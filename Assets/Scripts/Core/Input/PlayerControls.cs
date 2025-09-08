@@ -127,6 +127,33 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Sprint"",
+                    ""type"": ""Button"",
+                    ""id"": ""2e533d93-1f8c-49dd-94d4-100ca891428a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Strafe"",
+                    ""type"": ""Button"",
+                    ""id"": ""1bbd8391-51b9-4b88-94a8-b2b498ddfe7a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CameraLook"",
+                    ""type"": ""Value"",
+                    ""id"": ""d9bb0dac-f991-4710-b123-a1138fde3506"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -173,6 +200,39 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""AttackMagic"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0787ff23-70e1-4c16-94dc-11f8affeda54"",
+                    ""path"": ""<Gamepad>/leftStickPress"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6d3d4a03-bb96-48e6-ae8a-de0e74aabfeb"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Strafe"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""054fcfda-1603-416c-a721-dd48980f1b27"",
+                    ""path"": ""<Gamepad>/rightStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CameraLook"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -185,6 +245,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_GamePlay_Jump = m_GamePlay.FindAction("Jump", throwIfNotFound: true);
         m_GamePlay_AttackPhysical = m_GamePlay.FindAction("AttackPhysical", throwIfNotFound: true);
         m_GamePlay_AttackMagic = m_GamePlay.FindAction("AttackMagic", throwIfNotFound: true);
+        m_GamePlay_Sprint = m_GamePlay.FindAction("Sprint", throwIfNotFound: true);
+        m_GamePlay_Strafe = m_GamePlay.FindAction("Strafe", throwIfNotFound: true);
+        m_GamePlay_CameraLook = m_GamePlay.FindAction("CameraLook", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -269,6 +332,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_GamePlay_Jump;
     private readonly InputAction m_GamePlay_AttackPhysical;
     private readonly InputAction m_GamePlay_AttackMagic;
+    private readonly InputAction m_GamePlay_Sprint;
+    private readonly InputAction m_GamePlay_Strafe;
+    private readonly InputAction m_GamePlay_CameraLook;
     /// <summary>
     /// Provides access to input actions defined in input action map "GamePlay".
     /// </summary>
@@ -296,6 +362,18 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "GamePlay/AttackMagic".
         /// </summary>
         public InputAction @AttackMagic => m_Wrapper.m_GamePlay_AttackMagic;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/Sprint".
+        /// </summary>
+        public InputAction @Sprint => m_Wrapper.m_GamePlay_Sprint;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/Strafe".
+        /// </summary>
+        public InputAction @Strafe => m_Wrapper.m_GamePlay_Strafe;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/CameraLook".
+        /// </summary>
+        public InputAction @CameraLook => m_Wrapper.m_GamePlay_CameraLook;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -334,6 +412,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @AttackMagic.started += instance.OnAttackMagic;
             @AttackMagic.performed += instance.OnAttackMagic;
             @AttackMagic.canceled += instance.OnAttackMagic;
+            @Sprint.started += instance.OnSprint;
+            @Sprint.performed += instance.OnSprint;
+            @Sprint.canceled += instance.OnSprint;
+            @Strafe.started += instance.OnStrafe;
+            @Strafe.performed += instance.OnStrafe;
+            @Strafe.canceled += instance.OnStrafe;
+            @CameraLook.started += instance.OnCameraLook;
+            @CameraLook.performed += instance.OnCameraLook;
+            @CameraLook.canceled += instance.OnCameraLook;
         }
 
         /// <summary>
@@ -357,6 +444,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @AttackMagic.started -= instance.OnAttackMagic;
             @AttackMagic.performed -= instance.OnAttackMagic;
             @AttackMagic.canceled -= instance.OnAttackMagic;
+            @Sprint.started -= instance.OnSprint;
+            @Sprint.performed -= instance.OnSprint;
+            @Sprint.canceled -= instance.OnSprint;
+            @Strafe.started -= instance.OnStrafe;
+            @Strafe.performed -= instance.OnStrafe;
+            @Strafe.canceled -= instance.OnStrafe;
+            @CameraLook.started -= instance.OnCameraLook;
+            @CameraLook.performed -= instance.OnCameraLook;
+            @CameraLook.canceled -= instance.OnCameraLook;
         }
 
         /// <summary>
@@ -425,5 +521,26 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnAttackMagic(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Strafe" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStrafe(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CameraLook" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCameraLook(InputAction.CallbackContext context);
     }
 }
