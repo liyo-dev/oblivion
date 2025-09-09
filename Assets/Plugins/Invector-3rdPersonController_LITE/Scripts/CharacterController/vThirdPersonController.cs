@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace Invector.vCharacterController
 {
+    // Evento C# simple para disparos mágicos
+    public enum MagicCastType { Basic, Combo }
+    public delegate void MagicCastHandler(GameObject caster, Transform origin, Vector3 direction, MagicCastType type);
+
     public class vThirdPersonController : vThirdPersonAnimator
     {
         // ======== FÍSICO (Base Layer) ========
@@ -28,19 +32,28 @@ namespace Invector.vCharacterController
         [Header("Debug")]
         [SerializeField] private bool debugLogs = false;
 
+        // ======== Evento C# y spawn point ========
+        [Header("Magic Events")]
+        [SerializeField] private Transform magicSpawnPoint; 
+        public event MagicCastHandler OnMagicCast;
+
         // ======== Runtime ========
         private int nextPhysicalIndex = 0;
         private float nextPhysicalTime = 0f;
         private Vector3 extraImpulse = Vector3.zero;
         private Coroutine upperWeightCo;
 
-        // ======== NUEVO: Anti-retrigger para magia ========
+        // ======== Anti-retrigger Magia ========
         [Header("Magic Anti-Retrigger")]
         [SerializeField, Range(0.2f, 0.9f)] private float magicMinRepeatNormalized = 0.60f; // % del clip antes de permitir relanzar
         [SerializeField] private float magicBufferGrace = 0.30f;  // margen para permitir un relanzamiento buffered
         private bool magicReplayBuffered = false;
         private int magicLastTargetHash = 0;
         private float magicBufferExpireAt = 0f;
+        private MagicCastType bufferedCastType = MagicCastType.Basic;
+        
+        [SerializeField] private bool autoAimMelee = true;
+        private ITargetProvider _targeting; // ← usa la interfaz
 
         // ----------------- Motor original -----------------
         public virtual void ControlAnimatorRootMotion()
@@ -155,29 +168,35 @@ namespace Invector.vCharacterController
             string state = (physicalAttackStates != null && physicalAttackStates.Length > 0)
                 ? physicalAttackStates[Mathf.Clamp(nextPhysicalIndex, 0, physicalAttackStates.Length - 1)]
                 : "Attack1";
-
-            // Base Layer (0), nombres simples
+            
+            if (autoAimMelee && _targeting != null && _targeting.TryGetTarget(out var t))
+            {
+                Vector3 to = t.position - transform.position;
+                to.y = 0f;
+                if (to.sqrMagnitude > 0.0001f)
+                    transform.rotation = Quaternion.LookRotation(to.normalized, Vector3.up);
+            }
+            
             animator.CrossFadeInFixedTime(state, attackFade, 0);
 
             nextPhysicalIndex = (nextPhysicalIndex + 1) % physicalAttackStates.Length;
             nextPhysicalTime  = Time.time + physicalCooldown;
 
-            // Impulso hacia donde mira el player
             Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
             float strength = (input.sqrMagnitude > 0.1f) ? impulseMoving : impulseIdle;
             extraImpulse += fwd * strength;
         }
 
         // ----------------- Magia -----------------
-        public virtual void CastMagic1()      { PlayUpperAndAutoOff(magicState1Path, magicFade); }
-        public virtual void CastMagicFinish() { PlayUpperAndAutoOff(magicStateComboPath, magicFade); } 
+        public virtual void CastMagic1()      { PlayUpperAndAutoOff(magicState1Path, magicFade, MagicCastType.Basic); }
+        public virtual void CastMagicFinish() { PlayUpperAndAutoOff(magicStateComboPath, magicFade, MagicCastType.Combo); } 
 
-        private void PlayUpperAndAutoOff(string fullPath, float fade)
+        private void PlayUpperAndAutoOff(string fullPath, float fade, MagicCastType castType)
         {
             if (!CanAttack()) return;
 
-            int layer      = upperLayerIndex;
-            int targetHash = Animator.StringToHash(fullPath);
+            int layer       = upperLayerIndex;
+            int targetHash  = Animator.StringToHash(fullPath);
             magicLastTargetHash = targetHash;
 
             // Sube peso siempre
@@ -186,9 +205,10 @@ namespace Invector.vCharacterController
             var cur = animator.GetCurrentAnimatorStateInfo(layer);
             var nxt = animator.GetNextAnimatorStateInfo(layer);
 
-            // ANTIRETRIGGER para Magic1: si el mismo estado está muy al inicio, no reiniciar; bufferiza un relanzamiento
             bool isSameState = (cur.fullPathHash == targetHash) || (nxt.fullPathHash == targetHash);
-            bool isMagic1 = (targetHash == Animator.StringToHash(magicState1Path));
+            bool isMagic1    = (targetHash == Animator.StringToHash(magicState1Path));
+
+            // Anti-retrigger
             if (isMagic1 && isSameState)
             {
                 float norm = (cur.fullPathHash == targetHash) ? cur.normalizedTime : nxt.normalizedTime;
@@ -197,14 +217,26 @@ namespace Invector.vCharacterController
                 {
                     magicReplayBuffered = true;
                     magicBufferExpireAt = Time.time + magicBufferGrace;
+                    bufferedCastType = castType;
                     if (debugLogs) Debug.Log("[Magic] Buffered re-cast (anti-retrigger)");
+                    StartBlendOutRoutineIfNeeded(targetHash);
                     return;
                 }
             }
 
-            // Transición normal
             animator.CrossFadeInFixedTime(fullPath, fade, layer);
+            RaiseMagicEvent(castType);
+            StartBlendOutRoutine(targetHash);
+        }
 
+        private void StartBlendOutRoutineIfNeeded(int targetHash)
+        {
+            if (upperWeightCo == null)
+                upperWeightCo = StartCoroutine(Co_UpperBlendOut(targetHash));
+        }
+
+        private void StartBlendOutRoutine(int targetHash)
+        {
             if (upperWeightCo != null) StopCoroutine(upperWeightCo);
             upperWeightCo = StartCoroutine(Co_UpperBlendOut(targetHash));
         }
@@ -213,7 +245,7 @@ namespace Invector.vCharacterController
         {
             int layer = upperLayerIndex;
 
-            // Espera a entrar
+            // Espera a entrar (por seguridad)
             float safety = 1f;
             while (safety > 0f)
             {
@@ -227,7 +259,7 @@ namespace Invector.vCharacterController
             {
                 var st = animator.GetCurrentAnimatorStateInfo(layer);
 
-                // Si teníamos un relanzamiento buffered para Magic1 y ya pasamos el umbral, relanza ahora
+                // Buffer replay
                 if (magicReplayBuffered && targetHash == Animator.StringToHash(magicState1Path))
                 {
                     float frac = Mathf.Repeat(st.normalizedTime, 1f);
@@ -236,8 +268,9 @@ namespace Invector.vCharacterController
                     {
                         magicReplayBuffered = false;
                         animator.Play(targetHash, layer, 0f);
+                        RaiseMagicEvent(bufferedCastType);
                         if (debugLogs) Debug.Log("[Magic] Buffered re-cast fired");
-                        yield return null; // deja que entre y vuelve a esperar al final del nuevo pase
+                        yield return null; 
                         continue;
                     }
                 }
@@ -247,13 +280,9 @@ namespace Invector.vCharacterController
                 yield return null;
             }
 
-            // Pre-blend a idle si lo tienes (si no existe, no pasa nada)
             if (!string.IsNullOrEmpty(upperIdlePath))
-            {
                 animator.CrossFadeInFixedTime(upperIdlePath, 0.12f, layer);
-            }
 
-            // Bajar peso suave
             float t = 0f, start = animator.GetLayerWeight(layer);
             const float fadeOutTime = 0.22f;
             while (t < fadeOutTime)
@@ -264,6 +293,24 @@ namespace Invector.vCharacterController
             }
             animator.SetLayerWeight(layer, 0f);
             upperWeightCo = null;
+        }
+
+        private void RaiseMagicEvent(MagicCastType type)
+        {
+            if (OnMagicCast == null || magicSpawnPoint == null) return;
+            OnMagicCast.Invoke(this.gameObject, magicSpawnPoint, magicSpawnPoint.forward, type);
+        }
+
+        private void Start()
+        {
+            if (magicSpawnPoint == null)
+            {
+                foreach (var tr in GetComponentsInChildren<Transform>(true))
+                {
+                    if (tr.name == "MagicAttackSpawner") { magicSpawnPoint = tr; break; }
+                }
+            }
+            _targeting = GetComponent<ITargetProvider>(); // ← obtiene la interfaz
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;

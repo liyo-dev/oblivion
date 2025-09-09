@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 67b379208c41407448621dfe40566996
+timeCreated: 1513009492
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 71799
+  packageName: Off Screen Target Indicator
+  packageVersion: 3.0
+  assetPath: Assets/Pixel Play/_Scenes/_main.unity
+  uploadId: 362973

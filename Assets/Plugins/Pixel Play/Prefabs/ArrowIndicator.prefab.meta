@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 09cefc679ac23c54aa919111d8f3fc40
+timeCreated: 1513009830
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 71799
+  packageName: Off Screen Target Indicator
+  packageVersion: 3.0
+  assetPath: Assets/Pixel Play/Prefabs/ArrowIndicator.prefab
+  uploadId: 362973
