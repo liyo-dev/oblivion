@@ -404,6 +404,7 @@ GameObject:
   - component: {fileID: 4071095640247716209}
   - component: {fileID: 3913042509876727973}
   - component: {fileID: 1834688310740449430}
+  - component: {fileID: 7542142823025554710}
   m_Layer: 7
   m_Name: Spider1
   m_TagString: Untagged
@@ -436,7 +437,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5572779666037620316}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 9000000, guid: eaa6c567d9ea03744a0d4ea30cfe9f99, type: 3}
   m_Controller: {fileID: 9100000, guid: c5959b55b9795d741bb9279d753ec773, type: 2}
   m_CullingMode: 1
@@ -466,10 +467,12 @@ MonoBehaviour:
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3
-  physicalMultiplier: 1
+  physicalMultiplier: 2
   magicMultiplier: 1
   specialMultiplier: 1
   invulnerabilitySeconds: 0.5
+  debugLogs: 1
+  drawHitPoint: 1
 --- !u!114 &3913042509876727973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -486,11 +489,31 @@ MonoBehaviour:
   duration: 0.12
   curve:
     serializedVersion: 2
-    m_Curve: []
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  preferRigidbody: 0
+  preferRigidbody: 1
+  behavioursToDisable: []
+  debugLogs: 0
 --- !u!65 &1834688310740449430
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -512,6 +535,33 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 0.64772284, z: 1}
   m_Center: {x: 0, y: 0.32386142, z: 0}
+--- !u!54 &7542142823025554710
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5572779666037620316}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &5572779666037620318
 GameObject:
   m_ObjectHideFlags: 0

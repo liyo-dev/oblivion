@@ -179,6 +179,9 @@ namespace Invector.vCharacterController
             
             animator.CrossFadeInFixedTime(state, attackFade, 0);
 
+            var hitbox = GetComponentInChildren<IAttackHitbox>(true);
+            if (hitbox != null) hitbox.ArmForSeconds(0.25f);
+            
             nextPhysicalIndex = (nextPhysicalIndex + 1) % physicalAttackStates.Length;
             nextPhysicalTime  = Time.time + physicalCooldown;
 
