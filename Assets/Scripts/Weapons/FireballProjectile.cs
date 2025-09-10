@@ -21,8 +21,8 @@ public class FireballProjectile : MonoBehaviour
 
     [Tooltip("Curva de caída de daño (x=0 centro -> 1 borde).")]
     [SerializeField] private AnimationCurve aoeFalloff = new AnimationCurve(
-        new Keyframe(0f, 1f, 0f, -0.7f),  // 100% en el centro
-        new Keyframe(1f, 0.3f, -0.7f, 0f) // ~30% en el borde
+        new Keyframe(0f, 1f, 0f, -0.7f),   // 100% en el centro
+        new Keyframe(1f, 0.3f, -0.7f, 0f)  // ~30% en el borde
     );
 
     [Header("Impact VFX")]
@@ -35,7 +35,7 @@ public class FireballProjectile : MonoBehaviour
     private Collider _col;
     private readonly HashSet<IDamageable> _damaged = new();
 
-    // (opcional) quién disparó este proyectil (útil para estadísticas, evitar friendly fire, etc.)
+    // Quién disparó este proyectil (opcional)
     public GameObject Instigator { get; set; }
 
     private void Awake()
@@ -49,24 +49,37 @@ public class FireballProjectile : MonoBehaviour
         if (maxLifetime > 0f) Destroy(gameObject, maxLifetime);
     }
 
-    // Usa uno u otro según tu collider (recomendado: NO trigger)
+    // --- COLLISION (collider no trigger) ---
     private void OnCollisionEnter(Collision c)
     {
         var contact = c.GetContact(0);
-        Explode(contact.point, Quaternion.LookRotation(-contact.normal), c.collider);
+        Vector3 pos = contact.point;
+
+        // Normal de empuje: desde el punto de impacto hacia fuera del objetivo
+        Vector3 n = -contact.normal;
+
+        Explode(pos, Quaternion.identity, c.collider, n);
     }
 
+    // --- TRIGGER (collider trigger) ---
     private void OnTriggerEnter(Collider other)
     {
-        Explode(transform.position, transform.rotation, other);
+        // Punto más cercano del objetivo al centro de la bola
+        Vector3 hitPoint = other.ClosestPoint(transform.position);
+
+        // Normal radial: desde el centro de la explosión (proyectil) hacia el objetivo
+        Vector3 n = (other.transform.position - transform.position).normalized;
+
+        Explode(hitPoint, Quaternion.identity, other, n);
     }
 
-    private void Explode(Vector3 pos, Quaternion rot, Collider directHit)
+    // Versión con normal explícita (la usamos en ambos casos)
+    private void Explode(Vector3 pos, Quaternion rot, Collider directHit, Vector3 hitNormal)
     {
         if (_exploded) return;
         _exploded = true;
 
-        // 1) Cortar física/colisiones YA para evitar reentradas en frames siguientes
+        // 1) Cortar física/colisiones YA para evitar reentradas
         if (_col) _col.enabled = false;
         if (_rb)
         {
@@ -76,14 +89,13 @@ public class FireballProjectile : MonoBehaviour
             _rb.detectCollisions = false;
         }
 
-        // 2) Daño directo (si golpeó algo en la capa Enemy)
-        TryDamageCollider(directHit, pos, rot * Vector3.forward);
+        // 2) Daño directo
+        TryDamageCollider(directHit, pos, hitNormal);
 
-        // 3) AOE opcional con falloff
+        // 3) AOE opcional
         if (explosionRadius > 0.01f)
         {
             var hits = Physics.OverlapSphere(pos, explosionRadius, enemyMask, QueryTriggerInteraction.Collide);
-
             foreach (var h in hits)
             {
                 if (h == null) continue;
@@ -93,12 +105,14 @@ public class FireballProjectile : MonoBehaviour
                 float t = Mathf.Clamp01(d / explosionRadius);
                 float scale = aoeHasFalloff ? aoeFalloff.Evaluate(t) : 1f;
 
-                // Mismo flujo de daño que en el impacto directo
-                ApplyDamageIfEnemy(h, pos, (h.transform.position - pos).normalized, scale);
+                // Normal radial para cada objetivo del AOE
+                Vector3 radial = (h.transform.position - pos).normalized;
+
+                ApplyDamageIfEnemy(h, pos, radial, scale);
             }
         }
 
-        // 4) VFX de explosión (usa AutoDestroyVFX si lo tienes; si no, fallback)
+        // 4) VFX
         if (explosionVFX)
         {
             var vfx = Instantiate(explosionVFX, pos, rot);
@@ -117,8 +131,9 @@ public class FireballProjectile : MonoBehaviour
 
     private void ApplyDamageIfEnemy(Collider col, Vector3 hitPoint, Vector3 hitNormal, float damageScale)
     {
-        // Filtra por máscara (solo capa Enemy)
-        if (((1 << col.gameObject.layer) & enemyMask) == 0) return;
+        // *** Filtra por la capa del ROOT ***
+        int rootLayer = col.transform.root.gameObject.layer;
+        if (((1 << rootLayer) & enemyMask) == 0) return;
 
         // Busca IDamageable en el objeto o sus padres
         if (!col.TryGetComponent<IDamageable>(out var dmgable))
@@ -131,14 +146,16 @@ public class FireballProjectile : MonoBehaviour
         float finalDamage = Mathf.Max(0f, damage * damageScale);
         if (finalDamage <= 0f) return;
 
-        var info = new DamageInfo(
-            amount: finalDamage,
-            kind: kind,
-            source: this.gameObject,
-            instigator: Instigator,
-            point: hitPoint,
-            normal: hitNormal
-        );
+        // Construcción del DamageInfo
+        var info = new DamageInfo
+        {
+            amount = finalDamage,
+            kind = kind,
+            point = hitPoint,
+            normal = hitNormal,          // <- dirección “explosión → objetivo”
+            source = this.gameObject,
+            instigator = Instigator
+        };
 
         dmgable.ApplyDamage(in info);
         _damaged.Add(dmgable);

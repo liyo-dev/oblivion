@@ -3,27 +3,23 @@ using UnityEngine;
 
 namespace Invector.vCharacterController
 {
-    // Evento C# simple para disparos mágicos
     public enum MagicCastType { Basic, Combo }
     public delegate void MagicCastHandler(GameObject caster, Transform origin, Vector3 direction, MagicCastType type);
 
     public class vThirdPersonController : vThirdPersonAnimator
     {
-        // ======== FÍSICO (Base Layer) ========
         [Header("Physical Attacks (Base Layer)")]
-        [SerializeField] private string[] physicalAttackStates = { "Attack1", "Attack2", "Attack3", "Attack4" }; // en Base Layer
+        [SerializeField] private string[] physicalAttackStates = { "Attack1", "Attack2", "Attack3", "Attack4" };
         [SerializeField] private float attackFade = 0.10f;
         [SerializeField] private float physicalCooldown = 0.20f;
 
-        // ======== MAGIA (Layer superior) ========
         [Header("UpperBody Magic (use FULL PATHS)")]
-        [SerializeField] private int upperLayerIndex = 1;                       // layer UpperBody
-        [SerializeField] private string magicState1Path = "UpperBody.Magic.Magic1"; 
-        [SerializeField] private string magicStateComboPath = "UpperBody.Magic.MagicComboDone"; 
-        [SerializeField] private string upperIdlePath  = "UpperBody.UpperIdle";     
+        [SerializeField] private int upperLayerIndex = 1;
+        [SerializeField] private string magicState1Path = "UpperBody.Magic.Magic1";
+        [SerializeField] private string magicStateComboPath = "UpperBody.Magic.MagicComboDone";
+        [SerializeField] private string upperIdlePath  = "UpperBody.UpperIdle";
         [SerializeField] private float  magicFade      = 0.10f;
 
-        // ======== IMPULSO EN ATAQUE ========
         [Header("Attack Impulse")]
         [SerializeField] private float impulseIdle   = 2.4f;
         [SerializeField] private float impulseMoving = 1.2f;
@@ -32,30 +28,29 @@ namespace Invector.vCharacterController
         [Header("Debug")]
         [SerializeField] private bool debugLogs = false;
 
-        // ======== Evento C# y spawn point ========
         [Header("Magic Events")]
-        [SerializeField] private Transform magicSpawnPoint; 
+        [SerializeField] private Transform magicSpawnPoint;
         public event MagicCastHandler OnMagicCast;
 
-        // ======== Runtime ========
         private int nextPhysicalIndex = 0;
         private float nextPhysicalTime = 0f;
         private Vector3 extraImpulse = Vector3.zero;
         private Coroutine upperWeightCo;
 
-        // ======== Anti-retrigger Magia ========
         [Header("Magic Anti-Retrigger")]
-        [SerializeField, Range(0.2f, 0.9f)] private float magicMinRepeatNormalized = 0.60f; // % del clip antes de permitir relanzar
-        [SerializeField] private float magicBufferGrace = 0.30f;  // margen para permitir un relanzamiento buffered
+        [SerializeField, Range(0.2f, 0.9f)] private float magicMinRepeatNormalized = 0.60f;
+        [SerializeField] private float magicBufferGrace = 0.30f;
         private bool magicReplayBuffered = false;
         private int magicLastTargetHash = 0;
         private float magicBufferExpireAt = 0f;
         private MagicCastType bufferedCastType = MagicCastType.Basic;
-        
-        [SerializeField] private bool autoAimMelee = true;
-        private ITargetProvider _targeting; // ← usa la interfaz
 
-        // ----------------- Motor original -----------------
+        [SerializeField] private bool autoAimMelee = true;
+        private ITargetProvider _targeting;
+
+        // === NUEVO: puente de habilidades/maná ===
+        [SerializeField] private IAbilityGate _gate;
+
         public virtual void ControlAnimatorRootMotion()
         {
             if (!this.enabled) return;
@@ -165,10 +160,17 @@ namespace Invector.vCharacterController
         {
             if (!CanAttack() || Time.time < nextPhysicalTime) return;
 
+            // === GATEO ===
+            if (!_gate.CanUsePhysical())
+            {
+                if (debugLogs) Debug.Log("Bloqueado: PhysicalAttack no desbloqueado");
+                return;
+            }
+
             string state = (physicalAttackStates != null && physicalAttackStates.Length > 0)
                 ? physicalAttackStates[Mathf.Clamp(nextPhysicalIndex, 0, physicalAttackStates.Length - 1)]
                 : "Attack1";
-            
+
             if (autoAimMelee && _targeting != null && _targeting.TryGetTarget(out var t))
             {
                 Vector3 to = t.position - transform.position;
@@ -176,12 +178,12 @@ namespace Invector.vCharacterController
                 if (to.sqrMagnitude > 0.0001f)
                     transform.rotation = Quaternion.LookRotation(to.normalized, Vector3.up);
             }
-            
+
             animator.CrossFadeInFixedTime(state, attackFade, 0);
 
             var hitbox = GetComponentInChildren<IAttackHitbox>(true);
             if (hitbox != null) hitbox.ArmForSeconds(0.25f);
-            
+
             nextPhysicalIndex = (nextPhysicalIndex + 1) % physicalAttackStates.Length;
             nextPhysicalTime  = Time.time + physicalCooldown;
 
@@ -192,17 +194,23 @@ namespace Invector.vCharacterController
 
         // ----------------- Magia -----------------
         public virtual void CastMagic1()      { PlayUpperAndAutoOff(magicState1Path, magicFade, MagicCastType.Basic); }
-        public virtual void CastMagicFinish() { PlayUpperAndAutoOff(magicStateComboPath, magicFade, MagicCastType.Combo); } 
+        public virtual void CastMagicFinish() { PlayUpperAndAutoOff(magicStateComboPath, magicFade, MagicCastType.Combo); }
 
         private void PlayUpperAndAutoOff(string fullPath, float fade, MagicCastType castType)
         {
             if (!CanAttack()) return;
 
+            // === GATEO ===
+            if (!_gate.CanUseMagic(castType))
+            {
+                if (debugLogs) Debug.Log("Bloqueado: MagicAttack no desbloqueado o sin MP");
+                return;
+            }
+
             int layer       = upperLayerIndex;
             int targetHash  = Animator.StringToHash(fullPath);
             magicLastTargetHash = targetHash;
 
-            // Sube peso siempre
             animator.SetLayerWeight(layer, 1f);
 
             var cur = animator.GetCurrentAnimatorStateInfo(layer);
@@ -211,7 +219,6 @@ namespace Invector.vCharacterController
             bool isSameState = (cur.fullPathHash == targetHash) || (nxt.fullPathHash == targetHash);
             bool isMagic1    = (targetHash == Animator.StringToHash(magicState1Path));
 
-            // Anti-retrigger
             if (isMagic1 && isSameState)
             {
                 float norm = (cur.fullPathHash == targetHash) ? cur.normalizedTime : nxt.normalizedTime;
@@ -248,7 +255,6 @@ namespace Invector.vCharacterController
         {
             int layer = upperLayerIndex;
 
-            // Espera a entrar (por seguridad)
             float safety = 1f;
             while (safety > 0f)
             {
@@ -262,7 +268,6 @@ namespace Invector.vCharacterController
             {
                 var st = animator.GetCurrentAnimatorStateInfo(layer);
 
-                // Buffer replay
                 if (magicReplayBuffered && targetHash == Animator.StringToHash(magicState1Path))
                 {
                     float frac = Mathf.Repeat(st.normalizedTime, 1f);
@@ -273,7 +278,7 @@ namespace Invector.vCharacterController
                         animator.Play(targetHash, layer, 0f);
                         RaiseMagicEvent(bufferedCastType);
                         if (debugLogs) Debug.Log("[Magic] Buffered re-cast fired");
-                        yield return null; 
+                        yield return null;
                         continue;
                     }
                 }
@@ -313,7 +318,8 @@ namespace Invector.vCharacterController
                     if (tr.name == "MagicAttackSpawner") { magicSpawnPoint = tr; break; }
                 }
             }
-            _targeting = GetComponent<ITargetProvider>(); // ← obtiene la interfaz
+            _targeting = GetComponent<ITargetProvider>();
+            if (_gate == null) _gate = GetComponent<IAbilityGate>();
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;

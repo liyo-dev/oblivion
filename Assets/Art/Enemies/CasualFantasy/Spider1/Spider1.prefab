@@ -402,7 +402,6 @@ GameObject:
   - component: {fileID: 5572779666037973628}
   - component: {fileID: 5572779666028121482}
   - component: {fileID: 4071095640247716209}
-  - component: {fileID: 3913042509876727973}
   - component: {fileID: 1834688310740449430}
   - component: {fileID: 7542142823025554710}
   m_Layer: 7
@@ -437,7 +436,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5572779666037620316}
-  m_Enabled: 0
+  m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: eaa6c567d9ea03744a0d4ea30cfe9f99, type: 3}
   m_Controller: {fileID: 9100000, guid: c5959b55b9795d741bb9279d753ec773, type: 2}
   m_CullingMode: 1
@@ -463,7 +462,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
+  maxHealth: 1000
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3
@@ -471,23 +470,11 @@ MonoBehaviour:
   magicMultiplier: 1
   specialMultiplier: 1
   invulnerabilitySeconds: 0.5
-  debugLogs: 1
-  drawHitPoint: 1
---- !u!114 &3913042509876727973
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5572779666037620316}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f7befc91e76bcf45af6a10d44a0e0e2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DamageableKnockback
-  strength: 4
-  duration: 0.12
-  curve:
+  enableKnockback: 1
+  minDamageForKnockback: 0.01
+  knockStrength: 2
+  knockDuration: 0.15
+  knockCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -513,7 +500,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   preferRigidbody: 1
   behavioursToDisable: []
-  debugLogs: 0
+  debugLogs: 1
+  drawHitPoint: 1
 --- !u!65 &1834688310740449430
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -558,10 +546,10 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  m_Constraints: 32
+  m_CollisionDetection: 2
 --- !u!1 &5572779666037620318
 GameObject:
   m_ObjectHideFlags: 0

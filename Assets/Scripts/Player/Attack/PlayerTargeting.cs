@@ -1,7 +1,9 @@
 using UnityEngine;
 
+[DisallowMultipleComponent]
 public class PlayerTargeting : MonoBehaviour, ITargetProvider
 {
+    // ================== SCAN / TARGETING ==================
     [Header("Búsqueda")]
     [SerializeField] private float radius = 8f;
     [SerializeField] private LayerMask enemyMask;          // solo Layer Enemy
@@ -18,20 +20,62 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private Color fovColor = new Color(0.2f, 1f, 0.4f, 0.25f);
     [SerializeField] private Color targetLineColor = new Color(1f, 0.8f, 0.2f, 0.9f);
 
+    // ================== FEEDBACK / MARKER ==================
+    [Header("Feedback de Target (Opcional)")]
+    [SerializeField] private bool enableMarker = true;
+    [SerializeField] private GameObject markerPrefab;
+    [SerializeField] private Vector3 markerOffset = new Vector3(0, 1.8f, 0);
+    [SerializeField] private bool billboardToCamera = true;
+    [Tooltip("Si true, el marcador se parenta al target (útil si se mueve mucho).")]
+    [SerializeField] private bool parentMarkerToTarget = false;
+
     public Transform CurrentTarget { get; private set; }
 
     float _nextScan;
+    Transform _marker;
+    Collider _lastTargetCol;
+    Camera _cam;
+
+    // ================== UNITY ==================
+    void Awake()
+    {
+        // Cámara para billboard (no es obligatorio)
+        _cam = Camera.main;
+
+        // Instancia del marker si se desea feedback
+        if (enableMarker && markerPrefab)
+        {
+            var go = Instantiate(markerPrefab);
+            go.SetActive(false);
+            _marker = go.transform;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (_marker) Destroy(_marker.gameObject);
+    }
 
     void Update()
     {
         if (updatesPerSecond <= 0f || Time.time >= _nextScan)
         {
+            Transform before = CurrentTarget;
             Scan();
             if (updatesPerSecond > 0f)
                 _nextScan = Time.time + 1f / updatesPerSecond;
+
+            if (before != CurrentTarget)
+                OnTargetChanged(before, CurrentTarget);
         }
     }
 
+    void LateUpdate()
+    {
+        UpdateMarker();
+    }
+
+    // ================== SCAN LOGIC ==================
     void Scan()
     {
         Vector3 origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up * 1f;
@@ -70,6 +114,58 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         CurrentTarget = best;
     }
 
+    // ================== FEEDBACK LOGIC ==================
+    void OnTargetChanged(Transform oldT, Transform newT)
+    {
+        if (!_marker) return;
+
+        if (parentMarkerToTarget)
+        {
+            _marker.SetParent(newT, worldPositionStays: true);
+        }
+
+        if (!newT)
+        {
+            if (_marker.gameObject.activeSelf) _marker.gameObject.SetActive(false);
+            _lastTargetCol = null;
+        }
+        else
+        {
+            if (!_marker.gameObject.activeSelf) _marker.gameObject.SetActive(true);
+        }
+    }
+
+    void UpdateMarker()
+    {
+        if (!_marker || !enableMarker) return;
+
+        var t = CurrentTarget;
+        if (!t)
+        {
+            if (_marker.gameObject.activeSelf) _marker.gameObject.SetActive(false);
+            return;
+        }
+
+        if (!_marker.gameObject.activeSelf) _marker.gameObject.SetActive(true);
+
+        // Calcula posición sobre el bounds del target
+        if (_lastTargetCol == null || _lastTargetCol.transform != t)
+            _lastTargetCol = t.GetComponentInParent<Collider>();
+
+        Vector3 pos = t.position + markerOffset;
+        if (_lastTargetCol)
+            pos = _lastTargetCol.bounds.center + new Vector3(0, _lastTargetCol.bounds.extents.y, 0) + markerOffset * 0.2f;
+
+        if (!parentMarkerToTarget) _marker.position = pos;
+        else _marker.localPosition = t.InverseTransformPoint(pos);
+
+        if (billboardToCamera && (_cam || (_cam = Camera.main)))
+        {
+            _marker.forward = (_marker.position - _cam.transform.position).normalized;
+        }
+    }
+
+    // ================== ITargetProvider ==================
     public bool TryGetTarget(out Transform t)
     {
         t = CurrentTarget;

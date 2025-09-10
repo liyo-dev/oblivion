@@ -149,8 +149,8 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
+  m_RenderPostProcessing: 1
+  m_Antialiasing: 3
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
@@ -2693,7 +2693,10 @@ GameObject:
   - component: {fileID: 2086587158675341664}
   - component: {fileID: 8012417338242727288}
   - component: {fileID: 2503270187283354766}
-  - component: {fileID: 1157707165974423375}
+  - component: {fileID: 7904379901834280230}
+  - component: {fileID: 4391252562433000814}
+  - component: {fileID: 1119205446695802525}
+  - component: {fileID: 2858496106892344916}
   - component: {fileID: 6095438113907657555}
   - component: {fileID: 8204031992233880778}
   m_Layer: 3
@@ -2860,7 +2863,7 @@ MonoBehaviour:
     m_Bits: 128
   fovDegrees: 140
   requireLineOfSight: 0
-  aimOrigin: {fileID: 0}
+  aimOrigin: {fileID: 4198992989337649270}
   updatesPerSecond: 10
   drawRadius: 1
   drawFOV: 1
@@ -2868,7 +2871,12 @@ MonoBehaviour:
   radiusColor: {r: 0, g: 0.7, b: 1, a: 0.35}
   fovColor: {r: 0.2, g: 1, b: 0.4, a: 0.25}
   targetLineColor: {r: 1, g: 0.8, b: 0.2, a: 0.9}
---- !u!114 &1157707165974423375
+  enableMarker: 1
+  markerPrefab: {fileID: 6257368771293304010, guid: 0a8d3d2e80c7acf42880b491ab93fce0, type: 3}
+  markerOffset: {x: 0, y: 0, z: 0}
+  billboardToCamera: 1
+  parentMarkerToTarget: 0
+--- !u!114 &7904379901834280230
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2877,12 +2885,60 @@ MonoBehaviour:
   m_GameObject: {fileID: 7301600041700683748}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7099105d15fb3f43940f56c09b140eb, type: 3}
+  m_Script: {fileID: 11500000, guid: 301917e9383dfa241b2786c2c29d0ada, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerTargetingFeedback
-  markerPrefab: {fileID: 6257368771293304010, guid: 0a8d3d2e80c7acf42880b491ab93fce0, type: 3}
-  offset: {x: 0, y: 0, z: 0}
-  billboardToCamera: 1
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerState
+  config: {fileID: 11400000, guid: 14f527e0c6fe0b14d8f6fe1e836ecc89, type: 2}
+  newGamePreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
+  damageable: {fileID: 0}
+  mana: {fileID: 4391252562433000814}
+--- !u!114 &4391252562433000814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7301600041700683748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e6b82785564bd646a72a09b1ccf1101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ManaPool
+  max: 50
+  current: 50
+--- !u!114 &1119205446695802525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7301600041700683748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec5b89748e10879409f7dcdc116eb8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityGateBridge
+  playerState: {fileID: 7904379901834280230}
+  mana: {fileID: 4391252562433000814}
+  magicCostBasic: 8
+  magicCostCombo: 15
+--- !u!114 &2858496106892344916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7301600041700683748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b041d00537b95247b3fa2b9855ae3c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MagicCaster
+  fireballBasic: {fileID: 412438411903453573, guid: e55149ba6f4d00741984987e258c3378, type: 3}
+  fireballCombo: {fileID: 0}
+  enemyMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!54 &6095438113907657555
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3431,6 +3487,10 @@ PrefabInstance:
     - target: {fileID: 7298157750031488419, guid: f8acc5915de8f2a4588e1a0440a3174b, type: 3}
       propertyPath: m_Layer
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7298157750031488419, guid: f8acc5915de8f2a4588e1a0440a3174b, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7927341822376169241, guid: f8acc5915de8f2a4588e1a0440a3174b, type: 3}
       propertyPath: m_LocalPosition.x
