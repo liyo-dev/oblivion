@@ -17,6 +17,6 @@ MonoBehaviour:
   currentHP: 100
   maxMP: 50
   currentMP: 50
-  unlockedAbilities: 
-  unlockedSpells: 
+  unlockedAbilities: 01000000
+  unlockedSpells: 00000000
   flags: []
