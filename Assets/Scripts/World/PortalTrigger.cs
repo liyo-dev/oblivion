@@ -3,24 +3,23 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class PortalTrigger : MonoBehaviour
 {
-    public string targetAnchorId;          // a dónde te mueve (ej: "City_Gate")
-    public string requiredFlag;            // opcional (ej: "HasKey")
-    public string setFlagOnEnter;          // opcional (ej: "EnteredCity")
-    public bool   saveAfterTeleport = true;
+    public string targetAnchorId;
+    public string requiredFlag;
+    public string setFlagOnEnter;
 
     void Reset(){ GetComponent<Collider>().isTrigger = true; }
 
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-        var ps = other.GetComponent<PlayerState>(); if (!ps) ps = other.GetComponentInParent<PlayerState>();
+
+        var ps = other.GetComponent<PlayerState>() ?? other.GetComponentInParent<PlayerState>();
         if (!ps) return;
 
-        if (!string.IsNullOrEmpty(requiredFlag) && !ps.HasFlag(requiredFlag))
-            return; // no cumple requisito
-
+        if (!string.IsNullOrEmpty(requiredFlag) && !ps.HasFlag(requiredFlag)) return;
         if (!string.IsNullOrEmpty(setFlagOnEnter)) ps.SetFlag(setFlagOnEnter, true);
 
-        TeleportService.TeleportToAnchor(ps.gameObject, targetAnchorId, saveAfterTeleport);
+        TeleportService.TeleportToAnchor(ps.gameObject, targetAnchorId);
+        // NO guardar aquí
     }
 }

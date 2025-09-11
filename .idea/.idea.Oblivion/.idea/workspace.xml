@@ -6,12 +6,78 @@
   <component name="ChangeListManager">
     <list default="true" id="9eabfba9-47fb-4d93-81a2-90082062f2b7" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Oblivion/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Oblivion/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Prefab/PLAYER.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefab/PLAYER.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/UI/HUD.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/UI/HUD.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/UI/ui_magic_attacks.png.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Art/UI/ui_magic_attacks.png.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Ascend to the Heavens.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Ascend to the Heavens.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Battle Cry.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Battle Cry.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Beneath the Surface.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Beneath the Surface.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Dangers in a New Land.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Dangers in a New Land.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Demon of Forest.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Demon of Forest.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Eternal Dreams.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Eternal Dreams.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Get Away!.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Get Away!.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Grand Finale.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Grand Finale.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Hero's Journey.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Hero's Journey.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Knight Assault.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Knight Assault.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Afraid to Lose.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Afraid to Lose.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_All Alone.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_All Alone.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Born For More.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Born For More.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Dungeon Exploring D.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Dungeon Exploring D.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Glitch in the Orchestra.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Glitch in the Orchestra.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Land of Ashes (live).wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Land of Ashes (live).wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Resolve to Rise.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/LOOP_Resolve to Rise.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Primal Ascension.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Primal Ascension.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Reach for the Stars (no choir).wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Reach for the Stars (no choir).wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Reach for the Stars.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Reach for the Stars.wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Rise (live instrumental).wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Rise (live instrumental).wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Rise (live vocals).wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Rise (live vocals).wav.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Supreme Warriors.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Audio/Music/Symphonic Chronicles/Supreme Warriors.wav.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/MainWorld.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Config_SO/PlayerPreset_Default.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Config_SO/PlayerPreset_Default.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Start.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Start.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameConfigSO.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameConfigSO.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/Identifiers.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/Identifiers.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerSaveData.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerSaveData.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/SaveSystem.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/SaveSystem.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Health/DamageKind.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Health/DamageKind.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/Attack/MagicProjectileSpawner.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/Attack/MagicProjectileSpawner.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetSO.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetSO.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerState.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestLog.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestLog.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestSO.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestSO.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/SpawnManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/SpawnManager.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,9 +104,18 @@
     <setting file="file://$PROJECT_DIR$/Assets/Plugins/IAbilityGate.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Plugins/IAttackHitbox.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Bridge/MagicCaster.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/GameScriptableObjects.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/GameServices.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/PlayerComponents.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/TeleportService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/Attack/PlayerTargeting.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestStateEnum.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 0
@@ -50,19 +125,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.2.2f1\Editor\Unity.exe" />
@@ -131,7 +208,8 @@
       <workItem from="1757321107844" duration="18432000" />
       <workItem from="1757346063608" duration="30944000" />
       <workItem from="1757433580248" duration="4338000" />
-      <workItem from="1757490011796" duration="15231000" />
+      <workItem from="1757490011796" duration="16126000" />
+      <workItem from="1757567898888" duration="4348000" />
     </task>
     <task id="LOCAL-00001" summary="Add new asset metadata files for various components in the project">
       <option name="closed" value="true" />

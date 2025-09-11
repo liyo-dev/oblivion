@@ -5,8 +5,6 @@ using Invector.vCharacterController;
 
 public class MagicProjectileSpawner : MonoBehaviour
 {
-    public enum DirectionMode { PlayerForward, OriginForward, AimTransform }
-
     [Header("Listen")]
     [SerializeField] private vThirdPersonController controller;
 

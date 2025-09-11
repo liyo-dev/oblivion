@@ -1,44 +1,143 @@
+using System.Collections;
+using System.IO;
 using UnityEngine;
 
 public class SpawnManager : MonoBehaviour
 {
-    public GameConfigSO config;
-    public PlayerState  playerState;
-    public QuestLog     questLog;
+    [System.Serializable]
+    public class SpawnAnchor
+    {
+        public string id;
+        public Transform transform;
+    }
+    
+    [SerializeField] GameBootProfile bootProfile;
+    [SerializeField] PlayerState playerState;
+    [SerializeField] GameConfigSO config;
+    [SerializeField] SpawnAnchor[] spawnAnchors;
 
-    // TeleportService usará esto para saber "dónde reaparecer" tras cambios
     public static string CurrentAnchorId { get; private set; }
+    public static void SetCurrentAnchor(string id){ CurrentAnchorId = id; }
 
     void Awake()
     {
         if (!playerState) playerState = FindFirstObjectByType<PlayerState>();
-        if (!questLog)     questLog   = FindFirstObjectByType<QuestLog>();
+        if (!config)      config      = Resources.Load<GameConfigSO>("GameConfig");
+    }
 
-        // 1) Cargar o crear save runtime
-        PlayerSaveData save = SaveSystem.Load();
-        if (save == null)
+    void Start() { StartCoroutine(Co_Boot()); }
+
+    IEnumerator Co_Boot()
+    {
+        if (bootProfile && bootProfile.ShouldBootFromPreset())
         {
-            var preset = playerState.newGamePreset;
-            string spawnId = config ? config.defaultSpawnAnchorId : "Bedroom";
-            save = PlayerSaveData.FromPreset(preset, spawnId);
-            if (preset==null) Debug.LogWarning("No PlayerPresetSO asignado. Usando valores por defecto.");
+            var preset = bootProfile.GetPreset();
+            var anchor = bootProfile.GetStartAnchorId();
+            if (preset) playerState.ApplyPreset(preset);
+            PlaceAtAnchor(playerState.gameObject, string.IsNullOrEmpty(anchor) ? GetDefaultSpawnAnchor() : anchor, true);
+            yield break;
         }
 
-        // 2) Aplicar al player
-        playerState.LoadFromSave(save);
-        if (questLog) questLog.Import(save.quests);
+        var save = LoadGameData();
+        if (save != null)
+        {
+            save.ApplyTo(playerState);
+            var anchor = string.IsNullOrEmpty(save.lastSpawnAnchorId) ? GetDefaultSpawnAnchor() : save.lastSpawnAnchorId;
+            PlaceAtAnchor(playerState.gameObject, anchor, true);
+            yield break;
+        }
 
-        // 3) Recolocar al anchor pedido (tu Player YA está en escena)
-        string id = string.IsNullOrEmpty(save.lastSpawnAnchorId) ? (config?config.defaultSpawnAnchorId:"Bedroom") : save.lastSpawnAnchorId;
-        TeleportService.PlaceAtAnchor(playerState.gameObject, id, immediate:true);
-        CurrentAnchorId = id;
+        // fallback: preset runtime o default
+        var rp = bootProfile ? bootProfile.runtimePreset : null;
+        if (rp) playerState.ApplyPreset(rp);
+        PlaceAtAnchor(playerState.gameObject, GetDefaultSpawnAnchor(), true);
     }
 
     public void SaveNow()
     {
-        var data = playerState.CreateSave(CurrentAnchorId, questLog);
-        SaveSystem.Save(data);
+        var data = PlayerSaveData.From(playerState);
+        SaveGameData(data);
     }
 
-    public static void SetCurrentAnchor(string id){ CurrentAnchorId = id; }
+    public Transform GetAnchor(string anchorId)
+    {
+        if (spawnAnchors != null)
+        {
+            foreach (var anchor in spawnAnchors)
+            {
+                if (anchor.id == anchorId)
+                    return anchor.transform;
+            }
+        }
+        return null;
+    }
+
+    public void PlaceAtAnchor(GameObject player, string anchorId, bool setAsCurrent = false)
+    {
+        var anchor = GetAnchor(anchorId);
+        if (anchor != null)
+        {
+            player.transform.position = anchor.position;
+            player.transform.rotation = anchor.rotation;
+        }
+        else
+        {
+            // Fallback a posición por defecto
+            player.transform.position = Vector3.zero;
+            player.transform.rotation = Quaternion.identity;
+            Debug.LogWarning($"No se encontró anchor '{anchorId}', usando posición por defecto");
+        }
+        
+        if (setAsCurrent)
+        {
+            SetCurrentAnchor(anchorId);
+        }
+        
+        Debug.Log($"Jugador colocado en: {anchorId}");
+    }
+
+    private string GetDefaultSpawnAnchor()
+    {
+        // Usar valor por defecto si config no está disponible
+        return config != null ? "Bedroom" : "Bedroom";
+    }
+
+    // Sistema de guardado integrado
+    private void SaveGameData(PlayerSaveData data)
+    {
+        try
+        {
+            string json = JsonUtility.ToJson(data, true);
+            string path = Path.Combine(Application.persistentDataPath, "savegame.json");
+            File.WriteAllText(path, json);
+            Debug.Log($"Juego guardado en: {path}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error al guardar: {e.Message}");
+        }
+    }
+
+    private PlayerSaveData LoadGameData()
+    {
+        try
+        {
+            string path = Path.Combine(Application.persistentDataPath, "savegame.json");
+            if (!File.Exists(path))
+            {
+                Debug.Log("No se encontró archivo de guardado");
+                return null;
+            }
+
+            string json = File.ReadAllText(path);
+            PlayerSaveData data = JsonUtility.FromJson<PlayerSaveData>(json);
+            Debug.Log("Juego cargado exitosamente");
+            return data;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error al cargar: {e.Message}");
+            return null;
+        }
+    }
 }
