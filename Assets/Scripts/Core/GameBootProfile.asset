@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd05ba72011a49a4b8b4bee9d7d8a454, type: 3}
+  m_Name: GameBootProfile
+  m_EditorClassIdentifier: Assembly-CSharp::GameBootProfile
+  sceneToLoad: MainMenu
+  defaultAnchorId: 
+  defaultPlayerPreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
+  usePresetInsteadOfSave: 1
+  bootPreset: {fileID: 11400000, guid: 4525dab49d080974ba131c5581c3d793, type: 2}
+  startAnchorId: Bedroom
+  runtimePreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
