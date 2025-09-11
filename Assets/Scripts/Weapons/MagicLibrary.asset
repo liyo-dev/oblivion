@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06275afa96effb742b249171246bdc25, type: 3}
+  m_Name: MagicLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::MagicLibrarySO
+  spells:
+  - {fileID: 11400000, guid: d45589ea2589f21499b4b61ab8d6f54b, type: 2}
+  - {fileID: 11400000, guid: 18ae4d8a14b32b049a81e3c568fa4df1, type: 2}
+  - {fileID: 11400000, guid: bdcedfac08b648a4393bdc5f82614590, type: 2}
+  - {fileID: 11400000, guid: f1b288d0224cba143bdf71919eb15b91, type: 2}
+  - {fileID: 11400000, guid: fd9d38bfa5a54cc4da358ab98c1935d9, type: 2}

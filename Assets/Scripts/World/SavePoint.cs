@@ -49,9 +49,9 @@ public class SavePoint : MonoBehaviour
             ps.SetMana(ps.MaxMana);
         }
 
-        var sm = FindFirstObjectByType<SpawnManager>();
-        sm?.SaveNow();
-
+        var save = FindFirstObjectByType<SaveSystem>();
+        if (save) save.Save(PlayerSaveData.From(ps));
+        
         if (teleportAfterSave && !string.IsNullOrEmpty(teleportAnchorId))
             TeleportService.TeleportToAnchor(ps.gameObject, teleportAnchorId);
     }

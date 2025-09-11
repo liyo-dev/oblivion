@@ -12,6 +12,13 @@ public class AnchorSetter : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
         SpawnManager.SetCurrentAnchor(anchorId);
-        if (saveAfter) FindFirstObjectByType<SpawnManager>()?.SaveNow();
+
+        if (saveAfter)
+        {
+            var ps = other.GetComponent<PlayerState>() ?? other.GetComponentInParent<PlayerState>();
+            var save = FindFirstObjectByType<SaveSystem>();
+            if (ps && save) save.Save(PlayerSaveData.From(ps));
+        }
+
     }
 }

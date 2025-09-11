@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: GameBootProfile
   m_EditorClassIdentifier: Assembly-CSharp::GameBootProfile
   sceneToLoad: MainMenu
-  defaultAnchorId: 
+  defaultAnchorId: Bedroom
   defaultPlayerPreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
   usePresetInsteadOfSave: 1
   bootPreset: {fileID: 11400000, guid: 4525dab49d080974ba131c5581c3d793, type: 2}
-  startAnchorId: Bedroom
+  startAnchorId: House_FrontDoor
   runtimePreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}

@@ -2,52 +2,56 @@ using UnityEngine;
 
 public class WorldBootstrap : MonoBehaviour
 {
-    [Header("Opcional (solo para fallback)")]
-    public GameBootProfile profile;  // si quieres tomar defaultAnchorId desde aquí
-    public GameConfigSO gameConfig;  // si prefieres usar su Default Spawn Anchor Id
+    [Header("Perfil de arranque (SO)")]
+    public GameBootProfile profile;
 
-    SaveSystem saveSystem;
+    private SaveSystem saveSystem;
 
-    void Start()
+    private void Start()
     {
         saveSystem = FindFirstObjectByType<SaveSystem>();
 
-        // 1) Resolver anchor por defecto (si no hay save)
-        string fallbackAnchor = ResolveFallbackAnchorId(); // "start" / "Bedroom" según tengas
-
-        // 2) Intentar cargar partida
-        string anchorId = fallbackAnchor;
-        if (saveSystem != null && saveSystem.Load(out var data) && !string.IsNullOrEmpty(data.lastSpawnAnchorId))
+        // 1) Modo PRESET (test): ignora el save
+        if (profile && profile.ShouldBootFromPreset())
         {
-            anchorId = data.lastSpawnAnchorId;
+            var ps = FindFirstObjectByType<PlayerState>();
+            if (ps) profile.ApplyBootPreset(ps);
 
-            // Restaura stats/flags/abilities al Player
+            var anchor = profile.GetStartAnchorOrDefault();
+            SpawnManager.SetCurrentAnchor(anchor);
+
+            var playerGO = ps ? ps.gameObject : FindFirstObjectByType<PlayerState>()?.gameObject;
+            if (playerGO) TeleportService.PlaceAtAnchor(playerGO, anchor, immediate: true);
+
+            // IMPORTANTE: NO tocamos la magia aquí. Los slots se configuran en World
+            // (MagicLoadout del Player) de forma manual o por prefab.
+            return;
+        }
+
+        // 2) Flujo normal: intentar cargar partida
+        string anchorId = profile ? profile.defaultAnchorId : "Bedroom";
+        if (string.IsNullOrEmpty(anchorId)) anchorId = "Bedroom";
+
+        if (saveSystem != null && saveSystem.Load(out var data))
+        {
+            if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
+                anchorId = data.lastSpawnAnchorId;
+
             var ps = FindFirstObjectByType<PlayerState>();
             if (ps) data.ApplyTo(ps);
         }
 
-        // 3) Colocar al jugador en el anchor resuelto
+        // 3) Colocar jugador
         var player = FindFirstObjectByType<PlayerState>()?.gameObject;
         if (player)
         {
             TeleportService.PlaceAtAnchor(player, anchorId, immediate: true);
-            // PlaceAtAnchor ya hace SpawnManager.SetCurrentAnchor(anchorId).
         }
         else
         {
             Debug.LogWarning("[WorldBootstrap] No se encontró PlayerState en la escena.");
         }
-    }
 
-    string ResolveFallbackAnchorId()
-    {
-        // Prioridad: GameConfigSO > GameBootProfile > "start"
-        if (gameConfig && !string.IsNullOrEmpty(gameConfig.defaultSpawnAnchorId))
-            return gameConfig.defaultSpawnAnchorId;
-
-        if (profile && !string.IsNullOrEmpty(profile.defaultAnchorId))
-            return profile.defaultAnchorId;
-
-        return "start";
+        // Slots de magia: se dejan tal cual estén en la escena/prefab (MagicLoadout).
     }
 }

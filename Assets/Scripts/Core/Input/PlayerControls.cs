@@ -111,7 +111,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""AttackPhysical"",
+                    ""name"": ""AttackMagicWest"",
                     ""type"": ""Button"",
                     ""id"": ""2d16dc14-e6ef-441f-b419-64fd0001442e"",
                     ""expectedControlType"": """",
@@ -120,9 +120,18 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""AttackMagic"",
+                    ""name"": ""AttackMagicNorth"",
                     ""type"": ""Button"",
                     ""id"": ""e6983fcd-6052-46b3-b90d-e9d18cba65d9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AttackMagicEast"",
+                    ""type"": ""Button"",
+                    ""id"": ""6a96621c-93a5-402e-bc28-3427000ddd00"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -186,7 +195,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""AttackPhysical"",
+                    ""action"": ""AttackMagicWest"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -197,7 +206,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""AttackMagic"",
+                    ""action"": ""AttackMagicNorth"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -233,6 +242,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""CameraLook"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""35387ab1-a3ff-44f0-b088-70a2f1b2c845"",
+                    ""path"": ""<Gamepad>/buttonEast"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AttackMagicEast"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -243,8 +263,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_GamePlay = asset.FindActionMap("GamePlay", throwIfNotFound: true);
         m_GamePlay_Move = m_GamePlay.FindAction("Move", throwIfNotFound: true);
         m_GamePlay_Jump = m_GamePlay.FindAction("Jump", throwIfNotFound: true);
-        m_GamePlay_AttackPhysical = m_GamePlay.FindAction("AttackPhysical", throwIfNotFound: true);
-        m_GamePlay_AttackMagic = m_GamePlay.FindAction("AttackMagic", throwIfNotFound: true);
+        m_GamePlay_AttackMagicWest = m_GamePlay.FindAction("AttackMagicWest", throwIfNotFound: true);
+        m_GamePlay_AttackMagicNorth = m_GamePlay.FindAction("AttackMagicNorth", throwIfNotFound: true);
+        m_GamePlay_AttackMagicEast = m_GamePlay.FindAction("AttackMagicEast", throwIfNotFound: true);
         m_GamePlay_Sprint = m_GamePlay.FindAction("Sprint", throwIfNotFound: true);
         m_GamePlay_Strafe = m_GamePlay.FindAction("Strafe", throwIfNotFound: true);
         m_GamePlay_CameraLook = m_GamePlay.FindAction("CameraLook", throwIfNotFound: true);
@@ -330,8 +351,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private List<IGamePlayActions> m_GamePlayActionsCallbackInterfaces = new List<IGamePlayActions>();
     private readonly InputAction m_GamePlay_Move;
     private readonly InputAction m_GamePlay_Jump;
-    private readonly InputAction m_GamePlay_AttackPhysical;
-    private readonly InputAction m_GamePlay_AttackMagic;
+    private readonly InputAction m_GamePlay_AttackMagicWest;
+    private readonly InputAction m_GamePlay_AttackMagicNorth;
+    private readonly InputAction m_GamePlay_AttackMagicEast;
     private readonly InputAction m_GamePlay_Sprint;
     private readonly InputAction m_GamePlay_Strafe;
     private readonly InputAction m_GamePlay_CameraLook;
@@ -355,13 +377,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Jump => m_Wrapper.m_GamePlay_Jump;
         /// <summary>
-        /// Provides access to the underlying input action "GamePlay/AttackPhysical".
+        /// Provides access to the underlying input action "GamePlay/AttackMagicWest".
         /// </summary>
-        public InputAction @AttackPhysical => m_Wrapper.m_GamePlay_AttackPhysical;
+        public InputAction @AttackMagicWest => m_Wrapper.m_GamePlay_AttackMagicWest;
         /// <summary>
-        /// Provides access to the underlying input action "GamePlay/AttackMagic".
+        /// Provides access to the underlying input action "GamePlay/AttackMagicNorth".
         /// </summary>
-        public InputAction @AttackMagic => m_Wrapper.m_GamePlay_AttackMagic;
+        public InputAction @AttackMagicNorth => m_Wrapper.m_GamePlay_AttackMagicNorth;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/AttackMagicEast".
+        /// </summary>
+        public InputAction @AttackMagicEast => m_Wrapper.m_GamePlay_AttackMagicEast;
         /// <summary>
         /// Provides access to the underlying input action "GamePlay/Sprint".
         /// </summary>
@@ -406,12 +432,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Jump.started += instance.OnJump;
             @Jump.performed += instance.OnJump;
             @Jump.canceled += instance.OnJump;
-            @AttackPhysical.started += instance.OnAttackPhysical;
-            @AttackPhysical.performed += instance.OnAttackPhysical;
-            @AttackPhysical.canceled += instance.OnAttackPhysical;
-            @AttackMagic.started += instance.OnAttackMagic;
-            @AttackMagic.performed += instance.OnAttackMagic;
-            @AttackMagic.canceled += instance.OnAttackMagic;
+            @AttackMagicWest.started += instance.OnAttackMagicWest;
+            @AttackMagicWest.performed += instance.OnAttackMagicWest;
+            @AttackMagicWest.canceled += instance.OnAttackMagicWest;
+            @AttackMagicNorth.started += instance.OnAttackMagicNorth;
+            @AttackMagicNorth.performed += instance.OnAttackMagicNorth;
+            @AttackMagicNorth.canceled += instance.OnAttackMagicNorth;
+            @AttackMagicEast.started += instance.OnAttackMagicEast;
+            @AttackMagicEast.performed += instance.OnAttackMagicEast;
+            @AttackMagicEast.canceled += instance.OnAttackMagicEast;
             @Sprint.started += instance.OnSprint;
             @Sprint.performed += instance.OnSprint;
             @Sprint.canceled += instance.OnSprint;
@@ -438,12 +467,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Jump.started -= instance.OnJump;
             @Jump.performed -= instance.OnJump;
             @Jump.canceled -= instance.OnJump;
-            @AttackPhysical.started -= instance.OnAttackPhysical;
-            @AttackPhysical.performed -= instance.OnAttackPhysical;
-            @AttackPhysical.canceled -= instance.OnAttackPhysical;
-            @AttackMagic.started -= instance.OnAttackMagic;
-            @AttackMagic.performed -= instance.OnAttackMagic;
-            @AttackMagic.canceled -= instance.OnAttackMagic;
+            @AttackMagicWest.started -= instance.OnAttackMagicWest;
+            @AttackMagicWest.performed -= instance.OnAttackMagicWest;
+            @AttackMagicWest.canceled -= instance.OnAttackMagicWest;
+            @AttackMagicNorth.started -= instance.OnAttackMagicNorth;
+            @AttackMagicNorth.performed -= instance.OnAttackMagicNorth;
+            @AttackMagicNorth.canceled -= instance.OnAttackMagicNorth;
+            @AttackMagicEast.started -= instance.OnAttackMagicEast;
+            @AttackMagicEast.performed -= instance.OnAttackMagicEast;
+            @AttackMagicEast.canceled -= instance.OnAttackMagicEast;
             @Sprint.started -= instance.OnSprint;
             @Sprint.performed -= instance.OnSprint;
             @Sprint.canceled -= instance.OnSprint;
@@ -508,19 +540,26 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnJump(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "AttackPhysical" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "AttackMagicWest" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnAttackPhysical(InputAction.CallbackContext context);
+        void OnAttackMagicWest(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "AttackMagic" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "AttackMagicNorth" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnAttackMagic(InputAction.CallbackContext context);
+        void OnAttackMagicNorth(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "AttackMagicEast" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAttackMagicEast(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

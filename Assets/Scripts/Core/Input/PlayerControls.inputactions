@@ -25,7 +25,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "AttackPhysical",
+                    "name": "AttackMagicWest",
                     "type": "Button",
                     "id": "2d16dc14-e6ef-441f-b419-64fd0001442e",
                     "expectedControlType": "",
@@ -34,9 +34,18 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "AttackMagic",
+                    "name": "AttackMagicNorth",
                     "type": "Button",
                     "id": "e6983fcd-6052-46b3-b90d-e9d18cba65d9",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "AttackMagicEast",
+                    "type": "Button",
+                    "id": "6a96621c-93a5-402e-bc28-3427000ddd00",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -100,7 +109,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "AttackPhysical",
+                    "action": "AttackMagicWest",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -111,7 +120,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "AttackMagic",
+                    "action": "AttackMagicNorth",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -145,6 +154,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "CameraLook",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "35387ab1-a3ff-44f0-b088-70a2f1b2c845",
+                    "path": "<Gamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AttackMagicEast",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

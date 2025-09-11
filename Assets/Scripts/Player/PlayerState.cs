@@ -6,7 +6,6 @@ using UnityEngine;
 public class PlayerState : MonoBehaviour
 {
     [Header("Inicio")]
-    public GameConfigSO  config;
     public PlayerPresetSO newGamePreset;
 
     [Header("Refs opcionales")]

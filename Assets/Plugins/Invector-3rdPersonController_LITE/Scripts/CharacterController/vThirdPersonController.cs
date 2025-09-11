@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Invector.vCharacterController
 {
-    public enum MagicCastType { Basic, Combo }
-    public delegate void MagicCastHandler(GameObject caster, Transform origin, Vector3 direction, MagicCastType type);
+    // ¡OJO! Este controller NO referencia enums/typedefs tuyos del assembly principal.
+    // El evento de magia expone un int: 0=Left, 1=Right, 2=Special.
 
     public class vThirdPersonController : vThirdPersonAnimator
     {
@@ -14,11 +14,14 @@ namespace Invector.vCharacterController
         [SerializeField] private float physicalCooldown = 0.20f;
 
         [Header("UpperBody Magic (use FULL PATHS)")]
-        [SerializeField] private int upperLayerIndex = 1;
-        [SerializeField] private string magicState1Path = "UpperBody.Magic.Magic1";
-        [SerializeField] private string magicStateComboPath = "UpperBody.Magic.MagicComboDone";
-        [SerializeField] private string upperIdlePath  = "UpperBody.UpperIdle";
-        [SerializeField] private float  magicFade      = 0.10f;
+        [SerializeField] private int    upperLayerIndex        = 1;
+        [SerializeField] private string magicLeftStatePath     = "UpperBody.Magic.MagicLeft";
+        [SerializeField] private string magicRightStatePath    = "UpperBody.Magic.MagicRight";
+        [SerializeField] private string magicSpecialStatePath  = "UpperBody.Magic.MagicSpecial";
+        [SerializeField] private string upperIdlePath          = "UpperBody.UpperIdle";
+        [SerializeField] private float  magicFade              = 0.10f;
+        [SerializeField, Min(0f)] private float upperLayerFadeOut = 0.22f;
+
 
         [Header("Attack Impulse")]
         [SerializeField] private float impulseIdle   = 2.4f;
@@ -28,29 +31,19 @@ namespace Invector.vCharacterController
         [Header("Debug")]
         [SerializeField] private bool debugLogs = false;
 
-        [Header("Magic Events")]
-        [SerializeField] private Transform magicSpawnPoint;
-        public event MagicCastHandler OnMagicCast;
+        // ---- Eventos ----
+        public System.Action<int> OnMagicSlotCast; // 0=L, 1=R, 2=S
 
+        // ---- Runtime ----
         private int nextPhysicalIndex = 0;
         private float nextPhysicalTime = 0f;
         private Vector3 extraImpulse = Vector3.zero;
         private Coroutine upperWeightCo;
 
-        [Header("Magic Anti-Retrigger")]
-        [SerializeField, Range(0.2f, 0.9f)] private float magicMinRepeatNormalized = 0.60f;
-        [SerializeField] private float magicBufferGrace = 0.30f;
-        private bool magicReplayBuffered = false;
-        private int magicLastTargetHash = 0;
-        private float magicBufferExpireAt = 0f;
-        private MagicCastType bufferedCastType = MagicCastType.Basic;
-
         [SerializeField] private bool autoAimMelee = true;
         private ITargetProvider _targeting;
 
-        // === NUEVO: puente de habilidades/maná ===
-        [SerializeField] private IAbilityGate _gate;
-
+        // ========================= Motor base =========================
         public virtual void ControlAnimatorRootMotion()
         {
             if (!this.enabled) return;
@@ -155,17 +148,10 @@ namespace Invector.vCharacterController
             MoveCharacter(dir);
         }
 
-        // ----------------- Físico -----------------
+        // ========================= Ataque físico =========================
         public virtual void AttackPhysical()
         {
             if (!CanAttack() || Time.time < nextPhysicalTime) return;
-
-            // === GATEO ===
-            if (!_gate.CanUsePhysical())
-            {
-                if (debugLogs) Debug.Log("Bloqueado: PhysicalAttack no desbloqueado");
-                return;
-            }
 
             string state = (physicalAttackStates != null && physicalAttackStates.Length > 0)
                 ? physicalAttackStates[Mathf.Clamp(nextPhysicalIndex, 0, physicalAttackStates.Length - 1)]
@@ -192,134 +178,59 @@ namespace Invector.vCharacterController
             extraImpulse += fwd * strength;
         }
 
-        // ----------------- Magia -----------------
-        public virtual void CastMagic1()      { PlayUpperAndAutoOff(magicState1Path, magicFade, MagicCastType.Basic); }
-        public virtual void CastMagicFinish() { PlayUpperAndAutoOff(magicStateComboPath, magicFade, MagicCastType.Combo); }
+        // ======== MAGIA (Left / Right / Special) ========
 
-        private void PlayUpperAndAutoOff(string fullPath, float fade, MagicCastType castType)
+        private Coroutine magicCo;
+
+        // Input → X/B/Y
+        public void CastMagicLeft()    => PlayUpperAndRespectExit(magicLeftStatePath, 0);
+        public void CastMagicRight()   => PlayUpperAndRespectExit(magicRightStatePath, 1);
+        public void CastMagicSpecial() => PlayUpperAndRespectExit(magicSpecialStatePath, 2);
+
+        private void PlayUpperAndRespectExit(string fullPath, int slotId)
         {
             if (!CanAttack()) return;
 
-            // === GATEO ===
-            if (!_gate.CanUseMagic(castType))
-            {
-                if (debugLogs) Debug.Log("Bloqueado: MagicAttack no desbloqueado o sin MP");
-                return;
-            }
+            // Subimos el peso del layer y ENTRAMOS directo al estado (sin CrossFade)
+            animator.SetLayerWeight(upperLayerIndex, 1f);
+            animator.Play(fullPath, upperLayerIndex, 0f);
 
-            int layer       = upperLayerIndex;
-            int targetHash  = Animator.StringToHash(fullPath);
-            magicLastTargetHash = targetHash;
+            // Disparar evento para que el spawner genere el proyectil
+            OnMagicSlotCast?.Invoke(slotId);
 
-            animator.SetLayerWeight(layer, 1f);
-
-            var cur = animator.GetCurrentAnimatorStateInfo(layer);
-            var nxt = animator.GetNextAnimatorStateInfo(layer);
-
-            bool isSameState = (cur.fullPathHash == targetHash) || (nxt.fullPathHash == targetHash);
-            bool isMagic1    = (targetHash == Animator.StringToHash(magicState1Path));
-
-            if (isMagic1 && isSameState)
-            {
-                float norm = (cur.fullPathHash == targetHash) ? cur.normalizedTime : nxt.normalizedTime;
-                float frac = Mathf.Repeat(norm, 1f);
-                if (frac < magicMinRepeatNormalized)
-                {
-                    magicReplayBuffered = true;
-                    magicBufferExpireAt = Time.time + magicBufferGrace;
-                    bufferedCastType = castType;
-                    if (debugLogs) Debug.Log("[Magic] Buffered re-cast (anti-retrigger)");
-                    StartBlendOutRoutineIfNeeded(targetHash);
-                    return;
-                }
-            }
-
-            animator.CrossFadeInFixedTime(fullPath, fade, layer);
-            RaiseMagicEvent(castType);
-            StartBlendOutRoutine(targetHash);
+            // Esperamos a que el Animator SALGA del estado y bajamos el layer suave
+            if (magicCo != null) StopCoroutine(magicCo);
+            magicCo = StartCoroutine(Co_WaitAnimatorExitThenLowerLayer(Animator.StringToHash(fullPath)));
         }
 
-        private void StartBlendOutRoutineIfNeeded(int targetHash)
-        {
-            if (upperWeightCo == null)
-                upperWeightCo = StartCoroutine(Co_UpperBlendOut(targetHash));
-        }
-
-        private void StartBlendOutRoutine(int targetHash)
-        {
-            if (upperWeightCo != null) StopCoroutine(upperWeightCo);
-            upperWeightCo = StartCoroutine(Co_UpperBlendOut(targetHash));
-        }
-
-        private IEnumerator Co_UpperBlendOut(int targetHash)
+        private System.Collections.IEnumerator Co_WaitAnimatorExitThenLowerLayer(int targetHash)
         {
             int layer = upperLayerIndex;
 
-            float safety = 1f;
-            while (safety > 0f)
-            {
-                var st = animator.GetCurrentAnimatorStateInfo(layer);
-                if (st.fullPathHash == targetHash) break;
-                safety -= Time.deltaTime;
+            // Esperar a ENTRAR realmente en el estado
+            while (animator.GetCurrentAnimatorStateInfo(layer).fullPathHash != targetHash)
                 yield return null;
-            }
 
-            while (true)
-            {
-                var st = animator.GetCurrentAnimatorStateInfo(layer);
-
-                if (magicReplayBuffered && targetHash == Animator.StringToHash(magicState1Path))
-                {
-                    float frac = Mathf.Repeat(st.normalizedTime, 1f);
-                    bool canReplay = (frac >= magicMinRepeatNormalized) || (Time.time <= magicBufferExpireAt && frac >= 0.95f);
-                    if (canReplay)
-                    {
-                        magicReplayBuffered = false;
-                        animator.Play(targetHash, layer, 0f);
-                        RaiseMagicEvent(bufferedCastType);
-                        if (debugLogs) Debug.Log("[Magic] Buffered re-cast fired");
-                        yield return null;
-                        continue;
-                    }
-                }
-
-                if (st.fullPathHash != targetHash) break;
-                if (st.normalizedTime >= 0.98f) break;
+            // Esperar a SALIR del estado por Exit Time (no cortamos el clip)
+            while (animator.GetCurrentAnimatorStateInfo(layer).fullPathHash == targetHash)
                 yield return null;
-            }
 
-            if (!string.IsNullOrEmpty(upperIdlePath))
-                animator.CrossFadeInFixedTime(upperIdlePath, 0.12f, layer);
-
+            // Desvanecer peso del layer superior
             float t = 0f, start = animator.GetLayerWeight(layer);
-            const float fadeOutTime = 0.22f;
-            while (t < fadeOutTime)
+            while (t < upperLayerFadeOut)
             {
                 t += Time.deltaTime;
-                animator.SetLayerWeight(layer, Mathf.Lerp(start, 0f, t / fadeOutTime));
+                animator.SetLayerWeight(layer, Mathf.Lerp(start, 0f, t / upperLayerFadeOut));
                 yield return null;
             }
             animator.SetLayerWeight(layer, 0f);
-            upperWeightCo = null;
+            magicCo = null;
         }
 
-        private void RaiseMagicEvent(MagicCastType type)
-        {
-            if (OnMagicCast == null || magicSpawnPoint == null) return;
-            OnMagicCast.Invoke(this.gameObject, magicSpawnPoint, magicSpawnPoint.forward, type);
-        }
-
+        // ========================= Lifecycle =========================
         private void Start()
         {
-            if (magicSpawnPoint == null)
-            {
-                foreach (var tr in GetComponentsInChildren<Transform>(true))
-                {
-                    if (tr.name == "MagicAttackSpawner") { magicSpawnPoint = tr; break; }
-                }
-            }
             _targeting = GetComponent<ITargetProvider>();
-            if (_gate == null) _gate = GetComponent<IAbilityGate>();
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;

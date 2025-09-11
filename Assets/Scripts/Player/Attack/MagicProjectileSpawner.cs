@@ -3,32 +3,34 @@ using System.Collections.Generic;
 using UnityEngine;
 using Invector.vCharacterController;
 
+[DisallowMultipleComponent]
 public class MagicProjectileSpawner : MonoBehaviour
 {
     [Header("Listen")]
     [SerializeField] private vThirdPersonController controller;
 
-    [Header("Prefabs")]
-    [SerializeField] private GameObject basicFireballPrefab;
-    [SerializeField] private GameObject comboFireballPrefab;
+    [Header("Orígenes (mano izq/dcha/especial)")]
+    [SerializeField] private Transform leftOrigin;
+    [SerializeField] private Transform rightOrigin;
+    [SerializeField] private Transform specialOrigin;
 
-    [Header("Timing / Sync")]
-    [SerializeField] private float spawnDelaySeconds = 0.12f;
+    public enum DirectionMode { PlayerForward, OriginForward, AimTransform }
 
-    [Header("Direction")]
-    [SerializeField] private DirectionMode directionMode = DirectionMode.PlayerForward;
-    [SerializeField] private Transform aimTransform;               // solo si eliges AimTransform
+    [Header("Dirección / Auto-Aim")]
+    [SerializeField] private DirectionMode directionMode = DirectionMode.AimTransform;
+    [SerializeField] private Transform aimTransform;     // si eliges AimTransform
+    [SerializeField] private bool autoAim = true;
     [SerializeField] private Vector3 visualRotationOffsetEuler = Vector3.zero;
+    [SerializeField] private float forwardOffset = 0.5f;
 
-    [Header("Auto-Aim")]
-    [SerializeField] private bool autoAimFireball = true;          // ← NUEVO
-    [SerializeField] private float forwardOffset = 0.35f;
+    [Header("Timing")]
+    [SerializeField, Min(0f)] private float spawnDelaySeconds = 0.5f;
 
-    [Header("Projectile Physics")]
-    [SerializeField] private float speedBasic = 18f;
-    [SerializeField] private float speedCombo = 22f;
-    [SerializeField] private bool  useGravity = false;
-    [SerializeField] private bool  ignoreCasterColliders = true;
+    [Header("Colisiones")]
+    [SerializeField] private bool ignoreCasterColliders = true;
+
+    [Header("Datos")]
+    [SerializeField] private MagicLoadout loadout;
 
     private readonly List<Collider> _casterCols = new();
     private PlayerTargeting _targeting;
@@ -36,65 +38,116 @@ public class MagicProjectileSpawner : MonoBehaviour
     void Awake()
     {
         if (!controller) controller = GetComponentInParent<vThirdPersonController>();
+        if (!loadout)    loadout    = GetComponentInParent<MagicLoadout>();
+
         if (controller && ignoreCasterColliders)
             _casterCols.AddRange(controller.GetComponentsInChildren<Collider>(true));
 
         _targeting = controller ? controller.GetComponent<PlayerTargeting>() : GetComponentInParent<PlayerTargeting>();
+
         if (directionMode == DirectionMode.AimTransform && !aimTransform && Camera.main)
             aimTransform = Camera.main.transform;
     }
 
-    void OnEnable()  { if (controller != null) controller.OnMagicCast += HandleMagicCast; }
-    void OnDisable() { if (controller != null) controller.OnMagicCast -= HandleMagicCast; }
-
-    void HandleMagicCast(GameObject caster, Transform origin, Vector3 originSuggestedDir, MagicCastType type)
+    void OnEnable()
     {
-        if (origin != transform) return;
-        StartCoroutine(Co_SpawnAfterDelay(caster, origin, type));
+        if (controller) controller.OnMagicSlotCast += HandleSlotCast; // int slotId
     }
 
-    IEnumerator Co_SpawnAfterDelay(GameObject caster, Transform origin, MagicCastType type)
+    void OnDisable()
+    {
+        if (controller) controller.OnMagicSlotCast -= HandleSlotCast;
+    }
+
+    private void HandleSlotCast(int slotId)
+    {
+        // Mapear int -> tu enum
+        MagicSlot slot = slotId == 0 ? MagicSlot.Left
+                         : slotId == 1 ? MagicSlot.Right
+                         : MagicSlot.Special;
+
+        // Elegir origen
+        Transform origin = slot switch
+        {
+            MagicSlot.Left    => (leftOrigin    ? leftOrigin    : transform),
+            MagicSlot.Right   => (rightOrigin   ? rightOrigin   : transform),
+            MagicSlot.Special => (specialOrigin ? specialOrigin : transform),
+            _ => transform
+        };
+
+        StartCoroutine(Co_SpawnAfterDelay(origin, slot));
+    }
+
+    private IEnumerator Co_SpawnAfterDelay(Transform origin, MagicSlot slot)
     {
         if (spawnDelaySeconds > 0f) yield return new WaitForSeconds(spawnDelaySeconds);
 
-        // 1) Fallback forward según modo seleccionado
-        Vector3 baseDir = directionMode switch
-        {
-            DirectionMode.OriginForward => transform.forward,
-            DirectionMode.AimTransform  => (aimTransform ? aimTransform.forward : (controller ? controller.transform.forward : transform.forward)),
-            _                           => (controller ? controller.transform.forward : transform.forward),
-        };
+        // 1) Hechizo asignado y aprendido
+        var spell = loadout ? loadout.GetForSlot(slot) : null;
+        if (!spell || !spell.prefab) yield break;
 
-        // 2) Auto-aim (si hay target cercano, disparamos hacia él)
+        // 2) Dirección base - asegurar que sea horizontal y hacia adelante
+        Vector3 baseDir;
+        if (directionMode == DirectionMode.OriginForward && origin)
+        {
+            baseDir = origin.forward;
+        }
+        else if (directionMode == DirectionMode.AimTransform && aimTransform)
+        {
+            baseDir = aimTransform.forward;
+        }
+        else if (controller)
+        {
+            baseDir = controller.transform.forward;
+        }
+        else
+        {
+            baseDir = transform.forward;
+        }
+
+        // Normalizar y asegurar que tenga componente horizontal
+        baseDir = Vector3.ProjectOnPlane(baseDir, Vector3.up).normalized;
+        if (baseDir.sqrMagnitude < 0.01f) baseDir = transform.forward;
+
+        // 3) Auto-aim si hay targeting
         Vector3 dir = baseDir;
-        if (autoAimFireball && _targeting)
-            dir = _targeting.GetAimDirectionFrom(origin, baseDir);
+        if (autoAim && _targeting) dir = _targeting.GetAimDirectionFrom(origin ? origin : transform, baseDir);
         dir.Normalize();
 
-        // 3) Posición, rotación y prefab
-        Vector3 spawnPos = origin.position + dir * forwardOffset;
-        GameObject prefab = (type == MagicCastType.Combo && comboFireballPrefab != null) ? comboFireballPrefab : basicFireballPrefab;
-        if (!prefab) yield break;
+        // 4) Posición y rotación final
+        Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * forwardOffset;
+        Quaternion rot   = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(visualRotationOffsetEuler);
 
-        Quaternion rot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(visualRotationOffsetEuler);
-        GameObject go = Instantiate(prefab, spawnPos, rot);
+        // 5) Instanciado
+        GameObject go = Instantiate(spell.prefab, spawnPos, rot);
 
-        // 4) Física
+        // 6) Física
         if (go.TryGetComponent<Rigidbody>(out var rb))
         {
-            rb.useGravity = useGravity;
+            rb.useGravity = spell.useGravity;
             rb.isKinematic = false;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.linearVelocity = dir * ((type == MagicCastType.Combo) ? speedCombo : speedBasic);
+            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
 
-        // 5) Ignorar colisiones con el jugador
+        // 7) Ignorar colisiones con el caster
         if (ignoreCasterColliders && go.TryGetComponent<Collider>(out var projCol))
-            foreach (var c in _casterCols) if (c && c.enabled) Physics.IgnoreCollision(projCol, c, true);
+        {
+            foreach (var c in _casterCols)
+                if (c && c.enabled) Physics.IgnoreCollision(projCol, c, true);
+        }
 
-        // 6) (opcional) pasar instigator al proyectil
-        if (go.TryGetComponent<FireballProjectile>(out var fp))
-            fp.Instigator = controller ? controller.gameObject : null;
+        // 8) Instigator (solo MagicProjectile)
+        if (go.TryGetComponent<MagicProjectile>(out var mp))
+            mp.Instigator = controller ? controller.gameObject : null;
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (!controller) controller = GetComponentInParent<vThirdPersonController>();
+        if (!loadout)    loadout    = GetComponentInParent<MagicLoadout>();
+    }
+#endif
 }

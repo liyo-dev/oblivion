@@ -29,7 +29,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MagicComboDone
+  m_Name: MagicSpecial
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -15730,7 +15730,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Magic1
+  m_Name: MagicLeft
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -19819,7 +19819,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Magic2
+  m_Name: MagicRight
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
