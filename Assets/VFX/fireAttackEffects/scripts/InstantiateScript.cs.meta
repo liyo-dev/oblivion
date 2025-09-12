@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 1e6c73f6f07694148ab57032078f01ab
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 306217
+  packageName: fire attack VFX | The Ultimate pack
+  packageVersion: 1.0
+  assetPath: Assets/fireAttackEffects/scripts/InstantiateScript.cs
+  uploadId: 719996

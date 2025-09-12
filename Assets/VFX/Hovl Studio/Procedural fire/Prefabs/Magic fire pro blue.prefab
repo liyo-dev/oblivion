@@ -9709,7 +9709,7 @@ GameObject:
   - component: {fileID: 199374976460404498}
   - component: {fileID: 569618580392681193}
   - component: {fileID: -2799719659053395768}
-  - component: {fileID: -2141574124000484568}
+  - component: {fileID: 1033989930263291534}
   m_Layer: 0
   m_Name: Magic fire pro blue
   m_TagString: Untagged
@@ -9725,9 +9725,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1223526616464650}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 4, y: 4, z: 4}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4796241490362850}
@@ -9735,7 +9735,7 @@ Transform:
   - {fileID: 4604663409977868}
   - {fileID: 4294409281478964}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!198 &198696392922457284
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -14593,13 +14593,13 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-2141574124000484568
+--- !u!114 &1033989930263291534
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14608,45 +14608,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1223526616464650}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2ab4fbb92feed8438bafe6af6e19286, type: 3}
+  m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FireballProjectile
-  maxLifetime: 6
-  damage: 25
-  kind: 1
-  enemyMask:
-    serializedVersion: 2
-    m_Bits: 128
-  explosionRadius: 0
-  aoeHasFalloff: 1
-  aoeFalloff:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: -0.7
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0.3
-      inSlope: -0.7
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  explosionVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
-  destroyDelayAfterHit: 0.02
-  impactSound: {fileID: 0}
-  explosionSound: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
 --- !u!1 &1430769185673144
 GameObject:
   m_ObjectHideFlags: 0

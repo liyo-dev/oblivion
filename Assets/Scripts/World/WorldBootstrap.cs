@@ -23,8 +23,7 @@ public class WorldBootstrap : MonoBehaviour
             var playerGO = ps ? ps.gameObject : FindFirstObjectByType<PlayerState>()?.gameObject;
             if (playerGO) TeleportService.PlaceAtAnchor(playerGO, anchor, immediate: true);
 
-            // IMPORTANTE: NO tocamos la magia aquí. Los slots se configuran en World
-            // (MagicLoadout del Player) de forma manual o por prefab.
+            // PRESET forzado: no necesitamos runtimePreset, el servicio leerá bootPreset.
             return;
         }
 
@@ -38,7 +37,14 @@ public class WorldBootstrap : MonoBehaviour
                 anchorId = data.lastSpawnAnchorId;
 
             var ps = FindFirstObjectByType<PlayerState>();
-            if (ps) data.ApplyTo(ps);
+            if (ps) ps.LoadFromSave(data);
+
+            // ==== NUEVO: reflejar save en runtimePreset (para que los servicios lo lean) ====
+            if (profile)
+            {
+                var slotTemplate = profile.bootPreset ? profile.bootPreset : profile.defaultPlayerPreset;
+                profile.SetRuntimePresetFromSave(data, slotTemplate);
+            }
         }
 
         // 3) Colocar jugador
@@ -51,7 +57,5 @@ public class WorldBootstrap : MonoBehaviour
         {
             Debug.LogWarning("[WorldBootstrap] No se encontró PlayerState en la escena.");
         }
-
-        // Slots de magia: se dejan tal cual estén en la escena/prefab (MagicLoadout).
     }
 }

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 4eda7d6bf859be8449706cbf5764baaf
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 306217
+  packageName: fire attack VFX | The Ultimate pack
+  packageVersion: 1.0
+  assetPath: Assets/fireAttackEffects/effects/fireBall/trailShader.shadergraph
+  uploadId: 719996

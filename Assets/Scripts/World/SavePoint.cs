@@ -45,8 +45,8 @@ public class SavePoint : MonoBehaviour
 
         if (healOnSave)
         {
-            ps.SetHealth(ps.MaxHealth);
-            ps.SetMana(ps.MaxMana);
+            ps.SetHealth(ps.MaxHp);
+            ps.SetMana(ps.MaxMp);
         }
 
         var save = FindFirstObjectByType<SaveSystem>();

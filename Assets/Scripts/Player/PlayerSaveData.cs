@@ -11,8 +11,8 @@ public class PlayerSaveData
     public float maxMp, currentMp;
 
     public List<AbilityId> abilities = new();
-    public List<SpellId> spells = new();
-    public List<string> flags = new();     // misiones/estados simples
+    public List<SpellId>   spells    = new();
+    public List<string>    flags     = new(); // misiones/estados simples
 
     // ---- Helpers ----
     public static PlayerSaveData From(PlayerState ps)
@@ -22,7 +22,7 @@ public class PlayerSaveData
 
         d.level = ps.Level;
         d.maxHp = ps.MaxHp;  d.currentHp = ps.CurrentHp;
-        d.maxMp = ps.MaxMp;    d.currentMp = ps.CurrentMp;
+        d.maxMp = ps.MaxMp;  d.currentMp = ps.CurrentMp;
 
         d.abilities = ps.GetAbilitiesSnapshot();
         d.spells    = ps.GetSpellsSnapshot();
@@ -32,12 +32,7 @@ public class PlayerSaveData
 
     public void ApplyTo(PlayerState ps)
     {
-        ps.SetLevel(level);
-        ps.SetMaxHealth(maxHp); ps.SetHealth(currentHp);
-        ps.SetMaxMana(maxMp);   ps.SetMana(currentMp);
-
-        ps.LoadAbilities(abilities);
-        ps.LoadSpells(spells);
-        ps.LoadFlags(flags);
+        // Con PlayerState simplificado usamos su método de carga directo:
+        ps.LoadFromSave(this);
     }
 }

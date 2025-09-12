@@ -5,197 +5,148 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class PlayerState : MonoBehaviour
 {
-    [Header("Inicio")]
-    public PlayerPresetSO newGamePreset;
+    // ===== RUNTIME =====
+    public int    Level      { get; private set; }
+    public float  MaxHp      { get; private set; }
+    public float  CurrentHp  { get; private set; }
+    public float  MaxMp      { get; private set; }
+    public float  CurrentMp  { get; private set; }
+    public string LastSpawnAnchorId { get; private set; }
 
-    [Header("Refs opcionales")]
-    public Damageable damageable; // si lo tienes
-    public ManaPool  mana;        // si lo tienes
+    // Desbloqueos / flags (runtime)
+    readonly HashSet<AbilityId> _abilities = new();
+    readonly HashSet<SpellId>   _spells    = new();
+    readonly HashSet<string>    _flags     = new();
 
-    // Runtime
-    public int   Level     { get; private set; }
-    public float MaxHp     { get; private set; }
-    public float CurrentHp { get; private set; }
-    public float MaxMp     { get; private set; }
-    public float CurrentMp { get; private set; }
+    // Refs opcionales (no serializadas)
+    Damageable _damageable;
+    ManaPool   _mana;
 
-    HashSet<AbilityId> _abilities = new();
-    HashSet<SpellId>   _spells    = new();
-    HashSet<string>    _flags     = new();
-
+    // Eventos opcionales
     public System.Action OnAbilitiesChanged;
     public System.Action OnSpellsChanged;
     public System.Action OnFlagsChanged;
+    public System.Action OnStatsChanged;
 
     void Awake()
     {
-        if (!damageable) damageable = GetComponent<Damageable>();
-        if (!mana)       mana       = GetComponent<ManaPool>();
+        _damageable = GetComponent<Damageable>();
+        _mana       = GetComponent<ManaPool>();
     }
 
-    // === Carga desde SAVE ===
+    // ===== CARGA DESDE SAVE / PRESET =====
+
     public void LoadFromSave(PlayerSaveData d)
     {
-        SetLevel(d.level);
-        SetMaxHealth(d.maxHp);
-        SetHealth(d.currentHp);
-        SetMaxMana(d.maxMp);
-        SetMana(d.currentMp);
+        if (d == null) return;
 
-        _abilities = new HashSet<AbilityId>(d.abilities ?? new List<AbilityId>());
-        _spells    = new HashSet<SpellId>(d.spells    ?? new List<SpellId>());
-        _flags     = new HashSet<string> (d.flags     ?? new List<string>());
+        Level     = Mathf.Max(1, d.level);
+        MaxHp     = Mathf.Max(1f, d.maxHp);
+        CurrentHp = Mathf.Clamp(d.currentHp, 0f, MaxHp);
+        MaxMp     = Mathf.Max(0f, d.maxMp);
+        CurrentMp = Mathf.Clamp(d.currentMp, 0f, MaxMp);
+        LastSpawnAnchorId = string.IsNullOrEmpty(d.lastSpawnAnchorId) ? LastSpawnAnchorId : d.lastSpawnAnchorId;
+
+        _abilities.Clear(); if (d.abilities != null) foreach (var a in d.abilities) _abilities.Add(a);
+        _spells.Clear();    if (d.spells    != null) foreach (var s in d.spells)    _spells.Add(s);
+        _flags.Clear();     if (d.flags     != null) foreach (var f in d.flags)     _flags.Add(f);
 
         ApplyToComponents();
     }
 
-    public PlayerSaveData CreateSave(string spawnAnchorId, QuestLog questLog)
+    public void ApplyPreset(PlayerPresetSO p, string spawnAnchorId = null)
     {
-        return new PlayerSaveData {
-            level = Level, maxHp = MaxHp, currentHp = CurrentHp, maxMp = MaxMp, currentMp = CurrentMp,
+        if (!p) return;
+
+        Level     = Mathf.Max(1, p.level);
+        MaxHp     = Mathf.Max(1f, p.maxHP);
+        CurrentHp = Mathf.Clamp(p.currentHP, 0f, MaxHp);
+        MaxMp     = Mathf.Max(0f, p.maxMP);
+        CurrentMp = Mathf.Clamp(p.currentMP, 0f, MaxMp);
+        if (!string.IsNullOrEmpty(spawnAnchorId)) LastSpawnAnchorId = spawnAnchorId;
+
+        _abilities.Clear(); if (p.unlockedAbilities != null) foreach (var a in p.unlockedAbilities) _abilities.Add(a);
+        _spells.Clear();    if (p.unlockedSpells    != null) foreach (var s in p.unlockedSpells)    _spells.Add(s);
+        _flags.Clear();     if (p.flags             != null) foreach (var f in p.flags)             _flags.Add(f);
+
+        ApplyToComponents();
+    }
+
+    // ===== GUARDADO =====
+
+    public PlayerSaveData CreateSave()
+    {
+        return new PlayerSaveData
+        {
+            lastSpawnAnchorId = string.IsNullOrEmpty(LastSpawnAnchorId) ? SpawnManager.CurrentAnchorId : LastSpawnAnchorId,
+            level     = Level,
+            maxHp     = MaxHp,     currentHp = CurrentHp,
+            maxMp     = MaxMp,     currentMp = CurrentMp,
             abilities = new List<AbilityId>(_abilities),
             spells    = new List<SpellId>(_spells),
-            flags     = new List<string>(_flags),
-            lastSpawnAnchorId = spawnAnchorId
+            flags     = new List<string>(_flags)
         };
     }
 
-    // === Sincroniza con componentes (Damageable/ManaPool/HUD) ===
+    // ===== SINCRONIZACIÓN CON COMPONENTES =====
+
     public void ApplyToComponents()
     {
-        // ManaPool: establecemos valores exactos
-        if (mana) mana.Init(MaxMp, CurrentMp);
+        if (_mana) _mana.Init(MaxMp, CurrentMp);
 
-        // Damageable: intentamos sincronizar de forma segura
-        if (damageable)
-            TrySyncDamageable(damageable, MaxHp, CurrentHp);
+        if (_damageable)
+        {
+            // Preferimos un setter si existe
+            var mSet = _damageable.GetType().GetMethod(
+                "SetMaxAndCurrent",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new[] { typeof(float), typeof(float) }, null);
 
-        // Notificar cambios a quien escuche (HUD, etc.)
-        OnAbilitiesChanged?.Invoke();
-        OnSpellsChanged?.Invoke();
-        OnFlagsChanged?.Invoke();
+            if (mSet != null)
+                mSet.Invoke(_damageable, new object[] { MaxHp, Mathf.Clamp(CurrentHp, 0f, MaxHp) });
+            else
+            {
+                // Fallback: subir vida si es necesario (para bajar, lo hará gameplay)
+                var pCur = _damageable.GetType().GetProperty("Current", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var mHeal = _damageable.GetType().GetMethod("Heal", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(float) }, null);
+                if (pCur != null && pCur.CanRead && mHeal != null)
+                {
+                    float cur = (float)pCur.GetValue(_damageable, null);
+                    float target = Mathf.Clamp(CurrentHp, 0f, MaxHp);
+                    float diff = target - cur;
+                    if (diff > 0.01f) mHeal.Invoke(_damageable, new object[] { diff });
+                }
+            }
+        }
+
+        OnStatsChanged?.Invoke();
     }
 
-    // Intenta fijar max y current en Damageable sin romper tu implementación
-    void TrySyncDamageable(Damageable dmg, float max, float current)
-    {
-        // 1) Si existe SetMaxAndCurrent(max, current), úsalo
-        var mSet = dmg.GetType().GetMethod("SetMaxAndCurrent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(float), typeof(float) }, null);
-        if (mSet != null)
-        {
-            mSet.Invoke(dmg, new object[] { max, Mathf.Clamp(current, 0f, max) });
-            return;
-        }
+    // ===== API SIMPLE =====
 
-        // 2) Si existe campo maxHealth, intenta fijarlo
-        var fMax = dmg.GetType().GetField("maxHealth", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (fMax != null)
-        {
-            fMax.SetValue(dmg, max);
-        }
+    public void SetSpawnAnchor(string anchorId) { if (!string.IsNullOrEmpty(anchorId)) LastSpawnAnchorId = anchorId; }
 
-        // 3) Si existe propiedad Current (solo lectura), aproximamos con Heal() si existe
-        var pCur = dmg.GetType().GetProperty("Current", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        var mHeal = dmg.GetType().GetMethod("Heal", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(float) }, null);
-
-        if (pCur != null && pCur.CanRead && mHeal != null)
-        {
-            float curValue = (float)pCur.GetValue(dmg, null);
-            float target   = Mathf.Clamp(current, 0f, max);
-            float diff     = target - curValue;
-            if (diff > 0.01f) mHeal.Invoke(dmg, new object[] { diff });
-            // Si diff < 0 no aplicamos daño desde aquí (lo gestiona el combate).
-        }
-#if UNITY_EDITOR
-        else
-        {
-            Debug.Log($"[PlayerState] Damageable no expone setters compatibles. Se ha sincronizado mana y eventos, pero la vida en Damageable puede no reflejarse hasta recibir daño/curación in-game.");
-        }
-#endif
-    }
-
-    // === API de consulta ===
     public bool HasAbility(AbilityId a) => _abilities.Contains(a);
     public bool HasSpell(SpellId s)     => _spells.Contains(s);
     public bool HasFlag(string f)       => _flags.Contains(f);
 
-    // === API de modificación ===
-    public void UnlockAbility(AbilityId a){ if (_abilities.Add(a)) OnAbilitiesChanged?.Invoke(); }
-    public void UnlockSpell(SpellId s)   { if (_spells.Add(s))    OnSpellsChanged?.Invoke(); }
+    public void UnlockAbility(AbilityId a) { if (_abilities.Add(a)) OnAbilitiesChanged?.Invoke(); }
+    public void UnlockSpell(SpellId s)     { if (_spells.Add(s))    OnSpellsChanged?.Invoke(); }
     public void SetFlag(string f, bool v)
     {
         bool ch = v ? _flags.Add(f) : _flags.Remove(f);
         if (ch) OnFlagsChanged?.Invoke();
     }
 
-    // === Setters (ahora propagan a componentes) ===
-    public void SetLevel(int level)          { Level   = level; }
-    public void SetMaxHealth(float maxHp)    { MaxHp   = maxHp;  ApplyToComponents(); }
-    public void SetHealth(float hp)          { CurrentHp = Mathf.Clamp(hp, 0, MaxHp); ApplyToComponents(); }
-    public void SetMaxMana(float maxMp)      { MaxMp   = maxMp;  ApplyToComponents(); }
-    public void SetMana(float mp)            { CurrentMp = Mathf.Clamp(mp, 0, MaxMp); ApplyToComponents(); }
+    // Setters de stats (por si HUD / cheat / debug)
+    public void SetLevel(int v)         { Level = Mathf.Max(1, v); OnStatsChanged?.Invoke(); }
+    public void SetMaxHealth(float v)   { MaxHp = Mathf.Max(1f, v); CurrentHp = Mathf.Clamp(CurrentHp, 0f, MaxHp); ApplyToComponents(); }
+    public void SetHealth(float v)      { CurrentHp = Mathf.Clamp(v, 0f, MaxHp); ApplyToComponents(); }
+    public void SetMaxMana(float v)     { MaxMp = Mathf.Max(0f, v); CurrentMp = Mathf.Clamp(CurrentMp, 0f, MaxMp); ApplyToComponents(); }
+    public void SetMana(float v)        { CurrentMp = Mathf.Clamp(v, 0f, MaxMp); if (_mana) _mana.Init(MaxMp, CurrentMp); OnStatsChanged?.Invoke(); }
 
-    // Propiedades para compatibilidad con SavePoint
-    public float MaxHealth => MaxHp;
-    public float MaxMana   => MaxMp;
-
-    // Snapshots para guardado
-    public List<AbilityId> GetAbilitiesSnapshot() => new List<AbilityId>(_abilities);
-    public List<SpellId>   GetSpellsSnapshot()    => new List<SpellId>(_spells);
-    public List<string>    GetFlagsSnapshot()     => new List<string>(_flags);
-
-    // Carga desde listas (save)
-    public void LoadAbilities(List<AbilityId> abilities)
-    { 
-        _abilities = new HashSet<AbilityId>(abilities ?? new List<AbilityId>());
-        OnAbilitiesChanged?.Invoke();
-    }
-
-    public void LoadSpells(List<SpellId> spells)
-    { 
-        _spells = new HashSet<SpellId>(spells ?? new List<SpellId>());
-        OnSpellsChanged?.Invoke();
-    }
-
-    public void LoadFlags(List<string> flags)
-    { 
-        _flags = new HashSet<string>(flags ?? new List<string>());
-        OnFlagsChanged?.Invoke();
-    }
-
-    // Aplicar preset al jugador
-    public void ApplyPreset(PlayerPresetSO preset)
-    {
-        if (!preset) return;
-
-        Debug.Log($"Aplicando preset: {preset.name}");
-
-        SetLevel(preset.level);
-        SetMaxHealth(preset.maxHP);
-        SetHealth(preset.currentHP);
-        SetMaxMana(preset.maxMP);
-        SetMana(preset.currentMP);
-
-        _abilities.Clear();
-        if (preset.unlockedAbilities != null)
-            foreach (var ability in preset.unlockedAbilities) _abilities.Add(ability);
-
-        _spells.Clear();
-        if (preset.unlockedSpells != null)
-            foreach (var spell in preset.unlockedSpells) _spells.Add(spell);
-
-        _flags.Clear();
-        if (preset.flags != null)
-            foreach (var flag in preset.flags) _flags.Add(flag);
-
-        ApplyToComponents();
-    }
-
-    // Helper combinado (sigue existiendo)
-    public void SetHpMp(float hp, float mp)
-    {
-        CurrentHp = Mathf.Clamp(hp, 0, MaxHp);
-        CurrentMp = Mathf.Clamp(mp, 0, MaxMp);
-        ApplyToComponents();
-    }
+    // Snapshots para SaveSystem
+    public List<AbilityId> GetAbilitiesSnapshot() => new(_abilities);
+    public List<SpellId>   GetSpellsSnapshot()    => new(_spells);
+    public List<string>    GetFlagsSnapshot()     => new(_flags);
 }

@@ -18,5 +18,8 @@ MonoBehaviour:
   maxMP: 50
   currentMP: 50
   unlockedAbilities: 01000000
-  unlockedSpells: 000000000200000004000000
+  unlockedSpells: 010000000500000002000000
+  leftSpellId: 1
+  rightSpellId: 2
+  specialSpellId: 5
   flags: []

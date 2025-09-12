@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: c22b4260a035fc74aa887a10fc893ad7
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 306217
+  packageName: fire attack VFX | The Ultimate pack
+  packageVersion: 1.0
+  assetPath: Assets/fireAttackEffects/scripts/fireBallScript.cs
+  uploadId: 719996
