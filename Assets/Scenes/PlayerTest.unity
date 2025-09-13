@@ -356,6 +356,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Spider1
       objectReference: {fileID: 0}
+    - target: {fileID: 5572779666037620316, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5572779666037973628, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1.53648

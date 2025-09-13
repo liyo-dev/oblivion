@@ -1,0 +1,200 @@
+{
+  "strings": [
+    {
+      "key": "UI_START",
+      "value": "Comenzar"
+    },
+    {
+      "key": "UI_CONTINUE",
+      "value": "Continuar"
+    },
+    {
+      "key": "UI_NEW_GAME",
+      "value": "Nueva partida"
+    },
+    {
+      "key": "UI_LOAD_GAME",
+      "value": "Cargar partida"
+    },
+    {
+      "key": "UI_OPTIONS",
+      "value": "Opciones"
+    },
+    {
+      "key": "UI_AUDIO",
+      "value": "Audio"
+    },
+    {
+      "key": "UI_VIDEO",
+      "value": "Video"
+    },
+    {
+      "key": "UI_GAMEPLAY",
+      "value": "Jugabilidad"
+    },
+    {
+      "key": "UI_LANGUAGE",
+      "value": "Idioma"
+    },
+    {
+      "key": "UI_SUBTITLES",
+      "value": "Subtítulos"
+    },
+    {
+      "key": "UI_ON",
+      "value": "Activado"
+    },
+    {
+      "key": "UI_OFF",
+      "value": "Desactivado"
+    },
+    {
+      "key": "UI_BACK",
+      "value": "Volver"
+    },
+    {
+      "key": "UI_APPLY",
+      "value": "Aplicar"
+    },
+    {
+      "key": "UI_QUIT",
+      "value": "Salir"
+    },
+    {
+      "key": "UI_CONFIRM_QUIT_TITLE",
+      "value": "¿Salir del juego?"
+    },
+    {
+      "key": "UI_CONFIRM_QUIT_BODY",
+      "value": "Perderás el progreso no guardado."
+    },
+    {
+      "key": "UI_YES",
+      "value": "Sí"
+    },
+    {
+      "key": "UI_NO",
+      "value": "No"
+    },
+    {
+      "key": "UI_RESOLUTION",
+      "value": "Resolución"
+    },
+    {
+      "key": "UI_FULLSCREEN",
+      "value": "Pantalla completa"
+    },
+    {
+      "key": "UI_VSYNC",
+      "value": "VSync"
+    },
+    {
+      "key": "UI_MASTER_VOLUME",
+      "value": "Volumen general"
+    },
+    {
+      "key": "UI_MUSIC_VOLUME",
+      "value": "Volumen música"
+    },
+    {
+      "key": "UI_SFX_VOLUME",
+      "value": "Volumen efectos"
+    },
+    {
+      "key": "UI_VO_VOLUME",
+      "value": "Volumen voces"
+    },
+    {
+      "key": "UI_SUBTITLE_SIZE",
+      "value": "Tamaño de subtítulo"
+    },
+    {
+      "key": "UI_SUBTITLE_BG",
+      "value": "Fondo de subtítulo"
+    },
+    {
+      "key": "UI_ACCESSIBILITY",
+      "value": "Accesibilidad"
+    },
+    {
+      "key": "UI_COLORBLIND_MODE",
+      "value": "Modo daltonismo"
+    },
+    {
+      "key": "UI_OK",
+      "value": "Aceptar"
+    },
+    {
+      "key": "UI_CANCEL",
+      "value": "Cancelar"
+    },
+    {
+      "key": "UI_CREDITS",
+      "value": "Créditos"
+    },
+    {
+      "key": "UI_PAUSE",
+      "value": "Pausa"
+    },
+    {
+      "key": "UI_RESUME",
+      "value": "Reanudar"
+    },
+    {
+      "key": "UI_RESTART_CHECKPOINT",
+      "value": "Reiniciar desde punto de control"
+    },
+    {
+      "key": "UI_MAIN_MENU",
+      "value": "Menú principal"
+    },
+    {
+      "key": "UI_SAVE",
+      "value": "Guardar"
+    },
+    {
+      "key": "UI_LOAD",
+      "value": "Cargar"
+    },
+    {
+      "key": "UI_SLOT",
+      "value": "Ranura {0}"
+    },
+    {
+      "key": "PROMPT_SKIP_CINEMATIC",
+      "value": "Mantén pulsado para saltar cinemática"
+    },
+    {
+      "key": "PROMPT_SKIP_CONFIRM",
+      "value": "¿Seguro que quieres saltar esta cinemática?"
+    },
+    {
+      "key": "TUTORIAL_MOVE",
+      "value": "Moverse"
+    },
+    {
+      "key": "TUTORIAL_ATTACK",
+      "value": "Atacar"
+    },
+    {
+      "key": "TUTORIAL_INTERACT",
+      "value": "Interactuar"
+    },
+    {
+      "key": "TUTORIAL_DODGE",
+      "value": "Esquivar"
+    },
+    {
+      "key": "TUTORIAL_BLOCK",
+      "value": "Bloquear"
+    },
+    {
+      "key": "LANG_ES",
+      "value": "Español"
+    },
+    {
+      "key": "LANG_EN",
+      "value": "Inglés"
+    }
+  ]
+}

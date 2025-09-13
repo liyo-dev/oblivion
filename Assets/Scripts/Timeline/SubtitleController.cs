@@ -4,17 +4,10 @@ using DG.Tweening;
 
 public class SubtitleController : MonoBehaviour
 {
-    [Header("Refs")]
     public TextMeshProUGUI subtitleTMP;
-    public CanvasGroup canvasGroup;     // en el Panel (faja)
-    
-    [Header("Timings")]
-    [Tooltip("Duración del fade in/out")]
+    public CanvasGroup canvasGroup;
     public float fadeDuration = 0.35f;
-    [Tooltip("Alpha objetivo al mostrar")]
     public float targetAlpha = 1f;
-
-    [Header("Layout")]
     [Range(0f, 1f)] public float backgroundAlpha = 0.40f;
 
     Tween _currentTween;
@@ -22,8 +15,7 @@ public class SubtitleController : MonoBehaviour
     void Awake()
     {
         if (!canvasGroup) canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup) canvasGroup.alpha = 0f; // iniciar oculto
-        // Asegura que la faja tenga el alpha deseado (solo afecta Image, no el CanvasGroup)
+        if (canvasGroup) canvasGroup.alpha = 0f;
         var img = GetComponent<UnityEngine.UI.Image>();
         if (img != null)
         {
@@ -33,50 +25,33 @@ public class SubtitleController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Muestra la línea con fade in. Si holdSeconds > 0, se auto-oculta al terminar.
-    /// Usar desde Timeline Signal: ShowLineTimed("texto", 6.0f) o ShowLine("texto") y luego Hide() con otra señal.
-    /// </summary>
     public void ShowLine(string text)
     {
         if (!subtitleTMP || !canvasGroup) return;
-
         subtitleTMP.text = text;
-        
-        Debug.Log(subtitleTMP.text);
-
-        // Cancela tweens previos para evitar solapados
         _currentTween?.Kill();
-
-        // Fade in
-        canvasGroup.alpha = Mathf.Clamp01(canvasGroup.alpha); // mantiene si está ya visible
-        _currentTween = canvasGroup.DOFade(targetAlpha, fadeDuration)
-                                   .SetUpdate(true); // true => ignora TimeScale si pausas
+        _currentTween = canvasGroup.DOFade(targetAlpha, fadeDuration).SetUpdate(true);
     }
 
-    /// <summary>
-    /// Igual que ShowLine pero con auto-hide tras 'holdSeconds'.
-    /// </summary>
+    public void ShowLineById(string id)
+    {
+        var text = LocalizationManager.Instance?.Get(id, id) ?? id;
+        ShowLine(text);
+    }
+
     public void ShowLineTimed(string text, float holdSeconds)
     {
         ShowLine(text);
-        // Encadena auto-ocultado
-        _currentTween = DOVirtual.DelayedCall(holdSeconds, () =>
-        {
-            Hide();
-        }).SetUpdate(true);
+        _currentTween = DOVirtual.DelayedCall(holdSeconds, Hide).SetUpdate(true);
     }
 
     public void Hide()
     {
         if (!canvasGroup) return;
-
         _currentTween?.Kill();
-        _currentTween = canvasGroup.DOFade(0f, fadeDuration)
-                                   .SetUpdate(true);
+        _currentTween = canvasGroup.DOFade(0f, fadeDuration).SetUpdate(true);
     }
 
-    // Utilidad por si cambias de escena/Timeline
     void OnDisable()
     {
         _currentTween?.Kill();

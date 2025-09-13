@@ -1,0 +1,200 @@
+{
+  "strings": [
+    {
+      "key": "UI_START",
+      "value": "Start"
+    },
+    {
+      "key": "UI_CONTINUE",
+      "value": "Continue"
+    },
+    {
+      "key": "UI_NEW_GAME",
+      "value": "New Game"
+    },
+    {
+      "key": "UI_LOAD_GAME",
+      "value": "Load Game"
+    },
+    {
+      "key": "UI_OPTIONS",
+      "value": "Options"
+    },
+    {
+      "key": "UI_AUDIO",
+      "value": "Audio"
+    },
+    {
+      "key": "UI_VIDEO",
+      "value": "Video"
+    },
+    {
+      "key": "UI_GAMEPLAY",
+      "value": "Gameplay"
+    },
+    {
+      "key": "UI_LANGUAGE",
+      "value": "Language"
+    },
+    {
+      "key": "UI_SUBTITLES",
+      "value": "Subtitles"
+    },
+    {
+      "key": "UI_ON",
+      "value": "On"
+    },
+    {
+      "key": "UI_OFF",
+      "value": "Off"
+    },
+    {
+      "key": "UI_BACK",
+      "value": "Back"
+    },
+    {
+      "key": "UI_APPLY",
+      "value": "Apply"
+    },
+    {
+      "key": "UI_QUIT",
+      "value": "Quit"
+    },
+    {
+      "key": "UI_CONFIRM_QUIT_TITLE",
+      "value": "Quit the game?"
+    },
+    {
+      "key": "UI_CONFIRM_QUIT_BODY",
+      "value": "You will lose any unsaved progress."
+    },
+    {
+      "key": "UI_YES",
+      "value": "Yes"
+    },
+    {
+      "key": "UI_NO",
+      "value": "No"
+    },
+    {
+      "key": "UI_RESOLUTION",
+      "value": "Resolution"
+    },
+    {
+      "key": "UI_FULLSCREEN",
+      "value": "Fullscreen"
+    },
+    {
+      "key": "UI_VSYNC",
+      "value": "VSync"
+    },
+    {
+      "key": "UI_MASTER_VOLUME",
+      "value": "Master Volume"
+    },
+    {
+      "key": "UI_MUSIC_VOLUME",
+      "value": "Music Volume"
+    },
+    {
+      "key": "UI_SFX_VOLUME",
+      "value": "SFX Volume"
+    },
+    {
+      "key": "UI_VO_VOLUME",
+      "value": "VO Volume"
+    },
+    {
+      "key": "UI_SUBTITLE_SIZE",
+      "value": "Subtitle Size"
+    },
+    {
+      "key": "UI_SUBTITLE_BG",
+      "value": "Subtitle Background"
+    },
+    {
+      "key": "UI_ACCESSIBILITY",
+      "value": "Accessibility"
+    },
+    {
+      "key": "UI_COLORBLIND_MODE",
+      "value": "Colorblind Mode"
+    },
+    {
+      "key": "UI_OK",
+      "value": "OK"
+    },
+    {
+      "key": "UI_CANCEL",
+      "value": "Cancel"
+    },
+    {
+      "key": "UI_CREDITS",
+      "value": "Credits"
+    },
+    {
+      "key": "UI_PAUSE",
+      "value": "Pause"
+    },
+    {
+      "key": "UI_RESUME",
+      "value": "Resume"
+    },
+    {
+      "key": "UI_RESTART_CHECKPOINT",
+      "value": "Restart from Checkpoint"
+    },
+    {
+      "key": "UI_MAIN_MENU",
+      "value": "Main Menu"
+    },
+    {
+      "key": "UI_SAVE",
+      "value": "Save"
+    },
+    {
+      "key": "UI_LOAD",
+      "value": "Load"
+    },
+    {
+      "key": "UI_SLOT",
+      "value": "Slot {0}"
+    },
+    {
+      "key": "PROMPT_SKIP_CINEMATIC",
+      "value": "Hold to skip cinematic"
+    },
+    {
+      "key": "PROMPT_SKIP_CONFIRM",
+      "value": "Are you sure you want to skip this cinematic?"
+    },
+    {
+      "key": "TUTORIAL_MOVE",
+      "value": "Move"
+    },
+    {
+      "key": "TUTORIAL_ATTACK",
+      "value": "Attack"
+    },
+    {
+      "key": "TUTORIAL_INTERACT",
+      "value": "Interact"
+    },
+    {
+      "key": "TUTORIAL_DODGE",
+      "value": "Dodge"
+    },
+    {
+      "key": "TUTORIAL_BLOCK",
+      "value": "Block"
+    },
+    {
+      "key": "LANG_ES",
+      "value": "Spanish"
+    },
+    {
+      "key": "LANG_EN",
+      "value": "English"
+    }
+  ]
+}
