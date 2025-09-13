@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: c23f37799d978ae48bffdbe1e5dc5e6c
+timeCreated: 1511392070
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 28647
+  packageName: 3rd Person Controller + Fly Mode
+  packageVersion: 2.1.6
+  assetPath: Assets/3rdPerson+Fly/Animations/Fly/fly_dive.anim
+  uploadId: 621162

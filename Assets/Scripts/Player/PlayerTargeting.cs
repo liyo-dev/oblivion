@@ -6,11 +6,15 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     // ================== SCAN / TARGETING ==================
     [Header("Búsqueda")]
     [SerializeField] private float radius = 8f;
-    [SerializeField] private LayerMask enemyMask;          // solo Layer Enemy
-    [SerializeField] private float fovDegrees = 140f;      // campo de visión
-    [SerializeField] private bool requireLineOfSight = false;
-    [SerializeField] private Transform aimOrigin;          // si null usa el player; puedes arrastrar la cámara
-    [SerializeField] private float updatesPerSecond = 10f; // 0 = cada frame
+    [SerializeField] private LayerMask enemyMask;
+    [SerializeField] private float fovDegrees = 140f;
+    [SerializeField] private bool requireLineOfSight = true;     // <- ahora true por defecto
+    [SerializeField] private Transform aimOrigin;                 // arrastra la cámara aquí
+    [SerializeField] private float updatesPerSecond = 10f;
+
+    [Header("Visibilidad en pantalla")]
+    [SerializeField] private bool mustBeOnScreen = true;          // <- NUEVO
+    [SerializeField, Range(0f, 0.2f)] private float screenEdgePadding = 0.03f;
 
     [Header("Debug Gizmos")]
     [SerializeField] private bool drawRadius = true;
@@ -20,15 +24,6 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private Color fovColor = new Color(0.2f, 1f, 0.4f, 0.25f);
     [SerializeField] private Color targetLineColor = new Color(1f, 0.8f, 0.2f, 0.9f);
 
-    // ================== FEEDBACK / MARKER ==================
-    [Header("Feedback de Target (Opcional)")]
-    [SerializeField] private bool enableMarker = true;
-    [SerializeField] private GameObject markerPrefab;
-    [SerializeField] private Vector3 markerOffset = new Vector3(0, 1.8f, 0);
-    [SerializeField] private bool billboardToCamera = true;
-    [Tooltip("Si true, el marcador se parenta al target (útil si se mueve mucho).")]
-    [SerializeField] private bool parentMarkerToTarget = false;
-
     public Transform CurrentTarget { get; private set; }
 
     float _nextScan;
@@ -36,19 +31,23 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     Collider _lastTargetCol;
     Camera _cam;
 
-    // ================== UNITY ==================
+    [Header("Feedback de Target (Opcional)")]
+    [SerializeField] private bool enableMarker = true;
+    [SerializeField] private GameObject markerPrefab;
+    [SerializeField] private Vector3 markerOffset = new(0, 1.8f, 0);
+    [SerializeField] private bool billboardToCamera = true;
+    [SerializeField] private bool parentMarkerToTarget = false;
+
     void Awake()
     {
-        // Cámara para billboard (no es obligatorio)
         _cam = Camera.main;
-
-        // Instancia del marker si se desea feedback
         if (enableMarker && markerPrefab)
         {
             var go = Instantiate(markerPrefab);
             go.SetActive(false);
             _marker = go.transform;
         }
+        if (!aimOrigin && _cam) aimOrigin = _cam.transform; // <- recomendable
     }
 
     void OnDestroy()
@@ -60,7 +59,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         if (updatesPerSecond <= 0f || Time.time >= _nextScan)
         {
-            Transform before = CurrentTarget;
+            var before = CurrentTarget;
             Scan();
             if (updatesPerSecond > 0f)
                 _nextScan = Time.time + 1f / updatesPerSecond;
@@ -70,16 +69,12 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         }
     }
 
-    void LateUpdate()
-    {
-        UpdateMarker();
-    }
+    void LateUpdate() => UpdateMarker();
 
-    // ================== SCAN LOGIC ==================
     void Scan()
     {
-        Vector3 origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up * 1f;
-        Vector3 fwd    = aimOrigin ? aimOrigin.forward  : transform.forward;
+        var origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up;
+        var fwd    = aimOrigin ? aimOrigin.forward  : transform.forward;
 
         var hits = Physics.OverlapSphere(origin, radius, enemyMask, QueryTriggerInteraction.Collide);
         float bestScore = float.NegativeInfinity;
@@ -90,14 +85,26 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (!h) continue;
 
             Vector3 center = GetTargetCenter(h.transform);
-            Vector3 to     = center - origin;
-            float dist     = to.magnitude;
+            Vector3 to = center - origin;
+            float dist = to.magnitude;
             if (dist < 0.01f) continue;
 
             Vector3 dir = to / dist;
-            float ang   = Vector3.Angle(fwd, dir);
+
+            // FOV respecto al aim (cámara si la arrastras a aimOrigin)
+            float ang = Vector3.Angle(fwd, dir);
             if (ang > fovDegrees * 0.5f) continue;
 
+            // En pantalla (si se exige)
+            if (mustBeOnScreen && (_cam || (_cam = Camera.main)))
+            {
+                Vector3 vp = _cam.WorldToViewportPoint(center);
+                if (vp.z <= 0f) continue; // detrás de la cámara
+                float pad = screenEdgePadding;
+                if (vp.x < pad || vp.x > 1f - pad || vp.y < pad || vp.y > 1f - pad) continue;
+            }
+
+            // Línea de visión
             if (requireLineOfSight)
             {
                 if (Physics.Raycast(origin, dir, out var rh, dist, ~0, QueryTriggerInteraction.Ignore))
@@ -106,7 +113,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
                 }
             }
 
-            // score: favorece ángulo (dot) y distancia corta
+            // score: favorece estar centrado y más cerca
             float score = Vector3.Dot(fwd, dir) * 1.0f - (dist / Mathf.Max(0.0001f, radius)) * 0.35f;
             if (score > bestScore) { bestScore = score; best = h.transform; }
         }
@@ -114,15 +121,12 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         CurrentTarget = best;
     }
 
-    // ================== FEEDBACK LOGIC ==================
     void OnTargetChanged(Transform oldT, Transform newT)
     {
         if (!_marker) return;
 
         if (parentMarkerToTarget)
-        {
             _marker.SetParent(newT, worldPositionStays: true);
-        }
 
         if (!newT)
         {
@@ -148,7 +152,6 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
         if (!_marker.gameObject.activeSelf) _marker.gameObject.SetActive(true);
 
-        // Calcula posición sobre el bounds del target
         if (_lastTargetCol == null || _lastTargetCol.transform != t)
             _lastTargetCol = t.GetComponentInParent<Collider>();
 
@@ -160,9 +163,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         else _marker.localPosition = t.InverseTransformPoint(pos);
 
         if (billboardToCamera && (_cam || (_cam = Camera.main)))
-        {
             _marker.forward = (_marker.position - _cam.transform.position).normalized;
-        }
     }
 
     // ================== ITargetProvider ==================
@@ -178,8 +179,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         {
             Vector3 center = GetTargetCenter(CurrentTarget);
             Vector3 dir = (center - origin.position);
-            dir.y = 0f; // opcional: evita disparos altos/bajos
-            if (dir.sqrMagnitude > 0.0001f) return dir.normalized;
+            if (dir.sqrMagnitude > 0.0001f)
+                return dir.normalized;              // <- ya NO aplano en Y aquí
         }
         return fallbackForward.normalized;
     }
@@ -206,12 +207,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         {
             Gizmos.color = fovColor;
             float half = fovDegrees * 0.5f;
-            Quaternion leftRot  = Quaternion.AngleAxis(-half, Vector3.up);
-            Quaternion rightRot = Quaternion.AngleAxis(+half, Vector3.up);
-            Vector3 leftDir  = leftRot * fwd;
-            Vector3 rightDir = rightRot * fwd;
-            Gizmos.DrawRay(origin, leftDir.normalized * radius);
-            Gizmos.DrawRay(origin, rightDir.normalized * radius);
+            Gizmos.DrawRay(origin, Quaternion.AngleAxis(-half, Vector3.up) * fwd * radius);
+            Gizmos.DrawRay(origin, Quaternion.AngleAxis(+half, Vector3.up) * fwd * radius);
         }
 
         if (drawTargetLine && CurrentTarget)

@@ -45,7 +45,7 @@ public class PlayerState : MonoBehaviour
         CurrentHp = Mathf.Clamp(d.currentHp, 0f, MaxHp);
         MaxMp     = Mathf.Max(0f, d.maxMp);
         CurrentMp = Mathf.Clamp(d.currentMp, 0f, MaxMp);
-        LastSpawnAnchorId = string.IsNullOrEmpty(d.lastSpawnAnchorId) ? LastSpawnAnchorId : d.lastSpawnAnchorId;
+        if (!string.IsNullOrEmpty(d.lastSpawnAnchorId)) LastSpawnAnchorId = d.lastSpawnAnchorId;
 
         _abilities.Clear(); if (d.abilities != null) foreach (var a in d.abilities) _abilities.Add(a);
         _spells.Clear();    if (d.spells    != null) foreach (var s in d.spells)    _spells.Add(s);
@@ -103,10 +103,12 @@ public class PlayerState : MonoBehaviour
                 null, new[] { typeof(float), typeof(float) }, null);
 
             if (mSet != null)
+            {
                 mSet.Invoke(_damageable, new object[] { MaxHp, Mathf.Clamp(CurrentHp, 0f, MaxHp) });
+            }
             else
             {
-                // Fallback: subir vida si es necesario (para bajar, lo hará gameplay)
+                // Fallback: sólo subimos vida si es necesario (bajar la hará gameplay)
                 var pCur = _damageable.GetType().GetProperty("Current", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 var mHeal = _damageable.GetType().GetMethod("Heal", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(float) }, null);
                 if (pCur != null && pCur.CanRead && mHeal != null)
@@ -124,7 +126,10 @@ public class PlayerState : MonoBehaviour
 
     // ===== API SIMPLE =====
 
-    public void SetSpawnAnchor(string anchorId) { if (!string.IsNullOrEmpty(anchorId)) LastSpawnAnchorId = anchorId; }
+    public void SetSpawnAnchor(string anchorId)
+    {
+        if (!string.IsNullOrEmpty(anchorId)) LastSpawnAnchorId = anchorId;
+    }
 
     public bool HasAbility(AbilityId a) => _abilities.Contains(a);
     public bool HasSpell(SpellId s)     => _spells.Contains(s);
@@ -138,12 +143,12 @@ public class PlayerState : MonoBehaviour
         if (ch) OnFlagsChanged?.Invoke();
     }
 
-    // Setters de stats (por si HUD / cheat / debug)
-    public void SetLevel(int v)         { Level = Mathf.Max(1, v); OnStatsChanged?.Invoke(); }
-    public void SetMaxHealth(float v)   { MaxHp = Mathf.Max(1f, v); CurrentHp = Mathf.Clamp(CurrentHp, 0f, MaxHp); ApplyToComponents(); }
-    public void SetHealth(float v)      { CurrentHp = Mathf.Clamp(v, 0f, MaxHp); ApplyToComponents(); }
-    public void SetMaxMana(float v)     { MaxMp = Mathf.Max(0f, v); CurrentMp = Mathf.Clamp(CurrentMp, 0f, MaxMp); ApplyToComponents(); }
-    public void SetMana(float v)        { CurrentMp = Mathf.Clamp(v, 0f, MaxMp); if (_mana) _mana.Init(MaxMp, CurrentMp); OnStatsChanged?.Invoke(); }
+    // Setters de stats (por si HUD / debug)
+    public void SetLevel(int v)       { Level = Mathf.Max(1, v); OnStatsChanged?.Invoke(); }
+    public void SetMaxHealth(float v) { MaxHp = Mathf.Max(1f, v); CurrentHp = Mathf.Clamp(CurrentHp, 0f, MaxHp); ApplyToComponents(); }
+    public void SetHealth(float v)    { CurrentHp = Mathf.Clamp(v, 0f, MaxHp); ApplyToComponents(); }
+    public void SetMaxMana(float v)   { MaxMp = Mathf.Max(0f, v); CurrentMp = Mathf.Clamp(CurrentMp, 0f, MaxMp); ApplyToComponents(); }
+    public void SetMana(float v)      { CurrentMp = Mathf.Clamp(v, 0f, MaxMp); if (_mana) _mana.Init(MaxMp, CurrentMp); OnStatsChanged?.Invoke(); }
 
     // Snapshots para SaveSystem
     public List<AbilityId> GetAbilitiesSnapshot() => new(_abilities);

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: b283eb77c9cc3ff4793335e8c9cd0940
+timeCreated: 1503970188
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 28647
+  packageName: 3rd Person Controller + Fly Mode
+  packageVersion: 2.1.6
+  assetPath: Assets/3rdPerson+Fly/Animations/Locomotion/sprint_fwd.anim
+  uploadId: 621162

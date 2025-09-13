@@ -3545,6 +3545,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectileSpawner
   controller: {fileID: 1841047807}
+  targeting: {fileID: 1841047804}
   leftOrigin: {fileID: 531231385}
   rightOrigin: {fileID: 1965387660}
   specialOrigin: {fileID: 824829703}
@@ -3567,9 +3568,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   fovDegrees: 140
-  requireLineOfSight: 0
+  requireLineOfSight: 1
   aimOrigin: {fileID: 1538329370}
   updatesPerSecond: 10
+  mustBeOnScreen: 1
+  screenEdgePadding: 0.03
   drawRadius: 1
   drawFOV: 1
   drawTargetLine: 1

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a09827d8ea45bb7449930c189d7791fc
+timeCreated: 1504254138
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 28647
+  packageName: 3rd Person Controller + Fly Mode
+  packageVersion: 2.1.6
+  assetPath: Assets/3rdPerson+Fly/Animations/Jumping/fall.anim
+  uploadId: 621162

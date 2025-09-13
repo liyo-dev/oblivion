@@ -8,21 +8,17 @@ public class MagicProjectileSpawner : MonoBehaviour
 {
     [Header("Listen")]
     [SerializeField] private vThirdPersonController controller;
+    [SerializeField] private PlayerTargeting targeting;  // <- NUEVO
 
     [Header("Orígenes (mano izq/dcha/especial)")]
     [SerializeField] private Transform leftOrigin;
     [SerializeField] private Transform rightOrigin;
     [SerializeField] private Transform specialOrigin;
 
-    private MagicSpellSO leftSpell;
-    private MagicSpellSO rightSpell;
-    private MagicSpellSO specialSpell;
+    private MagicSpellSO leftSpell, rightSpell, specialSpell;
 
     [Header("Opciones")]
-    [Tooltip("Ignora colisiones del proyectil con los colliders del Player.")]
     [SerializeField] private bool ignoreCasterColliders = true;
-
-    [Tooltip("Instigador del disparo (por defecto, este GameObject).")]
     [SerializeField] private GameObject instigatorOverride;
 
     private readonly List<Collider> _casterCols = new();
@@ -30,6 +26,7 @@ public class MagicProjectileSpawner : MonoBehaviour
     void Awake()
     {
         if (!controller) controller = GetComponentInParent<vThirdPersonController>();
+        if (!targeting)  targeting  = GetComponentInParent<PlayerTargeting>();
 
         if (ignoreCasterColliders)
             _casterCols.AddRange(GetComponentsInChildren<Collider>(true));
@@ -56,19 +53,16 @@ public class MagicProjectileSpawner : MonoBehaviour
         var (spell, origin) = GetSpellAndOrigin(slot);
         if (!spell || !spell.prefab) return;
 
-        // Respeta el delay definido en el SO
         StartCoroutine(Co_SpawnAfterDelay(spell, origin));
     }
 
     private IEnumerator Co_SpawnAfterDelay(MagicSpellSO spell, Transform origin)
     {
         float d = Mathf.Max(0f, spell.castDelaySeconds);
-        if (d > 0f) yield return new WaitForSeconds(d); // usa tiempo escalado (anim)
-
+        if (d > 0f) yield return new WaitForSeconds(d);
         SpawnNow(spell, origin);
     }
 
-    // === API opcional (si llamas desde Animation Event, pon castDelaySeconds=0) ===
     public void SpawnLeft()    => Spawn(MagicSlot.Left);
     public void SpawnRight()   => Spawn(MagicSlot.Right);
     public void SpawnSpecial() => Spawn(MagicSlot.Special);
@@ -85,7 +79,6 @@ public class MagicProjectileSpawner : MonoBehaviour
     {
         var (spell, origin) = GetSpellAndOrigin(slot);
         if (!spell || !spell.prefab) return;
-        // Si llamas manualmente a Spawn(), también respeta el delay del SO
         StartCoroutine(Co_SpawnAfterDelay(spell, origin));
     }
 
@@ -95,23 +88,24 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         Transform origin = originOverride ? originOverride : transform;
 
-        // Dirección SIEMPRE la del Player
-        Vector3 dir = transform.forward;
+        // === Dirección: si hay targeting activo, usa la dirección de APUNTADO ===
+        Vector3 baseForward = transform.forward;
+        Vector3 dir = (targeting != null)
+            ? targeting.GetAimDirectionFrom(origin ? origin : transform, baseForward)
+            : baseForward;
+
+        // Respeta la nivelación definida por el hechizo
         dir = spell.flattenDirection ? Vector3.ProjectOnPlane(dir, Vector3.up).normalized : dir.normalized;
-        if (dir.sqrMagnitude < 0.001f) dir = transform.forward;
+        if (dir.sqrMagnitude < 0.001f) dir = baseForward;
 
         // Posición/rotación finales
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
 
-        // VFX de salida
-        if (spell.spawnVFX)
-            Instantiate(spell.spawnVFX, spawnPos, spawnRt);
+        if (spell.spawnVFX) Instantiate(spell.spawnVFX, spawnPos, spawnRt);
 
-        // Instanciar proyectil
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
 
-        // Ignorar colisiones con el caster
         if (ignoreCasterColliders)
         {
             var projCols = go.GetComponentsInChildren<Collider>(true);
@@ -123,7 +117,6 @@ public class MagicProjectileSpawner : MonoBehaviour
             }
         }
 
-        // Config del proyectil (si existe)
         if (go.TryGetComponent<MagicProjectile>(out var mp))
         {
             var cfg = new MagicProjectile.ProjectileConfig
@@ -143,28 +136,31 @@ public class MagicProjectileSpawner : MonoBehaviour
             mp.Configure(cfg, instigatorOverride ? instigatorOverride : gameObject);
         }
 
-        // Física inicial si hay Rigidbody
         if (go.TryGetComponent<Rigidbody>(out var rb))
         {
             rb.useGravity = spell.useGravity;
             rb.isKinematic = false;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed); // <- corregido
+            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed); // <- correcto
         }
     }
 
     // === Setters para servicios ===============================================
     public void SetSpells(MagicSpellSO left, MagicSpellSO right, MagicSpellSO special)
-    {
-        leftSpell = left; rightSpell = right; specialSpell = special;
-    }
+    { leftSpell = left; rightSpell = right; specialSpell = special; }
+
     public void SetOrigins(Transform left, Transform right, Transform special)
-    {
-        leftOrigin = left; rightOrigin = right; specialOrigin = special;
-    }
+    { leftOrigin = left; rightOrigin = right; specialOrigin = special; }
+
     public void SetInstigator(GameObject instigator) => instigatorOverride = instigator;
-    public void SetController(vThirdPersonController c) => controller = c;
+
+    public void SetController(vThirdPersonController c)
+    {
+        if (controller) controller.OnMagicSlotCast -= HandleSlotCast;
+        controller = c;
+        if (controller) controller.OnMagicSlotCast += HandleSlotCast;
+    }
 
     // === Helpers ===============================================================
     (MagicSpellSO, Transform) GetSpellAndOrigin(MagicSlot slot)
@@ -182,6 +178,7 @@ public class MagicProjectileSpawner : MonoBehaviour
     void OnValidate()
     {
         if (!controller) controller = GetComponentInParent<vThirdPersonController>();
+        if (!targeting)  targeting  = GetComponentInParent<PlayerTargeting>();
         if (!instigatorOverride) instigatorOverride = gameObject;
     }
 #endif
