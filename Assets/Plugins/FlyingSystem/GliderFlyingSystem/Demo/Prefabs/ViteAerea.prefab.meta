@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 71a1cdf54816459429da4f5c79dba292
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/GliderFlyingSystem/Demo/Prefabs/ViteAerea.prefab
+  uploadId: 636743

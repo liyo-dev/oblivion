@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 6b0bc55f26784dd43afd0ea53338a2fc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/AircraftFlyingSystem/Demo/Prefabs/Jet.prefab
+  uploadId: 636743

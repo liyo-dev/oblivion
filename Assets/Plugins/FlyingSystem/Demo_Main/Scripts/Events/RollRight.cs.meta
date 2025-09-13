@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7b45d2e05f76aea40adaaa47ed82bb87
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Scripts/Events/RollRight.cs
+  uploadId: 636743

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3008303c7e0591e46abdf89e4c8f734e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Mesh/Environment/Mountain/Materials/PlatformMaterial.mat
+  uploadId: 636743

@@ -1,0 +1,11 @@
+{
+    "asset": "f79e2fd1bc9a0ff4399a98912db20968",
+    "fileName": "01994212-df2a-79c5-b833-37d5d96961a1.pose.json",
+    "prompt": "super magic spell cast with short preparation",
+    "negativePrompt": "",
+    "model": "a9c27ca4-3ec9-43e8-96cd-ee891aba64c5",
+    "modelName": "Text to Motion",
+    "customSeed": 1913947524,
+    "w3CTraceId": "a88b4975d6caa643f1a4776f915d139c",
+    "isTrimmed": false
+}

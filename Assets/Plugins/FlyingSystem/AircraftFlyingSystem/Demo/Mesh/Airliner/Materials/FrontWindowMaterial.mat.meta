@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 63606d0366289f140bb9d9c25a33371c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/AircraftFlyingSystem/Demo/Mesh/Airliner/Materials/FrontWindowMaterial.mat
+  uploadId: 636743

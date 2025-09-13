@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b8ee6795e7c8095468e1f28cbe01a2ae
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Third-Party Notices.txt
+  uploadId: 636743

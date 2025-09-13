@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 525bb8f2f029ade4cb92382ebdbe1a8d
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/HelicopterFlyingSystem/Demo/Prefabs/Drone.prefab
+  uploadId: 636743

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2954f57b235ac094a8f5d1dd10aa0d3b
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Prefabs/ThirdPersonCharacter.prefab
+  uploadId: 636743

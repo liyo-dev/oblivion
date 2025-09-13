@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7f5e00190eefe334c9991e4b61e9efa2
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/HelicopterFlyingSystem/Demo/Prefabs/Helicopter.prefab
+  uploadId: 636743

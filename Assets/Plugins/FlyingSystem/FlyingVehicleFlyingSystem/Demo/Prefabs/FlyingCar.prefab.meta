@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7a16eedb134bf3a428e828f1c469a2d5
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/FlyingVehicleFlyingSystem/Demo/Prefabs/FlyingCar.prefab
+  uploadId: 636743

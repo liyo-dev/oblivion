@@ -1,0 +1,11 @@
+{
+    "asset": "f79e2fd1bc9a0ff4399a98912db20968",
+    "fileName": "01994213-f1a1-76b5-adbf-9107744f4dd9.pose.json",
+    "prompt": "super magic spell to the sky with short preparation using the arms and elevated from the floor while preparation",
+    "negativePrompt": "",
+    "model": "a9c27ca4-3ec9-43e8-96cd-ee891aba64c5",
+    "modelName": "Text to Motion",
+    "customSeed": 1494140908,
+    "w3CTraceId": "00b795c9ac9a6b3cfcf81cb03fe948f6",
+    "isTrimmed": false
+}

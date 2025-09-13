@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 15d2af2f41f6c964983ee9b74a10762b
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/CreatureFlyingSystem/Demo/Prefabs/Eagle.prefab
+  uploadId: 636743

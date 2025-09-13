@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e79330fe8318e8141a2ee95a67d8ce11
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Prefabs/TriggerVolume.prefab
+  uploadId: 636743

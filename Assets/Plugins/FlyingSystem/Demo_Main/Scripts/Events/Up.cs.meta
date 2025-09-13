@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a11958066d5611c4583cb5f881a11210
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Scripts/Events/Up.cs
+  uploadId: 636743

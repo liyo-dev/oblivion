@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a3749735b58a60e48bc974ff996d92f5
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/CreatureFlyingSystem/Demo/Scenes/CreatureFlyingSystemDemo.unity
+  uploadId: 636743

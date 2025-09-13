@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 305856a6f6abcaf4cbc5ceb26351d922
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/HelicopterFlyingSystem/Demo/Scenes/HelicopterFlyingSystemDemo.unity
+  uploadId: 636743

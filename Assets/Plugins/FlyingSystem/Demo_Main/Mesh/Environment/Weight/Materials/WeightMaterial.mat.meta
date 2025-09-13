@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2ff05aa08f89bbc4f9103cf428004eae
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Mesh/Environment/Weight/Materials/WeightMaterial.mat
+  uploadId: 636743

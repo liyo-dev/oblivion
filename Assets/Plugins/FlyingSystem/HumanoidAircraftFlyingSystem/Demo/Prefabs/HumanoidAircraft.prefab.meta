@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c71831e74efbfb7459df01becb1f0435
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/HumanoidAircraftFlyingSystem/Demo/Prefabs/HumanoidAircraft.prefab
+  uploadId: 636743

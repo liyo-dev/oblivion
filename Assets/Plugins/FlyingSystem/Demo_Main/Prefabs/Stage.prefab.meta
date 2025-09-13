@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 88cf8666077729943982def34ee6b29d
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Prefabs/Stage.prefab
+  uploadId: 636743

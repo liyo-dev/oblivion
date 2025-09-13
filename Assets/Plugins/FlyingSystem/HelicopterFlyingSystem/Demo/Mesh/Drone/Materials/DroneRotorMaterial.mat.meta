@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0ad33c9b75396e547830558c3a301e95
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/HelicopterFlyingSystem/Demo/Mesh/Drone/Materials/DroneRotorMaterial.mat
+  uploadId: 636743

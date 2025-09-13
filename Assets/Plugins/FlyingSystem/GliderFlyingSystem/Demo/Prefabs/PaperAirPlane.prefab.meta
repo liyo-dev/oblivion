@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2e897012332953045860227a22548d74
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/GliderFlyingSystem/Demo/Prefabs/PaperAirPlane.prefab
+  uploadId: 636743

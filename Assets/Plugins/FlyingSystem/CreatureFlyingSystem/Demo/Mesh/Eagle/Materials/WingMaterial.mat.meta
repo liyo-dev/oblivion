@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f8835af2a6d85d8479630e56fd0e91cc
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/CreatureFlyingSystem/Demo/Mesh/Eagle/Materials/WingMaterial.mat
+  uploadId: 636743

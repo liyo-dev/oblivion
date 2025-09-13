@@ -1,0 +1,11 @@
+{
+    "asset": "f79e2fd1bc9a0ff4399a98912db20968",
+    "fileName": "01994212-3c40-7c4c-bab9-18cae86b6137.pose.json",
+    "prompt": "magic spell cast with preparation",
+    "negativePrompt": "",
+    "model": "a9c27ca4-3ec9-43e8-96cd-ee891aba64c5",
+    "modelName": "Text to Motion",
+    "customSeed": 1861940928,
+    "w3CTraceId": "fdcaf8bbc62f4ddf169b8e2263cb9756",
+    "isTrimmed": false
+}

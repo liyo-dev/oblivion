@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: e385f5483bc781c4395f3ab62e94e6ec
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/AircraftFlyingSystem/Demo/Scripts/AircraftController.cs
+  uploadId: 636743

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 510f1eeeee03ec941ab205acf7e2d8ee
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/GliderFlyingSystem/Demo/Scenes/GliderFlyingSystemDemo.unity
+  uploadId: 636743

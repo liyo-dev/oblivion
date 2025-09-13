@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3a0040b3595d3d64499f4763f7c0d498
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/Demo_Main/Mesh/Character/Materials/BlackMaterial.mat
+  uploadId: 636743

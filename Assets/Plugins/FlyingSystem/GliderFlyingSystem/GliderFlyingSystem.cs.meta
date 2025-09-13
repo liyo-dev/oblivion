@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 902e73f05a84769419201d3384966bcc
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254446
+  packageName: Flying System
+  packageVersion: 1.0.4
+  assetPath: Assets/FlyingSystem/GliderFlyingSystem/GliderFlyingSystem.cs
+  uploadId: 636743
