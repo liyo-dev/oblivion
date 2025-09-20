@@ -7,16 +7,67 @@
     <list default="true" id="9eabfba9-47fb-4d93-81a2-90082062f2b7" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Oblivion/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Oblivion/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Fly.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Fly/fly_dive.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Fly/fly_dive.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Fly/fly_idle.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Fly/fly_idle.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Idle.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Idle/Idle.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Idle/Idle.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Jumping.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Jumping/fall.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Jumping/fall.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Jumping/jump_start.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Jumping/jump_start.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/jog_fwd.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/jog_fwd.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/run_fwd.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/run_fwd.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/sprint_fwd.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/sprint_fwd.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/strafe.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/strafe.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/strafe_45.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/strafe_45.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/walk_fwd.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animations/Locomotion/walk_fwd.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animators.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animators/CharacterController.controller" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Animations/Animators/CharacterController.controller.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/MainMenu.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/MainMenu.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/MainWorld.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/PlayerTest.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Prologo.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Prologo.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Start.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Start.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test.unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test.unity.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Timeline/SubtitleController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Timeline/SubtitleController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/BootLoader.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/BootLoader.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerControls.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerControls.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerControls.inputactions" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/PlayerControls.inputactions" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/ScreenFader.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/ScreenFader.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/Signals/Sig_HideSub.signal" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/Signals/Sig_HideSub.signal.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/Signals/Sig_ShowSubl.signal" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/Signals/Sig_ShowSubl.signal.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994212-3c40-7c4c-bab9-18cae86b6137.pose.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994212-3c40-7c4c-bab9-18cae86b6137.pose.json.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994212-df2a-79c5-b833-37d5d96961a1.pose.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994212-df2a-79c5-b833-37d5d96961a1.pose.json.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994213-f1a1-76b5-adbf-9107744f4dd9.pose.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994213-f1a1-76b5-adbf-9107744f4dd9.pose.json.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994215-c251-72c0-8c22-d823d743e711.pose.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994215-c251-72c0-8c22-d823d743e711.pose.json.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994217-3407-7a26-8adb-904819603eda.pose.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/01994217-3407-7a26-8adb-904819603eda.pose.json.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/TempAnimationClip_f4ff7582-022f-4430-8219-f62ce6a8bf8e.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/GeneratedAssets/f79e2fd1bc9a0ff4399a98912db20968/TempAnimationClip_f4ff7582-022f-4430-8219-f62ce6a8bf8e.anim.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,13 +91,35 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Art/Enemies/CasualFantasy/_Demo.meta" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Fonts/Nunito-SemiBold SDF.asset" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Plugins/IAttackHitbox.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scenes/MainMenu.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scenes/MainMenu.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scenes/MainWorld.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scenes/MainWorld.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scenes/PlayerTest.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scenes/PlayerTest.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scenes/Prologo.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scenes/Prologo.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scenes/Start.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scenes/Start.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/Core/BootLoader.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/Core/GameBootProfile.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/Core/PlayerControls.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Core/SceneTransitionLoader.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Timeline/SubtitleController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/LocalizedText.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/UI/MainMenuController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/MagicProjectil.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SpellLibrarySO.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/AnchorEnvironment.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/EnvironmentController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/World/TeleportService.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/Assets/Scripts/World/WorldBootstrap.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Oblivion/ProjectSettings/ProjectSettings.asset" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProblemsViewState">
@@ -148,6 +221,7 @@
       <workItem from="1757567898888" duration="32399000" />
       <workItem from="1757616801535" duration="6329000" />
       <workItem from="1757667043890" duration="13159000" />
+      <workItem from="1758277216230" duration="18495000" />
     </task>
     <task id="LOCAL-00001" summary="Add new asset metadata files for various components in the project">
       <option name="closed" value="true" />

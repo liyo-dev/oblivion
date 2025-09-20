@@ -1,35 +1,45 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MainMenuController : MonoBehaviour
 {
     [Header("Refs")]
-    public GameBootProfile profile;
-    public SaveSystem saveSystem;
-    public Button continueButton; // opcional
+    private SaveSystem _saveSystem;
+    public Button continueButton;
 
     [Header("World Scene")]
-    public string worldScene = "World";
+    public string worldScene = "MainWorld";
+
+    [Header("Fade override (opcional)")]
+    public EasyTransition.TransitionSettings fadeOverride; // si lo dejas vacío usa el default del servicio
+    [Min(0)] public float fadeDelay = 0f;
 
     void Start()
     {
-        if (!saveSystem) saveSystem = FindFirstObjectByType<SaveSystem>();
-        if (continueButton) continueButton.interactable = saveSystem && saveSystem.HasSave();
+        _saveSystem = FindFirstObjectByType<SaveSystem>();
+        if (continueButton != null)
+            continueButton.interactable = (_saveSystem != null) && _saveSystem.HasSave();
     }
 
     public void OnNewGame()
     {
-        var data = profile.BuildDefaultSave(); // usa defaultAnchorId del SO
-        saveSystem?.Save(data);
-        SceneManager.LoadScene(worldScene);
+        _saveSystem?.Delete();
+        Load("Prologo");
     }
 
     public void OnContinue()
     {
-        if (saveSystem && saveSystem.HasSave())
-            SceneManager.LoadScene(worldScene);
+        if (_saveSystem != null && _saveSystem.HasSave())
+            Load(worldScene);
         else
             OnNewGame();
+    }
+
+    void Load(string sceneName)
+    {
+        if (fadeOverride != null)
+            SceneTransitionLoader.Load(sceneName, fadeOverride, fadeDelay);
+        else
+            SceneTransitionLoader.Load(sceneName); // usa default del servicio
     }
 }

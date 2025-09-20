@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 471152417041a2940a4295d01794f152
+timeCreated: 1503968716
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 28647
+  packageName: 3rd Person Controller + Fly Mode
+  packageVersion: 2.1.6
+  assetPath: Assets/3rdPerson+Fly/Animations/Idle/Idle.anim
+  uploadId: 621162

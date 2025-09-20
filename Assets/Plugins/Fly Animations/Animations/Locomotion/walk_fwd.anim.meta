@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ebb08566d36984f458cd0a7adfc9f953
+timeCreated: 1503970252
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 28647
+  packageName: 3rd Person Controller + Fly Mode
+  packageVersion: 2.1.6
+  assetPath: Assets/3rdPerson+Fly/Animations/Locomotion/walk_fwd.anim
+  uploadId: 621162

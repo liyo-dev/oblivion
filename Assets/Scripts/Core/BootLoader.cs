@@ -3,12 +3,14 @@ using UnityEngine.SceneManagement;
 
 public class BootLoader : MonoBehaviour
 {
-    public GameBootProfile profile;
+    public string sceneToLoad;
 
     void Awake()
     {
-        // SaveSystem ya hace DontDestroyOnLoad en su Awake.
-        // Aquí solo saltamos al menú.
-        SceneManager.LoadScene(profile.sceneToLoad);
+        // Solo ejecutar si estamos en la escena Start
+        if (SceneManager.GetActiveScene().name == "Start")
+        {
+            SceneManager.LoadScene(sceneToLoad);
+        }
     }
 }

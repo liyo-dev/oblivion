@@ -1,78 +1,190 @@
-using System.Collections;
+// Scripts/World/TeleportService.cs
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
+using EasyTransition;
 
+[DisallowMultipleComponent]
 public class TeleportService : MonoBehaviour
 {
-    static TeleportService _inst;
-
-    [Header("Refs")]
-    public ScreenFader fader; // opcional
-
-    [Header("Fade Durations")]
-    [Min(0f)] public float fadeOut = 0.45f;
-    [Min(0f)] public float holdBlack = 0.05f;
-    [Min(0f)] public float fadeIn = 0.45f;
-
-    void Awake()
+    // ===== Singleton mínimo =====
+    private static TeleportService _inst;
+    public static TeleportService Inst
     {
+        get
+        {
+            if (_inst != null) return _inst;
+            // #pragma para silenciar el warning CS0618 si te molesta (opcional)
+#pragma warning disable 618
+            _inst = FindObjectOfType<TeleportService>(true);
+#pragma warning restore 618
+            return _inst;
+        }
+    }
+
+    [Header("Transición (EasyTransition)")]
+    [SerializeField] private TransitionSettings teleportTransition; // arrastra p.ej. Fade.asset
+    [SerializeField] private float transitionDelay = 0f;
+    [SerializeField] private bool useTransitionByDefault = true;
+
+    private void Awake()
+    {
+        if (_inst != null && _inst != this) { Destroy(gameObject); return; }
         _inst = this;
-        if (!fader) fader = FindFirstObjectByType<ScreenFader>();
+        DontDestroyOnLoad(gameObject);
     }
 
-    public static void PlaceAtAnchor(GameObject player, string anchorId, bool immediate = false)
+    // ================== API ESTÁTICA (compatibilidad) ==================
+
+    /// <summary>API antigua: immediate=true -> SIN transición | immediate=false -> CON transición.</summary>
+    public static void PlaceAtAnchor(GameObject player, string anchorName, bool immediate = true)
     {
-        var anchor = SpawnAnchor.FindById(anchorId);
-        if (!anchor) { Debug.LogWarning($"SpawnAnchor '{anchorId}' no encontrado"); return; }
-
-        var rot = anchor.facing.sqrMagnitude > 0.001f
-            ? Quaternion.LookRotation(anchor.facing, Vector3.up)
-            : anchor.transform.rotation;
-
-        _inst?.Place(player, anchor.transform.position, rot, immediate);
-        // OJO: no guardamos aquí
-        SpawnManager.SetCurrentAnchor(anchorId);
+        if (!Inst) return;
+        var anchor = FindAnchorByName(anchorName);
+        if (!anchor)
+        {
+            Debug.LogWarning($"[TeleportService] Anchor '{anchorName}' no encontrado.");
+            return;
+        }
+        bool useTrans = !immediate;
+        Inst.DoTeleportToAnchor(player, anchor, useTrans);
     }
 
-    public static void TeleportToAnchor(GameObject player, string anchorId)
+    /// <summary>Teleporta a un anchor por nombre. (Estático, compat.)</summary>
+    public static void TeleportToAnchor(GameObject player, string anchorName, bool? useTransition = null)
     {
-        var anchor = SpawnAnchor.FindById(anchorId);
-        if (!anchor) { Debug.LogWarning($"Teleport: anchor '{anchorId}' no existe"); return; }
-        _inst?.StartCoroutine(_inst.Co_Teleport(player, anchor));
+        if (!Inst) return;
+        var anchor = FindAnchorByName(anchorName);
+        if (!anchor)
+        {
+            Debug.LogWarning($"[TeleportService] Anchor '{anchorName}' no encontrado.");
+            return;
+        }
+        Inst.DoTeleportToAnchor(player, anchor, useTransition);
     }
 
-    IEnumerator Co_Teleport(GameObject player, SpawnAnchor anchor)
+    /// <summary>Teleporta a un anchor por Transform. (Estático, compat.)</summary>
+    public static void TeleportToAnchor(GameObject player, Transform anchor, bool? useTransition = null)
     {
-        if (fader) yield return fader.Co_FadeOut(fadeOut);
-        if (holdBlack > 0f) yield return new WaitForSecondsRealtime(holdBlack);
-
-        var rot = anchor.facing.sqrMagnitude > 0.001f
-            ? Quaternion.LookRotation(anchor.facing, Vector3.up)
-            : anchor.transform.rotation;
-
-        Place(player, anchor.transform.position, rot, immediate: true);
-
-        if (fader) yield return fader.Co_FadeIn(fadeIn);
-
-        SpawnManager.SetCurrentAnchor(anchor.anchorId);
-        // NO se guarda aquí
+        if (!Inst) return;
+        Inst.DoTeleportToAnchor(player, anchor, useTransition);
     }
 
-    void Place(GameObject player, Vector3 pos, Quaternion rot, bool immediate)
+    /// <summary>Teleporta directo a posición/rotación. (Estático, compat.)</summary>
+    public static void TeleportToPosition(GameObject player, Vector3 worldPos, Quaternion worldRot, bool? useTransition = null)
+    {
+        if (!Inst) return;
+        Inst.DoTeleportToPosition(player, worldPos, worldRot, useTransition);
+    }
+
+    // ================== API de instancia (renombrada para no duplicar firmas) ==================
+
+    public void DoTeleportToAnchor(GameObject player, Transform anchor, bool? useTransition = null)
+    {
+        if (!player || !anchor)
+        {
+            Debug.LogWarning("[TeleportService] Parámetros nulos en TeleportToAnchor.");
+            return;
+        }
+
+        var pos = anchor.position;
+        var rot = anchor.rotation;
+        bool useTrans = useTransition ?? useTransitionByDefault;
+
+        if (useTrans) TeleportWithTransition(player, pos, rot, anchor);
+        else          MoveNow(player, pos, rot, anchor);
+    }
+
+    public void DoTeleportToPosition(GameObject player, Vector3 worldPos, Quaternion worldRot, bool? useTransition = null)
+    {
+        bool useTrans = useTransition ?? useTransitionByDefault;
+        if (useTrans) TeleportWithTransition(player, worldPos, worldRot, null);
+        else          MoveNow(player, worldPos, worldRot, null);
+    }
+
+    // ================== Núcleo transición / movimiento ==================
+
+    private void TeleportWithTransition(GameObject player, Vector3 worldPos, Quaternion worldRot, Transform anchorForEnv)
+    {
+        var tm = TransitionManager.Instance();
+        if (tm == null || !teleportTransition)
+        {
+            if (tm == null) Debug.LogWarning("[TeleportService] TransitionManager no encontrado. Teleport inmediato.");
+            if (!teleportTransition) Debug.LogWarning("[TeleportService] TransitionSettings no asignado. Teleport inmediato.");
+            MoveNow(player, worldPos, worldRot, anchorForEnv);
+            return;
+        }
+
+        UnityAction onCut = null;
+        UnityAction onEnd = null;
+
+        onCut = () =>
+        {
+            MovePlayerSafely(player, worldPos, worldRot);
+            ApplyEnvironmentForAnchor(anchorForEnv);
+            tm.onTransitionCutPointReached -= onCut;
+        };
+
+        onEnd = () =>
+        {
+            tm.onTransitionEnd -= onEnd;
+        };
+
+        tm.onTransitionCutPointReached += onCut;
+        tm.onTransitionEnd            += onEnd;
+
+        tm.Transition(teleportTransition, transitionDelay);
+    }
+
+    private void MoveNow(GameObject player, Vector3 pos, Quaternion rot, Transform anchorForEnv)
+    {
+        MovePlayerSafely(player, pos, rot);
+        ApplyEnvironmentForAnchor(anchorForEnv);
+    }
+
+    private void MovePlayerSafely(GameObject player, Vector3 pos, Quaternion rot)
     {
         if (!player) return;
 
         var cc    = player.GetComponent<CharacterController>() ?? player.GetComponentInChildren<CharacterController>(true);
-        var agent = player.GetComponent<UnityEngine.AI.NavMeshAgent>() ?? player.GetComponentInChildren<UnityEngine.AI.NavMeshAgent>(true);
-        var rb    = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
+        var agent = player.GetComponent<NavMeshAgent>()        ?? player.GetComponentInChildren<NavMeshAgent>(true);
+        var rb    = player.GetComponent<Rigidbody>()           ?? player.GetComponentInChildren<Rigidbody>(true);
+
+        bool ccWas = cc && cc.enabled;
+        bool agWas = agent && agent.enabled;
 
         if (cc)    cc.enabled = false;
         if (agent) agent.enabled = false;
 
         player.transform.SetPositionAndRotation(pos, rot);
 
-        if (rb) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
-        if (agent) agent.enabled = true;
-        if (cc)    cc.enabled = true;
+        if (rb)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        if (agent) agent.enabled = agWas;
+        if (cc)    cc.enabled    = ccWas;
+    }
+
+    private void ApplyEnvironmentForAnchor(Transform anchor)
+    {
+        var ec = EnvironmentController.Instance;
+        if (!ec) return;
+
+        AnchorEnvironment env = null;
+        if (anchor) env = anchor.GetComponentInParent<AnchorEnvironment>();
+
+        if (env && env.isInterior) ec.ApplyInterior(env);
+        else                       ec.ApplyExterior();
+    }
+
+    // ================== Utilidades ==================
+
+    private static Transform FindAnchorByName(string name)
+    {
+        var go = GameObject.Find(name);
+        return go ? go.transform : null;
     }
 }
