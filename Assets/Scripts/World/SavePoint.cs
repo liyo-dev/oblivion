@@ -11,6 +11,12 @@ public class SavePoint : MonoBehaviour
 
     [Header("Interacción")]
     public KeyCode interactKey = KeyCode.E;
+    
+    [Header("Localización")]
+    [Tooltip("ID de localización para el prompt (ej: 'SAVEPOINT_PROMPT'). Si está vacío, usa prompt directamente.")]
+    public string promptId;
+    
+    [Tooltip("Texto del prompt (usado si promptId está vacío o no se usa localización)")]
     public string prompt = "Guardar partida (E)";
 
     CanvasGroup _promptCg;
@@ -133,9 +139,21 @@ public class SavePoint : MonoBehaviour
     {
         // opcional: si tienes un Canvas local con CanvasGroup para el prompt
         if (!_promptCg) _promptCg = GetComponentInChildren<CanvasGroup>(true);
-        if (_promptCg){ _promptCg.alpha = show ? 1f : 0f; _promptCg.blocksRaycasts = show; }
-        // si no, pon aquí tu llamada a la UI global (TextMeshPro).
-        if (show) Debug.Log(prompt);
+        if (_promptCg)
+        {
+            _promptCg.alpha = show ? 1f : 0f;
+            _promptCg.blocksRaycasts = show;
+        }
+    }
+    
+    /// <summary>Obtiene el prompt localizado</summary>
+    public string GetLocalizedPrompt()
+    {
+        if (!string.IsNullOrEmpty(promptId) && LocalizationManager.Instance != null)
+        {
+            return LocalizationManager.Instance.Get(promptId, prompt);
+        }
+        return prompt;
     }
 
     // Evento opcional para notificar cuando la partida se guarda correctamente

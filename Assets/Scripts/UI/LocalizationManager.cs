@@ -8,7 +8,7 @@ public class LocalizationManager : MonoBehaviour
     public static LocalizationManager Instance { get; private set; }
 
     [SerializeField] private string defaultLocale = "es";
-    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematicintro" };
+    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematicintro", "dialogues", "quests" };
 
     private readonly Dictionary<string, string> _table = new Dictionary<string, string>(1024);
     private readonly Dictionary<string, SubtitleInfo> _subs = new Dictionary<string, SubtitleInfo>(64);
@@ -40,6 +40,9 @@ public class LocalizationManager : MonoBehaviour
         _subs.Clear();
         CurrentLocale = locale;
 
+        Debug.Log($"[LocalizationManager] Cargando idioma: {locale}");
+        Debug.Log($"[LocalizationManager] Catálogos a cargar: {string.Join(", ", catalogs)}");
+
         foreach (var cat in catalogs)
         {
             var path = $"Localization/{cat}_{locale}";
@@ -48,16 +51,39 @@ public class LocalizationManager : MonoBehaviour
             {
                 Debug.LogWarning($"[Localization] Missing catalog: {path}. Falling back to default.");
                 var fallback = Resources.Load<TextAsset>($"Localization/{cat}_{defaultLocale}");
-                if (fallback != null) MergeJsonIntoTables(fallback.text);
+                if (fallback != null) 
+                {
+                    MergeJsonIntoTables(fallback.text);
+                    Debug.Log($"[LocalizationManager] ✓ Cargado catálogo fallback: {cat}_{defaultLocale}");
+                }
+                else
+                {
+                    Debug.LogError($"[LocalizationManager] ✗ No se encontró ni el catálogo {path} ni el fallback");
+                }
             }
             else
             {
                 MergeJsonIntoTables(textAsset.text);
+                Debug.Log($"[LocalizationManager] ✓ Cargado catálogo: {cat}_{locale} ({_table.Count} entradas totales)");
             }
         }
 
         PlayerPrefs.SetString("locale", locale);
         OnLocaleChanged?.Invoke();
+        
+        Debug.Log($"[LocalizationManager] Localización completa. Total de {_table.Count} traducciones cargadas.");
+        
+        // Debug: Mostrar algunas claves cargadas
+        int count = 0;
+        foreach (var key in _table.Keys)
+        {
+            if (key.StartsWith("DLG_") || key.StartsWith("CHAR_"))
+            {
+                Debug.Log($"[LocalizationManager]   → {key} = {_table[key]}");
+                count++;
+                if (count >= 5) break; // Mostrar solo las primeras 5
+            }
+        }
     }
 
     private void MergeJsonIntoTables(string json)

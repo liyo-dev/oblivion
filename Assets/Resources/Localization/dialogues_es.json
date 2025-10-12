@@ -1,0 +1,124 @@
+{
+    "texts": [
+        {
+            "key": "CHAR_ALEX",
+            "value": "Alex"
+        },
+        {
+            "key": "CHAR_ELDRAN",
+            "value": "Eldran"
+        },
+        {
+            "key": "CHAR_GUARD",
+            "value": "Guardia"
+        },
+        {
+            "key": "CHAR_MERCHANT",
+            "value": "Mercader"
+        },
+        {
+            "key": "CHAR_NARRATOR",
+            "value": "Narrador"
+        },
+        {
+            "key": "CHAR_PIRATA",
+            "value": "Pirata"
+        },
+        {
+            "key": "CHAR_VERONICA",
+            "value": "Verónica"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION1_01",
+            "value": "Veo que leíste mi carta..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION1_BEFORE_01",
+            "value": "¿Has leido la carta que te dejé en la mesita?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_COMPLETED_01",
+            "value": "Gracias de nuevo por traer esa pesada caja."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_COMPLETED_02",
+            "value": "Las frutas están deliciosas."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
+            "value": "¿Encontraste la caja de frutas?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
+            "value": "Debería estar en el bosque, búscala bien."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_01",
+            "value": "Gracias por venir."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_02",
+            "value": "He estado recogiendo frutas en el bosque..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_03",
+            "value": "Y ahora la caja pesa demasiado para que yo la traiga solo."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_04",
+            "value": "¿Podrías ir al bosque a buscarla?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_05",
+            "value": "Y luego traérmela aquí, por favor."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_01",
+            "value": "¡Excelente! Conseguiste traer la caja."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_02",
+            "value": "Sabía que podía contar contigo."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_03",
+            "value": "Toma, esto es por tu ayuda."
+        },
+        {
+            "key": "DLG_LETTER_INTRO_01",
+            "value": "Alex ven a verme cuando despiertes."
+        },
+        {
+            "key": "DLG_LETTER_INTRO_02",
+            "value": "Te espero en la entrada del reino."
+        },
+        {
+            "key": "DLG_PIRATE_01",
+            "value": "¿Ves este ojo?"
+        },
+        {
+            "key": "DLG_PIRATE_02",
+            "value": "Me lo quitó un caridas..."
+        },
+        {
+            "key": "DLG_VERONICA_01",
+            "value": "Hay una leyenda que dice..."
+        },
+        {
+            "key": "DLG_VERONICA_02",
+            "value": "que si pronuncias mi nombre tres veces"
+        },
+        {
+            "key": "DLG_VERONICA_03",
+            "value": "delante de un espejo...."
+        },
+        {
+            "key": "DLG_VERONICA_04",
+            "value": "¡Aparece un fantasma!"
+        },
+        {
+            "key": "DLG_VERONICA_05",
+            "value": "Mejor no lo pruebes..."
+        }
+    ]
+}

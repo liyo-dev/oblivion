@@ -31,11 +31,15 @@ public class Interactable : MonoBehaviour
 
     // ---- estado ----
     bool used, enabledForUse;
+    SimpleQuestNPC _questNPC;
 
     void Awake()
     {
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
+        
+        // Detectar automáticamente SimpleQuestNPC
+        _questNPC = GetComponent<SimpleQuestNPC>();
     }
 
     public void SetHintVisible(bool visible)
@@ -55,6 +59,14 @@ public class Interactable : MonoBehaviour
 
         OnInteract?.Invoke(interactor);
 
+        // Si hay SimpleQuestNPC, delegar a él
+        if (_questNPC != null)
+        {
+            _questNPC.Interact();
+            return;
+        }
+
+        // Si no, comportamiento normal
         switch (mode)
         {
             case Mode.OpenDialogue:

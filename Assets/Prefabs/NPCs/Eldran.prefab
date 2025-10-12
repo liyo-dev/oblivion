@@ -19137,7 +19137,6 @@ GameObject:
   - component: {fileID: 687251097168369106}
   - component: {fileID: 2756883682784156866}
   - component: {fileID: 1301072731070886384}
-  - component: {fileID: 2396553418133151189}
   - component: {fileID: 2331612480173205874}
   m_Layer: 8
   m_Name: Eldran
@@ -19286,19 +19285,7 @@ MonoBehaviour:
   dialogue: {fileID: 0}
   OnInteract:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2331612480173205874}
-        m_TargetAssemblyTypeName: SimpleQuestNPC, Assembly-CSharp
-        m_MethodName: Interact
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   OnStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -19308,20 +19295,6 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &2396553418133151189
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8894687061216898430}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0aa9c332235aa76499e761786cd94a29, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::QuestProgressOnEvent
-  questId: Q_Eldran_1
-  stepIndex: 0
 --- !u!114 &2331612480173205874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19334,12 +19307,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6ea59accc640a45b8372dfdfd079e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleQuestNPC
-  questData: {fileID: 11400000, guid: 962bc3c997aeeb245bc3d60a3f71e0e2, type: 2}
-  talkStepIndex: 0
-  dlgBefore: {fileID: 11400000, guid: f8a48bcc4e7e1e4429b1c82d6e70fb9e, type: 2}
-  dlgInProgress: {fileID: 0}
-  dlgTurnIn: {fileID: 11400000, guid: 0ca37e965628c0b478bbb7f08583f546, type: 2}
-  dlgCompleted: {fileID: 11400000, guid: fb27661367a686441a4cc991a5960d45, type: 2}
+  questChain:
+  - questData: {fileID: 11400000, guid: 962bc3c997aeeb245bc3d60a3f71e0e2, type: 2}
+    completionMode: 1
+    talkStepIndex: 0
+    dlgBefore: {fileID: 11400000, guid: b24b280a71cc4204a9ea99d7665d8b1d, type: 2}
+    dlgInProgress: {fileID: 0}
+    dlgTurnIn: {fileID: 11400000, guid: bb063e1aaebef4842be88c93c3db8609, type: 2}
+    dlgCompleted: {fileID: 0}
+    OnQuestCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - questData: {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
+    completionMode: 0
+    talkStepIndex: 0
+    dlgBefore: {fileID: 11400000, guid: 923b5da55eaf67b4991f8b6ba6b05f36, type: 2}
+    dlgInProgress: {fileID: 11400000, guid: 39ef7fd3a6e9f8641acf2cced0f26532, type: 2}
+    dlgTurnIn: {fileID: 11400000, guid: ccf34efc36cfcf24caa59ea5fe1817a5, type: 2}
+    dlgCompleted: {fileID: 11400000, guid: 73fef9c79041ddf4b8fcb40f4aeb155c, type: 2}
+    OnQuestCompleted:
+      m_PersistentCalls:
+        m_Calls: []
 --- !u!1 &8932229672498769586
 GameObject:
   m_ObjectHideFlags: 0

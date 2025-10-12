@@ -6,7 +6,7 @@ Un juego de acción 3D desarrollado en Unity con sistemas de combate mágico y c
 
 ## 🎮 Descripción General
 
-Oblivion es un juego de acción en tercera persona que combina mecánicas de combate mágico y físico. Los jugadores navegan por entornos fantásticos usando una variedad de ataques, hechizos y habilidades para superar desafíos y enemigos.
+Alex Adventure es un juego de acción en tercera persona que combina mecánicas de combate mágico y físico. Los jugadores navegan por entornos fantásticos usando una variedad de ataques, hechizos y habilidades para superar desafíos y enemigos.
 
 ## ✨ Características
 

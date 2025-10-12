@@ -30,8 +30,8 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private InputActionReference[] inputActionsToDisable;
 
     [Header("Opcional")]
-    [SerializeField] private bool pauseGameWhileOpen = false;
-    [SerializeField] private bool resolveWithLocalizationManager = false; // usa tu LocalizationManager si está en Start
+    [SerializeField] private bool pauseGameWhileOpen;
+    [SerializeField] private bool resolveWithLocalizationManager = true;
 
     // Estado
     private DialogueAsset current;
@@ -149,11 +149,21 @@ public class DialogueManager : MonoBehaviour
 
         var line = current.lines[index];
 
-        if (nameText) nameText.text = string.IsNullOrEmpty(line.speakerName) ? "" : line.speakerName;
+        // Resolver nombre del hablante con localización
+        string speakerNameToShow = "";
+        if (!string.IsNullOrEmpty(line.speakerNameId) && LocalizationManager.Instance != null)
+        {
+            speakerNameToShow = LocalizationManager.Instance.Get(line.speakerNameId, "");
+        }
+        
+        if (nameText) nameText.text = speakerNameToShow;
 
-        string textToShow = line.text ?? "";
-        if (resolveWithLocalizationManager && LocalizationManager.Instance != null)
-            textToShow = LocalizationManager.Instance.Get(textToShow, textToShow);
+        // Resolver texto del diálogo con localización
+        string textToShow = "";
+        if (!string.IsNullOrEmpty(line.textId) && LocalizationManager.Instance != null)
+        {
+            textToShow = LocalizationManager.Instance.Get(line.textId, "");
+        }
 
         _currentText = textToShow;
 

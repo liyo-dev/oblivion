@@ -99,6 +99,38 @@
     {
       "key": "System_Error",
       "value": "Error"
+    },
+    {
+      "key": "SAVEPOINT_PROMPT",
+      "value": "Save Game [E]"
+    },
+    {
+      "key": "SAVEPOINT_SAVING",
+      "value": "Saving game..."
+    },
+    {
+      "key": "SAVEPOINT_SAVED",
+      "value": "Game saved successfully!"
+    },
+    {
+      "key": "INTERACT_NPC_TALK",
+      "value": "Talk [A]"
+    },
+    {
+      "key": "INTERACT_CHEST_OPEN",
+      "value": "Open chest [A]"
+    },
+    {
+      "key": "INTERACT_DOOR_OPEN",
+      "value": "Open door [A]"
+    },
+    {
+      "key": "INTERACT_ITEM_PICKUP",
+      "value": "Pick up [A]"
+    },
+    {
+      "key": "INTERACT_EXAMINE",
+      "value": "Examine [A]"
     }
   ],
   "subtitles": [
@@ -114,4 +146,3 @@
     }
   ]
 }
-

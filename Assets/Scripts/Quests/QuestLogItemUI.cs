@@ -26,32 +26,40 @@ public class QuestLogItemUI : MonoBehaviour, IPointerClickHandler
 
     public void Bind(QuestManager.RuntimeQuest data)
     {
-        // Título de la quest
-        string display = string.IsNullOrEmpty(data.Data.displayName) ? data.Id : data.Data.displayName;
+        // Título de la quest (localizado)
+        string display = data.Data.GetLocalizedName();
+        if (string.IsNullOrEmpty(display)) display = data.Id;
         if (questName) questName.text = display;
 
         // Obtener steps una sola vez para todo el método
         var steps = data.Steps ?? Array.Empty<QuestStep>();
 
-        // Descripción del primer paso no completado
+        // Descripción del primer paso no completado (localizado)
         if (firstStepDesc)
         {
             string stepDescription = "";
+            int stepIndex = -1;
             
             // Buscar el primer paso no completado
-            foreach (var step in steps)
+            for (int i = 0; i < steps.Length; i++)
             {
-                if (!step.completed)
+                if (!steps[i].completed)
                 {
-                    stepDescription = step.description;
+                    stepIndex = i;
                     break;
                 }
             }
             
             // Si todos están completados, mostrar el último paso
-            if (string.IsNullOrEmpty(stepDescription) && steps.Length > 0)
+            if (stepIndex == -1 && steps.Length > 0)
             {
-                stepDescription = steps[steps.Length - 1].description;
+                stepIndex = steps.Length - 1;
+            }
+            
+            // Obtener descripción localizada
+            if (stepIndex >= 0)
+            {
+                stepDescription = data.Data.GetLocalizedStepDescription(stepIndex);
             }
             
             firstStepDesc.text = stepDescription;
@@ -60,15 +68,25 @@ public class QuestLogItemUI : MonoBehaviour, IPointerClickHandler
         switch (data.State)
         {
             case QuestState.Inactive:
-                if (statePillText) statePillText.text = "Inactiva";
+                // Localizar estado
+                string inactiveText = "Inactiva";
+                if (LocalizationManager.Instance != null)
+                    inactiveText = LocalizationManager.Instance.Get("QUEST_STATE_INACTIVE", inactiveText);
+                if (statePillText) statePillText.text = inactiveText;
                 if (statePillBg) statePillBg.color = colorInactive;
                 break;
             case QuestState.Active:
-                if (statePillText) statePillText.text = "Activa";
+                string activeText = "Activa";
+                if (LocalizationManager.Instance != null)
+                    activeText = LocalizationManager.Instance.Get("QUEST_STATE_ACTIVE", activeText);
+                if (statePillText) statePillText.text = activeText;
                 if (statePillBg) statePillBg.color = colorActive;
                 break;
             case QuestState.Completed:
-                if (statePillText) statePillText.text = "Completada";
+                string completedText = "Completada";
+                if (LocalizationManager.Instance != null)
+                    completedText = LocalizationManager.Instance.Get("QUEST_STATE_COMPLETED", completedText);
+                if (statePillText) statePillText.text = completedText;
                 if (statePillBg) statePillBg.color = colorCompleted;
                 break;
         }
@@ -89,7 +107,8 @@ public class QuestLogItemUI : MonoBehaviour, IPointerClickHandler
             for (int i = 0; i < steps.Length; i++)
             {
                 var item = GameObject.Instantiate(stepPrefab, stepsRoot);
-                item.Bind(steps[i]);
+                // Usar el método Bind con localización
+                item.Bind(steps[i], data.Data, i);
             }
         }
 

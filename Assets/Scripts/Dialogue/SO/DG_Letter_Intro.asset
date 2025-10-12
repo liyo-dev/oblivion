@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: DG_Letter_Intro
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerName: Eldran
-    text: Alex ven a verme cuando despiertes.
-    portrait: {fileID: 21300000, guid: 170c3148924dd1548874918d63b2c1bb, type: 3}
-  - speakerName: Eldran
-    text: Te espero en la entrada del reino.
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_LETTER_INTRO_01
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_LETTER_INTRO_02
     portrait: {fileID: 0}

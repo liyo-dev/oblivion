@@ -1,0 +1,124 @@
+{
+    "texts": [
+        {
+            "key": "CHAR_ALEX",
+            "value": "Alex"
+        },
+        {
+            "key": "CHAR_ELDRAN",
+            "value": "Eldran"
+        },
+        {
+            "key": "CHAR_GUARD",
+            "value": "Guard"
+        },
+        {
+            "key": "CHAR_MERCHANT",
+            "value": "Merchant"
+        },
+        {
+            "key": "CHAR_NARRATOR",
+            "value": "Narrator"
+        },
+        {
+            "key": "CHAR_PIRATA",
+            "value": "Pirate"
+        },
+        {
+            "key": "CHAR_VERONICA",
+            "value": "Veronica"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION1_01",
+            "value": "I see you read my letter..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION1_BEFORE_01",
+            "value": "Have you read the letter I left you on the nightstand?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_COMPLETED_01",
+            "value": "Thanks again for bringing that heavy crate."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_COMPLETED_02",
+            "value": "The fruits are delicious."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
+            "value": "Did you find the fruit crate?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
+            "value": "It should be in the forest, look carefully."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_01",
+            "value": "Thanks for coming."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_02",
+            "value": "I've been gathering fruits in the forest..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_03",
+            "value": "And now the crate is too heavy for me to carry alone."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_04",
+            "value": "Could you go to the forest and find it?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_OFFER_05",
+            "value": "And then bring it back to me, please."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_01",
+            "value": "Excellent! You managed to bring the crate."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_02",
+            "value": "I knew I could count on you."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_TURNIN_03",
+            "value": "Here, this is for your help."
+        },
+        {
+            "key": "DLG_LETTER_INTRO_01",
+            "value": "Alex come see me when you wake up."
+        },
+        {
+            "key": "DLG_LETTER_INTRO_02",
+            "value": "I will wait for you at the kingdom entrance."
+        },
+        {
+            "key": "DLG_PIRATE_01",
+            "value": "See this eye?"
+        },
+        {
+            "key": "DLG_PIRATE_02",
+            "value": "A sharktopus took it from me..."
+        },
+        {
+            "key": "DLG_VERONICA_01",
+            "value": "There is a legend that says..."
+        },
+        {
+            "key": "DLG_VERONICA_02",
+            "value": "that if you say my name three times"
+        },
+        {
+            "key": "DLG_VERONICA_03",
+            "value": "in front of a mirror...."
+        },
+        {
+            "key": "DLG_VERONICA_04",
+            "value": "A ghost appears!"
+        },
+        {
+            "key": "DLG_VERONICA_05",
+            "value": "Better not try it..."
+        }
+    ]
+}

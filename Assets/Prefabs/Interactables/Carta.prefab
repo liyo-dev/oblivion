@@ -243,8 +243,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f89ead06f4e89c448b3aa43cc4c0c1b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestStarterOnInteract
-  questIdToStart: Q_Eldran_1
-  onlyOnce: 1
+  questIdToStart: ELDRAN_MISSION1
+  onlyOnce: 0
 --- !u!1 &8625976105098133822
 GameObject:
   m_ObjectHideFlags: 0

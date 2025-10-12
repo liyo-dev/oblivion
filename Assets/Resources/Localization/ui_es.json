@@ -99,6 +99,38 @@
     {
       "key": "System_Error",
       "value": "Error"
+    },
+    {
+      "key": "SAVEPOINT_PROMPT",
+      "value": "Guardar partida [E]"
+    },
+    {
+      "key": "SAVEPOINT_SAVING",
+      "value": "Guardando partida..."
+    },
+    {
+      "key": "SAVEPOINT_SAVED",
+      "value": "¡Partida guardada con éxito!"
+    },
+    {
+      "key": "INTERACT_NPC_TALK",
+      "value": "Hablar [A]"
+    },
+    {
+      "key": "INTERACT_CHEST_OPEN",
+      "value": "Abrir cofre [A]"
+    },
+    {
+      "key": "INTERACT_DOOR_OPEN",
+      "value": "Abrir puerta [A]"
+    },
+    {
+      "key": "INTERACT_ITEM_PICKUP",
+      "value": "Recoger [A]"
+    },
+    {
+      "key": "INTERACT_EXAMINE",
+      "value": "Examinar [A]"
     }
   ],
   "subtitles": [
@@ -114,4 +146,3 @@
     }
   ]
 }
-

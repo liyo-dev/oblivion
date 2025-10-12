@@ -22,9 +22,17 @@ public class WorldBootstrap : MonoBehaviour
     private void HandleProfileReady()
     {
         if (_initialized) return;
-        InitializeWorld();
+        // Usar corutina para dar tiempo a que los SpawnAnchor se registren en OnEnable
+        StartCoroutine(InitializeWorldDelayed());
         _initialized = true;
         GameBootService.OnProfileReady -= HandleProfileReady;
+    }
+
+    private System.Collections.IEnumerator InitializeWorldDelayed()
+    {
+        // Esperar un frame para que todos los OnEnable de los SpawnAnchor se ejecuten
+        yield return null;
+        InitializeWorld();
     }
 
     private void InitializeWorld()
@@ -44,8 +52,7 @@ public class WorldBootstrap : MonoBehaviour
             var anchor = bootProfile.GetStartAnchorOrDefault();
             SpawnManager.SetCurrentAnchor(anchor);
 
-            var playerGo = GameObject.FindWithTag("Player");
-            if (playerGo) SpawnManager.TeleportTo(anchor, true);
+            StartCoroutine(WaitForPlayerAndTeleport(anchor));
 
             Debug.Log("[WorldBootstrap] Iniciado en modo PRESET");
             return;
@@ -70,17 +77,90 @@ public class WorldBootstrap : MonoBehaviour
             Debug.Log("[WorldBootstrap] Sin save disponible, usando configuración por defecto");
         }
 
-        // 3) Colocar jugador
+        // 3) Colocar jugador (esperar a que esté disponible y activo)
         SpawnManager.SetCurrentAnchor(anchorId);
-        var player = GameObject.FindWithTag("Player");
-        if (player) 
+        StartCoroutine(WaitForPlayerAndTeleport(anchorId));
+    }
+
+    private System.Collections.IEnumerator WaitForPlayerAndTeleport(string anchorId)
+    {
+        GameObject player = null;
+        int maxAttempts = 100;
+        int attempts = 0;
+
+        // Buscar al jugador (incluso si está desactivado)
+        while (player == null && attempts < maxAttempts)
         {
-            SpawnManager.TeleportTo(anchorId, true);
-            Debug.Log($"[WorldBootstrap] Jugador colocado en anchor: {anchorId}");
+            try
+            {
+                player = GameObject.FindWithTag("Player");
+            }
+            catch (UnityException) { }
+            
+            if (player == null)
+            {
+                var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+                foreach (var obj in allObjects)
+                {
+                    try
+                    {
+                        if (obj != null && obj.CompareTag("Player") && obj.scene.isLoaded && !string.IsNullOrEmpty(obj.scene.name))
+                        {
+                            player = obj;
+                            break;
+                        }
+                    }
+                    catch (UnityException) { }
+                }
+            }
+
+            if (player == null)
+            {
+                yield return new WaitForSeconds(0.05f);
+                attempts++;
+            }
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("[WorldBootstrap] No se encontró el jugador con tag 'Player'.");
+            yield break;
+        }
+
+        // Esperar a que el jugador esté activo
+        attempts = 0;
+        while (!player.activeInHierarchy && attempts < maxAttempts)
+        {
+            yield return new WaitForSeconds(0.05f);
+            attempts++;
+        }
+
+        // Teleportar al jugador
+        if (player.activeInHierarchy)
+        {
+            SpawnManager.TeleportTo(anchorId, false);
         }
         else
         {
-            Debug.LogWarning("[WorldBootstrap] No se encontró el jugador con tag 'Player'");
+            SpawnManager.SetCurrentAnchor(anchorId);
+            StartCoroutine(TeleportWhenActive(player, anchorId));
+        }
+    }
+
+    private System.Collections.IEnumerator TeleportWhenActive(GameObject player, string anchorId)
+    {
+        int maxAttempts = 200;
+        int attempts = 0;
+
+        while (player != null && !player.activeInHierarchy && attempts < maxAttempts)
+        {
+            yield return new WaitForSeconds(0.05f);
+            attempts++;
+        }
+
+        if (player != null && player.activeInHierarchy)
+        {
+            SpawnManager.TeleportTo(anchorId, false);
         }
     }
 }

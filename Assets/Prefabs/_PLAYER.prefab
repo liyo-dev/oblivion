@@ -3245,7 +3245,7 @@ GameObject:
   - component: {fileID: 6673899346828621514}
   m_Layer: 0
   m_Name: _PLAYER
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3362,9 +3362,9 @@ MonoBehaviour:
     rotationSpeed: 16
     walkByDefault: 0
     rotateWithCamera: 0
-    walkSpeed: 2
-    runningSpeed: 4
-    sprintSpeed: 6
+    walkSpeed: 4
+    runningSpeed: 6
+    sprintSpeed: 12
   strafeSpeed:
     movementSmooth: 6
     animationSmooth: 0.2
@@ -3675,7 +3675,7 @@ MonoBehaviour:
   maxDownwardSpeed: 6
   swimmingAnimationName: Swimming_Floating_NoWeapon
   idleAnimationName: Idle_Normal_NoWeapon
-  showDebugInfo: 0
+  showDebugInfo: 1
 --- !u!1 &5083193882848345264
 GameObject:
   m_ObjectHideFlags: 0

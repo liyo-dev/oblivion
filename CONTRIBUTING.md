@@ -1,6 +1,6 @@
-# Contributing to Oblivion
+# Contributing to Alex Adventure
 
-Thank you for your interest in contributing to Oblivion! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Alex Adventure! This document provides guidelines and information for contributors.
 
 ## 🚀 Getting Started
 
