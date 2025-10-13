@@ -404,6 +404,8 @@ GameObject:
   - component: {fileID: 4071095640247716209}
   - component: {fileID: 1834688310740449430}
   - component: {fileID: 7542142823025554710}
+  - component: {fileID: 1175714022862013922}
+  - component: {fileID: 4204621156195107645}
   m_Layer: 7
   m_Name: Spider1
   m_TagString: Untagged
@@ -466,42 +468,8 @@ MonoBehaviour:
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3
-  physicalMultiplier: 2
-  magicMultiplier: 1
-  specialMultiplier: 1
   invulnerabilitySeconds: 0.5
-  enableKnockback: 1
-  minDamageForKnockback: 0.01
-  knockStrength: 2
-  knockDuration: 0.15
-  knockCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  preferRigidbody: 1
-  behavioursToDisable: []
   debugLogs: 1
-  drawHitPoint: 1
 --- !u!65 &1834688310740449430
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -550,6 +518,56 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 32
   m_CollisionDetection: 2
+--- !u!195 &1175714022862013922
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5572779666037620316}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &4204621156195107645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5572779666037620316}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b36310691ff5426cbfc645db0b46d005, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Spider1AI
+  player: {fileID: 0}
+  animator: {fileID: 0}
+  damageable: {fileID: 0}
+  agent: {fileID: 0}
+  detectionRange: 8
+  attackRange: 1.5
+  patrolRadius: 5
+  idleTime: 2
+  patrolEnabled: 1
+  damage: 5
+  attackCooldown: 1.5
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  moveSpeed: 3.5
+  chaseSpeedMultiplier: 1.3
 --- !u!1 &5572779666037620318
 GameObject:
   m_ObjectHideFlags: 0

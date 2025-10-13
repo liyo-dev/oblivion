@@ -1720,7 +1720,7 @@ Transform:
   m_GameObject: {fileID: 2893593141627515413}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0.5}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3322,6 +3322,7 @@ GameObject:
   - component: {fileID: 6951569915639772467}
   - component: {fileID: 488251440676369700}
   - component: {fileID: 8739406389657817009}
+  - component: {fileID: 8599661016629616348}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -3725,13 +3726,28 @@ MonoBehaviour:
   pickupStateName: CarryStart_NoWeapon
   carryMoveStateName: CarryMoveIdle_NoWeapon
   throwStateName: CarryThrow_NoWeapon
-  locomotionBaseName: Locomotion
-  upperIdleStateName: UpperIdle
-  upperBodyLayer: 1
+  locomotionStateName: Locomotion
+  animatorLayer: 1
   transitionDuration: 0.2
   attachDelay: 0.5
   throwAnimationDuration: 0.3
-  dropOnKeyA: 1
+  dropOnInteract: 1
+--- !u!114 &8599661016629616348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be403b3f1f3cc474c8d1c4d64b9b218f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerActionManager
+  upperBodyLayer: 1
+  upperIdleState: UpperIdle
+  rules: []
+  debugLogs: 1
 --- !u!1 &5083193882848345264
 GameObject:
   m_ObjectHideFlags: 0

@@ -19405,6 +19405,7 @@ GameObject:
   - component: {fileID: 199087449348766326}
   - component: {fileID: -6164719594205059670}
   - component: {fileID: 2821976958716594460}
+  - component: {fileID: 7938904112883210326}
   m_Layer: 0
   m_Name: Magic fire pro red
   m_TagString: Untagged
@@ -24294,3 +24295,18 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7938904112883210326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975959190090480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20df411e278d434ebd9e1291c4489fa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonProjectile
+  speed: 15
+  lifetime: 5
+  hitEffectPrefab: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}

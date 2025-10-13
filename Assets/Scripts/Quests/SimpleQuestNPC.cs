@@ -309,19 +309,13 @@ public class SimpleQuestNPC : MonoBehaviour
         {
             _interactable.SetDialogue(dlg);
             
-            // Solo disparar OnStarted si NO estamos encadenando (para evitar parpadeo)
-            if (!_isChaining)
-            {
-                _interactable.OnStarted?.Invoke();
-            }
+            // SIEMPRE disparar OnStarted para que el NPC se gire hacia el jugador
+            _interactable.OnStarted?.Invoke();
             
             DialogueManager.Instance.StartDialogue(dlg, () =>
             {
-                // Solo disparar OnFinished si NO estamos encadenando
-                if (!_isChaining)
-                {
-                    _interactable.OnFinished?.Invoke();
-                }
+                // SIEMPRE disparar OnFinished para que el NPC vuelva a su estado normal
+                _interactable.OnFinished?.Invoke();
                 onComplete?.Invoke();
             });
         }

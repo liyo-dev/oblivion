@@ -1,14 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
-using System;
 using System.IO;
 using System.Reflection;
 
 [CustomEditor(typeof(Readme))]
 [InitializeOnLoad]
-public class ReadmeEditor : Editor
+public class ReadmeEditor : UnityEditor.Editor
 {
     static string s_ShowedReadmeSessionStateName = "ReadmeEditor.showedReadme";
     
@@ -71,7 +68,10 @@ public class ReadmeEditor : Editor
         var assembly = typeof(EditorApplication).Assembly;
         var windowLayoutType = assembly.GetType("UnityEditor.WindowLayout", true);
         var method = windowLayoutType.GetMethod("LoadWindowLayout", BindingFlags.Public | BindingFlags.Static);
-        method.Invoke(null, new object[] { Path.Combine(Application.dataPath, "TutorialInfo/Layout.wlt"), false });
+        if (method != null)
+        {
+            method.Invoke(null, new object[] { Path.Combine(Application.dataPath, "TutorialInfo/Layout.wlt"), false });
+        }
     }
 
     static Readme SelectReadme()
@@ -81,7 +81,7 @@ public class ReadmeEditor : Editor
         {
             var readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
 
-            Selection.objects = new UnityEngine.Object[] { readmeObject };
+            Selection.objects = new[] { readmeObject };
 
             return (Readme)readmeObject;
         }
@@ -161,7 +161,6 @@ public class ReadmeEditor : Editor
         get { return m_LinkStyle; }
     }
 
-    [SerializeField]
     GUIStyle m_LinkStyle;
 
     GUIStyle TitleStyle
@@ -169,7 +168,6 @@ public class ReadmeEditor : Editor
         get { return m_TitleStyle; }
     }
 
-    [SerializeField]
     GUIStyle m_TitleStyle;
 
     GUIStyle HeadingStyle
@@ -177,7 +175,6 @@ public class ReadmeEditor : Editor
         get { return m_HeadingStyle; }
     }
 
-    [SerializeField]
     GUIStyle m_HeadingStyle;
 
     GUIStyle BodyStyle
@@ -185,7 +182,6 @@ public class ReadmeEditor : Editor
         get { return m_BodyStyle; }
     }
 
-    [SerializeField]
     GUIStyle m_BodyStyle;
 
     GUIStyle ButtonStyle
@@ -193,7 +189,6 @@ public class ReadmeEditor : Editor
         get { return m_ButtonStyle; }
     }
 
-    [SerializeField]
     GUIStyle m_ButtonStyle;
 
     void Init()

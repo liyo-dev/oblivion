@@ -3,9 +3,17 @@ using UnityEngine;
 
 namespace Invector.vCharacterController
 {
-    // ¡OJO! Este controller NO referencia enums/typedefs tuyos del assembly principal.
-    // El evento de magia expone un int: 0=Left, 1=Right, 2=Special.
-
+    /// <summary>
+    /// Controller de tercera persona con sistema de combate físico y mágico.
+    /// 
+    /// IMPORTANTE: Este controller está en el assembly de Plugins y NO debe referenciar
+    /// enums o tipos específicos del assembly principal (como MagicSlot, PlayerState, etc.).
+    /// 
+    /// Para comunicación entre assemblies, usa:
+    /// - Interfaces en el namespace global (IActionValidator, ITargetProvider, IAttackHitbox)
+    /// - Tipos primitivos (int, float, bool, string)
+    /// - El evento OnMagicSlotCast usa int: 0=Left, 1=Right, 2=Special
+    /// </summary>
     public class vThirdPersonController : vThirdPersonAnimator
     {
         [Header("Physical Attacks (Base Layer)")]
@@ -32,7 +40,11 @@ namespace Invector.vCharacterController
         [SerializeField] private bool debugLogs = false;
 
         // ---- Eventos ----
-        public System.Action<int> OnMagicSlotCast; // 0=L, 1=R, 2=S
+        /// <summary>
+        /// Evento disparado al lanzar magia. Usa int en lugar de enum para evitar dependencias:
+        /// 0 = Left, 1 = Right, 2 = Special
+        /// </summary>
+        public System.Action<int> OnMagicSlotCast;
 
         // ---- Runtime ----
         private int nextPhysicalIndex = 0;
@@ -42,6 +54,13 @@ namespace Invector.vCharacterController
 
         [SerializeField] private bool autoAimMelee = true;
         private ITargetProvider _targeting;
+        
+        /// <summary>
+        /// Referencia a IActionValidator (interfaz del namespace global).
+        /// Permite validar acciones sin depender de enums del assembly principal.
+        /// Es opcional, el sistema funciona sin él.
+        /// </summary>
+        private IActionValidator _actionValidator;
 
         // ========================= Motor base =========================
         public virtual void ControlAnimatorRootMotion()
@@ -112,6 +131,9 @@ namespace Invector.vCharacterController
 
         public virtual void Sprint(bool value)
         {
+            // Verificar permiso del ActionValidator
+            if (_actionValidator != null && !_actionValidator.CanSprint()) return;
+
             var sprintConditions = (input.sqrMagnitude > 0.1f && isGrounded &&
                 !(isStrafing && !strafeSpeed.walkByDefault && (horizontalSpeed >= 0.5 || horizontalSpeed <= -0.5 || verticalSpeed <= 0.1f)));
 
@@ -131,6 +153,9 @@ namespace Invector.vCharacterController
 
         public virtual void Jump()
         {
+            // Verificar permiso del ActionValidator
+            if (_actionValidator != null && !_actionValidator.CanJump()) return;
+
             jumpCounter = jumpTimer;
             isJumping = true;
 
@@ -151,6 +176,8 @@ namespace Invector.vCharacterController
         // ========================= Ataque físico =========================
         public virtual void AttackPhysical()
         {
+            // Verificar permiso del ActionValidator
+            if (_actionValidator != null && !_actionValidator.CanAttack()) return;
             if (!CanAttack() || Time.time < nextPhysicalTime) return;
 
             string state = (physicalAttackStates != null && physicalAttackStates.Length > 0)
@@ -189,6 +216,8 @@ namespace Invector.vCharacterController
 
         private void PlayUpperAndRespectExit(string fullPath, int slotId)
         {
+            // Verificar permiso del ActionValidator
+            if (_actionValidator != null && !_actionValidator.CanCastMagic()) return;
             if (!CanAttack()) return;
 
             // Subimos el peso del layer y ENTRAMOS directo al estado (sin CrossFade)
@@ -231,7 +260,10 @@ namespace Invector.vCharacterController
         private void Start()
         {
             _targeting = GetComponent<ITargetProvider>();
+            // Buscar el ActionValidator (opcional, el sistema funciona sin él)
+            _actionValidator = GetComponent<IActionValidator>();
         }
+
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;
     }

@@ -23,7 +23,7 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private bool dropOnInteract = true;
 
     private Animator _animator;
-    private vThirdPersonController _controller;
+    private PlayerActionManager _actionManager;
     private GameObject _carriedObject;
     private Rigidbody _carriedRigidbody;
     private PickupObject _carriedPickupObject;
@@ -33,7 +33,7 @@ public class PlayerCarrySystem : MonoBehaviour
     void Awake()
     {
         _animator = GetComponent<Animator>();
-        _controller = GetComponent<vThirdPersonController>();
+        _actionManager = GetComponent<PlayerActionManager>();
 
         if (carryPoint == null)
         {
@@ -42,14 +42,14 @@ public class PlayerCarrySystem : MonoBehaviour
             cp.localPosition = new Vector3(0, 1.2f, 0.5f);
             carryPoint = cp;
         }
-
-        // MUY IMPORTANTE: que la capa UpperBody pese 1
-        if (_animator != null && animatorLayer > 0)
-            _animator.SetLayerWeight(animatorLayer, 1f);
     }
 
     public bool TryPickupOrDrop(GameObject obj)
     {
+        // Verificar con el ActionManager si podemos interactuar
+        if (_actionManager != null && !_actionManager.CanUse(PlayerAbility.Carry))
+            return false;
+
         if (_isCarrying) { DropObject(); return false; }
         PickupObject(obj);
         return true;
@@ -58,6 +58,10 @@ public class PlayerCarrySystem : MonoBehaviour
     public void PickupObject(GameObject obj)
     {
         if (_isCarrying || _isPickingUp || obj == null) return;
+
+        // Verificar permiso con el ActionManager
+        if (_actionManager != null && !_actionManager.CanUse(PlayerAbility.Carry))
+            return;
 
         // Si te pasan un hijo, sube al raíz que tiene el PickupObject
         var pickup = obj.GetComponentInParent<PickupObject>();
@@ -99,6 +103,10 @@ public class PlayerCarrySystem : MonoBehaviour
 
         if (_animator != null)
             _animator.CrossFade(carryMoveStateName, transitionDuration, animatorLayer);
+
+        // Notificar al ActionManager que estamos en modo Carrying
+        if (_actionManager != null)
+            _actionManager.PushMode(ActionMode.Carrying);
     }
 
     public void DropObject()
@@ -139,6 +147,25 @@ public class PlayerCarrySystem : MonoBehaviour
         _carriedObject = null;
         _carriedRigidbody = null;
         _carriedPickupObject = null;
+
+        // Notificar al ActionManager que salimos del modo Carrying
+        if (_actionManager != null)
+            _actionManager.PopMode(ActionMode.Carrying);
+        
+        // IMPORTANTE: Esperar un frame antes de permitir acciones para evitar inputs residuales
+        // Esto previene que al soltar la caja con el botón de interacción, se active un salto accidental
+        StartCoroutine(ClearInputBufferAfterDrop());
+    }
+
+    private System.Collections.IEnumerator ClearInputBufferAfterDrop()
+    {
+        // Bloquear brevemente las acciones para limpiar el buffer de inputs
+        if (_actionManager != null)
+        {
+            _actionManager.PushMode(ActionMode.Stunned);
+            yield return new WaitForSeconds(0.15f); // Pequeño delay para limpiar inputs
+            _actionManager.PopMode(ActionMode.Stunned);
+        }
     }
 
     public bool IsCarrying => _isCarrying;

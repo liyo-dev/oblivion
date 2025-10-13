@@ -131,6 +131,14 @@
     {
       "key": "INTERACT_EXAMINE",
       "value": "Examinar [A]"
+    },
+    {
+      "key": "ROOM_EXIT_BLOCKED",
+      "value": "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer..."
+    },
+    {
+      "key": "Pensamiento",
+      "value": "Pensamiento"
     }
   ],
   "subtitles": [
