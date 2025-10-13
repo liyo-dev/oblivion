@@ -3,24 +3,15 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Barra de vida para bosses que aparece automáticamente en la esquina inferior derecha
+/// Barra de vida para bosses que aparece automáticamente en la esquina inferior derecha.
+/// Se autoconfigura completamente, solo añade este script al GameObject del boss.
 /// </summary>
 public class BossHealthBar : MonoBehaviour
 {
-    [Header("Referencias del Boss")]
-    [SerializeField] private Damageable bossDamageable;
+    [Header("Configuración")]
     [SerializeField] private string bossName = "Boss Demonio";
-
-    [Header("UI - Barra de Vida")]
-    [SerializeField] private Image healthBarFill;
-    [SerializeField] private Image healthBarBackground;
-    [SerializeField] private TextMeshProUGUI healthText;
-    [SerializeField] private TextMeshProUGUI bossNameText;
-
-    [Header("Sprites Opcionales")]
-    [SerializeField] private Image bossIcon; // Cara del boss
-    [SerializeField] private Sprite customHealthBarSprite; // Sprite personalizado para la barra
-    [SerializeField] private Sprite customBossIconSprite; // Sprite de la cara del boss
+    [SerializeField] private Vector2 barSize = new Vector2(400f, 40f);
+    [SerializeField] private Vector2 barPosition = new Vector2(-20f, 80f); // Desde la esquina inferior derecha
 
     [Header("Colores")]
     [SerializeField] private Color healthyColor = new Color(0.8f, 0.2f, 0.2f); // Rojo oscuro
@@ -31,106 +22,66 @@ public class BossHealthBar : MonoBehaviour
 
     [Header("Animación")]
     [SerializeField] private bool animateHealthChanges = true;
-    [SerializeField] private float animationSpeed = 3f;
-    [SerializeField] private bool showDamageFlash = true;
-    [SerializeField] private float damageFlashDuration = 0.2f;
+    [SerializeField] private float animationSpeed = 5f;
 
-    [Header("Configuración")]
-    [SerializeField] private bool showHealthNumbers = true;
-    [SerializeField] private bool autoShow = true;
-    [SerializeField] private bool autoHideOnDeath = true;
-    [SerializeField] private bool autoCreateSprites = true; // Crear sprites automáticamente
+    // Referencias generadas automáticamente
+    private Damageable _bossDamageable;
+    private Canvas _canvas;
+    private GameObject _barContainer;
+    private Image _healthBarFill;
+    private Image _healthBarBackground;
+    private TextMeshProUGUI _healthText;
+    private TextMeshProUGUI _bossNameText;
+    private CanvasGroup _canvasGroup;
 
     private float _targetFillAmount = 1f;
     private float _currentFillAmount = 1f;
-    private CanvasGroup _canvasGroup;
     private bool _isVisible = false;
 
     void Awake()
     {
-        _canvasGroup = GetComponent<CanvasGroup>();
-        if (!_canvasGroup) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
-
-        // Crear sprites por defecto si están habilitados
-        if (autoCreateSprites)
+        // Buscar el componente Damageable en este GameObject
+        _bossDamageable = GetComponent<Damageable>();
+        
+        if (!_bossDamageable)
         {
-            CreateDefaultSprites();
+            Debug.LogError("[BossHealthBar] No se encontró el componente Damageable en el GameObject. Este script debe estar en el mismo GameObject que el boss.");
+            enabled = false;
+            return;
         }
 
-        // Aplicar sprites personalizados si están asignados
-        if (customHealthBarSprite && healthBarFill)
-        {
-            healthBarFill.sprite = customHealthBarSprite;
-        }
-
-        if (customBossIconSprite && bossIcon)
-        {
-            bossIcon.sprite = customBossIconSprite;
-            bossIcon.gameObject.SetActive(true);
-        }
-        else if (bossIcon && bossIcon.sprite != null)
-        {
-            bossIcon.gameObject.SetActive(true);
-        }
-        else if (bossIcon)
-        {
-            bossIcon.gameObject.SetActive(false);
-        }
-
-        // Ocultar inicialmente
-        if (!autoShow)
-        {
-            _canvasGroup.alpha = 0f;
-            _isVisible = false;
-        }
+        // Crear toda la UI automáticamente
+        CreateBossHealthBarUI();
     }
 
     void Start()
     {
-        // Buscar el Damageable si no está asignado
-        if (!bossDamageable)
-        {
-            bossDamageable = GetComponentInParent<Damageable>();
-            
-            // Si no está en el parent, buscar en la escena (por si está en otro objeto)
-            if (!bossDamageable)
-            {
-                bossDamageable = FindObjectOfType<ImpDemonAI>()?.GetComponent<Damageable>();
-            }
-        }
-
-        if (bossDamageable)
+        if (_bossDamageable)
         {
             // Suscribirse a eventos
-            bossDamageable.OnDamaged += OnBossDamaged;
-            bossDamageable.OnDied += OnBossDied;
+            _bossDamageable.OnDamaged += OnBossDamaged;
+            _bossDamageable.OnDied += OnBossDied;
 
             // Inicializar la barra
             UpdateHealthBar();
             
-            if (autoShow)
-            {
-                Show();
-            }
-        }
-        else
-        {
-            Debug.LogError("[BossHealthBar] No se encontró el componente Damageable del boss!");
-        }
-
-        // Configurar nombre del boss
-        if (bossNameText)
-        {
-            bossNameText.text = bossName;
+            // Mostrar la barra
+            Show();
         }
     }
 
     void OnDestroy()
     {
-        if (bossDamageable)
+        if (_bossDamageable)
         {
-            bossDamageable.OnDamaged -= OnBossDamaged;
-            bossDamageable.OnDied -= OnBossDied;
+            _bossDamageable.OnDamaged -= OnBossDamaged;
+            _bossDamageable.OnDied -= OnBossDied;
+        }
+
+        // Destruir el canvas creado
+        if (_canvas != null && _canvas.gameObject != null)
+        {
+            Destroy(_canvas.gameObject);
         }
     }
 
@@ -143,39 +94,128 @@ public class BossHealthBar : MonoBehaviour
         {
             _currentFillAmount = Mathf.Lerp(_currentFillAmount, _targetFillAmount, Time.deltaTime * animationSpeed);
             
-            if (healthBarFill)
+            if (_healthBarFill)
             {
-                healthBarFill.fillAmount = _currentFillAmount;
+                _healthBarFill.fillAmount = _currentFillAmount;
             }
         }
     }
 
-    private void CreateDefaultSprites()
+    private void CreateBossHealthBarUI()
     {
-        // Crear sprite por defecto para la barra de vida si no existe
-        if (!customHealthBarSprite && healthBarFill && healthBarFill.sprite == null)
-        {
-            healthBarFill.sprite = CreateSolidSprite(Color.white);
-            healthBarFill.type = Image.Type.Filled;
-            healthBarFill.fillMethod = Image.FillMethod.Horizontal;
-            healthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            Debug.Log("[BossHealthBar] Sprite de barra creado automáticamente");
-        }
+        // 1. Crear Canvas principal
+        GameObject canvasObj = new GameObject("BossHealthBar_Canvas");
+        _canvas = canvasObj.AddComponent<Canvas>();
+        _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _canvas.sortingOrder = 100; // Asegurar que esté por encima de otras UI
+        
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
+        
+        canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Crear sprite por defecto para el background si no existe
-        if (healthBarBackground && healthBarBackground.sprite == null)
-        {
-            healthBarBackground.sprite = CreateSolidSprite(Color.white);
-            healthBarBackground.color = new Color(0.2f, 0.2f, 0.2f, 0.8f); // Gris oscuro
-            Debug.Log("[BossHealthBar] Sprite de background creado automáticamente");
-        }
+        // 2. Crear contenedor principal (posicionado en esquina inferior derecha)
+        _barContainer = new GameObject("BarContainer");
+        _barContainer.transform.SetParent(_canvas.transform, false);
+        
+        RectTransform containerRect = _barContainer.AddComponent<RectTransform>();
+        containerRect.anchorMin = new Vector2(1f, 0f); // Esquina inferior derecha
+        containerRect.anchorMax = new Vector2(1f, 0f);
+        containerRect.pivot = new Vector2(1f, 0f);
+        containerRect.anchoredPosition = barPosition;
+        containerRect.sizeDelta = new Vector2(barSize.x + 20f, barSize.y + 60f); // Espacio extra para nombre
 
-        // Crear sprite por defecto para el icono del boss si no existe y está asignado
-        if (!customBossIconSprite && bossIcon && bossIcon.sprite == null)
-        {
-            bossIcon.sprite = CreateDemonIconSprite();
-            Debug.Log("[BossHealthBar] Icono del demonio creado automáticamente");
-        }
+        _canvasGroup = _barContainer.AddComponent<CanvasGroup>();
+        _canvasGroup.alpha = 0f; // Empezar oculto
+
+        // 3. Crear texto del nombre del boss (arriba de la barra)
+        GameObject nameObj = new GameObject("BossName");
+        nameObj.transform.SetParent(_barContainer.transform, false);
+        
+        RectTransform nameRect = nameObj.AddComponent<RectTransform>();
+        nameRect.anchorMin = new Vector2(0f, 1f);
+        nameRect.anchorMax = new Vector2(1f, 1f);
+        nameRect.pivot = new Vector2(0.5f, 1f);
+        nameRect.anchoredPosition = new Vector2(0f, -5f);
+        nameRect.sizeDelta = new Vector2(0f, 30f);
+
+        _bossNameText = nameObj.AddComponent<TextMeshProUGUI>();
+        _bossNameText.text = bossName;
+        _bossNameText.fontSize = 24;
+        _bossNameText.fontStyle = FontStyles.Bold;
+        _bossNameText.alignment = TextAlignmentOptions.Center;
+        _bossNameText.color = Color.white;
+        
+        // Añadir sombra al texto
+        var shadow = nameObj.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0, 0, 0, 0.8f);
+        shadow.effectDistance = new Vector2(2, -2);
+
+        // 4. Crear background de la barra
+        GameObject bgObj = new GameObject("HealthBar_Background");
+        bgObj.transform.SetParent(_barContainer.transform, false);
+        
+        RectTransform bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.anchorMin = new Vector2(0f, 0f);
+        bgRect.anchorMax = new Vector2(1f, 0f);
+        bgRect.pivot = new Vector2(0.5f, 0f);
+        bgRect.anchoredPosition = new Vector2(0f, 5f);
+        bgRect.sizeDelta = new Vector2(-20f, barSize.y);
+
+        _healthBarBackground = bgObj.AddComponent<Image>();
+        _healthBarBackground.sprite = CreateSolidSprite(Color.white);
+        _healthBarBackground.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+        _healthBarBackground.type = Image.Type.Sliced;
+
+        // Añadir borde
+        var outline = bgObj.AddComponent<Outline>();
+        outline.effectColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
+        outline.effectDistance = new Vector2(2, -2);
+
+        // 5. Crear barra de vida (fill)
+        GameObject fillObj = new GameObject("HealthBar_Fill");
+        fillObj.transform.SetParent(bgObj.transform, false);
+        
+        RectTransform fillRect = fillObj.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.pivot = new Vector2(0f, 0.5f);
+        fillRect.anchoredPosition = Vector2.zero;
+        fillRect.sizeDelta = new Vector2(-4f, -4f); // Padding interno
+
+        _healthBarFill = fillObj.AddComponent<Image>();
+        _healthBarFill.sprite = CreateSolidSprite(Color.white);
+        _healthBarFill.color = healthyColor;
+        _healthBarFill.type = Image.Type.Filled;
+        _healthBarFill.fillMethod = Image.FillMethod.Horizontal;
+        _healthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        _healthBarFill.fillAmount = 1f;
+
+        // 6. Crear texto de vida (encima de la barra)
+        GameObject textObj = new GameObject("HealthText");
+        textObj.transform.SetParent(bgObj.transform, false);
+        
+        RectTransform textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.pivot = new Vector2(0.5f, 0.5f);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = Vector2.zero;
+
+        _healthText = textObj.AddComponent<TextMeshProUGUI>();
+        _healthText.fontSize = 18;
+        _healthText.fontStyle = FontStyles.Bold;
+        _healthText.alignment = TextAlignmentOptions.Center;
+        _healthText.color = Color.white;
+        
+        // Añadir sombra al texto
+        var textShadow = textObj.AddComponent<Shadow>();
+        textShadow.effectColor = new Color(0, 0, 0, 0.9f);
+        textShadow.effectDistance = new Vector2(1, -1);
+
+        Debug.Log($"[BossHealthBar] UI creada automáticamente para '{bossName}'");
     }
 
     private Sprite CreateSolidSprite(Color color)
@@ -200,142 +240,12 @@ public class BossHealthBar : MonoBehaviour
         return sprite;
     }
 
-    private Sprite CreateDemonIconSprite()
-    {
-        // Crear una textura de 128x128 con un círculo rojo (representando al demonio)
-        int size = 128;
-        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        
-        Color demonColor = new Color(0.8f, 0.1f, 0.1f, 1f); // Rojo demoniaco
-        Color backgroundColor = new Color(0, 0, 0, 0); // Transparente
-        Color eyeColor = new Color(1f, 0.9f, 0.2f, 1f); // Amarillo para los ojos
-        Color hornColor = new Color(0.3f, 0.1f, 0.1f, 1f); // Rojo oscuro para cuernos
-
-        Vector2 center = new Vector2(size / 2f, size / 2f);
-        float radius = size * 0.4f;
-
-        // Dibujar el fondo transparente
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                texture.SetPixel(x, y, backgroundColor);
-            }
-        }
-
-        // Dibujar círculo rojo (cara del demonio)
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float distance = Vector2.Distance(new Vector2(x, y), center);
-                if (distance < radius)
-                {
-                    // Gradiente sutil desde el centro
-                    float gradient = 1f - (distance / radius) * 0.3f;
-                    texture.SetPixel(x, y, demonColor * gradient);
-                }
-            }
-        }
-
-        // Dibujar cuernos (dos triángulos en la parte superior)
-        DrawHorn(texture, size / 2 - 20, size * 0.75f, hornColor); // Cuerno izquierdo
-        DrawHorn(texture, size / 2 + 20, size * 0.75f, hornColor); // Cuerno derecho
-
-        // Dibujar ojos brillantes
-        DrawCircle(texture, size / 2 - 15, size / 2 + 10, 8, eyeColor); // Ojo izquierdo
-        DrawCircle(texture, size / 2 + 15, size / 2 + 10, 8, eyeColor); // Ojo derecho
-
-        // Dibujar boca malvada (sonrisa)
-        DrawSmile(texture, size / 2, size / 2 - 15, 30, Color.black);
-
-        texture.Apply();
-        texture.filterMode = FilterMode.Bilinear;
-
-        Sprite sprite = Sprite.Create(
-            texture,
-            new Rect(0, 0, size, size),
-            new Vector2(0.5f, 0.5f),
-            100f,
-            0,
-            SpriteMeshType.FullRect
-        );
-        sprite.name = "AutoGeneratedDemonIcon";
-
-        return sprite;
-    }
-
-    private void DrawHorn(Texture2D texture, float centerX, float centerY, Color color)
-    {
-        // Dibujar un pequeño triángulo (cuerno)
-        int baseWidth = 10;
-        int height = 20;
-
-        for (int dy = 0; dy < height; dy++)
-        {
-            int width = Mathf.RoundToInt(baseWidth * (1f - (float)dy / height));
-            for (int dx = -width / 2; dx <= width / 2; dx++)
-            {
-                int x = Mathf.RoundToInt(centerX + dx);
-                int y = Mathf.RoundToInt(centerY + dy);
-                if (x >= 0 && x < texture.width && y >= 0 && y < texture.height)
-                {
-                    texture.SetPixel(x, y, color);
-                }
-            }
-        }
-    }
-
-    private void DrawCircle(Texture2D texture, float centerX, float centerY, float radius, Color color)
-    {
-        Vector2 center = new Vector2(centerX, centerY);
-        int radiusInt = Mathf.CeilToInt(radius);
-
-        for (int y = -radiusInt; y <= radiusInt; y++)
-        {
-            for (int x = -radiusInt; x <= radiusInt; x++)
-            {
-                if (x * x + y * y <= radius * radius)
-                {
-                    int px = Mathf.RoundToInt(centerX + x);
-                    int py = Mathf.RoundToInt(centerY + y);
-                    if (px >= 0 && px < texture.width && py >= 0 && py < texture.height)
-                    {
-                        texture.SetPixel(px, py, color);
-                    }
-                }
-            }
-        }
-    }
-
-    private void DrawSmile(Texture2D texture, float centerX, float centerY, float width, Color color)
-    {
-        // Dibujar una sonrisa malvada (curva)
-        for (int i = 0; i < width; i++)
-        {
-            float t = (float)i / width - 0.5f;
-            float curve = t * t * 15f; // Parábola hacia abajo
-            
-            int x = Mathf.RoundToInt(centerX - width / 2 + i);
-            int y = Mathf.RoundToInt(centerY - curve);
-
-            // Dibujar línea gruesa
-            for (int dy = -2; dy <= 2; dy++)
-            {
-                int py = y + dy;
-                if (x >= 0 && x < texture.width && py >= 0 && py < texture.height)
-                {
-                    texture.SetPixel(x, py, color);
-                }
-            }
-        }
-    }
-
     private void OnBossDamaged(float damageAmount)
     {
         UpdateHealthBar();
 
-        if (showDamageFlash)
+        // Efecto de flash
+        if (_healthBarBackground)
         {
             StartCoroutine(DamageFlash());
         }
@@ -350,61 +260,53 @@ public class BossHealthBar : MonoBehaviour
     private void OnBossDied()
     {
         UpdateHealthBar();
-
-        if (autoHideOnDeath)
-        {
-            StartCoroutine(HideAfterDelay(2f));
-        }
+        StartCoroutine(HideAfterDelay(2f));
     }
 
     private void UpdateHealthBar()
     {
-        if (!bossDamageable) return;
+        if (!_bossDamageable) return;
 
-        float healthPercentage = bossDamageable.Current / bossDamageable.Max;
+        float healthPercentage = _bossDamageable.Current / _bossDamageable.Max;
         _targetFillAmount = Mathf.Clamp01(healthPercentage);
 
         if (!animateHealthChanges)
         {
             _currentFillAmount = _targetFillAmount;
-            if (healthBarFill)
+            if (_healthBarFill)
             {
-                healthBarFill.fillAmount = _currentFillAmount;
+                _healthBarFill.fillAmount = _currentFillAmount;
             }
         }
 
         // Actualizar color según salud
-        if (healthBarFill)
+        if (_healthBarFill)
         {
             if (healthPercentage <= criticalThreshold)
-                healthBarFill.color = criticalColor;
+                _healthBarFill.color = criticalColor;
             else if (healthPercentage <= warningThreshold)
-                healthBarFill.color = warningColor;
+                _healthBarFill.color = warningColor;
             else
-                healthBarFill.color = healthyColor;
+                _healthBarFill.color = healthyColor;
         }
 
         // Actualizar texto de salud
-        if (showHealthNumbers && healthText)
+        if (_healthText)
         {
-            healthText.text = $"{Mathf.Ceil(bossDamageable.Current)} / {bossDamageable.Max}";
-        }
-        else if (healthText)
-        {
-            healthText.text = "";
+            _healthText.text = $"{Mathf.Ceil(_bossDamageable.Current)} / {_bossDamageable.Max}";
         }
     }
 
     private System.Collections.IEnumerator DamageFlash()
     {
-        if (healthBarBackground)
+        if (_healthBarBackground)
         {
-            Color originalColor = healthBarBackground.color;
-            healthBarBackground.color = Color.white;
+            Color originalColor = _healthBarBackground.color;
+            _healthBarBackground.color = new Color(1f, 0.3f, 0.3f, 0.9f);
             
-            yield return new WaitForSeconds(damageFlashDuration);
+            yield return new WaitForSeconds(0.15f);
             
-            healthBarBackground.color = originalColor;
+            _healthBarBackground.color = originalColor;
         }
     }
 
@@ -435,7 +337,7 @@ public class BossHealthBar : MonoBehaviour
     private System.Collections.IEnumerator FadeIn()
     {
         float elapsed = 0f;
-        float duration = 0.5f;
+        float duration = 0.3f;
 
         while (elapsed < duration)
         {
@@ -460,37 +362,6 @@ public class BossHealthBar : MonoBehaviour
         }
 
         _canvasGroup.alpha = 0f;
-    }
-
-    // Método público para asignar el boss desde otro script
-    public void SetBoss(Damageable damageable, string name = null)
-    {
-        // Desuscribir del boss anterior si existe
-        if (bossDamageable)
-        {
-            bossDamageable.OnDamaged -= OnBossDamaged;
-            bossDamageable.OnDied -= OnBossDied;
-        }
-
-        bossDamageable = damageable;
-        
-        if (!string.IsNullOrEmpty(name))
-        {
-            bossName = name;
-            if (bossNameText)
-            {
-                bossNameText.text = name;
-            }
-        }
-
-        // Suscribir al nuevo boss
-        if (bossDamageable)
-        {
-            bossDamageable.OnDamaged += OnBossDamaged;
-            bossDamageable.OnDied += OnBossDied;
-            UpdateHealthBar();
-            Show();
-        }
     }
 }
 
