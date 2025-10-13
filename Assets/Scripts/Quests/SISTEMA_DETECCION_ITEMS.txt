@@ -1,0 +1,237 @@
+﻿═══════════════════════════════════════════════════════════════
+  SISTEMA DE DETECCIÓN AUTOMÁTICA DE ITEMS - SimpleQuestNPC
+═══════════════════════════════════════════════════════════════
+
+✅ COMPLETADO: El sistema ahora detecta automáticamente cuando el 
+   jugador SUELTA un item en el rango de visión del NPC
+
+📦 CÓMO FUNCIONA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. El jugador recoge la caja → Step 0 completado (SimpleQuestPickup)
+2. El jugador lleva la caja cerca del NPC
+3. El jugador SUELTA la caja (deja de interactuar)
+4. El NPC detecta automáticamente la caja en su rango de visión
+5. Completa el Step 1 automáticamente
+6. Destruye la caja
+7. Completa la quest y muestra el diálogo de "Turn In"
+
+═══════════════════════════════════════════════════════════════
+  CONFIGURACIÓN SIMPLE
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 1: LA CAJA (No cambios)                               │
+└─────────────────────────────────────────────────────────────┘
+
+GameObject: Caja_Misteriosa
+  ├─ Tag: "QuestItem" ⭐ IMPORTANTE
+  ├─ SimpleQuestPickup
+  │   ├─ Quest ID: "entregar_caja_01"
+  │   ├─ Step Index: 0
+  │   └─ Auto Complete: ✓
+  └─ Interactable (para recogerla)
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 2: EL NPC (Configuración actualizada)                 │
+└─────────────────────────────────────────────────────────────┘
+
+GameObject: NPC_Mercader
+  └─ SimpleQuestNPC
+      ├─ Quest Chain [0]:
+      │   ├─ Quest Data: Quest_EntregarCaja
+      │   ├─ Completion Mode: (cualquiera)
+      │   │
+      │   ├─ ✨ NUEVO: Detección de Items
+      │   ├─ Auto Detect Item Delivery: ✓ (ACTIVAR)
+      │   ├─ Item Delivery Step Index: 1
+      │   ├─ Item Tag: "QuestItem"
+      │   │
+      │   └─ Diálogos:
+      │       ├─ Dlg Before: "Busca mi caja perdida"
+      │       ├─ Dlg In Progress: "¿Ya la encontraste?"
+      │       ├─ Dlg Turn In: "¡Gracias por traerla!" ⭐
+      │       └─ Dlg Completed: "Todo resuelto"
+      │
+      └─ ✨ NUEVO: Parámetros de Detección
+          ├─ Detection Radius: 3 (metros)
+          ├─ Detection Angle: 90 (grados)
+          ├─ Detection Interval: 0.5 (segundos)
+          └─ Show Detection Gizmos: ✓
+
+═══════════════════════════════════════════════════════════════
+  PARÁMETROS DE DETECCIÓN
+═══════════════════════════════════════════════════════════════
+
+📏 Detection Radius (3m por defecto)
+   Radio en metros donde el NPC puede detectar items
+   - Más grande = detecta más lejos
+   - Más pequeño = el jugador debe acercarse más
+
+👁️ Detection Angle (90° por defecto)
+   Ángulo de visión del NPC (campo de visión)
+   - 0° = solo al frente (muy estrecho)
+   - 90° = cono amplio al frente (recomendado)
+   - 180° = semicírculo completo
+
+⏱️ Detection Interval (0.5s por defecto)
+   Cada cuántos segundos verifica si hay items
+   - Más bajo = más responsive (0.2s)
+   - Más alto = menos chequeos (1.0s)
+
+🎨 Show Detection Gizmos
+   Muestra el área de detección en el editor
+   - Esfera amarilla = radio de detección
+   - Cono verde = campo de visión
+
+═══════════════════════════════════════════════════════════════
+  CONFIGURACIÓN POR QUEST
+═══════════════════════════════════════════════════════════════
+
+Cada Quest en la cadena puede tener su propia configuración:
+
+Quest Chain Element [0]:
+  ├─ Auto Detect Item Delivery: ✓
+  ├─ Item Delivery Step Index: 1 (qué paso se completa)
+  └─ Item Tag: "QuestItem" (qué tag buscar)
+
+Ejemplo con múltiples quests:
+
+Quest [0]: "Buscar Carta"
+  ├─ Auto Detect: ✓
+  ├─ Step: 1
+  └─ Tag: "Letter"
+
+Quest [1]: "Buscar Paquete"  
+  ├─ Auto Detect: ✓
+  ├─ Step: 1
+  └─ Tag: "Package"
+
+═══════════════════════════════════════════════════════════════
+  FLUJO COMPLETO EN JUEGO
+═══════════════════════════════════════════════════════════════
+
+1. 🗣️ INICIO
+   Jugador: [E] habla con NPC
+   NPC: "He perdido una caja, ¿puedes buscarla?"
+   → Quest añadida al log
+
+2. 🔍 BUSCAR
+   Jugador: Encuentra la caja
+   Jugador: [E] recoge la caja
+   → Step 0 ✓ completado
+   → Caja pasa a ser hija del jugador
+
+3. 🚶 REGRESAR
+   Jugador: Camina de vuelta al NPC
+   Jugador: [E] suelta la caja cerca del NPC
+
+4. ✨ DETECCIÓN AUTOMÁTICA
+   NPC: Detecta la caja en su rango (cada 0.5s)
+   → Verifica: ¿Está en el radio? ✓
+   → Verifica: ¿Está en el ángulo de visión? ✓
+   → Verifica: ¿NO está siendo sostenida? ✓
+   → ¡DETECTADA!
+
+5. 🎯 AUTO-COMPLETADO
+   → Step 1 ✓ completado
+   → Caja destruida
+   → Quest completada
+   → Diálogo "Turn In" mostrado automáticamente
+   NPC: "¡Gracias por traer la caja!"
+
+═══════════════════════════════════════════════════════════════
+  VERIFICACIONES DEL SISTEMA
+═══════════════════════════════════════════════════════════════
+
+El NPC verifica automáticamente:
+
+✓ Que la quest esté ACTIVA
+✓ Que el item tenga el TAG correcto
+✓ Que esté dentro del RADIO de detección
+✓ Que esté dentro del ÁNGULO de visión
+✓ Que NO esté siendo sostenido por el jugador
+✓ Que no se detecte el mismo item dos veces
+
+═══════════════════════════════════════════════════════════════
+  VISUALIZACIÓN EN EDITOR
+═══════════════════════════════════════════════════════════════
+
+Con "Show Detection Gizmos" activado, verás en la Scene:
+
+🟡 Esfera Amarilla = Radio máximo de detección
+🟢 Cono Verde = Campo de visión del NPC
+
+Esto te ayuda a posicionar al NPC y ajustar los valores.
+
+═══════════════════════════════════════════════════════════════
+  TIPS Y CONSEJOS
+═══════════════════════════════════════════════════════════════
+
+💡 POSICIONAMIENTO
+   Coloca al NPC mirando hacia donde el jugador dejará el item
+   El forward del NPC es la dirección del cono de visión
+
+💡 RADIUS vs ANGLE
+   - Radius grande + Angle pequeño = "túnel de visión"
+   - Radius pequeño + Angle grande = "cerca y amplio"
+   - Recomendado: 3m radius + 90° angle
+
+💡 TAGS ÚNICOS
+   Si tienes varios items de quest, usa tags diferentes:
+   - "QuestItem_Carta"
+   - "QuestItem_Paquete"
+   - "QuestItem_Caja"
+
+💡 MÚLTIPLES NPCS
+   Varios NPCs pueden detectar el mismo tag
+   Solo el que tenga la quest activa lo procesará
+
+💡 SOLTAR vs TIRAR
+   El sistema detecta cuando el item NO está siendo sostenido
+   No importa si lo sueltas o lo tiras, funcionará igual
+
+═══════════════════════════════════════════════════════════════
+  DEBUGGING
+═══════════════════════════════════════════════════════════════
+
+Mensajes en consola:
+
+✓ "[SimpleQuestNPC] Item 'Caja' detectado en rango. 
+   Completando paso 1"
+   → El item fue detectado correctamente
+
+✓ "[SimpleQuestNPC] Quest entregar_caja_01 completada 
+   por entrega de item"
+   → La quest se completó por detección automática
+
+Si no funciona, verifica:
+❌ El item tiene el tag correcto
+❌ La quest está activa (no Inactive ni Completed)
+❌ Auto Detect Item Delivery está marcado
+❌ El item está en el rango del NPC (mira los gizmos)
+❌ El item NO está como hijo del jugador
+
+═══════════════════════════════════════════════════════════════
+  DIFERENCIAS CON EL SISTEMA ANTERIOR
+═══════════════════════════════════════════════════════════════
+
+❌ ANTES (QuestItemDelivery - ELIMINADO):
+   - Requería llamar TryDeliverItem() manualmente
+   - Necesitaba componente adicional
+   - Verificaba por componente/script
+
+✅ AHORA (SimpleQuestNPC integrado):
+   - Detección AUTOMÁTICA
+   - Todo en un solo componente
+   - Verifica por TAG
+   - Rango de visión configurable
+   - Funciona cuando SUELTAS el item
+
+═══════════════════════════════════════════════════════════════
+
+Creado: 2025-01-13
+Sistema: Quest Item Auto-Detection
+
+═══════════════════════════════════════════════════════════════
+

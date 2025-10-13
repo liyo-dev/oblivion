@@ -20,4 +20,4 @@ MonoBehaviour:
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION2_STEP1
     description: 
-    conditionId: GET_FRUIT_CRATE
+    conditionId: 

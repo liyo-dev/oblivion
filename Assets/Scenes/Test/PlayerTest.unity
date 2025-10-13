@@ -651,10 +651,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Goods_Interactable
       objectReference: {fileID: 0}
-    - target: {fileID: 356326472222561346, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5760757089802404095, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 31.63
@@ -751,6 +747,10 @@ PrefabInstance:
     - target: {fileID: 3643264553064591952, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: m_Name
       value: BattleArena
+      objectReference: {fileID: 0}
+    - target: {fileID: 3643264553064591952, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

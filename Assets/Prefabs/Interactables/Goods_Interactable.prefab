@@ -15,12 +15,13 @@ GameObject:
   - component: {fileID: 839992212735961885}
   - component: {fileID: 8088929991642480120}
   - component: {fileID: 2717961875639964677}
+  - component: {fileID: 5705958517298367090}
   m_Layer: 8
   m_Name: Goods_Interactable
-  m_TagString: Untagged
+  m_TagString: Pickable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4294967295
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5760757089802404095
 Transform:
@@ -184,8 +185,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a50a4493c84444a83eb1444d72953f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupObject
-  objectType: Caja
+  objectType: 0
   canBeDropped: 1
+--- !u!114 &5705958517298367090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 356326472222561346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e9c28d07092c2b40acbb936a2b55c60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleQuestPickup
+  questId: ELDRAN_MISSION2
+  stepIndex: 0
 --- !u!1 &2349119106315196847
 GameObject:
   m_ObjectHideFlags: 0

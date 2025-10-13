@@ -25,6 +25,16 @@ public class SimpleQuestNPC : MonoBehaviour
         [Tooltip("Índice del paso donde se habla con este NPC (0 por defecto)")]
         public int talkStepIndex;
         
+        [Header("Detección de Items")]
+        [Tooltip("Si está activado, detecta automáticamente cuando el jugador suelta items en el rango")]
+        public bool autoDetectItemDelivery;
+        
+        [Tooltip("Índice del paso que se completa al detectar el item")]
+        public int itemDeliveryStepIndex = 1;
+        
+        [Tooltip("Tag del item a detectar (ej: 'QuestItem')")]
+        public string itemTag = "QuestItem";
+        
         [Header("Diálogos de esta Quest")]
         public DialogueAsset dlgBefore;
         public DialogueAsset dlgInProgress;
@@ -39,8 +49,22 @@ public class SimpleQuestNPC : MonoBehaviour
     [Header("Cadena de Quests")]
     [SerializeField] private List<QuestChainEntry> questChain = new List<QuestChainEntry>();
 
+    [Header("Detección de Items")]
+    [Tooltip("Radio de detección para items soltados")]
+    [SerializeField] private float detectionRadius = 3f;
+    
+    [Tooltip("Ángulo de visión para detectar items (0-180)")]
+    [SerializeField] private float detectionAngle = 90f;
+    
+    [Tooltip("Frecuencia de detección (segundos)")]
+    [SerializeField] private float detectionInterval = 0.5f;
+    
+    [Tooltip("Mostrar gizmos de detección en la escena")]
+    [SerializeField] private bool showDetectionGizmos = true;
+
     private Interactable _interactable;
     private bool _isChaining = false; // Flag para evitar parpadeo del hint durante encadenamiento
+    private HashSet<GameObject> _detectedItems = new HashSet<GameObject>();
 
     void Awake()
     {
@@ -49,6 +73,12 @@ public class SimpleQuestNPC : MonoBehaviour
         {
             Debug.LogError($"[SimpleQuestNPC] {name} necesita un componente Interactable.");
         }
+    }
+
+    void Start()
+    {
+        // Iniciar detección periódica de items
+        StartCoroutine(DetectItemsRoutine());
     }
 
     public void Interact()
@@ -324,4 +354,194 @@ public class SimpleQuestNPC : MonoBehaviour
             DialogueManager.Instance.StartDialogue(dlg, onComplete);
         }
     }
+
+    #region Item Detection
+
+    private IEnumerator DetectItemsRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(detectionInterval);
+            CheckForItemsInRange();
+        }
+    }
+
+    private void CheckForItemsInRange()
+    {
+        var qm = QuestManager.Instance;
+        if (qm == null) return;
+
+        // Buscar quest activa que requiera detección de items
+        int activeQuestIndex = FindActiveQuestIndex(qm);
+        if (activeQuestIndex < 0) return;
+
+        var entry = questChain[activeQuestIndex];
+        if (!entry.autoDetectItemDelivery) return;
+
+        var questState = qm.GetState(entry.questData.questId);
+        if (questState != QuestState.Active) return;
+
+        // Buscar objetos con el tag especificado en el rango
+        var itemsInScene = GameObject.FindGameObjectsWithTag(entry.itemTag);
+        
+        foreach (var item in itemsInScene)
+        {
+            // Evitar detectar el mismo item múltiples veces
+            if (_detectedItems.Contains(item)) continue;
+
+            // Verificar si está en el rango
+            if (IsItemInDetectionRange(item))
+            {
+                // Verificar si el item NO está siendo sostenido por el jugador
+                if (!IsItemHeldByPlayer(item))
+                {
+                    OnItemDetected(item, entry, qm);
+                }
+            }
+        }
+    }
+
+    private bool IsItemInDetectionRange(GameObject item)
+    {
+        Vector3 directionToItem = item.transform.position - transform.position;
+        float distanceToItem = directionToItem.magnitude;
+
+        // Verificar distancia
+        if (distanceToItem > detectionRadius)
+            return false;
+
+        // Verificar ángulo (campo de visión)
+        Vector3 forward = transform.forward;
+        float angleToItem = Vector3.Angle(forward, directionToItem);
+        
+        return angleToItem <= detectionAngle * 0.5f;
+    }
+
+    private bool IsItemHeldByPlayer(GameObject item)
+    {
+        // Verificar si el item es hijo del jugador
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return false;
+
+        Transform currentParent = item.transform.parent;
+        while (currentParent != null)
+        {
+            if (currentParent.gameObject == player)
+                return true;
+            currentParent = currentParent.parent;
+        }
+
+        return false;
+    }
+
+    private void OnItemDetected(GameObject item, QuestChainEntry entry, QuestManager qm)
+    {
+        // Marcar como detectado para no procesarlo de nuevo
+        _detectedItems.Add(item);
+
+        Debug.Log($"[SimpleQuestNPC] Item '{item.name}' detectado en rango.");
+
+        // Destruir el item
+        Destroy(item);
+
+        // Si la quest NO tiene pasos (quest simple), completarla directamente
+        var runtimeQuest = qm.GetAll().FirstOrDefault(rq => rq.Id == entry.questData.questId);
+        if (runtimeQuest != null)
+        {
+            Debug.Log($"[SimpleQuestNPC] Quest '{entry.questData.questId}' tiene {runtimeQuest.Steps.Length} pasos.");
+            
+            if (runtimeQuest.Steps.Length == 0)
+            {
+                // Quest sin pasos - completar directamente
+                Debug.Log($"[SimpleQuestNPC] Quest sin pasos detectada. Completando directamente.");
+                CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
+            }
+            else
+            {
+                // Quest con pasos - determinar qué paso completar
+                int stepToComplete = entry.itemDeliveryStepIndex;
+                
+                // Si el índice configurado no existe, usar el último paso disponible
+                if (stepToComplete >= runtimeQuest.Steps.Length)
+                {
+                    stepToComplete = runtimeQuest.Steps.Length - 1;
+                    Debug.LogWarning($"[SimpleQuestNPC] itemDeliveryStepIndex ({entry.itemDeliveryStepIndex}) fuera de rango. Usando último paso disponible: {stepToComplete}");
+                }
+                
+                Debug.Log($"[SimpleQuestNPC] Completando paso {stepToComplete}");
+                qm.MarkStepDone(entry.questData.questId, stepToComplete);
+                
+                // DEBUG: Verificar estado de todos los pasos
+                Debug.Log($"[SimpleQuestNPC] Estado de pasos para '{entry.questData.questId}':");
+                for (int i = 0; i < runtimeQuest.Steps.Length; i++)
+                {
+                    Debug.Log($"  Step {i}: {runtimeQuest.Steps[i].description} - Completado: {runtimeQuest.Steps[i].completed}");
+                }
+                
+                // Verificar si todos los pasos están completados
+                bool allStepsCompleted = qm.AreAllStepsCompleted(entry.questData.questId);
+                Debug.Log($"[SimpleQuestNPC] ¿Todos los pasos completados? {allStepsCompleted}");
+                
+                if (allStepsCompleted)
+                {
+                    CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
+                }
+                else
+                {
+                    Debug.LogWarning($"[SimpleQuestNPC] La quest '{entry.questData.questId}' aún tiene pasos pendientes.");
+                }
+            }
+        }
+    }
+
+    private void CompleteQuestWithItem(QuestChainEntry entry, QuestManager qm, int currentIndex)
+    {
+        qm.CompleteQuest(entry.questData.questId);
+        
+        Debug.Log($"[SimpleQuestNPC] Quest {entry.questData.questId} completada por entrega de item.");
+        
+        // Ejecutar evento de quest completada
+        entry.OnQuestCompleted?.Invoke();
+
+        // Mostrar diálogo de entrega y encadenar
+        ChainToNextQuest(entry, qm, entry.questData.questId, currentIndex);
+    }
+
+    #endregion
+
+    #region Gizmos
+
+    void OnDrawGizmosSelected()
+    {
+        if (!showDetectionGizmos) return;
+
+        // Dibujar el radio de detección
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectionRadius);
+
+        // Dibujar el cono de visión
+        Vector3 forward = transform.forward;
+        float halfAngle = detectionAngle * 0.5f;
+
+        // Líneas del cono
+        Vector3 leftBoundary = Quaternion.Euler(0, -halfAngle, 0) * forward * detectionRadius;
+        Vector3 rightBoundary = Quaternion.Euler(0, halfAngle, 0) * forward * detectionRadius;
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + leftBoundary);
+        Gizmos.DrawLine(transform.position, transform.position + rightBoundary);
+        
+        // Arco del cono
+        Vector3 previousPoint = transform.position + leftBoundary;
+        int segments = 20;
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = -halfAngle + (detectionAngle * i / segments);
+            Vector3 point = transform.position + Quaternion.Euler(0, angle, 0) * forward * detectionRadius;
+            Gizmos.DrawLine(previousPoint, point);
+            previousPoint = point;
+        }
+    }
+
+    #endregion
 }
