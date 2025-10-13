@@ -208,24 +208,48 @@ namespace Invector.vCharacterController
         // ======== MAGIA (Left / Right / Special) ========
 
         private Coroutine magicCo;
+        // TEMPORAL: Sistema directo mientras Unity recompila las interfaces
+        private MonoBehaviour _magicCasterMB; // Referencia temporal como MonoBehaviour
 
         // Input → X/B/Y
-        public void CastMagicLeft()    => PlayUpperAndRespectExit(magicLeftStatePath, 0);
-        public void CastMagicRight()   => PlayUpperAndRespectExit(magicRightStatePath, 1);
-        public void CastMagicSpecial() => PlayUpperAndRespectExit(magicSpecialStatePath, 2);
+        public void CastMagicLeft()    => TryCastMagic(magicLeftStatePath, 0);
+        public void CastMagicRight()   => TryCastMagic(magicRightStatePath, 1);
+        public void CastMagicSpecial() => TryCastMagic(magicSpecialStatePath, 2);
 
-        private void PlayUpperAndRespectExit(string fullPath, int slotId)
+        private void TryCastMagic(string fullPath, int slotId)
         {
             // Verificar permiso del ActionValidator
             if (_actionValidator != null && !_actionValidator.CanCastMagic()) return;
             if (!CanAttack()) return;
 
+            // TEMPORAL: Buscar MagicCaster por nombre de componente
+            bool canCast = false;
+            if (_magicCasterMB != null)
+            {
+                // Usar reflexión para llamar TryCastSpell
+                var method = _magicCasterMB.GetType().GetMethod("TryCastSpell", new[] { typeof(int) });
+                if (method != null)
+                {
+                    canCast = (bool)method.Invoke(_magicCasterMB, new object[] { slotId });
+                }
+            }
+            else
+            {
+                // Fallback: usar el sistema anterior si no hay MagicCaster
+                OnMagicSlotCast?.Invoke(slotId);
+                canCast = true; // Asumimos que el casting es válido
+            }
+
+            // Solo reproducir animación si el casting fue exitoso
+            if (canCast)
+                PlayUpperAnimationAndExit(fullPath);
+        }
+
+        private void PlayUpperAnimationAndExit(string fullPath)
+        {
             // Subimos el peso del layer y ENTRAMOS directo al estado (sin CrossFade)
             animator.SetLayerWeight(upperLayerIndex, 1f);
             animator.Play(fullPath, upperLayerIndex, 0f);
-
-            // Disparar evento para que el spawner genere el proyectil
-            OnMagicSlotCast?.Invoke(slotId);
 
             // Esperamos a que el Animator SALGA del estado y bajamos el layer suave
             if (magicCo != null) StopCoroutine(magicCo);
@@ -262,8 +286,32 @@ namespace Invector.vCharacterController
             _targeting = GetComponent<ITargetProvider>();
             // Buscar el ActionValidator (opcional, el sistema funciona sin él)
             _actionValidator = GetComponent<IActionValidator>();
+            
+            // TEMPORAL: Buscar MagicCaster por nombre de componente
+            var allComponents = GetComponents<MonoBehaviour>();
+            foreach (var comp in allComponents)
+            {
+                if (comp.GetType().Name == "MagicCaster")
+                {
+                    _magicCasterMB = comp;
+                    break;
+                }
+            }
+            
+            // También buscar en el parent
+            if (_magicCasterMB == null)
+            {
+                var parentComponents = GetComponentsInParent<MonoBehaviour>();
+                foreach (var comp in parentComponents)
+                {
+                    if (comp.GetType().Name == "MagicCaster")
+                    {
+                        _magicCasterMB = comp;
+                        break;
+                    }
+                }
+            }
         }
-
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;
     }

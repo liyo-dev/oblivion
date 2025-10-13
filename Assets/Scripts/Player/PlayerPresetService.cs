@@ -12,6 +12,7 @@ public class PlayerPresetService : MonoBehaviour
     [SerializeField] private GameObject instigatorOverride;
 
     MagicProjectileSpawner _spawner;
+    MagicCaster _magicCaster; // ← NUEVO: referencia al MagicCaster
     
     // Evitar inicialización doble si el evento llega más de una vez o ya está listo al habilitar
     bool _initialized;
@@ -19,6 +20,7 @@ public class PlayerPresetService : MonoBehaviour
     void Awake()
     {
         _spawner = GetComponent<MagicProjectileSpawner>() ?? gameObject.AddComponent<MagicProjectileSpawner>();
+        _magicCaster = GetComponent<MagicCaster>(); // ← NUEVO: obtener MagicCaster
     }
 
     // Suscribirnos al evento y cubrir el caso de que ya esté disponible
@@ -130,6 +132,17 @@ public class PlayerPresetService : MonoBehaviour
         // Aplicar configuración al spawner
         _spawner.SetSpells(left, right, special);
         _spawner.SetInstigator(instigatorOverride ? instigatorOverride : gameObject);
+
+        // ← NUEVO: Aplicar configuración al MagicCaster también
+        if (_magicCaster)
+        {
+            _magicCaster.SetSpells(left, right, special);
+            Debug.Log($"[PlayerPresetService] MagicCaster configurado con hechizos del preset");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerPresetService] No se encontró MagicCaster en el GameObject");
+        }
 
         Debug.Log($"[PlayerPresetService] Hechizos configurados - L:{left?.name} R:{right?.name} S:{special?.name}");
     }

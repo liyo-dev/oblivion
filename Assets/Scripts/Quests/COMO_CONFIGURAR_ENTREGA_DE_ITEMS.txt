@@ -1,0 +1,271 @@
+﻿═══════════════════════════════════════════════════════════════
+  GUÍA: CÓMO CONFIGURAR LA ENTREGA DE ITEMS EN QUESTS
+═══════════════════════════════════════════════════════════════
+
+📦 SISTEMA DE ENTREGA DE ITEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+El sistema usa 3 componentes principales:
+
+1. QuestData (ScriptableObject) - Define la misión
+2. SimpleQuestNPC - Gestiona el diálogo y progreso  
+3. QuestItemDelivery - Gestiona la entrega del item
+
+
+═══════════════════════════════════════════════════════════════
+  MÉTODO 1: ENTREGA AUTOMÁTICA (RECOMENDADO)
+═══════════════════════════════════════════════════════════════
+
+Este método usa el sistema existente sin código adicional.
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 1: Crear la Quest (ScriptableObject)                  │
+└─────────────────────────────────────────────────────────────┘
+
+En Unity:
+  1. Click derecho en Project → Create → Quests → Quest Data
+  2. Nombra: "Quest_EntregarCaja"
+  3. Configura:
+     - Quest ID: "entregar_caja_01"
+     - Title: "Entregar el paquete"
+     - Description: "Lleva la caja misteriosa al mercader"
+     
+  4. Añade 2 Pasos (Steps):
+     Step 0: "Encontrar la caja misteriosa"
+     Step 1: "Llevar la caja al mercader"
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 2: Configurar el Item (La Caja)                       │
+└─────────────────────────────────────────────────────────────┘
+
+En la caja GameObject:
+  1. Añade el componente: SimpleQuestPickup
+  2. Configura:
+     - Quest ID: "entregar_caja_01"
+     - Step Index: 0
+     - Auto Complete Step: ✓ (marcado)
+  3. Asegúrate que tenga Tag: "QuestItem"
+  4. Añade Interactable si aún no lo tiene
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 3: Configurar el NPC Receptor                         │
+└─────────────────────────────────────────────────────────────┘
+
+En el NPC GameObject:
+  1. Añade SimpleQuestNPC
+  2. En Quest Chain, añade 1 entrada:
+     - Quest Data: Quest_EntregarCaja
+     - Completion Mode: CompleteOnTalkIfStepsReady ⭐
+     - Talk Step Index: 1
+     
+  3. Diálogos:
+     - Dlg Before: "¿Tienes un paquete para mí?"
+     - Dlg In Progress: "Todavía no tienes la caja..."
+     - Dlg Turn In: "¡Gracias por traer la caja!"
+     - Dlg Completed: "El paquete llegó a salvo"
+
+¡LISTO! El sistema automáticamente:
+  ✓ Marca Step 0 cuando recoges la caja
+  ✓ Completa la quest cuando hablas con el NPC (si tienes la caja)
+
+
+═══════════════════════════════════════════════════════════════
+  MÉTODO 2: CON VERIFICACIÓN DE INVENTARIO
+═══════════════════════════════════════════════════════════════
+
+Usa el nuevo componente QuestItemDelivery para mayor control.
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 1: Igual que el Método 1 (Crear Quest y Caja)         │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 2: Configurar el NPC con QuestItemDelivery            │
+└─────────────────────────────────────────────────────────────┘
+
+En el NPC GameObject:
+  1. Añade SimpleQuestNPC (igual que antes)
+  2. Añade QuestItemDelivery (NUEVO)
+  3. Configura QuestItemDelivery:
+     - Quest ID: "entregar_caja_01"
+     - Delivery Step Index: 1
+     - Required Item Tag: "QuestItem"
+     - Item Display Name: "la caja"
+     
+  4. Mensajes (opcional):
+     - Has Item Message: "Tienes la caja para entregar"
+     - Needs Item Message: "Necesitas encontrar la caja"
+     - Delivered Message: "¡Caja entregada!"
+
+┌─────────────────────────────────────────────────────────────┐
+│ PASO 3: Conectar con Interact                              │
+└─────────────────────────────────────────────────────────────┘
+
+Opción A: Llamar desde código
+  En Interactable del NPC, en el evento OnInteract:
+    → QuestItemDelivery.TryDeliverItem()
+
+Opción B: Verificación manual
+  Puedes llamar a TryDeliverItem() desde cualquier Unity Event
+
+
+═══════════════════════════════════════════════════════════════
+  FLUJO COMPLETO DE LA QUEST
+═══════════════════════════════════════════════════════════════
+
+1️⃣ INICIO
+   NPC: "¿Puedes buscar mi paquete?"
+   → Quest se añade al log
+   → Step 0: "Encontrar la caja" (pendiente)
+
+2️⃣ RECOGER CAJA
+   Jugador interactúa con la caja
+   → SimpleQuestPickup marca Step 0 como completado
+   → La caja se añade al inventario del jugador
+   → UI: "Caja misteriosa recogida ✓"
+
+3️⃣ VOLVER AL NPC
+   Jugador habla con el NPC
+   → SimpleQuestNPC verifica todos los steps
+   → QuestItemDelivery (opcional) verifica inventario
+   → Step 1 se marca como completado
+   → Quest se completa automáticamente
+
+4️⃣ COMPLETADO
+   → Diálogo de "Turn In"
+   → Recompensas otorgadas
+   → Quest marcada como Completed
+
+
+═══════════════════════════════════════════════════════════════
+  TIPS Y TRUCOS
+═══════════════════════════════════════════════════════════════
+
+💡 MULTIPLES ITEMS
+   Crea varios Steps, uno por cada item:
+     Step 0: "Encontrar 3 manzanas (0/3)"
+     Step 1: "Entregar manzanas al NPC"
+
+💡 ITEMS OPCIONALES
+   Usa QuestProgressOnEvent en lugar de SimpleQuestPickup
+   para tener más control sobre cuándo se marca el paso
+
+💡 QUITAR ITEM AL ENTREGAR
+   QuestItemDelivery automáticamente elimina el item
+   del jugador cuando se entrega
+
+💡 CHAIN QUESTS
+   En SimpleQuestNPC puedes añadir varias quests
+   que se encadenan automáticamente:
+     Quest 1: Recoger caja
+     Quest 2: Entregar caja
+     Quest 3: Buscar remitente
+
+💡 DEBUGGING
+   Activa "Show Debug Info" en QuestManager
+   para ver logs detallados en la consola
+
+
+═══════════════════════════════════════════════════════════════
+  EJEMPLO COMPLETO: QUEST DE ENTREGA
+═══════════════════════════════════════════════════════════════
+
+SCENARIO: El mercader ha perdido un paquete importante
+
+┌─────────────────────────────────────────────────────────────┐
+│ NPC: Mercader (Inicio y Entrega)                           │
+├─────────────────────────────────────────────────────────────┤
+│ Componentes:                                                │
+│   • Interactable                                            │
+│   • SimpleQuestNPC                                          │
+│   • QuestItemDelivery                                       │
+│                                                             │
+│ SimpleQuestNPC Setup:                                       │
+│   Quest Chain [0]:                                          │
+│     - Quest: Quest_EntregarPaquete                          │
+│     - Mode: CompleteOnTalkIfStepsReady                      │
+│     - Dialogues:                                            │
+│       * Before: "He perdido mi paquete..."                  │
+│       * InProgress: "¿Ya encontraste mi paquete?"           │
+│       * TurnIn: "¡Muchas gracias!"                          │
+│       * Completed: "Todo en orden"                          │
+│                                                             │
+│ QuestItemDelivery Setup:                                    │
+│   - Quest ID: "entregar_paquete"                            │
+│   - Step Index: 1                                           │
+│   - Item Tag: "Package"                                     │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ ITEM: Paquete Perdido                                       │
+├─────────────────────────────────────────────────────────────┤
+│ Componentes:                                                │
+│   • Interactable                                            │
+│   • SimpleQuestPickup                                       │
+│   • Tag: "Package"                                          │
+│                                                             │
+│ SimpleQuestPickup Setup:                                    │
+│   - Quest ID: "entregar_paquete"                            │
+│   - Step Index: 0                                           │
+│   - Auto Complete: ✓                                        │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ QUEST DATA: Quest_EntregarPaquete                          │
+├─────────────────────────────────────────────────────────────┤
+│ Quest ID: "entregar_paquete"                                │
+│ Title: "El paquete perdido"                                 │
+│ Description: "Encuentra el paquete del mercader"            │
+│                                                             │
+│ Steps:                                                      │
+│   [0] "Buscar el paquete perdido"                           │
+│   [1] "Devolver el paquete al mercader"                     │
+└─────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════
+  SOLUCIÓN DE PROBLEMAS
+═══════════════════════════════════════════════════════════════
+
+❌ "El NPC no completa la quest"
+   → Verifica que Completion Mode sea CompleteOnTalkIfStepsReady
+   → Asegúrate que todos los steps estén completados
+   → Revisa en QuestManager si la quest está Active
+
+❌ "El item no se recoge"
+   → Verifica que SimpleQuestPickup tenga el Quest ID correcto
+   → Asegúrate que la quest esté activa antes de recoger
+   → Revisa que Auto Complete Step esté marcado
+
+❌ "No se elimina el item del inventario"
+   → QuestItemDelivery busca por Tag
+   → Verifica que el item tenga el tag correcto
+   → El item debe estar como hijo del jugador
+
+❌ "Los diálogos no se muestran"
+   → Verifica que DialogueManager esté en la escena
+   → Asegúrate que los DialogueAssets estén asignados
+   → Revisa que el Canvas tenga DialogueUI
+
+
+═══════════════════════════════════════════════════════════════
+  SCRIPTS RELACIONADOS
+═══════════════════════════════════════════════════════════════
+
+📄 QuestManager.cs          - Sistema principal de quests
+📄 QuestData.cs             - Definición de quest (SO)
+📄 SimpleQuestNPC.cs        - NPC que da/recibe quests
+📄 SimpleQuestPickup.cs     - Items que completan steps
+📄 QuestItemDelivery.cs     - Entrega de items al NPC
+📄 QuestProgressOnEvent.cs  - Progreso por eventos custom
+📄 QuestProgressOnTrigger.cs- Progreso por trigger zones
+
+
+═══════════════════════════════════════════════════════════════
+
+Creado: 2025-10-13
+Versión: 1.0
+Sistema: Quest System con Entrega de Items
+
+═══════════════════════════════════════════════════════════════
+

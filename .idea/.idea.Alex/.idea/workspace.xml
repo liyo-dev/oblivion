@@ -5,18 +5,46 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/COMO_CONFIGURAR_ENTREGA_DE_ITEMS.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/COMO_CONFIGURAR_ENTREGA_DE_ITEMS.txt.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestItemDelivery.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestItemDelivery.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MagicSlotsUI.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MagicSlotsUI.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Weapons/MagicCaster.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Weapons/MagicCaster.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Art/Cinematic/Cinematic_Intro/2.png" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Art/Cinematic/Cinematic_Intro/2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/IActionValidator.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/IActionValidator.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/CharacterController/vThirdPersonController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/CharacterController/vThirdPersonController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Spider1.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/Spider1.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Readme.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Readme.asset.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Rooms/BossArenaController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Rooms/BossArenaController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/BossHealthBar.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/BossHealthBar.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Debug.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons/URP.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Icons/URP.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Layout.wlt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Layout.wlt.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Readme.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TutorialInfo/Scripts/Readme.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,13 +68,21 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Art/Enemies/CasualFantasy/Spider1/SourceFiles/AC.controller" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Art/Enemies/CasualFantasy/Spider1/SourceFiles/AC.controller" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/CharacterController/vThirdPersonController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scenes/Main World/MainWorld.unity" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestItemDelivery.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/MagicProjectileSpawner.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/MagicProjectileSpawner.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/_Recovery/0 (10).unity" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
@@ -59,21 +95,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.2.7f2\Editor\Unity.exe" />
@@ -139,6 +176,7 @@
       <option name="presentableId" value="Default" />
       <updated>1760379125093</updated>
       <workItem from="1760379129434" duration="2471000" />
+      <workItem from="1760382820437" duration="6404000" />
     </task>
     <servers />
   </component>

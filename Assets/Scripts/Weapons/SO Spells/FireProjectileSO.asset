@@ -32,7 +32,7 @@ MonoBehaviour:
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
   flattenDirection: 1
   manaCost: 5
-  cooldown: 0.25
+  cooldown: 2
   spawnVFX: {fileID: 0}
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 0}
