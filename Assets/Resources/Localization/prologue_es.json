@@ -1,28 +1,20 @@
 {
-  "subtitles": [
-    {
-      "id": "PRLG_01",
-      "text": "Hace siglos, todas las razas vivían en paz bajo el reinado del monarca humano."
-    },
-    {
-      "id": "PRLG_02",
-      "text": "A su muerte, sin herederos, la paz se quebró y el trono quedó vacío."
-    },
-    {
-      "id": "PRLG_03",
-      "text": "El consejero demoníaco usurpó el poder e impuso una tiranía."
-    },
-    {
-      "id": "PRLG_04",
-      "text": "Las razas se unieron contra él, y el mundo ardió en una guerra devastadora."
-    },
-    {
-      "id": "PRLG_05",
-      "text": "Un mago ofreció su vida con un conjuro prohibido y encadenó al demonio, arrojándolo a la Nada."
-    },
-    {
-      "id": "PRLG_06",
-      "text": "Desde entonces, cada raza tomó su propio camino, convencidos de que la separación mantendría sellado al demonio."
-    }
-  ]
+    "subtitles": [
+        {
+            "id": "PRLG_01",
+            "text": "Hace milenios, los dioses otorgaron a los magos el don de la magia."
+        },
+        {
+            "id": "PRLG_02",
+            "text": "Un hechizo prohibido fue creado, capaz de destruir universos."
+        },
+        {
+            "id": "PRLG_03",
+            "text": "Un mago intentó usarlo y falló, causando un cataclismo que dividió el mundo."
+        },
+        {
+            "id": "PRLG_04",
+            "text": "Desde entonces, los dioses sellaron la magia y vivieron separadas, temiendo su regreso."
+        }
+    ]
 }

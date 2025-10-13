@@ -3238,7 +3238,6 @@ GameObject:
   - component: {fileID: 5411191197508503009}
   - component: {fileID: 6903908210425150239}
   - component: {fileID: 6570775665125871610}
-  - component: {fileID: 6951569915639772467}
   - component: {fileID: 8739406389657817009}
   - component: {fileID: 8599661016629616348}
   - component: {fileID: 1297097001791454143}
@@ -3586,26 +3585,6 @@ MonoBehaviour:
   OnPlayerRevived:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &6951569915639772467
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 857cf24a9a3f4b9a85936c49607a05dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthTester
-  damageKey: 15
-  healKey: 16
-  killKey: 17
-  reviveKey: 18
-  godModeKey: 19
-  testDamageAmount: 20
-  testHealAmount: 15
-  playerHealthSystem: {fileID: 6570775665125871610}
 --- !u!114 &8739406389657817009
 MonoBehaviour:
   m_ObjectHideFlags: 0

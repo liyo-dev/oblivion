@@ -1,156 +1,144 @@
 {
-  "texts": [
-    {
-      "key": "MainMenu_NewGame",
-      "value": "Nueva Partida"
-    },
-    {
-      "key": "MainMenu_Continue",
-      "value": "Continuar"
-    },
-    {
-      "key": "MainMenu_Settings",
-      "value": "Configuración"
-    },
-    {
-      "key": "MainMenu_Exit",
-      "value": "Salir"
-    },
-    {
-      "key": "Settings_Language",
-      "value": "Idioma"
-    },
-    {
-      "key": "Settings_Audio",
-      "value": "Audio"
-    },
-    {
-      "key": "Settings_Graphics",
-      "value": "Gráficos"
-    },
-    {
-      "key": "Settings_Controls",
-      "value": "Controles"
-    },
-    {
-      "key": "Settings_Back",
-      "value": "Volver"
-    },
-    {
-      "key": "UI_Health",
-      "value": "Vida"
-    },
-    {
-      "key": "UI_Mana",
-      "value": "Maná"
-    },
-    {
-      "key": "UI_Level",
-      "value": "Nivel"
-    },
-    {
-      "key": "UI_Experience",
-      "value": "Experiencia"
-    },
-    {
-      "key": "Dialogue_Continue",
-      "value": "Continuar"
-    },
-    {
-      "key": "Dialogue_Skip",
-      "value": "Saltar"
-    },
-    {
-      "key": "Dialogue_End",
-      "value": "Finalizar"
-    },
-    {
-      "key": "Interact_Press",
-      "value": "Presiona [A] para interactuar"
-    },
-    {
-      "key": "Interact_Talk",
-      "value": "Hablar"
-    },
-    {
-      "key": "Interact_Examine",
-      "value": "Examinar"
-    },
-    {
-      "key": "Interact_PickUp",
-      "value": "Recoger"
-    },
-    {
-      "key": "Interact_Open",
-      "value": "Abrir"
-    },
-    {
-      "key": "System_Loading",
-      "value": "Cargando..."
-    },
-    {
-      "key": "System_Saving",
-      "value": "Guardando..."
-    },
-    {
-      "key": "System_GameSaved",
-      "value": "Partida guardada"
-    },
-    {
-      "key": "System_Error",
-      "value": "Error"
-    },
-    {
-      "key": "SAVEPOINT_PROMPT",
-      "value": "Guardar partida [E]"
-    },
-    {
-      "key": "SAVEPOINT_SAVING",
-      "value": "Guardando partida..."
-    },
-    {
-      "key": "SAVEPOINT_SAVED",
-      "value": "¡Partida guardada con éxito!"
-    },
-    {
-      "key": "INTERACT_NPC_TALK",
-      "value": "Hablar [A]"
-    },
-    {
-      "key": "INTERACT_CHEST_OPEN",
-      "value": "Abrir cofre [A]"
-    },
-    {
-      "key": "INTERACT_DOOR_OPEN",
-      "value": "Abrir puerta [A]"
-    },
-    {
-      "key": "INTERACT_ITEM_PICKUP",
-      "value": "Recoger [A]"
-    },
-    {
-      "key": "INTERACT_EXAMINE",
-      "value": "Examinar [A]"
-    },
-    {
-      "key": "ROOM_EXIT_BLOCKED",
-      "value": "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer..."
-    },
-    {
-      "key": "Pensamiento",
-      "value": "Pensamiento"
-    }
-  ],
-  "subtitles": [
-    {
-      "id": "welcome_intro",
-      "start": 0.0,
-      "duration": 3.5
-    },
-    {
-      "id": "tutorial_movement",
-      "start": 0.0,
-      "duration": 5.0
-    }
-  ]
+    "texts": [
+        {
+            "key": "Dialogue_Continue",
+            "value": "Continuar"
+        },
+        {
+            "key": "Dialogue_End",
+            "value": "Finalizar"
+        },
+        {
+            "key": "Dialogue_Skip",
+            "value": "Saltar"
+        },
+        {
+            "key": "INTERACT_CHEST_OPEN",
+            "value": "Abrir cofre [A]"
+        },
+        {
+            "key": "INTERACT_DOOR_OPEN",
+            "value": "Abrir puerta [A]"
+        },
+        {
+            "key": "Interact_Examine",
+            "value": "Examinar"
+        },
+        {
+            "key": "INTERACT_EXAMINE",
+            "value": "Examinar [A]"
+        },
+        {
+            "key": "INTERACT_ITEM_PICKUP",
+            "value": "Recoger [A]"
+        },
+        {
+            "key": "INTERACT_NPC_TALK",
+            "value": "Hablar [A]"
+        },
+        {
+            "key": "Interact_Open",
+            "value": "Abrir"
+        },
+        {
+            "key": "Interact_PickUp",
+            "value": "Recoger"
+        },
+        {
+            "key": "Interact_Press",
+            "value": "Presiona [A] para interactuar"
+        },
+        {
+            "key": "Interact_Talk",
+            "value": "Hablar"
+        },
+        {
+            "key": "MainMenu_Continue",
+            "value": "Continuar"
+        },
+        {
+            "key": "MainMenu_Exit",
+            "value": "Salir"
+        },
+        {
+            "key": "MainMenu_NewGame",
+            "value": "Nueva Partida"
+        },
+        {
+            "key": "MainMenu_Settings",
+            "value": "Configuración"
+        },
+        {
+            "key": "Pensamiento",
+            "value": "Pensamiento"
+        },
+        {
+            "key": "ROOM_EXIT_BLOCKED",
+            "value": "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer..."
+        },
+        {
+            "key": "SAVEPOINT_PROMPT",
+            "value": "Guardar partida [E]"
+        },
+        {
+            "key": "SAVEPOINT_SAVED",
+            "value": "¡Partida guardada con éxito!"
+        },
+        {
+            "key": "SAVEPOINT_SAVING",
+            "value": "Guardando partida..."
+        },
+        {
+            "key": "Settings_Audio",
+            "value": "Audio"
+        },
+        {
+            "key": "Settings_Back",
+            "value": "Volver"
+        },
+        {
+            "key": "Settings_Controls",
+            "value": "Controles"
+        },
+        {
+            "key": "Settings_Graphics",
+            "value": "Gráficos"
+        },
+        {
+            "key": "Settings_Language",
+            "value": "Idioma"
+        },
+        {
+            "key": "System_Error",
+            "value": "Error"
+        },
+        {
+            "key": "System_GameSaved",
+            "value": "Partida guardada"
+        },
+        {
+            "key": "System_Loading",
+            "value": "Cargando..."
+        },
+        {
+            "key": "System_Saving",
+            "value": "Guardando..."
+        },
+        {
+            "key": "UI_Experience",
+            "value": "Experiencia"
+        },
+        {
+            "key": "UI_Health",
+            "value": "Vida"
+        },
+        {
+            "key": "UI_Level",
+            "value": "Nivel"
+        },
+        {
+            "key": "UI_Mana",
+            "value": "Maná"
+        }
+    ]
 }

@@ -439,66 +439,42 @@ public class SimpleQuestNPC : MonoBehaviour
         // Marcar como detectado para no procesarlo de nuevo
         _detectedItems.Add(item);
 
-        Debug.Log($"[SimpleQuestNPC] Item '{item.name}' detectado en rango.");
-
         // Destruir el item
         Destroy(item);
 
-        // Si la quest NO tiene pasos (quest simple), completarla directamente
+        // Obtener información de la quest
         var runtimeQuest = qm.GetAll().FirstOrDefault(rq => rq.Id == entry.questData.questId);
-        if (runtimeQuest != null)
+        if (runtimeQuest == null) return;
+
+        // Quest sin pasos - completar directamente
+        if (runtimeQuest.Steps.Length == 0)
         {
-            Debug.Log($"[SimpleQuestNPC] Quest '{entry.questData.questId}' tiene {runtimeQuest.Steps.Length} pasos.");
-            
-            if (runtimeQuest.Steps.Length == 0)
-            {
-                // Quest sin pasos - completar directamente
-                Debug.Log($"[SimpleQuestNPC] Quest sin pasos detectada. Completando directamente.");
-                CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
-            }
-            else
-            {
-                // Quest con pasos - determinar qué paso completar
-                int stepToComplete = entry.itemDeliveryStepIndex;
-                
-                // Si el índice configurado no existe, usar el último paso disponible
-                if (stepToComplete >= runtimeQuest.Steps.Length)
-                {
-                    stepToComplete = runtimeQuest.Steps.Length - 1;
-                    Debug.LogWarning($"[SimpleQuestNPC] itemDeliveryStepIndex ({entry.itemDeliveryStepIndex}) fuera de rango. Usando último paso disponible: {stepToComplete}");
-                }
-                
-                Debug.Log($"[SimpleQuestNPC] Completando paso {stepToComplete}");
-                qm.MarkStepDone(entry.questData.questId, stepToComplete);
-                
-                // DEBUG: Verificar estado de todos los pasos
-                Debug.Log($"[SimpleQuestNPC] Estado de pasos para '{entry.questData.questId}':");
-                for (int i = 0; i < runtimeQuest.Steps.Length; i++)
-                {
-                    Debug.Log($"  Step {i}: {runtimeQuest.Steps[i].description} - Completado: {runtimeQuest.Steps[i].completed}");
-                }
-                
-                // Verificar si todos los pasos están completados
-                bool allStepsCompleted = qm.AreAllStepsCompleted(entry.questData.questId);
-                Debug.Log($"[SimpleQuestNPC] ¿Todos los pasos completados? {allStepsCompleted}");
-                
-                if (allStepsCompleted)
-                {
-                    CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
-                }
-                else
-                {
-                    Debug.LogWarning($"[SimpleQuestNPC] La quest '{entry.questData.questId}' aún tiene pasos pendientes.");
-                }
-            }
+            CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
+            return;
+        }
+
+        // Quest con pasos - determinar qué paso completar
+        int stepToComplete = entry.itemDeliveryStepIndex;
+        
+        // Si el índice configurado no existe, usar el último paso disponible
+        if (stepToComplete >= runtimeQuest.Steps.Length)
+        {
+            stepToComplete = runtimeQuest.Steps.Length - 1;
+        }
+        
+        // Marcar el paso como completado
+        qm.MarkStepDone(entry.questData.questId, stepToComplete);
+        
+        // Verificar si todos los pasos están completados
+        if (qm.AreAllStepsCompleted(entry.questData.questId))
+        {
+            CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
         }
     }
 
     private void CompleteQuestWithItem(QuestChainEntry entry, QuestManager qm, int currentIndex)
     {
         qm.CompleteQuest(entry.questData.questId);
-        
-        Debug.Log($"[SimpleQuestNPC] Quest {entry.questData.questId} completada por entrega de item.");
         
         // Ejecutar evento de quest completada
         entry.OnQuestCompleted?.Invoke();

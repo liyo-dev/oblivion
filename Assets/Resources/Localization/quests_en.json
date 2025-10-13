@@ -1,19 +1,64 @@
-﻿{
-  "texts": [
-    {"key": "QUEST_STATE_INACTIVE", "value": "Inactive"},
-    {"key": "QUEST_STATE_ACTIVE", "value": "Active"},
-    {"key": "QUEST_STATE_COMPLETED", "value": "Completed"},
-    {"key": "QUEST_MISSION1_NAME", "value": "Strange Sounds in the Forest"},
-    {"key": "QUEST_MISSION1_DESC", "value": "Eldran heard something strange in the forest last night."},
-    {"key": "QUEST_MISSION1_STEP1", "value": "Talk to Eldran"},
-    {"key": "QUEST_MISSION1_STEP2", "value": "Investigate the forest"},
-    {"key": "QUEST_MISSION1_STEP3", "value": "Return to Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION1_NAME", "value": "Talk to Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION1_DESC", "value": "Go talk to Eldran at the kingdom entrance"},
-    {"key": "QUEST_ELDRAN_MISSION1_STEP1", "value": "Talk to Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_NAME", "value": "Bring the Fruit Crate"},
-    {"key": "QUEST_ELDRAN_MISSION2_DESC", "value": "Find the fruit crate in the forest and bring it to Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_STEP1", "value": "Talk to Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_STEP2", "value": "Pick up the fruit crate"}
-  ]
+{
+    "texts": [
+        {
+            "key": "QUEST_ELDRAN_MISSION1_DESC",
+            "value": "Go talk to Eldran at the kingdom entrance"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_NAME",
+            "value": "Talk to Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_STEP1",
+            "value": "Talk to Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_DESC",
+            "value": "Find the fruit crate in the forest and bring it to Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_NAME",
+            "value": "Bring the Fruit Crate"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_STEP1",
+            "value": "Talk to Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_STEP2",
+            "value": "Pick up the fruit crate"
+        },
+        {
+            "key": "QUEST_MISSION1_DESC",
+            "value": "Eldran heard something strange in the forest last night."
+        },
+        {
+            "key": "QUEST_MISSION1_NAME",
+            "value": "Strange Sounds in the Forest"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP1",
+            "value": "Talk to Eldran"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP2",
+            "value": "Investigate the forest"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP3",
+            "value": "Return to Eldran"
+        },
+        {
+            "key": "QUEST_STATE_ACTIVE",
+            "value": "Active"
+        },
+        {
+            "key": "QUEST_STATE_COMPLETED",
+            "value": "Completed"
+        },
+        {
+            "key": "QUEST_STATE_INACTIVE",
+            "value": "Inactive"
+        }
+    ]
 }

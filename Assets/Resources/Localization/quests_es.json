@@ -1,19 +1,64 @@
-﻿{
-  "texts": [
-    {"key": "QUEST_STATE_INACTIVE", "value": "Inactiva"},
-    {"key": "QUEST_STATE_ACTIVE", "value": "Activa"},
-    {"key": "QUEST_STATE_COMPLETED", "value": "Completada"},
-    {"key": "QUEST_MISSION1_NAME", "value": "Sonidos extraños en el bosque"},
-    {"key": "QUEST_MISSION1_DESC", "value": "Eldran escuchó algo extraño en el bosque ayer por la noche."},
-    {"key": "QUEST_MISSION1_STEP1", "value": "Habla con Eldran"},
-    {"key": "QUEST_MISSION1_STEP2", "value": "Investiga el bosque"},
-    {"key": "QUEST_MISSION1_STEP3", "value": "Regresa con Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION1_NAME", "value": "Habla con Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION1_DESC", "value": "Ve a hablar con Eldran en la entrada del reino"},
-    {"key": "QUEST_ELDRAN_MISSION1_STEP1", "value": "Hablar con Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_NAME", "value": "Trae la caja de frutas"},
-    {"key": "QUEST_ELDRAN_MISSION2_DESC", "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_STEP1", "value": "Hablar con Eldran"},
-    {"key": "QUEST_ELDRAN_MISSION2_STEP2", "value": "Recoger la caja de frutas"}
-  ]
+{
+    "texts": [
+        {
+            "key": "QUEST_ELDRAN_MISSION1_DESC",
+            "value": "Ve a hablar con Eldran en la entrada del reino"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_NAME",
+            "value": "Habla con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION1_STEP1",
+            "value": "Hablar con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_DESC",
+            "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_NAME",
+            "value": "Trae la caja de frutas"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_STEP1",
+            "value": "Hablar con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION2_STEP2",
+            "value": "Recoger la caja de frutas"
+        },
+        {
+            "key": "QUEST_MISSION1_DESC",
+            "value": "Eldran escuchó algo extraño en el bosque ayer por la noche."
+        },
+        {
+            "key": "QUEST_MISSION1_NAME",
+            "value": "Sonidos extraños en el bosque"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP1",
+            "value": "Habla con Eldran"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP2",
+            "value": "Investiga el bosque"
+        },
+        {
+            "key": "QUEST_MISSION1_STEP3",
+            "value": "Regresa con Eldran"
+        },
+        {
+            "key": "QUEST_STATE_ACTIVE",
+            "value": "Activa"
+        },
+        {
+            "key": "QUEST_STATE_COMPLETED",
+            "value": "Completada"
+        },
+        {
+            "key": "QUEST_STATE_INACTIVE",
+            "value": "Inactiva"
+        }
+    ]
 }

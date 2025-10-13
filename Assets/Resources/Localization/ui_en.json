@@ -1,156 +1,144 @@
 {
-  "texts": [
-    {
-      "key": "MainMenu_NewGame",
-      "value": "New Game"
-    },
-    {
-      "key": "MainMenu_Continue",
-      "value": "Continue"
-    },
-    {
-      "key": "MainMenu_Settings",
-      "value": "Settings"
-    },
-    {
-      "key": "MainMenu_Exit",
-      "value": "Exit"
-    },
-    {
-      "key": "Settings_Language",
-      "value": "Language"
-    },
-    {
-      "key": "Settings_Audio",
-      "value": "Audio"
-    },
-    {
-      "key": "Settings_Graphics",
-      "value": "Graphics"
-    },
-    {
-      "key": "Settings_Controls",
-      "value": "Controls"
-    },
-    {
-      "key": "Settings_Back",
-      "value": "Back"
-    },
-    {
-      "key": "UI_Health",
-      "value": "Health"
-    },
-    {
-      "key": "UI_Mana",
-      "value": "Mana"
-    },
-    {
-      "key": "UI_Level",
-      "value": "Level"
-    },
-    {
-      "key": "UI_Experience",
-      "value": "Experience"
-    },
-    {
-      "key": "Dialogue_Continue",
-      "value": "Continue"
-    },
-    {
-      "key": "Dialogue_Skip",
-      "value": "Skip"
-    },
-    {
-      "key": "Dialogue_End",
-      "value": "End"
-    },
-    {
-      "key": "Interact_Press",
-      "value": "Press [A] to interact"
-    },
-    {
-      "key": "Interact_Talk",
-      "value": "Talk"
-    },
-    {
-      "key": "Interact_Examine",
-      "value": "Examine"
-    },
-    {
-      "key": "Interact_PickUp",
-      "value": "Pick Up"
-    },
-    {
-      "key": "Interact_Open",
-      "value": "Open"
-    },
-    {
-      "key": "System_Loading",
-      "value": "Loading..."
-    },
-    {
-      "key": "System_Saving",
-      "value": "Saving..."
-    },
-    {
-      "key": "System_GameSaved",
-      "value": "Game Saved"
-    },
-    {
-      "key": "System_Error",
-      "value": "Error"
-    },
-    {
-      "key": "SAVEPOINT_PROMPT",
-      "value": "Save Game [E]"
-    },
-    {
-      "key": "SAVEPOINT_SAVING",
-      "value": "Saving game..."
-    },
-    {
-      "key": "SAVEPOINT_SAVED",
-      "value": "Game saved successfully!"
-    },
-    {
-      "key": "INTERACT_NPC_TALK",
-      "value": "Talk [A]"
-    },
-    {
-      "key": "INTERACT_CHEST_OPEN",
-      "value": "Open chest [A]"
-    },
-    {
-      "key": "INTERACT_DOOR_OPEN",
-      "value": "Open door [A]"
-    },
-    {
-      "key": "INTERACT_ITEM_PICKUP",
-      "value": "Pick up [A]"
-    },
-    {
-      "key": "INTERACT_EXAMINE",
-      "value": "Examine [A]"
-    },
-    {
-      "key": "ROOM_EXIT_BLOCKED",
-      "value": "I should check my room before leaving. Maybe there's something important to read..."
-    },
-    {
-      "key": "Pensamiento",
-      "value": "Thought"
-    }
-  ],
-  "subtitles": [
-    {
-      "id": "welcome_intro",
-      "start": 0.0,
-      "duration": 3.5
-    },
-    {
-      "id": "tutorial_movement",
-      "start": 0.0,
-      "duration": 5.0
-    }
-  ]
+    "texts": [
+        {
+            "key": "Dialogue_Continue",
+            "value": "Continue"
+        },
+        {
+            "key": "Dialogue_End",
+            "value": "End"
+        },
+        {
+            "key": "Dialogue_Skip",
+            "value": "Skip"
+        },
+        {
+            "key": "INTERACT_CHEST_OPEN",
+            "value": "Open chest [A]"
+        },
+        {
+            "key": "INTERACT_DOOR_OPEN",
+            "value": "Open door [A]"
+        },
+        {
+            "key": "Interact_Examine",
+            "value": "Examine"
+        },
+        {
+            "key": "INTERACT_EXAMINE",
+            "value": "Examine [A]"
+        },
+        {
+            "key": "INTERACT_ITEM_PICKUP",
+            "value": "Pick up [A]"
+        },
+        {
+            "key": "INTERACT_NPC_TALK",
+            "value": "Talk [A]"
+        },
+        {
+            "key": "Interact_Open",
+            "value": "Open"
+        },
+        {
+            "key": "Interact_PickUp",
+            "value": "Pick Up"
+        },
+        {
+            "key": "Interact_Press",
+            "value": "Press [A] to interact"
+        },
+        {
+            "key": "Interact_Talk",
+            "value": "Talk"
+        },
+        {
+            "key": "MainMenu_Continue",
+            "value": "Continue"
+        },
+        {
+            "key": "MainMenu_Exit",
+            "value": "Exit"
+        },
+        {
+            "key": "MainMenu_NewGame",
+            "value": "New Game"
+        },
+        {
+            "key": "MainMenu_Settings",
+            "value": "Settings"
+        },
+        {
+            "key": "Pensamiento",
+            "value": "Thought"
+        },
+        {
+            "key": "ROOM_EXIT_BLOCKED",
+            "value": "I should check my room before leaving. Maybe there's something important to read..."
+        },
+        {
+            "key": "SAVEPOINT_PROMPT",
+            "value": "Save Game [E]"
+        },
+        {
+            "key": "SAVEPOINT_SAVED",
+            "value": "Game saved successfully!"
+        },
+        {
+            "key": "SAVEPOINT_SAVING",
+            "value": "Saving game..."
+        },
+        {
+            "key": "Settings_Audio",
+            "value": "Audio"
+        },
+        {
+            "key": "Settings_Back",
+            "value": "Back"
+        },
+        {
+            "key": "Settings_Controls",
+            "value": "Controls"
+        },
+        {
+            "key": "Settings_Graphics",
+            "value": "Graphics"
+        },
+        {
+            "key": "Settings_Language",
+            "value": "Language"
+        },
+        {
+            "key": "System_Error",
+            "value": "Error"
+        },
+        {
+            "key": "System_GameSaved",
+            "value": "Game Saved"
+        },
+        {
+            "key": "System_Loading",
+            "value": "Loading..."
+        },
+        {
+            "key": "System_Saving",
+            "value": "Saving..."
+        },
+        {
+            "key": "UI_Experience",
+            "value": "Experience"
+        },
+        {
+            "key": "UI_Health",
+            "value": "Health"
+        },
+        {
+            "key": "UI_Level",
+            "value": "Level"
+        },
+        {
+            "key": "UI_Mana",
+            "value": "Mana"
+        }
+    ]
 }
