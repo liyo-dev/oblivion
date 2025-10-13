@@ -571,6 +571,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2206090190173530099, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2206090190173530099, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 4760587502119886333, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
@@ -618,6 +626,10 @@ PrefabInstance:
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8739406389657817009, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
+      propertyPath: animatorLayer
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

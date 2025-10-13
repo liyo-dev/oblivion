@@ -91,3 +91,13 @@ public enum WeaponStance
     MagicWand = 6,
     DoubleSword = 7
 }
+
+public enum ObjectType
+{
+    Caja,
+    Barril,
+    Bolsa,
+    Paquete,
+    Otro
+}
+    

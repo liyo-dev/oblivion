@@ -19,6 +19,12 @@ public class InteractionDetector : MonoBehaviour
     [SerializeField] private bool disableJumpWhenFocused = true;
 
     private Interactable current;
+    private PlayerCarrySystem _carrySystem;
+
+    private void Awake()
+    {
+        _carrySystem = GetComponent<PlayerCarrySystem>();
+    }
 
     private void OnEnable()
     {
@@ -52,14 +58,30 @@ public class InteractionDetector : MonoBehaviour
             return;
         }
 
+        // Si está cargando algo, mantener el botón A habilitado para soltar
+        if (_carrySystem != null && _carrySystem.IsCarrying)
+        {
+            SetCurrent(null); // No detectar otros objetos mientras carga
+            EnableInteractAction(true); // Pero mantener el botón A activo para soltar
+            return;
+        }
+
         var nearest = FindNearest();
         SetCurrent(nearest);
     }
 
     private void OnInteract(InputAction.CallbackContext _)
     {
+        // Si está cargando algo, soltar
+        if (_carrySystem != null && _carrySystem.IsCarrying)
+        {
+            _carrySystem.DropObject();
+            return;
+        }
+
+        // Si no está cargando, intentar interactuar con objeto enfocado
         if (current != null && current.CanInteract(gameObject))
-            current.Interact(gameObject); // aquí ya abrirás diálogo, cofre, etc.
+            current.Interact(gameObject);
     }
 
     private void SetCurrent(Interactable next)
@@ -70,23 +92,25 @@ public class InteractionDetector : MonoBehaviour
         current = next;
         if (current) current.SetHintVisible(true);
 
-        var ia = interactAction?.action;
-        var ja = jumpAction?.action;
-
-        // Habilita Interact SOLO con foco
-        if (ia != null)
-        {
-            if (current && !ia.enabled) ia.Enable();
-            else if (!current && ia.enabled) ia.Disable();
-        }
+        EnableInteractAction(current != null);
 
         // Deshabilita Jump mientras hay foco (para que A no salte)
-        // PERO no lo reactives si hay diálogo abierto
-        if (disableJumpWhenFocused && ja != null)
+        if (disableJumpWhenFocused && jumpAction?.action != null)
         {
-            if (current && ja.enabled) ja.Disable();
-            else if (!current && !ja.enabled && !(DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)) 
-                ja.Enable();
+            if (current && jumpAction.action.enabled) 
+                jumpAction.action.Disable();
+            else if (!current && !jumpAction.action.enabled && !(DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)) 
+                jumpAction.action.Enable();
+        }
+    }
+
+    private void EnableInteractAction(bool enable)
+    {
+        var ia = interactAction?.action;
+        if (ia != null)
+        {
+            if (enable && !ia.enabled) ia.Enable();
+            else if (!enable && ia.enabled) ia.Disable();
         }
     }
 
