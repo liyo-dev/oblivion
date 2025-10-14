@@ -3,6 +3,7 @@ using UnityEngine.Events;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Serialization;
 
 public class SimpleQuestNPC : MonoBehaviour
 {
@@ -44,7 +45,8 @@ public class SimpleQuestNPC : MonoBehaviour
         
         [Header("Eventos")]
         [Tooltip("Evento que se ejecuta cuando esta quest se completa")]
-        public UnityEvent OnQuestCompleted;
+        [FormerlySerializedAs("OnQuestCompleted")]
+        public UnityEvent onQuestCompleted;
     }
 
     [Header("Cadena de Quests")]
@@ -209,7 +211,11 @@ public class SimpleQuestNPC : MonoBehaviour
                 break;
 
             case QuestState.Completed:
-                PlayDialogue(entry.dlgCompleted);
+                // Al hablar con una quest ya completada, ofrecer/seguir la siguiente de la cadena
+                PlayDialogue(entry.dlgCompleted, () =>
+                {
+                    StartCoroutine(StartNextQuestAfterDelay(qm, currentIndex));
+                });
                 break;
         }
     }
@@ -233,6 +239,24 @@ public class SimpleQuestNPC : MonoBehaviour
         }
     }
 
+    private void PersistQuestCompleted(string questId)
+    {
+        if (string.IsNullOrEmpty(questId)) return;
+        var profile = GameBootService.Profile;
+        if (profile == null) return;
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return;
+        if (preset.flags == null) preset.flags = new List<string>();
+        string flag = $"QUEST_COMPLETED:{questId}";
+        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
+
+        var saveSystem = FindFirstObjectByType<SaveSystem>();
+        if (saveSystem != null)
+        {
+            profile.SaveCurrentGameState(saveSystem);
+        }
+    }
+
     private void CompleteQuestAutomatically(QuestChainEntry entry, QuestManager qm, string questId, int currentIndex)
     {
         // Completar todos los pasos
@@ -250,9 +274,12 @@ public class SimpleQuestNPC : MonoBehaviour
 
         qm.CompleteQuest(questId);
         Debug.Log($"[SimpleQuestNPC] Quest {questId} completada automáticamente.");
+
+        // Persistir flag + save
+        PersistQuestCompleted(questId);
         
         // Ejecutar evento de quest completada
-        entry.OnQuestCompleted?.Invoke();
+        entry.onQuestCompleted?.Invoke();
 
         // Encadenar con la siguiente quest si existe
         ChainToNextQuest(entry, qm, questId, currentIndex);
@@ -264,8 +291,11 @@ public class SimpleQuestNPC : MonoBehaviour
         {
             qm.CompleteQuest(questId);
             
+            // Persistir flag + save
+            PersistQuestCompleted(questId);
+            
             // Ejecutar evento de quest completada
-            entry.OnQuestCompleted?.Invoke();
+            entry.onQuestCompleted?.Invoke();
             
             // Encadenar con la siguiente quest
             ChainToNextQuest(entry, qm, questId, currentIndex);
@@ -286,8 +316,11 @@ public class SimpleQuestNPC : MonoBehaviour
             // Todos los pasos están completados manualmente por el jugador
             qm.CompleteQuest(questId);
             
+            // Persistir flag + save
+            PersistQuestCompleted(questId);
+            
             // Ejecutar evento de quest completada
-            entry.OnQuestCompleted?.Invoke();
+            entry.onQuestCompleted?.Invoke();
             
             // Encadenar con la siguiente quest
             ChainToNextQuest(entry, qm, questId, currentIndex);
@@ -299,12 +332,29 @@ public class SimpleQuestNPC : MonoBehaviour
         }
     }
 
+    private void CompleteQuestWithItem(QuestChainEntry entry, QuestManager qm, int currentIndex)
+    {
+        qm.CompleteQuest(entry.questData.questId);
+        
+        // Persistir flag + save
+        PersistQuestCompleted(entry.questData.questId);
+        
+        entry.onQuestCompleted?.Invoke();
+        ChainToNextQuest(entry, qm, entry.questData.questId, currentIndex);
+    }
+
     /// <summary>
     /// Encadena automáticamente con la siguiente quest en la cadena
     /// </summary>
     private void ChainToNextQuest(QuestChainEntry completedEntry, QuestManager qm, string completedQuestId, int currentIndex)
     {
         // Mostrar diálogo de Turn In
+        // Usar el ID completado para logging y evitar advertencia de parámetro no usado
+        if (!string.IsNullOrEmpty(completedQuestId))
+        {
+            Debug.Log($"[SimpleQuestNPC] Quest completada: {completedQuestId}. Preparando encadenamiento...");
+        }
+
         PlayDialogue(completedEntry.dlgTurnIn, () =>
         {
             // Usar coroutine para dar un frame al DialogueManager antes de abrir el siguiente diálogo
@@ -317,26 +367,54 @@ public class SimpleQuestNPC : MonoBehaviour
         // Esperar un frame para que el DialogueManager termine de procesar el cierre
         yield return null;
 
-        // Iniciar la siguiente quest
+        // Iniciar/ofrecer la primera quest siguiente que no esté COMPLETADA ya
         int nextIndex = currentIndex + 1;
-        if (nextIndex < questChain.Count)
+        while (nextIndex < questChain.Count)
         {
             var nextEntry = questChain[nextIndex];
-            if (nextEntry.questData != null)
+            if (nextEntry?.questData == null)
+            {
+                nextIndex++;
+                continue;
+            }
+
+            var nextId = nextEntry.questData.questId;
+            var state = qm.GetState(nextId);
+
+            if (state == QuestState.Completed)
+            {
+                // Saltar quests ya completadas y seguir buscando
+                nextIndex++;
+                continue;
+            }
+
+            if (state == QuestState.Inactive)
             {
                 // Agregar y activar la siguiente quest
                 qm.AddQuest(nextEntry.questData);
-                qm.StartQuest(nextEntry.questData.questId);
-                
-                Debug.Log($"[SimpleQuestNPC] Encadenando a siguiente quest: {nextEntry.questData.questId}");
-                
+                qm.StartQuest(nextId);
+                Debug.Log($"[SimpleQuestNPC] Encadenando a siguiente quest: {nextId}");
+
                 // Mostrar el diálogo de oferta de la siguiente quest
                 if (nextEntry.dlgBefore != null)
                 {
                     PlayDialogue(nextEntry.dlgBefore);
                 }
             }
+            else if (state == QuestState.Active)
+            {
+                // Ya está activa: mostrar diálogo de progreso si lo hay
+                if (nextEntry.dlgInProgress != null)
+                {
+                    PlayDialogue(nextEntry.dlgInProgress);
+                }
+            }
+            // Tras gestionar la siguiente encontrada, terminar
+            yield break;
         }
+
+        // No hay más quests en la cadena que ofrecer/seguir
+        Debug.Log("[SimpleQuestNPC] Fin de la cadena de quests.");
     }
 
     private void PlayDialogue(DialogueAsset dlg, System.Action onComplete = null)
@@ -374,7 +452,7 @@ public class SimpleQuestNPC : MonoBehaviour
     private IEnumerator DetectItemsRoutine()
     {
         var wait = new WaitForSeconds(detectionInterval);
-        while (true)
+        while (isActiveAndEnabled)
         {
             yield return wait;
             CheckForItemsInRange();
@@ -458,13 +536,6 @@ public class SimpleQuestNPC : MonoBehaviour
         {
             CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
         }
-    }
-
-    private void CompleteQuestWithItem(QuestChainEntry entry, QuestManager qm, int currentIndex)
-    {
-        qm.CompleteQuest(entry.questData.questId);
-        entry.OnQuestCompleted?.Invoke();
-        ChainToNextQuest(entry, qm, entry.questData.questId, currentIndex);
     }
 
     #endregion

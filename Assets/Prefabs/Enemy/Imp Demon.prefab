@@ -5448,11 +5448,11 @@ GameObject:
   m_Component:
   - component: {fileID: 5683733078082542254}
   - component: {fileID: 1645871610873704314}
-  - component: {fileID: 4847328099168740309}
   - component: {fileID: 8664676780176396509}
-  - component: {fileID: 3281919030301970391}
   - component: {fileID: 4534419464761617090}
   - component: {fileID: 7169725361267392629}
+  - component: {fileID: 4847328099168740309}
+  - component: {fileID: 3281919030301970391}
   m_Layer: 7
   m_Name: Imp Demon
   m_TagString: Enemy
@@ -5503,24 +5503,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &4847328099168740309
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2543156170968106335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 300
-  destroyOnDeath: 1
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 1
-  debugLogs: 0
 --- !u!195 &8664676780176396509
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -5543,41 +5525,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &3281919030301970391
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2543156170968106335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59d07ef7ecf1d7642909fb36b8123186, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ImpDemonAI
-  player: {fileID: 0}
-  animator: {fileID: 0}
-  damageable: {fileID: 0}
-  agent: {fileID: 0}
-  detectionRange: 20
-  attackRange: 3
-  projectileRange: 10
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
-  slashDamage: 15
-  stabDamage: 20
-  projectileDamage: 10
-  projectilePrefab: {fileID: 1975959190090480, guid: eca000ab44c908d4dab395f654753038, type: 3}
-  projectileSpawnPoint: {fileID: 2156623539970524872}
-  spellEffectPrefab: {fileID: 0}
-  slashCooldown: 2
-  stabCooldown: 3
-  projectileCooldown: 4
-  spellCooldown: 8
-  undergroundCooldown: 15
-  phase2HealthPercent: 0.66
-  phase3HealthPercent: 0.33
 --- !u!65 &4534419464761617090
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5621,6 +5568,59 @@ MonoBehaviour:
   criticalThreshold: 0.25
   animateHealthChanges: 1
   animationSpeed: 5
+--- !u!114 &4847328099168740309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2543156170968106335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 1
+  debugLogs: 0
+--- !u!114 &3281919030301970391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2543156170968106335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59d07ef7ecf1d7642909fb36b8123186, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ImpDemonAI
+  player: {fileID: 0}
+  animator: {fileID: 0}
+  damageable: {fileID: 0}
+  agent: {fileID: 0}
+  detectionRange: 20
+  attackRange: 3
+  projectileRange: 10
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  slashDamage: 15
+  stabDamage: 20
+  projectileDamage: 10
+  projectilePrefab: {fileID: 1975959190090480, guid: eca000ab44c908d4dab395f654753038, type: 3}
+  projectileSpawnPoint: {fileID: 2156623539970524872}
+  spellEffectPrefab: {fileID: 0}
+  slashCooldown: 2
+  stabCooldown: 3
+  projectileCooldown: 4
+  spellCooldown: 8
+  undergroundCooldown: 15
+  phase2HealthPercent: 0.66
+  phase3HealthPercent: 0.33
 --- !u!1 &3024701460706714017
 GameObject:
   m_ObjectHideFlags: 0

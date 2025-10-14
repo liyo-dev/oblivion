@@ -11,7 +11,7 @@ public class GameBootService : MonoBehaviour
     
     // Cache estático para acceso global
     private static GameBootProfile _profile;
-    private static bool _isInitialized = false;
+    private static bool _isInitialized;
     
     // Evento para notificar cuando el profile está listo
     public static event System.Action OnProfileReady;
@@ -59,7 +59,7 @@ public class GameBootService : MonoBehaviour
         if (profile == null) return;
 
         // Intentar localizar un SaveSystem en escena (persistente)
-        SaveSystem saveSystem = null;
+        SaveSystem saveSystem;
 #if UNITY_2022_3_OR_NEWER
         saveSystem = Object.FindFirstObjectByType<SaveSystem>(FindObjectsInactive.Include);
 #else
@@ -114,4 +114,23 @@ public class GameBootService : MonoBehaviour
     /// Verifica si el GameBootProfile está disponible
     /// </summary>
     public static bool IsAvailable => _profile != null && _isInitialized;
+
+    // === NUEVO: API estática para Nueva Partida ===
+    /// <summary>
+    /// Borra el save y restablece el runtimePreset al defaultPlayerPreset.
+    /// Llamar desde menú antes de cargar la escena inicial de juego.
+    /// </summary>
+    public static void NewGameReset()
+    {
+        if (!IsAvailable) return;
+        SaveSystem save;
+#if UNITY_2022_3_OR_NEWER
+        save = Object.FindFirstObjectByType<SaveSystem>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+        save = Object.FindObjectOfType<SaveSystem>(true);
+#pragma warning restore 618
+#endif
+        _profile.NewGameReset(save);
+    }
 }

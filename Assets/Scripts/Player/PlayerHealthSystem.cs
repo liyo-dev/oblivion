@@ -14,6 +14,16 @@ public class PlayerHealthSystem : MonoBehaviour
     [SerializeField] private float invulnerabilityDuration = 1f;
     [Tooltip("Si está activo, el jugador no puede morir (útil para testing)")]
     [SerializeField] private bool godMode; // por defecto false
+
+    [Header("Regeneración de Vida")]
+    [Tooltip("Activa la regeneración pasiva de vida")]
+    [SerializeField] private bool enableHealthRegen = true;
+    [Tooltip("Vida por segundo que se regenera")]
+    [SerializeField] private float healthRegenPerSecond = 3f;
+    [Tooltip("Retraso (segundos) después de recibir daño antes de empezar a regenerar")]
+    [SerializeField] private float healthRegenDelayAfterDamage = 2f;
+    [Tooltip("Evita micro-actualizaciones: margen mínimo de cambio antes de notificar UI")]
+    [SerializeField] private float healthRegenNotifyEpsilon = 0.01f;
     
     [Header("Animaciones")]
     [SerializeField] private string damageAnimationName = "TakeDamage";
@@ -68,10 +78,14 @@ public class PlayerHealthSystem : MonoBehaviour
 
     // Evitar doble inicialización
     private bool _initialized;
-    
+
     // Corrutinas
     private Coroutine _invulnerabilityFlashCoroutine;
     private Coroutine _damageFlashCoroutine;
+
+    // Estado de regeneración
+    private float _lastDamageTime = -999f;
+    private float _lastNotifiedHealth;
     
     // Propiedades públicas usando GameBootProfile
     public bool IsAlive => _currentHp > 0 && !_isDead;
@@ -131,6 +145,7 @@ public class PlayerHealthSystem : MonoBehaviour
             _maxHp = preset.maxHP;
             _currentHp = preset.currentHP;
             _isDead = _currentHp <= 0;
+            _lastNotifiedHealth = _currentHp;
             
             Debug.Log($"[PlayerHealthSystem] Inicializado con vida: {_currentHp:0.1f}/{_maxHp:0.1f} ({HealthPercentage:P1}) - Estado: {(_isDead ? "MUERTO" : "VIVO")}");
         }
@@ -140,6 +155,7 @@ public class PlayerHealthSystem : MonoBehaviour
             _maxHp = 100f;
             _currentHp = 100f;
             _isDead = false;
+            _lastNotifiedHealth = _currentHp;
         }
         
         // Notificar UI inicial después de la inicialización
@@ -178,6 +194,7 @@ public class PlayerHealthSystem : MonoBehaviour
         
         float oldHealth = _currentHp;
         _currentHp = Mathf.Max(0f, oldHealth - damageAmount);
+        _lastDamageTime = Time.time;
         
         // Actualizar también el GameBootProfile si es necesario
         UpdateGameBootProfile();
@@ -267,6 +284,7 @@ public class PlayerHealthSystem : MonoBehaviour
         if (!IsAlive || godMode) return;
         
         _currentHp = 0f;
+        _lastDamageTime = Time.time;
         UpdateGameBootProfile();
         
         if (!_isDead)
@@ -525,6 +543,29 @@ public class PlayerHealthSystem : MonoBehaviour
         OnHealthPercentageChanged?.Invoke(healthPercentage);
     }
 
+    void Update()
+    {
+        // Regeneración pasiva de vida
+        if (enableHealthRegen && IsAlive && _currentHp < _maxHp)
+        {
+            if (Time.time - _lastDamageTime >= healthRegenDelayAfterDamage)
+            {
+                float before = _currentHp;
+                _currentHp = Mathf.Min(_maxHp, _currentHp + Mathf.Max(0f, healthRegenPerSecond) * Time.deltaTime);
+                if (Mathf.Abs(_currentHp - before) > Mathf.Epsilon)
+                {
+                    UpdateGameBootProfile();
+                    // Notificar UI de forma moderada
+                    if (Mathf.Abs(_currentHp - _lastNotifiedHealth) >= healthRegenNotifyEpsilon)
+                    {
+                        _lastNotifiedHealth = _currentHp;
+                        UpdateUI();
+                    }
+                }
+            }
+        }
+    }
+    
     private IEnumerator ApplyKnockback()
     {
         Vector3 knockbackDirection = -transform.forward; // Empujar en la dirección opuesta a donde mira el jugador

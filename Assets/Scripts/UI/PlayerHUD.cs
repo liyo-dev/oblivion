@@ -13,6 +13,12 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private Vector2 hudPosition = new Vector2(50, -50); // Arriba izquierda
     [SerializeField] private bool showDebugInfo = false;
 
+    [Header("Animación de Barras")]
+    [Tooltip("Si está activo, las barras se interpolan suavemente hacia el valor objetivo")]
+    [SerializeField] private bool animateBars = true;
+    [Tooltip("Velocidad de interpolación de las barras (mayor = más rápido)")]
+    [SerializeField] private float barLerpSpeed = 8f;
+
     [Header("Colores")]
     [SerializeField] private Color healthColor = new Color(0.9f, 0.2f, 0.2f, 1f);
     [SerializeField] private Color manaColor = new Color(0.3f, 0.5f, 1f, 1f);
@@ -30,6 +36,22 @@ public class PlayerHUD : MonoBehaviour
     private Slider _manaSlider;
     private TextMeshProUGUI _healthText;
     private TextMeshProUGUI _manaText;
+
+    // Objetivos de animación (0..1)
+    private float _healthTarget = 1f;
+    private float _manaTarget = 1f;
+
+    private Sprite _whiteSprite;
+
+    private Sprite GetWhiteSprite()
+    {
+        if (_whiteSprite != null) return _whiteSprite;
+        var texture = new Texture2D(1, 1);
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        _whiteSprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), Vector2.one * 0.5f);
+        return _whiteSprite;
+    }
 
     void Awake()
     {
@@ -130,6 +152,7 @@ public class PlayerHUD : MonoBehaviour
         var bgImage = bgGO.AddComponent<Image>();
         bgImage.color = barBackgroundColor;
         bgImage.raycastTarget = false;
+        if (bgImage.sprite == null) bgImage.sprite = GetWhiteSprite();
         _healthSlider.targetGraphic = bgImage;
 
         // Fill del slider
@@ -151,6 +174,7 @@ public class PlayerHUD : MonoBehaviour
         var fillImage = fillGO.AddComponent<Image>();
         fillImage.color = healthColor;
         fillImage.raycastTarget = false;
+        if (fillImage.sprite == null) fillImage.sprite = GetWhiteSprite();
         _healthSlider.fillRect = fillRect;
 
         // Texto de salud
@@ -204,6 +228,7 @@ public class PlayerHUD : MonoBehaviour
         var bgImage = bgGO.AddComponent<Image>();
         bgImage.color = barBackgroundColor;
         bgImage.raycastTarget = false;
+        if (bgImage.sprite == null) bgImage.sprite = GetWhiteSprite();
         _manaSlider.targetGraphic = bgImage;
 
         // Fill del slider
@@ -225,6 +250,7 @@ public class PlayerHUD : MonoBehaviour
         var fillImage = fillGO.AddComponent<Image>();
         fillImage.color = manaColor;
         fillImage.raycastTarget = false;
+        if (fillImage.sprite == null) fillImage.sprite = GetWhiteSprite();
         _manaSlider.fillRect = fillRect;
 
         // Texto de maná
@@ -258,6 +284,9 @@ public class PlayerHUD : MonoBehaviour
         // Si no se encontraron, buscar en este GameObject
         if (!_healthSystem) _healthSystem = GetComponent<PlayerHealthSystem>() ?? GetComponentInParent<PlayerHealthSystem>();
         if (!_manaPool) _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
+
+        SubscribeToEventsIfReady();
+        InitTargetsIfReady();
     }
 
     private IEnumerator FindComponentsDelayed()
@@ -273,24 +302,101 @@ public class PlayerHUD : MonoBehaviour
             if (_healthSystem) Debug.Log("[PlayerHUD] PlayerHealthSystem encontrado");
             if (_manaPool) Debug.Log("[PlayerHUD] ManaPool encontrado");
         }
+
+        SubscribeToEventsIfReady();
+        InitTargetsIfReady();
+    }
+
+    private void SubscribeToEventsIfReady()
+    {
+        if (_healthSystem != null)
+        {
+            // Evitar doble suscripción
+            _healthSystem.OnHealthChanged.RemoveListener(OnHealthPercentChanged);
+            _healthSystem.OnHealthChanged.AddListener(OnHealthPercentChanged);
+        }
+        if (_manaPool != null)
+        {
+            _manaPool.OnManaChanged.RemoveListener(OnManaPercentChanged);
+            _manaPool.OnManaChanged.AddListener(OnManaPercentChanged);
+        }
+    }
+
+    private void InitTargetsIfReady()
+    {
+        if (_healthSystem)
+        {
+            _healthTarget = _healthSystem.HealthPercentage;
+            if (_healthSlider) _healthSlider.value = _healthTarget;
+        }
+        if (_manaPool)
+        {
+            _manaTarget = (_manaPool.Max > 0f) ? (_manaPool.Current / _manaPool.Max) : 0f;
+            if (_manaSlider) _manaSlider.value = _manaTarget;
+        }
+        // Sincronizar textos iniciales
+        UpdateTexts();
+    }
+
+    // --- NUEVO: Forzar refresco desde las fuentes actuales (HealthSystem/ManaPool) ---
+    public void ForceRefresh()
+    {
+        // Reasegurar referencias y suscripciones
+        if (_healthSystem == null || _manaPool == null)
+        {
+            FindPlayerComponents();
+        }
+        else
+        {
+            SubscribeToEventsIfReady();
+            InitTargetsIfReady();
+        }
+    }
+
+    private void OnHealthPercentChanged(float percent)
+    {
+        _healthTarget = Mathf.Clamp01(percent);
+    }
+
+    private void OnManaPercentChanged(float percent)
+    {
+        _manaTarget = Mathf.Clamp01(percent);
     }
 
     private void UpdateHUD()
     {
-        // Actualizar salud usando PlayerHealthSystem
         if (_healthSystem && _healthSlider && _healthText)
         {
-            float healthPercent = _healthSystem.HealthPercentage;
-            _healthSlider.value = healthPercent;
-            _healthText.text = $"{_healthSystem.CurrentHealth:0}/{_healthSystem.MaxHealth:0}";
+            if (animateBars)
+                _healthSlider.value = Mathf.Lerp(_healthSlider.value, _healthTarget, Mathf.Clamp01(barLerpSpeed * Time.deltaTime));
+            else
+                _healthSlider.value = _healthTarget;
         }
 
-        // Actualizar maná
         if (_manaPool && _manaSlider && _manaText)
         {
-            float manaPercent = _manaPool.Current / _manaPool.Max;
-            _manaSlider.value = manaPercent;
-            _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+            if (animateBars)
+                _manaSlider.value = Mathf.Lerp(_manaSlider.value, _manaTarget, Mathf.Clamp01(barLerpSpeed * Time.deltaTime));
+            else
+                _manaSlider.value = _manaTarget;
+        }
+
+        UpdateTexts();
+    }
+
+    private void UpdateTexts()
+    {
+        if (_healthSystem && _healthText && _healthSlider)
+        {
+            float maxHp = _healthSystem.MaxHealth;
+            float shownHp = Mathf.Round(_healthSlider.value * maxHp);
+            _healthText.text = $"{shownHp:0}/{maxHp:0}";
+        }
+        if (_manaPool && _manaText && _manaSlider)
+        {
+            float maxMp = _manaPool.Max;
+            float shownMp = Mathf.Round(_manaSlider.value * maxMp);
+            _manaText.text = $"{shownMp:0}/{maxMp:0}";
         }
     }
 
@@ -311,6 +417,12 @@ public class PlayerHUD : MonoBehaviour
 
     void OnDestroy()
     {
+        // Desuscripción segura
+        if (_healthSystem)
+            _healthSystem.OnHealthChanged.RemoveListener(OnHealthPercentChanged);
+        if (_manaPool)
+            _manaPool.OnManaChanged.RemoveListener(OnManaPercentChanged);
+
         // Limpiar el HUD cuando se destruya el componente
         if (_hudPanel) DestroyImmediate(_hudPanel);
     }

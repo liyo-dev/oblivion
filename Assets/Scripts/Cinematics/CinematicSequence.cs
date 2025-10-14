@@ -18,6 +18,13 @@ public class CinematicSequence : ScriptableObject
     [Tooltip("Al terminar: activar gameplay, habilitar PlayerInput, etc.")]
     public bool handOffToGameplayOnEnd = true;
 
+    [Header("Playback Policy")]
+    [Tooltip("Si está activo, esta cinemática solo se reproducirá una vez por perfil de juego.")]
+    public bool playOnlyOnce;
+
+    [Tooltip("Identificador único de la cinemática. Si está vacío, se usa el nombre del asset.")]
+    public string sequenceId = string.Empty;
+
     [SerializeReference] public List<Shot> shots = new();
 
     [Serializable] public class Shot
@@ -45,7 +52,7 @@ public class CinematicSequence : ScriptableObject
         public float fadeDuration = 0.75f;
 
         [TextArea] public string subtitleText;
-        public float subtitleLeadIn = 0f;  // retraso antes de mostrar
+        public float subtitleLeadIn;  // retraso antes de mostrar
         public float subtitleHold = 2.5f;  // tiempo en pantalla
         public float subtitleFade = 0.25f;
 
@@ -64,6 +71,6 @@ public class CinematicSequence : ScriptableObject
         FocusTarget,    // sólo reorienta cámara hacia lookAt durante duración
         ShowText,       // muestra texto (subtítulos) con fade in/out
         FadeOnly,       // fundido a negro/desde negro
-        PlaySFX         // reproduce sonido
+        PlaySfx         // reproduce sonido
     }
 }

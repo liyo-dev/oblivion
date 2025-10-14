@@ -252,6 +252,84 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &808885103
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 808885106}
+  - component: {fileID: 808885105}
+  - component: {fileID: 808885104}
+  m_Layer: 0
+  m_Name: Unlock_Fireball
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &808885104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 808885103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4fcf8fb43cf44a29fe21bd951e7c870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnlockTrigger
+  oneShotFlag: 
+  unlockOnEnable: 0
+  abilitiesToUnlock: 01000000
+  spellsToUnlock: 01000000
+  assignSpellsToEmptySlots: 1
+  setManaMinimums: 1
+  minMaxMana: 50
+  minCurrentMana: 50
+  ensureFirstCast: 0
+  firstCastExtraBuffer: 0
+  disableAfterUse: 1
+  onUnlockedVfx: {fileID: 0}
+--- !u!65 &808885105
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 808885103}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &808885106
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 808885103}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &841680218 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3216579825125446628, guid: fc5a676d2c90b3d4f8a22e369c35950d, type: 3}
@@ -410,6 +488,50 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[1].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 808885104}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[1].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 808885104}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ApplyUnlocksNow
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[1].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ApplyUnlocksNow
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: UnlockTrigger, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[1].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: UnlockTrigger, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2331612480173205874, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
+      propertyPath: questChain.Array.data[0].OnQuestCompleted.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 3275434959031855424, guid: 8c8076d77b0336d4a8cf8c730536f893, type: 3}
       propertyPath: m_LocalPosition.x
       value: 38.08
@@ -905,3 +1027,4 @@ SceneRoots:
   - {fileID: 263694390}
   - {fileID: 1626529918}
   - {fileID: 3713296521603698178}
+  - {fileID: 808885106}

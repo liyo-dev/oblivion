@@ -5,23 +5,41 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/copilotDiffState.xml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Player/UnlockService.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Player/UnlockService.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestPersistenceBridge.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestPersistenceBridge.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/Camera/vThirdPersonCamera.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/Camera/vThirdPersonCamera.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Enemy/Imp Demon.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/Enemy/Imp Demon.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_DemonAppears.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_DemonAppears.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_Intro.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_Intro.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Systems/Start.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Systems/Start.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Rooms/BossArenaController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Rooms/BossArenaController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/TeleportService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/CinematicIntroDirectorTimeline.playable" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Timeline/CinematicIntroDirectorTimeline.playable" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Cinematics/CinematicDirector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Cinematics/CinematicDirector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Cinematics/CinematicSequence.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Cinematics/CinematicSequence.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/SO/GameBootProfile.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/SO/GameBootProfile.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/ManaPool.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/ManaPool.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerHealthSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerHealthSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerSaveData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerSaveData.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Default.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Default.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/WorldBootstrap.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/WorldBootstrap.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/VFX/Matthew Guz/Spell Area of Effect FREE/Prefab/AoE Magic.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/VFX/Matthew Guz/Spell Area of Effect FREE/Prefab/AoE Magic.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/SISTEMA_JUEGO.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/SISTEMA_JUEGO.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,12 +73,17 @@
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueCameraController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueCameraController.cs.meta" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/UnlockService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestPersistenceBridge.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/SimpleQuestNPC.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Rooms/BossArenaController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/_Recovery/0 (10).unity" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
@@ -157,7 +180,7 @@
       <workItem from="1760379129434" duration="2471000" />
       <workItem from="1760382820437" duration="10643000" />
       <workItem from="1760418177371" duration="8969000" />
-      <workItem from="1760428644437" duration="6160000" />
+      <workItem from="1760428644437" duration="21765000" />
     </task>
     <servers />
   </component>

@@ -19,7 +19,7 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Fade override (opcional)")]
     public EasyTransition.TransitionSettings fadeOverride;
-    [Min(0)] public float fadeDelay = 0f;
+    [Min(0)] public float fadeDelay; // sin valor por defecto redundante
 
     [Header("UI / Animación (DOTween)")]
     public CanvasGroup rootGroup;                         // si está vacío, se añade
@@ -45,15 +45,39 @@ public class MainMenuController : MonoBehaviour
             if (!rootGroup) rootGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        if (animatedItems == null || animatedItems.Count == 0)
+        // Asegurar lista no nula
+        animatedItems ??= new List<RectTransform>();
+
+        if (animatedItems.Count == 0)
         {
-            foreach (var s in GetComponentsInChildren<Selectable>(true))
-                if (s) animatedItems.Add(s.transform as RectTransform);
+#pragma warning disable 300
+            var selectables = GetComponentsInChildren<Selectable>(true);
+            if (selectables != null)
+            {
+                for (int i = 0; i < selectables.Length; i++)
+                {
+                    var s = selectables[i];
+                    if (ReferenceEquals(s, null)) continue;
+                    var tr = s.transform;
+                    if (ReferenceEquals(tr, null)) continue;
+                    var rt = tr as RectTransform;
+                    if (rt != null) animatedItems.Add(rt);
+                }
+            }
+#pragma warning restore 300
         }
 
-        _defaultSelection = continueButton
-            ? continueButton.gameObject
-            : (animatedItems.Count > 0 ? animatedItems[0]?.gameObject : null);
+        // Selección por defecto robusta
+        GameObject fallback = null;
+        if (animatedItems != null)
+        {
+            for (int i = 0; i < animatedItems.Count; i++)
+            {
+                var rt = animatedItems[i];
+                if (rt != null) { fallback = rt.gameObject; break; }
+            }
+        }
+        _defaultSelection = continueButton ? continueButton.gameObject : fallback;
     }
 
     void OnEnable()
@@ -62,11 +86,19 @@ public class MainMenuController : MonoBehaviour
         EnsureUISelection();
     }
 
+    void OnDisable()
+    {
+        // Liberar secuencia para evitar fugas si se desactiva el GO
+        _introSeq?.Kill();
+        _introSeq = null;
+    }
+
     void Start()
     {
         _saveSystem = FindFirstObjectByType<SaveSystem>();
+        bool hasSave = (_saveSystem != null) && _saveSystem.HasSave();
         if (continueButton != null)
-            continueButton.interactable = (_saveSystem != null) && _saveSystem.HasSave();
+            continueButton.interactable = hasSave;
 
         EnsureUISelection();
         PlayIntro();
@@ -78,21 +110,27 @@ public class MainMenuController : MonoBehaviour
     }
 
     // ---------------- UI Focus Keeper ----------------
+#pragma warning disable 300
     void EnsureUISelection()
     {
         if (_es == null) return;
 
         if (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy)
         {
-            if (_defaultSelection == null)
+            var toSelect = _defaultSelection;
+            if (toSelect == null)
             {
                 var firstSel = GetComponentInChildren<Selectable>(true);
-                if (firstSel) _defaultSelection = firstSel.gameObject;
+                if (!ReferenceEquals(firstSel, null)) toSelect = firstSel.gameObject;
             }
-            if (_defaultSelection != null)
-                _es.SetSelectedGameObject(_defaultSelection);
+            if (toSelect != null)
+            {
+                _defaultSelection = toSelect;
+                _es.SetSelectedGameObject(toSelect);
+            }
         }
     }
+#pragma warning restore 300
 
     void KeepUIFocusForGamepad()
     {
@@ -164,16 +202,27 @@ public class MainMenuController : MonoBehaviour
     // ---------------- Botones ----------------
     public void OnNewGame()
     {
-        _saveSystem?.Delete();
+        // Reset seguro: borra save y aplica preset por defecto en el runtimePreset
+        GameBootService.NewGameReset();
+        // Cargar la escena inicial (prólogo o equivalente)
         Load("Prologo");
     }
 
     public void OnContinue()
     {
         if (_saveSystem != null && _saveSystem.HasSave())
+        {
+            // Asegura que el runtimePreset refleja el save actual (por si el servicio persiste)
+            if (GameBootService.IsAvailable)
+            {
+                GameBootService.Profile?.LoadProfile(_saveSystem);
+            }
             Load(worldScene);
+        }
         else
+        {
             OnNewGame();
+        }
     }
 
     void Load(string sceneName)

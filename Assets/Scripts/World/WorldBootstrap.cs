@@ -67,8 +67,7 @@ public class WorldBootstrap : MonoBehaviour
                 anchorId = data.lastSpawnAnchorId;
 
             // Actualizar runtimePreset con los datos del save
-            var slotTemplate = bootProfile.bootPreset ? bootProfile.bootPreset : bootProfile.defaultPlayerPreset;
-            bootProfile.SetRuntimePresetFromSave(data, slotTemplate);
+            bootProfile.SetRuntimePresetFromSave(data);
 
             Debug.Log("[WorldBootstrap] Save cargado correctamente");
         }

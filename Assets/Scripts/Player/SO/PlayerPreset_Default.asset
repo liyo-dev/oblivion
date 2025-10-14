@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Default
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
+  spawnAnchorId: Bedroom
   level: 1
   maxHP: 100
   currentHP: 100
-  maxMP: 50
-  currentMP: 50
+  maxMP: 0
+  currentMP: 0
   unlockedAbilities: 
   unlockedSpells: 
+  leftSpellId: 0
+  rightSpellId: 0
+  specialSpellId: 0
   flags: []

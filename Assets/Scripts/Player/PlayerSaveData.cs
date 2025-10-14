@@ -11,9 +11,15 @@ public class PlayerSaveData
     public float maxHp, currentHp;
     public float maxMp, currentMp;
 
+    // Hechizos/skills
     public List<AbilityId> abilities = new();
     public List<SpellId>   spells    = new();
     public List<string>    flags     = new(); // misiones/estados simples
+
+    // Slots guardados (opcional: si faltan en saves antiguos, quedarán en None por defecto)
+    public SpellId leftSpellId  = SpellId.None;
+    public SpellId rightSpellId = SpellId.None;
+    public SpellId specialSpellId = SpellId.None;
 
     // ---- Helpers actualizados para usar GameBootProfile ----
     
@@ -53,6 +59,11 @@ public class PlayerSaveData
         d.spells = new List<SpellId>(preset.unlockedSpells ?? new List<SpellId>());
         d.flags = new List<string>(preset.flags ?? new List<string>());
 
+        // Slots
+        d.leftSpellId = preset.leftSpellId;
+        d.rightSpellId = preset.rightSpellId;
+        d.specialSpellId = preset.specialSpellId;
+
         return d;
     }
 
@@ -91,7 +102,7 @@ public class PlayerSaveData
         }
 
         // Usar el método existente del GameBootProfile para aplicar los datos
-        bootProfile.SetRuntimePresetFromSave(this, bootProfile.defaultPlayerPreset);
+        bootProfile.SetRuntimePresetFromSave(this);
         
         Debug.Log($"[PlayerSaveData] Datos aplicados al GameBootProfile - Level: {level}, HP: {currentHp}/{maxHp}");
     }

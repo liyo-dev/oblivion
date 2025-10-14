@@ -47,13 +47,39 @@ public class CinematicDirector : MonoBehaviour
     void Start()
     {
         if (sequence)
+        {
+            if (sequence.playOnlyOnce && IsCinematicSeen(GetSequenceId()))
+            {
+                if (sequence.handOffToGameplayOnEnd)
+                {
+                    if (subtitleTMP) subtitleTMP.text = "";
+                    if (fadeImage) fadeImage.canvasRenderer.SetAlpha(0f);
+                    SetPlayerInput(true);
+                }
+                Debug.Log($"[CinematicDirector] Saltando cinemática ya vista: {GetSequenceId()}");
+                return;
+            }
             StartCoroutine(Run());
+        }
     }
 
     public void Play(CinematicSequence seq)
     {
         if (running) return;
         sequence = seq;
+
+        if (sequence.playOnlyOnce && IsCinematicSeen(GetSequenceId()))
+        {
+            if (sequence.handOffToGameplayOnEnd)
+            {
+                if (subtitleTMP) subtitleTMP.text = "";
+                if (fadeImage) fadeImage.canvasRenderer.SetAlpha(0f);
+                SetPlayerInput(true);
+            }
+            Debug.Log($"[CinematicDirector] Saltando cinemática ya vista (Play): {GetSequenceId()}");
+            return;
+        }
+
         StartCoroutine(Run());
     }
 
@@ -96,8 +122,8 @@ public class CinematicDirector : MonoBehaviour
                     yield return DoFade(shot);
                     break;
 
-                case CinematicSequence.ShotType.PlaySFX:
-                    PlaySFX(shot);
+                case CinematicSequence.ShotType.PlaySfx:
+                    PlaySfx(shot);
                     yield return Wait(shot.duration);
                     break;
             }
@@ -109,10 +135,14 @@ public class CinematicDirector : MonoBehaviour
         // Handoff al gameplay
         if (sequence.handOffToGameplayOnEnd)
         {
-            // Limpieza HUD
             if (subtitleTMP) subtitleTMP.text = "";
-            yield return FadeTo(0f, 0.25f);  // asegúrate de estar sin negro
+            yield return FadeTo(0f, 0.25f);
             SetPlayerInput(true);
+        }
+
+        if (sequence.playOnlyOnce)
+        {
+            MarkCinematicSeen(GetSequenceId());
         }
 
         running = false;
@@ -127,10 +157,6 @@ public class CinematicDirector : MonoBehaviour
         Quaternion startRot = (shot.from ? shot.from.rotation : cameraRig.rotation);
         float startFOV = targetCamera ? targetCamera.fieldOfView : defaultFOV;
 
-        // Estado final
-        Vector3 endPos = startPos;
-        Quaternion endRot = startRot;
-
         // path (si existe, se interpola por waypoints; si no, LERP directo a 'to')
         List<Transform> path = new();
         if (shot.pathRoot)
@@ -142,7 +168,6 @@ public class CinematicDirector : MonoBehaviour
         {
             // Precompute segmentos
             var points = path.ToArray();
-            float t = 0f;
             float dur = Mathf.Max(0.01f, shot.duration) / Mathf.Max(0.01f, sequence.timeScale);
             float elapsed = 0f;
 
@@ -263,7 +288,7 @@ public class CinematicDirector : MonoBehaviour
         yield return Wait(shot.duration);
     }
 
-    void PlaySFX(CinematicSequence.Shot shot)
+    void PlaySfx(CinematicSequence.Shot shot)
     {
         if (shot.sfx && sfxSource)
             sfxSource.PlayOneShot(shot.sfx, shot.sfxVolume);
@@ -299,9 +324,9 @@ public class CinematicDirector : MonoBehaviour
         return Vector3.Lerp(pts[i].position, pts[i+1].position, u);
     }
 
-    void SetPlayerInput(bool enabled)
+    void SetPlayerInput(bool isEnabled)
     {
-        if (playerInput) playerInput.enabled = enabled;
+        if (playerInput) playerInput.enabled = isEnabled;
         if (playerRoot) playerRoot.SetActive(true); // por si lo desactivaste antes
     }
 
@@ -313,9 +338,9 @@ public class CinematicDirector : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
-        var fadeGO = new GameObject("Fade", typeof(Image));
-        fadeGO.transform.SetParent(hudCanvas.transform, false);
-        fadeImage = fadeGO.GetComponent<Image>();
+        var fadeGo = new GameObject("Fade", typeof(Image));
+        fadeGo.transform.SetParent(hudCanvas.transform, false);
+        fadeImage = fadeGo.GetComponent<Image>();
         fadeImage.color = Color.black;
         fadeImage.rectTransform.anchorMin = Vector2.zero;
         fadeImage.rectTransform.anchorMax = Vector2.one;
@@ -323,12 +348,12 @@ public class CinematicDirector : MonoBehaviour
         fadeImage.rectTransform.offsetMax = Vector2.zero;
         fadeImage.canvasRenderer.SetAlpha(0f);
 
-        var textGO = new GameObject("Subtitle", typeof(TextMeshProUGUI));
-        textGO.transform.SetParent(hudCanvas.transform, false);
-        subtitleTMP = textGO.GetComponent<TextMeshProUGUI>();
+        var textGo = new GameObject("Subtitle", typeof(TextMeshProUGUI));
+        textGo.transform.SetParent(hudCanvas.transform, false);
+        subtitleTMP = textGo.GetComponent<TextMeshProUGUI>();
         subtitleTMP.alignment = TextAlignmentOptions.Center;
         subtitleTMP.fontSize = 36;
-        subtitleTMP.enableWordWrapping = true;
+        subtitleTMP.textWrappingMode = TextWrappingModes.Normal;
         var rt = subtitleTMP.rectTransform;
         rt.anchorMin = new Vector2(0.1f, 0.05f);
         rt.anchorMax = new Vector2(0.9f, 0.25f);
@@ -367,5 +392,43 @@ public class CinematicDirector : MonoBehaviour
             yield return null;
         }
         subtitleTMP.alpha = to;
+    }
+
+    // --- Single-play helpers ---
+    string GetSequenceId()
+    {
+        if (!sequence) return string.Empty;
+        if (!string.IsNullOrEmpty(sequence.sequenceId)) return sequence.sequenceId;
+        return sequence.name;
+    }
+
+    bool IsCinematicSeen(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return false;
+        var profile = GameBootService.Profile;
+        if (profile == null) return false;
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return false;
+        if (preset.flags == null) return false;
+        string flag = $"CINEMATIC_SEEN:{id}";
+        return preset.flags.Contains(flag);
+    }
+
+    void MarkCinematicSeen(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        var profile = GameBootService.Profile;
+        if (profile == null) return;
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return;
+        if (preset.flags == null) preset.flags = new List<string>();
+        string flag = $"CINEMATIC_SEEN:{id}";
+        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
+
+        var saveSystem = UnityEngine.Object.FindFirstObjectByType<SaveSystem>();
+        if (saveSystem != null)
+        {
+            profile.SaveCurrentGameState(saveSystem);
+        }
     }
 }

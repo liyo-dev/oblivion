@@ -10,7 +10,7 @@ public class GameBootProfile : ScriptableObject
 
     [Header("Boot Settings")]
     [Tooltip("Ignora el save y aplica este preset al arrancar")]
-    public bool usePresetInsteadOfSave = false;
+    public bool usePresetInsteadOfSave; // eliminado '= false' redundante
     public PlayerPresetSO bootPreset;
 
     [Header("Runtime Fallback (auto-generado al cargar save)")]
@@ -55,7 +55,7 @@ public class GameBootProfile : ScriptableObject
         }
     }
 
-    public void SetRuntimePresetFromSave(PlayerSaveData data, PlayerPresetSO slotTemplate = null)
+    public void SetRuntimePresetFromSave(PlayerSaveData data)
     {
         if (data == null) return;
 
@@ -72,18 +72,30 @@ public class GameBootProfile : ScriptableObject
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
             p.spawnAnchorId = data.lastSpawnAnchorId;
 
-        // Slots: si hay plantilla, respétala; si no, usa los primeros del save
-        if (slotTemplate)
+        // Slots: si el save trae slots, usarlos (validando); si no, fallback al comportamiento anterior
+        var unlocked = p.unlockedSpells ?? new List<SpellId>();
+        SpellId Validate(SpellId id) => (id != SpellId.None && unlocked.Contains(id)) ? id : SpellId.None;
+        bool hasAnySavedSlot = data.leftSpellId != SpellId.None || data.rightSpellId != SpellId.None || data.specialSpellId != SpellId.None;
+
+        if (hasAnySavedSlot)
         {
-            p.leftSpellId    = slotTemplate.leftSpellId;
-            p.rightSpellId   = slotTemplate.rightSpellId;
-            p.specialSpellId = slotTemplate.specialSpellId;
+            p.leftSpellId    = Validate(data.leftSpellId);
+            p.rightSpellId   = Validate(data.rightSpellId);
+            p.specialSpellId = Validate(data.specialSpellId);
         }
         else
         {
-            p.leftSpellId    = p.unlockedSpells.Count > 0 ? p.unlockedSpells[0] : SpellId.None;
-            p.rightSpellId   = p.unlockedSpells.Count > 1 ? p.unlockedSpells[1] : SpellId.None;
-            p.specialSpellId = p.unlockedSpells.Count > 2 ? p.unlockedSpells[2] : SpellId.None;
+            // Fallback: mantener compatibilidad con saves antiguos (sin slots); solo asignar izquierdo si hay alguno desbloqueado
+            if (unlocked.Count > 0)
+            {
+                p.leftSpellId = unlocked[0];
+            }
+            else
+            {
+                p.leftSpellId = SpellId.None;
+            }
+            p.rightSpellId = SpellId.None;
+            p.specialSpellId = SpellId.None;
         }
     }
 
@@ -123,6 +135,10 @@ public class GameBootProfile : ScriptableObject
         data.abilities = new List<AbilityId>(activePreset.unlockedAbilities ?? new List<AbilityId>());
         data.spells = new List<SpellId>(activePreset.unlockedSpells ?? new List<SpellId>());
         data.flags = new List<string>(activePreset.flags ?? new List<string>());
+        // Guardar slots actuales
+        data.leftSpellId = activePreset.leftSpellId;
+        data.rightSpellId = activePreset.rightSpellId;
+        data.specialSpellId = activePreset.specialSpellId;
 
         return data;
     }
@@ -131,7 +147,7 @@ public class GameBootProfile : ScriptableObject
     private void ApplySaveDataToProfile(PlayerSaveData data)
     {
         if (data == null) return;
-        SetRuntimePresetFromSave(data, defaultPlayerPreset);
+        SetRuntimePresetFromSave(data);
     }
 
     public PlayerSaveData BuildDefaultSave()
@@ -209,5 +225,43 @@ public class GameBootProfile : ScriptableObject
 
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
+    }
+
+    // === NUEVO: Flujo de "Nueva partida" ===============================
+
+    /// <summary>
+    /// Elimina el save (si se pasa) y restablece el runtimePreset al preset por defecto.
+    /// Evita arrastrar datos de partidas anteriores cuando el GameBootService persiste.
+    /// </summary>
+    public void NewGameReset(SaveSystem saveSystem = null)
+    {
+        if (saveSystem) saveSystem.Delete();
+
+        if (defaultPlayerPreset)
+        {
+            EnsureRuntimePresetFromTemplate(defaultPlayerPreset);
+        }
+        else
+        {
+            EnsureRuntimePreset();
+            ResetPresetToEmpty(runtimePreset);
+        }
+
+        Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
+    }
+
+    private void ResetPresetToEmpty(PlayerPresetSO p)
+    {
+        if (!p) return;
+        p.spawnAnchorId = "Bedroom";
+        p.level = 1;
+        p.maxHP = 100f; p.currentHP = 100f;
+        p.maxMP = 50f;  p.currentMP = 50f;
+        p.unlockedAbilities = new List<AbilityId>();
+        p.unlockedSpells = new List<SpellId>();
+        p.leftSpellId = SpellId.None;
+        p.rightSpellId = SpellId.None;
+        p.specialSpellId = SpellId.None;
+        p.flags = new List<string>();
     }
 }

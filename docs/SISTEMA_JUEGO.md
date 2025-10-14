@@ -18,11 +18,11 @@
 
 ## 🏗️ Arquitectura General
 
-El juego utiliza una **arquitectura centralizada** basada en **GameBootService** que gestiona el **GameBootProfile** desde la escena start. Se eliminó el PlayerState para simplificar la gestión de datos y se reemplazó el sistema singleton automático por un servicio explícito.
+El juego utiliza una arquitectura centralizada basada en **GameBootService** que gestiona el **GameBootProfile** desde la escena start. Se eliminó el PlayerState para simplificar la gestión de datos y se reemplazó el sistema singleton automático por un servicio explícito.
 
 ### Componentes Principales:
 - **GameBootService** - Servicio en escena start que gestiona el GameBootProfile
-- **GameBootProfile** - SO con configuración y estado del juego (sin singleton automático)
+- **GameBootProfile** - ScriptableObject con configuración y estado del juego (sin singleton automático)
 - **PlayerPresetSO** - Datos del jugador (vida, maná, habilidades, etc.)
 - **PlayerHealthSystem** - Gestión específica de vida del jugador
 - **ManaPool** - Gestión de maná
@@ -169,9 +169,14 @@ PlayerPresetSO GetActivePresetResolved()
 bool SaveCurrentGameState(SaveSystem saveSystem)
 bool LoadProfile(SaveSystem saveSystem)
 
-// Configuración desde save
-void SetRuntimePresetFromSave(PlayerSaveData data, PlayerPresetSO template)
+// Aplicar datos de save al preset en runtime
+void SetRuntimePresetFromSave(PlayerSaveData data)
 ```
+
+Notas de comportamiento:
+- `SetRuntimePresetFromSave` aplica level, HP/MP, abilities, spells, flags y anchor del save al `runtimePreset`.
+- Slots al cargar desde save: si hay spells desbloqueados, se asigna el primero al slot izquierdo; los slots derecho y especial quedan vacíos (None).
+- `GetActivePresetResolved` siempre devuelve el `runtimePreset` (asegurándolo si hace falta), clonando de `bootPreset` o `defaultPlayerPreset` como fallback.
 
 ### Flujo de Inicialización
 1. **Modo Preset** - Si `usePresetInsteadOfSave = true`, usa `bootPreset`

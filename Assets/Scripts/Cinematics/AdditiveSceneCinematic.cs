@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Playables;
 using System.Collections;
+using UnityEngine.Events;
+using System.Collections.Generic;
 
 public class AdditiveSceneCinematic : MonoBehaviour
 {
@@ -14,12 +16,21 @@ public class AdditiveSceneCinematic : MonoBehaviour
     {
         if (cinematicSceneAsset != null)
             cinematicSceneName = cinematicSceneAsset.name; // copiamos el nombre real de la escena
+        // Autocompletar id por defecto si está vacío
+        if (string.IsNullOrEmpty(singlePlayId) && cinematicSceneAsset != null)
+            singlePlayId = cinematicSceneAsset.name;
     }
 #endif
 
     [Header("Playback")]
     [SerializeField] private bool playOnStart = true;
     [SerializeField] private bool directorInAdditive = true;
+
+    [Header("Playback Policy")]
+    [Tooltip("Si está activo, esta cinemática (por escena) solo se reproducirá una vez por perfil.")]
+    [SerializeField] private bool playOnlyOnce;
+    [Tooltip("Identificador único para marcar la cinemática como vista. Si está vacío, se usa el nombre de la escena.")]
+    [SerializeField] private string singlePlayId = "";
 
     [Header("Gameplay Lock")]
     [SerializeField] private GameObject[] toDisableDuringCinematic;
@@ -32,22 +43,29 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
     [Header("Return To Previous Position")]
     [Tooltip("Si está activo, al terminar la cinemática se restaurará la posición y la rotación previas del jugador, ignorando SpawnManager/Bootstrap.")]
-    [SerializeField] private bool useLastPlayerPositionOnExit = false;
+    [SerializeField] private bool useLastPlayerPositionOnExit;
+
+    [Header("Events")] 
+    [Tooltip("Se dispara justo cuando la Timeline termina (natural o forzada) antes de descargar la escena.")]
+    [SerializeField] private UnityEvent onCinematicFinished;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
 
     AsyncOperation loadOp;
     PlayableDirector director;
-    bool isUnloading = false;
-    bool isPlaying = false;
+    bool isUnloading;
+    bool isPlaying;
     Coroutine watchdogCo;
 
     // Estado guardado del jugador
     Transform cachedPlayerTransform;
     Vector3 savedPlayerPosition;
     Quaternion savedPlayerRotation;
-    bool hasSavedPlayerTransform = false;
+    bool hasSavedPlayerTransform;
+
+    // Para no invocar doble las acciones de fin
+    bool finishActionsInvoked;
 
     IEnumerator Start()
     {
@@ -63,11 +81,8 @@ public class AdditiveSceneCinematic : MonoBehaviour
             yield break;
         }
 
-        // Guardar posición/rotación actual del jugador si así se desea
-        if (useLastPlayerPositionOnExit)
-        {
-            SavePlayerTransformIfPossible();
-        }
+        // Determinar ID único
+        string id = GetSinglePlayId();
 
         // Preparar destino oficial de salida (no mueve, solo estado) salvo que ignoremos SpawnManager
         if (!useLastPlayerPositionOnExit && setAsCurrentAnchor && !string.IsNullOrEmpty(exitAnchorId))
@@ -77,8 +92,38 @@ public class AdditiveSceneCinematic : MonoBehaviour
                 Debug.Log($"[AdditiveSceneCinematic] CurrentAnchor preparado: '{exitAnchorId}'.");
         }
 
+        // Si es solo una vez y ya se vio, finalizar sin reproducir
+        if (playOnlyOnce && IsCinematicSeen(id))
+        {
+            if (showDebugLogs)
+                Debug.Log($"[AdditiveSceneCinematic] Saltando cinemática ya vista: {id}");
+
+            // Acciones de finalización equivalentes (sin cargar escena)
+            TryInvokeSkipLikeActions(); // dispara eventos de fin si hay listeners
+            // Rehabilitar gameplay explícitamente por si se desactivó algo previamente
+            if (toDisableDuringCinematic != null)
+                foreach (var go in toDisableDuringCinematic) if (go) go.SetActive(true);
+
+            if (useLastPlayerPositionOnExit && hasSavedPlayerTransform)
+            {
+                RestorePlayerTransformIfPossible();
+            }
+            else
+            {
+                SafeTeleportToCurrent();
+            }
+            yield break;
+        }
+
+        // Guardar posición/rotación actual del jugador si así se desea (solo si vamos a reproducir)
+        if (useLastPlayerPositionOnExit)
+        {
+            SavePlayerTransformIfPossible();
+        }
+
         isUnloading = false;
         isPlaying = false;
+        finishActionsInvoked = false;
 
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Desactivando gameplay y cargando escena: {cinematicSceneName}");
@@ -118,9 +163,9 @@ public class AdditiveSceneCinematic : MonoBehaviour
             director.Play();
             isPlaying = true;
 
-            // Watchdog: si no llega 'stopped', forzamos Stop()
+            // Monitor robusto del fin de la timeline
             if (watchdogCo != null) StopCoroutine(watchdogCo);
-            watchdogCo = StartCoroutine(WatchDirectorEnd(director));
+            watchdogCo = StartCoroutine(MonitorDirector(director));
         }
         else
         {
@@ -129,45 +174,72 @@ public class AdditiveSceneCinematic : MonoBehaviour
         }
     }
 
-    IEnumerator WatchDirectorEnd(PlayableDirector d)
+    IEnumerator MonitorDirector(PlayableDirector d)
     {
-        float Elapsed() => d.timeUpdateMode == DirectorUpdateMode.GameTime ? Time.deltaTime : Time.unscaledDeltaTime;
+        // Timeout suave: duración + margen o valor fijo si duración no es válida
+        float dur = (float)(double.IsNaN(d.duration) ? 0f : d.duration);
+        bool hasValidDuration = dur > 0f && !float.IsInfinity(dur);
+        float softTimeout = hasValidDuration ? dur + 0.5f : 30f;
 
-        var target = Mathf.Max(0.05f, (float)d.duration) + 0.25f;
-        float t = 0f;
-
-        while (d != null && !isUnloading && d.state == PlayState.Playing)
+        float elapsed = 0f;
+        while (d != null && !isUnloading)
         {
-            t += Elapsed();
+            // 1) Fin del gráfico
+            if (d.playableGraph.IsValid() && d.playableGraph.IsDone())
+            {
+                if (showDebugLogs) Debug.Log("[AdditiveSceneCinematic] PlayableGraph.IsDone -> finalizar cinemática.");
+                TryInvokeSkipLikeActions();
+                StartCoroutine(Unload());
+                yield break;
+            }
 
-            if (d.time >= d.duration - 0.001f)
-                break;
+            // 2) Fin por tiempo
+            if (hasValidDuration && d.time >= dur - 0.001f)
+            {
+                if (showDebugLogs) Debug.Log("[AdditiveSceneCinematic] Se alcanzó el final por tiempo -> Stop y finalizar.");
+                d.Stop(); // dispara OnDirectorStopped, que a su vez finalizará
+                yield break;
+            }
 
-            if (t >= target)
-                break;
+            // 3) Timeout suave
+            float dt = d.timeUpdateMode == DirectorUpdateMode.GameTime ? Time.deltaTime : Time.unscaledDeltaTime;
+            elapsed += dt;
+            if (elapsed >= softTimeout)
+            {
+                if (showDebugLogs) Debug.LogWarning("[AdditiveSceneCinematic] Timeout de cinemática. Forzando finalización.");
+                // Si sigue en Play, detener para asegurar OnDirectorStopped
+                if (d.state == PlayState.Playing) d.Stop();
+                else { TryInvokeSkipLikeActions(); StartCoroutine(Unload()); }
+                yield break;
+            }
 
             yield return null;
-        }
-
-        if (d != null && !isUnloading && d.state == PlayState.Playing)
-        {
-            if (showDebugLogs)
-                Debug.Log("[AdditiveSceneCinematic] Watchdog forzando Stop() de la Timeline.");
-            d.Stop(); // disparará OnDirectorStopped
         }
     }
 
     void Update()
     {
-        // Respaldo por si el wrapMode se tocó en runtime
+        // Respaldo adicional por si algo cambia en runtime
         if (isPlaying && director != null && !isUnloading)
         {
-            if (director.time >= director.duration && director.state != PlayState.Playing)
+            bool graphDone = director.playableGraph.IsValid() && director.playableGraph.IsDone();
+            bool byTime = director.duration > 0 && !double.IsInfinity(director.duration) && director.time >= director.duration - 0.001f;
+            if (graphDone)
+            {
+                if (showDebugLogs)
+                    Debug.Log("[AdditiveSceneCinematic] Detección en Update: PlayableGraph.IsDone.");
+                isPlaying = false;
+                director.stopped -= OnDirectorStopped;
+                TryInvokeSkipLikeActions();
+                StartCoroutine(Unload());
+            }
+            else if (byTime && director.state != PlayState.Playing)
             {
                 if (showDebugLogs)
                     Debug.Log($"[AdditiveSceneCinematic] Timeline terminó detectado en Update. {director.time:F2}s / {director.duration:F2}s");
                 isPlaying = false;
                 director.stopped -= OnDirectorStopped;
+                TryInvokeSkipLikeActions();
                 StartCoroutine(Unload());
             }
         }
@@ -187,7 +259,83 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
         isPlaying = false;
         d.stopped -= OnDirectorStopped;
+        // Invocar mismas acciones que 'hold A' antes de descargar
+        TryInvokeSkipLikeActions();
         StartCoroutine(Unload());
+    }
+
+    void TryInvokeSkipLikeActions()
+    {
+        if (finishActionsInvoked) return;
+        finishActionsInvoked = true;
+
+        // 1) Evento configurable en el inspector
+        try
+        {
+            onCinematicFinished?.Invoke();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[AdditiveSceneCinematic] onCinematicFinished lanzó excepción: {ex.Message}");
+        }
+
+        // 2) Compatibilidad: si hay un HoldToSkipUI activo, disparar su OnSkipCompleted
+        try
+        {
+            var hold = FindFirstObjectByType<HoldToSkipUI>();
+            if (hold != null)
+            {
+                if (hold.OnSkipCompleted != null)
+                {
+                    if (showDebugLogs) Debug.Log("[AdditiveSceneCinematic] Disparando HoldToSkipUI.OnSkipCompleted por fin automático.");
+                    hold.OnSkipCompleted.Invoke();
+                }
+            }
+        }
+        catch { /* ignorar si no existe la clase o no hay instancia */ }
+
+        // 3) Marcar como vista si aplica
+        if (playOnlyOnce)
+        {
+            MarkCinematicSeen(GetSinglePlayId());
+        }
+    }
+
+    // --- Single-play helpers ---
+    string GetSinglePlayId()
+    {
+        if (!string.IsNullOrEmpty(singlePlayId)) return singlePlayId;
+        return cinematicSceneName;
+    }
+
+    bool IsCinematicSeen(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return false;
+        var profile = GameBootService.Profile;
+        if (profile == null) return false;
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return false;
+        if (preset.flags == null) return false;
+        string flag = $"CINEMATIC_SEEN:{id}";
+        return preset.flags.Contains(flag);
+    }
+
+    void MarkCinematicSeen(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        var profile = GameBootService.Profile;
+        if (profile == null) return;
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return;
+        if (preset.flags == null) preset.flags = new List<string>();
+        string flag = $"CINEMATIC_SEEN:{id}";
+        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
+
+        var saveSystem = FindFirstObjectByType<SaveSystem>();
+        if (saveSystem != null)
+        {
+            profile.SaveCurrentGameState(saveSystem);
+        }
     }
 
     IEnumerator Unload()

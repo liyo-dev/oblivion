@@ -167,14 +167,44 @@ public class BossArenaBarrier : MonoBehaviour
     public void Show()
     {
         _isActive = true;
-        _renderer.enabled = true;
+        if (_renderer) _renderer.enabled = true;
         StopAllCoroutines();
-        StartCoroutine(FadeIn());
+        StartFadeIn();
     }
 
     public void Hide()
     {
         StopAllCoroutines();
+        StartFadeOut();
+    }
+
+    // === NUEVO: Helpers seguros para lanzar fades incluso si el objeto está inactivo ===
+    private void StartFadeIn()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+        {
+            // Aplicar estado final inmediato (visible con alpha objetivo)
+            _currentAlpha = barrierColor.a;
+            _baseColor = new Color(barrierColor.r, barrierColor.g, barrierColor.b, _currentAlpha);
+            if (_material) _material.SetColor(BASECOLOR, _baseColor);
+            if (_renderer) _renderer.enabled = true;
+            return;
+        }
+        StartCoroutine(FadeIn());
+    }
+
+    private void StartFadeOut()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+        {
+            // Aplicar estado final inmediato (oculto)
+            _currentAlpha = 0f;
+            _baseColor = new Color(barrierColor.r, barrierColor.g, barrierColor.b, 0f);
+            if (_material) _material.SetColor(BASECOLOR, _baseColor);
+            _isActive = false;
+            if (_renderer) _renderer.enabled = false;
+            return;
+        }
         StartCoroutine(FadeOut());
     }
 
@@ -216,7 +246,7 @@ public class BossArenaBarrier : MonoBehaviour
         }
 
         _isActive = false;
-        _renderer.enabled = false;
+        if (_renderer) _renderer.enabled = false;
     }
 
     void OnDestroy()
