@@ -63,6 +63,9 @@ public class PlayerHUDComplete : MonoBehaviour
     private MagicSlotUI _leftSlot;
     private MagicSlotUI _rightSlot;
     private MagicSlotUI _upSlot;
+    
+    private bool _createdCanvas;     
+    private GameObject _rootPanel;
 
     // Clase para manejar cada slot individual
     [System.Serializable]
@@ -114,14 +117,15 @@ public class PlayerHUDComplete : MonoBehaviour
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
             canvasGO.AddComponent<GraphicRaycaster>();
+            _createdCanvas = true; // ← NUEVO
         }
 
-        CreateIntegratedHUD();
+        _rootPanel = CreateIntegratedHUD(); // ← guarda el panel raíz
     }
 
     #region Integrated HUD (Todo en un panel)
 
-    private void CreateIntegratedHUD()
+    private GameObject  CreateIntegratedHUD()
     {
         // Panel principal que contiene TODO en VERTICAL
         var mainPanel = new GameObject("PlayerHUD_Main");
@@ -156,6 +160,7 @@ public class PlayerHUDComplete : MonoBehaviour
 
         // Crear contenedor principal con layout vertical
         CreateVerticalLayout(mainPanel);
+        return mainPanel; 
     }
 
     private void CreateVerticalLayout(GameObject parent)
@@ -563,14 +568,40 @@ public class PlayerHUDComplete : MonoBehaviour
             _healthFill.color = Color.Lerp(_healthFill.color, targetColor, Time.deltaTime * 6f);
         }
 
-        // Actualizar maná
+        // Maná (con guardia de división)
         if (_manaPool && _manaSlider && _manaText)
         {
-            float manaPercent = _manaPool.Current / _manaPool.Max;
+            float denom = Mathf.Max(0.0001f, _manaPool.Max);
+            float manaPercent = _manaPool.Current / denom;
             _manaSlider.value = Mathf.Lerp(_manaSlider.value, manaPercent, Time.deltaTime * 8f);
             _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
         }
     }
+    
+    public void ForceRefresh()
+    {
+        // Re-resolver referencias por si no estuvieran aún
+        if (_healthSystem == null) _healthSystem = FindObjectOfType<PlayerHealthSystem>();
+        if (_manaPool == null) _manaPool = FindObjectOfType<ManaPool>();
+        if (_magicCaster == null) _magicCaster = FindObjectOfType<MagicCaster>();
+
+        // Salud (snap inmediato)
+        if (_healthSystem && _healthSlider && _healthText)
+        {
+            float hp = _healthSystem.HealthPercentage;
+            _healthSlider.value = hp;
+            _healthText.text = $"{_healthSystem.CurrentHealth:0}/{_healthSystem.MaxHealth:0}";
+        }
+
+        // Maná (snap inmediato)
+        if (_manaPool && _manaSlider && _manaText)
+        {
+            float mp = _manaPool.Max > 0f ? _manaPool.Current / _manaPool.Max : 0f;
+            _manaSlider.value = mp;
+            _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+        }
+    }
+
 
     #endregion
 
@@ -757,14 +788,8 @@ public class PlayerHUDComplete : MonoBehaviour
 
     void OnDestroy()
     {
-        if (_statsPanel) 
-        {
-            if (_statsPanel.transform.parent != null)
-                DestroyImmediate(_statsPanel.transform.parent.gameObject);
-            else
-                DestroyImmediate(_statsPanel);
-        }
-        if (_slotsPanel) DestroyImmediate(_slotsPanel);
+        if (_rootPanel) DestroyImmediate(_rootPanel);
+        if (_createdCanvas && _canvas) DestroyImmediate(_canvas.gameObject);
     }
 
     #endregion

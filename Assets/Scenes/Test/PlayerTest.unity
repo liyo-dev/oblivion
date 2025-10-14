@@ -294,6 +294,7 @@ MonoBehaviour:
   firstCastExtraBuffer: 0
   disableAfterUse: 1
   onUnlockedVfx: {fileID: 0}
+  saveAfterUnlock: 1
 --- !u!65 &808885105
 BoxCollider:
   m_ObjectHideFlags: 0

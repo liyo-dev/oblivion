@@ -195,7 +195,7 @@ public class PlayerPresetService : MonoBehaviour
         ConfigureSpells(preset);
 
         // NUEVO: forzar refresco de HUD tras aplicar preset
-        var hud = FindFirstObjectByType<PlayerHUD>();
+        var hud = FindFirstObjectByType<PlayerHUDComplete>();
         if (hud != null)
         {
             hud.ForceRefresh();

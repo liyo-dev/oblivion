@@ -51,13 +51,9 @@ public class UnlockTrigger : MonoBehaviour
     {
         GameBootService.OnProfileReady += HandleProfileReady;
 
-        // Opción: desbloquear al habilitar el GO
         if (unlockOnEnable)
         {
-            if (GameBootService.IsAvailable)
-            {
-                TryApplyUnlocks();
-            }
+            if (GameBootService.IsAvailable)  TryApplyUnlocks();
             else
             {
                 _pendingApply = true;
@@ -73,20 +69,14 @@ public class UnlockTrigger : MonoBehaviour
 
     private void HandleProfileReady()
     {
-        if (_pendingApply)
-        {
-            TryApplyUnlocks();
-        }
+        if (_pendingApply) TryApplyUnlocks();
     }
 
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
 
-        if (GameBootService.IsAvailable)
-        {
-            TryApplyUnlocks();
-        }
+        if (GameBootService.IsAvailable)  TryApplyUnlocks();
         else
         {
             _pendingApply = true;
@@ -94,13 +84,10 @@ public class UnlockTrigger : MonoBehaviour
         }
     }
 
-    // === Nuevo: método público para invocar por evento externo (UnityEvent, AnimationEvent, Timeline, etc.) ===
+    // Invocable desde UnityEvent/Timeline/etc.
     public void ApplyUnlocksNow()
     {
-        if (GameBootService.IsAvailable)
-        {
-            TryApplyUnlocks();
-        }
+        if (GameBootService.IsAvailable)  TryApplyUnlocks();
         else
         {
             _pendingApply = true;
@@ -109,14 +96,12 @@ public class UnlockTrigger : MonoBehaviour
     }
 
     [ContextMenu("Apply Unlocks Now (Debug)")]
-    private void CtxApplyNow()
-    {
-        ApplyUnlocksNow();
-    }
+    private void CtxApplyNow() => ApplyUnlocksNow();
 
     private void TryApplyUnlocks()
     {
         _pendingApply = false;
+
         var preset = UnlockService.GetActivePreset();
         if (!preset)
         {
@@ -124,7 +109,7 @@ public class UnlockTrigger : MonoBehaviour
             return;
         }
 
-        // One-shot via flag
+        // One-shot via flag (si ya se aplicó, salir)
         if (!string.IsNullOrEmpty(oneShotFlag) && preset.flags != null && preset.flags.Contains(oneShotFlag))
         {
             if (disableAfterUse) gameObject.SetActive(false);
@@ -132,110 +117,90 @@ public class UnlockTrigger : MonoBehaviour
         }
 
         bool changed = false;
+        bool needsHudRefresh = false;                // ← disparará un refresh visual al final
+        PlayerPresetService presetService = null;
+
+        // Helper local para aplicar preset y marcar refresh HUD
+        void ApplyPresetAndMark()
+        {
+            if (!presetService) presetService = FindFirstObjectByType<PlayerPresetService>();
+            if (presetService)
+            {
+                presetService.ApplyCurrentPreset();
+                needsHudRefresh = true;
+            }
+        }
 
         // Desbloquear habilidades
         foreach (var ab in abilitiesToUnlock)
-        {
             changed |= UnlockService.UnlockAbility(ab);
-        }
 
         // Desbloquear hechizos
         foreach (var sp in spellsToUnlock)
-        {
             changed |= UnlockService.UnlockSpell(sp, assignSpellsToEmptySlots);
-        }
 
         // Asegurar maná si procede (valores proporcionados)
         if (setManaMinimums)
-        {
             changed |= UnlockService.EnsureMana(minMaxMana, minCurrentMana);
-        }
 
         // Añadir flag one-shot si configurado
         if (!string.IsNullOrEmpty(oneShotFlag))
-        {
             changed |= UnlockService.AddFlag(oneShotFlag);
-        }
 
-        // Re-aplicar preset a sistemas (MagicCaster/Spawner) si hubo cambios
-        PlayerPresetService presetService = null;
-        if (changed)
-        {
-            presetService = FindFirstObjectByType<PlayerPresetService>();
-            if (presetService) presetService.ApplyCurrentPreset();
-        }
+        // Si hubo cambios en preset/slots/MP mínimos → reaplicar
+        if (changed) ApplyPresetAndMark();
 
         // === Garantizar primer casteo si se pide ===
-        bool mpChangedByEnsure = false;
         if (ensureFirstCast)
         {
-            float needed = 0f;
+            float needed;
             var caster = FindFirstObjectByType<MagicCaster>();
+
             if (caster != null)
             {
-                // Coste mínimo de alguno de los slots asignados (asegura poder lanzar al menos uno)
                 float cL = caster.GetSpellForSlot(MagicSlot.Left)    ? caster.GetSpellForSlot(MagicSlot.Left).manaCost    : float.PositiveInfinity;
                 float cR = caster.GetSpellForSlot(MagicSlot.Right)   ? caster.GetSpellForSlot(MagicSlot.Right).manaCost   : float.PositiveInfinity;
                 float cS = caster.GetSpellForSlot(MagicSlot.Special) ? caster.GetSpellForSlot(MagicSlot.Special).manaCost : float.PositiveInfinity;
                 needed = Mathf.Min(cL, cR, cS);
-                if (!float.IsFinite(needed)) needed = 0f; // por si no hay ningún spell asignado
+                if (!float.IsFinite(needed)) needed = 0f;
             }
             else
             {
-                // Fallback: si no hay caster, usa un valor conservador (5)
-                needed = 5f;
+                needed = 5f; // conservador
             }
 
             needed = Mathf.Max(0f, needed + Mathf.Max(0f, firstCastExtraBuffer));
+
             if (needed > 0f)
             {
-                mpChangedByEnsure = UnlockService.EnsureMana(Mathf.Max(preset.maxMP, needed), Mathf.Max(preset.currentMP, needed));
-                if (mpChangedByEnsure)
-                {
-                    if (!presetService) presetService = FindFirstObjectByType<PlayerPresetService>();
-                    if (presetService) presetService.ApplyCurrentPreset();
-                }
+                bool mpChanged = UnlockService.EnsureMana(
+                    Mathf.Max(preset.maxMP, needed),
+                    Mathf.Max(preset.currentMP, needed)
+                );
+                if (mpChanged) ApplyPresetAndMark();
             }
         }
 
         // === Fallback de MP mínimo si se han desbloqueado hechizos y no hay otra configuración de MP activa ===
-        bool mpChangedByFallback = false;
         if (!ensureFirstCast && !setManaMinimums && spellsToUnlock != null && spellsToUnlock.Count > 0)
         {
-            const float fallbackMin = 5f; // valor prudente para permitir probar un hechizo barato
-            mpChangedByFallback = UnlockService.EnsureMana(
+            const float fallbackMin = 5f;
+            bool mpChanged = UnlockService.EnsureMana(
                 Mathf.Max(preset.maxMP, fallbackMin),
                 Mathf.Max(preset.currentMP, fallbackMin)
             );
-            if (mpChangedByFallback)
-            {
-                if (!presetService) presetService = FindFirstObjectByType<PlayerPresetService>();
-                if (presetService) presetService.ApplyCurrentPreset();
-            }
+            if (mpChanged) ApplyPresetAndMark();
         }
 
-        // Forzar refresco de HUD si hubo cambios en MP o preset
-        if (changed || mpChangedByEnsure || mpChangedByFallback)
+        // === Refresco de HUD (inmediato) si ha habido cambios aplicados ===
+        if (needsHudRefresh)
         {
-            var hud = FindFirstObjectByType<PlayerHUD>();
-            if (hud != null)
-            {
-                hud.ForceRefresh();
-            }
+            var hudComplete = FindFirstObjectByType<PlayerHUDComplete>();
+            if (hudComplete) hudComplete.ForceRefresh();
         }
 
-        if (changed)
-        {
-            if (onUnlockedVfx)
-            {
-                Instantiate(onUnlockedVfx, transform.position, Quaternion.identity);
-            }
-
-            Debug.Log("[UnlockTrigger] Desbloqueos aplicados al preset activo");
-        }
-
-        // Guardar si procede (si hubo cambios o si se ajustó MP para primer cast o fallback)
-        if (saveAfterUnlock && (changed || mpChangedByEnsure || mpChangedByFallback))
+        // === Guardado ===
+        if (saveAfterUnlock && needsHudRefresh)
         {
             var profile = GameBootService.Profile;
             var saveSystem = FindFirstObjectByType<SaveSystem>();
@@ -246,9 +211,8 @@ public class UnlockTrigger : MonoBehaviour
             }
         }
 
-        if (disableAfterUse)
-        {
-            gameObject.SetActive(false);
-        }
+        // === Feedback y desactivación ===
+        if (onUnlockedVfx) Instantiate(onUnlockedVfx, transform.position, Quaternion.identity);
+        if (disableAfterUse) gameObject.SetActive(false);
     }
 }
