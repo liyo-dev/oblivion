@@ -23,9 +23,10 @@ public class PlayerHUDComplete : MonoBehaviour
     [SerializeField] private Color manaColor = new Color(0.2f, 0.4f, 0.9f, 1f); // Azul
 
     [Header("Colores de Fondo")]
-    [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.7f);
-    [SerializeField] private Color backgroundColorActive = new Color(0.2f, 0.2f, 0.2f, 0.85f);
-    [SerializeField] private Color backgroundColorInactive = new Color(0.1f, 0.1f, 0.1f, 0.95f);
+    [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.25f); // Mucho más transparente
+    [SerializeField] private Color barBackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.4f); // Background de barras más sutil
+    [SerializeField] private Color backgroundColorActive = new Color(0.2f, 0.2f, 0.2f, 0.6f); // Menos opaco
+    [SerializeField] private Color backgroundColorInactive = new Color(0.1f, 0.1f, 0.1f, 0.5f); // Menos opaco
 
     [Header("Slots de Magia")]
     [SerializeField] private float slotSize = 70f;

@@ -136,24 +136,19 @@ public class PlayerCarrySystem : MonoBehaviour
             _carriedRigidbody.linearVelocity = transform.forward * 3f + Vector3.up * 1f;
         }
 
-        if (_animator != null)
+        // Bajar el peso de la capa UpperBody a 0 para volver a la animación base
+        if (_animator != null && animatorLayer > 0)
         {
-            _animator.CrossFade(locomotionStateName, transitionDuration, animatorLayer);
-            // Bajar el peso de la capa UpperBody a 0
-            if (animatorLayer > 0)
-                _animator.SetLayerWeight(animatorLayer, 0f);
+            _animator.SetLayerWeight(animatorLayer, 0f);
         }
 
         _carriedObject = null;
         _carriedRigidbody = null;
         _carriedPickupObject = null;
 
-        // Notificar al ActionManager que salimos del modo Carrying
         if (_actionManager != null)
             _actionManager.PopMode(ActionMode.Carrying);
         
-        // IMPORTANTE: Esperar un frame antes de permitir acciones para evitar inputs residuales
-        // Esto previene que al soltar la caja con el botón de interacción, se active un salto accidental
         StartCoroutine(ClearInputBufferAfterDrop());
     }
 

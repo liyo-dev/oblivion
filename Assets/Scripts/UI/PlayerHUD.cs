@@ -14,9 +14,10 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private bool showDebugInfo = false;
 
     [Header("Colores")]
-    [SerializeField] private Color healthColor = new Color(0.8f, 0.2f, 0.2f, 1f);
-    [SerializeField] private Color manaColor = new Color(0.2f, 0.4f, 0.8f, 1f);
-    [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.6f);
+    [SerializeField] private Color healthColor = new Color(0.9f, 0.2f, 0.2f, 1f);
+    [SerializeField] private Color manaColor = new Color(0.3f, 0.5f, 1f, 1f);
+    [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.3f); // Mucho más transparente
+    [SerializeField] private Color barBackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.5f); // Background de las barras más sutil
 
     // Referencias automáticas
     private PlayerHealthSystem _healthSystem; // ← CAMBIADO: usar tu sistema real
@@ -127,7 +128,7 @@ public class PlayerHUD : MonoBehaviour
         bgRect.offsetMin = Vector2.zero;
         bgRect.offsetMax = Vector2.zero;
         var bgImage = bgGO.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        bgImage.color = barBackgroundColor;
         bgImage.raycastTarget = false;
         _healthSlider.targetGraphic = bgImage;
 
@@ -201,7 +202,7 @@ public class PlayerHUD : MonoBehaviour
         bgRect.offsetMin = Vector2.zero;
         bgRect.offsetMax = Vector2.zero;
         var bgImage = bgGO.AddComponent<Image>();
-        bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        bgImage.color = barBackgroundColor;
         bgImage.raycastTarget = false;
         _manaSlider.targetGraphic = bgImage;
 

@@ -24299,6 +24299,8 @@ MonoBehaviour:
   toDisableDuringCinematic:
   - {fileID: 965833600}
   - {fileID: 1051082681}
+  - {fileID: 0}
+  - {fileID: 0}
   exitAnchorId: 
   setAsCurrentAnchor: 1
   showDebugLogs: 1
@@ -180507,6 +180509,10 @@ PrefabInstance:
     - target: {fileID: 4909843728885285984, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_Name
       value: _PLAYER
+      objectReference: {fileID: 0}
+    - target: {fileID: 5320047654197590396, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
+      propertyPath: m_text
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.x

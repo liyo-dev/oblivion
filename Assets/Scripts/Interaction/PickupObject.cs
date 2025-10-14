@@ -30,28 +30,17 @@ public class PickupObject : MonoBehaviour
     // ¡OJO! Este método puede recibir un hijo golpeado por el raycast o el propio Player
     private void OnPickup(GameObject whoCalled)
     {
-        // 1) Localiza el PlayerCarrySystem de forma robusta
-        var carry = whoCalled
-            ? whoCalled.GetComponentInParent<PlayerCarrySystem>()
-            : null;
+        var carry = whoCalled?.GetComponentInParent<PlayerCarrySystem>() 
+                     ?? FindFirstObjectByType<PlayerCarrySystem>();
 
         if (carry == null)
         {
-            // Plan B: toma el primero de la escena (útil si el evento te pasó el GO equivocado)
-            carry = FindFirstObjectByType<PlayerCarrySystem>();
-        }
-
-        if (carry == null)
-        {
-            Debug.LogWarning($"[PickupObject] No encuentro PlayerCarrySystem. ¿Está en el Player?");
+            Debug.LogWarning($"[PickupObject] No se encuentra PlayerCarrySystem en {name}");
             return;
         }
 
-        // 2) Desactiva el hint y la interacción antes de mover
         _interactable.SetHintVisible(false);
         _interactable.EnableInteraction(false);
-
-        // 3) Fuerza a coger **esta caja raíz** (no el hijo que haya golpeado el raycast)
         carry.PickupObject(gameObject);
     }
 

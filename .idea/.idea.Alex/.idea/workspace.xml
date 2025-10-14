@@ -5,20 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Editor/TagFieldDrawer.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Editor/TagFieldDrawer.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Attributes.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Attributes/TagFieldAttribute.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Attributes/TagFieldAttribute.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_es.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/prologue_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/prologue_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/prologue_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/prologue_es.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/quests_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/quests_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/quests_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/quests_es.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/ui_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/ui_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/ui_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/ui_es.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/InteractionDetector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/InteractionDetector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/PickupObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/PickupObject.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/PlayerCarrySystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/PlayerCarrySystem.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,21 +52,21 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Art/Enemies/CasualFantasy/Spider1/SourceFiles/AC.controller" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Editor/TagFieldDrawer.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestItemDelivery.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Attributes.meta" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Attributes/TagFieldAttribute.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/PickupObject.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/PlayerCarrySystem.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/RoomExitBlocker.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/MagicProjectileSpawner.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/MagicProjectileSpawner.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/_Recovery/0 (10).unity" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
@@ -77,6 +87,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -150,7 +161,8 @@
       <option name="presentableId" value="Default" />
       <updated>1760379125093</updated>
       <workItem from="1760379129434" duration="2471000" />
-      <workItem from="1760382820437" duration="9849000" />
+      <workItem from="1760382820437" duration="10643000" />
+      <workItem from="1760418177371" duration="3908000" />
     </task>
     <servers />
   </component>

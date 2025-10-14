@@ -33,7 +33,8 @@ public class SimpleQuestNPC : MonoBehaviour
         public int itemDeliveryStepIndex = 1;
         
         [Tooltip("Tag del item a detectar (ej: 'QuestItem')")]
-        public string itemTag = "QuestItem";
+        [TagField]
+        public string itemTag = "Untagged";
         
         [Header("Diálogos de esta Quest")]
         public DialogueAsset dlgBefore;
@@ -63,8 +64,8 @@ public class SimpleQuestNPC : MonoBehaviour
     [SerializeField] private bool showDetectionGizmos = true;
 
     private Interactable _interactable;
-    private bool _isChaining = false; // Flag para evitar parpadeo del hint durante encadenamiento
     private HashSet<GameObject> _detectedItems = new HashSet<GameObject>();
+    private Coroutine _detectionRoutine;
 
     void Awake()
     {
@@ -77,8 +78,39 @@ public class SimpleQuestNPC : MonoBehaviour
 
     void Start()
     {
-        // Iniciar detección periódica de items
-        StartCoroutine(DetectItemsRoutine());
+        StartDetection();
+    }
+
+    void OnEnable()
+    {
+        // Reiniciar detección si fue desactivado y reactivado (ej: por cinemática)
+        if (_detectionRoutine == null && gameObject.activeInHierarchy)
+        {
+            StartDetection();
+        }
+    }
+
+    void OnDisable()
+    {
+        StopDetection();
+    }
+
+    private void StartDetection()
+    {
+        if (_detectionRoutine != null)
+        {
+            StopCoroutine(_detectionRoutine);
+        }
+        _detectionRoutine = StartCoroutine(DetectItemsRoutine());
+    }
+
+    private void StopDetection()
+    {
+        if (_detectionRoutine != null)
+        {
+            StopCoroutine(_detectionRoutine);
+            _detectionRoutine = null;
+        }
     }
 
     public void Interact()
@@ -272,18 +304,23 @@ public class SimpleQuestNPC : MonoBehaviour
     /// </summary>
     private void ChainToNextQuest(QuestChainEntry completedEntry, QuestManager qm, string completedQuestId, int currentIndex)
     {
-        // Marcar que estamos encadenando para evitar parpadeo del hint
-        _isChaining = true;
-        
+        // Notificar al jugador que estamos encadenando diálogos para evitar parpadeo del hint
+        var player = GameObject.FindGameObjectWithTag("Player");
+        var interactionDetector = player?.GetComponent<InteractionDetector>();
+        if (interactionDetector != null)
+        {
+            interactionDetector.SetChaining(true);
+        }
+
         // Mostrar diálogo de Turn In
         PlayDialogue(completedEntry.dlgTurnIn, () =>
         {
             // Usar coroutine para dar un frame al DialogueManager antes de abrir el siguiente diálogo
-            StartCoroutine(StartNextQuestAfterDelay(qm, currentIndex));
+            StartCoroutine(StartNextQuestAfterDelay(qm, currentIndex, interactionDetector));
         });
     }
 
-    private IEnumerator StartNextQuestAfterDelay(QuestManager qm, int currentIndex)
+    private IEnumerator StartNextQuestAfterDelay(QuestManager qm, int currentIndex, InteractionDetector interactionDetector)
     {
         // Esperar un frame para que el DialogueManager termine de procesar el cierre
         yield return null;
@@ -306,24 +343,38 @@ public class SimpleQuestNPC : MonoBehaviour
                 {
                     PlayDialogue(nextEntry.dlgBefore, () =>
                     {
-                        // Termina el encadenamiento
-                        _isChaining = false;
+                        // Finalizar el encadenamiento cuando termine el último diálogo
+                        if (interactionDetector != null)
+                        {
+                            interactionDetector.SetChaining(false);
+                        }
                     });
                 }
                 else
                 {
-                    _isChaining = false;
+                    // Si no hay diálogo, finalizar el encadenamiento inmediatamente
+                    if (interactionDetector != null)
+                    {
+                        interactionDetector.SetChaining(false);
+                    }
                 }
             }
             else
             {
-                _isChaining = false;
+                // Si no hay más quests, finalizar el encadenamiento
+                if (interactionDetector != null)
+                {
+                    interactionDetector.SetChaining(false);
+                }
             }
         }
         else
         {
-            // No hay más quests en la cadena
-            _isChaining = false;
+            // No hay más quests en la cadena, finalizar el encadenamiento
+            if (interactionDetector != null)
+            {
+                interactionDetector.SetChaining(false);
+            }
         }
     }
 
@@ -359,9 +410,10 @@ public class SimpleQuestNPC : MonoBehaviour
 
     private IEnumerator DetectItemsRoutine()
     {
+        var wait = new WaitForSeconds(detectionInterval);
         while (true)
         {
-            yield return new WaitForSeconds(detectionInterval);
+            yield return wait;
             CheckForItemsInRange();
         }
     }
@@ -371,33 +423,24 @@ public class SimpleQuestNPC : MonoBehaviour
         var qm = QuestManager.Instance;
         if (qm == null) return;
 
-        // Buscar quest activa que requiera detección de items
         int activeQuestIndex = FindActiveQuestIndex(qm);
         if (activeQuestIndex < 0) return;
 
         var entry = questChain[activeQuestIndex];
         if (!entry.autoDetectItemDelivery) return;
 
-        var questState = qm.GetState(entry.questData.questId);
-        if (questState != QuestState.Active) return;
+        if (qm.GetState(entry.questData.questId) != QuestState.Active) return;
 
-        // Buscar objetos con el tag especificado en el rango
+        // Buscar objetos con el tag especificado
         var itemsInScene = GameObject.FindGameObjectsWithTag(entry.itemTag);
         
         foreach (var item in itemsInScene)
         {
-            // Evitar detectar el mismo item múltiples veces
             if (_detectedItems.Contains(item)) continue;
-
-            // Verificar si está en el rango
-            if (IsItemInDetectionRange(item))
-            {
-                // Verificar si el item NO está siendo sostenido por el jugador
-                if (!IsItemHeldByPlayer(item))
-                {
-                    OnItemDetected(item, entry, qm);
-                }
-            }
+            if (!IsItemInDetectionRange(item)) continue;
+            if (IsItemHeldByPlayer(item)) continue;
+            
+            OnItemDetected(item, entry, qm);
         }
     }
 
@@ -406,66 +449,48 @@ public class SimpleQuestNPC : MonoBehaviour
         Vector3 directionToItem = item.transform.position - transform.position;
         float distanceToItem = directionToItem.magnitude;
 
-        // Verificar distancia
-        if (distanceToItem > detectionRadius)
-            return false;
+        if (distanceToItem > detectionRadius) return false;
 
-        // Verificar ángulo (campo de visión)
-        Vector3 forward = transform.forward;
-        float angleToItem = Vector3.Angle(forward, directionToItem);
-        
+        float angleToItem = Vector3.Angle(transform.forward, directionToItem);
         return angleToItem <= detectionAngle * 0.5f;
     }
 
     private bool IsItemHeldByPlayer(GameObject item)
     {
-        // Verificar si el item es hijo del jugador
         var player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return false;
 
         Transform currentParent = item.transform.parent;
         while (currentParent != null)
         {
-            if (currentParent.gameObject == player)
-                return true;
+            if (currentParent.gameObject == player) return true;
             currentParent = currentParent.parent;
         }
-
         return false;
     }
 
     private void OnItemDetected(GameObject item, QuestChainEntry entry, QuestManager qm)
     {
-        // Marcar como detectado para no procesarlo de nuevo
         _detectedItems.Add(item);
-
-        // Destruir el item
         Destroy(item);
 
-        // Obtener información de la quest
         var runtimeQuest = qm.GetAll().FirstOrDefault(rq => rq.Id == entry.questData.questId);
         if (runtimeQuest == null) return;
 
-        // Quest sin pasos - completar directamente
         if (runtimeQuest.Steps.Length == 0)
         {
             CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
             return;
         }
 
-        // Quest con pasos - determinar qué paso completar
         int stepToComplete = entry.itemDeliveryStepIndex;
-        
-        // Si el índice configurado no existe, usar el último paso disponible
         if (stepToComplete >= runtimeQuest.Steps.Length)
         {
             stepToComplete = runtimeQuest.Steps.Length - 1;
         }
         
-        // Marcar el paso como completado
         qm.MarkStepDone(entry.questData.questId, stepToComplete);
         
-        // Verificar si todos los pasos están completados
         if (qm.AreAllStepsCompleted(entry.questData.questId))
         {
             CompleteQuestWithItem(entry, qm, FindActiveQuestIndex(qm));
@@ -475,11 +500,7 @@ public class SimpleQuestNPC : MonoBehaviour
     private void CompleteQuestWithItem(QuestChainEntry entry, QuestManager qm, int currentIndex)
     {
         qm.CompleteQuest(entry.questData.questId);
-        
-        // Ejecutar evento de quest completada
         entry.OnQuestCompleted?.Invoke();
-
-        // Mostrar diálogo de entrega y encadenar
         ChainToNextQuest(entry, qm, entry.questData.questId, currentIndex);
     }
 
