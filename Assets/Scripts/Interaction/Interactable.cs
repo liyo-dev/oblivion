@@ -80,7 +80,8 @@ public class Interactable : MonoBehaviour
         if (dialogue && DialogueManager.Instance)
         {
             OnStarted?.Invoke();
-            DialogueManager.Instance.StartDialogue(dialogue, () =>
+            // Pasar el transform de este objeto para la cámara de diálogo
+            DialogueManager.Instance.StartDialogue(dialogue, transform, () =>
             {
                 OnFinished?.Invoke();
                 AfterUse();

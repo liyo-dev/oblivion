@@ -20,7 +20,6 @@ public class InteractionDetector : MonoBehaviour
 
     private Interactable current;
     private PlayerCarrySystem _carrySystem;
-    private bool _isChaining = false; // Flag para evitar parpadeo del hint durante encadenamiento
 
     private void Awake()
     {
@@ -52,13 +51,11 @@ public class InteractionDetector : MonoBehaviour
 
     private void Update()
     {
-        // Si hay diálogo abierto O está en encadenamiento, no enfocamos nada nuevo
-        bool dialogueActive = (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) || _isChaining;
+        // Si hay diálogo abierto, no enfocamos nada nuevo
+        bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
         if (dialogueActive)
         {
-            // Durante encadenamiento, mantener el hint actual visible si existe
-            if (!_isChaining)
-                SetCurrent(null);
+            SetCurrent(null);
             return;
         }
 
@@ -146,15 +143,6 @@ public class InteractionDetector : MonoBehaviour
             }
         }
         return winner;
-    }
-
-    /// <summary>
-    /// Permite notificar que se está produciendo un encadenamiento de diálogos
-    /// para evitar que el hint parpadee entre diálogos consecutivos
-    /// </summary>
-    public void SetChaining(bool isChaining)
-    {
-        _isChaining = isChaining;
     }
 
 #if UNITY_EDITOR

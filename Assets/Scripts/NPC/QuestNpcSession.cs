@@ -80,7 +80,8 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
     void StartDlg(DialogueAsset asset, Action after)
     {
         if (asset == null) { after?.Invoke(); return; }
-        DialogueManager.Instance.StartDialogue(asset, () => after?.Invoke());
+        // Pasar el transform de este NPC al DialogueManager para la cámara de diálogo
+        DialogueManager.Instance.StartDialogue(asset, transform, () => after?.Invoke());
     }
 
     void End()

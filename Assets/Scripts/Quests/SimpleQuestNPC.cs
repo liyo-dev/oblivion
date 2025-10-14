@@ -304,23 +304,15 @@ public class SimpleQuestNPC : MonoBehaviour
     /// </summary>
     private void ChainToNextQuest(QuestChainEntry completedEntry, QuestManager qm, string completedQuestId, int currentIndex)
     {
-        // Notificar al jugador que estamos encadenando diálogos para evitar parpadeo del hint
-        var player = GameObject.FindGameObjectWithTag("Player");
-        var interactionDetector = player?.GetComponent<InteractionDetector>();
-        if (interactionDetector != null)
-        {
-            interactionDetector.SetChaining(true);
-        }
-
         // Mostrar diálogo de Turn In
         PlayDialogue(completedEntry.dlgTurnIn, () =>
         {
             // Usar coroutine para dar un frame al DialogueManager antes de abrir el siguiente diálogo
-            StartCoroutine(StartNextQuestAfterDelay(qm, currentIndex, interactionDetector));
+            StartCoroutine(StartNextQuestAfterDelay(qm, currentIndex));
         });
     }
 
-    private IEnumerator StartNextQuestAfterDelay(QuestManager qm, int currentIndex, InteractionDetector interactionDetector)
+    private IEnumerator StartNextQuestAfterDelay(QuestManager qm, int currentIndex)
     {
         // Esperar un frame para que el DialogueManager termine de procesar el cierre
         yield return null;
@@ -341,39 +333,8 @@ public class SimpleQuestNPC : MonoBehaviour
                 // Mostrar el diálogo de oferta de la siguiente quest
                 if (nextEntry.dlgBefore != null)
                 {
-                    PlayDialogue(nextEntry.dlgBefore, () =>
-                    {
-                        // Finalizar el encadenamiento cuando termine el último diálogo
-                        if (interactionDetector != null)
-                        {
-                            interactionDetector.SetChaining(false);
-                        }
-                    });
+                    PlayDialogue(nextEntry.dlgBefore);
                 }
-                else
-                {
-                    // Si no hay diálogo, finalizar el encadenamiento inmediatamente
-                    if (interactionDetector != null)
-                    {
-                        interactionDetector.SetChaining(false);
-                    }
-                }
-            }
-            else
-            {
-                // Si no hay más quests, finalizar el encadenamiento
-                if (interactionDetector != null)
-                {
-                    interactionDetector.SetChaining(false);
-                }
-            }
-        }
-        else
-        {
-            // No hay más quests en la cadena, finalizar el encadenamiento
-            if (interactionDetector != null)
-            {
-                interactionDetector.SetChaining(false);
             }
         }
     }
@@ -393,7 +354,8 @@ public class SimpleQuestNPC : MonoBehaviour
             // SIEMPRE disparar OnStarted para que el NPC se gire hacia el jugador
             _interactable.OnStarted?.Invoke();
             
-            DialogueManager.Instance.StartDialogue(dlg, () =>
+            // Pasar el transform de este NPC para la cámara de diálogo
+            DialogueManager.Instance.StartDialogue(dlg, transform, () =>
             {
                 // SIEMPRE disparar OnFinished para que el NPC vuelva a su estado normal
                 _interactable.OnFinished?.Invoke();
@@ -402,7 +364,8 @@ public class SimpleQuestNPC : MonoBehaviour
         }
         else
         {
-            DialogueManager.Instance.StartDialogue(dlg, onComplete);
+            // Pasar el transform de este NPC para la cámara de diálogo
+            DialogueManager.Instance.StartDialogue(dlg, transform, onComplete);
         }
     }
 

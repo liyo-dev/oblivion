@@ -33,6 +33,10 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private bool pauseGameWhileOpen;
     [SerializeField] private bool resolveWithLocalizationManager = true;
 
+    [Header("Cámara de Diálogo")]
+    [Tooltip("Si está activo, la cámara se posicionará para enfocar la conversación con NPCs")]
+    [SerializeField] private bool useDialogueCamera = true;
+
     // Estado
     private DialogueAsset current;
     private int index = -1;
@@ -43,6 +47,9 @@ public class DialogueManager : MonoBehaviour
     Coroutine _typeRoutine;
     bool _isTyping;
     string _currentText = string.Empty;
+
+    // NPC para cámara de diálogo
+    private Transform currentNPC = null;
 
     void Awake()
     {
@@ -93,7 +100,22 @@ public class DialogueManager : MonoBehaviour
         // Bloquear gameplay
         SetGameplayEnabled(false);
 
+        // Activar cámara de diálogo si hay un NPC asignado
+        if (useDialogueCamera && currentNPC != null && DialogueCameraController.Instance != null)
+        {
+            DialogueCameraController.Instance.StartDialogueCamera(currentNPC);
+        }
+
         Next(); // pinta primera línea
+    }
+
+    /// <summary>
+    /// Inicia un diálogo con un NPC específico (para usar la cámara de diálogo)
+    /// </summary>
+    public void StartDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
+    {
+        currentNPC = npc;
+        StartDialogue(asset, onFinished);
     }
 
     public void Advance()
@@ -128,6 +150,14 @@ public class DialogueManager : MonoBehaviour
             group.blocksRaycasts = false;
             group.interactable = false;
         }
+
+        // Desactivar cámara de diálogo
+        if (useDialogueCamera && DialogueCameraController.Instance != null)
+        {
+            DialogueCameraController.Instance.EndDialogueCamera();
+        }
+
+        currentNPC = null;
 
         // Restaurar gameplay
         SetGameplayEnabled(true);
