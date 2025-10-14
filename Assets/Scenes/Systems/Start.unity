@@ -900,6 +900,7 @@ MonoBehaviour:
   - {fileID: 3179225871509790519, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
   pauseGameWhileOpen: 0
   resolveWithLocalizationManager: 0
+  useDialogueCamera: 1
 --- !u!4 &1066137597
 Transform:
   m_ObjectHideFlags: 0
@@ -1208,6 +1209,7 @@ MonoBehaviour:
   - cinematicintro
   - dialogues
   - quests
+  - cinematicdemon
 --- !u!4 &1745447934
 Transform:
   m_ObjectHideFlags: 0

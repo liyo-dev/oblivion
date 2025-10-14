@@ -40,6 +40,25 @@ public class TeleportService : MonoBehaviour
         }
     }
 
+    // Nuevos eventos para notificar estado de teleport
+    public static event System.Action OnTeleportStarted;
+    public static event System.Action OnTeleportCut;     // Momento del movimiento real
+    public static event System.Action OnTeleportEnded;   // Fin de transición (o inmediato si no hay transición)
+
+    // Helper para invocar eventos de forma segura y con logging por suscriptor
+    private static void InvokeEvent(System.Action evt, string eventName)
+    {
+        if (evt == null) return;
+        foreach (var d in evt.GetInvocationList())
+        {
+            try { ((System.Action)d).Invoke(); }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TeleportService] Excepción en suscriptor de {eventName}: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+    }
+
     [Header("Transición (EasyTransition)")]
     [SerializeField] private TransitionSettings teleportTransition; // arrastra p.ej. Fade.asset
     [SerializeField] private float transitionDelay; // 0 por defecto implícito
@@ -101,6 +120,9 @@ public class TeleportService : MonoBehaviour
         var pos = anchor.position;
         var rot = anchor.rotation;
 
+        // Notificar inicio de teleport
+        InvokeEvent(OnTeleportStarted, nameof(OnTeleportStarted));
+
         // Decidir si podemos hacer transición de forma segura
         bool wantTransition = useTransition ?? useTransitionByDefault;
         var tm = wantTransition ? FindTM() : null;
@@ -151,12 +173,16 @@ public class TeleportService : MonoBehaviour
         {
             MovePlayerSafely(player, worldPos, worldRot);
             ApplyEnvironmentForAnchor(anchorForEnv);
+            // Notificar corte (momento del movimiento)
+            InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
             tm.onTransitionCutPointReached -= OnCut;
         }
 
         void OnEnd()
         {
             _sTransitionInProgress = false;
+            // Notificar fin
+            InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
             tm.onTransitionEnd -= OnEnd;
         }
 
@@ -171,6 +197,9 @@ public class TeleportService : MonoBehaviour
     {
         MovePlayerSafely(player, pos, rot);
         ApplyEnvironmentForAnchor(anchorForEnv);
+        // En modo inmediato, emitir cut y end seguidos
+        InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
+        InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
     }
 
     private void MovePlayerSafely(GameObject player, Vector3 pos, Quaternion rot)

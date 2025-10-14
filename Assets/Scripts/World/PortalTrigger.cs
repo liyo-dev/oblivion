@@ -1,4 +1,6 @@
 using UnityEngine;
+using Invector.vCharacterController;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(Collider))]
 public class PortalTrigger : MonoBehaviour
@@ -94,7 +96,65 @@ public class PortalTrigger : MonoBehaviour
             }
         }
 
+        // 1) Congelar movimiento inmediatamente
+        FreezePlayerMovement(player);
+
+        // 2) Suscribir para restaurar al terminar el teletransporte
+        System.Action onEnd = null;
+        onEnd = () =>
+        {
+            TeleportService.OnTeleportEnded -= onEnd;
+            RestorePlayerMovement(player);
+        };
+        TeleportService.OnTeleportEnded += onEnd;
+
+        // 3) Ejecutar teletransporte (mantiene transición por defecto aquí)
         SpawnManager.TeleportTo(targetAnchorId, true);
         // NO guardar aquí
+    }
+
+    // ---- Helpers de freeze/restore ----
+    private void FreezePlayerMovement(GameObject player)
+    {
+        if (!player) return;
+
+        // Forzar animación a Idle antes de congelar
+        var animator = player.GetComponentInChildren<Animator>(true);
+        if (animator)
+        {
+            animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, 0f);
+            animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputHorizontal, 0f);
+            animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputVertical, 0f);
+            animator.SetBool(Invector.vCharacterController.vAnimatorParameters.IsSprinting, false);
+        }
+
+        var input = player.GetComponent<vThirdPersonInput>() ?? player.GetComponentInChildren<vThirdPersonInput>(true);
+        if (input) input.enabled = false;
+
+        var agent = player.GetComponent<NavMeshAgent>() ?? player.GetComponentInChildren<NavMeshAgent>(true);
+        if (agent) agent.isStopped = true;
+
+        var rb = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
+        if (rb)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        var cc = player.GetComponent<CharacterController>() ?? player.GetComponentInChildren<CharacterController>(true);
+        if (cc) cc.enabled = false; // evita empujes durante el lapso hasta el cut
+    }
+
+    private void RestorePlayerMovement(GameObject player)
+    {
+        if (!player) return;
+        var cc = player.GetComponent<CharacterController>() ?? player.GetComponentInChildren<CharacterController>(true);
+        if (cc && !cc.enabled) cc.enabled = true;
+
+        var input = player.GetComponent<vThirdPersonInput>() ?? player.GetComponentInChildren<vThirdPersonInput>(true);
+        if (input && !input.enabled) input.enabled = true;
+
+        var agent = player.GetComponent<NavMeshAgent>() ?? player.GetComponentInChildren<NavMeshAgent>(true);
+        if (agent) agent.isStopped = false;
     }
 }

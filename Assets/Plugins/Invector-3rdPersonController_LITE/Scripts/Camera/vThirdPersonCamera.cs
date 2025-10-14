@@ -22,6 +22,18 @@ public class vThirdPersonCamera : MonoBehaviour
     public float yMinLimit = -40f;
     public float yMaxLimit = 80f;
 
+    [Header("Occlusion Smoothing")]
+    [Tooltip("Suaviza cambios de distancia al ocluir/desocluir para evitar parpadeos")]
+    public bool enableOcclusionSmoothing = true;
+    [Tooltip("Velocidad de acercamiento cuando hay oclusión (mayor = más rápido)")]
+    public float occlusionLerpIn = 20f;
+    [Tooltip("Velocidad de alejamiento cuando desaparece la oclusión (mayor = más rápido)")]
+    public float occlusionLerpOut = 6f;
+    [Tooltip("Pequeño retraso (s) antes de volver a alejar la cámara tras una oclusión, para evitar diente de sierra")]
+    public float occlusionExpandDelay = 0.12f;
+    [Tooltip("Tolerancia mínima de cambio de distancia antes de aplicar un ajuste (evita micro-oscillaciones)")]
+    public float cullingStableTolerance = 0.08f;
+
     #endregion
 
     #region hide properties    
@@ -56,6 +68,10 @@ public class vThirdPersonCamera : MonoBehaviour
     private float cullingHeight = 0.2f;
     private float cullingMinDist = 0.1f;
 
+    // Estado para smoothing
+    private float _occlusionTargetDistance;
+    private float _lastOcclusionHitTime = -999f;
+
     #endregion
 
     void Start()
@@ -82,6 +98,8 @@ public class vThirdPersonCamera : MonoBehaviour
 
         distance = defaultDistance;
         currentHeight = height;
+        _occlusionTargetDistance = distance;
+        _lastOcclusionHitTime = -999f;
     }
 
     void FixedUpdate()
@@ -152,10 +170,7 @@ public class vThirdPersonCamera : MonoBehaviour
         if (currentTarget == null)
             return;
 
-        distance = Mathf.Lerp(distance, defaultDistance, smoothFollow * Time.deltaTime);
-        cullingDistance = Mathf.Lerp(cullingDistance, distance, Time.deltaTime);
         var camDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
-
         camDir = camDir.normalized;
 
         var targetPos = new Vector3(currentTarget.position.x, currentTarget.position.y + offSetPlayerPivot, currentTarget.position.z);
@@ -176,15 +191,19 @@ public class vThirdPersonCamera : MonoBehaviour
             cullingHeight = Mathf.Lerp(height, cullingHeight, Mathf.Clamp(t, 0.0f, 1.0f));
         }
 
+        bool hadOcclusion = false;
+        float newTargetDistance = defaultDistance;
+
         //Check if desired target position is not blocked       
         if (CullingRayCast(desired_cPos, oldPoints, out hitInfo, distance + 0.2f, cullingLayer, Color.blue))
         {
-            distance = hitInfo.distance - 0.2f;
-            if (distance < defaultDistance)
+            hadOcclusion = true;
+            newTargetDistance = Mathf.Clamp(hitInfo.distance - 0.2f, cullingMinDist, defaultDistance);
+            if (newTargetDistance < defaultDistance)
             {
                 var t = hitInfo.distance;
                 t -= cullingMinDist;
-                t /= cullingMinDist;
+                t /= Mathf.Max(0.0001f, cullingMinDist);
                 currentHeight = Mathf.Lerp(cullingHeight, height, Mathf.Clamp(t, 0.0f, 1.0f));
                 current_cPos = currentTargetPos + new Vector3(0, currentHeight, 0);
             }
@@ -193,8 +212,44 @@ public class vThirdPersonCamera : MonoBehaviour
         {
             currentHeight = height;
         }
+
         //Check if target position with culling height applied is not blocked
-        if (CullingRayCast(current_cPos, planePoints, out hitInfo, distance, cullingLayer, Color.cyan)) distance = Mathf.Clamp(cullingDistance, 0.0f, defaultDistance);
+        if (CullingRayCast(current_cPos, planePoints, out hitInfo, distance, cullingLayer, Color.cyan))
+        {
+            hadOcclusion = true;
+            newTargetDistance = Mathf.Min(newTargetDistance, Mathf.Clamp(cullingDistance, cullingMinDist, defaultDistance));
+        }
+
+        // Actualizar objetivo de oclusión con histéresis
+        if (enableOcclusionSmoothing)
+        {
+            if (hadOcclusion)
+            {
+                _occlusionTargetDistance = newTargetDistance;
+                _lastOcclusionHitTime = Time.time;
+            }
+            else
+            {
+                // Solo expandimos tras un pequeño retraso
+                if (Time.time - _lastOcclusionHitTime > occlusionExpandDelay)
+                    _occlusionTargetDistance = defaultDistance;
+            }
+
+            // Aplicar tolerancia para evitar micro-ajustes
+            if (Mathf.Abs(_occlusionTargetDistance - distance) < cullingStableTolerance)
+                _occlusionTargetDistance = distance;
+
+            // Elegir lerp según si acercamos (IN) o alejamos (OUT)
+            float lerpSpeed = (_occlusionTargetDistance < distance) ? occlusionLerpIn : occlusionLerpOut;
+            distance = Mathf.Lerp(distance, _occlusionTargetDistance, Mathf.Clamp01(lerpSpeed * Time.deltaTime));
+        }
+        else
+        {
+            // Comportamiento original aproximado
+            distance = Mathf.Lerp(distance, hadOcclusion ? newTargetDistance : defaultDistance, smoothFollow * Time.deltaTime);
+            cullingDistance = Mathf.Lerp(cullingDistance, distance, Time.deltaTime);
+        }
+
         var lookPoint = current_cPos + targetLookAt.forward * 2f;
         lookPoint += (targetLookAt.right * Vector3.Dot(camDir * (distance), targetLookAt.right));
         targetLookAt.position = current_cPos;
@@ -248,3 +303,4 @@ public class vThirdPersonCamera : MonoBehaviour
         return hitInfo.collider && value;
     }
 }
+

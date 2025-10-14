@@ -30,6 +30,10 @@ public class AdditiveSceneCinematic : MonoBehaviour
     [Tooltip("Si true, registra este anchor como el 'actual' en el SpawnManager ANTES de reproducir.")]
     [SerializeField] private bool setAsCurrentAnchor = true;
 
+    [Header("Return To Previous Position")]
+    [Tooltip("Si está activo, al terminar la cinemática se restaurará la posición y la rotación previas del jugador, ignorando SpawnManager/Bootstrap.")]
+    [SerializeField] private bool useLastPlayerPositionOnExit = false;
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
 
@@ -38,6 +42,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
     bool isUnloading = false;
     bool isPlaying = false;
     Coroutine watchdogCo;
+
+    // Estado guardado del jugador
+    Transform cachedPlayerTransform;
+    Vector3 savedPlayerPosition;
+    Quaternion savedPlayerRotation;
+    bool hasSavedPlayerTransform = false;
 
     IEnumerator Start()
     {
@@ -53,8 +63,14 @@ public class AdditiveSceneCinematic : MonoBehaviour
             yield break;
         }
 
-        // Preparar destino oficial de salida (no mueve, solo estado)
-        if (setAsCurrentAnchor && !string.IsNullOrEmpty(exitAnchorId))
+        // Guardar posición/rotación actual del jugador si así se desea
+        if (useLastPlayerPositionOnExit)
+        {
+            SavePlayerTransformIfPossible();
+        }
+
+        // Preparar destino oficial de salida (no mueve, solo estado) salvo que ignoremos SpawnManager
+        if (!useLastPlayerPositionOnExit && setAsCurrentAnchor && !string.IsNullOrEmpty(exitAnchorId))
         {
             SafeSetCurrentAnchor(exitAnchorId);
             if (showDebugLogs)
@@ -201,8 +217,16 @@ public class AdditiveSceneCinematic : MonoBehaviour
         if (toDisableDuringCinematic != null)
             foreach (var go in toDisableDuringCinematic) if (go) go.SetActive(true);
 
-        // Teletransporte/posicionamiento de salida
-        SafeTeleportToCurrent();
+        // Posicionamiento de salida: o restauramos la posición previa del jugador o usamos SpawnManager
+        if (useLastPlayerPositionOnExit && hasSavedPlayerTransform)
+        {
+            RestorePlayerTransformIfPossible();
+        }
+        else
+        {
+            // Teletransporte/posicionamiento de salida vía SpawnManager
+            SafeTeleportToCurrent();
+        }
 
         director = null;
         isUnloading = false;
@@ -223,8 +247,9 @@ public class AdditiveSceneCinematic : MonoBehaviour
     {
         try
         {
-            SpawnManager.TeleportToCurrent();
-            if (showDebugLogs) Debug.Log("[AdditiveSceneCinematic] Teleport via SpawnManager.TeleportToCurrent().");
+            // Forzar teletransporte inmediato sin transición al salir de la cinemática
+            SpawnManager.TeleportToCurrent(false);
+            if (showDebugLogs) Debug.Log("[AdditiveSceneCinematic] Teleport via SpawnManager.TeleportToCurrent(false) (sin transición).");
         }
         catch
         {
@@ -242,5 +267,76 @@ public class AdditiveSceneCinematic : MonoBehaviour
         {
             Debug.LogWarning($"[AdditiveSceneCinematic] No se pudo SetCurrentAnchor('{anchorId}'). ¿Existe ese SpawnAnchor en MainWorld?");
         }
+    }
+
+    // Buscar el transform del jugador de forma segura
+    Transform FindPlayerTransform()
+    {
+        if (cachedPlayerTransform != null) return cachedPlayerTransform;
+
+        // Preferimos por Tag
+        var go = GameObject.FindGameObjectWithTag("Player");
+        if (go == null)
+        {
+            // Fallback por nombre (menos fiable, pero útil si no hay tag configurado)
+            // Obsoleto: FindObjectsOfType(true) -> usar FindObjectsByType con IncludeInactive
+            var all = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var t in all)
+            {
+                if (t.name == "Player" || t.name.Contains("Player"))
+                {
+                    go = t.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (go != null) cachedPlayerTransform = go.transform;
+        return cachedPlayerTransform;
+    }
+
+    void SavePlayerTransformIfPossible()
+    {
+        var t = FindPlayerTransform();
+        if (t != null)
+        {
+            savedPlayerPosition = t.position;
+            savedPlayerRotation = t.rotation;
+            hasSavedPlayerTransform = true;
+            if (showDebugLogs)
+                Debug.Log($"[AdditiveSceneCinematic] Guardada posición previa del jugador: {savedPlayerPosition} (rot: {savedPlayerRotation.eulerAngles}).");
+        }
+        else if (showDebugLogs)
+        {
+            Debug.LogWarning("[AdditiveSceneCinematic] No se encontró jugador para guardar posición previa.");
+        }
+    }
+
+    void RestorePlayerTransformIfPossible()
+    {
+        var t = FindPlayerTransform();
+        if (t == null)
+        {
+            Debug.LogWarning("[AdditiveSceneCinematic] No se encontró jugador para restaurar posición previa.");
+            return;
+        }
+
+        // Si hay CharacterController, conviene desactivarlo un frame para teleport limpio
+        var cc = t.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
+        t.position = savedPlayerPosition;
+        t.rotation = savedPlayerRotation; // siempre restauramos rotación
+
+        // Reset de físicas si aplica
+        var rb = t.GetComponent<Rigidbody>();
+        if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
+        var rb2d = t.GetComponent<Rigidbody2D>();
+        if (rb2d != null) { rb2d.linearVelocity = Vector2.zero; rb2d.angularVelocity = 0f; }
+
+        if (cc != null) cc.enabled = true;
+
+        if (showDebugLogs)
+            Debug.Log($"[AdditiveSceneCinematic] Restaurada posición y rotación previas del jugador: {savedPlayerPosition} / {savedPlayerRotation.eulerAngles}.");
     }
 }

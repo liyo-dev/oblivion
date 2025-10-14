@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class BossArenaController : MonoBehaviour
 {
@@ -32,6 +33,12 @@ public class BossArenaController : MonoBehaviour
     public RoomGoal roomGoal;
     public string playerTag = "Player";
     public AudioSource musicBoss;    // opcional
+
+    [Header("Bloqueos durante batalla")]
+    [Tooltip("Lista de objetos a desactivar al iniciar la batalla y restaurar al finalizar.")]
+    [SerializeField] private GameObject[] toDisableDuringBattle;
+
+    private readonly Dictionary<GameObject, bool> _prevActiveStates = new Dictionary<GameObject, bool>();
 
     bool started = false;
 
@@ -74,6 +81,9 @@ public class BossArenaController : MonoBehaviour
             // Modo área: activar la barrera y bloquear salida
             LockArea();
         }
+
+        // Desactivar objetos de la lista durante la batalla
+        ApplyBattleDisables();
 
         if (musicBoss) musicBoss.Play();
 
@@ -160,6 +170,9 @@ public class BossArenaController : MonoBehaviour
 
         if (roomGoal) roomGoal.MarkCleared();
 
+        // Restaurar objetos desactivados durante la batalla
+        RestoreBattleDisables();
+
         // Crea el portal de salida
         if (portalPrefab && portalSpawn)
             Instantiate(portalPrefab, portalSpawn.position, portalSpawn.rotation, transform.parent);
@@ -202,7 +215,6 @@ public class BossArenaController : MonoBehaviour
     {
         float halfWidth = size.x / 2f;
         float halfDepth = size.z / 2f;
-        float halfThickness = barrierThickness / 2f;
 
         // Pared Norte (Z+)
         CreateWall("Wall_North", 
@@ -225,10 +237,10 @@ public class BossArenaController : MonoBehaviour
             new Vector3(barrierThickness, height, size.z));
     }
 
-    private void CreateWall(string name, Vector3 localPosition, Vector3 size)
+    private void CreateWall(string wallName, Vector3 localPosition, Vector3 size)
     {
         GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wall.name = name;
+        wall.name = wallName;
         wall.transform.SetParent(_barrierVisual.transform);
         wall.transform.localPosition = localPosition;
         wall.transform.localRotation = Quaternion.identity;
@@ -303,8 +315,36 @@ public class BossArenaController : MonoBehaviour
         Debug.Log("[BossArenaController] Área del boss desbloqueada.");
     }
 
+    private void ApplyBattleDisables()
+    {
+        _prevActiveStates.Clear();
+        if (toDisableDuringBattle == null || toDisableDuringBattle.Length == 0) return;
+        foreach (var go in toDisableDuringBattle)
+        {
+            if (!go) continue;
+            if (!_prevActiveStates.ContainsKey(go))
+                _prevActiveStates.Add(go, go.activeSelf);
+            go.SetActive(false);
+        }
+    }
+
+    private void RestoreBattleDisables()
+    {
+        if (_prevActiveStates.Count == 0) return;
+        foreach (var kvp in _prevActiveStates)
+        {
+            var go = kvp.Key;
+            if (!go) continue;
+            go.SetActive(kvp.Value);
+        }
+        _prevActiveStates.Clear();
+    }
+
     void OnDestroy()
     {
+        // Restaurar objetos desactivados si quedara algo pendiente
+        RestoreBattleDisables();
+
         // Limpiar la barrera visual si fue creada
         if (_barrierVisual != null)
         {
