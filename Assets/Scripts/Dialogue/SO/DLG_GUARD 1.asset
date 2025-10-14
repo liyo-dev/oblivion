@@ -10,18 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10d8708fd0f936346bad26dff04672db, type: 3}
-  m_Name: DLG_ELDRAN_MISSION1_OFFER
+  m_Name: DLG_GUARD 1
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_01
+  - speakerNameId: CHAR_GUARD
+    textId: DLG_GUARD_03
     portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_02
-    portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_03
-    portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_04
+  - speakerNameId: CHAR_GUARD
+    textId: DLG_GUARD_04
     portrait: {fileID: 0}

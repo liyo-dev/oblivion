@@ -15,6 +15,38 @@
         {
             "id": "CH1_04",
             "text": "On the table, a letter awaits: his first mission."
+        },
+        {
+            "id": "EVT_01",
+            "text": "Alex arrives, struggling as he carries a crate of fruit for Eldran."
+        },
+        {
+            "id": "EVT_02",
+            "text": "Suddenly, something strange glows in the sky... a fireball is heading toward them."
+        },
+        {
+            "id": "EVT_03",
+            "text": "Alex closes his eyes and screams \"NOOO!\", unknowingly unleashing a powerful magic."
+        },
+        {
+            "id": "EVT_04",
+            "text": "His flame collides with the projectile, deflecting it completely."
+        },
+        {
+            "id": "EVT_05",
+            "text": "Alex opens his eyes, astonished, not understanding what he has just done."
+        },
+        {
+            "id": "EVT_06",
+            "text": "Eldran looks at him in awe: \"Alex! It can't be... do you have magic?\""
+        },
+        {
+            "id": "EVT_07",
+            "text": "The ground trembles and a dark figure emerges amid smoke and fire: a demon."
+        },
+        {
+            "id": "EVT_08",
+            "text": "Eldran shouts: \"Alex! Use your magic, press X and defeat the demon.\""
         }
     ]
 }

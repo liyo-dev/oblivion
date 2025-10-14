@@ -1,36 +1,52 @@
-﻿{
-  "subtitles": [
-    {
-      "id": "EVT_01",
-      "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
-    },
-    {
-      "id": "EVT_02",
-      "text": "De pronto Alex presiente algo."
-    },
-    {
-      "id": "EVT_03",
-      "text": "Una bola de fuego se dirige hacia ellos."
-    },
-    {
-      "id": "EVT_04",
-      "text": "Alex cierra los ojos y desata sin saberlo una poderosa magia."
-    },
-    {
-      "id": "EVT_05",
-      "text": "Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
-    },
-    {
-      "id": "EVT_06",
-      "text": "Alex se sorprende, sin entender lo que acaba de hacer."
-    },
-    {
-      "id": "EVT_07",
-      "text": "El suelo tiembla y una figura oscura emerge entre humo y fuego: un demonio."
-    },
-    {
-      "id": "EVT_08",
-      "text": "Eldran grita: '¡Alex! Usa tu magia, presiona X y derrota al demonio.'"
-    }
-  ]
+{
+    "subtitles": [
+        {
+            "id": "CH1_01",
+            "text": "La historia comienza en la apacible aldea \"<NOMBRE_ALDEA>\"."
+        },
+        {
+            "id": "CH1_02",
+            "text": "Donde vive Alex, un niño que cree llevar una vida normal."
+        },
+        {
+            "id": "CH1_03",
+            "text": "Bajo la tutela de Eldran, un anciano sabio que lo cuida desde que sus padres murieron cuando era pequeño."
+        },
+        {
+            "id": "CH1_04",
+            "text": "Sobre la mesa, una carta le espera: su primera misión."
+        },
+        {
+            "id": "EVT_01",
+            "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
+        },
+        {
+            "id": "EVT_02",
+            "text": "De pronto Alex presiente algo."
+        },
+        {
+            "id": "EVT_03",
+            "text": "Una bola de fuego se dirige hacia ellos."
+        },
+        {
+            "id": "EVT_04",
+            "text": "Alex cierra los ojos y desata sin saberlo una poderosa magia."
+        },
+        {
+            "id": "EVT_05",
+            "text": "Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
+        },
+        {
+            "id": "EVT_06",
+            "text": "Alex se sorprende, sin entender lo que acaba de hacer."
+        },
+        {
+            "id": "EVT_07",
+            "text": "El suelo tiembla y una figura oscura emerge entre humo y fuego: un demonio."
+        },
+        {
+            "id": "EVT_08",
+            "text": "Eldran grita: '¡Alex! Usa tu magia, presiona X y derrota al demonio.'"
+        }
+    ]
 }

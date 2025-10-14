@@ -5,12 +5,24 @@
             "value": "Alex"
         },
         {
+            "key": "CHAR_AMIGAPEZ",
+            "value": "Fish Kid's Friend"
+        },
+        {
+            "key": "CHAR_ANTIPATICO",
+            "value": "Grumpy"
+        },
+        {
             "key": "CHAR_ELDRAN",
             "value": "Eldran"
         },
         {
             "key": "CHAR_GUARD",
             "value": "Guard"
+        },
+        {
+            "key": "CHAR_GUERRERACHINA",
+            "value": "Warrior"
         },
         {
             "key": "CHAR_MERCHANT",
@@ -21,12 +33,52 @@
             "value": "Narrator"
         },
         {
+            "key": "CHAR_NIÑOPEZ",
+            "value": "Fish Kid"
+        },
+        {
             "key": "CHAR_PIRATA",
             "value": "Pirate"
         },
         {
             "key": "CHAR_VERONICA",
             "value": "Veronica"
+        },
+        {
+            "key": "DLG_AMIGAPEZ_01",
+            "value": "Looking for my friend? He always hides under the pier."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_02",
+            "value": "If you find his blue shell, tell him quick."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_03",
+            "value": "Sometimes he sings to bubbles so they glow."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_04",
+            "value": "I can't swim that deep, my fins are small."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_05",
+            "value": "If you help him he'll share water secrets with you."
+        },
+        {
+            "key": "DLG_ANTIPATICO_01",
+            "value": "What are you staring at?"
+        },
+        {
+            "key": "DLG_ANTIPATICO_02",
+            "value": "I'm busy ignoring people."
+        },
+        {
+            "key": "DLG_ANTIPATICO_03",
+            "value": "If you didn't bring something useful, don't talk."
+        },
+        {
+            "key": "DLG_ANTIPATICO_04",
+            "value": "...Still here? Impressive."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -85,12 +137,68 @@
             "value": "Here, this is for your help."
         },
         {
+            "key": "DLG_GUARD_01",
+            "value": "Halt. The castle isn't open to the public."
+        },
+        {
+            "key": "DLG_GUARD_02",
+            "value": "Captain's orders: no one without an insignia."
+        },
+        {
+            "key": "DLG_GUARD_03",
+            "value": "Prove your worth helping the townsfolk."
+        },
+        {
+            "key": "DLG_GUARD_04",
+            "value": "With an insignia I might reconsider letting you through."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_01",
+            "value": "Breathe... your stance trembles. Seeking strength?"
+        },
+        {
+            "key": "DLG_GUERRERACHINA_02",
+            "value": "I traveled a thousand leagues to perfect a single strike."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_03",
+            "value": "Patience sharpens the blade more than stone."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_04",
+            "value": "When you master balance, I'll teach you my spinning form."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_05",
+            "value": "Bring me a lotus flower from the lake and we'll speak of training."
+        },
+        {
             "key": "DLG_LETTER_INTRO_01",
             "value": "Alex come see me when you wake up."
         },
         {
             "key": "DLG_LETTER_INTRO_02",
             "value": "I will wait for you at the kingdom entrance."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_01",
+            "value": "Glub! Sorry, I sometimes forget to speak air."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_02",
+            "value": "Have you seen my blue seashell? I use it to call friends."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_03",
+            "value": "Under the pier there's a door covered in algae."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_04",
+            "value": "They say it opens if you tap three bubbles in order."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_05",
+            "value": "If you find it I'll tell you a secret about the currents."
         },
         {
             "key": "DLG_PIRATE_01",

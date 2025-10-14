@@ -21,3 +21,8 @@ MonoBehaviour:
   - descriptionId: QUEST_ELDRAN_MISSION1_STEP1
     description: 
     conditionId: 
+  offerDialogue: {fileID: 0}
+  inProgressDialogue: {fileID: 11400000, guid: bb063e1aaebef4842be88c93c3db8609, type: 2}
+  readyToTurnInDialogue: {fileID: 0}
+  completedDialogue: {fileID: 0}
+  completionMode: 0

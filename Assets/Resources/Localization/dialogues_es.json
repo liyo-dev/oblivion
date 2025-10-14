@@ -5,12 +5,24 @@
             "value": "Alex"
         },
         {
+            "key": "CHAR_AMIGAPEZ",
+            "value": "Amiga del Niño Pez"
+        },
+        {
+            "key": "CHAR_ANTIPATICO",
+            "value": "Antipático"
+        },
+        {
             "key": "CHAR_ELDRAN",
             "value": "Eldran"
         },
         {
             "key": "CHAR_GUARD",
             "value": "Guardia"
+        },
+        {
+            "key": "CHAR_GUERRERACHINA",
+            "value": "Guerrera China"
         },
         {
             "key": "CHAR_MERCHANT",
@@ -21,12 +33,52 @@
             "value": "Narrador"
         },
         {
+            "key": "CHAR_NIÑOPEZ",
+            "value": "Niño Pez"
+        },
+        {
             "key": "CHAR_PIRATA",
             "value": "Pirata"
         },
         {
             "key": "CHAR_VERONICA",
             "value": "Verónica"
+        },
+        {
+            "key": "DLG_AMIGAPEZ_01",
+            "value": "¿Buscas a mi amigo? Siempre se esconde bajo el muelle."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_02",
+            "value": "Si encuentras su caracola azul, díselo rápido."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_03",
+            "value": "A veces canta a las burbujas para que brillen."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_04",
+            "value": "Yo no puedo ir tan profundo, mis aletas son pequeñas."
+        },
+        {
+            "key": "DLG_AMIGAPEZ_05",
+            "value": "Si le ayudas, seguro te contará secretos del agua."
+        },
+        {
+            "key": "DLG_ANTIPATICO_01",
+            "value": "¿Qué miras?"
+        },
+        {
+            "key": "DLG_ANTIPATICO_02",
+            "value": "Estoy ocupado ignorando a la gente."
+        },
+        {
+            "key": "DLG_ANTIPATICO_03",
+            "value": "Si no traes algo útil, no hables."
+        },
+        {
+            "key": "DLG_ANTIPATICO_04",
+            "value": "...¿Sigues aquí? Impresionante."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -85,12 +137,68 @@
             "value": "Toma, esto es por tu ayuda."
         },
         {
+            "key": "DLG_GUARD_01",
+            "value": "Alto. El castillo no está abierto al público."
+        },
+        {
+            "key": "DLG_GUARD_02",
+            "value": "Órdenes del capitán: nadie sin insignia."
+        },
+        {
+            "key": "DLG_GUARD_03",
+            "value": "Prueba demostrar tu valor ayudando a la gente del pueblo."
+        },
+        {
+            "key": "DLG_GUARD_04",
+            "value": "Con una insignia quizá reconsidere dejarte pasar."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_01",
+            "value": "Respira... tu postura tiembla. ¿Buscas fuerza?"
+        },
+        {
+            "key": "DLG_GUERRERACHINA_02",
+            "value": "Viajé miles de leguas para perfeccionar un solo golpe."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_03",
+            "value": "La paciencia afila la espada más que la piedra."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_04",
+            "value": "Cuando domines tu equilibrio, te enseñaré mi forma giratoria."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_05",
+            "value": "Tráeme una flor de loto del lago y hablaremos de entrenamiento."
+        },
+        {
             "key": "DLG_LETTER_INTRO_01",
             "value": "Alex ven a verme cuando despiertes."
         },
         {
             "key": "DLG_LETTER_INTRO_02",
             "value": "Te espero en la entrada del reino."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_01",
+            "value": "¡Glub! Perdón, a veces olvido hablar aire."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_02",
+            "value": "¿Has visto mi caracola azul? La uso para llamar amigos."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_03",
+            "value": "Debajo del muelle hay una puerta cubierta de algas."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_04",
+            "value": "Dicen que se abre si tocas tres burbujas en orden."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_05",
+            "value": "Si la encuentras te contaré un secreto de las corrientes."
         },
         {
             "key": "DLG_PIRATE_01",

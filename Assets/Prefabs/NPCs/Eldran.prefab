@@ -19307,49 +19307,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6ea59accc640a45b8372dfdfd079e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleQuestNPC
-  questChain:
-  - questData: {fileID: 11400000, guid: 962bc3c997aeeb245bc3d60a3f71e0e2, type: 2}
-    completionMode: 1
-    talkStepIndex: 0
-    autoDetectItemDelivery: 0
-    itemDeliveryStepIndex: 0
-    itemTag: 
-    dlgBefore: {fileID: 11400000, guid: b24b280a71cc4204a9ea99d7665d8b1d, type: 2}
-    dlgInProgress: {fileID: 0}
-    dlgTurnIn: {fileID: 11400000, guid: bb063e1aaebef4842be88c93c3db8609, type: 2}
-    dlgCompleted: {fileID: 0}
-    OnQuestCompleted:
+  chain:
+  - quest: {fileID: 11400000, guid: 962bc3c997aeeb245bc3d60a3f71e0e2, type: 2}
+    npcStartsQuest: 0
+    preStartDialogue: {fileID: 11400000, guid: b24b280a71cc4204a9ea99d7665d8b1d, type: 2}
+    autoAdvanceToNext: 1
+    autoCompleteEmptyStepsOnTalk: 1
+    onAccepted:
       m_PersistentCalls:
         m_Calls: []
-  - questData: {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
-    completionMode: 0
-    talkStepIndex: 0
-    autoDetectItemDelivery: 1
-    itemDeliveryStepIndex: 0
-    itemTag: Pickable
-    dlgBefore: {fileID: 11400000, guid: 923b5da55eaf67b4991f8b6ba6b05f36, type: 2}
-    dlgInProgress: {fileID: 11400000, guid: 39ef7fd3a6e9f8641acf2cced0f26532, type: 2}
-    dlgTurnIn: {fileID: 0}
-    dlgCompleted: {fileID: 0}
-    OnQuestCompleted:
+    onCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_MethodName: SetActive
-          m_Mode: 6
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 1
-          m_CallState: 2
-  detectionRadius: 3
-  detectionAngle: 90
-  detectionInterval: 0.5
-  showDetectionGizmos: 1
+        m_Calls: []
+  - quest: {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
+    npcStartsQuest: 1
+    preStartDialogue: {fileID: 0}
+    autoAdvanceToNext: 0
+    autoCompleteEmptyStepsOnTalk: 0
+    onAccepted:
+      m_PersistentCalls:
+        m_Calls: []
+    onCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  onQuestChainCompleted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: UnlockTrigger, Assembly-CSharp
+        m_MethodName: ApplyUnlocksNow
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  debugLogs: 0
 --- !u!1 &8932229672498769586
 GameObject:
   m_ObjectHideFlags: 0

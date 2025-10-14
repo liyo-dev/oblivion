@@ -8,7 +8,7 @@ public class LocalizationManager : MonoBehaviour
     public static LocalizationManager Instance { get; private set; }
 
     [SerializeField] private string defaultLocale = "es";
-    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematicintro", "dialogues", "quests" };
+    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematicintro", "cinematicdemon", "dialogues", "quests" };
 
     private readonly Dictionary<string, string> _table = new Dictionary<string, string>(1024);
     private readonly Dictionary<string, SubtitleInfo> _subs = new Dictionary<string, SubtitleInfo>(64);

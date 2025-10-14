@@ -46,6 +46,7 @@ public class LocalizationTableEditor : EditorWindow
         { "quests", LocalizationCategory.Quests },
         { "ui", LocalizationCategory.UI },
         { "cinematicintro", LocalizationCategory.Cinematics },
+        { "cinematicdemon", LocalizationCategory.Cinematics }, 
         { "prologue", LocalizationCategory.Prologue }
     };
 
@@ -511,8 +512,8 @@ public class LocalizationTableEditor : EditorWindow
             
             if (entriesByCategory.TryGetValue(category, out var categoryEntries))
             {
-                // Determinar si es un archivo de subtítulos (prologue, cinematicintro)
-                bool isSubtitleFormat = fileName == "prologue" || fileName == "cinematicintro";
+                // Determinar si es un archivo de subtítulos (prologue, cinematicintro, cinematicdemon)
+                bool isSubtitleFormat = fileName == "prologue" || fileName == "cinematicintro" || fileName == "cinematicdemon";
                 
                 // Guardar español
                 var esPath = Path.Combine(LOCALIZATION_FOLDER, $"{fileName}_es.json");

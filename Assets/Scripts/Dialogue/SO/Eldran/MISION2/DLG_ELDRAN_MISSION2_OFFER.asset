@@ -28,12 +28,3 @@ MonoBehaviour:
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_OFFER_05
     portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_06
-    portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_07
-    portrait: {fileID: 0}
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION2_OFFER_08
-    portrait: {fileID: 0}

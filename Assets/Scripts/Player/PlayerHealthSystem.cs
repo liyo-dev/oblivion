@@ -194,7 +194,6 @@ public class PlayerHealthSystem : MonoBehaviour
         
         float oldHealth = _currentHp;
         _currentHp = Mathf.Max(0f, oldHealth - damageAmount);
-        _lastDamageTime = Time.time;
         
         // Actualizar también el GameBootProfile si es necesario
         UpdateGameBootProfile();
@@ -284,7 +283,6 @@ public class PlayerHealthSystem : MonoBehaviour
         if (!IsAlive || godMode) return;
         
         _currentHp = 0f;
-        _lastDamageTime = Time.time;
         UpdateGameBootProfile();
         
         if (!_isDead)
@@ -543,29 +541,6 @@ public class PlayerHealthSystem : MonoBehaviour
         OnHealthPercentageChanged?.Invoke(healthPercentage);
     }
 
-    void Update()
-    {
-        // Regeneración pasiva de vida
-        if (enableHealthRegen && IsAlive && _currentHp < _maxHp)
-        {
-            if (Time.time - _lastDamageTime >= healthRegenDelayAfterDamage)
-            {
-                float before = _currentHp;
-                _currentHp = Mathf.Min(_maxHp, _currentHp + Mathf.Max(0f, healthRegenPerSecond) * Time.deltaTime);
-                if (Mathf.Abs(_currentHp - before) > Mathf.Epsilon)
-                {
-                    UpdateGameBootProfile();
-                    // Notificar UI de forma moderada
-                    if (Mathf.Abs(_currentHp - _lastNotifiedHealth) >= healthRegenNotifyEpsilon)
-                    {
-                        _lastNotifiedHealth = _currentHp;
-                        UpdateUI();
-                    }
-                }
-            }
-        }
-    }
-    
     private IEnumerator ApplyKnockback()
     {
         Vector3 knockbackDirection = -transform.forward; // Empujar en la dirección opuesta a donde mira el jugador

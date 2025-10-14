@@ -6,15 +6,47 @@
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/CharacterCreator.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/CharacterCreator.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Editor/LocalizationTableEditor.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Editor/LocalizationTableEditor.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/NPCs/Eldran.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/NPCs/GuerreraChina.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/NPCs/GuerreraChina.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/NPCs/NiñoPez.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/NPCs/NiñoPez.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/cinematicintro_es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/dialogues_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/dialogues_en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/dialogues_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/dialogues_es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Systems/Start.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Systems/Start.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts.zip" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerPresetService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_BEFORE.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_BEFORE.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_COMPLETED.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_COMPLETED.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_OFFER.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_OFFER.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_TURNIN.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION1_TURNIN.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_COMPLETED.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_COMPLETED.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_INPROGRESS.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_INPROGRESS.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_OFFER.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_OFFER.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_TURNIN.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/SO/Eldran/DLG_ELDRAN_MISSION2_TURNIN.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/Interactable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/Interactable.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/ManaPool.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/ManaPool.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerHealthSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerHealthSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestData.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SO/Q_ELDRAN_MISSION1.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SO/Q_ELDRAN_MISSION1.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SO/Q_ELDRAN_MISSION2.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SO/Q_ELDRAN_MISSION2.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestPickup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestPickup.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/LocalizationManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/LocalizationManager.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +73,8 @@
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TagFieldDrawer.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Resources/Localization/cinematicdemon_en.json" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Resources/Localization/cinematicdemon_en.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Attributes.meta" root0="FORCE_HIGHLIGHTING" />
@@ -48,12 +82,19 @@
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Cinematics/AdditiveSceneCinematic.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueCameraController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueCameraController.cs.meta" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Interaction/IInteractionTarget.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/Interactable.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/Interactable.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/UnlockService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/QuestData.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/QuestManager.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestPersistenceBridge.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/SimpleQuestNPC.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/SimpleQuestNPC.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Quests/SimpleQuestPickup.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Rooms/BossArenaController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUD.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="FORCE_HIGHLIGHTING" />
@@ -155,7 +196,7 @@
       <workItem from="1760379129434" duration="2471000" />
       <workItem from="1760382820437" duration="10643000" />
       <workItem from="1760418177371" duration="8969000" />
-      <workItem from="1760428644437" duration="23699000" />
+      <workItem from="1760428644437" duration="36184000" />
     </task>
     <servers />
   </component>

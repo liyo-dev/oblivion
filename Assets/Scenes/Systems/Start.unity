@@ -319,6 +319,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestManager
   questCatalog:
   - {fileID: 11400000, guid: 962bc3c997aeeb245bc3d60a3f71e0e2, type: 2}
+  - {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
 --- !u!4 &297154811
 Transform:
   m_ObjectHideFlags: 0

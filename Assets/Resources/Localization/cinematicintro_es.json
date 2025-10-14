@@ -15,6 +15,38 @@
         {
             "id": "CH1_04",
             "text": "Sobre la mesa, una carta le espera: su primera misión."
+        },
+        {
+            "id": "EVT_01",
+            "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
+        },
+        {
+            "id": "EVT_02",
+            "text": "De pronto Alex presiente algo."
+        },
+        {
+            "id": "EVT_03",
+            "text": "Una bola de fuego se dirige hacia ellos."
+        },
+        {
+            "id": "EVT_04",
+            "text": "Alex cierra los ojos y desata sin saberlo una poderosa magia."
+        },
+        {
+            "id": "EVT_05",
+            "text": "Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
+        },
+        {
+            "id": "EVT_06",
+            "text": "Alex se sorprende, sin entender lo que acaba de hacer."
+        },
+        {
+            "id": "EVT_07",
+            "text": "El suelo tiembla y una figura oscura emerge entre humo y fuego: un demonio."
+        },
+        {
+            "id": "EVT_08",
+            "text": "Eldran grita: '¡Alex! Usa tu magia, presiona X y derrota al demonio.'"
         }
     ]
 }
