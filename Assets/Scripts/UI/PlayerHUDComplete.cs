@@ -14,7 +14,7 @@ public class PlayerHUDComplete : MonoBehaviour
     [SerializeField] private bool showDebugInfo = false;
 
     [Header("Posiciones")]
-    [SerializeField] private Vector2 hudPosition = new Vector2(30, -30); // Arriba izquierda - Todo junto
+    [SerializeField] private Vector2 hudPosition = new Vector2(30, 30); // Esquina inferior izquierda: 30px desde la izquierda y 30px desde abajo
 
     [Header("Colores de Vida (Degradado según HP)")]
     [SerializeField] private Color healthColorHigh = new Color(0.2f, 0.8f, 0.2f, 1f); // Verde
@@ -42,6 +42,10 @@ public class PlayerHUDComplete : MonoBehaviour
     [SerializeField] private Color xboxXColor = new Color(0.3f, 0.5f, 0.9f, 1f); // Azul
     [SerializeField] private Color xboxYColor = new Color(0.9f, 0.8f, 0.2f, 1f); // Amarillo
     [SerializeField] private Color xboxBColor = new Color(0.9f, 0.3f, 0.3f, 1f); // Rojo
+
+    [Header("Canvas")]
+    [Tooltip("Si está activado, el HUD siempre creará su propio Canvas en ScreenSpaceOverlay para evitar problemas de render en builds donde otros Canvas usan cámaras diferentes.")]
+    [SerializeField] private bool forceCreateCanvas = true;
 
     // Referencias automáticas
     private PlayerHealthSystem _healthSystem;
@@ -95,6 +99,9 @@ public class PlayerHUDComplete : MonoBehaviour
                 Debug.LogWarning("[PlayerHUDComplete] Faltan componentes. Buscando en toda la escena...");
             StartCoroutine(FindComponentsDelayed());
         }
+
+        // Intentar hacer un refresh inmediato para evitar que en builds el HUD aparezca vacío
+        ForceRefresh();
     }
 
     void Update()
@@ -105,23 +112,56 @@ public class PlayerHUDComplete : MonoBehaviour
 
     private void CreateCompleteHUD()
     {
-        // Buscar Canvas principal o crear uno
-        _canvas = FindObjectOfType<Canvas>();
-        if (!_canvas)
+        // Si forzamos la creación de Canvas, intentamos reutilizar uno con nombre específico
+        if (forceCreateCanvas)
         {
-            var canvasGO = new GameObject("PlayerHUD_Canvas");
-            _canvas = canvasGO.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 100;
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGO.AddComponent<GraphicRaycaster>();
-            _createdCanvas = true; // ← NUEVO
+            var existing = GameObject.Find("PlayerHUD_Canvas");
+            if (existing != null)
+            {
+                _canvas = existing.GetComponent<Canvas>();
+                if (_canvas == null) _canvas = existing.AddComponent<Canvas>();
+                _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                _canvas.sortingOrder = 1000;
+                _createdCanvas = false; // no lo creamos nosotros ahora
+                _rootPanel = CreateIntegratedHUD();
+                return;
+            }
+            // si no existe lo creamos abajo como siempre
         }
+         // Buscar Canvas existente que sea ScreenSpaceOverlay
+         Canvas[] canvases = FindObjectsOfType<Canvas>();
+         _canvas = null;
+         foreach (var c in canvases)
+         {
+             if (c.renderMode == RenderMode.ScreenSpaceOverlay)
+             {
+                 _canvas = c;
+                 break;
+             }
+         }
 
-        _rootPanel = CreateIntegratedHUD(); // ← guarda el panel raíz
-    }
+         // Si no hay un Canvas Overlay, crear uno propio para asegurar visibilidad en build
+         if (_canvas == null)
+         {
+             var canvasGO = new GameObject("PlayerHUD_Canvas");
+             _canvas = canvasGO.AddComponent<Canvas>();
+             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+             _canvas.sortingOrder = 1000; // asegurar que esté por encima
+             var scaler = canvasGO.AddComponent<CanvasScaler>();
+             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+             scaler.referenceResolution = new Vector2(1920, 1080);
+             canvasGO.AddComponent<GraphicRaycaster>();
+             // Asegurarse que está en la layer UI si existe
+             int uiLayer = LayerMask.NameToLayer("UI");
+             if (uiLayer != -1) canvasGO.layer = uiLayer;
+             _createdCanvas = true;
+         }
+
+         _rootPanel = CreateIntegratedHUD(); // ← guarda el panel raíz
+        // Forzar actualización de canvas para evitar que no se renderice en algunas plataformas
+        Canvas.ForceUpdateCanvases();
+        if (showDebugInfo) Debug.Log("[PlayerHUDComplete] HUD creado y Canvas actualizado.");
+     }
 
     #region Integrated HUD (Todo en un panel)
 
@@ -132,9 +172,10 @@ public class PlayerHUDComplete : MonoBehaviour
         mainPanel.transform.SetParent(_canvas.transform, false);
 
         var mainRect = mainPanel.AddComponent<RectTransform>();
-        mainRect.anchorMin = new Vector2(0, 1);
-        mainRect.anchorMax = new Vector2(0, 1);
-        mainRect.pivot = new Vector2(0, 1);
+        // Anclar al borde inferior-izquierdo
+        mainRect.anchorMin = new Vector2(0, 0);
+        mainRect.anchorMax = new Vector2(0, 0);
+        mainRect.pivot = new Vector2(0, 0);
         mainRect.anchoredPosition = hudPosition;
         mainRect.sizeDelta = new Vector2(260, 180); // Más alto para acomodar todo verticalmente
 
@@ -181,7 +222,8 @@ public class PlayerHUDComplete : MonoBehaviour
         verticalLayout.childControlHeight = false;
         verticalLayout.childControlWidth = true;
         verticalLayout.childForceExpandWidth = true;
-        verticalLayout.childAlignment = TextAnchor.UpperCenter;
+        // Alinear contenidos hacia la izquierda (mantener el orden de arriba hacia abajo)
+        verticalLayout.childAlignment = TextAnchor.UpperLeft;
 
         // Crear las barras de salud y maná
         CreateHealthBarInContainer(verticalContainer);
@@ -255,6 +297,8 @@ public class PlayerHUDComplete : MonoBehaviour
         healthTextRect.offsetMin = Vector2.zero;
         healthTextRect.offsetMax = Vector2.zero;
 
+        // Asegurar CanvasRenderer para TextMeshProUGUI (puede faltar en runtime/build)
+        if (healthTextGO.GetComponent<CanvasRenderer>() == null) healthTextGO.AddComponent<CanvasRenderer>();
         _healthText = healthTextGO.AddComponent<TextMeshProUGUI>();
         _healthText.text = "100 / 100";
         _healthText.fontSize = 16;
@@ -267,7 +311,7 @@ public class PlayerHUDComplete : MonoBehaviour
         var shadow = healthTextGO.AddComponent<UnityEngine.UI.Shadow>();
         shadow.effectColor = new Color(0, 0, 0, 0.8f);
         shadow.effectDistance = new Vector2(1.5f, -1.5f);
-
+        
         // Label "HP" en la esquina superior izquierda
         var hpLabelGO = new GameObject("HPLabel");
         hpLabelGO.transform.SetParent(healthSliderGO.transform, false);
@@ -278,6 +322,7 @@ public class PlayerHUDComplete : MonoBehaviour
         hpLabelRect.anchoredPosition = new Vector2(5, 0);
         hpLabelRect.sizeDelta = new Vector2(30, 15);
 
+        if (hpLabelGO.GetComponent<CanvasRenderer>() == null) hpLabelGO.AddComponent<CanvasRenderer>();
         var hpLabel = hpLabelGO.AddComponent<TextMeshProUGUI>();
         hpLabel.text = "HP";
         hpLabel.fontSize = 11;
@@ -351,6 +396,7 @@ public class PlayerHUDComplete : MonoBehaviour
         manaTextRect.offsetMin = Vector2.zero;
         manaTextRect.offsetMax = Vector2.zero;
 
+        if (manaTextGO.GetComponent<CanvasRenderer>() == null) manaTextGO.AddComponent<CanvasRenderer>();
         _manaText = manaTextGO.AddComponent<TextMeshProUGUI>();
         _manaText.text = "50 / 50";
         _manaText.fontSize = 16;
@@ -374,6 +420,7 @@ public class PlayerHUDComplete : MonoBehaviour
         mpLabelRect.anchoredPosition = new Vector2(5, 0);
         mpLabelRect.sizeDelta = new Vector2(30, 15);
 
+        if (mpLabelGO.GetComponent<CanvasRenderer>() == null) mpLabelGO.AddComponent<CanvasRenderer>();
         var mpLabel = mpLabelGO.AddComponent<TextMeshProUGUI>();
         mpLabel.text = "MP";
         mpLabel.fontSize = 11;
@@ -497,6 +544,7 @@ public class PlayerHUDComplete : MonoBehaviour
         buttonTextRect.offsetMin = Vector2.zero;
         buttonTextRect.offsetMax = Vector2.zero;
 
+        if (buttonTextGO.GetComponent<CanvasRenderer>() == null) buttonTextGO.AddComponent<CanvasRenderer>();
         slotUI.buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
         slotUI.buttonText.text = buttonText;
         slotUI.buttonText.fontSize = 12;
@@ -514,6 +562,7 @@ public class PlayerHUDComplete : MonoBehaviour
         cooldownTextRect.offsetMin = Vector2.zero;
         cooldownTextRect.offsetMax = Vector2.zero;
 
+        if (cooldownTextGO.GetComponent<CanvasRenderer>() == null) cooldownTextGO.AddComponent<CanvasRenderer>();
         slotUI.cooldownText = cooldownTextGO.AddComponent<TextMeshProUGUI>();
         slotUI.cooldownText.text = "";
         slotUI.cooldownText.fontSize = 18;
@@ -758,7 +807,10 @@ public class PlayerHUDComplete : MonoBehaviour
         {
             Debug.Log($"[PlayerHUDComplete] Componentes encontrados - Health:{_healthSystem != null} Mana:{_manaPool != null} Caster:{_magicCaster != null}");
         }
-    }
+
+        // Una vez encontrados, forzar refresco para que el HUD muestre valores en build
+        ForceRefresh();
+     }
 
     private Sprite CreateDefaultSpellIcon()
     {
