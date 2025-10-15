@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(Collider))]
 public class AutoSaveTrigger : MonoBehaviour
@@ -15,10 +16,17 @@ public class AutoSaveTrigger : MonoBehaviour
     [Header("One-shot")] public string oneShotFlag;
     public bool disableAfterUse = true;
 
+    [Header("Eventos")] public UnityEvent<GameObject> onSaved;
+
     private bool _pendingSave;
     private GameObject _pendingPlayer;
 
     void Reset() { GetComponent<Collider>().isTrigger = true; }
+
+    void Awake()
+    {
+        if (onSaved == null) onSaved = new UnityEvent<GameObject>();
+    }
 
     void OnEnable() { GameBootService.OnProfileReady += HandleProfileReady; }
     void OnDisable() { GameBootService.OnProfileReady -= HandleProfileReady; }
@@ -82,7 +90,7 @@ public class AutoSaveTrigger : MonoBehaviour
         var animator = playerGo.GetComponent<Animator>() ?? playerGo.GetComponentInParent<Animator>();
         if (animator != null)
         {
-            animator.Play("LevelUp_NoWeapon"); 
+            animator.Play("LevelUp_NoWeapon");
         }
 
         var saveSystem = FindFirstObjectByType<SaveSystem>();
@@ -102,6 +110,7 @@ public class AutoSaveTrigger : MonoBehaviour
                     if (!preset.flags.Contains(oneShotFlag)) preset.flags.Add(oneShotFlag);
                 }
                 Debug.Log("[AutoSaveTrigger] Guardado automático completado");
+                onSaved?.Invoke(playerGo);
             }
         }
         else

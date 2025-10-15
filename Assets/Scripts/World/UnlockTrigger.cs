@@ -119,14 +119,15 @@ public class UnlockTrigger : MonoBehaviour
         bool changed = false;
         bool needsHudRefresh = false;                // ← disparará un refresh visual al final
         PlayerPresetService presetService = null;
+        bool pendingApplyPreset = false; // marcar para aplicar solo una vez al final
 
-        // Helper local para aplicar preset y marcar refresh HUD
-        void ApplyPresetAndMark()
+        // Helper local para marcar que hay que aplicar el preset y refrescar HUD
+        void MarkApplyPreset()
         {
             if (!presetService) presetService = FindFirstObjectByType<PlayerPresetService>();
             if (presetService)
             {
-                presetService.ApplyCurrentPreset();
+                pendingApplyPreset = true;
                 needsHudRefresh = true;
             }
         }
@@ -148,7 +149,7 @@ public class UnlockTrigger : MonoBehaviour
             changed |= UnlockService.AddFlag(oneShotFlag);
 
         // Si hubo cambios en preset/slots/MP mínimos → reaplicar
-        if (changed) ApplyPresetAndMark();
+        if (changed) MarkApplyPreset();
 
         // === Garantizar primer casteo si se pide ===
         if (ensureFirstCast)
@@ -177,7 +178,7 @@ public class UnlockTrigger : MonoBehaviour
                     Mathf.Max(preset.maxMP, needed),
                     Mathf.Max(preset.currentMP, needed)
                 );
-                if (mpChanged) ApplyPresetAndMark();
+                if (mpChanged) MarkApplyPreset();
             }
         }
 
@@ -189,14 +190,21 @@ public class UnlockTrigger : MonoBehaviour
                 Mathf.Max(preset.maxMP, fallbackMin),
                 Mathf.Max(preset.currentMP, fallbackMin)
             );
-            if (mpChanged) ApplyPresetAndMark();
+            if (mpChanged) MarkApplyPreset();
         }
 
         // === Refresco de HUD (inmediato) si ha habido cambios aplicados ===
         if (needsHudRefresh)
         {
-            var hudComplete = FindFirstObjectByType<PlayerHUDComplete>();
-            if (hudComplete) hudComplete.ForceRefresh();
+            // Evitar forzar el refresco directo del HUD para evitar parpadeos.
+            // PlayerPresetService.ApplyCurrentPreset() dispara PlayerPresetService.OnPresetApplied
+            // y las UIs suscritas se encargarán de refrescar de forma controlada.
+        }
+
+        // Aplicar preset una sola vez si fue marcado
+        if (pendingApplyPreset && presetService)
+        {
+            presetService.ApplyCurrentPreset();
         }
 
         // === Guardado ===

@@ -11,7 +11,7 @@ using System.Collections;
 public class PlayerHUDComplete : MonoBehaviour
 {
     [Header("Configuración General")]
-    [SerializeField] private bool showDebugInfo = false;
+    [SerializeField] private bool showDebugInfo;
 
     [Header("Posiciones")]
     [SerializeField] private Vector2 hudPosition = new Vector2(30, 30); // Esquina inferior izquierda: 30px desde la izquierda y 30px desde abajo
@@ -24,7 +24,6 @@ public class PlayerHUDComplete : MonoBehaviour
 
     [Header("Colores de Fondo")]
     [SerializeField] private Color backgroundColor = new Color(0f, 0f, 0f, 0.25f); // Mucho más transparente
-    [SerializeField] private Color barBackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.4f); // Background de barras más sutil
     [SerializeField] private Color backgroundColorActive = new Color(0.2f, 0.2f, 0.2f, 0.6f); // Menos opaco
     [SerializeField] private Color backgroundColorInactive = new Color(0.1f, 0.1f, 0.1f, 0.5f); // Menos opaco
 
@@ -46,6 +45,13 @@ public class PlayerHUDComplete : MonoBehaviour
     [Header("Canvas")]
     [Tooltip("Si está activado, el HUD siempre creará su propio Canvas en ScreenSpaceOverlay para evitar problemas de render en builds donde otros Canvas usan cámaras diferentes.")]
     [SerializeField] private bool forceCreateCanvas = true;
+
+    // Nueva sección: referencias generadas desde el Editor
+    [Header("Editor / Prebuilt UI (asignar desde Editor)")]
+    [Tooltip("Opcional: si asignas aquí un panel raíz (generado por el editor), el script usará ese UI y NO creará elementos en tiempo de ejecución.")]
+    [SerializeField] private GameObject editorRootPanel;
+    [Tooltip("Opcional: Canvas asociado al UI preconstruido. Si se deja vacío, el script buscará el Canvas padre del root asignado.")]
+    [SerializeField] private Canvas editorCanvas;
 
     // Referencias automáticas
     private PlayerHealthSystem _healthSystem;
@@ -87,7 +93,20 @@ public class PlayerHUDComplete : MonoBehaviour
 
     void Awake()
     {
-        CreateCompleteHUD();
+        // Si el usuario asignó un UI preconstruido desde el Editor, usarlo y enlazar referencias.
+        if (editorRootPanel != null)
+        {
+            _rootPanel = editorRootPanel;
+            _canvas = editorCanvas != null ? editorCanvas : _rootPanel.GetComponentInParent<Canvas>();
+            _createdCanvas = false;
+            BindUIElementsFromRoot(_rootPanel);
+            if (showDebugInfo) Debug.Log("[PlayerHUDComplete] Usando UI preconstruido asignado desde el Editor.");
+        }
+        else
+        {
+            CreateCompleteHUD();
+        }
+
         FindPlayerComponents();
     }
 
@@ -124,12 +143,15 @@ public class PlayerHUDComplete : MonoBehaviour
                 _canvas.sortingOrder = 1000;
                 _createdCanvas = false; // no lo creamos nosotros ahora
                 _rootPanel = CreateIntegratedHUD();
+                // Si creamos aquí en runtime, enlazar elementos para uso inmediato
+                BindUIElementsFromRoot(_rootPanel);
                 return;
             }
             // si no existe lo creamos abajo como siempre
         }
          // Buscar Canvas existente que sea ScreenSpaceOverlay
-         Canvas[] canvases = FindObjectsOfType<Canvas>();
+         // Use la API moderna FindObjectsByType para evitar la advertencia de obsolescencia
+         Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
          _canvas = null;
          foreach (var c in canvases)
          {
@@ -158,6 +180,8 @@ public class PlayerHUDComplete : MonoBehaviour
          }
 
          _rootPanel = CreateIntegratedHUD(); // ← guarda el panel raíz
+        // Enlazar elementos creados dinámicamente
+        BindUIElementsFromRoot(_rootPanel);
         // Forzar actualización de canvas para evitar que no se renderice en algunas plataformas
         Canvas.ForceUpdateCanvases();
         if (showDebugInfo) Debug.Log("[PlayerHUDComplete] HUD creado y Canvas actualizado.");
@@ -630,9 +654,9 @@ public class PlayerHUDComplete : MonoBehaviour
     public void ForceRefresh()
     {
         // Re-resolver referencias por si no estuvieran aún
-        if (_healthSystem == null) _healthSystem = FindObjectOfType<PlayerHealthSystem>();
-        if (_manaPool == null) _manaPool = FindObjectOfType<ManaPool>();
-        if (_magicCaster == null) _magicCaster = FindObjectOfType<MagicCaster>();
+        if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
+        if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
+        if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
 
         // Salud (snap inmediato)
         if (_healthSystem && _healthSlider && _healthText)
@@ -778,8 +802,6 @@ public class PlayerHUDComplete : MonoBehaviour
 
     #endregion
 
-    #region Utility Methods
-
     private void FindPlayerComponents()
     {
         var player = GameObject.FindGameObjectWithTag("Player");
@@ -799,9 +821,9 @@ public class PlayerHUDComplete : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
 
-        if (!_healthSystem) _healthSystem = FindObjectOfType<PlayerHealthSystem>();
-        if (!_manaPool) _manaPool = FindObjectOfType<ManaPool>();
-        if (!_magicCaster) _magicCaster = FindObjectOfType<MagicCaster>();
+        if (!_healthSystem) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
+        if (!_manaPool) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
+        if (!_magicCaster) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
 
         if (showDebugInfo)
         {
@@ -838,11 +860,90 @@ public class PlayerHUDComplete : MonoBehaviour
         return Sprite.Create(texture, new Rect(0, 0, 64, 64), Vector2.one * 0.5f);
     }
 
-    void OnDestroy()
+    // Encuentra recursivamente un hijo por nombre bajo un transform
+    private Transform FindRecursive(Transform parent, string childName)
     {
-        if (_rootPanel) DestroyImmediate(_rootPanel);
-        if (_createdCanvas && _canvas) DestroyImmediate(_canvas.gameObject);
+        if (parent.name == childName) return parent;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var child = parent.GetChild(i);
+            var found = FindRecursive(child, childName);
+            if (found != null) return found;
+        }
+        return null;
+    }
+    
+    // Enlaza componentes UI existentes bajo un root (usado cuando el UI se crea desde el Editor)
+    private void BindUIElementsFromRoot(GameObject root)
+    {
+        if (root == null) return;
+
+        // Health Slider
+        var hs = FindRecursive(root.transform, "HealthSlider");
+        if (hs) _healthSlider = hs.GetComponent<Slider>();
+        var hf = FindRecursive(root.transform, "Fill");
+        if (hf) _healthFill = hf.GetComponent<Image>();
+        var ht = FindRecursive(root.transform, "HealthText");
+        if (ht) _healthText = ht.GetComponent<TextMeshProUGUI>();
+
+        // Mana Slider
+        var ms = FindRecursive(root.transform, "ManaSlider");
+        if (ms) _manaSlider = ms.GetComponent<Slider>();
+        var mf = FindRecursive(root.transform, "Fill");
+        // Note: "Fill" may be duplicated; prefer the one under Mana if possible
+        if (mf && _manaSlider != null)
+        {
+            var candidate = ms.Find("Fill Area/Fill");
+            if (candidate) _manaFill = candidate.GetComponent<Image>();
+        }
+        var mt = FindRecursive(root.transform, "ManaText");
+        if (mt) _manaText = mt.GetComponent<TextMeshProUGUI>();
+
+        // Slots
+        var slots = FindRecursive(root.transform, "SlotsRow");
+        if (slots) _slotsPanel = slots.gameObject;
+
+        // Crear contenedores de slot y enlazar subcomponentes (si existen)
+        _leftSlot = new MagicSlotUI();
+        _rightSlot = new MagicSlotUI();
+        _upSlot = new MagicSlotUI();
+
+        var leftGO = FindRecursive(root.transform, "Slot_Left");
+        if (leftGO) BindSlotFromGO(_leftSlot, leftGO.gameObject, MagicSlot.Left);
+        var rightGO = FindRecursive(root.transform, "Slot_Right");
+        if (rightGO) BindSlotFromGO(_rightSlot, rightGO.gameObject, MagicSlot.Right);
+        var upGO = FindRecursive(root.transform, "Slot_Special");
+        if (upGO) BindSlotFromGO(_upSlot, upGO.gameObject, MagicSlot.Special);
+
+        if (showDebugInfo)
+            Debug.Log($"[PlayerHUDComplete] BindUIElementsFromRoot - Health:{_healthSlider!=null} Mana:{_manaSlider!=null} Slots:{_slotsPanel!=null}");
+     }
+
+    private void BindSlotFromGO(MagicSlotUI slotUI, GameObject go, MagicSlot type)
+    {
+        if (go == null) return;
+        slotUI.slotObject = go;
+        slotUI.slotType = type;
+        slotUI.backgroundImage = go.GetComponent<Image>();
+        var iconT = FindRecursive(go.transform, "Icon");
+        if (iconT) slotUI.iconImage = iconT.GetComponent<Image>();
+        var coolT = FindRecursive(go.transform, "CooldownOverlay");
+        if (coolT) slotUI.cooldownOverlay = coolT.GetComponent<Image>();
+        var btnTextT = FindRecursive(go.transform, "ButtonText");
+        if (btnTextT) slotUI.buttonText = btnTextT.GetComponent<TextMeshProUGUI>();
+        var btnBgT = FindRecursive(go.transform, "ButtonBadge");
+        if (btnBgT) slotUI.buttonBackground = btnBgT.GetComponent<Image>();
+        var cdTextT = FindRecursive(go.transform, "CooldownText");
+        if (cdTextT) slotUI.cooldownText = cdTextT.GetComponent<TextMeshProUGUI>();
     }
 
-    #endregion
+    void OnDestroy()
+    {
+        // Si el root fue asignado desde el Editor (editorRootPanel != null), no lo destruimos.
+        if (_createdCanvas && _canvas) DestroyImmediate(_canvas.gameObject);
+        if (_rootPanel != null && editorRootPanel == null)
+        {
+            DestroyImmediate(_rootPanel);
+        }
+    }
 }

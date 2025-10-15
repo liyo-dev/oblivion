@@ -21,6 +21,12 @@ public class PlayerSaveData
     public SpellId rightSpellId = SpellId.None;
     public SpellId specialSpellId = SpellId.None;
 
+    // === NUEVO: permisos físicos/acciónales que se persisten por preset ===
+    // Si un save antiguo no contiene estos campos, quedarán en false (valor por defecto)
+    public bool canSwim = false;
+    public bool canJump = false;
+    public bool canClimb = false;
+
     // ---- Helpers actualizados para usar GameBootProfile ----
     
     /// <summary>
@@ -63,6 +69,14 @@ public class PlayerSaveData
         d.leftSpellId = preset.leftSpellId;
         d.rightSpellId = preset.rightSpellId;
         d.specialSpellId = preset.specialSpellId;
+
+        // === NUEVO: persistir permisos de abilities desde el preset ===
+        if (preset.abilities != null)
+        {
+            d.canSwim = preset.abilities.swim;
+            d.canJump = preset.abilities.jump;
+            d.canClimb = preset.abilities.climb;
+        }
 
         return d;
     }

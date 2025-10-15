@@ -82,7 +82,7 @@
         },
         {
             "key": "SAVEPOINT_PROMPT",
-            "value": "Guardar partida [E]"
+            "value": "Guardar partida "
         },
         {
             "key": "SAVEPOINT_SAVED",
@@ -115,10 +115,6 @@
         {
             "key": "System_Error",
             "value": "Error"
-        },
-        {
-            "key": "System_GameSaved",
-            "value": "Partida guardada"
         },
         {
             "key": "System_Loading",

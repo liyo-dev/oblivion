@@ -6,6 +6,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     // ================== SCAN / TARGETING ==================
     [Header("Búsqueda")]
     [SerializeField] private float radius = 8f;
+    [Tooltip("Radio máximo usado para detectar enemigos (debe ser >= los radios personalizados de los enemigos).")]
+    [SerializeField] private float scanRadius = 12f;
     [SerializeField] private LayerMask enemyMask;
     [SerializeField] private float fovDegrees = 140f;
     [SerializeField] private bool requireLineOfSight = true;     // <- ahora true por defecto
@@ -21,6 +23,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private bool drawFOV = true;
     [SerializeField] private bool drawTargetLine = true;
     [SerializeField] private Color radiusColor = new Color(0f, 0.7f, 1f, 0.35f);
+    [SerializeField] private Color scanRadiusColor = new Color(0f, 0.4f, 1f, 0.18f);
     [SerializeField] private Color fovColor = new Color(0.2f, 1f, 0.4f, 0.25f);
     [SerializeField] private Color targetLineColor = new Color(1f, 0.8f, 0.2f, 0.9f);
 
@@ -30,13 +33,15 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     Transform _marker;
     Collider _lastTargetCol;
     Camera _cam;
+    // buffer reutilizable para evitar allocations en OverlapSphereNonAlloc
+    private Collider[] _overlapBuffer = new Collider[64];
 
     [Header("Feedback de Target (Opcional)")]
     [SerializeField] private bool enableMarker = true;
     [SerializeField] private GameObject markerPrefab;
     [SerializeField] private Vector3 markerOffset = new(0, 1.8f, 0);
     [SerializeField] private bool billboardToCamera = true;
-    [SerializeField] private bool parentMarkerToTarget = false;
+    [SerializeField] private bool parentMarkerToTarget;
 
     void Awake()
     {
@@ -65,7 +70,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
                 _nextScan = Time.time + 1f / updatesPerSecond;
 
             if (before != CurrentTarget)
-                OnTargetChanged(before, CurrentTarget);
+                OnTargetChanged(CurrentTarget);
         }
     }
 
@@ -76,20 +81,30 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         var origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up;
         var fwd    = aimOrigin ? aimOrigin.forward  : transform.forward;
 
-        var hits = Physics.OverlapSphere(origin, radius, enemyMask, QueryTriggerInteraction.Collide);
-        float bestScore = float.NegativeInfinity;
-        Transform best = null;
+        int hitCount = Physics.OverlapSphereNonAlloc(origin, /*radius*/ scanRadius, _overlapBuffer, enemyMask, QueryTriggerInteraction.Collide);
+         float bestScore = float.NegativeInfinity;
+         Transform best = null;
 
-        foreach (var h in hits)
-        {
-            if (!h) continue;
+         for (int i = 0; i < hitCount; i++)
+         {
+             var h = _overlapBuffer[i];
+             if (!h) continue;
 
-            Vector3 center = GetTargetCenter(h.transform);
-            Vector3 to = center - origin;
-            float dist = to.magnitude;
-            if (dist < 0.01f) continue;
+             Vector3 center = GetTargetCenter(h.transform);
+             Vector3 to = center - origin;
+             float dist = to.magnitude;
+             if (dist < 0.01f) continue;
 
-            Vector3 dir = to / dist;
+            // Si el enemigo tiene un componente Targetable con un radio personalizado, úsalo
+            float allowedRadius = radius;
+            var cfg = h.transform.GetComponentInParent<Targetable>();
+            if (cfg != null && cfg.targetingRadius > 0f)
+                allowedRadius = cfg.targetingRadius;
+             
+             // Si está fuera del radio permitido para ese enemigo, ignóralo
+             if (dist > allowedRadius) continue;
+
+             Vector3 dir = to / dist;
 
             // FOV respecto al aim (cámara si la arrastras a aimOrigin)
             float ang = Vector3.Angle(fwd, dir);
@@ -114,14 +129,14 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             }
 
             // score: favorece estar centrado y más cerca
-            float score = Vector3.Dot(fwd, dir) * 1.0f - (dist / Mathf.Max(0.0001f, radius)) * 0.35f;
+            float score = Vector3.Dot(fwd, dir) * 1.0f - (dist / Mathf.Max(0.0001f, allowedRadius)) * 0.35f;
             if (score > bestScore) { bestScore = score; best = h.transform; }
         }
 
         CurrentTarget = best;
     }
 
-    void OnTargetChanged(Transform oldT, Transform newT)
+    void OnTargetChanged(Transform newT)
     {
         if (!_marker) return;
 
@@ -200,15 +215,19 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         if (drawRadius)
         {
             Gizmos.color = radiusColor;
+            // dibujar radio de targeting (radius)
             Gizmos.DrawWireSphere(origin, radius);
+            // dibujar radio de scan (scanRadius) con color más sutil
+            Gizmos.color = scanRadiusColor;
+            Gizmos.DrawWireSphere(origin, scanRadius);
         }
 
         if (drawFOV)
         {
             Gizmos.color = fovColor;
             float half = fovDegrees * 0.5f;
-            Gizmos.DrawRay(origin, Quaternion.AngleAxis(-half, Vector3.up) * fwd * radius);
-            Gizmos.DrawRay(origin, Quaternion.AngleAxis(+half, Vector3.up) * fwd * radius);
+            Gizmos.DrawRay(origin, Quaternion.AngleAxis(-half, Vector3.up) * fwd * scanRadius);
+            Gizmos.DrawRay(origin, Quaternion.AngleAxis(+half, Vector3.up) * fwd * scanRadius);
         }
 
         if (drawTargetLine && CurrentTarget)

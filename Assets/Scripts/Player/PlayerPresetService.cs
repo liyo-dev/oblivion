@@ -14,6 +14,7 @@ public class PlayerPresetService : MonoBehaviour
     MagicProjectileSpawner _spawner;
     MagicCaster _magicCaster; // ← NUEVO: referencia al MagicCaster
     ManaPool _manaPool;       // ← NUEVO: referencia al ManaPool
+    PlayerActionManager _actionManager; // ← NUEVO: referencia al PlayerActionManager
     
     // Evitar inicialización doble si el evento llega más de una vez o ya está listo al habilitar
     bool _initialized;
@@ -23,6 +24,7 @@ public class PlayerPresetService : MonoBehaviour
         _spawner = GetComponent<MagicProjectileSpawner>() ?? gameObject.AddComponent<MagicProjectileSpawner>();
         _magicCaster = GetComponent<MagicCaster>();
         _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>(); // ← NUEVO: obtener ManaPool
+        _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>(); // ← NUEVO: obtener PlayerActionManager
     }
 
     // Suscribirnos al evento y cubrir el caso de que ya esté disponible
@@ -83,6 +85,20 @@ public class PlayerPresetService : MonoBehaviour
 
         // Configurar hechizos del preset
         ConfigureSpells(preset);
+
+        // === NUEVO: Aplicar abilities del preset al PlayerActionManager si existe ===
+        if (_actionManager == null)
+            _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
+
+        if (_actionManager != null && preset != null)
+        {
+            _actionManager.ApplyAbilities(preset.abilities);
+            Debug.Log("[PlayerPresetService] Abilities del preset aplicadas al PlayerActionManager");
+        }
+        else if (_actionManager == null)
+        {
+            Debug.LogWarning("[PlayerPresetService] No se encontró PlayerActionManager para aplicar abilities del preset");
+        }
     }
 
     // === NUEVO: Aplica valores de maná desde el preset al ManaPool del jugador ===
@@ -194,11 +210,20 @@ public class PlayerPresetService : MonoBehaviour
         ApplyManaFromPreset(preset);
         ConfigureSpells(preset);
 
-        // NUEVO: forzar refresco de HUD tras aplicar preset
-        var hud = FindFirstObjectByType<PlayerHUDComplete>();
-        if (hud != null)
+        // NUEVO: aplicar abilities al action manager
+        if (_actionManager == null)
+            _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
+
+        if (_actionManager != null)
         {
-            hud.ForceRefresh();
+            _actionManager.ApplyAbilities(preset.abilities);
+            Debug.Log("[PlayerPresetService] Re-aplicado preset: abilities actualizadas");
         }
+
+        // Notificar a subscriptores que el preset ha sido aplicado (p.ej. UI)
+        OnPresetApplied?.Invoke();
     }
+
+    // Evento público para notificar re-aplicación de preset (subscriptores UI o sistemas)
+    public static System.Action OnPresetApplied;
 }

@@ -82,7 +82,7 @@
         },
         {
             "key": "SAVEPOINT_PROMPT",
-            "value": "Save Game [E]"
+            "value": "Save Game"
         },
         {
             "key": "SAVEPOINT_SAVED",
@@ -115,10 +115,6 @@
         {
             "key": "System_Error",
             "value": "Error"
-        },
-        {
-            "key": "System_GameSaved",
-            "value": "Game Saved"
         },
         {
             "key": "System_Loading",

@@ -98,7 +98,7 @@ public class SavePoint : MonoBehaviour
             {
                 playerHealth.SetCurrentHealth(playerHealth.MaxHealth);
             }
-            
+
             // Curar maná a través del ManaPool
             var manaPool = playerGo.GetComponent<ManaPool>() ?? playerGo.GetComponentInParent<ManaPool>();
             if (manaPool != null)
@@ -112,7 +112,7 @@ public class SavePoint : MonoBehaviour
         if (saveSystem != null)
         {
             bool success = bootProfile.SaveCurrentGameState(saveSystem);
-            
+
             if (success)
             {
                 Debug.Log("[SavePoint] Partida guardada correctamente");

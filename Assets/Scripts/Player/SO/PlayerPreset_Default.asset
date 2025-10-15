@@ -24,3 +24,7 @@ MonoBehaviour:
   rightSpellId: 0
   specialSpellId: 0
   flags: []
+  abilities:
+    swim: 0
+    jump: 0
+    climb: 0

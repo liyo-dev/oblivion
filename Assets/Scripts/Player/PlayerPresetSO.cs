@@ -24,4 +24,15 @@ public class PlayerPresetSO : ScriptableObject
 
     [Header("Flags (misiones/estados simples)")]
     public List<string> flags = new();
+
+    [System.Serializable]
+    public class PlayerAbilitiesPreset
+    {
+        [Tooltip("Permite nadar (Swimming)")] public bool swim = false;
+        [Tooltip("Permite saltar")] public bool jump = false;
+        [Tooltip("Permite trepar / escalar")] public bool climb = false;
+    }
+
+    [Header("Abilities (Swim, Jump, Climb)")]
+    public PlayerAbilitiesPreset abilities = new PlayerAbilitiesPreset();
 }

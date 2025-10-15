@@ -46,6 +46,19 @@ public class GameBootProfile : ScriptableObject
         dst.rightSpellId = src.rightSpellId;
         dst.specialSpellId = src.specialSpellId;
         dst.flags = new List<string>(src.flags ?? new List<string>());
+
+        // === NUEVO: copiar sección de abilities (permisos físicos/acciones) ===
+        if (src.abilities != null)
+        {
+            dst.abilities = new PlayerPresetSO.PlayerAbilitiesPreset();
+            dst.abilities.swim = src.abilities.swim;
+            dst.abilities.jump = src.abilities.jump;
+            dst.abilities.climb = src.abilities.climb;
+        }
+        else
+        {
+            dst.abilities = new PlayerPresetSO.PlayerAbilitiesPreset();
+        }
     }
 
     public void EnsureRuntimePresetFromTemplate(PlayerPresetSO template)
@@ -99,6 +112,12 @@ public class GameBootProfile : ScriptableObject
             p.rightSpellId = SpellId.None;
             p.specialSpellId = SpellId.None;
         }
+
+        // === NUEVO: restaurar permisos de abilities desde el save (si existen) ===
+        if (p.abilities == null) p.abilities = new PlayerPresetSO.PlayerAbilitiesPreset();
+        p.abilities.swim = data.canSwim;
+        p.abilities.jump = data.canJump;
+        p.abilities.climb = data.canClimb;
     }
 
     /// <summary>Preset activo: siempre runtimePreset (creado desde bootPreset, save o default)</summary>
@@ -141,6 +160,14 @@ public class GameBootProfile : ScriptableObject
         data.leftSpellId = activePreset.leftSpellId;
         data.rightSpellId = activePreset.rightSpellId;
         data.specialSpellId = activePreset.specialSpellId;
+
+        // === NUEVO: incluir permisos de abilities en el save ===
+        if (activePreset.abilities != null)
+        {
+            data.canSwim = activePreset.abilities.swim;
+            data.canJump = activePreset.abilities.jump;
+            data.canClimb = activePreset.abilities.climb;
+        }
 
         return data;
     }
@@ -249,6 +276,16 @@ public class GameBootProfile : ScriptableObject
             p.flags = newFlags;
         }
 
+        // === NUEVO: sincronizar abilities desde el PlayerActionManager (estado runtime actual) ===
+        var actionManager = FindFirstObjectByType<PlayerActionManager>();
+        if (actionManager != null)
+        {
+            if (p.abilities == null) p.abilities = new PlayerPresetSO.PlayerAbilitiesPreset();
+            p.abilities.swim = actionManager.AllowSwim;
+            p.abilities.jump = actionManager.AllowJump;
+            p.abilities.climb = actionManager.AllowClimb;
+        }
+
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
     }
@@ -293,5 +330,7 @@ public class GameBootProfile : ScriptableObject
         p.rightSpellId = SpellId.None;
         p.specialSpellId = SpellId.None;
         p.flags = new List<string>();
+        // === NUEVO: resetear abilities ===
+        p.abilities = new PlayerPresetSO.PlayerAbilitiesPreset();
     }
 }

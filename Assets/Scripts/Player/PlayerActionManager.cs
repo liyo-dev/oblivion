@@ -39,6 +39,31 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
 
+    // --- Runtime: permisos globales aplicables desde presets u otros sistemas ---
+    // Por defecto true para mantener compatibilidad si no se aplica preset explícito.
+    //private bool _allowPhysical = true; // ataques físicos
+    private bool _allowSwim = true;     // nadar
+    private bool _allowJump = true;     // saltar
+    private bool _allowClimb = true;    // trepar
+
+    // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos
+    public void ApplyAbilities(PlayerPresetSO.PlayerAbilitiesPreset abilities)
+    {
+        if (abilities == null) return;
+        // _allowPhysical = abilities.physical;
+        _allowSwim = abilities.swim;
+        _allowJump = abilities.jump;
+        _allowClimb = abilities.climb;
+
+        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb}");
+    }
+
+    // Opcional: getters públicos si otros sistemas necesitan consultarlos
+    //public bool AllowPhysical => _allowPhysical;
+    public bool AllowSwim => _allowSwim;
+    public bool AllowJump => _allowJump;
+    public bool AllowClimb => _allowClimb;
+
     public event Action<ActionMode> OnTopModeChanged;
 
     // --- Internals ---
@@ -142,6 +167,26 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
     public bool CanUse(PlayerAbility ability)
     {
+        // Comprueba permisos globales aplicados desde preset u otros sistemas
+        switch (ability)
+        {
+            case PlayerAbility.Jump:
+                if (!_allowJump)
+                {
+                    if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump deshabilitado por preset");
+                    return false;
+                }
+                break;
+            //case PlayerAbility.Attack:
+            //    if (!_allowPhysical)
+            //    {
+            //        if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Attack deshabilitado por preset");
+            //        return false;
+            //    }
+            //    break;
+            // Otros mapeos pueden añadirse si se utiliza swim/climb en otras partes
+        }
+
         // Recorre de arriba a abajo (prioridad)
         for (int i = _stack.Count - 1; i >= 0; --i)
         {

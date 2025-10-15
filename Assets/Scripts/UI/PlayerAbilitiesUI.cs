@@ -42,6 +42,9 @@ public class PlayerAbilitiesUI : MonoBehaviour
         {
             HandleProfileReady();
         }
+
+        // Suscribirse al evento de re-aplicar preset para refrescar UI cuando corresponda
+        PlayerPresetService.OnPresetApplied += OnPresetAppliedHandler;
     }
 
     void OnDisable()
@@ -51,6 +54,9 @@ public class PlayerAbilitiesUI : MonoBehaviour
         {
             CancelInvoke(nameof(RefreshAll));
         }
+
+        // Unsubscribe del evento
+        PlayerPresetService.OnPresetApplied -= OnPresetAppliedHandler;
     }
 
     private void HandleProfileReady()
@@ -68,7 +74,13 @@ public class PlayerAbilitiesUI : MonoBehaviour
         _initialized = true;
         GameBootService.OnProfileReady -= HandleProfileReady;
     }
-    
+
+    private void OnPresetAppliedHandler()
+    {
+        // Refrescar UI cuando se re-aplica el preset (sólo si ya inicializó la UI)
+        if (_initialized) RefreshAll();
+    }
+
     private void FindPlayerComponents()
     {
         // Buscar ManaPool del jugador
@@ -109,7 +121,7 @@ public class PlayerAbilitiesUI : MonoBehaviour
         // Limpiar UI existente
         foreach (var obj in _abilityUIObjects)
         {
-            if (obj != null) DestroyImmediate(obj);
+            if (obj != null) Destroy(obj);
         }
         _abilityUIObjects.Clear();
         
@@ -144,7 +156,7 @@ public class PlayerAbilitiesUI : MonoBehaviour
         // Limpiar UI existente
         foreach (var obj in _spellUIObjects)
         {
-            if (obj != null) DestroyImmediate(obj);
+            if (obj != null) Destroy(obj);
         }
         _spellUIObjects.Clear();
         

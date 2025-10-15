@@ -35,6 +35,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField] private Transform playerOverride; // opcional
     [SerializeField] private Transform lookFrom;       // origen para mirar (si null, transform)
 
+    [Header("Integración mundo vivo (opcional)")]
+    [Tooltip("Si existe, bloqueará el AmbientAgent durante la interacción para que no pise animaciones.")]
+    [SerializeField] private AmbientInhibitor ambientInhibitor; // opcional
+
     [Header("Depuración")]
     [SerializeField] private bool drawGizmos = true;
 
@@ -49,12 +53,14 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         lookFrom = transform;
+        ambientInhibitor = GetComponent<AmbientInhibitor>();
     }
 
     void Awake()
     {
         if (!animator) animator = GetComponentInChildren<Animator>();
         if (!lookFrom) lookFrom = transform;
+        if (!ambientInhibitor) ambientInhibitor = GetComponent<AmbientInhibitor>();
         CacheClipLengths();
 
         // Player y cámara
@@ -93,7 +99,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         Vector3 dir = toPlayer.normalized;
         float dot = Vector3.Dot(forward, dir);
         float fovDot = Mathf.Cos(0.5f * fovDegrees * Mathf.Deg2Rad);
-        if (dot < fovDot) return; // está fuera del cono → no saluda
+        if (dot < fovDot) return; // fuera del cono → no saluda
 
         // ¿El jugador/cámara me mira?
         if (requirePlayerLookingAtMe)
@@ -119,6 +125,9 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (isInteracting) return;
         isInteracting = true;
 
+        // Bloquea el mundo vivo si existe
+        ambientInhibitor?.Lock();
+
         StopFacing();
         if (rotateToPlayerOnInteract && player) faceCo = StartCoroutine(FaceTarget(player));
 
@@ -132,6 +141,9 @@ public class NPCSimpleAnimator : MonoBehaviour
 
         StopFacing();
         PlayState(idleState);
+
+        // Libera el bloqueo del mundo vivo
+        ambientInhibitor?.Unlock();
     }
 
     IEnumerator FaceTarget(Transform t)
@@ -173,6 +185,34 @@ public class NPCSimpleAnimator : MonoBehaviour
 
         yield return new WaitForSeconds(greetCooldown);
         greetOnCooldown = false;
+    }
+
+    // ==== Utilidades públicas extra ====
+    /// <summary>Permite fijar/actualizar el player desde fuera si cambias de avatar.</summary>
+    public void SetPlayer(Transform newPlayer, Transform newPlayerCam = null)
+    {
+        player = newPlayer;
+        playerCam = newPlayerCam ? newPlayerCam : (Camera.main ? Camera.main.transform : playerCam);
+    }
+
+    /// <summary>Dispara manualmente el saludo aunque no cumpla condiciones de Update.</summary>
+    public void TriggerGreeting()
+    {
+        if (!greetOnCooldown && !isInteracting) StartCoroutine(DoGreeting());
+    }
+
+    /// <summary>Reproduce un estado puntual por nombre y vuelve a idle.</summary>
+    public void PlayOneShot(string stateName)
+    {
+        StartCoroutine(CoPlayOneShot(stateName));
+    }
+    IEnumerator CoPlayOneShot(string stateName)
+    {
+        if (string.IsNullOrEmpty(stateName)) yield break;
+        PlayState(stateName);
+        float len = GetClipLengthSafe(stateName);
+        yield return new WaitForSeconds(len > 0f ? len : 1f);
+        if (!isInteracting) PlayState(idleState);
     }
 
     // ==== Animación util ====
