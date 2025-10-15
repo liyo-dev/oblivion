@@ -99760,7 +99760,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3451936355001664968, guid: c72fa9f03c1eab641be52cc822b8f076, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3451936355001664968, guid: c72fa9f03c1eab641be52cc822b8f076, type: 3}
       propertyPath: bedPosition

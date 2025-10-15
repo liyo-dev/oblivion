@@ -12,8 +12,6 @@ GameObject:
   - component: {fileID: 33225448495509406}
   - component: {fileID: 23617196765786836}
   - component: {fileID: 65386842399853726}
-  - component: {fileID: 3451936355001664968}
-  - component: {fileID: 4436186419707777364}
   m_Layer: 0
   m_Name: Bed01_a03
   m_TagString: Untagged
@@ -113,39 +111,3 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.335308, y: 1.2523278, z: 3.2285175}
   m_Center: {x: 0.00000023841858, y: 0.6261813, z: -0.010031104}
---- !u!114 &3451936355001664968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1212279657770944}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67f6c59a49ab45cb80d225cf31436f5c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SleepTrigger
-  player: {fileID: 0}
-  sleepAnimationState: Sleeping_NoWeapon
-  bedPosition: {fileID: 0}
---- !u!65 &4436186419707777364
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1212279657770944}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 5.648123, y: 1.2523278, z: 5.7074556}
-  m_Center: {x: -1.6564074, y: 0.6261813, z: 1.2294383}
