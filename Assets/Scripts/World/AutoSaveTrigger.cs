@@ -78,6 +78,13 @@ public class AutoSaveTrigger : MonoBehaviour
             if (manaPool != null) manaPool.Init(manaPool.Max, manaPool.Max);
         }
 
+        // Ejecutar animación LevelUp_NoWeapon directamente
+        var animator = playerGo.GetComponent<Animator>() ?? playerGo.GetComponentInParent<Animator>();
+        if (animator != null)
+        {
+            animator.Play("LevelUp_NoWeapon"); 
+        }
+
         var saveSystem = FindFirstObjectByType<SaveSystem>();
         if (saveSystem != null)
         {
@@ -110,4 +117,3 @@ public class AutoSaveTrigger : MonoBehaviour
         if (disableAfterUse) gameObject.SetActive(false);
     }
 }
-

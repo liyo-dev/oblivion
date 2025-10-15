@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/GameBootProfile.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/QuestManager.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/SleepTrigger.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/SleepTrigger.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/World/Fantasy_Kingdom_Pack/Perfabs/Props/Furniture/Bed/Bed01_a03.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Art/World/Fantasy_Kingdom_Pack/Perfabs/Props/Furniture/Bed/Bed01_a03.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Attacks/SO Spells/FireProjectileSO.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Attacks/SO Spells/FireProjectileSO.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,13 +35,20 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/URPsettings/ForwardRenderer.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/URPsettings/ForwardRenderer.asset" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Art/Enemies/CasualFantasy/Spider1/SourceFiles/AC.controller" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TagFieldDrawer.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/Camera/CameraOcclusionVisuals.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/Camera/FadableTintDesat_URP.shader" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Plugins/Invector-3rdPersonController_LITE/Scripts/Camera/PlayerOcclusionTintFeature.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Prefabs/_PLAYER.prefab" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Prefabs/_PLAYER.prefab" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_en.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Resources/Localization/cinematicdemon_es.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scenes/Main World/MainWorld.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scenes/Main World/MainWorld.unity" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Attributes.meta" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Attributes/TagFieldAttribute.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueCameraController.cs" root0="FORCE_HIGHLIGHTING" />
@@ -46,9 +59,11 @@
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/VFX/BossArenaBarrier.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Weapons/SO Spells/FireProjectileSO.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/SleepTrigger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/World/UnlockTrigger.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Settings/PC_RPAsset.asset" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Settings/PC_RPAsset.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/_Recovery/0 (10).unity" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
