@@ -151,6 +151,12 @@ public class QuestManager : MonoBehaviour
                 if (string.IsNullOrEmpty(qid)) continue;
                 EnsureRuntimeQuest(qid, out var rq);
                 rq.State = QuestState.Completed;
+                // Marcar todos los pasos como completados si la misión está completada
+                if (rq.Steps != null)
+                {
+                    for (int s = 0; s < rq.Steps.Length; s++)
+                        rq.Steps[s].completed = true;
+                }
             }
             else if (f.StartsWith(Q_ACTIVE, StringComparison.Ordinal))
             {
@@ -296,4 +302,14 @@ public class QuestManager : MonoBehaviour
         }
     }
     #endregion
+
+    /// <summary>
+    /// Elimina todas las misiones activas y su progreso. Útil para nueva partida.
+    /// </summary>
+    public void ResetAllQuests()
+    {
+        _runtime.Clear();
+        _conditionIndex.Clear();
+        OnQuestsChanged?.Invoke();
+    }
 }

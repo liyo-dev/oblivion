@@ -273,6 +273,10 @@ public class GameBootProfile : ScriptableObject
             ResetPresetToEmpty(runtimePreset);
         }
 
+        // Resetear misiones al iniciar nueva partida
+        if (QuestManager.Instance != null)
+            QuestManager.Instance.ResetAllQuests();
+
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
     }
 
