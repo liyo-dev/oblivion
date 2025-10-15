@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f3ff1c80169b1d04cad4d79afab26d46
+guid: 9cbbc263e2fe62342a75c9c5be07d806
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -115,3 +115,10 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 328840
+  packageName: plasma Shader
+  packageVersion: 1.0
+  assetPath: Assets/Houidisoft technology/Plasma Shader/Texture/prototype_512x512_blue2.png
+  uploadId: 778825

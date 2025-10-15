@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System;
+
 
 [CreateAssetMenu(fileName = "GameBootProfile", menuName = "Game/Boot Profile")]
 public class GameBootProfile : ScriptableObject
@@ -221,6 +223,30 @@ public class GameBootProfile : ScriptableObject
         {
             p.maxMP = manaPool.Max;
             p.currentMP = manaPool.Current;
+        }
+        
+        // === NUEVO: sincronizar flags de quests desde QuestManager =================
+        var qm = QuestManager.Instance;
+        if (qm != null)
+        {
+            // Construir lista nueva con flags no-quest actuales + estado de quests vivo
+            var newFlags = new List<string>(p.flags?.Count ?? 0);
+
+            // Conserva flags antiguos que NO sean de quests (no empiezan por "QUEST_")
+            if (p.flags != null)
+            {
+                for (int i = 0; i < p.flags.Count; i++)
+                {
+                    var f = p.flags[i];
+                    if (string.IsNullOrEmpty(f) || f.StartsWith("QUEST_", StringComparison.Ordinal)) continue;
+                    newFlags.Add(f);
+                }
+            }
+
+            // Añadir flags exportados por el QuestManager (active/completed/steps)
+            qm.ExportFlags(newFlags);
+
+            p.flags = newFlags;
         }
 
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual

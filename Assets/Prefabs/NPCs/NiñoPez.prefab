@@ -13184,7 +13184,7 @@ GameObject:
   - component: {fileID: 8421672972464511535}
   - component: {fileID: 1819113742337641893}
   - component: {fileID: 618065513445813328}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "Ni\xF1oPez"
   m_TagString: Untagged
   m_Icon: {fileID: 0}

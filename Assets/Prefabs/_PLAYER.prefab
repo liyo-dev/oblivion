@@ -1954,11 +1954,11 @@ MonoBehaviour:
   smoothCameraRotation: 12
   cullingLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 4294967295
   lockCamera: 0
   rightOffset: 0
-  defaultDistance: 3
-  height: 1.4
+  defaultDistance: 6
+  height: 2.5
   smoothFollow: 10
   xMouseSensitivity: 3
   yMouseSensitivity: 3
@@ -1969,6 +1969,11 @@ MonoBehaviour:
   occlusionLerpOut: 6
   occlusionExpandDelay: 0.12
   cullingStableTolerance: 0.08
+  useShadowsOnlyOcclusion: 1
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 2039
+  obstructionCheckRadius: 0.15
   indexList: 0
   indexLookPoint: 0
   offSetPlayerPivot: 0
@@ -3015,7 +3020,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6673899346828621514}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: _PLAYER
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -3189,7 +3194,7 @@ MonoBehaviour:
     rotateWithCamera: 0
     walkSpeed: 4
     runningSpeed: 6
-    sprintSpeed: 12
+    sprintSpeed: 15
   strafeSpeed:
     movementSmooth: 6
     animationSmooth: 0.2

@@ -16761,7 +16761,7 @@ GameObject:
   - component: {fileID: 8793141675050009501}
   - component: {fileID: 8569068404053688944}
   - component: {fileID: 4754465149019796885}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: GuerreraChina
   m_TagString: Untagged
   m_Icon: {fileID: 0}

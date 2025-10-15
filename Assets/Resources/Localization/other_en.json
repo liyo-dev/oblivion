@@ -1,0 +1,8 @@
+{
+    "texts": [
+        {
+            "key": "ROOM_EXIT_NEEDS",
+            "value": "Before you leave, you need: {0}"
+        }
+    ]
+}

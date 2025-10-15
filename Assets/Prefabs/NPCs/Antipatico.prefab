@@ -971,7 +971,7 @@ GameObject:
   - component: {fileID: 4931755970921521794}
   - component: {fileID: 1575609583052593555}
   - component: {fileID: 1360080327673199985}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Antipatico
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1115,7 +1115,7 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: a29094689e4273944abff20c0ba4bb69, type: 2}
   OnInteract:
     m_PersistentCalls:
       m_Calls: []

@@ -13254,7 +13254,7 @@ GameObject:
   - component: {fileID: 6861922946376265805}
   - component: {fileID: 8740781478056492596}
   - component: {fileID: 2232853087552565767}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Guard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13371,7 +13371,7 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 1
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: 536121a2b7bf8fd47a33e05f022a2ec8, type: 2}
   OnInteract:
     m_PersistentCalls:
       m_Calls: []

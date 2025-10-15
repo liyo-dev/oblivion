@@ -1,79 +1,267 @@
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 using System;
+using System.Linq;
+using System.Collections.Generic;
 
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager Instance { get; private set; }
 
-    [SerializeField] private List<QuestData> questCatalog = new(); // opcional: catálogo global
-    private readonly Dictionary<string, RuntimeQuest> runtime = new();
+    [Tooltip("Catálogo opcional para arrancar quests por ID aunque no se hayan añadido antes.")]
+    [SerializeField] private List<QuestData> questCatalog = new();
 
+    // runtime: questId -> RuntimeQuest
+    private readonly Dictionary<string, RuntimeQuest> _runtime = new(64);
+
+    // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
+    private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
+
+    // Eventos públicos para UI/lógica externa
+    public event Action<string> OnQuestStarted;
+    public event Action<string> OnQuestCompleted;
+    public event Action<string, int> OnStepCompleted;
     public event Action OnQuestsChanged;
 
+    #region Unity
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
+    #endregion
 
-    public bool HasQuest(string questId) => runtime.ContainsKey(questId);
-    public QuestState GetState(string questId) => HasQuest(questId) ? runtime[questId].State : QuestState.Inactive;
+    #region API básica
+    public bool HasQuest(string questId) => _runtime.ContainsKey(questId);
+
+    public QuestState GetState(string questId)
+        => _runtime.TryGetValue(questId, out var rq) ? rq.State : QuestState.Inactive;
+
+    public IEnumerable<RuntimeQuest> GetAll() => _runtime.Values;
 
     public void AddQuest(QuestData data)
     {
-        if (data == null || string.IsNullOrEmpty(data.questId)) return;
-        if (runtime.ContainsKey(data.questId)) return;
+        if (!data || string.IsNullOrEmpty(data.questId) || _runtime.ContainsKey(data.questId)) return;
 
-        runtime[data.questId] = new RuntimeQuest(data);
+        var rq = new RuntimeQuest(data);
+        _runtime[data.questId] = rq;
+        IndexQuestConditions(rq);
         OnQuestsChanged?.Invoke();
     }
 
-    public void Activate(string questId)
+    public void StartQuest(string questId)
     {
-        if (!runtime.TryGetValue(questId, out var rq)) return;
-        if (rq.State == QuestState.Inactive) rq.State = QuestState.Active;
-        OnQuestsChanged?.Invoke();
-    }
-
-    public void CompleteStep(string questId, int index)
-    {
-        if (!runtime.TryGetValue(questId, out var rq)) return;
-        if (rq.State != QuestState.Active) return;
-
-        if (index >= 0 && index < rq.Steps.Length)
+        if (!_runtime.TryGetValue(questId, out var rq))
         {
-            rq.Steps[index].completed = true;
+            var data = questCatalog.FirstOrDefault(q => q && q.questId == questId);
+            if (!data) return;
 
-            // Si todos los pasos están completados → misión completada.
-            if (rq.Steps.All(s => s.completed))
-                rq.State = QuestState.Completed;
+            rq = new RuntimeQuest(data);
+            _runtime[questId] = rq;
+            IndexQuestConditions(rq);
+        }
 
+        if (rq.State == QuestState.Inactive)
+        {
+            rq.State = QuestState.Active;
+            OnQuestStarted?.Invoke(questId);
             OnQuestsChanged?.Invoke();
         }
     }
 
+    public void CompleteQuest(string questId)
+    {
+        if (!_runtime.TryGetValue(questId, out var rq)) return;
+        if (rq.State == QuestState.Completed) return;
+
+        rq.State = QuestState.Completed;
+        OnQuestCompleted?.Invoke(questId);
+        OnQuestsChanged?.Invoke();
+    }
+
+    public void MarkStepDone(string questId, int stepIndex)
+    {
+        if (!_runtime.TryGetValue(questId, out var rq)) return;
+        if (rq.State != QuestState.Active) return;
+        if ((uint)stepIndex >= (uint)rq.Steps.Length) return;
+
+        var step = rq.Steps[stepIndex];
+        if (step.completed) return;
+
+        step.completed = true;
+        OnStepCompleted?.Invoke(questId, stepIndex);
+
+        if (AllStepsCompleted(rq))
+        {
+            rq.State = QuestState.Completed;
+            OnQuestCompleted?.Invoke(questId);
+        }
+
+        OnQuestsChanged?.Invoke();
+    }
+
+    public bool IsStepCompleted(string questId, int stepIndex)
+        => _runtime.TryGetValue(questId, out var rq)
+           && (uint)stepIndex < (uint)rq.Steps.Length
+           && rq.Steps[stepIndex].completed;
+
+    public bool AreAllStepsCompleted(string questId)
+        => _runtime.TryGetValue(questId, out var rq) && AllStepsCompleted(rq);
+
     public void CompleteByCondition(string conditionId)
     {
         if (string.IsNullOrEmpty(conditionId)) return;
+        if (!_conditionIndex.TryGetValue(conditionId, out var list)) return;
 
-        foreach (var rq in runtime.Values)
+        for (int i = 0; i < list.Count; i++)
         {
-            if (rq.State != QuestState.Active) continue;
-            for (int i = 0; i < rq.Steps.Length; i++)
+            var sr = list[i];
+            if (GetState(sr.questId) != QuestState.Active) continue;
+            MarkStepDone(sr.questId, sr.stepIndex);
+        }
+    }
+    #endregion
+
+    #region Persistencia vía flags (export/import)
+    // Formato de flags:
+    //   QUEST_COMPLETED:<questId>
+    //   QUEST_ACTIVE:<questId>
+    //   QUEST_STEP_DONE:<questId>:<stepIndex>
+
+    private const string Q_COMPLETED = "QUEST_COMPLETED:";
+    private const string Q_ACTIVE    = "QUEST_ACTIVE:";
+    private const string Q_STEP_DONE = "QUEST_STEP_DONE:";
+
+    /// <summary>Reconstruye el estado a partir de flags del perfil.</summary>
+    public void RestoreFromProfileFlags(IReadOnlyList<string> flags)
+    {
+        if (flags == null || flags.Count == 0) return;
+
+        var toActive = new HashSet<string>(StringComparer.Ordinal);
+
+        // 1) Marcar completadas / recopilar activas
+        for (int i = 0; i < flags.Count; i++)
+        {
+            var f = flags[i];
+            if (string.IsNullOrEmpty(f)) continue;
+
+            if (f.StartsWith(Q_COMPLETED, StringComparison.Ordinal))
             {
-                var step = rq.Steps[i];
-                if (!step.completed && step.conditionId == conditionId)
+                var qid = f.Substring(Q_COMPLETED.Length);
+                if (string.IsNullOrEmpty(qid)) continue;
+                EnsureRuntimeQuest(qid, out var rq);
+                rq.State = QuestState.Completed;
+            }
+            else if (f.StartsWith(Q_ACTIVE, StringComparison.Ordinal))
+            {
+                var qid = f.Substring(Q_ACTIVE.Length);
+                if (string.IsNullOrEmpty(qid)) continue;
+                EnsureRuntimeQuest(qid, out _);
+                toActive.Add(qid);
+            }
+        }
+
+        foreach (var qid in toActive)
+        {
+            if (_runtime.TryGetValue(qid, out var rq) && rq.State != QuestState.Completed)
+                rq.State = QuestState.Active;
+        }
+
+        // 2) Marcar pasos completados
+        for (int i = 0; i < flags.Count; i++)
+        {
+            var f = flags[i];
+            if (string.IsNullOrEmpty(f)) continue;
+            if (!f.StartsWith(Q_STEP_DONE, StringComparison.Ordinal)) continue;
+
+            var rest = f.Substring(Q_STEP_DONE.Length);
+            var sep = rest.LastIndexOf(':');
+            if (sep <= 0) continue;
+
+            var qid = rest.Substring(0, sep);
+            var idxStr = rest.Substring(sep + 1);
+            if (!int.TryParse(idxStr, out int stepIdx)) continue;
+
+            EnsureRuntimeQuest(qid, out var rq2);
+            if (rq2.State == QuestState.Inactive) rq2.State = QuestState.Active;
+            if ((uint)stepIdx < (uint)rq2.Steps.Length)
+                rq2.Steps[stepIdx].completed = true;
+        }
+
+        OnQuestsChanged?.Invoke();
+
+        // helper local
+        void EnsureRuntimeQuest(string questId, out RuntimeQuest rqOut)
+        {
+            if (!_runtime.TryGetValue(questId, out rqOut))
+            {
+                var data = questCatalog.FirstOrDefault(q => q && q.questId == questId);
+                if (data != null)
                 {
-                    CompleteStep(rq.Id, i);
+                    rqOut = new RuntimeQuest(data);
+                    _runtime[questId] = rqOut;
+                    // No necesitamos indexar conditions para restaurar (pero no pasa nada si lo haces).
                 }
             }
         }
     }
 
-    public IEnumerable<RuntimeQuest> GetAll() => runtime.Values;
+    /// <summary>Vuelca el estado actual a una lista de flags (determinista).</summary>
+    public void ExportFlags(List<string> outFlags)
+    {
+        if (outFlags == null) return;
+
+        foreach (var rq in _runtime.Values)
+        {
+            if (rq.State == QuestState.Completed)
+            {
+                outFlags.Add(Q_COMPLETED + rq.Id);
+                continue; // no hacen falta ACTIVE ni STEP_DONE si ya está completada
+            }
+
+            if (rq.State == QuestState.Active)
+            {
+                outFlags.Add(Q_ACTIVE + rq.Id);
+                for (int i = 0; i < rq.Steps.Length; i++)
+                    if (rq.Steps[i].completed)
+                        outFlags.Add($"{Q_STEP_DONE}{rq.Id}:{i}");
+            }
+        }
+    }
+    #endregion
+
+    #region Internals
+    private static bool AllStepsCompleted(RuntimeQuest rq)
+    {
+        var steps = rq.Steps;
+        for (int i = 0; i < steps.Length; i++)
+            if (!steps[i].completed) return false;
+        return true;
+    }
+
+    private void IndexQuestConditions(RuntimeQuest rq)
+    {
+        var steps = rq.Steps;
+        for (int i = 0; i < steps.Length; i++)
+        {
+            var cid = steps[i].conditionId;
+            if (string.IsNullOrEmpty(cid)) continue;
+
+            if (!_conditionIndex.TryGetValue(cid, out var lst))
+            {
+                lst = new List<StepRef>(2);
+                _conditionIndex[cid] = lst;
+            }
+            lst.Add(new StepRef(rq.Id, i));
+        }
+    }
+
+    private readonly struct StepRef
+    {
+        public readonly string questId;
+        public readonly int stepIndex;
+        public StepRef(string q, int i) { questId = q; stepIndex = i; }
+    }
 
     // ===== Runtime model =====
     public class RuntimeQuest
@@ -87,54 +275,25 @@ public class QuestManager : MonoBehaviour
         {
             Data = data;
             State = QuestState.Inactive;
-            // Copia profunda ligera de pasos para estado en runtime
-            Steps = data.steps != null ? data.steps.Select(s => new QuestStep {
-                description = s.description, conditionId = s.conditionId, completed = false
-            }).ToArray() : new QuestStep[0];
+
+            if (data.steps == null || data.steps.Length == 0)
+            {
+                Steps = Array.Empty<QuestStep>();
+                return;
+            }
+
+            Steps = new QuestStep[data.steps.Length];
+            for (int i = 0; i < data.steps.Length; i++)
+            {
+                var s = data.steps[i];
+                Steps[i] = new QuestStep
+                {
+                    description = s.description,
+                    conditionId = s.conditionId,
+                    completed = false
+                };
+            }
         }
     }
-    
-    public void StartQuest(string questId)
-    {
-        if (!runtime.TryGetValue(questId, out var rq))
-        {
-            var data = questCatalog.FirstOrDefault(q => q.questId == questId);
-            if (data == null) return;
-            rq = new RuntimeQuest(data);
-            runtime[questId] = rq;
-        }
-        if (rq.State == QuestState.Inactive) rq.State = QuestState.Active;
-        OnQuestsChanged?.Invoke();
-    }
-
-    public bool AreAllStepsCompleted(string questId)
-    {
-        if (!runtime.TryGetValue(questId, out var rq)) return false;
-        if (rq.Steps == null || rq.Steps.Length == 0) return true;
-        foreach (var s in rq.Steps) if (!s.completed) return false;
-        return true;
-    }
-
-    public void CompleteQuest(string questId)
-    {
-        if (!runtime.TryGetValue(questId, out var rq)) return;
-        rq.State = QuestState.Completed;
-        OnQuestsChanged?.Invoke();
-    }
-    
-    public void MarkStepDone(string questId, int stepIndex)
-    {
-        if (!runtime.TryGetValue(questId, out var rq)) return;
-        if (stepIndex < 0 || stepIndex >= rq.Steps.Length) return;
-        rq.Steps[stepIndex].completed = true;
-        OnQuestsChanged?.Invoke();
-    }
-
-    public bool IsStepCompleted(string questId, int stepIndex)
-    {
-        if (!runtime.TryGetValue(questId, out var rq)) return false;
-        if (stepIndex < 0 || stepIndex >= rq.Steps.Length) return false;
-        return rq.Steps[stepIndex].completed;
-    }
-
+    #endregion
 }

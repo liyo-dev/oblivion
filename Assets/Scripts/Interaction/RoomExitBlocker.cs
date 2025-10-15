@@ -1,286 +1,352 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 /// <summary>
-/// Bloquea la salida de una habitación hasta que el jugador haya iniciado al menos una misión.
-/// Útil para forzar al jugador a interactuar con objetos críticos (como leer una carta) antes de continuar.
+/// Bloquea la salida hasta que se cumpla un requisito de misiones.
+/// Permite exigir "alguna misión" o una/s misión/es concreta/s (iniciadas o completadas).
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class RoomExitBlocker : MonoBehaviour
 {
-    [Header("Configuración")]
-    [Tooltip("Mensaje que se muestra cuando el jugador intenta salir sin haber leído la carta")]
+    public enum RequirementMode
+    {
+        AnyQuestStartedOrCompleted, // deja pasar si hay al menos 1 misión activa o completada
+        AnyQuestStarted,            // deja pasar si hay al menos 1 misión activa
+        SpecificQuestsStarted,      // requiere que TODAS las indicadas estén activas
+        SpecificQuestsCompleted     // requiere que TODAS las indicadas estén completadas
+    }
+
+    [Header("Requisito")]
+    [SerializeField] private RequirementMode requirementMode = RequirementMode.AnyQuestStartedOrCompleted;
+
+    [Tooltip("IDs de misiones requeridas (opcional si usas QuestDataRefs). Para SpecificQuests* TODAS deben cumplirse.")]
+    [SerializeField] private List<string> requiredQuestIds = new();
+
+    [Tooltip("Referencias a QuestData requeridas (opcional si usas Ids). Para SpecificQuests* TODAS deben cumplirse.")]
+    [SerializeField] private List<QuestData> requiredQuestRefs = new();
+
+    [Header("Mensaje")]
+    [Tooltip("Clave de localización del mensaje de bloqueo (si está vacía, se usará defaultBlockedMessage).")]
     [SerializeField] private string blockedMessageKey = "ROOM_EXIT_BLOCKED";
-    
-    [Header("Mensaje por defecto (si no hay localización)")]
+
+    [Tooltip("Clave de localización con formato, p.ej.: 'Antes de salir, inicia: {0}'. Si está vacía, se intentará componer mensaje.")]
+    [SerializeField] private string blockedMessageFormatKey = "ROOM_EXIT_NEEDS";
+
     [TextArea(3, 5)]
-    [SerializeField] private string defaultBlockedMessage = "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer...";
-    
-    [Header("Diálogo para mostrar el mensaje")]
-    [Tooltip("Nombre del emisor del mensaje (aparecerá en el cuadro de diálogo)")]
+    [SerializeField] private string defaultBlockedMessage = "Debería revisar mi habitación antes de salir…";
+
+    [TextArea(2, 4)]
+    [SerializeField] private string defaultNeedsFormat = "Antes de salir, inicia/completa: {0}";
+
+    [Tooltip("Separador para listar nombres de quests requeridas en el mensaje.")]
+    [SerializeField] private string listSeparator = ", ";
+
+    [Header("Diálogo")]
+    [Tooltip("Nombre/ID del emisor (para el cuadro de diálogo).")]
     [SerializeField] private string messageSpeaker = "Pensamiento";
-    
+
     [Header("Bloqueo Físico")]
-    [Tooltip("Si está activado, el collider se vuelve sólido (no trigger) mientras esté bloqueado")]
+    [Tooltip("Si está activado, el collider se vuelve sólido mientras esté bloqueado.")]
     [SerializeField] private bool useSolidBlocker = true;
-    
-    [Header("Debug")]
+
+    [Header("Cooldown / Debug")]
+    [SerializeField] private float messageCooldown = 1.5f;
     [SerializeField] private bool debugLogs;
-    
-    private Collider _blockingCollider;
+
+    // ---- estado ----
+    private Collider _col;
+    private bool _isBlocked = true;
     private float _lastMessageTime;
-    private const float MessageCooldown = 2f; // Evitar spam de mensajes
-    private bool _isBlocked = true; // Estado del bloqueador
-    
-    private void Awake()
+    private bool _subscribed;
+
+    void Awake()
     {
-        _blockingCollider = GetComponent<Collider>();
-        UpdateBlockerState();
+        _col = GetComponent<Collider>();
+        EnsureSubscription();
+        EvaluateAndApplyState();
     }
-    
-    private void OnEnable()
+
+    void OnEnable()
     {
-        // Suscribirse al evento del QuestManager
+        EnsureSubscription();
+        EvaluateAndApplyState();
+    }
+
+    void OnDisable()
+    {
+        TryUnsubscribe();
+    }
+
+    void Start()
+    {
+        // Re-evaluar cuando todo está ya inicializado
+        EvaluateAndApplyState();
+    }
+
+    private void EnsureSubscription()
+    {
+        if (_subscribed) return;
         if (QuestManager.Instance != null)
         {
-            QuestManager.Instance.OnQuestsChanged += OnQuestsChanged;
+            QuestManager.Instance.OnQuestsChanged += HandleQuestsChanged;
+            _subscribed = true;
         }
     }
-    
-    private void OnDisable()
+
+    private void TryUnsubscribe()
     {
-        // Desuscribirse del evento del QuestManager
+        if (!_subscribed) return;
         if (QuestManager.Instance != null)
-        {
-            QuestManager.Instance.OnQuestsChanged -= OnQuestsChanged;
-        }
+            QuestManager.Instance.OnQuestsChanged -= HandleQuestsChanged;
+        _subscribed = false;
     }
-    
-    private void Start()
+
+    private void HandleQuestsChanged()
     {
-        // Verificar el estado inicial después de que el QuestManager esté listo
-        // Por si el QuestManager no estaba disponible en Awake
-        if (QuestManager.Instance != null && !_hasSubscribed)
-        {
-            QuestManager.Instance.OnQuestsChanged += OnQuestsChanged;
-            _hasSubscribed = true;
-        }
-        
-        UpdateBlockerState();
+        EvaluateAndApplyState();
     }
-    
-    private bool _hasSubscribed = false;
-    
-    /// <summary>
-    /// Callback que se ejecuta cuando cambia el estado de las misiones.
-    /// Mucho más eficiente que verificar cada frame.
-    /// </summary>
-    private void OnQuestsChanged()
+
+    private void EvaluateAndApplyState()
     {
-        bool shouldBeBlocked = !HasAnyActiveQuest();
-        
-        if (_isBlocked != shouldBeBlocked)
+        bool shouldBlock = !RequirementSatisfied();
+        if (_isBlocked != shouldBlock)
         {
-            _isBlocked = shouldBeBlocked;
-            UpdateBlockerState();
-            
-            if (debugLogs)
-            {
-                Debug.Log($"[RoomExitBlocker] Estado cambiado a: {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
-            }
-        }
-    }
-    
-    private void UpdateBlockerState()
-    {
-        if (_blockingCollider == null) return;
-        
-        if (useSolidBlocker)
-        {
-            // Cuando está bloqueado: collider sólido (no trigger)
-            // Cuando está desbloqueado: collider trigger (no bloquea físicamente)
-            _blockingCollider.isTrigger = !_isBlocked;
+            _isBlocked = shouldBlock;
+            ApplyColliderState();
+            if (debugLogs) Debug.Log($"[RoomExitBlocker] Estado → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
         }
         else
         {
-            // Modo antiguo: siempre trigger
-            _blockingCollider.isTrigger = true;
+            // Asegura estado del collider por si editor cambió cosas
+            ApplyColliderState();
         }
     }
-    
+
+    private void ApplyColliderState()
+    {
+        if (!_col) _col = GetComponent<Collider>();
+        if (!_col) return;
+
+        if (useSolidBlocker)
+        {
+            // Bloqueado = sólido (no trigger). Desbloqueado = trigger (pasa pero detecta para mensaje si hiciera falta)
+            _col.isTrigger = !_isBlocked;
+        }
+        else
+        {
+            // Modo no-sólido: siempre trigger; solo mostramos mensaje si está bloqueado.
+            _col.isTrigger = true;
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        // Solo se usa en modo trigger (cuando useSolidBlocker está desactivado o cuando está desbloqueado)
         if (!other.CompareTag("Player")) return;
-        
-        // Verificar si ya hay alguna misión activa
-        if (HasAnyActiveQuest())
-        {
-            if (debugLogs)
-                Debug.Log("[RoomExitBlocker] El jugador tiene misiones activas. Permitiendo salida.");
-            return; // Permitir salir
-        }
-        
-        // Mostrar mensaje (con cooldown para evitar spam)
-        if (Time.time - _lastMessageTime > MessageCooldown)
-        {
-            ShowBlockedMessage();
-            _lastMessageTime = Time.time;
-        }
+        // En modo trigger, solo mostramos mensaje si está bloqueado
+        if (_isBlocked) TryShowMessage();
     }
-    
+
     private void OnCollisionEnter(Collision collision)
     {
-        // Se usa cuando el collider es sólido (no trigger)
         if (!collision.gameObject.CompareTag("Player")) return;
-        
-        if (debugLogs)
-            Debug.Log("[RoomExitBlocker] Jugador colisionó con el bloqueador (modo sólido)");
-        
-        // Mostrar mensaje (con cooldown para evitar spam)
-        if (Time.time - _lastMessageTime > MessageCooldown)
-        {
-            ShowBlockedMessage();
-            _lastMessageTime = Time.time;
-        }
+        // En modo sólido, el choque indica bloqueo
+        if (_isBlocked) TryShowMessage();
     }
-    
-    private bool HasAnyActiveQuest()
+
+    private void TryShowMessage()
     {
-        if (QuestManager.Instance == null)
+        if (Time.time - _lastMessageTime < Mathf.Max(0.1f, messageCooldown)) return;
+        _lastMessageTime = Time.time;
+
+        string msg = BuildBlockedMessage();
+        if (string.IsNullOrEmpty(msg))
         {
-            if (debugLogs)
-                Debug.LogWarning("[RoomExitBlocker] QuestManager no está disponible. Bloqueando salida por defecto.");
-            return false;
+            if (debugLogs) Debug.LogWarning("[RoomExitBlocker] No hay mensaje que mostrar.");
+            return;
         }
-        
-        // Verificar si hay alguna misión activa
-        foreach (var quest in QuestManager.Instance.GetAll())
-        {
-            if (quest.State == QuestState.Active || quest.State == QuestState.Completed)
-            {
-                if (debugLogs)
-                    Debug.Log($"[RoomExitBlocker] Misión encontrada: {quest.Id} - Estado: {quest.State}");
-                return true;
-            }
-        }
-        
-        if (debugLogs)
-            Debug.Log("[RoomExitBlocker] No hay misiones activas. Bloqueando salida.");
-        
-        return false;
-    }
-    
-    private void ShowBlockedMessage()
-    {
+
         if (DialogueManager.Instance == null)
         {
-            if (debugLogs)
-                Debug.LogWarning("[RoomExitBlocker] DialogueManager no disponible. No se puede mostrar el mensaje.");
+            if (debugLogs) Debug.LogWarning("[RoomExitBlocker] DialogueManager no disponible.");
             return;
         }
-        
-        // Verificar que las claves existan en el LocalizationManager
-        if (LocalizationManager.Instance == null)
+
+        if (debugLogs) Debug.Log($"[RoomExitBlocker] MOSTRAR: {msg}");
+    }
+
+    // ---------- LÓGICA DE REQUISITOS ----------
+
+    private bool RequirementSatisfied()
+    {
+        var qm = QuestManager.Instance;
+        if (qm == null)
         {
-            if (debugLogs)
-                Debug.LogWarning("[RoomExitBlocker] LocalizationManager no disponible. No se puede mostrar el mensaje.");
-            return;
+            if (debugLogs) Debug.LogWarning("[RoomExitBlocker] QuestManager no disponible. Bloqueando por defecto.");
+            return false;
         }
-        
-        // Verificar que la clave existe
-        string messageTest = LocalizationManager.Instance.Get(blockedMessageKey, "");
-        if (string.IsNullOrEmpty(messageTest))
+
+        switch (requirementMode)
         {
-            Debug.LogError($"[RoomExitBlocker] La clave '{blockedMessageKey}' no existe en el LocalizationManager. " +
-                         $"Asegúrate de que esté en el archivo ui_{{idioma}}.json y recarga la escena.");
-            return;
-        }
-        
-        // Crear un ScriptableObject temporal para el diálogo
-        DialogueAsset tempDialogue = ScriptableObject.CreateInstance<DialogueAsset>();
-        
-        // Usar las claves de localización directamente
-        tempDialogue.lines = new[]
-        {
-            new DialogueLine
+            case RequirementMode.AnyQuestStartedOrCompleted:
             {
-                speakerNameId = messageSpeaker,  // Usamos directamente la clave "Pensamiento"
-                textId = blockedMessageKey,       // Usamos la clave "ROOM_EXIT_BLOCKED"
-                portrait = null
+                foreach (var rq in qm.GetAll())
+                    if (rq.State == QuestState.Active || rq.State == QuestState.Completed)
+                        return true;
+                return false;
             }
-        };
-        
-        if (debugLogs)
-        {
-            Debug.Log($"[RoomExitBlocker] Mostrando diálogo con claves: speaker='{messageSpeaker}', text='{blockedMessageKey}'");
-            Debug.Log($"[RoomExitBlocker] Texto resuelto: '{messageTest}'");
-        }
-        
-        // Mostrar el diálogo
-        DialogueManager.Instance.StartDialogue(tempDialogue, () =>
-        {
-            if (debugLogs)
-                Debug.Log("[RoomExitBlocker] Mensaje de bloqueo cerrado.");
-        });
-    }
-    
-    private string GetLocalizedMessage()
-    {
-        // Intentar obtener mensaje localizado
-        if (LocalizationManager.Instance != null)
-        {
-            string localized = LocalizationManager.Instance.Get(blockedMessageKey);
-            if (!string.IsNullOrEmpty(localized))
-                return localized;
-        }
-        
-        // Usar mensaje por defecto si no hay localización
-        return defaultBlockedMessage;
-    }
-    
-    private void OnDrawGizmos()
-    {
-        // Visualizar el área de bloqueo en el editor
-        bool blocked = Application.isPlaying ? _isBlocked : !HasAnyActiveQuest();
-        Gizmos.color = blocked ? Color.red : Color.green;
-        
-        if (_blockingCollider != null)
-        {
-            // Dibujar el collider con el color apropiado
-            Gizmos.matrix = transform.localToWorldMatrix;
-            
-            if (_blockingCollider is BoxCollider box)
+            case RequirementMode.AnyQuestStarted:
             {
-                Gizmos.DrawWireCube(box.center, box.size);
-                if (blocked)
-                {
-                    Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
-                    Gizmos.DrawCube(box.center, box.size);
-                }
+                foreach (var rq in qm.GetAll())
+                    if (rq.State == QuestState.Active)
+                        return true;
+                return false;
+            }
+            case RequirementMode.SpecificQuestsStarted:
+            {
+                var ids = GetRequiredIds();
+                if (ids.Count == 0) return false; // si no hay lista, bloquea (evita pasar por accidente)
+                for (int i = 0; i < ids.Count; i++)
+                    if (qm.GetState(ids[i]) != QuestState.Active)
+                        return false;
+                return true;
+            }
+            case RequirementMode.SpecificQuestsCompleted:
+            {
+                var ids = GetRequiredIds();
+                if (ids.Count == 0) return false;
+                for (int i = 0; i < ids.Count; i++)
+                    if (qm.GetState(ids[i]) != QuestState.Completed)
+                        return false;
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
+    private List<string> GetRequiredIds()
+    {
+        // Merge IDs + refs (sin duplicados)
+        var set = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < requiredQuestIds.Count; i++)
+        {
+            var id = requiredQuestIds[i];
+            if (!string.IsNullOrEmpty(id)) set.Add(id);
+        }
+        for (int i = 0; i < requiredQuestRefs.Count; i++)
+        {
+            var r = requiredQuestRefs[i];
+            if (r != null && !string.IsNullOrEmpty(r.questId)) set.Add(r.questId);
+        }
+        return set.ToList();
+    }
+
+    private string BuildBlockedMessage()
+    {
+        // 1) si el requisito es “alguna misión”, usa clave simple o por defecto
+        if (requirementMode == RequirementMode.AnyQuestStartedOrCompleted ||
+            requirementMode == RequirementMode.AnyQuestStarted)
+        {
+            string loc = TryGetLocalized(blockedMessageKey);
+            return string.IsNullOrEmpty(loc) ? defaultBlockedMessage : loc;
+        }
+
+        // 2) si el requisito es “misiones concretas”, compón la lista de nombres
+        var ids = GetRequiredIds();
+        if (ids.Count == 0)
+        {
+            // no hay lista → cae al mensaje simple
+            string fallback = TryGetLocalized(blockedMessageKey);
+            return string.IsNullOrEmpty(fallback) ? defaultBlockedMessage : fallback;
+        }
+
+        // Nombres localizados (QuestData si está en catálogo o en refs)
+        var names = new List<string>(ids.Count);
+        for (int i = 0; i < ids.Count; i++)
+        {
+            string id = ids[i];
+            string display = id;
+
+            // intenta desde refs
+            var refMatch = requiredQuestRefs.FirstOrDefault(q => q != null && q.questId == id);
+            if (refMatch != null)
+            {
+                var n = refMatch.GetLocalizedName();
+                if (!string.IsNullOrEmpty(n)) display = n;
             }
             else
             {
-                Gizmos.DrawWireCube(Vector3.zero, transform.localScale);
+                // intenta desde catálogo del QuestManager
+                var qm = QuestManager.Instance;
+                if (qm != null)
+                {
+                    // qm no expone catálogo público; alternativa: usa ID tal cual o agrega tu propio lookup si quieres
+                    // aquí preferimos dejar el id si no tenemos el SO
+                }
+            }
+
+            names.Add(display);
+        }
+
+        string joined = string.Join(listSeparator, names);
+
+        // 3) intenta formato localizado con {0}
+        string locFmt = TryGetLocalized(blockedMessageFormatKey);
+        if (!string.IsNullOrEmpty(locFmt) && locFmt.Contains("{0}"))
+            return string.Format(locFmt, joined);
+
+        // 4) formato por defecto
+        return string.Format(defaultNeedsFormat, joined);
+    }
+
+    private string TryGetLocalized(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return null;
+        if (LocalizationManager.Instance == null) return null;
+
+        // intenta sin fallback para detectar ausencia real
+        var txt = LocalizationManager.Instance.Get(key, "");
+        return string.IsNullOrEmpty(txt) ? null : txt;
+    }
+
+    // ---------- Gizmos ----------
+
+    private void OnDrawGizmos()
+    {
+        // Color según bloqueo actual (en editor, si no está en play, evalúa rápido)
+        bool blocked = Application.isPlaying ? _isBlocked : !RequirementSatisfied();
+        Gizmos.color = blocked ? Color.red : Color.green;
+
+        var c = GetComponent<Collider>();
+        if (c is BoxCollider box)
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(box.center, box.size);
+            if (blocked)
+            {
+                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+                Gizmos.DrawCube(box.center, box.size);
             }
         }
         else
         {
-            Gizmos.DrawWireCube(transform.position, transform.localScale);
+            Gizmos.DrawWireCube(transform.position, transform.lossyScale);
         }
-        
-        // Dibujar flecha indicando dirección de bloqueo
-        Gizmos.matrix = Matrix4x4.identity;
+
+        // Flecha de “salida”
         Gizmos.color = Color.yellow;
-        Vector3 arrowStart = transform.position;
-        Vector3 arrowEnd = transform.position - transform.forward * 2f;
-        Gizmos.DrawLine(arrowStart, arrowEnd);
-        Gizmos.DrawSphere(arrowEnd, 0.1f);
+        Vector3 a = transform.position;
+        Vector3 b = transform.position - transform.forward * 2f;
+        Gizmos.DrawLine(a, b);
+        Gizmos.DrawSphere(b, 0.08f);
     }
-    
-    private void OnDrawGizmosSelected()
+
+    private void OnValidate()
     {
-        // Mostrar información detallada cuando está seleccionado
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(transform.position, transform.localScale * 1.1f);
+        // Mantener coherencia en editor
+        if (!_col) _col = GetComponent<Collider>();
+        ApplyColliderState();
     }
 }

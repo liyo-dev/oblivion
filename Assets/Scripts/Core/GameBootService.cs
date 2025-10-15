@@ -108,6 +108,13 @@ public class GameBootService : MonoBehaviour
         {
             Debug.Log($"[GameBootService] RuntimePreset listo → Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}, Slots: L:{p.leftSpellId} R:{p.rightSpellId} S:{p.specialSpellId}");
         }
+        
+        // === reconstruir estados del QuestManager desde flags del perfil ===
+        var qm = QuestManager.Instance;
+        if (qm != null && p != null)
+        {
+            qm.RestoreFromProfileFlags(p.flags);
+        }
     }
     
     /// <summary>

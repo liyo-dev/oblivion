@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -6,7 +5,6 @@ using UnityEngine.Events;
 public class Interactable : MonoBehaviour
 {
     public enum Mode { OpenDialogue, HandOffToTarget }
-    
     public enum SessionSelect { UseField, AutoFirstOnThisGO, ByTypeName }
 
     [Header("Modo")]
@@ -29,7 +27,6 @@ public class Interactable : MonoBehaviour
     public UnityEvent OnFinished;
     public UnityEvent OnConsumed;
 
-    // ---- estado ----
     bool used, enabledForUse;
     SimpleQuestNPC _questNPC;
 
@@ -37,8 +34,6 @@ public class Interactable : MonoBehaviour
     {
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
-        
-        // Detectar automáticamente SimpleQuestNPC
         _questNPC = GetComponent<SimpleQuestNPC>();
     }
 
@@ -49,7 +44,8 @@ public class Interactable : MonoBehaviour
 
     public bool CanInteract(GameObject _)
     {
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return false;
+        var dm = DialogueManager.Instance;
+        if (dm != null && dm.IsOpen) return false;
         return enabledForUse && (!singleUse || !used);
     }
 
@@ -59,29 +55,23 @@ public class Interactable : MonoBehaviour
 
         OnInteract?.Invoke(interactor);
 
-        // Si hay SimpleQuestNPC, delegar a él
         if (_questNPC != null)
         {
             _questNPC.Interact();
             return;
         }
 
-        // Si no, comportamiento normal
-        switch (mode)
-        {
-            case Mode.OpenDialogue:
-                StartDialogue(interactor);
-                break;
-        }
+        if (mode == Mode.OpenDialogue)
+            StartDialogue();
     }
 
-    void StartDialogue(GameObject _)
+    void StartDialogue()
     {
-        if (dialogue && DialogueManager.Instance)
+        var dm = DialogueManager.Instance;
+        if (dialogue && dm != null)
         {
             OnStarted?.Invoke();
-            // Pasar el transform de este objeto para la cámara de diálogo
-            DialogueManager.Instance.StartDialogue(dialogue, transform, () =>
+            dm.StartDialogue(dialogue, transform, () =>
             {
                 OnFinished?.Invoke();
                 AfterUse();
@@ -89,7 +79,7 @@ public class Interactable : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[Interactable] No hay DialogueAsset o DialogueManager para {name}.");
+            Debug.LogWarning($"[Interactable] No DialogueAsset o DialogueManager en {name}.");
             AfterUse();
         }
     }
@@ -104,7 +94,6 @@ public class Interactable : MonoBehaviour
         SetHintVisible(false);
     }
 
-    // Helpers
     public void EnableInteraction(bool enable)
     {
         enabledForUse = enable;

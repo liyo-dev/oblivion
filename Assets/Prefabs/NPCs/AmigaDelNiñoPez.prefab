@@ -8276,7 +8276,7 @@ GameObject:
   - component: {fileID: 536178103273717142}
   - component: {fileID: 3762853441166883417}
   - component: {fileID: 3382772238179912040}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "AmigaDelNi\xF1oPez"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8420,7 +8420,7 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: c91e02b298ad5824fabd34a988636958, type: 2}
   OnInteract:
     m_PersistentCalls:
       m_Calls: []

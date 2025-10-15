@@ -6464,8 +6464,7 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
-  sessionTarget: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: 40ad844cb33491f43a9c99e4e09d95cb, type: 2}
   OnInteract:
     m_PersistentCalls:
       m_Calls: []
