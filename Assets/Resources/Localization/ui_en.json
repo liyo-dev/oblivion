@@ -77,6 +77,10 @@
             "value": "I should check my room before leaving. Maybe there's something important to read..."
         },
         {
+            "key": "ROOM_EXIT_NEEDS",
+            "value": "Before you leave, you need: {0}"
+        },
+        {
             "key": "SAVEPOINT_PROMPT",
             "value": "Save Game [E]"
         },

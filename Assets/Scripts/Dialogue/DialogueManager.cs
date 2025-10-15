@@ -179,49 +179,51 @@ public class DialogueManager : MonoBehaviour
 
         var line = current.lines[index];
 
-        // Resolver nombre del hablante con localización
-        string speakerNameToShow = "";
-        if (!string.IsNullOrEmpty(line.speakerNameId) && LocalizationManager.Instance != null)
+        // --- NOMBRE DEL HABLANTE (localización con fallback al ID) ---
+        string speakerNameToShow = string.Empty;
+        if (!string.IsNullOrEmpty(line.speakerNameId))
         {
-            speakerNameToShow = LocalizationManager.Instance.Get(line.speakerNameId, "");
+            if (LocalizationManager.Instance != null)
+                speakerNameToShow = LocalizationManager.Instance.Get(line.speakerNameId, line.speakerNameId);
+            else
+                speakerNameToShow = line.speakerNameId;
         }
-        
-        if (nameText) nameText.text = speakerNameToShow;
+        if (nameText) nameText.text = speakerNameToShow ?? string.Empty;
 
-        // Resolver texto del diálogo con localización
-        string textToShow = "";
-        if (!string.IsNullOrEmpty(line.textId) && LocalizationManager.Instance != null)
+        // --- TEXTO DEL DIÁLOGO (si hay textId se localiza; si no, usa line.text) ---
+        string textToShow = line.text ?? string.Empty;
+        if (!string.IsNullOrEmpty(line.textId))
         {
-            textToShow = LocalizationManager.Instance.Get(line.textId, "");
+            if (LocalizationManager.Instance != null)
+                textToShow = LocalizationManager.Instance.Get(line.textId, line.text ?? string.Empty);
+            else if (!string.IsNullOrEmpty(line.text))
+                textToShow = line.text;
+            else
+                textToShow = string.Empty;
         }
-
         _currentText = textToShow;
 
-        if (portraitImage)
+        // --- PORTRAIT (se mantiene si viene null) ---
+        if (portraitImage && line.portrait != null)
         {
-            if (line.portrait != null)
-            {
-                portraitImage.sprite = line.portrait;
-                portraitImage.enabled = true;
-            }
-            // Si portrait es null, mantenemos el anterior visible
+            portraitImage.sprite = line.portrait;
+            portraitImage.enabled = true;
         }
 
+        // --- PINTADO + TYPEWRITER ---
         if (bodyText)
         {
-            // Preparar typewriter o texto completo
             StopTypewriter();
             bodyText.text = _currentText;
             if (useTypewriter)
             {
-                // Forzar actualización de mesh para obtener characterCount correcto
                 bodyText.ForceMeshUpdate();
                 bodyText.maxVisibleCharacters = 0;
                 _typeRoutine = StartCoroutine(TypeRoutine());
             }
             else
             {
-                bodyText.maxVisibleCharacters = int.MaxValue; // todo el texto
+                bodyText.maxVisibleCharacters = int.MaxValue;
             }
         }
     }

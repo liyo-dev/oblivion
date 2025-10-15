@@ -77,6 +77,10 @@
             "value": "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer..."
         },
         {
+            "key": "ROOM_EXIT_NEEDS",
+            "value": "Antes de salir, necesitas: {0}"
+        },
+        {
             "key": "SAVEPOINT_PROMPT",
             "value": "Guardar partida [E]"
         },

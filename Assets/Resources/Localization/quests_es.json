@@ -59,6 +59,10 @@
         {
             "key": "QUEST_STATE_INACTIVE",
             "value": "Inactiva"
+        },
+        {
+            "key": "READ_THE_LETTER_DESC",
+            "value": "leer la carta que hay sobre la mesita."
         }
     ]
 }

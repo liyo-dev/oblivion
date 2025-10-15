@@ -59,6 +59,10 @@
         {
             "key": "QUEST_STATE_INACTIVE",
             "value": "Inactive"
+        },
+        {
+            "key": "READ_THE_LETTER_DESC",
+            "value": "read the letter on the side table."
         }
     ]
 }
