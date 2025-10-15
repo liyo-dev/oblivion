@@ -11,13 +11,7 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class RoomExitBlocker : MonoBehaviour
 {
-    public enum RequirementMode
-    {
-        AnyQuestStartedOrCompleted, // deja pasar si hay al menos 1 misión activa o completada
-        AnyQuestStarted,            // deja pasar si hay al menos 1 misión activa
-        SpecificQuestsStarted,      // requiere que TODAS las indicadas estén activas
-        SpecificQuestsCompleted     // requiere que TODAS las indicadas estén completadas
-    }
+    // RequirementMode moved to Core/Identifiers.cs (centralized)
 
     [Header("Requisito")]
     [SerializeField] private RequirementMode requirementMode = RequirementMode.AnyQuestStartedOrCompleted;

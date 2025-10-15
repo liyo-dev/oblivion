@@ -1,9 +1,7 @@
-
 using UnityEngine;
 
 public class SessionRouter : MonoBehaviour, IInteractionSession
 {
-    public enum TargetMode { FirstFound, Specific, ByName }
     [SerializeField] private TargetMode mode = TargetMode.Specific;
     [SerializeField] private MonoBehaviour specific; // must implement IInteractionSession
     [SerializeField] private string componentName;   // e.g., "QuestNpcSession"

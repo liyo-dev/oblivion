@@ -1,256 +1,133 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
-/// <summary>
-/// Barrera del área de boss: transparente, con “scan” vertical y borde de energía.
-/// </summary>
 [RequireComponent(typeof(MeshRenderer))]
-[RequireComponent(typeof(MeshFilter))]
 public class BossArenaBarrier : MonoBehaviour
 {
-    [Header("Visual")]
-    [SerializeField] private Color barrierColor = new Color(0.3f, 0.5f, 1f, 0.15f);
-    [SerializeField] private float pulseSpeed = 2f;
-    [SerializeField, Range(0f, 1f)] private float pulseIntensity = 0.3f;
-    [SerializeField] private bool showOnAwake = false;
+    MeshRenderer _r;
+    Material _sharedMat;                 
+    MaterialPropertyBlock _mpb;
 
-    [Header("Scan / Rim")]
-    [SerializeField] private Color bandColor = Color.white;
-    [SerializeField, Min(0.001f)] private float bandWidth = 0.35f;
-    [SerializeField] private float bandSpeed = 1.5f; // unidades de altura por segundo
-    [SerializeField, Range(0f, 3f)] private float rimIntensity = 0.6f;
-    [SerializeField, Range(0.1f, 8f)] private float rimPower = 2.2f;
+    // Parámetros del efecto
+    Color  _baseColor      = new(0.3f, 0.5f, 1f, 0.25f);
+    float  _pulseSpeed     = 2f;
+    float  _pulseIntensity = 0.3f;
+    float  _rimPower       = 2f;
+    float  _rimStrength    = 1.5f;
+    Vector2 _noiseTiling   = new(2, 2);
+    Vector2 _noiseSpeed    = new(0.2f, 0f);
+    float  _noiseStrength  = 1f;
+    float  _alpha          = 1f;
+    bool   _show;
 
-    [Header("Activación")]
-    [SerializeField, Min(0f)] private float activationDuration = 0.5f;
+    // IDs shader
+    static readonly int ID_BaseColor      = Shader.PropertyToID("_BaseColor");
+    static readonly int ID_Color          = Shader.PropertyToID("_Color"); 
+    static readonly int ID_Alpha          = Shader.PropertyToID("_Alpha");
+    static readonly int ID_PulseSpeed     = Shader.PropertyToID("_PulseSpeed");
+    static readonly int ID_PulseIntensity = Shader.PropertyToID("_PulseIntensity");
+    static readonly int ID_RimPower       = Shader.PropertyToID("_RimPower");
+    static readonly int ID_RimStrength    = Shader.PropertyToID("_RimStrength");
+    static readonly int ID_NoiseTiling    = Shader.PropertyToID("_NoiseTiling");
+    static readonly int ID_NoiseSpeed     = Shader.PropertyToID("_NoiseSpeed");
+    static readonly int ID_NoiseStrength  = Shader.PropertyToID("_NoiseStrength");
+    // >>> añadidos para la banda
+    static readonly int ID_MinY           = Shader.PropertyToID("_MinY");
+    static readonly int ID_MaxY           = Shader.PropertyToID("_MaxY");
 
-    private MeshRenderer _renderer;
-    private Material _material;
-    private Color _baseColor;
-    private bool _isActive;
-    private float _currentAlpha;
-
-    // Property IDs (evita strings repetidas)
-    static readonly int BASECOLOR = Shader.PropertyToID("_BaseColor");
-    static readonly int BANDCOLOR = Shader.PropertyToID("_BandColor");
-    static readonly int BANDWIDTH = Shader.PropertyToID("_BandWidth");
-    static readonly int BANDSPEED = Shader.PropertyToID("_BandSpeed");
-    static readonly int RIMINT    = Shader.PropertyToID("_RimIntensity");
-    static readonly int RIMPOW    = Shader.PropertyToID("_RimPower");
-    static readonly int MINY      = Shader.PropertyToID("_MinY");
-    static readonly int MAXY      = Shader.PropertyToID("_MaxY");
-    static readonly int EMISSION  = Shader.PropertyToID("_EmissionColor"); // por si usas post/emisión
-
-    void Awake()
+    public void Setup(
+        Material sourceMat,
+        Color color,
+        float pulseSpeed,
+        float pulseIntensity,
+        float rimPower = 2f,
+        float rimStrength = 1.5f,
+        Vector2? noiseTiling = null,
+        Vector2? noiseSpeed  = null,
+        float noiseStrength  = 1f,
+        float alpha          = 1f
+    )
     {
-        _renderer = GetComponent<MeshRenderer>();
-        CreateBarrierMaterial();
-
-        if (!showOnAwake)
+        // 1) Renderer
+        if (!_r && !TryGetComponent(out _r))
         {
-            _renderer.enabled = false;
+            Debug.LogError("[BossArenaBarrier] No hay MeshRenderer en " + name);
+            enabled = false;
+            return;
         }
+
+        // 2) Material asset
+        if (!sourceMat)
+        {
+            Debug.LogError("[BossArenaBarrier] Falta barrierMaterial (asigna el .mat en BossArenaController).");
+            enabled = false;
+            return;
+        }
+
+        _sharedMat = sourceMat;
+        // Asignamos el asset compartido; no instanciamos para ahorrar memoria
+        _r.sharedMaterial = _sharedMat;
+        if (_r.sharedMaterial != null)
+            _r.sharedMaterial.renderQueue = Mathf.Max(_r.sharedMaterial.renderQueue, 3000);
+
+        // 3) Parametría local
+        _baseColor      = color;
+        _pulseSpeed     = pulseSpeed;
+        _pulseIntensity = pulseIntensity;
+        _rimPower       = rimPower;
+        _rimStrength    = rimStrength;
+        _noiseTiling    = noiseTiling ?? new Vector2(2, 2);
+        _noiseSpeed     = noiseSpeed  ?? new Vector2(0.2f, 0f);
+        _noiseStrength  = noiseStrength;
+        _alpha          = Mathf.Clamp01(alpha);
+
+        // 4) PropertyBlock listo
+        _mpb ??= new MaterialPropertyBlock();
+        _r.GetPropertyBlock(_mpb);
+
+        // 5) Subimos MinY/MaxY con los bounds actuales del muro (ya tiene escala/pos)
+        var b = _r.bounds; // en mundo
+        _mpb.SetFloat(ID_MinY, b.min.y);
+        _mpb.SetFloat(ID_MaxY, b.max.y);
+
+        // 6) Propiedades estáticas del shader
+        if (_r.sharedMaterial && _r.sharedMaterial.HasProperty(ID_BaseColor))
+            _mpb.SetColor(ID_BaseColor, _baseColor);
         else
-        {
-            Show();
-        }
-    }
+            _mpb.SetColor(ID_Color, _baseColor);
 
-    void Update()
-    {
-        if (!_isActive || !_material) return;
+        _mpb.SetFloat(ID_PulseSpeed,     _pulseSpeed);
+        _mpb.SetFloat(ID_PulseIntensity, _pulseIntensity);
+        _mpb.SetFloat(ID_RimPower,       _rimPower);
+        _mpb.SetFloat(ID_RimStrength,    _rimStrength);
+        _mpb.SetVector(ID_NoiseTiling,   new Vector4(_noiseTiling.x, _noiseTiling.y, 0, 0));
+        _mpb.SetVector(ID_NoiseSpeed,    new Vector4(_noiseSpeed.x,  _noiseSpeed.y,  0, 0));
+        _mpb.SetFloat(ID_NoiseStrength,  _noiseStrength);
+        _mpb.SetFloat(ID_Alpha,          0f); // empieza oculto
 
-        // Pulso de alfa (respira)
-        float pulse = Mathf.Sin(Time.time * pulseSpeed) * pulseIntensity;
-        float alpha = Mathf.Clamp01(_baseColor.a + pulse);
-        var newColor = new Color(_baseColor.r, _baseColor.g, _baseColor.b, alpha);
+        _r.SetPropertyBlock(_mpb);
 
-        _material.SetColor(BASECOLOR, newColor);
-        _material.SetColor(EMISSION, newColor * 0.5f); // opcional si usas Bloom
-    }
-
-    void LateUpdate()
-    {
-        // Si el objeto se mueve/escala, mantener el recorrido completo del scan
-        if (_material && _renderer)
-        {
-            var b = _renderer.bounds;
-            _material.SetFloat(MINY, b.min.y);
-            _material.SetFloat(MAXY, b.max.y);
-        }
-    }
-
-    private void CreateBarrierMaterial()
-    {
-        // 1) Shader custom con scan + fresnel
-        var scanShader = Shader.Find("Liyo/BarrierScanURP");
-        if (scanShader != null)
-        {
-            _material = new Material(scanShader);
-            _renderer.material = _material;
-
-            _baseColor = barrierColor;
-
-            _material.SetColor(BASECOLOR, _baseColor);
-            _material.SetColor(BANDCOLOR, bandColor);
-            _material.SetFloat(BANDWIDTH, bandWidth);
-            _material.SetFloat(BANDSPEED, bandSpeed);
-            _material.SetFloat(RIMINT, rimIntensity);
-            _material.SetFloat(RIMPOW, rimPower);
-
-            // Cola transparente
-            _material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-
-            // Rango inicial del scan
-            var b = _renderer.bounds;
-            _material.SetFloat(MINY, b.min.y);
-            _material.SetFloat(MAXY, b.max.y);
-
-            // Renderer
-            _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            _renderer.receiveShadows = false;
-            _renderer.allowOcclusionWhenDynamic = true;
-            return;
-        }
-
-        // 2) Fallback URP/Simple Lit transparente si el shader no existe
-        var urpSimpleLit = Shader.Find("Universal Render Pipeline/Simple Lit");
-        if (urpSimpleLit != null)
-        {
-            _material = new Material(urpSimpleLit);
-            _renderer.material = _material;
-
-            _material.SetFloat("_Surface", 1f); // Transparent
-            _material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            _material.SetFloat("_Blend", 0f);   // Alpha
-            _material.SetFloat("_AlphaClip", 0f);
-            _material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Back);
-            _material.SetFloat("_ZWriteControl", 2f); // ForceDisable
-            _material.SetFloat("_SpecularHighlights", 0f);
-            _material.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
-
-            _baseColor = barrierColor;
-            _material.SetColor("_BaseColor", _baseColor);
-            _material.EnableKeyword("_EMISSION");
-            _material.SetColor("_EmissionColor", _baseColor * 0.5f);
-            _material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.BakedEmissive;
-
-            _material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-
-            _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            _renderer.receiveShadows = false;
-            return;
-        }
-
-        // 3) Último recurso: Standard transparente (Built-in)
-        _material = new Material(Shader.Find("Standard"));
-        _renderer.material = _material;
-
-        _material.SetFloat("_Mode", 3); // Transparent
-        _material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        _material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        _material.SetInt("_ZWrite", 0);
-        _material.DisableKeyword("_ALPHATEST_ON");
-        _material.EnableKeyword("_ALPHABLEND_ON");
-        _material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        _material.renderQueue = 3000;
-
-        _baseColor = barrierColor;
-        _material.SetColor("_Color", _baseColor);
-        _material.EnableKeyword("_EMISSION");
-        _material.SetColor("_EmissionColor", _baseColor * 0.5f);
-
-        _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        _renderer.receiveShadows = false;
+        // 7) Estado visible/oculto
+        _show = false;
+        _r.enabled = false;
     }
 
     public void Show()
     {
-        _isActive = true;
-        if (_renderer) _renderer.enabled = true;
-        StopAllCoroutines();
-        StartFadeIn();
+        if (!_r) return;
+        _show = true;
+        _r.enabled = true;
+        _r.GetPropertyBlock(_mpb);
+        _mpb.SetFloat(ID_Alpha, _alpha);
+        _r.SetPropertyBlock(_mpb);
     }
 
     public void Hide()
     {
-        StopAllCoroutines();
-        StartFadeOut();
-    }
-
-    // === NUEVO: Helpers seguros para lanzar fades incluso si el objeto está inactivo ===
-    private void StartFadeIn()
-    {
-        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
-        {
-            // Aplicar estado final inmediato (visible con alpha objetivo)
-            _currentAlpha = barrierColor.a;
-            _baseColor = new Color(barrierColor.r, barrierColor.g, barrierColor.b, _currentAlpha);
-            if (_material) _material.SetColor(BASECOLOR, _baseColor);
-            if (_renderer) _renderer.enabled = true;
-            return;
-        }
-        StartCoroutine(FadeIn());
-    }
-
-    private void StartFadeOut()
-    {
-        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
-        {
-            // Aplicar estado final inmediato (oculto)
-            _currentAlpha = 0f;
-            _baseColor = new Color(barrierColor.r, barrierColor.g, barrierColor.b, 0f);
-            if (_material) _material.SetColor(BASECOLOR, _baseColor);
-            _isActive = false;
-            if (_renderer) _renderer.enabled = false;
-            return;
-        }
-        StartCoroutine(FadeOut());
-    }
-
-    private IEnumerator FadeIn()
-    {
-        float elapsed = 0f;
-        _currentAlpha = 0f;
-
-        while (elapsed < activationDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / activationDuration);
-
-            _currentAlpha = Mathf.Lerp(0f, barrierColor.a, t);
-            var c = new Color(barrierColor.r, barrierColor.g, barrierColor.b, _currentAlpha);
-            _baseColor = c;
-
-            if (_material) _material.SetColor(BASECOLOR, c);
-            yield return null;
-        }
-    }
-
-    private IEnumerator FadeOut()
-    {
-        float elapsed = 0f;
-        float startAlpha = _currentAlpha;
-
-        while (elapsed < activationDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / activationDuration);
-
-            _currentAlpha = Mathf.Lerp(startAlpha, 0f, t);
-            var c = new Color(barrierColor.r, barrierColor.g, barrierColor.b, _currentAlpha);
-            _baseColor = c;
-
-            if (_material) _material.SetColor(BASECOLOR, c);
-            yield return null;
-        }
-
-        _isActive = false;
-        if (_renderer) _renderer.enabled = false;
-    }
-
-    void OnDestroy()
-    {
-        if (_material != null) Destroy(_material);
+        if (!_r) return;
+        _show = false;
+        _r.GetPropertyBlock(_mpb);
+        _mpb.SetFloat(ID_Alpha, 0f);
+        _r.SetPropertyBlock(_mpb);
+        _r.enabled = false;
     }
 }

@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum RoomDifficulty { Easy, Medium, Hard, Boss }
-public enum RoomKind { Puzzle, Combat, Mixed, Boss }
+// RoomDifficulty and RoomKind are defined centrally in Assets/Scripts/Core/Identifiers.cs
 
 [CreateAssetMenu(menuName="Proc/Rooms Catalog")]
 public class RoomCatalog : ScriptableObject

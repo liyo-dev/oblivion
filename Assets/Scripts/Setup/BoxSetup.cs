@@ -43,7 +43,7 @@ public class BoxSetup : MonoBehaviour
         if (col == null)
         {
             // Añadir BoxCollider por defecto
-            BoxCollider boxCol = gameObject.AddComponent<BoxCollider>();
+            gameObject.AddComponent<BoxCollider>();
             Debug.Log($"[BoxSetup] BoxCollider añadido a {name}");
         }
 
@@ -56,13 +56,13 @@ public class BoxSetup : MonoBehaviour
         }
 
         // Configurar Interactable en modo HandOffToTarget (para usar eventos)
-        interactable.SetMode(Interactable.Mode.HandOffToTarget);
+        interactable.SetMode(InteractableMode.HandOffToTarget);
 
         // 4. Asegurar que tiene PickupObject
         PickupObject pickup = GetComponent<PickupObject>();
         if (pickup == null)
         {
-            pickup = gameObject.AddComponent<PickupObject>();
+            gameObject.AddComponent<PickupObject>();
             Debug.Log($"[BoxSetup] PickupObject añadido a {name}");
         }
 

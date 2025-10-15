@@ -36,7 +36,7 @@ public class ModularAutoBuilder : MonoBehaviour
     readonly Dictionary<PartCat, List<GameObject>> parts = new();
     readonly Dictionary<PartCat, int> idx = new();
 
-    enum Hand { None, Left, Right }
+    // Use central Hand enum from Identifiers.cs (None, Left, Right)
     readonly Dictionary<GameObject, Hand> handOf = new();
 
     [Header("Opcional")]

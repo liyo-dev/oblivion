@@ -4,11 +4,8 @@ using UnityEngine.Events;
 [DisallowMultipleComponent]
 public class Interactable : MonoBehaviour
 {
-    public enum Mode { OpenDialogue, HandOffToTarget }
-    public enum SessionSelect { UseField, AutoFirstOnThisGO, ByTypeName }
-
     [Header("Modo")]
-    [SerializeField] private Mode mode = Mode.OpenDialogue;
+    [SerializeField] private InteractableMode mode = InteractableMode.OpenDialogue;
 
     [Header("Hint (icono botón)")]
     [SerializeField] private GameObject hint;
@@ -61,7 +58,7 @@ public class Interactable : MonoBehaviour
             return;
         }
 
-        if (mode == Mode.OpenDialogue)
+        if (mode == InteractableMode.OpenDialogue)
             StartDialogue();
     }
 
@@ -101,5 +98,5 @@ public class Interactable : MonoBehaviour
     }
 
     public void SetDialogue(DialogueAsset asset) => dialogue = asset;
-    public void SetMode(Mode newMode) => mode = newMode;
+    public void SetMode(InteractableMode newMode) => mode = newMode;
 }

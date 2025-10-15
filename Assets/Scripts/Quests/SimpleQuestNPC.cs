@@ -6,12 +6,7 @@ using System.Collections.Generic;
 [RequireComponent(typeof(Interactable))]
 public class SimpleQuestNPC : MonoBehaviour
 {
-    public enum QuestCompletionMode
-    {
-        Manual,
-        AutoCompleteOnTalk,
-        CompleteOnTalkIfStepsReady
-    }
+    // QuestCompletionMode moved to Identifiers.cs
 
     [System.Serializable]
     public class QuestChainEntry

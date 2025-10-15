@@ -10,8 +10,7 @@ public class EnvironmentController : MonoBehaviour
     public Material exteriorSkyboxOverride;   // si lo pones, se usará al volver a exterior
     public Camera targetCamera;               // si lo dejas vacío, se resuelve solo
 
-    enum Mode { Unknown, Exterior, Interior }
-    Mode _mode = Mode.Unknown;
+    EnvironmentMode _mode = EnvironmentMode.Unknown;
 
     // snapshot del “exterior” (para restaurar al salir)
     Material _savedRenderSettingsSkybox;
@@ -19,7 +18,6 @@ public class EnvironmentController : MonoBehaviour
     CameraClearFlags _savedClearFlags = CameraClearFlags.Skybox;
     bool _savedHadCamSkybox;
     bool _hasSnapshot;
-    Camera _snapshotCam;
 
     // tracking de cámara / re-aplicación
     Camera _cam;              // cámara resuelta actual
@@ -33,15 +31,15 @@ public class EnvironmentController : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        SceneManager.activeSceneChanged += (_, __) => OnSceneChanged();
-        SceneManager.sceneLoaded       += (_, __) => OnSceneChanged();
+        SceneManager.activeSceneChanged += (_, _) => OnSceneChanged();
+        SceneManager.sceneLoaded       += (_, _) => OnSceneChanged();
     }
 
     void OnSceneChanged()
     {
         _cam = null; _appliedCam = null;
         // no invalidamos el snapshot: si estabas en interior, lo necesitamos para volver a exterior
-        _needReapply = (_mode != Mode.Unknown); // re-aplicar el modo actual cuando haya cámara
+        _needReapply = (_mode != EnvironmentMode.Unknown); // re-aplicar el modo actual cuando haya cámara
     }
 
     void Update()
@@ -59,7 +57,7 @@ public class EnvironmentController : MonoBehaviour
     // === API pública ===
     public void ApplyInterior(AnchorEnvironment env)
     {
-        _mode = Mode.Interior;
+        _mode = EnvironmentMode.Interior;
         _currentInterior = env;
 
         // Capturamos el “exterior” una sola vez, antes de forzar interior
@@ -71,7 +69,7 @@ public class EnvironmentController : MonoBehaviour
 
     public void ApplyExterior()
     {
-        _mode = Mode.Exterior;
+        _mode = EnvironmentMode.Exterior;
         _currentInterior = null;
 
         var cam = ResolveCamera();
@@ -81,14 +79,14 @@ public class EnvironmentController : MonoBehaviour
     public void RefreshCameraNow()
     {
         _cam = ResolveCamera();
-        _needReapply = (_mode != Mode.Unknown);
+        _needReapply = (_mode != EnvironmentMode.Unknown);
     }
 
     // === implementación ===
     void Reapply(Camera cam)
     {
-        if (_mode == Mode.Interior) ApplyInteriorTo(cam, _currentInterior, reapply:true);
-        else if (_mode == Mode.Exterior) ApplyExteriorTo(cam);
+        if (_mode == EnvironmentMode.Interior) ApplyInteriorTo(cam, _currentInterior, reapply:true);
+        else if (_mode == EnvironmentMode.Exterior) ApplyExteriorTo(cam);
     }
 
     void CaptureExteriorSnapshot()
@@ -111,12 +109,14 @@ public class EnvironmentController : MonoBehaviour
             }
         }
 
-        _snapshotCam = cam;
         _hasSnapshot = true;
     }
 
     void ApplyInteriorTo(Camera cam, AnchorEnvironment env, bool reapply = false)
     {
+        // consumir el parámetro para evitar advertencia de "never used"
+        _ = reapply;
+
         // si no hay cámara aún, marca para re-aplicar cuando aparezca
         if (!cam)
         {
@@ -139,7 +139,7 @@ public class EnvironmentController : MonoBehaviour
         }
 
         // luces: apaga direccionales que no estén dentro del interior
-        foreach (var l in FindObjectsOfType<Light>(true))
+        foreach (var l in Resources.FindObjectsOfTypeAll<Light>())
         {
             if (!l || l.type != LightType.Directional) continue;
             bool inside = env && IsChildOf(l.transform, env.transform);
@@ -184,7 +184,7 @@ public class EnvironmentController : MonoBehaviour
             }
         }
 
-        foreach (var l in FindObjectsOfType<Light>(true))
+        foreach (var l in Resources.FindObjectsOfTypeAll<Light>())
             if (l && l.type == LightType.Directional) l.gameObject.SetActive(true);
 
         _appliedCam = cam;
@@ -201,11 +201,7 @@ public class EnvironmentController : MonoBehaviour
         if (m && m.enabled && m.gameObject.activeInHierarchy) return _cam = m;
 
         // 2) mejor cámara disponible (incluye inactivas)
-#if UNITY_2022_3_OR_NEWER
-        var cams = Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
         var cams = Resources.FindObjectsOfTypeAll<Camera>();
-#endif
         Camera best = null; float scoreBest = float.NegativeInfinity;
         foreach (var c in cams)
         {

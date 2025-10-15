@@ -5,14 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/SleepTrigger.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/World/SleepTrigger.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Art/World/Fantasy_Kingdom_Pack/Perfabs/Props/Furniture/Bed/Bed01_a03.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Art/World/Fantasy_Kingdom_Pack/Perfabs/Props/Furniture/Bed/Bed01_a03.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Animator/NPC_NoWeapon.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Animator/NPC_NoWeapon.controller" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Attacks/SO Spells/FireProjectileSO.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Attacks/SO Spells/FireProjectileSO.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/AutoSaveTrigger.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Characters/ModularAutoBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Characters/ModularAutoBuilder.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/Identifiers.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/Identifiers.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/Interactable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/Interactable.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/RoomExitBlocker.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/RoomExitBlocker.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerActionManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/PlayerActionManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SessionRouter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SessionRouter.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Quests/SimpleQuestNPC.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Rooms/RoomCatalog.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Rooms/RoomCatalog.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Setup/BoxSetup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Setup/BoxSetup.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/EnvironmentController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/EnvironmentController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Settings/PC_RPAsset.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Settings/PC_RPAsset.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,6 +111,18 @@
   }
 }</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
+    <configuration name="Standalone Player" type="RunUnityExe" factoryName="Unity Executable">
+      <option name="EXE_PATH" value="$USER_HOME$/OneDrive/Desktop/Alex\Alex Adventure.exe" />
+      <option name="PROGRAM_PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="C:\Users\luarb\OneDrive\Desktop\Alex" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="PTY_MODE" value="Auto" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
+      <method v="2" />
+    </configuration>
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.2.7f2\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-projectPath C:\Users\luarb\dev\unity\Alex -debugCodeOptimization" />
@@ -166,6 +192,7 @@
       <workItem from="1760428644437" duration="36671000" />
       <workItem from="1760506771109" duration="4976000" />
       <workItem from="1760512137262" duration="5937000" />
+      <workItem from="1760537124298" duration="62000" />
     </task>
     <servers />
   </component>

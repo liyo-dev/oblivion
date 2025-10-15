@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public enum ActionMode { Default, Carrying, Casting, Cinematic, Stunned, Swimming }
-public enum PlayerAbility { Move, Jump, Sprint, Roll, Attack, Magic, Interact, Carry, Aim }
-
 /// Reglas declarativas que se aplican cuando un modo es el tope de la pila
 [Serializable]
 public sealed class ModeRule

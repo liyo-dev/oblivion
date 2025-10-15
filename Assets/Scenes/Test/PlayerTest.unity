@@ -839,6 +839,10 @@ PrefabInstance:
       propertyPath: bossPrefab
       value: 
       objectReference: {fileID: 2543156170968106335, guid: 75ce093c15c934c4d894f67be515e8fd, type: 3}
+    - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+      propertyPath: barrierMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 03776cd3647ff4541895fb9cd602f3b0, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

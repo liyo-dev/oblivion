@@ -17,7 +17,7 @@ Shader "Liyo/BarrierScanURP"
         Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" "RenderPipeline"="UniversalPipeline" }
         Cull Back
         ZWrite Off
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend One One
 
         Pass
         {

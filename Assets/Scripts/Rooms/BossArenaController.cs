@@ -18,9 +18,22 @@ public class BossArenaController : MonoBehaviour
     [SerializeField] private float barrierHeight = 10f;
     [Tooltip("Grosor de la barrera visual")]
     [SerializeField] private float barrierThickness = 0.5f;
-    
+
+    [Header("Visual (Build-safe)")]
+    [Tooltip("Material asset con tu shader URP (precompilado). No generar shaders en runtime.")]
+    [SerializeField] private Material barrierMaterial;   // Asigna tu .mat
+    [SerializeField] private Color barrierColor = new(0.3f, 0.5f, 1f, 0.25f);
+    [SerializeField] private float pulseSpeed = 2f;
+    [SerializeField] private float pulseIntensity = 0.3f;
+    [SerializeField] private float rimPower = 2f;
+    [SerializeField] private float rimStrength = 1.5f;
+    [SerializeField] private Vector2 noiseTiling = new(2, 2);
+    [SerializeField] private Vector2 noiseSpeed = new(0.2f, 0f);
+    [SerializeField] private float noiseStrength = 1f;
+    [SerializeField] private float globalAlpha = 1f;
+
     private GameObject _barrierVisual;
-    private BossArenaBarrier _barrierEffect;
+    private BossArenaBarrier _barrierEffect; // referencia al primero para batch (Show/Hide)
     private bool _areaLocked = false;
 
     [Header("Spawn")]
@@ -38,7 +51,7 @@ public class BossArenaController : MonoBehaviour
     [Tooltip("Lista de objetos a desactivar al iniciar la batalla y restaurar al finalizar.")]
     [SerializeField] private GameObject[] toDisableDuringBattle;
 
-    private readonly Dictionary<GameObject, bool> _prevActiveStates = new Dictionary<GameObject, bool>();
+    private readonly Dictionary<GameObject, bool> _prevActiveStates = new();
 
     bool started = false;
 
@@ -125,7 +138,7 @@ public class BossArenaController : MonoBehaviour
         {
             Vector3 center = areaBarrierCollider.bounds.center;
             Vector3 direction = (center - player.position).normalized;
-            
+
             // Teleportar ligeramente hacia dentro
             CharacterController cc = player.GetComponent<CharacterController>();
             if (cc)
@@ -181,28 +194,31 @@ public class BossArenaController : MonoBehaviour
         _.onEnemyGone -= OnBossDead;
     }
 
+    // =========================== Visual Barrier ===========================
+
     private void CreateBarrierVisual()
     {
         if (areaBarrierCollider == null) return;
 
-        // Crear GameObject para la barrera visual
+        // Crear GameObject contenedor
         _barrierVisual = new GameObject("BossArenaBarrier_Visual");
         _barrierVisual.transform.SetParent(transform);
         _barrierVisual.transform.localPosition = Vector3.zero;
         _barrierVisual.transform.localRotation = Quaternion.identity;
 
-        // Obtener dimensiones del collider
+        // Dimensiones del collider (en mundo)
         Bounds bounds = areaBarrierCollider.bounds;
         Vector3 size = bounds.size;
-        Vector3 center = areaBarrierCollider.transform.InverseTransformPoint(bounds.center);
+        Vector3 centerWorld = bounds.center;
+        Vector3 centerLocal = _barrierVisual.transform.InverseTransformPoint(centerWorld);
 
-        // Calcular altura si no está especificada
+        // Altura efectiva
         float height = barrierHeight > 0 ? barrierHeight : size.y;
 
-        // Crear las 4 paredes de la barrera
+        // Crear paredes según tipo de collider
         if (areaBarrierCollider is BoxCollider)
         {
-            CreateBoxBarrierWalls(center, size, height);
+            CreateBoxBarrierWalls(centerLocal, size, height);
         }
         else
         {
@@ -211,74 +227,94 @@ public class BossArenaController : MonoBehaviour
         }
     }
 
-    private void CreateBoxBarrierWalls(Vector3 center, Vector3 size, float height)
+    private void CreateBoxBarrierWalls(Vector3 centerLocal, Vector3 worldSize, float height)
     {
-        float halfWidth = size.x / 2f;
-        float halfDepth = size.z / 2f;
+        float halfWidth = worldSize.x * 0.5f;
+        float halfDepth = worldSize.z * 0.5f;
 
         // Pared Norte (Z+)
-        CreateWall("Wall_North", 
-            new Vector3(center.x, center.y + height / 2f, center.z + halfDepth),
-            new Vector3(size.x, height, barrierThickness));
+        CreateWall("Wall_North",
+            new Vector3(centerLocal.x, centerLocal.y + height * 0.5f, centerLocal.z + halfDepth),
+            new Vector3(worldSize.x, height, barrierThickness));
 
         // Pared Sur (Z-)
-        CreateWall("Wall_South", 
-            new Vector3(center.x, center.y + height / 2f, center.z - halfDepth),
-            new Vector3(size.x, height, barrierThickness));
+        CreateWall("Wall_South",
+            new Vector3(centerLocal.x, centerLocal.y + height * 0.5f, centerLocal.z - halfDepth),
+            new Vector3(worldSize.x, height, barrierThickness));
 
         // Pared Este (X+)
-        CreateWall("Wall_East", 
-            new Vector3(center.x + halfWidth, center.y + height / 2f, center.z),
-            new Vector3(barrierThickness, height, size.z));
+        CreateWall("Wall_East",
+            new Vector3(centerLocal.x + halfWidth, centerLocal.y + height * 0.5f, centerLocal.z),
+            new Vector3(barrierThickness, height, worldSize.z));
 
         // Pared Oeste (X-)
-        CreateWall("Wall_West", 
-            new Vector3(center.x - halfWidth, center.y + height / 2f, center.z),
-            new Vector3(barrierThickness, height, size.z));
+        CreateWall("Wall_West",
+            new Vector3(centerLocal.x - halfWidth, centerLocal.y + height * 0.5f, centerLocal.z),
+            new Vector3(barrierThickness, height, worldSize.z));
     }
 
     private void CreateWall(string wallName, Vector3 localPosition, Vector3 size)
     {
         GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         wall.name = wallName;
-        wall.transform.SetParent(_barrierVisual.transform);
+        wall.transform.SetParent(_barrierVisual.transform, false);
         wall.transform.localPosition = localPosition;
         wall.transform.localRotation = Quaternion.identity;
         wall.transform.localScale = size;
 
-        // Eliminar el collider (no queremos que interfiera)
-        Destroy(wall.GetComponent<Collider>());
+        // Eliminar collider (no interactúa)
+        var col = wall.GetComponent<Collider>();
+        if (col) Destroy(col);
 
-        // Añadir el efecto visual
-        BossArenaBarrier barrierEffect = wall.AddComponent<BossArenaBarrier>();
-        
-        // Guardar referencia al primer efecto creado
-        if (_barrierEffect == null)
-        {
-            _barrierEffect = barrierEffect;
-        }
+        // Efecto visual (build-safe, NO compila shaders en runtime)
+        var barrierEffect = wall.AddComponent<BossArenaBarrier>();
+        barrierEffect.Setup(
+            barrierMaterial,
+            barrierColor,
+            pulseSpeed,
+            pulseIntensity,
+            rimPower,
+            rimStrength,
+            noiseTiling,
+            noiseSpeed,
+            noiseStrength,
+            globalAlpha
+        );
+
+        // Guardar el primero para batch de Show/Hide (luego cogemos todos con GetComponentsInChildren)
+        if (_barrierEffect == null) _barrierEffect = barrierEffect;
     }
 
-    private void CreateGenericBarrier(Bounds bounds, float height)
+    private void CreateGenericBarrier(Bounds boundsWorld, float height)
     {
-        // Crear una barrera cilíndrica genérica
         GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         wall.name = "GenericBarrier";
-        wall.transform.SetParent(_barrierVisual.transform);
-        
-        Vector3 worldCenter = bounds.center;
-        Vector3 localCenter = _barrierVisual.transform.InverseTransformPoint(worldCenter);
+        wall.transform.SetParent(_barrierVisual.transform, false);
+
+        Vector3 centerWorld = boundsWorld.center;
+        Vector3 localCenter = _barrierVisual.transform.InverseTransformPoint(centerWorld);
         wall.transform.localPosition = localCenter;
         wall.transform.localRotation = Quaternion.identity;
-        
-        float radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
-        wall.transform.localScale = new Vector3(radius * 2f, height / 2f, radius * 2f);
 
-        // Eliminar el collider
-        Destroy(wall.GetComponent<Collider>());
+        float radius = Mathf.Max(boundsWorld.extents.x, boundsWorld.extents.z);
+        wall.transform.localScale = new Vector3(radius * 2f, height * 0.5f, radius * 2f);
 
-        // Añadir el efecto visual
+        var col = wall.GetComponent<Collider>();
+        if (col) Destroy(col);
+
         _barrierEffect = wall.AddComponent<BossArenaBarrier>();
+        _barrierEffect.Setup(
+            barrierMaterial,
+            barrierColor,
+            pulseSpeed,
+            pulseIntensity,
+            rimPower,
+            rimStrength,
+            noiseTiling,
+            noiseSpeed,
+            noiseStrength,
+            globalAlpha
+        );
     }
 
     private void LockArea()
@@ -290,9 +326,7 @@ public class BossArenaController : MonoBehaviour
         {
             var barriers = _barrierVisual.GetComponentsInChildren<BossArenaBarrier>();
             foreach (var barrier in barriers)
-            {
                 barrier.Show();
-            }
         }
 
         Debug.Log("[BossArenaController] Área del boss bloqueada.");
@@ -307,13 +341,13 @@ public class BossArenaController : MonoBehaviour
         {
             var barriers = _barrierVisual.GetComponentsInChildren<BossArenaBarrier>();
             foreach (var barrier in barriers)
-            {
                 barrier.Hide();
-            }
         }
 
         Debug.Log("[BossArenaController] Área del boss desbloqueada.");
     }
+
+    // =========================== Battle toggles ===========================
 
     private void ApplyBattleDisables()
     {
