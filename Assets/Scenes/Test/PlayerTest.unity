@@ -833,8 +833,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3643264553064591952, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+      propertyPath: bossPrefab
+      value: 
+      objectReference: {fileID: 2543156170968106335, guid: 75ce093c15c934c4d894f67be515e8fd, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

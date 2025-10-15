@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6215212178649409521}
   - component: {fileID: 6881870606270202592}
   - component: {fileID: 3652846012152988861}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Plasma Sphere (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3.4634, y: 4.2, z: -6.7999997}
-  m_LocalScale: {x: 3.8478293, y: 3.8478293, z: 3.8478293}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 594917730747500432}
@@ -169,7 +169,7 @@ GameObject:
   - component: {fileID: 298928909643819493}
   - component: {fileID: 8375376771640425500}
   - component: {fileID: 2391210161443924024}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

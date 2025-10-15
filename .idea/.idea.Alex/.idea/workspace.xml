@@ -5,21 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Invector_BasicLocomotion.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/quests_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/quests_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/quests_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/quests_es.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/ui_en.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/ui_en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/Localization/ui_es.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Localization/ui_es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/Extra Scenes/Anim Layer Avatar Mask.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/Extra Scenes/NoWeaponExtraAnims.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/Extra Scenes/RootMotionCombo.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/BootProfile/GameBootProfile.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/BootProfile/GameBootProfile.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Invector-3rdPersonController_LITE/Animator/Invector@BasicLocomotion.controller" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main World/MainWorld.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueLine.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueLine.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Dialogue/DialogueManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Interaction/RoomExitBlocker.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Interaction/RoomExitBlocker.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/World/PortalTrigger.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Timeline/CinematicIntroDirectorTimeline.playable" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Timeline/CinematicIntroDirectorTimeline.playable" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/VFX/Houidisoft technology/Plasma Shader/Prefabs/Plasma Sphere (2).prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/VFX/Houidisoft technology/Plasma Shader/Prefabs/Plasma Sphere (2).prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
