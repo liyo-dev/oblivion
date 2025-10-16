@@ -71,7 +71,7 @@ public class TeleportService : MonoBehaviour
     {
         if (_inst != null && _inst != this) { Destroy(gameObject); return; }
         _inst = this;
-        DontDestroyOnLoad(gameObject);
+        //DontDestroyOnLoad(gameObject);
         Debug.Log($"[TeleportService] Awake in '{name}' | TransitionSettings: {(teleportTransition ? teleportTransition.name : "<null>")}");
     }
 

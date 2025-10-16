@@ -13574,8 +13574,10 @@ GameObject:
   - component: {fileID: 1348768594672796933}
   - component: {fileID: 478176048377239031}
   - component: {fileID: 3795583537632490528}
+  - component: {fileID: 9131262901232982737}
   - component: {fileID: 352492673259393651}
   - component: {fileID: 7761732784798172037}
+  - component: {fileID: 5038913063942613785}
   m_Layer: 8
   m_Name: Girl_1
   m_TagString: Untagged
@@ -13673,6 +13675,28 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 1
+--- !u!195 &9131262901232982737
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6079598791180535481}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!114 &352492673259393651
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13702,6 +13726,7 @@ MonoBehaviour:
   rotateSpeed: 10
   playerOverride: {fileID: 0}
   lookFrom: {fileID: 0}
+  ambientInhibitor: {fileID: 0}
   drawGizmos: 1
 --- !u!114 &7761732784798172037
 MonoBehaviour:
@@ -13733,6 +13758,23 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5038913063942613785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6079598791180535481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99321acb11064415b2e59a0b4edae326, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleNPCWander
+  wanderRadius: 8
+  minIdleTime: 1.2
+  maxIdleTime: 3
+  pickWhileMoving: 1
+  agentSpeed: 0
 --- !u!1 &6147645207745817370
 GameObject:
   m_ObjectHideFlags: 0

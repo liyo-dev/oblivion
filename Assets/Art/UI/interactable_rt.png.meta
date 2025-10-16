@@ -1,5 +1,7 @@
 fileFormatVersion: 2
-guid: 38f74ed734c00e64393954cb1c34a20c
+guid: e19bbdccbb7bc384bbc6f0302e4e1eb7
+labels:
+- UnityAI
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -34,7 +36,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1

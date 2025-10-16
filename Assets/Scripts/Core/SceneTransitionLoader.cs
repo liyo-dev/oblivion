@@ -77,6 +77,21 @@ public class SceneTransitionLoader : MonoBehaviour
             yield break;
         }
 
+        // Si los settings no contienen prefabs válidos, intentar usar defaultSettings o hacer fallback
+        if (settings != null && !(settings.transitionIn != null || settings.transitionOut != null))
+        {
+            if (this.defaultSettings != null && (this.defaultSettings.transitionIn != null || this.defaultSettings.transitionOut != null))
+            {
+                settings = this.defaultSettings;
+            }
+            else
+            {
+                // No hay transición válida disponible: carga directa y salimos
+                SceneManager.LoadScene(sceneName);
+                yield break;
+            }
+        }
+
         // Suscriptores locales y auto-desuscripción
         UnityAction onCut = null;
         UnityAction onEnd = null;
@@ -99,6 +114,45 @@ public class SceneTransitionLoader : MonoBehaviour
 
         // Importante: usamos la VERSIÓN SIN CAMBIO DE ESCENA del plugin.
         // Esa ruta sí pone runningTransition = false al terminar.
+
+        // Evitar llamar a tm.Transition si el TransitionManager ya está en medio de otra transición.
+        // El campo 'runningTransition' es privado en el plugin, así que lo leemos por reflexión.
+        bool isRunning = false;
+        try
+        {
+            var fi = typeof(TransitionManager).GetField("runningTransition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (fi != null)
+                isRunning = (bool)fi.GetValue(tm);
+        }
+        catch { isRunning = false; }
+
+        if (isRunning)
+        {
+            // Espera hasta 1s a que termine la transición actual
+            float waitTimeout = 1f;
+            float waited = 0f;
+            while (waited < waitTimeout)
+            {
+                yield return null;
+                waited += Time.unscaledDeltaTime;
+                try
+                {
+                    var fi = typeof(TransitionManager).GetField("runningTransition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (fi == null) { isRunning = false; break; }
+                    isRunning = (bool)fi.GetValue(tm);
+                    if (!isRunning) break;
+                }
+                catch { isRunning = false; break; }
+            }
+
+            if (isRunning)
+            {
+                Debug.LogWarning("SceneTransitionLoader: TransitionManager busy; loading scene without transition to avoid conflict.");
+                SceneManager.LoadScene(sceneName);
+                yield break;
+            }
+        }
+
         tm.Transition(settings, delay);
     }
 

@@ -1,46 +1,308 @@
-public enum AbilityId { PhysicalAttack, MagicAttack, Dash, Block }
-public enum SpellId { None, Fireball, IceSpike, Storm, Lightning, FireSpecial }
-public enum DamageKind { Physical, Magic, Special }
-[System.Obsolete("Use QuestState instead")] public enum QuesStateEnum { NotStarted = 0, Active = 1, Completed = 2 }
-public enum MagicSlot { Left, Right, Special }
-public enum MagicKind { Projectile, Special }
-public enum MagicElement { Fire, Ice, Storm, Light }
-public enum SpellSlotType { Any, SpecialOnly }
-public enum QuestState { Inactive = 0, Active = 1, Completed = 2, Failed = 3 }
+using System;
 
-// Enumerados para localización
-public enum UITextId { MainMenu_NewGame, MainMenu_Continue, MainMenu_Settings, MainMenu_Exit, Settings_Language, Settings_Audio, Settings_Graphics, Settings_Controls, Settings_Back, UI_Health, UI_Mana, UI_Level, UI_Experience, Dialogue_Continue, Dialogue_Skip, Dialogue_End, Interact_Press, Interact_Talk, Interact_Examine, Interact_PickUp, Interact_Open, System_Loading, System_Saving, System_GameSaved, System_Error }
+/// <summary>
+/// Conjunto centralizado de identificadores y enumerados usados por el juego.
+/// Mantener todos los enums en este archivo facilita su localización y evita
+/// duplicados en el proyecto. No se introduce un namespace para mantener
+/// compatibilidad con referencias existentes en el código base.
+/// </summary>
 
-public enum DialogueId { NPC_Villager_01, NPC_Merchant_01, NPC_Guard_01, Object_Sign_01, Object_Book_01, Object_Chest_01, Tutorial_Movement, Tutorial_Combat, Tutorial_Magic }
+/// Combat / Abilities
+/// <summary>Identificadores de habilidades y ataques disponibles.</summary>
+public enum AbilityId
+{
+    PhysicalAttack,
+    MagicAttack,
+    Dash,
+    Block
+}
 
-public enum PartCategory { Body, Cloak, Head, Hair, Eyes, Mouth, Hat, Eyebrow, Accessory, WeaponL, WeaponR, ShieldR, Bow, Arrows, Spear, Wand, THS_Sword, OHS_Sword, Axe, Hammer }
-[System.Obsolete("Use PartCategory instead")] public enum PartCat { Body, Cloak, Accessory, Eyes, Mouth, Hair, Head, Hat, Eyebrow, Bow, OHS, Shield, Arrows }
+/// <summary>Tipos de daño que pueden aplicarse a entidades.</summary>
+public enum DamageKind
+{
+    Physical,
+    Magic,
+    Special
+}
 
-public enum WeaponStance { None = 0, SingleSword = 1, SwordAndShield = 2, TwoHandSword = 3, BowAndArrow = 4, Spear = 5, MagicWand = 6, DoubleSword = 7 }
+/// <summary>Posturas/estilos de manejo de armas.</summary>
+public enum WeaponStance
+{
+    None = 0,
+    SingleSword = 1,
+    SwordAndShield = 2,
+    TwoHandSword = 3,
+    BowAndArrow = 4,
+    Spear = 5,
+    MagicWand = 6,
+    DoubleSword = 7
+}
 
-public enum ObjectType { Caja, Barril, Bolsa, Paquete, Otro }
+// Magic / Spells
+/// <summary>Identificadores de hechizos y habilidades mágicas.</summary>
+public enum SpellId
+{
+    None,
+    Fireball,
+    IceSpike,
+    Storm,
+    Lightning,
+    FireSpecial
+}
 
-// --- Enums centralizados añadidos --- (movidos desde varios scripts para tener un único punto de verdad)
-public enum ActionMode { Default, Carrying, Casting, Cinematic, Stunned, Swimming }
-public enum PlayerAbility { Move, Jump, Sprint, Roll, Attack, Magic, Interact, Carry, Aim }
+/// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>
+public enum MagicSlot
+{
+    Left,
+    Right,
+    Special
+}
 
-// Interactable
-public enum InteractableMode { OpenDialogue, HandOffToTarget }
-public enum SessionSelect { UseField, AutoFirstOnThisGO, ByTypeName }
+/// <summary>Tipos de comportamiento de un hechizo.</summary>
+public enum MagicKind
+{
+    Projectile,
+    Special
+}
 
-// Quests
-public enum QuestCompletionMode { Manual, AutoCompleteOnTalk, CompleteOnTalkIfStepsReady }
-public enum TargetMode { FirstFound, Specific, ByName }
+/// <summary>Elementos mágicos disponibles.</summary>
+public enum MagicElement
+{
+    Fire,
+    Ice,
+    Storm,
+    Light
+}
 
-// Rooms
-public enum RoomDifficulty { Easy, Medium, Hard, Boss }
-public enum RoomKind { Puzzle, Combat, Mixed, Boss }
+/// <summary>Tipos de ranuras para asignar hechizos.</summary>
+public enum SpellSlotType
+{
+    Any,
+    SpecialOnly
+}
 
-// Requirement modes moved from RoomExitBlocker
-public enum RequirementMode { AnyQuestStartedOrCompleted, AnyQuestStarted, SpecificQuestsStarted, SpecificQuestsCompleted }
+// Player / Actions
+/// <summary>Modos de acción globales del sistema de personajes.</summary>
+public enum ActionMode
+{
+    Default,
+    Carrying,
+    Casting,
+    Cinematic,
+    Stunned,
+    Swimming
+}
+
+/// <summary>Habilidades básicas que puede usar el jugador.</summary>
+public enum PlayerAbility
+{
+    Move,
+    Jump,
+    Sprint,
+    Roll,
+    Attack,
+    Magic,
+    Interact,
+    Carry,
+    Aim
+}
+
+// Interactable / Session
+/// <summary>Modos de interacción disponibles para objetos interactuables.</summary>
+public enum InteractableMode
+{
+    OpenDialogue,
+    HandOffToTarget
+}
+
+/// <summary>Cómo seleccionar una sesión: por campo, automáticamente por GameObject, o por nombre de tipo.</summary>
+public enum SessionSelect
+{
+    UseField,
+    AutoFirstOnThisGameObject,
+    ByTypeName
+}
+
+// Quests / Objectives
+/// <summary>Estado de una misión.</summary>
+public enum QuestState
+{
+    Inactive = 0,
+    Active = 1,
+    Completed = 2,
+    Failed = 3
+}
+
+/// <summary>Obsoleto: use <see cref="QuestState"/> en su lugar.</summary>
+[Obsolete("Use QuestState instead")]
+public enum QuestStateEnum
+{
+    NotStarted = 0,
+    Active = 1,
+    Completed = 2
+}
+
+/// <summary>Modo de finalización de una quest.</summary>
+public enum QuestCompletionMode
+{
+    Manual,
+    AutoCompleteOnTalk,
+    CompleteOnTalkIfStepsReady
+}
+
+/// <summary>Modo de objetivo (como encontrar el primero, uno específico o por nombre).</summary>
+public enum TargetMode
+{
+    FirstFound,
+    Specific,
+    ByName
+}
+
+// Rooms / Encounters
+/// <summary>Dificultad de una sala/encuentro.</summary>
+public enum RoomDifficulty
+{
+    Easy,
+    Medium,
+    Hard,
+    Boss
+}
+
+/// <summary>Tipo de sala o encuentro.</summary>
+public enum RoomKind
+{
+    Puzzle,
+    Combat,
+    Mixed,
+    Boss
+}
+
+/// <summary>Modos de requerimiento para desbloqueos de salida.</summary>
+public enum RequirementMode
+{
+    AnyQuestStartedOrCompleted,
+    AnyQuestStarted,
+    SpecificQuestsStarted,
+    SpecificQuestsCompleted
+}
+
+// Localization / UI
+/// <summary>Identificadores de texto usados por el sistema de localización/UI.</summary>
+public enum UITextId
+{
+    MainMenuNewGame,
+    MainMenuContinue,
+    MainMenuSettings,
+    MainMenuExit,
+    SettingsLanguage,
+    SettingsAudio,
+    SettingsGraphics,
+    SettingsControls,
+    SettingsBack,
+    UIHealth,
+    UIMana,
+    UILevel,
+    UIExperience,
+    DialogueContinue,
+    DialogueSkip,
+    DialogueEnd,
+    InteractPress,
+    InteractTalk,
+    InteractExamine,
+    InteractPickUp,
+    InteractOpen,
+    SystemLoading,
+    SystemSaving,
+    SystemGameSaved,
+    SystemError
+}
+
+/// <summary>Identificadores para diálogos y nodos de conversación.</summary>
+public enum DialogueId
+{
+    NpcVillager01,
+    NpcMerchant01,
+    NpcGuard01,
+    ObjectSign01,
+    ObjectBook01,
+    ObjectChest01,
+    TutorialMovement,
+    TutorialCombat,
+    TutorialMagic
+}
+
+// Parts / Character customization
+/// <summary>Categorías de piezas/partes para personajes (cosmética/armado).</summary>
+public enum PartCategory
+{
+    Body,
+    Cloak,
+    Head,
+    Hair,
+    Eyes,
+    Mouth,
+    Hat,
+    Eyebrow,
+    Accessory,
+    WeaponL,
+    WeaponR,
+    ShieldR,
+    Bow,
+    Arrows,
+    Spear,
+    Wand,
+    ThsSword,
+    OhsSword,
+    Axe,
+    Hammer
+}
+
+/// <summary>Obsoleto: use <see cref="PartCategory"/> en su lugar.</summary>
+[Obsolete("Use PartCategory instead")]
+public enum PartCat
+{
+    Body,
+    Cloak,
+    Accessory,
+    Eyes,
+    Mouth,
+    Hair,
+    Head,
+    Hat,
+    Eyebrow,
+    Bow,
+    Ohs,
+    // Compatibilidad: algunos scripts históricos usan "OHS" (todo en mayúsculas).
+    // Mantener un alias evita romper compilación sin renombrar en todos los lugares.
+    OHS = Ohs,
+    Shield,
+    Arrows
+}
+
+// World objects
+/// <summary>Tipos de objetos en el mundo (nombres en español usados por el diseñador).</summary>
+public enum ObjectType
+{
+    Caja,
+    Barril,
+    Bolsa,
+    Paquete,
+    Otro
+}
 
 // Characters
-public enum Hand { None, Left, Right }
+/// <summary>Mano usada (none/left/right).</summary>
+public enum Hand
+{
+    None,
+    Left,
+    Right
+}
 
-// Environment
-public enum EnvironmentMode { Unknown, Exterior, Interior }
+/// <summary>Modo de entorno (interior/exterior/unknown).</summary>
+public enum EnvironmentMode
+{
+    Unknown,
+    Exterior,
+    Interior
+}
