@@ -33236,7 +33236,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISelectVisual
   targetGraphic: {fileID: 0}
-  normalColor: {r: 0.043137256, g: 0.09411765, b: 0.7372549, a: 1}
+  normalColor: {r: 0.14901961, g: 0.2509804, b: 0.4509804, a: 1}
   highlightColor: {r: 0.023529412, g: 0, b: 0.29803923, a: 1}
   selectedScale: 1.08
   animDuration: 0.12
@@ -133869,7 +133869,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISelectVisual
   targetGraphic: {fileID: 0}
-  normalColor: {r: 0.043137256, g: 0.09411765, b: 0.7372549, a: 1}
+  normalColor: {r: 0.14901961, g: 0.2509804, b: 0.4509804, a: 1}
   highlightColor: {r: 0.023529412, g: 0, b: 0.29803923, a: 1}
   selectedScale: 1.08
   animDuration: 0.12
@@ -174873,7 +174873,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISelectVisual
   targetGraphic: {fileID: 0}
-  normalColor: {r: 0.04304019, g: 0.09502681, b: 0.735849, a: 1}
+  normalColor: {r: 0.14901961, g: 0.2509804, b: 0.4509804, a: 1}
   highlightColor: {r: 0.022931723, g: 0, b: 0.2981131, a: 1}
   selectedScale: 1.08
   animDuration: 0.12
