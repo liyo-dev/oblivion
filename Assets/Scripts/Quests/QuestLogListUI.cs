@@ -32,6 +32,13 @@ public class QuestLogListUI : MonoBehaviour
 
     void Update()
     {
+        // Si el menú de pausa está abierto, ignorar entradas de D-pad para no abrir/cerrar el panel de misiones
+        if (PauseMenuController.IsOpen)
+        {
+            Debug.Log("QuestLogListUI: entrada D-Pad ignorada porque PauseMenuController.IsOpen == true");
+            return;
+        }
+
         // Control con D-pad arriba SOLAMENTE (no joystick izquierdo)
         bool dpadUpPressed = false;
         
@@ -126,6 +133,13 @@ public class QuestLogListUI : MonoBehaviour
 
     public void TogglePanel()
     {
+        // Si el menú de pausa está abierto, no permitir abrir/ocultar el panel de misiones
+        if (PauseMenuController.IsOpen)
+        {
+            Debug.Log("QuestLogListUI.TogglePanel: ignorado porque PauseMenuController.IsOpen == true");
+            return;
+        }
+
         _isPanelVisible = !_isPanelVisible;
         
         // Solo ocultar el ScrollView, no todo el panel
@@ -150,6 +164,13 @@ public class QuestLogListUI : MonoBehaviour
 
     public void ShowPanel(bool show)
     {
+        // Si el menú de pausa está abierto, ignorar la petición
+        if (PauseMenuController.IsOpen)
+        {
+            Debug.Log("QuestLogListUI.ShowPanel: ignorado porque PauseMenuController.IsOpen == true");
+            return;
+        }
+
         _isPanelVisible = show;
         
         if (scrollView)
