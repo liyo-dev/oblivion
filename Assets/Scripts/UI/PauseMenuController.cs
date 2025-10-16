@@ -1,4 +1,4 @@
-﻿// PauseMenuController.cs
+﻿﻿// PauseMenuController.cs
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -213,84 +213,6 @@ public class PauseMenuController : MonoBehaviour
         IsOpen = false;
         _introSeq?.Kill(); _introSeq = null;
         DisableUIInput();
-
-        // Además de desactivar el mapa de UI, desuscribimos handlers para evitar que el InputSystem
-        // invoque callbacks mientras el objeto se está desactivando o destruyendo.
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            if (_pauseAction != null)
-            {
-                _pauseAction.performed -= OnPausePressed;
-                if (_pauseAction.enabled) _pauseAction.Disable();
-            }
-            if (_uiNavigateAction != null)
-            {
-                _uiNavigateAction.performed -= OnUINavigate;
-                if (_uiNavigateAction.enabled) _uiNavigateAction.Disable();
-            }
-            if (_uiSubmitAction != null && _uiSubmitAction.enabled) _uiSubmitAction.Disable();
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning("PauseMenuController.OnDisable: error al desuscribir InputActions: " + ex.Message);
-        }
-#endif
-    }
-
-    // Asegurarse de desuscribir callbacks del Input System cuando el objeto se destruye
-    void OnDestroy()
-    {
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            if (_pauseAction != null)
-            {
-                _pauseAction.performed -= OnPausePressed;
-                if (_pauseAction.enabled) _pauseAction.Disable();
-            }
-
-            if (_uiNavigateAction != null)
-            {
-                _uiNavigateAction.performed -= OnUINavigate;
-                if (_uiNavigateAction.enabled) _uiNavigateAction.Disable();
-            }
-
-            if (_uiSubmitAction != null)
-            {
-                // No siempre registramos submit callback, pero es seguro asegurar su estado
-                if (_uiSubmitAction.enabled) _uiSubmitAction.Disable();
-            }
-
-            if (playerControls != null)
-            {
-                // Desactivar mapas de acción completos si es necesario
-                try
-                {
-                    playerControls.UI.Disable();
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning("PauseMenuController.OnDestroy: error disabling UI action map: " + ex.Message);
-                }
-
-                try
-                {
-                    // GamePlay es un tipo generado que puede ser value-type; evitar usar el operator ?. sobre él.
-                    var startAction = playerControls.GamePlay.Start;
-                    if (startAction != null && startAction.enabled) startAction.Disable();
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning("PauseMenuController.OnDestroy: error disabling Start action: " + ex.Message);
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning("PauseMenuController.OnDestroy: error al limpiar InputActions: " + ex.Message);
-        }
-#endif
     }
 
     void Start()
@@ -364,11 +286,6 @@ public class PauseMenuController : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
     void OnPausePressed(InputAction.CallbackContext ctx)
     {
-        // Protección: si este objeto fue destruido por el cambio de escena u otra razón,
-        // la comparación con null de UnityEngine.Object devolverá true. Salimos para evitar excepciones.
-        if (this == null) return;
-        if (gameObject == null) return;
-        if (!enabled) return;
         TogglePause();
     }
 

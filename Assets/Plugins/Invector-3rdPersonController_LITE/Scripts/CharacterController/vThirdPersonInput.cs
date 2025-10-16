@@ -77,9 +77,9 @@ namespace Invector.vCharacterController
             if (cameraAction != null) { cameraAction.performed += OnCameraInput; cameraAction.canceled += OnCameraInput; }
 
             // Magia (solo started para evitar dobles disparos)
-            if (attackMagicWestAction  != null) attackMagicWestAction.started  += _ => cc.CastMagicLeft();
-            if (attackMagicEastAction  != null) attackMagicEastAction.started  += _ => cc.CastMagicRight();
-            if (attackMagicNorthAction != null) attackMagicNorthAction.started += _ => cc.CastMagicSpecial();
+            if (attackMagicWestAction  != null) attackMagicWestAction.started  += OnAttackMagicWestStarted;
+            if (attackMagicEastAction  != null) attackMagicEastAction.started  += OnAttackMagicEastStarted;
+            if (attackMagicNorthAction != null) attackMagicNorthAction.started += OnAttackMagicNorthStarted;
         }
 
         protected virtual void OnDisable()
@@ -92,9 +92,9 @@ namespace Invector.vCharacterController
             if (strafeAction != null) { strafeAction.performed -= OnStrafeInput; }
             if (cameraAction != null) { cameraAction.performed -= OnCameraInput; cameraAction.canceled  -= OnCameraInput; }
 
-            if (attackMagicWestAction  != null) attackMagicWestAction.started  -= _ => cc.CastMagicLeft();
-            if (attackMagicEastAction  != null) attackMagicEastAction.started  -= _ => cc.CastMagicRight();
-            if (attackMagicNorthAction != null) attackMagicNorthAction.started -= _ => cc.CastMagicSpecial();
+            if (attackMagicWestAction  != null) attackMagicWestAction.started  -= OnAttackMagicWestStarted;
+            if (attackMagicEastAction  != null) attackMagicEastAction.started  -= OnAttackMagicEastStarted;
+            if (attackMagicNorthAction != null) attackMagicNorthAction.started -= OnAttackMagicNorthStarted;
 
             inputActions.Disable();
         }
@@ -204,6 +204,22 @@ namespace Invector.vCharacterController
                 cc.Jump();
                 jumpPressed = false;
             }
+        }
+
+        // Named callbacks for magic inputs so they can be unsubscribed reliably
+        private void OnAttackMagicWestStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
+        {
+            if (cc != null) cc.CastMagicLeft();
+        }
+
+        private void OnAttackMagicEastStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
+        {
+            if (cc != null) cc.CastMagicRight();
+        }
+
+        private void OnAttackMagicNorthStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
+        {
+            if (cc != null) cc.CastMagicSpecial();
         }
     }
 }

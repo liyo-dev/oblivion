@@ -247,12 +247,19 @@ namespace Invector.vCharacterController
 
         private void PlayUpperAnimationAndExit(string fullPath)
         {
+            // Proteger contra Animator destruido
+            if (animator == null)
+            {
+                if (debugLogs) Debug.LogWarning("PlayUpperAnimationAndExit called but animator is null/destroyed");
+                return;
+            }
+
             // Subimos el peso del layer y ENTRAMOS directo al estado (sin CrossFade)
+            if (magicCo != null) { StopCoroutine(magicCo); magicCo = null; }
             animator.SetLayerWeight(upperLayerIndex, 1f);
             animator.Play(fullPath, upperLayerIndex, 0f);
 
             // Esperamos a que el Animator SALGA del estado y bajamos el layer suave
-            if (magicCo != null) StopCoroutine(magicCo);
             magicCo = StartCoroutine(Co_WaitAnimatorExitThenLowerLayer(Animator.StringToHash(fullPath)));
         }
 
@@ -261,22 +268,37 @@ namespace Invector.vCharacterController
             int layer = upperLayerIndex;
 
             // Esperar a ENTRAR realmente en el estado
-            while (animator.GetCurrentAnimatorStateInfo(layer).fullPathHash != targetHash)
+            while (animator != null && animator.GetCurrentAnimatorStateInfo(layer).fullPathHash != targetHash)
                 yield return null;
 
+            if (animator == null)
+            {
+                // Animator fue destruido, limpiar y salir
+                magicCo = null;
+                yield break;
+            }
+
             // Esperar a SALIR del estado por Exit Time (no cortamos el clip)
-            while (animator.GetCurrentAnimatorStateInfo(layer).fullPathHash == targetHash)
+            while (animator != null && animator.GetCurrentAnimatorStateInfo(layer).fullPathHash == targetHash)
                 yield return null;
+
+            if (animator == null)
+            {
+                magicCo = null;
+                yield break;
+            }
 
             // Desvanecer peso del layer superior
             float t = 0f, start = animator.GetLayerWeight(layer);
             while (t < upperLayerFadeOut)
             {
                 t += Time.deltaTime;
+                if (animator == null) break;
                 animator.SetLayerWeight(layer, Mathf.Lerp(start, 0f, t / upperLayerFadeOut));
                 yield return null;
             }
-            animator.SetLayerWeight(layer, 0f);
+
+            if (animator != null) animator.SetLayerWeight(layer, 0f);
             magicCo = null;
         }
 
@@ -286,7 +308,7 @@ namespace Invector.vCharacterController
             _targeting = GetComponent<ITargetProvider>();
             // Buscar el ActionValidator (opcional, el sistema funciona sin él)
             _actionValidator = GetComponent<IActionValidator>();
-            
+
             // TEMPORAL: Buscar MagicCaster por nombre de componente
             var allComponents = GetComponents<MonoBehaviour>();
             foreach (var comp in allComponents)
@@ -297,7 +319,7 @@ namespace Invector.vCharacterController
                     break;
                 }
             }
-            
+
             // También buscar en el parent
             if (_magicCasterMB == null)
             {
@@ -314,5 +336,20 @@ namespace Invector.vCharacterController
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;
+
+        // Limpiar coroutine y asegurar que el peso del layer no quede atascado si el objeto se desactiva o destruye
+        private void OnDisable()
+        {
+            if (magicCo != null) { StopCoroutine(magicCo); magicCo = null; }
+            if (animator != null) animator.SetLayerWeight(upperLayerIndex, 0f);
+        }
+
+        private void OnDestroy()
+        {
+            if (magicCo != null) { StopCoroutine(magicCo); magicCo = null; }
+            // No podemos tocar animator si ya fue destruido, la comprobación es redundante pero segura
+            if (animator != null) animator.SetLayerWeight(upperLayerIndex, 0f);
+        }
     }
 }
+

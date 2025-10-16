@@ -5634,7 +5634,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e56e4d3ef79460980580a9918b788f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
-  targetingRadius: 40
+  targetingRadius: 90
 --- !u!1 &3024701460706714017
 GameObject:
   m_ObjectHideFlags: 0
