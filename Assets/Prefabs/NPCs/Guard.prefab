@@ -13252,8 +13252,9 @@ GameObject:
   - component: {fileID: 3059051994120085827}
   - component: {fileID: 3049972968634466059}
   - component: {fileID: 6861922946376265805}
-  - component: {fileID: 8740781478056492596}
   - component: {fileID: 2232853087552565767}
+  - component: {fileID: 6353187348953647502}
+  - component: {fileID: 8158634281784988604}
   m_Layer: 8
   m_Name: Guard
   m_TagString: Untagged
@@ -13324,36 +13325,6 @@ CapsuleCollider:
   m_Height: 0.63
   m_Direction: 1
   m_Center: {x: 0, y: 0.31, z: 0}
---- !u!114 &8740781478056492596
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6212661583293693831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a765fc0f77ab9fa44aef0a473cfc2305, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
-  animator: {fileID: 0}
-  idleState: Idle_Normal_NoWeapon
-  greetState: Greeting01_NoWeapon
-  interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  drawGizmos: 1
 --- !u!114 &2232853087552565767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13384,6 +13355,72 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!195 &6353187348953647502
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6212661583293693831}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &8158634281784988604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6212661583293693831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00e97a32a4c8b8349be01bd014399d3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCAmbientBrain
+  animator: {fileID: 3049972968634466059}
+  locomotionState: Base Layer.Locomotion.Free Locomotion
+  locomotionParam: InputMagnitude
+  useRootMotion: 0
+  greetState: Greeting01_NoWeapon
+  drinkState: DrinkPotion_NoWeapon
+  sleepState: Sleeping_NoWeapon
+  lookAroundState: SenseSomethingSearching_NoWeapon
+  foundSomething: FoundSomething_NoWeapon
+  interactPeople: InteractWithPeople_NoWeapon
+  danceState: Dance_NoWeapon
+  dizzyState: Dizzy_NoWeapon
+  celebrateState: LevelUp_NoWeapon
+  wanderRadius: 8
+  minIdleBeforeMove: 1
+  maxIdleBeforeMove: 3
+  overrideAgentSpeed: 0
+  actionChance: 0.55
+  loopActionDuration: {x: 4, y: 10}
+  maxPointSearchDist: 25
+  actionPoints: []
+  greetOnSight: 1
+  greetRadius: 3
+  fovDegrees: 110
+  greetCooldown: 4
+  useIKLookAt: 1
+  lookAtWeight: 0.6
+  bodyWeight: 0.1
+  headWeight: 0.9
+  eyesWeight: 0.7
+  rotateToPlayerOnInteract: 1
+  rotateSpeed: 10
 --- !u!1 &6216805902959371846
 GameObject:
   m_ObjectHideFlags: 0

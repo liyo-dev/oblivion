@@ -61,6 +61,7 @@ public class PlayerHUDComplete : MonoBehaviour
     // Manejador para recibir updates inmediatos de maná
     private void OnManaChangedListener(float percent)
     {
+        Debug.Log($"[PlayerHUDComplete] OnManaChangedListener called on HUD. ManaPool={( _manaPool != null ? _manaPool.gameObject.name : "null")}, percent={percent}");
         if (_manaSlider)
         {
             // Snap inmediato
@@ -132,6 +133,13 @@ public class PlayerHUDComplete : MonoBehaviour
         // Garantizar actualización del HUD cuando el preset se aplique (p.ej. GameBootService llega después)
         PlayerPresetService.OnPresetApplied -= ForceRefresh;
         PlayerPresetService.OnPresetApplied += ForceRefresh;
+
+        // Si el GameBootService ya está listo, forzar refresco ahora para evitar condiciones de carrera
+        if (GameBootService.IsAvailable)
+        {
+            Debug.Log("[PlayerHUDComplete] GameBootService ya disponible en Awake -> ForceRefresh inmediato");
+            ForceRefresh();
+        }
     }
 
     void Start()
@@ -688,21 +696,43 @@ public class PlayerHUDComplete : MonoBehaviour
 
         if (_manaPool && _manaSlider && _manaText)
         {
-            float denom = Mathf.Max(0.0001f, _manaPool.Max);
-            float manaPercent = _manaPool.Current / denom;
-            _manaSlider.gameObject.SetActive(true);
-            _manaText.gameObject.SetActive(true);
-            _manaSlider.value = Mathf.Lerp(_manaSlider.value, manaPercent, Time.deltaTime * 8f);
-            _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+            // Si el ManaPool existe pero Max es 0 o negativo, forzar 0/0 (protección contra división por cero)
+            if (_manaPool.Max <= 0f)
+            {
+                if (_manaSlider)
+                {
+                    _manaSlider.gameObject.SetActive(true);
+                    _manaSlider.value = 0f;
+                }
+                if (_manaText)
+                {
+                    _manaText.gameObject.SetActive(true);
+                    _manaText.text = "0/0";
+                }
+                if (_manaFill) _manaFill.color = noManaColor;
+            }
+            else
+            {
+                float denom = Mathf.Max(0.0001f, _manaPool.Max);
+                float manaPercent = _manaPool.Current / denom;
+                _manaSlider.gameObject.SetActive(true);
+                _manaText.gameObject.SetActive(true);
+                _manaSlider.value = Mathf.Lerp(_manaSlider.value, manaPercent, Time.deltaTime * 8f);
+                _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+            }
         }
     }
 
     public void ForceRefresh()
     {
+        Debug.Log("[PlayerHUDComplete] ForceRefresh called");
+        var presetDbg = GameBootService.Profile?.GetActivePresetResolved();
+        Debug.Log($"[PlayerHUDComplete] preset abilities.magic={(presetDbg!=null && presetDbg.abilities!=null?presetDbg.abilities.magic.ToString():"null")}");
         // Re-resolver referencias por si no estuvieran aún
         if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
         if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
         if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
+        Debug.Log($"[PlayerHUDComplete] ForceRefresh: found ManaPool={( _manaPool != null ? _manaPool.gameObject.name : "null")}, values={( _manaPool != null ? _manaPool.Current + "/" + _manaPool.Max : "n/a")} ");
 
         // Salud (snap inmediato)
         if (_healthSystem && _healthSlider && _healthText)
@@ -714,6 +744,24 @@ public class PlayerHUDComplete : MonoBehaviour
 
         // Maná (snap inmediato)
         var preset = GameBootService.Profile?.GetActivePresetResolved();
+        // Si el ManaPool existe y su Max es 0 -> forzar 0/0 (protección adicional)
+        if (_manaPool != null && _manaPool.Max <= 0f)
+        {
+            if (_manaSlider)
+            {
+                _manaSlider.gameObject.SetActive(true);
+                _manaSlider.value = 0f;
+            }
+            if (_manaText)
+            {
+                _manaText.gameObject.SetActive(true);
+                _manaText.text = "0/0";
+            }
+            if (_manaFill) _manaFill.color = noManaColor;
+            Debug.Log("[PlayerHUDComplete] ManaPool reports Max<=0 -> HUD set to 0/0");
+            return;
+        }
+
         if (preset != null && preset.abilities != null && !preset.abilities.magic)
         {
             // Mostrar la barra pero como 0/0 para indicar ausencia de magia
@@ -728,6 +776,7 @@ public class PlayerHUDComplete : MonoBehaviour
                 _manaText.text = "0/0";
             }
             if (_manaFill) _manaFill.color = noManaColor;
+            Debug.Log("[PlayerHUDComplete] Preset indicates no magic -> HUD set to 0/0");
         }
         else
         {
@@ -738,6 +787,7 @@ public class PlayerHUDComplete : MonoBehaviour
                 _manaText.gameObject.SetActive(true);
                 _manaSlider.value = mp;
                 _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+                Debug.Log($"[PlayerHUDComplete] HUD populated from ManaPool: {_manaPool.gameObject.name} -> {_manaPool.Current}/{_manaPool.Max}");
             }
         }
     }

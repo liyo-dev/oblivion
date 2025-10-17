@@ -30,6 +30,11 @@ public class ManaPool : MonoBehaviour
     // Llamado por PlayerState al cargar preset/partida
     public void Init(float maxMP, float currentMP)
     {
+        Debug.Log($"[ManaPool.Init] On '{gameObject.name}' -> Init(maxMP={maxMP}, currentMP={currentMP}) | prev max={max}, prev current={current}");
+        // Mostrar stacktrace para identificar el llamador y el orden de ejecución (temporal, para debugging)
+        Debug.Log(System.Environment.StackTrace);
+        // opcional: mostrar stacktrace para identificar llamador (descomentar si necesitas más detalle)
+        // Debug.Log(Environment.StackTrace);
         max = Mathf.Max(0f, maxMP);
         current = Mathf.Clamp(currentMP, 0f, max);
         _lastNotifiedMana = current;

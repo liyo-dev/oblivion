@@ -11,19 +11,19 @@ public class NPCAmbientBrain : MonoBehaviour
     [SerializeField] private Animator animator;
 
     [Tooltip("Nombre o RUTA COMPLETA del Blend Tree de locomoción. Ej.: \"Free Locomotion\" o \"Base Layer.Locomotion.Free Locomotion\"")]
-    [SerializeField] private string locomotionState = "Free Locomotion";
+    [SerializeField] private string locomotionState = "Base Layer.Locomotion.Free Locomotion";
 
     [Tooltip("Parámetro del Blend Tree (normalmente InputMagnitude)")]
     [SerializeField] private string locomotionParam = "InputMagnitude";
 
-    [SerializeField] private bool useRootMotion = false; // normalmente false
+    [SerializeField] private bool useRootMotion = false; // normalmente false: manda el Agent
 
-    [Header("Clips Ambientales (nombre o ruta completa)")]
+    [Header("Clips Ambientales (nombres exactos según tu librería)")]
     public string greetState        = "Greeting01_NoWeapon";
     public string drinkState        = "DrinkPotion_NoWeapon";
     public string sleepState        = "Sleeping_NoWeapon";
-    public string lookAroundState   = "SenseSome_NoWeapon";
-    public string foundSomething    = "FoundSom_NoWeapon";
+    public string lookAroundState   = "SenseSomethingSearching_NoWeapon";
+    public string foundSomething    = "FoundSomething_NoWeapon";
     public string interactPeople    = "InteractWithPeople_NoWeapon";
     public string danceState        = "Dance_NoWeapon";
     public string dizzyState        = "Dizzy_NoWeapon";
@@ -56,6 +56,10 @@ public class NPCAmbientBrain : MonoBehaviour
     [Range(0f,1f)] public float lookAtWeight = 0.6f;
     [Range(0f,1f)] public float bodyWeight = 0.1f, headWeight = 0.9f, eyesWeight = 0.7f;
 
+    [Header("Interacción con jugador")]
+    [SerializeField] private bool rotateToPlayerOnInteract = true;
+    [SerializeField] private float rotateSpeed = 10f;
+
     // ===== Internals =====
     NavMeshAgent _agent;
     Transform _player, _playerCam;
@@ -64,10 +68,14 @@ public class NPCAmbientBrain : MonoBehaviour
     readonly Dictionary<string, float> _clipLen = new();
 
     // Resolución de estados
-    readonly Dictionary<string, int> _stateHash = new();     // nombre -> hash
-    readonly Dictionary<string, int> _stateLayer = new();     // nombre -> capa
+    readonly Dictionary<string, int> _stateHash  = new();   // nombre -> hash
+    readonly Dictionary<string, int> _stateLayer = new();   // nombre -> capa
+
     bool _running;
     bool _greetOnCd;
+
+    bool _isInteracting = false;
+    Coroutine _faceCo;
 
     void Reset()
     {
@@ -98,7 +106,15 @@ public class NPCAmbientBrain : MonoBehaviour
                     actionPoints.Add(ap);
         }
 
-        // Pre-resolver estados críticos
+        // Enlace a Interactable (sin tocar su script)
+        var interactable = GetComponent<Interactable>();
+        if (interactable)
+        {
+            interactable.OnStarted.AddListener(BeginInteraction);
+            interactable.OnFinished.AddListener(EndInteraction);
+        }
+
+        // Pre-resolver estados importantes
         EnsureResolved(locomotionState);
         EnsureResolved(greetState);
         EnsureResolved(drinkState);
@@ -138,8 +154,8 @@ public class NPCAmbientBrain : MonoBehaviour
             animator.SetFloat(_inputMagHash, speed01, 0.1f, Time.deltaTime);
         }
 
-        // Saludo reactivo simple
-        if (greetOnSight && !_greetOnCd && _player && PlayerInFOV(greetRadius))
+        // Saludo reactivo simple (no durante interacción)
+        if (!_isInteracting && greetOnSight && !_greetOnCd && _player && PlayerInFOV(greetRadius))
             StartCoroutine(CoGreet());
     }
 
@@ -158,6 +174,9 @@ public class NPCAmbientBrain : MonoBehaviour
         while (_running && isActiveAndEnabled)
         {
             yield return new WaitForSeconds(Random.Range(minIdleBeforeMove, maxIdleBeforeMove));
+
+            // Si está interactuando con el player, no planificar acciones nuevas
+            if (_isInteracting) { yield return null; continue; }
 
             if (Random.value < actionChance && TryPickAction(out var act))
                 yield return DoAction(act);
@@ -217,6 +236,8 @@ public class NPCAmbientBrain : MonoBehaviour
 
     IEnumerator DoAction(AmbientAction a)
     {
+        if (_isInteracting) yield break;
+
         // 1) Ir a un punto si aplica
         NPCActionPoint point = null;
         switch (a)
@@ -279,9 +300,51 @@ public class NPCAmbientBrain : MonoBehaviour
         GoLocomotion();
     }
 
-    // ======= Resolución de estados / reproducción segura =======
+    // ======= Interacción con jugador =======
+    public void BeginInteraction()
+    {
+        if (_isInteracting) return;
+        _isInteracting = true;
 
-    // Reproduce estado resolviendo hash y capa automáticamente
+        SafeStop(true);
+
+        if (rotateToPlayerOnInteract && _player)
+        {
+            if (_faceCo != null) StopCoroutine(_faceCo);
+            _faceCo = StartCoroutine(FaceTarget(_player));
+        }
+
+        if (!string.IsNullOrEmpty(interactPeople))
+            CrossFadeResolved(interactPeople, 0.1f);
+    }
+
+    public void EndInteraction()
+    {
+        if (!_isInteracting) return;
+        _isInteracting = false;
+
+        if (_faceCo != null) { StopCoroutine(_faceCo); _faceCo = null; }
+
+        GoLocomotion();
+    }
+
+    IEnumerator FaceTarget(Transform t)
+    {
+        var pivot = transform;
+        while (_isInteracting && t)
+        {
+            Vector3 dir = t.position - pivot.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                Quaternion q = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                pivot.rotation = Quaternion.Slerp(pivot.rotation, q, Time.deltaTime * rotateSpeed);
+            }
+            yield return null;
+        }
+    }
+
+    // ======= Resolución de estados / reproducción segura =======
     bool CrossFadeResolved(string stateNameOrPath, float fade)
     {
         if (!animator) return false;
@@ -293,19 +356,16 @@ public class NPCAmbientBrain : MonoBehaviour
         return true;
     }
 
-    // Cambia a locomoción con resolución robusta
     void GoLocomotion()
     {
         CrossFadeResolved(locomotionState, 0.1f);
     }
 
-    // Intenta resolver nombre/ruta → (hash, layer). Cachea. Devuelve true si existe.
     bool EnsureResolved(string nameOrPath)
     {
         if (string.IsNullOrEmpty(nameOrPath) || animator == null) return false;
         if (_stateHash.ContainsKey(nameOrPath)) return true;
 
-        // candidatos de ruta: tal cual, Base Layer.{n}, Base Layer.Locomotion.{n}
         string n = nameOrPath;
         string[] candidates = new string[] {
             n,
@@ -320,20 +380,20 @@ public class NPCAmbientBrain : MonoBehaviour
                 int h = Animator.StringToHash(cand);
                 if (animator.HasState(layer, h))
                 {
-                    _stateHash[nameOrPath] = h;
+                    _stateHash[nameOrPath]  = h;
                     _stateLayer[nameOrPath] = layer;
                     return true;
                 }
             }
         }
 
-        // último intento: si ya viene con "Base Layer." asumimos tal cual pero prueba en todas las capas
+        // intento directo por si ya viene con ruta completa
         int directHash = Animator.StringToHash(nameOrPath);
         for (int layer = 0; layer < animator.layerCount; layer++)
         {
             if (animator.HasState(layer, directHash))
             {
-                _stateHash[nameOrPath] = directHash;
+                _stateHash[nameOrPath]  = directHash;
                 _stateLayer[nameOrPath] = layer;
                 return true;
             }
