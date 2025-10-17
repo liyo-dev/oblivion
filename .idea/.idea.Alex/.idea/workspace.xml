@@ -6,22 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Art/Enemies/Imp Demon Cute Series/FBX/Imp Demon.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Art/Enemies/Imp Demon Cute Series/FBX/Imp Demon.controller" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/BootProfile/GameBootProfile.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/BootProfile/GameBootProfile.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Bold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-ExtraBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/EasyTransitions/Scripts/TransitionManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/EasyTransitions/Scripts/TransitionManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/PerformanceTestRunInfo.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/PerformanceTestRunInfo.json.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/PerformanceTestRunSettings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/PerformanceTestRunSettings.json.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/SceneTransitionLoader.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/SceneTransitionLoader.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Player/SO/PlayerPreset_Test.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/PauseMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/PauseMenuController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/GraphicsSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/GraphicsSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/UISelectVisual.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/UISelectVisual.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +49,6 @@
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/UnlockService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Quests/QuestPersistenceBridge.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Shaders/BarrierScanURP.shader" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/UI/MainMenuController.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PauseMenuController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/PlayerHUDComplete.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI/UISelectVisual.cs" root0="FORCE_HIGHLIGHTING" />
