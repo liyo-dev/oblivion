@@ -14,7 +14,7 @@ public class PlayerPresetSO : ScriptableObject
     public float maxMP = 50,  currentMP = 50;
 
     [Header("Desbloqueos")]
-    public List<AbilityId> unlockedAbilities = new();
+    [HideInInspector] public List<AbilityId> unlockedAbilities = new();
     public List<SpellId>   unlockedSpells    = new();
 
     [Header("Slots de hechizo (por ID)")]
@@ -25,14 +25,7 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Flags (misiones/estados simples)")]
     public List<string> flags = new();
 
-    [System.Serializable]
-    public class PlayerAbilitiesPreset
-    {
-        [Tooltip("Permite nadar (Swimming)")] public bool swim = false;
-        [Tooltip("Permite saltar")] public bool jump = false;
-        [Tooltip("Permite trepar / escalar")] public bool climb = false;
-    }
-
+    // Usar la clase separada PlayerAbilities para evitar problemas de resolución entre archivos
     [Header("Abilities (Swim, Jump, Climb)")]
-    public PlayerAbilitiesPreset abilities = new PlayerAbilitiesPreset();
+    public PlayerAbilities abilities = new PlayerAbilities();
 }

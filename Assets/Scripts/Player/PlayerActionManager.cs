@@ -45,17 +45,37 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private bool _allowSwim = true;     // nadar
     private bool _allowJump = true;     // saltar
     private bool _allowClimb = true;    // trepar
+    private bool _allowMagic = true;    // lanzar magia
 
     // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos
-    public void ApplyAbilities(PlayerPresetSO.PlayerAbilitiesPreset abilities)
+    public void ApplyAbilities(PlayerAbilities abilities)
     {
         if (abilities == null) return;
         // _allowPhysical = abilities.physical;
         _allowSwim = abilities.swim;
         _allowJump = abilities.jump;
         _allowClimb = abilities.climb;
+        // 'magic' read with reflection as fallback (some analyzers/assemblies may not resolve the member)
+        try
+        {
+            var t = abilities.GetType();
+            var f = t.GetField("magic");
+            if (f != null && f.FieldType == typeof(bool))
+            {
+                _allowMagic = (bool)f.GetValue(abilities);
+            }
+            else
+            {
+                // por compatibilidad, mantener true si no existe
+                _allowMagic = true;
+            }
+        }
+        catch
+        {
+            _allowMagic = true;
+        }
 
-        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb}");
+        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Magic={_allowMagic}");
     }
 
     // Opcional: getters públicos si otros sistemas necesitan consultarlos
@@ -63,6 +83,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool AllowSwim => _allowSwim;
     public bool AllowJump => _allowJump;
     public bool AllowClimb => _allowClimb;
+    public bool AllowMagic => _allowMagic;
 
     public event Action<ActionMode> OnTopModeChanged;
 
@@ -174,6 +195,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                 if (!_allowJump)
                 {
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump deshabilitado por preset");
+                    return false;
+                }
+                break;
+            case PlayerAbility.Magic:
+                if (!_allowMagic)
+                {
+                    if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Magic deshabilitado por preset");
                     return false;
                 }
                 break;

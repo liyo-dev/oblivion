@@ -5,49 +5,45 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class NPCSimpleAnimator : MonoBehaviour
 {
-    [Header("Animator (sin transiciones, por código)")]
+    [Header("Animator")]
     [SerializeField] private Animator animator;
-    [SerializeField] private string idleState     = "Idle_Normal_NoWeapon";
+
+    [Tooltip("Nombre EXACTO del estado (Blend Tree) de locomoción en la capa Base.")]
+    [SerializeField] private string locomotionState = "Free Locomotion";
+
     [SerializeField] private string greetState    = "Greeting01_NoWeapon";
     [SerializeField] private string interactState = "InteractWithPeople_NoWeapon";
 
     [Header("Saludo automático")]
     [SerializeField] private bool greetOnSight = true;
     [SerializeField] private float greetRadius = 3.0f;
-
-    [Tooltip("Ángulo de FOV del NPC (solo saluda si el player está delante).")]
     [Range(1f, 180f)] [SerializeField] private float fovDegrees = 110f;
-
-    [Tooltip("Requiere que el jugador/cámara esté mirando al NPC para saludar.")]
     [SerializeField] private bool requirePlayerLookingAtMe = true;
-
-    [Range(0.0f, 1.0f)]
-    [SerializeField] private float playerLookDotThreshold = 0.6f;
-
+    [Range(0f, 1f)] [SerializeField] private float playerLookDotThreshold = 0.6f;
     [SerializeField] private float greetCooldown = 4.0f;
-    [SerializeField] private LayerMask occluders = ~0; // para raycast opcional
+    [SerializeField] private LayerMask occluders = ~0;
 
     [Header("Rotación al interactuar")]
     [SerializeField] private bool rotateToPlayerOnInteract = true;
-    [SerializeField] private float rotateSpeed = 10f; // grados/seg aprox (lerp suave)
+    [SerializeField] private float rotateSpeed = 10f;
 
     [Header("Referencias")]
     [SerializeField] private Transform playerOverride; // opcional
-    [SerializeField] private Transform lookFrom;       // origen para mirar (si null, transform)
-
-    [Header("Integración mundo vivo (opcional)")]
-    [Tooltip("Si existe, bloqueará el AmbientAgent durante la interacción para que no pise animaciones.")]
+    [SerializeField] private Transform lookFrom;       // si null, transform
     [SerializeField] private AmbientInhibitor ambientInhibitor; // opcional
 
     [Header("Depuración")]
     [SerializeField] private bool drawGizmos = true;
 
-    // estado
+    // Estado interno
     bool isInteracting = false;
     bool greetOnCooldown = false;
     Transform player, playerCam;
     Coroutine faceCo;
     readonly Dictionary<string, float> clipLenCache = new();
+
+    // Parámetros (hash)
+    static readonly int InputMagnitude_Hash = Animator.StringToHash("InputMagnitude");
 
     void Reset()
     {
@@ -58,12 +54,12 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     void Awake()
     {
-        if (!animator) animator = GetComponentInChildren<Animator>();
+        if (!animator) animator = GetComponentInChildren<Animator>(true);
         if (!lookFrom) lookFrom = transform;
         if (!ambientInhibitor) ambientInhibitor = GetComponent<AmbientInhibitor>();
         CacheClipLengths();
 
-        // Player y cámara
+        // Player/cámara
         if (playerOverride) player = playerOverride;
         else
         {
@@ -72,46 +68,51 @@ public class NPCSimpleAnimator : MonoBehaviour
         }
         if (Camera.main) playerCam = Camera.main.transform;
 
-        // Enganche automático a Interactable (sin tocar su script)
+        // Enlazar con Interactable si existe (no modifica tu script)
         var interactable = GetComponent<Interactable>();
         if (interactable)
         {
             interactable.OnStarted.AddListener(BeginInteraction);
             interactable.OnFinished.AddListener(EndInteraction);
         }
+
+        // Locomoción controlada por Agent (no root-motion)
+        if (animator) animator.applyRootMotion = false;
     }
 
     void Start()
     {
-        PlayState(idleState);
+        // Entra al Blend Tree de locomoción desde el inicio
+        PlayLocomotion();
+        if (animator) animator.SetFloat(InputMagnitude_Hash, 0f);
     }
 
     void Update()
     {
         if (!greetOnSight || isInteracting || !player) return;
 
-        Vector3 toPlayer = (player.position - lookFrom.position);
+        Vector3 from = (lookFrom ? lookFrom.position : transform.position);
+        Vector3 toPlayer = player.position - from;
         float dist = toPlayer.magnitude;
         if (dist > greetRadius) return;
 
-        // FOV: ¿está delante del NPC?
-        Vector3 forward = lookFrom.forward;
+        // FOV
+        Vector3 forward = (lookFrom ? lookFrom.forward : transform.forward);
         Vector3 dir = toPlayer.normalized;
         float dot = Vector3.Dot(forward, dir);
         float fovDot = Mathf.Cos(0.5f * fovDegrees * Mathf.Deg2Rad);
-        if (dot < fovDot) return; // fuera del cono → no saluda
+        if (dot < fovDot) return;
 
         // ¿El jugador/cámara me mira?
-        if (requirePlayerLookingAtMe)
+        if (requirePlayerLookingAtMe && playerCam)
         {
-            Vector3 toNpc = (lookFrom.position - (playerCam ? playerCam.position : player.position)).normalized;
-            Vector3 lookForward = (playerCam ? playerCam.forward : player.forward);
-            float lookDot = Vector3.Dot(lookForward, toNpc);
+            Vector3 toNpc = (from - playerCam.position).normalized;
+            float lookDot = Vector3.Dot(playerCam.forward, toNpc);
             if (lookDot < playerLookDotThreshold) return;
         }
 
-        // Línea de visión básica (evita paredes)
-        if (Physics.Raycast(lookFrom.position + Vector3.up * 1.6f, dir, out var hit, greetRadius, occluders))
+        // Línea de visión (evita paredes entre medias)
+        if (Physics.Raycast(from + Vector3.up * 1.6f, dir, out var hit, greetRadius, occluders))
         {
             if (hit.transform != player && !hit.transform.IsChildOf(player)) return;
         }
@@ -119,19 +120,19 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!greetOnCooldown) StartCoroutine(DoGreeting());
     }
 
-    // ==== Interacción (vienen del Interactable vía listeners) ====
+    // ===== Interacción =====
     public void BeginInteraction()
     {
         if (isInteracting) return;
         isInteracting = true;
 
-        // Bloquea el mundo vivo si existe
         ambientInhibitor?.Lock();
 
         StopFacing();
-        if (rotateToPlayerOnInteract && player) faceCo = StartCoroutine(FaceTarget(player));
+        if (rotateToPlayerOnInteract && player)
+            faceCo = StartCoroutine(FaceTarget(player));
 
-        PlayState(interactState);
+        CrossFade(interactState, 0.1f);
     }
 
     public void EndInteraction()
@@ -140,23 +141,23 @@ public class NPCSimpleAnimator : MonoBehaviour
         isInteracting = false;
 
         StopFacing();
-        PlayState(idleState);
+        PlayLocomotion();
 
-        // Libera el bloqueo del mundo vivo
         ambientInhibitor?.Unlock();
     }
 
     IEnumerator FaceTarget(Transform t)
     {
-        if (!t) yield break;
-        while (isInteracting)
+        while (isInteracting && t)
         {
-            Vector3 dir = (t.position - lookFrom.position);
+            Vector3 from = (lookFrom ? lookFrom.position : transform.position);
+            Vector3 dir = t.position - from;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f)
             {
                 Quaternion target = Quaternion.LookRotation(dir.normalized, Vector3.up);
-                lookFrom.rotation = Quaternion.Slerp(lookFrom.rotation, target, Time.deltaTime * rotateSpeed);
+                var rotXform = (lookFrom ? lookFrom : transform);
+                rotXform.rotation = Quaternion.Slerp(rotXform.rotation, target, Time.deltaTime * rotateSpeed);
             }
             yield return null;
         }
@@ -164,44 +165,36 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     void StopFacing()
     {
-        if (faceCo != null)
-        {
-            StopCoroutine(faceCo);
-            faceCo = null;
-        }
+        if (faceCo != null) { StopCoroutine(faceCo); faceCo = null; }
     }
 
-    // ==== Saludo ====
+    // ===== Saludo =====
     IEnumerator DoGreeting()
     {
         greetOnCooldown = true;
 
-        PlayState(greetState);
+        CrossFade(greetState, 0.08f);
         float len = GetClipLengthSafe(greetState);
-        if (len <= 0f) len = 1.0f;
+        yield return new WaitForSeconds(len > 0f ? len : 1f);
 
-        yield return new WaitForSeconds(len);
-        if (!isInteracting) PlayState(idleState);
+        if (!isInteracting) PlayLocomotion();
 
         yield return new WaitForSeconds(greetCooldown);
         greetOnCooldown = false;
     }
 
-    // ==== Utilidades públicas extra ====
-    /// <summary>Permite fijar/actualizar el player desde fuera si cambias de avatar.</summary>
+    // ===== Utilidades públicas =====
     public void SetPlayer(Transform newPlayer, Transform newPlayerCam = null)
     {
         player = newPlayer;
         playerCam = newPlayerCam ? newPlayerCam : (Camera.main ? Camera.main.transform : playerCam);
     }
 
-    /// <summary>Dispara manualmente el saludo aunque no cumpla condiciones de Update.</summary>
     public void TriggerGreeting()
     {
         if (!greetOnCooldown && !isInteracting) StartCoroutine(DoGreeting());
     }
 
-    /// <summary>Reproduce un estado puntual por nombre y vuelve a idle.</summary>
     public void PlayOneShot(string stateName)
     {
         StartCoroutine(CoPlayOneShot(stateName));
@@ -209,17 +202,23 @@ public class NPCSimpleAnimator : MonoBehaviour
     IEnumerator CoPlayOneShot(string stateName)
     {
         if (string.IsNullOrEmpty(stateName)) yield break;
-        PlayState(stateName);
+        CrossFade(stateName, 0.08f);
         float len = GetClipLengthSafe(stateName);
         yield return new WaitForSeconds(len > 0f ? len : 1f);
-        if (!isInteracting) PlayState(idleState);
+        if (!isInteracting) PlayLocomotion();
     }
 
-    // ==== Animación util ====
-    void PlayState(string stateName)
+    // ===== Helpers de anim =====
+    void PlayLocomotion()
+    {
+        if (!animator || string.IsNullOrEmpty(locomotionState)) return;
+        animator.CrossFadeInFixedTime(locomotionState, 0.1f, 0, 0f);
+    }
+
+    void CrossFade(string stateName, float fade)
     {
         if (!animator || string.IsNullOrEmpty(stateName)) return;
-        animator.Play(stateName, 0, 0f);
+        animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
     }
 
     void CacheClipLengths()
@@ -242,17 +241,15 @@ public class NPCSimpleAnimator : MonoBehaviour
         return 0f;
     }
 
-    // ==== Gizmos ====
     void OnDrawGizmosSelected()
     {
         if (!drawGizmos) return;
-        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
-        Gizmos.DrawSphere((lookFrom ? lookFrom.position : transform.position), greetRadius);
-
-        // FOV
         Vector3 pos = (lookFrom ? lookFrom.position : transform.position);
-        Vector3 fwd = (lookFrom ? lookFrom.forward : transform.forward);
+        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
+        Gizmos.DrawSphere(pos, greetRadius);
+
         float half = 0.5f * fovDegrees * Mathf.Deg2Rad;
+        Vector3 fwd = (lookFrom ? lookFrom.forward : transform.forward);
         Vector3 left = Quaternion.Euler(0, -Mathf.Rad2Deg * half, 0) * fwd;
         Vector3 right = Quaternion.Euler(0,  Mathf.Rad2Deg * half, 0) * fwd;
         Gizmos.color = new Color(1f, 0.9f, 0.2f, 0.9f);

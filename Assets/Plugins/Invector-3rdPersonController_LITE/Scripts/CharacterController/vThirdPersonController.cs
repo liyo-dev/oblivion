@@ -62,6 +62,11 @@ namespace Invector.vCharacterController
         /// </summary>
         private IActionValidator _actionValidator;
 
+        // Referencia a IMagicCaster (más robusta que la reflexión)
+        private IMagicCaster _magicCasterInterface;
+        // TEMPORAL: Sistema directo mientras Unity recompila las interfaces
+        private MonoBehaviour _magicCasterMB; // Referencia temporal como MonoBehaviour (fallback)
+
         // ========================= Motor base =========================
         public virtual void ControlAnimatorRootMotion()
         {
@@ -208,8 +213,6 @@ namespace Invector.vCharacterController
         // ======== MAGIA (Left / Right / Special) ========
 
         private Coroutine magicCo;
-        // TEMPORAL: Sistema directo mientras Unity recompila las interfaces
-        private MonoBehaviour _magicCasterMB; // Referencia temporal como MonoBehaviour
 
         // Input → X/B/Y
         public void CastMagicLeft()    => TryCastMagic(magicLeftStatePath, 0);
@@ -224,9 +227,13 @@ namespace Invector.vCharacterController
 
             // TEMPORAL: Buscar MagicCaster por nombre de componente
             bool canCast = false;
-            if (_magicCasterMB != null)
+            if (_magicCasterInterface != null)
             {
-                // Usar reflexión para llamar TryCastSpell
+                canCast = _magicCasterInterface.TryCastSpell(slotId);
+            }
+            else if (_magicCasterMB != null)
+            {
+                // Usar reflexión para llamar TryCastSpell como fallback
                 var method = _magicCasterMB.GetType().GetMethod("TryCastSpell", new[] { typeof(int) });
                 if (method != null)
                 {
@@ -310,21 +317,16 @@ namespace Invector.vCharacterController
             _actionValidator = GetComponent<IActionValidator>();
 
             // TEMPORAL: Buscar MagicCaster por nombre de componente
-            var allComponents = GetComponents<MonoBehaviour>();
-            foreach (var comp in allComponents)
-            {
-                if (comp.GetType().Name == "MagicCaster")
-                {
-                    _magicCasterMB = comp;
-                    break;
-                }
-            }
+            // Intentar obtener una referencia por la interfaz IMagicCaster (más robusto)
+            _magicCasterInterface = GetComponent<IMagicCaster>();
+            if (_magicCasterInterface == null)
+                _magicCasterInterface = GetComponentInParent<IMagicCaster>();
 
-            // También buscar en el parent
-            if (_magicCasterMB == null)
+            // Si no hay interfaz, mantener el fallback de buscar MonoBehaviour por nombre
+            if (_magicCasterInterface == null)
             {
-                var parentComponents = GetComponentsInParent<MonoBehaviour>();
-                foreach (var comp in parentComponents)
+                var allComponents = GetComponents<MonoBehaviour>();
+                foreach (var comp in allComponents)
                 {
                     if (comp.GetType().Name == "MagicCaster")
                     {
@@ -332,7 +334,23 @@ namespace Invector.vCharacterController
                         break;
                     }
                 }
+
+                if (_magicCasterMB == null)
+                {
+                    var parentComponents = GetComponentsInParent<MonoBehaviour>();
+                    foreach (var comp in parentComponents)
+                    {
+                        if (comp.GetType().Name == "MagicCaster")
+                        {
+                            _magicCasterMB = comp;
+                            break;
+                        }
+                    }
+                }
             }
+
+            // Log diagnóstico para ayudar a verificar en consola si el controller encontró el caster
+            Debug.Log($"[vThirdPersonController] MagicCaster detected -> interface={( _magicCasterInterface != null ? "yes" : "no" )}, mb={( _magicCasterMB != null ? _magicCasterMB.GetType().Name : "no" )}");
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;
@@ -352,4 +370,3 @@ namespace Invector.vCharacterController
         }
     }
 }
-

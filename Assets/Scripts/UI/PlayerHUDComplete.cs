@@ -58,6 +58,26 @@ public class PlayerHUDComplete : MonoBehaviour
     private ManaPool _manaPool;
     private MagicCaster _magicCaster;
 
+    // Manejador para recibir updates inmediatos de maná
+    private void OnManaChangedListener(float percent)
+    {
+        if (_manaSlider)
+        {
+            // Snap inmediato
+            _manaSlider.value = percent;
+            _manaSlider.gameObject.SetActive(true);
+        }
+        if (_manaText)
+        {
+            _manaText.gameObject.SetActive(true);
+            _manaText.text = _manaPool != null ? $"{_manaPool.Current:0}/{_manaPool.Max:0}" : "0/0";
+        }
+        if (_manaFill)
+        {
+            _manaFill.color = (_manaPool != null && _manaPool.Max > 0f) ? manaColor : noManaColor;
+        }
+    }
+
     // UI Elements - Stats
     private Canvas _canvas;
     private GameObject _statsPanel;
@@ -108,6 +128,10 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         FindPlayerComponents();
+
+        // Garantizar actualización del HUD cuando el preset se aplique (p.ej. GameBootService llega después)
+        PlayerPresetService.OnPresetApplied -= ForceRefresh;
+        PlayerPresetService.OnPresetApplied += ForceRefresh;
     }
 
     void Start()
@@ -642,15 +666,37 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         // Maná (con guardia de división)
+        // Ocultar la UI de maná si el preset indica que el jugador NO tiene magia
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset != null && preset.abilities != null && !preset.abilities.magic)
+        {
+            // Mostrar la barra pero con valores 0/0 para indicar que no hay magia
+            if (_manaSlider)
+            {
+                _manaSlider.gameObject.SetActive(true);
+                _manaSlider.value = 0f;
+            }
+            if (_manaText)
+            {
+                _manaText.gameObject.SetActive(true);
+                _manaText.text = "0/0";
+            }
+            if (_manaFill) _manaFill.color = noManaColor;
+
+            return;
+        }
+
         if (_manaPool && _manaSlider && _manaText)
         {
             float denom = Mathf.Max(0.0001f, _manaPool.Max);
             float manaPercent = _manaPool.Current / denom;
+            _manaSlider.gameObject.SetActive(true);
+            _manaText.gameObject.SetActive(true);
             _manaSlider.value = Mathf.Lerp(_manaSlider.value, manaPercent, Time.deltaTime * 8f);
             _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
         }
     }
-    
+
     public void ForceRefresh()
     {
         // Re-resolver referencias por si no estuvieran aún
@@ -667,11 +713,32 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         // Maná (snap inmediato)
-        if (_manaPool && _manaSlider && _manaText)
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset != null && preset.abilities != null && !preset.abilities.magic)
         {
-            float mp = _manaPool.Max > 0f ? _manaPool.Current / _manaPool.Max : 0f;
-            _manaSlider.value = mp;
-            _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+            // Mostrar la barra pero como 0/0 para indicar ausencia de magia
+            if (_manaSlider)
+            {
+                _manaSlider.gameObject.SetActive(true);
+                _manaSlider.value = 0f;
+            }
+            if (_manaText)
+            {
+                _manaText.gameObject.SetActive(true);
+                _manaText.text = "0/0";
+            }
+            if (_manaFill) _manaFill.color = noManaColor;
+        }
+        else
+        {
+            if (_manaPool && _manaSlider && _manaText)
+            {
+                float mp = _manaPool.Max > 0f ? _manaPool.Current / _manaPool.Max : 0f;
+                _manaSlider.gameObject.SetActive(true);
+                _manaText.gameObject.SetActive(true);
+                _manaSlider.value = mp;
+                _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+            }
         }
     }
 
@@ -815,6 +882,14 @@ public class PlayerHUDComplete : MonoBehaviour
         if (!_healthSystem) _healthSystem = GetComponent<PlayerHealthSystem>() ?? GetComponentInParent<PlayerHealthSystem>();
         if (!_manaPool) _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
         if (!_magicCaster) _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
+
+        // Suscribir al evento de cambios de maná para que la UI se actualice inmediatamente
+        if (_manaPool != null)
+        {
+            // Evitar múltiples suscripciones
+            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
+            _manaPool.OnManaChanged.AddListener(OnManaChangedListener);
+        }
     }
 
     private IEnumerator FindComponentsDelayed()
@@ -828,6 +903,13 @@ public class PlayerHUDComplete : MonoBehaviour
         if (showDebugInfo)
         {
             Debug.Log($"[PlayerHUDComplete] Componentes encontrados - Health:{_healthSystem != null} Mana:{_manaPool != null} Caster:{_magicCaster != null}");
+        }
+
+        // Suscribir al evento de cambios de maná si lo encontramos ahora
+        if (_manaPool != null)
+        {
+            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
+            _manaPool.OnManaChanged.AddListener(OnManaChangedListener);
         }
 
         // Una vez encontrados, forzar refresco para que el HUD muestre valores en build
@@ -941,9 +1023,19 @@ public class PlayerHUDComplete : MonoBehaviour
     {
         // Si el root fue asignado desde el Editor (editorRootPanel != null), no lo destruimos.
         if (_createdCanvas && _canvas) DestroyImmediate(_canvas.gameObject);
-        if (_rootPanel != null && editorRootPanel == null)
+         if (_rootPanel != null && editorRootPanel == null)
+         {
+             DestroyImmediate(_rootPanel);
+         }
+
+        // Limpiar suscripción de maná
+        if (_manaPool != null)
         {
-            DestroyImmediate(_rootPanel);
+            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
         }
+
+        // Limpiar suscripción al preset
+        PlayerPresetService.OnPresetApplied -= ForceRefresh;
     }
+
 }

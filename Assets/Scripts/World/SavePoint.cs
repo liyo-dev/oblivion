@@ -103,7 +103,16 @@ public class SavePoint : MonoBehaviour
             var manaPool = playerGo.GetComponent<ManaPool>() ?? playerGo.GetComponentInParent<ManaPool>();
             if (manaPool != null)
             {
-                manaPool.Init(manaPool.Max, manaPool.Max);
+                // No rellenar maná si el preset actual indica que el jugador no tiene magia
+                var preset = GameBootService.Profile?.GetActivePresetResolved();
+                if (preset != null && preset.abilities != null && !preset.abilities.magic)
+                {
+                    Debug.Log("[SavePoint] Preset sin magia detectado; no se rellenará el ManaPool");
+                }
+                else
+                {
+                    manaPool.Init(manaPool.Max, manaPool.Max);
+                }
             }
         }
 

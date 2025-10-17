@@ -195,13 +195,23 @@ public class PlayerAbilitiesUI : MonoBehaviour
         // Actualizar maná
         if (manaText != null)
         {
-            if (_manaPool != null)
+            // Ocultar el contador de maná si el preset indica que el jugador NO tiene la ability de magia
+            if (preset.abilities != null && !preset.abilities.magic)
             {
-                manaText.text = $"Maná: {_manaPool.Current:0}/{_manaPool.Max:0}";
+                manaText.gameObject.SetActive(false);
             }
             else
             {
-                manaText.text = $"Maná: {preset.currentMP:0}/{preset.maxMP:0}";
+                // Mostrar/actualizar el texto de maná según el ManaPool si existe, o según el preset
+                manaText.gameObject.SetActive(true);
+                if (_manaPool != null)
+                {
+                    manaText.text = $"Maná: {_manaPool.Current:0}/{_manaPool.Max:0}";
+                }
+                else
+                {
+                    manaText.text = $"Maná: {preset.currentMP:0}/{preset.maxMP:0}";
+                }
             }
         }
     }

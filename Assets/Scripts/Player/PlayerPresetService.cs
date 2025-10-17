@@ -21,8 +21,16 @@ public class PlayerPresetService : MonoBehaviour
 
     void Awake()
     {
-        _spawner = GetComponent<MagicProjectileSpawner>() ?? gameObject.AddComponent<MagicProjectileSpawner>();
-        _magicCaster = GetComponent<MagicCaster>();
+        // Buscar spawner y magicCaster también en los padres del GameObject.
+        // Esto evita crear un MagicProjectileSpawner LOCAL cuando ya existe uno en el root del jugador.
+        _spawner = GetComponent<MagicProjectileSpawner>() ?? GetComponentInParent<MagicProjectileSpawner>();
+        if (_spawner == null)
+        {
+            // Como último recurso, añadimos uno local (solo si realmente no existe en la jerarquía)
+            _spawner = gameObject.AddComponent<MagicProjectileSpawner>();
+        }
+
+        _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
         _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>(); // ← NUEVO: obtener ManaPool
         _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>(); // ← NUEVO: obtener PlayerActionManager
     }
@@ -55,12 +63,19 @@ public class PlayerPresetService : MonoBehaviour
     {
         var profile = GameBootService.Profile;
         
-        if (!profile || !spellLibrary) 
-        { 
-            enabled = false; 
-            Debug.LogError("[PlayerPresetService] Falta GameBootProfile o SpellLibrary."); 
-            return; 
+        if (!profile)
+        {
+            enabled = false;
+            Debug.LogError("[PlayerPresetService] Falta GameBootProfile.");
+            return;
         }
+        if (!spellLibrary)
+        {
+            Debug.LogWarning("[PlayerPresetService] SpellLibrary no asignada en el inspector — algunas funcionalidades (resolución de SpellId) no estarán disponibles.");
+        }
+
+        // Log diagnóstico: comprobar qué componentes hemos encontrado para evitar configuraciones en el objeto equivocado
+        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}");
 
         var preset = profile.GetActivePresetResolved();
         if (!preset) 
@@ -94,11 +109,15 @@ public class PlayerPresetService : MonoBehaviour
         {
             _actionManager.ApplyAbilities(preset.abilities);
             Debug.Log("[PlayerPresetService] Abilities del preset aplicadas al PlayerActionManager");
+            Debug.Log($"[PlayerPresetService] PlayerActionManager.AllowMagic = {_actionManager.AllowMagic}");
         }
         else if (_actionManager == null)
         {
             Debug.LogWarning("[PlayerPresetService] No se encontró PlayerActionManager para aplicar abilities del preset");
         }
+
+        // Notificar a subscriptores (HUD, UI u otros) que el preset ha sido aplicado
+        OnPresetApplied?.Invoke();
     }
 
     // === NUEVO: Aplica valores de maná desde el preset al ManaPool del jugador ===
@@ -107,7 +126,17 @@ public class PlayerPresetService : MonoBehaviour
         if (!preset) return;
         if (_manaPool == null)
         {
-            _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
+            // Intentar obtener el ManaPool del jugador (preferente) para evitar apuntar a otras instancias en escena
+            var playerGO = GameObject.FindGameObjectWithTag("Player");
+            if (playerGO != null)
+            {
+                _manaPool = playerGO.GetComponentInChildren<ManaPool>() ?? playerGO.GetComponent<ManaPool>();
+            }
+            // Si no se encontró en el Player, seguir con la lógica previa
+            if (_manaPool == null)
+            {
+                _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
+            }
 #if UNITY_2022_3_OR_NEWER
             if (_manaPool == null) _manaPool = FindFirstObjectByType<ManaPool>(FindObjectsInactive.Include);
 #else
@@ -118,7 +147,62 @@ public class PlayerPresetService : MonoBehaviour
         }
         if (_manaPool != null)
         {
-            _manaPool.Init(preset.maxMP, preset.currentMP);
+            Debug.Log($"[PlayerPresetService] Using ManaPool on GameObject: {_manaPool.gameObject.name}");
+        }
+        if (_manaPool != null)
+        {
+            // Si el preset NO tiene la ability de magia, no queremos mostrar una barra de maná llena.
+            if (preset.abilities != null && !preset.abilities.magic)
+            {
+                _manaPool.Init(0f, 0f);
+                Debug.Log("[PlayerPresetService] Preset indica que no tiene magia -> maxMP y currentMP seteados a 0");
+                return;
+            }
+
+            // Si el preset explícitamente no define maná, intentar inferir un valor mínimo a partir
+            // de los hechizos asignados o desbloqueados para evitar que el jugador tenga 0 MP y no pueda lanzar.
+            float maxMP = Mathf.Max(0f, preset.maxMP);
+            float currentMP = Mathf.Clamp(preset.currentMP, 0f, maxMP > 0f ? maxMP : float.MaxValue);
+
+            if (maxMP <= 0f)
+            {
+                float highestCost = 0f;
+                // Revisar slots asignados
+                SpellId[] slotIds = new[] { preset.leftSpellId, preset.rightSpellId, preset.specialSpellId };
+                foreach (var id in slotIds)
+                {
+                    if (id == SpellId.None) continue;
+                    var s = spellLibrary != null ? spellLibrary.Get(id) : null;
+                    if (s != null) highestCost = Mathf.Max(highestCost, s.manaCost);
+                }
+                // Revisar desbloqueados
+                if (preset.unlockedSpells != null && spellLibrary != null)
+                {
+                    foreach (var id in preset.unlockedSpells)
+                    {
+                        if (id == SpellId.None) continue;
+                        var s = spellLibrary.Get(id);
+                        if (s != null) highestCost = Mathf.Max(highestCost, s.manaCost);
+                    }
+                }
+
+                if (highestCost > 0f)
+                {
+                    // Dar suficiente maná para lanzar al menos 1-2 veces el hechizo más caro
+                    maxMP = Mathf.Max(20f, highestCost * 2f);
+                    currentMP = Mathf.Max(currentMP, maxMP);
+                    Debug.Log($"[PlayerPresetService] Preset maxMP was 0 — inferred maxMP={maxMP} from highest spell cost {highestCost}");
+                }
+                else
+                {
+                    // Fallback genérico si no hay hechizos conocidos
+                    maxMP = 50f;
+                    if (currentMP <= 0f) currentMP = maxMP;
+                    Debug.Log("[PlayerPresetService] Preset maxMP was 0 and no spells found; using default maxMP=50");
+                }
+            }
+
+            _manaPool.Init(maxMP, currentMP);
         }
         else
         {
@@ -175,8 +259,11 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         // Aplicar configuración al spawner
-        _spawner.SetSpells(left, right, special);
-        _spawner.SetInstigator(instigatorOverride ? instigatorOverride : gameObject);
+        if (_spawner != null)
+        {
+            _spawner.SetSpells(left, right, special);
+            _spawner.SetInstigator(instigatorOverride ? instigatorOverride : gameObject);
+        }
 
         // ← NUEVO: Aplicar configuración al MagicCaster también
         if (_magicCaster)
