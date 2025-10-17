@@ -57,6 +57,8 @@ public class PlayerHUDComplete : MonoBehaviour
     private PlayerHealthSystem _healthSystem;
     private ManaPool _manaPool;
     private MagicCaster _magicCaster;
+    private PlayerActionManager _actionManager;
+    private PlayerAbilities _playerAbilities;
 
     // Manejador para recibir updates inmediatos de maná
     private void OnManaChangedListener(float percent)
@@ -75,7 +77,9 @@ public class PlayerHUDComplete : MonoBehaviour
         }
         if (_manaFill)
         {
-            _manaFill.color = (_manaPool != null && _manaPool.Max > 0f) ? manaColor : noManaColor;
+            // Si el jugador NO tiene la ability de magia, mostrar color de no-mana
+            if (!HasMagicAbility()) _manaFill.color = noManaColor;
+            else _manaFill.color = (_manaPool != null && _manaPool.Max > 0f) ? manaColor : noManaColor;
         }
     }
 
@@ -129,6 +133,23 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         FindPlayerComponents();
+
+        // Inicializar la UI de maná a un estado seguro (0/0, color no-mana) para evitar que se muestre el valor serializado
+        // (por ejemplo 50/50) antes de que el preset/PlayerPresetService aplique los valores apropiados.
+        if (_manaSlider != null)
+        {
+            _manaSlider.gameObject.SetActive(true);
+            _manaSlider.value = 0f;
+        }
+        if (_manaText != null)
+        {
+            _manaText.gameObject.SetActive(true);
+            _manaText.text = "0/0";
+        }
+        if (_manaFill != null)
+        {
+            _manaFill.color = noManaColor;
+        }
 
         // Garantizar actualización del HUD cuando el preset se aplique (p.ej. GameBootService llega después)
         PlayerPresetService.OnPresetApplied -= ForceRefresh;
@@ -218,8 +239,6 @@ public class PlayerHUDComplete : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         if (showDebugInfo) Debug.Log("[PlayerHUDComplete] HUD creado y Canvas actualizado.");
      }
-
-    #region Integrated HUD (Todo en un panel)
 
     private GameObject  CreateIntegratedHUD()
     {
@@ -319,6 +338,8 @@ public class PlayerHUDComplete : MonoBehaviour
         bgRect.offsetMin = Vector2.zero;
         bgRect.offsetMax = Vector2.zero;
         var bgImage = bgGO.AddComponent<Image>();
+        bgImage.sprite = CreateDefaultSpellIcon();
+        bgImage.type = Image.Type.Sliced;
         bgImage.color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
         bgImage.raycastTarget = false;
         _healthSlider.targetGraphic = bgImage;
@@ -340,6 +361,8 @@ public class PlayerHUDComplete : MonoBehaviour
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
         _healthFill = fillGO.AddComponent<Image>();
+        _healthFill.sprite = CreateDefaultSpellIcon();
+        _healthFill.type = Image.Type.Sliced;
         _healthFill.color = healthColorHigh;
         _healthFill.raycastTarget = false;
         _healthSlider.fillRect = fillRect;
@@ -418,6 +441,8 @@ public class PlayerHUDComplete : MonoBehaviour
         bgRect.offsetMin = Vector2.zero;
         bgRect.offsetMax = Vector2.zero;
         var bgImage = bgGO.AddComponent<Image>();
+        bgImage.sprite = CreateDefaultSpellIcon();
+        bgImage.type = Image.Type.Sliced;
         bgImage.color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
         bgImage.raycastTarget = false;
         _manaSlider.targetGraphic = bgImage;
@@ -439,6 +464,8 @@ public class PlayerHUDComplete : MonoBehaviour
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
         _manaFill = fillGO.AddComponent<Image>();
+        _manaFill.sprite = CreateDefaultSpellIcon();
+        _manaFill.type = Image.Type.Sliced;
         _manaFill.color = manaColor;
         _manaFill.raycastTarget = false;
         _manaSlider.fillRect = fillRect;
@@ -674,11 +701,9 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         // Maná (con guardia de división)
-        // Ocultar la UI de maná si el preset indica que el jugador NO tiene magia
-        var preset = GameBootService.Profile?.GetActivePresetResolved();
-        if (preset != null && preset.abilities != null && !preset.abilities.magic)
+        // Si el jugador NO tiene la ability de magia (detectada por varias fuentes), mostrar 0/0 y color noManaColor
+        if (!HasMagicAbility())
         {
-            // Mostrar la barra pero con valores 0/0 para indicar que no hay magia
             if (_manaSlider)
             {
                 _manaSlider.gameObject.SetActive(true);
@@ -690,7 +715,6 @@ public class PlayerHUDComplete : MonoBehaviour
                 _manaText.text = "0/0";
             }
             if (_manaFill) _manaFill.color = noManaColor;
-
             return;
         }
 
@@ -727,11 +751,17 @@ public class PlayerHUDComplete : MonoBehaviour
     {
         Debug.Log("[PlayerHUDComplete] ForceRefresh called");
         var presetDbg = GameBootService.Profile?.GetActivePresetResolved();
-        Debug.Log($"[PlayerHUDComplete] preset abilities.magic={(presetDbg!=null && presetDbg.abilities!=null?presetDbg.abilities.magic.ToString():"null")}");
+        Debug.Log($"[PlayerHUDComplete] preset abilities.magic={(presetDbg!=null && presetDbg.abilities!=null?presetDbg.abilities.magic.ToString():"null")} ");
         // Re-resolver referencias por si no estuvieran aún
         if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
         if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
         if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
+        if (_actionManager == null) _actionManager = UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
+        if (_playerAbilities == null)
+        {
+            var playerGo = GameObject.FindGameObjectWithTag("Player");
+            if (playerGo != null) _playerAbilities = ResolvePlayerAbilitiesFromHierarchy(playerGo);
+        }
         Debug.Log($"[PlayerHUDComplete] ForceRefresh: found ManaPool={( _manaPool != null ? _manaPool.gameObject.name : "null")}, values={( _manaPool != null ? _manaPool.Current + "/" + _manaPool.Max : "n/a")} ");
 
         // Salud (snap inmediato)
@@ -743,9 +773,8 @@ public class PlayerHUDComplete : MonoBehaviour
         }
 
         // Maná (snap inmediato)
-        var preset = GameBootService.Profile?.GetActivePresetResolved();
-        // Si el ManaPool existe y su Max es 0 -> forzar 0/0 (protección adicional)
-        if (_manaPool != null && _manaPool.Max <= 0f)
+        // Si el jugador NO tiene la ability de magia, mostrar 0/0
+        if (!HasMagicAbility())
         {
             if (_manaSlider)
             {
@@ -758,42 +787,85 @@ public class PlayerHUDComplete : MonoBehaviour
                 _manaText.text = "0/0";
             }
             if (_manaFill) _manaFill.color = noManaColor;
-            Debug.Log("[PlayerHUDComplete] ManaPool reports Max<=0 -> HUD set to 0/0");
+            Debug.Log("[PlayerHUDComplete] Player lacks magic ability -> HUD set to 0/0");
             return;
         }
 
-        if (preset != null && preset.abilities != null && !preset.abilities.magic)
+        // Si el ManaPool existe y su Max es 0 -> forzar 0/0 (protección adicional)
+         if (_manaPool != null && _manaPool.Max <= 0f)
+         {
+             if (_manaSlider)
+             {
+                 _manaSlider.gameObject.SetActive(true);
+                 _manaSlider.value = 0f;
+             }
+             if (_manaText)
+             {
+                 _manaText.gameObject.SetActive(true);
+                 _manaText.text = "0/0";
+             }
+             if (_manaFill) _manaFill.color = noManaColor;
+             Debug.Log("[PlayerHUDComplete] ManaPool reports Max<=0 -> HUD set to 0/0");
+             return;
+         }
+
+        // Si el preset explícitamente indica no magia, ya lo cubre HasMagicAbility() arriba
+         else
+         {
+             if (_manaPool && _manaSlider && _manaText)
+             {
+                 float mp = _manaPool.Max > 0f ? _manaPool.Current / _manaPool.Max : 0f;
+                 _manaSlider.gameObject.SetActive(true);
+                 _manaText.gameObject.SetActive(true);
+                 _manaSlider.value = mp;
+                 _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
+                 // Actualizar color del fill según tenga maná o no
+                if (_manaFill)
+                {
+                    _manaFill.color = (_manaPool != null && _manaPool.Max > 0f && _manaPool.Current > 0f) ? manaColor : noManaColor;
+                }
+                 Debug.Log($"[PlayerHUDComplete] HUD populated from ManaPool: {_manaPool.gameObject.name} -> {_manaPool.Current}/{_manaPool.Max}");
+             }
+         }
+     }
+
+    // Determina si el jugador tiene la habilidad de magia consultando:
+    // 1) PlayerActionManager.AllowMagic si existe
+    // 2) El preset activo (GameBootService.Profile)
+    // 3) Componente PlayerAbilities en el Player GameObject
+    private bool HasMagicAbility()
+    {
+        // Preferir la fuente runtime que aplica presets al jugador
+        if (_actionManager == null)
         {
-            // Mostrar la barra pero como 0/0 para indicar ausencia de magia
-            if (_manaSlider)
+            _actionManager = UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
+            // intentar localizar en player si no se encontró globalmente
+            if (_actionManager == null)
             {
-                _manaSlider.gameObject.SetActive(true);
-                _manaSlider.value = 0f;
+                var playerGo = GameObject.FindGameObjectWithTag("Player");
+                if (playerGo != null) _actionManager = playerGo.GetComponent<PlayerActionManager>() ?? playerGo.GetComponentInParent<PlayerActionManager>();
             }
-            if (_manaText)
-            {
-                _manaText.gameObject.SetActive(true);
-                _manaText.text = "0/0";
-            }
-            if (_manaFill) _manaFill.color = noManaColor;
-            Debug.Log("[PlayerHUDComplete] Preset indicates no magic -> HUD set to 0/0");
         }
-        else
+        if (_actionManager != null) return _actionManager.AllowMagic;
+
+        // Comprobar preset activo
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset != null && preset.abilities != null)
         {
-            if (_manaPool && _manaSlider && _manaText)
-            {
-                float mp = _manaPool.Max > 0f ? _manaPool.Current / _manaPool.Max : 0f;
-                _manaSlider.gameObject.SetActive(true);
-                _manaText.gameObject.SetActive(true);
-                _manaSlider.value = mp;
-                _manaText.text = $"{_manaPool.Current:0}/{_manaPool.Max:0}";
-                Debug.Log($"[PlayerHUDComplete] HUD populated from ManaPool: {_manaPool.gameObject.name} -> {_manaPool.Current}/{_manaPool.Max}");
-            }
+            return preset.abilities.magic;
         }
+
+        // Consultar PlayerAbilities (Scriptable/POCO) desde preset o desde componentes que lo expongan
+        if (_playerAbilities == null)
+        {
+            var playerGo = GameObject.FindGameObjectWithTag("Player");
+            if (playerGo != null) _playerAbilities = ResolvePlayerAbilitiesFromHierarchy(playerGo);
+        }
+        if (_playerAbilities != null) return _playerAbilities.magic;
+
+        // Por defecto, asumir que sí tiene magia (compatibilidad hacia atrás)
+        return true;
     }
-
-
-    #endregion
 
     #region Slots Panel (Magia)
 
@@ -808,23 +880,83 @@ public class PlayerHUDComplete : MonoBehaviour
 
     private void UpdateSlot(MagicSlotUI slot)
     {
-        if (slot?.slotObject == null) return;
+        // Implementación defensiva mínima: no asume APIs concretas del MagicCaster
+        if (slot == null || slot.slotObject == null) return;
 
+        // Asegurarse de que los componentes básicos existan
+        if (slot.iconImage == null)
+        {
+            // intentar localizar un Image llamado "Icon" en los hijos
+            var iconT = slot.slotObject.transform.Find("Icon");
+            if (iconT != null) slot.iconImage = iconT.GetComponent<Image>();
+        }
+
+        // Si no hay sprite asignado, usar uno por defecto para evitar errores en runtime
+        if (slot.iconImage != null && slot.iconImage.sprite == null)
+        {
+            slot.iconImage.sprite = CreateDefaultSpellIcon();
+            slot.iconImage.color = availableColor;
+        }
+
+        // Desactivar overlay de cooldown por defecto (implementación simple)
+        if (slot.cooldownOverlay != null)
+        {
+            slot.cooldownOverlay.gameObject.SetActive(false);
+            slot.cooldownOverlay.fillAmount = 0f;
+        }
+        if (slot.cooldownText != null)
+        {
+            slot.cooldownText.gameObject.SetActive(false);
+            slot.cooldownText.text = "";
+        }
+
+        // Asignar texto del botón (si está presente) según el tipo de slot
+        if (slot.buttonText != null)
+        {
+            switch (slot.slotType)
+            {
+                case MagicSlot.Left:
+                    slot.buttonText.text = leftButtonText;
+                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxXColor;
+                    break;
+                case MagicSlot.Right:
+                    slot.buttonText.text = rightButtonText;
+                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxBColor;
+                    break;
+                case MagicSlot.Special:
+                    slot.buttonText.text = upButtonText;
+                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxYColor;
+                    break;
+                default:
+                    slot.buttonText.text = "";
+                    break;
+            }
+        }
+
+        // Si no hay MagicCaster o ManaPool no continuamos
+        if (_magicCaster == null || _manaPool == null) return;
+
+        // Obtener estado del slot desde MagicCaster
         var spell = _magicCaster.GetSpellForSlot(slot.slotType);
         bool hasSpell = spell != null;
-        bool canCast = _magicCaster.CanCastSpell(slot.slotType);
+        if (!hasSpell)
+        {
+            // No hay hechizo asignado: ocultar icono y elementos relacionados
+            slot.slotObject.SetActive(false);
+            return;
+        }
+        slot.slotObject.SetActive(true);
+
+        // Determinar si se puede lanzar (usar overload que devuelve motivo)
+        bool canCast = _magicCaster.CanCastSpell(slot.slotType, spell, out string reason);
         bool isOnCooldown = _magicCaster.IsOnCooldown(slot.slotType);
         float cooldownTime = _magicCaster.GetCooldownTime(slot.slotType);
-        bool hasEnoughMana = hasSpell && _manaPool.Current >= spell.manaCost;
+        bool hasEnoughMana = _manaPool.Current >= spell.manaCost;
 
-        // Actualizar visibilidad del slot
-        slot.slotObject.SetActive(hasSpell);
-        if (!hasSpell) return;
-
-        // Actualizar colores con transiciones suaves
+        // Colores objetivo
         Color targetIconColor = availableColor;
         Color targetBgColor = backgroundColorActive;
-        
+
         if (!canCast)
         {
             if (isOnCooldown)
@@ -839,253 +971,264 @@ public class PlayerHUDComplete : MonoBehaviour
             }
             else
             {
+                // bloqueado por otra razón (ej. acción bloqueada)
                 targetIconColor = cooldownColor;
                 targetBgColor = backgroundColorInactive;
             }
         }
-        
-        slot.iconImage.color = Color.Lerp(slot.iconImage.color, targetIconColor, Time.deltaTime * 8f);
-        slot.backgroundImage.color = Color.Lerp(slot.backgroundImage.color, targetBgColor, Time.deltaTime * 8f);
 
-        // Actualizar cooldown visual
-        if (isOnCooldown && cooldownTime > 0)
+        // Aplicar colores suavemente
+        if (slot.iconImage != null)
+            slot.iconImage.color = Color.Lerp(slot.iconImage.color, targetIconColor, Time.deltaTime * 8f);
+        if (slot.backgroundImage != null)
+            slot.backgroundImage.color = Color.Lerp(slot.backgroundImage.color, targetBgColor, Time.deltaTime * 8f);
+
+        // Actualizar icono: si en el futuro MagicSpellSO expone un sprite podríamos asignarlo aquí.
+        // Ahora coloreamos según el elemento como diferenciador (si no hay sprite concreto)
+        if (slot.iconImage != null && spell != null)
         {
-            slot.cooldownOverlay.gameObject.SetActive(true);
-            slot.cooldownText.gameObject.SetActive(true);
-            
-            float maxCooldown = spell.cooldown;
-            float cooldownPercent = cooldownTime / maxCooldown;
-            slot.cooldownOverlay.fillAmount = cooldownPercent;
-            
-            if (cooldownTime < 1f)
-                slot.cooldownText.text = cooldownTime.ToString("F1");
-            else
-                slot.cooldownText.text = Mathf.CeilToInt(cooldownTime).ToString();
-            
-            // Pulso al final
+            // si se añadiera spell.iconSprite en el futuro, preferirlo:
+            // if (spell.iconSprite != null) slot.iconImage.sprite = spell.iconSprite;
+
+            // pequeña heurística: tintar según elemento
+            switch (spell.element)
+            {
+                case MagicElement.Fire:
+                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(1f, 0.6f, 0.2f, 1f), Time.deltaTime * 6f);
+                    break;
+                case MagicElement.Ice:
+                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(0.6f, 0.8f, 1f, 1f), Time.deltaTime * 6f);
+                    break;
+                case MagicElement.Light:
+                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(1f, 1f, 0.8f, 1f), Time.deltaTime * 6f);
+                    break;
+                default:
+                    // mantener el color actual / availableColor
+                    break;
+            }
+        }
+
+        // Cooldown visual
+        if (isOnCooldown && cooldownTime > 0f)
+        {
+            if (slot.cooldownOverlay != null) slot.cooldownOverlay.gameObject.SetActive(true);
+            if (slot.cooldownText != null) slot.cooldownText.gameObject.SetActive(true);
+
+            float maxCooldown = Mathf.Max(0.0001f, spell.cooldown);
+            float cooldownPercent = Mathf.Clamp01(cooldownTime / maxCooldown);
+
+            if (slot.cooldownOverlay != null) slot.cooldownOverlay.fillAmount = cooldownPercent;
+
+            // Mostrar tiempo: 1 decimal si < 1s, entero si >=1
+            if (slot.cooldownText != null)
+            {
+                slot.cooldownText.text = cooldownTime < 1f ? cooldownTime.ToString("F1") : Mathf.CeilToInt(cooldownTime).ToString();
+            }
+
+            // Pulso final cuando cooldown < 0.5s
             if (cooldownTime < 0.5f)
             {
                 float pulse = Mathf.PingPong(Time.time * 6f, 1f);
                 float scale = 1f + pulse * 0.12f;
                 slot.slotObject.transform.localScale = Vector3.one * scale;
-                slot.iconImage.color = Color.Lerp(targetIconColor, Color.white, pulse * 0.4f);
             }
             else
             {
-                slot.slotObject.transform.localScale = Vector3.Lerp(
-                    slot.slotObject.transform.localScale, Vector3.one, Time.deltaTime * 10f);
+                slot.slotObject.transform.localScale = Vector3.Lerp(slot.slotObject.transform.localScale, Vector3.one, Time.deltaTime * 8f);
             }
         }
         else
         {
-            slot.cooldownOverlay.gameObject.SetActive(false);
-            slot.cooldownText.gameObject.SetActive(false);
-            slot.slotObject.transform.localScale = Vector3.Lerp(
-                slot.slotObject.transform.localScale, Vector3.one, Time.deltaTime * 10f);
-            
-            // Flash cuando está listo
-            if (canCast && slot.iconImage.color != availableColor)
-            {
-                StartCoroutine(FlashSlotReady(slot));
-            }
+            if (slot.cooldownOverlay != null) slot.cooldownOverlay.gameObject.SetActive(false);
+            if (slot.cooldownText != null) slot.cooldownText.gameObject.SetActive(false);
+            slot.slotObject.transform.localScale = Vector3.Lerp(slot.slotObject.transform.localScale, Vector3.one, Time.deltaTime * 8f);
+        }
+
+        // Mostrar nombre del hechizo dentro del slot si existe el texto de cooldown (cuando no hay cooldown lo mostramos opcionalmente)
+        if (slot.cooldownText != null && !isOnCooldown)
+        {
+            slot.cooldownText.gameObject.SetActive(true);
+            slot.cooldownText.text = spell.displayName;
+            // Lo mantenemos visible por simplicidad; una mejora sería ocultarlo tras x segundos o animarlo
         }
     }
 
-    private IEnumerator FlashSlotReady(MagicSlotUI slot)
-    {
-        if (slot?.slotObject == null) yield break;
-        
-        Color originalColor = slot.iconImage.color;
-        slot.iconImage.color = Color.white;
-        slot.slotObject.transform.localScale = Vector3.one * 1.15f;
-        
-        yield return new WaitForSeconds(0.08f);
-        
-        float elapsed = 0f;
-        float duration = 0.12f;
-        
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            slot.iconImage.color = Color.Lerp(Color.white, originalColor, t);
-            slot.slotObject.transform.localScale = Vector3.Lerp(Vector3.one * 1.15f, Vector3.one, t);
-            yield return null;
-        }
-        
-        slot.iconImage.color = originalColor;
-        slot.slotObject.transform.localScale = Vector3.one;
-    }
-
-    #endregion
-
-    private void FindPlayerComponents()
-    {
-        var player = GameObject.FindGameObjectWithTag("Player");
-        if (player)
-        {
-            _healthSystem = player.GetComponent<PlayerHealthSystem>() ?? player.GetComponentInParent<PlayerHealthSystem>();
-            _manaPool = player.GetComponent<ManaPool>() ?? player.GetComponentInParent<ManaPool>();
-            _magicCaster = player.GetComponent<MagicCaster>() ?? player.GetComponentInParent<MagicCaster>();
-        }
-
-        if (!_healthSystem) _healthSystem = GetComponent<PlayerHealthSystem>() ?? GetComponentInParent<PlayerHealthSystem>();
-        if (!_manaPool) _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
-        if (!_magicCaster) _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
-
-        // Suscribir al evento de cambios de maná para que la UI se actualice inmediatamente
-        if (_manaPool != null)
-        {
-            // Evitar múltiples suscripciones
-            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
-            _manaPool.OnManaChanged.AddListener(OnManaChangedListener);
-        }
-    }
-
-    private IEnumerator FindComponentsDelayed()
-    {
-        yield return new WaitForSeconds(1f);
-
-        if (!_healthSystem) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
-        if (!_manaPool) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
-        if (!_magicCaster) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
-
-        if (showDebugInfo)
-        {
-            Debug.Log($"[PlayerHUDComplete] Componentes encontrados - Health:{_healthSystem != null} Mana:{_manaPool != null} Caster:{_magicCaster != null}");
-        }
-
-        // Suscribir al evento de cambios de maná si lo encontramos ahora
-        if (_manaPool != null)
-        {
-            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
-            _manaPool.OnManaChanged.AddListener(OnManaChangedListener);
-        }
-
-        // Una vez encontrados, forzar refresco para que el HUD muestre valores en build
-        ForceRefresh();
-     }
-
-    private Sprite CreateDefaultSpellIcon()
-    {
-        var texture = new Texture2D(64, 64);
-        var center = new Vector2(32, 32);
-        
-        for (int x = 0; x < 64; x++)
-        {
-            for (int y = 0; y < 64; y++)
-            {
-                float distance = Vector2.Distance(new Vector2(x, y), center);
-                if (distance <= 28)
-                {
-                    float alpha = 1f - (distance / 28f) * 0.3f;
-                    texture.SetPixel(x, y, new Color(0.9f, 0.5f, 1f, alpha));
-                }
-                else
-                {
-                    texture.SetPixel(x, y, Color.clear);
-                }
-            }
-        }
-        
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, 64, 64), Vector2.one * 0.5f);
-    }
-
-    // Encuentra recursivamente un hijo por nombre bajo un transform
-    private Transform FindRecursive(Transform parent, string childName)
-    {
-        if (parent.name == childName) return parent;
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var child = parent.GetChild(i);
-            var found = FindRecursive(child, childName);
-            if (found != null) return found;
-        }
-        return null;
-    }
-    
-    // Enlaza componentes UI existentes bajo un root (usado cuando el UI se crea desde el Editor)
+    // BindUIElementsFromRoot: intenta enlazar referencias si se asignó un UI preconstruido
     private void BindUIElementsFromRoot(GameObject root)
     {
         if (root == null) return;
 
-        // Health Slider
-        var hs = FindRecursive(root.transform, "HealthSlider");
-        if (hs) _healthSlider = hs.GetComponent<Slider>();
-        var hf = FindRecursive(root.transform, "Fill");
-        if (hf) _healthFill = hf.GetComponent<Image>();
-        var ht = FindRecursive(root.transform, "HealthText");
-        if (ht) _healthText = ht.GetComponent<TextMeshProUGUI>();
+        // Intentos simples por ruta esperada. Si no existe, no fallar.
+        Transform t = null;
 
-        // Mana Slider
-        var ms = FindRecursive(root.transform, "ManaSlider");
-        if (ms) _manaSlider = ms.GetComponent<Slider>();
-        var mf = FindRecursive(root.transform, "Fill");
-        // Note: "Fill" may be duplicated; prefer the one under Mana if possible
-        if (mf && _manaSlider != null)
+        t = root.transform.Find("HealthContainer/HealthSlider");
+        if (t != null) _healthSlider = t.GetComponent<Slider>();
+        t = root.transform.Find("HealthContainer/HealthSlider/HealthText");
+        if (t != null) _healthText = t.GetComponent<TextMeshProUGUI>();
+
+        t = root.transform.Find("ManaContainer/ManaSlider");
+        if (t != null) _manaSlider = t.GetComponent<Slider>();
+        t = root.transform.Find("ManaContainer/ManaSlider/ManaText");
+        if (t != null) _manaText = t.GetComponent<TextMeshProUGUI>();
+
+        // Slots (nombres basados en CreateSlotInRow). Intentar localizar iconos
+        t = root.transform.Find("SlotsRow/Slot_Left/Icon");
+        if (t != null)
         {
-            var candidate = ms.Find("Fill Area/Fill");
-            if (candidate) _manaFill = candidate.GetComponent<Image>();
+            _leftSlot = new MagicSlotUI();
+            _leftSlot.slotObject = t.parent != null ? t.parent.gameObject : t.gameObject;
+            _leftSlot.iconImage = t.GetComponent<Image>();
         }
-        var mt = FindRecursive(root.transform, "ManaText");
-        if (mt) _manaText = mt.GetComponent<TextMeshProUGUI>();
+        t = root.transform.Find("SlotsRow/Slot_Right/Icon");
+        if (t != null)
+        {
+            _rightSlot = new MagicSlotUI();
+            _rightSlot.slotObject = t.parent != null ? t.parent.gameObject : t.gameObject;
+            _rightSlot.iconImage = t.GetComponent<Image>();
+        }
+        t = root.transform.Find("SlotsRow/Slot_Special/Icon");
+        if (t != null)
+        {
+            _upSlot = new MagicSlotUI();
+            _upSlot.slotObject = t.parent != null ? t.parent.gameObject : t.gameObject;
+            _upSlot.iconImage = t.GetComponent<Image>();
+        }
 
-        // Slots
-        var slots = FindRecursive(root.transform, "SlotsRow");
-        if (slots) _slotsPanel = slots.gameObject;
-
-        // Crear contenedores de slot y enlazar subcomponentes (si existen)
-        _leftSlot = new MagicSlotUI();
-        _rightSlot = new MagicSlotUI();
-        _upSlot = new MagicSlotUI();
-
-        var leftGO = FindRecursive(root.transform, "Slot_Left");
-        if (leftGO) BindSlotFromGO(_leftSlot, leftGO.gameObject, MagicSlot.Left);
-        var rightGO = FindRecursive(root.transform, "Slot_Right");
-        if (rightGO) BindSlotFromGO(_rightSlot, rightGO.gameObject, MagicSlot.Right);
-        var upGO = FindRecursive(root.transform, "Slot_Special");
-        if (upGO) BindSlotFromGO(_upSlot, upGO.gameObject, MagicSlot.Special);
-
-        if (showDebugInfo)
-            Debug.Log($"[PlayerHUDComplete] BindUIElementsFromRoot - Health:{_healthSlider!=null} Mana:{_manaSlider!=null} Slots:{_slotsPanel!=null}");
-     }
-
-    private void BindSlotFromGO(MagicSlotUI slotUI, GameObject go, MagicSlot type)
-    {
-        if (go == null) return;
-        slotUI.slotObject = go;
-        slotUI.slotType = type;
-        slotUI.backgroundImage = go.GetComponent<Image>();
-        var iconT = FindRecursive(go.transform, "Icon");
-        if (iconT) slotUI.iconImage = iconT.GetComponent<Image>();
-        var coolT = FindRecursive(go.transform, "CooldownOverlay");
-        if (coolT) slotUI.cooldownOverlay = coolT.GetComponent<Image>();
-        var btnTextT = FindRecursive(go.transform, "ButtonText");
-        if (btnTextT) slotUI.buttonText = btnTextT.GetComponent<TextMeshProUGUI>();
-        var btnBgT = FindRecursive(go.transform, "ButtonBadge");
-        if (btnBgT) slotUI.buttonBackground = btnBgT.GetComponent<Image>();
-        var cdTextT = FindRecursive(go.transform, "CooldownText");
-        if (cdTextT) slotUI.cooldownText = cdTextT.GetComponent<TextMeshProUGUI>();
+        // Intentar obtener fills desde los sliders si existen
+        if (_healthSlider != null && _healthSlider.fillRect != null)
+            _healthFill = _healthSlider.fillRect.GetComponent<Image>();
+        if (_manaSlider != null && _manaSlider.fillRect != null)
+            _manaFill = _manaSlider.fillRect.GetComponent<Image>();
     }
 
-    void OnDestroy()
+    private void FindPlayerComponents()
     {
-        // Si el root fue asignado desde el Editor (editorRootPanel != null), no lo destruimos.
-        if (_createdCanvas && _canvas) DestroyImmediate(_canvas.gameObject);
-         if (_rootPanel != null && editorRootPanel == null)
-         {
-             DestroyImmediate(_rootPanel);
-         }
+        if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
+        if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
+        if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
+        if (_actionManager == null) _actionManager = UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
 
-        // Limpiar suscripción de maná
+        var playerGo = GameObject.FindGameObjectWithTag("Player");
+        if (playerGo != null)
+        {
+            // _playerAbilities NO es un Component; resolver de forma segura desde el preset o desde componentes que lo expongan
+            if (_playerAbilities == null) _playerAbilities = ResolvePlayerAbilitiesFromHierarchy(playerGo);
+            if (_actionManager == null) _actionManager = playerGo.GetComponent<PlayerActionManager>() ?? playerGo.GetComponentInParent<PlayerActionManager>();
+
+            // Si no tenemos PlayerAbilities (ni en el preset ni en componentes), crear un componente pequeño para exponerlas
+            if (_playerAbilities == null)
+            {
+                var existingComp = playerGo.GetComponent<PlayerAbilitiesComponent>();
+                if (existingComp == null)
+                {
+                    existingComp = playerGo.AddComponent<PlayerAbilitiesComponent>();
+                    // Si hay un preset activo, aplicar sus abilities a este componente
+                    var preset = GameBootService.Profile?.GetActivePresetResolved();
+                    if (preset != null && preset.abilities != null)
+                    {
+                        existingComp.abilities = preset.abilities;
+                    }
+                    Debug.Log("[PlayerHUDComplete] PlayerAbilitiesComponent añadido automáticamente al Player.");
+                }
+                _playerAbilities = existingComp.abilities;
+            }
+        }
+        // Suscribir al evento de maná si lo encontramos para recibir actualizaciones inmediatas
         if (_manaPool != null)
         {
-            _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
+            try
+            {
+                // Evitar suscripciones duplicadas
+                _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener);
+            }
+            catch { }
+            _manaPool.OnManaChanged.AddListener(OnManaChangedListener);
         }
+     }
 
-        // Limpiar suscripción al preset
+    private void OnDestroy()
+    {
+        if (_manaPool != null)
+        {
+            try { _manaPool.OnManaChanged.RemoveListener(OnManaChangedListener); } catch { }
+        }
         PlayerPresetService.OnPresetApplied -= ForceRefresh;
     }
 
+    private IEnumerator FindComponentsDelayed()
+    {
+        // Esperar un pequeño tiempo para dar chance a servicios que inicializan en Start/Awake
+        yield return new WaitForSeconds(0.5f);
+        FindPlayerComponents();
+        ForceRefresh();
+    }
+
+    private Sprite CreateDefaultSpellIcon()
+    {
+        // Crear un sprite mínimo en tiempo de ejecución para evitar nulos si no hay assets
+        var tex = new Texture2D(2, 2);
+        tex.SetPixels(new Color[] { Color.white, Color.white, Color.white, Color.white });
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+    }
+
+    private PlayerAbilities ResolvePlayerAbilitiesFromHierarchy(GameObject playerGo)
+    {
+        if (playerGo == null) return null;
+
+        // 1) Preferir el preset activo si está disponible
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset != null && preset.abilities != null)
+            return preset.abilities;
+
+        // 2) Buscar en componentes del GameObject (y en padres) algún MonoBehaviour que exponga
+        //    un campo o propiedad pública llamado 'abilities' de tipo PlayerAbilities.
+        PlayerAbilities TryFromGameObject(GameObject go)
+        {
+            if (go == null) return null;
+            var comps = go.GetComponents<MonoBehaviour>();
+            foreach (var c in comps)
+            {
+                if (c == null) continue;
+                var t = c.GetType();
+                var f = t.GetField("abilities");
+                if (f != null && f.FieldType == typeof(PlayerAbilities))
+                {
+                    var v = f.GetValue(c) as PlayerAbilities;
+                    if (v != null) return v;
+                }
+                var p = t.GetProperty("abilities");
+                if (p != null && p.PropertyType == typeof(PlayerAbilities))
+                {
+                    var v2 = p.GetValue(c) as PlayerAbilities;
+                    if (v2 != null) return v2;
+                }
+            }
+            return null;
+        }
+
+        // Buscar en el propio GO
+        var found = TryFromGameObject(playerGo);
+        if (found != null) return found;
+
+        // Buscar recursivamente en padres
+        var parent = playerGo.transform.parent;
+        while (parent != null)
+        {
+            found = TryFromGameObject(parent.gameObject);
+            if (found != null) return found;
+            parent = parent.parent;
+        }
+
+        // Buscar recursivamente en hijos (último recurso)
+        foreach (Transform child in playerGo.transform)
+        {
+            found = TryFromGameObject(child.gameObject);
+            if (found != null) return found;
+        }
+
+        return null;
+    }
+
+    #endregion
 }

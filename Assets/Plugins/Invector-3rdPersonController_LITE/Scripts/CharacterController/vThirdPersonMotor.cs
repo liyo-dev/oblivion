@@ -105,6 +105,13 @@ namespace Invector.vCharacterController
 
         #endregion
 
+        // --- Helper to validate vectors to avoid NaN/Infinity assignments to Rigidbody ---
+        private bool IsFiniteVector(Vector3 v)
+        {
+            return !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) ||
+                     float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z));
+        }
+
         public void Init()
         {
             animator = GetComponent<Animator>();
@@ -165,6 +172,13 @@ namespace Invector.vCharacterController
 
         public virtual void MoveCharacter(Vector3 _direction)
         {
+            // validate incoming direction to avoid NaN propagation
+            if (!IsFiniteVector(_direction))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] MoveCharacter received invalid direction (NaN/Infinity). Ignoring movement.");
+                return;
+            }
+
             // calculate input smooth
             inputSmooth = Vector3.Lerp(inputSmooth, input, (isStrafing ? strafeSpeed.movementSmooth : freeSpeed.movementSmooth) * Time.deltaTime);
 
@@ -177,11 +191,44 @@ namespace Invector.vCharacterController
             if (_direction.magnitude > 1f)
                 _direction.Normalize();
 
-            Vector3 targetPosition = (useRootMotion ? animator.rootPosition : _rigidbody.position) + _direction * (stopMove ? 0 : moveSpeed) * Time.deltaTime;
+            Vector3 basePosition = useRootMotion ? animator.rootPosition : _rigidbody.position;
+            if (!IsFiniteVector(basePosition) || !IsFiniteVector(transform.position))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Invalid positions detected. Skipping velocity assignment.");
+                return;
+            }
+
+            Vector3 targetPosition = basePosition + _direction * (stopMove ? 0 : moveSpeed) * Time.deltaTime;
+
+            if (!IsFiniteVector(targetPosition))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Computed invalid targetPosition. Skipping velocity assignment.");
+                return;
+            }
+
+            // Protección: evitar división por cero en Time.deltaTime
+            if (Time.deltaTime <= Mathf.Epsilon)
+            {
+                Debug.LogWarning("[vThirdPersonMotor] DeltaTime ~ 0 when computing targetVelocity. Skipping velocity assignment.");
+                return;
+            }
+
             Vector3 targetVelocity = (targetPosition - transform.position) / Time.deltaTime;
 
             bool useVerticalVelocity = true;
-            if (useVerticalVelocity) targetVelocity.y = _rigidbody.linearVelocity.y;
+            if (useVerticalVelocity)
+            {
+                // keep existing vertical velocity if it's finite, otherwise zero
+                var currentY = _rigidbody.linearVelocity.y;
+                targetVelocity.y = float.IsNaN(currentY) || float.IsInfinity(currentY) ? 0f : currentY;
+            }
+
+            if (!IsFiniteVector(targetVelocity))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Computed invalid targetVelocity (NaN/Infinity). Skipping assignment.");
+                return;
+            }
+
             _rigidbody.linearVelocity = targetVelocity;
         }
 
@@ -248,7 +295,14 @@ namespace Invector.vCharacterController
             // apply extra force to the jump height   
             var vel = _rigidbody.linearVelocity;
             vel.y = jumpHeight;
-            _rigidbody.linearVelocity = vel;
+            if (IsFiniteVector(vel))
+            {
+                _rigidbody.linearVelocity = vel;
+            }
+            else
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Skipping assignment of jump velocity because it's invalid (NaN/Infinity).");
+            }
         }
 
         public virtual void AirControl()
@@ -268,9 +322,31 @@ namespace Invector.vCharacterController
             moveDirection.z = Mathf.Clamp(moveDirection.z, -1f, 1f);
 
             Vector3 targetPosition = _rigidbody.position + (moveDirection * airSpeed) * Time.deltaTime;
-            Vector3 targetVelocity = (targetPosition - transform.position) / Time.deltaTime;
 
-            targetVelocity.y = _rigidbody.linearVelocity.y;
+            if (!IsFiniteVector(targetPosition) || !IsFiniteVector(transform.position))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Invalid positions in AirControl. Skipping velocity update.");
+                return;
+            }
+
+            // Protección: evitar división por cero en Time.deltaTime
+            if (Time.deltaTime <= Mathf.Epsilon)
+            {
+                Debug.LogWarning("[vThirdPersonMotor] DeltaTime ~ 0 in AirControl when computing targetVelocity. Skipping velocity update.");
+                return;
+            }
+
+            Vector3 targetVelocity = (targetPosition - transform.position) / Time.deltaTime;
+            // preserve vertical velocity if finite
+            var currentY = _rigidbody.linearVelocity.y;
+            targetVelocity.y = float.IsNaN(currentY) || float.IsInfinity(currentY) ? 0f : currentY;
+
+            if (!IsFiniteVector(targetVelocity) || !IsFiniteVector(_rigidbody.linearVelocity))
+            {
+                Debug.LogWarning("[vThirdPersonMotor] Invalid velocity values in AirControl. Skipping velocity update.");
+                return;
+            }
+
             _rigidbody.linearVelocity = Vector3.Lerp(_rigidbody.linearVelocity, targetVelocity, airSmooth * Time.deltaTime);
         }
 

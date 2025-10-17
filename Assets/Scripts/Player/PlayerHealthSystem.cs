@@ -1,6 +1,7 @@
 ﻿using Oblivion.Core.Feedback;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -27,7 +28,7 @@ public class PlayerHealthSystem : MonoBehaviour
     
     [Header("Animaciones")]
     [SerializeField] private string damageAnimationName = "TakeDamage";
-    [SerializeField] private string deathAnimationName = "Death";
+    [SerializeField] private string deathAnimationName = "Die02_NoWeapon";
     [SerializeField] private string healAnimationName = "Heal";
     [SerializeField] private int upperBodyLayer = 1; // Layer para animaciones del torso superior
     
@@ -68,7 +69,11 @@ public class PlayerHealthSystem : MonoBehaviour
     private AudioSource _audioSource;
     private Renderer[] _renderers;
     private Material[] _originalMaterials;
-    
+
+    // Cache para resolución de estados del Animator
+    private readonly Dictionary<string, int> _stateHash = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> _stateLayer = new Dictionary<string, int>();
+
     // Estado local del sistema de salud
     private float _currentHp;
     private float _maxHp;
@@ -369,29 +374,89 @@ public class PlayerHealthSystem : MonoBehaviour
     private void Die()
     {
         if (_isDead) return;
-        
+
         _isDead = true;
-        
-        // Efectos
-        TriggerAnimation(deathAnimationName);
-        PlaySound(deathSound);
-        
-        // Notificar eventos
-        OnPlayerDeath?.Invoke();
-        OnDied?.Invoke();
-        
+
+        // Asegurar que la salud está a 0
+        _currentHp = 0f;
+
+        // Sincronizar profile y UI INMEDIATAMENTE para que el HUD muestre correctamente 0
+        UpdateGameBootProfile();
+        UpdateUI();
+
+        // Notificar eventos lo antes posible (antes de intentar animaciones/sonidos que podrían lanzar)
+        try
+        {
+            OnPlayerDeath?.Invoke();
+            OnDied?.Invoke();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[PlayerHealth] Excepción al invocar eventos de muerte: {e}");
+        }
+
         Debug.Log("[PlayerHealth] ¡El jugador ha muerto!");
+
+        // Intentar ejecutar efectos (animación/sonido) de forma segura; si fallan, no impedimos la notificación de GameOver
+        try
+        {
+            TriggerAnimation(deathAnimationName);
+            PlaySound(deathSound);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[PlayerHealth] Error al reproducir animación/sonido de muerte: {e}");
+        }
+
+        // Mostrar pantalla de Game Over (si existe un GameOverManager en la escena)
+        try
+        {
+            GameOverManager.NotifyGameOver();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[PlayerHealth] Error notificando GameOver: {e}");
+        }
     }
-    
+
     private void ReviveInternal()
     {
         if (!_isDead) return;
-        
+
         _isDead = false;
-        
+
+        // Teletransportar al último anchor conocido si existe
+        try
+        {
+            if (!string.IsNullOrEmpty(SpawnManager.CurrentAnchorId))
+            {
+                SpawnManager.TeleportToCurrent(true);
+                Debug.Log("[PlayerHealth] Revivido y teletransportado al último punto de partida guardado");
+            }
+            else
+            {
+                Debug.Log("[PlayerHealth] Revivido pero no hay anchor guardado (CurrentAnchorId vacío)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[PlayerHealth] Error al teletransportar en ReviveInternal: {ex.Message}");
+        }
+
+        // Actualizar profile/UI para asegurar que la HUD muestra el estado correcto
+        UpdateGameBootProfile();
+        UpdateUI();
+
         // Notificar eventos
-        OnPlayerRevived?.Invoke();
-        
+        try
+        {
+            OnPlayerRevived?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[PlayerHealth] Excepción al invocar OnPlayerRevived: {ex.Message}");
+        }
+
         Debug.Log("[PlayerHealth] ¡El jugador ha revivido!");
     }
     
@@ -515,22 +580,144 @@ public class PlayerHealthSystem : MonoBehaviour
     
     private void TriggerAnimation(string animationName)
     {
-        if (_animator != null && !string.IsNullOrEmpty(animationName))
-        {
-            // Asegurar que el layer esté activo
-            if (upperBodyLayer > 0)
-            {
-                _animator.SetLayerWeight(upperBodyLayer, 1f);
-            }
-            
-            // Reproducir la animación directamente por nombre
-            _animator.Play(animationName);
-            
-            Debug.Log($"[PlayerHealthSystem] Reproduciendo animación: {animationName} en layer {upperBodyLayer}");
-        }
-        else
+        if (_animator == null || string.IsNullOrEmpty(animationName))
         {
             Debug.LogWarning($"[PlayerHealthSystem] No se puede reproducir animación - Animator: {(_animator != null ? "OK" : "NULL")}, AnimationName: '{animationName}'");
+            return;
+        }
+
+        // Asegurar que el layer configurado existe antes de usarlo
+        if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
+        {
+            _animator.SetLayerWeight(upperBodyLayer, 1f);
+        }
+
+        // Intentar reproducir usando CrossFade en el estado resuelto (más seguro)
+        if (CrossFadeResolved(animationName, 0.05f))
+        {
+            int layer = _stateLayer.ContainsKey(animationName) ? _stateLayer[animationName] : 0;
+            Debug.Log($"[PlayerHealthSystem] Reproduciendo animación (CrossFade): {animationName} [layer {layer}]");
+            return;
+        }
+
+        // Si CrossFade falló, intentamos resolver el estado y usar Play por hash (más seguro que Play(string))
+        if (EnsureResolved(animationName))
+        {
+            int hash = _stateHash[animationName];
+            int layer = _stateLayer[animationName];
+            _animator.Play(hash, layer, 0f);
+            Debug.Log($"[PlayerHealthSystem] Reproduciendo animación (Play por hash): {animationName} en layer {layer}");
+            return;
+        }
+
+        Debug.LogWarning($"[PlayerHealthSystem] No se encontró el estado '{animationName}' en Animator. Asegúrate del nombre EXACTO o usa la ruta completa (p. ej. 'Base Layer.NombreEstado').");
+    }
+
+    // ===== Helpers para resolución segura de estados en el Animator =====
+    private bool CrossFadeResolved(string stateNameOrPath, float fade)
+    {
+        if (_animator == null) return false;
+        if (!EnsureResolved(stateNameOrPath)) return false;
+
+        int hash = _stateHash[stateNameOrPath];
+        int layer = _stateLayer[stateNameOrPath];
+        _animator.CrossFadeInFixedTime(hash, fade, layer, 0f);
+        return true;
+    }
+
+    private bool EnsureResolved(string nameOrPath)
+    {
+        if (string.IsNullOrEmpty(nameOrPath) || _animator == null) return false;
+        if (_stateHash.ContainsKey(nameOrPath)) return true;
+
+        // Probar variantes comunes de nombre (por ejemplo sufijos usados en el animator como _NoWeapon)
+        string[] suffixes = new string[] { "", "_NoWeapon", "-NoWeapon" };
+        var candidateList = new List<string>();
+        foreach (var s in suffixes)
+        {
+            candidateList.Add(nameOrPath + s);
+            candidateList.Add($"Base Layer.{nameOrPath}{s}");
+            candidateList.Add($"Base Layer.Locomotion.{nameOrPath}{s}");
+        }
+        string[] candidates = candidateList.ToArray();
+
+        for (int layer = 0; layer < _animator.layerCount; layer++)
+        {
+            foreach (var cand in candidates)
+            {
+                int h = Animator.StringToHash(cand);
+                if (_animator.HasState(layer, h))
+                {
+                    _stateHash[nameOrPath] = h;
+                    _stateLayer[nameOrPath] = layer;
+                    return true;
+                }
+            }
+        }
+
+        // intento directo por si ya viene con ruta completa
+        int directHash = Animator.StringToHash(nameOrPath);
+        for (int layer = 0; layer < _animator.layerCount; layer++)
+        {
+            if (_animator.HasState(layer, directHash))
+            {
+                _stateHash[nameOrPath] = directHash;
+                _stateLayer[nameOrPath] = layer;
+                return true;
+            }
+        }
+
+        // Depuración: listar candidatos probados (solo si no se encontró)
+        try
+        {
+            Debug.LogWarning($"[PlayerHealthSystem] EnsureResolved: no se encontró '{nameOrPath}'. Candidatos probados: {string.Join(", ", candidates)}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[PlayerHealthSystem] EnsureResolved: excepción al listar candidatos: {ex.Message}");
+        }
+
+        return false;
+    }
+    
+    [ContextMenu("Dump Animator States")]
+    public void DumpAnimatorStates()
+    {
+        if (_animator == null)
+        {
+            Debug.LogWarning("[PlayerHealthSystem] DumpAnimatorStates: Animator es null");
+            return;
+        }
+
+        var rc = _animator.runtimeAnimatorController;
+        if (rc == null)
+        {
+            Debug.LogWarning("[PlayerHealthSystem] DumpAnimatorStates: runtimeAnimatorController es null");
+            return;
+        }
+
+        Debug.Log($"[PlayerHealthSystem] Runtime clips ({rc.animationClips.Length}): {string.Join(", ", Array.ConvertAll(rc.animationClips, c => c.name))}");
+
+        // Probar las mismas variantes que EnsureResolved para cada layer
+        string[] suffixes = new string[] { "", "_NoWeapon", "-NoWeapon" };
+        var candidateList = new List<string>();
+        foreach (var s in suffixes)
+        {
+            candidateList.Add(damageAnimationName + s);
+            candidateList.Add($"Base Layer.{damageAnimationName}{s}");
+            candidateList.Add($"Base Layer.Locomotion.{damageAnimationName}{s}");
+        }
+        string[] candidates = candidateList.ToArray();
+
+        for (int layer = 0; layer < _animator.layerCount; layer++)
+        {
+            var layerName = _animator.GetLayerName(layer);
+            foreach (var cand in candidates)
+            {
+                int h = Animator.StringToHash(cand);
+                bool has = _animator.HasState(layer, h);
+                Debug.Log($"[PlayerHealthSystem] Layer {layer} ('{layerName}') - HasState('{cand}') = {has}");
+            }
         }
     }
     
@@ -544,16 +731,35 @@ public class PlayerHealthSystem : MonoBehaviour
     private IEnumerator ApplyKnockback()
     {
         Vector3 knockbackDirection = -transform.forward; // Empujar en la dirección opuesta a donde mira el jugador
+
+        // Si el objeto tiene Rigidbody, aplicar una fuerza/impulso en vez de mover transform directamente.
+        // Mover el transform de un objeto controlado por física puede producir valores NaN en la velocidad.
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            // Normalizar y comprobar NaN por seguridad
+            if (!float.IsNaN(knockbackDirection.x) && !float.IsNaN(knockbackDirection.y) && !float.IsNaN(knockbackDirection.z))
+            {
+                Vector3 impulse = knockbackDirection.normalized * knockbackForce;
+                rb.AddForce(impulse, ForceMode.Impulse);
+            }
+            yield break;
+        }
+
         float elapsed = 0f;
-        
+
         while (elapsed < knockbackDuration)
         {
             float t = elapsed / knockbackDuration;
             float curveValue = knockbackCurve.Evaluate(t);
-            
-            // Aplicar fuerza de empuje
-            transform.position += knockbackDirection * (knockbackForce * curveValue * Time.deltaTime);
-            
+
+            // Aplicar fuerza de empuje (fallback para objetos sin Rigidbody)
+            Vector3 delta = knockbackDirection * (knockbackForce * curveValue * Time.deltaTime);
+            if (!float.IsNaN(delta.x) && !float.IsNaN(delta.y) && !float.IsNaN(delta.z))
+            {
+                transform.position += delta;
+            }
+
             elapsed += Time.deltaTime;
             yield return null;
         }
@@ -564,51 +770,5 @@ public class PlayerHealthSystem : MonoBehaviour
     {
         godMode = isEnabled;
         Debug.Log($"[PlayerHealth] God Mode: {(isEnabled ? "ACTIVADO" : "DESACTIVADO")}");
-    }
-    
-    public void SetInvulnerabilityDuration(float duration)
-    {
-        invulnerabilityDuration = Mathf.Max(0f, duration);
-    }
-    
-    // Métodos de testing
-    public void TestDamage(float amount)
-    {
-        TakeDamage(amount);
-    }
-    
-    public void TestHeal(float amount)
-    {
-        Heal(amount);
-    }
-    
-    // ===== MÉTODOS PARA ANIMATION EVENTS =====
-    // Estos métodos son llamados por Animation Events en las animaciones
-    
-    /// <summary>
-    /// Llamado por Animation Event cuando se ejecuta un hechizo/magia
-    /// </summary>
-    public void OnMagicExecute()
-    {
-        Debug.Log("[PlayerHealthSystem] Animation Event: OnMagicExecute - Ignorando para sistema de salud");
-        // NO hacer nada aquí para evitar interferencias con el sistema de salud
-    }
-    
-    /// <summary>
-    /// Llamado por Animation Event cuando termina el cast de magia
-    /// </summary>
-    public void OnMagicCastEnd()
-    {
-        Debug.Log("[PlayerHealthSystem] Animation Event: OnMagicCastEnd - Ignorando para sistema de salud");
-        // NO hacer nada aquí para evitar interferencias con el sistema de salud
-    }
-    
-    /// <summary>
-    /// Llamado por Animation Event para efectos de daño (opcional)
-    /// </summary>
-    public void OnDamageAnimationComplete()
-    {
-        Debug.Log("[PlayerHealthSystem] Animation Event: OnDamageAnimationComplete");
-        // Este método SÍ puede tener lógica útil cuando termina la animación de daño
     }
 }

@@ -162,7 +162,21 @@ public class PauseMenuController : MonoBehaviour
     }
 
 #if ENABLE_INPUT_SYSTEM
-    void OnPausePressed(InputAction.CallbackContext ctx) => TogglePause();
+    void OnPausePressed(InputAction.CallbackContext ctx)
+    {
+        // Proteger contra callbacks que todavía se disparen después de que el objeto haya sido destruido
+        // (InputSystem puede invocar callbacks en objetos cuyos bindings no fueron limpiados).
+        // Hacemos una comprobación rápida y atrapamos MissingReferenceException por seguridad.
+        if (this == null) return;
+        try
+        {
+            TogglePause();
+        }
+        catch (MissingReferenceException)
+        {
+            // El objeto Unity fue destruido; ignorar el callback.
+        }
+    }
     void OnUINavigate(InputAction.CallbackContext ctx)
     {
         if (!_isPaused || _navCooldown > 0f) return;

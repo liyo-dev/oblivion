@@ -4,8 +4,8 @@ using UnityEngine.Events;
 [DisallowMultipleComponent]
 public class ManaPool : MonoBehaviour
 {
-    [SerializeField] float max = 50f;
-    [SerializeField] float current = 50f;
+    [SerializeField] float max = 0f;
+    [SerializeField] float current = 0f;
 
     [Header("Regeneración de Maná")]
     [Tooltip("Activa la regeneración pasiva de maná")]

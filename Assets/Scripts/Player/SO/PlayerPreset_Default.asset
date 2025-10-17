@@ -28,3 +28,4 @@ MonoBehaviour:
     swim: 0
     jump: 0
     climb: 0
+    magic: 0

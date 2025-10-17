@@ -6499,11 +6499,11 @@ MonoBehaviour:
   minIdleBeforeMove: 1
   maxIdleBeforeMove: 3
   overrideAgentSpeed: 0
-  actionChance: 0.55
+  actionChance: 0
   loopActionDuration: {x: 4, y: 10}
   maxPointSearchDist: 25
   actionPoints: []
-  greetOnSight: 1
+  greetOnSight: 0
   greetRadius: 3
   fovDegrees: 110
   greetCooldown: 4
@@ -6514,6 +6514,29 @@ MonoBehaviour:
   eyesWeight: 0.7
   rotateToPlayerOnInteract: 1
   rotateSpeed: 10
+  challengerMode: 1
+  challengeSightRadius: 10
+  challengeStopDistance: 2.2
+  approachRepathInterval: 0.25
+  loseSightGraceSeconds: 1.5
+  alertState: SenseSomethingStart_NoWeapon
+  challengeState: Challenging_NoWeapon
+  challengeDialogue: "\xA1Te reto a un combate!"
+  lockPlayerDuringChallenge: 1
+  exclamationPrefab: {fileID: 0}
+  exclamationOffset: {x: 0, y: 2, z: 0}
+  OnChallengeStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerLockRequest:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerUnlockRequest:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDialogueRequest:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &3575467550323464722
 GameObject:
   m_ObjectHideFlags: 0

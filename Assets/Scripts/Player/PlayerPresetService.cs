@@ -195,19 +195,33 @@ public class PlayerPresetService : MonoBehaviour
                 }
                 else
                 {
-                    // Fallback genérico si no hay hechizos conocidos
-                    maxMP = 50f;
-                    if (currentMP <= 0f) currentMP = maxMP;
-                    Debug.Log("[PlayerPresetService] Preset maxMP was 0 and no spells found; using default maxMP=50");
-                }
-            }
+                    // Si no hay hechizos conocidos, respetar explícitamente un preset 0/0.
+                    // Anteriormente forzábamos maxMP=50 para evitar que el jugador no pudiera lanzar,
+                    // pero esto sobreescribía presets donde el diseñador quería 0/0. Ahora:
+                    // - Si el preset explícitamente tiene maxMP<=0 y currentMP<=0 -> respetar 0/0
+                    // - En caso contrario (p.ej. currentMP > 0) usar un fallback razonable
+                    if (preset.currentMP <= 0f && preset.maxMP <= 0f)
+                    {
+                        maxMP = 0f;
+                        currentMP = 0f;
+                        Debug.Log("[PlayerPresetService] Preset explicitly sets 0/0 and no spells found -> respecting 0/0");
+                    }
+                    else
+                    {
+                        // Fallback: si el preset pide algo de currentMP pero no definió max, usar el valor histórico por compatibilidad
+                        maxMP = 50f;
+                        if (currentMP <= 0f) currentMP = Mathf.Clamp(preset.currentMP, 0f, maxMP);
+                        Debug.Log("[PlayerPresetService] Preset maxMP was 0 and no spells found; using default maxMP=50 to satisfy preset currentMP");
+                    }
+                 }
+             }
 
-            _manaPool.Init(maxMP, currentMP);
-        }
-        else
-        {
-            Debug.LogWarning("[PlayerPresetService] No se encontró ManaPool en escena para sincronizar MP");
-        }
+             _manaPool.Init(maxMP, currentMP);
+         }
+         else
+         {
+             Debug.LogWarning("[PlayerPresetService] No se encontró ManaPool en escena para sincronizar MP");
+         }
     }
 
     private void ConfigureSpells(PlayerPresetSO preset)

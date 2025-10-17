@@ -4932,6 +4932,8 @@ GameObject:
   - component: {fileID: 8599661016629616348}
   - component: {fileID: 1297097001791454143}
   - component: {fileID: 4974162908857341787}
+  - component: {fileID: 7049979429020794785}
+  - component: {fileID: 2384823629447114158}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -5144,6 +5146,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerTargeting
   radius: 8
+  scanRadius: 12
   enemyMask:
     serializedVersion: 2
     m_Bits: 128
@@ -5157,6 +5160,7 @@ MonoBehaviour:
   drawFOV: 1
   drawTargetLine: 1
   radiusColor: {r: 0, g: 0.7, b: 1, a: 0.35}
+  scanRadiusColor: {r: 0, g: 0.4, b: 1, a: 0.18}
   fovColor: {r: 0.2, g: 1, b: 0.4, a: 0.25}
   targetLineColor: {r: 1, g: 0.8, b: 0.2, a: 0.9}
   enableMarker: 1
@@ -5223,7 +5227,7 @@ MonoBehaviour:
   healthRegenDelayAfterDamage: 2
   healthRegenNotifyEpsilon: 0.01
   damageAnimationName: TakeDamage
-  deathAnimationName: Death
+  deathAnimationName: Die02_NoWeapon
   healAnimationName: Heal
   upperBodyLayer: 1
   damageFlashDuration: 0.2
@@ -5354,6 +5358,43 @@ MonoBehaviour:
   actionManager: {fileID: 8599661016629616348}
   spawner: {fileID: 5411191197508503009}
   showDebugLogs: 1
+--- !u!114 &7049979429020794785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec247fbd3d4a4b1a9b365946febba79d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilitiesComponent
+  abilities:
+    swim: 0
+    jump: 0
+    climb: 0
+    magic: 1
+--- !u!114 &2384823629447114158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 857cf24a9a3f4b9a85936c49607a05dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthTester
+  damageKey: 38
+  healKey: 40
+  killKey: 25
+  reviveKey: 32
+  godModeKey: 21
+  testDamageAmount: 20
+  testHealAmount: 15
+  playerHealthSystem: {fileID: 6570775665125871610}
 --- !u!1 &5048321103299432130
 GameObject:
   m_ObjectHideFlags: 0
