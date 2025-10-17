@@ -27,17 +27,17 @@ public class PlayerHealthTester : MonoBehaviour
         // Auto-encontrar si no se asignó
         if (playerHealthSystem == null)
         {
-            playerHealthSystem = FindObjectOfType<PlayerHealthSystem>();
+            playerHealthSystem = FindFirstObjectByType<PlayerHealthSystem>();
         }
-        
+
         if (playerHealthSystem == null)
         {
             Debug.LogWarning("[HealthTester] No se encontró PlayerHealthSystem en la escena");
         }
-        
+
         // Obtener referencia al teclado
         _keyboard = Keyboard.current;
-        
+
         if (_keyboard == null)
         {
             Debug.LogWarning("[HealthTester] No se encontró teclado. Asegúrate de que el Input System esté configurado correctamente.");
@@ -69,7 +69,7 @@ public class PlayerHealthTester : MonoBehaviour
         
         if (_keyboard[reviveKey].wasPressedThisFrame)
         {
-            playerHealthSystem.Revive(1f); // Revivir con vida completa
+            playerHealthSystem.Revive(); // Revivir con valor por defecto (100%)
             Debug.Log("[HealthTester] Reviviendo jugador con vida completa");
         }
         
@@ -84,14 +84,18 @@ public class PlayerHealthTester : MonoBehaviour
     void OnGUI()
     {
         if (playerHealthSystem == null) return;
-        
-        // Calcular posición en la esquina inferior izquierda
+
+        // Calcular posición en la izquierda, centrado verticalmente
         float guiWidth = 350f;
         float guiHeight = 180f;
         float margin = 10f;
-        
-        Rect guiRect = new Rect(margin, Screen.height - guiHeight - margin, guiWidth, guiHeight);
-        
+
+        // Posicionar pegado al borde izquierdo y centrado vertical
+        float x = margin;
+        float y = (Screen.height - guiHeight) * 0.5f;
+
+        Rect guiRect = new Rect(x, y, guiWidth, guiHeight);
+
         GUILayout.BeginArea(guiRect);
         GUILayout.Label("=== PLAYER HEALTH TESTER ===");
         GUILayout.Label($"Salud: {playerHealthSystem.CurrentHealth:0}/{playerHealthSystem.MaxHealth:0} ({playerHealthSystem.HealthPercentage:P1})");
