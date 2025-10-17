@@ -21,7 +21,17 @@ namespace EasyTransition
 
         private void Awake()
         {
-            instance = this;
+            // Robust singleton: si ya existe otra instancia, destruir esta y conservar la original.
+            if (instance == null)
+            {
+                instance = this;
+            }
+            else if (instance != this)
+            {
+                Debug.LogWarning("TransitionManager: another instance already exists in scene; destroying duplicate.");
+                Destroy(this.gameObject);
+                return;
+            }
         }
 
         public static TransitionManager Instance()
@@ -100,7 +110,7 @@ namespace EasyTransition
 
             onTransitionBegin?.Invoke();
 
-            GameObject template = Instantiate(transitionTemplate) as GameObject;
+            var template = Instantiate(transitionTemplate);
             template.GetComponent<Transition>().transitionSettings = transitionSettings;
 
             float transitionTime = transitionSettings.transitionTime;
@@ -117,6 +127,9 @@ namespace EasyTransition
             yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
 
             onTransitionEnd?.Invoke();
+
+            // Asegurar que el flag se limpia al finalizar la transición que incluye carga de escena.
+            runningTransition = false;
         }
 
         IEnumerator Timer(int sceneIndex, float startDelay, TransitionSettings transitionSettings)
@@ -125,7 +138,7 @@ namespace EasyTransition
 
             onTransitionBegin?.Invoke();
 
-            GameObject template = Instantiate(transitionTemplate) as GameObject;
+            var template = Instantiate(transitionTemplate);
             template.GetComponent<Transition>().transitionSettings = transitionSettings;
 
             float transitionTime = transitionSettings.transitionTime;
@@ -141,6 +154,9 @@ namespace EasyTransition
             yield return new WaitForSecondsRealtime(transitionSettings.destroyTime);
 
             onTransitionEnd?.Invoke();
+
+            // Asegurar que el flag se limpia al finalizar la transición que incluye carga de escena.
+            runningTransition = false;
         }
 
         IEnumerator Timer(float delay, TransitionSettings transitionSettings)
@@ -149,7 +165,7 @@ namespace EasyTransition
 
             onTransitionBegin?.Invoke();
 
-            GameObject template = Instantiate(transitionTemplate) as GameObject;
+            var template = Instantiate(transitionTemplate);
             template.GetComponent<Transition>().transitionSettings = transitionSettings;
 
             float transitionTime = transitionSettings.transitionTime;

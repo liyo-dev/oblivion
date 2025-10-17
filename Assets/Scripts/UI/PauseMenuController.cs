@@ -1,4 +1,4 @@
-﻿﻿// PauseMenuController.cs
+﻿// PauseMenuController.cs
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -32,6 +32,7 @@ public class PauseMenuController : MonoBehaviour
     private InputAction _pauseAction;
     private InputAction _uiSubmitAction;
     private InputAction _uiNavigateAction;
+    private bool _createdPlayerControls = false;
 #endif
 
     // internos
@@ -158,7 +159,7 @@ public class PauseMenuController : MonoBehaviour
         // intentar crear PlayerControls si no asignado (opcional)
         if (playerControls == null)
         {
-            try { playerControls = new PlayerControls(); Debug.Log("PauseMenuController: PlayerControls creado automáticamente."); }
+            try { playerControls = new PlayerControls(); Debug.Log("PauseMenuController: PlayerControls creado automáticamente."); _createdPlayerControls = true; }
             catch (System.Exception ex) { Debug.LogWarning("PauseMenuController: fallo creando PlayerControls: " + ex.Message); }
         }
 
@@ -213,6 +214,41 @@ public class PauseMenuController : MonoBehaviour
         IsOpen = false;
         _introSeq?.Kill(); _introSeq = null;
         DisableUIInput();
+    }
+
+    void OnDestroy()
+    {
+        // Desuscribir callbacks de Input System para evitar MissingReferenceException si el objeto fue destruido
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            if (_pauseAction != null)
+            {
+                _pauseAction.performed -= OnPausePressed;
+                _pauseAction.Disable();
+            }
+            if (_uiNavigateAction != null)
+            {
+                _uiNavigateAction.performed -= OnUINavigate;
+                _uiNavigateAction.Disable();
+            }
+            if (_uiSubmitAction != null)
+            {
+                _uiSubmitAction.Disable();
+            }
+            // Si creamos nosotros el PlayerControls, liberarlo
+            if (_createdPlayerControls && playerControls != null)
+            {
+                try { playerControls.Disable(); playerControls.Dispose(); } catch {};
+                playerControls = null;
+            }
+        }
+        catch { }
+#endif
+        // Enlazamientos UI
+        if (resumeButton != null) resumeButton.onClick.RemoveAllListeners();
+        if (optionsButton != null) optionsButton.onClick.RemoveAllListeners();
+        if (quitToMainButton != null) quitToMainButton.onClick.RemoveAllListeners();
     }
 
     void Start()
@@ -305,8 +341,21 @@ public class PauseMenuController : MonoBehaviour
     // Nuevo: togglear el menú de pausa de forma segura
     public void TogglePause()
     {
-        Debug.Log($"PauseMenuController.TogglePause called. active={gameObject.activeInHierarchy}, _isPaused={_isPaused}, IsOpen={IsOpen}");
-        if (gameObject.activeInHierarchy)
+        // Acceder a propiedades de UnityEngine.Object puede lanzar MissingReferenceException si el objeto fue destruido
+        bool activeInHierarchy;
+        try
+        {
+            if (gameObject == null) return; // objeto nativo destruido
+            activeInHierarchy = gameObject.activeInHierarchy;
+        }
+        catch
+        {
+            // El objeto fue destruido; ignorar el callback
+            return;
+        }
+
+        Debug.Log($"PauseMenuController.TogglePause called. active={activeInHierarchy}, _isPaused={_isPaused}, IsOpen={IsOpen}");
+        if (activeInHierarchy)
         {
             Resume();
             Debug.Log("PauseMenuController: menu closed via TogglePause");
