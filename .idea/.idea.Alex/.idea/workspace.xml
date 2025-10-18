@@ -6,11 +6,14 @@
   <component name="ChangeListManager">
     <list default="true" id="f4bd068e-f54e-477e-a3c7-5afbf244e4c8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Alex/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Plugins/Fonts/Nunito-Regular SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Fonts/Nunito-Regular SDF.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Plugins/Fonts/Nunito-SemiBold SDF.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Plugins/Fonts/Nunito-SemiBold SDF.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Test/PlayerTest.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/NPC/NPCBehaviourManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/NPC/NPCBehaviourManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GameOverManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GameOverManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_DemonAppears.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_DemonAppears.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_Intro.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_Intro.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_VillainPlans.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Cinematic_VillainPlans.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo/PrologueVolume Profile.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Cinematics/Prologo/PrologueVolume Profile.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Systems/MainMenu.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Systems/MainMenu.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Timeline/PrologueDirectorTimeline.playable" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +55,7 @@
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/IA/SimpleNPCCombat.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/IA/Targetable.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Interaction/Interactable.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/NPC/NPCBehaviourManager.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Player/ManaPool.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/luarb/dev/unity/Alex/Assets/Scripts/Player/ManaPool.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Player/PlayerAbilities.cs" root0="FORCE_HIGHLIGHTING" />
@@ -195,7 +199,7 @@
       <workItem from="1760700213361" duration="9088000" />
       <workItem from="1760732103255" duration="607000" />
       <workItem from="1760768130334" duration="378000" />
-      <workItem from="1760794423539" duration="4995000" />
+      <workItem from="1760794423539" duration="8939000" />
     </task>
     <servers />
   </component>

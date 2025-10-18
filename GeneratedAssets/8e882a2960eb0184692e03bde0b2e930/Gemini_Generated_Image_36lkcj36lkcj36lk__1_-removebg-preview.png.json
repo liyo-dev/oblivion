@@ -1,0 +1,20 @@
+{
+    "asset": "8e882a2960eb0184692e03bde0b2e930",
+    "fileName": "Gemini_Generated_Image_36lkcj36lkcj36lk__1_-removebg-preview.png",
+    "prompt": "",
+    "negativePrompt": "",
+    "model": "",
+    "modelName": "",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": []
+    },
+    "upscaleFactor": 0
+}
