@@ -38,8 +38,11 @@ namespace Alex.NPC
 
         Transform _player;
         Transform _playerCamera;
+        Animator _playerAnimator;
 
         PlayerActionManager _actionManager; // agregado: cache para PlayerActionManager
+
+        static readonly int PlayerInputMagnitudeHash = UnityEngine.Animator.StringToHash("InputMagnitude");
 
         void Awake()
         {
@@ -138,6 +141,18 @@ namespace Alex.NPC
             return _actionManager;
         }
 
+        internal void ForcePlayerIdle()
+        {
+            var pam = GetActionManager();
+            if (pam == null)
+                return;
+
+            if (_playerAnimator == null || _playerAnimator.gameObject != pam.gameObject)
+                _playerAnimator = pam.GetComponent<Animator>();
+
+            _playerAnimator?.SetFloat(PlayerInputMagnitudeHash, 0f);
+        }
+
         internal bool IsPlayerInFov(float radius, float fov)
         {
             if (_player == null)
@@ -232,6 +247,8 @@ namespace Alex.NPC
         {
             _player = null;
             _playerCamera = null;
+            _playerAnimator = null;
+            _actionManager = null;
         }
 
         #endregion
@@ -751,6 +768,9 @@ namespace Alex.NPC
                 if (lockPlayer && lockOnSight && !_lockModeApplied)
                     ApplyLock();
 
+                if (lockPlayer && _lockModeApplied)
+                    _ctx.ForcePlayerIdle();
+
                 // ← NUEVO: programa el giro si procede y aún no se ha lanzado
                 if (turnPlayerOnSight && _turnRoutine == null && _lockModeApplied)
                     _turnRoutine = _ctx.RunCoroutine(TurnPlayerAfterDelay());
@@ -777,6 +797,8 @@ namespace Alex.NPC
 
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 _ctx.Animator.ResetMovement();
+                if (lockPlayer && _lockModeApplied)
+                    _ctx.ForcePlayerIdle();
 
                 // Animación de “alerta”
                 float alertTimer = 0f;
@@ -789,6 +811,9 @@ namespace Alex.NPC
                 {
                     if (_ctx.Player == null || !_ctx.IsPlayerInFov(sightRadius, fovDegrees))
                         break;
+
+                    if (lockPlayer && _lockModeApplied)
+                        _ctx.ForcePlayerIdle();
 
                     alertTimer += Time.deltaTime;
                     yield return null;
@@ -824,6 +849,9 @@ namespace Alex.NPC
                     if (distance <= challengeStopDistance)
                         break;
 
+                    if (lockPlayer && _lockModeApplied)
+                        _ctx.ForcePlayerIdle();
+
                     if (!_ctx.IsPlayerInFov(sightRadius, fovDegrees))
                     {
                         loseSightTimer += Time.deltaTime;
@@ -853,9 +881,18 @@ namespace Alex.NPC
 
                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
                 _ctx.Animator.ResetMovement();
+                if (lockPlayer && _lockModeApplied)
+                    _ctx.ForcePlayerIdle();
 
                 if (!string.IsNullOrEmpty(challengeState))
+                {
+                    _ctx.Animator.SetInteractOverride(challengeState, true);
                     _ctx.Animator.PlayOneShot(challengeState);
+                }
+                else
+                {
+                    _ctx.Animator.ClearInteractOverride();
+                }
 
                 // Dispara la interacción o fallback
                 if (_ctx.Interactable && _ctx.Player)
@@ -900,6 +937,8 @@ namespace Alex.NPC
                 {
                     _ctx.DebugLog("PlayerActionManager no disponible para aplicar lock.");
                 }
+
+                _ctx.ForcePlayerIdle();
             }
 
             void CleanupAndRelease(string reason)
@@ -916,12 +955,18 @@ namespace Alex.NPC
 
             void ReleasePlayer()
             {
+                _ctx.Animator.ClearInteractOverride();
+
                 if (!lockPlayer) return;
 
                 var pam = _ctx.GetActionManager();
                 if (_lockModeApplied && pam != null)
                 {
                     pam.PopMode(lockMode);
+                    _lockModeApplied = false;
+                }
+                else if (_lockModeApplied)
+                {
                     _lockModeApplied = false;
                 }
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO

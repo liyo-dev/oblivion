@@ -45,6 +45,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     Transform _player;
     Transform _playerCam;
     Coroutine _faceRoutine;
+    string _interactOverride;
+    bool _clearOverrideOnEnd;
 
     void Reset()
     {
@@ -159,7 +161,8 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (rotateToPlayerOnInteract && _player)
             _faceRoutine = StartCoroutine(FaceTarget(_player));
 
-        CrossFade(interactState, 0.1f);
+        string targetState = string.IsNullOrEmpty(_interactOverride) ? interactState : _interactOverride;
+        CrossFade(targetState, 0.1f);
     }
 
     public void EndInteraction()
@@ -172,6 +175,9 @@ public class NPCSimpleAnimator : MonoBehaviour
         StopFacing();
         PlayLocomotion();
         ambientInhibitor?.Unlock();
+
+        if (_clearOverrideOnEnd)
+            ClearInteractOverride();
     }
 
     IEnumerator FaceTarget(Transform target)
@@ -218,6 +224,18 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         _player = newPlayer;
         _playerCam = newPlayerCam ? newPlayerCam : (_playerCam ?? PlayerLocator.ResolvePlayerCamera());
+    }
+
+    public void SetInteractOverride(string stateName, bool clearOnEnd = true)
+    {
+        _interactOverride = stateName;
+        _clearOverrideOnEnd = clearOnEnd && !string.IsNullOrEmpty(stateName);
+    }
+
+    public void ClearInteractOverride()
+    {
+        _interactOverride = null;
+        _clearOverrideOnEnd = false;
     }
 
     public void TriggerGreeting()

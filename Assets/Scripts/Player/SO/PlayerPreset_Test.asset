@@ -15,17 +15,17 @@ MonoBehaviour:
   spawnAnchorId: Bedroom
   level: 1
   maxHP: 100
-  currentHP: 50
-  maxMP: 0
-  currentMP: 0
+  currentHP: 97
+  maxMP: 100
+  currentMP: 25
   unlockedAbilities: 01000000
-  unlockedSpells: 
-  leftSpellId: 0
-  rightSpellId: 0
+  unlockedSpells: 01000000
+  leftSpellId: 1
+  rightSpellId: 1
   specialSpellId: 0
   flags: []
   abilities:
     swim: 0
-    jump: 0
+    jump: 1
     climb: 0
-    magic: 0
+    magic: 1
