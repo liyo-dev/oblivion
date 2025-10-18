@@ -4882,9 +4882,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6673899346828621514}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: _PLAYER
-  m_TagString: Player
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

@@ -1,3 +1,4 @@
+using Alex.NPC;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -26,12 +27,14 @@ public class Interactable : MonoBehaviour
 
     bool used, enabledForUse;
     SimpleQuestNPC _questNPC;
+    NPCBehaviourManager _npcManager;
 
     void Awake()
     {
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
         _questNPC = GetComponent<SimpleQuestNPC>();
+        _npcManager = GetComponent<NPCBehaviourManager>();
     }
 
     public void SetHintVisible(bool visible)
@@ -58,8 +61,33 @@ public class Interactable : MonoBehaviour
             return;
         }
 
+        if (_npcManager != null && _npcManager.HandleInteraction(interactor))
+            return;
+
         if (mode == InteractableMode.OpenDialogue)
             StartDialogue();
+    }
+
+    public void InteractWithPlayer()
+    {
+        TryInteractWithPlayer();
+    }
+
+    public bool TryInteractWithPlayer()
+    {
+        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
+        {
+            var fallback = GameObject.FindGameObjectWithTag("Player");
+            if (!fallback)
+            {
+                Debug.LogWarning("[Interactable] Could not locate Player for interaction.");
+                return false;
+            }
+            playerGo = fallback;
+        }
+
+        Interact(playerGo);
+        return true;
     }
 
     void StartDialogue()
@@ -99,4 +127,15 @@ public class Interactable : MonoBehaviour
 
     public void SetDialogue(DialogueAsset asset) => dialogue = asset;
     public void SetMode(InteractableMode newMode) => mode = newMode;
+
+    internal void RegisterNPCManager(NPCBehaviourManager manager)
+    {
+        _npcManager = manager;
+    }
+
+    internal void UnregisterNPCManager(NPCBehaviourManager manager)
+    {
+        if (_npcManager == manager)
+            _npcManager = null;
+    }
 }

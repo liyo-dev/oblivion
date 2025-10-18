@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Collections.Generic;
+using Alex.NPC.Common;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -11,7 +11,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Tooltip("Nombre EXACTO del estado (Blend Tree) de locomoción en la capa Base.")]
     [SerializeField] private string locomotionState = "Free Locomotion";
 
-    [SerializeField] private string greetState    = "Greeting01_NoWeapon";
+    [SerializeField] private string greetState = "Greeting01_NoWeapon";
     [SerializeField] private string interactState = "InteractWithPeople_NoWeapon";
 
     [Header("Saludo automático")]
@@ -28,22 +28,23 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField] private float rotateSpeed = 10f;
 
     [Header("Referencias")]
-    [SerializeField] private Transform playerOverride; // opcional
-    [SerializeField] private Transform lookFrom;       // si null, transform
-    [SerializeField] private AmbientInhibitor ambientInhibitor; // opcional
+    [SerializeField] private Transform playerOverride;
+    [SerializeField] private Transform lookFrom;
+    [SerializeField] private AmbientInhibitor ambientInhibitor;
 
     [Header("Depuración")]
     [SerializeField] private bool drawGizmos = true;
 
-    // Estado interno
-    bool isInteracting = false;
-    bool greetOnCooldown = false;
-    Transform player, playerCam;
-    Coroutine faceCo;
-    readonly Dictionary<string, float> clipLenCache = new();
+    static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
 
-    // Parámetros (hash)
-    static readonly int InputMagnitude_Hash = Animator.StringToHash("InputMagnitude");
+    AnimatorStateCache _stateCache;
+    AnimatorClipCache _clipCache;
+
+    bool _isInteracting;
+    bool _greetOnCooldown;
+    Transform _player;
+    Transform _playerCam;
+    Coroutine _faceRoutine;
 
     void Reset()
     {
@@ -54,110 +55,136 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     void Awake()
     {
-        if (!animator) animator = GetComponentInChildren<Animator>(true);
-        if (!lookFrom) lookFrom = transform;
-        if (!ambientInhibitor) ambientInhibitor = GetComponent<AmbientInhibitor>();
-        CacheClipLengths();
+        animator ??= GetComponentInChildren<Animator>(true);
+        lookFrom ??= transform;
+        ambientInhibitor ??= GetComponent<AmbientInhibitor>();
 
-        // Player/cámara
-        if (playerOverride) player = playerOverride;
-        else
+        if (animator != null)
         {
-            var pGo = GameObject.FindGameObjectWithTag("Player");
-            if (pGo) player = pGo.transform;
-        }
-        if (Camera.main) playerCam = Camera.main.transform;
-
-        // Enlazar con Interactable si existe (no modifica tu script)
-        var interactable = GetComponent<Interactable>();
-        if (interactable)
-        {
-            interactable.OnStarted.AddListener(BeginInteraction);
-            interactable.OnFinished.AddListener(EndInteraction);
+            animator.applyRootMotion = false;
+            _stateCache = new AnimatorStateCache(animator);
+            _clipCache = new AnimatorClipCache(animator);
         }
 
-        // Locomoción controlada por Agent (no root-motion)
-        if (animator) animator.applyRootMotion = false;
+        ResolvePlayerReferences();
+        BindInteractable();
     }
 
     void Start()
     {
-        // Entra al Blend Tree de locomoción desde el inicio
         PlayLocomotion();
-        if (animator) animator.SetFloat(InputMagnitude_Hash, 0f);
+        if (animator != null)
+            animator.SetFloat(InputMagnitudeHash, 0f);
     }
 
     void Update()
     {
-        if (!greetOnSight || isInteracting || !player) return;
+        if (!greetOnSight || _isInteracting || !_player || animator == null)
+            return;
 
-        Vector3 from = (lookFrom ? lookFrom.position : transform.position);
-        Vector3 toPlayer = player.position - from;
-        float dist = toPlayer.magnitude;
-        if (dist > greetRadius) return;
+        var origin = LookTransform;
+        var toPlayer = _player.position - origin.position;
 
-        // FOV
-        Vector3 forward = (lookFrom ? lookFrom.forward : transform.forward);
-        Vector3 dir = toPlayer.normalized;
+        if (toPlayer.sqrMagnitude > greetRadius * greetRadius)
+            return;
+
+        if (!IsInsideFov(origin.forward, toPlayer))
+            return;
+
+        if (requirePlayerLookingAtMe && _playerCam && !IsPlayerLookingAtNpc(origin.position))
+            return;
+
+        if (HasOcclusion(origin.position, toPlayer))
+            return;
+
+        if (!_greetOnCooldown)
+            StartCoroutine(DoGreeting());
+    }
+
+    void ResolvePlayerReferences()
+    {
+        _player = playerOverride ? playerOverride : PlayerLocator.ResolvePlayer();
+        if (_player)
+            PlayerService.RegisterComponent(_player, false);
+
+        _playerCam = PlayerLocator.ResolvePlayerCamera();
+    }
+
+    void BindInteractable()
+    {
+        var interactable = GetComponent<Interactable>();
+        if (interactable == null)
+            return;
+
+        interactable.OnStarted.AddListener(BeginInteraction);
+        interactable.OnFinished.AddListener(EndInteraction);
+    }
+
+    Transform LookTransform => lookFrom ? lookFrom : transform;
+
+    bool IsInsideFov(Vector3 forward, Vector3 toPlayer)
+    {
+        var dir = toPlayer.normalized;
         float dot = Vector3.Dot(forward, dir);
         float fovDot = Mathf.Cos(0.5f * fovDegrees * Mathf.Deg2Rad);
-        if (dot < fovDot) return;
+        return dot >= fovDot;
+    }
 
-        // ¿El jugador/cámara me mira?
-        if (requirePlayerLookingAtMe && playerCam)
-        {
-            Vector3 toNpc = (from - playerCam.position).normalized;
-            float lookDot = Vector3.Dot(playerCam.forward, toNpc);
-            if (lookDot < playerLookDotThreshold) return;
-        }
+    bool IsPlayerLookingAtNpc(Vector3 npcPosition)
+    {
+        Vector3 toNpc = (npcPosition - _playerCam.position).normalized;
+        float lookDot = Vector3.Dot(_playerCam.forward, toNpc);
+        return lookDot >= playerLookDotThreshold;
+    }
 
-        // Línea de visión (evita paredes entre medias)
-        if (Physics.Raycast(from + Vector3.up * 1.6f, dir, out var hit, greetRadius, occluders))
-        {
-            if (hit.transform != player && !hit.transform.IsChildOf(player)) return;
-        }
+    bool HasOcclusion(Vector3 origin, Vector3 toPlayer)
+    {
+        var dir = toPlayer.normalized;
+        if (!Physics.Raycast(origin + Vector3.up * 1.6f, dir, out var hit, greetRadius, occluders))
+            return false;
 
-        if (!greetOnCooldown) StartCoroutine(DoGreeting());
+        return hit.transform != _player && !hit.transform.IsChildOf(_player);
     }
 
     // ===== Interacción =====
     public void BeginInteraction()
     {
-        if (isInteracting) return;
-        isInteracting = true;
+        if (_isInteracting)
+            return;
 
+        _isInteracting = true;
         ambientInhibitor?.Lock();
 
         StopFacing();
-        if (rotateToPlayerOnInteract && player)
-            faceCo = StartCoroutine(FaceTarget(player));
+        if (rotateToPlayerOnInteract && _player)
+            _faceRoutine = StartCoroutine(FaceTarget(_player));
 
         CrossFade(interactState, 0.1f);
     }
 
     public void EndInteraction()
     {
-        if (!isInteracting) return;
-        isInteracting = false;
+        if (!_isInteracting)
+            return;
+
+        _isInteracting = false;
 
         StopFacing();
         PlayLocomotion();
-
         ambientInhibitor?.Unlock();
     }
 
-    IEnumerator FaceTarget(Transform t)
+    IEnumerator FaceTarget(Transform target)
     {
-        while (isInteracting && t)
+        while (_isInteracting && target)
         {
-            Vector3 from = (lookFrom ? lookFrom.position : transform.position);
-            Vector3 dir = t.position - from;
+            var anchor = LookTransform;
+            Vector3 dir = target.position - anchor.position;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f)
             {
-                Quaternion target = Quaternion.LookRotation(dir.normalized, Vector3.up);
-                var rotXform = (lookFrom ? lookFrom : transform);
-                rotXform.rotation = Quaternion.Slerp(rotXform.rotation, target, Time.deltaTime * rotateSpeed);
+                Quaternion desired = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                anchor.rotation = Quaternion.Slerp(anchor.rotation, desired, Time.deltaTime * rotateSpeed);
             }
             yield return null;
         }
@@ -165,93 +192,100 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     void StopFacing()
     {
-        if (faceCo != null) { StopCoroutine(faceCo); faceCo = null; }
+        if (_faceRoutine == null) return;
+        StopCoroutine(_faceRoutine);
+        _faceRoutine = null;
     }
 
     // ===== Saludo =====
     IEnumerator DoGreeting()
     {
-        greetOnCooldown = true;
+        _greetOnCooldown = true;
 
         CrossFade(greetState, 0.08f);
-        float len = GetClipLengthSafe(greetState);
-        yield return new WaitForSeconds(len > 0f ? len : 1f);
+        float len = Mathf.Max(0.01f, _clipCache?.GetLength(greetState) ?? 0f);
+        yield return new WaitForSeconds(len);
 
-        if (!isInteracting) PlayLocomotion();
+        if (!_isInteracting)
+            PlayLocomotion();
 
         yield return new WaitForSeconds(greetCooldown);
-        greetOnCooldown = false;
+        _greetOnCooldown = false;
     }
 
-    // ===== Utilidades públicas =====
+    // ===== API pública =====
     public void SetPlayer(Transform newPlayer, Transform newPlayerCam = null)
     {
-        player = newPlayer;
-        playerCam = newPlayerCam ? newPlayerCam : (Camera.main ? Camera.main.transform : playerCam);
+        _player = newPlayer;
+        _playerCam = newPlayerCam ? newPlayerCam : (_playerCam ?? PlayerLocator.ResolvePlayerCamera());
     }
 
     public void TriggerGreeting()
     {
-        if (!greetOnCooldown && !isInteracting) StartCoroutine(DoGreeting());
+        if (!_greetOnCooldown && !_isInteracting)
+            StartCoroutine(DoGreeting());
     }
+
+    public void SetMovementSpeed(float normalizedSpeed, float dampTime = 0.1f)
+    {
+        if (!animator) return;
+        animator.SetFloat(InputMagnitudeHash, Mathf.Clamp01(normalizedSpeed), dampTime, Time.deltaTime);
+    }
+
+    public void ResetMovement() => SetMovementSpeed(0f);
 
     public void PlayOneShot(string stateName)
     {
         StartCoroutine(CoPlayOneShot(stateName));
     }
+
     IEnumerator CoPlayOneShot(string stateName)
     {
-        if (string.IsNullOrEmpty(stateName)) yield break;
+        if (string.IsNullOrEmpty(stateName) || animator == null)
+            yield break;
+
         CrossFade(stateName, 0.08f);
-        float len = GetClipLengthSafe(stateName);
-        yield return new WaitForSeconds(len > 0f ? len : 1f);
-        if (!isInteracting) PlayLocomotion();
+        float len = Mathf.Max(0.01f, _clipCache?.GetLength(stateName) ?? 0f);
+        yield return new WaitForSeconds(len);
+
+        if (!_isInteracting)
+            PlayLocomotion();
     }
 
-    // ===== Helpers de anim =====
+    // ===== Helpers de animación =====
     void PlayLocomotion()
     {
-        if (!animator || string.IsNullOrEmpty(locomotionState)) return;
-        animator.CrossFadeInFixedTime(locomotionState, 0.1f, 0, 0f);
+        if (string.IsNullOrEmpty(locomotionState))
+            return;
+
+        if (!_stateCache?.CrossFade(locomotionState, 0.1f) ?? true)
+            animator?.CrossFadeInFixedTime(locomotionState, 0.1f, 0, 0f);
     }
 
     void CrossFade(string stateName, float fade)
     {
-        if (!animator || string.IsNullOrEmpty(stateName)) return;
-        animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
-    }
+        if (string.IsNullOrEmpty(stateName) || animator == null)
+            return;
 
-    void CacheClipLengths()
-    {
-        if (!animator || animator.runtimeAnimatorController == null) return;
-        foreach (var c in animator.runtimeAnimatorController.animationClips)
-            if (!clipLenCache.ContainsKey(c.name)) clipLenCache.Add(c.name, c.length);
-    }
-
-    float GetClipLengthSafe(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return 0f;
-        if (clipLenCache.TryGetValue(name, out var l)) return l;
-
-        if (animator && animator.runtimeAnimatorController != null)
-        {
-            foreach (var c in animator.runtimeAnimatorController.animationClips)
-                if (c.name == name) { clipLenCache[name] = c.length; return c.length; }
-        }
-        return 0f;
+        if (!_stateCache?.CrossFade(stateName, fade) ?? true)
+            animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
     }
 
     void OnDrawGizmosSelected()
     {
-        if (!drawGizmos) return;
-        Vector3 pos = (lookFrom ? lookFrom.position : transform.position);
+        if (!drawGizmos)
+            return;
+
+        var origin = LookTransform;
+        Vector3 pos = origin.position;
         Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
         Gizmos.DrawSphere(pos, greetRadius);
 
         float half = 0.5f * fovDegrees * Mathf.Deg2Rad;
-        Vector3 fwd = (lookFrom ? lookFrom.forward : transform.forward);
+        Vector3 fwd = origin.forward;
         Vector3 left = Quaternion.Euler(0, -Mathf.Rad2Deg * half, 0) * fwd;
-        Vector3 right = Quaternion.Euler(0,  Mathf.Rad2Deg * half, 0) * fwd;
+        Vector3 right = Quaternion.Euler(0, Mathf.Rad2Deg * half, 0) * fwd;
+
         Gizmos.color = new Color(1f, 0.9f, 0.2f, 0.9f);
         Gizmos.DrawLine(pos, pos + left.normalized * greetRadius);
         Gizmos.DrawLine(pos, pos + right.normalized * greetRadius);

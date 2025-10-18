@@ -16761,7 +16761,8 @@ GameObject:
   - component: {fileID: 8793141675050009501}
   - component: {fileID: 4754465149019796885}
   - component: {fileID: 7310009456760416518}
-  - component: {fileID: 6462550380194503217}
+  - component: {fileID: -6525812222826922307}
+  - component: {fileID: 5727848368144605934}
   m_Layer: 8
   m_Name: GuerreraChina
   m_TagString: Untagged
@@ -16911,7 +16912,7 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &6462550380194503217
+--- !u!114 &-6525812222826922307
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -16920,41 +16921,84 @@ MonoBehaviour:
   m_GameObject: {fileID: 7770552252693826820}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00e97a32a4c8b8349be01bd014399d3c, type: 3}
+  m_Script: {fileID: 11500000, guid: a765fc0f77ab9fa44aef0a473cfc2305, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCAmbientBrain
+  m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 2228114838541742359}
-  locomotionState: Base Layer.Locomotion.Free Locomotion
-  locomotionParam: InputMagnitude
-  useRootMotion: 0
+  locomotionState: Free Locomotion
   greetState: Greeting01_NoWeapon
-  drinkState: DrinkPotion_NoWeapon
-  sleepState: Sleeping_NoWeapon
-  lookAroundState: SenseSomethingSearching_NoWeapon
-  foundSomething: FoundSomething_NoWeapon
-  interactPeople: InteractWithPeople_NoWeapon
-  danceState: Dance_NoWeapon
-  dizzyState: Dizzy_NoWeapon
-  celebrateState: LevelUp_NoWeapon
-  wanderRadius: 8
-  minIdleBeforeMove: 1
-  maxIdleBeforeMove: 3
-  overrideAgentSpeed: 0
-  actionChance: 0.55
-  loopActionDuration: {x: 4, y: 10}
-  maxPointSearchDist: 25
-  actionPoints: []
+  interactState: InteractWithPeople_NoWeapon
   greetOnSight: 1
   greetRadius: 3
   fovDegrees: 110
+  requirePlayerLookingAtMe: 1
+  playerLookDotThreshold: 0.6
   greetCooldown: 4
-  useIKLookAt: 1
-  lookAtWeight: 0.6
-  bodyWeight: 0.1
-  headWeight: 0.9
-  eyesWeight: 0.7
+  occluders:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rotateToPlayerOnInteract: 1
   rotateSpeed: 10
+  playerOverride: {fileID: 0}
+  lookFrom: {fileID: 2121512956809328837}
+  ambientInhibitor: {fileID: 0}
+  drawGizmos: 1
+--- !u!114 &5727848368144605934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7770552252693826820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
+  ambientModule:
+    enableWander: 1
+    wanderRadius: 2
+    minIdleTime: 1.2
+    maxIdleTime: 3
+    pickWhileMoving: 0
+  questModule:
+    enable: 0
+    chain: []
+    enableItemDetection: 1
+    detectionRadius: 3
+    detectionAngle: 90
+    detectionLayer:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    detectionInterval: 0.33
+  combatModule:
+    enable: 0
+    sightRadius: 8
+    fovDegrees: 120
+    challengeStopDistance: 2.2
+    approachRepathInterval: 0.25
+    loseSightGraceSeconds: 1.5
+    challengeAlertState: SenseSomethingStart_NoWeapon
+    challengeAlertMinSeconds: 0.75
+    challengeState: Challenging_NoWeapon
+    exclamationPrefab: {fileID: 0}
+    exclamationOffset: {x: 0, y: 2, z: 0}
+    exclamationSeconds: 2
+    lockPlayer: 1
+    fallbackDialogue: 
+    onChallengeStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onPlayerLock:
+      m_PersistentCalls:
+        m_Calls: []
+    onPlayerUnlock:
+      m_PersistentCalls:
+        m_Calls: []
+    onDialogueRequest:
+      m_PersistentCalls:
+        m_Calls: []
+  logDebug: 0
 --- !u!1 &7787806511522334384
 GameObject:
   m_ObjectHideFlags: 0

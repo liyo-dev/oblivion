@@ -1,13 +1,13 @@
-using UnityEngine;
-using UnityEngine.Events;
 using System.Collections;
 using System.Collections.Generic;
+using Alex.NPC.Common;
+using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(Interactable))]
+[System.Obsolete("Usa NPCBehaviourManager para gestionar NPCs con misiones.")]
 public class SimpleQuestNPC : MonoBehaviour
 {
-    // QuestCompletionMode moved to Identifiers.cs
-
     [System.Serializable]
     public class QuestChainEntry
     {
@@ -46,76 +46,82 @@ public class SimpleQuestNPC : MonoBehaviour
     private float detectionInterval = 0.33f;
     [SerializeField] private bool showDetectionGizmos = true;
 
-    // buffers no alocantes
-    private Collider[] _overlapBuffer = new Collider[16];
-    private readonly HashSet<GameObject> _consumed = new();
+    readonly Collider[] _overlapBuffer = new Collider[16];
+    readonly HashSet<GameObject> _consumed = new();
 
-    private Interactable _interactable;
-    private Transform _t;
-    private Transform _player;
-    private Coroutine _scanCo;
+    Interactable _interactable;
+    Transform _cachedTransform;
+    Transform _player;
+    Coroutine _scanRoutine;
+
+    QuestManager Manager => QuestManager.Instance;
+    bool HasChain => questChain != null && questChain.Count > 0;
 
     void Awake()
     {
-        _t = transform;
+        _cachedTransform = transform;
         _interactable = GetComponent<Interactable>();
-        if (!_interactable)
+        if (_interactable == null)
             Debug.LogError($"[{nameof(SimpleQuestNPC)}] Falta Interactable en {name}");
     }
 
     void Start()
     {
-        var goPlayer = GameObject.FindGameObjectWithTag("Player");
-        _player = goPlayer ? goPlayer.transform : null;
+        _player = PlayerLocator.ResolvePlayer();
+        if (_player)
+            PlayerService.RegisterComponent(_player, false);
         StartItemScan();
     }
 
     void OnEnable()
     {
-        if (_scanCo == null && isActiveAndEnabled) StartItemScan();
+        if (_scanRoutine == null && isActiveAndEnabled)
+            StartItemScan();
     }
 
     void OnDisable()
     {
-        if (_scanCo != null) { StopCoroutine(_scanCo); _scanCo = null; }
+        if (_scanRoutine != null)
+        {
+            StopCoroutine(_scanRoutine);
+            _scanRoutine = null;
+        }
     }
 
     public void Interact()
     {
-        var qm = QuestManager.Instance;
-        if (qm == null || questChain.Count == 0) return;
+        var qm = Manager;
+        if (qm == null || !HasChain)
+            return;
 
-        int idx = FindActiveOrCompletedIndex(qm);
-        if (idx >= 0)
+        if (TryGetCurrentEntry(qm, out var entry, out var index))
         {
-            var entry = questChain[idx];
             var questId = entry.questData?.questId;
-            if (string.IsNullOrEmpty(questId)) return;
+            if (string.IsNullOrEmpty(questId))
+                return;
 
-            var state = qm.GetState(questId);
-            switch (state)
+            switch (qm.GetState(questId))
             {
                 case QuestState.Inactive:
                     PlayDialogue(entry.dlgBefore);
                     break;
+
                 case QuestState.Active:
-                    HandleActive(entry, qm, questId, idx);
+                    HandleActive(entry, qm, questId, index);
                     break;
+
                 case QuestState.Completed:
-                    PlayDialogue(entry.dlgCompleted, () => StartCoroutine(StartNextQuestAfterDialogue(qm, idx)));
+                    PlayDialogue(entry.dlgCompleted, () => StartCoroutine(StartNextQuestAfterDialogue(qm, index)));
                     break;
             }
         }
         else
         {
-            // todavía no hay ninguna activa o completada → ofrecer la primera
-            var e0 = questChain[0];
-            PlayDialogue(e0.dlgBefore);
+            PlayDialogue(questChain[0].dlgBefore);
         }
     }
 
-    // === Flujo activo
-    private void HandleActive(QuestChainEntry entry, QuestManager qm, string questId, int currentIndex)
+    void HandleActive(QuestChainEntry entry, QuestManager qm, string questId, int currentIndex)
     {
         switch (entry.completionMode)
         {
@@ -130,7 +136,7 @@ public class SimpleQuestNPC : MonoBehaviour
                     PlayDialogue(entry.dlgInProgress);
                 break;
 
-            default: // Manual
+            default:
                 if (qm.AreAllStepsCompleted(questId))
                     FinishQuestAndChain(entry, qm, questId, currentIndex);
                 else
@@ -139,21 +145,27 @@ public class SimpleQuestNPC : MonoBehaviour
         }
     }
 
-    private void CompleteAllStepsAndQuest(QuestChainEntry entry, QuestManager qm, string questId, int currentIndex)
+    void CompleteAllStepsAndQuest(QuestChainEntry entry, QuestManager qm, string questId, int index)
     {
-        var rqEnum = qm.GetAll();
-        foreach (var rq in rqEnum)
+        foreach (var rq in qm.GetAll())
         {
-            if (rq.Id != questId) continue;
-            for (int i = 0; i < rq.Steps.Length; i++)
-                if (!rq.Steps[i].completed) qm.MarkStepDone(questId, i);
+            if (rq.Id != questId)
+                continue;
+
+            var steps = rq.Steps;
+            if (steps != null)
+            {
+                for (int i = 0; i < steps.Length; i++)
+                    if (!steps[i].completed)
+                        qm.MarkStepDone(questId, i);
+            }
             break;
         }
 
-        FinishQuestAndChain(entry, qm, questId, currentIndex);
+        FinishQuestAndChain(entry, qm, questId, index);
     }
 
-    private void FinishQuestAndChain(QuestChainEntry entry, QuestManager qm, string questId, int currentIndex)
+    void FinishQuestAndChain(QuestChainEntry entry, QuestManager qm, string questId, int index)
     {
         qm.CompleteQuest(questId);
         PersistQuestCompletedFlag(questId);
@@ -161,34 +173,33 @@ public class SimpleQuestNPC : MonoBehaviour
 
         PlayDialogue(entry.dlgTurnIn, () =>
         {
-            StartCoroutine(StartNextQuestAfterDialogue(qm, currentIndex));
+            StartCoroutine(StartNextQuestAfterDialogue(qm, index));
         });
     }
 
-    private IEnumerator StartNextQuestAfterDialogue(QuestManager qm, int currentIndex)
+    IEnumerator StartNextQuestAfterDialogue(QuestManager qm, int currentIndex)
     {
-        yield return null; // un frame para evitar carreras con cierre de diálogos
+        yield return null; // esperar un frame para evitar carreras con el cierre del diálogo
 
         int next = currentIndex + 1;
         while (next < questChain.Count)
         {
-            var e = questChain[next];
-            var id = e.questData ? e.questData.questId : null;
+            var nextEntry = questChain[next];
+            var nextId = nextEntry.questData ? nextEntry.questData.questId : null;
+            if (string.IsNullOrEmpty(nextId)) { next++; continue; }
 
-            if (string.IsNullOrEmpty(id)) { next++; continue; }
-
-            var state = qm.GetState(id);
+            var state = qm.GetState(nextId);
             if (state == QuestState.Completed) { next++; continue; }
 
             if (state == QuestState.Inactive)
             {
-                qm.AddQuest(e.questData);
-                qm.StartQuest(id);
-                if (e.dlgBefore) PlayDialogue(e.dlgBefore);
+                qm.AddQuest(nextEntry.questData);
+                qm.StartQuest(nextId);
+                if (nextEntry.dlgBefore) PlayDialogue(nextEntry.dlgBefore);
             }
-            else // Active
+            else
             {
-                if (e.dlgInProgress) PlayDialogue(e.dlgInProgress);
+                if (nextEntry.dlgInProgress) PlayDialogue(nextEntry.dlgInProgress);
             }
             yield break;
         }
@@ -196,20 +207,7 @@ public class SimpleQuestNPC : MonoBehaviour
         Debug.Log($"[{nameof(SimpleQuestNPC)}] Fin de la cadena en {name}.");
     }
 
-    private int FindActiveOrCompletedIndex(QuestManager qm)
-    {
-        // desde el final hacia atrás priorizando la última activa/completada
-        for (int i = questChain.Count - 1; i >= 0; i--)
-        {
-            var e = questChain[i];
-            if (!e.questData) continue;
-            var s = qm.GetState(e.questData.questId);
-            if (s == QuestState.Active || s == QuestState.Completed) return i;
-        }
-        return -1;
-    }
-
-    private void PlayDialogue(DialogueAsset dlg, System.Action onComplete = null)
+    void PlayDialogue(DialogueAsset dlg, System.Action onComplete = null)
     {
         if (!dlg)
         {
@@ -225,7 +223,7 @@ public class SimpleQuestNPC : MonoBehaviour
             var dm = DialogueManager.Instance;
             if (dm != null)
             {
-                dm.StartDialogue(dlg, _t, () =>
+                dm.StartDialogue(dlg, _cachedTransform, () =>
                 {
                     _interactable.OnFinished?.Invoke();
                     onComplete?.Invoke();
@@ -233,42 +231,77 @@ public class SimpleQuestNPC : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[SimpleQuestNPC] DialogueManager no disponible, saltando diálogo.");
+                Debug.LogWarning($"[{nameof(SimpleQuestNPC)}] DialogueManager no disponible, saltando diálogo.");
                 _interactable.OnFinished?.Invoke();
                 onComplete?.Invoke();
             }
         }
         else
         {
-            DialogueManager.Instance?.StartDialogue(dlg, _t, onComplete);
+            DialogueManager.Instance?.StartDialogue(dlg, _cachedTransform, onComplete);
         }
     }
 
-    private void PersistQuestCompletedFlag(string questId)
+    void PersistQuestCompletedFlag(string questId)
     {
-        if (string.IsNullOrEmpty(questId)) return;
+        if (string.IsNullOrEmpty(questId))
+            return;
+
         var profile = GameBootService.Profile;
         var saveSystem = FindFirstObjectByType<SaveSystem>();
-        if (profile == null || saveSystem == null) return;
+        if (profile == null || saveSystem == null)
+            return;
 
         var preset = profile.GetActivePresetResolved();
-        if (preset == null) return;
-        preset.flags ??= new List<string>();
+        if (preset == null)
+            return;
 
+        preset.flags ??= new List<string>();
         string flag = $"QUEST_COMPLETED:{questId}";
-        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
+        if (!preset.flags.Contains(flag))
+            preset.flags.Add(flag);
 
         profile.SaveCurrentGameState(saveSystem);
     }
 
-    // ==== Detección de ítems (no alocante, sin Find*)
-    private void StartItemScan()
+    bool TryGetCurrentEntry(QuestManager qm, out QuestChainEntry entry, out int index)
     {
-        if (_scanCo != null) StopCoroutine(_scanCo);
-        _scanCo = StartCoroutine(ScanRoutine());
+        index = FindActiveOrCompletedIndex(qm);
+        if (index >= 0)
+        {
+            entry = questChain[index];
+            return true;
+        }
+
+        entry = null;
+        return false;
     }
 
-    private IEnumerator ScanRoutine()
+    int FindActiveOrCompletedIndex(QuestManager qm)
+    {
+        for (int i = questChain.Count - 1; i >= 0; i--)
+        {
+            var entry = questChain[i];
+            if (!entry.questData) continue;
+
+            var state = qm.GetState(entry.questData.questId);
+            if (state == QuestState.Active || state == QuestState.Completed)
+                return i;
+        }
+
+        return -1;
+    }
+
+    // ==== Detección de ítems ====
+    void StartItemScan()
+    {
+        if (_scanRoutine != null)
+            StopCoroutine(_scanRoutine);
+
+        _scanRoutine = StartCoroutine(ScanRoutine());
+    }
+
+    IEnumerator ScanRoutine()
     {
         var wait = new WaitForSeconds(detectionInterval);
         while (isActiveAndEnabled)
@@ -278,110 +311,118 @@ public class SimpleQuestNPC : MonoBehaviour
         }
     }
 
-    private void TryDetectItems()
+    void TryDetectItems()
     {
-        var qm = QuestManager.Instance;
-        if (qm == null) return;
+        var qm = Manager;
+        if (qm == null)
+            return;
 
-        int idx = FindActiveOrCompletedIndex(qm);
-        if (idx < 0) return;
+        if (!TryGetCurrentEntry(qm, out var entry, out var index))
+            return;
 
-        var entry = questChain[idx];
-        if (!entry.autoDetectItemDelivery || entry.questData == null) return;
-        if (qm.GetState(entry.questData.questId) != QuestState.Active) return;
+        if (!entry.autoDetectItemDelivery || entry.questData == null)
+            return;
 
-        int count = Physics.OverlapSphereNonAlloc(_t.position, detectionRadius, _overlapBuffer, detectionLayer, QueryTriggerInteraction.Collide);
-        if (count <= 0) return;
+        if (qm.GetState(entry.questData.questId) != QuestState.Active)
+            return;
 
-        Vector3 fwd = _t.forward;
-        float half = detectionAngle * 0.5f;
+        int hits = Physics.OverlapSphereNonAlloc(_cachedTransform.position, detectionRadius, _overlapBuffer, detectionLayer, QueryTriggerInteraction.Collide);
+        if (hits <= 0)
+            return;
 
-        for (int i = 0; i < count; i++)
+        Vector3 origin = _cachedTransform.position;
+        Vector3 forward = _cachedTransform.forward;
+        float halfAngle = detectionAngle * 0.5f;
+        float radiusSqr = detectionRadius * detectionRadius;
+
+        for (int i = 0; i < hits; i++)
         {
-            var col = _overlapBuffer[i];
-            if (!col) continue;
+            var collider = _overlapBuffer[i];
+            if (!collider) continue;
 
-            var go = col.attachedRigidbody ? col.attachedRigidbody.gameObject : col.gameObject;
-            if (_consumed.Contains(go)) continue;
+            var go = collider.attachedRigidbody ? collider.attachedRigidbody.gameObject : collider.gameObject;
+            if (!go || _consumed.Contains(go))
+                continue;
 
-            // Tag check (rápido)
-            if (!string.IsNullOrEmpty(entry.itemTag) && !go.CompareTag(entry.itemTag)) continue;
+            if (!string.IsNullOrEmpty(entry.itemTag) && !go.CompareTag(entry.itemTag))
+                continue;
 
-            // ángulo
-            Vector3 dir = go.transform.position - _t.position;
-            if (dir.sqrMagnitude > detectionRadius * detectionRadius) continue;
-            float ang = Vector3.Angle(fwd, dir);
-            if (ang > half) continue;
+            Vector3 dir = go.transform.position - origin;
+            if (dir.sqrMagnitude > radiusSqr)
+                continue;
 
-            // Si lo lleva el player, no lo detectes aún
-            if (IsHeldByPlayer(go)) continue;
+            if (Vector3.Angle(forward, dir) > halfAngle)
+                continue;
 
-            OnItemDetected(go, entry, qm);
-            // no lo seguimos procesando este frame
+            if (IsHeldByPlayer(go))
+                continue;
+
+            OnItemDetected(go, entry, qm, index);
         }
     }
 
-    private bool IsHeldByPlayer(GameObject item)
+    bool IsHeldByPlayer(GameObject item)
     {
-        if (_player == null) return false;
-        Transform p = item.transform.parent;
-        while (p != null)
+        if (_player == null)
+            return false;
+
+        Transform parent = item.transform.parent;
+        while (parent != null)
         {
-            if (p == _player) return true;
-            p = p.parent;
+            if (parent == _player)
+                return true;
+            parent = parent.parent;
         }
         return false;
     }
-    
-    private void OnItemDetected(GameObject item, QuestChainEntry entry, QuestManager qm)
+
+    void OnItemDetected(GameObject item, QuestChainEntry entry, QuestManager qm, int currentIndex)
     {
         _consumed.Add(item);
-        Destroy(item); // o devuelve al pool si usas pooling
+        Destroy(item);
 
-        var qid = entry.questData.questId;
-        int stepsCount = GetStepsCount(qm, qid);
+        string questId = entry.questData.questId;
+        int stepsCount = GetStepsCount(qm, questId);
 
         if (stepsCount == 0)
         {
-            // Sin pasos: completar directamente
-            FinishQuestAndChain(entry, qm, qid, FindActiveOrCompletedIndex(qm));
+            FinishQuestAndChain(entry, qm, questId, currentIndex);
             return;
         }
 
-        int step = Mathf.Clamp(entry.itemDeliveryStepIndex, 0, stepsCount - 1);
-        qm.MarkStepDone(qid, step);
+        int stepIndex = Mathf.Clamp(entry.itemDeliveryStepIndex, 0, stepsCount - 1);
+        qm.MarkStepDone(questId, stepIndex);
 
-        if (qm.AreAllStepsCompleted(qid))
-        {
-            FinishQuestAndChain(entry, qm, qid, FindActiveOrCompletedIndex(qm));
-        }
+        if (qm.AreAllStepsCompleted(questId))
+            FinishQuestAndChain(entry, qm, questId, currentIndex);
     }
 
-    private int GetStepsCount(QuestManager qm, string questId)
+    int GetStepsCount(QuestManager qm, string questId)
     {
-        foreach (var rq in qm.GetAll())
+        foreach (var request in qm.GetAll())
         {
-            if (rq.Id == questId)
-                return rq.Steps != null ? rq.Steps.Length : 0;
+            if (request.Id == questId)
+                return request.Steps?.Length ?? 0;
         }
         return 0;
     }
 
-    // ==== Gizmos
     void OnDrawGizmosSelected()
     {
-        if (!showDetectionGizmos) return;
+        if (!showDetectionGizmos)
+            return;
 
+        Vector3 pos = transform.position;
         Gizmos.color = new Color(1f, 0.8f, 0f, 0.75f);
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
+        Gizmos.DrawWireSphere(pos, detectionRadius);
 
-        var forward = transform.forward;
         float half = detectionAngle * 0.5f;
-        Vector3 left = Quaternion.Euler(0, -half, 0) * forward * detectionRadius;
-        Vector3 right = Quaternion.Euler(0, half, 0) * forward * detectionRadius;
+        Vector3 forward = transform.forward;
+        Vector3 left = Quaternion.Euler(0f, -half, 0f) * forward * detectionRadius;
+        Vector3 right = Quaternion.Euler(0f, half, 0f) * forward * detectionRadius;
 
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position, transform.position + left);
-        Gizmos.DrawLine(transform.position, transform.position + right);
+        Gizmos.DrawLine(pos, pos + left);
+        Gizmos.DrawLine(pos, pos + right);
     }
 }

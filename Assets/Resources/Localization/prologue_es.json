@@ -2,19 +2,19 @@
     "subtitles": [
         {
             "id": "PRLG_01",
-            "text": "Hace milenios, los dioses otorgaron a los magos el don de la magia."
+            "text": "Hace eones, un mago desafió a los dioses al recorrer el Sendero de las Estrellas, donde cada portal prometía poder y un deseo al final del camino."
         },
         {
             "id": "PRLG_02",
-            "text": "Un hechizo prohibido fue creado, capaz de destruir universos."
+            "text": "Pero su deseo fue demasiado grande, y su poder desató un cataclismo."
         },
         {
             "id": "PRLG_03",
-            "text": "Un mago intentó usarlo y falló, causando un cataclismo que dividió el mundo."
+            "text": "Los dioses sellaron el conocimiento del Sendero en el Grimorio de las Estrellas, para que nadie más repitiera su error."
         },
         {
             "id": "PRLG_04",
-            "text": "Desde entonces, los dioses sellaron la magia y vivieron separadas, temiendo su regreso."
+            "text": "Siglos después, el mundo había olvidado la leyenda…"
         }
     ]
 }

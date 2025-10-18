@@ -1,9 +1,11 @@
-﻿using UnityEngine;
 using System.Collections;
+using Alex.NPC.Common;
+using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 [DisallowMultipleComponent]
+[System.Obsolete("Usa NPCBehaviourManager con el módulo de ambientación.")]
 public class SimpleNPCWander : MonoBehaviour
 {
     [Header("Wander Settings")]
@@ -21,16 +23,10 @@ public class SimpleNPCWander : MonoBehaviour
     public float agentSpeed = 0f;
 
     NavMeshAgent _agent;
-    IAmbientAnim _ambientAnim;     // opcional: puente a tu sistema de animaciones
+    IAmbientAnim _ambientAnim; // Bridge opcional hacia tu sistema de animaciones
     Animator _animator;
 
-    static readonly int InputMagnitude_Hash = Animator.StringToHash("InputMagnitude");
-
-    void SafeSetAgentStopped(bool stopped)
-    {
-        if (_agent != null && _agent.isOnNavMesh)
-            _agent.isStopped = stopped;
-    }
+    static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
 
     void Awake()
     {
@@ -39,27 +35,21 @@ public class SimpleNPCWander : MonoBehaviour
         _animator = GetComponentInChildren<Animator>(true);
 
         if (_agent == null)
-            Debug.LogError($"[SimpleNPCWander] No NavMeshAgent en {name}.");
+            Debug.LogError($"[{nameof(SimpleNPCWander)}] No NavMeshAgent en {name}.");
 
         if (agentSpeed > 0f && _agent != null)
             _agent.speed = agentSpeed;
 
-        if (_animator) _animator.applyRootMotion = false; // manda el Agent
+        if (_animator != null)
+            _animator.applyRootMotion = false;
     }
 
     void OnEnable()
     {
         StopAllCoroutines();
 
-        if (_agent != null && !_agent.isOnNavMesh)
-        {
-            NavMeshHit hit;
-            float sampleRadius = Mathf.Max(1f, wanderRadius);
-            if (NavMesh.SamplePosition(transform.position, out hit, sampleRadius, NavMesh.AllAreas))
-                _agent.Warp(hit.position);
-            else
-                return; // no hay NavMesh cerca; no arrancar el loop
-        }
+        if (!NavMeshAgentUtility.EnsureAgentOnNavMesh(_agent, transform.position, wanderRadius))
+            return;
 
         StartCoroutine(WanderLoop());
     }
@@ -67,93 +57,75 @@ public class SimpleNPCWander : MonoBehaviour
     void OnDisable()
     {
         StopAllCoroutines();
-        SafeSetAgentStopped(true);
+        NavMeshAgentUtility.SafeSetStopped(_agent, true);
     }
 
     IEnumerator WanderLoop()
     {
-        // desincroniza un poco a los NPCs
+        // pequeña desincronización para que múltiples NPCs no arranquen a la vez
         yield return new WaitForSeconds(Random.Range(0f, 0.6f));
 
         while (isActiveAndEnabled)
         {
-            // idle previo al siguiente destino
             yield return new WaitForSeconds(Random.Range(minIdleTime, maxIdleTime));
 
-            if (_agent == null || !_agent.isOnNavMesh)
+            if (_agent == null || !NavMeshAgentUtility.EnsureAgentOnNavMesh(_agent, transform.position, wanderRadius))
             {
                 yield return new WaitForSeconds(0.5f);
                 continue;
             }
 
-            if (TryGetRandomNavmeshPoint(transform.position, wanderRadius, out var dest))
+            if (!NavMeshAgentUtility.TryGetRandomPoint(transform.position, wanderRadius, out var destination))
             {
-                SafeSetAgentStopped(false);
-
-                if (_agent == null || !_agent.isOnNavMesh)
-                {
-                    yield return null;
-                    continue;
-                }
-
-                _agent.SetDestination(dest);
-
-                // animación de caminar
-                if (_ambientAnim != null) _ambientAnim.PlayWalk(1f);
-
-                // seguimiento de movimiento
-                while (isActiveAndEnabled &&
-                       _agent != null &&
-                       _agent.isOnNavMesh &&
-                       !_agent.pathPending &&
-                       _agent.remainingDistance > _agent.stoppingDistance + 0.1f)
-                {
-                    float speed01 = (_agent.speed <= 0.01f)
-                        ? 0f
-                        : Mathf.Clamp01(_agent.velocity.magnitude / _agent.speed);
-
-                    if (_ambientAnim != null)
-                        _ambientAnim.PlayWalk(speed01);
-                    else if (_animator != null)
-                        _animator.SetFloat(InputMagnitude_Hash, speed01, 0.1f, Time.deltaTime); // suavizado
-
-                    if (!pickWhileMoving && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
-                        break;
-
-                    yield return null;
-                }
-
-                // llegada o cancelación
-                SafeSetAgentStopped(true);
-
-                if (_ambientAnim != null) _ambientAnim.PlayIdle();
-                else if (_animator != null) _animator.SetFloat(InputMagnitude_Hash, 0f, 0.1f, Time.deltaTime);
-            }
-            else
-            {
-                // no encontró punto válido
                 yield return new WaitForSeconds(0.5f);
+                continue;
             }
+
+            NavMeshAgentUtility.SetDestination(_agent, destination);
+            UpdateMovementAnimation(1f);
+
+            while (ShouldContinueWalking())
+            {
+                UpdateMovementAnimation(NavMeshAgentUtility.ComputeSpeedFactor(_agent));
+
+                if (!pickWhileMoving && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
+                    break;
+
+                yield return null;
+            }
+
+            NavMeshAgentUtility.SafeSetStopped(_agent, true);
+            UpdateMovementAnimation(0f);
 
             yield return null;
         }
     }
 
-    bool TryGetRandomNavmeshPoint(Vector3 origin, float radius, out Vector3 result)
+    bool ShouldContinueWalking()
     {
-        for (int i = 0; i < 8; i++)
+        return isActiveAndEnabled &&
+               _agent != null &&
+               _agent.isOnNavMesh &&
+               !_agent.pathPending &&
+               _agent.remainingDistance > _agent.stoppingDistance + 0.1f;
+    }
+
+    void UpdateMovementAnimation(float speed01)
+    {
+        if (_ambientAnim != null)
         {
-            Vector3 randomPoint = origin + Random.insideUnitSphere * radius;
-            if (NavMesh.SamplePosition(randomPoint, out var hit, radius, NavMesh.AllAreas))
-            {
-                result = hit.position;
-                return true;
-            }
+            if (speed01 <= 0.01f) _ambientAnim.PlayIdle();
+            else _ambientAnim.PlayWalk(speed01);
+            return;
         }
-        result = origin;
-        return false;
+
+        if (_animator != null)
+            _animator.SetFloat(InputMagnitudeHash, Mathf.Clamp01(speed01), 0.1f, Time.deltaTime);
     }
 
     // API pública
-    public void SetWanderRadius(float r) { wanderRadius = Mathf.Max(0f, r); }
+    public void SetWanderRadius(float radius)
+    {
+        wanderRadius = Mathf.Max(0f, radius);
+    }
 }
