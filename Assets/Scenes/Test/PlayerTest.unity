@@ -335,6 +335,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &759418093
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 759418094}
+  m_Layer: 0
+  m_Name: Combat
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &759418094
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 759418093}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6162509334625715681}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &761563302 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5572779666037973628, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
@@ -14650,6 +14681,7 @@ Transform:
   - {fileID: 1584695607014715846}
   - {fileID: 6225082953674226008}
   - {fileID: 2964420494270286386}
+  - {fileID: 759418094}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6166187668353536084
@@ -20835,9 +20867,14 @@ MonoBehaviour:
     challengeAlertMinSeconds: 0.75
     challengeState: Challenging_NoWeapon
     exclamationPrefab: {fileID: 6270544608068926498}
-    exclamationOffset: {x: 0, y: 2, z: 0}
+    exclamationOffset: {x: 0, y: 0, z: 0}
     exclamationSeconds: 2
     lockPlayer: 1
+    lockOnSight: 0
+    lockMode: 4
+    turnPlayerOnSight: 1
+    turnDelaySeconds: 1
+    turnDurationSeconds: 0.35
     fallbackDialogue: 
     onChallengeStarted:
       m_PersistentCalls:

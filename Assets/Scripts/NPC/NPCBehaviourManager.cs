@@ -669,18 +669,37 @@ namespace Alex.NPC
         sealed class CombatModule : INPCBehaviourModule
         {
             public bool enable = false;
+
+            [Header("Detección")]
             [Min(0f)] public float sightRadius = 8f;
             [Range(1f, 180f)] public float fovDegrees = 120f;
+
+            [Header("Aproximación")]
             public float challengeStopDistance = 2.2f;
             public float approachRepathInterval = 0.25f;
             public float loseSightGraceSeconds = 1.5f;
+
+            [Header("Animaciones")]
             public string challengeAlertState = "SenseSomethingStart_NoWeapon";
             public float challengeAlertMinSeconds = 0.75f;
             public string challengeState = "Challenging_NoWeapon";
+
+            [Header("UI / Feedback")]
             public GameObject exclamationPrefab;
             public Vector3 exclamationOffset = new Vector3(0f, 2f, 0f);
             public float exclamationSeconds = 2f;
+
+            [Header("Bloqueo de jugador")]
             public bool lockPlayer = true;
+            public bool lockOnSight = true;
+            public ActionMode lockMode = ActionMode.Stunned;
+
+            [Header("Giro estilo 'entrenador Pokémon'")]
+            public bool turnPlayerOnSight = true;     // ← NUEVO: activa el giro
+            [Min(0f)] public float turnDelaySeconds = 1.0f;   // ← NUEVO: espera antes de girar
+            [Min(0f)] public float turnDurationSeconds = 0.35f; // ← NUEVO: cuánto tarda en girar
+
+            [Header("Fallback")]
             [TextArea] public string fallbackDialogue;
 
             public UnityEvent onChallengeStarted;
@@ -690,15 +709,12 @@ namespace Alex.NPC
 
             NPCBehaviourManager _ctx;
             Coroutine _challengeRoutine;
+            Coroutine _turnRoutine;   
             bool _isChallenging;
             bool _lockModeApplied;
             bool _playerLockEventRaised;
 
-            public void Initialize(NPCBehaviourManager context)
-            {
-                _ctx = context;
-            }
-
+            public void Initialize(NPCBehaviourManager context) => _ctx = context;
             public void OnStart() { }
 
             public void OnEnable()
@@ -706,6 +722,7 @@ namespace Alex.NPC
                 _isChallenging = false;
                 _lockModeApplied = false;
                 _playerLockEventRaised = false;
+                if (exclamationPrefab) exclamationPrefab.SetActive(false);
             }
 
             public void OnDisable()
@@ -715,24 +732,31 @@ namespace Alex.NPC
                     _ctx.StopCoroutineSafe(_challengeRoutine);
                     _challengeRoutine = null;
                 }
+                if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
                 _ctx.Animator.ResetMovement();
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 ReleasePlayer();
+                if (exclamationPrefab) exclamationPrefab.SetActive(false);
             }
 
             public void Tick()
             {
-                if (!enable || _isChallenging || sightRadius <= 0f)
-                    return;
+                if (!enable || _isChallenging || sightRadius <= 0f) return;
 
                 _ctx.EnsurePlayerReference();
-                if (_ctx.Player == null)
-                    return;
+                if (_ctx.Player == null) return;
+                if (!_ctx.IsPlayerInFov(sightRadius, fovDegrees)) return;
 
-                if (!_ctx.IsPlayerInFov(sightRadius, fovDegrees))
-                    return;
+                // Bloqueo inmediato
+                if (lockPlayer && lockOnSight && !_lockModeApplied)
+                    ApplyLock();
 
-                _challengeRoutine ??= _ctx.RunCoroutine(ChallengeFlow());
+                // ← NUEVO: programa el giro si procede y aún no se ha lanzado
+                if (turnPlayerOnSight && _turnRoutine == null && _lockModeApplied)
+                    _turnRoutine = _ctx.RunCoroutine(TurnPlayerAfterDelay());
+
+                if (_challengeRoutine == null)
+                    _challengeRoutine = _ctx.RunCoroutine(ChallengeFlow());
             }
 
             public bool HandleInteraction(GameObject interactor) => false;
@@ -742,29 +766,21 @@ namespace Alex.NPC
                 _isChallenging = true;
                 _ctx.DebugLog("ChallengeFlow iniciado.");
 
-                exclamationPrefab.SetActive(true);
+                // Asegura bloqueo incluso si lockOnSight = false
+                if (lockPlayer && !_lockModeApplied)
+                    ApplyLock();
+                
+                if (turnPlayerOnSight && _turnRoutine == null && _lockModeApplied)
+                    _turnRoutine = _ctx.RunCoroutine(TurnPlayerAfterDelay());
 
-                if (lockPlayer)
-                {
-                    onPlayerLock?.Invoke();
-                    _playerLockEventRaised = true;
-
-                    var actionManager = _ctx.GetActionManager() is PlayerActionManager pam
-                        ? pam
-                        : null;
-
-                    if (actionManager != null)
-                    {
-                        actionManager.PushMode(ActionMode.Stunned);
-                        _lockModeApplied = true;
-                    }
-                }
+                if (exclamationPrefab) exclamationPrefab.SetActive(true);
 
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 _ctx.Animator.ResetMovement();
 
+                // Animación de “alerta”
                 float alertTimer = 0f;
-                float alertDuration = Mathf.Max(challengeAlertMinSeconds, 0.1f);
+                float alertDuration = Mathf.Max(challengeAlertMinSeconds, 0.05f);
 
                 if (!string.IsNullOrEmpty(challengeAlertState))
                     _ctx.Animator.PlayOneShot(challengeAlertState);
@@ -780,11 +796,11 @@ namespace Alex.NPC
 
                 if (_ctx.Player == null)
                 {
-                    Cleanup();
-                    _ctx.DebugLog("Challenge cancelado: player null tras alerta.");
+                    CleanupAndRelease("Challenge cancelado: player null tras alerta.");
                     yield break;
                 }
 
+                // Aproximación
                 float repathTimer = 0f;
                 float loseSightTimer = 0f;
                 float iconTimer = 0f;
@@ -793,18 +809,15 @@ namespace Alex.NPC
                 {
                     if (_ctx.Player == null)
                     {
-                        Cleanup();
-                        _ctx.DebugLog("Challenge cancelado: player perdido durante aproximación.");
+                        CleanupAndRelease("Challenge cancelado: player perdido durante aproximación.");
                         yield break;
                     }
 
-                    if (exclamationPrefab.activeInHierarchy &&  exclamationSeconds > 0f)
+                    if (exclamationPrefab && exclamationSeconds > 0f)
                     {
                         iconTimer += Time.deltaTime;
                         if (iconTimer >= exclamationSeconds)
-                        {
                             exclamationPrefab.SetActive(false);
-                        }
                     }
 
                     float distance = Vector3.Distance(_ctx.transform.position, _ctx.Player.position);
@@ -816,8 +829,7 @@ namespace Alex.NPC
                         loseSightTimer += Time.deltaTime;
                         if (loseSightTimer >= loseSightGraceSeconds)
                         {
-                            Cleanup();
-                            _ctx.DebugLog("Challenge cancelado: jugador fuera de visión durante aproximación.");
+                            CleanupAndRelease("Challenge cancelado: jugador fuera de visión durante aproximación.");
                             yield break;
                         }
                     }
@@ -839,11 +851,13 @@ namespace Alex.NPC
                     yield return null;
                 }
 
-                if (exclamationPrefab.activeInHierarchy) exclamationPrefab.SetActive(false);
+                if (exclamationPrefab) exclamationPrefab.SetActive(false);
                 _ctx.Animator.ResetMovement();
+
                 if (!string.IsNullOrEmpty(challengeState))
                     _ctx.Animator.PlayOneShot(challengeState);
 
+                // Dispara la interacción o fallback
                 if (_ctx.Interactable && _ctx.Player)
                 {
                     _ctx.Interactable.Interact(_ctx.Player.gameObject);
@@ -855,45 +869,106 @@ namespace Alex.NPC
                     _ctx.DebugLog("FallbackDialogue disparado.");
                 }
 
+                // Espera a que se cierre diálogo
                 yield return _ctx.RunCoroutine(_ctx.WaitDialogueToClose());
 
                 onChallengeStarted?.Invoke();
                 _ctx.DebugLog("OnChallengeStarted invocado.");
+
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 _ctx.Animator.ResetMovement();
 
+                // Libera al jugador tras el reto/diálogo
                 ReleasePlayer();
 
                 _isChallenging = false;
                 _challengeRoutine = null;
             }
 
-            void Cleanup()
+            void ApplyLock()
             {
-                exclamationPrefab.SetActive(false);
+                onPlayerLock?.Invoke();
+                _playerLockEventRaised = true;
+
+                var pam = _ctx.GetActionManager();
+                if (pam != null)
+                {
+                    pam.PushMode(lockMode);
+                    _lockModeApplied = true;
+                }
+                else
+                {
+                    _ctx.DebugLog("PlayerActionManager no disponible para aplicar lock.");
+                }
+            }
+
+            void CleanupAndRelease(string reason)
+            {
+                if (exclamationPrefab) exclamationPrefab.SetActive(false);
+                if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
                 ReleasePlayer();
                 _isChallenging = false;
                 _challengeRoutine = null;
                 _ctx.Animator.ResetMovement();
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                _ctx.DebugLog(reason);
             }
 
             void ReleasePlayer()
             {
-                if (!lockPlayer)
-                    return;
+                if (!lockPlayer) return;
 
-                if (_lockModeApplied && _ctx.GetActionManager() is PlayerActionManager pam)
+                var pam = _ctx.GetActionManager();
+                if (_lockModeApplied && pam != null)
                 {
-                    pam.PopMode(ActionMode.Stunned);
+                    pam.PopMode(lockMode);
                     _lockModeApplied = false;
                 }
+                if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
 
                 if (_playerLockEventRaised)
                 {
                     onPlayerUnlock?.Invoke();
                     _playerLockEventRaised = false;
                 }
+            }
+            
+            IEnumerator TurnPlayerAfterDelay()
+            {
+                // Espera el retardo, pero aborta si perdemos el lock o el player
+                float t = 0f;
+                while (t < turnDelaySeconds)
+                {
+                    if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
+                    t += Time.deltaTime;
+                    yield return null;
+                }
+
+                // Calcula rotación objetivo mirando al NPC en plano horizontal
+                Transform player = _ctx.Player;
+                Vector3 toNpc = _ctx.transform.position - player.position;
+                toNpc.y = 0f;
+                if (toNpc.sqrMagnitude < 0.0001f) { _turnRoutine = null; yield break; }
+
+                Quaternion start = player.rotation;
+                Quaternion target = Quaternion.LookRotation(toNpc.normalized, Vector3.up);
+
+                // Slerp suave (ease in-out) durante turnDurationSeconds, solo si seguimos bloqueados
+                float dur = Mathf.Max(0.0001f, turnDurationSeconds);
+                float elapsed = 0f;
+                while (elapsed < dur)
+                {
+                    if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
+                    elapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(elapsed / dur);
+                    // ease in-out (smoothstep)
+                    u = u * u * (3f - 2f * u);
+                    player.rotation = Quaternion.Slerp(start, target, u);
+                    yield return null;
+                }
+
+                player.rotation = target;
+                _turnRoutine = null;
             }
         }
 

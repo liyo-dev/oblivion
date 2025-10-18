@@ -44,6 +44,8 @@ public class GameOverManager : MonoBehaviour
 
     private bool _isGameOverShown = false;
     private Coroutine _showCoroutine = null;
+    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones públicas.
+    bool _allowActions = false;
 
     private void Awake()
     {
@@ -93,69 +95,52 @@ public class GameOverManager : MonoBehaviour
         }
         _defaultSelection = loadLastSaveButton ? loadLastSaveButton.gameObject : fallback;
 
-        // Asegurar que los botones están enlazados correctamente en tiempo de ejecución.
-        // Esto previene que un botón mal enlazado en la escena (por ejemplo apuntando a OnBackToMainMenu)
-        // haga que "Continuar" lleve al menú principal por error.
+        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se añadirán
+        // y quitarán cuando el menú se muestre/oculte para evitar callbacks fuera de contexto.
+        // Asegurar estado inicial no interactivo para evitar que botones respondan si el GameObject
+        // se activa inadvertidamente.
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+        // Solo afectar botones que pertenecen al panel de GameOver para no interferir con HUD
         if (loadLastSaveButton != null)
         {
-            try
-            {
-                // Reemplazar el UnityEvent elimina listeners serializados y runtime
-                loadLastSaveButton.onClick = new Button.ButtonClickedEvent();
-                loadLastSaveButton.onClick.AddListener(OnContinueButtonPressed);
-                Debug.Log("[GameOverManager] loadLastSaveButton wired to OnContinueButtonPressed at Awake");
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[GameOverManager] No se pudo re-sincronizar loadLastSaveButton: {e}");
-            }
+            if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
+                loadLastSaveButton.interactable = false;
+            else
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificará en Awake.");
         }
-
         if (backToMenuButton != null)
         {
-            try
-            {
-                backToMenuButton.onClick = new Button.ButtonClickedEvent();
-                backToMenuButton.onClick.AddListener(OnBackToMainMenu);
-                Debug.Log("[GameOverManager] backToMenuButton wired to OnBackToMainMenu at Awake");
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[GameOverManager] No se pudo re-sincronizar backToMenuButton: {e}");
-            }
-        }
-
-        if (worldScene == mainMenuScene)
-        {
-            Debug.LogWarning($"[GameOverManager] Atención: worldScene == mainMenuScene ('{worldScene}'). Esto hará que 'Continuar' cargue el menú principal. Revise la configuración.");
+            if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
+                backToMenuButton.interactable = false;
+            else
+                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificará en Awake.");
         }
     }
 
     private void OnEnable()
     {
-        // Mostrar cursor y pausar juego
-        if (pauseOnGameOver)
-            Time.timeScale = 0f;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        EnsureUISelection();
+        // No manejar la pausa/cursores aquí: OnEnable se llama cuando el GO se activa, pero
+        // el menú de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
     }
 
     private void OnDisable()
     {
-        // Reanudar juego
-        if (pauseOnGameOver)
-            Time.timeScale = 1f;
-
-        // limpiar selección si estaba apuntando aquí
-        if (_es != null && _es.currentSelectedGameObject == gameObject)
-            _es.SetSelectedGameObject(null);
+        // No manejar la reanudación aquí por la misma razón.
     }
 
     void Update()
     {
+#if ENABLE_INPUT_SYSTEM
+        // Solo procesar inputs cuando el Game Over esté realmente mostrado, la UI esté activa y las acciones estén permitidas
+        if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
+#else
+        if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
+#endif
+
         KeepUIFocusForGamepad();
 
         // Cancel/back behavior: llevar al menú principal
@@ -204,7 +189,7 @@ public class GameOverManager : MonoBehaviour
 #endif
     }
 
-    // ---------------- UI Focus Keeper ----------------
+// ---------------- UI Focus Keeper ----------------
 #pragma warning disable 300
     void EnsureUISelection()
     {
@@ -263,6 +248,72 @@ public class GameOverManager : MonoBehaviour
             EnsureUISelection();
     }
 
+    // Attach/detach listeners: solo añadimos/quitan nuestro callback, no tocamos listeners serializados.
+    void AttachUIButtonListeners()
+    {
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = true;
+            rootGroup.interactable = true;
+        }
+
+        // Solo afectar botones que pertenecen al panel de GameOver
+        if (loadLastSaveButton != null)
+        {
+            if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
+            {
+                loadLastSaveButton.onClick.RemoveListener(OnContinueButtonPressed);
+                loadLastSaveButton.onClick.AddListener(OnContinueButtonPressed);
+                loadLastSaveButton.interactable = true;
+            }
+            else
+            {
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI — no se añadirá listener");
+            }
+        }
+
+        if (backToMenuButton != null)
+        {
+            if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
+            {
+                backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
+                backToMenuButton.onClick.AddListener(OnBackToMainMenu);
+                backToMenuButton.interactable = true;
+            }
+            else
+            {
+                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI — no se añadirá listener");
+            }
+        }
+
+        // Permitir la ejecución de las acciones públicas ahora que los listeners están adjuntos
+        _allowActions = true;
+    }
+
+    void DetachUIButtonListeners()
+    {
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+
+        if (loadLastSaveButton != null && gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            loadLastSaveButton.onClick.RemoveListener(OnContinueButtonPressed);
+            loadLastSaveButton.interactable = false;
+        }
+
+        if (backToMenuButton != null && gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
+            backToMenuButton.interactable = false;
+        }
+
+        // Desactivar la ejecución de acciones públicas
+        _allowActions = false;
+    }
+
     /// <summary>
     /// Muestra la pantalla de Game Over. Pausa el juego si está configurado.
     /// </summary>
@@ -289,25 +340,14 @@ public class GameOverManager : MonoBehaviour
         if (gameOverUI != null)
             gameOverUI.SetActive(true);
 
-        // Cerrar el menú de pausa si está abierto para evitar que su InputAction siga intentando
-        // invocar callbacks mientras GameOver está activo o si el objeto del PauseMenu fue destruido.
-        var pause = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>();
-        if (pause != null)
-        {
-            try
-            {
-                // Asegurarse de que el menú de pausa se cierre
-                pause.Resume();
-                pause.gameObject.SetActive(false);
-            }
-            catch (System.Exception ex) { Debug.LogWarning($"[GameOverManager] Error cerrando PauseMenuController: {ex}"); }
-        }
-
         if (pauseOnGameOver)
             Time.timeScale = 0f;
 
         // Asegurar selección inicial del UI
         EnsureUISelection();
+
+        // Adjuntar solo nuestros listeners y activar la interacción
+        AttachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over mostrado");
     }
@@ -332,6 +372,9 @@ public class GameOverManager : MonoBehaviour
 
         if (pauseOnGameOver)
             Time.timeScale = 1f;
+
+        // Quitar nuestros listeners y desactivar interacción
+        DetachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over ocultado");
     }
@@ -428,8 +471,14 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void OnContinueButtonPressed()
     {
+        if (!_allowActions || !_isGameOverShown)
+        {
+            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el menú no permite acciones ahora.");
+            Debug.Log(new System.Diagnostics.StackTrace().ToString());
+            return;
+        }
+
         Debug.Log("[GameOverManager] OnContinueButtonPressed invoked -> ocultando GameOver (resumir juego)");
-        // Siempre resumimos la sesión actual. Si quieres cargar una partida guardada, usa OnLoadLastSave desde el botón correspondiente.
         HideGameOver();
     }
 
@@ -438,6 +487,13 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void OnLoadLastSave()
     {
+        if (!_allowActions || !_isGameOverShown)
+        {
+            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menú no permite acciones ahora.");
+            Debug.Log(new System.Diagnostics.StackTrace().ToString());
+            return;
+        }
+
         Debug.Log($"[GameOverManager] OnLoadLastSave invoked. worldScene='{worldScene}', mainMenuScene='{mainMenuScene}'");
         // Restaurar timescale antes de hacer la carga/scene load
         if (pauseOnGameOver)
@@ -490,6 +546,13 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void OnBackToMainMenu()
     {
+        if (!_allowActions || !_isGameOverShown)
+        {
+            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menú no permite acciones ahora.");
+            Debug.Log(new System.Diagnostics.StackTrace().ToString());
+            return;
+        }
+
         Debug.Log($"[GameOverManager] OnBackToMainMenu invoked. mainMenuScene='{mainMenuScene}'");
         if (pauseOnGameOver)
             Time.timeScale = 1f;
