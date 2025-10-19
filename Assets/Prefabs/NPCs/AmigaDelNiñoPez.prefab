@@ -8471,7 +8471,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
   ambientModule:
-    enableWander: 1
+    enableWander: 0
     wanderRadius: 2
     minIdleTime: 1.2
     maxIdleTime: 3
@@ -8500,6 +8500,11 @@ MonoBehaviour:
     exclamationOffset: {x: 0, y: 2, z: 0}
     exclamationSeconds: 2
     lockPlayer: 1
+    lockOnSight: 1
+    lockMode: 4
+    turnPlayerOnSight: 1
+    turnDelaySeconds: 1
+    turnDurationSeconds: 0.35
     fallbackDialogue: 
     onChallengeStarted:
       m_PersistentCalls:

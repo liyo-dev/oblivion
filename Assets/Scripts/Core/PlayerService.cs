@@ -204,7 +204,9 @@ public sealed class PlayerService : MonoBehaviour
         CacheIfPresent<PlayerHealthSystem>(player);
         CacheIfPresent<ManaPool>(player);
         CacheIfPresent<MagicCaster>(player);
+        CacheIfPresent<SpecialChargeMeter>(player);
         CacheIfPresent<PlayerActionManager>(player);
+        CacheIfPresent<PlayerPickupCollector>(player);
     }
 
     void CacheIfPresent<T>(GameObject root) where T : Component

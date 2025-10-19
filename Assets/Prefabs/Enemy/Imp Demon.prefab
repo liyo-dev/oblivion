@@ -5583,7 +5583,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
   maxHealth: 100
   destroyOnDeath: 1
-  deathVFX: {fileID: 0}
+  deathVFX: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
   deathVFXLifetime: 3
   invulnerabilitySeconds: 1
   debugLogs: 0
@@ -5622,6 +5622,7 @@ MonoBehaviour:
   undergroundCooldown: 15
   phase2HealthPercent: 0.66
   phase3HealthPercent: 0.33
+  debugLogAnimator: 0
 --- !u!114 &6837251540150738088
 MonoBehaviour:
   m_ObjectHideFlags: 0

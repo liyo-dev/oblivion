@@ -10,6 +10,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     [SerializeField] private ManaPool manaPool;
     [SerializeField] private PlayerActionManager actionManager;
     [SerializeField] private MagicProjectileSpawner spawner;
+    [SerializeField] private SpecialChargeMeter specialChargeMeter;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
@@ -26,6 +27,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!manaPool) manaPool = GetComponentInParent<ManaPool>();
         if (!actionManager) actionManager = GetComponentInParent<PlayerActionManager>();
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
+        if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
 
         // Inicializar cooldowns
         _slotCooldowns[MagicSlot.Left] = 0f;
@@ -60,6 +62,16 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         {
             if (showDebugLogs) Debug.Log($"[MagicCaster] Sin maná suficiente para {spell.displayName} (costo: {spell.manaCost})");
             return false;
+        }
+
+        if (slot == MagicSlot.Special && specialChargeMeter)
+        {
+            if (!specialChargeMeter.TryConsume())
+            {
+                if (showDebugLogs) Debug.LogWarning("[MagicCaster] Fallo el consumo de carga especial.");
+                if (manaPool) manaPool.Refill(spell.manaCost);
+                return false;
+            }
         }
 
         // Activar cooldown
@@ -120,6 +132,12 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
             return false;
         }
 
+        if (slot == MagicSlot.Special && specialChargeMeter && !specialChargeMeter.IsReady)
+        {
+            reason = "Sin carga especial disponible";
+            return false;
+        }
+
         return true;
     }
 
@@ -177,6 +195,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     public float LeftCooldown => GetCooldownTime(MagicSlot.Left);
     public float RightCooldown => GetCooldownTime(MagicSlot.Right);
     public float SpecialCooldown => GetCooldownTime(MagicSlot.Special);
+    public SpecialChargeMeter SpecialChargeMeter => specialChargeMeter;
 
 #if UNITY_EDITOR
     void OnValidate()
@@ -184,6 +203,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!manaPool) manaPool = GetComponentInParent<ManaPool>();
         if (!actionManager) actionManager = GetComponentInParent<PlayerActionManager>();
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
+        if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
     }
 #endif
 }
