@@ -1,6 +1,10 @@
 {
     "texts": [
         {
+            "key": "ELDRAN_MISSION3",
+            "value": "El despertar de una Estrella"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
             "value": "Ve a hablar con Eldran en la entrada del reino"
         },
@@ -27,6 +31,22 @@
         {
             "key": "QUEST_ELDRAN_MISSION2_STEP2",
             "value": "Recoger la caja de frutas"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_DESC",
+            "value": "Aprende a lanzar bolas de fuego"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": "Usa tu magia"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_STEP1",
+            "value": "Derrota al demonio"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_STEP2",
+            "value": "Descansa y cuando estes preparado ve a casa de Eldran"
         },
         {
             "key": "QUEST_MISSION1_DESC",

@@ -5581,7 +5581,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
+  maxHealth: 20
   destroyOnDeath: 1
   deathVFX: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
   deathVFXLifetime: 3
@@ -5614,7 +5614,7 @@ MonoBehaviour:
   projectileDamage: 10
   projectilePrefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
   projectileSpawnPoint: {fileID: 2156623539970524872}
-  spellEffectPrefab: {fileID: 0}
+  spellEffectPrefab: {fileID: 8460667080445658512, guid: a3e2c3406e02f2c4ba86cfb1604277bd, type: 3}
   slashCooldown: 2
   stabCooldown: 3
   projectileCooldown: 4

@@ -19363,6 +19363,54 @@ MonoBehaviour:
       dlgCompleted: {fileID: 0}
       onQuestCompleted:
         m_PersistentCalls:
+          m_Calls:
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: UnlockTrigger, Assembly-CSharp
+            m_MethodName: ApplyUnlocksNow
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+            m_MethodName: SetActive
+            m_Mode: 6
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 1
+            m_CallState: 2
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+            m_MethodName: SetActive
+            m_Mode: 6
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
+    - questData: {fileID: 11400000, guid: b6bca4c14a2270847bce04a6eae9c353, type: 2}
+      completionMode: 2
+      autoDetectItemDelivery: 0
+      itemDeliveryStepIndex: 0
+      itemTag: Pickable
+      dlgBefore: {fileID: 11400000, guid: e52dd4d09252ac34e9eade0980e96816, type: 2}
+      dlgInProgress: {fileID: 0}
+      dlgTurnIn: {fileID: 0}
+      dlgCompleted: {fileID: 0}
+      onQuestCompleted:
+        m_PersistentCalls:
           m_Calls: []
     enableItemDetection: 1
     detectionRadius: 3
@@ -19385,6 +19433,11 @@ MonoBehaviour:
     exclamationOffset: {x: 0, y: 2, z: 0}
     exclamationSeconds: 2
     lockPlayer: 1
+    lockOnSight: 1
+    lockMode: 4
+    turnPlayerOnSight: 1
+    turnDelaySeconds: 1
+    turnDurationSeconds: 0.35
     fallbackDialogue: 
     onChallengeStarted:
       m_PersistentCalls:

@@ -1,6 +1,22 @@
 {
     "subtitles": [
         {
+            "id": "CH1_01",
+            "text": "La historia comienza en un pequeño reino."
+        },
+        {
+            "id": "CH1_02",
+            "text": "Aquí despierta nuestro héroe."
+        },
+        {
+            "id": "CH1_03",
+            "text": "Su vecino, que lo cuida, es su mejor amigo."
+        },
+        {
+            "id": "CH1_04",
+            "text": "Sobre la mesa hay una carta... ¿Qué contendrá?"
+        },
+        {
             "id": "EVT_01",
             "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
         },

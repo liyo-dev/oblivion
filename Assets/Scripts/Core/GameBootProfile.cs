@@ -46,6 +46,8 @@ public class GameBootProfile : ScriptableObject
         dst.rightSpellId = src.rightSpellId;
         dst.specialSpellId = src.specialSpellId;
         dst.flags = new List<string>(src.flags ?? new List<string>());
+        dst.inventoryItems = new List<InventoryItemSave>(src.inventoryItems ?? new List<InventoryItemSave>());
+        dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
 
         // === NUEVO: copiar sección de abilities (permisos físicos/acciones) ===
         if (src.abilities != null)
@@ -83,6 +85,8 @@ public class GameBootProfile : ScriptableObject
         p.unlockedAbilities = new List<AbilityId>(data.abilities ?? new List<AbilityId>());
         p.unlockedSpells    = new List<SpellId>(data.spells    ?? new List<SpellId>());
         p.flags             = new List<string>(data.flags      ?? new List<string>());
+        p.inventoryItems    = data.inventory != null ? new List<InventoryItemSave>(data.inventory) : new List<InventoryItemSave>();
+        p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
             p.spawnAnchorId = data.lastSpawnAnchorId;
@@ -156,6 +160,8 @@ public class GameBootProfile : ScriptableObject
         data.abilities = new List<AbilityId>(activePreset.unlockedAbilities ?? new List<AbilityId>());
         data.spells = new List<SpellId>(activePreset.unlockedSpells ?? new List<SpellId>());
         data.flags = new List<string>(activePreset.flags ?? new List<string>());
+        data.inventory = activePreset.inventoryItems != null ? new List<InventoryItemSave>(activePreset.inventoryItems) : new List<InventoryItemSave>();
+        data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
         // Guardar slots actuales
         data.leftSpellId = activePreset.leftSpellId;
         data.rightSpellId = activePreset.rightSpellId;
@@ -184,6 +190,8 @@ public class GameBootProfile : ScriptableObject
         var d = new PlayerSaveData();
         var preset = defaultPlayerPreset ? defaultPlayerPreset : runtimePreset;
         d.lastSpawnAnchorId = preset && !string.IsNullOrEmpty(preset.spawnAnchorId) ? preset.spawnAnchorId : "Bedroom";
+        d.inventory = new List<InventoryItemSave>();
+        d.defeatedBossIds = new List<string>();
         return d;
     }
 
@@ -287,6 +295,24 @@ public class GameBootProfile : ScriptableObject
          }
 
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
+        if (PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true))
+        {
+            p.inventoryItems = inventory.GetSaveSnapshot();
+        }
+        else
+        {
+            p.inventoryItems = new List<InventoryItemSave>();
+        }
+
+        if (BossProgressTracker.TryGetInstance(out var bossTracker))
+        {
+            p.defeatedBossIds = bossTracker.GetSnapshot();
+        }
+        else
+        {
+            p.defeatedBossIds = new List<string>();
+        }
+
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
     }
 
@@ -330,6 +356,8 @@ public class GameBootProfile : ScriptableObject
         p.rightSpellId = SpellId.None;
         p.specialSpellId = SpellId.None;
         p.flags = new List<string>();
+        p.inventoryItems = new List<InventoryItemSave>();
+        p.defeatedBossIds = new List<string>();
         // === NUEVO: resetear abilities ===
         p.abilities = new PlayerAbilities();
     }

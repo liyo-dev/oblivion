@@ -15,6 +15,8 @@ public class PlayerSaveData
     public List<AbilityId> abilities = new();
     public List<SpellId>   spells    = new();
     public List<string>    flags     = new(); // misiones/estados simples
+    public List<InventoryItemSave> inventory = new();
+    public List<string> defeatedBossIds = new();
 
     // Slots guardados (opcional: si faltan en saves antiguos, quedarán en None por defecto)
     public SpellId leftSpellId  = SpellId.None;
@@ -64,6 +66,8 @@ public class PlayerSaveData
         d.abilities = new List<AbilityId>(preset.unlockedAbilities ?? new List<AbilityId>());
         d.spells = new List<SpellId>(preset.unlockedSpells ?? new List<SpellId>());
         d.flags = new List<string>(preset.flags ?? new List<string>());
+        d.inventory = preset.inventoryItems != null ? new List<InventoryItemSave>(preset.inventoryItems) : new List<InventoryItemSave>();
+        d.defeatedBossIds = preset.defeatedBossIds != null ? new List<string>(preset.defeatedBossIds) : new List<string>();
 
         // Slots
         d.leftSpellId = preset.leftSpellId;

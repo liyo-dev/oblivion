@@ -206,6 +206,7 @@ public sealed class PlayerService : MonoBehaviour
         CacheIfPresent<MagicCaster>(player);
         CacheIfPresent<SpecialChargeMeter>(player);
         CacheIfPresent<PlayerActionManager>(player);
+        CacheIfPresent<Inventory>(player);
         CacheIfPresent<PlayerPickupCollector>(player);
     }
 

@@ -3641,6 +3641,8 @@ MonoBehaviour:
   popupParent: {fileID: 1344344951236170951}
   displayDuration: 2
   spawnAtTop: 0
+  groupingWindow: 0.4
+  dedupeWindow: 0.25
 --- !u!1 &3650021634695701730
 GameObject:
   m_ObjectHideFlags: 0
@@ -5207,8 +5209,9 @@ GameObject:
   - component: {fileID: 4974162908857341787}
   - component: {fileID: 7049979429020794785}
   - component: {fileID: 2384823629447114158}
-  - component: {fileID: 8596922922614951842}
-  - component: {fileID: 6181741265012674138}
+  - component: {fileID: 2207912406606354293}
+  - component: {fileID: 2041446895494581001}
+  - component: {fileID: 2009112871374720472}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -5671,7 +5674,7 @@ MonoBehaviour:
   testDamageAmount: 20
   testHealAmount: 15
   playerHealthSystem: {fileID: 6570775665125871610}
---- !u!114 &8596922922614951842
+--- !u!114 &2207912406606354293
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5683,7 +5686,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65e03cc83f346014ea1dd82b3055360b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
---- !u!114 &6181741265012674138
+  knownItems: []
+--- !u!114 &2041446895494581001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc97b9ff8256fb04f83afc0790bc4a90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryPersistenceBridge
+  applyOnProfileReady: 1
+--- !u!114 &2009112871374720472
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5695,11 +5712,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edc50d58df8b4046936a74112ce2627d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPickupCollector
-  inventory: {fileID: 8596922922614951842}
+  inventory: {fileID: 2207912406606354293}
   healthSystem: {fileID: 6570775665125871610}
   manaPool: {fileID: 1297097001791454143}
   specialChargeMeter: {fileID: 0}
-  logWarnings: 1
+  logWarnings: 0
   onEffectApplied:
     m_PersistentCalls:
       m_Calls: []

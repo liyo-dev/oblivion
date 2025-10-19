@@ -1,6 +1,10 @@
 {
     "texts": [
         {
+            "key": "ELDRAN_MISSION3",
+            "value": ""
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
             "value": "Go talk to Eldran at the kingdom entrance"
         },
@@ -27,6 +31,22 @@
         {
             "key": "QUEST_ELDRAN_MISSION2_STEP2",
             "value": "Pick up the fruit crate"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_DESC",
+            "value": ""
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": ""
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_STEP1",
+            "value": ""
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_STEP2",
+            "value": ""
         },
         {
             "key": "QUEST_MISSION1_DESC",

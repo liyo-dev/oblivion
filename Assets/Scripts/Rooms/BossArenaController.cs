@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections.Generic;
 
 public class BossArenaController : MonoBehaviour
@@ -47,6 +49,13 @@ public class BossArenaController : MonoBehaviour
     public string playerTag = "Player";
     public AudioSource musicBoss;    // opcional
 
+    [Header("Progreso")]
+    [Tooltip("ID único del boss para registrar su derrota en el guardado (ej: 'DEMONIO_01').")]
+    [SerializeField] private string bossId;
+
+    [Header("Eventos")]
+    [SerializeField] private UnityEvent onBossDefeated;
+
     [Header("Bloqueos durante batalla")]
     [Tooltip("Lista de objetos a desactivar al iniciar la batalla y restaurar al finalizar.")]
     [SerializeField] private GameObject[] toDisableDuringBattle;
@@ -54,6 +63,7 @@ public class BossArenaController : MonoBehaviour
     private readonly Dictionary<GameObject, bool> _prevActiveStates = new();
 
     bool started = false;
+    bool _bossDefeatHandled = false;
 
     void Reset()
     {
@@ -76,10 +86,34 @@ public class BossArenaController : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        BossProgressTracker.OnProgressRestored += HandleBossProgressRestored;
+    }
+
+    void OnDisable()
+    {
+        BossProgressTracker.OnProgressRestored -= HandleBossProgressRestored;
+    }
+
+    void Start()
+    {
+        if (IsBossAlreadyDefeated())
+        {
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+        }
+    }
+
     void OnTriggerEnter(Collider other)
     {
-        if (started) return;
+        if (started || _bossDefeatHandled) return;
         if (!other.CompareTag(playerTag)) return;
+
+        if (IsBossAlreadyDefeated())
+        {
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            return;
+        }
 
         started = true;
 
@@ -169,11 +203,44 @@ public class BossArenaController : MonoBehaviour
         return null;
     }
 
-    void OnBossDead(EnemyMarker _)
+    void OnBossDead(EnemyMarker marker)
     {
-        // Según el modo, abrir puertas o desactivar barrera
+        if (marker != null)
+        {
+            marker.onEnemyGone -= OnBossDead;
+        }
+
+        ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
+    }
+
+    void HandleBossProgressRestored()
+    {
+        if (_bossDefeatHandled) return;
+        if (IsBossAlreadyDefeated())
+        {
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+        }
+    }
+
+    bool IsBossAlreadyDefeated()
+    {
+        if (string.IsNullOrEmpty(bossId)) return false;
+        if (BossProgressTracker.TryGetInstance(out var tracker))
+        {
+            return tracker.IsDefeated(bossId);
+        }
+        return false;
+    }
+
+    void ApplyBossClearedState(bool invokeUnityEvents, bool markDefeatedInTracker)
+    {
+        if (_bossDefeatHandled) return;
+        _bossDefeatHandled = true;
+        started = true;
+
         if (useDoorMode)
         {
+            if (doorWest) doorWest.Open();
             if (doorEast) doorEast.Open();
         }
         else
@@ -181,17 +248,49 @@ public class BossArenaController : MonoBehaviour
             UnlockArea();
         }
 
+        if (musicBoss && musicBoss.isPlaying)
+        {
+            musicBoss.Stop();
+        }
+
+        if (markDefeatedInTracker && !string.IsNullOrEmpty(bossId))
+        {
+            BossProgressTracker.Instance.MarkDefeated(bossId);
+        }
+
         if (roomGoal) roomGoal.MarkCleared();
 
-        // Restaurar objetos desactivados durante la batalla
+        if (invokeUnityEvents)
+        {
+            onBossDefeated?.Invoke();
+        }
+
         RestoreBattleDisables();
+        SpawnExitPortalIfNeeded();
+    }
 
-        // Crea el portal de salida
-        if (portalPrefab && portalSpawn)
-            Instantiate(portalPrefab, portalSpawn.position, portalSpawn.rotation, transform.parent);
+    void SpawnExitPortalIfNeeded()
+    {
+        if (!portalPrefab || !portalSpawn) return;
+        if (HasExistingPortal()) return;
 
-        // Limpieza del evento
-        _.onEnemyGone -= OnBossDead;
+        Instantiate(portalPrefab, portalSpawn.position, portalSpawn.rotation, transform.parent);
+    }
+
+    bool HasExistingPortal()
+    {
+        if (!portalPrefab) return false;
+        var parent = transform.parent;
+        if (!parent) return false;
+
+        string prefabName = portalPrefab.name;
+        foreach (Transform child in parent)
+        {
+            if (!child) continue;
+            if (child.name.StartsWith(prefabName, StringComparison.Ordinal))
+                return true;
+        }
+        return false;
     }
 
     // =========================== Visual Barrier ===========================
@@ -386,3 +485,5 @@ public class BossArenaController : MonoBehaviour
         }
     }
 }
+
+

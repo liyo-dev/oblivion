@@ -28,4 +28,10 @@ public class PlayerPresetSO : ScriptableObject
     // Usar la clase separada PlayerAbilities para evitar problemas de resolución entre archivos
     [Header("Abilities (Swim, Jump, Climb)")]
     public PlayerAbilities abilities = new PlayerAbilities();
+
+    [Header("Inventario")]
+    public List<InventoryItemSave> inventoryItems = new();
+
+    [Header("Progreso de bosses")]
+    public List<string> defeatedBossIds = new();
 }
