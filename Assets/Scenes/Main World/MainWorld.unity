@@ -71573,7 +71573,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!82 &839685498
 AudioSource:
   m_ObjectHideFlags: 0
@@ -92691,6 +92691,7 @@ Transform:
   m_Children:
   - {fileID: 292905641}
   - {fileID: 1694323087}
+  - {fileID: 1506144533}
   m_Father: {fileID: 571335477}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1123195456
@@ -123708,6 +123709,66 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 419458, guid: 5ceaab7783dfd9c498b3411a37a5a30b, type: 3}
   m_PrefabInstance: {fileID: 1505563917}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1506144532
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1506144533}
+  - component: {fileID: 1506144534}
+  m_Layer: 0
+  m_Name: '@CinematicVillain'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1506144533
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506144532}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1121984882}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1506144534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506144532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 773fe93448c0d33428650d8537eee9e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AdditiveSceneCinematic
+  cinematicSceneName: Cinematic_VillainPlans
+  cinematicSceneAsset: {fileID: 102900000, guid: 5584327ed38f19d438ac3cfd54de34bc, type: 3}
+  playOnStart: 1
+  directorInAdditive: 1
+  playOnlyOnce: 1
+  singlePlayId: Cinematic_DemonAppears
+  toDisableDuringCinematic:
+  - {fileID: 1051082681}
+  - {fileID: 965833600}
+  exitAnchorId: 
+  setAsCurrentAnchor: 0
+  useLastPlayerPositionOnExit: 1
+  onCinematicFinished:
+    m_PersistentCalls:
+      m_Calls: []
+  showDebugLogs: 1
 --- !u!1001 &1512424916
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -142289,7 +142350,7 @@ MonoBehaviour:
   blockedMessageKey: ROOM_EXIT_BLOCKED
   blockedMessageFormatKey: ROOM_EXIT_NEEDS
   listSeparator: ', '
-  messageSpeaker: Alex
+  messageSpeaker: 
   useSolidBlocker: 1
   messageCooldown: 1.5
   debugLogs: 1
@@ -143197,7 +143258,7 @@ PrefabInstance:
     - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: musicBoss
       value: 
-      objectReference: {fileID: 839685498}
+      objectReference: {fileID: 0}
     - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: bossPrefab
       value: 
@@ -143208,7 +143269,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 03776cd3647ff4541895fb9cd602f3b0, type: 2}
     - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: toDisableDuringBattle.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
       propertyPath: 'toDisableDuringBattle.Array.data[0]'
@@ -143218,6 +143279,10 @@ PrefabInstance:
       propertyPath: 'toDisableDuringBattle.Array.data[1]'
       value: 
       objectReference: {fileID: 1768855151}
+    - target: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+      propertyPath: 'toDisableDuringBattle.Array.data[2]'
+      value: 
+      objectReference: {fileID: 1506144532}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -145867,7 +145932,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!82 &1768855152
 AudioSource:
   m_ObjectHideFlags: 0

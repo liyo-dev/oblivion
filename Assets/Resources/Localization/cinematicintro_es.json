@@ -2,51 +2,19 @@
     "subtitles": [
         {
             "id": "CH1_01",
-            "text": "La historia comienza en este pequeño Reino."
+            "text": "La historia comienza en un pequeño reino."
         },
         {
             "id": "CH1_02",
-            "text": "Donde recien despierta nuestro héroe."
+            "text": "Aquí despierta nuestro héroe."
         },
         {
             "id": "CH1_03",
-            "text": "Su vecino quien le cuida y el son grandes compañeros"
+            "text": "Su vecino, que lo cuida, es su mejor amigo."
         },
         {
             "id": "CH1_04",
-            "text": "Sobre la mesa hay una carta... ¿que será?"
-        },
-        {
-            "id": "EVT_01",
-            "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
-        },
-        {
-            "id": "EVT_02",
-            "text": "De pronto Alex presiente algo."
-        },
-        {
-            "id": "EVT_03",
-            "text": "Una bola de fuego se dirige hacia ellos."
-        },
-        {
-            "id": "EVT_04",
-            "text": "Alex cierra los ojos y desata sin saberlo una poderosa magia."
-        },
-        {
-            "id": "EVT_05",
-            "text": "Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
-        },
-        {
-            "id": "EVT_06",
-            "text": "Alex se sorprende, sin entender lo que acaba de hacer."
-        },
-        {
-            "id": "EVT_07",
-            "text": "El suelo tiembla y una figura oscura emerge entre humo y fuego: un demonio."
-        },
-        {
-            "id": "EVT_08",
-            "text": "Eldran grita: '¡Alex! Usa tu magia, presiona X y derrota al demonio.'"
+            "text": "Sobre la mesa hay una carta... ¿Qué contendrá?"
         }
     ]
 }

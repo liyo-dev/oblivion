@@ -1,20 +1,20 @@
 {
-    "subtitles": [
+  "subtitles": [
         {
             "id": "PRLG_01",
-            "text": ""
+            "text": "Eons ago, a mage defied the gods by traversing the Path of the Stars, where each portal promised power and a wish at the journey's end."
         },
         {
             "id": "PRLG_02",
-            "text": ""
+            "text": "But his desire was too great, and his power unleashed a cataclysm."
         },
         {
             "id": "PRLG_03",
-            "text": ""
+            "text": "The gods sealed the knowledge of the Path in the Grimoire of the Stars, so that no one would repeat his mistake."
         },
         {
             "id": "PRLG_04",
-            "text": ""
+            "text": "Centuries later, the world had forgotten the legend..."
         }
     ]
 }

@@ -1,22 +1,6 @@
 {
     "subtitles": [
         {
-            "id": "CH1_01",
-            "text": "The story begins in the peaceful village of <VILLAGE_NAME>."
-        },
-        {
-            "id": "CH1_02",
-            "text": "There lives Alex, a boy who believes he leads a normal life."
-        },
-        {
-            "id": "CH1_03",
-            "text": "Under the care of Eldran, a wise elder who has looked after him since his parents died when he was little."
-        },
-        {
-            "id": "CH1_04",
-            "text": "On the table, a letter awaits: his first mission."
-        },
-        {
             "id": "EVT_01",
             "text": "Alex arrives, struggling as he carries a crate of fruit for Eldran."
         },

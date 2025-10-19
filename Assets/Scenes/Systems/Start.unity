@@ -1211,6 +1211,7 @@ MonoBehaviour:
   - dialogues
   - quests
   - cinematicdemon
+  - cinematicivillain
 --- !u!4 &1745447934
 Transform:
   m_ObjectHideFlags: 0
@@ -1243,7 +1244,7 @@ MonoBehaviour:
   - en
   currentLanguageIndex: 0
   enableKeyboardTesting: 1
-  showKeyboardHelp: 1
+  showKeyboardHelp: 0
   showCurrentLanguage: 1
 --- !u!1 &1932988361
 GameObject:

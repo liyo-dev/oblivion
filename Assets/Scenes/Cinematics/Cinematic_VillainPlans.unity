@@ -910,7 +910,7 @@ PlayableDirector:
   m_GameObject: {fileID: 1264402475}
   m_Enabled: 1
   serializedVersion: 3
-  m_PlayableAsset: {fileID: 11400000, guid: 5eed16de4c04bc24a959f3dc157f0f51, type: 2}
+  m_PlayableAsset: {fileID: 11400000, guid: caf2e49838fb6b34e9234489d9f54b73, type: 2}
   m_InitialState: 1
   m_WrapMode: 2
   m_DirectorUpdateMode: 1
@@ -956,6 +956,14 @@ PlayableDirector:
     value: {fileID: 0}
   - key: {fileID: 6415068276717833945, guid: 5eed16de4c04bc24a959f3dc157f0f51, type: 2}
     value: {fileID: 0}
+  - key: {fileID: -1446745885072756484, guid: caf2e49838fb6b34e9234489d9f54b73, type: 2}
+    value: {fileID: 2024190072}
+  - key: {fileID: -1490718888549154533, guid: caf2e49838fb6b34e9234489d9f54b73, type: 2}
+    value: {fileID: 1898986008}
+  - key: {fileID: -8937361208023276885, guid: caf2e49838fb6b34e9234489d9f54b73, type: 2}
+    value: {fileID: 65308294}
+  - key: {fileID: 6482789337144433380, guid: caf2e49838fb6b34e9234489d9f54b73, type: 2}
+    value: {fileID: 1788392308}
   m_ExposedReferences:
     m_References: []
 --- !u!4 &1264402477
@@ -1160,7 +1168,7 @@ MonoBehaviour:
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
             m_IntArgument: 0
             m_FloatArgument: 0
-            m_StringArgument: EVT_02
+            m_StringArgument: CIV_02
             m_BoolArgument: 0
           m_CallState: 2
 --- !u!1 &2024190070
@@ -1226,7 +1234,7 @@ MonoBehaviour:
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
             m_IntArgument: 0
             m_FloatArgument: 0
-            m_StringArgument: EVT_01
+            m_StringArgument: CIV_01
             m_BoolArgument: 0
           m_CallState: 2
 --- !u!1001 &2098705023
