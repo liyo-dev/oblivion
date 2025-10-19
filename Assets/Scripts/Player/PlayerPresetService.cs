@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DefaultExecutionOrder(-50)]
@@ -6,6 +7,7 @@ public class PlayerPresetService : MonoBehaviour
 {
     [Header("Librería de hechizos (ID → SO)")]
     [SerializeField] private SpellLibrarySO spellLibrary;
+    public SpellLibrarySO SpellLibrary => spellLibrary;
 
     [Header("Opciones")]
     [SerializeField] private bool autoFillEmptySlotsFromUnlocked; // default false por defecto
@@ -15,9 +17,11 @@ public class PlayerPresetService : MonoBehaviour
     MagicCaster _magicCaster; // ← NUEVO: referencia al MagicCaster
     ManaPool _manaPool;       // ← NUEVO: referencia al ManaPool
     PlayerActionManager _actionManager; // ← NUEVO: referencia al PlayerActionManager
+    ModularAutoBuilder _appearanceBuilder;
     
     // Evitar inicialización doble si el evento llega más de una vez o ya está listo al habilitar
     bool _initialized;
+    bool _warnedMissingAppearanceBuilder;
 
     void Awake()
     {
@@ -75,7 +79,8 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         // Log diagnóstico: comprobar qué componentes hemos encontrado para evitar configuraciones en el objeto equivocado
-        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}");
+        EnsureAppearanceBuilderReference();
+        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}, appearanceBuilder={( _appearanceBuilder != null ? _appearanceBuilder.GetType().Name : "null" )}");
 
         var preset = profile.GetActivePresetResolved();
         if (!preset) 
@@ -100,6 +105,7 @@ public class PlayerPresetService : MonoBehaviour
 
         // Configurar hechizos del preset
         ConfigureSpells(preset);
+        ApplyAppearanceFromPreset(preset);
 
         // === NUEVO: Aplicar abilities del preset al PlayerActionManager si existe ===
         if (_actionManager == null)
@@ -118,6 +124,100 @@ public class PlayerPresetService : MonoBehaviour
 
         // Notificar a subscriptores (HUD, UI u otros) que el preset ha sido aplicado
         OnPresetApplied?.Invoke();
+    }
+
+    private void EnsureAppearanceBuilderReference()
+    {
+        if (_appearanceBuilder != null) return;
+
+        _appearanceBuilder = GetComponent<ModularAutoBuilder>()
+            ?? GetComponentInChildren<ModularAutoBuilder>(true)
+            ?? GetComponentInParent<ModularAutoBuilder>();
+
+        if (_appearanceBuilder == null && PlayerService.TryGetComponent<ModularAutoBuilder>(out var builder, includeInactive: true, allowSceneLookup: true))
+        {
+            _appearanceBuilder = builder;
+        }
+
+        if (_appearanceBuilder == null && !_warnedMissingAppearanceBuilder)
+        {
+            Debug.LogWarning("[PlayerPresetService] No se encontro ModularAutoBuilder para sincronizar la apariencia del jugador.");
+            _warnedMissingAppearanceBuilder = true;
+        }
+    }
+
+    private void ApplyAppearanceFromPreset(PlayerPresetSO preset)
+    {
+        if (preset == null) return;
+
+        EnsureAppearanceBuilderReference();
+        if (_appearanceBuilder == null) return;
+
+        var entries = preset.appearance;
+        if (entries == null || entries.Count == 0)
+        {
+            SnapshotAppearanceToPreset();
+            return;
+        }
+
+        var selection = new Dictionary<PartCat, string>();
+        foreach (var entry in entries)
+        {
+            selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;
+        }
+
+        _appearanceBuilder.ApplySelection(selection);
+    }
+
+    public void SnapshotAppearanceToPreset()
+    {
+        EnsureAppearanceBuilderReference();
+        if (_appearanceBuilder == null) return;
+
+        if (!GameBootService.IsAvailable)
+        {
+            Debug.LogWarning("[PlayerPresetService] GameBootService no esta listo; no se guarda la apariencia.");
+            return;
+        }
+
+        var profile = GameBootService.Profile;
+        if (profile == null)
+        {
+            Debug.LogWarning("[PlayerPresetService] GameBootService.Profile es null; no se guarda la apariencia.");
+            return;
+        }
+
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null)
+        {
+            Debug.LogWarning("[PlayerPresetService] No hay preset activo; no se guarda la apariencia.");
+            return;
+        }
+
+        var selection = _appearanceBuilder.GetSelection();
+
+        if (preset.appearance == null)
+            preset.appearance = new List<AppearanceEntry>();
+        else
+            preset.appearance.Clear();
+
+        var processed = new HashSet<PartCat>();
+        foreach (PartCat cat in (PartCat[])System.Enum.GetValues(typeof(PartCat)))
+        {
+            if (!processed.Add(cat)) continue;
+
+            var options = _appearanceBuilder.GetOptions(cat);
+            if (options == null || options.Count == 0) continue;
+
+            selection.TryGetValue(cat, out var partName);
+            preset.appearance.Add(new AppearanceEntry
+            {
+                category = cat,
+                partName = string.IsNullOrEmpty(partName) ? null : partName
+            });
+        }
+
+        Debug.Log("[PlayerPresetService] Apariencia guardada en el preset activo.");
     }
 
     // === NUEVO: Aplica valores de maná desde el preset al ManaPool del jugador ===
@@ -310,6 +410,7 @@ public class PlayerPresetService : MonoBehaviour
         // Aplicar stats (maná) y luego los hechizos
         ApplyManaFromPreset(preset);
         ConfigureSpells(preset);
+        ApplyAppearanceFromPreset(preset);
 
         // NUEVO: aplicar abilities al action manager
         if (_actionManager == null)

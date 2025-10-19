@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 56f5de7ae076c194b9163dfa5b27fe73
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301624
+  packageName: QMS - Cartoon Skybox Pack FREE
+  packageVersion: 1.0
+  assetPath: Assets/Quantum Mana Studio/QMS - Cartoon Skybox Pack FREE/Scripts/QMSSkyboxFREE.cs
+  uploadId: 705801

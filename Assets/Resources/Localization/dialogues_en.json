@@ -137,6 +137,10 @@
             "value": "Here, this is for your help."
         },
         {
+            "key": "DLG_ELDRAN_MISSION3_OFFER",
+            "value": ""
+        },
+        {
             "key": "DLG_GUARD_01",
             "value": "Halt. The castle isn't open to the public."
         },

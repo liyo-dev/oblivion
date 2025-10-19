@@ -62,8 +62,19 @@ public class BossArenaController : MonoBehaviour
 
     private readonly Dictionary<GameObject, bool> _prevActiveStates = new();
 
+    [Header("Activacion manual")]
+    [Tooltip("Cuando es true, al entrar el jugador se inicia la batalla (verifica si el boss ya fue derrotado).")]
+    [SerializeField] private bool startBarrierOnPlayerEnter;
+
     bool started = false;
     bool _bossDefeatHandled = false;
+    EnemyMarker _activeBossMarker;
+    Damageable _activeBossDamageable;
+
+    public void SetStartBarrierOnPlayerEnter(bool value)
+    {
+        startBarrierOnPlayerEnter = value;
+    }
 
     void Reset()
     {
@@ -94,6 +105,7 @@ public class BossArenaController : MonoBehaviour
     void OnDisable()
     {
         BossProgressTracker.OnProgressRestored -= HandleBossProgressRestored;
+        CleanupBossSubscriptions();
     }
 
     void Start()
@@ -108,6 +120,7 @@ public class BossArenaController : MonoBehaviour
     {
         if (started || _bossDefeatHandled) return;
         if (!other.CompareTag(playerTag)) return;
+        if (!startBarrierOnPlayerEnter) return;
 
         if (IsBossAlreadyDefeated())
         {
@@ -147,10 +160,17 @@ public class BossArenaController : MonoBehaviour
             return;
         }
 
-        // Asegura un EnemyMarker para detectar la muerte (se dispara en OnDestroy)
-        var marker = boss.GetComponent<EnemyMarker>();
-        if (!marker) marker = boss.AddComponent<EnemyMarker>();
-        marker.onEnemyGone += OnBossDead;
+        // Preparar referencias para escuchar la derrota real del boss
+        _activeBossMarker = boss.GetComponent<EnemyMarker>() ?? boss.AddComponent<EnemyMarker>();
+        _activeBossMarker.onEnemyGone -= OnBossDead;
+        _activeBossMarker.onEnemyGone += OnBossDead;
+
+        _activeBossDamageable = boss.GetComponent<Damageable>();
+        if (_activeBossDamageable != null)
+        {
+            _activeBossDamageable.OnDied -= HandleBossDamageableDied;
+            _activeBossDamageable.OnDied += HandleBossDamageableDied;
+        }
     }
 
     void OnTriggerExit(Collider other)
@@ -206,11 +226,43 @@ public class BossArenaController : MonoBehaviour
     void OnBossDead(EnemyMarker marker)
     {
         if (marker != null)
-        {
             marker.onEnemyGone -= OnBossDead;
+
+        if (_bossDefeatHandled)
+        {
+            CleanupBossSubscriptions();
+            return;
+        }
+
+        if (_activeBossDamageable != null && _activeBossDamageable.IsAlive)
+        {
+            // El boss fue destruido sin haber sido derrotado (p.ej. cambio de escena tras Game Over).
+            CleanupBossSubscriptions();
+            started = false;
+            return;
         }
 
         ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
+    }
+
+    void HandleBossDamageableDied()
+    {
+        ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
+    }
+
+    void CleanupBossSubscriptions()
+    {
+        if (_activeBossMarker != null)
+        {
+            _activeBossMarker.onEnemyGone -= OnBossDead;
+            _activeBossMarker = null;
+        }
+
+        if (_activeBossDamageable != null)
+        {
+            _activeBossDamageable.OnDied -= HandleBossDamageableDied;
+            _activeBossDamageable = null;
+        }
     }
 
     void HandleBossProgressRestored()
@@ -237,6 +289,8 @@ public class BossArenaController : MonoBehaviour
         if (_bossDefeatHandled) return;
         _bossDefeatHandled = true;
         started = true;
+
+        CleanupBossSubscriptions();
 
         if (useDoorMode)
         {
@@ -477,6 +531,7 @@ public class BossArenaController : MonoBehaviour
     {
         // Restaurar objetos desactivados si quedara algo pendiente
         RestoreBattleDisables();
+        CleanupBossSubscriptions();
 
         // Limpiar la barrera visual si fue creada
         if (_barrierVisual != null)

@@ -47,6 +47,8 @@ public class GameOverManager : MonoBehaviour
     // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones públicas.
     bool _allowActions = false;
 
+    public bool IsShown => _isGameOverShown;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)

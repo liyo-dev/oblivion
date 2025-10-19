@@ -5,6 +5,20 @@ using UnityEngine;
 [DefaultExecutionOrder(-40)]
 public class InventoryPersistenceBridge : MonoBehaviour
 {
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void Bootstrap()
+    {
+        TryAttachToPlayerInventory();
+        PlayerService.OnPlayerRegistered += _ => TryAttachToPlayerInventory();
+    }
+
+    private static void TryAttachToPlayerInventory()
+    {
+        if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true)) return;
+        if (inventory.GetComponent<InventoryPersistenceBridge>() == null)
+            inventory.gameObject.AddComponent<InventoryPersistenceBridge>();
+    }
+
     [SerializeField] private bool applyOnProfileReady = true;
 
     private Inventory _inventory;

@@ -118,6 +118,62 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public bool HasItem(ItemData item, int requiredAmount = 1)
+    {
+        if (item == null || requiredAmount <= 0) return false;
+        return _bag.TryGetValue(item.itemId, out var cur) && cur >= requiredAmount;
+    }
+
+    public bool HasItem(string itemId, int requiredAmount = 1)
+    {
+        if (string.IsNullOrEmpty(itemId) || requiredAmount <= 0) return false;
+        return _bag.TryGetValue(itemId, out var cur) && cur >= requiredAmount;
+    }
+
+    public bool TryConsume(ItemData item, int amount = 1, bool notifyChanges = true)
+    {
+        if (item == null) return false;
+        return TryConsume(item.itemId, amount, notifyChanges, item);
+    }
+
+    public bool TryConsume(string itemId, int amount = 1, bool notifyChanges = true, ItemData fallbackDefinition = null)
+    {
+        if (string.IsNullOrEmpty(itemId)) return false;
+        if (amount <= 0) amount = 1;
+
+        if (!_bag.TryGetValue(itemId, out int cur) || cur < amount) return false;
+
+        int next = cur - amount;
+        if (next > 0)
+        {
+            _bag[itemId] = next;
+        }
+        else
+        {
+            _bag.Remove(itemId);
+        }
+
+        if (_definitions.TryGetValue(itemId, out var def) == false && fallbackDefinition != null)
+        {
+            RegisterDefinition(fallbackDefinition);
+            def = fallbackDefinition;
+        }
+
+        if (notifyChanges)
+        {
+            OnInventoryChanged?.Invoke(def, Mathf.Max(next, 0));
+        }
+
+        return true;
+    }
+
+    public ItemData GetDefinition(string itemId)
+    {
+        if (string.IsNullOrEmpty(itemId)) return null;
+        _definitions.TryGetValue(itemId, out var def);
+        return def;
+    }
+
     private void PreloadKnownItems()
     {
         if (knownItems == null) return;

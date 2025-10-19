@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DLG_ELDRAN_MISSION3_OFFER
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerNameId: prueba de que sale
-    textId: prueba de que sale
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION3_OFFER
     text: 
     portrait: {fileID: 0}

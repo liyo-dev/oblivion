@@ -46,6 +46,7 @@ public class GameBootProfile : ScriptableObject
         dst.rightSpellId = src.rightSpellId;
         dst.specialSpellId = src.specialSpellId;
         dst.flags = new List<string>(src.flags ?? new List<string>());
+        dst.appearance = new List<AppearanceEntry>(src.appearance ?? new List<AppearanceEntry>());
         dst.inventoryItems = new List<InventoryItemSave>(src.inventoryItems ?? new List<InventoryItemSave>());
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
 
@@ -85,6 +86,7 @@ public class GameBootProfile : ScriptableObject
         p.unlockedAbilities = new List<AbilityId>(data.abilities ?? new List<AbilityId>());
         p.unlockedSpells    = new List<SpellId>(data.spells    ?? new List<SpellId>());
         p.flags             = new List<string>(data.flags      ?? new List<string>());
+        p.appearance        = data.appearance != null ? new List<AppearanceEntry>(data.appearance) : new List<AppearanceEntry>();
         p.inventoryItems    = data.inventory != null ? new List<InventoryItemSave>(data.inventory) : new List<InventoryItemSave>();
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         // Anchor procedente del save
@@ -160,6 +162,7 @@ public class GameBootProfile : ScriptableObject
         data.abilities = new List<AbilityId>(activePreset.unlockedAbilities ?? new List<AbilityId>());
         data.spells = new List<SpellId>(activePreset.unlockedSpells ?? new List<SpellId>());
         data.flags = new List<string>(activePreset.flags ?? new List<string>());
+        data.appearance = activePreset.appearance != null ? new List<AppearanceEntry>(activePreset.appearance) : new List<AppearanceEntry>();
         data.inventory = activePreset.inventoryItems != null ? new List<InventoryItemSave>(activePreset.inventoryItems) : new List<InventoryItemSave>();
         data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
         // Guardar slots actuales
@@ -192,6 +195,7 @@ public class GameBootProfile : ScriptableObject
         d.lastSpawnAnchorId = preset && !string.IsNullOrEmpty(preset.spawnAnchorId) ? preset.spawnAnchorId : "Bedroom";
         d.inventory = new List<InventoryItemSave>();
         d.defeatedBossIds = new List<string>();
+        d.appearance = new List<AppearanceEntry>();
         return d;
     }
 
@@ -304,6 +308,30 @@ public class GameBootProfile : ScriptableObject
             p.inventoryItems = new List<InventoryItemSave>();
         }
 
+        if (PlayerService.TryGetComponent<ModularAutoBuilder>(out var builder, includeInactive: true, allowSceneLookup: true))
+        {
+            var selection = builder.GetSelection();
+            if (selection != null)
+            {
+                if (p.appearance == null) p.appearance = new List<AppearanceEntry>();
+                else p.appearance.Clear();
+
+                foreach (var kv in selection)
+                {
+                    if (string.IsNullOrEmpty(kv.Value)) continue;
+                    p.appearance.Add(new AppearanceEntry
+                    {
+                        category = kv.Key,
+                        partName = kv.Value
+                    });
+                }
+            }
+        }
+        else
+        {
+            p.appearance = new List<AppearanceEntry>();
+        }
+
         if (BossProgressTracker.TryGetInstance(out var bossTracker))
         {
             p.defeatedBossIds = bossTracker.GetSnapshot();
@@ -336,6 +364,13 @@ public class GameBootProfile : ScriptableObject
             ResetPresetToEmpty(runtimePreset);
         }
 
+        // Reiniciar progreso de bosses para partidas nuevas
+        if (BossProgressTracker.TryGetInstance(out var tracker))
+        {
+            var snapshot = runtimePreset != null ? runtimePreset.defeatedBossIds : null;
+            tracker.LoadFromSnapshot(snapshot);
+        }
+
         // Resetear misiones al iniciar nueva partida
         if (QuestManager.Instance != null)
             QuestManager.Instance.ResetAllQuests();
@@ -356,6 +391,7 @@ public class GameBootProfile : ScriptableObject
         p.rightSpellId = SpellId.None;
         p.specialSpellId = SpellId.None;
         p.flags = new List<string>();
+        p.appearance = new List<AppearanceEntry>();
         p.inventoryItems = new List<InventoryItemSave>();
         p.defeatedBossIds = new List<string>();
         // === NUEVO: resetear abilities ===

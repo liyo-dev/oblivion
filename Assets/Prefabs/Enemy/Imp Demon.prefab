@@ -5614,7 +5614,7 @@ MonoBehaviour:
   projectileDamage: 10
   projectilePrefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
   projectileSpawnPoint: {fileID: 2156623539970524872}
-  spellEffectPrefab: {fileID: 8460667080445658512, guid: a3e2c3406e02f2c4ba86cfb1604277bd, type: 3}
+  spellEffectPrefab: {fileID: 3384366999043453948, guid: 7c19ad7a926fc084ea69d9ba4fedeeab, type: 3}
   slashCooldown: 2
   stabCooldown: 3
   projectileCooldown: 4

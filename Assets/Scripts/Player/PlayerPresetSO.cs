@@ -29,6 +29,9 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Abilities (Swim, Jump, Climb)")]
     public PlayerAbilities abilities = new PlayerAbilities();
 
+    [Header("Apariencia")]
+    public List<AppearanceEntry> appearance = new();
+
     [Header("Inventario")]
     public List<InventoryItemSave> inventoryItems = new();
 

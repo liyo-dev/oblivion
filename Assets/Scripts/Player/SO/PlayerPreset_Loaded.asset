@@ -12,15 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Loaded
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Bedroom
+  spawnAnchorId: House_FrontDoor
   level: 1
   maxHP: 100
-  currentHP: 50
+  currentHP: 100
   maxMP: 50
   currentMP: 50
   unlockedAbilities: 01000000
   unlockedSpells: 01000000
-  leftSpellId: 0
+  leftSpellId: 1
   rightSpellId: 0
   specialSpellId: 0
-  flags: []
+  flags:
+  - CINEMATIC_SEEN:Cinematic_Intro
+  - CINEMATIC_SEEN:Cinematic_DemonAppears
+  - QUEST_COMPLETED:ELDRAN_MISSION1
+  - QUEST_COMPLETED:ELDRAN_MISSION2
+  - QUEST_ACTIVE:ELDRAN_MISSION3
+  abilities:
+    swim: 0
+    jump: 0
+    climb: 0
+    magic: 1
+  appearance: []
+  inventoryItems:
+  - itemId: coin
+    count: 14
+  defeatedBossIds: []

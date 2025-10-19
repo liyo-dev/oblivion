@@ -4,6 +4,16 @@ using UnityEngine;
 [DefaultExecutionOrder(-520)]
 public class BossProgressPersistenceBridge : MonoBehaviour
 {
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (FindObjectOfType<BossProgressPersistenceBridge>() != null) return;
+
+        var go = new GameObject(nameof(BossProgressPersistenceBridge));
+        DontDestroyOnLoad(go);
+        go.AddComponent<BossProgressPersistenceBridge>();
+    }
+
     private bool _initialized;
 
     private void OnEnable()

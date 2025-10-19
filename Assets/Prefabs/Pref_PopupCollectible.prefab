@@ -167,8 +167,9 @@ MonoBehaviour:
   iconImage: {fileID: 6444570628627935288}
   scaleInDuration: 0.12
   fadeOutDuration: 0.2
-  slideDistance: 150
-  slideInDuration: 3
+  slideDistance: 200
+  slideInDuration: 1
+  minPreferredHeight: 32
 --- !u!1 &8375086378797176426
 GameObject:
   m_ObjectHideFlags: 0
