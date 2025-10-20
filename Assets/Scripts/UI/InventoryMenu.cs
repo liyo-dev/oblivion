@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace UI
 {
@@ -60,11 +63,23 @@ namespace UI
 
         void Update()
         {
-            // Toggle menu con la tecla I
-            if (Input.GetKeyDown(KeyCode.I))
+            if (ShouldToggle())
             {
                 ToggleMenu();
             }
+        }
+
+        bool ShouldToggle()
+        {
+            bool toggle = Input.GetKeyDown(KeyCode.I);
+#if ENABLE_INPUT_SYSTEM
+            if (!toggle && Gamepad.current != null && Gamepad.current.dpad.down.wasPressedThisFrame)
+                toggle = true;
+#else
+            if (!toggle && Input.GetKeyDown(KeyCode.JoystickButton6))
+                toggle = true;
+#endif
+            return toggle;
         }
 
         public void ToggleMenu()
