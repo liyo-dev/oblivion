@@ -214,8 +214,14 @@ public class UnlockTrigger : MonoBehaviour
             var saveSystem = FindFirstObjectByType<SaveSystem>();
             if (profile != null && saveSystem != null)
             {
-                bool ok = profile.SaveCurrentGameState(saveSystem);
-                if (!ok) Debug.LogError("[UnlockTrigger] Error al guardar tras desbloqueo");
+                bool ok = profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
+                if (!ok)
+                {
+                    if (!profile.allowAutoSaves)
+                        Debug.Log("[UnlockTrigger] Auto-guardado omitido (allowAutoSaves = false).");
+                    else
+                        Debug.LogError("[UnlockTrigger] Error al guardar tras desbloqueo");
+                }
             }
         }
 

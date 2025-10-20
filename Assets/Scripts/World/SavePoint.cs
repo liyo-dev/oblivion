@@ -78,6 +78,34 @@ public class SavePoint : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Permite disparar el guardado desde un evento externo (ej. Interactable/diálogo).
+    /// </summary>
+    public void SaveFromInteractable()
+    {
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || !player)
+        {
+            player = GameObject.FindGameObjectWithTag("Player");
+        }
+
+        if (!player)
+        {
+            Debug.LogWarning("[SavePoint] No se encontró el jugador para guardar desde Interactable.");
+            return;
+        }
+
+        if (GameBootService.IsAvailable)
+        {
+            DoSave(player);
+        }
+        else
+        {
+            _pendingSave = true;
+            _pendingPlayer = player;
+            Debug.Log("[SavePoint] Perfil no listo. Guardado diferido hasta OnProfileReady (desde Interactable)");
+        }
+    }
+
     void DoSave(GameObject playerGo)
     {
         var bootProfile = GameBootService.Profile;
@@ -87,8 +115,20 @@ public class SavePoint : MonoBehaviour
             return;
         }
 
-        if (!string.IsNullOrEmpty(anchorIdToSet))
-            SpawnManager.SetCurrentAnchor(anchorIdToSet);
+        string anchorId = anchorIdToSet;
+        if (string.IsNullOrEmpty(anchorId))
+        {
+            var anchor = GetComponentInParent<SpawnAnchor>() ?? GetComponent<SpawnAnchor>();
+            if (anchor != null && !string.IsNullOrEmpty(anchor.anchorId))
+            {
+                anchorId = anchor.anchorId;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(anchorId))
+        {
+            SpawnManager.SetCurrentAnchor(anchorId);
+        }
 
         if (healOnSave && playerGo != null)
         {

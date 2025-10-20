@@ -135,6 +135,8 @@ public class QuestManager : MonoBehaviour
     /// <summary>Reconstruye el estado a partir de flags del perfil.</summary>
     public void RestoreFromProfileFlags(IReadOnlyList<string> flags)
     {
+        ResetAllQuests();
+
         if (flags == null || flags.Count == 0) return;
 
         var toActive = new HashSet<string>(StringComparer.Ordinal);
@@ -206,7 +208,7 @@ public class QuestManager : MonoBehaviour
                 {
                     rqOut = new RuntimeQuest(data);
                     _runtime[questId] = rqOut;
-                    // No necesitamos indexar conditions para restaurar (pero no pasa nada si lo haces).
+                    IndexQuestConditions(rqOut);
                 }
             }
         }

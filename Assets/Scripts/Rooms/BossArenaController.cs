@@ -68,6 +68,7 @@ public class BossArenaController : MonoBehaviour
 
     bool started = false;
     bool _bossDefeatHandled = false;
+    bool _bossDeathConfirmed = false;
     EnemyMarker _activeBossMarker;
     Damageable _activeBossDamageable;
 
@@ -129,6 +130,7 @@ public class BossArenaController : MonoBehaviour
         }
 
         started = true;
+        _bossDeathConfirmed = false;
 
         // Según el modo, activar puertas o barrera
         if (useDoorMode)
@@ -234,7 +236,7 @@ public class BossArenaController : MonoBehaviour
             return;
         }
 
-        if (_activeBossDamageable != null && _activeBossDamageable.IsAlive)
+        if (!_bossDeathConfirmed)
         {
             // El boss fue destruido sin haber sido derrotado (p.ej. cambio de escena tras Game Over).
             CleanupBossSubscriptions();
@@ -247,6 +249,7 @@ public class BossArenaController : MonoBehaviour
 
     void HandleBossDamageableDied()
     {
+        _bossDeathConfirmed = true;
         ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
     }
 
@@ -515,13 +518,15 @@ public class BossArenaController : MonoBehaviour
         }
     }
 
-    private void RestoreBattleDisables()
+    private void RestoreBattleDisables(bool skipObjectsInSameScene = false)
     {
         if (_prevActiveStates.Count == 0) return;
         foreach (var kvp in _prevActiveStates)
         {
             var go = kvp.Key;
             if (!go) continue;
+            if (skipObjectsInSameScene && go.scene == gameObject.scene)
+                continue;
             go.SetActive(kvp.Value);
         }
         _prevActiveStates.Clear();
@@ -529,8 +534,11 @@ public class BossArenaController : MonoBehaviour
 
     void OnDestroy()
     {
-        // Restaurar objetos desactivados si quedara algo pendiente
-        RestoreBattleDisables();
+        // Restaurar objetos desactivados si quedara algo pendiente.
+        // Si la escena se estǭ descargando, los objetos del mismo scene tambiǭn se destruyen,
+        // y Unity lanza un error al intentar reactivarlos.
+        bool sceneStillLoaded = gameObject.scene.IsValid() && gameObject.scene.isLoaded;
+        RestoreBattleDisables(skipObjectsInSameScene: !sceneStillLoaded);
         CleanupBossSubscriptions();
 
         // Limpiar la barrera visual si fue creada

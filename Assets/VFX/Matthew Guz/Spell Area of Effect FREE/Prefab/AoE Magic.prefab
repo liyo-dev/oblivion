@@ -10044,7 +10044,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -18.433075, y: 15.347988, z: 19.035412}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2774892750574231313}
@@ -14976,7 +14976,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 4195920858664622009}
   hideHintAtStart: 1
-  singleUse: 0
+  singleUse: 1
   initiallyEnabled: 1
   dialogue: {fileID: 11400000, guid: d37a298bae2f40047978b9524f7fd669, type: 2}
   OnInteract:
@@ -14988,10 +14988,10 @@ MonoBehaviour:
   OnFinished:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4915463286639469466}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 4479071251875004551}
+        m_TargetAssemblyTypeName: SavePoint, Assembly-CSharp
+        m_MethodName: SaveFromInteractable
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -15034,14 +15034,14 @@ GameObject:
   m_Component:
   - component: {fileID: 6818229948521429209}
   - component: {fileID: 236248877354682967}
-  - component: {fileID: 4344764777987427226}
+  - component: {fileID: 4479071251875004551}
   m_Layer: 0
   m_Name: SavePoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &6818229948521429209
 Transform:
   m_ObjectHideFlags: 0
@@ -15078,7 +15078,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3, y: 2, z: 3}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4344764777987427226
+--- !u!114 &4479071251875004551
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -15087,18 +15087,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 4915463286639469466}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e214aa4dd2af423a9689f060e2459d2e, type: 3}
+  m_Script: {fileID: 11500000, guid: bd25ffdca4e283d448aef5c4390db21e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AutoSaveTrigger
+  m_EditorClassIdentifier: Assembly-CSharp::SavePoint
   anchorIdToSet: Woods_SavePoint
   healOnSave: 1
   teleportAfterSave: 0
   teleportAnchorId: 
-  oneShotFlag: 
-  disableAfterUse: 1
-  onSaved:
-    m_PersistentCalls:
-      m_Calls: []
+  interactKey: 101
+  promptId: 
+  prompt: Guardar partida (E)
 --- !u!1 &5698229888806196876
 GameObject:
   m_ObjectHideFlags: 0

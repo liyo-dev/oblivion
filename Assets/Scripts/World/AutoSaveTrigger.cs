@@ -96,10 +96,17 @@ public class AutoSaveTrigger : MonoBehaviour
         var saveSystem = FindFirstObjectByType<SaveSystem>();
         if (saveSystem != null)
         {
-            bool ok = bootProfile.SaveCurrentGameState(saveSystem);
+            bool ok = bootProfile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
             if (!ok)
             {
-                Debug.LogError("[AutoSaveTrigger] Error al guardar");
+                if (!bootProfile.allowAutoSaves)
+                {
+                    Debug.Log("[AutoSaveTrigger] Auto-guardado omitido (allowAutoSaves = false).");
+                }
+                else
+                {
+                    Debug.LogError("[AutoSaveTrigger] Error al guardar");
+                }
             }
             else
             {

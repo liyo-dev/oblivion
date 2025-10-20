@@ -334,7 +334,7 @@ public class AdditiveSceneCinematic : MonoBehaviour
         var saveSystem = FindFirstObjectByType<SaveSystem>();
         if (saveSystem != null)
         {
-            profile.SaveCurrentGameState(saveSystem);
+            profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
         }
     }
 

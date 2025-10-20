@@ -204,12 +204,24 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8625976105098133822}
   hideHintAtStart: 1
-  singleUse: 0
+  singleUse: 1
   initiallyEnabled: 1
   dialogue: {fileID: 11400000, guid: 16f6f92679e396e45bcb2f3ab42eec3a, type: 2}
   OnInteract:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -230,7 +242,19 @@ MonoBehaviour:
         m_CallState: 2
   OnConsumed:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 3784440622836498799}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &8818352264299906031
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -244,7 +268,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestStarterOnInteract
   questIdToStart: ELDRAN_MISSION1
-  onlyOnce: 0
+  onlyOnce: 1
 --- !u!1 &8625976105098133822
 GameObject:
   m_ObjectHideFlags: 0

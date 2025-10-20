@@ -31,25 +31,14 @@ public class QuestPersistenceBridge : MonoBehaviour
     {
         var profile = GameBootService.Profile;
         if (profile == null) return;
-        if (QuestManager.Instance == null) return;
+
+        var questManager = QuestManager.Instance;
+        if (questManager == null) return;
 
         var preset = profile.GetActivePresetResolved();
-        if (preset == null || preset.flags == null) return;
+        if (preset == null) return;
 
-        foreach (var flag in preset.flags)
-        {
-            if (string.IsNullOrEmpty(flag)) continue;
-            if (!flag.StartsWith("QUEST_COMPLETED:")) continue;
-            string questId = flag.Substring("QUEST_COMPLETED:".Length);
-            if (string.IsNullOrEmpty(questId)) continue;
-
-            // Asegurar que la quest exista en runtime y marcarla como completada
-            QuestManager.Instance.StartQuest(questId);   // añade desde catálogo si no existe y la activa
-            QuestManager.Instance.CompleteQuest(questId);
-        }
-
-        // Notificar a listeners que el estado puede haber cambiado
-        // (QuestManager ya dispara eventos en CompleteQuest/StartQuest)
+        questManager.RestoreFromProfileFlags(preset.flags);
     }
 }
 

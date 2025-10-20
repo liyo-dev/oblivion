@@ -2,6 +2,11 @@
 using UnityEngine;
 using System;
 
+public enum SaveRequestContext
+{
+    Manual,
+    Auto
+}
 
 [CreateAssetMenu(fileName = "GameBootProfile", menuName = "Game/Boot Profile")]
 public class GameBootProfile : ScriptableObject
@@ -17,6 +22,10 @@ public class GameBootProfile : ScriptableObject
 
     [Header("Runtime Fallback (auto-generado al cargar save)")]
     public PlayerPresetSO runtimePreset;
+
+    [Header("Save Options")]
+    [Tooltip("Permite auto-guardados fuera de los puntos de guardado manuales.")]
+    public bool allowAutoSaves = true;
 
     public bool ShouldBootFromPreset() => usePresetInsteadOfSave && bootPreset != null;
 
@@ -186,6 +195,21 @@ public class GameBootProfile : ScriptableObject
     {
         if (data == null) return;
         SetRuntimePresetFromSave(data);
+
+        var preset = GetActivePresetResolved();
+
+        if (!string.IsNullOrEmpty(preset?.spawnAnchorId))
+        {
+            SpawnManager.SetCurrentAnchor(preset.spawnAnchorId);
+        }
+
+        if (BossProgressTracker.TryGetInstance(out var tracker))
+        {
+            tracker.LoadFromSnapshot(preset?.defeatedBossIds);
+        }
+
+        var questManager = QuestManager.Instance;
+        questManager?.RestoreFromProfileFlags(preset?.flags);
     }
 
     public PlayerSaveData BuildDefaultSave()
@@ -224,9 +248,15 @@ public class GameBootProfile : ScriptableObject
     }
 
     /// <summary>Actualiza el runtimePreset con los valores actuales de los sistemas del juego y guarda</summary>
-    public bool SaveCurrentGameState(SaveSystem saveSystem)
+    public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
         if (!saveSystem) return false;
+
+        if (context == SaveRequestContext.Auto && !allowAutoSaves)
+        {
+            Debug.Log("[GameBootProfile] Auto-guardado omitido (allowAutoSaves = false).");
+            return false;
+        }
 
         // Actualizar el runtimePreset con el estado actual del juego
         UpdateRuntimePresetFromCurrentState();

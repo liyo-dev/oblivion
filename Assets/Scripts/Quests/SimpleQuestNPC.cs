@@ -261,7 +261,7 @@ public class SimpleQuestNPC : MonoBehaviour
         if (!preset.flags.Contains(flag))
             preset.flags.Add(flag);
 
-        profile.SaveCurrentGameState(saveSystem);
+        profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
     }
 
     bool TryGetCurrentEntry(QuestManager qm, out QuestChainEntry entry, out int index)

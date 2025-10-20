@@ -428,7 +428,7 @@ public class CinematicDirector : MonoBehaviour
         var saveSystem = UnityEngine.Object.FindFirstObjectByType<SaveSystem>();
         if (saveSystem != null)
         {
-            profile.SaveCurrentGameState(saveSystem);
+            profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
         }
     }
 }

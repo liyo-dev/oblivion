@@ -54,6 +54,13 @@ public class AnchorSetter : MonoBehaviour
         if (!saveAfter) return;
         if (!GameBootService.IsAvailable) return;
 
+        var profile = GameBootService.Profile;
+        if (profile != null && !profile.allowAutoSaves)
+        {
+            Debug.Log("[AnchorSetter] Auto-guardado omitido (allowAutoSaves = false).");
+            return;
+        }
+
         // Guardar estado actualizando el lastSpawnAnchorId
         var data = PlayerSaveData.FromGameBootProfile();
         data.lastSpawnAnchorId = anchorId;
