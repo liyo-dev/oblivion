@@ -6,6 +6,7 @@ public class InventoryRowWidget : MonoBehaviour
 {
     [SerializeField] private Button button;
     [SerializeField] private Text label;
+    [SerializeField] private Image iconImage;
 
     ItemData _item;
     string _fallbackName = "Item";
@@ -19,6 +20,12 @@ public class InventoryRowWidget : MonoBehaviour
             button = GetComponent<Button>();
         if (label == null)
             label = GetComponentInChildren<Text>();
+        if (iconImage == null)
+        {
+            var iconTransform = transform.Find("Icon");
+            if (iconTransform != null)
+                iconImage = iconTransform.GetComponent<Image>();
+        }
     }
 
     public void Configure(ItemData item)
@@ -26,6 +33,7 @@ public class InventoryRowWidget : MonoBehaviour
         _item = item;
         if (_item != null && !string.IsNullOrEmpty(_item.displayName))
             _fallbackName = _item.displayName;
+        UpdateIcon();
     }
 
     public void RefreshLabel(Inventory inventory)
@@ -60,6 +68,22 @@ public class InventoryRowWidget : MonoBehaviour
             button.onClick.Invoke();
         else
             HandleClick();
+    }
+
+    void UpdateIcon()
+    {
+        if (iconImage == null) return;
+
+        if (_item != null && _item.icon != null)
+        {
+            iconImage.enabled = true;
+            iconImage.sprite = _item.icon;
+        }
+        else
+        {
+            iconImage.sprite = null;
+            iconImage.enabled = false;
+        }
     }
 
     void HandleClick()
