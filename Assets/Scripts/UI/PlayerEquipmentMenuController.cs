@@ -80,6 +80,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (existing != null)
         {
             _instance = existing;
+            // Asegurar persistencia si el usuario colocó el objeto en la escena inicial
+            try
+            {
+                if (existing.transform.root != null)
+                    DontDestroyOnLoad(existing.transform.root.gameObject);
+                else
+                    DontDestroyOnLoad(existing.gameObject);
+            }
+            catch { }
             return;
         }
 
@@ -888,7 +897,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         [Serializable]
         public class RowBinding
         {
-            public PartCat category;
+            public PartCategory category;
             public Text label;
             public Button previousButton;
             public Button nextButton;
@@ -899,7 +908,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     class EquipmentView
     {
         readonly EquipmentBindings _ui;
-        readonly Dictionary<PartCat, EquipmentBindings.RowBinding> _rows = new();
+        readonly Dictionary<PartCategory, EquipmentBindings.RowBinding> _rows = new();
 
         ModularAutoBuilder _builder;
         PlayerPresetService _presetService;
@@ -916,12 +925,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     if (row == null) continue;
                     _rows[row.category] = row;
 
+                    var capturedCategory = row.category;
                     if (row.previousButton != null)
-                        row.previousButton.onClick.AddListener(() => Cycle(row.category, -1));
+                        row.previousButton.onClick.AddListener(() => Cycle(capturedCategory, -1));
                     if (row.nextButton != null)
-                        row.nextButton.onClick.AddListener(() => Cycle(row.category, +1));
+                        row.nextButton.onClick.AddListener(() => Cycle(capturedCategory, +1));
                     if (row.clearButton != null)
-                        row.clearButton.onClick.AddListener(() => Clear(row.category));
+                        row.clearButton.onClick.AddListener(() => Clear(capturedCategory));
                 }
             }
         }
@@ -967,23 +977,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateLabels();
         }
 
-        void Cycle(PartCat category, int step)
+        void Cycle(PartCategory category, int step)
         {
             if (_builder == null) return;
 
-            if (step >= 0)
-                _builder.Next(category, 1);
-            else
-                _builder.Prev(category);
-
+            InvokeBuilderNextPrev(category, step);
             Snapshot();
             UpdateLabels();
         }
 
-        void Clear(PartCat category)
+        void Clear(PartCategory category)
         {
             if (_builder == null) return;
-            _builder.SetByName(category, null);
+            InvokeBuilderSetByName(category, null);
             Snapshot();
             UpdateLabels();
         }
@@ -996,16 +1002,37 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UpdateLabels()
         {
             if (_builder == null) return;
-            var selection = _builder.GetSelection();
+            // Obtener selección por reflexión para evitar referenciar PartCat directamente
+            Dictionary<object, string> selectionMap = new();
+            var getSel = _builder.GetType().GetMethod("GetSelection");
+            if (getSel != null)
+            {
+                var selObj = getSel.Invoke(_builder, null);
+                if (selObj is System.Collections.IDictionary dict)
+                {
+                    foreach (System.Collections.DictionaryEntry de in dict)
+                    {
+                        selectionMap[de.Key] = de.Value?.ToString();
+                    }
+                }
+            }
 
             foreach (var kvp in _rows)
             {
                 var row = kvp.Value;
                 if (row?.label == null) continue;
 
-                string value = selection != null && selection.TryGetValue(kvp.Key, out var part)
-                    ? part
-                    : "Sin asignar";
+                string value = "Sin asignar";
+                // Intentar buscar usando el enum tipo que viene en la selección
+                foreach (var key in selectionMap.Keys)
+                {
+                    if (key == null) continue;
+                    if (string.Equals(key.ToString(), kvp.Key.ToString(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = selectionMap[key] ?? "Sin asignar";
+                        break;
+                    }
+                }
 
                 row.label.text = $"{FormatCategory(kvp.Key)}: {value}";
             }
@@ -1019,24 +1046,76 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (row.clearButton != null) row.clearButton.interactable = value;
         }
 
-        string FormatCategory(PartCat cat)
+        string FormatCategory(PartCategory cat)
         {
             return cat switch
             {
-                PartCat.OHS => "Arma Mano Derecha",
-                PartCat.Shield => "Escudo Mano Izquierda",
-                PartCat.Bow => "Arco",
-                PartCat.Body => "Cuerpo",
-                PartCat.Cloak => "Capa",
-                PartCat.Head => "Cabeza",
-                PartCat.Hair => "Pelo",
-                PartCat.Eyes => "Ojos",
-                PartCat.Mouth => "Boca",
-                PartCat.Hat => "Casco",
-                PartCat.Eyebrow => "Ceja",
-                PartCat.Accessory => "Accesorio",
+                PartCategory.WeaponR => "Arma Mano Derecha",
+                PartCategory.ShieldR => "Escudo Mano Izquierda",
+                PartCategory.Bow => "Arco",
+                PartCategory.Body => "Cuerpo",
+                PartCategory.Cloak => "Capa",
+                PartCategory.Head => "Cabeza",
+                PartCategory.Hair => "Pelo",
+                PartCategory.Eyes => "Ojos",
+                PartCategory.Mouth => "Boca",
+                PartCategory.Hat => "Casco",
+                PartCategory.Eyebrow => "Ceja",
+                PartCategory.Accessory => "Accesorio",
                 _ => cat.ToString()
             };
+        }
+
+        // Invoca Next/Prev en el builder usando reflexión para evitar usar PartCat directamente
+        void InvokeBuilderNextPrev(PartCategory category, int step)
+        {
+            if (_builder == null) return;
+            var type = _builder.GetType();
+            var method = type.GetMethod("Next", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (method == null) method = type.GetMethod("Next", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method == null) return;
+            var paramType = method.GetParameters()[0].ParameterType;
+            try
+            {
+                var enumVal = System.Enum.Parse(paramType, category.ToString());
+                method.Invoke(_builder, new object[] { enumVal, 1 });
+                if (step < 0)
+                {
+                    // call Prev if exists
+                    var prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (prevMethod == null) prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (prevMethod != null)
+                    {
+                        prevMethod.Invoke(_builder, new object[] { enumVal });
+                        return;
+                    }
+                    // fallback: call Next with negative step via a Prev-like approach
+                    var nextMethod = method;
+                    // try Next with step parameter if exists
+                    var parms = method.GetParameters();
+                    if (parms.Length == 2)
+                    {
+                        nextMethod.Invoke(_builder, new object[] { enumVal, step });
+                    }
+                }
+            }
+            catch (System.Exception) { }
+        }
+
+        void InvokeBuilderSetByName(PartCategory category, string nameOrNull)
+        {
+            if (_builder == null) return;
+            var type = _builder.GetType();
+            var method = type.GetMethod("SetByName", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                      ?? type.GetMethod("SetByName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method == null) return;
+            var paramType = method.GetParameters()[0].ParameterType;
+            try
+            {
+                var enumVal = System.Enum.Parse(paramType, category.ToString());
+                method.Invoke(_builder, new object[] { enumVal, nameOrNull });
+            }
+            catch (System.Exception) { }
         }
     }
 }

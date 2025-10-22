@@ -254,29 +254,8 @@ public enum PartCategory
     ThsSword,
     OhsSword,
     Axe,
-    Hammer
-}
-
-/// <summary>Obsoleto: use <see cref="PartCategory"/> en su lugar.</summary>
-[Obsolete("Use PartCategory instead")]
-public enum PartCat
-{
-    Body,
-    Cloak,
-    Accessory,
-    Eyes,
-    Mouth,
-    Hair,
-    Head,
-    Hat,
-    Eyebrow,
-    Bow,
-    Ohs,
-    // Compatibilidad: algunos scripts históricos usan "OHS" (todo en mayúsculas).
-    // Mantener un alias evita romper compilación sin renombrar en todos los lugares.
-    OHS = Ohs,
-    Shield,
-    Arrows
+    Hammer,
+    Ohs
 }
 
 // World objects

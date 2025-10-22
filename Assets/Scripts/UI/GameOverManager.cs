@@ -48,6 +48,37 @@ public class GameOverManager : MonoBehaviour
     bool _allowActions = false;
 
     public bool IsShown => _isGameOverShown;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void EnsurePersistentIfPlacedInStartScene()
+    {
+        try
+        {
+#if UNITY_2022_3_OR_NEWER
+            var existing = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            var existing = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
+#pragma warning restore 618
+#endif
+            if (existing != null)
+            {
+                if (existing.transform.root != null)
+                    UnityEngine.Object.DontDestroyOnLoad(existing.transform.root.gameObject);
+                else
+                    UnityEngine.Object.DontDestroyOnLoad(existing.gameObject);
+            }
+
+            if (UnityEngine.EventSystems.EventSystem.current == null)
+            {
+                var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
+                UnityEngine.Object.DontDestroyOnLoad(es);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"EnsurePersistentIfPlacedInStartScene failed: {ex}");
+        }
+    }
 
     private void Awake()
     {
@@ -59,6 +90,11 @@ public class GameOverManager : MonoBehaviour
         Instance = this;
         // Opcional: no destruir al cambiar de escena si quieres persistencia
         // DontDestroyOnLoad(gameObject);
+        // Si está en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
+        if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
+        {
+            DontDestroyOnLoad(gameObject);
+        }
 
         if (gameOverUI != null)
             gameOverUI.SetActive(false);

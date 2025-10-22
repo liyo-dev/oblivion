@@ -11,12 +11,12 @@ public class CharacterCreatorUI : MonoBehaviour
         "OHS","Shield","Bow"  // Panel_Right (9-11)
     };
 
-    PartCat Parse(string category)
+    PartCategory Parse(string category)
     {
         // Categorías vienen como "Body","Cloak",... exactas desde el CanvasBuilder
-        if (System.Enum.TryParse(category, out PartCat cat)) return cat;
+        if (System.Enum.TryParse(category, out PartCategory cat)) return cat;
         Debug.LogWarning($"[UI] Categoría desconocida: {category}");
-        return PartCat.Body;
+        return PartCategory.Body;
     }
 
     public void Step(string category, int step)
@@ -37,14 +37,14 @@ public class CharacterCreatorUI : MonoBehaviour
     }
 
     // Helpers para el GamepadController
-    public PartCat CurrentHighlightedCategory()
+    public PartCategory CurrentHighlightedCategory()
     {
-        if (!highlighter) return PartCat.Body;
+        if (!highlighter) return PartCategory.Body;
         
         int index = highlighter.SelectedIndex;
         if (index >= 0 && index < CategoryOrder.Length)
             return Parse(CategoryOrder[index]);
         
-        return PartCat.Body;
+        return PartCategory.Body;
     }
 }

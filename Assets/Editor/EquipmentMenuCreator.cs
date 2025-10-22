@@ -171,7 +171,7 @@ public static class EquipmentMenuCreator
 
     private static void EnsureEventSystem()
     {
-        if (Object.FindObjectOfType<EventSystem>() != null) return;
+        if (Object.FindFirstObjectByType<EventSystem>() != null) return;
 
         var es = new GameObject("EventSystem");
         Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
@@ -436,11 +436,11 @@ public static class EquipmentMenuCreator
 
         var rows = new[]
         {
-            CreateEquipmentRow(root.transform, resources, PartCat.Body, "Cuerpo"),
-            CreateEquipmentRow(root.transform, resources, PartCat.Cloak, "Capa"),
-            CreateEquipmentRow(root.transform, resources, PartCat.Head, "Cabeza"),
-            CreateEquipmentRow(root.transform, resources, PartCat.Hair, "Cabello"),
-            CreateEquipmentRow(root.transform, resources, PartCat.Accessory, "Accesorio")
+            CreateEquipmentRow(root.transform, resources, PartCategory.Body, "Cuerpo"),
+            CreateEquipmentRow(root.transform, resources, PartCategory.Cloak, "Capa"),
+            CreateEquipmentRow(root.transform, resources, PartCategory.Head, "Cabeza"),
+            CreateEquipmentRow(root.transform, resources, PartCategory.Hair, "Cabello"),
+            CreateEquipmentRow(root.transform, resources, PartCategory.Accessory, "Accesorio")
         };
 
         return new EquipmentPanelBindings
@@ -450,7 +450,7 @@ public static class EquipmentMenuCreator
         };
     }
 
-    private static EquipmentPanelBindings.Row CreateEquipmentRow(Transform parent, DefaultControls.Resources resources, PartCat category, string labelText)
+    private static EquipmentPanelBindings.Row CreateEquipmentRow(Transform parent, DefaultControls.Resources resources, PartCategory category, string labelText)
     {
         var rowGO = CreateUIObject($"{category}Row", parent);
         var rowRect = rowGO.GetComponent<RectTransform>();
@@ -550,7 +550,7 @@ public static class EquipmentMenuCreator
 
         public struct Row
         {
-            public PartCat category;
+            public PartCategory category;
             public Text label;
             public Button previous;
             public Button next;

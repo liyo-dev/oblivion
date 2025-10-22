@@ -6,6 +6,6 @@ using System;
 [Serializable]
 public struct AppearanceEntry
 {
-    public PartCat category;
+    public PartCategory category;
     public string partName;
 }

@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: MainNarrative
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: 52047bbd-bef9-4dfc-a2b4-2ad85c022849
+  nodes:
+  - rid: 4128268622357594629
+  - rid: 4128268622357594630
+  - rid: 4128268622357594632
+  - rid: 4128268622357594945
+  - rid: 4128268622357595047
+  references:
+    version: 2
+    RefIds:
+    - rid: 4128268622357594629
+      type: {class: StartNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CAPITULO 1
+        guid: 52047bbd-bef9-4dfc-a2b4-2ad85c022849
+        position: {x: -376, y: -327.19998}
+        outputs:
+        - 78455749-f638-46de-a00c-c00cb1e61e5d
+    - rid: 4128268622357594630
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CUANDO ALEX LEE LA CARTA
+        guid: 78455749-f638-46de-a00c-c00cb1e61e5d
+        position: {x: -86.4, y: -70.4}
+        outputs:
+        - 16d41261-7e42-42bb-b91a-1cab8d52164e
+        eventKey: LETTER_START
+    - rid: 4128268622357594632
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
+        guid: 14dab578-84ac-40c4-8874-1f724ff76437
+        position: {x: 892, y: -70.4}
+        outputs:
+        - ca92ab2f-4e94-4068-a495-08f556c4747c
+        questId: ELDRAN_MISSION2
+    - rid: 4128268622357594945
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: TIENE QUE HABLAR CON ELDRAN
+        guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
+        position: {x: 407.2, y: -70.4}
+        outputs:
+        - 14dab578-84ac-40c4-8874-1f724ff76437
+        questId: ELDRAN_MISSION1
+    - rid: 4128268622357595047
+      type: {class: PlayTimelineNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CINEMATICAA DEMONIO
+        guid: ca92ab2f-4e94-4068-a495-08f556c4747c
+        position: {x: 1466.4, y: -70.4}
+        outputs: []
+        directorRef:
+          exposedName: 
+          defaultValue: {fileID: 0}

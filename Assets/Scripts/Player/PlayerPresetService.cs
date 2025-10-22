@@ -160,7 +160,7 @@ public class PlayerPresetService : MonoBehaviour
             return;
         }
 
-        var selection = new Dictionary<PartCat, string>();
+        var selection = new Dictionary<PartCategory, string>();
         foreach (var entry in entries)
         {
             selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;
@@ -201,8 +201,8 @@ public class PlayerPresetService : MonoBehaviour
         else
             preset.appearance.Clear();
 
-        var processed = new HashSet<PartCat>();
-        foreach (PartCat cat in (PartCat[])System.Enum.GetValues(typeof(PartCat)))
+        var processed = new HashSet<PartCategory>();
+        foreach (PartCategory cat in (PartCategory[])System.Enum.GetValues(typeof(PartCategory)))
         {
             if (!processed.Add(cat)) continue;
 

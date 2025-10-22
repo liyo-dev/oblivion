@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: c3ba08fce2cbf0846b22c0ae77f39f6e, type: 2}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -539,85 +539,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 9070343936430133588, guid: be3ed9816d019ff4a85901f7a3aae376, type: 3}
---- !u!1 &883520187
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 883520190}
-  - component: {fileID: 883520189}
-  - component: {fileID: 883520188}
-  m_Layer: 0
-  m_Name: EventSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &883520188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 883520187}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
-  m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
-  m_XRTrackingOrigin: {fileID: 0}
-  m_ActionsAsset: {fileID: -944628639613478452, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_PointAction: {fileID: -3575729326886634555, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MoveAction: {fileID: -2690846353137964619, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_SubmitAction: {fileID: -4857292949242138091, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_CancelAction: {fileID: 1577013650251605496, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_LeftClickAction: {fileID: -7977897160081949292, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MiddleClickAction: {fileID: 8981538171461349378, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_RightClickAction: {fileID: 2941200214913115188, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_ScrollWheelAction: {fileID: -6286134650788867106, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDevicePositionAction: {fileID: 4851584977388053012, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDeviceOrientationAction: {fileID: 8930605249725871117, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 0
-  m_CursorLockBehavior: 0
-  m_ScrollDeltaPerTick: 6
---- !u!114 &883520189
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 883520187}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
---- !u!4 &883520190
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 883520187}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &888606658
 GameObject:
   m_ObjectHideFlags: 0
@@ -21688,7 +21609,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 8354416668599502667}
   - {fileID: 1047409973}
-  - {fileID: 883520190}
   - {fileID: 340814318}
   - {fileID: 1546800745}
   - {fileID: 808885106}

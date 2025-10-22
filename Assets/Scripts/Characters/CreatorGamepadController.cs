@@ -98,7 +98,7 @@ public class CreatorGamepadController : MonoBehaviour
         _lastNavY = nav.y;
 
         // Categoría actual según highlight
-        var cat = ui ? ui.CurrentHighlightedCategory() : PartCat.Body;
+        var cat = ui ? ui.CurrentHighlightedCategory() : PartCategory.Body;
 
         // --- A = Siguiente variante (derecha) ---
         if (_input.UI.Submit.WasPressedThisFrame())

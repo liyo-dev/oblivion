@@ -7,7 +7,7 @@ public class UICurrentPartLabel : MonoBehaviour
     public string category; // "Body","Hair","Hat","OHS"...
 
     Text _txt;
-    PartCat _cat;
+    PartCategory _cat;
 
     void Awake()
     {

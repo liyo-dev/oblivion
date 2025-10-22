@@ -10,6 +10,44 @@ using UnityEngine.InputSystem;
 
 public class PauseMenuController : MonoBehaviour
 {
+    // Asegura que si hay un PauseMenuController en la escena inicial, persista entre escenas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void EnsurePersistentInstance()
+    {
+        try
+        {
+#if UNITY_2022_3_OR_NEWER
+            var existing = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            var existing = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
+#pragma warning restore 618
+#endif
+            if (existing != null)
+            {
+                if (existing.transform.root != null)
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(existing.transform.root.gameObject);
+                }
+                else
+                {
+                    UnityEngine.Object.DontDestroyOnLoad(existing.gameObject);
+                }
+            }
+
+            // Si no hay EventSystem en la escena, crear uno persistente para navegación
+            if (UnityEngine.EventSystems.EventSystem.current == null)
+            {
+                var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
+                UnityEngine.Object.DontDestroyOnLoad(es);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"EnsurePersistentInstance failed: {ex}");
+        }
+    }
+
     [Header("Refs")]
     public Button resumeButton;
     public Button optionsButton;

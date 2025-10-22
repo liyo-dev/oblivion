@@ -20,7 +20,7 @@ public class UITextCurrentPart : MonoBehaviour
     void Refresh()
     {
         if (_txt == null || builder == null) return;
-        if (!System.Enum.TryParse(category, out PartCat cat))
+        if (!System.Enum.TryParse(category, out PartCategory cat))
         {
             _txt.text = "-";
             return;

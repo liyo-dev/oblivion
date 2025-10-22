@@ -7,34 +7,34 @@ using UnityEngine;
 public class ModularAutoBuilder : MonoBehaviour
 {
     // Prefijos -> categorías (case-insensitive)
-    static readonly (string prefix, PartCat cat)[] Map = new (string, PartCat)[]
+    static readonly (string prefix, PartCategory cat)[] Map = new (string, PartCategory)[]
     {
-        ("Body",     PartCat.Body),
-        ("Cloak",    PartCat.Cloak),
-        ("AC",       PartCat.Accessory),
+        ("Body",     PartCategory.Body),
+        ("Cloak",    PartCategory.Cloak),
+        ("AC",       PartCategory.Accessory),
 
         // OJO: Eyebrow antes que Eye para no colisionar
-        ("Eyebrow",  PartCat.Eyebrow),
-        ("Eye",      PartCat.Eyes),
+        ("Eyebrow",  PartCategory.Eyebrow),
+        ("Eye",      PartCategory.Eyes),
 
-        ("Mouth",    PartCat.Mouth),
-        ("Hair",     PartCat.Hair),
-        ("Head",     PartCat.Head),
-        ("Hat",      PartCat.Hat),
+        ("Mouth",    PartCategory.Mouth),
+        ("Hair",     PartCategory.Hair),
+        ("Head",     PartCategory.Head),
+        ("Hat",      PartCategory.Hat),
 
         // Armas
-        ("Bow",      PartCat.Bow),
-        ("OHS",      PartCat.OHS),
-        ("Shield",   PartCat.Shield),
-        ("Arrows",   PartCat.Arrows),
+        ("Bow",      PartCategory.Bow),
+        ("OHS",      PartCategory.Ohs),
+        ("Shield",   PartCategory.ShieldR),
+        ("Arrows",   PartCategory.Arrows),
     };
 
 
-    static readonly HashSet<PartCat> WeaponCats = new() { PartCat.Bow, PartCat.OHS, PartCat.Shield };
+    static readonly HashSet<PartCategory> WeaponCats = new() { PartCategory.Bow, PartCategory.Ohs, PartCategory.ShieldR };
 
     // cache
-    readonly Dictionary<PartCat, List<GameObject>> parts = new();
-    readonly Dictionary<PartCat, int> idx = new();
+    readonly Dictionary<PartCategory, List<GameObject>> parts = new();
+    readonly Dictionary<PartCategory, int> idx = new();
 
     // Use central Hand enum from Identifiers.cs (None, Left, Right)
     readonly Dictionary<GameObject, Hand> handOf = new();
@@ -66,7 +66,7 @@ public class ModularAutoBuilder : MonoBehaviour
     {
         parts.Clear();
         handOf.Clear();
-        foreach (var c in Enum.GetValues(typeof(PartCat)).Cast<PartCat>())
+        foreach (var c in Enum.GetValues(typeof(PartCategory)).Cast<PartCategory>())
             parts[c] = new List<GameObject>();
 
         var all = GetComponentsInChildren<Transform>(true);
@@ -74,7 +74,7 @@ public class ModularAutoBuilder : MonoBehaviour
         {
             if (t == transform) continue;
 
-            PartCat? maybe = null;
+            PartCategory? maybe = null;
             foreach (var m in Map)
                 if (t.name.StartsWith(m.prefix, StringComparison.OrdinalIgnoreCase)) { maybe = m.cat; break; }
             if (maybe == null) continue;
@@ -119,13 +119,13 @@ public class ModularAutoBuilder : MonoBehaviour
 
     void EnsureDefaults()
     {
-        TryEnsureOne(PartCat.Body);
-        TryEnsureOne(PartCat.Head);
-        TryEnsureOne(PartCat.Eyes);
-        TryEnsureOne(PartCat.Mouth);
+        TryEnsureOne(PartCategory.Body);
+        TryEnsureOne(PartCategory.Head);
+        TryEnsureOne(PartCategory.Eyes);
+        TryEnsureOne(PartCategory.Mouth);
     }
 
-    void TryEnsureOne(PartCat cat)
+    void TryEnsureOne(PartCategory cat)
     {
         var opts = GetOptions(cat);
         if (opts != null && opts.Count > 0)
@@ -136,12 +136,12 @@ public class ModularAutoBuilder : MonoBehaviour
     }
 
     // ---------- API pública ----------
-    public IReadOnlyList<string> GetOptions(PartCat cat) =>
+    public IReadOnlyList<string> GetOptions(PartCategory cat) =>
         parts.TryGetValue(cat, out var list) ? list.Select(g => g.name).ToList() : Array.Empty<string>();
 
-    public Dictionary<PartCat, string> GetSelection()
+    public Dictionary<PartCategory, string> GetSelection()
     {
-        var dict = new Dictionary<PartCat, string>();
+        var dict = new Dictionary<PartCategory, string>();
         foreach (var kv in idx)
         {
             var list = parts[kv.Key];
@@ -151,27 +151,27 @@ public class ModularAutoBuilder : MonoBehaviour
         return dict;
     }
 
-    public void ApplySelection(Dictionary<PartCat, string> sel)
+    public void ApplySelection(Dictionary<PartCategory, string> sel)
     {
         // aplica Bow primero por su dependencia con Arrows
-        if (sel.TryGetValue(PartCat.Bow, out var bow)) SetByName(PartCat.Bow, bow);
+        if (sel.TryGetValue(PartCategory.Bow, out var bow)) SetByName(PartCategory.Bow, bow);
         foreach (var kv in sel)
         {
-            if (kv.Key == PartCat.Bow) continue;
+            if (kv.Key == PartCategory.Bow) continue;
             SetByName(kv.Key, kv.Value);
         }
     }
 
-    public void Next(PartCat cat, int step = 1)
+    public void Next(PartCategory cat, int step = 1)
     {
         if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
         int cur = idx.TryGetValue(cat, out var v) ? v : -1;
         cur = (cur + step + list.Count) % list.Count;
         SetByIndex(cat, cur);
     }
-    public void Prev(PartCat cat) => Next(cat, -1);
+    public void Prev(PartCategory cat) => Next(cat, -1);
 
-    public void Randomize(PartCat cat, float noneChance = 0f)
+    public void Randomize(PartCategory cat, float noneChance = 0f)
     {
         if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
         if (noneChance > 0f && UnityEngine.Random.value < noneChance) { SetByName(cat, null); return; }
@@ -181,34 +181,34 @@ public class ModularAutoBuilder : MonoBehaviour
 
     public void RandomizeAll()
     {
-        Randomize(PartCat.Body);
-        Randomize(PartCat.Cloak, 0.5f);
-        Randomize(PartCat.Head);
-        Randomize(PartCat.Hair, 0.2f);
-        Randomize(PartCat.Eyes);
-        Randomize(PartCat.Mouth);
-        Randomize(PartCat.Hat, 0.6f);
-        Randomize(PartCat.Eyebrow, 0.3f);
-        Randomize(PartCat.Accessory, 0.7f);
+        Randomize(PartCategory.Body);
+        Randomize(PartCategory.Cloak, 0.5f);
+        Randomize(PartCategory.Head);
+        Randomize(PartCategory.Hair, 0.2f);
+        Randomize(PartCategory.Eyes);
+        Randomize(PartCategory.Mouth);
+        Randomize(PartCategory.Hat, 0.6f);
+        Randomize(PartCategory.Eyebrow, 0.3f);
+        Randomize(PartCategory.Accessory, 0.7f);
 
         // armas (reglas de exclusión aplicarán dentro de SetByName)
         if (UnityEngine.Random.value < 0.25f)
-            Randomize(PartCat.Bow);
+            Randomize(PartCategory.Bow);
         else
         {
-            Randomize(PartCat.OHS, 0.4f);
-            if (!idx.ContainsKey(PartCat.OHS)) Randomize(PartCat.Shield, 0.5f);
+            Randomize(PartCategory.Ohs, 0.4f);
+            if (!idx.ContainsKey(PartCategory.Ohs)) Randomize(PartCategory.ShieldR, 0.5f);
         }
     }
 
-    public void SetByIndex(PartCat cat, int i)
+    public void SetByIndex(PartCategory cat, int i)
     {
         if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
         i = Mathf.Clamp(i, 0, list.Count - 1);
         SetByName(cat, list[i].name);
     }
     
-    public void SetByName(PartCat cat, string nameOrNull)
+    public void SetByName(PartCategory cat, string nameOrNull)
 {
     if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
 
@@ -221,7 +221,7 @@ public class ModularAutoBuilder : MonoBehaviour
         idx.Remove(cat);
 
         // coherencia con Bow -> apaga flechas
-        if (cat == PartCat.Bow) SetByName(PartCat.Arrows, null);
+        if (cat == PartCategory.Bow) SetByName(PartCategory.Arrows, null);
         return;
     }
 
@@ -235,15 +235,15 @@ public class ModularAutoBuilder : MonoBehaviour
 
     // 1) Exclusión dura: Hair y Hat no pueden coexistir
     //    (se ejecuta SIEMPRE que activas uno u otro)
-    if (cat == PartCat.Hat)       TurnOffCategory(PartCat.Hair);
-    else if (cat == PartCat.Hair) TurnOffCategory(PartCat.Hat);
+    if (cat == PartCategory.Hat)       TurnOffCategory(PartCategory.Hair);
+    else if (cat == PartCategory.Hair) TurnOffCategory(PartCategory.Hat);
 
     // 2) Reglas por armas / manos (exclusividad por mano y Bow usa ambas)
-    if (WeaponCats.Contains(cat) || cat == PartCat.Arrows)
+    if (WeaponCats.Contains(cat) || cat == PartCategory.Arrows)
     {
         var h = handOf.TryGetValue(chosen, out var hh) ? hh : Hand.None;
 
-        if (cat == PartCat.Bow)
+        if (cat == PartCategory.Bow)
         {
             // Bow ocupa ambas manos: apaga todo en ambas y enciende flechas der.
             TurnOffAllWeapons(Hand.Left);
@@ -255,7 +255,7 @@ public class ModularAutoBuilder : MonoBehaviour
             return;
         }
 
-        if (cat == PartCat.OHS || cat == PartCat.Shield || cat == PartCat.Arrows)
+        if (cat == PartCategory.Ohs || cat == PartCategory.ShieldR || cat == PartCategory.Arrows)
         {
             // exclusividad dentro de la mano de ese objeto
             TurnOffAllWeapons(h);
@@ -270,10 +270,10 @@ public class ModularAutoBuilder : MonoBehaviour
     idx[cat] = i;
 
     // Consistencia: si enciendo OHS o Shield, apaga Bow/Arrows
-    if (cat == PartCat.OHS || cat == PartCat.Shield)
+    if (cat == PartCategory.Ohs || cat == PartCategory.ShieldR)
     {
-        SetByName(PartCat.Bow, null);
-        SetByName(PartCat.Arrows, null);
+        SetByName(PartCategory.Bow, null);
+        SetByName(PartCategory.Arrows, null);
     }
 }
 
@@ -289,7 +289,7 @@ public class ModularAutoBuilder : MonoBehaviour
 
     void TurnOffAllWeapons(Hand h)
     {
-        foreach (var cat in WeaponCats.Concat(new[] { PartCat.Arrows }))
+        foreach (var cat in WeaponCats.Concat(new[] { PartCategory.Arrows }))
         {
             if (!parts.TryGetValue(cat, out var list)) continue;
             for (int k = 0; k < list.Count; k++)
@@ -307,7 +307,7 @@ public class ModularAutoBuilder : MonoBehaviour
 
     void AutoEnableArrowsRight()
     {
-        if (!parts.TryGetValue(PartCat.Arrows, out var arrows)) return;
+        if (!parts.TryGetValue(PartCategory.Arrows, out var arrows)) return;
         foreach (var a in arrows) a.SetActive(false);
 
         var right = arrows.FirstOrDefault(a => handOf.TryGetValue(a, out var h) && h == Hand.Right);
@@ -315,7 +315,7 @@ public class ModularAutoBuilder : MonoBehaviour
         {
             EnsureAncestorsActive(right.transform);
             right.SetActive(true);
-            idx[PartCat.Arrows] = arrows.IndexOf(right);
+            idx[PartCategory.Arrows] = arrows.IndexOf(right);
         }
     }
 
@@ -334,7 +334,7 @@ public class ModularAutoBuilder : MonoBehaviour
         }
     }
     
-    void TurnOffCategory(PartCat cat)
+    void TurnOffCategory(PartCategory cat)
     {
         if (!parts.TryGetValue(cat, out var list)) return;
         foreach (var go in list) go.SetActive(false);

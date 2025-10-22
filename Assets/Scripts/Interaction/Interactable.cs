@@ -26,14 +26,12 @@ public class Interactable : MonoBehaviour
     public UnityEvent OnConsumed;
 
     bool used, enabledForUse;
-    SimpleQuestNPC _questNPC;
     NPCBehaviourManager _npcManager;
 
     void Awake()
     {
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
-        _questNPC = GetComponent<SimpleQuestNPC>();
         _npcManager = GetComponent<NPCBehaviourManager>();
     }
 
@@ -54,12 +52,6 @@ public class Interactable : MonoBehaviour
         if (!CanInteract(interactor)) return;
 
         OnInteract?.Invoke(interactor);
-
-        if (_questNPC != null)
-        {
-            _questNPC.Interact();
-            return;
-        }
 
         if (_npcManager != null && _npcManager.HandleInteraction(interactor))
             return;

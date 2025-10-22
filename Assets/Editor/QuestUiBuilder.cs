@@ -15,7 +15,7 @@ public static class QuestUiBuilder
         EnsureFolder(RootFolder);
 
         // 1) Buscar o crear Canvas destino
-        var canvas = GameObject.Find("CanvasHUD") ?? Object.FindObjectOfType<Canvas>()?.gameObject;
+        var canvas = GameObject.Find("CanvasHUD") ?? Object.FindFirstObjectByType<Canvas>()?.gameObject;
         if (canvas == null)
         {
             canvas = CreateCanvas();
@@ -178,7 +178,7 @@ public static class QuestUiBuilder
         tmp.text = text;
         tmp.fontSize = size;
         tmp.alignment = align;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.raycastTarget = false;
         var rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(300, 40);
@@ -494,11 +494,11 @@ static GameObject BuildQuestItemPrefab(out QuestLogItemUI itemUI)
         label.alignment = TextAlignmentOptions.MidlineLeft;
         label.raycastTarget = false;
         label.color = new Color(0.85f, 0.88f, 0.95f, 1f); // Color de texto claro
-        label.enableWordWrapping = true;
-        
-        var labelLE = labelGO.AddComponent<LayoutElement>();
-        labelLE.flexibleWidth = 1;
-        labelLE.minWidth = 150;
+        label.textWrappingMode = TextWrappingModes.Normal;
+         
+         var labelLE = labelGO.AddComponent<LayoutElement>();
+         labelLE.flexibleWidth = 1;
+         labelLE.minWidth = 150;
 
         var ui = root.AddComponent<QuestStepItemUI>();
         var so = new SerializedObject(ui);
