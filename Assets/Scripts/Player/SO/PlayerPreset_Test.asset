@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
   spawnAnchorId: Bedroom
   level: 1
-  maxHP: 100
-  currentHP: 97
+  maxHP: 20
+  currentHP: 10
   maxMP: 100
   currentMP: 25
   unlockedAbilities: 01000000
   unlockedSpells: 01000000
   leftSpellId: 1
-  rightSpellId: 1
+  rightSpellId: 0
   specialSpellId: 0
   flags: []
   abilities:
@@ -29,3 +29,6 @@ MonoBehaviour:
     jump: 1
     climb: 0
     magic: 1
+  appearance: []
+  inventoryItems: []
+  defeatedBossIds: []

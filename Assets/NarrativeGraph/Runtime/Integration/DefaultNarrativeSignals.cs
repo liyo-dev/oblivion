@@ -16,6 +16,10 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     // Eventos que llegaron antes de que hubiera oyentes (se consumen al suscribirse)
     readonly HashSet<string> _pending = new();
 
+    // ====== BATTLE subscribers (por arena key) ======
+    readonly Dictionary<object, Action> _battleSubscribers = new();
+    readonly HashSet<object> _battlePending = new();
+
     void Awake()
     {
         Instance = this; 
@@ -96,7 +100,48 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         }
     }
 
-    // ====== BATTLE (placeholder) ======
-    public void OnBattleWon(object arena, Action cb) { }
-    public void OffBattleWon(object arena, Action cb) { }
+    // ====== BATTLE (implementación) ======
+    public void OnBattleWon(object arena, Action cb)
+    {
+        if (cb == null) return;
+        var key = arena ?? "__NULL__";
+
+        // Si hubo un RaiseBattleWon antes de suscribirse, consumimos inmediatamente
+        if (_battlePending.Remove(key))
+        {
+            try { cb(); } catch (Exception e) { Debug.LogException(e); }
+            return;
+        }
+
+        if (_battleSubscribers.TryGetValue(key, out var a)) _battleSubscribers[key] = a + cb;
+        else _battleSubscribers[key] = cb;
+    }
+
+    public void OffBattleWon(object arena, Action cb)
+    {
+        if (cb == null) return;
+        var key = arena ?? "__NULL__";
+        if (_battleSubscribers.TryGetValue(key, out var a))
+        {
+            a -= cb;
+            if (a == null) _battleSubscribers.Remove(key);
+            else _battleSubscribers[key] = a;
+        }
+    }
+
+    // Llamar esto cuando una arena se considere ganada
+    public void RaiseBattleWon(object arena)
+    {
+        var key = arena ?? "__NULL__";
+        if (_battleSubscribers.TryGetValue(key, out var a) && a != null)
+        {
+            Debug.Log($"[Signals] BattleWon: {key}");
+            try { a.Invoke(); } catch (Exception e) { Debug.LogException(e); }
+        }
+        else
+        {
+            _battlePending.Add(key);
+            Debug.Log($"[Signals] BattleWon: {key} (sin oyentes → pendiente)");
+        }
+    }
 }

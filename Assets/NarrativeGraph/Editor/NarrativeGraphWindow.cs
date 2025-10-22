@@ -43,6 +43,7 @@ namespace Sendero.Narrative.Editor
             var nodeTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(a => { try { return a.GetTypes(); } catch { return Array.Empty<Type>(); } })
                 .Where(t => typeof(NarrativeNode).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
+                .Where(t => t.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Length == 0)
                 .OrderBy(t => t.Name).ToArray();
 
             foreach (var t in nodeTypes)
@@ -54,7 +55,7 @@ namespace Sendero.Narrative.Editor
 
             rootVisualElement.Add(toolbar);
 
-            _view.AddManipulator(new ContextualMenuManipulator((ContextualMenuPopulateEvent e) =>
+            _view.AddManipulator(new ContextualMenuManipulator(e =>
             {
                 Vector2 world = e.mousePosition;
                 Vector2 local = _view.contentViewContainer.WorldToLocal(world);
@@ -77,7 +78,7 @@ namespace Sendero.Narrative.Editor
             DrawNode(node);
         }
 
-        private void LoadGraph(global::NarrativeGraph g)
+        private void LoadGraph(NarrativeGraph g)
         {
             _graph = g;
             _view.DeleteElements(_view.graphElements.ToList());
@@ -107,6 +108,16 @@ namespace Sendero.Narrative.Editor
         {
             var view = new NodeView(model);
 
+            // Auto-expandir por defecto los nodos que contienen listas/configuración (UX)
+            try
+            {
+                if (model is DeliverQuestCompleteNode || model is AdditiveSceneCinematicNode || model is UnlockTriggerNode)
+                {
+                    view.expanded = true;
+                }
+            }
+            catch { /* no crítico si la propiedad no existe en versiones antiguas */ }
+
             var so = new SerializedObject(_graph);
             var idx = _graph.nodes.IndexOf(model);
             var prop = so.FindProperty("nodes").GetArrayElementAtIndex(idx);
@@ -130,6 +141,43 @@ namespace Sendero.Narrative.Editor
                 if (p.EndsWith(".guid"))         continue;
                 if (p.EndsWith(".position"))     continue;
                 if (p.EndsWith(".outputs"))      continue;
+
+                // Special case: abilitiesToUnlock and spellsToUnlock -> render ReorderableList
+                if (p.EndsWith(".abilitiesToUnlock") || p.EndsWith(".spellsToUnlock"))
+                {
+#if UNITY_EDITOR
+                    try
+                    {
+                        var listProp = so.FindProperty(child.propertyPath);
+                        if (listProp != null)
+                        {
+                            var listLabel = listProp.displayName;
+                            var reorder = new UnityEditorInternal.ReorderableList(so, listProp, true, true, true, true);
+                            reorder.drawHeaderCallback = (rect) => { EditorGUI.LabelField(rect, listLabel); };
+                            reorder.drawElementCallback = (rect, index, isActive, isFocused) =>
+                            {
+                                // Usar discard para evitar warnings de parámetros no usados
+                                _ = isActive; _ = isFocused;
+                                var el = listProp.GetArrayElementAtIndex(index);
+                                rect.y += 2;
+                                EditorGUI.PropertyField(new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight), el, GUIContent.none);
+                            };
+                            reorder.elementHeight = EditorGUIUtility.singleLineHeight + 6;
+
+                            var container = new IMGUIContainer(() =>
+                            {
+                                reorder.DoLayoutList();
+                                // apply changes
+                                so.ApplyModifiedProperties();
+                            });
+
+                            view.extensionContainer.Add(container);
+                            continue;
+                        }
+                    }
+                    catch (Exception) { /* si algo falla, caer al PropertyField por defecto */ }
+#endif
+                }
 
                 var pf = new PropertyField(child);
                 pf.Bind(so);

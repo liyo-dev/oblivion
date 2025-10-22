@@ -53,6 +53,27 @@ public class BossArenaController : MonoBehaviour
     [Tooltip("ID único del boss para registrar su derrota en el guardado (ej: 'DEMONIO_01').")]
     [SerializeField] private string bossId;
 
+    [Header("Battle Identification")]
+    [Tooltip("ID único de la arena/batalla para poder activarla por referencia (ej: 'BATTLE_DEMON_01'). Si está vacío, no se registrará.")]
+    [SerializeField] private string battleId;
+
+    // Si no quieres mantener dos ids, por defecto usamos bossId como battleId cuando éste está vacío.
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (string.IsNullOrEmpty(battleId) && !string.IsNullOrEmpty(bossId))
+        {
+            battleId = bossId;
+        }
+    }
+#endif
+
+    // Registro estático para buscar arenas por id desde otros sistemas (p.ej. la cinematica)
+    private static readonly System.Collections.Generic.Dictionary<string, BossArenaController> s_arenaRegistry = new();
+
+    // Exponer el id públicamente de solo lectura
+    public string BattleId => battleId;
+
     [Header("Eventos")]
     [SerializeField] private UnityEvent onBossDefeated;
 
@@ -85,6 +106,12 @@ public class BossArenaController : MonoBehaviour
 
     void Awake()
     {
+        // Runtime fallback: si no hay battleId explícito, usar bossId para registrar la arena
+        if (string.IsNullOrEmpty(battleId) && !string.IsNullOrEmpty(bossId))
+        {
+            battleId = bossId;
+        }
+
         // Si no se especifica un collider de barrera, usar el del propio GameObject
         if (!useDoorMode && areaBarrierCollider == null)
         {
@@ -96,17 +123,55 @@ public class BossArenaController : MonoBehaviour
         {
             CreateBarrierVisual();
         }
+
+        // Registrar en el diccionario por battleId si procede
+        if (!string.IsNullOrEmpty(battleId))
+        {
+            if (s_arenaRegistry.TryGetValue(battleId, out var existing) && existing != this)
+            {
+                Debug.LogWarning($"[BossArenaController] BattleId '{battleId}' ya registrado por otro BossArenaController. Sobrescribiendo registro.");
+            }
+            s_arenaRegistry[battleId] = this;
+            // Diagnostic log: confirmar registro en runtime (útil para debugging)
+            Debug.Log($"[BossArenaController] Registrada arena con BattleId='{battleId}' en scene='{gameObject.scene.name}' (active={gameObject.activeInHierarchy}, enabled={this.enabled}).");
+        }
     }
 
     void OnEnable()
     {
         BossProgressTracker.OnProgressRestored += HandleBossProgressRestored;
+
+        // Asegurar registro en OnEnable (por si el orden de Awake/Start causa que el registro aún no exista
+        // cuando otros sistemas intenten activarlo). Normalizamos la clave.
+        if (!string.IsNullOrEmpty(battleId) || !string.IsNullOrEmpty(bossId))
+        {
+            var key = (!string.IsNullOrEmpty(battleId) ? battleId : bossId)?.Trim();
+            if (!string.IsNullOrEmpty(key))
+            {
+                if (s_arenaRegistry.TryGetValue(key, out var existing) && existing != this)
+                {
+                    Debug.LogWarning($"[BossArenaController] OnEnable: BattleId '{key}' ya registrado por otro BossArenaController. Sobrescribiendo registro.");
+                }
+                s_arenaRegistry[key] = this;
+                Debug.Log($"[BossArenaController] OnEnable: Registrada arena con BattleId='{key}' (scene='{gameObject.scene.name}', active={gameObject.activeInHierarchy}).");
+            }
+        }
     }
 
     void OnDisable()
     {
         BossProgressTracker.OnProgressRestored -= HandleBossProgressRestored;
         CleanupBossSubscriptions();
+
+        // Desregistrar si estaba registrado
+        if (!string.IsNullOrEmpty(battleId))
+        {
+            if (s_arenaRegistry.TryGetValue(battleId, out var existing) && existing == this)
+            {
+                s_arenaRegistry.Remove(battleId);
+                Debug.Log($"[BossArenaController] Desregistrada arena con BattleId='{battleId}' en OnDisable.");
+            }
+        }
     }
 
     void Start()
@@ -129,6 +194,28 @@ public class BossArenaController : MonoBehaviour
             return;
         }
 
+        // Usamos el método centralizado para iniciar la batalla
+        StartBattleInternal();
+    }
+
+    // Método público para permitir que la cinemática u otros sistemas inicien la batalla
+    // Se puede enlazar directamente al UnityEvent onCinematicFinished (sin parámetros)
+    public void TriggerStartBattle()
+    {
+        if (started || _bossDefeatHandled) return;
+
+        if (IsBossAlreadyDefeated())
+        {
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            return;
+        }
+
+        StartBattleInternal();
+    }
+
+    // Lógica centralizada para arrancar la batalla (refactorizada desde OnTriggerEnter)
+    private void StartBattleInternal()
+    {
         started = true;
         _bossDeathConfirmed = false;
 
@@ -320,6 +407,17 @@ public class BossArenaController : MonoBehaviour
         if (invokeUnityEvents)
         {
             onBossDefeated?.Invoke();
+        }
+
+        // Emitir la señal del grafo para indicar que la batalla/arena ha sido ganada
+        try
+        {
+            // Usar BattleId (fallback a bossId ya fue aplicado en Awake)
+            DefaultNarrativeSignals.Instance?.RaiseBattleWon(BattleId);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[BossArenaController] Error notificando BattleWon: {ex.Message}");
         }
 
         RestoreBattleDisables();
@@ -546,7 +644,80 @@ public class BossArenaController : MonoBehaviour
         {
             Destroy(_barrierVisual);
         }
+
+        // Asegurar desregistro final
+        if (!string.IsNullOrEmpty(battleId))
+        {
+            if (s_arenaRegistry.TryGetValue(battleId, out var existing) && existing == this)
+            {
+                s_arenaRegistry.Remove(battleId);
+                Debug.Log($"[BossArenaController] Desregistrada arena con BattleId='{battleId}' en OnDestroy.");
+            }
+        }
+    }
+
+    // =================== Static registry helpers ===================
+    public static bool TryTriggerBattleById(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return false;
+
+        // Normalizar (quitar espacios que puedan venir de editores o importaciones)
+        var key = id.Trim();
+        if (string.IsNullOrEmpty(key)) return false;
+
+        // Lookup directo por key normalizada
+        if (s_arenaRegistry.TryGetValue(key, out var arena) && arena != null)
+        {
+            arena.TriggerStartBattle();
+            return true;
+        }
+
+        // Fallback: intentar búsqueda case-insensitive / trim sobre las keys registradas
+        try
+        {
+            foreach (var kvp in s_arenaRegistry)
+            {
+                if (string.Equals(kvp.Key?.Trim(), key, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (kvp.Value != null)
+                    {
+                        Debug.LogWarning($"[BossArenaController] TryTriggerBattleById: Lookup directo falló para '{id}', usando fallback con key registrada '{kvp.Key}'.");
+                        kvp.Value.TriggerStartBattle();
+                        return true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[BossArenaController] Error durante fallback de búsqueda de BattleId '{id}': {ex.Message}");
+        }
+
+        // Diagnostic: si no se encuentra, mostrar los ids registrados (útil para debugging)
+        try
+        {
+            if (s_arenaRegistry.Count == 0)
+            {
+                Debug.LogWarning($"[BossArenaController] Intento de activar BattleId '{id}' pero el registry está vacío.");
+            }
+            else
+            {
+                var keys = string.Join(", ", s_arenaRegistry.Keys);
+                Debug.LogWarning($"[BossArenaController] Intento de activar BattleId '{id}' pero no se encontró. Keys registradas: {keys}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[BossArenaController] Error al listar ids registrados: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    public static bool TryGetById(string id, out BossArenaController arena)
+    {
+        arena = null;
+        if (string.IsNullOrEmpty(id)) return false;
+        return s_arenaRegistry.TryGetValue(id, out arena) && arena != null;
     }
 }
-
-

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: db8103dfbe528954aa7c7490a987d771
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 302113
+  packageName: VFX Graph - Golden Coin
+  packageVersion: 1.0
+  assetPath: Assets/TwoUncleVFX/_Effect/Mesh/GoldenCoin.prefab
+  uploadId: 707335

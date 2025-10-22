@@ -75,6 +75,8 @@ public class PauseMenuController : MonoBehaviour
     private InputAction _uiSubmitAction;
     private InputAction _uiNavigateAction;
     private bool _createdPlayerControls = false;
+    private InputAction _dpadUpAction; // añadido
+    private InputAction _dpadDownAction; // añadido
 #endif
 
     EventSystem _es;
@@ -87,6 +89,8 @@ public class PauseMenuController : MonoBehaviour
     float _navCooldown;
     [Min(0f)] public float navRepeatDelay = 0.15f;
     [Range(0f,1f)] public float navDeadzone = 0.3f;
+    [Header("Debug")]
+    public bool inputDebug = false;
 
     void Awake()
     {
@@ -165,8 +169,15 @@ public class PauseMenuController : MonoBehaviour
 
             _pauseAction?.Enable();
             _pauseAction.performed += OnPausePressed;
+            // Habilitar navigate (se leerá por polling en Update)
             _uiNavigateAction?.Enable();
-            _uiNavigateAction.performed += OnUINavigate;
+
+            // Registrar D-Pad explícito (algunos gamepads pueden enviar dpad a acciones separadas)
+            _dpadUpAction = playerControls.GamePlay.DPadUp;
+            _dpadDownAction = playerControls.GamePlay.DPadDown;
+            _dpadUpAction?.Enable();
+            _dpadDownAction?.Enable();
+            // No subscripciones a performed: usamos polling en Update
         }
 #endif
 
@@ -214,14 +225,6 @@ public class PauseMenuController : MonoBehaviour
         {
             // El objeto Unity fue destruido; ignorar el callback.
         }
-    }
-    void OnUINavigate(InputAction.CallbackContext ctx)
-    {
-        if (!_isPaused || _navCooldown > 0f) return;
-        Vector2 v = ctx.ReadValue<Vector2>();
-        if (v.y > navDeadzone) MoveSelection(Vector2.up);
-        else if (v.y < -navDeadzone) MoveSelection(Vector2.down);
-        _navCooldown = navRepeatDelay;
     }
 #endif
 
@@ -285,6 +288,9 @@ public class PauseMenuController : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         playerControls?.UI.Enable();
+        // Asegurar que D-Pad también esté activo para navegación
+        _dpadUpAction?.Enable();
+        _dpadDownAction?.Enable();
 #endif
     }
 
@@ -292,6 +298,8 @@ public class PauseMenuController : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         playerControls?.UI.Disable();
+        _dpadUpAction?.Disable();
+        _dpadDownAction?.Disable();
 #endif
     }
 
@@ -357,6 +365,93 @@ public class PauseMenuController : MonoBehaviour
             _es.SetSelectedGameObject(next.gameObject);
             next.Select();
         }
+    }
+
+    void Update()
+    {
+        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
+        if (_navCooldown > 0f)
+        {
+            _navCooldown -= Time.unscaledDeltaTime;
+            if (_navCooldown < 0f) _navCooldown = 0f;
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        if (_isPaused && _navCooldown <= 0f)
+        {
+            bool moved = false;
+            try
+            {
+                // 1) UI.Navigate (vector) - preferido
+                if (playerControls != null)
+                {
+                    var nav = playerControls.UI.Navigate;
+                    if (nav != null && nav.enabled)
+                    {
+                        Vector2 v = nav.ReadValue<Vector2>();
+                        if (inputDebug && (v.y > navDeadzone || v.y < -navDeadzone)) Debug.Log($"PauseMenu: UI.Navigate -> {v}");
+                        if (v.y > navDeadzone) { MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                        else if (v.y < -navDeadzone) { MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                    }
+
+                    // 2) Si no movimos con Navigate, chequear acciones DPad (botones)
+                    if (!moved)
+                    {
+                        var dUp = playerControls.GamePlay.DPadUp;
+                        var dDown = playerControls.GamePlay.DPadDown;
+                        if (dUp != null && dUp.enabled)
+                        {
+                            var valUp = dUp.ReadValue<float>();
+                            if (valUp > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: DPadUp action"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                        }
+                        if (!moved && dDown != null && dDown.enabled)
+                        {
+                            var valDown = dDown.ReadValue<float>();
+                            if (valDown > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: DPadDown action"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                        }
+                    }
+                }
+
+                // 3) Fallback a Gamepad.current si no hubo movimiento
+                if (!moved)
+                {
+                    var gp = UnityEngine.InputSystem.Gamepad.current;
+                    if (gp != null)
+                    {
+                        var d = gp.dpad.ReadValue();
+                        if (d.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                        else if (d.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                        else
+                        {
+                            var s = gp.leftStick.ReadValue();
+                            if (s.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                            else if (s.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                        }
+                    }
+
+                    // Si no hay Gamepad, comprobar Joystick (algunos mandos genéricos aparecen como Joystick)
+                    if (!moved)
+                    {
+                        var js = UnityEngine.InputSystem.Joystick.current;
+                        if (js != null)
+                        {
+                            try
+                            {
+                                var s = js.stick.ReadValue();
+                                if (s.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                                else if (s.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception)
+            {
+                // lectura defensiva: si InputSystem cambia en runtime, evitar crash
+            }
+        }
+#endif
     }
 
     public void OnOptions()

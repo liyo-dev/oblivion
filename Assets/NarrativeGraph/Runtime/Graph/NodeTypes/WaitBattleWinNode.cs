@@ -1,6 +1,7 @@
 // WaitBattleWinNode.cs
 using System;
 
+[Obsolete("WaitBattleWinNode está obsoleto. Usa StartBattleNode que combina Start+Wait, o usa señales directamente.")]
 [Serializable]
 public sealed class WaitBattleWinNode : NarrativeNode
 {
@@ -19,3 +20,6 @@ public sealed class WaitBattleWinNode : NarrativeNode
         _cb = null;
     }
 }
+
+// Este nodo está marcado como obsoleto porque StartBattleNode ahora combina inicio y espera de victoria.
+// Puedes eliminar el archivo si confirmas que no lo necesitas.

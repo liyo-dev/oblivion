@@ -1,18 +1,19 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /// Adapta tu QuestManager clásico al IQuestService del grafo.
 public class QuestServiceAdapter : MonoBehaviour, IQuestService
 {
-    [SerializeField] bool debugLogs = false;
+    [SerializeField] bool debugLogs;
 
-    QuestManager QM => QuestManager.Instance;
-    readonly Dictionary<string, List<Action>> waitingCompleted = new();
-    bool subscribed;
+    QuestManager Qm => QuestManager.Instance;
+    readonly Dictionary<string, List<Action>> _waitingCompleted = new();
+    bool _subscribed;
 
     void OnEnable() { TrySubscribe(); }
-    void OnDisable() { TryUnsubscribe(); waitingCompleted.Clear(); }
+    void OnDisable() { TryUnsubscribe(); _waitingCompleted.Clear(); }
     
     public void StartQuest(string questId)
     {
@@ -25,36 +26,60 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
 
     void TrySubscribe()
     {
-        if (subscribed || QM == null) return;
-        QM.OnQuestsChanged += HandleQuestsChanged;
-        subscribed = true;
+        if (_subscribed || Qm == null) return;
+        Qm.OnQuestsChanged += HandleQuestsChanged;
+        _subscribed = true;
         if (debugLogs) Debug.Log("[QuestServiceAdapter] Subscribed");
     }
     void TryUnsubscribe()
     {
-        if (!subscribed) return;
-        if (QM != null) QM.OnQuestsChanged -= HandleQuestsChanged;
-        subscribed = false;
+        if (!_subscribed) return;
+        if (Qm != null) Qm.OnQuestsChanged -= HandleQuestsChanged;
+        _subscribed = false;
     }
 
     void HandleQuestsChanged()
     {
-        if (QM == null) return;
+        if (Qm == null) return;
         var completedNow = new List<string>();
-        foreach (var kv in waitingCompleted)
+
+        // Iterar sobre una copia de las entradas para permitir modificaciones durante callbacks
+        var entries = _waitingCompleted.ToList();
+        foreach (var kv in entries)
         {
             var qid = kv.Key;
             QuestState st;
-            try { st = QM.GetState(qid); } catch { continue; }
+            try { st = Qm.GetState(qid); } catch { continue; }
             if (st == QuestState.Completed)
             {
                 if (debugLogs) Debug.Log($"[QuestServiceAdapter] Completed → {qid}");
-                foreach (var cb in kv.Value) { try { cb?.Invoke(); } catch (Exception e) { Debug.LogException(e); } }
+
+                // Iterar sobre una copia de la lista de callbacks porque los callbacks pueden modificarla
+                var callbacks = kv.Value?.ToArray();
+                if (callbacks != null)
+                {
+                    foreach (var cb in callbacks)
+                    {
+                        try { cb?.Invoke(); } catch (Exception e) { Debug.LogException(e); }
+                    }
+                }
                 completedNow.Add(qid);
             }
         }
-        foreach (var q in completedNow) waitingCompleted.Remove(q);
+
+        // Remover fuera del bucle principal
+        foreach (var q in completedNow) _waitingCompleted.Remove(q);
+
+        // Si ya no hay callbacks pendientes, podemos desuscribirnos para ahorrar trabajo
+        if (_waitingCompleted.Count == 0)
+        {
+            TryUnsubscribe();
+            if (debugLogs) Debug.Log("[QuestServiceAdapter] No pending completions; unsubscribed.");
+        }
     }
+
+    // Helper para construir siempre un object[] sin warnings de inferencia/cast
+    static object[] MakeArgs(params object[] args) => args;
 
     // ===== IQuestService =====
     public void Offer(string questId, object npcCtx)
@@ -73,8 +98,8 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         {
             // intenta pasar questId y (opcional) npcCtx si el método lo acepta
             var pars = offerM.GetParameters();
-            if (pars.Length == 2) offerM.Invoke(qm, new object[] { questId, npcCtx });
-            else                   offerM.Invoke(qm, new object[] { questId });
+            if (pars.Length == 2) offerM.Invoke(qm, MakeArgs(questId, npcCtx));
+            else                   offerM.Invoke(qm, MakeArgs(questId));
         }
         else
         {
@@ -85,18 +110,18 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
 
     public bool IsCompleted(string questId)
     {
-        if (QM == null) return false;
-        try { return QM.GetState(questId) == QuestState.Completed; } catch { return false; }
+        if (Qm == null) return false;
+        try { return Qm.GetState(questId) == QuestState.Completed; } catch { return false; }
     }
 
     public void OnCompleted(string questId, Action cb)
     {
         if (cb == null || string.IsNullOrEmpty(questId)) return;
         if (IsCompleted(questId)) { cb(); return; }
-        if (!waitingCompleted.TryGetValue(questId, out var list))
+        if (!_waitingCompleted.TryGetValue(questId, out var list))
         {
             list = new List<Action>();
-            waitingCompleted[questId] = list;
+            _waitingCompleted[questId] = list;
         }
         list.Add(cb);
         TrySubscribe();
@@ -106,22 +131,22 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
     public void OffCompleted(string questId, Action cb)
     {
         if (cb == null) return;
-        if (waitingCompleted.TryGetValue(questId, out var list))
+        if (_waitingCompleted.TryGetValue(questId, out var list))
         {
             list.RemoveAll(a => a == cb);
-            if (list.Count == 0) waitingCompleted.Remove(questId);
+            if (list.Count == 0) _waitingCompleted.Remove(questId);
         }
     }
 
     public void Complete(string questId)
     {
-        if (QM == null) return;
-        var t = QM.GetType();
+        if (Qm == null) return;
+        var t = Qm.GetType();
         var m = t.GetMethod("CompleteQuest") ?? t.GetMethod("Complete") ?? t.GetMethod("CompleteQuestById");
         if (m != null)
         {
             if (debugLogs) Debug.Log($"[QuestServiceAdapter] Complete → {m.Name}({questId})");
-            try { m.Invoke(QM, new object[] { questId }); } catch (Exception e) { Debug.LogException(e); }
+            try { m.Invoke(Qm, MakeArgs(questId)); } catch (Exception e) { Debug.LogException(e); }
         }
         else if (debugLogs) Debug.Log("[QuestServiceAdapter] QuestManager no tiene método de completar (no-op).");
     }

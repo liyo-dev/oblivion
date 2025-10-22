@@ -4,6 +4,7 @@ using UnityEngine.Playables;
 using System.Collections;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using System;
 
 public class AdditiveSceneCinematic : MonoBehaviour
 {
@@ -21,6 +22,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
             singlePlayId = cinematicSceneAsset.name;
     }
 #endif
+
+    // Added: permitir lectura/escritura del nombre de la escena desde código
+    public string CinematicSceneName { get => cinematicSceneName; set => cinematicSceneName = value; }
+
+    // Added: evento público que se dispara cuando la cinemática finaliza
+    public event Action OnCinematicFinished;
 
     [Header("Playback")]
     [SerializeField] private bool playOnStart = true;
@@ -274,7 +281,7 @@ public class AdditiveSceneCinematic : MonoBehaviour
         {
             onCinematicFinished?.Invoke();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Debug.LogWarning($"[AdditiveSceneCinematic] onCinematicFinished lanzó excepción: {ex.Message}");
         }
@@ -298,6 +305,16 @@ public class AdditiveSceneCinematic : MonoBehaviour
         if (playOnlyOnce)
         {
             MarkCinematicSeen(GetSinglePlayId());
+        }
+
+        // Added: disparar el evento público de finalización para que callers puedan suscribirse
+        try
+        {
+            OnCinematicFinished?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[AdditiveSceneCinematic] OnCinematicFinished lanzó excepción: {ex.Message}");
         }
     }
 
@@ -486,5 +503,21 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Restaurada posición y rotación previas del jugador: {savedPlayerPosition} / {savedPlayerRotation.eulerAngles}.");
+    }
+
+    // Added: método público que permite reproducir la cinemática y esperar hasta que finalice
+    public IEnumerator PlayAndBlock()
+    {
+        bool finished = false;
+        Action cb = () => finished = true;
+        OnCinematicFinished += cb;
+
+        // Iniciar la reproducción (Play() es IEnumerator y se encarga de cargar la escena y disparar la lógica de reproducción)
+        StartCoroutine(Play());
+
+        // Esperar hasta que TryInvokeSkipLikeActions invoque OnCinematicFinished
+        yield return new WaitUntil(() => finished);
+
+        OnCinematicFinished -= cb;
     }
 }

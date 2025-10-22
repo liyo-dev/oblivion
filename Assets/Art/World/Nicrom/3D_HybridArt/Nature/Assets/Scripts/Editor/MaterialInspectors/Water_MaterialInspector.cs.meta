@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 5900e73582882d642a0ea205e5de1694
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 181109
+  packageName: Nature - Hybrid Pack
+  packageVersion: 1.1.4
+  assetPath: Assets/Nicrom/3D_HybridArt/Nature/Assets/Scripts/Editor/MaterialInspectors/Water_MaterialInspector.cs
+  uploadId: 763345

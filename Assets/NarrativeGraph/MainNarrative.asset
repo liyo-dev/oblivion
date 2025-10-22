@@ -18,7 +18,11 @@ MonoBehaviour:
   - rid: 4128268622357594630
   - rid: 4128268622357594632
   - rid: 4128268622357594945
-  - rid: 4128268622357595047
+  - rid: 4128268641526088178
+  - rid: 4128268641526088494
+  - rid: 4128268641526088533
+  - rid: 4128268648164098057
+  - rid: 4128268648164098058
   references:
     version: 2
     RefIds:
@@ -27,15 +31,15 @@ MonoBehaviour:
       data:
         displayTitle: CAPITULO 1
         guid: 52047bbd-bef9-4dfc-a2b4-2ad85c022849
-        position: {x: -376, y: -327.19998}
+        position: {x: -376, y: -327}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: CUANDO ALEX LEE LA CARTA
+        displayTitle: CUANDO LEE LA CARTA
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: -86.4, y: -70.4}
+        position: {x: -43, y: -327}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -44,26 +48,73 @@ MonoBehaviour:
       data:
         displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: 892, y: -70.4}
+        position: {x: -376, y: -158}
         outputs:
-        - ca92ab2f-4e94-4068-a495-08f556c4747c
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
+        - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: TIENE QUE HABLAR CON ELDRAN
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 407.2, y: -70.4}
+        position: {x: 426, y: -327}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
-    - rid: 4128268622357595047
-      type: {class: PlayTimelineNode, ns: , asm: Assembly-CSharp}
+    - rid: 4128268641526088178
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: CINEMATICAA DEMONIO
-        guid: ca92ab2f-4e94-4068-a495-08f556c4747c
-        position: {x: 1466.4, y: -70.4}
+        displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
+        guid: d038b916-5571-48b0-a896-7dbc2af3e05c
+        position: {x: 184, y: 64}
         outputs: []
-        directorRef:
-          exposedName: 
-          defaultValue: {fileID: 0}
+        useInternalUnlock: 1
+        abilitiesToUnlock: 01000000
+        spellsToUnlock: 01000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 0
+    - rid: 4128268641526088494
+      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
+        guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
+        position: {x: 213, y: -122}
+        outputs:
+        - da331290-6f7e-4aa3-937d-83cb066bbfe7
+        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        cinematicSceneName: Cinematic_DemonAppears
+        useInternalCinematic: 1
+    - rid: 4128268641526088533
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
+        position: {x: 810, y: -188}
+        outputs: []
+        questId: ELDRAN_MISSION3
+    - rid: 4128268648164098057
+      type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        position: {x: 810, y: -54}
+        outputs:
+        - b267926e-80d5-44fc-8ef1-c8ac4cb96328
+        battleId: Demon_1
+        bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
+        useBattleById: 1
+        completeMission: 1
+        missionStringId: ELDRAN_MISSION3
+        missionId: 0
+    - rid: 4128268648164098058
+      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        guid: b267926e-80d5-44fc-8ef1-c8ac4cb96328
+        position: {x: 1238, y: -54}
+        outputs: []
+        cinematicSceneName: Cinematic_VillainPlans
+        useInternalCinematic: 1

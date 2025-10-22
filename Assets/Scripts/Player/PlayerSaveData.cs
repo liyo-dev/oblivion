@@ -26,9 +26,28 @@ public class PlayerSaveData
 
     // === NUEVO: permisos físicos/acciónales que se persisten por preset ===
     // Si un save antiguo no contiene estos campos, quedarán en false (valor por defecto)
-    public bool canSwim = false;
-    public bool canJump = false;
-    public bool canClimb = false;
+    public bool canSwim;
+    public bool canJump;
+    public bool canClimb;
+
+    // === NUEVO: Estado narrativo (grafo) ==================================
+    [Serializable]
+    public class NarrativeBlackboardEntry
+    {
+        public string key;
+        public string type; // "int", "float", "bool", "string"
+        public string value; // siempre serializado como string
+    }
+
+    [Serializable]
+    public class NarrativeSnapshot
+    {
+        public string currentNodeGuid;
+        public List<NarrativeBlackboardEntry> entries = new List<NarrativeBlackboardEntry>();
+    }
+
+    // Contenedor opcional del snapshot narrativo; puede ser null en saves antiguos
+    public NarrativeSnapshot narrativeSnapshot;
 
     // ---- Helpers actualizados para usar GameBootProfile ----
     

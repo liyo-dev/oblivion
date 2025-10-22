@@ -10,7 +10,7 @@ public class NarrativeAutoSetup : MonoBehaviour
     public NarrativeGraph graph;
 
     [Header("Debug opcional")]
-    public bool debugLogs = false;
+    public bool debugLogs;
 
     // Singleton duro para persistir entre escenas
     private static NarrativeAutoSetup _instance;
@@ -45,6 +45,32 @@ public class NarrativeAutoSetup : MonoBehaviour
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         if (fi != null) fi.SetValue(runner, signals);
         else Debug.LogWarning("[NarrativeAutoSetup] No se encontró 'signalsProvider' en NarrativeRunner.");
+
+        // Aplicar snapshot pendiente del GameBootProfile (si existe)
+        try
+        {
+            var profile = GameBootService.Profile;
+            if (profile != null)
+            {
+                var pending = profile.PopPendingNarrativeSnapshot();
+                if (pending != null)
+                {
+                    try
+                    {
+                        runner.RestoreFromSnapshot(pending);
+                        if (debugLogs) Debug.Log("[NarrativeAutoSetup] Applied pending narrative snapshot to runner.");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[NarrativeAutoSetup] Error applying pending narrative snapshot: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[NarrativeAutoSetup] Error checking pending snapshot: {ex.Message}");
+        }
 
         if (debugLogs)
             Debug.Log("[NarrativeAutoSetup] Listo: persistente, runner+signals+adapter conectados.");

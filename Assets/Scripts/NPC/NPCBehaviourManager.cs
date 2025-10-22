@@ -18,6 +18,23 @@ namespace Alex.NPC
     [DisallowMultipleComponent]
     public sealed class NPCBehaviourManager : MonoBehaviour
     {
+        // Manejador simple para poder devolver un token desde RunRoutine que represente
+        // una coroutine incluso si no se ha arrancado todavía (por ejemplo cuando el GO está inactivo).
+        internal sealed class RoutineHandle
+        {
+            public IEnumerator Enumerator { get; }
+            public Coroutine RunningCoroutine { get; set; }
+            public bool IsStarted => RunningCoroutine != null;
+            public RoutineHandle(IEnumerator enumerator, Coroutine running = null)
+            {
+                Enumerator = enumerator;
+                RunningCoroutine = running;
+            }
+        }
+
+        // Lista de rutinas pendientes que se encolan mientras este component está inactivo
+        readonly List<RoutineHandle> _pendingRoutines = new();
+
         [Header("Ambientación")]
         [SerializeField] AmbientModule ambientModule = new();
 
@@ -71,6 +88,28 @@ namespace Alex.NPC
         {
             foreach (var module in _modules)
                 module?.OnEnable();
+
+            // Arrancar cualquier rutina que se encoló mientras estábamos inactivos
+            if (_pendingRoutines.Count > 0)
+            {
+                for (int i = _pendingRoutines.Count - 1; i >= 0; i--)
+                {
+                    var h = _pendingRoutines[i];
+                    if (h != null && h.RunningCoroutine == null && h.Enumerator != null)
+                    {
+                        try
+                        {
+                            h.RunningCoroutine = StartCoroutine(h.Enumerator);
+                            Debug.Log($"[NPCBehaviourManager] Rutina arrancada desde OnEnable: {h.Enumerator}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[NPCBehaviourManager] No se pudo arrancar rutina en OnEnable: {ex.Message}");
+                        }
+                    }
+                    _pendingRoutines.RemoveAt(i);
+                }
+            }
         }
 
         void OnDisable()
@@ -115,11 +154,37 @@ namespace Alex.NPC
         internal Transform Player => _player;
         internal Transform PlayerCamera => _playerCamera;
 
-        internal Coroutine RunCoroutine(IEnumerator routine) => StartCoroutine(routine);
-        internal void StopCoroutineSafe(Coroutine routine)
+        // Inicia una rutina; si el GO está inactivo, se encola y se devolverá un RoutineHandle válido
+        // que podrá utilizarse para detenerla más tarde.
+        internal RoutineHandle RunCoroutine(IEnumerator routine)
         {
-            if (routine != null)
-                StopCoroutine(routine);
+            if (isActiveAndEnabled)
+            {
+                var c = StartCoroutine(routine);
+                return new RoutineHandle(routine, c);
+            }
+            else
+            {
+                var h = new RoutineHandle(routine, null);
+                _pendingRoutines.Add(h);
+                Debug.Log($"[NPCBehaviourManager] Rutina encolada: {routine}");
+                return h;
+            }
+        }
+
+        internal void StopCoroutineSafe(RoutineHandle handle)
+        {
+            if (handle == null) return;
+            // Si ya está en ejecución, detener la coroutine asociada
+            if (handle.RunningCoroutine != null)
+            {
+                try { StopCoroutine(handle.RunningCoroutine); } catch { }
+                handle.RunningCoroutine = null;
+                return;
+            }
+            // Si estaba pendiente, removerla de la cola
+            if (_pendingRoutines.Contains(handle))
+                _pendingRoutines.Remove(handle);
         }
 
         internal bool EnsureAgentOnNavMesh(float radius) =>
@@ -152,7 +217,6 @@ namespace Alex.NPC
 
             _playerAnimator?.SetFloat(PlayerInputMagnitudeHash, 0f);
         }
-
         internal bool IsPlayerInFov(float radius, float fov)
         {
             if (_player == null)
@@ -277,43 +341,44 @@ namespace Alex.NPC
             public bool pickWhileMoving = false;
 
             NPCBehaviourManager _ctx;
-            Coroutine _wanderRoutine;
+            RoutineHandle _wanderRoutine;
+             
+             public void Initialize(NPCBehaviourManager context)
+             {
+                 _ctx = context;
+             }
 
-            public void Initialize(NPCBehaviourManager context)
-            {
-                _ctx = context;
-            }
+             public void OnStart()
+             {
+                 // Nada que hacer.
+             }
 
-            public void OnStart()
-            {
-                // Nada que hacer.
-            }
+             public void OnEnable()
+             {
+                 if (!enableWander)
+                     return;
 
-            public void OnEnable()
-            {
-                if (!enableWander)
-                    return;
+                if (_wanderRoutine == null)
+                    _wanderRoutine = _ctx.RunCoroutine(WanderLoop());
+             }
 
-                _wanderRoutine ??= _ctx.RunCoroutine(WanderLoop());
-            }
-
-            public void OnDisable()
-            {
-                if (_wanderRoutine != null)
-                {
+             public void OnDisable()
+             {
+                 if (_wanderRoutine != null)
+                 {
                     _ctx.StopCoroutineSafe(_wanderRoutine);
                     _wanderRoutine = null;
-                }
-                _ctx.Animator.ResetMovement();
-                NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
-            }
+                 }
+                 _ctx.Animator.ResetMovement();
+                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+             }
 
-            public void Tick()
-            {
+             public void Tick()
+             {
                 // Ambient no necesita lógica por frame; el coroutine maneja el movimiento.
-            }
+             }
 
-            public bool HandleInteraction(GameObject interactor) => false;
+             public bool HandleInteraction(GameObject interactor) => false;
 
             IEnumerator WanderLoop()
             {
@@ -381,43 +446,57 @@ namespace Alex.NPC
             [Min(0.05f)] public float detectionInterval = 0.33f;
 
             NPCBehaviourManager _ctx;
-            Coroutine _scanRoutine;
-            readonly Collider[] _overlapBuffer = new Collider[16];
-            readonly HashSet<GameObject> _consumed = new();
+            RoutineHandle _scanRoutine;
+             readonly Collider[] _overlapBuffer = new Collider[16];
+             readonly HashSet<GameObject> _consumed = new();
 
-            public void Initialize(NPCBehaviourManager context)
-            {
-                _ctx = context;
-            }
+             public void Initialize(NPCBehaviourManager context)
+             {
+                 _ctx = context;
+             }
 
-            public void OnStart() { }
+             public void OnStart() { }
 
-            public void OnEnable()
-            {
-                if (!enable)
-                    return;
+             public void OnEnable()
+             {
+                 if (!enable)
+                     return;
 
                 if (enableItemDetection)
-                    _scanRoutine ??= _ctx.RunCoroutine(ScanRoutine());
-            }
-
-            public void OnDisable()
-            {
-                if (_scanRoutine != null)
                 {
+                    // Chequeo de configuración útil en edición/runtime para detectar entradas mal configuradas
+                    for (int i = 0; i < chain.Length; i++)
+                    {
+                        var entry = chain[i];
+                        if (entry == null) continue;
+                        if (!entry.autoDetectItemDelivery && (!string.IsNullOrEmpty(entry.itemTag) || entry.itemDeliveryStepIndex != 1))
+                        {
+                            _ctx.DebugLog($"QuestModule: chain[{i}] '{entry.questData?.questId}' tiene itemTag='{entry.itemTag}' o itemDeliveryStepIndex={entry.itemDeliveryStepIndex} pero autoDetectItemDelivery está DESACTIVADO. Si esperas detección automática, habilítalo en el inspector.");
+                        }
+                    }
+
+                    if (_scanRoutine == null)
+                        _scanRoutine = _ctx.RunCoroutine(ScanRoutine());
+                }
+             }
+
+             public void OnDisable()
+             {
+                 if (_scanRoutine != null)
+                 {
                     _ctx.StopCoroutineSafe(_scanRoutine);
                     _scanRoutine = null;
-                }
-                _consumed.Clear();
-            }
+                 }
+                 _consumed.Clear();
+             }
 
-            public void Tick()
-            {
+             public void Tick()
+             {
                 // Quest no necesita lógica por frame si no hay detección continua.
-            }
+             }
 
-            public bool HandleInteraction(GameObject interactor)
-            {
+             public bool HandleInteraction(GameObject interactor)
+             {
                 if (!enable)
                     return false;
 
@@ -725,39 +804,39 @@ namespace Alex.NPC
             public StringEvent onDialogueRequest;
 
             NPCBehaviourManager _ctx;
-            Coroutine _challengeRoutine;
-            Coroutine _turnRoutine;   
-            bool _isChallenging;
-            bool _lockModeApplied;
-            bool _playerLockEventRaised;
+            RoutineHandle _challengeRoutine;
+            RoutineHandle _turnRoutine;   
+             bool _isChallenging;
+             bool _lockModeApplied;
+             bool _playerLockEventRaised;
 
-            public void Initialize(NPCBehaviourManager context) => _ctx = context;
-            public void OnStart() { }
+             public void Initialize(NPCBehaviourManager context) => _ctx = context;
+             public void OnStart() { }
 
-            public void OnEnable()
-            {
-                _isChallenging = false;
-                _lockModeApplied = false;
-                _playerLockEventRaised = false;
-                if (exclamationPrefab) exclamationPrefab.SetActive(false);
-            }
+             public void OnEnable()
+             {
+                 _isChallenging = false;
+                 _lockModeApplied = false;
+                 _playerLockEventRaised = false;
+                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
+             }
 
-            public void OnDisable()
-            {
+             public void OnDisable()
+             {
                 if (_challengeRoutine != null)
                 {
                     _ctx.StopCoroutineSafe(_challengeRoutine);
                     _challengeRoutine = null;
                 }
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
-                _ctx.Animator.ResetMovement();
-                NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
-                ReleasePlayer();
-                if (exclamationPrefab) exclamationPrefab.SetActive(false);
-            }
+                 _ctx.Animator.ResetMovement();
+                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                 ReleasePlayer();
+                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
+             }
 
-            public void Tick()
-            {
+             public void Tick()
+             {
                 if (!enable || _isChallenging || sightRadius <= 0f) return;
 
                 _ctx.EnsurePlayerReference();
@@ -777,12 +856,12 @@ namespace Alex.NPC
 
                 if (_challengeRoutine == null)
                     _challengeRoutine = _ctx.RunCoroutine(ChallengeFlow());
-            }
+             }
 
-            public bool HandleInteraction(GameObject interactor) => false;
+             public bool HandleInteraction(GameObject interactor) => false;
 
-            IEnumerator ChallengeFlow()
-            {
+             IEnumerator ChallengeFlow()
+             {
                 _isChallenging = true;
                 _ctx.DebugLog("ChallengeFlow iniciado.");
 
@@ -906,8 +985,8 @@ namespace Alex.NPC
                     _ctx.DebugLog("FallbackDialogue disparado.");
                 }
 
-                // Espera a que se cierre diálogo
-                yield return _ctx.RunCoroutine(_ctx.WaitDialogueToClose());
+                // Espera a que se cierre diálogo (directamente yield al IEnumerator)
+                yield return _ctx.WaitDialogueToClose();
 
                 onChallengeStarted?.Invoke();
                 _ctx.DebugLog("OnChallengeStarted invocado.");
@@ -920,7 +999,7 @@ namespace Alex.NPC
 
                 _isChallenging = false;
                 _challengeRoutine = null;
-            }
+             }
 
             void ApplyLock()
             {
@@ -983,11 +1062,11 @@ namespace Alex.NPC
                 // Espera el retardo, pero aborta si perdemos el lock o el player
                 float t = 0f;
                 while (t < turnDelaySeconds)
-                {
-                    if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
-                    t += Time.deltaTime;
-                    yield return null;
-                }
+                 {
+                     if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
+                     t += Time.deltaTime;
+                     yield return null;
+                 }
 
                 // Calcula rotación objetivo mirando al NPC en plano horizontal
                 Transform player = _ctx.Player;
@@ -1002,19 +1081,19 @@ namespace Alex.NPC
                 float dur = Mathf.Max(0.0001f, turnDurationSeconds);
                 float elapsed = 0f;
                 while (elapsed < dur)
-                {
-                    if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
-                    elapsed += Time.deltaTime;
-                    float u = Mathf.Clamp01(elapsed / dur);
-                    // ease in-out (smoothstep)
-                    u = u * u * (3f - 2f * u);
-                    player.rotation = Quaternion.Slerp(start, target, u);
-                    yield return null;
-                }
+                 {
+                     if (!_lockModeApplied || _ctx.Player == null) { _turnRoutine = null; yield break; }
+                     elapsed += Time.deltaTime;
+                     float u = Mathf.Clamp01(elapsed / dur);
+                     // ease in-out (smoothstep)
+                     u = u * u * (3f - 2f * u);
+                     player.rotation = Quaternion.Slerp(start, target, u);
+                     yield return null;
+                 }
 
-                player.rotation = target;
-                _turnRoutine = null;
-            }
+                 player.rotation = target;
+                 _turnRoutine = null;
+             }
         }
 
         #endregion

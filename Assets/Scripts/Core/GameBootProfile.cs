@@ -32,6 +32,18 @@ public class GameBootProfile : ScriptableObject
     public string GetStartAnchorOrDefault()
         => GetActivePresetResolved()?.spawnAnchorId ?? "Bedroom";
 
+    // === PENDING: snapshot narrativo si no hay runner al cargar ===
+    [NonSerialized]
+    PlayerSaveData.NarrativeSnapshot _pendingNarrativeSnapshot;
+
+    internal void SetPendingNarrativeSnapshot(PlayerSaveData.NarrativeSnapshot s) => _pendingNarrativeSnapshot = s;
+    internal PlayerSaveData.NarrativeSnapshot PopPendingNarrativeSnapshot()
+    {
+        var tmp = _pendingNarrativeSnapshot;
+        _pendingNarrativeSnapshot = null;
+        return tmp;
+    }
+
     // ==== NUEVO: API para runtimePreset =======================================
     public void EnsureRuntimePreset()
     {
@@ -187,6 +199,37 @@ public class GameBootProfile : ScriptableObject
             data.canClimb = activePreset.abilities.climb;
         }
 
+        // === NUEVO: incluir snapshot narrativo si hay uno pendiente (desde UpdateRuntimePresetFromCurrentState) ===
+        var pending = PopPendingNarrativeSnapshot();
+        if (pending != null)
+        {
+            data.narrativeSnapshot = pending;
+        }
+        else
+        {
+            // intentar localizar runner ahora y exportar snapshot directamente
+#if UNITY_2022_3_OR_NEWER
+            var runnerNow = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            var runnerNow = FindObjectOfType<NarrativeRunner>(true);
+#pragma warning restore 618
+#endif
+            if (runnerNow != null)
+            {
+                try
+                {
+                    data.narrativeSnapshot = runnerNow.ExportSnapshot();
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[GameBootProfile] Error exporting narrative snapshot: {ex.Message}");
+                    data.narrativeSnapshot = null;
+                }
+            }
+
+        }
+
         return data;
     }
 
@@ -242,31 +285,36 @@ public class GameBootProfile : ScriptableObject
         if (saveSystem.Load(out var data))
         {
             ApplySaveDataToProfile(data);
+
+            // Intentar restaurar snapshot narrativo inmediatamente si viene en el save
+            if (data != null && data.narrativeSnapshot != null)
+            {
+                // Intentar localizar un runner en escena
+#if UNITY_2022_3_OR_NEWER
+                var runner = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+                var runner = FindObjectOfType<NarrativeRunner>(true);
+#pragma warning restore 618
+#endif
+                if (runner != null)
+                {
+                    runner.RestoreFromSnapshot(data.narrativeSnapshot);
+                }
+                else
+                {
+                    // Si no existe runner todavía, guardarlo en pending para que NarrativeAutoSetup lo aplique al crear el runner
+                    SetPendingNarrativeSnapshot(data.narrativeSnapshot);
+                }
+            }
+
             return true;
         }
         return false;
     }
 
-    /// <summary>Actualiza el runtimePreset con los valores actuales de los sistemas del juego y guarda</summary>
-    public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
-    {
-        if (!saveSystem) return false;
-
-        if (context == SaveRequestContext.Auto && !allowAutoSaves)
-        {
-            Debug.Log("[GameBootProfile] Auto-guardado omitido (allowAutoSaves = false).");
-            return false;
-        }
-
-        // Actualizar el runtimePreset con el estado actual del juego
-        UpdateRuntimePresetFromCurrentState();
-
-        // Guardar el profile actualizado
-        return SaveProfile(saveSystem);
-    }
-
-    /// <summary>Actualiza runtimePreset con los datos actuales del juego (PlayerHealthSystem, etc.)</summary>
-    private void UpdateRuntimePresetFromCurrentState()
+    /// <summary>Actualiza el runtimePreset con los valores actuales del juego (PlayerHealthSystem, etc.)</summary>
+    public void UpdateRuntimePresetFromCurrentState()
     {
         EnsureRuntimePreset();
         var p = runtimePreset;
@@ -371,7 +419,49 @@ public class GameBootProfile : ScriptableObject
             p.defeatedBossIds = new List<string>();
         }
 
+        // === NUEVO: incluir snapshot narrativo si existe un NarrativeRunner en la escena ===
+        try
+        {
+#if UNITY_2022_3_OR_NEWER
+            var runner = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            var runner = FindObjectOfType<NarrativeRunner>(true);
+#pragma warning restore 618
+#endif
+            var snap = runner != null ? runner.ExportSnapshot() : null;
+            // NOTE: BuildSaveDataFromProfile crea PlayerSaveData y este método actualizará runtimePreset;
+            // asignaremos el snapshot en BuildSaveDataFromProfile para que se serialice en el save.
+            if (snap != null)
+            {
+                // almacenar temporalmente en pending para que BuildSaveDataFromProfile recoja si necesita
+                SetPendingNarrativeSnapshot(snap);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[GameBootProfile] Error al obtener snapshot narrativo: {ex.Message}");
+        }
+
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
+    }
+
+    /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automáticos.</summary>
+    public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
+    {
+        if (!saveSystem) return false;
+
+        if (context == SaveRequestContext.Auto && !allowAutoSaves)
+        {
+            Debug.Log("[GameBootProfile] Auto-guardado omitido (allowAutoSaves = false)." );
+            return false;
+        }
+
+        // Sincronizar runtimePreset con estado actual del juego
+        UpdateRuntimePresetFromCurrentState();
+
+        // Guardar profile actualizado
+        return SaveProfile(saveSystem);
     }
 
     // === NUEVO: Flujo de "Nueva partida" ===============================

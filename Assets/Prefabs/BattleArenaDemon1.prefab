@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3643264553064591952
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1543051359224744056}
+  - component: {fileID: 7011547886733809324}
+  - component: {fileID: 4571108151598832824}
+  m_Layer: 0
+  m_Name: BattleArenaDemon1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1543051359224744056
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3643264553064591952}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.23, y: 0, z: 90}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7011547886733809324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3643264553064591952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbbd9e153c49bc049a0960880cda5a71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossArenaController
+  useDoorMode: 0
+  doorWest: {fileID: 0}
+  doorEast: {fileID: 0}
+  areaBarrierCollider: {fileID: 4571108151598832824}
+  barrierHeight: 10
+  barrierThickness: 0.5
+  barrierMaterial: {fileID: 2100000, guid: 03776cd3647ff4541895fb9cd602f3b0, type: 2}
+  barrierColor: {r: 0.3, g: 0.5, b: 1, a: 0.25}
+  pulseSpeed: 2
+  pulseIntensity: 0.3
+  rimPower: 2
+  rimStrength: 1.5
+  noiseTiling: {x: 2, y: 2}
+  noiseSpeed: {x: 0.2, y: 0}
+  noiseStrength: 1
+  globalAlpha: 1
+  bossSpawn: {fileID: 1543051359224744056}
+  bossPrefab: {fileID: 2543156170968106335, guid: 75ce093c15c934c4d894f67be515e8fd, type: 3}
+  portalSpawn: {fileID: 0}
+  portalPrefab: {fileID: 8846737274113074935, guid: 81a74a0aefeb7674ca32535d1a269b4a, type: 3}
+  roomGoal: {fileID: 0}
+  playerTag: Player
+  musicBoss: {fileID: 0}
+  bossId: Demon_1
+  battleId: Demon_1
+  onBossDefeated:
+    m_PersistentCalls:
+      m_Calls: []
+  toDisableDuringBattle: []
+  startBarrierOnPlayerEnter: 0
+--- !u!65 &4571108151598832824
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3643264553064591952}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.538656, y: 10, z: 28.315369}
+  m_Center: {x: -0.7306719, y: 0, z: -5.186615}

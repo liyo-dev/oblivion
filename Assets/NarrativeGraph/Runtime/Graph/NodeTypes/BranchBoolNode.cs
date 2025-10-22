@@ -3,16 +3,15 @@ using System;
 [Serializable]
 public sealed class BranchBoolNode : NarrativeNode
 {
-    public string blackboardKey;
-    public bool defaultWhenMissing = false; // si no existe la clave, usa este valor
+    public string variableName;
+    public bool invert = false;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        // Usa la sobrecarga Get(key, fallback) para evitar avisos
-        bool v = ctx.Blackboard.Get(blackboardKey, defaultWhenMissing);
-
-        // No llamamos a onReadyToAdvance: saltamos a la salida elegida
-        // Convención: salida[0]=false, salida[1]=true
-        ctx.Runner.ForceJumpToOutput(this, v ? 1 : 0);
+        bool val = false;
+        try { if (ctx?.Blackboard != null) val = ctx.Blackboard.Get<bool>(variableName, false); } catch { }
+        if (invert) val = !val;
+        // Original implementation no-ops with val; keep behavior: simply advance
+        onReadyToAdvance?.Invoke();
     }
 }

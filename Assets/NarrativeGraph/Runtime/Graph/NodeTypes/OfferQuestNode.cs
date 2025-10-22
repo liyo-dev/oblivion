@@ -1,6 +1,7 @@
 // OfferQuestNode.cs
 using System;
 
+[Obsolete("OfferQuestNode está obsoleto. Usa Signals.StartQuest/OfferQuest directamente desde otros nodos o adapta el flujo.")]
 [Serializable]
 public sealed class OfferQuestNode : NarrativeNode
 {
