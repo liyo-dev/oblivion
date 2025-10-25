@@ -269,12 +269,12 @@ public class GameBootProfile : ScriptableObject
     // === NUEVO: Métodos para guardar/cargar el profile completo ===
 
     /// <summary>Guarda el estado actual del profile en el SaveSystem</summary>
-    public bool SaveProfile(SaveSystem saveSystem)
+    public bool SaveProfile(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
         if (!saveSystem) return false;
 
         var data = BuildSaveDataFromProfile();
-        return saveSystem.Save(data);
+        return saveSystem.Save(data, context);
     }
 
     /// <summary>Carga datos del SaveSystem y los aplica al profile</summary>
@@ -461,7 +461,7 @@ public class GameBootProfile : ScriptableObject
         UpdateRuntimePresetFromCurrentState();
 
         // Guardar profile actualizado
-        return SaveProfile(saveSystem);
+        return SaveProfile(saveSystem, context);
     }
 
     // === NUEVO: Flujo de "Nueva partida" ===============================

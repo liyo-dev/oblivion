@@ -1,4 +1,5 @@
-ï»¿using UnityEngine;
+using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -9,33 +10,33 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Gestiona la pantalla de Game Over (mostrar/ocultar, pausar el juego y reiniciar escena).
 /// Asignar en el inspector un GameObject que contenga la UI de Game Over (Canvas con panel).
-/// Nota: versiÃ³n simplificada â€” no gestiona animaciones ni desactiva componentes del jugador.
+/// Nota: versión simplificada — no gestiona animaciones ni desactiva componentes del jugador.
 /// </summary>
 public class GameOverManager : MonoBehaviour
 {
     public static GameOverManager Instance { get; private set; }
 
-    [Tooltip("Referencia al objeto de UI que actÃºa como pantalla de Game Over. Puede estar desactivado por defecto.")]
+    [Tooltip("Referencia al objeto de UI que actúa como pantalla de Game Over. Puede estar desactivado por defecto.")]
     [SerializeField] private GameObject gameOverUI;
 
-    [Tooltip("Si estÃ¡ activado, al mostrar GameOver se pausarÃ¡ el juego con Time.timeScale = 0.")]
+    [Tooltip("Si está activado, al mostrar GameOver se pausará el juego con Time.timeScale = 0.")]
     [SerializeField] private bool pauseOnGameOver = true;
 
     [Header("Escenas")]
     [Tooltip("Nombre de la escena de mundo que se carga al 'Cargar partida'. Igual que en MainMenuController.worldScene.")]
     [SerializeField] private string worldScene = "MainWorld";
 
-    [Tooltip("Nombre de la escena del menÃº principal.")]
+    [Tooltip("Nombre de la escena del menú principal.")]
     [SerializeField] private string mainMenuScene = "MainMenu";
 
-    [Header("UI / NavegaciÃ³n")]
+    [Header("UI / Navegación")]
     public Button loadLastSaveButton; // asignar desde inspector
     public Button backToMenuButton; // asignar desde inspector
     public CanvasGroup rootGroup; // opcional
-    public RectTransform[] selectableItems; // opcional: orden de selecciÃ³n
+    public RectTransform[] selectableItems; // opcional: orden de selección
 
     [Header("Comportamiento")]
-    [Tooltip("Retraso en segundos antes de mostrar la UI de Game Over para permitir que la animaciÃ³n de muerte y la barra de vida terminen.")]
+    [Tooltip("Retraso en segundos antes de mostrar la UI de Game Over para permitir que la animación de muerte y la barra de vida terminen.")]
     [SerializeField] private float delayBeforeShow = 0.75f;
 
     // internos para mantener foco
@@ -44,10 +45,14 @@ public class GameOverManager : MonoBehaviour
 
     private bool _isGameOverShown = false;
     private Coroutine _showCoroutine = null;
-    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones pÃºblicas.
+    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones públicas.
     bool _allowActions = false;
 
     public bool IsShown => _isGameOverShown;
+    [Header("Navegación")]
+    [Tooltip("Tiempo entre repeticiones de navegación cuando se mantiene el D-Pad o stick.")]
+    [Range(0.05f, 0.5f)] public float navRepeatDelay = 0.2f;
+    float _navCooldown;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentIfPlacedInStartScene()
     {
@@ -90,7 +95,7 @@ public class GameOverManager : MonoBehaviour
         Instance = this;
         // Opcional: no destruir al cambiar de escena si quieres persistencia
         // DontDestroyOnLoad(gameObject);
-        // Si estÃ¡ en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
+        // Si está en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
         if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
         {
             DontDestroyOnLoad(gameObject);
@@ -133,8 +138,8 @@ public class GameOverManager : MonoBehaviour
         }
         _defaultSelection = loadLastSaveButton ? loadLastSaveButton.gameObject : fallback;
 
-        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se aÃ±adirÃ¡n
-        // y quitarÃ¡n cuando el menÃº se muestre/oculte para evitar callbacks fuera de contexto.
+        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se añadirán
+        // y quitarán cuando el menú se muestre/oculte para evitar callbacks fuera de contexto.
         // Asegurar estado inicial no interactivo para evitar que botones respondan si el GameObject
         // se activa inadvertidamente.
         if (rootGroup != null)
@@ -148,40 +153,41 @@ public class GameOverManager : MonoBehaviour
             if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
                 loadLastSaveButton.interactable = false;
             else
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificarÃ¡ en Awake.");
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificará en Awake.");
         }
         if (backToMenuButton != null)
         {
             if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
                 backToMenuButton.interactable = false;
             else
-                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificarÃ¡ en Awake.");
+                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificará en Awake.");
         }
     }
 
     private void OnEnable()
     {
-        // No manejar la pausa/cursores aquÃ­: OnEnable se llama cuando el GO se activa, pero
-        // el menÃº de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
+        // No manejar la pausa/cursores aquí: OnEnable se llama cuando el GO se activa, pero
+        // el menú de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
     }
 
     private void OnDisable()
     {
-        // No manejar la reanudaciÃ³n aquÃ­ por la misma razÃ³n.
+        // No manejar la reanudación aquí por la misma razón.
     }
 
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
-        // Solo procesar inputs cuando el Game Over estÃ© realmente mostrado, la UI estÃ© activa y las acciones estÃ©n permitidas
+        // Solo procesar inputs cuando el Game Over esté realmente mostrado, la UI esté activa y las acciones estén permitidas
         if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
 #else
         if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
 #endif
 
         KeepUIFocusForGamepad();
+        HandleNavigationInput();
 
-        // Cancel/back behavior: llevar al menÃº principal
+        // Cancel/back behavior: llevar al menú principal
 #if ENABLE_INPUT_SYSTEM
         if (Gamepad.current != null)
         {
@@ -192,7 +198,7 @@ public class GameOverManager : MonoBehaviour
                 HideGameOver();
                 return;
             }
-            // buttonEast (B) -> volver al menÃº principal (cancel)
+            // buttonEast (B) -> volver al menú principal (cancel)
             if (gp.buttonEast.wasPressedThisFrame)
             {
                 OnBackToMainMenu();
@@ -286,7 +292,117 @@ public class GameOverManager : MonoBehaviour
             EnsureUISelection();
     }
 
-    // Attach/detach listeners: solo aÃ±adimos/quitan nuestro callback, no tocamos listeners serializados.
+    void HandleNavigationInput()
+    {
+        if (selectableItems == null || selectableItems.Length == 0) return;
+        if (_es == null) _es = EventSystem.current;
+        if (_es == null) return;
+
+        if (_navCooldown > 0f)
+        {
+            _navCooldown -= Time.unscaledDeltaTime;
+            if (_navCooldown > 0f) return;
+            _navCooldown = 0f;
+        }
+
+        bool moveUp = false;
+        bool moveDown = false;
+
+#if ENABLE_INPUT_SYSTEM
+        if (Gamepad.current != null)
+        {
+            var gp = Gamepad.current;
+            moveUp |= gp.dpad.up.wasPressedThisFrame;
+            moveDown |= gp.dpad.down.wasPressedThisFrame;
+
+            var stickY = gp.leftStick.ReadValue().y;
+            moveUp |= stickY > 0.6f;
+            moveDown |= stickY < -0.6f;
+        }
+        else if (Keyboard.current != null)
+        {
+            moveUp |= Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame;
+            moveDown |= Keyboard.current.downArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame;
+        }
+#else
+        float axis = Input.GetAxisRaw("Vertical");
+        moveUp |= Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || axis > 0.6f;
+        moveDown |= Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) || axis < -0.6f;
+#endif
+
+        if (moveUp)
+        {
+            MoveSelection(-1);
+            _navCooldown = navRepeatDelay;
+        }
+        else if (moveDown)
+        {
+            MoveSelection(+1);
+            _navCooldown = navRepeatDelay;
+        }
+    }
+
+    void MoveSelection(int direction)
+    {
+        if (selectableItems == null || selectableItems.Length == 0) return;
+        EnsureUISelection();
+        if (_es == null) return;
+
+        var ordered = GetOrderedSelectables();
+        if (ordered.Count == 0) return;
+
+        var current = _es.currentSelectedGameObject;
+        int currentIndex = 0;
+        if (current != null)
+        {
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                if (ordered[i] != null && ordered[i].gameObject == current)
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+        }
+
+        int nextIndex = Mathf.Clamp(currentIndex + direction, 0, ordered.Count - 1);
+        if (nextIndex == currentIndex) return;
+
+        var next = ordered[nextIndex];
+        if (next != null)
+        {
+            _defaultSelection = next.gameObject;
+            _es.SetSelectedGameObject(next.gameObject);
+            next.Select();
+        }
+    }
+
+    readonly System.Collections.Generic.List<Selectable> _orderedSelectables = new System.Collections.Generic.List<Selectable>();
+
+    System.Collections.Generic.List<Selectable> GetOrderedSelectables()
+    {
+        _orderedSelectables.Clear();
+        if (selectableItems != null && selectableItems.Length > 0)
+        {
+            foreach (var rt in selectableItems)
+            {
+                if (!rt) continue;
+                var sel = rt.GetComponent<Selectable>();
+                if (sel != null)
+                    _orderedSelectables.Add(sel);
+            }
+        }
+        else if (gameOverUI != null)
+        {
+            var selectables = gameOverUI.GetComponentsInChildren<Selectable>(true);
+            foreach (var sel in selectables)
+                if (sel != null)
+                    _orderedSelectables.Add(sel);
+        }
+        return _orderedSelectables;
+    }
+
+    // Attach/detach listeners: solo añadimos/quitan nuestro callback, no tocamos listeners serializados.
     void AttachUIButtonListeners()
     {
         if (rootGroup != null)
@@ -306,7 +422,7 @@ public class GameOverManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI â€” no se aÃ±adirÃ¡ listener");
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI — no se añadirá listener");
             }
         }
 
@@ -320,11 +436,11 @@ public class GameOverManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI â€” no se aÃ±adirÃ¡ listener");
+                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI — no se añadirá listener");
             }
         }
 
-        // Permitir la ejecuciÃ³n de las acciones pÃºblicas ahora que los listeners estÃ¡n adjuntos
+        // Permitir la ejecución de las acciones públicas ahora que los listeners están adjuntos
         _allowActions = true;
     }
 
@@ -348,16 +464,16 @@ public class GameOverManager : MonoBehaviour
             backToMenuButton.interactable = false;
         }
 
-        // Desactivar la ejecuciÃ³n de acciones pÃºblicas
+        // Desactivar la ejecución de acciones públicas
         _allowActions = false;
     }
 
     /// <summary>
-    /// Muestra la pantalla de Game Over. Pausa el juego si estÃ¡ configurado.
+    /// Muestra la pantalla de Game Over. Pausa el juego si está configurado.
     /// </summary>
     public void ShowGameOver()
     {
-        // Evitar reentradas: si ya estÃ¡ mostrado o en proceso de mostrarse, ignorar
+        // Evitar reentradas: si ya está mostrado o en proceso de mostrarse, ignorar
         if (_isGameOverShown || _showCoroutine != null) return;
 
         // Iniciar la coroutine que espera en tiempo real para permitir animaciones/efectos
@@ -381,10 +497,10 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 0f;
 
-        // Asegurar selecciÃ³n inicial del UI
+        // Asegurar selección inicial del UI
         EnsureUISelection();
 
-        // Adjuntar solo nuestros listeners y activar la interacciÃ³n
+        // Adjuntar solo nuestros listeners y activar la interacción
         AttachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over mostrado");
@@ -411,7 +527,7 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 1f;
 
-        // Quitar nuestros listeners y desactivar interacciÃ³n
+        // Quitar nuestros listeners y desactivar interacción
         DetachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over ocultado");
@@ -451,10 +567,10 @@ public class GameOverManager : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogWarning("[GameOverManager] No se encontrÃ³ PlayerHealthSystem para sincronizar HP antes de reiniciar");
+                        Debug.LogWarning("[GameOverManager] No se encontró PlayerHealthSystem para sincronizar HP antes de reiniciar");
                     }
 
-                    // Manejar ManÃ¡: si el preset no tiene la ability de magia, respetar 0/0
+                    // Manejar Maná: si el preset no tiene la ability de magia, respetar 0/0
                     if (preset.abilities != null && !preset.abilities.magic)
                     {
                         preset.currentMP = 0f;
@@ -480,18 +596,18 @@ public class GameOverManager : MonoBehaviour
                         }
                         else
                         {
-                            Debug.LogWarning("[GameOverManager] No se encontrÃ³ ManaPool para sincronizar MP antes de reiniciar (dejando valores del preset)");
+                            Debug.LogWarning("[GameOverManager] No se encontró ManaPool para sincronizar MP antes de reiniciar (dejando valores del preset)");
                         }
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("[GameOverManager] Profile disponible pero GetActivePresetResolved() devolviÃ³ null");
+                    Debug.LogWarning("[GameOverManager] Profile disponible pero GetActivePresetResolved() devolvió null");
                 }
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] GameBootService.Profile no estÃ¡ disponible al reiniciar nivel");
+                Debug.LogWarning("[GameOverManager] GameBootService.Profile no está disponible al reiniciar nivel");
             }
         }
         catch (System.Exception e)
@@ -504,14 +620,14 @@ public class GameOverManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Llamado desde el botÃ³n "Continuar" en la UI. Wrapper pÃºblico que garantiza la lÃ³gica correcta
-    /// y deja un log claro para depuraciÃ³n del mapeo del botÃ³n.
+    /// Llamado desde el botón "Continuar" en la UI. Wrapper público que garantiza la lógica correcta
+    /// y deja un log claro para depuración del mapeo del botón.
     /// </summary>
     public void OnContinueButtonPressed()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el menÃº no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el menú no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
@@ -521,13 +637,13 @@ public class GameOverManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Llamado desde el botÃ³n "Cargar partida" en la UI. Reutiliza la lÃ³gica de MainMenuController.OnContinue().
+    /// Llamado desde el botón "Cargar partida" en la UI. Reutiliza la lógica de MainMenuController.OnContinue().
     /// </summary>
     public void OnLoadLastSave()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menÃº no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menú no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
@@ -547,7 +663,7 @@ public class GameOverManager : MonoBehaviour
                 GameBootService.Profile?.LoadProfile(saveSystem);
 
             Debug.Log($"[GameOverManager] Loading scene '{worldScene}' from save");
-            // Llamada dinÃ¡mica a SceneTransitionLoader.Load para evitar dependencia dura
+            // Llamada dinámica a SceneTransitionLoader.Load para evitar dependencia dura
             var loaderType = System.Type.GetType("SceneTransitionLoader, Assembly-CSharp");
             if (loaderType != null)
             {
@@ -580,13 +696,13 @@ public class GameOverManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Llamado desde el botÃ³n "Volver al menÃº principal".
+    /// Llamado desde el botón "Volver al menú principal".
     /// </summary>
     public void OnBackToMainMenu()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menÃº no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menú no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
@@ -619,3 +735,5 @@ public class GameOverManager : MonoBehaviour
             Debug.LogWarning("[GameOverManager] No hay instancia disponible para mostrar Game Over.");
     }
 }
+
+

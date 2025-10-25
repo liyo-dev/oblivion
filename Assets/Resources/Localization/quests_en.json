@@ -13,16 +13,28 @@
             "value": "Go talk to Eldran at the kingdom entrance"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION1_NAME",
+            "value": "[EN] De buena mañana"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Find the fruit crate in the forest and bring it to Eldran"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION2_NAME",
+            "value": "[EW] A por la caja de frutas"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
-            "value": "[EN] ¡Bien hecho! Descansa un poco ahora y ven a verme cuando estés listo"
+            "value": "[EN] ¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_DESC",
             "value": "[EN] Derrota al demonio y habla después con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": "[EN] El despertar de una Estrella"
         },
         {
             "key": "QUEST_MISSION1_STEP1",

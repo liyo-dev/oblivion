@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Q_ELDRAN_MISSION2
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
   questId: ELDRAN_MISSION2
-  displayNameId: QUEST_ELDRAN_MISSION2_NAME
-  displayName: 
+  displayNameId: ELDRAN_MISSION2
+  displayName: QUEST_ELDRAN_MISSION2_NAME
   descriptionId: QUEST_ELDRAN_MISSION2_DESC
   description: 
   steps:

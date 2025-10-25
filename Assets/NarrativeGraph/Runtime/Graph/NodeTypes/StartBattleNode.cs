@@ -1,6 +1,7 @@
 ﻿// StartBattleNode.cs
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 /// <summary>
@@ -14,7 +15,10 @@ public sealed class StartBattleNode : NarrativeNode
     [Tooltip("ID de la batalla (coincide con BossArenaController.BattleId).")]
     public string battleId;
 
-    [Tooltip("Referencia directa a BossArenaController (fallback si no se activa por id).")]
+    [Tooltip("Prefab del BossArenaController que se instanciará automáticamente.")]
+    public BossArenaController arenaPrefab;
+
+    [Tooltip("Referencia directa a una arena existente en la escena (fallback).")]
     public BossArenaController bossArena;
 
     [Tooltip("Si true, intenta activar por battleId primero.")]
@@ -39,6 +43,7 @@ public sealed class StartBattleNode : NarrativeNode
     INarrativeSignals _subscribedSignals;
     object _usedContextKey; // la clave exacta usada al suscribirse (para desuscribirse)
     bool _subscriptionOk;
+    BossArenaController _spawnedArenaInstance;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
@@ -53,7 +58,13 @@ public sealed class StartBattleNode : NarrativeNode
 
         // Resolver la clave/objeto de contexto que usará la señal
         // Nota: aquí usamos string; si tu implementación de señales soporta objetos, esta clave debe ser la misma que emita la arena.
-        var contextKey = string.IsNullOrEmpty(arenaContext) ? (string.IsNullOrEmpty(battleId) ? (object)"__DEFAULT_BOSS__" : battleId) : arenaContext;
+        var derivedId = !string.IsNullOrEmpty(arenaContext)
+            ? arenaContext
+            : (!string.IsNullOrEmpty(battleId) ? battleId :
+               arenaPrefab != null && !string.IsNullOrEmpty(arenaPrefab.BattleId) ? arenaPrefab.BattleId :
+               bossArena != null && !string.IsNullOrEmpty(bossArena.BattleId) ? bossArena.BattleId : "__DEFAULT_BOSS__");
+
+        var contextKey = derivedId;
         _usedContextKey = contextKey;
 
         // Preparar callback ANTES de disparar la batalla para evitar condiciones de carrera
@@ -147,7 +158,22 @@ public sealed class StartBattleNode : NarrativeNode
         // Ahora, intentar disparar la batalla
         bool triggered = false;
 
-        if (useBattleById && !string.IsNullOrEmpty(battleId))
+        BossArenaController targetArena = null;
+
+        if (arenaPrefab != null)
+        {
+            targetArena = InstantiateArenaPrefab(ctx);
+        }
+
+        if (targetArena == null && bossArena != null && bossArena.gameObject.scene.IsValid())
+            targetArena = bossArena;
+
+        if (targetArena != null)
+        {
+            triggered = TriggerArena(targetArena);
+        }
+
+        if (!triggered && useBattleById && !string.IsNullOrEmpty(battleId))
         {
             try
             {
@@ -164,26 +190,61 @@ public sealed class StartBattleNode : NarrativeNode
             }
         }
 
-        if (!triggered && bossArena != null)
-        {
-            try
-            {
-                bossArena.TriggerStartBattle();
-                triggered = true;
-                Debug.Log("[StartBattleNode] TriggerStartBattle() llamado en BossArenaController (referencia directa).");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[StartBattleNode] Error llamando TriggerStartBattle(): {ex.Message}");
-            }
-        }
-
         if (!triggered)
         {
             Debug.LogWarning("[StartBattleNode] No se activó la arena (battleId vacío/no encontrado y bossArena null). Para no bloquear, avanzamos y limpiamos suscripción.");
             // Nos desuscribimos y avanzamos para no romper flujo si no se pudo iniciar la batalla
             SafeUnsubscribe(ctx);
             onReadyToAdvance?.Invoke();
+        }
+    }
+
+    BossArenaController InstantiateArenaPrefab(NarrativeContext ctx)
+    {
+        if (arenaPrefab == null) return null;
+
+        try
+        {
+            var prefabGO = arenaPrefab.gameObject;
+            var clone = UnityEngine.Object.Instantiate(prefabGO, prefabGO.transform.position, prefabGO.transform.rotation);
+            clone.name = prefabGO.name + "_Runtime";
+
+            var scene = ctx?.Runner != null ? ctx.Runner.gameObject.scene : default;
+            if (scene.IsValid() && clone.scene != scene)
+            {
+                SceneManager.MoveGameObjectToScene(clone, scene);
+            }
+
+            _spawnedArenaInstance = clone.GetComponent<BossArenaController>();
+            if (_spawnedArenaInstance == null)
+            {
+                Debug.LogWarning("[StartBattleNode] El prefab instanciado no tiene BossArenaController. ¿Asignaste el prefab correcto?");
+                UnityEngine.Object.Destroy(clone);
+                _spawnedArenaInstance = null;
+            }
+
+            return _spawnedArenaInstance;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[StartBattleNode] Error instanciando prefab de arena: {ex.Message}");
+            return null;
+        }
+    }
+
+    bool TriggerArena(BossArenaController arena)
+    {
+        if (arena == null) return false;
+        try
+        {
+            arena.TriggerStartBattle();
+            Debug.Log("[StartBattleNode] TriggerStartBattle() ejecutado en arena instanciada/directa.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[StartBattleNode] Error llamando TriggerStartBattle(): {ex.Message}");
+            return false;
         }
     }
 

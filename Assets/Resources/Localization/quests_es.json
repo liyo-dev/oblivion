@@ -13,16 +13,28 @@
             "value": "Ve a hablar con Eldran en la entrada del reino"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION1_NAME",
+            "value": "De buena mañana"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION2_NAME",
+            "value": "A por la caja de frutas"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
-            "value": "¡Bien hecho! Descansa un poco ahora y ven a verme cuando estés listo"
+            "value": "¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_DESC",
             "value": "Derrota al demonio y habla después con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": "El despertar de una Estrella"
         },
         {
             "key": "QUEST_MISSION1_STEP1",

@@ -5597,7 +5597,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerActionManager
   upperBodyLayer: 1
   upperIdleState: UpperIdle
-  rules: []
+  rules:
+  - mode: 3
+    blockedAbilities: 
+    disableComponents: []
+    disableInputActions: []
+    forceUpperIdle: 1
+    upperBodyWeight: 0
   debugLogs: 1
 --- !u!114 &1297097001791454143
 MonoBehaviour:

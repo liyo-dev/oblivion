@@ -5455,7 +5455,7 @@ GameObject:
   - component: {fileID: 3281919030301970391}
   - component: {fileID: 6837251540150738088}
   m_Layer: 7
-  m_Name: Imp Demon
+  m_Name: Demon
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

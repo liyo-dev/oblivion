@@ -68,7 +68,7 @@ public class AnchorSetter : MonoBehaviour
         var saveSystem = FindFirstObjectByType<SaveSystem>();
         if (saveSystem != null)
         {
-            saveSystem.Save(data);
+            saveSystem.Save(data, SaveRequestContext.Manual);
             Debug.Log("[AnchorSetter] Partida guardada tras cambiar de anchor");
         }
         else
