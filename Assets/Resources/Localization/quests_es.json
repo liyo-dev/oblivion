@@ -37,40 +37,16 @@
             "value": "Recoger la caja de frutas"
         },
         {
-            "key": "QUEST_ELDRAN_MISSION3_DESC",
-            "value": "Aprende a lanzar bolas de fuego"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_NAME",
-            "value": "Usa tu magia"
+            "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
+            "value": "¡Bien hecho! Descansa un poco ahora y ven a verme cuando estés listo"
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_STEP1",
-            "value": "Derrota al demonio"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_STEP2",
-            "value": "Descansa y cuando estes preparado ve a casa de Eldran"
-        },
-        {
-            "key": "QUEST_MISSION1_DESC",
-            "value": "Eldran escuchó algo extraño en el bosque ayer por la noche."
-        },
-        {
-            "key": "QUEST_MISSION1_NAME",
-            "value": "Sonidos extraños en el bosque"
+            "value": "Derrota al demonio y habla después con Eldran"
         },
         {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
-        },
-        {
-            "key": "QUEST_MISSION1_STEP2",
-            "value": "Investiga el bosque"
-        },
-        {
-            "key": "QUEST_MISSION1_STEP3",
-            "value": "Regresa con Eldran"
         },
         {
             "key": "QUEST_STATE_ACTIVE",

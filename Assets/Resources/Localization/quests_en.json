@@ -2,11 +2,11 @@
     "texts": [
         {
             "key": "ELDRAN_MISSION3",
-            "value": ""
+            "value": "[EN] El despertar de una Estrella"
         },
         {
             "key": "Q_NIÑOPEZ",
-            "value": "EN Ayudar al niño pez antes de entrar al agua."
+            "value": "[EN] Ayudar al niño pez antes de entrar al agua."
         },
         {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
@@ -37,40 +37,16 @@
             "value": "Pick up the fruit crate"
         },
         {
-            "key": "QUEST_ELDRAN_MISSION3_DESC",
-            "value": ""
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_NAME",
-            "value": ""
+            "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
+            "value": "[EN] ¡Bien hecho! Descansa un poco ahora y ven a verme cuando estés listo"
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_STEP1",
-            "value": ""
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION3_STEP2",
-            "value": ""
-        },
-        {
-            "key": "QUEST_MISSION1_DESC",
-            "value": "Eldran heard something strange in the forest last night."
-        },
-        {
-            "key": "QUEST_MISSION1_NAME",
-            "value": "Strange Sounds in the Forest"
+            "value": "[EN] Derrota al demonio y habla después con Eldran"
         },
         {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Talk to Eldran"
-        },
-        {
-            "key": "QUEST_MISSION1_STEP2",
-            "value": "Investigate the forest"
-        },
-        {
-            "key": "QUEST_MISSION1_STEP3",
-            "value": "Return to Eldran"
         },
         {
             "key": "QUEST_STATE_ACTIVE",

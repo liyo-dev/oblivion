@@ -22,7 +22,6 @@ MonoBehaviour:
   - rid: 4128268641526088494
   - rid: 4128268641526088533
   - rid: 4128268648164098057
-  - rid: 4128268648164098058
   references:
     version: 2
     RefIds:
@@ -101,20 +100,11 @@ MonoBehaviour:
         displayTitle: 
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         position: {x: 810, y: -54}
-        outputs:
-        - b267926e-80d5-44fc-8ef1-c8ac4cb96328
+        outputs: []
         battleId: Demon_1
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
         useBattleById: 1
         completeMission: 1
         missionStringId: ELDRAN_MISSION3
         missionId: 0
-    - rid: 4128268648164098058
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        guid: b267926e-80d5-44fc-8ef1-c8ac4cb96328
-        position: {x: 1238, y: -54}
-        outputs: []
-        cinematicSceneName: Cinematic_VillainPlans
-        useInternalCinematic: 1
+        arenaContext: 
