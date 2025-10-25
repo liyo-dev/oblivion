@@ -15,7 +15,7 @@ MonoBehaviour:
   questId: ELDRAN_MISSION3
   displayNameId: QUEST_ELDRAN_MISSION3_NAME
   displayName: 
-  descriptionId: 
+  descriptionId: QUEST_ELDRAN_MISSION3_DESC
   description: 
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION3_DESC

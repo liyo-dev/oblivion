@@ -1,12 +1,8 @@
 {
     "texts": [
         {
-            "key": "CIV_01",
-            "value": "So... the star has finally awakened."
-        },
-        {
-            "key": "CIV_02",
-            "value": "The first step is complete..."
+            "key": "QUEST_ELDRAN_MISSION3_NAME",
+            "value": "[EN] El despertar de una Estrella"
         }
     ]
 }

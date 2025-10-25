@@ -1,8 +1,8 @@
 {
     "texts": [
         {
-            "key": "ELDRAN_MISSION3",
-            "value": "El despertar de una Estrella"
+            "key": "ELDRAN_MISSION2_NAME",
+            "value": "A por la caja de frutas\t"
         },
         {
             "key": "Q_NIÑOPEZ",
@@ -13,35 +13,15 @@
             "value": "Ve a hablar con Eldran en la entrada del reino"
         },
         {
-            "key": "QUEST_ELDRAN_MISSION1_NAME",
-            "value": "Habla con Eldran"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION1_STEP1",
-            "value": "Hablar con Eldran"
-        },
-        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_NAME",
-            "value": "Trae la caja de frutas"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_STEP1",
-            "value": "Hablar con Eldran"
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION2_STEP2",
-            "value": "Recoger la caja de frutas"
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
             "value": "¡Bien hecho! Descansa un poco ahora y ven a verme cuando estés listo"
         },
         {
-            "key": "QUEST_ELDRAN_MISSION3_STEP1",
+            "key": "QUEST_ELDRAN_MISSION3_DESC",
             "value": "Derrota al demonio y habla después con Eldran"
         },
         {
