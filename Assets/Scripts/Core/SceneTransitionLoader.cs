@@ -15,6 +15,10 @@ public class SceneTransitionLoader : MonoBehaviour
     [Min(0)] public float defaultDelay = 0f;
     [Min(0)] public float waitForManagerSec = 0.5f;
 
+    [Header("Loading Overlay")]
+    [Tooltip("Nombre de la escena que se usa como overlay al cargar escenas largas.")]
+    public string defaultOverlayScene = "LoadingScreen";
+
     // Evita arranques concurrentes
     private bool _isLoading = false;
 
@@ -52,9 +56,7 @@ public class SceneTransitionLoader : MonoBehaviour
                 Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring request.");
                 return;
             }
-            // marcamos inmediatamente para evitar reentradas mientras la coroutine no haya comenzado aún
-            _inst._isLoading = true;
-            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, _inst.defaultSettings, _inst.defaultDelay));
+            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, _inst.defaultSettings, _inst.defaultDelay, true));
         }
         else
         {
@@ -73,9 +75,7 @@ public class SceneTransitionLoader : MonoBehaviour
                 Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring request.");
                 return;
             }
-            // marcamos inmediatamente para evitar reentradas mientras la coroutine no haya comenzado aún
-            _inst._isLoading = true;
-            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, settings ?? _inst.defaultSettings, delay));
+            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, settings ?? _inst.defaultSettings, delay, true));
         }
         else
         {
@@ -84,12 +84,33 @@ public class SceneTransitionLoader : MonoBehaviour
         }
     }
 
+    public static void LoadWithOverlay(string sceneName, string overlaySceneName = null, TransitionSettings settings = null, float delay = 0f)
+    {
+        if (_inst)
+        {
+            Debug.Log($"SceneTransitionLoader.LoadWithOverlay requested: {sceneName} (overlay={overlaySceneName})");
+            if (_inst._isLoading)
+            {
+                Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring overlay request.");
+                return;
+            }
+
+            string overlay = string.IsNullOrEmpty(overlaySceneName) ? _inst.defaultOverlayScene : overlaySceneName;
+            _inst.StartCoroutine(_inst.LoadWithOverlayRoutine(sceneName, overlay, settings ?? _inst.defaultSettings, delay));
+        }
+        else
+        {
+            Debug.LogWarning("SceneTransitionLoader: No instance found. Loading scene directly without overlay.");
+            SceneManager.LoadScene(sceneName);
+        }
+    }
+
     // Núcleo: transición SIN cambio de escena + carga en el "cut"
-    IEnumerator LoadRoutine(string sceneName, TransitionSettings settings, float delay)
+    IEnumerator LoadRoutine(string sceneName, TransitionSettings settings, float delay, bool manageLoadingState)
     {
         Debug.Log($"SceneTransitionLoader.LoadRoutine start for {sceneName}");
-        // marcamos que estamos en proceso
-        _isLoading = true;
+        if (manageLoadingState)
+            _isLoading = true;
         TransitionManager tm = null;
         UnityAction onCut = null;
         UnityAction onEnd = null;
@@ -277,8 +298,56 @@ public class SceneTransitionLoader : MonoBehaviour
                 }
             }
             catch { }
-            _isLoading = false;
+            if (manageLoadingState)
+                _isLoading = false;
         }
+    }
+
+    IEnumerator LoadWithOverlayRoutine(string sceneName, string overlaySceneName, TransitionSettings settings, float delay)
+    {
+        _isLoading = true;
+
+        Scene overlayScene = default;
+        bool overlayLoadedByLoader = false;
+
+        if (!string.IsNullOrEmpty(overlaySceneName))
+        {
+            overlayScene = SceneManager.GetSceneByName(overlaySceneName);
+            if (!overlayScene.IsValid() || !overlayScene.isLoaded)
+            {
+                var overlayOp = SceneManager.LoadSceneAsync(overlaySceneName, LoadSceneMode.Additive);
+                if (overlayOp == null)
+                {
+                    Debug.LogWarning($"SceneTransitionLoader: Could not load overlay scene '{overlaySceneName}'.");
+                }
+                else
+                {
+                    while (!overlayOp.isDone)
+                        yield return null;
+
+                    overlayScene = SceneManager.GetSceneByName(overlaySceneName);
+                    overlayLoadedByLoader = overlayScene.IsValid() && overlayScene.isLoaded;
+                }
+            }
+        }
+
+        yield return StartCoroutine(LoadRoutine(sceneName, settings, delay, false));
+
+        if (overlayLoadedByLoader)
+        {
+            overlayScene = SceneManager.GetSceneByName(overlaySceneName);
+            if (overlayScene.IsValid() && overlayScene.isLoaded)
+            {
+                var unloadOp = SceneManager.UnloadSceneAsync(overlayScene);
+                if (unloadOp != null)
+                {
+                    while (!unloadOp.isDone)
+                        yield return null;
+                }
+            }
+        }
+
+        _isLoading = false;
     }
 
     static TransitionManager FindTM()

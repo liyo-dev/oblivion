@@ -59,14 +59,7 @@ public class GameBootService : MonoBehaviour
         if (profile == null) return;
 
         // Intentar localizar un SaveSystem en escena (persistente)
-        SaveSystem saveSystem;
-#if UNITY_2022_3_OR_NEWER
-        saveSystem = Object.FindFirstObjectByType<SaveSystem>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        saveSystem = FindObjectOfType<SaveSystem>(true);
-#pragma warning restore 618
-#endif
+        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
         bool initialized = false;
 
@@ -130,14 +123,7 @@ public class GameBootService : MonoBehaviour
     public static void NewGameReset()
     {
         if (!IsAvailable) return;
-        SaveSystem save;
-#if UNITY_2022_3_OR_NEWER
-        save = Object.FindFirstObjectByType<SaveSystem>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        save = Object.FindObjectOfType<SaveSystem>(true);
-#pragma warning restore 618
-#endif
+        var save = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         _profile.NewGameReset(save);
     }
 }

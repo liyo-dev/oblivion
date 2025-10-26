@@ -59,13 +59,7 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
 
                     if (saveAfterUnlock)
                     {
-                        var profile = GameBootService.Profile;
-                        var saveSystem = UnityEngine.Object.FindFirstObjectByType<SaveSystem>();
-                        if (profile != null && saveSystem != null)
-                        {
-                            try { profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto); }
-                            catch (Exception ex) { Debug.LogWarning($"[UnlockAbilitiesNode] Error al guardar tras unlock: {ex.Message}"); }
-                        }
+                        Debug.Log("[UnlockAbilitiesNode] Auto-guardado deshabilitado. Usa un punto de guardado para conservar el progreso narrativo.");
                     }
                 }
             }

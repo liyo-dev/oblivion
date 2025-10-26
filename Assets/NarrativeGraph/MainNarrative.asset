@@ -103,7 +103,6 @@ MonoBehaviour:
         - 61c504a2-24c2-4662-9049-acaa52b3ed8d
         - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
         battleId: Demon_1
-        arenaPrefab: {fileID: 0}
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
         useBattleById: 1
         completeMission: 1

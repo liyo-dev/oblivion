@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using UnityEngine.AI;
 
 public class BossArenaController : MonoBehaviour
 {
@@ -43,6 +45,12 @@ public class BossArenaController : MonoBehaviour
     public GameObject bossPrefab;   // tu boss
     public Transform portalSpawn;
     public GameObject portalPrefab; // PF_PortalExit
+    [Tooltip("Radio para buscar NavMesh válido alrededor del punto de spawn.")]
+    [SerializeField] private float navMeshProbeRadius = 1.5f;
+    [Tooltip("Tiempo máximo (segundos) que se esperará a que el NavMesh esté listo antes de abortar el spawn.")]
+    [SerializeField] private float navMeshWaitTimeout = 5f;
+    [Tooltip("Intervalo entre reintentos al comprobar NavMesh.")]
+    [SerializeField] private float navMeshRetryInterval = 0.25f;
 
     [Header("Refs")]
     public RoomGoal roomGoal;
@@ -216,6 +224,7 @@ public class BossArenaController : MonoBehaviour
     // Lógica centralizada para arrancar la batalla (refactorizada desde OnTriggerEnter)
     private void StartBattleInternal()
     {
+        if (started) return;
         started = true;
         _bossDeathConfirmed = false;
 
@@ -236,17 +245,41 @@ public class BossArenaController : MonoBehaviour
 
         if (musicBoss) musicBoss.Play();
 
+        StartCoroutine(SpawnBossWhenNavMeshReady());
+    }
+
+    private IEnumerator SpawnBossWhenNavMeshReady()
+    {
+        Vector3 targetPosition = bossSpawn ? bossSpawn.position : transform.position;
+        Quaternion targetRotation = bossSpawn ? bossSpawn.rotation : transform.rotation;
+
+        float waited = 0f;
+        Vector3 resolvedPosition;
+        while (!TryResolveNavMeshPosition(targetPosition, out resolvedPosition))
+        {
+            if (waited >= navMeshWaitTimeout)
+            {
+                Debug.LogError("[BossArenaController] NavMesh no disponible en el punto de spawn tras esperar. Abortando batalla.");
+                started = false;
+                yield break;
+            }
+
+            yield return new WaitForSeconds(navMeshRetryInterval);
+            waited += navMeshRetryInterval;
+        }
+
         GameObject boss = null;
 
-        if (bossPrefab && bossSpawn)
-            boss = Instantiate(bossPrefab, bossSpawn.position, bossSpawn.rotation, transform.parent);
+        if (bossPrefab)
+            boss = Instantiate(bossPrefab, resolvedPosition, targetRotation, transform.parent);
         else
             boss = FindExistingBossInRoom(); // por si ya lo dejaste colocado
 
         if (!boss)
         {
             Debug.LogError("[BossArenaController] No hay boss para esta sala.");
-            return;
+            started = false;
+            yield break;
         }
 
         // Preparar referencias para escuchar la derrota real del boss
@@ -599,6 +632,15 @@ public class BossArenaController : MonoBehaviour
         }
 
         Debug.Log("[BossArenaController] Área del boss desbloqueada.");
+    }
+
+    private bool TryResolveNavMeshPosition(Vector3 desiredPosition, out Vector3 resolved)
+    {
+        resolved = desiredPosition;
+        if (!NavMesh.SamplePosition(desiredPosition, out var hit, navMeshProbeRadius, NavMesh.AllAreas))
+            return false;
+        resolved = hit.position;
+        return true;
     }
 
     // =========================== Battle toggles ===========================

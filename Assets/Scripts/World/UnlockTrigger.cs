@@ -210,19 +210,7 @@ public class UnlockTrigger : MonoBehaviour
         // === Guardado ===
         if (saveAfterUnlock && needsHudRefresh)
         {
-            var profile = GameBootService.Profile;
-            var saveSystem = FindFirstObjectByType<SaveSystem>();
-            if (profile != null && saveSystem != null)
-            {
-                bool ok = profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
-                if (!ok)
-                {
-                    if (!profile.allowAutoSaves)
-                        Debug.Log("[UnlockTrigger] Auto-guardado omitido (allowAutoSaves = false).");
-                    else
-                        Debug.LogError("[UnlockTrigger] Error al guardar tras desbloqueo");
-                }
-            }
+            Debug.Log("[UnlockTrigger] Auto-guardado deshabilitado. Usa un punto de guardado para conservar los cambios.");
         }
 
         // === Feedback y desactivación ===

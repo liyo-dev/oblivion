@@ -13,6 +13,12 @@ public class SaveSystem : MonoBehaviour
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
+        ServiceLocator.Register(this);
+    }
+
+    void OnDestroy()
+    {
+        ServiceLocator.Unregister(this);
     }
 
     public bool HasManualSave() => File.Exists(ManualPath);

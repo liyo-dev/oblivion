@@ -93,37 +93,13 @@ public class AutoSaveTrigger : MonoBehaviour
             animator.Play("LevelUp_NoWeapon");
         }
 
-        var saveSystem = FindFirstObjectByType<SaveSystem>();
-        if (saveSystem != null)
+        if (!string.IsNullOrEmpty(oneShotFlag) && preset != null)
         {
-            bool ok = bootProfile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
-            if (!ok)
-            {
-                if (!bootProfile.allowAutoSaves)
-                {
-                    Debug.Log("[AutoSaveTrigger] Auto-guardado omitido (allowAutoSaves = false).");
-                }
-                else
-                {
-                    Debug.LogError("[AutoSaveTrigger] Error al guardar");
-                }
-            }
-            else
-            {
-                // add one-shot flag after success
-                if (!string.IsNullOrEmpty(oneShotFlag) && preset != null)
-                {
-                    if (preset.flags == null) preset.flags = new System.Collections.Generic.List<string>();
-                    if (!preset.flags.Contains(oneShotFlag)) preset.flags.Add(oneShotFlag);
-                }
-                Debug.Log("[AutoSaveTrigger] Guardado automático completado");
-                onSaved?.Invoke(playerGo);
-            }
+            if (preset.flags == null) preset.flags = new System.Collections.Generic.List<string>();
+            if (!preset.flags.Contains(oneShotFlag)) preset.flags.Add(oneShotFlag);
         }
-        else
-        {
-            Debug.LogError("[AutoSaveTrigger] No se encontró SaveSystem en escena");
-        }
+
+        Debug.Log("[AutoSaveTrigger] Auto-guardado deshabilitado. Usa un punto de guardado manual para persistir.");
 
         if (teleportAfterSave && !string.IsNullOrEmpty(teleportAnchorId) && playerGo)
         {

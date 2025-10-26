@@ -44,7 +44,7 @@ public class WorldBootstrap : MonoBehaviour
             return;
         }
 
-        _saveSystem = FindFirstObjectByType<SaveSystem>();
+        _saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
         // 1) Modo PRESET (test): ignora el save
         if (bootProfile.ShouldBootFromPreset())

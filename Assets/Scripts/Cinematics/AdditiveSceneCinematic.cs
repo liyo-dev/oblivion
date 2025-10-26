@@ -348,11 +348,7 @@ public class AdditiveSceneCinematic : MonoBehaviour
         string flag = $"CINEMATIC_SEEN:{id}";
         if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
 
-        var saveSystem = FindFirstObjectByType<SaveSystem>();
-        if (saveSystem != null)
-        {
-            profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
-        }
+        Debug.Log("[AdditiveSceneCinematic] Auto-guardado deshabilitado tras la cinemática. Usa un punto de guardado para conservar el avance.");
     }
 
     IEnumerator Unload()
