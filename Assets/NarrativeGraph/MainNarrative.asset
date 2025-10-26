@@ -36,7 +36,7 @@ MonoBehaviour:
       data:
         displayTitle: CUANDO LEE LA CARTA
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: -43.2, y: -327.19998}
+        position: {x: -43, y: -327}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -45,7 +45,7 @@ MonoBehaviour:
       data:
         displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -376, y: -158.4}
+        position: {x: -376, y: -158}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
@@ -54,7 +54,7 @@ MonoBehaviour:
       data:
         displayTitle: TIENE QUE HABLAR CON ELDRAN
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 392.8, y: -327.19998}
+        position: {x: 393, y: -327}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -80,7 +80,7 @@ MonoBehaviour:
       data:
         displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 212.8, y: -122.4}
+        position: {x: 213, y: -122}
         outputs:
         - 1dc4cb98-abae-44ef-8c7a-501d464d8848
         cinematicSceneName: Cinematic_DemonAppears
@@ -90,7 +90,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 810.4, y: -188}
+        position: {x: 810, y: -188}
         outputs: []
         questId: ELDRAN_MISSION3
     - rid: 4128268648164098057
@@ -98,7 +98,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 810.4, y: -54.4}
+        position: {x: 810, y: -54}
         outputs:
         - 61c504a2-24c2-4662-9049-acaa52b3ed8d
         - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
@@ -115,7 +115,7 @@ MonoBehaviour:
       data:
         displayTitle: ELDRAN SE VA
         guid: f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
-        position: {x: 1303.2, y: -54.4}
+        position: {x: 1303, y: -54}
         outputs: []
         npcName: Eldran
         npcTag: 
@@ -143,7 +143,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 666aaee3-7590-4204-a412-96b13f2b3171
-        position: {x: -496, y: -482.4}
+        position: {x: -496, y: -482}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
         clip: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
@@ -154,7 +154,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 1dc4cb98-abae-44ef-8c7a-501d464d8848
-        position: {x: -331.2, y: 8.800001}
+        position: {x: -331, y: 9}
         outputs:
         - d038b916-5571-48b0-a896-7dbc2af3e05c
         clip: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
@@ -165,7 +165,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 5003d61f-1302-4cec-9a4c-0c123ee60826
-        position: {x: 810.4, y: 257.6}
+        position: {x: 810, y: 258}
         outputs: []
         clip: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
         fadeSeconds: 0.5
@@ -175,7 +175,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 61c504a2-24c2-4662-9049-acaa52b3ed8d
-        position: {x: 1303.2, y: -226.4}
+        position: {x: 1303, y: -226}
         outputs: []
         clip: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
         fadeSeconds: 0.5
@@ -185,7 +185,7 @@ MonoBehaviour:
       data:
         displayTitle: CAPITULO 1
         guid: db912a03-cc37-4701-b21b-22ffd135fe3e
-        position: {x: -1082.4, y: -482.4}
+        position: {x: -1082, y: -482}
         outputs:
         - a87a0200-5f03-48e7-b3da-587a333ca853
     - rid: 4128268721076306140
@@ -193,7 +193,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: a87a0200-5f03-48e7-b3da-587a333ca853
-        position: {x: -780, y: -482.4}
+        position: {x: -780, y: -482}
         outputs:
         - 666aaee3-7590-4204-a412-96b13f2b3171
         eventKey: StartCity

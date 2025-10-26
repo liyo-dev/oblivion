@@ -1,38 +1,67 @@
+using System.Collections;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public class InteractableToNarrativeEvent : MonoBehaviour
 {
+    [Tooltip("Clave del evento que escuchará el grafo")]
     public string eventKey = "";
-    public DefaultNarrativeSignals signals; // puede quedarse vacío
 
+    [Tooltip("Referencia opcional. Si está vacía, se resuelve sola.")]
+    public DefaultNarrativeSignals signals; // opcional
+
+    [Tooltip("Enviar automáticamente al iniciar")]
     public bool sendNow = false;
 
     void Awake()
     {
-        if (signals == null) signals = DefaultNarrativeSignals.Instance
-                                       ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+        ResolveSignals();
     }
 
-    /// <summary>
-    /// Start is called on the frame when a script is enabled just before
-    /// any of the Update methods is called the first time.
-    /// </summary>
     void Start()
     {
-        if (sendNow) Send();
+        if (sendNow) StartCoroutine(SendWhenReady());
+    }
+
+    IEnumerator SendWhenReady()
+    {
+        // Espera breve a que los managers de Start se inicialicen
+        float timeout = 2f; // segundos máx
+        while (signals == null && timeout > 0f)
+        {
+            ResolveSignals();
+            if (signals != null) break;
+            timeout -= Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (signals == null)
+        {
+            Debug.LogError("[InteractableToNarrativeEvent] No hay DefaultNarrativeSignals tras esperar.");
+            yield break;
+        }
+
+        Send();
+    }
+
+    void ResolveSignals()
+    {
+        if (signals != null) return;
+
+        signals = DefaultNarrativeSignals.Instance
+                  ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
     }
 
     public void Send()
     {
+        if (signals == null) ResolveSignals();
         if (signals == null)
-            signals = DefaultNarrativeSignals.Instance
-                      ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
-
-        if (signals == null) { Debug.LogError("[InteractableToNarrativeEvent] No hay DefaultNarrativeSignals."); return; }
+        {
+            Debug.LogError("[InteractableToNarrativeEvent] No hay DefaultNarrativeSignals.");
+            return;
+        }
 
         signals.RaiseCustom(eventKey);
         Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{signals.GetInstanceID()}");
     }
-
 }

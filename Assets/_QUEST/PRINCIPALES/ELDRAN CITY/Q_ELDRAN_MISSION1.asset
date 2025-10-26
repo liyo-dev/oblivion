@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Q_ELDRAN_MISSION1
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
   questId: ELDRAN_MISSION1
-  displayNameId: ELDRAN_MISSION1
+  displayNameId: QUEST_ELDRAN_MISSION1_NAME
   displayName: QUEST_ELDRAN_MISSION1_NAME
   descriptionId: QUEST_ELDRAN_MISSION1_DESC
   description: 
