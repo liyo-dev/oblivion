@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
   m_Name: MainNarrative
   m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
-  startNodeGuid: 666aaee3-7590-4204-a412-96b13f2b3171
+  startNodeGuid: db912a03-cc37-4701-b21b-22ffd135fe3e
   nodes:
+  - rid: 4128268721076306139
   - rid: 4128268622357594630
   - rid: 4128268622357594632
   - rid: 4128268622357594945
@@ -26,6 +27,7 @@ MonoBehaviour:
   - rid: 4128268715043062347
   - rid: 4128268715043062348
   - rid: 4128268715043062349
+  - rid: 4128268721076306140
   references:
     version: 2
     RefIds:
@@ -45,16 +47,14 @@ MonoBehaviour:
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
         position: {x: -376, y: -158.4}
         outputs:
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        - 1dc4cb98-abae-44ef-8c7a-501d464d8848
         questId: ELDRAN_MISSION2
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: TIENE QUE HABLAR CON ELDRAN
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 426.4, y: -327.19998}
+        position: {x: 392.8, y: -327.19998}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -64,7 +64,10 @@ MonoBehaviour:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
         position: {x: 184, y: 64}
-        outputs: []
+        outputs:
+        - da331290-6f7e-4aa3-937d-83cb066bbfe7
+        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        - 5003d61f-1302-4cec-9a4c-0c123ee60826
         useInternalUnlock: 1
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -79,9 +82,7 @@ MonoBehaviour:
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         position: {x: 212.8, y: -122.4}
         outputs:
-        - da331290-6f7e-4aa3-937d-83cb066bbfe7
-        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        - 5003d61f-1302-4cec-9a4c-0c123ee60826
+        - 1dc4cb98-abae-44ef-8c7a-501d464d8848
         cinematicSceneName: Cinematic_DemonAppears
         useInternalCinematic: 1
     - rid: 4128268641526088533
@@ -99,8 +100,8 @@ MonoBehaviour:
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         position: {x: 810.4, y: -54.4}
         outputs:
-        - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
         - 61c504a2-24c2-4662-9049-acaa52b3ed8d
+        - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
         battleId: Demon_1
         arenaPrefab: {fileID: 0}
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
@@ -142,7 +143,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 666aaee3-7590-4204-a412-96b13f2b3171
-        position: {x: -668.8, y: -364.8}
+        position: {x: -496, y: -482.4}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
         clip: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
@@ -154,7 +155,8 @@ MonoBehaviour:
         displayTitle: 
         guid: 1dc4cb98-abae-44ef-8c7a-501d464d8848
         position: {x: -331.2, y: 8.800001}
-        outputs: []
+        outputs:
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
         clip: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
         fadeSeconds: 0.5
         loop: 1
@@ -163,7 +165,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 5003d61f-1302-4cec-9a4c-0c123ee60826
-        position: {x: 810.4, y: 259.2}
+        position: {x: 810.4, y: 257.6}
         outputs: []
         clip: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
         fadeSeconds: 0.5
@@ -173,8 +175,25 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 61c504a2-24c2-4662-9049-acaa52b3ed8d
-        position: {x: 1303.2, y: -224.79999}
+        position: {x: 1303.2, y: -226.4}
         outputs: []
         clip: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
         fadeSeconds: 0.5
         loop: 1
+    - rid: 4128268721076306139
+      type: {class: StartNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CAPITULO 1
+        guid: db912a03-cc37-4701-b21b-22ffd135fe3e
+        position: {x: -1082.4, y: -482.4}
+        outputs:
+        - a87a0200-5f03-48e7-b3da-587a333ca853
+    - rid: 4128268721076306140
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        guid: a87a0200-5f03-48e7-b3da-587a333ca853
+        position: {x: -780, y: -482.4}
+        outputs:
+        - 666aaee3-7590-4204-a412-96b13f2b3171
+        eventKey: StartCity
