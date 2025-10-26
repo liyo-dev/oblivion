@@ -22,11 +22,26 @@ public class SimpleNPCWander : MonoBehaviour
     [Tooltip("Velocidad del NavMeshAgent (si 0 usa la ya configurada).")]
     public float agentSpeed = 0f;
 
+    [Header("Interacci�n con el jugador")]
+    [Tooltip("Si es true, al iniciar un di�logo mirará al jugador.")]
+    public bool lookAtPlayerOnInteract = true;
+    [Tooltip("Velocidad de rotación al mirar al jugador.")]
+    public float interactRotateSpeed = 10f;
+    [Tooltip("Pose a reproducir en IAmbientAnim al hablar con el jugador.")]
+    public SpotPose interactPose = SpotPose.Talk;
+    [Tooltip("Nombre del estado de animación a reproducir si no hay IAmbientAnim.")]
+    public string interactState = "InteractWithPeople_NoWeapon";
+
     NavMeshAgent _agent;
     IAmbientAnim _ambientAnim; // Bridge opcional hacia tu sistema de animaciones
     Animator _animator;
+    Interactable _interactable;
 
     static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
+
+    Transform _player;
+    bool _isInteracting;
+    Coroutine _faceRoutine;
 
     void Awake()
     {
@@ -42,6 +57,13 @@ public class SimpleNPCWander : MonoBehaviour
 
         if (_animator != null)
             _animator.applyRootMotion = false;
+
+        _interactable = GetComponent<Interactable>();
+        if (_interactable != null)
+        {
+            _interactable.OnStarted.AddListener(BeginInteraction);
+            _interactable.OnFinished.AddListener(EndInteraction);
+        }
     }
 
     void OnEnable()
@@ -58,6 +80,17 @@ public class SimpleNPCWander : MonoBehaviour
     {
         StopAllCoroutines();
         NavMeshAgentUtility.SafeSetStopped(_agent, true);
+        StopFacing();
+        _isInteracting = false;
+    }
+
+    void OnDestroy()
+    {
+        if (_interactable != null)
+        {
+            _interactable.OnStarted.RemoveListener(BeginInteraction);
+            _interactable.OnFinished.RemoveListener(EndInteraction);
+        }
     }
 
     IEnumerator WanderLoop()
@@ -68,6 +101,9 @@ public class SimpleNPCWander : MonoBehaviour
         while (isActiveAndEnabled)
         {
             yield return new WaitForSeconds(Random.Range(minIdleTime, maxIdleTime));
+
+            while (_isInteracting)
+                yield return null;
 
             if (_agent == null || !NavMeshAgentUtility.EnsureAgentOnNavMesh(_agent, transform.position, wanderRadius))
             {
@@ -86,6 +122,9 @@ public class SimpleNPCWander : MonoBehaviour
 
             while (ShouldContinueWalking())
             {
+                if (_isInteracting)
+                    break;
+
                 UpdateMovementAnimation(NavMeshAgentUtility.ComputeSpeedFactor(_agent));
 
                 if (!pickWhileMoving && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
@@ -96,6 +135,9 @@ public class SimpleNPCWander : MonoBehaviour
 
             NavMeshAgentUtility.SafeSetStopped(_agent, true);
             UpdateMovementAnimation(0f);
+
+            while (_isInteracting)
+                yield return null;
 
             yield return null;
         }
@@ -127,5 +169,85 @@ public class SimpleNPCWander : MonoBehaviour
     public void SetWanderRadius(float radius)
     {
         wanderRadius = Mathf.Max(0f, radius);
+    }
+
+    void BeginInteraction()
+    {
+        if (_isInteracting)
+            return;
+
+        _isInteracting = true;
+        NavMeshAgentUtility.SafeSetStopped(_agent, true);
+
+        if (lookAtPlayerOnInteract)
+        {
+            ResolvePlayerReference();
+            if (_player != null)
+            {
+                StopFacing();
+                _faceRoutine = StartCoroutine(FacePlayerRoutine());
+            }
+        }
+
+        if (_ambientAnim != null)
+        {
+            _ambientAnim.PlayPose(interactPose);
+        }
+        else if (_animator != null && !string.IsNullOrEmpty(interactState))
+        {
+            _animator.CrossFade(interactState, 0.1f, 0, 0f);
+        }
+    }
+
+    void EndInteraction()
+    {
+        if (!_isInteracting)
+            return;
+
+        _isInteracting = false;
+        StopFacing();
+        _ambientAnim?.ClearPose();
+        UpdateMovementAnimation(0f);
+    }
+
+    void ResolvePlayerReference()
+    {
+        if (_player == null || !_player)
+            _player = PlayerLocator.ResolvePlayer();
+    }
+
+    IEnumerator FacePlayerRoutine()
+    {
+        while (_isInteracting)
+        {
+            if (_player == null)
+            {
+                ResolvePlayerReference();
+                if (_player == null)
+                {
+                    yield return null;
+                    continue;
+                }
+            }
+
+            Vector3 dir = _player.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                Quaternion desired = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, desired, Time.deltaTime * interactRotateSpeed);
+            }
+
+            yield return null;
+        }
+    }
+
+    void StopFacing()
+    {
+        if (_faceRoutine != null)
+        {
+            StopCoroutine(_faceRoutine);
+            _faceRoutine = null;
+        }
     }
 }

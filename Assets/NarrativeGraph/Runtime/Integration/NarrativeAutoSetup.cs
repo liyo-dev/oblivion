@@ -5,19 +5,16 @@ using UnityEngine;
 [DefaultExecutionOrder(-1000)]
 public class NarrativeAutoSetup : MonoBehaviour
 {
-    // ÚNICO que debes asignar en el inspector
     [Header("Config obligatoria")]
     public NarrativeGraph graph;
 
     [Header("Debug opcional")]
     public bool debugLogs;
 
-    // Singleton duro para persistir entre escenas
     private static NarrativeAutoSetup _instance;
 
     void Awake()
     {
-        // Singleton + persistencia IMPERATIVA
         if (_instance != null && _instance != this)
         {
             if (debugLogs) Debug.Log("[NarrativeAutoSetup] Duplicado detectado. Destruyendo este.");
@@ -27,26 +24,21 @@ public class NarrativeAutoSetup : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Asegura y conecta componentes
-        var runner  = GetComponent<NarrativeRunner>()        ?? gameObject.AddComponent<NarrativeRunner>();
+        var runner = GetComponent<NarrativeRunner>() ?? gameObject.AddComponent<NarrativeRunner>();
         var signals = GetComponent<DefaultNarrativeSignals>() ?? gameObject.AddComponent<DefaultNarrativeSignals>();
-        var qs      = GetComponent<QuestServiceAdapter>()    ?? gameObject.AddComponent<QuestServiceAdapter>();
+        var questService = GetComponent<QuestServiceAdapter>() ?? gameObject.AddComponent<QuestServiceAdapter>();
 
-        // Asigna el asset de grafo
         if (!graph)
-            Debug.LogWarning("[NarrativeAutoSetup] Graph no asignado. Asígnalo en el inspector.");
+            Debug.LogWarning("[NarrativeAutoSetup] Graph no asignado. Asigna uno en el inspector.");
         runner.graph = graph;
 
-        // Señales → servicio de quests
-        signals.questServiceProvider = qs;
+        signals.questServiceProvider = questService;
 
-        // Runner → provider de señales (campo público o privado)
         var fi = typeof(NarrativeRunner).GetField("signalsProvider",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         if (fi != null) fi.SetValue(runner, signals);
         else Debug.LogWarning("[NarrativeAutoSetup] No se encontró 'signalsProvider' en NarrativeRunner.");
 
-        // Aplicar snapshot pendiente del GameBootProfile (si existe)
         try
         {
             var profile = GameBootService.Profile;
@@ -73,7 +65,7 @@ public class NarrativeAutoSetup : MonoBehaviour
         }
 
         if (debugLogs)
-            Debug.Log("[NarrativeAutoSetup] Listo: persistente, runner+signals+adapter conectados.");
+            Debug.Log("[NarrativeAutoSetup] Listo: runner + signals + questService conectados.");
     }
 
     void OnDestroy()
