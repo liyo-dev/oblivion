@@ -25,7 +25,7 @@ public class GameBootProfile : ScriptableObject
 
     [Header("Save Options")]
     [Tooltip("Permite auto-guardados fuera de los puntos de guardado manuales.")]
-    public bool allowAutoSaves = true;
+    public bool allowAutoSaves = false;
 
     public bool ShouldBootFromPreset() => usePresetInsteadOfSave && bootPreset != null;
 

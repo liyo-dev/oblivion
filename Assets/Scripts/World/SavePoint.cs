@@ -157,7 +157,7 @@ public class SavePoint : MonoBehaviour
         }
 
         // Guardar usando GameBootProfile
-        var saveSystem = FindFirstObjectByType<SaveSystem>();
+        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         if (saveSystem != null)
         {
             bool success = bootProfile.SaveCurrentGameState(saveSystem);

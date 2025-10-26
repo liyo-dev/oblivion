@@ -10,27 +10,26 @@ using UnityEngine.InputSystem;
 
 public class PauseMenuController : MonoBehaviour
 {
+    private static PauseMenuController _instance;
+
     // Asegura que si hay un PauseMenuController en la escena inicial, persista entre escenas.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentInstance()
     {
         try
         {
+            if (_instance == null)
+            {
 #if UNITY_2022_3_OR_NEWER
-            var existing = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
+                var existing = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
 #else
 #pragma warning disable 618
-            var existing = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
+                var existing = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
 #pragma warning restore 618
 #endif
-            if (existing != null)
-            {
-                if (existing.transform.root != null)
+                if (existing != null)
                 {
-                    UnityEngine.Object.DontDestroyOnLoad(existing.transform.root.gameObject);
-                }
-                else
-                {
+                    _instance = existing;
                     UnityEngine.Object.DontDestroyOnLoad(existing.gameObject);
                 }
             }
@@ -94,6 +93,16 @@ public class PauseMenuController : MonoBehaviour
 
     void Awake()
     {
+        if (_instance != null && _instance != this)
+        {
+            Debug.Log("[PauseMenuController] Duplicate detected in scene, destroying extra instance.");
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
         _es = EventSystem.current;
 
         if (rootGroup == null)

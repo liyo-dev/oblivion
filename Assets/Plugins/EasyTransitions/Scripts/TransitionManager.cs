@@ -18,6 +18,7 @@ namespace EasyTransition
         public UnityAction onTransitionEnd;
 
         private static TransitionManager instance;
+        private static bool duplicateWarningShown;
 
         private void Awake()
         {
@@ -25,11 +26,18 @@ namespace EasyTransition
             if (instance == null)
             {
                 instance = this;
+                DontDestroyOnLoad(gameObject);
             }
             else if (instance != this)
             {
-                Debug.LogWarning("TransitionManager: another instance already exists in scene; destroying duplicate.");
-                Destroy(this.gameObject);
+#if UNITY_EDITOR
+                if (!duplicateWarningShown)
+                {
+                    Debug.Log("[TransitionManager] Duplicate detected while loading additive scene. Destroying new instance.");
+                    duplicateWarningShown = true;
+                }
+#endif
+                Destroy(gameObject);
                 return;
             }
         }

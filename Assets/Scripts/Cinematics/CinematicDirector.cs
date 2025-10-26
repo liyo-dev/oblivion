@@ -425,10 +425,6 @@ public class CinematicDirector : MonoBehaviour
         string flag = $"CINEMATIC_SEEN:{id}";
         if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
 
-        var saveSystem = UnityEngine.Object.FindFirstObjectByType<SaveSystem>();
-        if (saveSystem != null)
-        {
-            profile.SaveCurrentGameState(saveSystem, SaveRequestContext.Auto);
-        }
+        Debug.Log("[CinematicDirector] Auto-guardado deshabilitado tras la cinemática. Usa un punto de guardado para persistir el progreso.");
     }
 }

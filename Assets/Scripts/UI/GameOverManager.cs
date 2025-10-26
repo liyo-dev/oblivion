@@ -653,7 +653,7 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 1f;
 
-        var saveSystem = UnityEngine.Object.FindFirstObjectByType<SaveSystem>();
+        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         bool hasSave = saveSystem != null && saveSystem.HasSave();
         Debug.Log($"[GameOverManager] SaveSystem found={ (saveSystem!=null) }, HasSave={hasSave}");
 

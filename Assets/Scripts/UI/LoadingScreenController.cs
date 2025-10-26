@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System;
+using TMPro;
 
 /// <summary>
 /// Controlador simple de pantalla de carga.
@@ -19,8 +20,10 @@ public class LoadingScreenController : MonoBehaviour
     public CanvasGroup panel;
     [Tooltip("Slider que muestra el progreso (0..1).")]
     public Slider progressBar;
-    [Tooltip("Texto que muestra porcentaje (opcional)")]
-    public Text progressText;
+    [Tooltip("Imagen radial (Image type Filled) para mostrar progreso opcional.")]
+    public Image progressRadial;
+    [Tooltip("Texto TMP que muestra porcentaje (opcional)")]
+    public TMP_Text progressText;
 
     [Header("Timing")]
     public float fadeDuration = 0.25f;
@@ -60,6 +63,7 @@ public class LoadingScreenController : MonoBehaviour
     {
         t = Mathf.Clamp01(t);
         if (progressBar != null) progressBar.value = t;
+        if (progressRadial != null) progressRadial.fillAmount = t;
         if (progressText != null) progressText.text = Mathf.RoundToInt(t * 100f) + "%";
     }
 

@@ -51,29 +51,9 @@ public class AnchorSetter : MonoBehaviour
         SpawnManager.SetCurrentAnchor(anchorId);
         Debug.Log($"[AnchorSetter] Anchor establecido a: {anchorId}");
 
-        if (!saveAfter) return;
-        if (!GameBootService.IsAvailable) return;
-
-        var profile = GameBootService.Profile;
-        if (profile != null && !profile.allowAutoSaves)
+        if (saveAfter)
         {
-            Debug.Log("[AnchorSetter] Auto-guardado omitido (allowAutoSaves = false).");
-            return;
-        }
-
-        // Guardar estado actualizando el lastSpawnAnchorId
-        var data = PlayerSaveData.FromGameBootProfile();
-        data.lastSpawnAnchorId = anchorId;
-
-        var saveSystem = FindFirstObjectByType<SaveSystem>();
-        if (saveSystem != null)
-        {
-            saveSystem.Save(data, SaveRequestContext.Manual);
-            Debug.Log("[AnchorSetter] Partida guardada tras cambiar de anchor");
-        }
-        else
-        {
-            Debug.LogWarning("[AnchorSetter] No se encontró SaveSystem para guardar");
+            Debug.Log("[AnchorSetter] Auto-guardado deshabilitado. Visita un punto de guardado para persistir el nuevo anchor.");
         }
     }
 }
