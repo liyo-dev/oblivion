@@ -8,7 +8,7 @@ using DG.Tweening;
 public class MainMenuController : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private SaveSystem saveSystem;
+    private SaveSystem saveSystem;
 
     [Tooltip("Fila / contenedor de la opción CONTINUAR (con tu Text dentro). Si no hay partida, se oculta.")]
     [SerializeField] private GameObject continueRow;
@@ -20,7 +20,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private Button newGameButton;
 
     [Header("World Scene")]
-    [SerializeField] private string worldScene = "MainWorld";
+    [SerializeField] private string nextScene = "MainWorld";
 
     [Header("Loading Screen")]
     [SerializeField] private string loadingOverlayScene = "LoadingScreen";
@@ -175,7 +175,7 @@ public class MainMenuController : MonoBehaviour
             Debug.LogWarning("[MainMenu] CONTINUE pulsado sin save disponible.");
         }
 
-        LoadWorldScene();
+        LoadNextScene();
     }
 
     public void OnClickNewGame()
@@ -202,7 +202,7 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
-        LoadWorldScene();
+        LoadNextScene();
     }
 
     public void OnClickExit()
@@ -213,22 +213,22 @@ public class MainMenuController : MonoBehaviour
 #endif
     }
 
-    void LoadWorldScene()
+    void LoadNextScene()
     {
         bool useOverlay = !string.IsNullOrEmpty(loadingOverlayScene);
         if (useOverlay)
         {
             if (fadeOverride != null)
-                SceneTransitionLoader.LoadWithOverlay(worldScene, loadingOverlayScene, fadeOverride, fadeDelay);
+                SceneTransitionLoader.LoadWithOverlay(nextScene, loadingOverlayScene, fadeOverride, fadeDelay);
             else
-                SceneTransitionLoader.LoadWithOverlay(worldScene, loadingOverlayScene);
+                SceneTransitionLoader.LoadWithOverlay(nextScene, loadingOverlayScene);
         }
         else
         {
             if (fadeOverride != null)
-                SceneTransitionLoader.Load(worldScene, fadeOverride, fadeDelay);
+                SceneTransitionLoader.Load(nextScene, fadeOverride, fadeDelay);
             else
-                SceneTransitionLoader.Load(worldScene);
+                SceneTransitionLoader.Load(nextScene);
         }
     }
 
