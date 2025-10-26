@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 
 /// <summary>
 /// Nodo que inicia una batalla (boss arena) y espera a la señal de victoria para avanzar.
-/// - Puede activar por battleId (vía BossArenaController.TryTriggerBattleById) o por referencia directa.
+/// - Activa por battleId buscando en escenas cargadas (tanto activos como inactivos), o por referencia directa.
 /// - Opcionalmente completa/avanza una misión/step cuando se gana la batalla.
 /// </summary>
 [Serializable]
@@ -14,9 +14,6 @@ public sealed class StartBattleNode : NarrativeNode
 {
     [Tooltip("ID de la batalla (coincide con BossArenaController.BattleId).")]
     public string battleId;
-
-    [Tooltip("Prefab del BossArenaController que se instanciará automáticamente.")]
-    public BossArenaController arenaPrefab;
 
     [Tooltip("Referencia directa a una arena existente en la escena (fallback).")]
     public BossArenaController bossArena;
@@ -35,39 +32,37 @@ public sealed class StartBattleNode : NarrativeNode
     public int missionId = 0;
 
     [Header("Contexto de la arena")]
-    [Tooltip("Identificador que se usará al suscribirse a OnBattleWon. Si está vacío, se usará battleId.")]
+    [Tooltip("Identificador que se usará al suscribirse a OnBattleWon. Si está vacío, se usará battleId o el de la arena.")]
     public string arenaContext = "";
 
     // --- Estado interno ---
     Action _onBattleWonCb;
     INarrativeSignals _subscribedSignals;
-    object _usedContextKey; // la clave exacta usada al suscribirse (para desuscribirse)
+    object _usedContextKey; // clave usada al suscribirse (para desuscribirse)
     bool _subscriptionOk;
-    BossArenaController _spawnedArenaInstance;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        // Proveedor de señales seguro: preferir el del runner; fallback a global
-        var signals = ctx?.Signals ?? DefaultNarrativeSignals.Instance;
+        // Proveedor de señales
+        INarrativeSignals signals = ctx?.Signals ?? DefaultNarrativeSignals.Instance;
         if (signals == null)
         {
-            Debug.LogWarning("[StartBattleNode] No hay proveedor de señales (ctx.Signals == null y DefaultNarrativeSignals.Instance == null). Avanzando para no bloquear.");
+            Debug.LogWarning("[StartBattleNode] No hay proveedor de señales. Avanzo para no bloquear.");
             onReadyToAdvance?.Invoke();
             return;
         }
 
-        // Resolver la clave/objeto de contexto que usará la señal
-        // Nota: aquí usamos string; si tu implementación de señales soporta objetos, esta clave debe ser la misma que emita la arena.
-        var derivedId = !string.IsNullOrEmpty(arenaContext)
+        // Resolver id de contexto
+        string derivedId = !string.IsNullOrEmpty(arenaContext)
             ? arenaContext
-            : (!string.IsNullOrEmpty(battleId) ? battleId :
-               arenaPrefab != null && !string.IsNullOrEmpty(arenaPrefab.BattleId) ? arenaPrefab.BattleId :
-               bossArena != null && !string.IsNullOrEmpty(bossArena.BattleId) ? bossArena.BattleId : "__DEFAULT_BOSS__");
+            : (!string.IsNullOrEmpty(battleId) ? battleId
+               : bossArena != null && !string.IsNullOrEmpty(bossArena.BattleId) ? bossArena.BattleId
+               : "__DEFAULT_BOSS__");
 
         var contextKey = derivedId;
         _usedContextKey = contextKey;
 
-        // Preparar callback ANTES de disparar la batalla para evitar condiciones de carrera
+        // Preparar callback de victoria
         _onBattleWonCb = () =>
         {
             try
@@ -76,21 +71,21 @@ public sealed class StartBattleNode : NarrativeNode
                 {
                     bool done = false;
 
-                    // 1) Intentar completar step por (string,int)
+                    // 1) step (string, int)
                     if (!string.IsNullOrEmpty(missionStringId) && missionId >= 0)
                     {
                         try
                         {
                             done = TryCompleteMissionStepByReflection(missionStringId, missionId);
-                            if (done) Debug.Log($"[StartBattleNode] MarkStepDone('{missionStringId}', {missionId}) ejecutado al ganar la batalla.");
+                            if (done) Debug.Log($"[StartBattleNode] MarkStepDone('{missionStringId}', {missionId}) al ganar.");
                         }
                         catch (Exception e)
                         {
-                            Debug.LogWarning($"[StartBattleNode] Error completando step por reflexión: {e.Message}");
+                            Debug.LogWarning($"[StartBattleNode] Error completando step (reflexión): {e.Message}");
                         }
                     }
 
-                    // 2) Si no, intentar completar quest por string vía señales o reflexión
+                    // 2) quest por string vía señales/reflexión
                     if (!done && !string.IsNullOrEmpty(missionStringId))
                     {
                         try
@@ -109,11 +104,11 @@ public sealed class StartBattleNode : NarrativeNode
                         }
                         catch (Exception e)
                         {
-                            Debug.LogWarning($"[StartBattleNode] Error completando misión por string: {e.Message}");
+                            Debug.LogWarning($"[StartBattleNode] Error completando misión (string): {e.Message}");
                         }
                     }
 
-                    // 3) Fallback: completar por id (int) si procede
+                    // 3) quest por int
                     if (!done && missionId != 0)
                     {
                         try
@@ -128,19 +123,18 @@ public sealed class StartBattleNode : NarrativeNode
 
                     if (!done)
                     {
-                        Debug.LogWarning($"[StartBattleNode] No se pudo completar la misión/step (string='{missionStringId}', id={missionId}).");
+                        Debug.LogWarning($"[StartBattleNode] No se pudo completar misión/step (string='{missionStringId}', id={missionId}).");
                     }
                 }
             }
             finally
             {
-                // Avanzar SIEMPRE el grafo aunque la misión falle para no bloquear narrativa
                 onReadyToAdvance?.Invoke();
                 _onBattleWonCb = null;
             }
         };
 
-        // Suscribirse primero
+        // Suscribirse antes de lanzar
         try
         {
             signals.OnBattleWon(contextKey, _onBattleWonCb);
@@ -150,85 +144,38 @@ public sealed class StartBattleNode : NarrativeNode
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[StartBattleNode] Error suscribiéndose a OnBattleWon: {ex.Message}. Avanzando para no bloquear.");
+            Debug.LogWarning($"[StartBattleNode] Error suscribiéndose a OnBattleWon: {ex.Message}. Avanzo.");
             onReadyToAdvance?.Invoke();
             return;
         }
 
-        // Ahora, intentar disparar la batalla
+        // Disparar batalla
         bool triggered = false;
-
         BossArenaController targetArena = null;
 
-        if (arenaPrefab != null)
+        // 1) Buscar por id en escenas cargadas (incluye inactivos)
+        if (useBattleById && !string.IsNullOrEmpty(battleId))
         {
-            targetArena = InstantiateArenaPrefab(ctx);
+            targetArena = TryFindArenaInLoadedScenesById(battleId);
         }
 
+        // 2) Fallback: referencia directa si es válida
         if (targetArena == null && bossArena != null && bossArena.gameObject.scene.IsValid())
+        {
             targetArena = bossArena;
+        }
 
+        // 3) Trigger
         if (targetArena != null)
         {
             triggered = TriggerArena(targetArena);
         }
 
-        if (!triggered && useBattleById && !string.IsNullOrEmpty(battleId))
-        {
-            try
-            {
-                Debug.Log($"[StartBattleNode] Intentando activar arena por id: '{battleId}' (len={battleId.Length}).");
-                triggered = BossArenaController.TryTriggerBattleById(battleId);
-                if (triggered)
-                    Debug.Log($"[StartBattleNode] Arena activada por id: {battleId}");
-                else
-                    Debug.LogWarning($"[StartBattleNode] No se encontró arena con BattleId '{battleId}'.");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[StartBattleNode] Error intentando activar por id '{battleId}': {ex.Message}");
-            }
-        }
-
         if (!triggered)
         {
-            Debug.LogWarning("[StartBattleNode] No se activó la arena (battleId vacío/no encontrado y bossArena null). Para no bloquear, avanzamos y limpiamos suscripción.");
-            // Nos desuscribimos y avanzamos para no romper flujo si no se pudo iniciar la batalla
+            Debug.LogWarning("[StartBattleNode] No se activó la arena (id vacío/no encontrada y sin fallback). Desuscribo y avanzo.");
             SafeUnsubscribe(ctx);
             onReadyToAdvance?.Invoke();
-        }
-    }
-
-    BossArenaController InstantiateArenaPrefab(NarrativeContext ctx)
-    {
-        if (arenaPrefab == null) return null;
-
-        try
-        {
-            var prefabGO = arenaPrefab.gameObject;
-            var clone = UnityEngine.Object.Instantiate(prefabGO, prefabGO.transform.position, prefabGO.transform.rotation);
-            clone.name = prefabGO.name + "_Runtime";
-
-            var scene = ctx?.Runner != null ? ctx.Runner.gameObject.scene : default;
-            if (scene.IsValid() && clone.scene != scene)
-            {
-                SceneManager.MoveGameObjectToScene(clone, scene);
-            }
-
-            _spawnedArenaInstance = clone.GetComponent<BossArenaController>();
-            if (_spawnedArenaInstance == null)
-            {
-                Debug.LogWarning("[StartBattleNode] El prefab instanciado no tiene BossArenaController. ¿Asignaste el prefab correcto?");
-                UnityEngine.Object.Destroy(clone);
-                _spawnedArenaInstance = null;
-            }
-
-            return _spawnedArenaInstance;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[StartBattleNode] Error instanciando prefab de arena: {ex.Message}");
-            return null;
         }
     }
 
@@ -238,19 +185,18 @@ public sealed class StartBattleNode : NarrativeNode
         try
         {
             arena.TriggerStartBattle();
-            Debug.Log("[StartBattleNode] TriggerStartBattle() ejecutado en arena instanciada/directa.");
+            Debug.Log("[StartBattleNode] TriggerStartBattle() ejecutado en arena encontrada.");
             return true;
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"[StartBattleNode] Error llamando TriggerStartBattle(): {ex.Message}");
+            Debug.LogWarning($"[StartBattleNode] Error en TriggerStartBattle(): {ex.Message}");
             return false;
         }
     }
 
     public override void Exit(NarrativeContext ctx)
     {
-        // Limpieza: desuscribir si sigue activa la suscripción
         SafeUnsubscribe(ctx);
     }
 
@@ -273,6 +219,50 @@ public sealed class StartBattleNode : NarrativeNode
                 _usedContextKey = null;
             }
         }
+    }
+
+    // -------- BÚSQUEDA EN ESCENAS CARGADAS --------
+
+    static BossArenaController TryFindArenaInLoadedScenesById(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+
+        // 1) Búsqueda rápida global (incluye inactivos) si tu versión la soporta
+        try
+        {
+#if UNITY_2022_2_OR_NEWER
+            var all = UnityEngine.Object.FindObjectsByType<BossArenaController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            var all = UnityEngine.Object.FindObjectsOfType<BossArenaController>(true); // includeInactive en 2020/2021
+#endif
+            foreach (var a in all)
+            {
+                if (a != null && !string.IsNullOrEmpty(a.BattleId) && string.Equals(a.BattleId, id, StringComparison.Ordinal))
+                    return a;
+            }
+        }
+        catch { /* fallback abajo */ }
+
+        // 2) Fallback: iterar todas las escenas cargadas (root → children)
+        int count = SceneManager.sceneCount;
+        for (int i = 0; i < count; i++)
+        {
+            Scene sc = SceneManager.GetSceneAt(i);
+            if (!sc.IsValid() || !sc.isLoaded) continue;
+
+            var roots = sc.GetRootGameObjects();
+            for (int r = 0; r < roots.Length; r++)
+            {
+                var arena = roots[r].GetComponentInChildren<BossArenaController>(true);
+                if (arena != null && !string.IsNullOrEmpty(arena.BattleId) &&
+                    string.Equals(arena.BattleId, id, StringComparison.Ordinal))
+                {
+                    return arena;
+                }
+            }
+        }
+
+        return null;
     }
 
     // ===== Utilidades por reflexión (compatibilidad con distintos gestores) =====
@@ -419,7 +409,7 @@ public sealed class StartBattleNode : NarrativeNode
         if (instance != null) return instance;
 
         // Buscar en escena algún componente de ese tipo (o derivado)
-        var behaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
+        var behaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>(true);
         foreach (var mb in behaviours)
         {
             var t = mb.GetType();
