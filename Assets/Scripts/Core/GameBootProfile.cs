@@ -484,6 +484,12 @@ public class GameBootProfile : ScriptableObject
             ResetPresetToEmpty(runtimePreset);
         }
 
+        // Limpiar flags transitorias (ej: cinemáticas vistas) para garantizar que Nueva Partida siempre las repita.
+        if (runtimePreset != null && runtimePreset.flags != null)
+        {
+            runtimePreset.flags.RemoveAll(flag => !string.IsNullOrEmpty(flag) && flag.StartsWith("CINEMATIC_SEEN:", StringComparison.OrdinalIgnoreCase));
+        }
+
         // Reiniciar progreso de bosses para partidas nuevas
         if (BossProgressTracker.TryGetInstance(out var tracker))
         {

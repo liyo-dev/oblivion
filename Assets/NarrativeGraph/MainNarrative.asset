@@ -48,6 +48,7 @@ MonoBehaviour:
         position: {x: -376, y: -158}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
+        - 1dc4cb98-abae-44ef-8c7a-501d464d8848
         questId: ELDRAN_MISSION2
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
@@ -63,11 +64,8 @@ MonoBehaviour:
       data:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 184, y: 64}
-        outputs:
-        - da331290-6f7e-4aa3-937d-83cb066bbfe7
-        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        - 5003d61f-1302-4cec-9a4c-0c123ee60826
+        position: {x: 757, y: 440}
+        outputs: []
         useInternalUnlock: 1
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -80,9 +78,12 @@ MonoBehaviour:
       data:
         displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 213, y: -122}
+        position: {x: 222, y: -158}
         outputs:
-        - 1dc4cb98-abae-44ef-8c7a-501d464d8848
+        - da331290-6f7e-4aa3-937d-83cb066bbfe7
+        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        - 5003d61f-1302-4cec-9a4c-0c123ee60826
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
         cinematicSceneName: Cinematic_DemonAppears
         useInternalCinematic: 1
     - rid: 4128268641526088533
@@ -90,7 +91,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 810, y: -188}
+        position: {x: 886, y: -158}
         outputs: []
         questId: ELDRAN_MISSION3
     - rid: 4128268648164098057
@@ -98,7 +99,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 810, y: -54}
+        position: {x: 886, y: -24}
         outputs:
         - 61c504a2-24c2-4662-9049-acaa52b3ed8d
         - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
@@ -114,7 +115,7 @@ MonoBehaviour:
       data:
         displayTitle: ELDRAN SE VA
         guid: f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
-        position: {x: 1303, y: -54}
+        position: {x: 1451, y: -24}
         outputs: []
         npcName: Eldran
         npcTag: 
@@ -153,9 +154,8 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 1dc4cb98-abae-44ef-8c7a-501d464d8848
-        position: {x: -331, y: 9}
-        outputs:
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
+        position: {x: 222, y: -2}
+        outputs: []
         clip: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}
         fadeSeconds: 0.5
         loop: 1
@@ -164,7 +164,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 5003d61f-1302-4cec-9a4c-0c123ee60826
-        position: {x: 810, y: 258}
+        position: {x: 886, y: 276}
         outputs: []
         clip: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
         fadeSeconds: 0.5
@@ -174,7 +174,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 61c504a2-24c2-4662-9049-acaa52b3ed8d
-        position: {x: 1303, y: -226}
+        position: {x: 1451, y: -196}
         outputs: []
         clip: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
         fadeSeconds: 0.5

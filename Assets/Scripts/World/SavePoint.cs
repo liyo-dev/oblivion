@@ -62,6 +62,12 @@ public class SavePoint : MonoBehaviour
     void OnTriggerStay(Collider other)
     {
         if (!other.CompareTag("Player")) return;
+        if (Time.timeScale <= 0f) return; // evita interacciones mientras el juego está en pausa
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // referencia segura al menú de pausa sin obligar a tenerlo en escena
+#endif
+        if (PauseMenuController.IsOpen) return;
+
         if (Input.GetKeyDown(interactKey))
         {
             if (GameBootService.IsAvailable)
