@@ -49,6 +49,7 @@ MonoBehaviour:
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         - 1dc4cb98-abae-44ef-8c7a-501d464d8848
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
         questId: ELDRAN_MISSION2
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
@@ -64,7 +65,7 @@ MonoBehaviour:
       data:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 757, y: 440}
+        position: {x: 222, y: 196}
         outputs: []
         useInternalUnlock: 1
         abilitiesToUnlock: 01000000
@@ -83,7 +84,6 @@ MonoBehaviour:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         - 5003d61f-1302-4cec-9a4c-0c123ee60826
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
         cinematicSceneName: Cinematic_DemonAppears
         useInternalCinematic: 1
     - rid: 4128268641526088533
