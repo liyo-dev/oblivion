@@ -1,361 +1,207 @@
+// Assets/Scripts/Core/SceneTransitionLoader.cs
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using EasyTransition;
-using System.Collections;
-using UnityEngine.Events;
+using EasyTransition; // TransitionSettings y (opcional) TransitionManager
 
-[DisallowMultipleComponent]
-public class SceneTransitionLoader : MonoBehaviour
+/// <summary>
+/// Servicio estático centralizado para cargar escenas.
+/// - Load(): carga sin overlay (puede usar EasyTransition si se pasa settings).
+/// - LoadWithOverlay(): carga con overlay de progreso (NO usa EasyTransition para evitar conflictos).
+/// 
+/// Notas:
+/// - La overlay se carga en aditivo, se busca LoadingScreenController, se marca DontDestroyOnLoad
+///   para sobrevivir a la activación de la escena destino y se destruye al final.
+/// - Las corrutinas de UI (fades) siempre se lanzan desde un runner persistente.
+/// </summary>
+public static class SceneTransitionLoader
 {
-    private static SceneTransitionLoader _inst;
-    public static SceneTransitionLoader Instance => _inst;
+    // ====================== API PÚBLICA ======================
 
-    [Header("Valores por defecto")]
-    public TransitionSettings defaultSettings;     // ← asigna tu Fade.asset aquí
-    [Min(0)] public float defaultDelay = 0f;
-    [Min(0)] public float waitForManagerSec = 0.5f;
-
-    [Header("Loading Overlay")]
-    [Tooltip("Nombre de la escena que se usa como overlay al cargar escenas largas.")]
-    public string defaultOverlayScene = "LoadingScreen";
-
-    // Evita arranques concurrentes
-    private bool _isLoading = false;
-
-    void Awake()
+    /// <summary>Carga una escena por nombre, sin overlay de progreso.</summary>
+    public static void Load(string targetScene,
+                            TransitionSettings fade = null,
+                            float fadeDelay = 0f)
     {
-        if (_inst == null)
-        {
-            _inst = this;
-            DontDestroyOnLoad(gameObject);
-            return;
-        }
-        if (_inst != this)
-        {
-            // Prefiere la instancia que tenga defaultSettings asignado
-            bool prevOk = _inst.defaultSettings != null;
-            bool thisOk = this.defaultSettings != null;
-            if (!prevOk && thisOk)
-            {
-                Destroy(_inst.gameObject);
-                _inst = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else Destroy(gameObject);
-        }
+        EnsureRunner().StartCoroutine(LoadRoutine(targetScene, overlayScene: null, fade, fadeDelay));
     }
 
-    // APIs públicas
-    public static void Load(string sceneName)
+    /// <summary>
+    /// Carga una escena por nombre mostrando overlay de carga/progreso.
+    /// IMPORTANTE: al usar overlay, NO se dispara EasyTransition para evitar que su GameObject
+    /// muera a mitad de transición. El fade visual lo realiza la propia overlay.
+    /// </summary>
+    public static void LoadWithOverlay(string targetScene,
+                                       string overlayScene,
+                                       TransitionSettings fade = null,
+                                       float fadeDelay = 0f)
     {
-        if (_inst)
-        {
-            Debug.Log($"SceneTransitionLoader.Load requested: {sceneName}");
-            if (_inst._isLoading)
-            {
-                Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring request.");
-                return;
-            }
-            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, _inst.defaultSettings, _inst.defaultDelay, true));
-        }
-        else
-        {
-            Debug.Log("SceneTransitionLoader: No instance found, loading scene directly.");
-            SceneManager.LoadScene(sceneName);
-        }
+        EnsureRunner().StartCoroutine(LoadRoutine(targetScene, overlayScene, fade, fadeDelay));
     }
 
-    public static void Load(string sceneName, TransitionSettings settings, float delay = 0f)
+    // ====================== Núcleo ======================
+
+    private static LoaderRunner _runner;
+
+    private static LoaderRunner EnsureRunner()
     {
-        if (_inst)
-        {
-            Debug.Log($"SceneTransitionLoader.Load requested (with settings): {sceneName}");
-            if (_inst._isLoading)
-            {
-                Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring request.");
-                return;
-            }
-            _inst.StartCoroutine(_inst.LoadRoutine(sceneName, settings ?? _inst.defaultSettings, delay, true));
-        }
-        else
-        {
-            Debug.Log("SceneTransitionLoader: No instance found, loading scene directly (settings provided).");
-            SceneManager.LoadScene(sceneName);
-        }
+        if (_runner != null) return _runner;
+
+        var go = new GameObject("_SceneTransitionLoader");
+        Object.DontDestroyOnLoad(go);
+        _runner = go.AddComponent<LoaderRunner>();
+        return _runner;
     }
 
-    public static void LoadWithOverlay(string sceneName, string overlaySceneName = null, TransitionSettings settings = null, float delay = 0f)
+    private static IEnumerator LoadRoutine(string targetScene,
+                                           string overlayScene, // null o vacío => sin overlay
+                                           TransitionSettings fade,
+                                           float fadeDelay)
     {
-        if (_inst)
+        bool hasOverlay = !string.IsNullOrEmpty(overlayScene);
+
+        // 1) Transición externa (SOLO si NO hay overlay)
+        if (!hasOverlay)
         {
-            Debug.Log($"SceneTransitionLoader.LoadWithOverlay requested: {sceneName} (overlay={overlaySceneName})");
-            if (_inst._isLoading)
+            TryPlayExternalTransition(fade, fadeDelay);
+        }
+
+        // 2) Preparar overlay si procede
+        LoadingScreenController ui = null;
+        ILoadingUI loadingUI = null;
+        Scene overlayLoaded = default;
+
+        if (hasOverlay)
+        {
+            // Cargar overlay aditiva si no estaba ya cargada
+            var existing = SceneManager.GetSceneByName(overlayScene);
+            if (!existing.IsValid() || !existing.isLoaded)
             {
-                Debug.LogWarning("SceneTransitionLoader: Load already in progress; ignoring overlay request.");
-                return;
+                var loadOverlay = SceneManager.LoadSceneAsync(overlayScene, LoadSceneMode.Additive);
+                while (loadOverlay != null && !loadOverlay.isDone) yield return null;
+                existing = SceneManager.GetSceneByName(overlayScene);
+            }
+            overlayLoaded = existing;
+
+            // Buscar la UI en la overlay
+            foreach (var root in overlayLoaded.GetRootGameObjects())
+            {
+                ui = root.GetComponentInChildren<LoadingScreenController>(true);
+                if (ui) break;
+            }
+            if (!ui)
+                ui = Object.FindFirstObjectByType<LoadingScreenController>(FindObjectsInactive.Include);
+
+            if (!ui)
+            {
+                Debug.LogWarning($"[SceneTransitionLoader] No se encontró LoadingScreenController en '{overlayScene}'. Progreso no visible.");
+            }
+            else
+            {
+                // Mantener viva la UI durante el cambio de escena
+                Object.DontDestroyOnLoad(ui.gameObject);
+
+                loadingUI = ui;
+                ui.ShowImmediate();
+                // Fade-in de la UI desde el runner persistente
+                yield return EnsureRunner().StartCoroutine(ui.Fade(0f, 1f));
+            }
+        }
+
+        // 3) Carga asíncrona de la escena destino
+        var op = SceneManager.LoadSceneAsync(targetScene);
+        if (op == null)
+        {
+            Debug.LogError($"[SceneTransitionLoader] No se pudo iniciar la carga de '{targetScene}'");
+
+            // Apagar overlay si estaba
+            if (ui != null)
+            {
+                yield return EnsureRunner().StartCoroutine(ui.Fade(1f, 0f));
+                ui.HideImmediate();
+                Object.Destroy(ui.gameObject);
+            }
+            yield break;
+        }
+
+        op.allowSceneActivation = false;
+
+        float shownAt = Time.unscaledTime;
+
+        while (!op.isDone)
+        {
+            // Unity reporta 0..0.9 durante la carga; 1 al activar
+            float raw = op.progress;                       // 0..0.9
+            float normalized = (raw < 0.9f) ? raw / 0.9f : 1f;
+            loadingUI?.SetProgress(normalized);
+
+            if (raw >= 0.9f)
+            {
+                // Respetar tiempo mínimo visible de la overlay
+                if (loadingUI != null)
+                {
+                    float elapsedShown = Time.unscaledTime - shownAt;
+                    float remaining = Mathf.Max(0f, loadingUI.MinVisibleTime - elapsedShown);
+                    if (remaining > 0f) yield return new WaitForSecondsRealtime(remaining);
+                }
+
+                // Pequeño respiro antes de activar
+                yield return new WaitForSecondsRealtime(0.05f);
+                op.allowSceneActivation = true;
             }
 
-            string overlay = string.IsNullOrEmpty(overlaySceneName) ? _inst.defaultOverlayScene : overlaySceneName;
-            _inst.StartCoroutine(_inst.LoadWithOverlayRoutine(sceneName, overlay, settings ?? _inst.defaultSettings, delay));
+            yield return null;
         }
-        else
+
+        // Llegados aquí, la escena destino está activa
+        loadingUI?.SetProgress(1f);
+
+        // 4) Apagar overlay con fade-out y limpieza
+        if (ui != null)
         {
-            Debug.LogWarning("SceneTransitionLoader: No instance found. Loading scene directly without overlay.");
-            SceneManager.LoadScene(sceneName);
+            yield return new WaitForSecondsRealtime(0.1f);
+            yield return EnsureRunner().StartCoroutine(ui.Fade(1f, 0f));
+            ui.HideImmediate();
+            Object.Destroy(ui.gameObject);
         }
+
+        // Descargar la escena overlay si sigue cargada (por si acaso)
+        if (hasOverlay && overlayLoaded.IsValid() && overlayLoaded.isLoaded)
+        {
+            var unload = SceneManager.UnloadSceneAsync(overlayLoaded);
+            while (unload != null && !unload.isDone) yield return null;
+        }
+
+        // 5) (Opcional) Transición externa post (si quisieras una “entrada”),
+        //     podrías lanzar aquí SIEMPRE QUE el TransitionManager sea persistente.
+        //     Por defecto lo omitimos para evitar conflictos.
+        yield break;
     }
 
-    // Núcleo: transición SIN cambio de escena + carga en el "cut"
-    IEnumerator LoadRoutine(string sceneName, TransitionSettings settings, float delay, bool manageLoadingState)
+    /// <summary>
+    /// Intenta disparar transición externa (EasyTransition) si hay TransitionManager en escena.
+    /// Solo se usa cuando NO hay overlay.
+    /// </summary>
+    private static void TryPlayExternalTransition(TransitionSettings settings, float delay)
     {
-        Debug.Log($"SceneTransitionLoader.LoadRoutine start for {sceneName}");
-        if (manageLoadingState)
-            _isLoading = true;
-        TransitionManager tm = null;
-        UnityAction onCut = null;
-        UnityAction onEnd = null;
+        if (settings == null) return;
+
+        var mgr = Object.FindFirstObjectByType<TransitionManager>(FindObjectsInactive.Include);
+        if (!mgr) return;
 
         try
         {
-            // Si seguimos sin settings, no llames al plugin (evita su error)
-            if (settings == null)
-            {
-                Debug.LogWarning($"SceneTransitionLoader: No TransitionSettings provided for {sceneName}, loading directly.");
-                SceneManager.LoadScene(sceneName);
-                yield break;
-            }
-
-            // Espera a que exista el TransitionManager (Start entra aditivo)
-            float t = 0f;
-            while (t < waitForManagerSec && (tm = FindTM()) == null)
-            {
-                yield return null;
-                t += Time.unscaledDeltaTime;
-            }
-            if (tm == null) tm = FindTM();
-
-            if (tm == null)
-            {
-                Debug.LogWarning($"SceneTransitionLoader: TransitionManager not found for {sceneName}, loading directly.");
-                SceneManager.LoadScene(sceneName); // fallback seguro
-                yield break;
-            }
-
-            // Si los settings no contienen prefabs válidos, intentar usar defaultSettings o hacer fallback
-            if (settings != null && !(settings.transitionIn != null || settings.transitionOut != null))
-            {
-                if (this.defaultSettings != null && (this.defaultSettings.transitionIn != null || this.defaultSettings.transitionOut != null))
-                {
-                    settings = this.defaultSettings;
-                    Debug.LogWarning($"SceneTransitionLoader: Provided settings invalid for {sceneName}, using defaultSettings.");
-                }
-                else
-                {
-                    // No hay transición válida disponible: carga directa y salimos
-                    Debug.LogWarning($"SceneTransitionLoader: No valid transition prefabs found for {sceneName}, loading directly.");
-                    SceneManager.LoadScene(sceneName);
-                    yield break;
-                }
-            }
-
-            // Evitar llamar a tm.Transition si el TransitionManager ya está en medio de otra transición.
-            bool isRunning = false;
-            try
-            {
-                var fi = typeof(TransitionManager).GetField("runningTransition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (fi != null)
-                    isRunning = (bool)fi.GetValue(tm);
-            }
-            catch (System.Exception ex) { Debug.LogException(ex); isRunning = false; }
-
-            if (isRunning)
-            {
-                // Espera hasta un timeout razonable a que termine la transición actual
-                float waitTimeout = 3f; // aumentar timeout para reducir false fallbacks
-                float waited = 0f;
-                while (waited < waitTimeout)
-                {
-                    yield return null;
-                    waited += Time.unscaledDeltaTime;
-                    try
-                    {
-                        var fi = typeof(TransitionManager).GetField("runningTransition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        if (fi == null) { isRunning = false; break; }
-                        isRunning = (bool)fi.GetValue(tm);
-                        if (!isRunning) break;
-                    }
-                    catch (System.Exception ex) { Debug.LogException(ex); isRunning = false; break; }
-                }
-
-                if (isRunning)
-                {
-                    // Tras timeout, evitamos bloquear la experiencia: cargar sin transición
-                    Debug.LogWarning($"SceneTransitionLoader: TransitionManager busy; loading scene {sceneName} without transition to avoid conflict.");
-                    SceneManager.LoadScene(sceneName);
-                    yield break;
-                }
-            }
-
-            // Ahora que el manager está libre, suscribimos los handlers locales y lanzamos la transición.
-            // Preparar control de finalización y carga única de escena
-            bool completed = false;
-            bool sceneLoaded = false;
-
-            // Redefinimos los handlers para usar las banderas locales de control
-            onCut = () =>
-            {
-                Debug.Log($"SceneTransitionLoader: onCut invoked for {sceneName}");
-                // Dejar que el TransitionManager haga la carga de escena en su Timer(string,...)
-                sceneLoaded = true; // marcar para evitar fallback manual
-                Debug.Log($"SceneTransitionLoader: onCut - plugin will load the scene: {sceneName}");
-                completed = true;
-
-                try { if (tm != null) tm.onTransitionCutPointReached -= onCut; } catch (System.Exception ex) { Debug.LogException(ex); }
-            };
-
-            onEnd = () =>
-            {
-                Debug.Log($"SceneTransitionLoader: onEnd invoked for {sceneName}");
-                completed = true;
-                try { if (tm != null) tm.onTransitionEnd -= onEnd; } catch (System.Exception ex) { Debug.LogException(ex); }
-            };
-
-            // Suscribimos una vez con las implementaciones finales
-            try
-            {
-                if (tm != null)
-                {
-                    tm.onTransitionCutPointReached += onCut;
-                    tm.onTransitionEnd += onEnd;
-                }
-            }
-            catch (System.Exception ex) { Debug.LogException(ex); }
-
-            // Esperamos activamente a que la transición complete su flujo (cut o end)
-
-            try
-            {
-                Debug.Log($"SceneTransitionLoader: Requesting Transition for {sceneName} (delay={delay})");
-                // Usar la sobrecarga que carga la escena internamente para evitar duplicar la carga
-                tm.Transition(sceneName, settings, delay);
-            }
-            catch (System.Exception ex)
-            {
-                // Si por alguna razón la llamada a Transition falla, hacemos fallback seguro
-                Debug.LogWarning("SceneTransitionLoader: Transition failed; loading scene directly.");
-                Debug.LogException(ex);
-                // nos aseguramos de desuscribir handlers que pudimos haber añadido
-                try
-                {
-                    if (tm != null)
-                    {
-                        if (onCut != null) tm.onTransitionCutPointReached -= onCut;
-                        if (onEnd != null) tm.onTransitionEnd -= onEnd;
-                    }
-                }
-                catch (System.Exception ex2) { Debug.LogException(ex2); }
-
-                if (!sceneLoaded)
-                {
-                    Debug.Log($"SceneTransitionLoader: Loading scene (fallback after exception): {sceneName}");
-                    SceneManager.LoadScene(sceneName);
-                    sceneLoaded = true;
-                }
-
-                yield break;
-            }
-
-            // Esperamos a que la transición termine (cut o end). Esto evita que _isLoading se libere
-            // inmediatamente y que se inicien transiciones dobles.
-            float waitForTransitionTimeout = 10f; // segundos máximos de espera
-            float waitAcc = 0f;
-            while (!completed && waitAcc < waitForTransitionTimeout)
-            {
-                yield return null;
-                waitAcc += Time.unscaledDeltaTime;
-            }
-
-            if (!completed)
-            {
-                Debug.LogWarning("SceneTransitionLoader: Transition did not complete within timeout; forcing scene load.");
-                if (!sceneLoaded)
-                {
-                    SceneManager.LoadScene(sceneName);
-                    sceneLoaded = true;
-                }
-            }
-
+            // OJO: si el TransitionManager vive en una escena que se va a descargar,
+            // también puede morir. Idealmente, colócalo bajo un objeto persistente (Start/CoreSystems)
+            // con DontDestroyOnLoad para máxima seguridad.
+            mgr.Transition(settings, delay);
         }
-        finally
+        catch (System.MissingMethodException)
         {
-            // limpieza segura: desuscribimos por si queda alguno (es seguro hacer -= si no está suscrito)
-            try
-            {
-                if (tm != null)
-                {
-                    if (onCut != null) tm.onTransitionCutPointReached -= onCut;
-                    if (onEnd != null) tm.onTransitionEnd -= onEnd;
-                }
-            }
-            catch { }
-            if (manageLoadingState)
-                _isLoading = false;
+            Debug.LogWarning("[SceneTransitionLoader] TransitionManager encontrado, pero no tiene método Transition(TransitionSettings, float). Ajusta TryPlayExternalTransition().");
         }
     }
 
-    IEnumerator LoadWithOverlayRoutine(string sceneName, string overlaySceneName, TransitionSettings settings, float delay)
-    {
-        _isLoading = true;
-
-        Scene overlayScene = default;
-        bool overlayLoadedByLoader = false;
-
-        if (!string.IsNullOrEmpty(overlaySceneName))
-        {
-            overlayScene = SceneManager.GetSceneByName(overlaySceneName);
-            if (!overlayScene.IsValid() || !overlayScene.isLoaded)
-            {
-                var overlayOp = SceneManager.LoadSceneAsync(overlaySceneName, LoadSceneMode.Additive);
-                if (overlayOp == null)
-                {
-                    Debug.LogWarning($"SceneTransitionLoader: Could not load overlay scene '{overlaySceneName}'.");
-                }
-                else
-                {
-                    while (!overlayOp.isDone)
-                        yield return null;
-
-                    overlayScene = SceneManager.GetSceneByName(overlaySceneName);
-                    overlayLoadedByLoader = overlayScene.IsValid() && overlayScene.isLoaded;
-                }
-            }
-        }
-
-        yield return StartCoroutine(LoadRoutine(sceneName, settings, delay, false));
-
-        if (overlayLoadedByLoader)
-        {
-            overlayScene = SceneManager.GetSceneByName(overlaySceneName);
-            if (overlayScene.IsValid() && overlayScene.isLoaded)
-            {
-                var unloadOp = SceneManager.UnloadSceneAsync(overlayScene);
-                if (unloadOp != null)
-                {
-                    while (!unloadOp.isDone)
-                        yield return null;
-                }
-            }
-        }
-
-        _isLoading = false;
-    }
-
-    static TransitionManager FindTM()
-    {
-    #if UNITY_2022_3_OR_NEWER
-        return Object.FindFirstObjectByType<TransitionManager>(FindObjectsInactive.Include);
-    #else
-        return Object.FindObjectOfType<TransitionManager>(true);
-    #endif
-    }
+    /// <summary>Runner persistente (host de coroutines) para no depender de objetos que se destruyen al cambiar de escena.</summary>
+    private sealed class LoaderRunner : MonoBehaviour { }
 }

@@ -19,8 +19,11 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Button de la fila NUEVA PARTIDA.")]
     [SerializeField] private Button newGameButton;
 
-    [Header("World Scene")]
-    [SerializeField] private string nextScene = "MainWorld";
+    [Header("Scene when continuing")]
+    [SerializeField] private string nextSceneContinue = "MainWorld";
+
+    [Header("Scene when starting new game")]
+    [SerializeField] private string nextSceneNewGame = "Prologo";
 
     [Header("Loading Screen")]
     [SerializeField] private string loadingOverlayScene = "LoadingScreen";
@@ -175,7 +178,7 @@ public class MainMenuController : MonoBehaviour
             Debug.LogWarning("[MainMenu] CONTINUE pulsado sin save disponible.");
         }
 
-        LoadNextScene();
+        LoadContinueScene();
     }
 
     public void OnClickNewGame()
@@ -202,7 +205,7 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
-        LoadNextScene();
+        LoadNewGameScene();
     }
 
     public void OnClickExit()
@@ -213,22 +216,48 @@ public class MainMenuController : MonoBehaviour
 #endif
     }
 
-    void LoadNextScene()
+    // ===== Carga de escenas diferenciada ===================================
+    void LoadContinueScene()
+    {
+        if (string.IsNullOrEmpty(nextSceneContinue))
+        {
+            Debug.LogError("[MainMenu] nextSceneContinue no está configurado.");
+            _isLoading = false;
+            return;
+        }
+
+        LoadTargetScene(nextSceneContinue);
+    }
+
+    void LoadNewGameScene()
+    {
+        if (string.IsNullOrEmpty(nextSceneNewGame))
+        {
+            Debug.LogError("[MainMenu] nextSceneNewGame no está configurado.");
+            _isLoading = false;
+            return;
+        }
+
+        LoadTargetScene(nextSceneNewGame);
+    }
+
+    void LoadTargetScene(string sceneName)
     {
         bool useOverlay = !string.IsNullOrEmpty(loadingOverlayScene);
+
         if (useOverlay)
         {
             if (fadeOverride != null)
-                SceneTransitionLoader.LoadWithOverlay(nextScene, loadingOverlayScene, fadeOverride, fadeDelay);
+                SceneTransitionLoader.LoadWithOverlay(sceneName, loadingOverlayScene, fadeOverride, fadeDelay);
             else
-                SceneTransitionLoader.LoadWithOverlay(nextScene, loadingOverlayScene);
+                SceneTransitionLoader.LoadWithOverlay(sceneName, loadingOverlayScene);
         }
         else
         {
             if (fadeOverride != null)
-                SceneTransitionLoader.Load(nextScene, fadeOverride, fadeDelay);
+                SceneTransitionLoader.Load(sceneName, fadeOverride, fadeDelay);
             else
-                SceneTransitionLoader.Load(nextScene);
+                SceneTransitionLoader.Load(sceneName);
         }
     }
 
