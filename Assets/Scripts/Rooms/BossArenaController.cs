@@ -364,6 +364,8 @@ public class BossArenaController : MonoBehaviour
             return;
         }
 
+        DefaultNarrativeSignals.Instance?.RaiseBattleWon(battleId);
+        
         ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
     }
 

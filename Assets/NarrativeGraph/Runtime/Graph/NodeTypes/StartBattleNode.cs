@@ -61,7 +61,9 @@ public sealed class StartBattleNode : NarrativeNode
 
         var contextKey = derivedId;
         _usedContextKey = contextKey;
-
+        
+        DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}");
+        
         // Preparar callback de victoria
         _onBattleWonCb = () =>
         {
