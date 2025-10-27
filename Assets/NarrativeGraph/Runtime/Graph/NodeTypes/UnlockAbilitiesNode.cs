@@ -6,9 +6,6 @@ using UnityEngine;
 [Serializable]
 public sealed class UnlockAbilitiesNode : NarrativeNode
 {
-    [Tooltip("Usar desbloqueo interno mediante selección en la tarjeta (no requiere GameObject)")]
-    public bool useInternalUnlock = true;
-
     [Header("Internal Unlock - Abilities & Spells")]
     [Tooltip("Lista de habilidades a desbloquear desde el grafo")]
     public List<AbilityId> abilitiesToUnlock = new();
@@ -30,21 +27,19 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         bool changed = false;
-
-        if (useInternalUnlock)
-        {
+        
             try
             {
                 if (abilitiesToUnlock != null)
                 {
-                    foreach (var ab in abilitiesToUnlock)
-                        changed |= UnlockService.UnlockAbility(ab);
+                    for (int i = 0; i < abilitiesToUnlock.Count; i++)
+                        changed |= UnlockService.UnlockAbility(abilitiesToUnlock[i]);
                 }
 
                 if (spellsToUnlock != null)
                 {
-                    foreach (var sp in spellsToUnlock)
-                        changed |= UnlockService.UnlockSpell(sp, assignSpellsToEmptySlot);
+                    for (int i = 0; i < spellsToUnlock.Count; i++)
+                        changed |= UnlockService.UnlockSpell(spellsToUnlock[i], assignSpellsToEmptySlot);
                 }
 
                 if (!string.IsNullOrEmpty(oneShotFlag))
@@ -54,12 +49,30 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
 
                 if (changed && applyPresetAfterUnlock)
                 {
-                    var ps = UnityEngine.Object.FindFirstObjectByType<PlayerPresetService>();
-                    if (ps != null) ps.ApplyCurrentPreset();
+                    // Buscar PlayerPresetService incluyendo objetos inactivos.
+                    var ps = UnityEngine.Object.FindFirstObjectByType<PlayerPresetService>(FindObjectsInactive.Include);
 
+                    // Fallback: buscar por el Player y componentes en hijos (incluyendo inactivos).
+                    if (ps == null)
+                    {
+                        var player = GameObject.FindWithTag("Player");
+                        if (player != null)
+                            ps = player.GetComponentInChildren<PlayerPresetService>(true);
+                    }
+
+                    if (ps != null)
+                    {
+                        ps.ApplyCurrentPreset();
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[UnlockAbilitiesNode] No se encontró PlayerPresetService para aplicar el preset. El preset quedó actualizado.");
+                    }
+
+                    // Nota: mantenemos el guardado deshabilitado aquí (como antes).
                     if (saveAfterUnlock)
                     {
-                        Debug.Log("[UnlockAbilitiesNode] Auto-guardado deshabilitado. Usa un punto de guardado para conservar el progreso narrativo.");
+                        Debug.Log("[UnlockAbilitiesNode] Auto-guardado deshabilitado. Usa un punto de guardado para conservar el progreso.");
                     }
                 }
             }
@@ -67,10 +80,8 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
             {
                 Debug.LogWarning($"[UnlockAbilitiesNode] Error al aplicar unlock interno: {ex.Message}");
             }
-        }
 
-        // Este nodo es puramente de acción: avanza inmediatamente
+        // Nodo de acción inmediata: avanza
         onReadyToAdvance?.Invoke();
     }
 }
-

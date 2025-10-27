@@ -16,5 +16,5 @@ MonoBehaviour:
   defaultPlayerPreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
   usePresetInsteadOfSave: 0
   bootPreset: {fileID: 11400000, guid: 4525dab49d080974ba131c5581c3d793, type: 2}
-  runtimePreset: {fileID: 0}
+  runtimePreset: {fileID: 11400000, guid: fee66c719481427428bc6c595a24ff8b, type: 2}
   allowAutoSaves: 0
