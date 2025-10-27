@@ -48,7 +48,6 @@ public class Spider1AI : MonoBehaviour
     private static readonly int AnimIdle = Animator.StringToHash("Idle");
     private static readonly int AnimWalk = Animator.StringToHash("Walk");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
-    private static readonly int AnimHit = Animator.StringToHash("GetHit");
     private static readonly int AnimDeath = Animator.StringToHash("Death");
 
     void Awake()
@@ -364,7 +363,8 @@ public class Spider1AI : MonoBehaviour
         SpiderState previousState = currentState;
         currentState = SpiderState.TakingDamage;
 
-        PlayAnimation(AnimHit);
+        PlayAnimation(AnimIdle);
+        
         yield return new WaitForSeconds(0.2f);
 
         if (!isDead)
