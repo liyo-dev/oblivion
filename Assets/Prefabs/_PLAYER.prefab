@@ -3856,8 +3856,8 @@ MonoBehaviour:
     m_Bits: 4294967295
   lockCamera: 0
   rightOffset: 0
-  defaultDistance: 6
-  height: 2.5
+  defaultDistance: 4
+  height: 2
   smoothFollow: 10
   xMouseSensitivity: 3
   yMouseSensitivity: 3
@@ -4815,7 +4815,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4451487918911611750}
   - component: {fileID: 4728080385467631756}
-  - component: {fileID: 7990180947140619733}
   - component: {fileID: 8681100097435492128}
   m_Layer: 0
   m_Name: Hint Camera
@@ -4890,14 +4889,6 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &7990180947140619733
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4536246877931114375}
-  m_Enabled: 0
 --- !u!114 &8681100097435492128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4976,9 +4967,9 @@ RectTransform:
   - {fileID: 7494898344820634034}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -119.333336}
   m_SizeDelta: {x: 0, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3915552163775894671
@@ -5210,7 +5201,6 @@ GameObject:
   - component: {fileID: 7049979429020794785}
   - component: {fileID: 2384823629447114158}
   - component: {fileID: 2207912406606354293}
-  - component: {fileID: 2041446895494581001}
   - component: {fileID: 2009112871374720472}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
@@ -5332,7 +5322,7 @@ MonoBehaviour:
   freeSpeed:
     movementSmooth: 6
     animationSmooth: 0.2
-    rotationSpeed: 16
+    rotationSpeed: 10
     walkByDefault: 0
     rotateWithCamera: 0
     walkSpeed: 4
@@ -5341,7 +5331,7 @@ MonoBehaviour:
   strafeSpeed:
     movementSmooth: 6
     animationSmooth: 0.2
-    rotationSpeed: 16
+    rotationSpeed: 10
     walkByDefault: 0
     rotateWithCamera: 0
     walkSpeed: 2
@@ -5693,19 +5683,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
   knownItems: []
---- !u!114 &2041446895494581001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc97b9ff8256fb04f83afc0790bc4a90, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InventoryPersistenceBridge
-  applyOnProfileReady: 1
 --- !u!114 &2009112871374720472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6769,9 +6746,9 @@ RectTransform:
   - {fileID: 3164285146094779977}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -19}
   m_SizeDelta: {x: 0, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &6354297946308910066
@@ -7740,9 +7717,9 @@ RectTransform:
   - {fileID: 171022786256076972}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -63.666668}
   m_SizeDelta: {x: 0, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8177260282099553764

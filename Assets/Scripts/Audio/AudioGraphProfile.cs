@@ -31,6 +31,9 @@ public class AudioGraphProfile : ScriptableObject
         public bool duckInsteadOfReplace = true;
         [Range(0f,1f)] public float duckTo = 0.35f;
         [Min(0f)] public float fade = 0.5f;
+        [Header("Restauración tras cinemática (opcional)")]
+        [Tooltip("Si no está vacía, al finalizar la cinemática se forzará la música asociada a esta escena base usando las reglas de SceneMusic.")]
+        public string restoreBaseSceneName;
     }
 
     public List<SceneMusic> sceneMusic = new();
