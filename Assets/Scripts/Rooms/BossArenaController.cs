@@ -228,22 +228,29 @@ public class BossArenaController : MonoBehaviour
         started = true;
         _bossDeathConfirmed = false;
 
-        // Según el modo, activar puertas o barrera
+        // Puertas o barrera
         if (useDoorMode)
         {
-            // Modo puertas: cerrar la entrada
             if (doorWest) doorWest.Close();
         }
         else
         {
-            // Modo área: activar la barrera y bloquear salida
             LockArea();
         }
 
-        // Desactivar objetos de la lista durante la batalla
+        // Desactivar objetos durante la batalla
         ApplyBattleDisables();
 
-        if (musicBoss) musicBoss.Play();
+        var id = !string.IsNullOrEmpty(battleId) ? battleId : bossId;
+        if (!string.IsNullOrEmpty(id))
+        {
+            // Señal (si está a tiempo)
+            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{id}");
+
+            // Fallback directo (si el wiring llega tarde)
+            if (AudioService.Instance != null)
+                AudioService.Instance.BeginBattleById(id);
+        }
 
         StartCoroutine(SpawnBossWhenNavMeshReady());
     }
@@ -363,8 +370,6 @@ public class BossArenaController : MonoBehaviour
             started = false;
             return;
         }
-
-        DefaultNarrativeSignals.Instance?.RaiseBattleWon(battleId);
         
         ApplyBossClearedState(invokeUnityEvents: true, markDefeatedInTracker: true);
     }
@@ -449,6 +454,10 @@ public class BossArenaController : MonoBehaviour
         {
             // Usar BattleId (fallback a bossId ya fue aplicado en Awake)
             DefaultNarrativeSignals.Instance?.RaiseBattleWon(BattleId);
+            
+            if (!string.IsNullOrEmpty(BattleId) && AudioService.Instance != null)
+                AudioService.Instance.EndBattleById(BattleId);
+
         }
         catch (Exception ex)
         {

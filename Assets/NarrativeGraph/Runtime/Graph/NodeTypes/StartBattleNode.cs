@@ -62,8 +62,6 @@ public sealed class StartBattleNode : NarrativeNode
         var contextKey = derivedId;
         _usedContextKey = contextKey;
         
-        DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}");
-        
         // Preparar callback de victoria
         _onBattleWonCb = () =>
         {
@@ -171,6 +169,9 @@ public sealed class StartBattleNode : NarrativeNode
         if (targetArena != null)
         {
             triggered = TriggerArena(targetArena);
+            
+                    
+            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}");
         }
 
         if (!triggered)
