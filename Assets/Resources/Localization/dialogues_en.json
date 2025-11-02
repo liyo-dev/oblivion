@@ -227,6 +227,10 @@
         {
             "key": "DLG_VERONICA_05",
             "value": "Better not try it..."
+        },
+        {
+            "key": "WATER_ENTER_NEEDS",
+            "value": "Before entering the water, you need: {0}\r\n"
         }
     ]
 }

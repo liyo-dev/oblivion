@@ -147,6 +147,9 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         if (agent == null || !npc.EnsureAgentOnNavMesh(navmeshSampleRadius))
         {
             npc.transform.position = destination;
+            // Persistir última posición si el NPC lo requiere
+            if (npc.persistLastPosition)
+                npc.SetLastPosition(destination);
             if (resetAnimationOnEnd && animator != null)
                 animator.ResetMovement();
             yield break;
@@ -197,8 +200,66 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         agent.ResetPath();
         agent.Warp(destination);
 
+        // Persistir última posición si el NPC lo requiere y actualizar SO
+        PersistNpcPositionIfNeeded(npc, destination);
+
         if (resetAnimationOnEnd && animator != null)
             animator.ResetMovement();
+    }
+
+    void PersistNpcPositionIfNeeded(NPCBehaviourManager npc, Vector3 destination)
+    {
+        if (npc == null || !npc.persistLastPosition) return;
+        npc.SetLastPosition(destination);
+
+        PlayerPresetSO preset = null;
+
+        // 1) Intentar a través de GameBootService.Profile
+        var gb = GameBootService.Profile;
+        if (gb != null)
+        {
+            try { preset = gb.GetActivePresetResolved(); } catch { }
+        }
+
+        // 2) ServiceLocator
+        if (preset == null)
+        {
+            try { preset = ServiceLocator.Get<PlayerPresetSO>(logIfMissing: false); } catch { }
+        }
+
+        // 3) Fallback: buscar en memoria
+        if (preset == null)
+        {
+            var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
+            if (all != null && all.Length > 0) preset = all[0];
+        }
+
+        if (preset == null) return;
+
+        if (preset.npcPositions == null)
+            preset.npcPositions = new System.Collections.Generic.List<PlayerPresetSO.NpcPosEntry>();
+
+        var id = npc.gameObject.name;
+        bool updated = false;
+        for (int i = 0; i < preset.npcPositions.Count; i++)
+        {
+            if (preset.npcPositions[i].npcId == id)
+            {
+                var e = preset.npcPositions[i];
+                e.position = destination;
+                preset.npcPositions[i] = e;
+                updated = true;
+                break;
+            }
+        }
+        if (!updated)
+        {
+            preset.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
+            {
+                npcId = id,
+                position = destination
+            });
+        }
     }
 
     NPCBehaviourManager ResolveNpc()

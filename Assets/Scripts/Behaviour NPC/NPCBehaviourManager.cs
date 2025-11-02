@@ -61,6 +61,12 @@ namespace Alex.NPC
 
         static readonly int PlayerInputMagnitudeHash = UnityEngine.Animator.StringToHash("InputMagnitude");
 
+        [Header("Persistencia (opcional)")]
+        [Tooltip("Si está activado, este NPC guardará/restaurará su última posición mediante el sistema de guardado.")]
+        public bool persistLastPosition = false;
+        [Tooltip("Última posición conocida a persistir/restaurar. Se actualiza cuando el NPC se recoloca por misión o lógica explícita.")]
+        public Vector3 lastPosition;
+
         void Awake()
         {
             _agent = GetComponent<NavMeshAgent>();
@@ -82,6 +88,9 @@ namespace Alex.NPC
         {
             foreach (var module in _modules)
                 module?.OnStart();
+
+            // Restauración inicial si procede
+            ApplyLastPositionIfNeeded();
         }
 
         void OnEnable()
@@ -121,6 +130,13 @@ namespace Alex.NPC
             NavMeshAgentUtility.SafeSetStopped(_agent, true);
         }
 
+        // API pública para actualizar la última posición cuando la lógica externa
+        // mueva al NPC (por ejemplo, al completar misión y cambiar de punto del mapa)
+        public void SetLastPosition(Vector3 worldPosition)
+        {
+            lastPosition = worldPosition;
+        }
+
         void OnDestroy()
         {
             PlayerService.OnPlayerRegistered -= HandlePlayerRegistered;
@@ -136,8 +152,16 @@ namespace Alex.NPC
         /// <summary>
         /// Permite que los módulos consuman la interacción antes de que el Interactable abra un diálogo genérico.
         /// </summary>
+        [Header("Interacción (opcional)")]
+        [Tooltip("Si está activo, el NPC girará suavemente hacia el jugador al iniciar la interacción.")]
+        [SerializeField] bool rotateOnInteract = false;
+        [SerializeField, Min(0f)] float rotateOnInteractSeconds = 0.3f;
+
         public bool HandleInteraction(GameObject interactor)
         {
+            // Giro opcional y no intrusivo
+            if (rotateOnInteract)
+                StartSmoothFaceTowardsPlayer(Mathf.Max(0.05f, rotateOnInteractSeconds));
             foreach (var module in _modules)
             {
                 if (module != null && module.HandleInteraction(interactor))
@@ -197,6 +221,52 @@ namespace Alex.NPC
         {
             if (!logDebug) return;
             Debug.Log($"[NPCBehaviourManager:{name}] {message}", this);
+        }
+
+        // Permite aplicar la última posición después de una carga cuando el valor se reinyecta tras Start().
+        public void ApplyLastPositionIfNeeded()
+        {
+            if (!persistLastPosition) return;
+            if (lastPosition == default) return;
+
+            transform.position = lastPosition;
+            EnsureAgentOnNavMesh(2f);
+            if (_agent != null && _agent.enabled && _agent.isOnNavMesh)
+                _agent.Warp(transform.position);
+        }
+
+        Coroutine _faceRoutine;
+
+        // Inicia un giro suave para mirar al jugador sin tocar NavMeshAgent ni Animator
+        public void StartSmoothFaceTowardsPlayer(float duration = 0.3f)
+        {
+            EnsurePlayerReference();
+            if (_player == null) return;
+            if (_faceRoutine != null) { StopCoroutine(_faceRoutine); _faceRoutine = null; }
+            _faceRoutine = StartCoroutine(FaceTowardsRoutine(duration));
+        }
+
+        IEnumerator FaceTowardsRoutine(float duration)
+        {
+            if (_player == null) yield break;
+            Vector3 dir = _player.position - transform.position; dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f) yield break;
+
+            Quaternion start = transform.rotation;
+            Quaternion target = Quaternion.LookRotation(dir.normalized, Vector3.up);
+            float t = 0f; duration = Mathf.Max(0.05f, duration);
+            while (t < duration)
+            {
+                // Unscaled para no quedar bloqueado si el diálogo pausa el juego
+                t += Time.unscaledDeltaTime;
+                float u = Mathf.Clamp01(t / duration);
+                // easing suave (ease in-out)
+                u = u * u * (3f - 2f * u);
+                transform.rotation = Quaternion.Slerp(start, target, u);
+                yield return null;
+            }
+            transform.rotation = target;
+            _faceRoutine = null;
         }
 
         internal PlayerActionManager GetActionManager()
@@ -270,7 +340,18 @@ namespace Alex.NPC
                 return;
             }
 
-            dm.StartDialogue(asset, transform, onComplete);
+            // Iniciar animación de interactuar igual que hace el Interactable (OnStarted/OnFinished)
+            if (_animator != null && _animator.isActiveAndEnabled && gameObject.activeInHierarchy)
+                _animator.BeginInteraction();
+            dm.StartDialogue(asset, transform, () =>
+            {
+                try { onComplete?.Invoke(); }
+                finally
+                {
+                    if (_animator != null && _animator.isActiveAndEnabled && gameObject.activeInHierarchy)
+                        _animator.EndInteraction();
+                }
+            });
         }
 
         #endregion

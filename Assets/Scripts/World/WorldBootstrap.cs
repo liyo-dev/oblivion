@@ -1,4 +1,5 @@
 using UnityEngine;
+using Alex.NPC; // NPCBehaviourManager
 
 public class WorldBootstrap : MonoBehaviour
 {
@@ -69,16 +70,49 @@ public class WorldBootstrap : MonoBehaviour
             // Actualizar runtimePreset con los datos del save
             bootProfile.SetRuntimePresetFromSave(data);
 
+            // Reubicar NPCs desde el SO si hay entradas persistidas
+            TryApplyNpcPositionsFromPreset(bootProfile);
+
             Debug.Log("[WorldBootstrap] Save cargado correctamente");
         }
         else
         {
             Debug.Log("[WorldBootstrap] Sin save disponible, usando configuración por defecto");
+            // Nueva partida efectiva: asegurar estado limpio de narrativa y quests
+            try { bootProfile.SetPendingNarrativeSnapshot(null); } catch { }
+            var qm = QuestManager.Instance; if (qm != null) qm.ResetAllQuests();
         }
 
         // 3) Colocar jugador (esperar a que esté disponible y activo)
         SpawnManager.SetCurrentAnchor(anchorId);
         StartCoroutine(WaitForPlayerAndTeleport(anchorId));
+    }
+
+    void TryApplyNpcPositionsFromPreset(GameBootProfile bootProfile)
+    {
+        if (bootProfile == null) return;
+        var preset = bootProfile.GetActivePresetResolved();
+        if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0) return;
+
+        for (int i = 0; i < preset.npcPositions.Count; i++)
+        {
+            var entry = preset.npcPositions[i];
+            if (string.IsNullOrWhiteSpace(entry.npcId)) continue;
+
+            GameObject go = null;
+            try { go = GameObject.Find(entry.npcId); } catch { }
+            if (go == null) continue;
+
+            var mgr = go.GetComponent<NPCBehaviourManager>();
+            if (mgr == null) continue;
+            if (!mgr.persistLastPosition) continue;
+
+            mgr.lastPosition = entry.position;
+            if (mgr.isActiveAndEnabled)
+            {
+                mgr.ApplyLastPositionIfNeeded();
+            }
+        }
     }
 
     private System.Collections.IEnumerator WaitForPlayerAndTeleport(string anchorId)
