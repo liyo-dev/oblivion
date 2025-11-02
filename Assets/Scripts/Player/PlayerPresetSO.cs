@@ -37,4 +37,15 @@ public class PlayerPresetSO : ScriptableObject
 
     [Header("Progreso de bosses")]
     public List<string> defeatedBossIds = new();
+
+    [System.Serializable]
+    public struct NpcPosEntry
+    {
+        public string npcId;        // normalizado: nombre del GameObject
+        public Vector3 position;    // última posición persistida
+    }
+
+    [Header("NPCs (persistencia opcional)")]
+    [Tooltip("Lista de posiciones persistidas por NPC. El id es el nombre único del GameObject del NPC.")]
+    public List<NpcPosEntry> npcPositions = new();
 }
