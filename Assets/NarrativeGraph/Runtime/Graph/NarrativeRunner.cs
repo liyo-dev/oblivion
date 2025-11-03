@@ -13,8 +13,7 @@ public class NarrativeRunner : MonoBehaviour
     NarrativeContext _ctx;
     NarrativeNode _current;
 
-    // Pending snapshot si RestoreFromSnapshot se invoca antes de Start()
-    PlayerSaveData.NarrativeSnapshot _pendingSnapshot;
+    // Snapshot narrativo eliminado: no se mantiene estado externo del grafo
 
     void Start()
     {
@@ -34,15 +33,6 @@ public class NarrativeRunner : MonoBehaviour
             Exposed = new ExposedPropertyTable(),
             Signals = signalsProvider // puede ser null; los nodos que lo usen deben comprobarlo
         };
-
-        // Si hay snapshot pendiente, restaurarla y no arrancar desde el StartNode por defecto
-        if (_pendingSnapshot != null)
-        {
-            var snap = _pendingSnapshot;
-            _pendingSnapshot = null;
-            RestoreFromSnapshot(snap);
-            return;
-        }
 
         // Arranca en el StartNode del asset
         if (string.IsNullOrEmpty(graph.startNodeGuid))
@@ -211,84 +201,5 @@ public class NarrativeRunner : MonoBehaviour
         GoTo(next);
     }
 
-    // === NUEVO: Snapshot export/import ===
-    public PlayerSaveData.NarrativeSnapshot ExportSnapshot()
-    {
-        var snap = new PlayerSaveData.NarrativeSnapshot();
-        try
-        {
-            snap.currentNodeGuid = _current != null ? _current.guid : string.Empty;
-
-            var sbEntries = Blackboard?.ExportToSerializable();
-            if (sbEntries != null && sbEntries.Count > 0)
-            {
-                snap.entries = new List<PlayerSaveData.NarrativeBlackboardEntry>(sbEntries.Count);
-                foreach (var e in sbEntries)
-                {
-                    var ne = new PlayerSaveData.NarrativeBlackboardEntry
-                    {
-                        key = e.key,
-                        type = e.type,
-                        value = e.value
-                    };
-                    snap.entries.Add(ne);
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[Narrative] ExportSnapshot falló: {ex.Message}");
-        }
-        return snap;
-    }
-
-    public void RestoreFromSnapshot(PlayerSaveData.NarrativeSnapshot snapshot)
-    {
-        if (snapshot == null) return;
-
-        // Si el runner no ha inicializado el contexto aún, guardar el snapshot para aplicarlo en Start()
-        if (_ctx == null)
-        {
-            _pendingSnapshot = snapshot;
-            return;
-        }
-
-        try
-        {
-            // Restaurar blackboard
-            if (snapshot.entries != null && snapshot.entries.Count > 0)
-            {
-                var sbList = new List<SimpleBlackboard.Entry>(snapshot.entries.Count);
-                foreach (var e in snapshot.entries)
-                {
-                    var se = new SimpleBlackboard.Entry
-                    {
-                        key = e.key,
-                        type = e.type,
-                        value = e.value
-                    };
-                    sbList.Add(se);
-                }
-                Blackboard.ImportFromSerializable(sbList);
-            }
-
-            // Restaurar nodo actual (si existe)
-            if (!string.IsNullOrEmpty(snapshot.currentNodeGuid) && graph != null)
-            {
-                var node = graph.FindNode(snapshot.currentNodeGuid);
-                if (node != null)
-                {
-                    GoTo(node);
-                }
-                else
-                {
-                    Debug.LogWarning($"[Narrative] RestoreFromSnapshot: no existe el nodo guid={snapshot.currentNodeGuid} en el grafo.");
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[Narrative] RestoreFromSnapshot falló: {ex.Message}");
-        }
-    }
+    // Snapshot export/import eliminado: la progresión depende de flags/misiones
 }

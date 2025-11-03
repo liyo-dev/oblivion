@@ -39,30 +39,7 @@ public class NarrativeAutoSetup : MonoBehaviour
         if (fi != null) fi.SetValue(runner, signals);
         else Debug.LogWarning("[NarrativeAutoSetup] No se encontró 'signalsProvider' en NarrativeRunner.");
 
-        try
-        {
-            var profile = GameBootService.Profile;
-            if (profile != null)
-            {
-                var pending = profile.PopPendingNarrativeSnapshot();
-                if (pending != null)
-                {
-                    try
-                    {
-                        runner.RestoreFromSnapshot(pending);
-                        if (debugLogs) Debug.Log("[NarrativeAutoSetup] Applied pending narrative snapshot to runner.");
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogWarning($"[NarrativeAutoSetup] Error applying pending narrative snapshot: {ex.Message}");
-                    }
-                }
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[NarrativeAutoSetup] Error checking pending snapshot: {ex.Message}");
-        }
+        // Snapshot narrativo eliminado; no hay pending que aplicar
 
         if (debugLogs)
             Debug.Log("[NarrativeAutoSetup] Listo: runner + signals + questService conectados.");
