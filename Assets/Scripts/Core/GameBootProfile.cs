@@ -32,17 +32,7 @@ public class GameBootProfile : ScriptableObject
     public string GetStartAnchorOrDefault()
         => GetActivePresetResolved()?.spawnAnchorId ?? "Bedroom";
 
-    // === PENDING: snapshot narrativo si no hay runner al cargar ===
-    [NonSerialized]
-    PlayerSaveData.NarrativeSnapshot _pendingNarrativeSnapshot;
-
-    internal void SetPendingNarrativeSnapshot(PlayerSaveData.NarrativeSnapshot s) => _pendingNarrativeSnapshot = s;
-    internal PlayerSaveData.NarrativeSnapshot PopPendingNarrativeSnapshot()
-    {
-        var tmp = _pendingNarrativeSnapshot;
-        _pendingNarrativeSnapshot = null;
-        return tmp;
-    }
+    // Snapshot narrativo eliminado (no se usa)
 
     // ==== NUEVO: API para runtimePreset =======================================
     public void EnsureRuntimePreset()
@@ -199,36 +189,18 @@ public class GameBootProfile : ScriptableObject
             data.canClimb = activePreset.abilities.climb;
         }
 
-        // === NUEVO: incluir snapshot narrativo si hay uno pendiente (desde UpdateRuntimePresetFromCurrentState) ===
-        var pending = PopPendingNarrativeSnapshot();
-        if (pending != null)
+        // === NUEVO: incluir posiciones de NPCs ===
+        if (activePreset.npcPositions != null && activePreset.npcPositions.Count > 0)
         {
-            data.narrativeSnapshot = pending;
-        }
-        else
-        {
-            // intentar localizar runner ahora y exportar snapshot directamente
-#if UNITY_2022_3_OR_NEWER
-            var runnerNow = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            var runnerNow = FindObjectOfType<NarrativeRunner>(true);
-#pragma warning restore 618
-#endif
-            if (runnerNow != null)
+            data.npcPositions = new List<PlayerSaveData.NpcPosEntry>(activePreset.npcPositions.Count);
+            for (int i = 0; i < activePreset.npcPositions.Count; i++)
             {
-                try
-                {
-                    data.narrativeSnapshot = runnerNow.ExportSnapshot();
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning($"[GameBootProfile] Error exporting narrative snapshot: {ex.Message}");
-                    data.narrativeSnapshot = null;
-                }
+                var e = activePreset.npcPositions[i];
+                data.npcPositions.Add(new PlayerSaveData.NpcPosEntry { npcId = e.npcId, position = e.position });
             }
-
         }
+
+        // Snapshot narrativo omitido
 
         return data;
     }
@@ -240,6 +212,26 @@ public class GameBootProfile : ScriptableObject
         SetRuntimePresetFromSave(data);
 
         var preset = GetActivePresetResolved();
+
+        // Aplicar posiciones de NPCs desde el save al preset
+        if (preset != null)
+        {
+            if (preset.npcPositions == null) preset.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
+            else preset.npcPositions.Clear();
+
+            if (data.npcPositions != null && data.npcPositions.Count > 0)
+            {
+                for (int i = 0; i < data.npcPositions.Count; i++)
+                {
+                    var e = data.npcPositions[i];
+                    preset.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
+                    {
+                        npcId = e.npcId,
+                        position = e.position
+                    });
+                }
+            }
+        }
 
         if (!string.IsNullOrEmpty(preset?.spawnAnchorId))
         {
@@ -286,27 +278,7 @@ public class GameBootProfile : ScriptableObject
         {
             ApplySaveDataToProfile(data);
 
-            // Intentar restaurar snapshot narrativo inmediatamente si viene en el save
-            if (data != null && data.narrativeSnapshot != null)
-            {
-                // Intentar localizar un runner en escena
-#if UNITY_2022_3_OR_NEWER
-                var runner = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-                var runner = FindObjectOfType<NarrativeRunner>(true);
-#pragma warning restore 618
-#endif
-                if (runner != null)
-                {
-                    runner.RestoreFromSnapshot(data.narrativeSnapshot);
-                }
-                else
-                {
-                    // Si no existe runner todavía, guardarlo en pending para que NarrativeAutoSetup lo aplique al crear el runner
-                    SetPendingNarrativeSnapshot(data.narrativeSnapshot);
-                }
-            }
+            // Snapshot narrativo eliminado; no se restaura
 
             return true;
         }
@@ -419,29 +391,7 @@ public class GameBootProfile : ScriptableObject
             p.defeatedBossIds = new List<string>();
         }
 
-        // === NUEVO: incluir snapshot narrativo si existe un NarrativeRunner en la escena ===
-        try
-        {
-#if UNITY_2022_3_OR_NEWER
-            var runner = FindFirstObjectByType<NarrativeRunner>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            var runner = FindObjectOfType<NarrativeRunner>(true);
-#pragma warning restore 618
-#endif
-            var snap = runner != null ? runner.ExportSnapshot() : null;
-            // NOTE: BuildSaveDataFromProfile crea PlayerSaveData y este método actualizará runtimePreset;
-            // asignaremos el snapshot en BuildSaveDataFromProfile para que se serialice en el save.
-            if (snap != null)
-            {
-                // almacenar temporalmente en pending para que BuildSaveDataFromProfile recoja si necesita
-                SetPendingNarrativeSnapshot(snap);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[GameBootProfile] Error al obtener snapshot narrativo: {ex.Message}");
-        }
+        // Snapshot narrativo eliminado; no se captura
 
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
     }

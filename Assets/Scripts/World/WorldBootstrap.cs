@@ -78,8 +78,7 @@ public class WorldBootstrap : MonoBehaviour
         else
         {
             Debug.Log("[WorldBootstrap] Sin save disponible, usando configuración por defecto");
-            // Nueva partida efectiva: asegurar estado limpio de narrativa y quests
-            try { bootProfile.SetPendingNarrativeSnapshot(null); } catch { }
+            // Nueva partida efectiva: asegurar estado limpio de quests
             var qm = QuestManager.Instance; if (qm != null) qm.ResetAllQuests();
         }
 

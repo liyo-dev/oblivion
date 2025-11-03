@@ -18,6 +18,16 @@ public class PlayerSaveData
     public List<InventoryItemSave> inventory = new();
     public List<string> defeatedBossIds = new();
     public List<AppearanceEntry> appearance = new();
+    
+    [Serializable]
+    public struct NpcPosEntry
+    {
+        public string npcId;
+        public Vector3 position;
+    }
+
+    // Posiciones persistidas de NPCs (reflejadas desde/hacia el PlayerPresetSO)
+    public List<NpcPosEntry> npcPositions = new();
 
     // Slots guardados (opcional: si faltan en saves antiguos, quedarán en None por defecto)
     public SpellId leftSpellId  = SpellId.None;
@@ -30,24 +40,7 @@ public class PlayerSaveData
     public bool canJump;
     public bool canClimb;
 
-    // === NUEVO: Estado narrativo (grafo) ==================================
-    [Serializable]
-    public class NarrativeBlackboardEntry
-    {
-        public string key;
-        public string type; // "int", "float", "bool", "string"
-        public string value; // siempre serializado como string
-    }
-
-    [Serializable]
-    public class NarrativeSnapshot
-    {
-        public string currentNodeGuid;
-        public List<NarrativeBlackboardEntry> entries = new List<NarrativeBlackboardEntry>();
-    }
-
-    // Contenedor opcional del snapshot narrativo; puede ser null en saves antiguos
-    public NarrativeSnapshot narrativeSnapshot;
+    // Nota: Eliminado el soporte de snapshot narrativo (redundante con flags)
 
     // ---- Helpers actualizados para usar GameBootProfile ----
     
@@ -89,6 +82,16 @@ public class PlayerSaveData
         d.inventory = preset.inventoryItems != null ? new List<InventoryItemSave>(preset.inventoryItems) : new List<InventoryItemSave>();
         d.defeatedBossIds = preset.defeatedBossIds != null ? new List<string>(preset.defeatedBossIds) : new List<string>();
         d.appearance = preset.appearance != null ? new List<AppearanceEntry>(preset.appearance) : new List<AppearanceEntry>();
+        // NPCs
+        if (preset.npcPositions != null && preset.npcPositions.Count > 0)
+        {
+            d.npcPositions = new List<NpcPosEntry>(preset.npcPositions.Count);
+            for (int i = 0; i < preset.npcPositions.Count; i++)
+            {
+                var e = preset.npcPositions[i];
+                d.npcPositions.Add(new NpcPosEntry { npcId = e.npcId, position = e.position });
+            }
+        }
 
         // Slots
         d.leftSpellId = preset.leftSpellId;
