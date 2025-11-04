@@ -4967,9 +4967,9 @@ RectTransform:
   - {fileID: 7494898344820634034}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -119.333336}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3915552163775894671
@@ -5452,7 +5452,7 @@ MonoBehaviour:
   targeting: {fileID: 2788111570677460138}
   leftOrigin: {fileID: 2434631454830301341}
   rightOrigin: {fileID: 940617031723835885}
-  specialOrigin: {fileID: 7411043613090176458}
+  specialOrigin: {fileID: 4169242079592626095}
   ignoreCasterColliders: 1
   instigatorOverride: {fileID: 4951141271202639922}
 --- !u!114 &6903908210425150239
@@ -6352,7 +6352,7 @@ Transform:
   m_GameObject: {fileID: 5787813662732683950}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.1, y: -0.5, z: 0}
+  m_LocalPosition: {x: -0.187, y: -0.391, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6746,9 +6746,9 @@ RectTransform:
   - {fileID: 3164285146094779977}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -19}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &6354297946308910066
@@ -7717,9 +7717,9 @@ RectTransform:
   - {fileID: 171022786256076972}
   m_Father: {fileID: 4898256312556051111}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -63.666668}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8177260282099553764

@@ -27,6 +27,16 @@ public class Spider1AI : MonoBehaviour
     [SerializeField] private float attackCooldown = 1.5f;
     [SerializeField] private LayerMask playerLayer;
 
+    [Header("Reacción al daño")]
+    [Tooltip("Si está activo, al recibir daño la araña se detiene un instante (stun) antes de retomar su comportamiento.")]
+    [SerializeField] private bool stopOnHit = true;
+    [Tooltip("Tiempo detenido tras recibir daño (segundos).")]
+    [SerializeField, Min(0f)] private float hitStunSeconds = 0.35f;
+    [Tooltip("Al terminar el stun, si el jugador está en rango de detección, retomar persecución inmediatamente.")]
+    [SerializeField] private bool reacquireTargetAfterHit = true;
+    [Tooltip("Distancia extra para reenganchar la persecución tras el daño (multiplica detectionRange).")]
+    [SerializeField, Min(1f)] private float reacquireRangeMultiplier = 1.0f;
+
     [Header("Configuración")]
     [SerializeField] private float moveSpeed = 3.5f;
     [SerializeField] private float chaseSpeedMultiplier = 1.3f;
@@ -49,6 +59,14 @@ public class Spider1AI : MonoBehaviour
     private static readonly int AnimWalk = Animator.StringToHash("Walk");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
     private static readonly int AnimDeath = Animator.StringToHash("Death");
+    [Header("Animación de impacto (opcional)")]
+    [SerializeField, Tooltip("Nombre del estado de animación de 'Hit'. Si está vacío, usará Idle durante el stun.")]
+    private string hitStateName = ""; // p.ej. "Hit"
+    private int AnimHit = 0;
+
+    [Header("Knockback al recibir daño (opcional)")]
+    [SerializeField, Min(0f)] private float hitKnockback = 0f;
+    [SerializeField, Min(0f)] private float hitKnockbackDamp = 8f;
 
     void Awake()
     {
@@ -79,7 +97,12 @@ public class Spider1AI : MonoBehaviour
         {
             agent.speed = moveSpeed;
             originalSpeed = moveSpeed;
+            // Ajustar stoppingDistance acorde al rango de ataque para evitar solapes
+            agent.stoppingDistance = Mathf.Max(0.05f, attackRange * 0.9f);
         }
+
+        if (!string.IsNullOrEmpty(hitStateName))
+            AnimHit = Animator.StringToHash(hitStateName);
 
         // Iniciar con patrulla o idle
         if (patrolEnabled)
@@ -335,27 +358,37 @@ public class Spider1AI : MonoBehaviour
         }
     }
 
+    private int _currentAnimHash = 0;
     private void PlayAnimation(int animHash)
     {
         if (!animator) return;
-        animator.CrossFade(animHash, 0.1f);
+        if (_currentAnimHash == animHash) return; // no reiniciar cada frame
+        _currentAnimHash = animHash;
+        animator.Play(animHash, 0, 0f);
     }
 
     private void OnDamageTaken(float amount)
     {
         if (isDead) return;
 
-        // Activar persecución al recibir daño
-        if (currentState != SpiderState.Chasing && player)
+        // Cancelar ataque en curso
+        isAttacking = false;
+        StopCoroutineSafe(AttackPlayer());
+
+        if (stopOnHit)
         {
-            float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-            if (distanceToPlayer <= detectionRange * 2f) // Rango extendido al recibir daño
+            StartCoroutine(TakeDamageSequence());
+        }
+        else
+        {
+            // Opcional: reenganchar persecución directa según rango
+            if (reacquireTargetAfterHit && player)
             {
-                EnterChaseMode();
+                float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+                if (distanceToPlayer <= detectionRange * reacquireRangeMultiplier)
+                    EnterChaseMode();
             }
         }
-
-        StartCoroutine(TakeDamageSequence());
     }
 
     private IEnumerator TakeDamageSequence()
@@ -363,14 +396,59 @@ public class Spider1AI : MonoBehaviour
         SpiderState previousState = currentState;
         currentState = SpiderState.TakingDamage;
 
-        PlayAnimation(AnimIdle);
-        
-        yield return new WaitForSeconds(0.2f);
-
-        if (!isDead)
+        // Detener movimiento del agente durante el stun
+        if (agent && agent.isOnNavMesh)
         {
-            currentState = previousState;
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
         }
+
+        // Animación de impacto si existe, si no, Idle
+        if (AnimHit != 0) PlayAnimation(AnimHit); else PlayAnimation(AnimIdle);
+
+        // Empuje leve en dirección opuesta al jugador
+        if (hitKnockback > 0f && player)
+        {
+            var rb = GetComponent<Rigidbody>();
+            Vector3 dir = (transform.position - player.position); dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f) dir.Normalize(); else dir = -transform.forward;
+            if (rb && !rb.isKinematic)
+            {
+                rb.AddForce(dir * hitKnockback, ForceMode.VelocityChange);
+            }
+        }
+
+        // Stun configurable (no escalado por Time.timeScale)
+        float t = 0f;
+        while (t < hitStunSeconds)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (isDead) yield break;
+
+        // Reactivar movimiento
+        if (agent && agent.isOnNavMesh)
+            agent.isStopped = false;
+
+        // Tras ser herida: re-evaluar objetivo
+        if (reacquireTargetAfterHit && player && Vector3.Distance(transform.position, player.position) <= detectionRange * reacquireRangeMultiplier)
+        {
+            EnterChaseMode();
+            ChasePlayer();
+        }
+        else
+        {
+            // Volver al estado anterior/patrulla de forma segura
+            if (patrolEnabled) SetNewPatrolTarget(); else { currentState = SpiderState.Idle; idleTimer = idleTime; }
+        }
+    }
+
+    private void StopCoroutineSafe(IEnumerator routine)
+    {
+        // Helper para detener posibles corutinas de ataque sin lanzar excepciones
+        // No tenemos referencia directa, el ataque se autorregula por flags.
     }
 
     private void OnDeath()

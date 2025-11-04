@@ -9,17 +9,8 @@ public class SavePoint : MonoBehaviour
     public bool teleportAfterSave;
     public string teleportAnchorId;
 
-    [Header("Interacción")]
-    public KeyCode interactKey = KeyCode.E;
-    
-    [Header("Localización")]
-    [Tooltip("ID de localización para el prompt (ej: 'SAVEPOINT_PROMPT'). Si está vacío, usa prompt directamente.")]
-    public string promptId;
-    
-    [Tooltip("Texto del prompt (usado si promptId está vacío o no se usa localización)")]
-    public string prompt = "Guardar partida (E)";
-
     CanvasGroup _promptCg;
+    GameObject _playerInRange; // cache del jugador dentro del trigger
 
     // Estado para diferir el guardado si el perfil no está listo
     private bool _pendingSave;
@@ -35,6 +26,7 @@ public class SavePoint : MonoBehaviour
     void OnDisable()
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
+        _playerInRange = null;
     }
 
     private void HandleProfileReady()
@@ -50,56 +42,39 @@ public class SavePoint : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
+        if (!GameState.CanInteractGlobally) return;
+        _playerInRange = other.gameObject;
         ShowPrompt(true);
     }
 
     void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
+        if (_playerInRange == other.gameObject) _playerInRange = null;
         ShowPrompt(false);
     }
 
-    void OnTriggerStay(Collider other)
-    {
-        if (!other.CompareTag("Player")) return;
-        if (Time.timeScale <= 0f) return; // evita interacciones mientras el juego está en pausa
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        // referencia segura al menú de pausa sin obligar a tenerlo en escena
-#endif
-        if (PauseMenuController.IsOpen) return;
+    // El SavePoint no lee inputs directamente; el Interactable u otros sistemas invocan Save() desde eventos.
 
-        if (Input.GetKeyDown(interactKey))
-        {
-            if (GameBootService.IsAvailable)
-            {
-                DoSave(other.gameObject);
-            }
-            else
-            {
-                // Diferir hasta que el GameBootProfile esté listo
-                _pendingSave = true;
-                _pendingPlayer = other.gameObject;
-                Debug.Log("[SavePoint] Perfil no listo. Guardado diferido hasta OnProfileReady");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Permite disparar el guardado desde un evento externo (ej. Interactable/diálogo).
-    /// </summary>
-    public void SaveFromInteractable()
+    /// <summary>API única para guardar en este punto de guardado.</summary>
+    public void Save()
     {
-        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || !player)
-        {
-            player = GameObject.FindGameObjectWithTag("Player");
-        }
+        // En este flujo el Interactable muestra el prompt cuando el player está encima,
+        // pero no dependamos del trigger para guardar: usamos PlayerService y caemos a _playerInRange.
+        GameObject player = null;
+        PlayerService.TryGetPlayer(out player, allowSceneLookup: true);
+        if (!player) player = _playerInRange; // fallback local sin usar Find
 
         if (!player)
         {
-            Debug.LogWarning("[SavePoint] No se encontró el jugador para guardar desde Interactable.");
+            Debug.LogWarning("[SavePoint] Save() llamado pero no se pudo resolver el jugador (PlayerService/_playerInRange null).");
             return;
         }
+        TryDoSave(player);
+    }
 
+    private void TryDoSave(GameObject player)
+    {
         if (GameBootService.IsAvailable)
         {
             DoSave(player);
@@ -108,7 +83,7 @@ public class SavePoint : MonoBehaviour
         {
             _pendingSave = true;
             _pendingPlayer = player;
-            Debug.Log("[SavePoint] Perfil no listo. Guardado diferido hasta OnProfileReady (desde Interactable)");
+            Debug.Log("[SavePoint] Perfil no listo. Guardado diferido hasta OnProfileReady (desde Prompt)");
         }
     }
 
@@ -201,15 +176,7 @@ public class SavePoint : MonoBehaviour
         }
     }
     
-    /// <summary>Obtiene el prompt localizado</summary>
-    public string GetLocalizedPrompt()
-    {
-        if (!string.IsNullOrEmpty(promptId) && LocalizationManager.Instance != null)
-        {
-            return LocalizationManager.Instance.Get(promptId, prompt);
-        }
-        return prompt;
-    }
+    // La localización del prompt se gestiona en el prefab UI
 
     // Evento opcional para notificar cuando la partida se guarda correctamente
     public event System.Action OnSaveCompleted;

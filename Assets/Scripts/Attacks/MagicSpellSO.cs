@@ -31,6 +31,9 @@ public class MagicSpellSO : ScriptableObject
     public float   forwardOffset = 0.35f;
     public Vector3 visualRotationOffsetEuler = Vector3.zero;
     public bool    flattenDirection = true;
+    [Tooltip("Si se marca, se forzará esta escala al instanciar el proyectil y el VFX de spawn. Si está desmarcado, se usará la escala del prefab.")]
+    public bool     useScaleOverride = false;
+    public Vector3  scaleOverride = Vector3.one;
 
     [Header("Costes / CD")]
     public float manaCost = 5f;

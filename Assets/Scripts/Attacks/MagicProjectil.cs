@@ -37,25 +37,77 @@ public class MagicProjectile : MonoBehaviour
 
     Vector3 _spawnPos;
     float   _spawnTime;
+    
+    [Header("Lifetime (optional)")]
+    [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
+    [SerializeField, Min(0f)] private float lifeTimeSeconds = 0f;
+
+    [Header("Launch Delay (optional)")]
+    [Tooltip("If enabled, the projectile will wait this many seconds before starting to move. Useful to sync with VFX or animations.")]
+    [SerializeField] private bool useLaunchDelay = false;
+    [SerializeField, Min(0f)] private float launchDelaySeconds = 0f;
+
+    bool _movementActive = true;            // controls manual movement when no RB
+    Vector3 _plannedVelocity = Vector3.zero; // for RB case
+    bool _savedUseGravity;
 
     // ==== Ciclo de vida ========================================================
     void Awake()
     {
-        _rb    = GetComponent<Rigidbody>();
-        _hasRb = _rb != null;
+        _rb = GetComponent<Rigidbody>();
+
+        // Si no hay Rigidbody, añadimos uno cinemático para que los triggers funcionen.
+        // Nota: Unity solo envía OnTriggerEnter/Exit si al menos uno de los objetos tiene Rigidbody.
+        if (_rb == null)
+        {
+            _rb = gameObject.AddComponent<Rigidbody>();
+            _rb.isKinematic = true;
+            _rb.useGravity = false;
+            // Asegurar collider en modo trigger para proyectil con movimiento manual
+            var col = GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+        }
+
+        // Consideramos "con RB" solo si no es cinemático (usaremos física para mover)
+        _hasRb = _rb != null && !_rb.isKinematic;
     }
+
+    bool _ttlScheduled;
 
     void OnEnable()
     {
         _spawnPos  = transform.position;
         _spawnTime = Time.time;
 
-        // TTL (si procede) — si luego hay impacto, End() cancela el resto
-        if (_cfg.lifeTime > 0f)
-            Invoke(nameof(EndByTTL), _cfg.lifeTime);
+        // Si el propio componente define un TTL, usarlo ya desde OnEnable
+        _ttlScheduled = false;
+        CancelInvoke(nameof(EndByTTL));
+        if (lifeTimeSeconds > 0f)
+        {
+            Invoke(nameof(EndByTTL), lifeTimeSeconds);
+            _ttlScheduled = true;
+        }
 
         // Seguridad extra: si hay RB y se configuró gravedad
         if (_hasRb) _rb.useGravity = _cfg.useGravity;
+
+        // Manejo de lanzamiento diferido
+        if (useLaunchDelay && launchDelaySeconds > 0f)
+        {
+            if (_hasRb)
+            {
+                // Guardar y anular velocidad/gravedad hasta el lanzamiento
+                _plannedVelocity = _rb.linearVelocity;
+                _rb.linearVelocity = Vector3.zero;
+                _savedUseGravity = _rb.useGravity;
+                _rb.useGravity = false;
+            }
+            else
+            {
+                _movementActive = false;
+            }
+            Invoke(nameof(ActivateMovement), launchDelaySeconds);
+        }
     }
 
     /// <summary>
@@ -83,7 +135,7 @@ public class MagicProjectile : MonoBehaviour
         if (_ended) return;
 
         // Movimiento manual si no hay Rigidbody
-        if (!_hasRb && _cfg.initialSpeed > 0f)
+        if (!_hasRb && _cfg.initialSpeed > 0f && _movementActive)
             transform.position += transform.forward * (_cfg.initialSpeed * Time.deltaTime);
 
         // Fin por rango
@@ -92,6 +144,49 @@ public class MagicProjectile : MonoBehaviour
             float sqr = (transform.position - _spawnPos).sqrMagnitude;
             if (sqr >= _cfg.maxRange * _cfg.maxRange) End(false);
         }
+    }
+
+    void ActivateMovement()
+    {
+        if (_ended) return;
+        if (_hasRb)
+        {
+            _rb.linearVelocity = (_plannedVelocity != Vector3.zero)
+                ? _plannedVelocity
+                : transform.forward * Mathf.Max(0f, _cfg.initialSpeed);
+            _rb.useGravity = _savedUseGravity;
+        }
+        else
+        {
+            _movementActive = true;
+        }
+
+        // Programar TTL si no hay override desde el componente
+        if (!_ttlScheduled)
+        {
+            CancelInvoke(nameof(EndByTTL));
+            if (_cfg.lifeTime > 0f)
+            {
+                Invoke(nameof(EndByTTL), _cfg.lifeTime);
+                _ttlScheduled = true;
+            }
+        }
+
+        // Si usaremos delay y hay Rigidbody, capturar la velocidad tras ser asignada por el spawner
+        if (useLaunchDelay && launchDelaySeconds > 0f && _hasRb)
+            StartCoroutine(Co_CaptureVelocityAndPause());
+    }
+
+    System.Collections.IEnumerator Co_CaptureVelocityAndPause()
+    {
+        // Espera un frame para que el spawner asigne velocidad/gravedad
+        yield return null;
+        if (_ended || !_hasRb) yield break;
+        _plannedVelocity = _rb.linearVelocity;
+        _rb.linearVelocity = Vector3.zero;
+        _savedUseGravity = _rb.useGravity;
+        _rb.useGravity = false;
+        Invoke(nameof(ActivateMovement), launchDelaySeconds);
     }
 
     // ==== Colisiones ===========================================================
@@ -138,8 +233,14 @@ public class MagicProjectile : MonoBehaviour
     void ApplyDamageAndKnockback(Collider col, Vector3 hitPoint)
     {
         // Daño simple
-        if (col && col.TryGetComponent<Damageable>(out var d))
-            d.TakeDamage(_cfg.damage);
+        if (col)
+        {
+            // Buscar Damageable en el propio collider o en sus padres (enemigos con colisionadores hijos)
+            if (!col.TryGetComponent<Damageable>(out var d))
+                d = col.GetComponentInParent<Damageable>();
+            if (d != null)
+                d.TakeDamage(_cfg.damage);
+        }
 
         // Knockback simple (si hay RB dinámico)
         if (_cfg.knockbackForce > 0f && col)

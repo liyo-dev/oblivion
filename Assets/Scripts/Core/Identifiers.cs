@@ -112,6 +112,7 @@ public enum PlayerAbility
 public enum InteractableMode
 {
     OpenDialogue,
+    OpenDialogueWithOptions,
     HandOffToTarget
 }
 

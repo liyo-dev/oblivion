@@ -51,9 +51,11 @@ public class InteractionDetector : MonoBehaviour
 
     private void Update()
     {
-        // Si hay diálogo abierto, no enfocamos nada nuevo
+        // Si hay UI bloqueante (pausa/menús/diálogo/saveprompt), no enfocamos nada nuevo
         bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
-        if (dialogueActive)
+        bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
+        bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu y MainMenu
+        if (dialogueActive || choicePromptActive || menusBlock)
         {
             SetCurrent(null);
             return;

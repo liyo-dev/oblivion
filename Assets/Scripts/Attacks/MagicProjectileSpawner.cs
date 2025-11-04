@@ -102,9 +102,20 @@ public class MagicProjectileSpawner : MonoBehaviour
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
 
-        if (spell.spawnVFX) Instantiate(spell.spawnVFX, spawnPos, spawnRt);
+        if (spell.spawnVFX)
+        {
+            var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
+            if (spell.useScaleOverride)
+            {
+                fx.transform.localScale = spell.scaleOverride;
+            }
+        }
 
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
+        if (spell.useScaleOverride)
+        {
+            go.transform.localScale = spell.scaleOverride;
+        }
 
         if (ignoreCasterColliders)
         {

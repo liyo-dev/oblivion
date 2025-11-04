@@ -37,12 +37,29 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     [Min(1f)] public float maxWalkSeconds = 12f;
     [Range(0f, 1f)] public float minAnimSpeed = 0.25f;
     public bool resetAnimationOnEnd = true;
+    [Tooltip("Tiempo mínimo que el NPC debe permanecer en pantalla caminando antes de permitir teletransporte por 'offscreen'.")]
+    [Min(0f)] public float minVisibleWalkSeconds = 0.5f;
+    [Tooltip("Distancia mínima a recorrer antes de permitir teletransporte por 'offscreen'.")]
+    [Min(0f)] public float minDistanceBeforeTeleport = 0.5f;
 
     [Header("Cámara / Control")]
     public bool lockPlayer = true;
     public ActionMode lockMode = ActionMode.Cinematic;
     [Range(0f, 0.5f)] public float offscreenPadding = 0.05f;
     public float cameraHeightOffset = 1.5f;
+
+    [Header("Debug")]
+    public bool debugLogs = false;
+
+    [Header("Compatibilidad")]
+    [Tooltip("Si el agente no consigue path tras un breve intento, finalizar igualmente y warp al destino.")]
+    public bool treatNoPathAsReach = true;
+
+    void Log(string message)
+    {
+        if (debugLogs)
+            Debug.Log($"[NpcAutoMoveNode] {message}");
+    }
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
@@ -52,6 +69,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             return;
         }
 
+        Log($"Enter → npcName='{npcName}', npcTag='{npcTag}'");
         ctx.Runner.StartCoroutine(RunSequence(onReadyToAdvance));
     }
 
@@ -79,6 +97,11 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 {
                     pam.PushMode(lockMode);
                     lockApplied = true;
+                    Log($"Player lock PUSH → mode={lockMode}");
+                }
+                else
+                {
+                    Log("Player lock requested but PlayerActionManager not found");
                 }
             }
 
@@ -88,7 +111,10 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         finally
         {
             if (lockApplied && pam != null)
+            {
                 pam.PopMode(lockMode);
+                Log($"Player lock POP → mode={lockMode}");
+            }
 
             done?.Invoke();
         }
@@ -101,15 +127,18 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         if (dialogueOverride != null)
         {
             bool finished = false;
+            Log($"Playing dialogue override '{dialogueOverride.name}' (timeout {dialogueTimeout}s)");
             npc.PlayDialogue(dialogueOverride, () => finished = true);
             waited = true;
             yield return WaitUntil(() => finished, dialogueTimeout);
+            Log("Dialogue override finished or timed out");
         }
         else if (triggerInteractableIfNoOverride)
         {
             var interactable = npc.Interactable;
             if (interactable != null && PlayerService.TryGetPlayer(out var player, true) && player != null)
             {
+                Log("Triggering NPC Interactable (no override)");
                 interactable.Interact(player);
                 waited = true;
                 var wait = npc.WaitDialogueToClose(dialogueTimeout);
@@ -118,6 +147,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                     while (wait.MoveNext())
                         yield return wait.Current;
                 }
+                Log("Interactable dialogue finished or timed out");
             }
         }
 
@@ -144,22 +174,47 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         var agent = npc.Agent;
         var animator = npc.Animator;
 
-        if (agent == null || !npc.EnsureAgentOnNavMesh(navmeshSampleRadius))
+        // Asegurar agente habilitado y en NavMesh. Si falla en origen, intenta en destino antes de rendirse.
+        if (agent == null)
         {
+            Debug.LogWarning("[NpcAutoMoveNode] NPC no tiene NavMeshAgent; no puede caminar. Teleport al destino.");
             npc.transform.position = destination;
-            // Persistir última posición si el NPC lo requiere
-            if (npc.persistLastPosition)
-                npc.SetLastPosition(destination);
-            if (resetAnimationOnEnd && animator != null)
-                animator.ResetMovement();
+            PersistNpcPositionIfNeeded(npc, destination);
+            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            yield break;
+        }
+
+        if (!agent.enabled) agent.enabled = true;
+
+        bool onMesh = npc.EnsureAgentOnNavMesh(navmeshSampleRadius);
+        if (!onMesh)
+        {
+            // Reintentar capturando el punto de NavMesh más cercano al destino
+            if (NavMesh.SamplePosition(destination, out var hitNav, Mathf.Max(2f, navmeshSampleRadius * 2f), NavMesh.AllAreas))
+            {
+                agent.Warp(hitNav.position);
+                onMesh = true;
+                Log("Agent warped to nearest NavMesh point near destination");
+            }
+        }
+        if (!onMesh)
+        {
+            Debug.LogWarning("[NpcAutoMoveNode] No se pudo proyectar el NPC en NavMesh; teletransportando al destino.");
+            npc.transform.position = destination;
+            PersistNpcPositionIfNeeded(npc, destination);
+            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
             yield break;
         }
 
         NavMeshAgentUtility.SetDestination(agent, destination, stoppingDistance);
+        Log($"Move → destination={destination} stoppingDist={stoppingDistance}");
 
         var cam = ResolveCamera();
         float elapsed = 0f;
         bool leftCamera = false;
+        Vector3 startPos = npc.transform.position;
+        bool offscreenAllowed = false;
+        bool forcedReachNoPath = false;
 
         while (elapsed < maxWalkSeconds)
         {
@@ -171,14 +226,38 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 animator.SetMovementSpeed(Mathf.Max(speed, minAnimSpeed));
             }
 
-            if (HasLeftCamera(cam, npc.transform, cameraHeightOffset, offscreenPadding))
+            // solo permitir teletransporte por offscreen tras cierto tiempo/distancia
+            if (!offscreenAllowed)
+            {
+                if (elapsed >= Mathf.Max(0f, minVisibleWalkSeconds) || Vector3.Distance(npc.transform.position, startPos) >= Mathf.Max(0f, minDistanceBeforeTeleport))
+                {
+                    offscreenAllowed = true;
+                    Log("Offscreen-teleport now allowed (time/distance reached)");
+                }
+            }
+
+            if (offscreenAllowed && HasLeftCamera(cam, npc.transform, cameraHeightOffset, offscreenPadding))
             {
                 leftCamera = true;
+                Log("NPC left camera frustum → will teleport to destination");
                 break;
             }
 
-            if (!agent.pathPending && agent.remainingDistance <= Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f)
-                break;
+            if (!agent.pathPending)
+            {
+                if (agent.remainingDistance <= Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f)
+                {
+                    Log("Agent reached stopping distance");
+                    break;
+                }
+
+                if (treatNoPathAsReach && !agent.hasPath && elapsed >= 0.5f)
+                {
+                    forcedReachNoPath = true;
+                    Log($"No valid path after {elapsed:0.00}s (status={agent.pathStatus}). Forcing completion.");
+                    break;
+                }
+            }
 
             yield return null;
         }
@@ -196,15 +275,38 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             }
         }
 
-        NavMeshAgentUtility.SafeSetStopped(agent, true);
-        agent.ResetPath();
-        agent.Warp(destination);
+        // Decidir cómo finalizar
+        float reachThresh = Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f;
+        bool reached = (!agent.pathPending && agent.remainingDistance <= reachThresh) || forcedReachNoPath;
 
-        // Persistir última posición si el NPC lo requiere y actualizar SO
-        PersistNpcPositionIfNeeded(npc, destination);
-
-        if (resetAnimationOnEnd && animator != null)
-            animator.ResetMovement();
+        if (leftCamera)
+        {
+            // Fuera de cámara: teletransportar para terminar limpio
+            NavMeshAgentUtility.SafeSetStopped(agent, true);
+            agent.ResetPath();
+            agent.Warp(destination);
+            PersistNpcPositionIfNeeded(npc, destination);
+            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            Log("Finished by offscreen → teleported and persisted position");
+        }
+        else if (reached)
+        {
+            // Llegó al destino: detener agente y asegurar posición final
+            NavMeshAgentUtility.SafeSetStopped(agent, true);
+            agent.ResetPath();
+            if (Vector3.Distance(agent.transform.position, destination) > 0.2f)
+                agent.Warp(destination);
+            PersistNpcPositionIfNeeded(npc, destination);
+            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            Log(forcedReachNoPath ? "Finished by forced reach (no path) → warped to destination" : "Finished by reach → stopped at destination");
+        }
+        else
+        {
+            // Aún en cámara y sin llegar: no teletransportar. Dejamos que siga andando.
+            // El nodo finaliza, devolviendo el control; el NPC continuará con su path.
+            // No persistimos aún para no guardar una posición intermedia.
+            Log("Finished by timeout/in-camera → agent keeps walking (no teleport)");
+        }
     }
 
     void PersistNpcPositionIfNeeded(NPCBehaviourManager npc, Vector3 destination)

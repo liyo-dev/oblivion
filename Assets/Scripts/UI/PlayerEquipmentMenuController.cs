@@ -209,9 +209,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (!pressed) return;
 
         if (_isOpen)
+        {
             CloseMenu();
+        }
         else
+        {
+            if (!GameState.CanOpenInventory) return;
+            if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
             OpenMenu();
+        }
     }
 
     void HandleCloseInput()
@@ -236,6 +242,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OpenMenu()
     {
+        if (!GameState.CanOpenInventory) return;
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
         if (!EnsureViews()) return;
 
         EnsureEventSystem();
@@ -251,6 +259,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         UpdatePlayerInfoPanel();
 
         _isOpen = true;
+        GameState.Push(GamePhase.Inventory);
         SelectInitial();
     }
 
@@ -259,6 +268,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SetCanvasState(false);
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
+        if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
     }
 
     void SetCanvasState(bool visible)

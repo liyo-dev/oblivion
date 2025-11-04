@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 public class DialogueManager : MonoBehaviour
@@ -37,11 +38,27 @@ public class DialogueManager : MonoBehaviour
     [Tooltip("Si está activo, la cámara se posicionará para enfocar la conversación con NPCs")]
     [SerializeField] private bool useDialogueCamera = true;
 
+    [Header("UI Hints")]
+    [SerializeField] private GameObject submitHint;
+
     // Estado
     private DialogueAsset current;
     private int index = -1;
     private Action onEnd;
     public bool IsOpen => current != null;
+
+    [Header("Choices (optional)")]
+    [SerializeField] private CanvasGroup choicesRoot;   // contenedor de los botones
+    [SerializeField] private Button yesButton;
+    [SerializeField] private Button noButton;
+    [SerializeField] private TextMeshProUGUI messageLabel; // si quieres sobreescribir el texto principal
+    [SerializeField] private bool enableDpadHorizontalFallback = true; // si Navigate no recoge el D-Pad
+    [SerializeField, Min(0f)] private float dpadRepeatDelay = 0.2f;
+
+    float _dpadCooldown;
+
+    System.Action _onYes;
+    System.Action _onNo;
 
     // Typewriter estado
     Coroutine _typeRoutine;
@@ -63,6 +80,21 @@ public class DialogueManager : MonoBehaviour
             group.blocksRaycasts = false;
             group.interactable = false;
         }
+
+        // Asegurar choices ocultos por defecto
+        if (choicesRoot != null)
+        {
+            choicesRoot.alpha = 0f;
+            choicesRoot.blocksRaycasts = false;
+            choicesRoot.interactable = false;
+        }
+        // Auto localizar el hint si no está asignado (busca por nombre común)
+        if (submitHint == null)
+        {
+            var t = transform.Find("Canvas/Panel/boton A");
+            if (t != null) submitHint = t.gameObject;
+        }
+        if (submitHint != null) submitHint.SetActive(false);
     }
 
     void OnEnable()
@@ -80,6 +112,49 @@ public class DialogueManager : MonoBehaviour
             advanceAction.action.performed -= OnAdvance;
     }
 
+    void Update()
+    {
+        // Fallback explícito para D-Pad izquierda/derecha cuando las opciones están activas
+        if (!enableDpadHorizontalFallback) return;
+        if (choicesRoot == null || !choicesRoot.interactable) return;
+
+        if (_dpadCooldown > 0f) _dpadCooldown -= Time.unscaledDeltaTime;
+
+        bool left = false, right = false;
+#if ENABLE_INPUT_SYSTEM
+        var gp = UnityEngine.InputSystem.Gamepad.current;
+        if (gp != null)
+        {
+            left  |= gp.dpad.left.wasPressedThisFrame;
+            right |= gp.dpad.right.wasPressedThisFrame;
+        }
+#endif
+        // Teclado
+        left  |= Input.GetKeyDown(KeyCode.LeftArrow);
+        right |= Input.GetKeyDown(KeyCode.RightArrow);
+
+        if ((left || right) && _dpadCooldown <= 0f)
+        {
+            var es = EventSystem.current;
+            if (es != null)
+            {
+                var cur = es.currentSelectedGameObject;
+                if (cur == null || !cur.activeInHierarchy)
+                {
+                    if (yesButton) es.SetSelectedGameObject(yesButton.gameObject);
+                }
+                else if (yesButton != null && noButton != null)
+                {
+                    if (cur == yesButton.gameObject && right)
+                        es.SetSelectedGameObject(noButton.gameObject);
+                    else if (cur == noButton.gameObject && left)
+                        es.SetSelectedGameObject(yesButton.gameObject);
+                }
+            }
+            _dpadCooldown = dpadRepeatDelay;
+        }
+    }
+
     public void StartDialogue(DialogueAsset asset, Action onFinished = null)
     {
         if (asset == null || asset.lines == null || asset.lines.Length == 0) return;
@@ -95,6 +170,8 @@ public class DialogueManager : MonoBehaviour
             group.blocksRaycasts = true;
             group.interactable = true;
         }
+        if (submitHint != null)
+            submitHint.SetActive(true);
         if (pauseGameWhileOpen) Time.timeScale = 0f;
 
         // Bloquear gameplay
@@ -138,6 +215,8 @@ public class DialogueManager : MonoBehaviour
 
         StopTypewriter();
 
+        HideChoices();
+
         current = null;
         onEnd?.Invoke();
         onEnd = null;
@@ -161,6 +240,169 @@ public class DialogueManager : MonoBehaviour
 
         // Restaurar gameplay
         SetGameplayEnabled(true);
+        if (submitHint != null)
+            submitHint.SetActive(false);
+
+        // Seguridad extra: si por algún motivo quedó SavePrompt activo, liberarlo
+        if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
+    }
+
+    public void FinalizeChoiceNoFollowUp()
+    {
+        if (pauseGameWhileOpen) Time.timeScale = 1f;
+        SetGameplayEnabled(true);
+        if (group != null)
+        {
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+            group.interactable = false;
+        }
+        if (submitHint != null)
+            submitHint.SetActive(false);
+
+        // Seguridad extra: garantizar que SavePrompt no quede enganchado
+        if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
+    }
+
+    void HideChoices(bool restoreGameplay = true)
+    {
+        if (choicesRoot != null)
+        {
+            choicesRoot.alpha = 0f;
+            choicesRoot.blocksRaycasts = false;
+            choicesRoot.interactable = false;
+        }
+        if (yesButton != null) yesButton.onClick.RemoveListener(OnYesClicked);
+        if (noButton  != null) noButton.onClick.RemoveListener(OnNoClicked);
+        _onYes = null; _onNo = null;
+        if (submitHint != null)
+            submitHint.SetActive(false);
+        if (restoreGameplay && !IsOpen) // si no hay diálogo normal activo, restaurar gameplay
+            SetGameplayEnabled(true);
+    }
+
+    void OnYesClicked()
+    {
+        var cb = _onYes;
+        HideChoices(restoreGameplay: false);
+        cb?.Invoke();
+    }
+    void OnNoClicked()
+    {
+        var cb = _onNo;
+        HideChoices(restoreGameplay: false);
+        cb?.Invoke();
+    }
+
+    public void ShowWithChoices(string message, string yesText, string noText, System.Action onYes, System.Action onNo)
+    {
+        // Asegurar que el panel principal esté visible/interactable
+        if (group != null)
+        {
+            group.alpha = 1f;
+            group.blocksRaycasts = true;
+            group.interactable = true;
+        }
+        // Resetear contenido anterior
+        StopTypewriter();
+        if (nameText) nameText.text = string.Empty;
+        if (bodyText)
+        {
+            bodyText.text = string.Empty;
+            bodyText.maxVisibleCharacters = int.MaxValue;
+        }
+        if (portraitImage) portraitImage.enabled = false;
+        // bloquear gameplay igual que StartDialogue
+        SetGameplayEnabled(false);
+        if (pauseGameWhileOpen) Time.timeScale = 0f;
+        if (submitHint != null)
+            submitHint.SetActive(false);
+        if (messageLabel != null && !string.IsNullOrEmpty(message))
+            messageLabel.text = message;
+        else if (bodyText != null && !string.IsNullOrEmpty(message))
+            bodyText.text = message;
+
+        _onYes = onYes; _onNo = onNo;
+
+        if (yesButton != null)
+        {
+            var lbl = yesButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (lbl != null) lbl.text = yesText;
+            yesButton.onClick.RemoveListener(OnYesClicked);
+            yesButton.onClick.AddListener(OnYesClicked);
+            if (yesButton.GetComponent<ChoiceButtonFx>() == null)
+                yesButton.gameObject.AddComponent<ChoiceButtonFx>();
+        }
+        if (noButton != null)
+        {
+            var lbl = noButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (lbl != null) lbl.text = noText;
+            noButton.onClick.RemoveListener(OnNoClicked);
+            noButton.onClick.AddListener(OnNoClicked);
+            if (noButton.GetComponent<ChoiceButtonFx>() == null)
+                noButton.gameObject.AddComponent<ChoiceButtonFx>();
+        }
+
+        // Navegación explícita izquierda/derecha entre ambos botones (UI/Navigate)
+        if (yesButton != null && noButton != null)
+        {
+            var navYes = new Navigation { mode = Navigation.Mode.Explicit };
+            navYes.selectOnLeft = noButton; navYes.selectOnRight = noButton;
+            yesButton.navigation = navYes;
+
+            var navNo = new Navigation { mode = Navigation.Mode.Explicit };
+            navNo.selectOnLeft = yesButton; navNo.selectOnRight = yesButton;
+            noButton.navigation = navNo;
+        }
+
+        // Mostrar visualmente las opciones pero con un pequeño debounce antes de habilitar interacción
+        if (choicesRoot != null)
+        {
+            choicesRoot.alpha = 1f;
+            // Evitar confirmar inmediatamente por el mismo botón de interacción (Submit)
+            choicesRoot.blocksRaycasts = false;
+            choicesRoot.interactable = false;
+        }
+
+        var es = EventSystem.current;
+        if (es != null && yesButton != null)
+        {
+            es.sendNavigationEvents = true;
+            es.SetSelectedGameObject(yesButton.gameObject);
+            yesButton.Select();
+            StartCoroutine(SelectNextFrame(yesButton.gameObject));
+        }
+        else
+        {
+            Debug.LogWarning($"[DialogueManager] EventSystem or yesButton missing. es={(es!=null)} yes={(yesButton!=null)}");
+        }
+
+        // Habilitar interacción tras un breve retardo para que no se dispare el Submit previo
+        StartCoroutine(ArmChoicesAfterDelay(0.15f));
+    }
+
+    System.Collections.IEnumerator SelectNextFrame(GameObject go)
+    {
+        yield return null;
+        var es = EventSystem.current;
+        if (es != null && go != null)
+            es.SetSelectedGameObject(go);
+    }
+
+    System.Collections.IEnumerator ArmChoicesAfterDelay(float delay)
+    {
+        // Esperar tiempo no escalado por si el juego está pausado durante diálogos
+        float t = 0f;
+        while (t < delay)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        if (choicesRoot != null)
+        {
+            choicesRoot.blocksRaycasts = true;
+            choicesRoot.interactable = true;
+        }
     }
 
     private void OnAdvance(InputAction.CallbackContext _)
@@ -283,5 +525,7 @@ public class DialogueManager : MonoBehaviour
                 }
             }
         }
+        if (enable && pauseGameWhileOpen)
+            Time.timeScale = 1f;
     }
 }

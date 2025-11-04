@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 839992212735961885}
   - component: {fileID: 8088929991642480120}
   - component: {fileID: 2717961875639964677}
+  - component: {fileID: 315120265145860376}
   m_Layer: 8
   m_Name: Goods_Interactable
   m_TagString: Pickable
@@ -154,12 +155,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 1
+  mode: 2
   hint: {fileID: 2349119106315196847}
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
   dialogue: {fileID: 0}
+  yesOption: {fileID: 0}
+  noOption: {fileID: 0}
+  confirmFollowUp: {fileID: 0}
+  cancelFollowUp: {fileID: 0}
+  OnConfirm:
+    m_PersistentCalls:
+      m_Calls: []
   OnInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -186,6 +194,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PickupObject
   objectType: 0
   canBeDropped: 1
+--- !u!114 &315120265145860376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 356326472222561346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e9c28d07092c2b40acbb936a2b55c60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleQuestPickup
+  questId: ELDRAN_MISSION2
+  stepIndex: 0
 --- !u!1 &2349119106315196847
 GameObject:
   m_ObjectHideFlags: 0

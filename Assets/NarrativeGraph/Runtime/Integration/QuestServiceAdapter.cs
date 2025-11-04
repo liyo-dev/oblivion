@@ -28,13 +28,18 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
     {
         if (_subscribed || Qm == null) return;
         Qm.OnQuestsChanged += HandleQuestsChanged;
+        Qm.OnQuestCompleted += HandleQuestCompleted; // suscripción directa para disparo inmediato
         _subscribed = true;
         if (debugLogs) Debug.Log("[QuestServiceAdapter] Subscribed");
     }
     void TryUnsubscribe()
     {
         if (!_subscribed) return;
-        if (Qm != null) Qm.OnQuestsChanged -= HandleQuestsChanged;
+        if (Qm != null)
+        {
+            Qm.OnQuestsChanged -= HandleQuestsChanged;
+            Qm.OnQuestCompleted -= HandleQuestCompleted;
+        }
         _subscribed = false;
     }
 
@@ -117,7 +122,12 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
     public void OnCompleted(string questId, Action cb)
     {
         if (cb == null || string.IsNullOrEmpty(questId)) return;
-        if (IsCompleted(questId)) { cb(); return; }
+        if (IsCompleted(questId))
+        {
+            if (debugLogs) Debug.Log($"[QuestServiceAdapter] Quest {questId} already completed; invoking callback now");
+            cb();
+            return;
+        }
         if (!_waitingCompleted.TryGetValue(questId, out var list))
         {
             list = new List<Action>();
@@ -149,5 +159,22 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
             try { m.Invoke(Qm, MakeArgs(questId)); } catch (Exception e) { Debug.LogException(e); }
         }
         else if (debugLogs) Debug.Log("[QuestServiceAdapter] QuestManager no tiene método de completar (no-op).");
+    }
+
+    // Disparo inmediato cuando QuestManager anuncia completada
+    void HandleQuestCompleted(string questId)
+    {
+        if (!_waitingCompleted.TryGetValue(questId, out var list) || list == null || list.Count == 0)
+            return;
+        if (debugLogs) Debug.Log($"[QuestServiceAdapter] HandleQuestCompleted → {questId} (callbacks={list.Count})");
+        var callbacks = list.ToArray();
+        foreach (var cb in callbacks)
+        {
+            try { cb?.Invoke(); } catch (Exception e) { Debug.LogException(e); }
+        }
+        _waitingCompleted.Remove(questId);
+
+        if (_waitingCompleted.Count == 0)
+            TryUnsubscribe();
     }
 }
