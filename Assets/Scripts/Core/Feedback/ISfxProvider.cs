@@ -1,4 +1,4 @@
-﻿namespace Oblivion.Core.Feedback
+﻿namespace Sendero.Core.Feedback
 {
     using UnityEngine;
 
