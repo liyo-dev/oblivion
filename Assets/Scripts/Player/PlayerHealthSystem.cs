@@ -500,6 +500,7 @@ public class PlayerHealthSystem : MonoBehaviour
         SetRenderersColor(damageFlashColor);
         yield return new WaitForSeconds(damageFlashDuration);
         RestoreOriginalMaterials();
+        _damageFlashCoroutine = null;
     }
     
     private void StartInvulnerabilityFlash()
@@ -518,7 +519,30 @@ public class PlayerHealthSystem : MonoBehaviour
             SetRenderersVisibility(true);
             yield return new WaitForSeconds(invulnerabilityFlashRate);
         }
+
+        _invulnerabilityFlashCoroutine = null;
         SetRenderersVisibility(true);
+    }
+
+    /// <summary>
+    /// Forzamos la restauración de materiales y visibilidad para evitar quedarse tintado tras cinemáticas.
+    /// </summary>
+    public void ResetDamageVisuals()
+    {
+        if (_damageFlashCoroutine != null)
+        {
+            StopCoroutine(_damageFlashCoroutine);
+            _damageFlashCoroutine = null;
+        }
+
+        if (_invulnerabilityFlashCoroutine != null)
+        {
+            StopCoroutine(_invulnerabilityFlashCoroutine);
+            _invulnerabilityFlashCoroutine = null;
+        }
+
+        SetRenderersVisibility(true);
+        RestoreOriginalMaterials();
     }
     
     private void SetRenderersColor(Color color)

@@ -63,7 +63,7 @@ public class PlayerHUDComplete : MonoBehaviour
     // Manejador para recibir updates inmediatos de maná
     private void OnManaChangedListener(float percent)
     {
-        Debug.Log($"[PlayerHUDComplete] OnManaChangedListener called on HUD. ManaPool={( _manaPool != null ? _manaPool.gameObject.name : "null")}, percent={percent}");
+       // Debug.Log($"[PlayerHUDComplete] OnManaChangedListener called on HUD. ManaPool={( _manaPool != null ? _manaPool.gameObject.name : "null")}, percent={percent}");
         if (_manaSlider)
         {
             // Snap inmediato

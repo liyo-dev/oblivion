@@ -22,9 +22,9 @@ MonoBehaviour:
   - rid: 4128268641526088494
   - rid: 4128268641526088533
   - rid: 4128268648164098057
-  - rid: 4128268648164099100
   - rid: 4128268721076306140
   - rid: 4128268764951085534
+  - rid: 5623891023686795667
   references:
     version: 2
     RefIds:
@@ -104,38 +104,6 @@ MonoBehaviour:
         missionStringId: ELDRAN_MISSION3
         missionId: 0
         arenaContext: 
-    - rid: 4128268648164099100
-      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: ELDRAN SE VA
-        guid: f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
-        position: {x: 1707, y: -24}
-        outputs: []
-        npcName: Eldran
-        npcTag: 
-        dialogueOverride: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
-        triggerInteractableIfNoOverride: 1
-        dialogueTimeout: 60
-        targetAnchorName: House_FrontDoor
-        targetPosition: {x: 0, y: 0, z: 0}
-        anchorOffset: {x: 0, y: 0, z: 0}
-        useAnchorPosition: 1
-        useRelativeOffset: 0
-        relativeOffsetIsLocal: 0
-        relativeOffset: {x: 0, y: 0, z: 12}
-        navmeshSampleRadius: 2
-        stoppingDistance: 0.3
-        maxWalkSeconds: 12
-        minAnimSpeed: 0.25
-        resetAnimationOnEnd: 1
-        minVisibleWalkSeconds: 0.5
-        minDistanceBeforeTeleport: 0.5
-        lockPlayer: 1
-        lockMode: 3
-        offscreenPadding: 0.1
-        cameraHeightOffset: 1.5
-        debugLogs: 1
-        treatNoPathAsReach: 1
     - rid: 4128268721076306139
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -160,6 +128,34 @@ MonoBehaviour:
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         position: {x: 1374, y: -24}
         outputs:
-        - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
+        - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
         useInternalCinematic: 1
+    - rid: 5623891023686795667
+      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
+        position: {x: 1762, y: -230}
+        outputs: []
+        npcName: Eldran
+        npcTag: 
+        dialogueOverride: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
+        triggerInteractableIfNoOverride: 1
+        dialogueTimeout: 60
+        targetAnchorName: House_FrontDoor
+        targetPosition: {x: 0, y: 0, z: 0}
+        anchorOffset: {x: 0, y: 0, z: 0}
+        useAnchorPosition: 1
+        useRelativeOffset: 0
+        relativeOffsetIsLocal: 1
+        relativeOffset: {x: 0, y: 0, z: 5}
+        navmeshSampleRadius: 2
+        stoppingDistance: 0.35
+        maxWalkSeconds: 12
+        minAnimSpeed: 0.25
+        resetAnimationOnEnd: 1
+        lockPlayer: 1
+        lockMode: 3
+        offscreenPadding: 0.05
+        cameraHeightOffset: 1.5
