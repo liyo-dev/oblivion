@@ -199,6 +199,7 @@ public class PauseMenuController : MonoBehaviour
         Time.timeScale = 0f;
         _isPaused = true;
         IsOpen = true;
+        GameState.Push(GamePhase.PauseMenu);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -228,6 +229,7 @@ public class PauseMenuController : MonoBehaviour
         if (this == null) return;
         try
         {
+            if (!GameState.CanOpenPause) return;
             TogglePause();
         }
         catch (MissingReferenceException)
@@ -245,6 +247,7 @@ public class PauseMenuController : MonoBehaviour
 
     public void ShowPauseMenu()
     {
+        if (!GameState.CanOpenPause) return;
         gameObject.SetActive(true);
         EnsureUISelection();
     }
@@ -258,6 +261,7 @@ public class PauseMenuController : MonoBehaviour
             rootGroup.blocksRaycasts = false;
         }
         gameObject.SetActive(false);
+        if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
     }
 
     void BuildOrderedButtonsIfEmpty()

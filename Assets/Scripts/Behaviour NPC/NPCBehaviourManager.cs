@@ -655,10 +655,15 @@ namespace Alex.NPC
 
             void FinishQuest(QuestChainEntry entry, QuestManager qm, string questId, int index)
             {
+                _ctx.DebugLog($"FinishQuest → {questId}");
                 qm.CompleteQuest(questId);
                 entry.onQuestCompleted?.Invoke();
 
-                _ctx.PlayDialogue(entry.dlgTurnIn, () => _ctx.RunCoroutine(StartNextQuestAfterDialogue(qm, index)));
+                // Si no hay diálogo de entrega, avanzar inmediatamente en la cadena (evita panel vacío)
+                if (entry.dlgTurnIn)
+                    _ctx.PlayDialogue(entry.dlgTurnIn, () => _ctx.RunCoroutine(StartNextQuestAfterDialogue(qm, index)));
+                else
+                    _ctx.RunCoroutine(StartNextQuestAfterDialogue(qm, index));
             }
 
             IEnumerator StartNextQuestAfterDialogue(QuestManager qm, int currentIndex)
@@ -704,26 +709,39 @@ namespace Alex.NPC
             {
                 var qm = QuestManager.Instance;
                 if (qm == null)
+                {
+                    _ctx.DebugLog("Detección: QuestManager null");
                     return;
+                }
 
                 if (!TryGetCurrentEntry(qm, out var entry, out int index))
+                {
+                    _ctx.DebugLog("Detección: no hay entrada activa en la cadena");
                     return;
+                }
 
                 if (!entry.autoDetectItemDelivery || entry.questData == null)
+                {
+                    _ctx.DebugLog("Detección: autoDetect desactivado o questData null");
                     return;
+                }
 
                 if (qm.GetState(entry.questData.questId) != QuestState.Active)
+                {
+                    _ctx.DebugLog($"Detección: quest '{entry.questData.questId}' no está Active");
                     return;
+                }
 
-                int hits = Physics.OverlapSphereNonAlloc(_ctx.transform.position, detectionRadius,
+                float useRadius = (entry.overrideDetectionRadius > 0f) ? entry.overrideDetectionRadius : detectionRadius;
+                int hits = Physics.OverlapSphereNonAlloc(_ctx.transform.position, useRadius,
                     _overlapBuffer, detectionLayer, QueryTriggerInteraction.Collide);
 
-                if (hits <= 0) return;
+                if (hits <= 0) { _ctx.DebugLog("Detección: no hay colliders en radio"); return; }
 
                 Vector3 origin = _ctx.transform.position;
                 Vector3 forward = _ctx.transform.forward;
                 float halfAngle = detectionAngle * 0.5f;
-                float radiusSqr = detectionRadius * detectionRadius;
+                float radiusSqr = useRadius * useRadius;
 
                 for (int i = 0; i < hits; i++)
                 {
@@ -735,18 +753,19 @@ namespace Alex.NPC
                         continue;
 
                     if (!string.IsNullOrEmpty(entry.itemTag) && !go.CompareTag(entry.itemTag))
-                        continue;
+                    { _ctx.DebugLog($"Detección: descarta '{go.name}' por tag != '{entry.itemTag}'"); continue; }
 
                     Vector3 dir = go.transform.position - origin;
                     if (dir.sqrMagnitude > radiusSqr)
-                        continue;
+                    { _ctx.DebugLog($"Detección: '{go.name}' fuera de radio"); continue; }
 
-                    if (Vector3.Angle(forward, dir) > halfAngle)
-                        continue;
+                    if (!entry.ignoreFovForItem && Vector3.Angle(forward, dir) > halfAngle)
+                    { _ctx.DebugLog($"Detección: '{go.name}' fuera de FOV"); continue; }
 
                     if (IsHeldByPlayer(go))
-                        continue;
+                    { _ctx.DebugLog($"Detección: '{go.name}' ignorado (lo lleva el jugador)"); continue; }
 
+                    _ctx.DebugLog($"Detección: item '{go.name}' válido → entregar");
                     OnItemDetected(go, entry, qm, index);
                 }
             }
@@ -830,6 +849,8 @@ namespace Alex.NPC
                 public bool autoDetectItemDelivery = false;
                 public int itemDeliveryStepIndex = 1;
                 public string itemTag = "Untagged";
+                [Tooltip("Ignorar FOV; usa solo radio alrededor del NPC para detección")] public bool ignoreFovForItem = false;
+                [Tooltip("Si >0, usa este radio en lugar del del módulo para detectar el item")] public float overrideDetectionRadius = 0f;
 
                 [Header("Diálogos")]
                 public DialogueAsset dlgBefore;

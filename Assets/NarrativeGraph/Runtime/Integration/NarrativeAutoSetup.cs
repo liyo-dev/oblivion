@@ -12,6 +12,8 @@ public class NarrativeAutoSetup : MonoBehaviour
     public bool debugLogs;
 
     private static NarrativeAutoSetup _instance;
+    DefaultNarrativeSignals _signals;
+    QuestServiceAdapter _questService;
 
     void Awake()
     {
@@ -25,18 +27,18 @@ public class NarrativeAutoSetup : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         var runner = GetComponent<NarrativeRunner>() ?? gameObject.AddComponent<NarrativeRunner>();
-        var signals = GetComponent<DefaultNarrativeSignals>() ?? gameObject.AddComponent<DefaultNarrativeSignals>();
-        var questService = GetComponent<QuestServiceAdapter>() ?? gameObject.AddComponent<QuestServiceAdapter>();
+        _signals = GetComponent<DefaultNarrativeSignals>() ?? gameObject.AddComponent<DefaultNarrativeSignals>();
+        _questService = GetComponent<QuestServiceAdapter>() ?? gameObject.AddComponent<QuestServiceAdapter>();
 
         if (!graph)
             Debug.LogWarning("[NarrativeAutoSetup] Graph no asignado. Asigna uno en el inspector.");
         runner.graph = graph;
 
-        signals.questServiceProvider = questService;
+        _signals.questServiceProvider = _questService;
 
         var fi = typeof(NarrativeRunner).GetField("signalsProvider",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (fi != null) fi.SetValue(runner, signals);
+        if (fi != null) fi.SetValue(runner, _signals);
         else Debug.LogWarning("[NarrativeAutoSetup] No se encontró 'signalsProvider' en NarrativeRunner.");
 
         // Snapshot narrativo eliminado; no hay pending que aplicar
@@ -48,5 +50,24 @@ public class NarrativeAutoSetup : MonoBehaviour
     void OnDestroy()
     {
         if (_instance == this) _instance = null;
+    }
+
+    void Start()
+    {
+        TryBootstrapQuestSignals();
+    }
+
+    void TryBootstrapQuestSignals()
+    {
+        if (_signals == null) return;
+        var qm = QuestManager.Instance;
+        if (qm == null) return;
+
+        var questState = qm.GetState("ELDRAN_MISSION1");
+        if (questState >= QuestState.Completed)
+        {
+            if (debugLogs) Debug.Log("[NarrativeAutoSetup] Quest ELDRAN_MISSION1 completed; raising LETTER_START");
+            _signals.RaiseCustom("LETTER_START");
+        }
     }
 }

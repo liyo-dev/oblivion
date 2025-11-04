@@ -19,10 +19,10 @@ MonoBehaviour:
   maxMP: 100
   currentMP: 25
   unlockedAbilities: 01000000
-  unlockedSpells: 
-  leftSpellId: 0
-  rightSpellId: 0
-  specialSpellId: 0
+  unlockedSpells: 050000000100000002000000
+  leftSpellId: 1
+  rightSpellId: 2
+  specialSpellId: 5
   flags: []
   abilities:
     swim: 0
@@ -32,3 +32,4 @@ MonoBehaviour:
   appearance: []
   inventoryItems: []
   defeatedBossIds: []
+  npcPositions: []

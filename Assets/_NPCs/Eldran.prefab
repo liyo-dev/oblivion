@@ -19279,12 +19279,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 1
+  mode: 2
   hint: {fileID: 442860958227013085}
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
   dialogue: {fileID: 0}
+  yesOption: {fileID: 0}
+  noOption: {fileID: 0}
+  confirmFollowUp: {fileID: 0}
+  cancelFollowUp: {fileID: 0}
+  OnConfirm:
+    m_PersistentCalls:
+      m_Calls: []
   OnInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -19332,10 +19339,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCBehaviourManager
   ambientModule:
-    enableWander: 0
-    wanderRadius: 6
-    minIdleTime: 1.2
-    maxIdleTime: 3
+    enableWander: 1
+    wanderRadius: 0
+    minIdleTime: 0
+    maxIdleTime: 0
     pickWhileMoving: 0
   questModule:
     enable: 1
@@ -19416,6 +19423,10 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls: []
   logDebug: 0
+  persistLastPosition: 0
+  lastPosition: {x: 0, y: 0, z: 0}
+  rotateOnInteract: 0
+  rotateOnInteractSeconds: 0.3
 --- !u!1 &8932229672498769586
 GameObject:
   m_ObjectHideFlags: 0

@@ -434,6 +434,13 @@ public class GameBootProfile : ScriptableObject
             ResetPresetToEmpty(runtimePreset);
         }
 
+        // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
+        if (runtimePreset != null)
+        {
+            if (runtimePreset.npcPositions != null)
+                runtimePreset.npcPositions.Clear();
+        }
+
         // Limpiar flags transitorias (ej: cinemáticas vistas) para garantizar que Nueva Partida siempre las repita.
         if (runtimePreset != null && runtimePreset.flags != null)
         {

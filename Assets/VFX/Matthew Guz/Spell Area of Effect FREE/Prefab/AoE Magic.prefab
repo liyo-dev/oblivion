@@ -14973,12 +14973,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 1
   hint: {fileID: 4195920858664622009}
   hideHintAtStart: 1
-  singleUse: 1
+  singleUse: 0
   initiallyEnabled: 1
   dialogue: {fileID: 11400000, guid: d37a298bae2f40047978b9524f7fd669, type: 2}
+  yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
+  noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}
+  OnConfirm:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 4479071251875004551}
+        m_TargetAssemblyTypeName: SavePoint, Assembly-CSharp
+        m_MethodName: SaveFromDialogue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -14987,19 +15004,7 @@ MonoBehaviour:
       m_Calls: []
   OnFinished:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 4479071251875004551}
-        m_TargetAssemblyTypeName: SavePoint, Assembly-CSharp
-        m_MethodName: SaveFromInteractable
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+      m_Calls: []
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
@@ -15094,9 +15099,6 @@ MonoBehaviour:
   healOnSave: 1
   teleportAfterSave: 0
   teleportAnchorId: 
-  interactKey: 101
-  promptId: 
-  prompt: Guardar partida (E)
 --- !u!1 &5698229888806196876
 GameObject:
   m_ObjectHideFlags: 0

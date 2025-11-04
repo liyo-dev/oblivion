@@ -1,4 +1,3 @@
-// Assets/Scripts/UI/MainMenuController.cs
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -35,10 +34,16 @@ public class MainMenuController : MonoBehaviour
     [Header("UI / Intro (opcional)")]
     [SerializeField] private CanvasGroup rootGroup;          // si está vacío, se añade en Awake
     [SerializeField] private RectTransform[] animatedItems;  // hijos que caen en intro
+    [Tooltip("Retraso antes de que aparezca el rootGroup")]
+    [Min(0f)] public float rootAppearDelay = 1f;
     [Min(0f)] public float introDelay = 0.05f;
     [Min(0f)] public float introStagger = 0.04f;
     [Min(0f)] public float introDuration = 0.35f;
     public float introYOffset = 40f;
+    [Header("Input Debounce")]
+    [Tooltip("Activar para ignorar el Submit inicial al entrar al menú.")]
+    public bool enableInputDebounce = false;
+    [Min(0f)] public float inputArmDelay = 0.2f;
 
     private Sequence _introSeq;
     private bool _isLoading = false;
@@ -69,6 +74,9 @@ public class MainMenuController : MonoBehaviour
         PlayIntro();
         AutoSelectFirstIfNeeded();
         SelfTestButtons();
+        // Armar interacción tras un breve retardo para ignorar el Submit inicial
+        if (enableInputDebounce)
+            StartCoroutine(ArmMenuAfterDelay(inputArmDelay));
     }
 
     void Start()
@@ -147,7 +155,8 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
-        _introSeq.Insert(0f, rootGroup.DOFade(1f, introDuration));
+        // Hacer que el rootGroup aparezca tras un retardo configurable
+        _introSeq.Insert(rootAppearDelay, rootGroup.DOFade(1f, introDuration));
     }
 
     // ===== Acciones de menú =================================================
@@ -320,5 +329,31 @@ public class MainMenuController : MonoBehaviour
 
             Debug.Log($"[MainMenu][SelfTest] NewGame active={active}, interactable={interact}, blocksRaycasts={raycastOK}");
         }
+    }
+
+    System.Collections.IEnumerator ArmMenuAfterDelay(float delay)
+    {
+        // Deshabilitar temporalmente interacción para evitar confirmar por el mismo Submit
+        bool prevCR = true;
+        if (rootGroup != null)
+        {
+            prevCR = rootGroup.blocksRaycasts;
+            rootGroup.blocksRaycasts = false;
+        }
+        bool prevCont = continueButton ? continueButton.interactable : true;
+        bool prevNew = newGameButton ? newGameButton.interactable : true;
+        if (continueButton) continueButton.interactable = false;
+        if (newGameButton) newGameButton.interactable = false;
+
+        float t = 0f;
+        while (t < delay)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (rootGroup != null) rootGroup.blocksRaycasts = prevCR;
+        if (continueButton) continueButton.interactable = prevCont;
+        if (newGameButton) newGameButton.interactable = prevNew;
     }
 }

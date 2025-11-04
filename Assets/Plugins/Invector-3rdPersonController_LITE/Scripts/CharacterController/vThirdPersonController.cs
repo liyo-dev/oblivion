@@ -217,6 +217,7 @@ namespace Invector.vCharacterController
         // Input → X/B/Y
         public void CastMagicLeft()    => TryCastMagic(magicLeftStatePath, 0);
         public void CastMagicRight()   => TryCastMagic(magicRightStatePath, 1);
+        // Special slot id is 2 (0=Left, 1=Right, 2=Special)
         public void CastMagicSpecial() => TryCastMagic(magicSpecialStatePath, 2);
 
         private void TryCastMagic(string fullPath, int slotId)

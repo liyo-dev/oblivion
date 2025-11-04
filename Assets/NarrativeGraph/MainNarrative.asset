@@ -33,7 +33,7 @@ MonoBehaviour:
       data:
         displayTitle: CUANDO LEE LA CARTA
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: -43.2, y: -327.19998}
+        position: {x: -43, y: -327}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -42,16 +42,17 @@ MonoBehaviour:
       data:
         displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -376, y: -158.4}
+        position: {x: -376, y: -158}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
+        debugLogs: 1
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: TIENE QUE HABLAR CON ELDRAN
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 392.8, y: -327.19998}
+        position: {x: 393, y: -327}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -60,7 +61,7 @@ MonoBehaviour:
       data:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 782.4, y: 285.6}
+        position: {x: 782, y: 286}
         outputs: []
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -73,7 +74,7 @@ MonoBehaviour:
       data:
         displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 222.4, y: -158.4}
+        position: {x: 222, y: -158}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
@@ -85,7 +86,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 886.4, y: -158.4}
+        position: {x: 886, y: -158}
         outputs: []
         questId: ELDRAN_MISSION3
     - rid: 4128268648164098057
@@ -93,7 +94,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 886.4, y: -24}
+        position: {x: 886, y: -24}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -108,7 +109,7 @@ MonoBehaviour:
       data:
         displayTitle: ELDRAN SE VA
         guid: f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
-        position: {x: 1707.2, y: -24}
+        position: {x: 1707, y: -24}
         outputs: []
         npcName: Eldran
         npcTag: 
@@ -127,16 +128,20 @@ MonoBehaviour:
         maxWalkSeconds: 12
         minAnimSpeed: 0.25
         resetAnimationOnEnd: 1
+        minVisibleWalkSeconds: 0.5
+        minDistanceBeforeTeleport: 0.5
         lockPlayer: 1
         lockMode: 3
         offscreenPadding: 0.1
         cameraHeightOffset: 1.5
+        debugLogs: 1
+        treatNoPathAsReach: 1
     - rid: 4128268721076306139
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: CAPITULO 1
         guid: db912a03-cc37-4701-b21b-22ffd135fe3e
-        position: {x: -716.8, y: -327.19998}
+        position: {x: -717, y: -327}
         outputs:
         - a87a0200-5f03-48e7-b3da-587a333ca853
     - rid: 4128268721076306140
@@ -144,7 +149,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: a87a0200-5f03-48e7-b3da-587a333ca853
-        position: {x: -376, y: -327.19998}
+        position: {x: -376, y: -327}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
         eventKey: StartCity
@@ -153,7 +158,7 @@ MonoBehaviour:
       data:
         displayTitle: 
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 1374.4, y: -24}
+        position: {x: 1374, y: -24}
         outputs:
         - f7cf7dc6-ac09-4ab3-a400-46bfdc91f68e
         cinematicSceneName: Cinematic_VillainPlans

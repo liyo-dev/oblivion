@@ -16,6 +16,10 @@ using EasyTransition; // TransitionSettings y (opcional) TransitionManager
 /// </summary>
 public static class SceneTransitionLoader
 {
+    // Defaults configurable en runtime (p.ej., desde menús) para aplicar overlay/fade
+    public static string DefaultOverlayScene = null; // si no es null/empty, Load() usará overlay
+    public static TransitionSettings DefaultFade = null; // usado cuando NO hay overlay
+    public static float DefaultFadeDelay = 0f;
     // ====================== API PÚBLICA ======================
 
     /// <summary>Carga una escena por nombre, sin overlay de progreso.</summary>
@@ -23,7 +27,13 @@ public static class SceneTransitionLoader
                             TransitionSettings fade = null,
                             float fadeDelay = 0f)
     {
-        EnsureRunner().StartCoroutine(LoadRoutine(targetScene, overlayScene: null, fade, fadeDelay));
+        // Si hay overlay por defecto configurado, redirigir a LoadWithOverlay
+        if (!string.IsNullOrEmpty(DefaultOverlayScene))
+        {
+            EnsureRunner().StartCoroutine(LoadRoutine(targetScene, DefaultOverlayScene, DefaultFade ?? fade, DefaultFadeDelay > 0f ? DefaultFadeDelay : fadeDelay));
+            return;
+        }
+        EnsureRunner().StartCoroutine(LoadRoutine(targetScene, overlayScene: null, fade ?? DefaultFade, (fadeDelay > 0f) ? fadeDelay : DefaultFadeDelay));
     }
 
     /// <summary>

@@ -1,6 +1,14 @@
 {
     "texts": [
         {
+            "key": "COMMON_NO",
+            "value": "No\t"
+        },
+        {
+            "key": "COMMON_YES",
+            "value": "Sí"
+        },
+        {
             "key": "Dialogue_Continue",
             "value": "Continuar"
         },
