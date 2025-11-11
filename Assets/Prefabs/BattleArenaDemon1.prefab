@@ -65,6 +65,9 @@ MonoBehaviour:
   bossPrefab: {fileID: 2543156170968106335, guid: 75ce093c15c934c4d894f67be515e8fd, type: 3}
   portalSpawn: {fileID: 0}
   portalPrefab: {fileID: 8846737274113074935, guid: 81a74a0aefeb7674ca32535d1a269b4a, type: 3}
+  navMeshProbeRadius: 1.5
+  navMeshWaitTimeout: 5
+  navMeshRetryInterval: 0.25
   roomGoal: {fileID: 0}
   playerTag: Player
   musicBoss: {fileID: 0}
@@ -73,7 +76,8 @@ MonoBehaviour:
   onBossDefeated:
     m_PersistentCalls:
       m_Calls: []
-  toDisableDuringBattle: []
+  toDisableDuringBattle:
+  - {fileID: 0}
   startBarrierOnPlayerEnter: 0
 --- !u!65 &4571108151598832824
 BoxCollider:

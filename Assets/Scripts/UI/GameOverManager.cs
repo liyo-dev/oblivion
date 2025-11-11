@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using EasyTransition;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -10,33 +11,40 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Gestiona la pantalla de Game Over (mostrar/ocultar, pausar el juego y reiniciar escena).
 /// Asignar en el inspector un GameObject que contenga la UI de Game Over (Canvas con panel).
-/// Nota: versiÛn simplificada ó no gestiona animaciones ni desactiva componentes del jugador.
+/// Nota: versi√≥n simplificada - no gestiona animaciones ni desactiva componentes del jugador.
 /// </summary>
 public class GameOverManager : MonoBehaviour
 {
     public static GameOverManager Instance { get; private set; }
 
-    [Tooltip("Referencia al objeto de UI que act˙a como pantalla de Game Over. Puede estar desactivado por defecto.")]
+    [Tooltip("Referencia al objeto de UI que act√∫a como pantalla de Game Over. Puede estar desactivado por defecto.")]
     [SerializeField] private GameObject gameOverUI;
 
-    [Tooltip("Si est· activado, al mostrar GameOver se pausar· el juego con Time.timeScale = 0.")]
+    [Tooltip("Si est√° activado, al mostrar GameOver se pausar√° el juego con Time.timeScale = 0.")]
     [SerializeField] private bool pauseOnGameOver = true;
 
     [Header("Escenas")]
-    [Tooltip("Nombre de la escena de mundo que se carga al 'Cargar partida'. Igual que en MainMenuController.worldScene.")]
-    [SerializeField] private string worldScene = "MainWorld";
-
-    [Tooltip("Nombre de la escena del men˙ principal.")]
+    [Tooltip("Nombre de la escena del men√∫ principal.")]
     [SerializeField] private string mainMenuScene = "MainMenu";
 
-    [Header("UI / NavegaciÛn")]
+    [Header("Transiciones")]
+    [Tooltip("TransitionManager persistente que reproducira la transicion visual.")]
+    [SerializeField] private TransitionManager transitionManager;
+    [Tooltip("TransitionSettings usado al recargar la escena actual (boton Cargar partida).")]
+    [SerializeField] private TransitionSettings reloadTransitionSettings;
+    [Tooltip("TransitionSettings usado al volver al menu principal. Si es null, se reutiliza el de recarga.")]
+    [SerializeField] private TransitionSettings mainMenuTransitionSettings;
+    [Tooltip("Retraso opcional antes de lanzar la transicion.")]
+    [SerializeField] private float transitionStartDelay = 0f;
+
+    [Header("UI / Navegaci√≥n")]
     public Button loadLastSaveButton; // asignar desde inspector
     public Button backToMenuButton; // asignar desde inspector
     public CanvasGroup rootGroup; // opcional
-    public RectTransform[] selectableItems; // opcional: orden de selecciÛn
+    public RectTransform[] selectableItems; // opcional: orden de selecci√≥n
 
     [Header("Comportamiento")]
-    [Tooltip("Retraso en segundos antes de mostrar la UI de Game Over para permitir que la animaciÛn de muerte y la barra de vida terminen.")]
+    [Tooltip("Retraso en segundos antes de mostrar la UI de Game Over para permitir que la animaci√≥n de muerte y la barra de vida terminen.")]
     [SerializeField] private float delayBeforeShow = 0.75f;
 
     // internos para mantener foco
@@ -45,12 +53,12 @@ public class GameOverManager : MonoBehaviour
 
     private bool _isGameOverShown = false;
     private Coroutine _showCoroutine = null;
-    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones p˙blicas.
+    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones p√∫blicas.
     bool _allowActions = false;
 
     public bool IsShown => _isGameOverShown;
-    [Header("NavegaciÛn")]
-    [Tooltip("Tiempo entre repeticiones de navegaciÛn cuando se mantiene el D-Pad o stick.")]
+    [Header("Navegaci√≥n")]
+    [Tooltip("Tiempo entre repeticiones de navegaci√≥n cuando se mantiene el D-Pad o stick.")]
     [Range(0.05f, 0.5f)] public float navRepeatDelay = 0.2f;
     float _navCooldown;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -93,9 +101,10 @@ public class GameOverManager : MonoBehaviour
             return;
         }
         Instance = this;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
         // Opcional: no destruir al cambiar de escena si quieres persistencia
         // DontDestroyOnLoad(gameObject);
-        // Si est· en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
+        // Si est√° en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
         if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
         {
             DontDestroyOnLoad(gameObject);
@@ -138,8 +147,8 @@ public class GameOverManager : MonoBehaviour
         }
         _defaultSelection = loadLastSaveButton ? loadLastSaveButton.gameObject : fallback;
 
-        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se aÒadir·n
-        // y quitar·n cuando el men˙ se muestre/oculte para evitar callbacks fuera de contexto.
+        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se a√±adir√°n
+        // y quitar√°n cuando el men√∫ se muestre/oculte para evitar callbacks fuera de contexto.
         // Asegurar estado inicial no interactivo para evitar que botones respondan si el GameObject
         // se activa inadvertidamente.
         if (rootGroup != null)
@@ -153,32 +162,41 @@ public class GameOverManager : MonoBehaviour
             if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
                 loadLastSaveButton.interactable = false;
             else
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificar· en Awake.");
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificar√° en Awake.");
         }
         if (backToMenuButton != null)
         {
             if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
                 backToMenuButton.interactable = false;
             else
-                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificar· en Awake.");
+                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificar√° en Awake.");
         }
     }
 
     private void OnEnable()
     {
-        // No manejar la pausa/cursores aquÌ: OnEnable se llama cuando el GO se activa, pero
-        // el men˙ de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
+        // No manejar la pausa/cursores aqu√≠: OnEnable se llama cuando el GO se activa, pero
+        // el men√∫ de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
     }
 
     private void OnDisable()
     {
-        // No manejar la reanudaciÛn aquÌ por la misma razÛn.
+        // No manejar la reanudaci√≥n aqu√≠ por la misma raz√≥n.
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
-        // Solo procesar inputs cuando el Game Over estÈ realmente mostrado, la UI estÈ activa y las acciones estÈn permitidas
+        // Solo procesar inputs cuando el Game Over est√° realmente mostrado, la UI est√° activa y las acciones est√°n permitidas
         if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
 #else
         if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
@@ -187,7 +205,7 @@ public class GameOverManager : MonoBehaviour
         KeepUIFocusForGamepad();
         HandleNavigationInput();
 
-        // Cancel/back behavior: llevar al men˙ principal
+        // Cancel/back behavior: llevar al men√∫ principal
 #if ENABLE_INPUT_SYSTEM
         if (Gamepad.current != null)
         {
@@ -198,7 +216,7 @@ public class GameOverManager : MonoBehaviour
                 HideGameOver();
                 return;
             }
-            // buttonEast (B) -> volver al men˙ principal (cancel)
+            // buttonEast (B) -> volver al men√∫ principal (cancel)
             if (gp.buttonEast.wasPressedThisFrame)
             {
                 OnBackToMainMenu();
@@ -402,7 +420,7 @@ public class GameOverManager : MonoBehaviour
         return _orderedSelectables;
     }
 
-    // Attach/detach listeners: solo aÒadimos/quitan nuestro callback, no tocamos listeners serializados.
+    // Attach/detach listeners: solo a√±adimos/quitan nuestro callback, no tocamos listeners serializados.
     void AttachUIButtonListeners()
     {
         if (rootGroup != null)
@@ -416,13 +434,13 @@ public class GameOverManager : MonoBehaviour
         {
             if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
             {
-                loadLastSaveButton.onClick.RemoveListener(OnContinueButtonPressed);
-                loadLastSaveButton.onClick.AddListener(OnContinueButtonPressed);
+                loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
+                loadLastSaveButton.onClick.AddListener(OnLoadLastSave);
                 loadLastSaveButton.interactable = true;
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI ó no se aÒadir· listener");
+                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI - no se a√±adir√° listener");
             }
         }
 
@@ -436,11 +454,11 @@ public class GameOverManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI ó no se aÒadir· listener");
+                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI - no se a√±adir√° listener");
             }
         }
 
-        // Permitir la ejecuciÛn de las acciones p˙blicas ahora que los listeners est·n adjuntos
+        // Permitir la ejecuci√≥n de las acciones p√∫blicas ahora que los listeners est√°n adjuntos
         _allowActions = true;
     }
 
@@ -454,7 +472,7 @@ public class GameOverManager : MonoBehaviour
 
         if (loadLastSaveButton != null && gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
         {
-            loadLastSaveButton.onClick.RemoveListener(OnContinueButtonPressed);
+            loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
             loadLastSaveButton.interactable = false;
         }
 
@@ -464,16 +482,16 @@ public class GameOverManager : MonoBehaviour
             backToMenuButton.interactable = false;
         }
 
-        // Desactivar la ejecuciÛn de acciones p˙blicas
+        // Desactivar la ejecuci√≥n de acciones p√∫blicas
         _allowActions = false;
     }
 
     /// <summary>
-    /// Muestra la pantalla de Game Over. Pausa el juego si est· configurado.
+    /// Muestra la pantalla de Game Over. Pausa el juego si est√° configurado.
     /// </summary>
     public void ShowGameOver()
     {
-        // Evitar reentradas: si ya est· mostrado o en proceso de mostrarse, ignorar
+        // Evitar reentradas: si ya est√° mostrado o en proceso de mostrarse, ignorar
         if (_isGameOverShown || _showCoroutine != null) return;
 
         // Iniciar la coroutine que espera en tiempo real para permitir animaciones/efectos
@@ -497,10 +515,10 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 0f;
 
-        // Asegurar selecciÛn inicial del UI
+        // Asegurar selecci√≥n inicial del UI
         EnsureUISelection();
 
-        // Adjuntar solo nuestros listeners y activar la interacciÛn
+        // Adjuntar solo nuestros listeners y activar la interacci√≥n
         AttachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over mostrado");
@@ -509,7 +527,7 @@ public class GameOverManager : MonoBehaviour
     /// <summary>
     /// Oculta la pantalla de Game Over y reanuda el juego.
     /// </summary>
-    public void HideGameOver()
+    public void HideGameOver(bool resumeTime = true)
     {
         // Si estamos en espera para mostrar, cancelarla
         if (_showCoroutine != null)
@@ -524,13 +542,47 @@ public class GameOverManager : MonoBehaviour
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
 
-        if (pauseOnGameOver)
+        if (pauseOnGameOver && resumeTime)
             Time.timeScale = 1f;
 
-        // Quitar nuestros listeners y desactivar interacciÛn
+        // Quitar nuestros listeners y desactivar interacci√≥n
         DetachUIButtonListeners();
 
         Debug.Log("[GameOverManager] Game Over ocultado");
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ForceResetState($"[GameOverManager] Scene '{scene.name}' loaded -> forzando estado cerrado");
+    }
+
+    private void ForceResetState(string reason = null)
+    {
+        if (_showCoroutine != null)
+        {
+            StopCoroutine(_showCoroutine);
+            _showCoroutine = null;
+        }
+
+        _isGameOverShown = false;
+        _allowActions = false;
+
+        if (gameOverUI != null)
+            gameOverUI.SetActive(false);
+
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+
+        if (pauseOnGameOver)
+            Time.timeScale = 1f;
+
+        DetachUIButtonListeners();
+
+        if (!string.IsNullOrEmpty(reason))
+            Debug.Log(reason);
     }
 
     /// <summary>
@@ -538,8 +590,8 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void RestartLevel()
     {
-        if (pauseOnGameOver)
-            Time.timeScale = 1f;
+        // Asegurar que el men√∫ queda completamente oculto antes de recargar
+        HideGameOver(resumeTime: false);
 
         // Antes de recargar la escena, asegurarnos de que el runtimePreset contiene los valores actuales de HP/MP
         try
@@ -567,10 +619,10 @@ public class GameOverManager : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogWarning("[GameOverManager] No se encontrÛ PlayerHealthSystem para sincronizar HP antes de reiniciar");
+                        Debug.LogWarning("[GameOverManager] No se encontr√≥ PlayerHealthSystem para sincronizar HP antes de reiniciar");
                     }
 
-                    // Manejar Man·: si el preset no tiene la ability de magia, respetar 0/0
+                    // Manejar Man√°: si el preset no tiene la ability de magia, respetar 0/0
                     if (preset.abilities != null && !preset.abilities.magic)
                     {
                         preset.currentMP = 0f;
@@ -596,18 +648,18 @@ public class GameOverManager : MonoBehaviour
                         }
                         else
                         {
-                            Debug.LogWarning("[GameOverManager] No se encontrÛ ManaPool para sincronizar MP antes de reiniciar (dejando valores del preset)");
+                            Debug.LogWarning("[GameOverManager] No se encontr√≥ ManaPool para sincronizar MP antes de reiniciar (dejando valores del preset)");
                         }
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("[GameOverManager] Profile disponible pero GetActivePresetResolved() devolviÛ null");
+                    Debug.LogWarning("[GameOverManager] Profile disponible pero GetActivePresetResolved() devolvi√≥ null");
                 }
             }
             else
             {
-                Debug.LogWarning("[GameOverManager] GameBootService.Profile no est· disponible al reiniciar nivel");
+                Debug.LogWarning("[GameOverManager] GameBootService.Profile no est√° disponible al reiniciar nivel");
             }
         }
         catch (System.Exception e)
@@ -616,18 +668,18 @@ public class GameOverManager : MonoBehaviour
         }
 
         var active = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(active.name);
+        LoadSceneWithTransition(active.name, reloadTransitionSettings, mainMenuTransitionSettings, "Reiniciar nivel");
     }
 
     /// <summary>
-    /// Llamado desde el botÛn "Continuar" en la UI. Wrapper p˙blico que garantiza la lÛgica correcta
-    /// y deja un log claro para depuraciÛn del mapeo del botÛn.
+    /// Llamado desde el bot√≥n "Continuar" en la UI. Wrapper p√∫blico que garantiza la l√≥gica correcta
+    /// y deja un log claro para depuraci√≥n del mapeo del bot√≥n.
     /// </summary>
     public void OnContinueButtonPressed()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el men˙ no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el men√∫ no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
@@ -636,92 +688,196 @@ public class GameOverManager : MonoBehaviour
         HideGameOver();
     }
 
+    private TransitionSettings ResolveTransitionSettings(TransitionSettings preferred, TransitionSettings fallback)
+    {
+        if (preferred != null) return preferred;
+        return fallback;
+    }
+
+    private TransitionManager ResolveTransitionManager()
+    {
+        if (transitionManager != null) return transitionManager;
+
+        try
+        {
+            transitionManager = TransitionManager.Instance();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[GameOverManager] TransitionManager.Instance() fall√≥: {ex.Message}");
+        }
+
+        if (transitionManager != null)
+            return transitionManager;
+
+        try
+        {
+#if UNITY_2022_3_OR_NEWER
+            transitionManager = UnityEngine.Object.FindFirstObjectByType<TransitionManager>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            transitionManager = UnityEngine.Object.FindObjectOfType<TransitionManager>(true);
+#pragma warning restore 618
+#endif
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[GameOverManager] Error buscando TransitionManager en escena: {ex.Message}");
+        }
+
+        return transitionManager;
+    }
+
+    private void ResetProfileForPresetReload()
+    {
+        if (!GameBootService.IsAvailable) return;
+        var profile = GameBootService.Profile;
+        if (profile == null) return;
+
+        if (profile.ShouldBootFromPreset() && profile.bootPreset != null)
+        {
+            profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
+            Debug.Log("[GameOverManager] RuntimePreset restablecido desde bootPreset antes de recargar la escena actual");
+        }
+        else
+        {
+            GameBootService.NewGameReset();
+            Debug.LogWarning("[GameOverManager] No hay bootPreset activo; se realiz√≥ NewGameReset para limpiar el runtimePreset antes de recargar");
+        }
+    }
+
+    private void LoadSceneWithTransition(string targetScene, TransitionSettings preferredSettings, TransitionSettings fallbackSettings, string context)
+    {
+        var settings = ResolveTransitionSettings(preferredSettings, fallbackSettings);
+        var tm = ResolveTransitionManager();
+
+        if (tm != null && settings != null)
+        {
+            Debug.Log($"[GameOverManager] {context} usando TransitionManager -> '{targetScene}'");
+            tm.Transition(targetScene, settings, transitionStartDelay);
+            return;
+        }
+
+        if (tm == null)
+            Debug.LogWarning($"[GameOverManager] No se encontr√≥ TransitionManager para {context}. Carga directa de '{targetScene}'.");
+        else
+            Debug.LogWarning($"[GameOverManager] TransitionSettings no configurado ({context}). Carga directa de '{targetScene}'.");
+
+        SceneManager.LoadScene(targetScene);
+    }
+
     /// <summary>
-    /// Llamado desde el botÛn "Cargar partida" en la UI. Reutiliza la lÛgica de MainMenuController.OnContinue().
+    /// Llamado desde el bot√≥n "Cargar partida" en la UI. Reutiliza la l√≥gica de MainMenuController.OnContinue().
     /// </summary>
     public void OnLoadLastSave()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el men˙ no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el men√∫ no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
 
-        Debug.Log($"[GameOverManager] OnLoadLastSave invoked. worldScene='{worldScene}', mainMenuScene='{mainMenuScene}'");
-        // Restaurar timescale antes de hacer la carga/scene load
-        if (pauseOnGameOver)
-            Time.timeScale = 1f;
+        Debug.Log("[GameOverManager] OnLoadLastSave invoked -> recargar escena actual usando transici√≥n configurada");
+
+        // Cerrar el panel antes de iniciar la recarga para que los flags internos se reinicien
+        HideGameOver(resumeTime: false);
 
         var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         bool hasSave = saveSystem != null && saveSystem.HasSave();
-        Debug.Log($"[GameOverManager] SaveSystem found={ (saveSystem!=null) }, HasSave={hasSave}");
+        Debug.Log($"[GameOverManager] SaveSystem found={(saveSystem!=null)}, HasSave={hasSave}");
 
-        if (saveSystem != null && saveSystem.HasSave())
+        if (hasSave)
         {
             if (GameBootService.IsAvailable)
                 GameBootService.Profile?.LoadProfile(saveSystem);
-
-            Debug.Log($"[GameOverManager] Loading scene '{worldScene}' from save");
-            // Llamada din·mica a SceneTransitionLoader.Load para evitar dependencia dura
-            var loaderType = System.Type.GetType("SceneTransitionLoader, Assembly-CSharp");
-            if (loaderType != null)
-            {
-                var method = loaderType.GetMethod("Load", new System.Type[] { typeof(string) });
-                method?.Invoke(null, new object[] { worldScene });
-            }
-            else
-            {
-                SceneManager.LoadScene(worldScene);
-            }
         }
         else
         {
-            Debug.Log("[GameOverManager] No hay partida guardada; empezar nueva partida");
-            // Si no hay save, empezar nueva partida (igual que MainMenuController)
-            GameBootService.NewGameReset();
-
-            Debug.Log($"[GameOverManager] Loading scene '{worldScene}' for new game");
-            var loaderType = System.Type.GetType("SceneTransitionLoader, Assembly-CSharp");
-            if (loaderType != null)
-            {
-                var method = loaderType.GetMethod("Load", new System.Type[] { typeof(string) });
-                method?.Invoke(null, new object[] { worldScene });
-            }
-            else
-            {
-                SceneManager.LoadScene(worldScene);
-            }
+            Debug.LogWarning("[GameOverManager] No hay partida guardada; se recargar√° la escena actual igualmente.");
+            ResetProfileForPresetReload();
         }
+
+        string sceneToReload = SceneManager.GetActiveScene().name;
+        LoadSceneWithTransition(sceneToReload, reloadTransitionSettings, mainMenuTransitionSettings, "Recargar escena actual");
     }
 
+
     /// <summary>
-    /// Llamado desde el botÛn "Volver al men˙ principal".
+    /// Llamado desde el bot√≥n "Volver al men√∫ principal".
     /// </summary>
     public void OnBackToMainMenu()
     {
         if (!_allowActions || !_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el men˙ no permite acciones ahora.");
+            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el men√∫ no permite acciones ahora.");
             Debug.Log(new System.Diagnostics.StackTrace().ToString());
             return;
         }
 
         Debug.Log($"[GameOverManager] OnBackToMainMenu invoked. mainMenuScene='{mainMenuScene}'");
-        if (pauseOnGameOver)
-            Time.timeScale = 1f;
+
+        // Evitar quedar marcados como mostrados cuando la escena cambie
+        HideGameOver(resumeTime: false);
+
+        LoadSceneWithTransition(mainMenuScene, mainMenuTransitionSettings, reloadTransitionSettings, "Volver al men√∫ principal");
+    }
 
 
-        var loaderType = System.Type.GetType("SceneTransitionLoader, Assembly-CSharp");
-        if (loaderType != null)
+    /// <summary>
+    /// Intenta localizar una instancia existente incluso si est√° inactiva (por ejemplo, si el panel est√° en un prefab desactivado).
+    /// </summary>
+    private static bool TryResolveInstance()
+    {
+        if (Instance != null) return true;
+
+        GameOverManager found = null;
+#if UNITY_2022_3_OR_NEWER
+        try
         {
-            var method = loaderType.GetMethod("Load", new System.Type[] { typeof(string) });
-            method?.Invoke(null, new object[] { mainMenuScene });
+            found = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
         }
-        else
+        catch (System.Exception ex)
         {
-            SceneManager.LoadScene(mainMenuScene);
+            Debug.LogWarning($"[GameOverManager] Error al buscar instancia (FindFirstObjectByType): {ex.Message}");
         }
+#else
+        try
+        {
+#pragma warning disable 618
+            found = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
+#pragma warning restore 618
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[GameOverManager] Error al buscar instancia (FindObjectOfType): {ex.Message}");
+        }
+#endif
+
+        if (found != null)
+        {
+            Instance = found;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Asegura que la instancia est√° activa y habilitada antes de mostrar el men√∫.
+    /// </summary>
+    private static bool EnsureInstanceReady()
+    {
+        if (!TryResolveInstance())
+            return false;
+
+        if (!Instance.gameObject.activeSelf)
+            Instance.gameObject.SetActive(true);
+
+        if (!Instance.enabled)
+            Instance.enabled = true;
+
+        return true;
     }
 
     /// <summary>
@@ -729,11 +885,12 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public static void NotifyGameOver()
     {
-        if (Instance != null)
-            Instance.ShowGameOver();
-        else
-            Debug.LogWarning("[GameOverManager] No hay instancia disponible para mostrar Game Over.");
+        if (!EnsureInstanceReady())
+        {
+            Debug.LogWarning("[GameOverManager] No se encontr√≥ ninguna instancia para mostrar Game Over.");
+            return;
+        }
+
+        Instance.ShowGameOver();
     }
 }
-
-

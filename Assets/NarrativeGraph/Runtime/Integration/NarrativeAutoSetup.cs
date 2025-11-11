@@ -14,6 +14,7 @@ public class NarrativeAutoSetup : MonoBehaviour
     private static NarrativeAutoSetup _instance;
     DefaultNarrativeSignals _signals;
     QuestServiceAdapter _questService;
+    NarrativeRunner _runner;
 
     void Awake()
     {
@@ -26,19 +27,19 @@ public class NarrativeAutoSetup : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
 
-        var runner = GetComponent<NarrativeRunner>() ?? gameObject.AddComponent<NarrativeRunner>();
+        _runner = GetComponent<NarrativeRunner>() ?? gameObject.AddComponent<NarrativeRunner>();
         _signals = GetComponent<DefaultNarrativeSignals>() ?? gameObject.AddComponent<DefaultNarrativeSignals>();
         _questService = GetComponent<QuestServiceAdapter>() ?? gameObject.AddComponent<QuestServiceAdapter>();
 
         if (!graph)
             Debug.LogWarning("[NarrativeAutoSetup] Graph no asignado. Asigna uno en el inspector.");
-        runner.graph = graph;
+        _runner.graph = graph;
 
         _signals.questServiceProvider = _questService;
 
         var fi = typeof(NarrativeRunner).GetField("signalsProvider",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (fi != null) fi.SetValue(runner, _signals);
+        if (fi != null) fi.SetValue(_runner, _signals);
         else Debug.LogWarning("[NarrativeAutoSetup] No se encontró 'signalsProvider' en NarrativeRunner.");
 
         // Snapshot narrativo eliminado; no hay pending que aplicar
@@ -69,5 +70,20 @@ public class NarrativeAutoSetup : MonoBehaviour
             if (debugLogs) Debug.Log("[NarrativeAutoSetup] Quest ELDRAN_MISSION1 completed; raising LETTER_START");
             _signals.RaiseCustom("LETTER_START");
         }
+    }
+
+    public static void ResetForNewGame()
+    {
+        if (_instance == null) return;
+        _instance.HandleNewGameReset();
+    }
+
+    void HandleNewGameReset()
+    {
+        if (debugLogs) Debug.Log("[NarrativeAutoSetup] ResetForNewGame()");
+
+        _signals?.ResetState();
+        _questService?.ResetState();
+        _runner?.RestartFromStartNode(resetBlackboard: true);
     }
 }

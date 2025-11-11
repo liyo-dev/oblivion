@@ -13,28 +13,34 @@ public class NarrativeRunner : MonoBehaviour
     NarrativeContext _ctx;
     NarrativeNode _current;
 
-    // Snapshot narrativo eliminado: no se mantiene estado externo del grafo
-
     void Start()
     {
-        Debug.Log("[Runner] Start");
-        
-        if (graph == null)
+        RestartFromStartNode(resetBlackboard: true);
+    }
+
+    /// <summary>
+    /// Reinicia el grafo desde el nodo inicial. Útil al arrancar o al comenzar nueva partida.
+    /// </summary>
+    public void RestartFromStartNode(bool resetBlackboard)
+    {
+        Debug.Log("[Runner] RestartFromStartNode");
+
+        StopAllCoroutines();
+
+        if (resetBlackboard)
         {
-            Debug.LogError("[Narrative] Graph no asignado en NarrativeRunner.");
-            return;
+            if (Blackboard == null) Blackboard = new SimpleBlackboard();
+            else Blackboard.Clear();
+        }
+        else if (Blackboard == null)
+        {
+            Blackboard = new SimpleBlackboard();
         }
 
-        _ctx = new NarrativeContext
-        {
-            Graph = graph,
-            Runner = this,
-            Blackboard = Blackboard,
-            Exposed = new ExposedPropertyTable(),
-            Signals = signalsProvider // puede ser null; los nodos que lo usen deben comprobarlo
-        };
+        if (!TryBuildContext()) return;
 
-        // Arranca en el StartNode del asset
+        _current = null; // evita llamar Exit con un contexto nuevo
+
         if (string.IsNullOrEmpty(graph.startNodeGuid))
         {
             Debug.LogError("[Narrative] startNodeGuid vacío. Marca un nodo como 'Set as Start' en el editor.");
@@ -49,6 +55,25 @@ public class NarrativeRunner : MonoBehaviour
         }
 
         GoTo(start);
+    }
+
+    bool TryBuildContext()
+    {
+        if (graph == null)
+        {
+            Debug.LogError("[Narrative] Graph no asignado en NarrativeRunner.");
+            return false;
+        }
+
+        _ctx = new NarrativeContext
+        {
+            Graph = graph,
+            Runner = this,
+            Blackboard = Blackboard,
+            Exposed = new ExposedPropertyTable(),
+            Signals = signalsProvider
+        };
+        return true;
     }
 
     public void GoTo(NarrativeNode node)
