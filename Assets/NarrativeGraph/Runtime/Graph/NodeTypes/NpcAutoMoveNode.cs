@@ -302,10 +302,14 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
         else
         {
-            // Aún en cámara y sin llegar: no teletransportar. Dejamos que siga andando.
-            // El nodo finaliza, devolviendo el control; el NPC continuará con su path.
-            // No persistimos aún para no guardar una posición intermedia.
-            Log("Finished by timeout/in-camera → agent keeps walking (no teleport)");
+            // Caso límite: agotó el tiempo máximo visible pero sigue en cámara.
+            // Para evitar carreras eternas, moverlo al destino y dejarlo en idle.
+            NavMeshAgentUtility.SafeSetStopped(agent, true);
+            agent.ResetPath();
+            agent.Warp(destination);
+            PersistNpcPositionIfNeeded(npc, destination);
+            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            Log("Finished by timeout/in-camera → forced warp to destination");
         }
     }
 

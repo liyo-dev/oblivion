@@ -14,7 +14,13 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
 
     void OnEnable() { TrySubscribe(); }
     void OnDisable() { TryUnsubscribe(); _waitingCompleted.Clear(); }
-    
+
+    public void ResetState()
+    {
+        TryUnsubscribe();
+        _waitingCompleted.Clear();
+    }
+
     public void StartQuest(string questId)
     {
         if (debugLogs) Debug.Log($"[QuestServiceAdapter] StartQuest({questId})");

@@ -155,7 +155,11 @@ MonoBehaviour:
         maxWalkSeconds: 12
         minAnimSpeed: 0.25
         resetAnimationOnEnd: 1
+        minVisibleWalkSeconds: 0.5
+        minDistanceBeforeTeleport: 0.5
         lockPlayer: 1
         lockMode: 3
         offscreenPadding: 0.05
         cameraHeightOffset: 1.5
+        debugLogs: 0
+        treatNoPathAsReach: 1

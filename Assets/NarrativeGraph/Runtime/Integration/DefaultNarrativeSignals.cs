@@ -25,6 +25,15 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         Instance = this; 
     }
 
+    public void ResetState()
+    {
+        _custom.Clear();
+        _pending.Clear();
+        _battleSubscribers.Clear();
+        _battlePending.Clear();
+        _qs = null;
+    }
+
     IQuestService QS
     {
         get

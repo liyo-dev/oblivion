@@ -458,6 +458,8 @@ public class GameBootProfile : ScriptableObject
         if (QuestManager.Instance != null)
             QuestManager.Instance.ResetAllQuests();
 
+        NarrativeAutoSetup.ResetForNewGame();
+
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
     }
 
