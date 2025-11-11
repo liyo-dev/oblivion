@@ -147,6 +147,10 @@
         {
             "key": "UI_Mana",
             "value": "Mana"
+        },
+        {
+            "key": "WOODS_EXIT_BLOCKED",
+            "value": "[EN] Debería hablar con ese guarda."
         }
     ]
 }
