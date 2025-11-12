@@ -75,15 +75,24 @@ public class NarrativeAutoSetup : MonoBehaviour
     public static void ResetForNewGame()
     {
         if (_instance == null) return;
-        _instance.HandleNewGameReset();
+        _instance.HandleReset("ResetForNewGame");
     }
 
-    void HandleNewGameReset()
+    public static void ResetForLoadedProfile()
     {
-        if (debugLogs) Debug.Log("[NarrativeAutoSetup] ResetForNewGame()");
+        if (_instance == null) return;
+        _instance.HandleReset("ResetForLoadedProfile", rebootstrapSignals: true);
+    }
+
+    void HandleReset(string reason, bool rebootstrapSignals = false)
+    {
+        if (debugLogs) Debug.Log($"[NarrativeAutoSetup] {reason}()");
 
         _signals?.ResetState();
         _questService?.ResetState();
         _runner?.RestartFromStartNode(resetBlackboard: true);
+
+        if (rebootstrapSignals)
+            TryBootstrapQuestSignals();
     }
 }
