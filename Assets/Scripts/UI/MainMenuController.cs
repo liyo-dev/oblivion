@@ -56,6 +56,12 @@ public class MainMenuController : MonoBehaviour
 
     private Sequence _introSeq;
     private bool _isLoading = false;
+    private bool _inputArmed = true;
+    private Coroutine _armRoutine;
+    private bool _armSnapshotValid;
+    private bool _armSnapshotRaycasts;
+    private bool _armSnapshotContinueInteractable;
+    private bool _armSnapshotNewInteractable;
 
     void Awake()
     {
@@ -85,6 +91,14 @@ public class MainMenuController : MonoBehaviour
         SelfTestButtons();
         // Armar interacción tras un breve retardo para ignorar el Submit inicial
         bool shouldDebounce = enableInputDebounce || _forceInputDebounce;
+        _inputArmed = !shouldDebounce;
+
+        if (_armRoutine != null)
+        {
+            StopCoroutine(_armRoutine);
+            _armRoutine = null;
+        }
+
         if (shouldDebounce)
         {
             float delay = inputArmDelay;
@@ -95,7 +109,7 @@ public class MainMenuController : MonoBehaviour
                 _forcedDelay = -1f;
             }
 
-            StartCoroutine(ArmMenuAfterDelay(delay));
+            _armRoutine = StartCoroutine(ArmMenuAfterDelay(delay));
         }
     }
 
@@ -108,6 +122,13 @@ public class MainMenuController : MonoBehaviour
     void OnDisable()
     {
         _introSeq?.Kill(); _introSeq = null;
+        if (_armRoutine != null)
+        {
+            StopCoroutine(_armRoutine);
+            _armRoutine = null;
+        }
+        RestoreArmSnapshot();
+        _inputArmed = true;
     }
 
     // ===== Visibilidad / Selección =========================================
@@ -182,7 +203,12 @@ public class MainMenuController : MonoBehaviour
     // ===== Acciones de menú =================================================
     public void OnClickContinue()
     {
-        if (_isLoading) return;
+        if (_isLoading || !_inputArmed)
+        {
+            if (!_inputArmed)
+                Debug.Log("[MainMenu] Ignorando Continue mientras el menú arma la entrada.");
+            return;
+        }
         _isLoading = true;
         Debug.Log("[MainMenu] CONTINUE click");
 
@@ -212,7 +238,12 @@ public class MainMenuController : MonoBehaviour
 
     public void OnClickNewGame()
     {
-        if (_isLoading) return;
+        if (_isLoading || !_inputArmed)
+        {
+            if (!_inputArmed)
+                Debug.Log("[MainMenu] Ignorando New Game mientras el menú arma la entrada.");
+            return;
+        }
         _isLoading = true;
 
         Debug.Log("[MainMenu] NEW GAME click -> reiniciando perfil y cargando escena");
@@ -351,29 +382,63 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    System.Collections.IEnumerator ArmMenuAfterDelay(float delay)
+    void CaptureArmSnapshot()
     {
-        // Deshabilitar temporalmente interacción para evitar confirmar por el mismo Submit
-        bool prevCR = true;
         if (rootGroup != null)
         {
-            prevCR = rootGroup.blocksRaycasts;
+            _armSnapshotRaycasts = rootGroup.blocksRaycasts;
             rootGroup.blocksRaycasts = false;
         }
-        bool prevCont = continueButton ? continueButton.interactable : true;
-        bool prevNew = newGameButton ? newGameButton.interactable : true;
-        if (continueButton) continueButton.interactable = false;
-        if (newGameButton) newGameButton.interactable = false;
 
-        float t = 0f;
-        while (t < delay)
+        if (continueButton)
         {
-            t += Time.unscaledDeltaTime;
-            yield return null;
+            _armSnapshotContinueInteractable = continueButton.interactable;
+            continueButton.interactable = false;
         }
 
-        if (rootGroup != null) rootGroup.blocksRaycasts = prevCR;
-        if (continueButton) continueButton.interactable = prevCont;
-        if (newGameButton) newGameButton.interactable = prevNew;
+        if (newGameButton)
+        {
+            _armSnapshotNewInteractable = newGameButton.interactable;
+            newGameButton.interactable = false;
+        }
+
+        _armSnapshotValid = true;
+    }
+
+    void RestoreArmSnapshot()
+    {
+        if (!_armSnapshotValid) return;
+
+        if (rootGroup != null)
+            rootGroup.blocksRaycasts = _armSnapshotRaycasts;
+
+        if (continueButton)
+            continueButton.interactable = _armSnapshotContinueInteractable;
+
+        if (newGameButton)
+            newGameButton.interactable = _armSnapshotNewInteractable;
+
+        _armSnapshotValid = false;
+    }
+
+    System.Collections.IEnumerator ArmMenuAfterDelay(float delay)
+    {
+        CaptureArmSnapshot();
+
+        try
+        {
+            float t = 0f;
+            while (t < delay)
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+        finally
+        {
+            RestoreArmSnapshot();
+            _inputArmed = true;
+            _armRoutine = null;
+        }
     }
 }
