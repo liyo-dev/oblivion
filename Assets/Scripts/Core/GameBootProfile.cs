@@ -280,6 +280,8 @@ public class GameBootProfile : ScriptableObject
 
             // Snapshot narrativo eliminado; no se restaura
 
+            NarrativeAutoSetup.ResetForLoadedProfile();
+
             return true;
         }
         return false;
