@@ -478,6 +478,7 @@ public class PauseMenuController : MonoBehaviour
         // Cierra el menú antes de cambiar de escena para que no quede activo en el MainMenu.
         Resume();
         Time.timeScale = 1f;
+        MainMenuController.RequestInputDebounce();
         UnityEngine.SceneManagement.SceneManager.LoadScene(mainMenuScene);
     }
 }

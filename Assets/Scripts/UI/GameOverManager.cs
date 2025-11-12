@@ -820,6 +820,7 @@ public class GameOverManager : MonoBehaviour
         // Evitar quedar marcados como mostrados cuando la escena cambie
         HideGameOver(resumeTime: false);
 
+        MainMenuController.RequestInputDebounce();
         LoadSceneWithTransition(mainMenuScene, mainMenuTransitionSettings, reloadTransitionSettings, "Volver al menú principal");
     }
 

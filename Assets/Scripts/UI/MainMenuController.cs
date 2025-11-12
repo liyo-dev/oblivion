@@ -6,6 +6,15 @@ using DG.Tweening;
 [DisallowMultipleComponent]
 public class MainMenuController : MonoBehaviour
 {
+    static bool _forceInputDebounce;
+    static float _forcedDelay = -1f;
+
+    public static void RequestInputDebounce(float minimumDelay = 0.2f)
+    {
+        _forceInputDebounce = true;
+        _forcedDelay = Mathf.Max(0f, minimumDelay);
+    }
+
     [Header("Refs")]
     private SaveSystem saveSystem;
 
@@ -75,8 +84,19 @@ public class MainMenuController : MonoBehaviour
         AutoSelectFirstIfNeeded();
         SelfTestButtons();
         // Armar interacción tras un breve retardo para ignorar el Submit inicial
-        if (enableInputDebounce)
-            StartCoroutine(ArmMenuAfterDelay(inputArmDelay));
+        bool shouldDebounce = enableInputDebounce || _forceInputDebounce;
+        if (shouldDebounce)
+        {
+            float delay = inputArmDelay;
+            if (_forceInputDebounce)
+            {
+                delay = Mathf.Max(delay, _forcedDelay >= 0f ? _forcedDelay : delay);
+                _forceInputDebounce = false;
+                _forcedDelay = -1f;
+            }
+
+            StartCoroutine(ArmMenuAfterDelay(delay));
+        }
     }
 
     void Start()
