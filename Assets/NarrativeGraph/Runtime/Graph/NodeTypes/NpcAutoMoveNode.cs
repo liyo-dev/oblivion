@@ -322,7 +322,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         if (animator == null)
             return;
 
-        animator.SetMovementSpeed(0f);
+        animator.SetMovementSpeed(0f, 0f);
 
         if (resetAnimationOnEnd)
             animator.ResetMovement();

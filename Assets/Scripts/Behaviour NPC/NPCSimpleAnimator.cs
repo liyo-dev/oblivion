@@ -250,7 +250,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         animator.SetFloat(InputMagnitudeHash, Mathf.Clamp01(normalizedSpeed), dampTime, Time.deltaTime);
     }
 
-    public void ResetMovement() => SetMovementSpeed(0f);
+    public void ResetMovement() => SetMovementSpeed(0f, 0f);
 
     public void PlayOneShot(string stateName)
     {
