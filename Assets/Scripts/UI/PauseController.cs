@@ -194,6 +194,7 @@ public class PauseController : MonoBehaviour
     {
         // Asegurar reanudado antes de cambiar de escena
         Time.timeScale = 1f;
+        MainMenuController.RequestInputDebounce();
         // Usar SceneTransitionLoader si existe en proyecto, si no, fallback a SceneManager
         var loaderType = System.Type.GetType("SceneTransitionLoader, Assembly-CSharp");
         if (loaderType != null)
