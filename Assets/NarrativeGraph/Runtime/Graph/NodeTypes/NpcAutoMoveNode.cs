@@ -168,6 +168,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         {
             Debug.LogWarning("[NpcAutoMoveNode] No se pudo resolver el destino. Teleportando al origen configurado.");
             npc.transform.position = targetPosition;
+            EnsureNpcIdle(npc.Animator);
             yield break;
         }
 
@@ -180,7 +181,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             Debug.LogWarning("[NpcAutoMoveNode] NPC no tiene NavMeshAgent; no puede caminar. Teleport al destino.");
             npc.transform.position = destination;
             PersistNpcPositionIfNeeded(npc, destination);
-            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            EnsureNpcIdle(animator);
             yield break;
         }
 
@@ -202,7 +203,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             Debug.LogWarning("[NpcAutoMoveNode] No se pudo proyectar el NPC en NavMesh; teletransportando al destino.");
             npc.transform.position = destination;
             PersistNpcPositionIfNeeded(npc, destination);
-            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            EnsureNpcIdle(animator);
             yield break;
         }
 
@@ -223,7 +224,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             if (animator != null)
             {
                 float speed = NavMeshAgentUtility.ComputeSpeedFactor(agent);
-                animator.SetMovementSpeed(Mathf.Max(speed, minAnimSpeed));
+                float minSpeed = speed > 0.01f ? minAnimSpeed : 0f;
+                animator.SetMovementSpeed(Mathf.Max(speed, minSpeed));
             }
 
             // solo permitir teletransporte por offscreen tras cierto tiempo/distancia
@@ -286,7 +288,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             agent.ResetPath();
             agent.Warp(destination);
             PersistNpcPositionIfNeeded(npc, destination);
-            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            EnsureNpcIdle(animator);
             Log("Finished by offscreen → teleported and persisted position");
         }
         else if (reached)
@@ -297,7 +299,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             if (Vector3.Distance(agent.transform.position, destination) > 0.2f)
                 agent.Warp(destination);
             PersistNpcPositionIfNeeded(npc, destination);
-            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            EnsureNpcIdle(animator);
             Log(forcedReachNoPath ? "Finished by forced reach (no path) → warped to destination" : "Finished by reach → stopped at destination");
         }
         else
@@ -308,9 +310,48 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             agent.ResetPath();
             agent.Warp(destination);
             PersistNpcPositionIfNeeded(npc, destination);
-            if (resetAnimationOnEnd && animator != null) animator.ResetMovement();
+            EnsureNpcIdle(animator);
             Log("Finished by timeout/in-camera → forced warp to destination");
         }
+
+        FaceBackTowardsStart(npc, startPos, destination);
+    }
+
+    void EnsureNpcIdle(NPCSimpleAnimator animator)
+    {
+        if (animator == null)
+            return;
+
+        animator.SetMovementSpeed(0f);
+
+        if (resetAnimationOnEnd)
+            animator.ResetMovement();
+    }
+
+    void FaceBackTowardsStart(NPCBehaviourManager npc, Vector3 startPosition, Vector3 destination)
+    {
+        if (npc == null)
+            return;
+
+        Vector3 backward = startPosition - destination;
+        backward.y = 0f;
+
+        if (backward.sqrMagnitude < 0.0001f)
+        {
+            backward = -npc.transform.forward;
+            backward.y = 0f;
+        }
+
+        if (backward.sqrMagnitude < 0.0001f)
+            return;
+
+        backward.Normalize();
+
+        npc.transform.rotation = Quaternion.LookRotation(backward, Vector3.up);
+
+        var agent = npc.Agent;
+        if (agent != null && agent.enabled)
+            agent.nextPosition = npc.transform.position;
     }
 
     void PersistNpcPositionIfNeeded(NPCBehaviourManager npc, Vector3 destination)
