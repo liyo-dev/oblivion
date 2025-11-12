@@ -223,7 +223,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             if (animator != null)
             {
                 float speed = NavMeshAgentUtility.ComputeSpeedFactor(agent);
-                animator.SetMovementSpeed(Mathf.Max(speed, minAnimSpeed));
+                float minSpeed = speed > 0.01f ? minAnimSpeed : 0f;
+                animator.SetMovementSpeed(Mathf.Max(speed, minSpeed));
             }
 
             // solo permitir teletransporte por offscreen tras cierto tiempo/distancia
