@@ -15,15 +15,55 @@ public static class UnlockService
         return GameBootService.Profile.GetActivePresetResolved();
     }
 
-    /// Desbloquea una habilidad en el preset activo. Devuelve true si añadió algo.
+    /// Desbloquea una habilidad en el preset activo. Devuelve true si se modificó el preset (lista u otros datos asociados).
     public static bool UnlockAbility(AbilityId ability)
     {
         var preset = GetActivePreset();
         if (!preset) return false;
-        if (preset.unlockedAbilities == null) preset.unlockedAbilities = new List<AbilityId>();
-        if (preset.unlockedAbilities.Contains(ability)) return false;
-        preset.unlockedAbilities.Add(ability);
-        return true;
+
+        if (preset.unlockedAbilities == null)
+            preset.unlockedAbilities = new List<AbilityId>();
+
+        bool changed = false;
+
+        if (!preset.unlockedAbilities.Contains(ability))
+        {
+            preset.unlockedAbilities.Add(ability);
+            changed = true;
+        }
+
+        switch (ability)
+        {
+            case AbilityId.MagicAttack:
+                // Garantizar que el preset permite usar magia (habilita PlayerActionManager.AllowMagic)
+                if (preset.abilities == null)
+                    preset.abilities = new PlayerAbilities();
+
+                if (!preset.abilities.magic)
+                {
+                    preset.abilities.magic = true;
+                    changed = true;
+                }
+
+                // Asegurar que exista una reserva mínima de maná para que la barra se regenere.
+                const float minMagicMaxMp = 50f;
+                float desiredMax = Mathf.Max(preset.maxMP, minMagicMaxMp);
+                if (!Mathf.Approximately(preset.maxMP, desiredMax))
+                {
+                    preset.maxMP = desiredMax;
+                    changed = true;
+                }
+
+                float desiredCurrent = Mathf.Clamp(preset.currentMP, 0f, preset.maxMP);
+                if (!Mathf.Approximately(preset.currentMP, desiredCurrent))
+                {
+                    preset.currentMP = desiredCurrent;
+                    changed = true;
+                }
+                break;
+        }
+
+        return changed;
     }
 
     /// Desbloquea un hechizo y opcionalmente lo asigna a un slot vacío.
