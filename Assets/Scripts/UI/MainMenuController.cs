@@ -210,7 +210,6 @@ public class MainMenuController : MonoBehaviour
             return;
         }
         _isLoading = true;
-        Debug.Log("[MainMenu] CONTINUE click");
 
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
@@ -220,15 +219,19 @@ public class MainMenuController : MonoBehaviour
 
         if (forcePreset)
         {
-            Debug.Log("[MainMenu] CONTINUE en modo preset/test -> se omite la carga de save para respetar el boot forzado.");
+            // MODO TESTING: El preset de testeo tiene prioridad absoluta - ignora saves completamente
+            Debug.Log("[MainMenu] CONTINUE en modo preset/test → Save IGNORADO, se usará bootPreset configurado");
         }
         else if (hasSave)
         {
+            Debug.Log("[MainMenu] CONTINUE → Cargando save...");
             if (GameBootService.IsAvailable && GameBootService.Profile != null)
             {
                 bool loaded = GameBootService.Profile.LoadProfile(saveSystem);
                 if (!loaded)
                     Debug.LogWarning("[MainMenu] No se pudo cargar el save antes de ir a la escena del mundo.");
+                else
+                    Debug.Log("[MainMenu] Save cargado correctamente");
             }
             else
             {
@@ -237,7 +240,7 @@ public class MainMenuController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MainMenu] CONTINUE pulsado sin save disponible.");
+            Debug.LogWarning("[MainMenu] CONTINUE pulsado sin save disponible → usando preset por defecto");
         }
 
         LoadContinueScene();
@@ -253,22 +256,32 @@ public class MainMenuController : MonoBehaviour
         }
         _isLoading = true;
 
-        Debug.Log("[MainMenu] NEW GAME click -> reiniciando perfil y cargando escena");
-
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
-        if (GameBootService.IsAvailable)
+        bool forcePreset = GameBootService.IsPresetOverrideActive;
+
+        if (forcePreset)
         {
-            GameBootService.NewGameReset();
+            // MODO TESTING: El preset de testeo controla TODO - no hace falta resetear ni borrar saves
+            Debug.Log("[MainMenu] NEW GAME en modo preset/test → Save NO se borra, bootPreset tiene control absoluto");
         }
         else
         {
-            Debug.LogWarning("[MainMenu] GameBootService no esta listo; se borra el save directamente.");
-            if (saveSystem != null)
+            Debug.Log("[MainMenu] NEW GAME → Reseteando perfil y borrando save");
+            
+            if (GameBootService.IsAvailable)
             {
-                bool ok = saveSystem.Delete();
-                if (!ok) Debug.LogWarning("[MainMenu] SaveSystem.Delete() devolvio false (algun fichero no se pudo borrar).");
+                GameBootService.NewGameReset();
+            }
+            else
+            {
+                Debug.LogWarning("[MainMenu] GameBootService no esta listo; se borra el save directamente.");
+                if (saveSystem != null)
+                {
+                    bool ok = saveSystem.Delete();
+                    if (!ok) Debug.LogWarning("[MainMenu] SaveSystem.Delete() devolvio false (algun fichero no se pudo borrar).");
+                }
             }
         }
 

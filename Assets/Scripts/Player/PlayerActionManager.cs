@@ -42,6 +42,14 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [Tooltip("Capa del Animator donde residen las animaciones de locomoción.")]
     [SerializeField] private int locomotionLayer = 0;
 
+    [Header("Swimming Physics")]
+    [Tooltip("Altura (Y) a la que flotar mientras nada. Relativa a la superficie del agua.")]
+    [SerializeField] private float swimmingFloatHeight = -0.5f;
+    [Tooltip("Fuerza de flotación aplicada al nadar para mantener al jugador en superficie.")]
+    [SerializeField] private float buoyancyForce = 20f;
+    [Tooltip("Velocidad de interpolación para alcanzar la altura de flotación.")]
+    [SerializeField] private float floatSpeed = 5f;
+
     [Header("Reglas por modo (inspector)")]
     [Tooltip("Declara aquí todo lo que debe bloquearse/deshabilitarse por modo. Orden no importa.")]
     [SerializeField] private ModeRule[] rules;
@@ -109,9 +117,17 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private int _swimmingStateHash;
     private int _locomotionStateHash;
 
+    // Física para natación
+    private Rigidbody _rb;
+    private CharacterController _characterController;
+    private bool _wasUsingGravity;
+    private float _waterSurfaceY;
+
     void Awake()
     {
         _anim = GetComponent<Animator>();
+        _rb = GetComponent<Rigidbody>();
+        _characterController = GetComponent<CharacterController>();
 
         _swimmingStateHash = Animator.StringToHash(swimmingStateName);
         _locomotionStateHash = Animator.StringToHash(locomotionStateName);
@@ -320,6 +336,12 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         if (other == null || !IsWaterLayer(other.gameObject.layer))
             return;
 
+        // Guardar la posición Y de la superficie del agua
+        if (_waterContacts == 0)
+        {
+            _waterSurfaceY = other.bounds.max.y;
+        }
+
         _waterContacts++;
         TryEnterSwimming();
     }
@@ -355,6 +377,21 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
         _isSwimming = true;
 
+        // Desactivar gravedad si hay Rigidbody
+        if (_rb != null)
+        {
+            _wasUsingGravity = _rb.useGravity;
+            _rb.useGravity = false;
+            _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z); // Cancelar velocidad vertical
+        }
+
+        // Desactivar gravedad en CharacterController si existe
+        if (_characterController != null)
+        {
+            // CharacterController no tiene useGravity, se maneja en el script de movimiento
+            // pero podemos resetear la velocidad vertical
+        }
+
         if (_anim)
         {
             if (_swimmingStateHash != 0)
@@ -364,6 +401,8 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
 
         PushMode(ActionMode.Swimming);
+
+        if (debugLogs) Debug.Log("[PlayerActionManager] ✅ Modo Swimming activado - Gravedad desactivada");
     }
 
     private void ExitSwimming()
@@ -372,6 +411,12 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             return;
 
         _isSwimming = false;
+
+        // Reactivar gravedad si había Rigidbody
+        if (_rb != null)
+        {
+            _rb.useGravity = _wasUsingGravity;
+        }
 
         if (_anim)
         {
@@ -382,6 +427,8 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
 
         PopMode(ActionMode.Swimming);
+
+        if (debugLogs) Debug.Log("[PlayerActionManager] ✅ Modo Swimming desactivado - Gravedad restaurada");
     }
 
     // Por si el GameObject se desactiva en mitad de un modo
@@ -396,6 +443,50 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         ReenableAll();
         _stack.Clear();
         _stack.Add(ActionMode.Default);
+    }
+
+    void FixedUpdate()
+    {
+        if (!_isSwimming)
+            return;
+
+        ApplySwimmingPhysics();
+    }
+
+    private void ApplySwimmingPhysics()
+    {
+        // Aplicar flotación si hay Rigidbody
+        if (_rb != null)
+        {
+            float targetY = _waterSurfaceY + swimmingFloatHeight;
+            float currentY = transform.position.y;
+            
+            // Si está por debajo de la altura objetivo, aplicar fuerza hacia arriba
+            if (currentY < targetY)
+            {
+                float forceMagnitude = (targetY - currentY) * buoyancyForce;
+                _rb.AddForce(Vector3.up * forceMagnitude, ForceMode.Acceleration);
+            }
+            
+            // Limitar velocidad vertical para evitar que salte demasiado
+            Vector3 vel = _rb.linearVelocity;
+            vel.y = Mathf.Clamp(vel.y, -2f, 2f);
+            _rb.linearVelocity = vel;
+        }
+        // Si usa CharacterController, ajustar posición suavemente
+        else if (_characterController != null)
+        {
+            float targetY = _waterSurfaceY + swimmingFloatHeight;
+            float currentY = transform.position.y;
+            
+            if (Mathf.Abs(currentY - targetY) > 0.1f)
+            {
+                float newY = Mathf.Lerp(currentY, targetY, Time.fixedDeltaTime * floatSpeed);
+                Vector3 pos = transform.position;
+                pos.y = newY;
+                transform.position = pos;
+            }
+        }
     }
 
     // API pública para consultar estado
