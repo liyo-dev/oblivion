@@ -32,6 +32,16 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [SerializeField] private int upperBodyLayer = 1;
     [SerializeField] private string upperIdleState = "UpperIdle";
 
+    [Header("Swimming Detection")]
+    [Tooltip("Nombre de la capa que se considerará agua.")]
+    [SerializeField] private string waterLayerName = "Water";
+    [Tooltip("Estado base que se reproducirá al nadar.")]
+    [SerializeField] private string swimmingStateName = "Swimming_Floating_NoWeapon";
+    [Tooltip("Estado base al que regresamos al salir del agua.")]
+    [SerializeField] private string locomotionStateName = "Free Locomotion";
+    [Tooltip("Capa del Animator donde residen las animaciones de locomoción.")]
+    [SerializeField] private int locomotionLayer = 0;
+
     [Header("Reglas por modo (inspector)")]
     [Tooltip("Declara aquí todo lo que debe bloquearse/deshabilitarse por modo. Orden no importa.")]
     [SerializeField] private ModeRule[] rules;
@@ -93,10 +103,19 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private readonly Dictionary<ActionMode, ModeRule> _ruleByMode = new();
     private Animator _anim;
     private float _originalUpperWeight = 0f;
+    private int _waterLayer = -1;
+    private int _waterContacts = 0;
+    private bool _isSwimming = false;
+    private int _swimmingStateHash;
+    private int _locomotionStateHash;
 
     void Awake()
     {
         _anim = GetComponent<Animator>();
+
+        _swimmingStateHash = Animator.StringToHash(swimmingStateName);
+        _locomotionStateHash = Animator.StringToHash(locomotionStateName);
+        _waterLayer = LayerMask.NameToLayer(waterLayerName);
 
         // Guardar peso original del UpperBody
         if (upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
@@ -296,9 +315,84 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other == null || !IsWaterLayer(other.gameObject.layer))
+            return;
+
+        _waterContacts++;
+        TryEnterSwimming();
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other == null || !IsWaterLayer(other.gameObject.layer))
+            return;
+
+        _waterContacts = Mathf.Max(0, _waterContacts - 1);
+        if (_waterContacts == 0)
+            ExitSwimming();
+    }
+
+    private bool IsWaterLayer(int layer)
+    {
+        if (_waterLayer == -1)
+            return false;
+
+        return layer == _waterLayer;
+    }
+
+    private void TryEnterSwimming()
+    {
+        if (_isSwimming)
+            return;
+
+        if (!_allowSwim)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Swimming deshabilitado por preset");
+            return;
+        }
+
+        _isSwimming = true;
+
+        if (_anim)
+        {
+            if (_swimmingStateHash != 0)
+                _anim.Play(_swimmingStateHash, locomotionLayer, 0f);
+            else
+                _anim.Play(swimmingStateName, locomotionLayer, 0f);
+        }
+
+        PushMode(ActionMode.Swimming);
+    }
+
+    private void ExitSwimming()
+    {
+        if (!_isSwimming)
+            return;
+
+        _isSwimming = false;
+
+        if (_anim)
+        {
+            if (_locomotionStateHash != 0)
+                _anim.Play(_locomotionStateHash, locomotionLayer, 0f);
+            else
+                _anim.Play(locomotionStateName, locomotionLayer, 0f);
+        }
+
+        PopMode(ActionMode.Swimming);
+    }
+
     // Por si el GameObject se desactiva en mitad de un modo
     void OnDisable()
     {
+        if (_isSwimming)
+        {
+            _waterContacts = 0;
+            ExitSwimming();
+        }
+
         ReenableAll();
         _stack.Clear();
         _stack.Add(ActionMode.Default);
