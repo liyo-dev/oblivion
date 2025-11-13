@@ -18,6 +18,11 @@ public class GameBootService : MonoBehaviour
     
     // Propiedad pública para acceder al profile desde cualquier lugar
     public static GameBootProfile Profile => _profile;
+
+    /// <summary>
+    /// Indica si el perfil está configurado para forzar el boot desde el preset (modo test).
+    /// </summary>
+    public static bool IsPresetOverrideActive => _profile != null && _profile.ShouldBootFromPreset();
     
     void Awake()
     {

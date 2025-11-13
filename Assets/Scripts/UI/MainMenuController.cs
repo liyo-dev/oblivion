@@ -215,7 +215,14 @@ public class MainMenuController : MonoBehaviour
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
-        if (saveSystem != null && saveSystem.HasSave())
+        bool hasSave = saveSystem != null && saveSystem.HasSave();
+        bool forcePreset = GameBootService.IsPresetOverrideActive;
+
+        if (forcePreset)
+        {
+            Debug.Log("[MainMenu] CONTINUE en modo preset/test -> se omite la carga de save para respetar el boot forzado.");
+        }
+        else if (hasSave)
         {
             if (GameBootService.IsAvailable && GameBootService.Profile != null)
             {
