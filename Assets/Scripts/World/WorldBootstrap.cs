@@ -47,15 +47,31 @@ public class WorldBootstrap : MonoBehaviour
 
         _saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
-        // 1) Modo PRESET (test): ignora el save
+        // 1) Modo PRESET (test): SIEMPRE tiene prioridad sobre saves
+        // Si el checkbox de testeo está marcado, ignoramos cualquier save existente
         if (bootProfile.ShouldBootFromPreset())
         {
+            // Reforzar que el runtimePreset sea el bootPreset (por si se modificó)
+            bootProfile.EnsureRuntimePresetFromTemplate(bootProfile.bootPreset);
+            
             var anchor = bootProfile.GetStartAnchorOrDefault();
             SpawnManager.SetCurrentAnchor(anchor);
 
+            // IMPORTANTE: Resetear quests para que usen SOLO los flags del preset de testeo
+            var qm = QuestManager.Instance;
+            if (qm != null)
+            {
+                var preset = bootProfile.GetActivePresetResolved();
+                if (preset != null)
+                {
+                    qm.RestoreFromProfileFlags(preset.flags);
+                    Debug.Log($"[WorldBootstrap] Quest restauradas desde preset de testeo (flags count: {preset.flags?.Count ?? 0})");
+                }
+            }
+
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
 
-            Debug.Log("[WorldBootstrap] Iniciado en modo PRESET");
+            Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing) - Se ignora cualquier save existente");
             return;
         }
 

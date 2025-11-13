@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Servicio simple que hace persistir el GameBootProfile entre escenas
@@ -49,6 +50,9 @@ public class GameBootService : MonoBehaviour
         // Hacer que este GameObject persista entre escenas
         DontDestroyOnLoad(gameObject);
         
+        // Suscribirse a eventos de carga de escena para reforzar el preset de testeo
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        
         Debug.Log($"[GameBootService] GameBootProfile '{bootProfile.name}' cacheado y servicio persistente.");
 
         // Preparar el runtimePreset según reglas: preset de test -> save -> default
@@ -56,6 +60,34 @@ public class GameBootService : MonoBehaviour
         
         // Notificar que el profile está listo
         OnProfileReady?.Invoke();
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Si el checkbox de testeo está activado, SIEMPRE reforzar el preset de testeo completo
+        // ignorando cualquier save existente (control absoluto del preset)
+        if (_profile != null && _profile.ShouldBootFromPreset() && _profile.bootPreset != null)
+        {
+            _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
+            
+            // Restaurar quest desde el preset de testeo (sobrescribe cualquier estado previo)
+            var qm = QuestManager.Instance;
+            if (qm != null)
+            {
+                var preset = _profile.GetActivePresetResolved();
+                if (preset != null)
+                {
+                    qm.RestoreFromProfileFlags(preset.flags);
+                }
+            }
+            
+            Debug.Log($"[GameBootService] Escena '{scene.name}' cargada → Reforzando bootPreset completo (modo testing - save ignorado)");
+        }
     }
 
     private void PrepareActivePreset()
@@ -68,15 +100,15 @@ public class GameBootService : MonoBehaviour
 
         bool initialized = false;
 
-        // 1) Forzar preset de test si está configurado
+        // 1) MODO TESTING: El preset de testeo tiene PRIORIDAD ABSOLUTA - ignora saves completamente
         if (profile.ShouldBootFromPreset())
         {
             profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-            Debug.Log("[GameBootService] Inicializado desde bootPreset (testing)");
+            Debug.Log("[GameBootService] Inicializado desde bootPreset (testing) - SAVE IGNORADO");
             initialized = true;
         }
-        // 2) Intentar cargar partida si existe
-        else if (saveSystem && saveSystem.HasSave())
+        // 2) Intentar cargar partida si existe (SOLO si NO hay preset de testeo)
+        else if (saveSystem != null && saveSystem.HasSave())
         {
             if (profile.LoadProfile(saveSystem))
             {
@@ -124,10 +156,20 @@ public class GameBootService : MonoBehaviour
     /// <summary>
     /// Borra el save y restablece el runtimePreset al defaultPlayerPreset.
     /// Llamar desde menú antes de cargar la escena inicial de juego.
+    /// IMPORTANTE: Si el modo testing está activo, respeta el bootPreset en lugar de resetear.
     /// </summary>
     public static void NewGameReset()
     {
         if (!IsAvailable) return;
+        
+        // Si el modo testing está activo, no resetear - mantener el bootPreset
+        if (_profile.ShouldBootFromPreset() && _profile.bootPreset != null)
+        {
+            _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
+            Debug.Log("[GameBootService] NewGameReset llamado con testing mode activo → Manteniendo bootPreset");
+            return;
+        }
+        
         var save = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         _profile.NewGameReset(save);
     }

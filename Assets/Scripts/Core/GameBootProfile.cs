@@ -68,6 +68,7 @@ public class GameBootProfile : ScriptableObject
             dst.abilities.swim = src.abilities.swim;
             dst.abilities.jump = src.abilities.jump;
             dst.abilities.climb = src.abilities.climb;
+            dst.abilities.magic = src.abilities.magic; // ← ARREGLADO: copiar también magic
         }
         else
         {
