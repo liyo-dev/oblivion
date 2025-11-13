@@ -785,9 +785,15 @@ public class GameOverManager : MonoBehaviour
 
         var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         bool hasSave = saveSystem != null && saveSystem.HasSave();
-        Debug.Log($"[GameOverManager] SaveSystem found={(saveSystem!=null)}, HasSave={hasSave}");
+        bool forcePreset = GameBootService.IsPresetOverrideActive;
+        Debug.Log($"[GameOverManager] SaveSystem found={(saveSystem!=null)}, HasSave={hasSave}, ForcePreset={forcePreset}");
 
-        if (hasSave)
+        if (forcePreset)
+        {
+            Debug.Log("[GameOverManager] Modo preset/test activo -> se omite la carga de save al recargar la escena actual.");
+            ResetProfileForPresetReload();
+        }
+        else if (hasSave)
         {
             if (GameBootService.IsAvailable)
                 GameBootService.Profile?.LoadProfile(saveSystem);
