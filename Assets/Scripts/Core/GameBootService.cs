@@ -172,5 +172,8 @@ public class GameBootService : MonoBehaviour
         
         var save = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         _profile.NewGameReset(save);
+
+        // Reiniciar todos los grafos narrativos persistentes para que arranquen desde cero
+        NarrativeGraphHub.Instance?.RestartAll(resetBlackboard: true);
     }
 }

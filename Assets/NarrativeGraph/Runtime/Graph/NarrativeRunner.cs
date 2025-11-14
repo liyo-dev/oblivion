@@ -9,13 +9,16 @@ public class NarrativeRunner : MonoBehaviour
 
     // ← asegúrate de tener este campo (lo rellena el AutoSetup o tú a mano)
     [SerializeField] private DefaultNarrativeSignals signalsProvider;
+    [SerializeField] private bool autoStartOnPlay = true;
+    [SerializeField] private bool resetBlackboardOnAutoStart = true;
 
     NarrativeContext _ctx;
     NarrativeNode _current;
 
     void Start()
     {
-        RestartFromStartNode(resetBlackboard: true);
+        if (autoStartOnPlay)
+            RestartFromStartNode(resetBlackboardOnAutoStart);
     }
 
     /// <summary>
@@ -64,6 +67,12 @@ public class NarrativeRunner : MonoBehaviour
             Debug.LogError("[Narrative] Graph no asignado en NarrativeRunner.");
             return false;
         }
+
+        if (Blackboard == null)
+            Blackboard = new SimpleBlackboard();
+
+        if (signalsProvider == null)
+            signalsProvider = DefaultNarrativeSignals.EnsureInstance();
 
         _ctx = new NarrativeContext
         {
@@ -227,4 +236,29 @@ public class NarrativeRunner : MonoBehaviour
     }
 
     // Snapshot export/import eliminado: la progresión depende de flags/misiones
+
+    public void SetSignalsProvider(DefaultNarrativeSignals provider)
+    {
+        if (provider != null)
+            signalsProvider = provider;
+    }
+
+    public void SetAutoStart(bool autoStart, bool resetBlackboard)
+    {
+        autoStartOnPlay = autoStart;
+        resetBlackboardOnAutoStart = resetBlackboard;
+    }
+
+    public void Configure(NarrativeGraph newGraph, SimpleBlackboard blackboard, DefaultNarrativeSignals provider, bool runImmediately, bool resetBlackboardBeforeRun)
+    {
+        if (newGraph != null)
+            graph = newGraph;
+        if (blackboard != null)
+            Blackboard = blackboard;
+        if (provider != null)
+            signalsProvider = provider;
+
+        if (runImmediately)
+            RestartFromStartNode(resetBlackboardBeforeRun);
+    }
 }

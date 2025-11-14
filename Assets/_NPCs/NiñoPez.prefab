@@ -13414,8 +13414,8 @@ MonoBehaviour:
       itemTag: 
       ignoreFovForItem: 0
       overrideDetectionRadius: 0
-      dlgBefore: {fileID: 11400000, guid: 1a4b3d11fdc02b1458216cbbd2882434, type: 2}
-      dlgInProgress: {fileID: 0}
+      dlgBefore: {fileID: 0}
+      dlgInProgress: {fileID: 11400000, guid: 1a4b3d11fdc02b1458216cbbd2882434, type: 2}
       dlgTurnIn: {fileID: 0}
       dlgCompleted: {fileID: 0}
       onQuestCompleted:
@@ -13478,7 +13478,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: "START_Q_NI\xD1OPEZ"
-  signals: {fileID: 0}
   sendNow: 0
 --- !u!1 &5539596735600499571
 GameObject:

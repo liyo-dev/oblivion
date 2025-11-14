@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
+  m_Name: Secundary
+  m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
+  startNodeGuid: b637fe58-dba2-46e0-a474-9ce5cea8914e
+  nodes:
+  - rid: 5623891252771815603
+  - rid: 5623891252771815604
+  - rid: 5623891252771815605
+  - rid: 5623891252771815606
+  - rid: 5623891252771815607
+  references:
+    version: 2
+    RefIds:
+    - rid: 5623891252771815603
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Misi\xF3n Aprender a Nadar"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b637fe58-dba2-46e0-a474-9ce5cea8914e
+        position: {x: 260, y: -214}
+        outputs:
+        - 56ee457b-d855-4e76-a2f1-01a3499c3c2a
+        eventKey: "START_Q_NI\xD1OPEZ"
+    - rid: 5623891252771815604
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Mision Ni\xF1o Pez"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 56ee457b-d855-4e76-a2f1-01a3499c3c2a
+        position: {x: 742, y: -214}
+        outputs:
+        - 1402d671-5cbc-4187-b2ad-b0233103a172
+        - 099fe10e-98f2-475b-ae44-0f435002ee2c
+        questId: "Q_NI\xD1OPEZ"
+    - rid: 5623891252771815605
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recibo Algas
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 099fe10e-98f2-475b-ae44-0f435002ee2c
+        position: {x: 763, y: 71}
+        outputs:
+        - a5b0ec64-4604-458f-baa2-4363bad5d765
+        eventKey: ALGAS_INVENTORY
+    - rid: 5623891252771815606
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "A\xF1ado Aa\xF1gas al Inventario"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: a5b0ec64-4604-458f-baa2-4363bad5d765
+        position: {x: 1241, y: 231}
+        outputs: []
+        item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
+        amount: 1
+        logWarnings: 1
+    - rid: 5623891252771815607
+      type: {class: RequireInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1402d671-5cbc-4187-b2ad-b0233103a172
+        position: {x: 1241, y: -214}
+        outputs: []
+        item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
+        requiredAmount: 1
+        consumeOnSuccess: 1
+        logWarnings: 1
+        questId: "Q_NI\xD1OPEZ"
+        questStepIndex: -1
+        autoStartQuestIfInactive: 1
+        completeQuestInstead: 0
+        useAlternateOutputOnMissing: 1
+        alternateOutputIndex: 1
