@@ -13,8 +13,11 @@ MonoBehaviour:
   m_Name: "Q_NI\xD1OPEZ"
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
   questId: "Q_NI\xD1OPEZ"
-  displayNameId: "Q_NI\xD1OPEZ"
-  displayName: 
-  descriptionId: 
+  displayNameId: "CHAR_NI\xD1OPEZ"
+  displayName: "CHAR_NI\xD1OPEZ"
+  descriptionId: "Q_NI\xD1OPEZ_DESC"
   description: 
-  steps: []
+  steps:
+  - descriptionId: "Q_NI\xD1OPEZ_DESC"
+    description: 
+    conditionId: 

@@ -41,12 +41,16 @@
             "value": "Pirata"
         },
         {
+            "key": "CHAR_TENDERA",
+            "value": "Tendera"
+        },
+        {
             "key": "CHAR_VERONICA",
             "value": "Verónica"
         },
         {
             "key": "DLG_AMIGAPEZ_01",
-            "value": "¿Buscas a mi amigo? Siempre se esconde bajo el muelle."
+            "value": "¿Buscas a mi amigo? Siempre se esconde cerca del mar."
         },
         {
             "key": "DLG_AMIGAPEZ_02",
@@ -54,15 +58,15 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "A veces canta a las burbujas para que brillen."
+            "value": "A veces se camufla con algas."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
-            "value": "Yo no puedo ir tan profundo, mis aletas son pequeñas."
+            "value": "Si te las pide puedes preguntar en las tiendas del reino."
         },
         {
             "key": "DLG_AMIGAPEZ_05",
-            "value": "Si le ayudas, seguro te contará secretos del agua."
+            "value": "A veces les sobra y hasta te la pueden regalar."
         },
         {
             "key": "DLG_ANTIPATICO_01",
@@ -186,19 +190,19 @@
         },
         {
             "key": "DLG_NIÑOPEZ_02",
-            "value": "¿Has visto mi caracola azul? La uso para llamar amigos."
+            "value": "¿Has visto mi caracola azul? La uso para llamar a mis amigos marinos."
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "Debajo del muelle hay una puerta cubierta de algas."
+            "value": "Pero no puedo meterme en el agua sin mis algas de camuflaje,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
-            "value": "Dicen que se abre si tocas tres burbujas en orden."
+            "value": "Seguro que mi amiga me las ha quitado."
         },
         {
             "key": "DLG_NIÑOPEZ_05",
-            "value": "Si la encuentras te contaré un secreto de las corrientes."
+            "value": "Si la encuentras te diré como puedes ayudarme a buscar mi caracola."
         },
         {
             "key": "DLG_PIRATE_01",
@@ -207,6 +211,14 @@
         {
             "key": "DLG_PIRATE_02",
             "value": "Me lo quitó un caridas..."
+        },
+        {
+            "key": "DLG_TENDERA_01",
+            "value": "Tengo la tienda cerrada de momento."
+        },
+        {
+            "key": "DLG_TENDERA_02",
+            "value": "Pero toma un poco de algas que me sobra un montón."
         },
         {
             "key": "DLG_VERONICA_01",
