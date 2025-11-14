@@ -5,8 +5,22 @@ using UnityEngine;
 [Serializable]
 public abstract class NarrativeNode
 {
+    public enum PortAnchor
+    {
+        Left,
+        Right,
+        Top,
+        Bottom
+    }
+
     // Título visible en la card
     public string displayTitle;
+
+    // Campos legacy (ocultos) para mantener compatibilidad con grafos existentes.
+    [HideInInspector] public PortAnchor inputAnchor = PortAnchor.Left;
+    [HideInInspector] public PortAnchor outputAnchor = PortAnchor.Right;
+    [HideInInspector] public bool overrideNodeColor;
+    [HideInInspector] public Color nodeColor = new Color(0.35f, 0.35f, 0.35f);
 
     // Técnicos (ocultos en inspector normal)
     [HideInInspector] public string guid = Guid.NewGuid().ToString();

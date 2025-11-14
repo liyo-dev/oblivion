@@ -14,6 +14,7 @@ namespace Sendero.Narrative.Editor
         private global::NarrativeGraph _graph;
         private NarrativeGraphView _view;
         private readonly Dictionary<string, NodeView> _nodeViews = new();
+        private bool _suppressGraphCallbacks;
 
         [MenuItem("Tools/Narrative Graph/Open Editor")]
         public static void OpenWindow()
@@ -55,6 +56,15 @@ namespace Sendero.Narrative.Editor
 
             rootVisualElement.Add(toolbar);
 
+#if UNITY_EDITOR
+            var sheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/NarrativeGraph/Editor/NarrativeGraphStyles.uss");
+            if (sheet != null)
+            {
+                _view.styleSheets.Add(sheet);
+                rootVisualElement.styleSheets.Add(sheet);
+            }
+#endif
+
             _view.AddManipulator(new ContextualMenuManipulator(e =>
             {
                 Vector2 world = e.mousePosition;
@@ -81,9 +91,14 @@ namespace Sendero.Narrative.Editor
         private void LoadGraph(NarrativeGraph g)
         {
             _graph = g;
+            _suppressGraphCallbacks = true;
             _view.DeleteElements(_view.graphElements.ToList());
             _nodeViews.Clear();
-            if (_graph == null) return;
+            if (_graph == null)
+            {
+                _suppressGraphCallbacks = false;
+                return;
+            }
 
             if (string.IsNullOrEmpty(_graph.startNodeGuid) && _graph.nodes.Count > 0)
                 _graph.startNodeGuid = _graph.nodes[0].guid;
@@ -102,6 +117,7 @@ namespace Sendero.Narrative.Editor
             }
 
             _view.FrameAll();
+            _suppressGraphCallbacks = false;
         }
 
         private void DrawNode(NarrativeNode model)
@@ -215,6 +231,7 @@ namespace Sendero.Narrative.Editor
 
         private void OnEdgeLinked(Edge e)
         {
+            if (_suppressGraphCallbacks) return;
             if (_graph == null) return;
             if (e.output?.node is NodeView from && e.input?.node is NodeView to)
             {
@@ -228,6 +245,7 @@ namespace Sendero.Narrative.Editor
 
         private void OnEdgeUnlinked(Edge e)
         {
+            if (_suppressGraphCallbacks) return;
             if (_graph == null) return;
             if (e.output?.node is NodeView from && e.input?.node is NodeView to)
             {
@@ -249,6 +267,7 @@ namespace Sendero.Narrative.Editor
         
         private void OnNodeDeleted(NodeView nv)
         {
+            if (_suppressGraphCallbacks) return;
             if (_graph == null || nv == null || nv.Model == null) return;
             Undo.RecordObject(_graph, "Delete Narrative Node");
 

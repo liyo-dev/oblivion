@@ -1,0 +1,83 @@
+.narrative-node {
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: #1a1a1a;
+    background-color: #2c2f39;
+    box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.35);
+    min-width: 280px;
+}
+
+.narrative-node__subtitle {
+    font-size: 11px;
+    color: rgba(1, 1, 1, 0.85);
+    white-space: normal;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+.narrative-node__title-bar {
+    border-radius: 10px 10px 0 0;
+    padding: 6px;
+}
+
+.narrative-node__extension {
+    padding-bottom: 18px;
+}
+
+.narrative-port-dock {
+    justify-content: flex-start;
+    padding: 3px 4px;
+}
+
+.narrative-port-dock--right {
+    justify-content: flex-end;
+}
+
+.narrative-port-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 18px;
+    pointer-events: none;
+}
+
+.narrative-port-layer--top {
+    top: -12px;
+}
+
+.narrative-port-layer--bottom {
+    bottom: -12px;
+}
+
+.narrative-port {
+    width: 18px;
+    height: 18px;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    border-width: 2px;
+    border-color: rgba(0, 0, 0, 0.45);
+    margin: 2px;
+}
+
+.narrative-port--top,
+.narrative-port--bottom {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.narrative-port--top {
+    top: 0;
+}
+
+.narrative-port--bottom {
+    bottom: 0;
+}
+
+.narrative-port--left {
+    justify-content: flex-start;
+}
+
+.narrative-port--right {
+    justify-content: flex-end;
+}

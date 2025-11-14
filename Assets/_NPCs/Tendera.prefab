@@ -22034,6 +22034,7 @@ GameObject:
   - component: {fileID: 6199239328823991692}
   - component: {fileID: 97637299257529874}
   - component: {fileID: 3312015601590296491}
+  - component: {fileID: 855545638525381079}
   m_Layer: 8
   m_Name: Tendera
   m_TagString: Untagged
@@ -22201,7 +22202,7 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: c64f3f0e540efa2469f37e79c506802a, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}
@@ -22217,10 +22218,36 @@ MonoBehaviour:
       m_Calls: []
   OnFinished:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 855545638525381079}
+        m_TargetAssemblyTypeName: InteractableToNarrativeEvent, Assembly-CSharp
+        m_MethodName: Send
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &855545638525381079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8726245353716293871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35821e7abd7d67d4da3628200f9aaea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
+  eventKey: ALGAS_INVENTORY
+  sendNow: 0
 --- !u!1 &8756357815637414138
 GameObject:
   m_ObjectHideFlags: 0

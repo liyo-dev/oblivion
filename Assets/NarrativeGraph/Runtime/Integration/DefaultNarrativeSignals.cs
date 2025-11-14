@@ -6,6 +6,27 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 {
     public static DefaultNarrativeSignals Instance { get; private set; }
 
+    public static DefaultNarrativeSignals EnsureInstance()
+    {
+        if (Instance != null)
+            return Instance;
+
+        var existing = FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+        if (existing != null)
+        {
+            Instance = existing;
+        }
+        else
+        {
+            var go = new GameObject("DefaultNarrativeSignals (Auto)");
+            DontDestroyOnLoad(go);
+            Instance = go.AddComponent<DefaultNarrativeSignals>();
+        }
+
+        Instance.EnsureQuestServiceProvider();
+        return Instance;
+    }
+
     [Tooltip("Componente que implementa IQuestService (p.ej., QuestServiceAdapter)")]
     public MonoBehaviour questServiceProvider;
 
@@ -22,7 +43,45 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 
     void Awake()
     {
-        Instance = this; 
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[DefaultNarrativeSignals] Instancia duplicada detectada. Se usará la primera creada.");
+            return;
+        }
+        Instance = this;
+        EnsureQuestServiceProvider();
+    }
+
+    public void EnsureQuestServiceProvider()
+    {
+        if (questServiceProvider is IQuestService)
+            return;
+
+        if (questServiceProvider == null)
+        {
+            var local = GetComponent<IQuestService>();
+            if (local is MonoBehaviour mbLocal)
+            {
+                questServiceProvider = mbLocal;
+                return;
+            }
+        }
+
+        if (questServiceProvider == null)
+        {
+            var existing = FindAnyObjectByType<QuestServiceAdapter>(FindObjectsInactive.Include);
+            if (existing != null)
+            {
+                questServiceProvider = existing;
+                return;
+            }
+        }
+
+        if (questServiceProvider == null)
+        {
+            var adapter = GetComponent<QuestServiceAdapter>() ?? gameObject.AddComponent<QuestServiceAdapter>();
+            questServiceProvider = adapter;
+        }
     }
 
     public void ResetState()

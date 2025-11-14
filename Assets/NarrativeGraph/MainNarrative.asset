@@ -25,9 +25,6 @@ MonoBehaviour:
   - rid: 4128268721076306140
   - rid: 4128268764951085534
   - rid: 5623891023686795667
-  - rid: 5623891227833795438
-  - rid: 5623891227833795571
-  - rid: 5623891227833795572
   references:
     version: 2
     RefIds:
@@ -35,8 +32,12 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: CUANDO LEE LA CARTA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: -43.2, y: -327.19998}
+        position: {x: -43, y: -327}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -44,8 +45,12 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -376, y: -158.4}
+        position: {x: -376, y: -158}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
@@ -54,8 +59,12 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: TIENE QUE HABLAR CON ELDRAN
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 392.8, y: -327.19998}
+        position: {x: 393, y: -327}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -63,8 +72,12 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 782.4, y: 285.6}
+        position: {x: 1516, y: -70}
         outputs: []
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -76,28 +89,40 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 222.4, y: -158.4}
+        position: {x: 222, y: -158}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
-        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
         cinematicSceneName: Cinematic_DemonAppears
         useInternalCinematic: 1
     - rid: 4128268641526088533
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 886.4, y: -158.4}
-        outputs: []
+        position: {x: 1170, y: -242}
+        outputs:
+        - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
         questId: ELDRAN_MISSION3
     - rid: 4128268648164098057
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 886.4, y: -24}
+        position: {x: 1008, y: -70}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -111,26 +136,37 @@ MonoBehaviour:
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: CAPITULO 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: db912a03-cc37-4701-b21b-22ffd135fe3e
-        position: {x: -716.8, y: -327.19998}
+        position: {x: -717, y: -327}
         outputs:
         - a87a0200-5f03-48e7-b3da-587a333ca853
     - rid: 4128268721076306140
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Comienzo
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a87a0200-5f03-48e7-b3da-587a333ca853
-        position: {x: -376, y: -327.19998}
+        position: {x: -398, y: -327}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
-        - 6c0152ae-d53f-436d-ad27-f69f7e931b6d
         eventKey: StartCity
     - rid: 4128268764951085534
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 1374.4, y: -24}
+        position: {x: 540, y: 98}
         outputs:
         - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
@@ -139,8 +175,12 @@ MonoBehaviour:
       type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: 1762.4, y: -230.4}
+        position: {x: 0, y: 98}
         outputs: []
         npcName: Eldran
         npcTag: 
@@ -167,30 +207,3 @@ MonoBehaviour:
         cameraHeightOffset: 1.5
         debugLogs: 0
         treatNoPathAsReach: 1
-    - rid: 5623891227833795438
-      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "EL NI\xD1O PEZ NOS PIDE QUE BUSQUEMOS ALGAS"
-        guid: 42c7479e-7ba5-43aa-9b01-2645f7164b59
-        position: {x: -820.8, y: 252.80002}
-        outputs: []
-        questId: "Q_NI\xD1OPEZ"
-        debugLogs: 1
-    - rid: 5623891227833795571
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        guid: 6c0152ae-d53f-436d-ad27-f69f7e931b6d
-        position: {x: -837.6, y: 56}
-        outputs:
-        - 4ce94d1e-75f7-4b2e-9ef3-17d9cd5fa794
-        eventKey: "START_Q_NI\xD1OPEZ"
-    - rid: 5623891227833795572
-      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        guid: 4ce94d1e-75f7-4b2e-9ef3-17d9cd5fa794
-        position: {x: -464, y: 113.6}
-        outputs:
-        - 42c7479e-7ba5-43aa-9b01-2645f7164b59
-        questId: "Q_NI\xD1OPEZ"

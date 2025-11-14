@@ -7,8 +7,7 @@ public class InteractableToNarrativeEvent : MonoBehaviour
     [Tooltip("Clave del evento que escuchará el grafo")]
     public string eventKey = "";
 
-    [Tooltip("Referencia opcional. Si está vacía, se resuelve sola.")]
-    public DefaultNarrativeSignals signals; // opcional
+    DefaultNarrativeSignals _signals;
 
     [Tooltip("Enviar automáticamente al iniciar")]
     public bool sendNow = false;
@@ -27,15 +26,15 @@ public class InteractableToNarrativeEvent : MonoBehaviour
     {
         // Espera breve a que los managers de Start se inicialicen
         float timeout = 2f; // segundos máx
-        while (signals == null && timeout > 0f)
+        while (_signals == null && timeout > 0f)
         {
             ResolveSignals();
-            if (signals != null) break;
+            if (_signals != null) break;
             timeout -= Time.unscaledDeltaTime;
             yield return null;
         }
 
-        if (signals == null)
+        if (_signals == null)
         {
             Debug.LogError("[InteractableToNarrativeEvent] No hay DefaultNarrativeSignals tras esperar.");
             yield break;
@@ -46,22 +45,20 @@ public class InteractableToNarrativeEvent : MonoBehaviour
 
     void ResolveSignals()
     {
-        if (signals != null) return;
-
-        signals = DefaultNarrativeSignals.Instance
-                  ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+        if (_signals != null) return;
+        _signals = DefaultNarrativeSignals.EnsureInstance();
     }
 
     public void Send()
     {
-        if (signals == null) ResolveSignals();
-        if (signals == null)
+        if (_signals == null) ResolveSignals();
+        if (_signals == null)
         {
             Debug.LogError("[InteractableToNarrativeEvent] No hay DefaultNarrativeSignals.");
             return;
         }
 
-        signals.RaiseCustom(eventKey);
-        Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{signals.GetInstanceID()}");
+        _signals.RaiseCustom(eventKey);
+        Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{_signals.GetInstanceID()}");
     }
 }
