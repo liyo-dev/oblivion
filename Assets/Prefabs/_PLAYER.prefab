@@ -5198,9 +5198,9 @@ GameObject:
   - component: {fileID: 8599661016629616348}
   - component: {fileID: 1297097001791454143}
   - component: {fileID: 4974162908857341787}
-  - component: {fileID: 7049979429020794785}
   - component: {fileID: 2207912406606354293}
   - component: {fileID: 2009112871374720472}
+  - component: {fileID: 4979874908035186640}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -5632,23 +5632,6 @@ MonoBehaviour:
   spawner: {fileID: 5411191197508503009}
   specialChargeMeter: {fileID: 0}
   showDebugLogs: 1
---- !u!114 &7049979429020794785
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ec247fbd3d4a4b1a9b365946febba79d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilitiesComponent
-  abilities:
-    swim: 0
-    jump: 0
-    climb: 0
-    magic: 1
 --- !u!114 &2207912406606354293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5685,6 +5668,35 @@ MonoBehaviour:
   onAnyPickup:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4979874908035186640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0b74f15437c88b40afca6e62cc4fc07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSwimmingController
+  waterLayer:
+    serializedVersion: 2
+    m_Bits: 16
+  probeWithRaycast: 1
+  raycastVerticalOffset: 3
+  raycastDepth: 10
+  surfaceMemoryTime: 0.4
+  enterBuffer: 0.05
+  exitBuffer: 0.08
+  surfaceOffset: 0.9
+  verticalAlignmentSpeed: 5
+  maxVerticalSpeed: 6
+  locomotionLayerIndex: 0
+  swimStateName: Swimming_Floating_NoWeapon
+  locomotionStateName: Free Locomotion
+  exitCrossFade: 0.1
+  debugLogs: 1
 --- !u!1 &5048321103299432130
 GameObject:
   m_ObjectHideFlags: 0
