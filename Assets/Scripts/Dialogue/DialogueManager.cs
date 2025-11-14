@@ -177,6 +177,9 @@ public class DialogueManager : MonoBehaviour
         // Bloquear gameplay
         SetGameplayEnabled(false);
 
+        // NUEVO: Activar modo DialogueActive en PlayerActionManager
+        ActivateDialogueMode(true);
+
         // Activar cámara de diálogo si hay un NPC asignado
         if (useDialogueCamera && currentNPC != null && DialogueCameraController.Instance != null)
         {
@@ -199,7 +202,7 @@ public class DialogueManager : MonoBehaviour
     {
         if (!IsOpen) return;
 
-        // Si estamos escribiendo y se permite saltar, completar la línea actual
+        // Si estamos escribiendo y se permite saltar, completa la línea actual
         if (useTypewriter && _isTyping && allowSkipCurrentLine)
         {
             CompleteCurrentLineInstant();
@@ -238,6 +241,9 @@ public class DialogueManager : MonoBehaviour
 
         currentNPC = null;
 
+        // NUEVO: Desactivar modo DialogueActive en PlayerActionManager
+        ActivateDialogueMode(false);
+
         // Restaurar gameplay
         SetGameplayEnabled(true);
         if (submitHint != null)
@@ -250,6 +256,10 @@ public class DialogueManager : MonoBehaviour
     public void FinalizeChoiceNoFollowUp()
     {
         if (pauseGameWhileOpen) Time.timeScale = 1f;
+        
+        // NUEVO: Desactivar modo DialogueActive
+        ActivateDialogueMode(false);
+        
         SetGameplayEnabled(true);
         if (group != null)
         {
@@ -277,8 +287,13 @@ public class DialogueManager : MonoBehaviour
         _onYes = null; _onNo = null;
         if (submitHint != null)
             submitHint.SetActive(false);
-        if (restoreGameplay && !IsOpen) // si no hay diálogo normal activo, restaurar gameplay
+        
+        // NUEVO: Desactivar modo DialogueActive si no hay diálogo activo
+        if (restoreGameplay && !IsOpen)
+        {
+            ActivateDialogueMode(false);
             SetGameplayEnabled(true);
+        }
     }
 
     void OnYesClicked()
@@ -312,11 +327,17 @@ public class DialogueManager : MonoBehaviour
             bodyText.maxVisibleCharacters = int.MaxValue;
         }
         if (portraitImage) portraitImage.enabled = false;
+        
         // bloquear gameplay igual que StartDialogue
         SetGameplayEnabled(false);
+        
+        // NUEVO: Activar modo DialogueActive
+        ActivateDialogueMode(true);
+        
         if (pauseGameWhileOpen) Time.timeScale = 0f;
         if (submitHint != null)
             submitHint.SetActive(false);
+        
         if (messageLabel != null && !string.IsNullOrEmpty(message))
             messageLabel.text = message;
         else if (bodyText != null && !string.IsNullOrEmpty(message))
@@ -527,5 +548,39 @@ public class DialogueManager : MonoBehaviour
         }
         if (enable && pauseGameWhileOpen)
             Time.timeScale = 1f;
+    }
+
+    /// <summary>
+    /// Activa/desactiva el modo Cinematic en PlayerActionManager para bloquear completamente al jugador durante diálogos
+    /// </summary>
+    private void ActivateDialogueMode(bool activate)
+    {
+        // Buscar el jugador
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            Debug.LogWarning("[DialogueManager] No se encontró el jugador con tag 'Player' para activar modo diálogo");
+            return;
+        }
+
+        // Obtener el PlayerActionManager
+        var actionManager = player.GetComponent<PlayerActionManager>();
+        if (actionManager == null)
+        {
+            Debug.LogWarning("[DialogueManager] El jugador no tiene PlayerActionManager, no se puede bloquear el movimiento");
+            return;
+        }
+
+        // Activar/desactivar modo Cinematic (bloquea todo el jugador)
+        if (activate)
+        {
+            actionManager.PushMode(ActionMode.Cinematic);
+            Debug.Log("[DialogueManager] Modo Cinematic ACTIVADO - Jugador bloqueado para diálogo");
+        }
+        else
+        {
+            actionManager.PopMode(ActionMode.Cinematic);
+            Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
+        }
     }
 }

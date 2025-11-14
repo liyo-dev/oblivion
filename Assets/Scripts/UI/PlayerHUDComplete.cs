@@ -1115,23 +1115,6 @@ public class PlayerHUDComplete : MonoBehaviour
             if (_playerAbilities == null) _playerAbilities = ResolvePlayerAbilitiesFromHierarchy(playerGo);
             if (_actionManager == null) _actionManager = playerGo.GetComponent<PlayerActionManager>() ?? playerGo.GetComponentInParent<PlayerActionManager>();
 
-            // Si no tenemos PlayerAbilities (ni en el preset ni en componentes), crear un componente pequeño para exponerlas
-            if (_playerAbilities == null)
-            {
-                var existingComp = playerGo.GetComponent<PlayerAbilitiesComponent>();
-                if (existingComp == null)
-                {
-                    existingComp = playerGo.AddComponent<PlayerAbilitiesComponent>();
-                    // Si hay un preset activo, aplicar sus abilities a este componente
-                    var preset = GameBootService.Profile?.GetActivePresetResolved();
-                    if (preset != null && preset.abilities != null)
-                    {
-                        existingComp.abilities = preset.abilities;
-                    }
-                    Debug.Log("[PlayerHUDComplete] PlayerAbilitiesComponent añadido automáticamente al Player.");
-                }
-                _playerAbilities = existingComp.abilities;
-            }
         }
         // Suscribir al evento de maná si lo encontramos para recibir actualizaciones inmediatas
         if (_manaPool != null)

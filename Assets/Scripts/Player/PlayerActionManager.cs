@@ -32,24 +32,6 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [SerializeField] private int upperBodyLayer = 1;
     [SerializeField] private string upperIdleState = "UpperIdle";
 
-    [Header("Swimming Detection")]
-    [Tooltip("Nombre de la capa que se considerará agua.")]
-    [SerializeField] private string waterLayerName = "Water";
-    [Tooltip("Estado base que se reproducirá al nadar.")]
-    [SerializeField] private string swimmingStateName = "Swimming_Floating_NoWeapon";
-    [Tooltip("Estado base al que regresamos al salir del agua.")]
-    [SerializeField] private string locomotionStateName = "Free Locomotion";
-    [Tooltip("Capa del Animator donde residen las animaciones de locomoción.")]
-    [SerializeField] private int locomotionLayer = 0;
-
-    [Header("Swimming Physics")]
-    [Tooltip("Altura (Y) a la que flotar mientras nada. Relativa a la superficie del agua.")]
-    [SerializeField] private float swimmingFloatHeight = -0.5f;
-    [Tooltip("Fuerza de flotación aplicada al nadar para mantener al jugador en superficie.")]
-    [SerializeField] private float buoyancyForce = 20f;
-    [Tooltip("Velocidad de interpolación para alcanzar la altura de flotación.")]
-    [SerializeField] private float floatSpeed = 5f;
-
     [Header("Reglas por modo (inspector)")]
     [Tooltip("Declara aquí todo lo que debe bloquearse/deshabilitarse por modo. Orden no importa.")]
     [SerializeField] private ModeRule[] rules;
@@ -111,27 +93,10 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private readonly Dictionary<ActionMode, ModeRule> _ruleByMode = new();
     private Animator _anim;
     private float _originalUpperWeight = 0f;
-    private int _waterLayer = -1;
-    private int _waterContacts = 0;
-    private bool _isSwimming = false;
-    private int _swimmingStateHash;
-    private int _locomotionStateHash;
-
-    // Física para natación
-    private Rigidbody _rb;
-    private CharacterController _characterController;
-    private bool _wasUsingGravity;
-    private float _waterSurfaceY;
 
     void Awake()
     {
         _anim = GetComponent<Animator>();
-        _rb = GetComponent<Rigidbody>();
-        _characterController = GetComponent<CharacterController>();
-
-        _swimmingStateHash = Animator.StringToHash(swimmingStateName);
-        _locomotionStateHash = Animator.StringToHash(locomotionStateName);
-        _waterLayer = LayerMask.NameToLayer(waterLayerName);
 
         // Guardar peso original del UpperBody
         if (upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
@@ -270,6 +235,18 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         ReenableAll();
 
         var top = Top;
+
+        // NUEVO: Resetear visuales de daño al entrar en modo Cinematic
+        if (top == ActionMode.Cinematic)
+        {
+            var healthSystem = GetComponent<PlayerHealthSystem>();
+            if (healthSystem != null)
+            {
+                healthSystem.ResetDamageVisuals();
+                if (debugLogs) Debug.Log("[PlayerActionManager] Visuales de daño reseteados (modo Cinematic)");
+            }
+        }
+
         if (_ruleByMode.TryGetValue(top, out var rule))
         {
             // Desactivar componentes
@@ -331,162 +308,12 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other == null || !IsWaterLayer(other.gameObject.layer))
-            return;
-
-        // Guardar la posición Y de la superficie del agua
-        if (_waterContacts == 0)
-        {
-            _waterSurfaceY = other.bounds.max.y;
-        }
-
-        _waterContacts++;
-        TryEnterSwimming();
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other == null || !IsWaterLayer(other.gameObject.layer))
-            return;
-
-        _waterContacts = Mathf.Max(0, _waterContacts - 1);
-        if (_waterContacts == 0)
-            ExitSwimming();
-    }
-
-    private bool IsWaterLayer(int layer)
-    {
-        if (_waterLayer == -1)
-            return false;
-
-        return layer == _waterLayer;
-    }
-
-    private void TryEnterSwimming()
-    {
-        if (_isSwimming)
-            return;
-
-        if (!_allowSwim)
-        {
-            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Swimming deshabilitado por preset");
-            return;
-        }
-
-        _isSwimming = true;
-
-        // Desactivar gravedad si hay Rigidbody
-        if (_rb != null)
-        {
-            _wasUsingGravity = _rb.useGravity;
-            _rb.useGravity = false;
-            _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z); // Cancelar velocidad vertical
-        }
-
-        // Desactivar gravedad en CharacterController si existe
-        if (_characterController != null)
-        {
-            // CharacterController no tiene useGravity, se maneja en el script de movimiento
-            // pero podemos resetear la velocidad vertical
-        }
-
-        if (_anim)
-        {
-            if (_swimmingStateHash != 0)
-                _anim.Play(_swimmingStateHash, locomotionLayer, 0f);
-            else
-                _anim.Play(swimmingStateName, locomotionLayer, 0f);
-        }
-
-        PushMode(ActionMode.Swimming);
-
-        if (debugLogs) Debug.Log("[PlayerActionManager] ✅ Modo Swimming activado - Gravedad desactivada");
-    }
-
-    private void ExitSwimming()
-    {
-        if (!_isSwimming)
-            return;
-
-        _isSwimming = false;
-
-        // Reactivar gravedad si había Rigidbody
-        if (_rb != null)
-        {
-            _rb.useGravity = _wasUsingGravity;
-        }
-
-        if (_anim)
-        {
-            if (_locomotionStateHash != 0)
-                _anim.Play(_locomotionStateHash, locomotionLayer, 0f);
-            else
-                _anim.Play(locomotionStateName, locomotionLayer, 0f);
-        }
-
-        PopMode(ActionMode.Swimming);
-
-        if (debugLogs) Debug.Log("[PlayerActionManager] ✅ Modo Swimming desactivado - Gravedad restaurada");
-    }
-
     // Por si el GameObject se desactiva en mitad de un modo
     void OnDisable()
     {
-        if (_isSwimming)
-        {
-            _waterContacts = 0;
-            ExitSwimming();
-        }
-
         ReenableAll();
         _stack.Clear();
         _stack.Add(ActionMode.Default);
-    }
-
-    void FixedUpdate()
-    {
-        if (!_isSwimming)
-            return;
-
-        ApplySwimmingPhysics();
-    }
-
-    private void ApplySwimmingPhysics()
-    {
-        // Aplicar flotación si hay Rigidbody
-        if (_rb != null)
-        {
-            float targetY = _waterSurfaceY + swimmingFloatHeight;
-            float currentY = transform.position.y;
-            
-            // Si está por debajo de la altura objetivo, aplicar fuerza hacia arriba
-            if (currentY < targetY)
-            {
-                float forceMagnitude = (targetY - currentY) * buoyancyForce;
-                _rb.AddForce(Vector3.up * forceMagnitude, ForceMode.Acceleration);
-            }
-            
-            // Limitar velocidad vertical para evitar que salte demasiado
-            Vector3 vel = _rb.linearVelocity;
-            vel.y = Mathf.Clamp(vel.y, -2f, 2f);
-            _rb.linearVelocity = vel;
-        }
-        // Si usa CharacterController, ajustar posición suavemente
-        else if (_characterController != null)
-        {
-            float targetY = _waterSurfaceY + swimmingFloatHeight;
-            float currentY = transform.position.y;
-            
-            if (Mathf.Abs(currentY - targetY) > 0.1f)
-            {
-                float newY = Mathf.Lerp(currentY, targetY, Time.fixedDeltaTime * floatSpeed);
-                Vector3 pos = transform.position;
-                pos.y = newY;
-                transform.position = pos;
-            }
-        }
     }
 
     // API pública para consultar estado
@@ -499,4 +326,5 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool CanAttack() => CanUse(PlayerAbility.Attack);
     public bool CanCastMagic() => CanUse(PlayerAbility.Magic);
     public bool CanInteract() => CanUse(PlayerAbility.Interact);
+    public bool CanSwim() => _allowSwim;
 }
