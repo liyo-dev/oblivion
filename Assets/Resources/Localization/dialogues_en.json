@@ -41,12 +41,16 @@
             "value": "Pirate"
         },
         {
+            "key": "CHAR_TENDERA",
+            "value": "[EN] Tendera"
+        },
+        {
             "key": "CHAR_VERONICA",
             "value": "Veronica"
         },
         {
             "key": "DLG_AMIGAPEZ_01",
-            "value": "Looking for my friend? He always hides under the pier."
+            "value": "[EN] ¿Buscas a mi amigo? Siempre se esconde cerca del mar."
         },
         {
             "key": "DLG_AMIGAPEZ_02",
@@ -54,15 +58,15 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "Sometimes he sings to bubbles so they glow."
+            "value": "[EN] A veces se camufla con algas."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
-            "value": "I can't swim that deep, my fins are small."
+            "value": "[EN] Si te las pide puedes preguntar en las tiendas del reino."
         },
         {
             "key": "DLG_AMIGAPEZ_05",
-            "value": "If you help him he'll share water secrets with you."
+            "value": "[EN] A veces les sobra y hasta te la pueden regalar."
         },
         {
             "key": "DLG_ANTIPATICO_01",
@@ -182,23 +186,23 @@
         },
         {
             "key": "DLG_NIÑOPEZ_01",
-            "value": "Glub! Sorry, I sometimes forget to speak air."
+            "value": "[EN] ¡Glub! Perdón, a veces olvido hablar aire."
         },
         {
             "key": "DLG_NIÑOPEZ_02",
-            "value": "Have you seen my blue seashell? I use it to call friends."
+            "value": "[EN] ¿Has visto mi caracola azul? La uso para llamar a mis amigos marinos."
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "Under the pier there's a door covered in algae."
+            "value": "[EN] Pero no puedo meterme en el agua sin mis algas de camuflaje,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
-            "value": "They say it opens if you tap three bubbles in order."
+            "value": "[EN] Seguro que mi amiga me las ha quitado."
         },
         {
             "key": "DLG_NIÑOPEZ_05",
-            "value": "If you find it I'll tell you a secret about the currents."
+            "value": "[EN] Si la encuentras te diré como puedes ayudarme a buscar mi caracola."
         },
         {
             "key": "DLG_PIRATE_01",
@@ -207,6 +211,14 @@
         {
             "key": "DLG_PIRATE_02",
             "value": "A sharktopus took it from me..."
+        },
+        {
+            "key": "DLG_TENDERA_01",
+            "value": "[EN] Tengo la tienda cerrada de momento."
+        },
+        {
+            "key": "DLG_TENDERA_02",
+            "value": "[EN] Pero toma un poco de algas que me sobra un montón."
         },
         {
             "key": "DLG_VERONICA_01",

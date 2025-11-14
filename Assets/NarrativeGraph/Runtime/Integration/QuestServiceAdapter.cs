@@ -29,7 +29,6 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         qm.StartQuest(questId);
     }
 
-
     void TrySubscribe()
     {
         if (_subscribed || Qm == null) return;
