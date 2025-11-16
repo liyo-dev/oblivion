@@ -10,6 +10,7 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
 
     Action _onClick;
     Action _onSelected;
+    bool _selectionCallbacksEnabled = true;
 
     void Awake()
     {
@@ -50,6 +51,11 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
             es.SetSelectedGameObject(ButtonGameObject);
     }
 
+    public void SetSelectionCallbacksEnabled(bool enabled)
+    {
+        _selectionCallbacksEnabled = enabled;
+    }
+
     void HandleClick()
     {
         _onSelected?.Invoke();
@@ -58,11 +64,13 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
 
     public void OnSelect(BaseEventData eventData)
     {
+        if (!_selectionCallbacksEnabled) return;
         _onSelected?.Invoke();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (!_selectionCallbacksEnabled) return;
         _onSelected?.Invoke();
     }
 }
