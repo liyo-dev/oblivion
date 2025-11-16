@@ -534,6 +534,13 @@ public class GameBootProfile : ScriptableObject
             Debug.Log("[GameBootProfile] Blackboards narrativos limpiados para Nueva Partida");
         }
 
+        // Limpiar snapshots narrativos del preset para forzar inicio desde StartNode
+        if (runtimePreset != null && runtimePreset.narrativeBlackboards != null)
+        {
+            runtimePreset.narrativeBlackboards.Clear();
+            Debug.Log("[GameBootProfile] Snapshots narrativos del preset limpiados para Nueva Partida");
+        }
+
         NarrativeAutoSetup.ResetForNewGame();
 
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");

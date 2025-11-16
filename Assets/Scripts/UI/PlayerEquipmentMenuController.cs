@@ -1013,6 +1013,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             _pendingSpell = spellId;
             _isSelectingSlot = true;
+            SetRowSelectionCallbacksEnabled(false);
             SetSlotNavigationActive(true);
             UpdateSlotButtonVisuals();
 
@@ -1074,6 +1075,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _pendingSpell = SpellId.None;
             SetSlotNavigationActive(false);
             UpdateSlotButtonVisuals();
+            SetRowSelectionCallbacksEnabled(true);
             _currentSlotSelection = null;
             _highlightedRow?.widget?.Focus();
             ShowSpellDetails(_highlightedSpell);
@@ -1088,6 +1090,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _pendingSpell = SpellId.None;
             SetSlotNavigationActive(false);
             UpdateSlotButtonVisuals();
+            SetRowSelectionCallbacksEnabled(true);
             _currentSlotSelection = null;
             if (!silent)
             {
@@ -1178,11 +1181,23 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 es.SetSelectedGameObject(_currentSlotSelection);
         }
 
+        void SetRowSelectionCallbacksEnabled(bool enabled)
+        {
+            foreach (var row in _rows)
+            {
+                row?.widget?.SetSelectionCallbacksEnabled(enabled);
+            }
+        }
+
         void ConfigureSlotButton(Button button, MagicSlot slot)
         {
             if (button == null) return;
 
             button.onClick.AddListener(() => HandleSlotButtonPressed(slot));
+            var listener = button.gameObject.GetComponent<SlotSelectListener>();
+            if (listener == null)
+                listener = button.gameObject.AddComponent<SlotSelectListener>();
+            listener.onSelect = () => HandleSlotFocused(button);
 
             if (!_slotDefaultColors.ContainsKey(button))
                 _slotDefaultColors[button] = button.colors;
@@ -1216,13 +1231,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 ? colors
                 : button.colors;
 
-            if (_isSelectingSlot && CanAssign(slot, _pendingSpell))
+            var isAllowedSlot = _isSelectingSlot && CanAssign(slot, _pendingSpell);
+            var isFocused = _currentSlotSelection == button.gameObject && _isSelectingSlot;
+
+            if (isAllowedSlot)
             {
                 var highlighted = defaults;
-                highlighted.normalColor = _ui.slotSelectionColor;
-                highlighted.highlightedColor = _ui.slotSelectionColor;
-                highlighted.selectedColor = _ui.slotSelectionColor;
-                highlighted.pressedColor = _ui.slotSelectionColor;
+                var dimmed = Color.Lerp(defaults.normalColor, _ui.slotSelectionColor, 0.35f);
+                var focusColor = _ui.slotSelectionColor;
+
+                highlighted.normalColor = isFocused ? focusColor : dimmed;
+                highlighted.highlightedColor = focusColor;
+                highlighted.selectedColor = focusColor;
+                highlighted.pressedColor = focusColor;
                 button.colors = highlighted;
             }
             else
@@ -1231,6 +1252,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             button.interactable = !_isSelectingSlot || CanAssign(slot, _pendingSpell);
+        }
+
+        void HandleSlotFocused(Button button)
+        {
+            if (!_isSelectingSlot) return;
+            if (button == null) return;
+            _currentSlotSelection = button.gameObject;
+            UpdateSlotButtonVisuals();
+        }
+
+        class SlotSelectListener : MonoBehaviour, ISelectHandler
+        {
+            public Action onSelect;
+
+            public void OnSelect(BaseEventData eventData)
+            {
+                onSelect?.Invoke();
+            }
         }
 
         bool CanAssign(MagicSlot slot, SpellId spellId)
