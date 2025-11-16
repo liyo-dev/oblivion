@@ -18,6 +18,7 @@ public class PlayerSaveData
     public List<InventoryItemSave> inventory = new();
     public List<string> defeatedBossIds = new();
     public List<AppearanceEntry> appearance = new();
+    public List<string> unlockedWardrobeIds = new();
     
     [Serializable]
     public struct NarrativeBlackboardSnapshot
@@ -91,6 +92,7 @@ public class PlayerSaveData
         d.inventory = preset.inventoryItems != null ? new List<InventoryItemSave>(preset.inventoryItems) : new List<InventoryItemSave>();
         d.defeatedBossIds = preset.defeatedBossIds != null ? new List<string>(preset.defeatedBossIds) : new List<string>();
         d.appearance = preset.appearance != null ? new List<AppearanceEntry>(preset.appearance) : new List<AppearanceEntry>();
+        d.unlockedWardrobeIds = preset.unlockedWardrobeIds != null ? new List<string>(preset.unlockedWardrobeIds) : new List<string>();
         d.narrativeBlackboards = preset.narrativeBlackboards != null ? new List<NarrativeBlackboardSnapshot>(preset.narrativeBlackboards) : new List<NarrativeBlackboardSnapshot>();
         // NPCs
         if (preset.npcPositions != null && preset.npcPositions.Count > 0)

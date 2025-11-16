@@ -13,6 +13,71 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     public static PlayerEquipmentMenuController Instance => _instance;
     public static bool IsOpen => _instance != null && _instance._isOpen;
 
+    public readonly struct InventoryItemUseContext
+    {
+        public Inventory Inventory { get; }
+        public ItemData Item { get; }
+        public PlayerPickupCollector Collector { get; }
+
+        public InventoryItemUseContext(Inventory inventory, ItemData item, PlayerPickupCollector collector)
+        {
+            Inventory = inventory;
+            Item = item;
+            Collector = collector;
+        }
+    }
+
+    public struct InventoryItemUseResult
+    {
+        public bool handled;
+        public bool consumed;
+        public string message;
+
+        public InventoryItemUseResult(bool handled, bool consumed, string message)
+        {
+            this.handled = handled;
+            this.consumed = consumed;
+            this.message = message;
+        }
+
+        public static InventoryItemUseResult NotHandled => new InventoryItemUseResult(false, false, null);
+
+        public static InventoryItemUseResult Handled(string message = null, bool consumed = false)
+            => new InventoryItemUseResult(true, consumed, message);
+    }
+
+    public delegate InventoryItemUseResult InventoryItemUseHandler(InventoryItemUseContext context);
+    public static event InventoryItemUseHandler OnInventoryItemUseRequested;
+
+    static InventoryItemUseResult DispatchInventoryUseRequest(InventoryItemUseContext context)
+    {
+        var handlers = OnInventoryItemUseRequested;
+        if (handlers == null) return InventoryItemUseResult.NotHandled;
+
+        var aggregated = InventoryItemUseResult.NotHandled;
+
+        foreach (InventoryItemUseHandler handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                var partial = handler(context);
+                if (!partial.handled) continue;
+
+                aggregated.handled = true;
+                if (partial.consumed)
+                    aggregated.consumed = true;
+                if (!string.IsNullOrEmpty(partial.message))
+                    aggregated.message = partial.message;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        return aggregated;
+    }
+
     [Header("Persistencia")]
     [SerializeField] private bool dontDestroyOnLoad = true;
 
@@ -141,6 +206,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void OnDestroy()
     {
         _inventoryView?.Dispose();
+        _equipmentView?.Dispose();
         if (_instance == this)
             _instance = null;
     }
@@ -170,6 +236,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_isOpen)
         {
             HandleCloseInput();
+            HandleTabNavigationInput();
             UpdatePlayerInfoPanel();
         }
     }
@@ -255,6 +322,50 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             CloseMenu();
     }
 
+    void HandleTabNavigationInput()
+    {
+        int delta = 0;
+
+#if ENABLE_INPUT_SYSTEM
+        var pad = Gamepad.current;
+        if (pad != null)
+        {
+            if (pad.leftShoulder.wasPressedThisFrame) delta = -1;
+            else if (pad.rightShoulder.wasPressedThisFrame) delta = 1;
+        }
+#endif
+
+        if (delta == 0)
+        {
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.PageUp)) delta = -1;
+            else if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown)) delta = 1;
+        }
+
+        if (delta == 0) return;
+
+        var availableTabs = GetAvailableTabs();
+        if (availableTabs.Count == 0) return;
+
+        int currentIndex = availableTabs.IndexOf(_activeTab);
+        if (currentIndex < 0) currentIndex = 0;
+
+        int nextIndex = (currentIndex + delta + availableTabs.Count) % availableTabs.Count;
+        int nextTab = availableTabs[nextIndex];
+        bool forceRebuild = nextTab == 0 && nextTab != _activeTab;
+        ShowTab(nextTab, forceRebuild);
+    }
+
+    List<int> GetAvailableTabs()
+    {
+        var tabs = new List<int>(3);
+        if (_inventoryView != null) tabs.Add(0);
+        if (_spellView != null) tabs.Add(1);
+        if (_equipmentView != null) tabs.Add(2);
+        if (tabs.Count == 0)
+            tabs.Add(_activeTab);
+        return tabs;
+    }
+
     void OpenMenu()
     {
         if (!GameState.CanOpenInventory) return;
@@ -275,6 +386,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         _isOpen = true;
         GameState.Push(GamePhase.Inventory);
+        GameState.Push(GamePhase.Equipment);
         SelectInitial();
     }
 
@@ -284,6 +396,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
+        if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
     }
 
     void SetCanvasState(bool visible)
@@ -672,20 +785,33 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_inventory == null || _selectedItem == null) return;
 
-            if (!InventoryUseUtility.TryUseItem(_inventory, _selectedItem, _collector, out var reason, out var consumed))
+            var context = new InventoryItemUseContext(_inventory, _selectedItem, _collector);
+            var result = DispatchInventoryUseRequest(context);
+
+            if (!result.handled)
             {
-                if (_ui.feedbackText != null)
-                    _ui.feedbackText.text = reason;
-                return;
+                if (!InventoryUseUtility.TryUseItem(_inventory, _selectedItem, _collector, out var reason, out var consumed))
+                {
+                    if (_ui.feedbackText != null)
+                        _ui.feedbackText.text = string.IsNullOrEmpty(reason) ? "No se pudo usar." : reason;
+                    return;
+                }
+
+                result.handled = true;
+                result.consumed = consumed;
             }
 
-            if (_ui.feedbackText != null)
-                _ui.feedbackText.text = "Usado correctamente.";
-
-            if (consumed && _inventory.Count(_selectedItem.itemId) == 0)
+            if (result.consumed && _inventory.Count(_selectedItem.itemId) == 0)
                 _selectedItem = null;
 
             Refresh(true);
+
+            if (_ui.feedbackText != null)
+            {
+                if (string.IsNullOrEmpty(result.message))
+                    result.message = "Usado correctamente.";
+                _ui.feedbackText.text = result.message;
+            }
         }
 
         void HandleInventoryChanged(ItemData item, int newAmount)
@@ -937,6 +1063,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         ModularAutoBuilder _builder;
         PlayerPresetService _presetService;
+        WardrobeInventory _wardrobe;
+        WardrobeInventory _boundWardrobe;
 
         public EquipmentView(EquipmentBindings bindings)
         {
@@ -984,6 +1112,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             PlayerService.TryGetComponent(out _builder, includeInactive: true, allowSceneLookup: true);
             PlayerService.TryGetComponent(out _presetService, includeInactive: true, allowSceneLookup: true);
+            PlayerService.TryGetComponent(out _wardrobe, includeInactive: true, allowSceneLookup: true);
+
+            if (_boundWardrobe != _wardrobe)
+            {
+                if (_boundWardrobe != null)
+                    _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
+                if (_wardrobe != null)
+                    _wardrobe.OnWardrobeChanged += HandleWardrobeChanged;
+                _boundWardrobe = _wardrobe;
+            }
 
             if (_builder == null)
             {
@@ -991,13 +1129,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 {
                     if (row?.label != null)
                         row.label.text = $"{FormatCategory(row.category)}: (sin builder)";
-                    SetInteractable(row, false);
+                    SetInteractable(row, false, false);
                 }
                 return;
             }
 
-            foreach (var row in _rows.Values)
-                SetInteractable(row, true);
+            foreach (var kvp in _rows)
+            {
+                bool hasOptions = _wardrobe == null || _wardrobe.HasOptions(kvp.Key);
+                SetInteractable(kvp.Value, hasOptions, true);
+            }
 
             UpdateLabels();
         }
@@ -1006,7 +1147,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_builder == null) return;
 
-            InvokeBuilderNextPrev(category, step);
+            bool changed = false;
+
+            if (_wardrobe != null)
+                changed = TryCycleWithWardrobe(category, step);
+
+            if (!changed)
+                InvokeBuilderNextPrev(category, step);
+
             Snapshot();
             UpdateLabels();
         }
@@ -1027,20 +1175,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UpdateLabels()
         {
             if (_builder == null) return;
-            // Obtener selección por reflexión para evitar referenciar PartCat directamente
-            Dictionary<object, string> selectionMap = new();
-            var getSel = _builder.GetType().GetMethod("GetSelection");
-            if (getSel != null)
-            {
-                var selObj = getSel.Invoke(_builder, null);
-                if (selObj is System.Collections.IDictionary dict)
-                {
-                    foreach (System.Collections.DictionaryEntry de in dict)
-                    {
-                        selectionMap[de.Key] = de.Value?.ToString();
-                    }
-                }
-            }
+            var selection = _builder.GetSelection();
 
             foreach (var kvp in _rows)
             {
@@ -1048,27 +1183,78 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (row?.label == null) continue;
 
                 string value = "Sin asignar";
-                // Intentar buscar usando el enum tipo que viene en la selección
-                foreach (var key in selectionMap.Keys)
-                {
-                    if (key == null) continue;
-                    if (string.Equals(key.ToString(), kvp.Key.ToString(), StringComparison.OrdinalIgnoreCase))
-                    {
-                        value = selectionMap[key] ?? "Sin asignar";
-                        break;
-                    }
-                }
+                if (selection != null && selection.TryGetValue(kvp.Key, out var part) && !string.IsNullOrEmpty(part))
+                    value = ResolveDisplayName(kvp.Key, part);
 
                 row.label.text = $"{FormatCategory(kvp.Key)}: {value}";
             }
         }
 
-        void SetInteractable(EquipmentBindings.RowBinding row, bool value)
+        void SetInteractable(EquipmentBindings.RowBinding row, bool canCycle, bool allowClear)
         {
             if (row == null) return;
-            if (row.previousButton != null) row.previousButton.interactable = value;
-            if (row.nextButton != null) row.nextButton.interactable = value;
-            if (row.clearButton != null) row.clearButton.interactable = value;
+            if (row.previousButton != null) row.previousButton.interactable = canCycle;
+            if (row.nextButton != null) row.nextButton.interactable = canCycle;
+            if (row.clearButton != null) row.clearButton.interactable = allowClear;
+        }
+
+        bool TryCycleWithWardrobe(PartCategory category, int step)
+        {
+            var options = _wardrobe?.GetUnlockedOptions(category);
+            if (options == null || options.Count == 0) return false;
+
+            string current = GetSelectionFor(category);
+            int currentIndex = -1;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (string.Equals(options[i].partName, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            if (currentIndex < 0)
+                currentIndex = step > 0 ? 0 : options.Count - 1;
+
+            if (options.Count == 0) return false;
+
+            int nextIndex = (currentIndex + step) % options.Count;
+            if (nextIndex < 0) nextIndex += options.Count;
+
+            var entry = options[nextIndex];
+            if (string.IsNullOrEmpty(entry.partName)) return false;
+
+            InvokeBuilderSetByName(category, entry.partName);
+            return true;
+        }
+
+        string GetSelectionFor(PartCategory category)
+        {
+            if (_builder == null) return null;
+            var selection = _builder.GetSelection();
+            if (selection != null && selection.TryGetValue(category, out var part))
+                return part;
+            return null;
+        }
+
+        string ResolveDisplayName(PartCategory category, string partName)
+        {
+            if (string.IsNullOrEmpty(partName)) return "Sin asignar";
+            if (_wardrobe != null && _wardrobe.TryGetEntry(category, partName, out var entry))
+                return string.IsNullOrEmpty(entry.displayName) ? partName : entry.displayName;
+            return partName;
+        }
+
+        void HandleWardrobeChanged()
+        {
+            UpdateLabels();
+        }
+
+        public void Dispose()
+        {
+            if (_boundWardrobe != null)
+                _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
         }
 
         string FormatCategory(PartCategory cat)
