@@ -12,8 +12,27 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
     readonly Dictionary<string, List<Action>> _waitingCompleted = new();
     bool _subscribed;
 
-    void OnEnable() { TrySubscribe(); }
+    void OnEnable() 
+    { 
+        if (!_subscribed)
+            StartCoroutine(WaitForQuestManagerAndSubscribe());
+    }
+    
     void OnDisable() { TryUnsubscribe(); _waitingCompleted.Clear(); }
+
+    /// <summary>
+    /// Espera a que QuestManager esté disponible antes de suscribirse.
+    /// Esto soporta la carga aditiva de la escena Start.
+    /// </summary>
+    private System.Collections.IEnumerator WaitForQuestManagerAndSubscribe()
+    {
+        while (QuestManager.Instance == null)
+        {
+            yield return null;
+        }
+        
+        TrySubscribe();
+    }
 
     public void ResetState()
     {
