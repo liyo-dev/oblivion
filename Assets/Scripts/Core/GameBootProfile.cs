@@ -527,6 +527,13 @@ public class GameBootProfile : ScriptableObject
         if (QuestManager.Instance != null)
             QuestManager.Instance.ResetAllQuests();
 
+        // Limpiar blackboards de los grafos narrativos para Nueva Partida
+        if (NarrativeGraphHub.Instance != null)
+        {
+            NarrativeGraphHub.Instance.ClearAllBlackboards();
+            Debug.Log("[GameBootProfile] Blackboards narrativos limpiados para Nueva Partida");
+        }
+
         NarrativeAutoSetup.ResetForNewGame();
 
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
