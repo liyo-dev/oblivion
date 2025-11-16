@@ -54,7 +54,9 @@ public static class UnlockService
                     changed = true;
                 }
 
-                float desiredCurrent = Mathf.Clamp(preset.currentMP, 0f, preset.maxMP);
+                // Al desbloquear magia por primera vez, inicializar currentMP al máximo
+                // Si currentMP es 0 (sin magia previa), llenarlo completamente
+                float desiredCurrent = preset.currentMP <= 0f ? preset.maxMP : Mathf.Clamp(preset.currentMP, 0f, preset.maxMP);
                 if (!Mathf.Approximately(preset.currentMP, desiredCurrent))
                 {
                     preset.currentMP = desiredCurrent;
