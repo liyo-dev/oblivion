@@ -7,56 +7,77 @@ public class NarrativeRunner : MonoBehaviour
     public NarrativeGraph graph;
     public SimpleBlackboard Blackboard = new SimpleBlackboard();
 
-    // ← asegúrate de tener este campo (lo rellena el AutoSetup o tú a mano)
     [SerializeField] private DefaultNarrativeSignals signalsProvider;
-    [SerializeField] private bool autoStartOnPlay = true;
-    [SerializeField] private bool resetBlackboardOnAutoStart = true;
 
     NarrativeContext _ctx;
     NarrativeNode _current;
 
-    void Start()
+    // Ya no hay auto-start. Los grafos se activan mediante señales/eventos.
+
+    /// <summary>
+    /// Inicia el grafo desde un nodo específico mediante su GUID.
+    /// Útil cuando un evento/señal quiere activar el grafo.
+    /// </summary>
+    public void StartFromNode(string nodeGuid)
     {
-        if (autoStartOnPlay)
-            RestartFromStartNode(resetBlackboardOnAutoStart);
+        if (!TryBuildContext()) return;
+
+        if (string.IsNullOrEmpty(nodeGuid))
+        {
+            Debug.LogError("[NarrativeRunner] StartFromNode: nodeGuid vacío.");
+            return;
+        }
+
+        var node = graph.FindNode(nodeGuid);
+        if (node == null)
+        {
+            Debug.LogError($"[NarrativeRunner] No existe nodo con guid={nodeGuid}");
+            return;
+        }
+
+        Debug.Log($"[NarrativeRunner] Iniciando desde nodo: {node.GetType().Name}");
+        GoTo(node);
     }
 
     /// <summary>
-    /// Reinicia el grafo desde el nodo inicial. Útil al arrancar o al comenzar nueva partida.
+    /// Inicia el grafo desde el nodo marcado como Start.
+    /// Si hay un nodo guardado en el blackboard, continúa desde ahí.
     /// </summary>
-    public void RestartFromStartNode(bool resetBlackboard)
+    public void StartFromStartNode()
     {
-        Debug.Log("[Runner] RestartFromStartNode");
-
-        StopAllCoroutines();
-
-        if (resetBlackboard)
-        {
-            if (Blackboard == null) Blackboard = new SimpleBlackboard();
-            else Blackboard.Clear();
-        }
-        else if (Blackboard == null)
-        {
-            Blackboard = new SimpleBlackboard();
-        }
-
         if (!TryBuildContext()) return;
 
-        _current = null; // evita llamar Exit con un contexto nuevo
+        // Verificar si hay un nodo guardado en el blackboard
+        var savedNodeGuid = Blackboard.Get<string>("__currentNodeGuid", null);
+        if (!string.IsNullOrEmpty(savedNodeGuid))
+        {
+            var savedNode = graph.FindNode(savedNodeGuid);
+            if (savedNode != null)
+            {
+                Debug.Log($"[NarrativeRunner] Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
+                GoTo(savedNode);
+                return;
+            }
+            else
+            {
+                Debug.LogWarning($"[NarrativeRunner] Nodo guardado con guid={savedNodeGuid} no encontrado. Iniciando desde Start.");
+            }
+        }
 
         if (string.IsNullOrEmpty(graph.startNodeGuid))
         {
-            Debug.LogError("[Narrative] startNodeGuid vacío. Marca un nodo como 'Set as Start' en el editor.");
+            Debug.LogError("[NarrativeRunner] startNodeGuid vacío. Añade un StartNode y márcalo como 'Set as Start' en el editor.");
             return;
         }
 
         var start = graph.FindNode(graph.startNodeGuid);
         if (start == null)
         {
-            Debug.LogError($"[Narrative] No encuentro el StartNode guid={graph.startNodeGuid}. ¿Se borró?");
+            Debug.LogError($"[NarrativeRunner] No encuentro el StartNode guid={graph.startNodeGuid}");
             return;
         }
 
+        Debug.Log($"[NarrativeRunner] Iniciando desde StartNode: {start.GetType().Name}");
         GoTo(start);
     }
 
@@ -95,8 +116,13 @@ public class NarrativeRunner : MonoBehaviour
         if (_current == null)
         {
             Debug.LogWarning("[Narrative] GoTo(null). Fin del flujo.");
+            // Limpiar el nodo actual del blackboard
+            Blackboard.Set("__currentNodeGuid", string.Empty);
             return;
         }
+
+        // Guardar el GUID del nodo actual en el blackboard para persistencia
+        Blackboard.Set("__currentNodeGuid", _current.guid);
 
         // El nodo llama a ready() cuando esté listo para avanzar
         _current.Enter(_ctx, Advance);
@@ -241,24 +267,5 @@ public class NarrativeRunner : MonoBehaviour
     {
         if (provider != null)
             signalsProvider = provider;
-    }
-
-    public void SetAutoStart(bool autoStart, bool resetBlackboard)
-    {
-        autoStartOnPlay = autoStart;
-        resetBlackboardOnAutoStart = resetBlackboard;
-    }
-
-    public void Configure(NarrativeGraph newGraph, SimpleBlackboard blackboard, DefaultNarrativeSignals provider, bool runImmediately, bool resetBlackboardBeforeRun)
-    {
-        if (newGraph != null)
-            graph = newGraph;
-        if (blackboard != null)
-            Blackboard = blackboard;
-        if (provider != null)
-            signalsProvider = provider;
-
-        if (runImmediately)
-            RestartFromStartNode(resetBlackboardBeforeRun);
     }
 }

@@ -55,11 +55,24 @@ public class NarrativeAutoSetup : MonoBehaviour
 
     void Start()
     {
-        TryBootstrapQuestSignals();
+        // Iniciar el grafo para que esté listo para escuchar señales
+        if (_runner != null && graph != null)
+        {
+            _runner.StartFromStartNode();
+            if (debugLogs) Debug.Log("[NarrativeAutoSetup] Grafo iniciado desde StartNode.");
+        }
+        
+        // DESHABILITADO: TryBootstrapQuestSignals() causaba emisiones duplicadas de LETTER_START
+        // Los eventos custom deben ser emitidos explícitamente por Interactables o scripts, no automáticamente
+        // TryBootstrapQuestSignals();
     }
 
     void TryBootstrapQuestSignals()
     {
+        // MÉTODO DESHABILITADO - Causaba emisiones duplicadas de eventos
+        // Los eventos deben ser emitidos por los Interactables cuando corresponda
+        
+        /*
         if (_signals == null) return;
         var qm = QuestManager.Instance;
         if (qm == null) return;
@@ -70,6 +83,7 @@ public class NarrativeAutoSetup : MonoBehaviour
             if (debugLogs) Debug.Log("[NarrativeAutoSetup] Quest ELDRAN_MISSION1 completed; raising LETTER_START");
             _signals.RaiseCustom("LETTER_START");
         }
+        */
     }
 
     public static void ResetForNewGame()
@@ -90,9 +104,15 @@ public class NarrativeAutoSetup : MonoBehaviour
 
         _signals?.ResetState();
         _questService?.ResetState();
-        _runner?.RestartFromStartNode(resetBlackboard: true);
+        
+        if (_runner != null)
+        {
+            _runner.Blackboard?.Clear();
+            _runner.StartFromStartNode();
+        }
 
-        if (rebootstrapSignals)
-            TryBootstrapQuestSignals();
+        // DESHABILITADO: Bootstrap automático de señales causaba eventos duplicados
+        // if (rebootstrapSignals)
+        //     TryBootstrapQuestSignals();
     }
 }

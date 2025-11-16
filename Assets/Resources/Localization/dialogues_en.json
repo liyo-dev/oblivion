@@ -205,6 +205,26 @@
             "value": "[EN] Si la encuentras te diré como puedes ayudarme a buscar mi caracola."
         },
         {
+            "key": "DLG_NIÑOPEZ_CARACOLA_01",
+            "value": "[EN] Busca mi caracola porfa."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN",
+            "value": "[EN] Gracias, eres mi héroe."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_TURNIN_01",
+            "value": "[EN] Oh Muchas gracias, ahora que tengo mis algas puedo entrar al mar."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_TURNIN_02",
+            "value": "[EN] Es muy fácil, solo tienes que mover los brazos para nadar."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_TURNIN_03",
+            "value": "[EN] Pruebalo y ayúdame a buscar mi caracola."
+        },
+        {
             "key": "DLG_PIRATE_01",
             "value": "See this eye?"
         },

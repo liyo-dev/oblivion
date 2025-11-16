@@ -38,6 +38,9 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Progreso de bosses")]
     public List<string> defeatedBossIds = new();
 
+    [Header("Estado de grafos narrativos")]
+    public List<PlayerSaveData.NarrativeBlackboardSnapshot> narrativeBlackboards = new();
+
     [System.Serializable]
     public struct NpcPosEntry
     {

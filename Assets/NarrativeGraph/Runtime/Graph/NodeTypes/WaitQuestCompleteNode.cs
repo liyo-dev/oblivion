@@ -2,6 +2,7 @@
 using System;
 
 [Serializable]
+[SavePoint("Seguro guardar mientras espera quests")]
 public sealed class WaitQuestCompleteNode : NarrativeNode
 {
     public string questId;

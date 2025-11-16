@@ -101,6 +101,7 @@ public class GameBootProfile : ScriptableObject
         p.appearance        = data.appearance != null ? new List<AppearanceEntry>(data.appearance) : new List<AppearanceEntry>();
         p.inventoryItems    = data.inventory != null ? new List<InventoryItemSave>(data.inventory) : new List<InventoryItemSave>();
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
+        p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
             p.spawnAnchorId = data.lastSpawnAnchorId;
@@ -201,7 +202,10 @@ public class GameBootProfile : ScriptableObject
             }
         }
 
-        // Snapshot narrativo omitido
+        // === NUEVO: incluir blackboards narrativos ===
+        data.narrativeBlackboards = activePreset.narrativeBlackboards != null 
+            ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(activePreset.narrativeBlackboards) 
+            : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
 
         return data;
     }
@@ -264,16 +268,35 @@ public class GameBootProfile : ScriptableObject
     /// <summary>Guarda el estado actual del profile en el SaveSystem</summary>
     public bool SaveProfile(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
-        if (!saveSystem) return false;
+        if (!saveSystem)
+        {
+            GameBootProfileDebugger.Log("SaveProfile", "❌ SaveSystem no disponible", LogType.Error);
+            return false;
+        }
 
         var data = BuildSaveDataFromProfile();
-        return saveSystem.Save(data, context);
+        bool success = saveSystem.Save(data, context);
+        
+        if (success)
+        {
+            GameBootProfileDebugger.Log("SaveProfile", $"✅ Guardado exitoso (context: {context})", LogType.Log);
+        }
+        else
+        {
+            GameBootProfileDebugger.Log("SaveProfile", "❌ Error al guardar", LogType.Error);
+        }
+        
+        return success;
     }
 
     /// <summary>Carga datos del SaveSystem y los aplica al profile</summary>
     public bool LoadProfile(SaveSystem saveSystem)
     {
-        if (!saveSystem || !saveSystem.HasSave()) return false;
+        if (!saveSystem || !saveSystem.HasSave())
+        {
+            GameBootProfileDebugger.Log("LoadProfile", "❌ Sin SaveSystem o sin save disponible", LogType.Warning);
+            return false;
+        }
 
         if (saveSystem.Load(out var data))
         {
@@ -283,8 +306,11 @@ public class GameBootProfile : ScriptableObject
 
             NarrativeAutoSetup.ResetForLoadedProfile();
 
+            GameBootProfileDebugger.Log("LoadProfile", $"✅ Cargado exitoso - Anchor: {data.lastSpawnAnchorId}, HP: {data.currentHp:F0}", LogType.Log);
             return true;
         }
+        
+        GameBootProfileDebugger.Log("LoadProfile", "❌ Error al cargar datos", LogType.Error);
         return false;
     }
 
@@ -294,11 +320,14 @@ public class GameBootProfile : ScriptableObject
         EnsureRuntimePreset();
         var p = runtimePreset;
 
+        var syncedSystems = new System.Collections.Generic.List<string>();
+
         // Actualizar anchor actual en el runtime preset
         var currentAnchor = SpawnManager.CurrentAnchorId;
         if (!string.IsNullOrEmpty(currentAnchor))
         {
             p.spawnAnchorId = currentAnchor;
+            syncedSystems.Add($"SpawnAnchor({currentAnchor})");
         }
 
         // Obtener datos del PlayerHealthSystem si existe
@@ -307,6 +336,7 @@ public class GameBootProfile : ScriptableObject
         {
             p.maxHP = playerHealthSystem.MaxHealth;
             p.currentHP = playerHealthSystem.CurrentHealth;
+            syncedSystems.Add($"Health({p.currentHP:F0}/{p.maxHP:F0})");
         }
 
         // Obtener datos del sistema de maná si existe
@@ -315,6 +345,7 @@ public class GameBootProfile : ScriptableObject
         {
             p.maxMP = manaPool.Max;
             p.currentMP = manaPool.Current;
+            syncedSystems.Add($"Mana({p.currentMP:F0}/{p.maxMP:F0})");
         }
         
         // === NUEVO: sincronizar flags de quests desde QuestManager =================
@@ -338,7 +369,12 @@ public class GameBootProfile : ScriptableObject
             // Añadir flags exportados por el QuestManager (active/completed/steps)
             qm.ExportFlags(newFlags);
 
+            // Log detallado de quests activas/completadas para debug
+            var questFlags = newFlags.FindAll(f => f.StartsWith("QUEST_"));
+            Debug.Log($"[GameBootProfile] Quest flags al guardar: {string.Join(", ", questFlags)}");
+
             p.flags = newFlags;
+            syncedSystems.Add($"QuestFlags({newFlags.Count})");
         }
 
         // === NUEVO: sincronizar abilities desde el PlayerActionManager (estado runtime actual) ===
@@ -349,12 +385,14 @@ public class GameBootProfile : ScriptableObject
             p.abilities.swim = actionManager.AllowSwim;
             p.abilities.jump = actionManager.AllowJump;
             p.abilities.climb = actionManager.AllowClimb;
+            syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb})");
          }
 
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
         if (PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true))
         {
             p.inventoryItems = inventory.GetSaveSnapshot();
+            syncedSystems.Add($"Inventory({p.inventoryItems?.Count ?? 0})");
         }
         else
         {
@@ -378,6 +416,7 @@ public class GameBootProfile : ScriptableObject
                         partName = kv.Value
                     });
                 }
+                syncedSystems.Add($"Appearance({p.appearance.Count})");
             }
         }
         else
@@ -388,30 +427,52 @@ public class GameBootProfile : ScriptableObject
         if (BossProgressTracker.TryGetInstance(out var bossTracker))
         {
             p.defeatedBossIds = bossTracker.GetSnapshot();
+            syncedSystems.Add($"Bosses({p.defeatedBossIds?.Count ?? 0})");
         }
         else
         {
             p.defeatedBossIds = new List<string>();
         }
 
+        // Capturar estado de los grafos narrativos
+        if (NarrativeGraphHub.Instance != null)
+        {
+            Debug.Log("[GameBootProfile] === CAPTURANDO BLACKBOARDS ===");
+            p.narrativeBlackboards = NarrativeGraphHub.Instance.CaptureBlackboards();
+            syncedSystems.Add($"Narratives({p.narrativeBlackboards?.Count ?? 0})");
+            Debug.Log($"[GameBootProfile] Blackboards capturados: {p.narrativeBlackboards?.Count ?? 0}");
+        }
+        else
+        {
+            Debug.LogWarning("[GameBootProfile] NarrativeGraphHub.Instance es NULL - no se pueden guardar blackboards");
+            p.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+        }
+
         // Snapshot narrativo eliminado; no se captura
 
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
+        GameBootProfileDebugger.Log("UpdateRuntimePreset", $"✅ Sincronizados: {string.Join(", ", syncedSystems)}", LogType.Log);
     }
 
     /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automáticos.</summary>
     public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
-        if (!saveSystem) return false;
+        if (!saveSystem)
+        {
+            GameBootProfileDebugger.Log("SaveCurrentGameState", "❌ SaveSystem no disponible", LogType.Error);
+            return false;
+        }
 
         if (context == SaveRequestContext.Auto && !allowAutoSaves)
         {
             Debug.Log("[GameBootProfile] Auto-guardado omitido (allowAutoSaves = false)." );
+            GameBootProfileDebugger.Log("SaveCurrentGameState", "⏭️ Auto-guardado omitido (allowAutoSaves = false)", LogType.Warning);
             return false;
         }
 
         // Sincronizar runtimePreset con estado actual del juego
         UpdateRuntimePresetFromCurrentState();
+        GameBootProfileDebugger.Log("SaveCurrentGameState", $"🔄 Runtime actualizado antes de guardar (context: {context})", LogType.Log);
 
         // Guardar profile actualizado
         return SaveProfile(saveSystem, context);
@@ -430,11 +491,13 @@ public class GameBootProfile : ScriptableObject
         if (defaultPlayerPreset)
         {
             EnsureRuntimePresetFromTemplate(defaultPlayerPreset);
+            GameBootProfileDebugger.Log("NewGameReset", $"🆕 Nueva partida desde defaultPlayerPreset: {defaultPlayerPreset.name}", LogType.Log);
         }
         else
         {
             EnsureRuntimePreset();
             ResetPresetToEmpty(runtimePreset);
+            GameBootProfileDebugger.Log("NewGameReset", "🆕 Nueva partida con preset vacío (sin defaultPlayerPreset)", LogType.Warning);
         }
 
         // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
@@ -464,6 +527,7 @@ public class GameBootProfile : ScriptableObject
         NarrativeAutoSetup.ResetForNewGame();
 
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
+        GameBootProfileDebugger.Log("NewGameReset", "✅ Reset completado - sistemas reiniciados", LogType.Log);
     }
 
     private void ResetPresetToEmpty(PlayerPresetSO p)

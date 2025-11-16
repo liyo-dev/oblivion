@@ -33,7 +33,11 @@ public class DebugInventoryAdder : MonoBehaviour
 
             if (alsoForcePopup)
             {
+#if UNITY_2023_1_OR_NEWER
+                var queue = FindFirstObjectByType<CollectiblePopupQueue>();
+#else
                 var queue = FindObjectOfType<CollectiblePopupQueue>();
+#endif
                 if (queue != null)
                 {
                     Debug.Log("[DebugInventoryAdder] Forcing TestSpawn on CollectiblePopupQueue");

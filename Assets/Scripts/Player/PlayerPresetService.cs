@@ -18,6 +18,7 @@ public class PlayerPresetService : MonoBehaviour
     ManaPool _manaPool;       // ← NUEVO: referencia al ManaPool
     PlayerActionManager _actionManager; // ← NUEVO: referencia al PlayerActionManager
     ModularAutoBuilder _appearanceBuilder;
+    Inventory _inventory;     // ← NUEVO: referencia al Inventory
     
     // Evitar inicialización doble si el evento llega más de una vez o ya está listo al habilitar
     bool _initialized;
@@ -37,6 +38,7 @@ public class PlayerPresetService : MonoBehaviour
         _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
         _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>(); // ← NUEVO: obtener ManaPool
         _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>(); // ← NUEVO: obtener PlayerActionManager
+        _inventory = GetComponent<Inventory>() ?? GetComponentInParent<Inventory>(); // ← NUEVO: obtener Inventory
     }
 
     // Suscribirnos al evento y cubrir el caso de que ya esté disponible
@@ -80,7 +82,7 @@ public class PlayerPresetService : MonoBehaviour
 
         // Log diagnóstico: comprobar qué componentes hemos encontrado para evitar configuraciones en el objeto equivocado
         EnsureAppearanceBuilderReference();
-        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}, appearanceBuilder={( _appearanceBuilder != null ? _appearanceBuilder.GetType().Name : "null" )}");
+        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}, appearanceBuilder={( _appearanceBuilder != null ? _appearanceBuilder.GetType().Name : "null" )}, inventory={( _inventory != null ? _inventory.GetType().Name : "null" )}");
 
         var preset = profile.GetActivePresetResolved();
         if (!preset) 
@@ -102,6 +104,9 @@ public class PlayerPresetService : MonoBehaviour
 
         // Sincronizar maná del preset → ManaPool (evita arrancar 50/50 si el preset está en 0/0)
         ApplyManaFromPreset(preset);
+
+        // Sincronizar inventario del preset → Inventory
+        ApplyInventoryFromPreset(preset);
 
         // Configurar hechizos del preset
         ConfigureSpells(preset);
@@ -218,6 +223,40 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         Debug.Log("[PlayerPresetService] Apariencia guardada en el preset activo.");
+    }
+
+    // === NUEVO: Aplica el inventario desde el preset al componente Inventory del jugador ===
+    private void ApplyInventoryFromPreset(PlayerPresetSO preset)
+    {
+        if (!preset) return;
+        
+        if (_inventory == null)
+        {
+            // Intentar obtener el Inventory del jugador
+            if (PlayerService.TryGetComponent<Inventory>(out var inv, includeInactive: false, allowSceneLookup: true))
+            {
+                _inventory = inv;
+            }
+        }
+
+        if (_inventory != null)
+        {
+            var items = preset.inventoryItems;
+            if (items != null && items.Count > 0)
+            {
+                _inventory.LoadSnapshot(items, clearExisting: true, notifyChanges: false);
+                Debug.Log($"[PlayerPresetService] Inventario cargado desde preset ({items.Count} tipos de ítems)");
+            }
+            else
+            {
+                _inventory.LoadSnapshot(null, clearExisting: true, notifyChanges: false);
+                Debug.Log("[PlayerPresetService] Inventario inicializado vacío (preset sin items)");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerPresetService] No se encontró componente Inventory para cargar el inventario del preset");
+        }
     }
 
     // === NUEVO: Aplica valores de maná desde el preset al ManaPool del jugador ===
@@ -409,6 +448,7 @@ public class PlayerPresetService : MonoBehaviour
         }
         // Aplicar stats (maná) y luego los hechizos
         ApplyManaFromPreset(preset);
+        ApplyInventoryFromPreset(preset);
         ConfigureSpells(preset);
         ApplyAppearanceFromPreset(preset);
 

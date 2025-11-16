@@ -7,7 +7,11 @@ public class BossProgressPersistenceBridge : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
     {
+#if UNITY_2023_1_OR_NEWER
+        if (FindFirstObjectByType<BossProgressPersistenceBridge>() != null) return;
+#else
         if (FindObjectOfType<BossProgressPersistenceBridge>() != null) return;
+#endif
 
         var go = new GameObject(nameof(BossProgressPersistenceBridge));
         DontDestroyOnLoad(go);

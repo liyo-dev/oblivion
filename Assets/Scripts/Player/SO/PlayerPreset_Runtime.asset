@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Runtime
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Bedroom
+  spawnAnchorId: Woods_SavePoint
   level: 1
   maxHP: 100
   currentHP: 100
@@ -23,9 +23,23 @@ MonoBehaviour:
   leftSpellId: 0
   rightSpellId: 0
   specialSpellId: 0
-  flags: []
+  flags:
+  - QUEST_COMPLETED:ELDRAN_MISSION1
+  - QUEST_ACTIVE:ELDRAN_MISSION2
   abilities:
     swim: 0
     jump: 0
     climb: 0
     magic: 0
+  appearance: []
+  inventoryItems:
+  - itemId: coin
+    count: 4
+  defeatedBossIds: []
+  narrativeBlackboards:
+  - graphLabel: 
+    blackboardData:
+    - key: 
+      type: 
+      value: 
+  npcPositions: []

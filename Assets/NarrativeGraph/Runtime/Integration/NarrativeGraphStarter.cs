@@ -1,0 +1,131 @@
+using UnityEngine;
+
+/// <summary>
+/// Script para iniciar grafos narrativos específicos en una escena de gameplay.
+/// Coloca este script en un GameObject de la escena y configura qué grafos deben iniciarse.
+/// </summary>
+public class NarrativeGraphStarter : MonoBehaviour
+{
+    [Header("Grafos a Iniciar")]
+    [Tooltip("Etiquetas de los grafos del NarrativeGraphHub que se iniciarán al cargar esta escena.")]
+    [SerializeField] private string[] graphLabels = new string[] { "Historia Principal" };
+
+    [Header("Configuración")]
+    [Tooltip("Si está activado, los grafos se inician en Start(). Si no, debes llamar a StartGraphs() manualmente.")]
+    [SerializeField] private bool startOnAwake = true;
+
+    [Header("Debug")]
+    [SerializeField] private bool logDebug = true;
+
+    void Start()
+    {
+        if (startOnAwake)
+        {
+            StartGraphs();
+        }
+    }
+
+    /// <summary>
+    /// Inicia todos los grafos configurados en la lista.
+    /// Si hay un estado guardado previo, lo restaura primero.
+    /// </summary>
+    public void StartGraphs()
+    {
+        if (graphLabels == null || graphLabels.Length == 0)
+        {
+            if (logDebug)
+                Debug.LogWarning("[NarrativeGraphStarter] No hay grafos configurados para iniciar.");
+            return;
+        }
+
+        var hub = NarrativeGraphHub.Instance;
+        if (hub == null)
+        {
+            Debug.LogError("[NarrativeGraphStarter] NarrativeGraphHub no encontrado. Asegúrate de que existe en la escena.");
+            return;
+        }
+
+        // Restaurar blackboards guardados si existen (desde el preset)
+        RestoreBlackboardsFromPreset(hub);
+
+        if (logDebug)
+            Debug.Log($"[NarrativeGraphStarter] Iniciando {graphLabels.Length} grafo(s) en escena '{gameObject.scene.name}'");
+
+        foreach (var label in graphLabels)
+        {
+            if (string.IsNullOrEmpty(label))
+            {
+                if (logDebug)
+                    Debug.LogWarning("[NarrativeGraphStarter] Etiqueta vacía en la lista, saltando...");
+                continue;
+            }
+
+            // El runner se encargará de verificar si hay estado guardado
+            // y continuará desde el nodo guardado automáticamente
+            hub.StartGraph(label);
+        }
+    }
+
+    /// <summary>
+    /// Restaura los blackboards desde el preset guardado.
+    /// </summary>
+    private void RestoreBlackboardsFromPreset(NarrativeGraphHub hub)
+    {
+        if (!GameBootService.IsAvailable)
+        {
+            if (logDebug)
+                Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
+            return;
+        }
+
+        var profile = GameBootService.Profile;
+        if (profile == null)
+        {
+            if (logDebug)
+                Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
+            return;
+        }
+
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null)
+        {
+            if (logDebug)
+                Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
+            return;
+        }
+
+        if (preset.narrativeBlackboards == null)
+        {
+            if (logDebug)
+                Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
+            return;
+        }
+
+        if (preset.narrativeBlackboards.Count == 0)
+        {
+            if (logDebug)
+                Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
+            return;
+        }
+
+        if (logDebug)
+            Debug.Log($"[NarrativeGraphStarter] Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
+
+        hub.RestoreBlackboards(preset.narrativeBlackboards);
+    }
+
+    /// <summary>
+    /// Inicia un grafo específico por su etiqueta.
+    /// </summary>
+    public void StartGraph(string label)
+    {
+        var hub = NarrativeGraphHub.Instance;
+        if (hub == null)
+        {
+            Debug.LogError("[NarrativeGraphStarter] NarrativeGraphHub no encontrado.");
+            return;
+        }
+
+        hub.StartGraph(label);
+    }
+}

@@ -412,7 +412,11 @@ public sealed class StartBattleNode : NarrativeNode
         if (instance != null) return instance;
 
         // Buscar en escena algún componente de ese tipo (o derivado)
+#if UNITY_2022_2_OR_NEWER
+        var behaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
         var behaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>(true);
+#endif
         foreach (var mb in behaviours)
         {
             var t = mb.GetType();

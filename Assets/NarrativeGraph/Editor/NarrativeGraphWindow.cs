@@ -124,16 +124,6 @@ namespace Sendero.Narrative.Editor
         {
             var view = new NodeView(model);
 
-            // Auto-expandir por defecto los nodos que contienen listas/configuración (UX)
-            try
-            {
-                if (model is DeliverQuestCompleteNode || model is AdditiveSceneCinematicNode || model is UnlockTriggerNode)
-                {
-                    view.expanded = true;
-                }
-            }
-            catch { /* no crítico si la propiedad no existe en versiones antiguas */ }
-
             var so = new SerializedObject(_graph);
             var idx = _graph.nodes.IndexOf(model);
             var prop = so.FindProperty("nodes").GetArrayElementAtIndex(idx);
@@ -200,13 +190,17 @@ namespace Sendero.Narrative.Editor
                 view.extensionContainer.Add(pf);
             }
 
-            var btn = new Button(() =>
+            // Solo el StartNode puede ser marcado como inicio
+            if (model is StartNode)
             {
-                _graph.startNodeGuid = model.guid;
-                EditorUtility.SetDirty(_graph);
-            })
-            { text = "Set as Start" };
-            view.titleButtonContainer.Add(btn);
+                var btn = new Button(() =>
+                {
+                    _graph.startNodeGuid = model.guid;
+                    EditorUtility.SetDirty(_graph);
+                })
+                { text = "Set as Start" };
+                view.titleButtonContainer.Add(btn);
+            }
 
             _view.AddElement(view);
             _nodeViews[model.guid] = view;
