@@ -47,14 +47,36 @@ public static class GameState
 
     // ===== Derived permissions =====
     public static bool CanProcessGameplayInput
-        => !IsAny(GamePhase.PauseMenu, GamePhase.MainMenu, GamePhase.Dialogue, GamePhase.SavePrompt, GamePhase.Cutscene, GamePhase.Loading, GamePhase.GameOver);
+        => !IsAny(GamePhase.PauseMenu,
+                  GamePhase.MainMenu,
+                  GamePhase.Dialogue,
+                  GamePhase.SavePrompt,
+                  GamePhase.Cutscene,
+                  GamePhase.Loading,
+                  GamePhase.GameOver,
+                  GamePhase.Inventory,
+                  GamePhase.Equipment);
 
     public static bool CanInteractGlobally
-        => !IsAny(GamePhase.PauseMenu, GamePhase.MainMenu, GamePhase.Dialogue, GamePhase.SavePrompt, GamePhase.Loading);
+        => !IsAny(GamePhase.PauseMenu,
+                  GamePhase.MainMenu,
+                  GamePhase.Dialogue,
+                  GamePhase.SavePrompt,
+                  GamePhase.Loading,
+                  GamePhase.Inventory,
+                  GamePhase.Equipment);
 
     public static bool CanOpenPause
-        => !IsAny(GamePhase.PauseMenu, GamePhase.MainMenu, GamePhase.Dialogue, GamePhase.SavePrompt, GamePhase.Cutscene, GamePhase.Loading, GamePhase.GameOver);
+        => !IsAny(GamePhase.PauseMenu,
+                  GamePhase.MainMenu,
+                  GamePhase.Dialogue,
+                  GamePhase.SavePrompt,
+                  GamePhase.Cutscene,
+                  GamePhase.Loading,
+                  GamePhase.GameOver,
+                  GamePhase.Inventory,
+                  GamePhase.Equipment);
 
     public static bool CanOpenInventory
-        => CanProcessGameplayInput && !Is(GamePhase.Inventory);
+        => CanProcessGameplayInput && !Is(GamePhase.Inventory) && !Is(GamePhase.Equipment);
 }
