@@ -19,6 +19,7 @@ public class PlayerPresetService : MonoBehaviour
     PlayerActionManager _actionManager; // ← NUEVO: referencia al PlayerActionManager
     ModularAutoBuilder _appearanceBuilder;
     Inventory _inventory;     // ← NUEVO: referencia al Inventory
+    WardrobeInventory _wardrobeInventory;
     
     // Evitar inicialización doble si el evento llega más de una vez o ya está listo al habilitar
     bool _initialized;
@@ -111,6 +112,7 @@ public class PlayerPresetService : MonoBehaviour
         // Configurar hechizos del preset
         ConfigureSpells(preset);
         ApplyAppearanceFromPreset(preset);
+        ApplyWardrobeFromPreset(preset);
 
         // === NUEVO: Aplicar abilities del preset al PlayerActionManager si existe ===
         if (_actionManager == null)
@@ -223,6 +225,16 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         Debug.Log("[PlayerPresetService] Apariencia guardada en el preset activo.");
+    }
+
+    void ApplyWardrobeFromPreset(PlayerPresetSO preset)
+    {
+        if (preset == null) return;
+
+        if (_wardrobeInventory == null)
+            PlayerService.TryGetComponent(out _wardrobeInventory, includeInactive: true, allowSceneLookup: true);
+
+        _wardrobeInventory?.ApplyFromPreset(preset);
     }
 
     // === NUEVO: Aplica el inventario desde el preset al componente Inventory del jugador ===
@@ -451,6 +463,7 @@ public class PlayerPresetService : MonoBehaviour
         ApplyInventoryFromPreset(preset);
         ConfigureSpells(preset);
         ApplyAppearanceFromPreset(preset);
+        ApplyWardrobeFromPreset(preset);
 
         // NUEVO: aplicar abilities al action manager
         if (_actionManager == null)

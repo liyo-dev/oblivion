@@ -13,6 +13,71 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     public static PlayerEquipmentMenuController Instance => _instance;
     public static bool IsOpen => _instance != null && _instance._isOpen;
 
+    public readonly struct InventoryItemUseContext
+    {
+        public Inventory Inventory { get; }
+        public ItemData Item { get; }
+        public PlayerPickupCollector Collector { get; }
+
+        public InventoryItemUseContext(Inventory inventory, ItemData item, PlayerPickupCollector collector)
+        {
+            Inventory = inventory;
+            Item = item;
+            Collector = collector;
+        }
+    }
+
+    public struct InventoryItemUseResult
+    {
+        public bool handled;
+        public bool consumed;
+        public string message;
+
+        public InventoryItemUseResult(bool handled, bool consumed, string message)
+        {
+            this.handled = handled;
+            this.consumed = consumed;
+            this.message = message;
+        }
+
+        public static InventoryItemUseResult NotHandled => new InventoryItemUseResult(false, false, null);
+
+        public static InventoryItemUseResult Handled(string message = null, bool consumed = false)
+            => new InventoryItemUseResult(true, consumed, message);
+    }
+
+    public delegate InventoryItemUseResult InventoryItemUseHandler(InventoryItemUseContext context);
+    public static event InventoryItemUseHandler OnInventoryItemUseRequested;
+
+    static InventoryItemUseResult DispatchInventoryUseRequest(InventoryItemUseContext context)
+    {
+        var handlers = OnInventoryItemUseRequested;
+        if (handlers == null) return InventoryItemUseResult.NotHandled;
+
+        var aggregated = InventoryItemUseResult.NotHandled;
+
+        foreach (InventoryItemUseHandler handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                var partial = handler(context);
+                if (!partial.handled) continue;
+
+                aggregated.handled = true;
+                if (partial.consumed)
+                    aggregated.consumed = true;
+                if (!string.IsNullOrEmpty(partial.message))
+                    aggregated.message = partial.message;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        return aggregated;
+    }
+
     [Header("Persistencia")]
     [SerializeField] private bool dontDestroyOnLoad = true;
 
@@ -126,6 +191,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void OnDestroy()
     {
         _inventoryView?.Dispose();
+        _equipmentView?.Dispose();
         if (_instance == this)
             _instance = null;
     }
@@ -155,6 +221,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_isOpen)
         {
             HandleCloseInput();
+            HandleTabNavigationInput();
             UpdatePlayerInfoPanel();
         }
     }
@@ -236,8 +303,55 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                      Input.GetKeyDown(KeyCode.JoystickButton1);
         }
 
+        if (cancel && _activeTab == 1 && _spellView != null && _spellView.TryHandleCancel())
+            return;
+
         if (cancel)
             CloseMenu();
+    }
+
+    void HandleTabNavigationInput()
+    {
+        int delta = 0;
+
+#if ENABLE_INPUT_SYSTEM
+        var pad = Gamepad.current;
+        if (pad != null)
+        {
+            if (pad.leftShoulder.wasPressedThisFrame) delta = -1;
+            else if (pad.rightShoulder.wasPressedThisFrame) delta = 1;
+        }
+#endif
+
+        if (delta == 0)
+        {
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.PageUp)) delta = -1;
+            else if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown)) delta = 1;
+        }
+
+        if (delta == 0) return;
+
+        var availableTabs = GetAvailableTabs();
+        if (availableTabs.Count == 0) return;
+
+        int currentIndex = availableTabs.IndexOf(_activeTab);
+        if (currentIndex < 0) currentIndex = 0;
+
+        int nextIndex = (currentIndex + delta + availableTabs.Count) % availableTabs.Count;
+        int nextTab = availableTabs[nextIndex];
+        bool forceRebuild = nextTab == 0 && nextTab != _activeTab;
+        ShowTab(nextTab, forceRebuild);
+    }
+
+    List<int> GetAvailableTabs()
+    {
+        var tabs = new List<int>(3);
+        if (_inventoryView != null) tabs.Add(0);
+        if (_spellView != null) tabs.Add(1);
+        if (_equipmentView != null) tabs.Add(2);
+        if (tabs.Count == 0)
+            tabs.Add(_activeTab);
+        return tabs;
     }
 
     void OpenMenu()
@@ -260,15 +374,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         _isOpen = true;
         GameState.Push(GamePhase.Inventory);
+        GameState.Push(GamePhase.Equipment);
         SelectInitial();
     }
 
     void CloseMenu()
     {
         SetCanvasState(false);
+        _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
+        if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
     }
 
     void SetCanvasState(bool visible)
@@ -290,6 +407,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void ShowTab(int index, bool forceRebuild = false)
     {
         _activeTab = Mathf.Clamp(index, 0, 2);
+
+        if (_spellView != null && _activeTab != 1)
+            _spellView.CancelSlotSelection(true);
 
         if (_inventoryView != null)
         {
@@ -657,20 +777,33 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_inventory == null || _selectedItem == null) return;
 
-            if (!InventoryUseUtility.TryUseItem(_inventory, _selectedItem, _collector, out var reason, out var consumed))
+            var context = new InventoryItemUseContext(_inventory, _selectedItem, _collector);
+            var result = DispatchInventoryUseRequest(context);
+
+            if (!result.handled)
             {
-                if (_ui.feedbackText != null)
-                    _ui.feedbackText.text = reason;
-                return;
+                if (!InventoryUseUtility.TryUseItem(_inventory, _selectedItem, _collector, out var reason, out var consumed))
+                {
+                    if (_ui.feedbackText != null)
+                        _ui.feedbackText.text = string.IsNullOrEmpty(reason) ? "No se pudo usar." : reason;
+                    return;
+                }
+
+                result.handled = true;
+                result.consumed = consumed;
             }
 
-            if (_ui.feedbackText != null)
-                _ui.feedbackText.text = "Usado correctamente.";
-
-            if (consumed && _inventory.Count(_selectedItem.itemId) == 0)
+            if (result.consumed && _inventory.Count(_selectedItem.itemId) == 0)
                 _selectedItem = null;
 
             Refresh(true);
+
+            if (_ui.feedbackText != null)
+            {
+                if (string.IsNullOrEmpty(result.message))
+                    result.message = "Usado correctamente.";
+                _ui.feedbackText.text = result.message;
+            }
         }
 
         void HandleInventoryChanged(ItemData item, int newAmount)
@@ -692,6 +825,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public Transform rowsParent;
         public SpellRowWidget rowPrefab;
         public Text detailsText;
+        [Header("Feedback visual")]
+        public Color slotSelectionColor = new Color(1f, 0.83f, 0.2f, 1f);
 
         public bool IsConfigured =>
             root != null &&
@@ -709,27 +844,55 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     class SpellView
     {
         readonly SpellBindings _ui;
-        readonly List<SpellRowWidget> _rows = new();
-        MagicSlot _activeSlot = MagicSlot.Left;
+        readonly List<RowEntry> _rows = new();
+        readonly Dictionary<Button, ColorBlock> _slotDefaultColors = new();
+        readonly Dictionary<Button, Navigation> _slotNavigation = new();
 
         PlayerPresetSO _preset;
         SpellLibrarySO _library;
         PlayerPresetService _presetService;
+        SpellId _highlightedSpell = SpellId.None;
+        RowEntry _highlightedRow;
+        SpellId _pendingSpell = SpellId.None;
+        bool _isSelectingSlot;
+        GameObject _currentSlotSelection;
+
+        class RowEntry
+        {
+            public SpellId spellId;
+            public SpellRowWidget widget;
+        }
 
         public SpellView(SpellBindings bindings)
         {
             _ui = bindings;
             _ui.root?.SetActive(false);
 
-            _ui.leftSlotButton.onClick.AddListener(() => SelectSlot(MagicSlot.Left));
-            _ui.rightSlotButton.onClick.AddListener(() => SelectSlot(MagicSlot.Right));
-            _ui.specialSlotButton.onClick.AddListener(() => SelectSlot(MagicSlot.Special));
+            ConfigureSlotButton(_ui.leftSlotButton, MagicSlot.Left);
+            ConfigureSlotButton(_ui.rightSlotButton, MagicSlot.Right);
+            ConfigureSlotButton(_ui.specialSlotButton, MagicSlot.Special);
+
+            SetSlotNavigationActive(false);
         }
 
-        public GameObject DefaultSelection => _ui.leftSlotButton != null ? _ui.leftSlotButton.gameObject : null;
+        public GameObject DefaultSelection
+        {
+            get
+            {
+                if (_rows.Count > 0)
+                {
+                    var first = _rows[0]?.widget;
+                    if (first != null)
+                        return first.ButtonGameObject;
+                }
+                return _ui.leftSlotButton != null ? _ui.leftSlotButton.gameObject : _ui.root;
+            }
+        }
 
         public void SetVisible(bool value)
         {
+            if (!value)
+                CancelSlotSelection(true);
             if (_ui.root != null)
                 _ui.root.SetActive(value);
         }
@@ -741,8 +904,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _preset = null;
                 _library = null;
                 _presetService = null;
+                CancelSlotSelection(true);
                 ClearList();
                 UpdateSlotLabels();
+                ShowSpellDetails(SpellId.None);
                 return;
             }
 
@@ -752,6 +917,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             UpdateSlotLabels();
             BuildSpellList();
+            UpdateSlotButtonVisuals();
         }
 
         void UpdateSlotLabels()
@@ -769,56 +935,114 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _ui.specialSlotLabel.text = $"Especial: {ResolveName(_preset.specialSpellId)}";
         }
 
-        void SelectSlot(MagicSlot slot)
-        {
-            _activeSlot = slot;
-            BuildSpellList();
-        }
-
         void BuildSpellList()
         {
+            var previous = _highlightedSpell;
             ClearList();
 
             if (_preset == null) return;
 
+            var added = new HashSet<SpellId>();
             AddSpellRow(SpellId.None);
+            added.Add(SpellId.None);
 
             if (_preset.unlockedSpells != null)
             {
                 foreach (var id in _preset.unlockedSpells)
+                {
+                    if (!added.Add(id)) continue;
                     AddSpellRow(id);
+                }
             }
 
-            SpellId current = _activeSlot switch
+            if (!SelectRow(previous))
             {
-                MagicSlot.Left => _preset.leftSpellId,
-                MagicSlot.Right => _preset.rightSpellId,
-                MagicSlot.Special => _preset.specialSpellId,
-                _ => SpellId.None
-            };
-            ShowSpellDetails(current);
+                if (!SelectRow(_preset.leftSpellId))
+                    SelectFirstRow();
+            }
         }
 
         void AddSpellRow(SpellId spellId)
         {
-            if (!IsAllowed(spellId)) return;
-
             var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
             widget.SetLabel(ResolveName(spellId));
-            widget.RegisterClickHandler(() =>
-            {
-                AssignSpell(spellId);
-                ShowSpellDetails(spellId);
-            });
+            var rowEntry = new RowEntry { spellId = spellId, widget = widget };
+            widget.RegisterClickHandler(() => HandleRowClicked(rowEntry));
+            widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry));
 
-            _rows.Add(widget);
+            _rows.Add(rowEntry);
         }
 
-        void AssignSpell(SpellId id)
+        void HandleRowSelected(RowEntry entry)
+        {
+            if (entry == null) return;
+            if (_isSelectingSlot)
+            {
+                RestoreSlotFocus();
+                return;
+            }
+            _highlightedSpell = entry.spellId;
+            _highlightedRow = entry;
+            ShowSpellDetails(entry.spellId);
+        }
+
+        void HandleRowClicked(RowEntry entry)
+        {
+            if (entry == null) return;
+            if (_isSelectingSlot) return;
+
+            BeginSlotSelection(entry.spellId);
+        }
+
+        void BeginSlotSelection(SpellId spellId)
+        {
+            _pendingSpell = spellId;
+            _isSelectingSlot = true;
+            SetSlotNavigationActive(true);
+            UpdateSlotButtonVisuals();
+
+            if (!FocusFirstAllowedSlot())
+            {
+                CancelSlotSelection(false);
+                return;
+            }
+
+            ShowSpellDetails(spellId);
+        }
+
+        bool FocusFirstAllowedSlot()
+        {
+            if (TryFocusSlot(_ui.leftSlotButton, MagicSlot.Left)) return true;
+            if (TryFocusSlot(_ui.rightSlotButton, MagicSlot.Right)) return true;
+            if (TryFocusSlot(_ui.specialSlotButton, MagicSlot.Special)) return true;
+            return false;
+        }
+
+        bool TryFocusSlot(Button button, MagicSlot slot)
+        {
+            if (button == null) return false;
+            if (!CanAssign(slot, _pendingSpell)) return false;
+            var es = EventSystem.current;
+            if (es != null)
+                es.SetSelectedGameObject(button.gameObject);
+            _currentSlotSelection = button.gameObject;
+            return true;
+        }
+
+        void HandleSlotButtonPressed(MagicSlot slot)
+        {
+            if (!_isSelectingSlot) return;
+            if (!CanAssign(slot, _pendingSpell)) return;
+
+            AssignSpellToSlot(slot, _pendingSpell);
+            FinishSlotSelection();
+        }
+
+        void AssignSpellToSlot(MagicSlot slot, SpellId id)
         {
             if (_preset == null) return;
 
-            switch (_activeSlot)
+            switch (slot)
             {
                 case MagicSlot.Left: _preset.leftSpellId = id; break;
                 case MagicSlot.Right: _preset.rightSpellId = id; break;
@@ -829,45 +1053,181 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateSlotLabels();
         }
 
+        void FinishSlotSelection()
+        {
+            _isSelectingSlot = false;
+            _pendingSpell = SpellId.None;
+            SetSlotNavigationActive(false);
+            UpdateSlotButtonVisuals();
+            _currentSlotSelection = null;
+            _highlightedRow?.widget?.Focus();
+            ShowSpellDetails(_highlightedSpell);
+        }
+
+        public void CancelSlotSelection(bool silent)
+        {
+            if (!_isSelectingSlot)
+                return;
+
+            _isSelectingSlot = false;
+            _pendingSpell = SpellId.None;
+            SetSlotNavigationActive(false);
+            UpdateSlotButtonVisuals();
+            _currentSlotSelection = null;
+            if (!silent)
+            {
+                _highlightedRow?.widget?.Focus();
+                ShowSpellDetails(_highlightedSpell);
+            }
+        }
+
+        public bool TryHandleCancel()
+        {
+            if (!_isSelectingSlot) return false;
+            CancelSlotSelection(false);
+            return true;
+        }
+
         void ShowSpellDetails(SpellId id)
         {
             if (_ui.detailsText == null) return;
 
+            string description;
+
             if (id == SpellId.None)
             {
-                _ui.detailsText.text = "Sin asignar.";
-                return;
+                description = "Sin asignar.";
             }
-
-            var spell = GetSpellAsset(id);
-            if (spell == null)
+            else
             {
-                _ui.detailsText.text = "Hechizo sin información.";
-                return;
+                var spell = GetSpellAsset(id);
+                if (spell == null)
+                {
+                    description = "Hechizo sin información.";
+                }
+                else
+                {
+                    description = $"{spell.displayName}\nDaño: {spell.damage}\nCoste de maná: {spell.manaCost}\nCooldown: {spell.cooldown:F2}s";
+                }
             }
 
-            _ui.detailsText.text = $"{spell.displayName}\nDaño: {spell.damage}\nCoste de maná: {spell.manaCost}\nCooldown: {spell.cooldown:F2}s";
+            if (_isSelectingSlot)
+                description += "\nSelecciona un slot con A o cancela con B.";
+            else if (id == SpellId.None)
+                description += "\nPulsa A para limpiar un slot.";
+            else
+                description += "\nPulsa A para elegir en qué slot equipar.";
+
+            _ui.detailsText.text = description;
         }
 
         void ClearList()
         {
-            foreach (var widget in _rows)
+            foreach (var entry in _rows)
             {
-                if (widget != null)
-                    UnityEngine.Object.Destroy(widget.gameObject);
+                if (entry?.widget != null)
+                    UnityEngine.Object.Destroy(entry.widget.gameObject);
             }
             _rows.Clear();
+            _highlightedRow = null;
         }
 
-        bool IsAllowed(SpellId id)
+        bool SelectRow(SpellId id)
         {
-            if (id == SpellId.None) return true;
-            var spell = GetSpellAsset(id);
+            if (_rows.Count == 0) return false;
+
+            foreach (var entry in _rows)
+            {
+                if (entry == null || entry.spellId != id) continue;
+                entry.widget?.Focus();
+                HandleRowSelected(entry);
+                return true;
+            }
+
+            return false;
+        }
+
+        void SelectFirstRow()
+        {
+            if (_rows.Count == 0) return;
+            var first = _rows[0];
+            first?.widget?.Focus();
+            HandleRowSelected(first);
+        }
+
+        void RestoreSlotFocus()
+        {
+            if (_currentSlotSelection == null) return;
+            var es = EventSystem.current;
+            if (es != null)
+                es.SetSelectedGameObject(_currentSlotSelection);
+        }
+
+        void ConfigureSlotButton(Button button, MagicSlot slot)
+        {
+            if (button == null) return;
+
+            button.onClick.AddListener(() => HandleSlotButtonPressed(slot));
+
+            if (!_slotDefaultColors.ContainsKey(button))
+                _slotDefaultColors[button] = button.colors;
+
+            if (!_slotNavigation.ContainsKey(button))
+                _slotNavigation[button] = button.navigation;
+        }
+
+        void SetSlotNavigationActive(bool active)
+        {
+            foreach (var kvp in _slotNavigation)
+            {
+                var button = kvp.Key;
+                if (button == null) continue;
+                button.navigation = active ? kvp.Value : new Navigation { mode = Navigation.Mode.None };
+            }
+        }
+
+        void UpdateSlotButtonVisuals()
+        {
+            UpdateSlotButtonState(_ui.leftSlotButton, MagicSlot.Left);
+            UpdateSlotButtonState(_ui.rightSlotButton, MagicSlot.Right);
+            UpdateSlotButtonState(_ui.specialSlotButton, MagicSlot.Special);
+        }
+
+        void UpdateSlotButtonState(Button button, MagicSlot slot)
+        {
+            if (button == null) return;
+
+            var defaults = _slotDefaultColors.TryGetValue(button, out var colors)
+                ? colors
+                : button.colors;
+
+            if (_isSelectingSlot && CanAssign(slot, _pendingSpell))
+            {
+                var highlighted = defaults;
+                highlighted.normalColor = _ui.slotSelectionColor;
+                highlighted.highlightedColor = _ui.slotSelectionColor;
+                highlighted.selectedColor = _ui.slotSelectionColor;
+                highlighted.pressedColor = _ui.slotSelectionColor;
+                button.colors = highlighted;
+            }
+            else
+            {
+                button.colors = defaults;
+            }
+
+            button.interactable = !_isSelectingSlot || CanAssign(slot, _pendingSpell);
+        }
+
+        bool CanAssign(MagicSlot slot, SpellId spellId)
+        {
+            if (spellId == SpellId.None) return true;
+            var spell = GetSpellAsset(spellId);
             if (spell == null) return true;
 
-            return _activeSlot == MagicSlot.Special
-                ? spell.slotType == SpellSlotType.SpecialOnly || spell.slotType == SpellSlotType.Any
-                : spell.slotType != SpellSlotType.SpecialOnly;
+            if (slot == MagicSlot.Special)
+                return spell.slotType == SpellSlotType.SpecialOnly || spell.slotType == SpellSlotType.Any;
+
+            return spell.slotType != SpellSlotType.SpecialOnly;
         }
 
         string ResolveName(SpellId id)
@@ -922,6 +1282,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         ModularAutoBuilder _builder;
         PlayerPresetService _presetService;
+        WardrobeInventory _wardrobe;
+        WardrobeInventory _boundWardrobe;
 
         public EquipmentView(EquipmentBindings bindings)
         {
@@ -969,6 +1331,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             PlayerService.TryGetComponent(out _builder, includeInactive: true, allowSceneLookup: true);
             PlayerService.TryGetComponent(out _presetService, includeInactive: true, allowSceneLookup: true);
+            PlayerService.TryGetComponent(out _wardrobe, includeInactive: true, allowSceneLookup: true);
+
+            if (_boundWardrobe != _wardrobe)
+            {
+                if (_boundWardrobe != null)
+                    _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
+                if (_wardrobe != null)
+                    _wardrobe.OnWardrobeChanged += HandleWardrobeChanged;
+                _boundWardrobe = _wardrobe;
+            }
 
             if (_builder == null)
             {
@@ -976,13 +1348,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 {
                     if (row?.label != null)
                         row.label.text = $"{FormatCategory(row.category)}: (sin builder)";
-                    SetInteractable(row, false);
+                    SetInteractable(row, false, false);
                 }
                 return;
             }
 
-            foreach (var row in _rows.Values)
-                SetInteractable(row, true);
+            foreach (var kvp in _rows)
+            {
+                bool hasOptions = _wardrobe == null || _wardrobe.HasOptions(kvp.Key);
+                SetInteractable(kvp.Value, hasOptions, true);
+            }
 
             UpdateLabels();
         }
@@ -991,7 +1366,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_builder == null) return;
 
-            InvokeBuilderNextPrev(category, step);
+            bool changed = false;
+
+            if (_wardrobe != null)
+                changed = TryCycleWithWardrobe(category, step);
+
+            if (!changed)
+                InvokeBuilderNextPrev(category, step);
+
             Snapshot();
             UpdateLabels();
         }
@@ -1012,20 +1394,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UpdateLabels()
         {
             if (_builder == null) return;
-            // Obtener selección por reflexión para evitar referenciar PartCat directamente
-            Dictionary<object, string> selectionMap = new();
-            var getSel = _builder.GetType().GetMethod("GetSelection");
-            if (getSel != null)
-            {
-                var selObj = getSel.Invoke(_builder, null);
-                if (selObj is System.Collections.IDictionary dict)
-                {
-                    foreach (System.Collections.DictionaryEntry de in dict)
-                    {
-                        selectionMap[de.Key] = de.Value?.ToString();
-                    }
-                }
-            }
+            var selection = _builder.GetSelection();
 
             foreach (var kvp in _rows)
             {
@@ -1033,27 +1402,78 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (row?.label == null) continue;
 
                 string value = "Sin asignar";
-                // Intentar buscar usando el enum tipo que viene en la selección
-                foreach (var key in selectionMap.Keys)
-                {
-                    if (key == null) continue;
-                    if (string.Equals(key.ToString(), kvp.Key.ToString(), StringComparison.OrdinalIgnoreCase))
-                    {
-                        value = selectionMap[key] ?? "Sin asignar";
-                        break;
-                    }
-                }
+                if (selection != null && selection.TryGetValue(kvp.Key, out var part) && !string.IsNullOrEmpty(part))
+                    value = ResolveDisplayName(kvp.Key, part);
 
                 row.label.text = $"{FormatCategory(kvp.Key)}: {value}";
             }
         }
 
-        void SetInteractable(EquipmentBindings.RowBinding row, bool value)
+        void SetInteractable(EquipmentBindings.RowBinding row, bool canCycle, bool allowClear)
         {
             if (row == null) return;
-            if (row.previousButton != null) row.previousButton.interactable = value;
-            if (row.nextButton != null) row.nextButton.interactable = value;
-            if (row.clearButton != null) row.clearButton.interactable = value;
+            if (row.previousButton != null) row.previousButton.interactable = canCycle;
+            if (row.nextButton != null) row.nextButton.interactable = canCycle;
+            if (row.clearButton != null) row.clearButton.interactable = allowClear;
+        }
+
+        bool TryCycleWithWardrobe(PartCategory category, int step)
+        {
+            var options = _wardrobe?.GetUnlockedOptions(category);
+            if (options == null || options.Count == 0) return false;
+
+            string current = GetSelectionFor(category);
+            int currentIndex = -1;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (string.Equals(options[i].partName, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            if (currentIndex < 0)
+                currentIndex = step > 0 ? 0 : options.Count - 1;
+
+            if (options.Count == 0) return false;
+
+            int nextIndex = (currentIndex + step) % options.Count;
+            if (nextIndex < 0) nextIndex += options.Count;
+
+            var entry = options[nextIndex];
+            if (string.IsNullOrEmpty(entry.partName)) return false;
+
+            InvokeBuilderSetByName(category, entry.partName);
+            return true;
+        }
+
+        string GetSelectionFor(PartCategory category)
+        {
+            if (_builder == null) return null;
+            var selection = _builder.GetSelection();
+            if (selection != null && selection.TryGetValue(category, out var part))
+                return part;
+            return null;
+        }
+
+        string ResolveDisplayName(PartCategory category, string partName)
+        {
+            if (string.IsNullOrEmpty(partName)) return "Sin asignar";
+            if (_wardrobe != null && _wardrobe.TryGetEntry(category, partName, out var entry))
+                return string.IsNullOrEmpty(entry.displayName) ? partName : entry.displayName;
+            return partName;
+        }
+
+        void HandleWardrobeChanged()
+        {
+            UpdateLabels();
+        }
+
+        public void Dispose()
+        {
+            if (_boundWardrobe != null)
+                _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
         }
 
         string FormatCategory(PartCategory cat)
