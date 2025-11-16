@@ -184,7 +184,8 @@ public class GameBootProfileDebugger : MonoBehaviour
                 
                 DrawKeyValue("Unlocked Abilities", (p.unlockedAbilities?.Count ?? 0).ToString());
                 DrawKeyValue("Unlocked Spells", (p.unlockedSpells?.Count ?? 0).ToString());
-                
+                DrawKeyValue("Unlocked Wardrobe", (p.unlockedWardrobeIds?.Count ?? 0).ToString());
+
                 GUILayout.Space(5);
                 DrawKeyValue("Left Spell", p.leftSpellId.ToString());
                 DrawKeyValue("Right Spell", p.rightSpellId.ToString());

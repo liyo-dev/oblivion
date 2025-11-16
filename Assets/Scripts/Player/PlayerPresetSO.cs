@@ -32,6 +32,9 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Apariencia")]
     public List<AppearanceEntry> appearance = new();
 
+    [Header("Vestuario desbloqueado")]
+    public List<string> unlockedWardrobeIds = new();
+
     [Header("Inventario")]
     public List<InventoryItemSave> inventoryItems = new();
 
