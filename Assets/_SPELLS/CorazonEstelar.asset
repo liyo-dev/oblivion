@@ -10,32 +10,33 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
-  m_Name: IceProjectileSO
+  m_Name: CorazonEstelar
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
-  displayName: IceBall
-  kind: 0
-  element: 1
-  prefab: {fileID: 3367314013316085171, guid: 8b20002c2b69a9d44ab5bae8e1d923cd, type: 3}
-  castDelaySeconds: 0.5
-  initialSpeed: 18
+  displayName: "Coraz\xF3n Estelar"
+  kind: 1
+  element: 3
+  prefab: {fileID: 689667626583958020, guid: 1336648bc1d8baf46a4515860950c9d4, type: 3}
+  castDelaySeconds: 0
+  initialSpeed: 10
   useGravity: 0
   maxRange: 40
   lifeTime: 2
-  damage: 10
+  damage: 50
   aoeRadius: 0
   knockbackForce: 0
   hitLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 128
   destroyOnHit: 1
   forwardOffset: 0.35
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
   flattenDirection: 1
   useScaleOverride: 0
   scaleOverride: {x: 1, y: 1, z: 1}
-  manaCost: 5
-  cooldown: 0.25
+  manaCost: 25
+  cooldown: 1
   spawnVFX: {fileID: 0}
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 0}
-  slotType: 0
+  slotType: 1
+  attackIcon: {fileID: 21300000, guid: 7bb9669c2b0c9ef4c86aced248b8b3d7, type: 3}

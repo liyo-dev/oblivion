@@ -30,9 +30,17 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
 
         // Inicializar cooldowns
-        _slotCooldowns[MagicSlot.Left] = 0f;
-        _slotCooldowns[MagicSlot.Right] = 0f;
-        _slotCooldowns[MagicSlot.Special] = 0f;
+        InitializeCooldowns();
+    }
+
+    void InitializeCooldowns()
+    {
+        if (!_slotCooldowns.ContainsKey(MagicSlot.Left))
+            _slotCooldowns[MagicSlot.Left] = 0f;
+        if (!_slotCooldowns.ContainsKey(MagicSlot.Right))
+            _slotCooldowns[MagicSlot.Right] = 0f;
+        if (!_slotCooldowns.ContainsKey(MagicSlot.Special))
+            _slotCooldowns[MagicSlot.Special] = 0f;
     }
 
     void Update()
@@ -75,6 +83,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         }
 
         // Activar cooldown
+        InitializeCooldowns();
         _slotCooldowns[slot] = spell.cooldown;
 
         // Lanzar el hechizo usando el spawner existente
@@ -102,6 +111,9 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     /// Verifica si se puede lanzar un hechizo
     public bool CanCastSpell(MagicSlot slot, MagicSpellSO spell, out string reason)
     {
+        // Asegurar que el diccionario esté inicializado
+        InitializeCooldowns();
+        
         reason = "";
 
         // Verificar ActionManager (carrying, stunned, etc.)
@@ -119,9 +131,9 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         }
 
         // Verificar cooldown
-        if (_slotCooldowns[slot] > 0f)
+        if (_slotCooldowns.TryGetValue(slot, out float cooldown) && cooldown > 0f)
         {
-            reason = $"Cooldown activo ({_slotCooldowns[slot]:F1}s)";
+            reason = $"Cooldown activo ({cooldown:F1}s)";
             return false;
         }
 

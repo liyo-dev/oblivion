@@ -107,8 +107,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [Header("Inventario")]
     [SerializeField] private InventoryBindings inventoryUI = new();
 
-    [Header("Hechizos")]
-    [SerializeField] private SpellBindings spellUI = new();
+        [Header("Hechizos")]
+        [SerializeField] private SpellBindings spellUI = new();
 
     [Header("Equipamiento")]
     [SerializeField] private EquipmentBindings equipmentUI = new();
@@ -831,17 +831,29 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     class SpellBindings
     {
         public GameObject root;
+        
+        [Header("Slots - Botón izquierdo (X)")]
         public Button leftSlotButton;
         public Text leftSlotLabel;
+        public Image leftSlotIcon;            // Icono del ataque
+        
+        [Header("Slots - Botón derecho (B)")]
         public Button rightSlotButton;
         public Text rightSlotLabel;
+        public Image rightSlotIcon;           // Icono del ataque
+        
+        [Header("Slots - Botón especial (Y)")]
         public Button specialSlotButton;
         public Text specialSlotLabel;
+        public Image specialSlotIcon;          // Icono del ataque
+        
+        [Header("Lista de hechizos")]
         public Transform rowsParent;
         public SpellRowWidget rowPrefab;
         public Text detailsText;
+        
         [Header("Feedback visual")]
-        public Color slotSelectionColor = new Color(1f, 0.83f, 0.2f, 1f);
+        public Color slotSelectionColor = new Color(1f, 0.82f, 0.16f, 1f);
 
         public bool IsConfigured =>
             root != null &&
@@ -930,24 +942,71 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             PlayerService.TryGetComponent(out _presetService, includeInactive: true, allowSceneLookup: true);
             _library = _presetService != null ? _presetService.SpellLibrary : null;
 
+            EnforcePresetSlotRules();
             UpdateSlotLabels();
+            UpdateSlotIcons();  // Nuevo: actualizar iconos de hechizos
             BuildSpellList();
             UpdateSlotButtonVisuals();
         }
 
         void UpdateSlotLabels()
         {
-            if (_preset == null)
+            // Ocultamos los labels de texto ya que mostramos sprites de botones
+            if (_ui.leftSlotLabel != null)
+                _ui.leftSlotLabel.gameObject.SetActive(false);
+            if (_ui.rightSlotLabel != null)
+                _ui.rightSlotLabel.gameObject.SetActive(false);
+            if (_ui.specialSlotLabel != null)
+                _ui.specialSlotLabel.gameObject.SetActive(false);
+        }
+
+        void UpdateSlotIcons()
+        {
+            // Los sprites de botones (X, Y, B) deben estar configurados manualmente en el Inspector
+            // Aquí solo actualizamos los iconos de ataques dinámicamente
+            if (_preset == null || _library == null)
             {
-                _ui.leftSlotLabel.text = "Izquierda: --";
-                _ui.rightSlotLabel.text = "Derecha: --";
-                _ui.specialSlotLabel.text = "Especial: --";
+                HideSlotIcon(_ui.leftSlotIcon);
+                HideSlotIcon(_ui.rightSlotIcon);
+                HideSlotIcon(_ui.specialSlotIcon);
                 return;
             }
 
-            _ui.leftSlotLabel.text = $"Izquierda: {ResolveName(_preset.leftSpellId)}";
-            _ui.rightSlotLabel.text = $"Derecha: {ResolveName(_preset.rightSpellId)}";
-            _ui.specialSlotLabel.text = $"Especial: {ResolveName(_preset.specialSpellId)}";
+            UpdateSlotIcon(_ui.leftSlotIcon, _preset.leftSpellId);
+            UpdateSlotIcon(_ui.rightSlotIcon, _preset.rightSpellId);
+            UpdateSlotIcon(_ui.specialSlotIcon, _preset.specialSpellId);
+        }
+
+        void UpdateSlotIcon(Image iconImage, SpellId spellId)
+        {
+            if (iconImage == null) return;
+
+            if (spellId == SpellId.None || _library == null)
+            {
+                HideSlotIcon(iconImage);
+                return;
+            }
+
+            var spell = _library.Get(spellId);
+            if (spell == null || spell.attackIcon == null)
+            {
+                HideSlotIcon(iconImage);
+                return;
+            }
+
+            // Mostrar el attackIcon del hechizo encima del botón
+            iconImage.sprite = spell.attackIcon;
+            iconImage.color = Color.white;
+            iconImage.gameObject.SetActive(true);
+        }
+
+        void HideSlotIcon(Image iconImage)
+        {
+            if (iconImage != null)
+            {
+                iconImage.sprite = null;
+                iconImage.gameObject.SetActive(false);
+            }
         }
 
         void BuildSpellList()
@@ -975,6 +1034,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (!SelectRow(_preset.leftSpellId))
                     SelectFirstRow();
             }
+            
+            UpdateRowVisuals(); // Actualizar colores después de construir la lista
         }
 
         void AddSpellRow(SpellId spellId)
@@ -998,7 +1059,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             _highlightedSpell = entry.spellId;
             _highlightedRow = entry;
+            UpdateRowVisuals(); // Resaltar visualmente la fila seleccionada
             ShowSpellDetails(entry.spellId);
+        }
+
+        void UpdateRowVisuals()
+        {
+            // Actualiza el color de todas las filas, resaltando la seleccionada
+            foreach (var row in _rows)
+            {
+                if (row?.widget == null) continue;
+                
+                bool isSelected = row == _highlightedRow;
+                row.widget.SetHighlighted(isSelected, _ui.slotSelectionColor);
+            }
         }
 
         void HandleRowClicked(RowEntry entry)
@@ -1065,8 +1139,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 case MagicSlot.Special: _preset.specialSpellId = id; break;
             }
 
+            EnsureUniqueAssignment(id, slot);
             _presetService?.ApplyCurrentPreset();
             UpdateSlotLabels();
+        }
+
+        void EnsureUniqueAssignment(SpellId id, MagicSlot targetSlot)
+        {
+            if (id == SpellId.None) return;
+
+            if (targetSlot != MagicSlot.Left && _preset.leftSpellId == id)
+                _preset.leftSpellId = SpellId.None;
+            if (targetSlot != MagicSlot.Right && _preset.rightSpellId == id)
+                _preset.rightSpellId = SpellId.None;
+            if (targetSlot != MagicSlot.Special && _preset.specialSpellId == id)
+                _preset.specialSpellId = SpellId.None;
         }
 
         void FinishSlotSelection()
@@ -1237,8 +1324,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (isAllowedSlot)
             {
                 var highlighted = defaults;
-                var dimmed = Color.Lerp(defaults.normalColor, _ui.slotSelectionColor, 0.35f);
                 var focusColor = _ui.slotSelectionColor;
+                var dimmed = new Color(focusColor.r, focusColor.g, focusColor.b, focusColor.a * 0.65f);
 
                 highlighted.normalColor = isFocused ? focusColor : dimmed;
                 highlighted.highlightedColor = focusColor;
@@ -1262,6 +1349,41 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateSlotButtonVisuals();
         }
 
+        void EnforcePresetSlotRules()
+        {
+            if (_preset == null || _library == null) return;
+
+            bool changed = false;
+
+            bool IsSpecialOnly(SpellId id)
+            {
+                var spell = _library.Get(id);
+                return spell != null && spell.slotType == SpellSlotType.SpecialOnly;
+            }
+
+            var left = _preset.leftSpellId;
+            var right = _preset.rightSpellId;
+            var special = _preset.specialSpellId;
+
+            // Specials solo en slot especial
+            if (left != SpellId.None && IsSpecialOnly(left)) { left = SpellId.None; changed = true; }
+            if (right != SpellId.None && IsSpecialOnly(right)) { right = SpellId.None; changed = true; }
+            if (special != SpellId.None && !IsSpecialOnly(special)) { special = SpellId.None; changed = true; }
+
+            // Sin duplicados entre los tres slots
+            if (left != SpellId.None && right == left) { left = SpellId.None; changed = true; }
+            if (left != SpellId.None && special == left) { left = SpellId.None; changed = true; }
+            if (right != SpellId.None && special == right) { right = SpellId.None; changed = true; }
+
+            if (changed)
+            {
+                _preset.leftSpellId = left;
+                _preset.rightSpellId = right;
+                _preset.specialSpellId = special;
+                _presetService?.ApplyCurrentPreset();
+            }
+        }
+
         class SlotSelectListener : MonoBehaviour, ISelectHandler
         {
             public Action onSelect;
@@ -1279,7 +1401,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (spell == null) return true;
 
             if (slot == MagicSlot.Special)
-                return spell.slotType == SpellSlotType.SpecialOnly || spell.slotType == SpellSlotType.Any;
+                return spell.slotType == SpellSlotType.SpecialOnly;
 
             return spell.slotType != SpellSlotType.SpecialOnly;
         }
