@@ -45,5 +45,9 @@ public class MagicSpellSO : ScriptableObject
     public GameObject despawnVFX;
 
     [Header("Reglas de slot")]
-    public SpellSlotType slotType = SpellSlotType.Any; 
+    public SpellSlotType slotType = SpellSlotType.Any;
+
+    [Header("UI")]
+    [Tooltip("Icono que se mostrará en el HUD cuando este hechizo esté equipado.")]
+    public Sprite attackIcon;
 }

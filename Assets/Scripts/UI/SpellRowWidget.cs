@@ -11,6 +11,8 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
     Action _onClick;
     Action _onSelected;
     bool _selectionCallbacksEnabled = true;
+    ColorBlock _defaultColors;
+    bool _colorsInitialized;
 
     void Awake()
     {
@@ -18,6 +20,12 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
             button = GetComponent<Button>();
         if (label == null)
             label = GetComponentInChildren<Text>();
+        
+        if (button != null && !_colorsInitialized)
+        {
+            _defaultColors = button.colors;
+            _colorsInitialized = true;
+        }
     }
 
     public void SetLabel(string value)
@@ -54,6 +62,30 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
     public void SetSelectionCallbacksEnabled(bool enabled)
     {
         _selectionCallbacksEnabled = enabled;
+    }
+
+    public void SetHighlighted(bool highlighted, Color highlightColor)
+    {
+        if (button == null) return;
+        
+        if (!_colorsInitialized)
+        {
+            _defaultColors = button.colors;
+            _colorsInitialized = true;
+        }
+
+        if (highlighted)
+        {
+            var colors = _defaultColors;
+            colors.normalColor = highlightColor;
+            colors.highlightedColor = highlightColor;
+            colors.selectedColor = highlightColor;
+            button.colors = colors;
+        }
+        else
+        {
+            button.colors = _defaultColors;
+        }
     }
 
     void HandleClick()

@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
-  m_Name: FireProjectileSO
+  m_Name: LlamaAstral
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
-  displayName: Fireball
+  displayName: Llama Astral
   kind: 0
   element: 0
   prefab: {fileID: 2680830935764052329, guid: 2fec67c3e5501714e9c206697d01239f, type: 3}
@@ -39,3 +39,4 @@ MonoBehaviour:
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 0}
   slotType: 0
+  attackIcon: {fileID: 21300000, guid: 7522bb52d0451d3418f913dd207b577a, type: 3}

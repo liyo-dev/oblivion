@@ -107,11 +107,11 @@ public class PlayerHUDComplete : MonoBehaviour
     private class MagicSlotUI
     {
         public GameObject slotObject;
-        public Image backgroundImage;
-        public Image iconImage;
+        public Image circleOutline;      // Círculo exterior (borde) - siempre visible
+        public Image iconImage;           // Icono del hechizo (interior del círculo)
         public Image cooldownOverlay;
-        public TextMeshProUGUI buttonText;
-        public Image buttonBackground;
+        public TextMeshProUGUI buttonText; // Letra del botón (X, Y, B)
+        public GameObject buttonBadge;     // Contenedor del botón
         public TextMeshProUGUI cooldownText;
         public MagicSlot slotType;
     }
@@ -548,44 +548,44 @@ public class PlayerHUDComplete : MonoBehaviour
         slotUI.slotObject.transform.SetParent(_slotsPanel.transform, false);
 
         var slotRect = slotUI.slotObject.AddComponent<RectTransform>();
-        slotRect.sizeDelta = new Vector2(50, 50); // Tamaño fijo del slot
+        slotRect.sizeDelta = new Vector2(70, 70); // Tamaño aumentado para mejor visibilidad
 
         // Layout element para controlar el tamaño en el HorizontalLayoutGroup
         var layoutElement = slotUI.slotObject.AddComponent<LayoutElement>();
-        layoutElement.preferredWidth = 50;
-        layoutElement.preferredHeight = 50;
+        layoutElement.preferredWidth = 70;
+        layoutElement.preferredHeight = 70;
         layoutElement.flexibleWidth = 0;
         layoutElement.flexibleHeight = 0;
 
-        // Background del slot con borde
-        var borderGO = new GameObject("Border");
-        borderGO.transform.SetParent(slotUI.slotObject.transform, false);
-        var borderRect = borderGO.AddComponent<RectTransform>();
-        borderRect.anchorMin = Vector2.zero;
-        borderRect.anchorMax = Vector2.one;
-        borderRect.offsetMin = Vector2.zero;
-        borderRect.offsetMax = Vector2.zero;
-        var borderImage = borderGO.AddComponent<Image>();
-        borderImage.color = buttonColor;
-        borderImage.raycastTarget = false;
+        // Círculo exterior (borde) - siempre visible
+        var circleGO = new GameObject("CircleOutline");
+        circleGO.transform.SetParent(slotUI.slotObject.transform, false);
+        var circleRect = circleGO.AddComponent<RectTransform>();
+        circleRect.anchorMin = Vector2.zero;
+        circleRect.anchorMax = Vector2.one;
+        circleRect.offsetMin = Vector2.zero;
+        circleRect.offsetMax = Vector2.zero;
+        
+        slotUI.circleOutline = circleGO.AddComponent<Image>();
+        slotUI.circleOutline.color = buttonColor;
+        slotUI.circleOutline.raycastTarget = false;
+        slotUI.circleOutline.sprite = CreateCircleSprite(); // Sprite circular (necesitarás crear esto o usar Resources)
+        slotUI.circleOutline.type = Image.Type.Simple;
 
-        slotUI.backgroundImage = slotUI.slotObject.AddComponent<Image>();
-        slotUI.backgroundImage.color = backgroundColorActive;
-        slotUI.backgroundImage.raycastTarget = false;
-
-        // Icono del hechizo
+        // Icono del hechizo (interior del círculo) - solo visible cuando hay hechizo equipado
         var iconGO = new GameObject("Icon");
         iconGO.transform.SetParent(slotUI.slotObject.transform, false);
         var iconRect = iconGO.AddComponent<RectTransform>();
         iconRect.anchorMin = Vector2.zero;
         iconRect.anchorMax = Vector2.one;
-        iconRect.offsetMin = new Vector2(5, 5);
-        iconRect.offsetMax = new Vector2(-5, -5);
+        iconRect.offsetMin = new Vector2(8, 8);  // Margen para que no tape el borde
+        iconRect.offsetMax = new Vector2(-8, -8);
 
         slotUI.iconImage = iconGO.AddComponent<Image>();
-        slotUI.iconImage.color = availableColor;
+        slotUI.iconImage.color = Color.white; // Color blanco para mostrar el sprite original
         slotUI.iconImage.raycastTarget = false;
-        slotUI.iconImage.sprite = CreateDefaultSpellIcon();
+        slotUI.iconImage.preserveAspect = true;
+        slotUI.iconImage.gameObject.SetActive(false); // Oculto por defecto hasta que se equipe un hechizo
 
         // Overlay de cooldown
         var cooldownGO = new GameObject("CooldownOverlay");
@@ -604,21 +604,19 @@ public class PlayerHUDComplete : MonoBehaviour
         slotUI.cooldownOverlay.fillOrigin = 2;
         slotUI.cooldownOverlay.gameObject.SetActive(false);
 
-        // Badge del botón (arriba a la derecha)
+        // Badge del botón en esquina superior derecha - LETRA GRANDE Y VISIBLE
         var buttonBadgeGO = new GameObject("ButtonBadge");
         buttonBadgeGO.transform.SetParent(slotUI.slotObject.transform, false);
+        slotUI.buttonBadge = buttonBadgeGO;
+        
         var buttonBadgeRect = buttonBadgeGO.AddComponent<RectTransform>();
         buttonBadgeRect.anchorMin = new Vector2(1, 1);
         buttonBadgeRect.anchorMax = new Vector2(1, 1);
-        buttonBadgeRect.pivot = new Vector2(1, 1);
-        buttonBadgeRect.anchoredPosition = new Vector2(2, 2);
-        buttonBadgeRect.sizeDelta = new Vector2(18, 18);
+        buttonBadgeRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonBadgeRect.anchoredPosition = new Vector2(-5, -5); // Esquina superior derecha
+        buttonBadgeRect.sizeDelta = new Vector2(24, 24); // Más grande para que se vea bien
 
-        slotUI.buttonBackground = buttonBadgeGO.AddComponent<Image>();
-        slotUI.buttonBackground.color = buttonColor;
-        slotUI.buttonBackground.raycastTarget = false;
-
-        // Texto del botón
+        // Texto del botón - GRANDE y sin fondo
         var buttonTextGO = new GameObject("ButtonText");
         buttonTextGO.transform.SetParent(buttonBadgeGO.transform, false);
         var buttonTextRect = buttonTextGO.AddComponent<RectTransform>();
@@ -630,11 +628,13 @@ public class PlayerHUDComplete : MonoBehaviour
         if (buttonTextGO.GetComponent<CanvasRenderer>() == null) buttonTextGO.AddComponent<CanvasRenderer>();
         slotUI.buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
         slotUI.buttonText.text = buttonText;
-        slotUI.buttonText.fontSize = 12;
+        slotUI.buttonText.fontSize = 18; // Más grande para mejor visibilidad
         slotUI.buttonText.fontStyle = FontStyles.Bold;
-        slotUI.buttonText.color = Color.white;
+        slotUI.buttonText.color = buttonColor; // Color del botón para que contraste
         slotUI.buttonText.alignment = TextAlignmentOptions.Center;
         slotUI.buttonText.raycastTarget = false;
+        slotUI.buttonText.outlineWidth = 0.2f; // Contorno para mejor legibilidad
+        slotUI.buttonText.outlineColor = new Color(0, 0, 0, 0.8f);
 
         // Texto de cooldown
         var cooldownTextGO = new GameObject("CooldownText");
@@ -827,6 +827,9 @@ public class PlayerHUDComplete : MonoBehaviour
                  Debug.Log($"[PlayerHUDComplete] HUD populated from ManaPool: {_manaPool.gameObject.name} -> {_manaPool.Current}/{_manaPool.Max}");
              }
          }
+
+         // Forzar actualización de slots para reflejar hechizos equipados
+         UpdateSlotsUI();
      }
 
     // Determina si el jugador tiene la habilidad de magia consultando:
@@ -883,19 +886,15 @@ public class PlayerHUDComplete : MonoBehaviour
         // Implementación defensiva mínima: no asume APIs concretas del MagicCaster
         if (slot == null || slot.slotObject == null) return;
 
+        // IMPORTANTE: El slot siempre está visible (círculo + letra)
+        slot.slotObject.SetActive(true);
+
         // Asegurarse de que los componentes básicos existan
         if (slot.iconImage == null)
         {
             // intentar localizar un Image llamado "Icon" en los hijos
             var iconT = slot.slotObject.transform.Find("Icon");
             if (iconT != null) slot.iconImage = iconT.GetComponent<Image>();
-        }
-
-        // Si no hay sprite asignado, usar uno por defecto para evitar errores en runtime
-        if (slot.iconImage != null && slot.iconImage.sprite == null)
-        {
-            slot.iconImage.sprite = CreateDefaultSpellIcon();
-            slot.iconImage.color = availableColor;
         }
 
         // Desactivar overlay de cooldown por defecto (implementación simple)
@@ -910,42 +909,73 @@ public class PlayerHUDComplete : MonoBehaviour
             slot.cooldownText.text = "";
         }
 
-        // Asignar texto del botón (si está presente) según el tipo de slot
+        // Asignar texto del botón y color del círculo según el tipo de slot
+        Color slotColor = Color.white;
         if (slot.buttonText != null)
         {
             switch (slot.slotType)
             {
                 case MagicSlot.Left:
                     slot.buttonText.text = leftButtonText;
-                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxXColor;
+                    slotColor = xboxXColor;
                     break;
                 case MagicSlot.Right:
                     slot.buttonText.text = rightButtonText;
-                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxBColor;
+                    slotColor = xboxBColor;
                     break;
                 case MagicSlot.Special:
                     slot.buttonText.text = upButtonText;
-                    if (slot.buttonBackground != null) slot.buttonBackground.color = xboxYColor;
-                    break;
-                default:
-                    slot.buttonText.text = "";
+                    slotColor = xboxYColor;
                     break;
             }
+            slot.buttonText.color = slotColor;
+        }
+
+        // Actualizar color del círculo exterior
+        if (slot.circleOutline != null)
+        {
+            slot.circleOutline.color = slotColor;
         }
 
         // Si no hay MagicCaster o ManaPool no continuamos
-        if (_magicCaster == null || _manaPool == null) return;
+        if (_magicCaster == null || _manaPool == null)
+        {
+            // Sin hechizo: ocultar solo el icono interior
+            if (slot.iconImage != null) slot.iconImage.gameObject.SetActive(false);
+            return;
+        }
 
         // Obtener estado del slot desde MagicCaster
         var spell = _magicCaster.GetSpellForSlot(slot.slotType);
         bool hasSpell = spell != null;
+        
         if (!hasSpell)
         {
-            // No hay hechizo asignado: ocultar icono y elementos relacionados
-            slot.slotObject.SetActive(false);
+            // No hay hechizo asignado: ocultar solo el icono interior, círculo sigue visible
+            if (slot.iconImage != null) slot.iconImage.gameObject.SetActive(false);
+            if (slot.cooldownOverlay != null) slot.cooldownOverlay.gameObject.SetActive(false);
+            if (slot.cooldownText != null) slot.cooldownText.gameObject.SetActive(false);
             return;
         }
-        slot.slotObject.SetActive(true);
+
+        // HAY HECHIZO: Mostrar el attackIcon
+        if (slot.iconImage != null)
+        {
+            if (spell.attackIcon != null)
+            {
+                // Asignar el sprite y asegurar que está visible
+                slot.iconImage.sprite = spell.attackIcon;
+                slot.iconImage.gameObject.SetActive(true);
+                // Forzar color blanco para mostrar el sprite original correctamente
+                slot.iconImage.color = Color.white;
+            }
+            else
+            {
+                // Si no tiene attackIcon, ocultar
+                slot.iconImage.sprite = null;
+                slot.iconImage.gameObject.SetActive(false);
+            }
+        }
 
         // Determinar si se puede lanzar (usar overload que devuelve motivo)
         bool canCast = _magicCaster.CanCastSpell(slot.slotType, spell, out string reason);
@@ -953,59 +983,34 @@ public class PlayerHUDComplete : MonoBehaviour
         float cooldownTime = _magicCaster.GetCooldownTime(slot.slotType);
         bool hasEnoughMana = _manaPool.Current >= spell.manaCost;
 
-        // Colores objetivo
-        Color targetIconColor = availableColor;
-        Color targetBgColor = backgroundColorActive;
+        // Colores según estado (para el icono interior)
+        Color targetIconColor = Color.white; // Mantener blanco para ver el sprite original
+        float targetIconAlpha = 1f;
 
         if (!canCast)
         {
             if (isOnCooldown)
             {
-                targetIconColor = cooldownColor;
-                targetBgColor = backgroundColorInactive;
+                targetIconAlpha = 0.5f; // Semitransparente durante cooldown
             }
             else if (!hasEnoughMana)
             {
-                targetIconColor = noManaColor;
-                targetBgColor = backgroundColorInactive;
+                targetIconColor = noManaColor; // Tinte rojo cuando no hay mana
+                targetIconAlpha = 0.7f;
             }
             else
             {
-                // bloqueado por otra razón (ej. acción bloqueada)
-                targetIconColor = cooldownColor;
-                targetBgColor = backgroundColorInactive;
+                targetIconAlpha = 0.5f; // Bloqueado por otra razón
             }
         }
 
-        // Aplicar colores suavemente
-        if (slot.iconImage != null)
-            slot.iconImage.color = Color.Lerp(slot.iconImage.color, targetIconColor, Time.deltaTime * 8f);
-        if (slot.backgroundImage != null)
-            slot.backgroundImage.color = Color.Lerp(slot.backgroundImage.color, targetBgColor, Time.deltaTime * 8f);
-
-        // Actualizar icono: si en el futuro MagicSpellSO expone un sprite podríamos asignarlo aquí.
-        // Ahora coloreamos según el elemento como diferenciador (si no hay sprite concreto)
-        if (slot.iconImage != null && spell != null)
+        // Aplicar color y alpha al icono interior
+        if (slot.iconImage != null && slot.iconImage.gameObject.activeSelf)
         {
-            // si se añadiera spell.iconSprite en el futuro, preferirlo:
-            // if (spell.iconSprite != null) slot.iconImage.sprite = spell.iconSprite;
-
-            // pequeña heurística: tintar según elemento
-            switch (spell.element)
-            {
-                case MagicElement.Fire:
-                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(1f, 0.6f, 0.2f, 1f), Time.deltaTime * 6f);
-                    break;
-                case MagicElement.Ice:
-                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(0.6f, 0.8f, 1f, 1f), Time.deltaTime * 6f);
-                    break;
-                case MagicElement.Light:
-                    slot.iconImage.color = Color.Lerp(slot.iconImage.color, new Color(1f, 1f, 0.8f, 1f), Time.deltaTime * 6f);
-                    break;
-                default:
-                    // mantener el color actual / availableColor
-                    break;
-            }
+            Color currentColor = slot.iconImage.color;
+            currentColor = Color.Lerp(currentColor, targetIconColor, Time.deltaTime * 8f);
+            currentColor.a = Mathf.Lerp(currentColor.a, targetIconAlpha, Time.deltaTime * 8f);
+            slot.iconImage.color = currentColor;
         }
 
         // Cooldown visual
@@ -1153,6 +1158,41 @@ public class PlayerHUDComplete : MonoBehaviour
         tex.SetPixels(new Color[] { Color.white, Color.white, Color.white, Color.white });
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+    }
+
+    private Sprite CreateCircleSprite()
+    {
+        // Crear un sprite circular para los bordes de los slots
+        int size = 64;
+        var tex = new Texture2D(size, size);
+        Color[] pixels = new Color[size * size];
+        
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float outerRadius = size / 2f;
+        float innerRadius = outerRadius - 3f; // Grosor del borde: 3 píxeles
+        
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 pos = new Vector2(x, y);
+                float distance = Vector2.Distance(pos, center);
+                
+                // Solo colorear el borde (entre innerRadius y outerRadius)
+                if (distance <= outerRadius && distance >= innerRadius)
+                {
+                    pixels[y * size + x] = Color.white;
+                }
+                else
+                {
+                    pixels[y * size + x] = Color.clear;
+                }
+            }
+        }
+        
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
 
     private PlayerAbilities ResolvePlayerAbilitiesFromHierarchy(GameObject playerGo)

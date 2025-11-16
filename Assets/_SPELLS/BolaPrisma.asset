@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
-  m_Name: LightProjectileSO
+  m_Name: BolaPrisma
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
-  displayName: LightBall
+  displayName: Bola Prisma
   kind: 0
-  element: 1
+  element: 2
   prefab: {fileID: 1518366863219760, guid: 3d35e81bdc5955041be098ef22e82a3b, type: 3}
   castDelaySeconds: 0.15
   initialSpeed: 18
@@ -26,7 +26,7 @@ MonoBehaviour:
   knockbackForce: 0
   hitLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 128
   destroyOnHit: 1
   forwardOffset: 0.35
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
@@ -36,6 +36,7 @@ MonoBehaviour:
   manaCost: 5
   cooldown: 0.25
   spawnVFX: {fileID: 0}
-  impactVFX: {fileID: 0}
+  impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 0}
   slotType: 0
+  attackIcon: {fileID: 21300000, guid: 9f65a57ebd40b074ca258be9bc7ad7dc, type: 3}
