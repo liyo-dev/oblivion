@@ -53,14 +53,15 @@ public class RoomExitBlocker : MonoBehaviour
     void Awake()
     {
         _col = GetComponent<Collider>();
-        EnsureSubscription();
-        EvaluateAndApplyState();
+        StartCoroutine(WaitForQuestManagerAndSubscribe());
     }
 
     void OnEnable()
     {
-        EnsureSubscription();
-        EvaluateAndApplyState();
+        if (_subscribed)
+            EvaluateAndApplyState();
+        else
+            StartCoroutine(WaitForQuestManagerAndSubscribe());
     }
 
     void OnDisable()
@@ -70,6 +71,18 @@ public class RoomExitBlocker : MonoBehaviour
 
     void Start()
     {
+        EvaluateAndApplyState();
+    }
+
+    private System.Collections.IEnumerator WaitForQuestManagerAndSubscribe()
+    {
+        // Esperar hasta que QuestManager esté disponible (para soportar carga aditiva de Start)
+        while (QuestManager.Instance == null)
+        {
+            yield return null;
+        }
+
+        EnsureSubscription();
         EvaluateAndApplyState();
     }
 

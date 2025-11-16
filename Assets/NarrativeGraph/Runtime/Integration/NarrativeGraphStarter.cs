@@ -21,8 +21,23 @@ public class NarrativeGraphStarter : MonoBehaviour
     {
         if (startOnAwake)
         {
-            StartGraphs();
+            StartCoroutine(WaitForHubAndStart());
         }
+    }
+
+    /// <summary>
+    /// Espera a que NarrativeGraphHub esté disponible antes de iniciar los grafos.
+    /// Esto soporta la carga aditiva de la escena Start en el editor.
+    /// </summary>
+    private System.Collections.IEnumerator WaitForHubAndStart()
+    {
+        // Esperar hasta que el Hub esté disponible
+        while (NarrativeGraphHub.Instance == null)
+        {
+            yield return null;
+        }
+
+        StartGraphs();
     }
 
     /// <summary>
