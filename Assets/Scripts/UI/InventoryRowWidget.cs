@@ -7,10 +7,14 @@ public class InventoryRowWidget : MonoBehaviour
     [SerializeField] private Button button;
     [SerializeField] private Text label;
     [SerializeField] private Image iconImage;
+    [Header("Feedback visual")]
+    [SerializeField] private Color selectionColor = new Color(1f, 0.82f, 0.16f, 1f);
 
     ItemData _item;
     string _fallbackName = "Item";
     Action _onClick;
+    ColorBlock _originalColors;
+    bool _hasCachedColors;
 
     public GameObject ButtonGameObject => button != null ? button.gameObject : gameObject;
 
@@ -26,6 +30,8 @@ public class InventoryRowWidget : MonoBehaviour
             if (iconTransform != null)
                 iconImage = iconTransform.GetComponent<Image>();
         }
+
+        CacheAndApplySelectionColors();
     }
 
     public void Configure(ItemData item)
@@ -89,5 +95,19 @@ public class InventoryRowWidget : MonoBehaviour
     void HandleClick()
     {
         _onClick?.Invoke();
+    }
+
+    void CacheAndApplySelectionColors()
+    {
+        if (button == null || _hasCachedColors)
+            return;
+
+        _originalColors = button.colors;
+        _hasCachedColors = true;
+
+        var colors = _originalColors;
+        colors.highlightedColor = selectionColor;
+        colors.selectedColor = selectionColor;
+        button.colors = colors;
     }
 }
