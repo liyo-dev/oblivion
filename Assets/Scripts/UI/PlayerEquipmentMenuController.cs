@@ -65,10 +65,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     bool _warnedSpells;
     bool _warnedEquipment;
 
+    // Cambiado a SubsystemRegistration para que se ejecute antes y busque en todas las escenas
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        _instance = null;
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        if (_instance != null) return;
+        // Pequeño delay para asegurar que Start está cargada si se carga aditivamente
+        UnityEngine.Object.FindFirstObjectByType<PlayerEquipmentMenuController>()?.StartCoroutine(DelayedBootstrap());
+    }
+
+    static System.Collections.IEnumerator DelayedBootstrap()
+    {
+        yield return null; // Esperar un frame para que Start termine de cargar
+
+        if (_instance != null) yield break;
 
 #if UNITY_2022_3_OR_NEWER
         var existing = FindFirstObjectByType<PlayerEquipmentMenuController>(FindObjectsInactive.Include);
@@ -89,7 +104,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     DontDestroyOnLoad(existing.gameObject);
             }
             catch { }
-            return;
+            yield break;
         }
 
         var go = new GameObject(nameof(PlayerEquipmentMenuController));
