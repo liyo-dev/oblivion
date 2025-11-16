@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12d267b89a9ff841983167bc75c8b77, type: 3}
   m_Name: MainNarrative
   m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
-  startNodeGuid: db912a03-cc37-4701-b21b-22ffd135fe3e
+  startNodeGuid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
   nodes:
-  - rid: 4128268721076306139
   - rid: 4128268622357594630
   - rid: 4128268622357594632
   - rid: 4128268622357594945
@@ -22,9 +21,9 @@ MonoBehaviour:
   - rid: 4128268641526088494
   - rid: 4128268641526088533
   - rid: 4128268648164098057
-  - rid: 4128268721076306140
   - rid: 4128268764951085534
   - rid: 5623891023686795667
+  - rid: 5623891259268006347
   references:
     version: 2
     RefIds:
@@ -77,7 +76,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 1516, y: -70}
+        position: {x: 1088, y: -2}
         outputs: []
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -108,7 +107,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 1170, y: -242}
+        position: {x: 737, y: -158}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         - d038b916-5571-48b0-a896-7dbc2af3e05c
@@ -122,7 +121,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 1008, y: -70}
+        position: {x: 605, y: 19}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -132,31 +131,6 @@ MonoBehaviour:
         missionStringId: ELDRAN_MISSION3
         missionId: 0
         arenaContext: 
-    - rid: 4128268721076306139
-      type: {class: StartNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: CAPITULO 1
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: db912a03-cc37-4701-b21b-22ffd135fe3e
-        position: {x: -717, y: -327}
-        outputs:
-        - a87a0200-5f03-48e7-b3da-587a333ca853
-    - rid: 4128268721076306140
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: Comienzo
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: a87a0200-5f03-48e7-b3da-587a333ca853
-        position: {x: -398, y: -327}
-        outputs:
-        - 78455749-f638-46de-a00c-c00cb1e61e5d
-        eventKey: StartCity
     - rid: 4128268764951085534
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
@@ -166,7 +140,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 540, y: 98}
+        position: {x: 253, y: 324}
         outputs:
         - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
@@ -180,7 +154,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: 0, y: 98}
+        position: {x: 578, y: 392}
         outputs: []
         npcName: Eldran
         npcTag: 
@@ -207,3 +181,15 @@ MonoBehaviour:
         cameraHeightOffset: 1.5
         debugLogs: 0
         treatNoPathAsReach: 1
+    - rid: 5623891259268006347
+      type: {class: StartNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CAPITULO 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
+        position: {x: -376, y: -327}
+        outputs:
+        - 78455749-f638-46de-a00c-c00cb1e61e5d

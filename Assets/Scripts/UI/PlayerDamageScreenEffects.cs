@@ -24,7 +24,11 @@ public class PlayerDamageScreenEffects : MonoBehaviour
         
         if (_playerHealthSystem == null)
         {
+#if UNITY_2023_1_OR_NEWER
+            _playerHealthSystem = FindFirstObjectByType<PlayerHealthSystem>();
+#else
             _playerHealthSystem = FindObjectOfType<PlayerHealthSystem>();
+#endif
         }
         
         if (_playerHealthSystem != null)

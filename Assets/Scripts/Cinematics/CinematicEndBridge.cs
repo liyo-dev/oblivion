@@ -146,7 +146,11 @@ public class CinematicEndBridge : MonoBehaviour
             // Si no hay singleton estático, intentar FindObjectOfType
             if (instance == null)
             {
+#if UNITY_2022_2_OR_NEWER
+                var monoBehaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var monoBehaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
+#endif
                 foreach (var mb in monoBehaviours)
                 {
                     if (mb.GetType() == mgrType || mb.GetType().IsSubclassOf(mgrType))
@@ -213,7 +217,11 @@ public class CinematicEndBridge : MonoBehaviour
 
             if (instance == null)
             {
+#if UNITY_2022_2_OR_NEWER
+                var monoBehaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var monoBehaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
+#endif
                 foreach (var mb in monoBehaviours)
                 {
                     if (mb.GetType() == mgrType || mb.GetType().IsSubclassOf(mgrType))

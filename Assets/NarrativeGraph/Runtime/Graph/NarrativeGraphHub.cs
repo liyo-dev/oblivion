@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Permite ejecutar múltiples grafos narrativos (cada uno con su propio Blackboard) desde un único GameObject.
-/// Útil para separar narrativa principal, misiones secundarias, etc.
+/// Hub simplificado para ejecutar múltiples grafos narrativos.
+/// Todos los grafos están siempre activos y esperando eventos.
+/// No hay auto-start: los grafos se activan mediante señales/eventos.
 /// </summary>
 [DefaultExecutionOrder(-450)]
 public sealed class NarrativeGraphHub : MonoBehaviour
@@ -17,17 +18,14 @@ public sealed class NarrativeGraphHub : MonoBehaviour
     {
         public string label = "Graph";
         public NarrativeGraph graph;
-        [Tooltip("Se ejecuta automáticamente al habilitar el Hub.")]
-        public bool autoStart = true;
-        [Tooltip("Vacía el blackboard antes de autoStart.")]
-        public bool resetBlackboardOnStart = true;
-        [Tooltip("Opcional: valores iniciales del blackboard.")]
+        [Tooltip("Valores iniciales del blackboard (opcional).")]
         public List<SimpleBlackboard.Entry> initialBlackboardValues = new();
     }
 
     [SerializeField] private GraphSlot[] graphs;
 
     private readonly Dictionary<string, NarrativeRunner> _runnersByLabel = new();
+    private readonly List<NarrativeRunner> _allRunners = new();
 
     void Awake()
     {
@@ -49,6 +47,10 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             if (slot == null || slot.graph == null)
                 continue;
 
+            // Validar el grafo antes de registrarlo
+            var validation = NarrativeGraphValidator.ValidateGraph(slot.graph);
+            validation.LogResults(slot.label ?? slot.graph.name);
+
             var runnerGo = new GameObject(string.IsNullOrEmpty(slot.label) ? slot.graph.name : slot.label);
             runnerGo.transform.SetParent(transform, false);
 
@@ -56,18 +58,17 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             var blackboard = new SimpleBlackboard();
             blackboard.ImportFromSerializable(slot.initialBlackboardValues);
 
-            runner.Configure(
-                slot.graph,
-                blackboard,
-                signals,
-                runImmediately: slot.autoStart && Application.isPlaying,
-                resetBlackboardBeforeRun: slot.resetBlackboardOnStart);
+            // Configurar el runner SIN ejecutarlo automáticamente
+            runner.graph = slot.graph;
+            runner.Blackboard = blackboard;
+            runner.SetSignalsProvider(signals);
 
-            // Mantiene la configuración por si se recrea durante la sesión
-            runner.SetAutoStart(slot.autoStart, slot.resetBlackboardOnStart);
-
+            _allRunners.Add(runner);
+            
             if (!_runnersByLabel.ContainsKey(slot.label ?? string.Empty))
                 _runnersByLabel.Add(slot.label ?? string.Empty, runner);
+
+            Debug.Log($"[NarrativeGraphHub] Grafo '{slot.label}' registrado.");
         }
 
         if (signals == null)
@@ -80,15 +81,6 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             _instance = null;
     }
 
-    public void RestartAll(bool resetBlackboard)
-    {
-        foreach (var runner in _runnersByLabel.Values)
-        {
-            if (runner == null) continue;
-            runner.RestartFromStartNode(resetBlackboard);
-        }
-    }
-
     DefaultNarrativeSignals ResolveSignals() => DefaultNarrativeSignals.EnsureInstance();
 
     /// <summary>Devuelve el runner asociado a la etiqueta proporcionada.</summary>
@@ -97,5 +89,159 @@ public sealed class NarrativeGraphHub : MonoBehaviour
         if (string.IsNullOrEmpty(label)) return null;
         _runnersByLabel.TryGetValue(label, out var runner);
         return runner;
+    }
+
+    /// <summary>Devuelve todos los runners registrados.</summary>
+    public List<NarrativeRunner> GetAllRunners() => _allRunners;
+
+    /// <summary>
+    /// Limpia todos los blackboards. Útil al iniciar nueva partida.
+    /// Los grafos se deben reiniciar manualmente usando NarrativeGraphStarter en cada escena.
+    /// </summary>
+    public void ClearAllBlackboards()
+    {
+        foreach (var runner in _allRunners)
+        {
+            if (runner == null) continue;
+            if (runner.Blackboard != null)
+            {
+                runner.Blackboard.Clear();
+                Debug.Log($"[NarrativeGraphHub] Blackboard limpiado: {runner.name}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Inicia un grafo específico por su etiqueta.
+    /// </summary>
+    public void StartGraph(string label)
+    {
+        var runner = GetRunner(label);
+        if (runner == null)
+        {
+            Debug.LogWarning($"[NarrativeGraphHub] No se encontró grafo con etiqueta '{label}'");
+            return;
+        }
+        
+        runner.StartFromStartNode();
+        Debug.Log($"[NarrativeGraphHub] Grafo '{label}' iniciado.");
+    }
+    
+    /// <summary>
+    /// Inicia múltiples grafos por sus etiquetas.
+    /// </summary>
+    public void StartGraphs(params string[] labels)
+    {
+        foreach (var label in labels)
+        {
+            StartGraph(label);
+        }
+    }
+    
+    /// <summary>
+    /// Captura el estado actual de todos los blackboards para guardado.
+    /// </summary>
+    public List<PlayerSaveData.NarrativeBlackboardSnapshot> CaptureBlackboards()
+    {
+        var snapshots = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+        
+        Debug.Log($"[NarrativeGraphHub] CaptureBlackboards - revisando {_runnersByLabel.Count} runners registrados");
+        
+        foreach (var kvp in _runnersByLabel)
+        {
+            var label = kvp.Key;
+            var runner = kvp.Value;
+            
+            if (runner == null || runner.Blackboard == null)
+            {
+                Debug.LogWarning($"[NarrativeGraphHub] Runner '{label}' o su Blackboard es null - saltando");
+                continue;
+            }
+            
+            var blackboardData = runner.Blackboard.ExportToSerializable();
+            
+            // Log detallado: mostrar nodo actual y algunas entradas clave
+            var currentNodeGuid = runner.Blackboard.Get<string>("__currentNodeGuid", null);
+            var currentNodeName = "N/A";
+            if (!string.IsNullOrEmpty(currentNodeGuid))
+            {
+                var node = runner.graph?.FindNode(currentNodeGuid);
+                if (node != null)
+                    currentNodeName = $"{node.GetType().Name}";
+            }
+            
+            Debug.Log($"[NarrativeGraphHub] Runner '{label}' - blackboard tiene {(blackboardData != null ? blackboardData.Count : 0)} entradas | Nodo actual: {currentNodeName} ({currentNodeGuid?.Substring(0, 8)}...)");
+            
+            // Solo guardar si hay datos en el blackboard
+            if (blackboardData != null && blackboardData.Count > 0)
+            {
+                snapshots.Add(new PlayerSaveData.NarrativeBlackboardSnapshot
+                {
+                    graphLabel = label,
+                    blackboardData = blackboardData
+                });
+                
+                Debug.Log($"[NarrativeGraphHub] ✅ Snapshot añadido para '{label}' (nodo: {currentNodeName})");
+            }
+        }
+        
+        Debug.Log($"[NarrativeGraphHub] Capturados {snapshots.Count} blackboards con estado");
+        return snapshots;
+    }
+    
+    /// <summary>
+    /// Restaura los blackboards desde un snapshot guardado.
+    /// </summary>
+    public void RestoreBlackboards(List<PlayerSaveData.NarrativeBlackboardSnapshot> snapshots)
+    {
+        if (snapshots == null || snapshots.Count == 0)
+        {
+            Debug.Log("[NarrativeGraphHub] No hay blackboards guardados para restaurar");
+            return;
+        }
+        
+        Debug.Log($"[NarrativeGraphHub] RestoreBlackboards llamado con {snapshots.Count} snapshot(s)");
+        
+        int restored = 0;
+        foreach (var snapshot in snapshots)
+        {
+            if (string.IsNullOrEmpty(snapshot.graphLabel))
+            {
+                Debug.LogWarning("[NarrativeGraphHub] Snapshot con graphLabel vacío - saltando");
+                continue;
+            }
+            
+            Debug.Log($"[NarrativeGraphHub] Intentando restaurar '{snapshot.graphLabel}' con {(snapshot.blackboardData != null ? snapshot.blackboardData.Count : 0)} entradas");
+            
+            var runner = GetRunner(snapshot.graphLabel);
+            if (runner == null)
+            {
+                Debug.LogWarning($"[NarrativeGraphHub] No se encontró runner para grafo '{snapshot.graphLabel}'");
+                continue;
+            }
+            
+            if (runner.Blackboard == null)
+            {
+                Debug.LogWarning($"[NarrativeGraphHub] Runner '{snapshot.graphLabel}' no tiene blackboard");
+                continue;
+            }
+            
+            runner.Blackboard.ImportFromSerializable(snapshot.blackboardData);
+            restored++;
+            
+            // Log detallado: mostrar nodo guardado
+            var currentNodeGuid = runner.Blackboard.Get<string>("__currentNodeGuid", null);
+            var currentNodeName = "N/A";
+            if (!string.IsNullOrEmpty(currentNodeGuid))
+            {
+                var node = runner.graph?.FindNode(currentNodeGuid);
+                if (node != null)
+                    currentNodeName = $"{node.GetType().Name}";
+            }
+            
+            Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({currentNodeGuid?.Substring(0, 8)}...)");
+        }
+        
+        Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
     }
 }

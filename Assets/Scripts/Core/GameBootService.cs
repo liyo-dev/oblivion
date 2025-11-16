@@ -173,7 +173,8 @@ public class GameBootService : MonoBehaviour
         var save = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         _profile.NewGameReset(save);
 
-        // Reiniciar todos los grafos narrativos persistentes para que arranquen desde cero
-        NarrativeGraphHub.Instance?.RestartAll(resetBlackboard: true);
+        // Limpiar blackboards de todos los grafos narrativos para nueva partida
+        // Los grafos siguen esperando eventos, pero con estado limpio
+        NarrativeGraphHub.Instance?.ClearAllBlackboards();
     }
 }

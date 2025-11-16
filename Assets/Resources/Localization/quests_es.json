@@ -9,6 +9,10 @@
             "value": "Ayudar al niño pez."
         },
         {
+            "key": "Q_NIÑOPEZ_CARACOLA_DESC",
+            "value": "Busca la caracola del niño pez."
+        },
+        {
             "key": "Q_NIÑOPEZ_DESC",
             "value": "Consigue algas para el niño pez."
         },

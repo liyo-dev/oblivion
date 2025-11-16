@@ -1,5 +1,15 @@
 using UnityEngine;
 
+/// <summary>
+/// DEPRECATED: Este componente emitía eventos automáticamente basado en el estado de quests.
+/// Esto causaba emisiones duplicadas y comportamiento impredecible.
+/// Los eventos deben ser emitidos explícitamente por:
+/// - Interactables (InteractableToNarrativeEvent)
+/// - Nodos del grafo (UnlockTriggerNode, etc.)
+/// - NPCs mediante código específico
+/// NO elimines este archivo porque podría estar referenciado en escenas, pero no se ejecutará.
+/// </summary>
+[System.Obsolete("Este componente está deprecado. Los eventos deben ser emitidos explícitamente por Interactables o nodos del grafo.")]
 [DefaultExecutionOrder(100)]
 public sealed class QuestEventBootstrap : MonoBehaviour
 {
@@ -12,16 +22,23 @@ public sealed class QuestEventBootstrap : MonoBehaviour
 
     void Start()
     {
-        TryFire();
+        Debug.LogWarning($"[QuestEventBootstrap] COMPONENTE DEPRECADO en '{gameObject.name}'. " +
+                        $"Este componente ya no emite eventos automáticamente. " +
+                        $"Usa InteractableToNarrativeEvent o nodos del grafo para emitir '{eventKey}'.");
+        // TryFire(); // DESHABILITADO - Causaba emisiones automáticas no deseadas
     }
 
     void OnEnable()
     {
-        if (!runOnce) TryFire();
+        // if (!runOnce) TryFire(); // DESHABILITADO
     }
 
     void TryFire()
     {
+        // MÉTODO DESHABILITADO - Causaba emisiones automáticas de eventos basadas en estado de quests
+        // Los eventos deben ser emitidos explícitamente por Interactables o nodos del grafo
+        
+        /*
         if (_fired && runOnce) return;
         if (string.IsNullOrWhiteSpace(questId) || string.IsNullOrWhiteSpace(eventKey)) return;
         var qm = QuestManager.Instance;
@@ -33,5 +50,6 @@ public sealed class QuestEventBootstrap : MonoBehaviour
         Debug.Log($"[QuestEventBootstrap] Raising '{eventKey}' because quest '{questId}' is {state}");
         signals.RaiseCustom(eventKey);
         if (runOnce) _fired = true;
+        */
     }
 }

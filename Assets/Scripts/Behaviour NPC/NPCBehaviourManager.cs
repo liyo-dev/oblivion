@@ -621,24 +621,73 @@ namespace Alex.NPC
                 switch (entry.completionMode)
                 {
                     case QuestCompletionMode.AutoCompleteOnTalk:
-                        CompleteAllSteps(entry, qm, questId, index);
+                        // Verificar inventario antes de autocompletar
+                        if (CheckInventoryRequirement(entry, out var inventoryAuto))
+                        {
+                            CompleteAllSteps(entry, qm, questId, index, inventoryAuto);
+                        }
+                        else
+                        {
+                            _ctx.PlayDialogue(entry.dlgInProgress);
+                        }
                         break;
                     case QuestCompletionMode.CompleteOnTalkIfStepsReady:
-                        if (qm.AreAllStepsCompleted(questId))
-                            FinishQuest(entry, qm, questId, index);
-                        else
+                        // Verificar inventario primero
+                        if (!CheckInventoryRequirement(entry, out var inventorySteps))
+                        {
                             _ctx.PlayDialogue(entry.dlgInProgress);
+                            break;
+                        }
+                        // Si tiene el ítem, verificar steps
+                        if (qm.AreAllStepsCompleted(questId))
+                        {
+                            FinishQuest(entry, qm, questId, index, inventorySteps);
+                        }
+                        else
+                        {
+                            _ctx.PlayDialogue(entry.dlgInProgress);
+                        }
                         break;
                     default:
-                        if (qm.AreAllStepsCompleted(questId))
-                            FinishQuest(entry, qm, questId, index);
-                        else
+                        // Verificar inventario primero
+                        if (!CheckInventoryRequirement(entry, out var inventoryManual))
+                        {
+                            _ctx.DebugLog($"HandleActive(Manual): NO tiene el ítem requerido → dlgInProgress");
                             _ctx.PlayDialogue(entry.dlgInProgress);
+                            break;
+                        }
+                        
+                        _ctx.DebugLog($"HandleActive(Manual): SÍ tiene el ítem en inventario");
+                        
+                        // Si tiene verificación de inventario activada, el ítem es suficiente para completar
+                        // (los steps son opcionales para mostrar objetivos, pero no bloquean la entrega)
+                        if (entry.requireItemInInventory)
+                        {
+                            _ctx.DebugLog($"HandleActive(Manual): Tiene el ítem → completar todos los steps automáticamente");
+                            CompleteAllSteps(entry, qm, questId, index, inventoryManual);
+                        }
+                        else
+                        {
+                            // Sin verificación de inventario, sí necesita completar steps manualmente
+                            _ctx.DebugLog($"HandleActive(Manual): Sin verificación de inventario → verificar steps");
+                            bool allStepsCompleted = qm.AreAllStepsCompleted(questId);
+                            _ctx.DebugLog($"HandleActive(Manual): AreAllStepsCompleted('{questId}') = {allStepsCompleted}");
+                            if (allStepsCompleted)
+                            {
+                                _ctx.DebugLog($"HandleActive(Manual): FinishQuest!");
+                                FinishQuest(entry, qm, questId, index, inventoryManual);
+                            }
+                            else
+                            {
+                                _ctx.DebugLog($"HandleActive(Manual): Steps incompletos → dlgInProgress");
+                                _ctx.PlayDialogue(entry.dlgInProgress);
+                            }
+                        }
                         break;
                 }
             }
 
-            void CompleteAllSteps(QuestChainEntry entry, QuestManager qm, string questId, int index)
+            void CompleteAllSteps(QuestChainEntry entry, QuestManager qm, string questId, int index, Inventory playerInventory = null)
             {
                 foreach (var request in qm.GetAll())
                 {
@@ -650,11 +699,17 @@ namespace Alex.NPC
                     break;
                 }
 
-            FinishQuest(entry, qm, questId, index);
+            FinishQuest(entry, qm, questId, index, playerInventory);
         }
 
-            void FinishQuest(QuestChainEntry entry, QuestManager qm, string questId, int index)
+            void FinishQuest(QuestChainEntry entry, QuestManager qm, string questId, int index, Inventory playerInventory = null)
             {
+                // Consumir el ítem del inventario si es necesario
+                if (playerInventory != null)
+                {
+                    ConsumeInventoryItem(entry, playerInventory);
+                }
+
                 _ctx.DebugLog($"FinishQuest → {questId}");
                 qm.CompleteQuest(questId);
                 entry.onQuestCompleted?.Invoke();
@@ -836,6 +891,81 @@ namespace Alex.NPC
                 return 0;
             }
 
+            bool CheckInventoryRequirement(QuestChainEntry entry, out Inventory playerInventory)
+            {
+                playerInventory = null;
+
+                if (!entry.requireItemInInventory)
+                {
+                    _ctx.DebugLog("CheckInventoryRequirement: requireItemInInventory está DESACTIVADO → devuelve TRUE");
+                    return true;
+                }
+
+                // Obtener el inventario del jugador usando PlayerService
+                if (!PlayerService.TryGetComponent<Inventory>(out playerInventory, includeInactive: false, allowSceneLookup: true))
+                {
+                    _ctx.DebugLog("CheckInventoryRequirement: No se pudo obtener el Inventory del jugador.");
+                    return false;
+                }
+
+                // Determinar qué ítem buscar
+                string itemId = null;
+                if (entry.requiredItem != null)
+                {
+                    itemId = entry.requiredItem.itemId;
+                    _ctx.DebugLog($"CheckInventoryRequirement: Usando requiredItem.itemId = '{itemId}'");
+                }
+
+                if (string.IsNullOrEmpty(itemId))
+                {
+                    _ctx.DebugLog("CheckInventoryRequirement: requireItemInInventory está activado pero requiredItem es null o no tiene itemId.");
+                    return false;
+                }
+
+                // Log del inventario actual
+                var snapshot = playerInventory.GetSaveSnapshot();
+                if (snapshot != null && snapshot.Count > 0)
+                {
+                    _ctx.DebugLog($"CheckInventoryRequirement: Inventario tiene {snapshot.Count} ítems:");
+                    foreach (var item in snapshot)
+                    {
+                        _ctx.DebugLog($"  - ItemId='{item.itemId}' Count={item.count}");
+                    }
+                }
+                else
+                {
+                    _ctx.DebugLog("CheckInventoryRequirement: El inventario está VACÍO.");
+                }
+
+                // Verificar si el jugador tiene el ítem en la cantidad requerida
+                bool hasItem = playerInventory.HasItem(itemId, entry.requiredAmount);
+                _ctx.DebugLog($"CheckInventoryRequirement: Buscando '{itemId}' x{entry.requiredAmount} → {(hasItem ? "✅ SÍ LO TIENE" : "❌ NO LO TIENE")}");
+                return hasItem;
+            }
+
+            void ConsumeInventoryItem(QuestChainEntry entry, Inventory playerInventory)
+            {
+                if (!entry.requireItemInInventory || !entry.consumeItemOnComplete || playerInventory == null)
+                    return;
+
+                if (entry.requiredItem == null)
+                {
+                    _ctx.DebugLog("ConsumeInventoryItem: requiredItem es null, no se puede consumir.");
+                    return;
+                }
+
+                string itemId = entry.requiredItem.itemId;
+                if (string.IsNullOrEmpty(itemId))
+                {
+                    _ctx.DebugLog("ConsumeInventoryItem: requiredItem.itemId está vacío.");
+                    return;
+                }
+
+                // Consumir el ítem
+                bool consumed = playerInventory.TryConsume(itemId, entry.requiredAmount, notifyChanges: true, fallbackDefinition: entry.requiredItem);
+                _ctx.DebugLog($"ConsumeInventoryItem: Intentando consumir '{itemId}' x{entry.requiredAmount} → {(consumed ? "OK" : "FALLO")}");
+            }
+
             [Serializable]
             public class QuestChainEntry
             {
@@ -851,6 +981,16 @@ namespace Alex.NPC
                 public string itemTag = "Untagged";
                 [Tooltip("Ignorar FOV; usa solo radio alrededor del NPC para detección")] public bool ignoreFovForItem = false;
                 [Tooltip("Si >0, usa este radio en lugar del del módulo para detectar el item")] public float overrideDetectionRadius = 0f;
+
+                [Header("Verificación de Inventario")]
+                [Tooltip("Si está activado, verifica que el jugador tenga cierto ítem en el inventario para completar la quest.")]
+                public bool requireItemInInventory = false;
+                [Tooltip("El ítem requerido en el inventario.")]
+                public ItemData requiredItem;
+                [Tooltip("Cantidad del ítem requerida.")]
+                [Min(1)] public int requiredAmount = 1;
+                [Tooltip("Si está activado, consume el ítem del inventario al completar la quest.")]
+                public bool consumeItemOnComplete = true;
 
                 [Header("Diálogos")]
                 public DialogueAsset dlgBefore;

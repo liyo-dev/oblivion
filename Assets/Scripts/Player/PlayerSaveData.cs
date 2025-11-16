@@ -20,6 +20,15 @@ public class PlayerSaveData
     public List<AppearanceEntry> appearance = new();
     
     [Serializable]
+    public struct NarrativeBlackboardSnapshot
+    {
+        public string graphLabel;
+        public List<SimpleBlackboard.Entry> blackboardData;
+    }
+    
+    public List<NarrativeBlackboardSnapshot> narrativeBlackboards = new();
+    
+    [Serializable]
     public struct NpcPosEntry
     {
         public string npcId;
@@ -82,6 +91,7 @@ public class PlayerSaveData
         d.inventory = preset.inventoryItems != null ? new List<InventoryItemSave>(preset.inventoryItems) : new List<InventoryItemSave>();
         d.defeatedBossIds = preset.defeatedBossIds != null ? new List<string>(preset.defeatedBossIds) : new List<string>();
         d.appearance = preset.appearance != null ? new List<AppearanceEntry>(preset.appearance) : new List<AppearanceEntry>();
+        d.narrativeBlackboards = preset.narrativeBlackboards != null ? new List<NarrativeBlackboardSnapshot>(preset.narrativeBlackboards) : new List<NarrativeBlackboardSnapshot>();
         // NPCs
         if (preset.npcPositions != null && preset.npcPositions.Count > 0)
         {
