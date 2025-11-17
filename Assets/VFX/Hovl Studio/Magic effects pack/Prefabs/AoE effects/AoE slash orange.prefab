@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 9212833412386566060}
   - component: {fileID: 817157532051505632}
   - component: {fileID: 1062870669812164893}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: AoE slash orange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3611678170689531142}
@@ -4934,8 +4934,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
-  useLaunchDelay: 1
-  launchDelaySeconds: 0.5
+  lifeTimeSeconds: 3
 --- !u!1 &1883585034484120993
 GameObject:
   m_ObjectHideFlags: 0
@@ -4947,7 +4946,7 @@ GameObject:
   - component: {fileID: 3611678170689531142}
   - component: {fileID: 1595746648861366345}
   - component: {fileID: 2372584074572498213}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Glow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9859,7 +9858,7 @@ GameObject:
   - component: {fileID: 3396847172213223623}
   - component: {fileID: 2864274740693678021}
   - component: {fileID: 3584934117744274234}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Flares
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14762,7 +14761,7 @@ GameObject:
   - component: {fileID: 8889657401428045141}
   - component: {fileID: 983296534774999383}
   - component: {fileID: 7160783592763126056}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sparks
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19714,7 +19713,7 @@ GameObject:
   - component: {fileID: 4634052894817328585}
   - component: {fileID: 7585976143170097536}
   - component: {fileID: 2824005854877838304}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Slash
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24608,7 +24607,7 @@ GameObject:
   - component: {fileID: 2858295213021141964}
   - component: {fileID: 1759838996291170385}
   - component: {fileID: 2732099183714700759}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: RotatePart
   m_TagString: Untagged
   m_Icon: {fileID: 0}

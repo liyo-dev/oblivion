@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
   m_Name: CorazonEstelar
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
+  spellId: 3
   displayName: "Coraz\xF3n Estelar"
   kind: 1
   element: 3
   prefab: {fileID: 689667626583958020, guid: 1336648bc1d8baf46a4515860950c9d4, type: 3}
   castDelaySeconds: 0
+  chargeTime: 0.5
+  chargeStartScale: 0.1
+  followOriginDuringCharge: 1
   initialSpeed: 10
   useGravity: 0
   maxRange: 40
@@ -26,7 +30,7 @@ MonoBehaviour:
   knockbackForce: 0
   hitLayers:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 2177
   destroyOnHit: 1
   forwardOffset: 0.35
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
@@ -35,8 +39,8 @@ MonoBehaviour:
   scaleOverride: {x: 1, y: 1, z: 1}
   manaCost: 25
   cooldown: 1
-  spawnVFX: {fileID: 0}
+  spawnVFX: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
-  despawnVFX: {fileID: 0}
+  despawnVFX: {fileID: 8680598818964007281, guid: dcd90c4976197424b9958a7c54b6bb8c, type: 3}
   slotType: 1
   attackIcon: {fileID: 21300000, guid: 7bb9669c2b0c9ef4c86aced248b8b3d7, type: 3}

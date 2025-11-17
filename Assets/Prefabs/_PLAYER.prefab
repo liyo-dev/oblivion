@@ -5451,7 +5451,7 @@ MonoBehaviour:
   targeting: {fileID: 2788111570677460138}
   leftOrigin: {fileID: 2434631454830301341}
   rightOrigin: {fileID: 940617031723835885}
-  specialOrigin: {fileID: 4169242079592626095}
+  specialOrigin: {fileID: 940617031723835885}
   ignoreCasterColliders: 1
   instigatorOverride: {fileID: 4951141271202639922}
 --- !u!114 &6903908210425150239
@@ -5680,23 +5680,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b74f15437c88b40afca6e62cc4fc07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSwimmingController
-  waterLayer:
-    serializedVersion: 2
-    m_Bits: 16
-  probeWithRaycast: 1
-  raycastVerticalOffset: 3
-  raycastDepth: 10
-  surfaceMemoryTime: 0.4
-  enterBuffer: 0.05
-  exitBuffer: 0.08
-  surfaceOffset: 0.9
-  verticalAlignmentSpeed: 5
-  maxVerticalSpeed: 6
   locomotionLayerIndex: 0
   swimStateName: Swimming_Floating_NoWeapon
   locomotionStateName: Free Locomotion
-  exitCrossFade: 0.1
-  debugLogs: 1
+  surfaceOffset: 0.45
+  debugLogs: 0
 --- !u!1 &5048321103299432130
 GameObject:
   m_ObjectHideFlags: 0

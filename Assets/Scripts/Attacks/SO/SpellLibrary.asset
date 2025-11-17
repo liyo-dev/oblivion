@@ -12,12 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 341bbfbdff070024db28b8877893da72, type: 3}
   m_Name: SpellLibrary
   m_EditorClassIdentifier: Assembly-CSharp::SpellLibrarySO
-  entries:
-  - id: 1
-    spell: {fileID: 11400000, guid: d45589ea2589f21499b4b61ab8d6f54b, type: 2}
-  - id: 5
-    spell: {fileID: 11400000, guid: fd9d38bfa5a54cc4da358ab98c1935d9, type: 2}
-  - id: 2
-    spell: {fileID: 11400000, guid: 18ae4d8a14b32b049a81e3c568fa4df1, type: 2}
-  - id: 4
-    spell: {fileID: 11400000, guid: bdcedfac08b648a4393bdc5f82614590, type: 2}
+  spells:
+  - {fileID: 11400000, guid: bdcedfac08b648a4393bdc5f82614590, type: 2}
+  - {fileID: 11400000, guid: fd9d38bfa5a54cc4da358ab98c1935d9, type: 2}
+  - {fileID: 11400000, guid: d45589ea2589f21499b4b61ab8d6f54b, type: 2}
