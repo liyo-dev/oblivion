@@ -218,6 +218,18 @@ public class Inventory : MonoBehaviour
             }
         }
 
+        // Intentar resolverlo a través del registro global
+        var registry = ItemRegistrySO.LoadDefault();
+        if (registry != null)
+        {
+            var resolved = registry.Get(itemId);
+            if (resolved != null)
+            {
+                RegisterDefinition(resolved);
+                return resolved;
+            }
+        }
+
         // Fallback: crear un ItemData temporal en runtime para no quedar sin referencia
         var runtimeItem = ScriptableObject.CreateInstance<ItemData>();
         runtimeItem.itemId = itemId;
