@@ -44,10 +44,8 @@ public enum SpellId
 {
     None,
     Fireball,
-    IceSpike,
-    Storm,
-    Lightning,
-    FireSpecial
+    Plasmaball,
+    LightSpecial
 }
 
 /// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>

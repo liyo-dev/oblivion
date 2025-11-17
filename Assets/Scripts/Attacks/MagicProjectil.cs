@@ -13,7 +13,8 @@ public class MagicProjectile : MonoBehaviour
         public float damage;
         public float aoeRadius;          // 0 = impacto directo
         public float knockbackForce;     // 0 = sin empuje
-        public LayerMask hitLayers;
+        public LayerMask hitLayers;      // Capas que reciben daño (Enemy, Boss, etc.)
+        public LayerMask collisionLayers; // Capas con las que colisiona (Enemy, Default, etc.)
         public bool destroyOnHit;
 
         // Vida / movimiento
@@ -42,31 +43,24 @@ public class MagicProjectile : MonoBehaviour
     [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
     [SerializeField, Min(0f)] private float lifeTimeSeconds = 0f;
 
-    [Header("Launch Delay (optional)")]
-    [Tooltip("If enabled, the projectile will wait this many seconds before starting to move. Useful to sync with VFX or animations.")]
-    [SerializeField] private bool useLaunchDelay = false;
-    [SerializeField, Min(0f)] private float launchDelaySeconds = 0f;
-
-    bool _movementActive = true;            // controls manual movement when no RB
-    Vector3 _plannedVelocity = Vector3.zero; // for RB case
-    bool _savedUseGravity;
-
     // ==== Ciclo de vida ========================================================
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
 
-        // Si no hay Rigidbody, añadimos uno cinemático para que los triggers funcionen.
-        // Nota: Unity solo envía OnTriggerEnter/Exit si al menos uno de los objetos tiene Rigidbody.
+        // Si no hay Rigidbody, añadimos uno cinemático para que las colisiones funcionen.
+        // Nota: Unity solo envía OnTriggerEnter/OnCollisionEnter si al menos uno tiene Rigidbody.
         if (_rb == null)
         {
             _rb = gameObject.AddComponent<Rigidbody>();
             _rb.isKinematic = true;
             _rb.useGravity = false;
-            // Asegurar collider en modo trigger para proyectil con movimiento manual
-            var col = GetComponent<Collider>();
-            if (col != null) col.isTrigger = true;
         }
+        
+        // IMPORTANTE: Collider NO debe ser trigger para detectar colisiones con árboles y otros objetos
+        // OnCollisionEnter funciona tanto con triggers como con colliders normales
+        var col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = false;
 
         // Consideramos "con RB" solo si no es cinemático (usaremos física para mover)
         _hasRb = _rb != null && !_rb.isKinematic;
@@ -90,24 +84,6 @@ public class MagicProjectile : MonoBehaviour
 
         // Seguridad extra: si hay RB y se configuró gravedad
         if (_hasRb) _rb.useGravity = _cfg.useGravity;
-
-        // Manejo de lanzamiento diferido
-        if (useLaunchDelay && launchDelaySeconds > 0f)
-        {
-            if (_hasRb)
-            {
-                // Guardar y anular velocidad/gravedad hasta el lanzamiento
-                _plannedVelocity = _rb.linearVelocity;
-                _rb.linearVelocity = Vector3.zero;
-                _savedUseGravity = _rb.useGravity;
-                _rb.useGravity = false;
-            }
-            else
-            {
-                _movementActive = false;
-            }
-            Invoke(nameof(ActivateMovement), launchDelaySeconds);
-        }
     }
 
     /// <summary>
@@ -135,7 +111,7 @@ public class MagicProjectile : MonoBehaviour
         if (_ended) return;
 
         // Movimiento manual si no hay Rigidbody
-        if (!_hasRb && _cfg.initialSpeed > 0f && _movementActive)
+        if (!_hasRb && _cfg.initialSpeed > 0f)
             transform.position += transform.forward * (_cfg.initialSpeed * Time.deltaTime);
 
         // Fin por rango
@@ -146,53 +122,21 @@ public class MagicProjectile : MonoBehaviour
         }
     }
 
-    void ActivateMovement()
-    {
-        if (_ended) return;
-        if (_hasRb)
-        {
-            _rb.linearVelocity = (_plannedVelocity != Vector3.zero)
-                ? _plannedVelocity
-                : transform.forward * Mathf.Max(0f, _cfg.initialSpeed);
-            _rb.useGravity = _savedUseGravity;
-        }
-        else
-        {
-            _movementActive = true;
-        }
-
-        // Programar TTL si no hay override desde el componente
-        if (!_ttlScheduled)
-        {
-            CancelInvoke(nameof(EndByTTL));
-            if (_cfg.lifeTime > 0f)
-            {
-                Invoke(nameof(EndByTTL), _cfg.lifeTime);
-                _ttlScheduled = true;
-            }
-        }
-
-        // Si usaremos delay y hay Rigidbody, capturar la velocidad tras ser asignada por el spawner
-        if (useLaunchDelay && launchDelaySeconds > 0f && _hasRb)
-            StartCoroutine(Co_CaptureVelocityAndPause());
-    }
-
-    System.Collections.IEnumerator Co_CaptureVelocityAndPause()
-    {
-        // Espera un frame para que el spawner asigne velocidad/gravedad
-        yield return null;
-        if (_ended || !_hasRb) yield break;
-        _plannedVelocity = _rb.linearVelocity;
-        _rb.linearVelocity = Vector3.zero;
-        _savedUseGravity = _rb.useGravity;
-        _rb.useGravity = false;
-        Invoke(nameof(ActivateMovement), launchDelaySeconds);
-    }
-
     // ==== Colisiones ===========================================================
 
     void OnTriggerEnter(Collider other)
-        => ResolveHit(other, other.ClosestPoint(transform.position));
+    {
+        Vector3 hitPoint = transform.position;
+        
+        // ClosestPoint solo funciona con Box, Sphere, Capsule y Mesh convexo
+        if (other is BoxCollider || other is SphereCollider || other is CapsuleCollider || 
+            (other is MeshCollider meshCol && meshCol.convex))
+        {
+            hitPoint = other.ClosestPoint(transform.position);
+        }
+        
+        ResolveHit(other, hitPoint);
+    }
 
     void OnCollisionEnter(Collision c)
         => ResolveHit(c.collider, c.GetContact(0).point);
@@ -207,26 +151,33 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_ended || other == null) return;
 
-        // Evitar golpearnos a nosotros mismos
-        if (_instigator && other.transform.IsChildOf(_instigator.transform)) return;
+        // Verificar si colisionamos con esta capa (para destruir el proyectil)
+        int layer = other.gameObject.layer;
+        bool shouldCollide = (_cfg.collisionLayers.value & (1 << layer)) != 0;
+        
+        if (!shouldCollide) return; // No colisionar con esta capa
 
-        // Filtro de capas
-        if ( (_cfg.hitLayers.value & (1 << other.gameObject.layer)) == 0 ) return;
+        // Verificar si esta capa recibe daño
+        bool shouldDamage = (_cfg.hitLayers.value & (1 << layer)) != 0;
 
-        // AOE o impacto directo
-        if (_cfg.aoeRadius > 0f)
+        if (shouldDamage)
         {
-            var cols = Physics.OverlapSphere(hitPoint, _cfg.aoeRadius, _cfg.hitLayers, QueryTriggerInteraction.Ignore);
-            foreach (var c in cols) ApplyDamageAndKnockback(c, hitPoint);
-        }
-        else
-        {
-            ApplyDamageAndKnockback(other, hitPoint);
+            // AOE o impacto directo
+            if (_cfg.aoeRadius > 0f)
+            {
+                var cols = Physics.OverlapSphere(hitPoint, _cfg.aoeRadius, _cfg.hitLayers, QueryTriggerInteraction.Ignore);
+                foreach (var c in cols) ApplyDamageAndKnockback(c, hitPoint);
+            }
+            else
+            {
+                ApplyDamageAndKnockback(other, hitPoint);
+            }
         }
 
-        // VFX de impacto
+        // VFX de impacto (siempre se muestra aunque no haga daño)
         if (_cfg.impactVFX) Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
 
+        // Destruir proyectil al colisionar con cualquier cosa válida
         if (_cfg.destroyOnHit) End(true);
     }
 

@@ -93,9 +93,9 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         // Log inicial de diagnóstico
-        var entriesCount = spellLibrary.Entries != null ? spellLibrary.Entries.Count : -1;
+        var spellsCount = spellLibrary.Spells != null ? spellLibrary.Spells.Count : -1;
         int unlockedCount = preset.unlockedSpells != null ? preset.unlockedSpells.Count : 0;
-        Debug.Log($"[PlayerPresetService] SpellLibrary entries: {entriesCount} | Unlocked: {unlockedCount} | Slots IDs → L:{preset.leftSpellId} R:{preset.rightSpellId} S:{preset.specialSpellId}");
+        Debug.Log($"[PlayerPresetService] SpellLibrary spells: {spellsCount} | Unlocked: {unlockedCount} | Slots IDs → L:{preset.leftSpellId} R:{preset.rightSpellId} S:{preset.specialSpellId}");
 
         // USAR EL ANCHOR DEL PRESET SO
         if (!string.IsNullOrEmpty(preset.spawnAnchorId))

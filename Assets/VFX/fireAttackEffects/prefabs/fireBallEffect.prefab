@@ -180,8 +180,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
-  useLaunchDelay: 0
-  launchDelaySeconds: 0
+  lifeTimeSeconds: 2
 --- !u!1001 &4897831432801354646
 PrefabInstance:
   m_ObjectHideFlags: 0

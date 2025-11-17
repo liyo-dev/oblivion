@@ -22,7 +22,7 @@ MonoBehaviour:
   unlockedSpells: 050000000100000002000000
   leftSpellId: 1
   rightSpellId: 2
-  specialSpellId: 5
+  specialSpellId: 3
   flags: []
   abilities:
     swim: 1
@@ -30,6 +30,8 @@ MonoBehaviour:
     climb: 0
     magic: 1
   appearance: []
+  unlockedWardrobeIds: []
   inventoryItems: []
   defeatedBossIds: []
+  narrativeBlackboards: []
   npcPositions: []
