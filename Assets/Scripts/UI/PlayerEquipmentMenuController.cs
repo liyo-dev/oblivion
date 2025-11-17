@@ -238,6 +238,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             HandleCloseInput();
             HandleTabNavigationInput();
             UpdatePlayerInfoPanel();
+            if (_activeTab == 1)
+                _spellView?.HandleInput();
         }
     }
 
@@ -835,17 +837,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         [Header("Slots - Botón izquierdo (X)")]
         public Button leftSlotButton;
         public Text leftSlotLabel;
-        public Image leftSlotIcon;            // Icono del ataque
-        
+
         [Header("Slots - Botón derecho (B)")]
         public Button rightSlotButton;
         public Text rightSlotLabel;
-        public Image rightSlotIcon;           // Icono del ataque
-        
+
         [Header("Slots - Botón especial (Y)")]
         public Button specialSlotButton;
         public Text specialSlotLabel;
-        public Image specialSlotIcon;          // Icono del ataque
         
         [Header("Lista de hechizos")]
         public Transform rowsParent;
@@ -870,10 +869,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     class SpellView
     {
+        enum FocusArea
+        {
+            Slots,
+            SpellList
+        }
+
+        enum AssignmentMode
+        {
+            None,
+            WaitingForSpellSelection,
+            WaitingForSlotSelection
+        }
+
         readonly SpellBindings _ui;
         readonly List<RowEntry> _rows = new();
         readonly Dictionary<Button, ColorBlock> _slotDefaultColors = new();
-        readonly Dictionary<Button, Navigation> _slotNavigation = new();
+        readonly Dictionary<Button, MagicSlot> _buttonToSlot = new();
+        readonly Dictionary<MagicSlot, Button> _slotToButton = new();
 
         PlayerPresetSO _preset;
         SpellLibrarySO _library;
@@ -881,8 +894,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SpellId _highlightedSpell = SpellId.None;
         RowEntry _highlightedRow;
         SpellId _pendingSpell = SpellId.None;
-        bool _isSelectingSlot;
-        GameObject _currentSlotSelection;
+        MagicSlot _pendingSlot = MagicSlot.Left;
+        MagicSlot _focusedSlot = MagicSlot.Left;
+        FocusArea _focusArea = FocusArea.Slots;
+        AssignmentMode _assignmentMode = AssignmentMode.None;
+        float _lastGamepadHorizontal;
+        float _lastLegacyHorizontal;
 
         class RowEntry
         {
@@ -898,30 +915,38 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             ConfigureSlotButton(_ui.leftSlotButton, MagicSlot.Left);
             ConfigureSlotButton(_ui.rightSlotButton, MagicSlot.Right);
             ConfigureSlotButton(_ui.specialSlotButton, MagicSlot.Special);
-
-            SetSlotNavigationActive(false);
         }
 
         public GameObject DefaultSelection
         {
             get
             {
+                if (_ui.leftSlotButton != null)
+                    return _ui.leftSlotButton.gameObject;
+                if (_ui.rightSlotButton != null)
+                    return _ui.rightSlotButton.gameObject;
+                if (_ui.specialSlotButton != null)
+                    return _ui.specialSlotButton.gameObject;
                 if (_rows.Count > 0)
                 {
                     var first = _rows[0]?.widget;
                     if (first != null)
                         return first.ButtonGameObject;
                 }
-                return _ui.leftSlotButton != null ? _ui.leftSlotButton.gameObject : _ui.root;
+                return _ui.root;
             }
         }
 
         public void SetVisible(bool value)
         {
-            if (!value)
-                CancelSlotSelection(true);
             if (_ui.root != null)
                 _ui.root.SetActive(value);
+            if (!value)
+            {
+                CancelSlotSelection(true);
+                _lastGamepadHorizontal = 0f;
+                _lastLegacyHorizontal = 0f;
+            }
         }
 
         public void Refresh()
@@ -944,69 +969,128 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             EnforcePresetSlotRules();
             UpdateSlotLabels();
-            UpdateSlotIcons();  // Nuevo: actualizar iconos de hechizos
             BuildSpellList();
             UpdateSlotButtonVisuals();
+            CancelSlotSelection(true);
+            ShowSpellDetails(_highlightedSpell);
+        }
+
+        public void HandleInput()
+        {
+            if (_ui.root == null || !_ui.root.activeInHierarchy)
+                return;
+            if (_assignmentMode != AssignmentMode.None)
+                return;
+
+            bool movedRight = false;
+            bool movedLeft = false;
+
+#if ENABLE_INPUT_SYSTEM
+            var pad = Gamepad.current;
+            if (pad != null)
+            {
+                movedRight |= pad.dpad.right.wasPressedThisFrame;
+                movedLeft |= pad.dpad.left.wasPressedThisFrame;
+                float axis = pad.leftStick.ReadValue().x;
+                if (axis > 0.5f && _lastGamepadHorizontal <= 0.5f)
+                    movedRight = true;
+                else if (axis < -0.5f && _lastGamepadHorizontal >= -0.5f)
+                    movedLeft = true;
+                _lastGamepadHorizontal = axis;
+            }
+            else
+            {
+                _lastGamepadHorizontal = 0f;
+            }
+#endif
+
+            if (!movedRight && !movedLeft)
+            {
+                if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+                    movedRight = true;
+                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                    movedLeft = true;
+
+                float axis = 0f;
+                try { axis = Input.GetAxisRaw("Horizontal"); }
+                catch { axis = 0f; }
+                if (axis > 0.5f && _lastLegacyHorizontal <= 0.5f)
+                    movedRight = true;
+                else if (axis < -0.5f && _lastLegacyHorizontal >= -0.5f)
+                    movedLeft = true;
+                _lastLegacyHorizontal = axis;
+
+                if (!movedRight && !movedLeft)
+                {
+                    try
+                    {
+                        if (Input.GetButtonDown("DPadRight")) movedRight = true;
+                        if (Input.GetButtonDown("DPadLeft")) movedLeft = true;
+                    }
+                    catch { }
+                }
+            }
+
+            if (movedRight && _focusArea == FocusArea.Slots)
+                FocusSpellList();
+            else if (movedLeft && _focusArea == FocusArea.SpellList)
+                FocusSlots();
+        }
+
+        void FocusSlots(MagicSlot? slotOverride = null)
+        {
+            if (_slotToButton.Count == 0)
+                return;
+
+            var targetSlot = slotOverride ?? _focusedSlot;
+            if (!_slotToButton.TryGetValue(targetSlot, out var button) || button == null)
+            {
+                foreach (var kvp in _slotToButton)
+                {
+                    if (kvp.Value != null)
+                    {
+                        targetSlot = kvp.Key;
+                        button = kvp.Value;
+                        break;
+                    }
+                }
+            }
+
+            _focusedSlot = targetSlot;
+            _focusArea = FocusArea.Slots;
+
+            if (button != null)
+            {
+                var es = EventSystem.current;
+                if (es != null)
+                    es.SetSelectedGameObject(button.gameObject);
+            }
+        }
+
+        void FocusSpellList()
+        {
+            if (_rows.Count == 0)
+                return;
+
+            if (_highlightedRow == null)
+                SelectFirstRow();
+
+            _focusArea = FocusArea.SpellList;
+            _highlightedRow?.widget?.Focus();
         }
 
         void UpdateSlotLabels()
         {
-            // Ocultamos los labels de texto ya que mostramos sprites de botones
-            if (_ui.leftSlotLabel != null)
-                _ui.leftSlotLabel.gameObject.SetActive(false);
-            if (_ui.rightSlotLabel != null)
-                _ui.rightSlotLabel.gameObject.SetActive(false);
-            if (_ui.specialSlotLabel != null)
-                _ui.specialSlotLabel.gameObject.SetActive(false);
+            UpdateSlotLabel(_ui.leftSlotLabel, _preset != null ? _preset.leftSpellId : SpellId.None);
+            UpdateSlotLabel(_ui.rightSlotLabel, _preset != null ? _preset.rightSpellId : SpellId.None);
+            UpdateSlotLabel(_ui.specialSlotLabel, _preset != null ? _preset.specialSpellId : SpellId.None);
         }
 
-        void UpdateSlotIcons()
+        void UpdateSlotLabel(Text label, SpellId spellId)
         {
-            // Los sprites de botones (X, Y, B) deben estar configurados manualmente en el Inspector
-            // Aquí solo actualizamos los iconos de ataques dinámicamente
-            if (_preset == null || _library == null)
-            {
-                HideSlotIcon(_ui.leftSlotIcon);
-                HideSlotIcon(_ui.rightSlotIcon);
-                HideSlotIcon(_ui.specialSlotIcon);
-                return;
-            }
-
-            UpdateSlotIcon(_ui.leftSlotIcon, _preset.leftSpellId);
-            UpdateSlotIcon(_ui.rightSlotIcon, _preset.rightSpellId);
-            UpdateSlotIcon(_ui.specialSlotIcon, _preset.specialSpellId);
-        }
-
-        void UpdateSlotIcon(Image iconImage, SpellId spellId)
-        {
-            if (iconImage == null) return;
-
-            if (spellId == SpellId.None || _library == null)
-            {
-                HideSlotIcon(iconImage);
-                return;
-            }
-
-            var spell = _library.Get(spellId);
-            if (spell == null || spell.attackIcon == null)
-            {
-                HideSlotIcon(iconImage);
-                return;
-            }
-
-            // Mostrar el attackIcon del hechizo encima del botón
-            iconImage.sprite = spell.attackIcon;
-            iconImage.color = Color.white;
-            iconImage.gameObject.SetActive(true);
-        }
-
-        void HideSlotIcon(Image iconImage)
-        {
-            if (iconImage != null)
-            {
-                iconImage.sprite = null;
-                iconImage.gameObject.SetActive(false);
-            }
+            if (label == null) return;
+            label.gameObject.SetActive(true);
+            label.text = ResolveName(spellId);
         }
 
         void BuildSpellList()
@@ -1014,7 +1098,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var previous = _highlightedSpell;
             ClearList();
 
-            if (_preset == null) return;
+            if (_preset == null)
+                return;
 
             var added = new HashSet<SpellId>();
             AddSpellRow(SpellId.None);
@@ -1034,42 +1119,41 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (!SelectRow(_preset.leftSpellId))
                     SelectFirstRow();
             }
-            
-            UpdateRowVisuals(); // Actualizar colores después de construir la lista
+
+            UpdateRowVisuals();
+            ConfigureRowNavigation();
+            UpdateSlotNavigationTargets();
         }
 
         void AddSpellRow(SpellId spellId)
         {
             var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
             widget.SetLabel(ResolveName(spellId));
+            widget.SetIcon(GetSpellAsset(spellId)?.attackIcon);
             var rowEntry = new RowEntry { spellId = spellId, widget = widget };
             widget.RegisterClickHandler(() => HandleRowClicked(rowEntry));
-            widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry));
+            widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry, true));
 
             _rows.Add(rowEntry);
         }
 
-        void HandleRowSelected(RowEntry entry)
+        void HandleRowSelected(RowEntry entry, bool fromUser)
         {
             if (entry == null) return;
-            if (_isSelectingSlot)
-            {
-                RestoreSlotFocus();
-                return;
-            }
+
             _highlightedSpell = entry.spellId;
             _highlightedRow = entry;
-            UpdateRowVisuals(); // Resaltar visualmente la fila seleccionada
+            if (fromUser)
+                _focusArea = FocusArea.SpellList;
+            UpdateRowVisuals();
             ShowSpellDetails(entry.spellId);
         }
 
         void UpdateRowVisuals()
         {
-            // Actualiza el color de todas las filas, resaltando la seleccionada
             foreach (var row in _rows)
             {
                 if (row?.widget == null) continue;
-                
                 bool isSelected = row == _highlightedRow;
                 row.widget.SetHighlighted(isSelected, _ui.slotSelectionColor);
             }
@@ -1078,54 +1162,42 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void HandleRowClicked(RowEntry entry)
         {
             if (entry == null) return;
-            if (_isSelectingSlot) return;
 
-            BeginSlotSelection(entry.spellId);
-        }
-
-        void BeginSlotSelection(SpellId spellId)
-        {
-            _pendingSpell = spellId;
-            _isSelectingSlot = true;
-            SetRowSelectionCallbacksEnabled(false);
-            SetSlotNavigationActive(true);
-            UpdateSlotButtonVisuals();
-
-            if (!FocusFirstAllowedSlot())
+            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
             {
-                CancelSlotSelection(false);
+                AssignSpellToSlot(_pendingSlot, entry.spellId);
+                CompleteAssignment();
                 return;
             }
 
-            ShowSpellDetails(spellId);
-        }
-
-        bool FocusFirstAllowedSlot()
-        {
-            if (TryFocusSlot(_ui.leftSlotButton, MagicSlot.Left)) return true;
-            if (TryFocusSlot(_ui.rightSlotButton, MagicSlot.Right)) return true;
-            if (TryFocusSlot(_ui.specialSlotButton, MagicSlot.Special)) return true;
-            return false;
-        }
-
-        bool TryFocusSlot(Button button, MagicSlot slot)
-        {
-            if (button == null) return false;
-            if (!CanAssign(slot, _pendingSpell)) return false;
-            var es = EventSystem.current;
-            if (es != null)
-                es.SetSelectedGameObject(button.gameObject);
-            _currentSlotSelection = button.gameObject;
-            return true;
+            _pendingSpell = entry.spellId;
+            _assignmentMode = AssignmentMode.WaitingForSlotSelection;
+            FocusSlots();
+            UpdateSlotButtonVisuals();
+            ShowSpellDetails(entry.spellId);
         }
 
         void HandleSlotButtonPressed(MagicSlot slot)
         {
-            if (!_isSelectingSlot) return;
-            if (!CanAssign(slot, _pendingSpell)) return;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                if (!CanAssign(slot, _pendingSpell)) return;
+                AssignSpellToSlot(slot, _pendingSpell);
+                CompleteAssignment();
+                return;
+            }
 
-            AssignSpellToSlot(slot, _pendingSpell);
-            FinishSlotSelection();
+            BeginSpellSelectionFromSlot(slot);
+        }
+
+        void BeginSpellSelectionFromSlot(MagicSlot slot)
+        {
+            _pendingSlot = slot;
+            _pendingSpell = SpellId.None;
+            _assignmentMode = AssignmentMode.WaitingForSpellSelection;
+            FocusSpellList();
+            UpdateSlotButtonVisuals();
+            ShowSpellDetails(_highlightedSpell);
         }
 
         void AssignSpellToSlot(MagicSlot slot, SpellId id)
@@ -1156,39 +1228,40 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _preset.specialSpellId = SpellId.None;
         }
 
-        void FinishSlotSelection()
+        void CompleteAssignment()
         {
-            _isSelectingSlot = false;
+            _assignmentMode = AssignmentMode.None;
             _pendingSpell = SpellId.None;
-            SetSlotNavigationActive(false);
             UpdateSlotButtonVisuals();
-            SetRowSelectionCallbacksEnabled(true);
-            _currentSlotSelection = null;
-            _highlightedRow?.widget?.Focus();
+            FocusSlots(_focusedSlot);
             ShowSpellDetails(_highlightedSpell);
         }
 
         public void CancelSlotSelection(bool silent)
         {
-            if (!_isSelectingSlot)
-                return;
+            ResetState(silent);
+        }
 
-            _isSelectingSlot = false;
+        void ResetState(bool silent)
+        {
+            _assignmentMode = AssignmentMode.None;
             _pendingSpell = SpellId.None;
-            SetSlotNavigationActive(false);
+            _pendingSlot = MagicSlot.Left;
+            _focusArea = FocusArea.Slots;
+            _focusedSlot = MagicSlot.Left;
             UpdateSlotButtonVisuals();
-            SetRowSelectionCallbacksEnabled(true);
-            _currentSlotSelection = null;
             if (!silent)
             {
-                _highlightedRow?.widget?.Focus();
+                FocusSlots(MagicSlot.Left);
                 ShowSpellDetails(_highlightedSpell);
             }
         }
 
         public bool TryHandleCancel()
         {
-            if (!_isSelectingSlot) return false;
+            if (_assignmentMode == AssignmentMode.None && _focusArea == FocusArea.Slots)
+                return false;
+
             CancelSlotSelection(false);
             return true;
         }
@@ -1216,12 +1289,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 }
             }
 
-            if (_isSelectingSlot)
-                description += "\nSelecciona un slot con A o cancela con B.";
-            else if (id == SpellId.None)
-                description += "\nPulsa A para limpiar un slot.";
-            else
-                description += "\nPulsa A para elegir en qué slot equipar.";
+            switch (_assignmentMode)
+            {
+                case AssignmentMode.WaitingForSpellSelection:
+                    description += "\nSelecciona un hechizo con A o cancela con B.";
+                    break;
+                case AssignmentMode.WaitingForSlotSelection:
+                    description += "\nSelecciona un slot con A o cancela con B.";
+                    break;
+                default:
+                    description += "\nPulsa A en un slot para elegir hechizo o pulsa A en un hechizo para escoger slot.";
+                    break;
+            }
 
             _ui.detailsText.text = description;
         }
@@ -1244,8 +1323,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             foreach (var entry in _rows)
             {
                 if (entry == null || entry.spellId != id) continue;
-                entry.widget?.Focus();
-                HandleRowSelected(entry);
+                HandleRowSelected(entry, false);
                 return true;
             }
 
@@ -1256,24 +1334,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_rows.Count == 0) return;
             var first = _rows[0];
-            first?.widget?.Focus();
-            HandleRowSelected(first);
-        }
-
-        void RestoreSlotFocus()
-        {
-            if (_currentSlotSelection == null) return;
-            var es = EventSystem.current;
-            if (es != null)
-                es.SetSelectedGameObject(_currentSlotSelection);
-        }
-
-        void SetRowSelectionCallbacksEnabled(bool enabled)
-        {
-            foreach (var row in _rows)
-            {
-                row?.widget?.SetSelectionCallbacksEnabled(enabled);
-            }
+            HandleRowSelected(first, false);
         }
 
         void ConfigureSlotButton(Button button, MagicSlot slot)
@@ -1284,23 +1345,67 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var listener = button.gameObject.GetComponent<SlotSelectListener>();
             if (listener == null)
                 listener = button.gameObject.AddComponent<SlotSelectListener>();
-            listener.onSelect = () => HandleSlotFocused(button);
+            var capturedSlot = slot;
+            listener.onSelect = () => HandleSlotFocused(button, capturedSlot);
 
             if (!_slotDefaultColors.ContainsKey(button))
                 _slotDefaultColors[button] = button.colors;
 
-            if (!_slotNavigation.ContainsKey(button))
-                _slotNavigation[button] = button.navigation;
+            if (!_buttonToSlot.ContainsKey(button))
+                _buttonToSlot[button] = slot;
+            if (!_slotToButton.ContainsKey(slot))
+                _slotToButton[slot] = button;
         }
 
-        void SetSlotNavigationActive(bool active)
+        void ConfigureSlotNavigation(Button button, Button up, Button down, Selectable right)
         {
-            foreach (var kvp in _slotNavigation)
+            if (button == null) return;
+            var nav = button.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnUp = up != null ? up : button;
+            nav.selectOnDown = down != null ? down : button;
+            nav.selectOnLeft = button;
+            nav.selectOnRight = right;
+            button.navigation = nav;
+        }
+
+        void UpdateSlotNavigationTargets()
+        {
+            var firstRowSelectable = GetFirstRowSelectable();
+            ConfigureSlotNavigation(_ui.leftSlotButton, _ui.specialSlotButton, _ui.rightSlotButton, firstRowSelectable);
+            ConfigureSlotNavigation(_ui.rightSlotButton, _ui.leftSlotButton, _ui.specialSlotButton, firstRowSelectable);
+            ConfigureSlotNavigation(_ui.specialSlotButton, _ui.rightSlotButton, _ui.leftSlotButton, firstRowSelectable);
+        }
+
+        void ConfigureRowNavigation()
+        {
+            var leftTarget = GetPrimarySlotSelectable();
+            for (int i = 0; i < _rows.Count; i++)
             {
-                var button = kvp.Key;
-                if (button == null) continue;
-                button.navigation = active ? kvp.Value : new Navigation { mode = Navigation.Mode.None };
+                var selectable = _rows[i]?.widget?.Selectable;
+                if (selectable == null) continue;
+                var nav = selectable.navigation;
+                nav.mode = Navigation.Mode.Explicit;
+                nav.selectOnLeft = leftTarget;
+                nav.selectOnRight = null;
+                nav.selectOnUp = i > 0 ? _rows[i - 1]?.widget?.Selectable : selectable;
+                nav.selectOnDown = i < _rows.Count - 1 ? _rows[i + 1]?.widget?.Selectable : selectable;
+                selectable.navigation = nav;
             }
+        }
+
+        Selectable GetFirstRowSelectable()
+        {
+            if (_rows.Count == 0) return null;
+            return _rows[0]?.widget?.Selectable;
+        }
+
+        Selectable GetPrimarySlotSelectable()
+        {
+            if (_ui.leftSlotButton != null) return _ui.leftSlotButton;
+            if (_ui.rightSlotButton != null) return _ui.rightSlotButton;
+            if (_ui.specialSlotButton != null) return _ui.specialSlotButton;
+            return null;
         }
 
         void UpdateSlotButtonVisuals()
@@ -1318,16 +1423,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 ? colors
                 : button.colors;
 
-            var isAllowedSlot = _isSelectingSlot && CanAssign(slot, _pendingSpell);
-            var isFocused = _currentSlotSelection == button.gameObject && _isSelectingSlot;
+            bool highlight = false;
+            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
+                highlight = slot == _pendingSlot;
+            else if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+                highlight = CanAssign(slot, _pendingSpell);
 
-            if (isAllowedSlot)
+            if (highlight)
             {
                 var highlighted = defaults;
                 var focusColor = _ui.slotSelectionColor;
-                var dimmed = new Color(focusColor.r, focusColor.g, focusColor.b, focusColor.a * 0.65f);
-
-                highlighted.normalColor = isFocused ? focusColor : dimmed;
+                highlighted.normalColor = focusColor;
                 highlighted.highlightedColor = focusColor;
                 highlighted.selectedColor = focusColor;
                 highlighted.pressedColor = focusColor;
@@ -1338,14 +1444,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 button.colors = defaults;
             }
 
-            button.interactable = !_isSelectingSlot || CanAssign(slot, _pendingSpell);
+            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
+                button.interactable = slot == _pendingSlot;
+            else if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+                button.interactable = CanAssign(slot, _pendingSpell);
+            else
+                button.interactable = true;
         }
 
-        void HandleSlotFocused(Button button)
+        void HandleSlotFocused(Button button, MagicSlot slot)
         {
-            if (!_isSelectingSlot) return;
             if (button == null) return;
-            _currentSlotSelection = button.gameObject;
+            _focusedSlot = slot;
+            _focusArea = FocusArea.Slots;
+            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
+                _pendingSlot = slot;
             UpdateSlotButtonVisuals();
         }
 
@@ -1365,12 +1478,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var right = _preset.rightSpellId;
             var special = _preset.specialSpellId;
 
-            // Specials solo en slot especial
             if (left != SpellId.None && IsSpecialOnly(left)) { left = SpellId.None; changed = true; }
             if (right != SpellId.None && IsSpecialOnly(right)) { right = SpellId.None; changed = true; }
             if (special != SpellId.None && !IsSpecialOnly(special)) { special = SpellId.None; changed = true; }
 
-            // Sin duplicados entre los tres slots
             if (left != SpellId.None && right == left) { left = SpellId.None; changed = true; }
             if (left != SpellId.None && special == left) { left = SpellId.None; changed = true; }
             if (right != SpellId.None && special == right) { right = SpellId.None; changed = true; }
@@ -1419,7 +1530,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return _library.Get(id);
         }
     }
-
     [Serializable]
     class EquipmentBindings
     {

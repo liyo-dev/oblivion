@@ -7,6 +7,7 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
 {
     [SerializeField] private Button button;
     [SerializeField] private Text label;
+    [SerializeField] private Image icon;
 
     Action _onClick;
     Action _onSelected;
@@ -20,6 +21,12 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
             button = GetComponent<Button>();
         if (label == null)
             label = GetComponentInChildren<Text>();
+        if (icon == null)
+        {
+            var iconTransform = transform.Find("Icon");
+            if (iconTransform != null)
+                icon = iconTransform.GetComponent<Image>();
+        }
         
         if (button != null && !_colorsInitialized)
         {
@@ -52,6 +59,8 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
 
     public GameObject ButtonGameObject => button != null ? button.gameObject : gameObject;
 
+    public Selectable Selectable => button != null ? button : GetComponent<Selectable>();
+
     public void Focus()
     {
         var es = EventSystem.current;
@@ -62,6 +71,21 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
     public void SetSelectionCallbacksEnabled(bool enabled)
     {
         _selectionCallbacksEnabled = enabled;
+    }
+
+    public void SetIcon(Sprite sprite)
+    {
+        if (icon == null) return;
+        if (sprite == null)
+        {
+            icon.enabled = false;
+            icon.sprite = null;
+        }
+        else
+        {
+            icon.enabled = true;
+            icon.sprite = sprite;
+        }
     }
 
     public void SetHighlighted(bool highlighted, Color highlightColor)
