@@ -13,10 +13,16 @@ public class CharacterCreatorUI : MonoBehaviour
 
     PartCategory Parse(string category)
     {
-        // Categorías vienen como "Body","Cloak",... exactas desde el CanvasBuilder
-        if (System.Enum.TryParse(category, out PartCategory cat)) return cat;
-        Debug.LogWarning($"[UI] Categoría desconocida: {category}");
-        return PartCategory.Body;
+        // Mapeo de nombres de UI a enum
+        switch (category)
+        {
+            case "OHS": return PartCategory.Ohs;
+            case "Shield": return PartCategory.ShieldR;
+            default:
+                if (System.Enum.TryParse(category, out PartCategory cat)) return cat;
+                Debug.LogWarning($"[UI] Categoría desconocida: {category}");
+                return PartCategory.Body;
+        }
     }
 
     public void Step(string category, int step)

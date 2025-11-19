@@ -20,10 +20,20 @@ public class UITextCurrentPart : MonoBehaviour
     void Refresh()
     {
         if (_txt == null || builder == null) return;
-        if (!System.Enum.TryParse(category, out PartCategory cat))
+        
+        // Mapeo de nombres de UI a enum
+        PartCategory cat;
+        switch (category)
         {
-            _txt.text = "-";
-            return;
+            case "OHS": cat = PartCategory.Ohs; break;
+            case "Shield": cat = PartCategory.ShieldR; break;
+            default:
+                if (!System.Enum.TryParse(category, out cat))
+                {
+                    _txt.text = "-";
+                    return;
+                }
+                break;
         }
 
         var sel = builder.GetSelection();

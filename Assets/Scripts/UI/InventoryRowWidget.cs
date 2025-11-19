@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventoryRowWidget : MonoBehaviour
+public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private Text label;
@@ -13,10 +14,12 @@ public class InventoryRowWidget : MonoBehaviour
     ItemData _item;
     string _fallbackName = "Item";
     Action _onClick;
+    Action _onSelected;
     ColorBlock _originalColors;
     bool _hasCachedColors;
 
     public GameObject ButtonGameObject => button != null ? button.gameObject : gameObject;
+    public ItemData Item => _item;
 
     void Awake()
     {
@@ -68,12 +71,26 @@ public class InventoryRowWidget : MonoBehaviour
         }
     }
 
+    public void RegisterSelectedHandler(Action onSelected)
+    {
+        _onSelected = onSelected;
+    }
+
     public void InvokeClick()
     {
         if (button != null)
             button.onClick.Invoke();
         else
             HandleClick();
+    }
+
+    public void Focus()
+    {
+        var es = EventSystem.current;
+        if (es != null && ButtonGameObject != null)
+        {
+            es.SetSelectedGameObject(ButtonGameObject);
+        }
     }
 
     void UpdateIcon()
@@ -95,6 +112,16 @@ public class InventoryRowWidget : MonoBehaviour
     void HandleClick()
     {
         _onClick?.Invoke();
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        _onSelected?.Invoke();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        _onSelected?.Invoke();
     }
 
     void CacheAndApplySelectionColors()

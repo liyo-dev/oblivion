@@ -432,7 +432,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_inventoryView != null)
         {
             _inventoryView.SetVisible(_activeTab == 0);
-            if (_activeTab == 0) _inventoryView.Refresh(forceRebuild);
+            if (_activeTab == 0)
+            {
+                _inventoryView.Refresh(forceRebuild);
+                _inventoryView.EnsureSelection();
+            }
         }
 
         if (_spellView != null)
@@ -640,6 +644,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Inventory _boundInventory;
         PlayerPickupCollector _collector;
         ItemData _selectedItem;
+        InventoryRowWidget _lastSelectedRow;
 
         public InventoryView(InventoryBindings bindings)
         {
@@ -726,17 +731,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 widget.Configure(entry.item);
                 widget.RefreshLabel(_inventory);
 
-                widget.RegisterClickHandler(() =>
-                {
-                    _selectedItem = entry.item;
-                    UpdateSelectedItemDetails();
-                });
+                var capturedWidget = widget;
+                var capturedItem = entry.item;
+                widget.RegisterClickHandler(() => HandleRowActivated(capturedWidget, capturedItem, true));
+                widget.RegisterSelectedHandler(() => HandleRowActivated(capturedWidget, capturedItem, false));
 
                 _rows.Add(widget);
             }
 
             if (_rows.Count == 0)
                 UpdateEmptyState("Inventario vacío");
+        }
+
+        void HandleRowActivated(InventoryRowWidget widget, ItemData item, bool focus)
+        {
+            _selectedItem = item;
+            _lastSelectedRow = widget;
+            if (focus)
+                widget?.Focus();
+            UpdateSelectedItemDetails();
         }
 
         void UpdateRowTexts()
@@ -753,6 +766,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     UnityEngine.Object.Destroy(widget.gameObject);
             }
             _rows.Clear();
+            _lastSelectedRow = null;
         }
 
         void UpdateSelectedItemDetails()
@@ -827,6 +841,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void HandleInventoryChanged(ItemData item, int newAmount)
         {
             Refresh(false);
+        }
+
+        public void EnsureSelection()
+        {
+            if (_rows.Count == 0) return;
+
+            if (_lastSelectedRow != null)
+            {
+                _lastSelectedRow.Focus();
+                return;
+            }
+
+            _rows[0].InvokeClick();
         }
     }
 
