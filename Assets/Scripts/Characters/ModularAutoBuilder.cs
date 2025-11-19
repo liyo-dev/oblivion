@@ -7,8 +7,16 @@ using UnityEngine;
 public class ModularAutoBuilder : MonoBehaviour
 {
     // Prefijos -> categorías (case-insensitive)
+    // IMPORTANTE: Orden importa - más específicos primero
     static readonly (string prefix, PartCategory cat)[] Map = new (string, PartCategory)[]
     {
+        // Armas PRIMERO (antes de Body para evitar colisiones)
+        ("Bow",      PartCategory.Bow),
+        ("OHS",      PartCategory.Ohs),
+        ("Shield",   PartCategory.ShieldR),
+        ("Arrows",   PartCategory.Arrows),
+        
+        // Cuerpo y ropa
         ("Body",     PartCategory.Body),
         ("Cloak",    PartCategory.Cloak),
         ("AC",       PartCategory.Accessory),
@@ -21,12 +29,6 @@ public class ModularAutoBuilder : MonoBehaviour
         ("Hair",     PartCategory.Hair),
         ("Head",     PartCategory.Head),
         ("Hat",      PartCategory.Hat),
-
-        // Armas
-        ("Bow",      PartCategory.Bow),
-        ("OHS",      PartCategory.Ohs),
-        ("Shield",   PartCategory.ShieldR),
-        ("Arrows",   PartCategory.Arrows),
     };
 
 
@@ -80,6 +82,20 @@ public class ModularAutoBuilder : MonoBehaviour
             if (maybe == null) continue;
 
             var go = t.gameObject;
+            
+            // FILTRO: Solo cachear objetos que tienen Renderer (partes visuales)
+            // Esto excluye carpetas contenedoras como "Bows", "Shields", etc.
+            bool hasRenderer = go.GetComponent<Renderer>() != null || go.GetComponentInChildren<Renderer>(true) != null;
+            if (!hasRenderer) continue;
+            
+            // FILTRO EXTRA para armas: deben tener números en el nombre (Bow01, Shield02, etc.)
+            // Esto excluye carpetas como "Bows" (sin número)
+            if (maybe == PartCategory.Bow || maybe == PartCategory.Ohs || maybe == PartCategory.ShieldR || maybe == PartCategory.Arrows)
+            {
+                bool hasDigit = t.name.Any(char.IsDigit);
+                if (!hasDigit) continue;
+            }
+
             parts[maybe.Value].Add(go);
 
             // mano aproximada por ruta
@@ -268,6 +284,12 @@ public class ModularAutoBuilder : MonoBehaviour
     EnsureAncestorsActive(chosen.transform);
     chosen.SetActive(true);
     idx[cat] = i;
+    
+    // Desactivar animaciones en armas
+    if (WeaponCats.Contains(cat) || cat == PartCategory.Arrows)
+    {
+        DisableAnimators(chosen);
+    }
 
     // Consistencia: si enciendo OHS o Shield, apaga Bow/Arrows
     if (cat == PartCategory.Ohs || cat == PartCategory.ShieldR)
@@ -315,7 +337,18 @@ public class ModularAutoBuilder : MonoBehaviour
         {
             EnsureAncestorsActive(right.transform);
             right.SetActive(true);
+            DisableAnimators(right);
             idx[PartCategory.Arrows] = arrows.IndexOf(right);
+        }
+    }
+    
+    void DisableAnimators(GameObject go)
+    {
+        // Desactivar todos los Animators en el arma y sus hijos
+        var animators = go.GetComponentsInChildren<Animator>(true);
+        foreach (var anim in animators)
+        {
+            anim.enabled = false;
         }
     }
 
@@ -330,6 +363,75 @@ public class ModularAutoBuilder : MonoBehaviour
             {
                 var r = t.GetComponent<Renderer>();
                 Debug.Log($"Head {t.name} | activeSelf={t.gameObject.activeSelf} | rend={(r!=null)} | layer={t.gameObject.layer}");
+            }
+        }
+    }
+    
+    [ContextMenu("Debug/Print active Weapons")]
+    void DebugWeapons()
+    {
+        Debug.Log("=== WEAPON DEBUG START ===");
+        
+        // Mostrar qué hay en caché
+        foreach (var cat in WeaponCats.Concat(new[] { PartCategory.Arrows }))
+        {
+            if (parts.TryGetValue(cat, out var list))
+            {
+                Debug.Log($"Category {cat}: {list.Count} items cached");
+                foreach (var go in list)
+                {
+                    var hand = handOf.TryGetValue(go, out var h) ? h : Hand.None;
+                    Debug.Log($"  - {go.name} | hand={hand}");
+                }
+            }
+        }
+        
+        Debug.Log("\n=== ACTIVE WEAPONS IN HIERARCHY ===");
+        var trs = GetComponentsInChildren<Transform>(true);
+        foreach (var t in trs)
+        {
+            if (t == transform) continue;
+            bool isWeapon = t.name.StartsWith("Bow", StringComparison.OrdinalIgnoreCase) ||
+                           t.name.StartsWith("OHS", StringComparison.OrdinalIgnoreCase) ||
+                           t.name.StartsWith("Shield", StringComparison.OrdinalIgnoreCase) ||
+                           t.name.StartsWith("Arrows", StringComparison.OrdinalIgnoreCase);
+            if (isWeapon)
+            {
+                var r = t.GetComponent<Renderer>();
+                var rends = t.GetComponentsInChildren<Renderer>(true);
+                var path = GetPath(t);
+                Debug.Log($"Weapon {t.name} | activeSelf={t.gameObject.activeSelf} | activeInHierarchy={t.gameObject.activeInHierarchy} | hasRenderer={r!=null} | childRenderers={rends.Length} | layer={LayerMask.LayerToName(t.gameObject.layer)} | path={path}");
+            }
+        }
+        
+        Debug.Log("\n=== CURRENT SELECTION ===");
+        foreach (var cat in WeaponCats.Concat(new[] { PartCategory.Arrows }))
+        {
+            if (idx.TryGetValue(cat, out var i) && parts.TryGetValue(cat, out var list) && i < list.Count)
+            {
+                Debug.Log($"{cat}: {list[i].name} (index {i})");
+            }
+            else
+            {
+                Debug.Log($"{cat}: NONE");
+            }
+        }
+    }
+    
+    [ContextMenu("Debug/Print all cached parts")]
+    void DebugAllParts()
+    {
+        Debug.Log("=== ALL CACHED PARTS ===");
+        foreach (var cat in Enum.GetValues(typeof(PartCategory)).Cast<PartCategory>())
+        {
+            if (parts.TryGetValue(cat, out var list) && list.Count > 0)
+            {
+                Debug.Log($"\n{cat} ({list.Count} items):");
+                foreach (var go in list)
+                {
+                    var path = GetPath(go.transform);
+                    Debug.Log($"  - {go.name} | path={path}");
+                }
             }
         }
     }

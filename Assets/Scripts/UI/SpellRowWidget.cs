@@ -75,20 +75,48 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
 
     public void SetIcon(Sprite sprite)
     {
-        if (icon == null) return;
+        var target = ResolveIconTarget();
+        if (target == null) return;
+
         if (sprite == null)
         {
-            icon.enabled = false;
-            icon.sprite = null;
-            icon.gameObject.SetActive(false);
+            target.enabled = false;
+            target.sprite = null;
+            target.gameObject.SetActive(false);
         }
         else
         {
-            icon.sprite = sprite;
-            icon.color = Color.white;
-            icon.enabled = true;
-            icon.gameObject.SetActive(true);
+            target.sprite = sprite;
+            target.color = Color.white;
+            target.enabled = true;
+            target.gameObject.SetActive(true);
         }
+    }
+
+    Image ResolveIconTarget()
+    {
+        if (icon != null) return icon;
+
+        if (button != null)
+        {
+            var graphics = button.GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                var candidate = graphics[i];
+                if (candidate == null) continue;
+                if (candidate == button.targetGraphic) continue;
+                icon = candidate;
+                break;
+            }
+
+            if (icon == null && button.targetGraphic is Image buttonImage)
+                icon = buttonImage;
+        }
+
+        if (icon == null)
+            icon = GetComponentInChildren<Image>(true);
+
+        return icon;
     }
 
     public void SetHighlighted(bool highlighted, Color highlightColor)
