@@ -80,11 +80,14 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
         {
             icon.enabled = false;
             icon.sprite = null;
+            icon.gameObject.SetActive(false);
         }
         else
         {
-            icon.enabled = true;
             icon.sprite = sprite;
+            icon.color = Color.white;
+            icon.enabled = true;
+            icon.gameObject.SetActive(true);
         }
     }
 

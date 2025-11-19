@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -870,12 +869,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     class SpellView
     {
-        enum FocusArea
-        {
-            Slots,
-            SpellList
-        }
-
         enum AssignmentMode
         {
             None,
@@ -888,8 +881,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         readonly Dictionary<Button, ColorBlock> _slotDefaultColors = new();
         readonly Dictionary<Button, MagicSlot> _buttonToSlot = new();
         readonly Dictionary<MagicSlot, Button> _slotToButton = new();
-        readonly Dictionary<Button, Vector3> _slotBaseScales = new();
-        readonly Dictionary<Button, Tween> _slotFeedbackTweens = new();
 
         PlayerPresetSO _preset;
         SpellLibrarySO _library;
@@ -897,9 +888,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SpellId _highlightedSpell = SpellId.None;
         RowEntry _highlightedRow;
         SpellId _pendingSpell = SpellId.None;
-        MagicSlot _pendingSlot = MagicSlot.Left;
         MagicSlot _focusedSlot = MagicSlot.Left;
-        FocusArea _focusArea = FocusArea.SpellList;
         AssignmentMode _assignmentMode = AssignmentMode.None;
 
         class RowEntry
@@ -922,18 +911,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             get
             {
+                // Primero intentar enfocar el listado de hechizos
                 if (_rows.Count > 0)
                 {
                     var first = _rows[0]?.widget;
                     if (first != null)
                         return first.ButtonGameObject;
                 }
-                if (_ui.leftSlotButton != null)
-                    return _ui.leftSlotButton.gameObject;
-                if (_ui.rightSlotButton != null)
-                    return _ui.rightSlotButton.gameObject;
-                if (_ui.specialSlotButton != null)
-                    return _ui.specialSlotButton.gameObject;
+                // Si no hay hechizos, no hay nada que seleccionar
                 return _ui.root;
             }
         }
@@ -945,7 +930,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (!value)
             {
                 CancelSlotSelection(true);
-                KillAllSlotFeedback();
             }
         }
 
@@ -973,23 +957,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateSlotButtonVisuals();
             CancelSlotSelection(true);
             ShowSpellDetails(_highlightedSpell);
-            FocusSpellList();
         }
 
         public void HandleInput()
         {
-            if (_ui.root == null || !_ui.root.activeInHierarchy)
-                return;
-
-            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
-            {
-                if (_focusArea != FocusArea.Slots)
-                    FocusSlots(_focusedSlot);
-                return;
-            }
-
-            if (_focusArea != FocusArea.SpellList)
-                FocusSpellList();
+            // Navegación simplificada: no se maneja aquí, solo con el sistema de navegación de Unity UI
         }
 
         void FocusSlots(MagicSlot? slotOverride = null)
@@ -998,16 +970,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
 
             var targetSlot = slotOverride ?? _focusedSlot;
-            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection && !CanAssign(targetSlot, _pendingSpell))
-            {
-                foreach (var candidate in _slotToButton.Keys)
-                {
-                    if (!CanAssign(candidate, _pendingSpell)) continue;
-                    targetSlot = candidate;
-                    break;
-                }
-            }
-
             if (!_slotToButton.TryGetValue(targetSlot, out var button) || button == null)
             {
                 foreach (var kvp in _slotToButton)
@@ -1022,7 +984,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             _focusedSlot = targetSlot;
-            _focusArea = FocusArea.Slots;
+            
+            // Actualizar visuals ANTES de seleccionar para evitar el error de "Attempting to select while already selecting"
+            UpdateSlotButtonVisuals();
 
             if (button != null)
             {
@@ -1040,23 +1004,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_highlightedRow == null)
                 SelectFirstRow();
 
-            _focusArea = FocusArea.SpellList;
             _highlightedRow?.widget?.Focus();
-        }
-
-        MagicSlot GetPreferredSlotForSpell(SpellId spellId)
-        {
-            if (spellId != SpellId.None && _library != null)
-            {
-                var spell = _library.Get(spellId);
-                if (spell != null && spell.slotType == SpellSlotType.SpecialOnly)
-                    return MagicSlot.Special;
-            }
-
-            if (CanAssign(MagicSlot.Left, spellId)) return MagicSlot.Left;
-            if (CanAssign(MagicSlot.Right, spellId)) return MagicSlot.Right;
-            if (CanAssign(MagicSlot.Special, spellId)) return MagicSlot.Special;
-            return MagicSlot.Left;
         }
 
         void UpdateSlotLabels()
@@ -1077,146 +1025,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             var previous = _highlightedSpell;
             ClearList();
-
-            if (_preset == null)
-                return;
-
-            var added = new HashSet<SpellId>();
-            AddSpellRow(SpellId.None);
-            added.Add(SpellId.None);
-
-            if (_preset.unlockedSpells != null)
-            {
-                foreach (var id in _preset.unlockedSpells)
-                {
-                    if (!added.Add(id)) continue;
-                    AddSpellRow(id);
-                }
-            }
-
-            if (!SelectRow(previous))
-            {
-                if (!SelectRow(_preset.leftSpellId))
-                    SelectFirstRow();
-            }
-
-            UpdateRowVisuals();
-            ConfigureRowNavigation();
-            UpdateSlotNavigationTargets();
-        }
-
-        void AddSpellRow(SpellId spellId)
-        {
-            var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
-            widget.SetLabel(ResolveName(spellId));
-            widget.SetIcon(GetSpellAsset(spellId)?.attackIcon);
-            var rowEntry = new RowEntry { spellId = spellId, widget = widget };
-            widget.RegisterClickHandler(() => HandleRowClicked(rowEntry));
-            widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry, true));
-
-            _rows.Add(rowEntry);
-        }
-
-        void HandleRowSelected(RowEntry entry, bool fromUser)
-        {
-            if (entry == null) return;
-
-            _highlightedSpell = entry.spellId;
-            _highlightedRow = entry;
-            if (fromUser)
-                _focusArea = FocusArea.SpellList;
-            UpdateRowVisuals();
-            ShowSpellDetails(entry.spellId);
-        }
-
-        void UpdateRowVisuals()
-        {
-            foreach (var row in _rows)
-            {
-                if (row?.widget == null) continue;
-                bool isSelected = row == _highlightedRow;
-                row.widget.SetHighlighted(isSelected, _ui.slotSelectionColor);
-            }
-        }
-
-        void HandleRowClicked(RowEntry entry)
-        {
-            if (entry == null) return;
-
-            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
-            {
-                AssignSpellToSlot(_pendingSlot, entry.spellId);
-                CompleteAssignment();
-                return;
-            }
-
-            _pendingSpell = entry.spellId;
-            _assignmentMode = AssignmentMode.WaitingForSlotSelection;
-            _focusedSlot = GetPreferredSlotForSpell(entry.spellId);
-            _pendingSlot = _focusedSlot;
-            FocusSlots(_focusedSlot);
-            UpdateSlotButtonVisuals();
-            ShowSpellDetails(entry.spellId);
-        }
-
-        void HandleSlotButtonPressed(MagicSlot slot)
-        {
-            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
-            {
-                _focusedSlot = slot;
-                if (!CanAssign(slot, _pendingSpell)) return;
-                AssignSpellToSlot(slot, _pendingSpell);
-                CompleteAssignment();
-                return;
-            }
-
-            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
-            {
-                if (!CanAssign(slot, _pendingSpell)) return;
-                AssignSpellToSlot(slot, _pendingSpell);
-                CompleteAssignment();
-                return;
-            }
-
-            _pendingSlot = slot;
-            _assignmentMode = AssignmentMode.WaitingForSpellSelection;
-            _focusArea = FocusArea.SpellList;
-            FocusSpellList();
-            UpdateSlotButtonVisuals();
-            ShowSpellDetails(_highlightedSpell);
-        }
-
-        void BeginSpellSelectionFromSlot(MagicSlot slot)
-        {
-            _pendingSlot = slot;
-            _pendingSpell = SpellId.None;
-            _assignmentMode = AssignmentMode.WaitingForSpellSelection;
-            FocusSpellList();
-            UpdateSlotButtonVisuals();
-            ShowSpellDetails(_highlightedSpell);
-        }
-
-        void AssignSpellToSlot(MagicSlot slot, SpellId id)
-        {
-            if (_preset == null) return;
-
-            switch (slot)
-            {
-                case MagicSlot.Left: _preset.leftSpellId = id; break;
-                case MagicSlot.Right: _preset.rightSpellId = id; break;
-                case MagicSlot.Special: _preset.specialSpellId = id; break;
-            }
-
-            EnsureUniqueAssignment(id, slot);
-            _presetService?.ApplyCurrentPreset();
-            UpdateSlotLabels();
-            PlaySlotConfirmFeedback(slot);
-        }
-
-        void EnsureUniqueAssignment(SpellId id, MagicSlot targetSlot)
-        {
-            if (id == SpellId.None) return;
-
+            // Navegación simplificada: no se maneja aquí, solo con el sistema de navegación de Unity UI
             if (targetSlot != MagicSlot.Left && _preset.leftSpellId == id)
                 _preset.leftSpellId = SpellId.None;
             if (targetSlot != MagicSlot.Right && _preset.rightSpellId == id)
@@ -1225,42 +1034,42 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _preset.specialSpellId = SpellId.None;
         }
 
-        void CompleteAssignment()
+        void CompleteAssignmentAndReturnToList()
         {
             _assignmentMode = AssignmentMode.None;
             _pendingSpell = SpellId.None;
             UpdateSlotButtonVisuals();
             FocusSpellList();
-            ShowSpellDetails(_highlightedSpell);
+            // Al hacer click/submit en un hechizo, activar modo de selección de slot
+            UpdateSlotButtonVisuals();
+            FocusSlots(_focusedSlot);
+            _highlightedSpell = entry.spellId;
+            _highlightedRow = entry;
+            
+            // Actualizar visuals y luego enfocar slots
         }
+            FocusSlots();
+            
+            // Actualizar visuals ANTES de seleccionar para evitar el error de "Attempting to select while already selecting"
+            UpdateSlotButtonVisuals();
 
         public void CancelSlotSelection(bool silent)
         {
             ResetState(silent);
         }
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
 
         void ResetState(bool silent)
         {
             _assignmentMode = AssignmentMode.None;
-            _pendingSpell = SpellId.None;
-            _pendingSlot = MagicSlot.Left;
-            _focusArea = FocusArea.SpellList;
+                CompleteAssignmentAndReturnToList();
             _focusedSlot = MagicSlot.Left;
             UpdateSlotButtonVisuals();
-            if (!silent)
-            {
-                FocusSpellList();
-                ShowSpellDetails(_highlightedSpell);
+                CancelSlotSelection(false);
+                return true;
             }
-        }
-
-        public bool TryHandleCancel()
-        {
-            if (_assignmentMode == AssignmentMode.None)
-                return false;
-
-            CancelSlotSelection(false);
-            return true;
+            
+            return false;
         }
 
         void ShowSpellDetails(SpellId id)
@@ -1285,42 +1094,45 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     description = $"{spell.displayName}\nDaño: {spell.damage}\nCoste de maná: {spell.manaCost}\nCooldown: {spell.cooldown:F2}s";
                 }
             }
-
-            switch (_assignmentMode)
-            {
-                case AssignmentMode.WaitingForSpellSelection:
-                    description += "\nSelecciona un hechizo con A o cancela con B.";
-                    break;
+        void CompleteAssignmentAndReturnToList()
+        {
+            _assignmentMode = AssignmentMode.None;
+            _pendingSpell = SpellId.None;
+            UpdateSlotButtonVisuals();
+            FocusSpellList();
+            ShowSpellDetails(_highlightedSpell);
+        }
+            // Al hacer click/submit en un hechizo, activar modo de selección de slot
                 case AssignmentMode.WaitingForSlotSelection:
                     description += "\nSelecciona un slot con A o cancela con B.";
-                    break;
+            _highlightedSpell = entry.spellId;
+            
+            // Actualizar visuals ANTES de seleccionar para evitar el error de "Attempting to select while already selecting"
+            UpdateSlotButtonVisuals();
+            _highlightedRow = entry;
+            
+            // Actualizar visuals y luego enfocar slots
                 default:
-                    description += "\nPulsa A sobre un hechizo y luego escoge el slot al que asignarlo.";
+            FocusSlots();
+                    description += "\nPulsa A en un slot para elegir hechizo o pulsa A en un hechizo para escoger slot.";
                     break;
             }
 
             _ui.detailsText.text = description;
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
         }
 
         void ClearList()
         {
-            foreach (var entry in _rows)
+                CompleteAssignmentAndReturnToList();
             {
                 if (entry?.widget != null)
-                    UnityEngine.Object.Destroy(entry.widget.gameObject);
+                CancelSlotSelection(false);
+                return true;
             }
-            _rows.Clear();
-            _highlightedRow = null;
-        }
-
-        bool SelectRow(SpellId id)
-        {
-            if (_rows.Count == 0) return false;
-
-            foreach (var entry in _rows)
-            {
-                if (entry == null || entry.spellId != id) continue;
-                HandleRowSelected(entry, false);
+            
+            // Si estamos en el listado sin ningún modo activo, permitir cerrar el menú
+            return false;
                 return true;
             }
 
@@ -1345,45 +1157,43 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var capturedSlot = slot;
             listener.onSelect = () => HandleSlotFocused(button, capturedSlot);
 
+        void CompleteAssignmentAndReturnToList()
+        {
+            // Al hacer click/submit en un hechizo, activar modo de selección de slot
             if (!_slotDefaultColors.ContainsKey(button))
                 _slotDefaultColors[button] = button.colors;
-
+            _highlightedSpell = entry.spellId;
+            _highlightedRow = entry;
+            
+            // Actualizar visuals y luego enfocar slots
             if (!_buttonToSlot.ContainsKey(button))
+            FocusSlots();
                 _buttonToSlot[button] = slot;
             if (!_slotToButton.ContainsKey(slot))
                 _slotToButton[slot] = button;
         }
 
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
         void ConfigureSlotNavigation(Button button, Button up, Button down, Selectable right)
         {
             if (button == null) return;
             var nav = button.navigation;
-            nav.mode = Navigation.Mode.Explicit;
+                CompleteAssignmentAndReturnToList();
             nav.selectOnUp = up != null ? up : button;
             nav.selectOnDown = down != null ? down : button;
-            nav.selectOnLeft = button;
-            nav.selectOnRight = right;
-            button.navigation = nav;
-        }
-
-        void UpdateSlotNavigationTargets()
-        {
-            var firstRowSelectable = GetFirstRowSelectable();
-            ConfigureSlotNavigation(_ui.leftSlotButton, _ui.specialSlotButton, _ui.rightSlotButton, firstRowSelectable);
-            ConfigureSlotNavigation(_ui.rightSlotButton, _ui.leftSlotButton, _ui.specialSlotButton, firstRowSelectable);
-            ConfigureSlotNavigation(_ui.specialSlotButton, _ui.rightSlotButton, _ui.leftSlotButton, firstRowSelectable);
-        }
 
         void ConfigureRowNavigation()
         {
-            var leftTarget = GetPrimarySlotSelectable();
-            for (int i = 0; i < _rows.Count; i++)
+            // Si estamos en modo de espera de selección de slot, volver al listado
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
             {
-                var selectable = _rows[i]?.widget?.Selectable;
-                if (selectable == null) continue;
+                CancelSlotSelection(false);
+                return true;
+            }
+            
                 var nav = selectable.navigation;
                 nav.mode = Navigation.Mode.Explicit;
-                nav.selectOnLeft = leftTarget;
+                nav.selectOnLeft = null;
                 nav.selectOnRight = null;
                 nav.selectOnUp = i > 0 ? _rows[i - 1]?.widget?.Selectable : selectable;
                 nav.selectOnDown = i < _rows.Count - 1 ? _rows[i + 1]?.widget?.Selectable : selectable;
@@ -1399,120 +1209,69 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         Selectable GetPrimarySlotSelectable()
         {
-            if (_ui.leftSlotButton != null) return _ui.leftSlotButton;
-            if (_ui.rightSlotButton != null) return _ui.rightSlotButton;
-            if (_ui.specialSlotButton != null) return _ui.specialSlotButton;
-            return null;
+            // Al hacer click/submit en un hechizo, activar modo de selección de slot
+            _highlightedRow = entry;
+            
+            _highlightedSpell = entry.spellId;
+            _highlightedRow = entry;
+            
+            // Actualizar visuals y luego enfocar slots
         }
+            FocusSlots();
+            FocusSlots();
 
-        void UpdateSlotButtonVisuals()
+            _highlightedSpell = entry.spellId;
+            _highlightedRow = entry;
+            FocusSlots();
+            
+            // Actualizar visuals y luego enfocar slots
         {
+            FocusSlots();
             UpdateSlotButtonState(_ui.leftSlotButton, MagicSlot.Left);
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
             UpdateSlotButtonState(_ui.rightSlotButton, MagicSlot.Right);
+            // Solo se puede presionar un slot cuando estamos esperando selección de slot
             UpdateSlotButtonState(_ui.specialSlotButton, MagicSlot.Special);
+                CompleteAssignmentAndReturnToList();
+        }
+                CompleteAssignmentAndReturnToList();
+            _assignmentMode = AssignmentMode.None;
+            _pendingSpell = SpellId.None;
+            UpdateSlotButtonVisuals();
+            FocusSpellList();
+            ShowSpellDetails(_highlightedSpell);
         }
 
-        void UpdateSlotButtonState(Button button, MagicSlot slot)
-        {
-            if (button == null) return;
-
-            var defaults = _slotDefaultColors.TryGetValue(button, out var colors)
-                ? colors
-                : button.colors;
-
-            bool highlight = false;
-            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
-                highlight = slot == _pendingSlot;
-            else if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
-                highlight = slot == _focusedSlot;
-
-            if (highlight)
-            {
-                var highlighted = defaults;
-                var focusColor = _ui.slotSelectionColor;
-                highlighted.normalColor = focusColor;
-                highlighted.highlightedColor = focusColor;
-                highlighted.selectedColor = focusColor;
-                highlighted.pressedColor = focusColor;
-                button.colors = highlighted;
             }
+        void CompleteAssignmentAndReturnToList()
+        {
+            _assignmentMode = AssignmentMode.None;
+            _pendingSpell = SpellId.None;
+            UpdateSlotButtonVisuals();
+            FocusSpellList();
+            ShowSpellDetails(_highlightedSpell);
+        }
+
             else
             {
-                button.colors = defaults;
+                nav.mode = Navigation.Mode.None;
             }
-
-            if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
-                button.interactable = slot == _pendingSlot;
-            else if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
-                button.interactable = CanAssign(slot, _pendingSpell);
-            else
-                button.interactable = true;
-
-            PlaySlotFeedback(button, highlight && button.interactable);
+            button.navigation = nav;
         }
-
-        void PlaySlotFeedback(Button button, bool active)
+        void CompleteAssignmentAndReturnToList()
         {
-            if (button == null) return;
+            _assignmentMode = AssignmentMode.None;
+            _pendingSpell = SpellId.None;
+            UpdateSlotButtonVisuals();
+            FocusSpellList();
+            ShowSpellDetails(_highlightedSpell);
+        void CompleteAssignmentAndReturnToList()
 
-            if (!_slotBaseScales.ContainsKey(button))
-                _slotBaseScales[button] = button.transform.localScale;
-
-            if (_slotFeedbackTweens.TryGetValue(button, out var tween) && tween != null)
-            {
-                tween.Kill();
-                _slotFeedbackTweens.Remove(button);
-            }
-
-            if (!_slotBaseScales.TryGetValue(button, out var baseScale))
-                baseScale = button.transform.localScale;
-
-            var targetScale = active ? baseScale * 1.08f : baseScale;
-            var duration = active ? 0.15f : 0.12f;
-
-            var scaleTween = button.transform
-                .DOScale(targetScale, duration)
-                .SetEase(active ? Ease.OutBack : Ease.OutCubic)
-                .SetUpdate(true)
-                .OnComplete(() => _slotFeedbackTweens.Remove(button));
-
-            _slotFeedbackTweens[button] = scaleTween;
-        }
-
-        void KillAllSlotFeedback()
-        {
-            foreach (var kvp in _slotFeedbackTweens)
-            {
-                kvp.Value?.Kill();
-                if (kvp.Key != null && _slotBaseScales.TryGetValue(kvp.Key, out var baseScale))
-                    kvp.Key.transform.localScale = baseScale;
-            }
-            _slotFeedbackTweens.Clear();
-        }
-
-        void PlaySlotConfirmFeedback(MagicSlot slot)
-        {
-            if (!_slotToButton.TryGetValue(slot, out var button) || button == null)
-                return;
-
-            var graphic = button.targetGraphic ?? button.GetComponentInChildren<Graphic>();
-            if (graphic == null) return;
-
-            var original = graphic.color;
-            var minAlpha = Mathf.Clamp01(original.a * 0.45f);
-
-            DOTween.Kill(graphic);
-            DOTween.Sequence()
-                .Append(graphic.DOFade(minAlpha, 0.08f).SetUpdate(true))
-                .Append(graphic.DOFade(original.a, 0.08f).SetUpdate(true))
-                .SetLoops(2, LoopType.Yoyo)
-                .OnComplete(() => graphic.color = original)
-                .SetTarget(graphic);
-        }
 
         void HandleSlotFocused(Button button, MagicSlot slot)
         {
-            if (button == null) return;
+            FocusSpellList();
             _focusedSlot = slot;
             _focusArea = FocusArea.Slots;
             if (_assignmentMode == AssignmentMode.WaitingForSpellSelection)
@@ -1521,40 +1280,69 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         void EnforcePresetSlotRules()
-        {
-            if (_preset == null || _library == null) return;
+            _focusArea = FocusArea.SpellList;
+            _focusArea = FocusArea.SpellList;
 
             bool changed = false;
 
-            bool IsSpecialOnly(SpellId id)
+            _focusArea = FocusArea.SpellList;
+                FocusSpellList();
+            _focusArea = FocusArea.SpellList;
+            bool shouldBeInteractable = false;
+            
+                FocusSpellList();
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+                FocusSpellList();
+            // Si estamos en modo de espera de selección de slot, volver al listado
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
             {
-                var spell = _library.Get(id);
-                return spell != null && spell.slotType == SpellSlotType.SpecialOnly;
+                CancelSlotSelection(false);
+            // Si estamos en modo de espera de selección de slot, volver al listado
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                CancelSlotSelection(false);
+                return true;
             }
-
-            var left = _preset.leftSpellId;
-            var right = _preset.rightSpellId;
+            
+            // Si estamos en el listado sin ningún modo activo, permitir cerrar el menú
+            return false;
+                CancelSlotSelection(false);
+                return true;
+            }
+            
+            // Si estamos en el listado sin ningún modo activo, permitir cerrar el menú
+            return false;
+            return false;
             var special = _preset.specialSpellId;
 
             if (left != SpellId.None && IsSpecialOnly(left)) { left = SpellId.None; changed = true; }
             if (right != SpellId.None && IsSpecialOnly(right)) { right = SpellId.None; changed = true; }
             if (special != SpellId.None && !IsSpecialOnly(special)) { special = SpellId.None; changed = true; }
 
-            if (left != SpellId.None && right == left) { left = SpellId.None; changed = true; }
+            // Los hechizos solo navegan entre ellos, no hacia los slots
             if (left != SpellId.None && special == left) { left = SpellId.None; changed = true; }
             if (right != SpellId.None && special == right) { right = SpellId.None; changed = true; }
 
             if (changed)
             {
                 _preset.leftSpellId = left;
-                _preset.rightSpellId = right;
+                nav.selectOnLeft = null;
                 _preset.specialSpellId = special;
-                _presetService?.ApplyCurrentPreset();
+            // Cambiar interactable sin que haya un objeto seleccionado causa problemas
+            // Solo hacemos los slots interactuables cuando estamos en modo de selección
+            button.interactable = shouldBeInteractable;
+            
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                nav.mode = Navigation.Mode.Explicit;
             }
-        }
-
         class SlotSelectListener : MonoBehaviour, ISelectHandler
-        {
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
             public Action onSelect;
 
             public void OnSelect(BaseEventData eventData)
@@ -1576,19 +1364,23 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         string ResolveName(SpellId id)
-        {
-            if (id == SpellId.None) return "Sin asignar";
-            var spell = GetSpellAsset(id);
+            bool shouldBeInteractable = false;
+            
+            // Solo resaltar y hacer interactuable cuando estamos en modo de selección de slot
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
             return spell != null ? spell.displayName : id.ToString();
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
+            }
         }
-
+            // Los hechizos solo navegan entre ellos, no hacia los slots
         MagicSpellSO GetSpellAsset(SpellId id)
         {
             if (_library == null) return null;
             return _library.Get(id);
         }
     }
-    [Serializable]
+                nav.selectOnLeft = null;
     class EquipmentBindings
     {
         public GameObject root;
@@ -1596,12 +1388,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         public bool IsConfigured
         {
-            get
+            // Cambiar interactable sin que haya un objeto seleccionado causa problemas
+            // Solo hacemos los slots interactuables cuando estamos en modo de selección
+            button.interactable = shouldBeInteractable;
+            
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
             {
-                if (root == null) return false;
-                if (rows == null || rows.Count == 0) return false;
+                nav.mode = Navigation.Mode.Explicit;
+            }
                 foreach (var row in rows)
-                {
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
                     if (row == null || row.label == null) return false;
                 }
                 return true;
@@ -1617,32 +1418,37 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             public Button nextButton;
             public Button clearButton;
         }
-    }
-
-    class EquipmentView
+            bool shouldBeInteractable = false;
+            
+            // Solo resaltar y hacer interactuable cuando estamos en modo de selección de slot
+            // Los hechizos solo navegan entre ellos, no hacia los slots
+            {
     {
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
+            // Los hechizos solo navegan entre ellos, no hacia los slots
         readonly EquipmentBindings _ui;
-        readonly Dictionary<PartCategory, EquipmentBindings.RowBinding> _rows = new();
-
+            // Los hechizos solo navegan entre ellos, no hacia los slots
+                nav.selectOnLeft = null;
         ModularAutoBuilder _builder;
         PlayerPresetService _presetService;
         WardrobeInventory _wardrobe;
-        WardrobeInventory _boundWardrobe;
+                nav.selectOnLeft = null;
 
-        public EquipmentView(EquipmentBindings bindings)
-        {
+                nav.selectOnLeft = null;
+                nav.selectOnLeft = null;
             _ui = bindings;
             _ui.root?.SetActive(false);
 
             if (_ui.rows != null)
             {
                 foreach (var row in _ui.rows)
-                {
-                    if (row == null) continue;
-                    _rows[row.category] = row;
-
-                    var capturedCategory = row.category;
-                    if (row.previousButton != null)
+            // Cambiar interactable sin que haya un objeto seleccionado causa problemas
+            // Solo hacemos los slots interactuables cuando estamos en modo de selección
+            button.interactable = shouldBeInteractable;
+            
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            button.navigation = nav;
                         row.previousButton.onClick.AddListener(() => Cycle(capturedCategory, -1));
                     if (row.nextButton != null)
                         row.nextButton.onClick.AddListener(() => Cycle(capturedCategory, +1));
@@ -1656,44 +1462,93 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             get
             {
-                foreach (var row in _ui.rows)
-                {
-                    if (row?.previousButton != null) return row.previousButton.gameObject;
-                    if (row?.nextButton != null) return row.nextButton.gameObject;
-                }
-                return null;
+            bool shouldBeInteractable = false;
+            
+            bool shouldBeInteractable = false;
+            
+            bool shouldBeInteractable = false;
+            
+            // Solo resaltar y hacer interactuable cuando estamos en modo de selección de slot
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+            bool shouldBeInteractable = false;
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
+            }
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
+            }
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
+            }
+            
+            // Solo resaltar y hacer interactuable cuando estamos en modo de selección de slot
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+            }
+                shouldBeInteractable = CanAssign(slot, _pendingSpell);
             }
         }
 
         public void SetVisible(bool value)
         {
             if (_ui.root != null)
-                _ui.root.SetActive(value);
-        }
-
-        public void Refresh()
-        {
-            PlayerService.TryGetComponent(out _builder, includeInactive: true, allowSceneLookup: true);
-            PlayerService.TryGetComponent(out _presetService, includeInactive: true, allowSceneLookup: true);
-            PlayerService.TryGetComponent(out _wardrobe, includeInactive: true, allowSceneLookup: true);
-
-            if (_boundWardrobe != _wardrobe)
+            // Cambiar interactable sin que haya un objeto seleccionado causa problemas
+            // Solo hacemos los slots interactuables cuando estamos en modo de selección
+            button.interactable = shouldBeInteractable;
+            
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
             {
-                if (_boundWardrobe != null)
-                    _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
-                if (_wardrobe != null)
-                    _wardrobe.OnWardrobeChanged += HandleWardrobeChanged;
-                _boundWardrobe = _wardrobe;
+                nav.mode = Navigation.Mode.Explicit;
             }
+            button.interactable = shouldBeInteractable;
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                nav.mode = Navigation.Mode.Explicit;
+            }
+            button.interactable = shouldBeInteractable;
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                nav.mode = Navigation.Mode.Explicit;
+            }
+
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
+            {
+            // Cambiar interactable sin que haya un objeto seleccionado causa problemas
+            // Solo hacemos los slots interactuables cuando estamos en modo de selección
+            button.interactable = shouldBeInteractable;
+            
+            // Configurar navegación: solo los slots son navegables cuando estamos en modo de selección
+            var nav = button.navigation;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+            {
+                nav.mode = Navigation.Mode.Explicit;
+            }
+                _boundWardrobe = _wardrobe;
+            {
+                nav.mode = Navigation.Mode.None;
+            }
+            button.navigation = nav;
 
             if (_builder == null)
             {
                 foreach (var row in _rows.Values)
                 {
                     if (row?.label != null)
-                        row.label.text = $"{FormatCategory(row.category)}: (sin builder)";
-                    SetInteractable(row, false, false);
-                }
                 return;
             }
 
