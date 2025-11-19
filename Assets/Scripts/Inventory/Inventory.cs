@@ -85,7 +85,25 @@ public class Inventory : MonoBehaviour
     /// </summary>
     public void LoadSnapshot(IEnumerable<InventoryItemSave> snapshot, bool clearExisting = true, bool notifyChanges = true)
     {
-        if (snapshot == null) return;
+        if (snapshot == null)
+        {
+            if (clearExisting)
+            {
+                // Resetear inventario aunque no haya snapshot (evita arrastrar ítems antiguos).
+                if (notifyChanges && _bag.Count > 0)
+                {
+                    foreach (var kvp in _bag)
+                    {
+                        if (_definitions.TryGetValue(kvp.Key, out var def) && def != null)
+                        {
+                            OnInventoryChanged?.Invoke(def, 0);
+                        }
+                    }
+                }
+                _bag.Clear();
+            }
+            return;
+        }
 
         if (clearExisting)
         {
