@@ -23,11 +23,14 @@ public class RoomExitBlocker : MonoBehaviour
     [SerializeField] private List<QuestData> requiredQuestRefs = new();
 
     [Header("Mensajes (localización)")]
-    [Tooltip("Clave genérica cuando el requisito es 'alguna misión'.")]
+    [Tooltip("Clave genérica cuando el requisito es 'alguna misión' (AnyQuestStarted/AnyQuestStartedOrCompleted). No se usa si especificas quests concretas.")]
     [SerializeField] private string blockedMessageKey = "ROOM_EXIT_BLOCKED";
 
-    [Tooltip("Clave con formato para requisitos concretos (ej: 'Antes de salir, necesitas: {0}')")]
-    [SerializeField] private string blockedMessageFormatKey = "ROOM_EXIT_NEEDS";
+    [Tooltip("Prefijo del mensaje (ej: 'Antes de salir de la habitación necesitas:', 'Antes de entrar al agua necesitas:'). Si está vacío, usa 'Antes de salir necesitas:'")]
+    [SerializeField] private string messagePrefix = "Antes de salir necesitas:";
+
+    [Tooltip("Clave de localización que se traducirá (ej: 'WATER_ENTER_NEEDS'). Si está vacío, usa el nombre/ID de las quests requeridas. Si está relleno, ignora los nombres de las quests y usa esta traducción.")]
+    [SerializeField] private string blockedMessageFormatKey = "";
 
     [Tooltip("Separador para listar nombres de quests requeridas en el mensaje.")]
     [SerializeField] private string listSeparator = ", ";
@@ -293,15 +296,44 @@ public class RoomExitBlocker : MonoBehaviour
             prettyNames.Add(display);
         }
 
+        // Determinar el prefijo del mensaje (intentar traducir si parece una clave)
+        string prefix = messagePrefix;
+        if (string.IsNullOrEmpty(prefix))
+        {
+            prefix = "Antes de salir necesitas:";
+        }
+        else if (LooksLikeLocalizationKey(prefix))
+        {
+            // Si el prefijo parece una clave de localización, intentar traducirlo
+            var translated = TryGetLocalized(prefix);
+            if (!string.IsNullOrEmpty(translated))
+                prefix = translated;
+        }
+
+        // Si blockedMessageFormatKey está relleno, traducirlo y usarlo
+        if (!string.IsNullOrEmpty(blockedMessageFormatKey))
+        {
+            string translated = TryGetLocalized(blockedMessageFormatKey);
+            if (!string.IsNullOrEmpty(translated))
+            {
+                return $"{prefix} {translated}";
+            }
+            // Fallback si no hay traducción: usar la clave directamente
+            return $"{prefix} {blockedMessageFormatKey}";
+        }
+
+        // Si está vacío, usar la lista de nombres de quests
         string joined = string.Join(listSeparator, prettyNames);
+        return $"{prefix} {joined}";
+    }
 
-        // Intenta usar clave con formato {0}
-        string fmt = TryGetLocalized(blockedMessageFormatKey);
-        if (!string.IsNullOrEmpty(fmt) && fmt.Contains("{0}"))
-            return string.Format(fmt, joined);
-
-        // Fallback fijo
-        return $"Antes de salir, necesitas: {joined}";
+    private bool LooksLikeLocalizationKey(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+        // Detectar patrones tipo UPPER_CASE_WITH_UNDERSCORES
+        return text.Length > 3 && 
+               text == text.ToUpperInvariant() && 
+               text.Contains('_');
     }
 
     private string TryGetLocalized(string key)

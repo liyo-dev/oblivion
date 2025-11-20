@@ -708,7 +708,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (_selectedItem == null && _rows.Count > 0)
             {
-                _rows[0].InvokeClick();
+                // Seleccionar el primer item tanto lógicamente como visualmente
+                var firstWidget = _rows[0];
+                var firstItem = firstWidget.Item;
+                HandleRowActivated(firstWidget, firstItem, false);
+                firstWidget.Focus();
             }
             else
             {

@@ -71,14 +71,12 @@ public class MagicProjectileSpawner : MonoBehaviour
         }
     }
 
-    (LayerMask hitLayers, LayerMask collisionLayers) GetProjectileLayers(MagicSpellSO spell)
+    LayerMask GetDamageLayers()
     {
         if (projectileSettings != null)
-        {
-            return (projectileSettings.damageableLayers, projectileSettings.collisionLayers);
-        }
-        // Fallback si no hay ProjectileSettings configurado (usar todas las capas)
-        return (LayerMask.GetMask("Enemy", "Boss"), LayerMask.GetMask("Enemy", "Boss", "Default"));
+            return projectileSettings.damageableLayers;
+
+        return LayerMask.GetMask("Enemy", "Boss");
     }
 
     void OnEnable()
@@ -135,163 +133,7 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         Transform origin = originOverride ? originOverride : transform;
 
-        // Si el hechizo tiene tiempo de carga, usar la coroutine especial
-        if (spell.chargeTime > 0f)
-        {
-            StartCoroutine(Co_ChargeAndLaunch(spell, origin));
-            return;
-        }
-
-        // Lanzamiento inmediato sin carga
         LaunchProjectile(spell, origin, null);
-    }
-
-    private IEnumerator Co_ChargeAndLaunch(MagicSpellSO spell, Transform origin)
-    {
-        // === Dirección inicial ===
-        Vector3 baseForward = transform.forward;
-        Vector3 dir = (targeting != null)
-            ? targeting.GetAimDirectionFrom(origin ? origin : transform, baseForward)
-            : baseForward;
-
-        dir = spell.flattenDirection ? Vector3.ProjectOnPlane(dir, Vector3.up).normalized : dir.normalized;
-        if (dir.sqrMagnitude < 0.001f) dir = baseForward;
-
-        // Posición/rotación iniciales (en la mano)
-        Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
-        Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
-
-        // Spawn VFX de inicio
-        if (spell.spawnVFX)
-        {
-            var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
-            if (spell.useScaleOverride)
-                fx.transform.localScale = spell.scaleOverride;
-        }
-
-        // Instanciar proyectil con escala inicial pequeña
-        GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
-        Vector3 targetScale = spell.useScaleOverride ? spell.scaleOverride : go.transform.localScale;
-        go.transform.localScale = targetScale * spell.chargeStartScale;
-
-        // Configurar colisiones - ignorar jugador y todos sus hijos
-        GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
-        IgnoreCollisionsBetween(go, instigator);
-
-        // Configurar proyectil pero sin velocidad aún
-        if (go.TryGetComponent<MagicProjectile>(out var mp))
-        {
-            var (hitLayers, collisionLayers) = GetProjectileLayers(spell);
-            var cfg = new MagicProjectile.ProjectileConfig
-            {
-                damage         = spell.damage,
-                aoeRadius      = spell.aoeRadius,
-                knockbackForce = spell.knockbackForce,
-                hitLayers      = hitLayers,
-                collisionLayers = collisionLayers,
-                destroyOnHit   = spell.destroyOnHit,
-                lifeTime       = spell.lifeTime,
-                maxRange       = spell.maxRange,
-                initialSpeed   = 0f, // Sin velocidad durante la carga
-                useGravity     = false, // Sin gravedad durante la carga
-                impactVFX      = spell.impactVFX,
-                despawnVFX     = spell.despawnVFX
-            };
-            mp.Configure(cfg, instigatorOverride ? instigatorOverride : gameObject);
-        }
-
-        // Si hay Rigidbody, hacerlo cinemático durante la carga
-        Rigidbody rb = go.GetComponent<Rigidbody>();
-        bool hadRb = rb != null;
-        if (hadRb)
-        {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.linearVelocity = Vector3.zero;
-        }
-
-        // === Fase de carga: crecer y seguir la mano ===
-        float elapsed = 0f;
-        while (elapsed < spell.chargeTime)
-        {
-            if (go == null) yield break; // Destruido prematuramente
-            
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / spell.chargeTime);
-            
-            // Interpolación de escala
-            float scale = Mathf.Lerp(spell.chargeStartScale, 1f, t);
-            go.transform.localScale = targetScale * scale;
-            
-            // Seguir la posición del origin si está habilitado
-            if (spell.followOriginDuringCharge && origin != null)
-            {
-                Vector3 currentDir = (targeting != null)
-                    ? targeting.GetAimDirectionFrom(origin, baseForward)
-                    : transform.forward;
-                
-                currentDir = spell.flattenDirection 
-                    ? Vector3.ProjectOnPlane(currentDir, Vector3.up).normalized 
-                    : currentDir.normalized;
-                
-                if (currentDir.sqrMagnitude < 0.001f) currentDir = baseForward;
-                
-                go.transform.position = origin.position + currentDir * spell.forwardOffset;
-                go.transform.rotation = Quaternion.LookRotation(currentDir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
-            }
-            
-            yield return null;
-        }
-
-        if (go == null) yield break;
-
-        // === Lanzamiento final ===
-        // Recalcular dirección final
-        Vector3 finalDir = (targeting != null)
-            ? targeting.GetAimDirectionFrom(origin ? origin : transform, baseForward)
-            : transform.forward;
-        
-        finalDir = spell.flattenDirection 
-            ? Vector3.ProjectOnPlane(finalDir, Vector3.up).normalized 
-            : finalDir.normalized;
-        
-        if (finalDir.sqrMagnitude < 0.001f) finalDir = baseForward;
-        
-        go.transform.rotation = Quaternion.LookRotation(finalDir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
-        go.transform.localScale = targetScale; // Escala final
-
-        // Activar física
-        if (mp != null)
-        {
-            var (hitLayers, collisionLayers) = GetProjectileLayers(spell);
-            // Actualizar config con velocidad y gravedad reales
-            var finalCfg = new MagicProjectile.ProjectileConfig
-            {
-                damage         = spell.damage,
-                aoeRadius      = spell.aoeRadius,
-                knockbackForce = spell.knockbackForce,
-                hitLayers      = hitLayers,
-                collisionLayers = collisionLayers,
-                destroyOnHit   = spell.destroyOnHit,
-                lifeTime       = spell.lifeTime,
-                maxRange       = spell.maxRange,
-                initialSpeed   = spell.initialSpeed,
-                useGravity     = spell.useGravity,
-                impactVFX      = spell.impactVFX,
-                despawnVFX     = spell.despawnVFX
-            };
-            mp.Configure(finalCfg, instigatorOverride ? instigatorOverride : gameObject);
-        }
-
-        if (hadRb && rb != null)
-        {
-            rb.isKinematic = false;
-            rb.useGravity = spell.useGravity;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.constraints = RigidbodyConstraints.FreezeRotation; // Evitar giros al colisionar
-            rb.linearVelocity = finalDir * Mathf.Max(0f, spell.initialSpeed);
-        }
     }
 
     private void LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)
@@ -333,14 +175,13 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         if (go.TryGetComponent<MagicProjectile>(out var mp))
         {
-            var (hitLayers, collisionLayers) = GetProjectileLayers(spell);
             var cfg = new MagicProjectile.ProjectileConfig
             {
                 damage         = spell.damage,
                 aoeRadius      = spell.aoeRadius,
                 knockbackForce = spell.knockbackForce,
-                hitLayers      = hitLayers,
-                collisionLayers = collisionLayers,
+                hitLayers      = GetDamageLayers(),
+                collisionLayers = GetDamageLayers(),
                 destroyOnHit   = spell.destroyOnHit,
                 lifeTime       = spell.lifeTime,
                 maxRange       = spell.maxRange,

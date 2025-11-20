@@ -25,6 +25,8 @@ public class PlayerPresetService : MonoBehaviour
     bool _initialized;
     bool _warnedMissingAppearanceBuilder;
 
+    public static bool HasAppliedPreset { get; private set; }
+
     void Awake()
     {
         // Buscar spawner y magicCaster también en los padres del GameObject.
@@ -92,6 +94,9 @@ public class PlayerPresetService : MonoBehaviour
             return; 
         }
 
+        OnPresetApplying?.Invoke();
+        HasAppliedPreset = false;
+
         // Log inicial de diagnóstico
         var spellsCount = spellLibrary.Spells != null ? spellLibrary.Spells.Count : -1;
         int unlockedCount = preset.unlockedSpells != null ? preset.unlockedSpells.Count : 0;
@@ -130,6 +135,7 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         // Notificar a subscriptores (HUD, UI u otros) que el preset ha sido aplicado
+        HasAppliedPreset = true;
         OnPresetApplied?.Invoke();
     }
 
@@ -458,6 +464,9 @@ public class PlayerPresetService : MonoBehaviour
             Debug.LogWarning("[PlayerPresetService] No hay preset activo para aplicar");
             return;
         }
+        OnPresetApplying?.Invoke();
+        HasAppliedPreset = false;
+
         // Aplicar stats (maná) y luego los hechizos
         ApplyManaFromPreset(preset);
         ApplyInventoryFromPreset(preset);
@@ -476,9 +485,11 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         // Notificar a subscriptores que el preset ha sido aplicado (p.ej. UI)
+        HasAppliedPreset = true;
         OnPresetApplied?.Invoke();
     }
 
     // Evento público para notificar re-aplicación de preset (subscriptores UI o sistemas)
+    public static System.Action OnPresetApplying;
     public static System.Action OnPresetApplied;
 }

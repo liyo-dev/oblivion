@@ -13,6 +13,7 @@ public sealed class PlayerService : MonoBehaviour
     const string DefaultPlayerTag = "Player";
 
     static PlayerService _instance;
+    static bool _isShuttingDown;
 
     [Tooltip("Optional manual reference to the player root. When empty the service locates it lazily.")]
     [SerializeField] private GameObject playerRoot;
@@ -28,7 +29,17 @@ public sealed class PlayerService : MonoBehaviour
     public static event Action<GameObject> OnPlayerRegistered;
     public static event Action OnPlayerUnregistered;
 
-    public static PlayerService Instance => _instance != null ? _instance : CreateRuntimeInstance();
+    public static PlayerService Instance
+    {
+        get
+        {
+            if (_isShuttingDown)
+                return _instance;
+            if (_instance != null)
+                return _instance;
+            return CreateRuntimeInstance();
+        }
+    }
     public static bool HasInstance => _instance != null;
     public static GameObject Player => Instance.playerRoot;
     public static Transform PlayerTransform => TryGetComponent(out Transform result) ? result : null;
@@ -43,6 +54,7 @@ public sealed class PlayerService : MonoBehaviour
         }
 
         _instance = this;
+        _isShuttingDown = false;
 
         if (persistAcrossScenes)
             DontDestroyOnLoad(gameObject);
@@ -58,7 +70,13 @@ public sealed class PlayerService : MonoBehaviour
             _instance = null;
             _componentCache.Clear();
             playerRoot = null;
+            _isShuttingDown = true;
         }
+    }
+
+    void OnApplicationQuit()
+    {
+        _isShuttingDown = true;
     }
 
     static PlayerService CreateRuntimeInstance()
@@ -72,8 +90,10 @@ public sealed class PlayerService : MonoBehaviour
     /// </summary>
     public static void RegisterPlayer(GameObject player, bool overwriteExisting = true)
     {
-        if (player == null) return;
-        Instance.InternalRegister(player, overwriteExisting);
+        if (player == null || _isShuttingDown) return;
+        var inst = Instance;
+        if (inst == null) return;
+        inst.InternalRegister(player, overwriteExisting);
     }
 
     /// <summary>
@@ -81,8 +101,10 @@ public sealed class PlayerService : MonoBehaviour
     /// </summary>
     public static void RegisterComponent(Component component, bool overwriteExisting = true)
     {
-        if (component == null) return;
-        Instance.InternalRegisterComponent(component, overwriteExisting);
+        if (component == null || _isShuttingDown) return;
+        var inst = Instance;
+        if (inst == null) return;
+        inst.InternalRegisterComponent(component, overwriteExisting);
     }
 
     /// <summary>
@@ -90,7 +112,8 @@ public sealed class PlayerService : MonoBehaviour
     /// </summary>
     public static void UnregisterPlayer(GameObject player)
     {
-        if (!HasInstance || player == null) return;
+        if (_isShuttingDown || player == null) return;
+        if (!HasInstance) return;
         Instance.InternalUnregister(player);
     }
 
@@ -99,7 +122,12 @@ public sealed class PlayerService : MonoBehaviour
     /// </summary>
     public static bool TryGetPlayer(out GameObject player, bool allowSceneLookup = true)
     {
-        return Instance.TryGetPlayerInternal(out player, allowSceneLookup);
+        player = null;
+        if (_isShuttingDown)
+            return false;
+        var inst = Instance;
+        if (inst == null) return false;
+        return inst.TryGetPlayerInternal(out player, allowSceneLookup);
     }
 
     /// <summary>
@@ -107,7 +135,12 @@ public sealed class PlayerService : MonoBehaviour
     /// </summary>
     public static bool TryGetComponent<T>(out T component, bool includeInactive = true, bool allowSceneLookup = true) where T : Component
     {
-        return Instance.TryGetComponentInternal(out component, includeInactive, allowSceneLookup);
+        component = null;
+        if (_isShuttingDown)
+            return false;
+        var inst = Instance;
+        if (inst == null) return false;
+        return inst.TryGetComponentInternal(out component, includeInactive, allowSceneLookup);
     }
 
     /// <summary>

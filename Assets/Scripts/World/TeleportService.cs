@@ -119,6 +119,21 @@ public class TeleportService : MonoBehaviour
 
         var pos = anchor.position;
         var rot = anchor.rotation;
+        
+        // Si el SpawnAnchor define faceDoor, ajustar rotación
+        if (sa != null)
+        {
+            if (sa.faceDoor)
+            {
+                // Mirar hacia la puerta (forward del anchor)
+                rot = Quaternion.LookRotation(anchor.forward, Vector3.up);
+            }
+            else
+            {
+                // Mirar en dirección opuesta a la puerta (back del anchor)
+                rot = Quaternion.LookRotation(-anchor.forward, Vector3.up);
+            }
+        }
 
         // Notificar inicio de teleport
         InvokeEvent(OnTeleportStarted, nameof(OnTeleportStarted));

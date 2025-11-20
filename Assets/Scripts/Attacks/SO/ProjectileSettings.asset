@@ -17,7 +17,7 @@ MonoBehaviour:
     m_Bits: 128
   collisionLayers:
     serializedVersion: 2
-    m_Bits: 2449
+    m_Bits: 0
   ignoreCollisionLayers:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 1048

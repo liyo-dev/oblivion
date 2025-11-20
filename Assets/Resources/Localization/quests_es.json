@@ -45,6 +45,14 @@
             "value": "El despertar de una Estrella"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION4_DESC",
+            "value": "Ve a hablar con Eldran cuando estés preparado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION4_NAME",
+            "value": "La preparación del Mago"
+        },
+        {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
         },

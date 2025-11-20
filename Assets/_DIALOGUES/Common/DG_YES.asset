@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: 
-    textId: 
+    textId: COMMON_YES
     text: COMMON_YES
     portrait: {fileID: 0}

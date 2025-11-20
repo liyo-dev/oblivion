@@ -82,7 +82,7 @@
         },
         {
             "key": "ROOM_EXIT_BLOCKED",
-            "value": "Debería revisar mi habitación antes de salir. Tal vez haya algo importante que leer..."
+            "value": "Leer la carta que hay sobre la mesita."
         },
         {
             "key": "ROOM_EXIT_NEEDS",
