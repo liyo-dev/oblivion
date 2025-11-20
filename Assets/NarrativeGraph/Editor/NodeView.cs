@@ -32,7 +32,8 @@ namespace Sendero.Narrative.Editor
             { typeof(PlayMusicNode),            new Color(0.32f, 0.64f, 0.82f) },
             { typeof(StopMusicNode),            new Color(0.28f, 0.36f, 0.65f) },
             { typeof(PlaySfxNode),              new Color(0.35f, 0.60f, 0.78f) },
-            { typeof(AdditiveSceneCinematicNode), new Color(0.66f, 0.42f, 0.84f) }
+            { typeof(AdditiveSceneCinematicNode), new Color(0.66f, 0.42f, 0.84f) },
+            { typeof(GraphNoteNode),            new Color(1.00f, 0.91f, 0.56f) }
         };
 
         static readonly Dictionary<Type, Color> ColorCache = new();
@@ -47,7 +48,8 @@ namespace Sendero.Narrative.Editor
         {
             Model = model;
 
-            title = model.GetType().Name;
+            var isNote = model is GraphNoteNode;
+            title = isNote ? "Nota" : model.GetType().Name;
             AddToClassList("narrative-node");
             mainContainer.style.position = Position.Relative;
             titleContainer.AddToClassList("narrative-node__title-bar");
@@ -56,24 +58,28 @@ namespace Sendero.Narrative.Editor
             outputContainer.AddToClassList("narrative-port-dock--right");
             extensionContainer.AddToClassList("narrative-node__extension");
 
-            SetPosition(new Rect(model.position, new Vector2(320, 220)));
+            var defaultSize = isNote ? new Vector2(260, 180) : new Vector2(320, 220);
+            SetPosition(new Rect(model.position, defaultSize));
 
             _subtitle = new Label();
             _subtitle.AddToClassList("narrative-node__subtitle");
             titleContainer.Add(_subtitle);
             UpdateSubtitle();
 
-            Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(bool));
-            Input.portName = "";
-            Input.AddToClassList("narrative-port");
-            Input.AddToClassList("narrative-port--left");
-            inputContainer.Add(Input);
+            if (!isNote)
+            {
+                Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(bool));
+                Input.portName = "";
+                Input.AddToClassList("narrative-port");
+                Input.AddToClassList("narrative-port--left");
+                inputContainer.Add(Input);
 
-            Output = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
-            Output.portName = "";
-            Output.AddToClassList("narrative-port");
-            Output.AddToClassList("narrative-port--right");
-            outputContainer.Add(Output);
+                Output = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
+                Output.portName = "";
+                Output.AddToClassList("narrative-port");
+                Output.AddToClassList("narrative-port--right");
+                outputContainer.Add(Output);
+            }
 
             ApplyColorTheme(model);
 
@@ -91,6 +97,13 @@ namespace Sendero.Narrative.Editor
             mainContainer.style.borderRightColor = new StyleColor(new Color(dark.r, dark.g, dark.b, 0.65f));
             mainContainer.style.borderBottomColor = new StyleColor(new Color(dark.r, dark.g, dark.b, 0.35f));
             titleContainer.style.color = new StyleColor(Color.white);
+
+            if (node is GraphNoteNode note)
+            {
+                var accent = note.accent;
+                mainContainer.style.backgroundColor = new StyleColor(new Color(accent.r, accent.g, accent.b, 0.25f));
+                titleContainer.style.color = new StyleColor(new Color(0.18f, 0.15f, 0.05f));
+            }
         }
 
         public void UpdateSubtitle()
