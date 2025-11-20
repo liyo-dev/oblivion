@@ -30,6 +30,9 @@ public class CollectiblePopupQueue : MonoBehaviour
     public float dedupeWindow = 0.25f;
 
     private Inventory _inventory;
+    bool _popupsEnabled;
+    Coroutine _enableRoutine;
+    bool _pendingEnable;
 
     // pending aggregated amounts per itemId
     private readonly Dictionary<string, int> _pending = new();
@@ -46,15 +49,43 @@ public class CollectiblePopupQueue : MonoBehaviour
     void Awake()
     {
         Debug.Log("[CollectiblePopupQueue] Awake: trying to bind to player inventory...");
+        PlayerPresetService.OnPresetApplying += HandlePresetApplying;
+        PlayerPresetService.OnPresetApplied += HandlePresetApplied;
+        _popupsEnabled = false;
+        if (PlayerPresetService.HasAppliedPreset)
+            StartEnableRoutine();
+        _pendingEnable = false;
         // Try bind to registered player inventory
         TryBindToPlayer();
         PlayerService.OnPlayerRegistered += OnPlayerRegistered;
+    }
+
+    void OnEnable()
+    {
+        if (_pendingEnable && _enableRoutine == null)
+        {
+            _pendingEnable = false;
+            StartEnableRoutine();
+        }
     }
 
     void OnDestroy()
     {
         UnbindFromInventory();
         PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
+        PlayerPresetService.OnPresetApplying -= HandlePresetApplying;
+        PlayerPresetService.OnPresetApplied -= HandlePresetApplied;
+        if (_enableRoutine != null)
+            StopCoroutine(_enableRoutine);
+    }
+
+    void OnDisable()
+    {
+        if (_enableRoutine != null)
+        {
+            StopCoroutine(_enableRoutine);
+            _enableRoutine = null;
+        }
     }
 
     private void OnPlayerRegistered(UnityEngine.GameObject player)
@@ -99,6 +130,7 @@ public class CollectiblePopupQueue : MonoBehaviour
 
     private void OnItemAdded(ItemData item, int addedAmount, int newTotal)
     {
+        if (!_popupsEnabled) return;
         if (item == null || addedAmount <= 0) return;
 
         Debug.Log($"[CollectiblePopupQueue] OnItemAdded called for {item?.displayName} added={addedAmount} total={newTotal}");
@@ -116,6 +148,43 @@ public class CollectiblePopupQueue : MonoBehaviour
                 StartCoroutine(FlushGroupedPopup(id, item, groupingWindow));
             }
         }
+    }
+
+    void HandlePresetApplying()
+    {
+        _popupsEnabled = false;
+        if (_enableRoutine != null)
+        {
+            StopCoroutine(_enableRoutine);
+            _enableRoutine = null;
+        }
+        ClearPendingState();
+        DestroyActivePopups();
+    }
+
+    void HandlePresetApplied()
+    {
+        StartEnableRoutine();
+    }
+
+    void StartEnableRoutine()
+    {
+        if (_enableRoutine != null)
+            StopCoroutine(_enableRoutine);
+        if (!isActiveAndEnabled)
+        {
+            _pendingEnable = true;
+            return;
+        }
+        _enableRoutine = StartCoroutine(EnablePopupsDelayed());
+    }
+
+    System.Collections.IEnumerator EnablePopupsDelayed()
+    {
+        yield return null;
+        yield return null;
+        _popupsEnabled = true;
+        _enableRoutine = null;
     }
 
     private System.Collections.IEnumerator FlushGroupedPopup(string itemId, ItemData item, float delay)
@@ -140,6 +209,26 @@ public class CollectiblePopupQueue : MonoBehaviour
     {
         Debug.Log("[CollectiblePopupQueue] TestSpawn called");
         SpawnPopup(item, amount);
+    }
+
+    void ClearPendingState()
+    {
+        lock (_pending)
+            _pending.Clear();
+        lock (_activeOrCreating)
+            _activeOrCreating.Clear();
+        _lastSpawnTime.Clear();
+    }
+
+    void DestroyActivePopups()
+    {
+        if (popupParent == null) return;
+        var panels = popupParent.GetComponentsInChildren<CollectiblePopupPanel>(true);
+        for (int i = 0; i < panels.Length; i++)
+        {
+            if (panels[i] != null)
+                Destroy(panels[i].gameObject);
+        }
     }
 
     private void SpawnPopup(ItemData item, int amountToShow)

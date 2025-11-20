@@ -3,7 +3,9 @@ using UnityEngine;
 public class SpawnAnchor : MonoBehaviour
 {
     public string anchorId;        // único (p.ej. "Bedroom", "City_Gate", "Desert_Camp")
-    public Vector3 facing = Vector3.forward; // opcional; si (0), usa forward del transform
+    
+    [Tooltip("Si está marcado, el jugador mira hacia la puerta (forward del transform). Si no, mira en dirección opuesta (back).")]
+    public bool faceDoor = false;
 
     private void OnEnable()
     {

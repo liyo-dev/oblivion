@@ -86,10 +86,32 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
 
     public void Focus()
     {
-        var es = EventSystem.current;
-        if (es != null && ButtonGameObject != null)
+        if (button != null)
         {
+            StartCoroutine(ForceSelectionVisual());
+        }
+    }
+    
+    System.Collections.IEnumerator ForceSelectionVisual()
+    {
+        // Esperar hasta el final del frame para que todo esté inicializado
+        yield return new WaitForEndOfFrame();
+        
+        var es = EventSystem.current;
+        if (es != null && ButtonGameObject != null && button != null)
+        {
+            // Seleccionar en el EventSystem
             es.SetSelectedGameObject(ButtonGameObject);
+            
+            // Esperar otro frame
+            yield return null;
+            
+            // Forzar visualmente el estado de selección
+            if (es.currentSelectedGameObject == ButtonGameObject)
+            {
+                // Forzar el estado pressed y luego selected para activar la transición visual
+                button.Select();
+            }
         }
     }
 

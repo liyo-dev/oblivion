@@ -3868,11 +3868,12 @@ MonoBehaviour:
   occlusionLerpOut: 6
   occlusionExpandDelay: 0.12
   cullingStableTolerance: 0.08
-  useShadowsOnlyOcclusion: 1
+  useFadeOcclusion: 1
   obstructionMask:
     serializedVersion: 2
-    m_Bits: 2039
+    m_Bits: 1
   obstructionCheckRadius: 0.15
+  minFadeAlpha: 0.2
   indexList: 0
   indexLookPoint: 0
   offSetPlayerPivot: 0
@@ -5449,6 +5450,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectileSpawner
   controller: {fileID: 8092544119751004760}
   targeting: {fileID: 2788111570677460138}
+  projectileSettings: {fileID: 0}
   leftOrigin: {fileID: 2434631454830301341}
   rightOrigin: {fileID: 940617031723835885}
   specialOrigin: {fileID: 940617031723835885}

@@ -9,6 +9,9 @@ public class PortalTrigger : MonoBehaviour
     public string requiredFlag;
     public string setFlagOnEnter;
 
+    [Tooltip("Desactivar gravedad durante el teletransporte (útil para escaleras/desniveles). Dejar en false para puertas normales.")]
+    public bool disableGravityDuringTeleport = false;
+
     private bool _pendingUse;
 
     void Reset(){ GetComponent<Collider>().isTrigger = true; }
@@ -139,6 +142,8 @@ public class PortalTrigger : MonoBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            if (disableGravityDuringTeleport)
+                rb.useGravity = false; // Solo desactivar gravedad si está configurado
         }
 
         var cc = player.GetComponent<CharacterController>() ?? player.GetComponentInChildren<CharacterController>(true);
@@ -200,7 +205,25 @@ public class PortalTrigger : MonoBehaviour
     private System.Collections.IEnumerator RestoreMovementCoroutine(GameObject player, CharacterController cc)
     {
         yield return null; // esperar un frame
-        if (cc && !cc.enabled) cc.enabled = true;
+
+        // Primero reactivar CharacterController para que detecte el suelo
+        if (cc && !cc.enabled)
+        {
+            cc.enabled = true;
+            // Forzar SimpleMove para que el CC actualice isGrounded
+            cc.SimpleMove(Vector3.zero);
+        }
+
+        // Esperar otro frame para que el CharacterController procese colisiones
+        yield return null;
+
+        var rb = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
+        if (rb) {
+            if (disableGravityDuringTeleport)
+                rb.useGravity = true;   // Solo reactivar si fue desactivada
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
         var input = player.GetComponent<vThirdPersonInput>() ?? player.GetComponentInChildren<vThirdPersonInput>(true);
         if (input && !input.enabled) input.enabled = true;
@@ -213,12 +236,6 @@ public class PortalTrigger : MonoBehaviour
         if (agent) {
             agent.isStopped = false;
             agent.velocity = Vector3.zero;
-        }
-
-        var rb = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
-        if (rb) {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
         }
 
         // Resetear parámetros de animación

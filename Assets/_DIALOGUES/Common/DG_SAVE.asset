@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: 
-    textId: 
+    textId: SAVEPOINT_PROMPT
     text: SAVEPOINT_PROMPT
     portrait: {fileID: 0}
