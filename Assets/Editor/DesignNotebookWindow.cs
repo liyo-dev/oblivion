@@ -70,11 +70,11 @@ public class DesignNotebookWindow : EditorWindow
         if (_asset == null || _serialized == null)
             return;
 
-        _storyBeatsList = CreateList("storyBeats", DrawStoryBeat, "Historia principal", 5.5f);
-        _graphNotesList = CreateList("graphNotes", DrawGraphNote, "Notas vinculadas al grafo", 6.5f);
-        _quickNotesList = CreateList("quickNotes", DrawQuickNote, "Notas rápidas", 5.5f);
-        _levelIdeasList = CreateList("levelIdeas", DrawLevelIdea, "Ideas de nivel", 8f);
-        _tasksList = CreateList("tasks", DrawTask, "Tareas", 6.5f);
+        _storyBeatsList = CreateList("storyBeats", DrawStoryBeat, "Historia principal", 7.5f);
+        _graphNotesList = CreateList("graphNotes", DrawGraphNote, "Notas vinculadas al grafo", 8.5f);
+        _quickNotesList = CreateList("quickNotes", DrawQuickNote, "Notas rápidas", 6.5f);
+        _levelIdeasList = CreateList("levelIdeas", DrawLevelIdea, "Ideas de nivel", 10f);
+        _tasksList = CreateList("tasks", DrawTask, "Tareas", 8f);
     }
 
     private ReorderableList CreateList(string property, ReorderableList.ElementCallbackDelegate drawElement, string header, float heightMultiplier = 5f)
@@ -82,11 +82,17 @@ public class DesignNotebookWindow : EditorWindow
         var prop = _serialized.FindProperty(property);
         var list = new ReorderableList(_serialized, prop, true, true, true, true)
         {
-            drawHeaderCallback = rect => EditorGUI.LabelField(rect, header, EditorStyles.boldLabel),
-            elementHeight = EditorGUIUtility.singleLineHeight * heightMultiplier
+            drawHeaderCallback = rect => EditorGUI.LabelField(rect, header, Styles.ListHeader),
+            elementHeight = (EditorGUIUtility.singleLineHeight * heightMultiplier) + Styles.Card.padding.vertical + 6f
         };
 
         list.drawElementCallback = drawElement;
+        list.drawElementBackgroundCallback = (rect, index, active, focused) =>
+        {
+            rect = Styles.Card.PaddingRect(rect, 2f);
+            var bg = active ? Styles.ElementBackgroundActive : Styles.ElementBackground;
+            EditorGUI.DrawRect(rect, bg);
+        };
         return list;
     }
 
@@ -210,9 +216,10 @@ public class DesignNotebookWindow : EditorWindow
         var line = rect.y;
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.5f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
-        line += EditorGUIUtility.singleLineHeight * 2.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3.5f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
+        line += EditorGUIUtility.singleLineHeight * 3.5f + 2f;
+        line += EditorGUIUtility.singleLineHeight + 4f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
     }
 
     private void DrawGraphNote(Rect rect, int index, bool isActive, bool isFocused)
@@ -221,8 +228,8 @@ public class DesignNotebookWindow : EditorWindow
         float line = rect.y;
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.5f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
-        line += EditorGUIUtility.singleLineHeight * 2.5f + 2f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3.2f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
+        line += EditorGUIUtility.singleLineHeight * 3.2f + 2f;
 
         var graphProp = element.FindPropertyRelative("graph");
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), graphProp, new GUIContent("Grafo"));
@@ -230,7 +237,7 @@ public class DesignNotebookWindow : EditorWindow
 
         DrawNodeSelector(rect, ref line, element, graphProp);
 
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
     }
 
     private void DrawNodeSelector(Rect rect, ref float line, SerializedProperty element, SerializedProperty graphProp)
@@ -265,9 +272,9 @@ public class DesignNotebookWindow : EditorWindow
         float line = rect.y;
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.5f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
-        line += EditorGUIUtility.singleLineHeight * 2.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
+        line += EditorGUIUtility.singleLineHeight * 3f + 4f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
     }
 
     private void DrawLevelIdea(Rect rect, int index, bool isActive, bool isFocused)
@@ -276,13 +283,13 @@ public class DesignNotebookWindow : EditorWindow
         float line = rect.y;
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("name"), new GUIContent("Nombre"));
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.5f), element.FindPropertyRelative("fantasy"), new GUIContent("Fantasía"));
-        line += EditorGUIUtility.singleLineHeight * 1.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.5f), element.FindPropertyRelative("challenges"), new GUIContent("Retos"));
-        line += EditorGUIUtility.singleLineHeight * 1.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.5f), element.FindPropertyRelative("rewards"), new GUIContent("Recompensas"));
-        line += EditorGUIUtility.singleLineHeight * 1.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("fantasy"), new GUIContent("Fantasía"));
+        line += EditorGUIUtility.singleLineHeight * 2.2f + 2f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("challenges"), new GUIContent("Retos"));
+        line += EditorGUIUtility.singleLineHeight * 2.2f + 2f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("rewards"), new GUIContent("Recompensas"));
+        line += EditorGUIUtility.singleLineHeight * 2.2f + 4f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
     }
 
     private void DrawTask(Rect rect, int index, bool isActive, bool isFocused)
@@ -294,9 +301,9 @@ public class DesignNotebookWindow : EditorWindow
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width * 0.6f, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("owner"), new GUIContent("Responsable"));
         EditorGUI.PropertyField(new Rect(rect.x + rect.width * 0.62f, line, rect.width * 0.36f, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("state"), GUIContent.none);
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.5f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
-        line += EditorGUIUtility.singleLineHeight * 1.5f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("relatedScene"), new GUIContent("Escena/Pista"));
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.4f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
+        line += EditorGUIUtility.singleLineHeight * 2.4f + 4f;
+        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("relatedScene"), new GUIContent("Escena/Pista"));
     }
 
     private void DrawExportButtons()
@@ -530,9 +537,12 @@ public class DesignNotebookWindow : EditorWindow
         public static readonly GUIStyle HeaderTitle;
         public static readonly GUIStyle SectionBox;
         public static readonly GUIStyle SectionTitle;
+        public static readonly GUIStyle ListHeader;
         public static readonly GUIStyle Card;
         public static readonly GUIStyle TabButton;
         public static readonly GUIStyle GhostLabel;
+        public static readonly Color ElementBackground;
+        public static readonly Color ElementBackgroundActive;
 
         static Styles()
         {
@@ -555,19 +565,28 @@ public class DesignNotebookWindow : EditorWindow
 
             SectionTitle = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 13
+                fontSize = 13,
+                margin = new RectOffset(4, 4, 2, 6)
+            };
+
+            ListHeader = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 12,
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.85f, 0.9f, 1f) : new Color(0.12f, 0.18f, 0.3f) }
             };
 
             Card = new GUIStyle("Box")
             {
                 padding = new RectOffset(10, 10, 8, 10),
-                margin = new RectOffset(0, 0, 6, 6)
+                margin = new RectOffset(0, 0, 10, 10),
+                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.13f, 0.16f, 0.2f) : new Color(0.88f, 0.92f, 0.98f)) }
             };
 
             TabButton = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedHeight = 24,
-                fontSize = 11
+                fontSize = 11,
+                margin = new RectOffset(2, 2, 2, 2)
             };
 
             GhostLabel = new GUIStyle(EditorStyles.miniLabel)
@@ -575,6 +594,31 @@ public class DesignNotebookWindow : EditorWindow
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = FontStyle.Italic
             };
+
+            ElementBackground = EditorGUIUtility.isProSkin
+                ? new Color(0.18f, 0.22f, 0.28f)
+                : new Color(0.85f, 0.9f, 0.98f);
+
+            ElementBackgroundActive = EditorGUIUtility.isProSkin
+                ? new Color(0.2f, 0.34f, 0.48f)
+                : new Color(0.75f, 0.84f, 0.95f);
+        }
+
+        private static Texture2D MakeTex(Color color)
+        {
+            var tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, color);
+            tex.Apply();
+            return tex;
+        }
+
+        public static Rect PaddingRect(this GUIStyle style, Rect rect, float inset)
+        {
+            rect.x += inset;
+            rect.y += inset * 0.5f;
+            rect.width -= inset * 2f;
+            rect.height -= inset * 1.5f;
+            return rect;
         }
     }
 }
