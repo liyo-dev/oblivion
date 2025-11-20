@@ -12,6 +12,7 @@ public class DesignNotebookWindow : EditorWindow
     private DesignNotebook _asset;
     private SerializedObject _serialized;
     private Vector2 _scroll;
+    private int _tabIndex;
 
     private ReorderableList _storyBeatsList;
     private ReorderableList _graphNotesList;
@@ -92,16 +93,19 @@ public class DesignNotebookWindow : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Cuaderno de diseño", EditorStyles.largeLabel);
+        using (new EditorGUILayout.VerticalScope(Styles.HeaderBox))
+        {
+            EditorGUILayout.LabelField("Cuaderno de diseño", Styles.HeaderTitle);
 
-        EditorGUILayout.BeginHorizontal();
-        var newAsset = (DesignNotebook)EditorGUILayout.ObjectField("Documento", _asset, typeof(DesignNotebook), false);
-        if (newAsset != _asset)
-            LoadAsset(newAsset);
+            EditorGUILayout.BeginHorizontal();
+            var newAsset = (DesignNotebook)EditorGUILayout.ObjectField("Documento", _asset, typeof(DesignNotebook), false);
+            if (newAsset != _asset)
+                LoadAsset(newAsset);
 
-        if (GUILayout.Button("Nuevo", GUILayout.Width(70f)))
-            CreateNewAsset();
-        EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button("Nuevo", GUILayout.Width(70f)))
+                CreateNewAsset();
+            EditorGUILayout.EndHorizontal();
+        }
 
         if (_asset == null)
         {
@@ -112,32 +116,92 @@ public class DesignNotebookWindow : EditorWindow
         if (_serialized == null)
             _serialized = new SerializedObject(_asset);
 
+        if (_storyBeatsList == null)
+            RebuildLists();
+
         _serialized.Update();
 
-        _scroll = EditorGUILayout.BeginScrollView(_scroll);
+        var tabs = new[]
+        {
+            "Resumen",
+            "Historia",
+            "Notas de grafo",
+            "Notas rápidas",
+            "Ideas de nivel",
+            "Tareas",
+            "Exportar"
+        };
 
-        EditorGUILayout.LabelField("Resumen", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(_serialized.FindProperty("highLevelSynopsis"));
-        EditorGUILayout.PropertyField(_serialized.FindProperty("toneAndGoals"));
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.FlexibleSpace();
+            _tabIndex = GUILayout.Toolbar(_tabIndex, tabs, Styles.TabButton, GUILayout.Height(24));
+            GUILayout.FlexibleSpace();
+        }
 
         EditorGUILayout.Space();
-        _storyBeatsList?.DoLayoutList();
-        EditorGUILayout.Space();
-        _graphNotesList?.DoLayoutList();
-        EditorGUILayout.Space();
-        _quickNotesList?.DoLayoutList();
-        EditorGUILayout.Space();
-        _levelIdeasList?.DoLayoutList();
-        EditorGUILayout.Space();
-        _tasksList?.DoLayoutList();
 
-        EditorGUILayout.Space();
-        DrawExportButtons();
-
-        EditorGUILayout.EndScrollView();
+        using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
+        {
+            _scroll = scroll.scrollPosition;
+            EditorGUILayout.BeginVertical(Styles.SectionBox);
+            EditorGUILayout.Space();
+            DrawCurrentTab();
+            EditorGUILayout.Space();
+            EditorGUILayout.EndVertical();
+        }
 
         if (_serialized.ApplyModifiedProperties())
             EditorUtility.SetDirty(_asset);
+    }
+
+    private void DrawCurrentTab()
+    {
+        switch (_tabIndex)
+        {
+            case 0:
+                DrawSummary();
+                break;
+            case 1:
+                DrawListSection(_storyBeatsList, "Historia principal");
+                break;
+            case 2:
+                DrawListSection(_graphNotesList, "Notas vinculadas al grafo narrativo");
+                break;
+            case 3:
+                DrawListSection(_quickNotesList, "Notas rápidas");
+                break;
+            case 4:
+                DrawListSection(_levelIdeasList, "Ideas de nivel");
+                break;
+            case 5:
+                DrawListSection(_tasksList, "Tareas y pendientes");
+                break;
+            case 6:
+                DrawExportButtons();
+                break;
+        }
+    }
+
+    private void DrawSummary()
+    {
+        EditorGUILayout.LabelField("Resumen general", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Captura la visión del proyecto y el tono deseado en un vistazo.", MessageType.None);
+
+        EditorGUILayout.PropertyField(_serialized.FindProperty("highLevelSynopsis"), new GUIContent("Sinopsis"));
+        EditorGUILayout.PropertyField(_serialized.FindProperty("toneAndGoals"), new GUIContent("Tono y objetivos"));
+    }
+
+    private void DrawListSection(ReorderableList list, string title)
+    {
+        EditorGUILayout.LabelField(title, Styles.SectionTitle);
+        using (new EditorGUILayout.VerticalScope(Styles.Card))
+        {
+            if (list == null)
+                EditorGUILayout.LabelField("Sin elementos", Styles.GhostLabel);
+            else
+                list.DoLayoutList();
+        }
     }
 
     private void DrawStoryBeat(Rect rect, int index, bool isActive, bool isFocused)
@@ -237,13 +301,15 @@ public class DesignNotebookWindow : EditorWindow
 
     private void DrawExportButtons()
     {
-        EditorGUILayout.LabelField("Exportar", EditorStyles.boldLabel);
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Exportar a .txt"))
-            ExportToText();
-        if (GUILayout.Button("Exportar a PDF"))
-            ExportToPdf();
-        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.LabelField("Exportar", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Obtén un documento imprimible o editable con toda la información del cuaderno.", MessageType.Info);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Exportar a .txt", GUILayout.Height(30)))
+                ExportToText();
+            if (GUILayout.Button("Exportar a PDF", GUILayout.Height(30)))
+                ExportToPdf();
+        }
     }
 
     private void CreateNewAsset()
@@ -330,62 +396,117 @@ public class DesignNotebookWindow : EditorWindow
 
     private void CreateSimplePdf(string path, string content)
     {
+        const float margin = 72f; // 1 inch
+        const float pageWidth = 612f; // 8.5in
+        const float pageHeight = 792f; // 11in
+        const float lineHeight = 14f;
+        var maxLinesPerPage = Mathf.FloorToInt((pageHeight - (margin * 2f)) / lineHeight);
+
         var sanitized = content.Replace("\r\n", "\n");
         var lines = sanitized.Split('\n');
-        var textBuilder = new StringBuilder();
-        textBuilder.AppendLine("BT");
-        textBuilder.AppendLine("/F1 12 Tf");
-        textBuilder.AppendLine("1 0 0 1 72 720 Tm");
-        textBuilder.AppendLine("12 TL");
+
+        var pageContents = new List<string>();
+        var current = new StringBuilder();
+        int lineCount = 0;
+
+        void StartTextBlock()
+        {
+            current.AppendLine("BT");
+            current.AppendLine("/F1 12 Tf");
+            current.AppendLine($"1 0 0 1 {margin} {pageHeight - margin} Tm");
+            current.AppendLine($"{lineHeight} TL");
+        }
+
+        void EndTextBlock()
+        {
+            current.AppendLine("ET");
+            pageContents.Add(current.ToString());
+            current.Clear();
+            lineCount = 0;
+        }
+
+        StartTextBlock();
         foreach (var line in lines)
         {
-            textBuilder.AppendLine($"({EscapePdf(line)}) Tj");
-            textBuilder.AppendLine("T*");
-        }
-        textBuilder.AppendLine("ET");
+            current.AppendLine($"({EscapePdf(line)}) Tj");
+            current.AppendLine("T*");
+            lineCount++;
 
-        var textBytes = Encoding.ASCII.GetBytes(textBuilder.ToString());
-        var offsets = new List<long>();
+            if (lineCount >= maxLinesPerPage)
+            {
+                EndTextBlock();
+                StartTextBlock();
+            }
+        }
+        EndTextBlock();
+
+        var encoding = Encoding.GetEncoding(1252, new EncoderReplacementFallback("?"), new DecoderReplacementFallback("?"));
+        var offsets = new Dictionary<int, long>();
         using var ms = new MemoryStream();
-        using var writer = new StreamWriter(ms, Encoding.ASCII);
+        using var writer = new StreamWriter(ms, encoding) { NewLine = "\n" };
 
         writer.WriteLine("%PDF-1.4");
 
-        void WriteObject(params string[] linesToWrite)
+        void WriteObject(int id, params string[] linesToWrite)
         {
             writer.Flush();
-            offsets.Add(ms.Position);
+            offsets[id] = ms.Position;
+            writer.WriteLine($"{id} 0 obj");
             foreach (var l in linesToWrite)
                 writer.WriteLine(l);
             writer.WriteLine("endobj");
         }
 
-        WriteObject("1 0 obj", "<< /Type /Catalog /Pages 2 0 R >>");
-        WriteObject("2 0 obj", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-        WriteObject("3 0 obj", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>");
+        void WriteStreamObject(int id, byte[] bytes)
+        {
+            writer.Flush();
+            offsets[id] = ms.Position;
+            writer.WriteLine($"{id} 0 obj");
+            writer.WriteLine($"<< /Length {bytes.Length} >>");
+            writer.WriteLine("stream");
+            writer.Flush();
+            ms.Write(bytes, 0, bytes.Length);
+            writer.WriteLine();
+            writer.WriteLine("endstream");
+            writer.WriteLine("endobj");
+        }
 
-        writer.Flush();
-        offsets.Add(ms.Position);
-        writer.WriteLine("4 0 obj");
-        writer.WriteLine($"<< /Length {textBytes.Length} >>");
-        writer.WriteLine("stream");
-        writer.Flush();
-        ms.Write(textBytes, 0, textBytes.Length);
-        writer.WriteLine();
-        writer.WriteLine("endstream");
-        writer.WriteLine("endobj");
+        int catalogId = 1;
+        int pagesId = 2;
+        int nextId = 3;
+        int fontId = nextId + (pageContents.Count * 2);
+        var pageObjectIds = new List<int>();
 
-        WriteObject("5 0 obj", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        WriteObject(catalogId, $"<< /Type /Catalog /Pages {pagesId} 0 R >>");
+
+        var contentIds = new List<int>();
+        foreach (var page in pageContents)
+        {
+            var contentId = nextId++;
+            contentIds.Add(contentId);
+            var bytes = encoding.GetBytes(page);
+            WriteStreamObject(contentId, bytes);
+
+            var pageId = nextId++;
+            pageObjectIds.Add(pageId);
+            WriteObject(pageId, $"<< /Type /Page /Parent {pagesId} 0 R /MediaBox [0 0 {pageWidth} {pageHeight}] /Contents {contentId} 0 R /Resources << /Font << /F1 {fontId} 0 R >> >> >>");
+        }
+
+        WriteObject(pagesId, $"<< /Type /Pages /Kids [{string.Join(" ", pageObjectIds.Select(id => $"{id} 0 R"))}] /Count {pageObjectIds.Count} >>");
+
+        nextId = fontId + 1;
+        WriteObject(fontId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
 
         writer.Flush();
         var startXref = ms.Position;
+        var maxId = offsets.Keys.Max();
         writer.WriteLine("xref");
-        writer.WriteLine($"0 {offsets.Count + 1}");
+        writer.WriteLine($"0 {maxId + 1}");
         writer.WriteLine("0000000000 65535 f ");
-        foreach (var o in offsets)
-            writer.WriteLine($"{o:0000000000} 00000 n ");
+        for (int i = 1; i <= maxId; i++)
+            writer.WriteLine($"{offsets[i]:0000000000} 00000 n ");
         writer.WriteLine("trailer");
-        writer.WriteLine($"<< /Size {offsets.Count + 1} /Root 1 0 R >>");
+        writer.WriteLine($"<< /Size {maxId + 1} /Root {catalogId} 0 R >>");
         writer.WriteLine("startxref");
         writer.WriteLine(startXref);
         writer.WriteLine("%%EOF");
@@ -397,6 +518,63 @@ public class DesignNotebookWindow : EditorWindow
     private string EscapePdf(string line)
     {
         if (string.IsNullOrEmpty(line)) return string.Empty;
-        return line.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+        return line
+            .Replace("\\", "\\\\")
+            .Replace("(", "\\(")
+            .Replace(")", "\\)");
+    }
+
+    private static class Styles
+    {
+        public static readonly GUIStyle HeaderBox;
+        public static readonly GUIStyle HeaderTitle;
+        public static readonly GUIStyle SectionBox;
+        public static readonly GUIStyle SectionTitle;
+        public static readonly GUIStyle Card;
+        public static readonly GUIStyle TabButton;
+        public static readonly GUIStyle GhostLabel;
+
+        static Styles()
+        {
+            HeaderBox = new GUIStyle("HelpBox")
+            {
+                padding = new RectOffset(12, 12, 8, 10),
+                margin = new RectOffset(6, 6, 4, 4)
+            };
+
+            HeaderTitle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 16,
+                alignment = TextAnchor.MiddleLeft
+            };
+
+            SectionBox = new GUIStyle("HelpBox")
+            {
+                padding = new RectOffset(14, 14, 12, 14)
+            };
+
+            SectionTitle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 13
+            };
+
+            Card = new GUIStyle("Box")
+            {
+                padding = new RectOffset(10, 10, 8, 10),
+                margin = new RectOffset(0, 0, 6, 6)
+            };
+
+            TabButton = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                fixedHeight = 24,
+                fontSize = 11
+            };
+
+            GhostLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Italic
+            };
+        }
     }
 }
