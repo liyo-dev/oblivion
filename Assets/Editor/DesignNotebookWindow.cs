@@ -612,13 +612,17 @@ public class DesignNotebookWindow : EditorWindow
             return tex;
         }
 
-        public static Rect PaddingRect(this GUIStyle style, Rect rect, float inset)
-        {
-            rect.x += inset;
-            rect.y += inset * 0.5f;
-            rect.width -= inset * 2f;
-            rect.height -= inset * 1.5f;
-            return rect;
-        }
+    }
+}
+
+internal static class DesignNotebookGUIExtensions
+{
+    public static Rect PaddingRect(this GUIStyle style, Rect rect, float inset)
+    {
+        rect.x += inset;
+        rect.y += inset * 0.5f;
+        rect.width -= inset * 2f;
+        rect.height -= inset * 1.5f;
+        return rect;
     }
 }
