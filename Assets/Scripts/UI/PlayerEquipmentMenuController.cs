@@ -121,6 +121,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
+    [Header("Cámara de equipamiento")]
+    [SerializeField] private Camera equipmentPreviewCamera;
+    [SerializeField] private float equipmentCameraDistance = 3f;
+    [SerializeField] private float equipmentCameraHeight = 1.7f;
+    [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
+    [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
+    [SerializeField] private float previewOrbitSpeed = 120f;
+    bool _equipmentCameraActive;
+    Transform _playerPreviewTarget;
+    Quaternion _storedPlayerRotation;
+    Vector3 _previewBaseForward = Vector3.forward;
+    float _previewPlayerYaw;
     PlayerActionManager _actionManager;
     bool _actionModeActive;
 
@@ -204,6 +216,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         RegisterTabButtons();
         EnsureViews();
+        SetEquipmentCameraActive(false);
     }
 
     void OnDestroy()
@@ -412,6 +425,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         GameState.Push(GamePhase.Inventory);
         GameState.Push(GamePhase.Equipment);
         SelectInitial();
+        SetEquipmentCameraActive(_activeTab == 2);
     }
 
     void CloseMenu()
@@ -428,6 +442,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Input.ResetInputAxes();
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
+        SetEquipmentCameraActive(false);
     }
 
     void SetCanvasState(bool visible)
@@ -483,12 +498,85 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         UpdateTabButtonStates();
         if (_isOpen && previousTab != _activeTab)
             SelectInitial();
+        SetEquipmentCameraActive(_isOpen && _activeTab == 2);
     }
 
     void EnsureActionManager()
     {
         if (_actionManager != null) return;
         PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
+    }
+
+    void LateUpdate()
+    {
+        if (!_equipmentCameraActive || equipmentPreviewCamera == null) return;
+        UpdateEquipmentCamera();
+    }
+
+    void UpdateEquipmentCamera()
+    {
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+        {
+            SetEquipmentCameraActive(false);
+            return;
+        }
+
+        _playerPreviewTarget = player.transform;
+
+        float rotateInput = 0f;
+#if ENABLE_INPUT_SYSTEM
+        if (Gamepad.current != null)
+            rotateInput += Gamepad.current.rightStick.ReadValue().x;
+#endif
+        try { rotateInput += Input.GetAxis("RightStickHorizontal"); } catch { }
+        try { rotateInput += Input.GetAxis("CameraHorizontal"); } catch { }
+
+        if (Mathf.Abs(rotateInput) > 0.01f)
+            _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
+
+        var baseForward = _previewBaseForward;
+        if (baseForward.sqrMagnitude < 0.001f) baseForward = Vector3.forward;
+        baseForward = Vector3.ProjectOnPlane(baseForward, Vector3.up).normalized;
+        Vector3 right = Vector3.Cross(Vector3.up, baseForward).normalized;
+
+        Vector3 targetPos = _playerPreviewTarget.position + equipmentCameraLookOffset;
+        Vector3 cameraPos = targetPos
+                            - baseForward * equipmentCameraDistance
+                            + Vector3.up * equipmentCameraHeight
+                            - right * equipmentCameraHorizontalOffset;
+
+        equipmentPreviewCamera.transform.position = cameraPos;
+        equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation((targetPos - cameraPos).normalized, Vector3.up);
+
+        var previewRotation = _storedPlayerRotation * Quaternion.Euler(0f, _previewPlayerYaw, 0f);
+        _playerPreviewTarget.rotation = previewRotation;
+    }
+
+    void SetEquipmentCameraActive(bool value)
+    {
+        if (equipmentPreviewCamera == null) return;
+        if (_equipmentCameraActive == value) return;
+        _equipmentCameraActive = value;
+        equipmentPreviewCamera.gameObject.SetActive(value);
+        if (_equipmentCameraActive)
+        {
+            if (PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+            {
+                _playerPreviewTarget = player.transform;
+                _storedPlayerRotation = _playerPreviewTarget.rotation;
+                _previewBaseForward = Vector3.ProjectOnPlane(_playerPreviewTarget.forward, Vector3.up);
+                if (_previewBaseForward.sqrMagnitude < 0.001f)
+                    _previewBaseForward = Vector3.forward;
+                _previewBaseForward.Normalize();
+                _previewPlayerYaw = 0f;
+            }
+        }
+        else
+        {
+            if (_playerPreviewTarget != null)
+                _playerPreviewTarget.rotation = _storedPlayerRotation;
+            _playerPreviewTarget = null;
+        }
     }
 
     int GetDefaultTab()
@@ -889,17 +977,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             Refresh(false);
         }
 
-        public void EnsureSelection()
+        public bool EnsureSelection()
         {
-            if (_rows.Count == 0) return;
+            if (_rows.Count == 0) return false;
 
             if (_lastSelectedRow != null)
             {
                 _lastSelectedRow.Focus();
-                return;
+                return true;
             }
 
             _rows[0].InvokeClick();
+            return true;
         }
 
         public bool TryHandleCancel() => false;
@@ -1780,8 +1869,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             foreach (var kvp in _rows)
             {
-                bool hasOptions = _wardrobe == null || _wardrobe.HasOptions(kvp.Key);
-                SetInteractable(kvp.Value, hasOptions, true);
+                bool allowClear = true;
+                SetInteractable(kvp.Value, _builder != null, allowClear);
             }
 
             UpdateLabels();
@@ -1927,6 +2016,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void Snapshot()
         {
             _presetService?.SnapshotAppearanceToPreset();
+            _presetService?.ApplyCurrentPreset();
         }
 
         void UpdateLabels()
@@ -2018,6 +2108,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 es.SetSelectedGameObject(null);
                 es.SetSelectedGameObject(target);
             }
+            var selectable = target.GetComponent<Selectable>();
+            selectable?.Select();
         }
 
         public bool TryHandleCancel() => false;

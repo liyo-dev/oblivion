@@ -15302,10 +15302,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectileSpawner
   controller: {fileID: 8092544119751004760}
   targeting: {fileID: 2788111570677460138}
-  projectileSettings: {fileID: 0}
-  leftOrigin: {fileID: 0}
-  rightOrigin: {fileID: 0}
-  specialOrigin: {fileID: 0}
+  projectileSettings: {fileID: 11400000, guid: ecbb0a0da3896fb4a88b2bd34abd81e2, type: 2}
+  leftOrigin: {fileID: 8995380405070795905}
+  rightOrigin: {fileID: 551697587970401536}
+  specialOrigin: {fileID: 551697587970401536}
   ignoreCasterColliders: 1
   instigatorOverride: {fileID: 4951141271202639922}
 --- !u!114 &6903908210425150239
