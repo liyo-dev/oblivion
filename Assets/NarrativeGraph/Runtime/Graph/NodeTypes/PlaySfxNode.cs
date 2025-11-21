@@ -10,7 +10,7 @@ public sealed class PlaySfxNode : NarrativeNode
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         if (clip != null)
-            AudioManager.Instance?.PlaySfx(clip, volume);
+            AudioService.Instance?.PlaySfx(clip, volume);
         else
             Debug.LogWarning("[PlaySfxNode] No AudioClip asignado.");
 

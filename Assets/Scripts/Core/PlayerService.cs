@@ -143,6 +143,12 @@ public sealed class PlayerService : MonoBehaviour
         return inst.TryGetComponentInternal(out component, includeInactive, allowSceneLookup);
     }
 
+    public static bool TryGetInventory(out Inventory inventory, bool includeInactive = true, bool allowSceneLookup = true)
+        => TryGetComponent(out inventory, includeInactive, allowSceneLookup);
+
+    public static bool TryGetWardrobe(out WardrobeInventory wardrobe, bool includeInactive = true, bool allowSceneLookup = true)
+        => TryGetComponent(out wardrobe, includeInactive, allowSceneLookup);
+
     /// <summary>
     /// Variante que lanza excepciA3n si el componente no existe. Astil para dependencias obligatorias.
     /// </summary>
@@ -242,6 +248,7 @@ public sealed class PlayerService : MonoBehaviour
         CacheIfPresent<Inventory>(player);
         CacheIfPresent<ModularAutoBuilder>(player);
         CacheIfPresent<PlayerPickupCollector>(player);
+        CacheIfPresent<WardrobeInventory>(player);
     }
 
     void CacheIfPresent<T>(GameObject root) where T : Component

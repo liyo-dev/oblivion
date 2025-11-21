@@ -20,6 +20,13 @@ public sealed class AudioService : MonoBehaviour
     public AudioMixerGroup sfxGroup;
     public AudioMixerGroup uiGroup;
     public AudioMixerGroup ambienceGroup;
+    public AudioMixerGroup dialogueGroup;
+
+    [Header("Parámetros del Mixer")]
+    [SerializeField] private string masterVolumeParam = "MasterVol";
+    [SerializeField] private string musicVolumeParam = "MusicVol";
+    [SerializeField] private string sfxVolumeParam = "SfxVol";
+    [SerializeField] private string dialogueVolumeParam = "DialogVol";
 
     [Header("Música")]
     [Min(0f)] public float defaultFade = 0.75f;
@@ -30,6 +37,7 @@ public sealed class AudioService : MonoBehaviour
 
     // --- motor interno ---
     AudioSource _musicA, _musicB;
+    AudioSource _voiceSource;
     bool _musicATurn; // false => current=_musicA, true => current=_musicB
     readonly Queue<AudioSource> _pool2D = new();
     readonly Queue<AudioSource> _pool3D = new();
@@ -65,6 +73,7 @@ public sealed class AudioService : MonoBehaviour
         // Fuentes
         _musicA = CreateChildSource("MusicA", musicGroup, spatial:false, loop:true);
         _musicB = CreateChildSource("MusicB", musicGroup, spatial:false, loop:true);
+        _voiceSource = CreateChildSource("Voice", dialogueGroup, spatial:false, loop:false);
         for (int i = 0; i < pool2DSize; i++) _pool2D.Enqueue(CreateChildSource($"SFX2D_{i}", sfxGroup, spatial:false));
         for (int i = 0; i < pool3DSize; i++) _pool3D.Enqueue(CreateChildSource($"SFX3D_{i}", sfxGroup, spatial:true));
 
@@ -633,5 +642,56 @@ public sealed class AudioService : MonoBehaviour
     {
         var c = _musicATurn ? _musicB : _musicA;
         return c ? c.clip : null;
+    }
+
+    // ===========================================================
+    // API compatible con AudioManager (para narrative nodes)
+
+    public void SetVolume(AudioBus bus, float volume01)
+    {
+        if (mixer == null) return;
+        string param = bus switch
+        {
+            AudioBus.Master => masterVolumeParam,
+            AudioBus.Music => musicVolumeParam,
+            AudioBus.Sfx => sfxVolumeParam,
+            AudioBus.Dialogue => dialogueVolumeParam,
+            _ => null
+        };
+        if (!string.IsNullOrEmpty(param))
+            SetExposedVolume(param, volume01);
+    }
+
+    public float GetVolume(AudioBus bus)
+    {
+        if (mixer == null) return 1f;
+        string param = bus switch
+        {
+            AudioBus.Master => masterVolumeParam,
+            AudioBus.Music => musicVolumeParam,
+            AudioBus.Sfx => sfxVolumeParam,
+            AudioBus.Dialogue => dialogueVolumeParam,
+            _ => null
+        };
+        return !string.IsNullOrEmpty(param) ? GetExposedVolume01(param) : 1f;
+    }
+
+    public void Mute(AudioBus bus, bool mute)
+    {
+        SetVolume(bus, mute ? 0f : 1f);
+    }
+
+    public void PlayVoice(AudioClip clip, float volume = 1f)
+    {
+        if (_voiceSource == null || clip == null) return;
+        _voiceSource.Stop();
+        _voiceSource.clip = clip;
+        _voiceSource.volume = Mathf.Clamp01(volume);
+        _voiceSource.Play();
+    }
+
+    public void PlaySfx(AudioClip clip, float volume = 1f)
+    {
+        PlaySFX(clip, volume);
     }
 }

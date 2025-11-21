@@ -515,13 +515,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void UpdateEquipmentCamera()
     {
-        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+        if (_playerPreviewTarget == null)
         {
-            SetEquipmentCameraActive(false);
-            return;
+            if (!TrySetupPreviewTarget())
+                return;
         }
-
-        _playerPreviewTarget = player.transform;
 
         float rotateInput = 0f;
 #if ENABLE_INPUT_SYSTEM
@@ -534,22 +532,45 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (Mathf.Abs(rotateInput) > 0.01f)
             _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
 
-        var baseForward = _previewBaseForward;
-        if (baseForward.sqrMagnitude < 0.001f) baseForward = Vector3.forward;
-        baseForward = Vector3.ProjectOnPlane(baseForward, Vector3.up).normalized;
-        Vector3 right = Vector3.Cross(Vector3.up, baseForward).normalized;
+        var cameraForward = _previewBaseForward;
+        if (cameraForward.sqrMagnitude < 0.001f) cameraForward = Vector3.forward;
+        cameraForward = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
+        Vector3 cameraRight = Vector3.Cross(Vector3.up, cameraForward).normalized;
 
         Vector3 targetPos = _playerPreviewTarget.position + equipmentCameraLookOffset;
         Vector3 cameraPos = targetPos
-                            - baseForward * equipmentCameraDistance
+                            - cameraForward * equipmentCameraDistance
                             + Vector3.up * equipmentCameraHeight
-                            - right * equipmentCameraHorizontalOffset;
+                            - cameraRight * equipmentCameraHorizontalOffset;
 
         equipmentPreviewCamera.transform.position = cameraPos;
         equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation((targetPos - cameraPos).normalized, Vector3.up);
 
-        var previewRotation = _storedPlayerRotation * Quaternion.Euler(0f, _previewPlayerYaw, 0f);
+        var lookDir = Quaternion.Euler(0f, _previewPlayerYaw, 0f) * cameraForward;
+        var previewRotation = Quaternion.LookRotation(-lookDir, Vector3.up);
         _playerPreviewTarget.rotation = previewRotation;
+    }
+
+    bool TrySetupPreviewTarget()
+    {
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+        {
+            if (equipmentPreviewCamera != null)
+                equipmentPreviewCamera.enabled = false;
+            return false;
+        }
+
+        _playerPreviewTarget = player.transform;
+        _storedPlayerRotation = _playerPreviewTarget.rotation;
+        var forwardSource = Camera.main != null ? Camera.main.transform.forward : _playerPreviewTarget.forward;
+        _previewBaseForward = Vector3.ProjectOnPlane(forwardSource, Vector3.up);
+        if (_previewBaseForward.sqrMagnitude < 0.001f)
+            _previewBaseForward = Vector3.forward;
+        _previewBaseForward.Normalize();
+        _previewPlayerYaw = 0f;
+        if (equipmentPreviewCamera != null)
+            equipmentPreviewCamera.enabled = true;
+        return true;
     }
 
     void SetEquipmentCameraActive(bool value)
@@ -560,22 +581,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         equipmentPreviewCamera.gameObject.SetActive(value);
         if (_equipmentCameraActive)
         {
-            if (PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
-            {
-                _playerPreviewTarget = player.transform;
-                _storedPlayerRotation = _playerPreviewTarget.rotation;
-                _previewBaseForward = Vector3.ProjectOnPlane(_playerPreviewTarget.forward, Vector3.up);
-                if (_previewBaseForward.sqrMagnitude < 0.001f)
-                    _previewBaseForward = Vector3.forward;
-                _previewBaseForward.Normalize();
-                _previewPlayerYaw = 0f;
-            }
+            TrySetupPreviewTarget();
         }
         else
         {
             if (_playerPreviewTarget != null)
                 _playerPreviewTarget.rotation = _storedPlayerRotation;
             _playerPreviewTarget = null;
+            equipmentPreviewCamera.enabled = false;
         }
     }
 
@@ -1265,6 +1278,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateRowVisuals();
             ConfigureRowNavigation();
             UpdateSlotNavigationTargets();
+            FocusSpellList();
         }
 
         void AddSpellRow(SpellId spellId)
@@ -1775,6 +1789,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public class RowBinding
         {
             public PartCategory category;
+            [Tooltip("Si está desactivado, esta categoría no se mostrará en el menú de equipo.")]
+            public bool enabled = true;
             public Text label;
             public Button previousButton;
             public Button nextButton;
@@ -1813,6 +1829,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                         row.nextButton.onClick.AddListener(() => Cycle(capturedCategory, +1));
                     if (row.clearButton != null)
                         row.clearButton.onClick.AddListener(() => Clear(capturedCategory));
+                    
+                    // Ocultar fila si está deshabilitada
+                    if (!row.enabled && row.label != null && row.label.transform.parent != null)
+                        row.label.transform.parent.gameObject.SetActive(false);
                 }
             }
 
@@ -1839,6 +1859,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_ui.root != null)
                 _ui.root.SetActive(value);
+            
+            // Ocultar filas deshabilitadas
+            if (value)
+            {
+                foreach (var row in _ui.rows)
+                {
+                    if (row == null) continue;
+                    bool visible = row.enabled;
+                    if (row.label != null && row.label.transform.parent != null)
+                        row.label.transform.parent.gameObject.SetActive(visible);
+                }
+            }
         }
 
         public void Refresh()
@@ -1869,8 +1901,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             foreach (var kvp in _rows)
             {
-                bool allowClear = true;
-                SetInteractable(kvp.Value, _builder != null, allowClear);
+                bool hasOptions = _wardrobe == null || _wardrobe.HasOptions(kvp.Key);
+                bool canCycle = _wardrobe == null ? _builder != null : hasOptions;
+                bool allowClear = _wardrobe == null ? _builder != null : hasOptions;
+                SetInteractable(kvp.Value, canCycle, allowClear);
             }
 
             UpdateLabels();
@@ -1996,10 +2030,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             bool changed = false;
 
             if (_wardrobe != null)
+            {
                 changed = TryCycleWithWardrobe(category, step);
-
-            if (!changed)
+                if (!changed)
+                    return;
+            }
+            else
+            {
                 InvokeBuilderNextPrev(category, step);
+                changed = true;
+            }
 
             Snapshot();
             UpdateLabels();
@@ -2145,35 +2185,54 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_builder == null) return;
             var type = _builder.GetType();
-            var method = type.GetMethod("Next", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            if (method == null) method = type.GetMethod("Next", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method == null) return;
-            var paramType = method.GetParameters()[0].ParameterType;
-            try
+            var nextMethod = type.GetMethod("Next", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                          ?? type.GetMethod("Next", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                          ?? type.GetMethod("Prev", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            var paramType = nextMethod?.GetParameters()[0].ParameterType ?? prevMethod?.GetParameters()[0].ParameterType;
+            if (paramType == null) return;
+
+            object enumVal;
+            try { enumVal = System.Enum.Parse(paramType, category.ToString()); }
+            catch { return; }
+
+            int dir = step >= 0 ? 1 : -1;
+            int times = Mathf.Max(1, Mathf.Abs(step));
+
+            if (dir > 0)
             {
-                var enumVal = System.Enum.Parse(paramType, category.ToString());
-                method.Invoke(_builder, new object[] { enumVal, 1 });
-                if (step < 0)
+                if (nextMethod == null) return;
+                var parms = nextMethod.GetParameters();
+                if (parms.Length >= 2)
                 {
-                    // call Prev if exists
-                    var prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (prevMethod == null) prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (prevMethod != null)
-                    {
+                    nextMethod.Invoke(_builder, new object[] { enumVal, step });
+                }
+                else
+                {
+                    for (int i = 0; i < times; i++)
+                        nextMethod.Invoke(_builder, new object[] { enumVal });
+                }
+            }
+            else
+            {
+                if (prevMethod != null)
+                {
+                    for (int i = 0; i < times; i++)
                         prevMethod.Invoke(_builder, new object[] { enumVal });
-                        return;
-                    }
-                    // fallback: call Next with negative step via a Prev-like approach
-                    var nextMethod = method;
-                    // try Next with step parameter if exists
-                    var parms = method.GetParameters();
-                    if (parms.Length == 2)
-                    {
+                }
+                else if (nextMethod != null)
+                {
+                    var parms = nextMethod.GetParameters();
+                    if (parms.Length >= 2)
                         nextMethod.Invoke(_builder, new object[] { enumVal, step });
+                    else
+                    {
+                        for (int i = 0; i < times; i++)
+                            nextMethod.Invoke(_builder, new object[] { enumVal });
                     }
                 }
             }
-            catch (System.Exception) { }
         }
 
         void InvokeBuilderSetByName(PartCategory category, string nameOrNull)
@@ -2202,10 +2261,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 foreach (var row in _ui.rows)
                 {
-                    if (row != null)
+                    // Filtrar solo las filas habilitadas
+                    if (row != null && row.enabled)
                         _orderedRows.Add(row);
                 }
-                _orderedRows.Sort((a, b) => GetRowSortValue(b).CompareTo(GetRowSortValue(a)));
+                _orderedRows.Sort((a, b) => GetRowSortValue(a).CompareTo(GetRowSortValue(b)));
             }
 
             _rowOrderDirty = false;

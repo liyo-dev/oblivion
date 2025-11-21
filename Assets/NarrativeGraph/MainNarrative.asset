@@ -26,6 +26,7 @@ MonoBehaviour:
   - rid: 5623891259268006347
   - rid: 5623891390812389407
   - rid: 5623891407965258066
+  - rid: 5623891407965258211
   references:
     version: 2
     RefIds:
@@ -117,7 +118,7 @@ MonoBehaviour:
     - rid: 4128268648164098057
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: 'ARENA DE BATALLA: DEMONIO'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -136,13 +137,13 @@ MonoBehaviour:
     - rid: 4128268764951085534
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: 'CINEMATICA: LOS PLANES DEL VILLANO'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 222, y: 56}
+        position: {x: 114, y: 56}
         outputs:
         - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
@@ -150,7 +151,7 @@ MonoBehaviour:
     - rid: 5623891023686795667
       type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: ELDRAN SE VA A CASA DE ALEX
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -199,7 +200,7 @@ MonoBehaviour:
     - rid: 5623891390812389407
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: HAY QUE VER A ELDRAN CUANDO ESTE PREPARADO
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -220,4 +221,17 @@ MonoBehaviour:
         position: {x: 251, y: -327}
         outputs: []
         note: La amenaza del demonio despierta la magia del interior de Alex.
+        accent: {r: 1, g: 0.93, b: 0.55, a: 1}
+    - rid: 5623891407965258211
+      type: {class: GraphNoteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: LIBERTAD GAMEPLAY
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f7b1c0c7-a92f-4e47-9ecb-d1e3aa95d619
+        position: {x: 157, y: 482}
+        outputs: []
+        note: En este punto hay libertad para explorar y hacer misiones secundarias
         accent: {r: 1, g: 0.93, b: 0.55, a: 1}

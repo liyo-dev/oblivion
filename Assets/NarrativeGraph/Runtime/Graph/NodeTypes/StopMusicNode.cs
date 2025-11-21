@@ -7,7 +7,7 @@ public sealed class StopMusicNode : NarrativeNode
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        AudioManager.Instance?.StopMusic(fadeSeconds);
+        AudioService.Instance?.StopMusic(fadeSeconds);
         onReadyToAdvance?.Invoke();
     }
 }

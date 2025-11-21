@@ -15,9 +15,9 @@ MonoBehaviour:
   questId: "Q_NI\xD1OPEZ_CARACOLA"
   displayNameId: "CHAR_NI\xD1OPEZ"
   displayName: "CHAR_NI\xD1OPEZ"
-  descriptionId: "Q_NI\xD1OPEZ_CARACOLA_DESC"
+  descriptionId: "QUEST_NI\xD1OPEZ_CARACOLA_DESC"
   description: 
   steps:
-  - descriptionId: "Q_NI\xD1OPEZ_CARACOLA_DESC"
+  - descriptionId: "QUEST_NI\xD1OPEZ_CARACOLA_DESC"
     description: 
     conditionId: 

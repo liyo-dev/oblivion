@@ -186,7 +186,7 @@ public class BossArenaController : MonoBehaviour
     {
         if (IsBossAlreadyDefeated())
         {
-            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
         }
     }
 
@@ -198,7 +198,7 @@ public class BossArenaController : MonoBehaviour
 
         if (IsBossAlreadyDefeated())
         {
-            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
             return;
         }
 
@@ -214,7 +214,7 @@ public class BossArenaController : MonoBehaviour
 
         if (IsBossAlreadyDefeated())
         {
-            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
             return;
         }
 
@@ -400,7 +400,7 @@ public class BossArenaController : MonoBehaviour
         if (_bossDefeatHandled) return;
         if (IsBossAlreadyDefeated())
         {
-            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false);
+            ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
         }
     }
 
@@ -414,7 +414,7 @@ public class BossArenaController : MonoBehaviour
         return false;
     }
 
-    void ApplyBossClearedState(bool invokeUnityEvents, bool markDefeatedInTracker)
+    void ApplyBossClearedState(bool invokeUnityEvents, bool markDefeatedInTracker, bool raiseSignals = true)
     {
         if (_bossDefeatHandled) return;
         _bossDefeatHandled = true;
@@ -450,18 +450,22 @@ public class BossArenaController : MonoBehaviour
         }
 
         // Emitir la señal del grafo para indicar que la batalla/arena ha sido ganada
-        try
+        // SOLO si raiseSignals=true (evita sonar música al cargar partida)
+        if (raiseSignals)
         {
-            // Usar BattleId (fallback a bossId ya fue aplicado en Awake)
-            DefaultNarrativeSignals.Instance?.RaiseBattleWon(BattleId);
-            
-            if (!string.IsNullOrEmpty(BattleId) && AudioService.Instance != null)
-                AudioService.Instance.EndBattleById(BattleId);
+            try
+            {
+                // Usar BattleId (fallback a bossId ya fue aplicado en Awake)
+                DefaultNarrativeSignals.Instance?.RaiseBattleWon(BattleId);
+                
+                if (!string.IsNullOrEmpty(BattleId) && AudioService.Instance != null)
+                    AudioService.Instance.EndBattleById(BattleId);
 
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[BossArenaController] Error notificando BattleWon: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[BossArenaController] Error notificando BattleWon: {ex.Message}");
+            }
         }
 
         RestoreBattleDisables();

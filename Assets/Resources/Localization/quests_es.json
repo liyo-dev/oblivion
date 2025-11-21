@@ -9,14 +9,6 @@
             "value": "Ayudar al niño pez."
         },
         {
-            "key": "Q_NIÑOPEZ_CARACOLA_DESC",
-            "value": "Busca la caracola del niño pez."
-        },
-        {
-            "key": "Q_NIÑOPEZ_DESC",
-            "value": "Consigue algas para el niño pez."
-        },
-        {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
             "value": "Ve a hablar con Eldran en la entrada del reino"
         },
@@ -33,12 +25,8 @@
             "value": "A por la caja de frutas"
         },
         {
-            "key": "QUEST_ELDRAN_MISSION3_COMPLETE",
-            "value": "¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
-        },
-        {
             "key": "QUEST_ELDRAN_MISSION3_DESC",
-            "value": "Derrota al demonio y habla después con Eldran"
+            "value": "Derrota al demonio."
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_NAME",
@@ -50,11 +38,39 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION4_NAME",
+            "value": "Vuelve con Eldran"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC",
+            "value": "Sigue las instrucciones de Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_01",
+            "value": "Busca a Victoria y pídele una capa de mago."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_02",
+            "value": "Compra una poción de vida."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_DESC_03",
+            "value": "Entrena con ?"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION5_NAME",
             "value": "La preparación del Mago"
         },
         {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
+            "value": "Busca la caracola del niño pez."
+        },
+        {
+            "key": "QUEST_NIÑOPEZ_DESC",
+            "value": "Consigue algas para el niño pez."
         },
         {
             "key": "QUEST_STATE_ACTIVE",

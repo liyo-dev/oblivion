@@ -66,6 +66,8 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
         var es = EventSystem.current;
         if (es != null && ButtonGameObject != null)
             es.SetSelectedGameObject(ButtonGameObject);
+        if (button != null)
+            button.Select();
     }
 
     public void SetSelectionCallbacksEnabled(bool enabled)

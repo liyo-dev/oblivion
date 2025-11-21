@@ -29,3 +29,9 @@ MonoBehaviour:
     jump: 0
     climb: 0
     magic: 0
+  appearance: []
+  unlockedWardrobeIds: []
+  inventoryItems: []
+  defeatedBossIds: []
+  narrativeBlackboards: []
+  npcPositions: []
