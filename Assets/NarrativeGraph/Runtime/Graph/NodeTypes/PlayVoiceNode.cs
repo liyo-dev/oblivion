@@ -10,7 +10,7 @@ public sealed class PlayVoiceNode : NarrativeNode
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         if (clip != null)
-            AudioManager.Instance?.PlayVoice(clip, volume);
+            AudioService.Instance?.PlayVoice(clip, volume);
         else
             Debug.LogWarning("[PlayVoiceNode] No AudioClip asignado.");
 

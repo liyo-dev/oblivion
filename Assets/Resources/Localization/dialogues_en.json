@@ -93,22 +93,6 @@
             "value": "Have you read the letter I left you on the nightstand?"
         },
         {
-            "key": "DLG_ELDRAN_MISSION2_COMPLETED_01",
-            "value": "Thanks again for bringing that heavy crate."
-        },
-        {
-            "key": "DLG_ELDRAN_MISSION2_COMPLETED_02",
-            "value": "The fruits are delicious."
-        },
-        {
-            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
-            "value": "Did you find the fruit crate?"
-        },
-        {
-            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
-            "value": "It should be in the forest, look carefully."
-        },
-        {
             "key": "DLG_ELDRAN_MISSION2_OFFER_01",
             "value": "Thanks for coming."
         },
@@ -139,6 +123,66 @@
         {
             "key": "DLG_ELDRAN_MISSION2_TURNIN_03",
             "value": "Here, this is for your help."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION3_COMPLETE",
+            "value": "[EN] ¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_01",
+            "value": "[EN] Alex, la amenaza del demonio ha despertado la magia de tu interior."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_02",
+            "value": "[EN] Pero hay algo que no me gusta..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_03",
+            "value": "[EN] Desde hace mucho tiempo nuestro reino está protegido con magia de amenazas."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_04",
+            "value": "[EN] Por alguna razón ese demonio ha conseguido atravesar la barrera."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_05",
+            "value": "[EN] De momento no digamos nada para no alterar al pueblo."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_06",
+            "value": "[EN] Pero necesito que vayas al bosque prohibido y busques a Estela. Una maga y amiga que siempre anda por ahí."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_07",
+            "value": "[EN] Aunque antes necesitas alguna cosilla para que el guardia te deje pasar."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_08",
+            "value": "[EN] Lo primero es una capa de mago. Busca a Victoria en la tienda de ropa y dile que vas de mi parte. Ella te la dará."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_09",
+            "value": "[EN] Luego compra en cualquier tienda una poción de vida."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_OFFER_10",
+            "value": "[EN] Por último habla con ? y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
+            "value": "[EN] Te recuerdo que la capa puedes conseguirla preguntando a Victoria en la tienda de ropa."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_PROGRESS_02",
+            "value": "[EN] La poción en cualquier tienda del reino la puedes encontrar."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
+            "value": "[EN] Habla con ? suele ir de verde y debe andar por el Reino."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION5_TURNIN",
+            "value": "[EN] Has conseguido todo y muy rápido."
         },
         {
             "key": "DLG_GUARD_01",

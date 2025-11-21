@@ -11,7 +11,7 @@ public sealed class PlayMusicNode : NarrativeNode
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         if (clip != null)
-            AudioManager.Instance?.PlayMusic(clip, fadeSeconds, loop);
+            AudioService.Instance?.PlayMusic(clip, fadeSeconds);
         else
             Debug.LogWarning("[PlayMusicNode] No AudioClip asignado.");
 

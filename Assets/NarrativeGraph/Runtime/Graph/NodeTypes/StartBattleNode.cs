@@ -165,7 +165,16 @@ public sealed class StartBattleNode : NarrativeNode
             targetArena = bossArena;
         }
 
-        // 3) Trigger
+        // 3) Verificar si la batalla ya fue ganada (al restaurar desde save)
+        if (targetArena != null && IsBattleAlreadyWon(targetArena))
+        {
+            Debug.Log($"[StartBattleNode] Batalla '{battleId}' ya fue ganada. Avanzando inmediatamente sin disparar.");
+            SafeUnsubscribe(ctx);
+            onReadyToAdvance?.Invoke();
+            return;
+        }
+
+        // 4) Trigger batalla
         if (targetArena != null)
         {
             triggered = TriggerArena(targetArena);
@@ -180,6 +189,23 @@ public sealed class StartBattleNode : NarrativeNode
             SafeUnsubscribe(ctx);
             onReadyToAdvance?.Invoke();
         }
+    }
+
+    bool IsBattleAlreadyWon(BossArenaController arena)
+    {
+        if (arena == null) return false;
+        
+        // Verificar en el tracker si ya fue derrotado
+        // Usar BattleId que es público (bossId es privado)
+        if (!string.IsNullOrEmpty(arena.BattleId))
+        {
+            if (BossProgressTracker.TryGetInstance(out var tracker))
+            {
+                return tracker.IsDefeated(arena.BattleId);
+            }
+        }
+        
+        return false;
     }
 
     bool TriggerArena(BossArenaController arena)

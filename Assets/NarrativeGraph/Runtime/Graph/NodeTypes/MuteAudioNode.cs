@@ -8,7 +8,7 @@ public sealed class MuteAudioNode : NarrativeNode
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        AudioManager.Instance?.Mute(bus, mute);
+        AudioService.Instance?.Mute(bus, mute);
         onReadyToAdvance?.Invoke();
     }
 }

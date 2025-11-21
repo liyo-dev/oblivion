@@ -31,7 +31,7 @@ public class AudioOptionsPanel : MonoBehaviour
 
     void RefreshUI()
     {
-        var mgr = AudioManager.Instance;
+        var mgr = AudioService.Instance;
         if (!mgr) return;
 
         if (masterSlider) masterSlider.SetValueWithoutNotify(mgr.GetVolume(AudioBus.Master));
@@ -42,7 +42,7 @@ public class AudioOptionsPanel : MonoBehaviour
 
     void SetVolume(AudioBus bus, float value)
     {
-        AudioManager.Instance?.SetVolume(bus, value);
+        AudioService.Instance?.SetVolume(bus, value);
     }
 
     // For binding from UI events without referencing sliders directly

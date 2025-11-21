@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -169,11 +170,14 @@ public class PlayerPresetService : MonoBehaviour
         var entries = preset.appearance;
         if (entries == null || entries.Count == 0)
         {
-            SnapshotAppearanceToPreset();
-            return;
+            Debug.Log("[PlayerPresetService] Preset sin apariencia definida - manteniendo apariencia actual del prefab");
+            return; // No hacer snapshot automático, mantener apariencia del prefab
         }
 
         var selection = new Dictionary<PartCategory, string>();
+        foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
+            selection[cat] = null;
+
         foreach (var entry in entries)
         {
             selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;

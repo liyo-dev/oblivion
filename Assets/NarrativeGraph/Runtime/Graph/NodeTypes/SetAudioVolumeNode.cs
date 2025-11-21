@@ -9,7 +9,7 @@ public sealed class SetAudioVolumeNode : NarrativeNode
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        AudioManager.Instance?.SetVolume(bus, volume);
+        AudioService.Instance?.SetVolume(bus, volume);
         onReadyToAdvance?.Invoke();
     }
 }

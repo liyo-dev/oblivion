@@ -63,7 +63,13 @@ MonoBehaviour:
   - title: Intro
     description: 
     tags: 
-  graphNotes: []
+  graphNotes:
+  - title: 
+    note: 
+    graph: {fileID: 11400000, guid: b7b7637be2dc369419dbdc79e516e99d, type: 2}
+    nodeGuid: 78455749-f638-46de-a00c-c00cb1e61e5d
+    cachedNodeTitle: CUANDO LEE LA CARTA
+    tags: 
   quickNotes:
   - title: 
     note: 
