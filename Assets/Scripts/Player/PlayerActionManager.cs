@@ -145,6 +145,20 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Stunned].Add(PlayerAbility.Interact);
         _blockedByMode[ActionMode.Stunned].Add(PlayerAbility.Carry);
 
+        // GARANTIZAR bloqueos críticos para modo Inventory (independiente del Inspector)
+        if (!_blockedByMode.ContainsKey(ActionMode.Inventory))
+            _blockedByMode[ActionMode.Inventory] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Move);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Sprint);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Magic);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Interact);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Carry);
+        _blockedByMode[ActionMode.Inventory].Add(PlayerAbility.Aim);
+
         // GARANTIZAR bloqueos críticos para modo Swimming (independiente del Inspector)
         if (!_blockedByMode.ContainsKey(ActionMode.Swimming))
             _blockedByMode[ActionMode.Swimming] = new HashSet<PlayerAbility>();

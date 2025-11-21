@@ -11,12 +11,13 @@ GameObject:
   - component: {fileID: 488698}
   - component: {fileID: 3391272}
   - component: {fileID: 2357852}
+  - component: {fileID: 3636532509043854951}
   m_Layer: 0
   m_Name: Balloon03_a04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4294967295
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &488698
 Transform:
@@ -90,3 +91,22 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3636532509043854951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b90da8c5a9ff09f4f9ce40cc1d297623, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BalloonFloatingMotion
+  verticalAmplitude: 2
+  verticalSpeed: 1
+  horizontalAmplitude: 5
+  horizontalSpeed: 0.8
+  rotationAmount: 15
+  rotationSpeed: 0.5
+  randomizeOffset: 1

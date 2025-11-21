@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec039437ea2c63f4fa571092c671014a, type: 3}
+  m_Name: DesignNotebook
+  m_EditorClassIdentifier: Assembly-CSharp::DesignNotebook
+  highLevelSynopsis: "El Sendero de las Estrellas: Resumen de la Trama\n\nHace eones,
+    un mago desafi\xF3 a los dioses recorriendo el Sendero de las Estrellas, una
+    serie de portales c\xF3smicos que ofrec\xEDan poder a quienes superaban sus pruebas.
+    Su deseo final fue convertirse en un ser tan poderoso como los propios dioses.
+    Pero ese deseo fue su perdici\xF3n: al intentar contener tal fuerza, su cuerpo
+    y su mente se quebraron, y su poder desat\xF3 un cataclismo que fragment\xF3
+    el mundo, conocido como El Quebranto del Alba.\n\nTemerosos de que alguien m\xE1s
+    intentara repetir su error, los dioses sellaron el conocimiento del Sendero en
+    un libro prohibido: el Grimorio de las Estrellas. En \xE9l quedaron escritos
+    los hechizos m\xE1s peligrosos y los secretos para abrir los portales divinos.\n\nEn
+    la era actual, un Antagonista sin magia descubre la existencia del Grimorio.
+    Desesperado por salvar a su Hermano enfermo, comienza a estudiar sus p\xE1ginas,
+    convencido de que el Sendero puede concederle un deseo capaz de salvarlo. Sin
+    embargo, el Or\xE1culo Arcano le revela una verdad inquietante: solo el \u201Cportador
+    de la Luz Estelar\u201D puede recorrer el Sendero sin morir.\n\nEse portador
+    es el H\xE9roe, un joven com\xFAn que vive una vida tranquila en un mundo donde
+    la magia existe, aunque no todos la poseen. Un d\xEDa, mientras ayuda a un habitante
+    del pueblo, el H\xE9roe presencia la ca\xEDda de una bola de fuego del cielo.
+    Sin saberlo, este ataque ha sido provocado por el Antagonista, guiado por el
+    Or\xE1culo Arcano, que le revel\xF3 que el H\xE9roe es el elegido y que su poder
+    dormido deb\xEDa ser despertado mediante una amenaza mortal. El Antagonista invoca
+    al Demonio Inicial y lo env\xEDa a atacarlo. En un instante de desesperaci\xF3n,
+    el H\xE9roe libera su poder interior y una energ\xEDa luminosa desv\xEDa la explosi\xF3n
+    y derrota al demonio. Ha activado el poder que los dioses creyeron extinguido.\n\nEl
+    Antagonista, observando de lejos, comprende que ha encontrado al elegido. Manipula
+    los acontecimientos para acercarse al H\xE9roe, present\xE1ndose como un sabio
+    viajero que promete guiarlo para comprender su don. As\xED, lo convence de recorrer
+    el Sendero bajo la ilusi\xF3n de que su poder salvar\xE1 al mundo.\n\nA lo largo
+    de su viaje, el H\xE9roe enfrenta las pruebas del Sendero \u2014valor, sabidur\xEDa
+    y sacrificio\u2014 mientras el Antagonista lucha contra su propia moral, dividido
+    entre la culpa y el amor por su hermano. En el portal final, el Antagonista,
+    desesperado, intenta invocar el poder del Grimorio para reclamar el deseo antes
+    que el H\xE9roe, pero el hechizo se descontrola y abre un portal ca\xF3tico que
+    libera al S\xFAper Demonio, una entidad estelar nacida del desequilibrio entre
+    el bien y el ego\xEDsmo.\n\nEn el cl\xEDmax, el Antagonista se redime sacrific\xE1ndose
+    para darle al H\xE9roe la oportunidad de sellar el Sendero. El H\xE9roe, en lugar
+    de pedir poder, pide salvar al Hermano del Antagonista, restaurando as\xED el
+    equilibrio y devolviendo la paz al mundo.\n\nEl cielo vuelve a brillar. El Sendero,
+    ahora sellado, permanece como s\xEDmbolo de que la verdadera grandeza no proviene
+    de los deseos cumplidos, sino de los sacrificios que se hacen por amor."
+  toneAndGoals: 
+  storyBeats:
+  - title: Prologo
+    description: 
+    tags: 
+  - title: Intro
+    description: 
+    tags: 
+  - title: Intro
+    description: 
+    tags: 
+  graphNotes: []
+  quickNotes:
+  - title: 
+    note: 
+    tags: 
+  levelIdeas:
+  - name: 
+    fantasy: 
+    challenges: 
+    rewards: 
+    tags: 
+  tasks:
+  - title: 
+    description: 
+    state: 1
+    owner: 
+    relatedScene: 

@@ -87,6 +87,7 @@ public enum ActionMode
     Carrying,
     Casting,
     Cinematic,
+    Inventory,
     Stunned,
     Swimming
 }
