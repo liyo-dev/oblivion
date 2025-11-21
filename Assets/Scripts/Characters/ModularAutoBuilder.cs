@@ -43,13 +43,26 @@ public class ModularAutoBuilder : MonoBehaviour
 
     [Header("Opcional")]
     public bool randomizeAtAwake = false;      // déjalo en false hasta que veas todo ok
-    public bool ensureDefaultsAtStart = true;  // fuerza Body/Head/Eyes/Mouth si no hay selección
+    public bool preserveActivePartsOnAwake = true;  // mantiene las partes activas del prefab
 
     void Awake()
     {
         CacheAll();
-        DeactivateAll();
-        if (randomizeAtAwake) RandomizeAll();
+        
+        if (randomizeAtAwake)
+        {
+            DeactivateAll();
+            RandomizeAll();
+        }
+        else if (preserveActivePartsOnAwake)
+        {
+            // NO TOCAR NADA - Solo registra lo que está activo
+            RegisterActivePartsWithoutModifying();
+        }
+        else
+        {
+            DeactivateAll();
+        }
     }
 
     void Start()
@@ -58,9 +71,97 @@ public class ModularAutoBuilder : MonoBehaviour
         EnsureHolderActive("head");
         EnsureHolderActive("weapon_l");
         EnsureHolderActive("weapon_r");
-
-        if (ensureDefaultsAtStart)
-            EnsureDefaults();
+    }
+    
+    void RegisterActivePartsWithoutModifying()
+    {
+        // SOLO registra qué está activo, NO modifica nada
+        Debug.Log("[ModularAutoBuilder] Registrando partes activas sin modificar...");
+        
+        foreach (var kvp in parts)
+        {
+            Debug.Log($"[ModularAutoBuilder] Revisando categoría {kvp.Key} con {kvp.Value.Count} partes");
+            
+            foreach (var go in kvp.Value)
+            {
+                bool isSelf = go.activeSelf;
+                bool isHierarchy = go.activeInHierarchy;
+                
+                Debug.Log($"[ModularAutoBuilder]   - {go.name}: activeSelf={isSelf}, activeInHierarchy={isHierarchy}");
+                
+                if (isSelf || isHierarchy)
+                {
+                    var list = kvp.Value;
+                    int index = list.IndexOf(go);
+                    if (index >= 0 && !idx.ContainsKey(kvp.Key))
+                    {
+                        idx[kvp.Key] = index;
+                        Debug.Log($"[ModularAutoBuilder] ✓ Registrado {kvp.Key}: {go.name} (índice {index})");
+                    }
+                }
+            }
+        }
+        
+        Debug.Log($"[ModularAutoBuilder] Total registradas: {idx.Count} partes activas");
+    }
+    
+    void DetectAndPreserveActiveParts()
+    {
+        // Primero, detecta qué partes están activas en el prefab
+        var activePartsDetected = new Dictionary<PartCategory, GameObject>();
+        
+        Debug.Log("[ModularAutoBuilder] Detectando partes activas...");
+        
+        foreach (var kvp in parts)
+        {
+            foreach (var go in kvp.Value)
+            {
+                if (go.activeInHierarchy || go.activeSelf)
+                {
+                    // Si ya hay una activa en esta categoría, registra solo la primera
+                    if (!activePartsDetected.ContainsKey(kvp.Key))
+                    {
+                        activePartsDetected[kvp.Key] = go;
+                        Debug.Log($"[ModularAutoBuilder] Detectado {kvp.Key}: {go.name} (activeSelf={go.activeSelf}, activeInHierarchy={go.activeInHierarchy})");
+                    }
+                }
+            }
+        }
+        
+        Debug.Log($"[ModularAutoBuilder] Total detectadas: {activePartsDetected.Count} partes activas");
+        
+        // Si no se detectó nada activo, no hagas nada (deja todo como está)
+        if (activePartsDetected.Count == 0)
+        {
+            Debug.LogWarning("[ModularAutoBuilder] No se detectaron partes activas. Dejando todo como está.");
+            return;
+        }
+        
+        // Ahora desactiva todas las partes
+        foreach (var list in parts.Values)
+            foreach (var go in list) 
+                go.SetActive(false);
+        
+        idx.Clear();
+        
+        // Reactiva solo las que estaban activas y registra su índice
+        foreach (var kvp in activePartsDetected)
+        {
+            var cat = kvp.Key;
+            var go = kvp.Value;
+            
+            if (parts.TryGetValue(cat, out var list))
+            {
+                int index = list.IndexOf(go);
+                if (index >= 0)
+                {
+                    EnsureAncestorsActive(go.transform);
+                    go.SetActive(true);
+                    idx[cat] = index;
+                    Debug.Log($"[ModularAutoBuilder] Reactivado {cat}: {go.name} (índice {index})");
+                }
+            }
+        }
     }
 
     // ---------- Construcción de caché ----------
@@ -83,10 +184,14 @@ public class ModularAutoBuilder : MonoBehaviour
 
             var go = t.gameObject;
             
-            // FILTRO: Solo cachear objetos que tienen Renderer (partes visuales)
-            // Esto excluye carpetas contenedoras como "Bows", "Shields", etc.
-            bool hasRenderer = go.GetComponent<Renderer>() != null || go.GetComponentInChildren<Renderer>(true) != null;
-            if (!hasRenderer) continue;
+            // FILTRO: Solo cachear objetos que tienen Renderer DIRECTAMENTE
+            // Esto excluye carpetas contenedoras como "Bows", "Shields", "head", etc.
+            bool hasRenderer = go.GetComponent<Renderer>() != null;
+            if (!hasRenderer)
+            {
+                Debug.Log($"[ModularAutoBuilder.CacheAll] SKIP '{go.name}' (categoría {maybe}) - sin Renderer directo");
+                continue;
+            }
             
             // FILTRO EXTRA para armas: deben tener números en el nombre (Bow01, Shield02, etc.)
             // Esto excluye carpetas como "Bows" (sin número)
@@ -110,6 +215,8 @@ public class ModularAutoBuilder : MonoBehaviour
 
         foreach (var kv in parts)
             kv.Value.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+            
+        Debug.Log($"[ModularAutoBuilder.CacheAll] Cacheado completo. Total categorías con partes: {parts.Count(p => p.Value.Count > 0)}");
     }
 
     static string GetPath(Transform t)
@@ -131,14 +238,6 @@ public class ModularAutoBuilder : MonoBehaviour
         var holder = GetComponentsInChildren<Transform>(true)
                      .FirstOrDefault(x => x.name.Equals(holderName, StringComparison.OrdinalIgnoreCase));
         if (holder && !holder.gameObject.activeSelf) holder.gameObject.SetActive(true);
-    }
-
-    void EnsureDefaults()
-    {
-        TryEnsureOne(PartCategory.Body);
-        TryEnsureOne(PartCategory.Head);
-        TryEnsureOne(PartCategory.Eyes);
-        TryEnsureOne(PartCategory.Mouth);
     }
 
     void TryEnsureOne(PartCategory cat)
@@ -353,6 +452,28 @@ public class ModularAutoBuilder : MonoBehaviour
     }
 
     // -------- utilidades de depuración --------
+    [ContextMenu("Debug/Print Current State")]
+    void DebugCurrentState()
+    {
+        Debug.Log("=== CURRENT STATE ===");
+        Debug.Log($"Cached categories: {parts.Count}");
+        Debug.Log($"Active selections: {idx.Count}");
+        
+        foreach (var cat in Enum.GetValues(typeof(PartCategory)).Cast<PartCategory>())
+        {
+            if (parts.TryGetValue(cat, out var list) && list.Count > 0)
+            {
+                Debug.Log($"\n{cat} - {list.Count} total parts:");
+                foreach (var go in list)
+                {
+                    bool isActive = go.activeSelf;
+                    bool isSelected = idx.TryGetValue(cat, out var selIdx) && list[selIdx] == go;
+                    Debug.Log($"  {go.name}: active={isActive}, selected={isSelected}");
+                }
+            }
+        }
+    }
+    
     [ContextMenu("Debug/Print active Heads")]
     void DebugHeads()
     {

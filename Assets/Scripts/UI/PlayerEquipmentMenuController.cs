@@ -121,6 +121,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
+    PlayerActionManager _actionManager;
+    bool _actionModeActive;
 
     bool _isOpen;
     int _activeTab;
@@ -321,11 +323,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                      Input.GetKeyDown(KeyCode.JoystickButton1);
         }
 
-        if (cancel && _activeTab == 1 && _spellView != null && _spellView.TryHandleCancel())
-            return;
-
         if (cancel)
+        {
+            bool handled = false;
+            if (_activeTab == 0 && _inventoryView != null)
+                handled = _inventoryView.TryHandleCancel();
+            else if (_activeTab == 1 && _spellView != null)
+                handled = _spellView.TryHandleCancel();
+            else if (_activeTab == 2 && _equipmentView != null)
+                handled = _equipmentView.TryHandleCancel();
+
+            if (handled)
+                return;
+
             CloseMenu();
+        }
     }
 
     void HandleTabNavigationInput()
@@ -379,6 +391,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (!EnsureViews()) return;
 
         EnsureEventSystem();
+        EnsureActionManager();
+        if (_actionManager != null)
+        {
+            _actionManager.PushMode(ActionMode.Inventory);
+            _actionModeActive = true;
+        }
 
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
@@ -402,6 +420,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
+        if (_actionModeActive && _actionManager != null)
+        {
+            _actionManager.PopMode(ActionMode.Inventory);
+            _actionModeActive = false;
+        }
+        Input.ResetInputAxes();
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
     }
@@ -424,6 +448,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void ShowTab(int index, bool forceRebuild = false)
     {
+        int previousTab = _activeTab;
         _activeTab = Mathf.Clamp(index, 0, 2);
 
         if (_spellView != null && _activeTab != 1)
@@ -448,10 +473,22 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_equipmentView != null)
         {
             _equipmentView.SetVisible(_activeTab == 2);
-            if (_activeTab == 2) _equipmentView.Refresh();
+            if (_activeTab == 2)
+            {
+                _equipmentView.Refresh();
+                _equipmentView.EnsureSelection();
+            }
         }
 
         UpdateTabButtonStates();
+        if (_isOpen && previousTab != _activeTab)
+            SelectInitial();
+    }
+
+    void EnsureActionManager()
+    {
+        if (_actionManager != null) return;
+        PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
     }
 
     int GetDefaultTab()
@@ -734,6 +771,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
                 widget.Configure(entry.item);
                 widget.RefreshLabel(_inventory);
+                widget.SetSelectedState(false);
 
                 var capturedWidget = widget;
                 var capturedItem = entry.item;
@@ -750,7 +788,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void HandleRowActivated(InventoryRowWidget widget, ItemData item, bool focus)
         {
             _selectedItem = item;
+            if (_lastSelectedRow != null && _lastSelectedRow != widget)
+                _lastSelectedRow.SetSelectedState(false);
             _lastSelectedRow = widget;
+            _lastSelectedRow?.SetSelectedState(true);
             if (focus)
                 widget?.Focus();
             UpdateSelectedItemDetails();
@@ -770,6 +811,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     UnityEngine.Object.Destroy(widget.gameObject);
             }
             _rows.Clear();
+            _selectedItem = null;
             _lastSelectedRow = null;
         }
 
@@ -859,6 +901,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             _rows[0].InvokeClick();
         }
+
+        public bool TryHandleCancel() => false;
     }
 
     [Serializable]
@@ -1113,8 +1157,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
 
             var added = new HashSet<SpellId>();
-            AddSpellRow(SpellId.None);
-            added.Add(SpellId.None);
 
             if (_preset.unlockedSpells != null)
             {
@@ -1624,6 +1666,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         public GameObject root;
         public List<RowBinding> rows = new();
+        public Color rowSelectionColor = new Color(1f, 0.82f, 0.16f, 1f);
 
         public bool IsConfigured
         {
@@ -1654,6 +1697,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         readonly EquipmentBindings _ui;
         readonly Dictionary<PartCategory, EquipmentBindings.RowBinding> _rows = new();
+        readonly List<EquipmentBindings.RowBinding> _orderedRows = new();
+        bool _rowOrderDirty = true;
 
         ModularAutoBuilder _builder;
         PlayerPresetService _presetService;
@@ -1681,16 +1726,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                         row.clearButton.onClick.AddListener(() => Clear(capturedCategory));
                 }
             }
+
+            ConfigureNavigation();
         }
 
         public GameObject DefaultSelection
         {
             get
             {
-                foreach (var row in _ui.rows)
+                var ordered = GetOrderedRows();
+                for (int i = 0; i < ordered.Count; i++)
                 {
-                    if (row?.previousButton != null) return row.previousButton.gameObject;
-                    if (row?.nextButton != null) return row.nextButton.gameObject;
+                    var row = ordered[i];
+                    var button = GetDefaultButton(row);
+                    if (button != null)
+                        return button.gameObject;
                 }
                 return null;
             }
@@ -1735,6 +1785,119 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             UpdateLabels();
+            _rowOrderDirty = true;
+            ConfigureNavigation();
+        }
+
+        void ConfigureNavigation()
+        {
+            var ordered = GetOrderedRows();
+            if (ordered.Count == 0) return;
+
+            for (int rowIndex = 0; rowIndex < ordered.Count; rowIndex++)
+            {
+                var row = ordered[rowIndex];
+                ConfigureButtonNavigation(row, row?.previousButton, rowIndex, 0);
+                ConfigureButtonNavigation(row, row?.nextButton, rowIndex, 1);
+                ConfigureButtonNavigation(row, row?.clearButton, rowIndex, 2);
+            }
+        }
+
+        void ConfigureButtonNavigation(EquipmentBindings.RowBinding row, Button button, int rowIndex, int columnIndex)
+        {
+            if (row == null || button == null) return;
+
+            var nav = button.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnLeft = ResolveHorizontal(rowIndex, columnIndex, -1);
+            nav.selectOnRight = ResolveHorizontal(rowIndex, columnIndex, +1);
+            nav.selectOnUp = ResolveVertical(rowIndex, columnIndex, -1);
+            nav.selectOnDown = ResolveVertical(rowIndex, columnIndex, +1);
+            button.navigation = nav;
+            ApplyButtonHighlight(button);
+        }
+
+        void ApplyButtonHighlight(Button button)
+        {
+            if (button == null) return;
+            var highlight = button.GetComponent<ButtonHighlight>();
+            if (highlight == null)
+                highlight = button.gameObject.AddComponent<ButtonHighlight>();
+            highlight.Configure(_ui.rowSelectionColor);
+        }
+
+        Button ResolveHorizontal(int rowIndex, int columnIndex, int step)
+        {
+            var row = GetRow(rowIndex);
+            if (row == null) return null;
+            int idx = columnIndex;
+            while (true)
+            {
+                idx += step;
+                if (idx < 0 || idx > 2)
+                    break;
+                var btn = GetButtonByColumn(row, idx);
+                if (IsSelectable(btn)) return btn;
+            }
+            var current = GetButtonByColumn(row, columnIndex);
+            if (IsSelectable(current)) return current;
+            return GetDefaultButton(row);
+        }
+
+        Button ResolveVertical(int rowIndex, int columnIndex, int step)
+        {
+            var ordered = GetOrderedRows();
+            int idx = rowIndex;
+            while (true)
+            {
+                idx += step;
+                if (idx < 0 || idx >= ordered.Count)
+                    break;
+                var row = ordered[idx];
+                if (row == null) continue;
+                var btn = GetButtonByColumn(row, columnIndex);
+                if (IsSelectable(btn)) return btn;
+                var fallback = GetDefaultButton(row);
+                if (IsSelectable(fallback)) return fallback;
+            }
+
+            var currentRow = GetRow(rowIndex);
+            var current = GetButtonByColumn(currentRow, columnIndex);
+            if (IsSelectable(current)) return current;
+            return GetDefaultButton(currentRow);
+        }
+
+        EquipmentBindings.RowBinding GetRow(int index)
+        {
+            var ordered = GetOrderedRows();
+            if (index < 0 || index >= ordered.Count) return null;
+            return ordered[index];
+        }
+
+        static Button GetButtonByColumn(EquipmentBindings.RowBinding row, int columnIndex)
+        {
+            if (row == null) return null;
+            return columnIndex switch
+            {
+                0 => row.previousButton,
+                1 => row.nextButton,
+                2 => row.clearButton,
+                _ => null
+            };
+        }
+
+        static Button GetDefaultButton(EquipmentBindings.RowBinding row)
+        {
+            if (row == null) return null;
+            if (IsSelectable(row.previousButton)) return row.previousButton;
+            if (IsSelectable(row.nextButton)) return row.nextButton;
+            if (IsSelectable(row.clearButton)) return row.clearButton;
+            return null;
+        }
+
+        static bool IsSelectable(Button button)
+        {
+            return button != null && button.IsInteractable();
         }
 
         void Cycle(PartCategory category, int step)
@@ -1845,6 +2008,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateLabels();
         }
 
+        public void EnsureSelection()
+        {
+            var target = DefaultSelection;
+            if (target == null) return;
+            var es = EventSystem.current;
+            if (es != null)
+            {
+                es.SetSelectedGameObject(null);
+                es.SetSelectedGameObject(target);
+            }
+        }
+
+        public bool TryHandleCancel() => false;
+
         public void Dispose()
         {
             if (_boundWardrobe != null)
@@ -1921,6 +2098,69 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 method.Invoke(_builder, new object[] { enumVal, nameOrNull });
             }
             catch (System.Exception) { }
+        }
+
+        List<EquipmentBindings.RowBinding> GetOrderedRows()
+        {
+            if (!_rowOrderDirty)
+                return _orderedRows;
+
+            _orderedRows.Clear();
+            if (_ui.rows != null)
+            {
+                foreach (var row in _ui.rows)
+                {
+                    if (row != null)
+                        _orderedRows.Add(row);
+                }
+                _orderedRows.Sort((a, b) => GetRowSortValue(b).CompareTo(GetRowSortValue(a)));
+            }
+
+            _rowOrderDirty = false;
+            return _orderedRows;
+        }
+
+        float GetRowSortValue(EquipmentBindings.RowBinding row)
+        {
+            Transform t = null;
+            if (row.label != null) t = row.label.transform;
+            else if (row.previousButton != null) t = row.previousButton.transform;
+            else if (row.nextButton != null) t = row.nextButton.transform;
+            else if (row.clearButton != null) t = row.clearButton.transform;
+            return t != null ? t.position.y : float.MinValue;
+        }
+
+        class ButtonHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler
+        {
+            public Graphic target;
+            public Color highlightColor = Color.white;
+            Color _baseColor;
+
+            void Awake()
+            {
+                if (target == null)
+                    target = GetComponent<Graphic>();
+                if (target == null)
+                    target = GetComponentInChildren<Graphic>();
+                if (target != null)
+                    _baseColor = target.color;
+            }
+
+            public void Configure(Color color)
+            {
+                highlightColor = color;
+                if (target != null)
+                    _baseColor = target.color;
+            }
+
+            public void OnSelect(BaseEventData eventData) => Set(true);
+            public void OnDeselect(BaseEventData eventData) => Set(false);
+
+            void Set(bool selected)
+            {
+                if (target != null)
+                    target.color = selected ? highlightColor : _baseColor;
+            }
         }
     }
 }

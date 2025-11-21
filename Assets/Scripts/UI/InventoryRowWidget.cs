@@ -10,13 +10,15 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
     [SerializeField] private Image iconImage;
     [Header("Feedback visual")]
     [SerializeField] private Color selectionColor = new Color(1f, 0.82f, 0.16f, 1f);
+    [SerializeField] private Graphic highlightGraphic;
 
     ItemData _item;
     string _fallbackName = "Item";
     Action _onClick;
     Action _onSelected;
-    ColorBlock _originalColors;
-    bool _hasCachedColors;
+    Color _defaultLabelColor = Color.white;
+    Color _defaultIconColor = Color.white;
+    Color _defaultHighlightColor = Color.white;
 
     public GameObject ButtonGameObject => button != null ? button.gameObject : gameObject;
     public ItemData Item => _item;
@@ -33,8 +35,24 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
             if (iconTransform != null)
                 iconImage = iconTransform.GetComponent<Image>();
         }
-
-        CacheAndApplySelectionColors();
+        if (label != null) _defaultLabelColor = label.color;
+        if (iconImage != null) _defaultIconColor = iconImage.color;
+        if (highlightGraphic == null)
+        {
+            var bg = GetComponent<Image>();
+            if (bg != null && bg != iconImage)
+                highlightGraphic = bg;
+            else if (button != null)
+            {
+                var candidate = button.GetComponent<Image>();
+                if (candidate != null && candidate != iconImage)
+                    highlightGraphic = candidate;
+                else if (button.targetGraphic != null && button.targetGraphic != label && button.targetGraphic != iconImage)
+                    highlightGraphic = button.targetGraphic;
+            }
+        }
+        if (highlightGraphic != null)
+            _defaultHighlightColor = highlightGraphic.color;
     }
 
     public void Configure(ItemData item)
@@ -91,6 +109,16 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
             StartCoroutine(ForceSelectionVisual());
         }
     }
+
+    public void SetSelectedState(bool selected)
+    {
+        if (label != null)
+            label.color = _defaultLabelColor;
+        if (iconImage != null)
+            iconImage.color = _defaultIconColor;
+        if (highlightGraphic != null)
+            highlightGraphic.color = selected ? selectionColor : _defaultHighlightColor;
+    }
     
     System.Collections.IEnumerator ForceSelectionVisual()
     {
@@ -146,17 +174,4 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
         _onSelected?.Invoke();
     }
 
-    void CacheAndApplySelectionColors()
-    {
-        if (button == null || _hasCachedColors)
-            return;
-
-        _originalColors = button.colors;
-        _hasCachedColors = true;
-
-        var colors = _originalColors;
-        colors.highlightedColor = selectionColor;
-        colors.selectedColor = selectionColor;
-        button.colors = colors;
-    }
 }
