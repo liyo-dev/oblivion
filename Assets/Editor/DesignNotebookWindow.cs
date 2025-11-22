@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Experimental.GraphView;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class DesignNotebookWindow : EditorWindow
 {
@@ -14,11 +16,10 @@ public class DesignNotebookWindow : EditorWindow
     private Vector2 _scroll;
     private int _tabIndex;
 
-    private ReorderableList _storyBeatsList;
-    private ReorderableList _graphNotesList;
     private ReorderableList _quickNotesList;
-    private ReorderableList _levelIdeasList;
-    private ReorderableList _tasksList;
+    private DesignStoryGraphView _storyGraphView;
+    private Color _highlightColor = new Color(1f, 0.92f, 0.23f);
+    private int _fontSize = 18;
 
     [MenuItem("Tools/Design/Notebook")]
     public static void Open()
@@ -31,6 +32,8 @@ public class DesignNotebookWindow : EditorWindow
     private void OnEnable()
     {
         Selection.selectionChanged += OnSelectionChange;
+        rootVisualElement.style.position = Position.Relative;
+        EnsureGraphView();
         TryUseSelectedAsset();
         RebuildLists();
     }
@@ -63,6 +66,7 @@ public class DesignNotebookWindow : EditorWindow
         _asset = notebook;
         _serialized = _asset != null ? new SerializedObject(_asset) : null;
         RebuildLists();
+        RefreshStoryGraph();
     }
 
     private void RebuildLists()
@@ -70,11 +74,7 @@ public class DesignNotebookWindow : EditorWindow
         if (_asset == null || _serialized == null)
             return;
 
-        _storyBeatsList = CreateList("storyBeats", DrawStoryBeat, "Historia principal", 7.5f);
-        _graphNotesList = CreateList("graphNotes", DrawGraphNote, "Notas vinculadas al grafo", 8.5f);
         _quickNotesList = CreateList("quickNotes", DrawQuickNote, "Notas rápidas", 6.5f);
-        _levelIdeasList = CreateList("levelIdeas", DrawLevelIdea, "Ideas de nivel", 10f);
-        _tasksList = CreateList("tasks", DrawTask, "Tareas", 8f);
     }
 
     private ReorderableList CreateList(string property, ReorderableList.ElementCallbackDelegate drawElement, string header, float heightMultiplier = 5f)
@@ -116,13 +116,14 @@ public class DesignNotebookWindow : EditorWindow
         if (_asset == null)
         {
             EditorGUILayout.HelpBox("Selecciona o crea un DesignNotebook para empezar.", MessageType.Info);
+            HideGraphView();
             return;
         }
 
         if (_serialized == null)
             _serialized = new SerializedObject(_asset);
 
-        if (_storyBeatsList == null)
+        if (_quickNotesList == null)
             RebuildLists();
 
         _serialized.Update();
@@ -131,10 +132,7 @@ public class DesignNotebookWindow : EditorWindow
         {
             "Resumen",
             "Historia",
-            "Notas de grafo",
             "Notas rápidas",
-            "Ideas de nivel",
-            "Tareas",
             "Exportar"
         };
 
@@ -147,14 +145,22 @@ public class DesignNotebookWindow : EditorWindow
 
         EditorGUILayout.Space();
 
-        using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
+        if (_tabIndex == 1)
         {
-            _scroll = scroll.scrollPosition;
-            EditorGUILayout.BeginVertical(Styles.SectionBox);
-            EditorGUILayout.Space();
-            DrawCurrentTab();
-            EditorGUILayout.Space();
-            EditorGUILayout.EndVertical();
+            DrawStoryTab();
+        }
+        else
+        {
+            HideGraphView();
+            using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
+            {
+                _scroll = scroll.scrollPosition;
+                EditorGUILayout.BeginVertical(Styles.SectionBox);
+                EditorGUILayout.Space();
+                DrawCurrentTab();
+                EditorGUILayout.Space();
+                EditorGUILayout.EndVertical();
+            }
         }
 
         if (_serialized.ApplyModifiedProperties())
@@ -168,22 +174,10 @@ public class DesignNotebookWindow : EditorWindow
             case 0:
                 DrawSummary();
                 break;
-            case 1:
-                DrawListSection(_storyBeatsList, "Historia principal");
-                break;
             case 2:
-                DrawListSection(_graphNotesList, "Notas vinculadas al grafo narrativo");
-                break;
-            case 3:
                 DrawListSection(_quickNotesList, "Notas rápidas");
                 break;
-            case 4:
-                DrawListSection(_levelIdeasList, "Ideas de nivel");
-                break;
-            case 5:
-                DrawListSection(_tasksList, "Tareas y pendientes");
-                break;
-            case 6:
+            case 3:
                 DrawExportButtons();
                 break;
         }
@@ -192,10 +186,38 @@ public class DesignNotebookWindow : EditorWindow
     private void DrawSummary()
     {
         EditorGUILayout.LabelField("Resumen general", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Captura la visión del proyecto y el tono deseado en un vistazo.", MessageType.None);
+        EditorGUILayout.HelpBox("Captura la visión del proyecto con herramientas de formato enriquecido.", MessageType.None);
 
-        EditorGUILayout.PropertyField(_serialized.FindProperty("highLevelSynopsis"), new GUIContent("Sinopsis"));
-        EditorGUILayout.PropertyField(_serialized.FindProperty("toneAndGoals"), new GUIContent("Tono y objetivos"));
+        var synopsisProp = _serialized.FindProperty("highLevelSynopsis");
+        DrawTextFormattingTools(synopsisProp);
+
+        var minHeight = Mathf.Max(position.height - 220f, 300f);
+        var rect = GUILayoutUtility.GetRect(position.width - 32f, minHeight, GUILayout.ExpandHeight(true));
+        EditorGUI.PropertyField(rect, synopsisProp, new GUIContent("Sinopsis"), true);
+    }
+
+    private void DrawTextFormattingTools(SerializedProperty prop)
+    {
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Negrita", GUILayout.Width(70f)))
+            InsertSnippet(prop, "<b>texto</b>");
+        if (GUILayout.Button("Subrayar", GUILayout.Width(80f)))
+            InsertSnippet(prop, "<u>texto</u>");
+        if (GUILayout.Button("Resaltar", GUILayout.Width(80f)))
+            InsertSnippet(prop, $"<color=#{ColorUtility.ToHtmlStringRGB(_highlightColor)}>texto</color>");
+
+        _highlightColor = EditorGUILayout.ColorField(_highlightColor, GUILayout.Width(80f));
+        _fontSize = EditorGUILayout.IntSlider("Tamaño de fuente", _fontSize, 10, 48);
+        if (GUILayout.Button("Aplicar tamaño", GUILayout.Width(110f)))
+            InsertSnippet(prop, $"<size={_fontSize}>texto</size>");
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void InsertSnippet(SerializedProperty prop, string snippet)
+    {
+        prop.stringValue = string.IsNullOrEmpty(prop.stringValue)
+            ? snippet
+            : prop.stringValue + "\n" + snippet;
     }
 
     private void DrawListSection(ReorderableList list, string title)
@@ -210,62 +232,6 @@ public class DesignNotebookWindow : EditorWindow
         }
     }
 
-    private void DrawStoryBeat(Rect rect, int index, bool isActive, bool isFocused)
-    {
-        var element = _storyBeatsList.serializedProperty.GetArrayElementAtIndex(index);
-        var line = rect.y;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
-        line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3.5f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
-        line += EditorGUIUtility.singleLineHeight * 3.5f + 2f;
-        line += EditorGUIUtility.singleLineHeight + 4f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
-    }
-
-    private void DrawGraphNote(Rect rect, int index, bool isActive, bool isFocused)
-    {
-        var element = _graphNotesList.serializedProperty.GetArrayElementAtIndex(index);
-        float line = rect.y;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
-        line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3.2f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
-        line += EditorGUIUtility.singleLineHeight * 3.2f + 2f;
-
-        var graphProp = element.FindPropertyRelative("graph");
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), graphProp, new GUIContent("Grafo"));
-        line += EditorGUIUtility.singleLineHeight + 2f;
-
-        DrawNodeSelector(rect, ref line, element, graphProp);
-
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
-    }
-
-    private void DrawNodeSelector(Rect rect, ref float line, SerializedProperty element, SerializedProperty graphProp)
-    {
-        var guidProp = element.FindPropertyRelative("nodeGuid");
-        var titleProp = element.FindPropertyRelative("cachedNodeTitle");
-        var graph = graphProp.objectReferenceValue as NarrativeGraph;
-
-        EditorGUI.BeginDisabledGroup(graph == null);
-        var nodes = graph == null ? Array.Empty<NarrativeNode>() : graph.nodes?.Where(n => n != null).ToArray();
-        var labels = nodes?.Select(n => string.IsNullOrEmpty(n.displayTitle) ? n.GetType().Name : n.displayTitle).ToArray() ?? Array.Empty<string>();
-        var guids = nodes?.Select(n => n.guid).ToArray() ?? Array.Empty<string>();
-
-        var currentIndex = Array.IndexOf(guids, guidProp.stringValue);
-        if (currentIndex < 0 && guids.Length > 0)
-            currentIndex = 0;
-
-        var newIndex = EditorGUI.Popup(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), "Nodo", currentIndex, labels);
-        if (newIndex >= 0 && newIndex < guids.Length)
-        {
-            guidProp.stringValue = guids[newIndex];
-            titleProp.stringValue = labels[newIndex];
-        }
-
-        EditorGUI.EndDisabledGroup();
-        line += EditorGUIUtility.singleLineHeight + 2f;
-    }
-
     private void DrawQuickNote(Rect rect, int index, bool isActive, bool isFocused)
     {
         var element = _quickNotesList.serializedProperty.GetArrayElementAtIndex(index);
@@ -277,33 +243,68 @@ public class DesignNotebookWindow : EditorWindow
         EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
     }
 
-    private void DrawLevelIdea(Rect rect, int index, bool isActive, bool isFocused)
+    private void DrawStoryTab()
     {
-        var element = _levelIdeasList.serializedProperty.GetArrayElementAtIndex(index);
-        float line = rect.y;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("name"), new GUIContent("Nombre"));
-        line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("fantasy"), new GUIContent("Fantasía"));
-        line += EditorGUIUtility.singleLineHeight * 2.2f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("challenges"), new GUIContent("Retos"));
-        line += EditorGUIUtility.singleLineHeight * 2.2f + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.2f), element.FindPropertyRelative("rewards"), new GUIContent("Recompensas"));
-        line += EditorGUIUtility.singleLineHeight * 2.2f + 4f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        EnsureGraphView();
+        _storyGraphView.style.display = DisplayStyle.Flex;
+        _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+
+        EditorGUILayout.BeginVertical(Styles.SectionBox);
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Historia principal", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Añade tarjetas, cámbiales el color y conéctalas para aclarar el game design.", MessageType.Info);
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+            _storyGraphView.CreateCard(new Vector2(position.width * 0.1f, position.height * 0.1f));
+        if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
+            _storyGraphView.FrameAll();
+        if (GUILayout.Button("Centrar", GUILayout.Width(100f)))
+            _storyGraphView.FrameSelection();
+        EditorGUILayout.EndHorizontal();
+
+        var rect = GUILayoutUtility.GetRect(position.width - 32f, position.height - 220f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        LayoutGraphView(rect);
+        EditorGUILayout.EndVertical();
     }
 
-    private void DrawTask(Rect rect, int index, bool isActive, bool isFocused)
+    private void LayoutGraphView(Rect rect)
     {
-        var element = _tasksList.serializedProperty.GetArrayElementAtIndex(index);
-        float line = rect.y;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Tarea"));
-        line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width * 0.6f, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("owner"), new GUIContent("Responsable"));
-        EditorGUI.PropertyField(new Rect(rect.x + rect.width * 0.62f, line, rect.width * 0.36f, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("state"), GUIContent.none);
-        line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 2.4f), element.FindPropertyRelative("description"), new GUIContent("Descripción"));
-        line += EditorGUIUtility.singleLineHeight * 2.4f + 4f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("relatedScene"), new GUIContent("Escena/Pista"));
+        _storyGraphView.style.position = Position.Absolute;
+        _storyGraphView.style.left = rect.xMin;
+        _storyGraphView.style.top = rect.yMin;
+        _storyGraphView.style.width = rect.width;
+        _storyGraphView.style.height = rect.height;
+    }
+
+    private void HideGraphView()
+    {
+        if (_storyGraphView != null)
+            _storyGraphView.style.display = DisplayStyle.None;
+    }
+
+    private void EnsureGraphView()
+    {
+        if (_storyGraphView != null) return;
+        _storyGraphView = new DesignStoryGraphView();
+        _storyGraphView.style.display = DisplayStyle.None;
+        rootVisualElement.Add(_storyGraphView);
+    }
+
+    private void RefreshStoryGraph()
+    {
+        if (_storyGraphView == null) return;
+        if (_asset == null)
+            _storyGraphView.style.display = DisplayStyle.None;
+        else
+            _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+    }
+
+    private void MarkAssetDirty()
+    {
+        if (_asset == null) return;
+        EditorUtility.SetDirty(_asset);
+        _serialized?.UpdateIfRequiredOrScript();
     }
 
     private void DrawExportButtons()
@@ -317,18 +318,6 @@ public class DesignNotebookWindow : EditorWindow
             if (GUILayout.Button("Exportar a PDF", GUILayout.Height(30)))
                 ExportToPdf();
         }
-    }
-
-    private void CreateNewAsset()
-    {
-        var path = EditorUtility.SaveFilePanelInProject("Nuevo cuaderno de diseño", "DesignNotebook", "asset", "Elige la ubicación para el asset.");
-        if (string.IsNullOrEmpty(path)) return;
-
-        var asset = CreateInstance<DesignNotebook>();
-        AssetDatabase.CreateAsset(asset, path);
-        AssetDatabase.SaveAssets();
-        LoadAsset(asset);
-        EditorGUIUtility.PingObject(asset);
     }
 
     private void ExportToText()
@@ -355,17 +344,29 @@ public class DesignNotebookWindow : EditorWindow
         sb.AppendLine("RESUMEN");
         sb.AppendLine(_asset.highLevelSynopsis);
         sb.AppendLine();
-        sb.AppendLine("TONO Y OBJETIVOS");
-        sb.AppendLine(_asset.toneAndGoals);
+
+        sb.AppendLine("HISTORIA PRINCIPAL");
+        sb.AppendLine(new string('-', 18));
+        foreach (var card in _asset.storyCards)
+        {
+            sb.AppendLine($"• {card.title}");
+            if (!string.IsNullOrEmpty(card.note)) sb.AppendLine(card.note);
+            var linked = _asset.storyLinks.Where(l => l.fromGuid == card.guid).Select(l => FindCardTitle(l.toGuid)).Where(t => !string.IsNullOrEmpty(t)).ToArray();
+            if (linked.Length > 0)
+                sb.AppendLine("Conecta con: " + string.Join(", ", linked));
+            sb.AppendLine();
+        }
         sb.AppendLine();
 
-        AppendList(sb, "HISTORIA PRINCIPAL", _asset.storyBeats.Select(b => ($"• {b.title}", b.description, b.tags)));
-        AppendList(sb, "NOTAS VINCULADAS AL GRAFO", _asset.graphNotes.Select(n => ($"• {n.title} ({n.cachedNodeTitle})", n.note, n.tags)));
         AppendList(sb, "NOTAS RÁPIDAS", _asset.quickNotes.Select(n => ($"• {n.title}", n.note, n.tags)));
-        AppendList(sb, "IDEAS DE NIVEL", _asset.levelIdeas.Select(l => ($"• {l.name}", BuildLevelIdeaBody(l), l.tags)));
-        AppendList(sb, "TAREAS", _asset.tasks.Select(t => ($"• [{t.state}] {t.title}", BuildTaskBody(t), t.relatedScene)));
 
         return sb.ToString();
+    }
+
+    private string FindCardTitle(string guid)
+    {
+        var card = _asset.storyCards.FirstOrDefault(c => c.guid == guid);
+        return card?.title;
     }
 
     private void AppendList(StringBuilder sb, string header, IEnumerable<(string title, string body, string tags)> entries)
@@ -383,22 +384,16 @@ public class DesignNotebookWindow : EditorWindow
         sb.AppendLine();
     }
 
-    private string BuildLevelIdeaBody(LevelIdea idea)
+    private void CreateNewAsset()
     {
-        var sb = new StringBuilder();
-        if (!string.IsNullOrEmpty(idea.fantasy)) sb.AppendLine($"Fantasía: {idea.fantasy}");
-        if (!string.IsNullOrEmpty(idea.challenges)) sb.AppendLine($"Retos: {idea.challenges}");
-        if (!string.IsNullOrEmpty(idea.rewards)) sb.AppendLine($"Recompensas: {idea.rewards}");
-        return sb.ToString();
-    }
+        var asset = CreateInstance<DesignNotebook>();
+        var path = EditorUtility.SaveFilePanelInProject("Crear DesignNotebook", "DesignNotebook", "asset", "Selecciona ubicación para el cuaderno");
+        if (string.IsNullOrEmpty(path)) return;
 
-    private string BuildTaskBody(DesignTask task)
-    {
-        var sb = new StringBuilder();
-        if (!string.IsNullOrEmpty(task.description)) sb.AppendLine(task.description);
-        if (!string.IsNullOrEmpty(task.owner)) sb.AppendLine($"Responsable: {task.owner}");
-        if (!string.IsNullOrEmpty(task.relatedScene)) sb.AppendLine($"Escena/Pista: {task.relatedScene}");
-        return sb.ToString();
+        AssetDatabase.CreateAsset(asset, path);
+        AssetDatabase.SaveAssets();
+        LoadAsset(asset);
+        EditorGUIUtility.PingObject(asset);
     }
 
     private void CreateSimplePdf(string path, string content)
@@ -612,6 +607,226 @@ public class DesignNotebookWindow : EditorWindow
             return tex;
         }
 
+    }
+}
+
+internal class DesignStoryGraphView : GraphView
+{
+    private DesignNotebook _notebook;
+    private readonly Dictionary<string, StoryCardNodeView> _nodes = new();
+    private Action _onDirty;
+
+    public DesignStoryGraphView()
+    {
+        var grid = new GridBackground();
+        Insert(0, grid);
+        grid.StretchToParentSize();
+
+        SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
+        this.AddManipulator(new ContentDragger());
+        this.AddManipulator(new SelectionDragger());
+        this.AddManipulator(new RectangleSelector());
+        style.flexGrow = 1f;
+
+        this.AddManipulator(new ContextualMenuManipulator(evt =>
+        {
+            Vector2 world = evt.mousePosition;
+            Vector2 local = contentViewContainer.WorldToLocal(world);
+            CreateCard(local);
+        }));
+
+        graphViewChanged = GraphChanged;
+    }
+
+    public void SetNotebook(DesignNotebook notebook, Action onDirty)
+    {
+        _notebook = notebook;
+        _onDirty = onDirty;
+        Rebuild();
+    }
+
+    public void CreateCard(Vector2 position)
+    {
+        if (_notebook == null) return;
+        Undo.RecordObject(_notebook, "Agregar tarjeta de historia");
+        var card = new DesignStoryCard
+        {
+            title = "Nueva tarjeta",
+            position = position
+        };
+        _notebook.storyCards.Add(card);
+        _onDirty?.Invoke();
+        Rebuild();
+    }
+
+    private void Rebuild()
+    {
+        DeleteElements(graphElements.ToList());
+        _nodes.Clear();
+        if (_notebook == null) return;
+
+        foreach (var card in _notebook.storyCards)
+        {
+            var view = new StoryCardNodeView(card, MarkDirty);
+            _nodes[card.guid] = view;
+            AddElement(view);
+        }
+
+        foreach (var link in _notebook.storyLinks.ToList())
+        {
+            if (!_nodes.TryGetValue(link.fromGuid, out var from) || !_nodes.TryGetValue(link.toGuid, out var to))
+                continue;
+            var edge = from.Output.ConnectTo(to.Input);
+            AddElement(edge);
+        }
+    }
+
+    private GraphViewChange GraphChanged(GraphViewChange changes)
+    {
+        if (changes.edgesToCreate != null)
+        {
+            foreach (var e in changes.edgesToCreate)
+            {
+                var from = e.output.node as StoryCardNodeView;
+                var to = e.input.node as StoryCardNodeView;
+                if (from == null || to == null) continue;
+
+                if (_notebook.storyLinks.Any(l => l.fromGuid == from.Card.guid && l.toGuid == to.Card.guid))
+                    continue;
+
+                Undo.RecordObject(_notebook, "Conectar tarjetas de historia");
+                _notebook.storyLinks.Add(new DesignStoryLink { fromGuid = from.Card.guid, toGuid = to.Card.guid });
+                AddElement(e);
+                MarkDirty();
+            }
+            changes.edgesToCreate = null;
+        }
+
+        if (changes.elementsToRemove != null)
+        {
+            foreach (var el in changes.elementsToRemove)
+            {
+                if (el is Edge edge)
+                {
+                    var from = edge.output.node as StoryCardNodeView;
+                    var to = edge.input.node as StoryCardNodeView;
+                    if (from == null || to == null) continue;
+
+                    var link = _notebook.storyLinks.FirstOrDefault(l => l.fromGuid == from.Card.guid && l.toGuid == to.Card.guid);
+                    if (link != null)
+                    {
+                        Undo.RecordObject(_notebook, "Desconectar tarjetas de historia");
+                        _notebook.storyLinks.Remove(link);
+                        MarkDirty();
+                    }
+                }
+                else if (el is StoryCardNodeView node)
+                {
+                    RemoveNode(node);
+                }
+            }
+        }
+
+        return changes;
+    }
+
+    private void RemoveNode(StoryCardNodeView node)
+    {
+        Undo.RecordObject(_notebook, "Eliminar tarjeta de historia");
+        _notebook.storyCards.Remove(node.Card);
+        _notebook.storyLinks.RemoveAll(l => l.fromGuid == node.Card.guid || l.toGuid == node.Card.guid);
+        MarkDirty();
+    }
+
+    private void MarkDirty()
+    {
+        _onDirty?.Invoke();
+    }
+
+    public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
+    {
+        var result = new List<Port>();
+        ports.ForEach(port =>
+        {
+            if (port == startPort) return;
+            if (port.node == startPort.node) return;
+            if (port.direction == startPort.direction) return;
+            result.Add(port);
+        });
+        return result;
+    }
+}
+
+internal class StoryCardNodeView : Node
+{
+    public DesignStoryCard Card { get; }
+    public Port Input { get; }
+    public Port Output { get; }
+    private readonly Action _onDirty;
+
+    public StoryCardNodeView(DesignStoryCard card, Action onDirty)
+    {
+        Card = card;
+        _onDirty = onDirty;
+        title = string.IsNullOrEmpty(card.title) ? "Tarjeta" : card.title;
+
+        Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
+        Input.portName = "Entradas";
+        inputContainer.Add(Input);
+
+        Output = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
+        Output.portName = "Salidas";
+        outputContainer.Add(Output);
+
+        var titleField = new TextField("Título") { value = card.title };
+        titleField.RegisterValueChangedCallback(evt =>
+        {
+            card.title = evt.newValue;
+            title = string.IsNullOrEmpty(evt.newValue) ? "Tarjeta" : evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(titleField);
+
+        var noteField = new TextField("Detalle") { value = card.note, multiline = true };
+        noteField.style.minHeight = 80f;
+        noteField.RegisterValueChangedCallback(evt =>
+        {
+            card.note = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(noteField);
+
+        var colorField = new ColorField("Color") { value = card.color };
+        colorField.RegisterValueChangedCallback(evt =>
+        {
+            card.color = evt.newValue;
+            UpdateColor();
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(colorField);
+
+        UpdateColor();
+        RefreshExpandedState();
+        RefreshPorts();
+        SetPosition(new Rect(card.position, new Vector2(260, 200)));
+    }
+
+    private void UpdateColor()
+    {
+        mainContainer.style.backgroundColor = new StyleColor(Card.color);
+        var border = Card.color;
+        border.a = 1f;
+        style.borderLeftColor = border;
+        style.borderRightColor = border;
+        style.borderTopColor = border;
+        style.borderBottomColor = border;
+    }
+
+    public override void SetPosition(Rect newPos)
+    {
+        base.SetPosition(newPos);
+        Card.position = newPos.position;
+        _onDirty?.Invoke();
     }
 }
 
