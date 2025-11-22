@@ -135,6 +135,9 @@ public class PlayerHealthSystem : MonoBehaviour
     void OnDisable()
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
+
+        // Asegurar que no se persistan estados visuales (parpadeo/invisibilidad) al desactivar el componente.
+        ResetDamageVisuals();
     }
 
     private void HandleProfileReady()
@@ -498,7 +501,7 @@ public class PlayerHealthSystem : MonoBehaviour
     private IEnumerator DamageFlashCoroutine()
     {
         SetRenderersColor(damageFlashColor);
-        yield return new WaitForSeconds(damageFlashDuration);
+        yield return new WaitForSecondsRealtime(damageFlashDuration);
         RestoreOriginalMaterials();
         _damageFlashCoroutine = null;
     }
@@ -515,9 +518,9 @@ public class PlayerHealthSystem : MonoBehaviour
         while (Time.time < _invulnerableUntil)
         {
             SetRenderersVisibility(false);
-            yield return new WaitForSeconds(invulnerabilityFlashRate);
+            yield return new WaitForSecondsRealtime(invulnerabilityFlashRate);
             SetRenderersVisibility(true);
-            yield return new WaitForSeconds(invulnerabilityFlashRate);
+            yield return new WaitForSecondsRealtime(invulnerabilityFlashRate);
         }
 
         _invulnerabilityFlashCoroutine = null;

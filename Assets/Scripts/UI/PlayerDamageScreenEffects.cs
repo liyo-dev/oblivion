@@ -8,6 +8,7 @@ public class PlayerDamageScreenEffects : MonoBehaviour
     [SerializeField] private float flashDuration = 0.1f;
 
     private PlayerHealthSystem _playerHealthSystem;
+    private Coroutine _flashCoroutine;
 
     private void Awake()
     {
@@ -40,7 +41,12 @@ public class PlayerDamageScreenEffects : MonoBehaviour
 
     private void OnPlayerDamageTaken(float damage)
     {
-        StartCoroutine(FlashDamageImage());
+        if (_flashCoroutine != null)
+        {
+            StopCoroutine(_flashCoroutine);
+        }
+
+        _flashCoroutine = StartCoroutine(FlashDamageImage());
     }
 
     private void OnPlayerHealthChanged(float healthPercentage)
@@ -51,7 +57,23 @@ public class PlayerDamageScreenEffects : MonoBehaviour
     private System.Collections.IEnumerator FlashDamageImage()
     {
         damageImage.color = damageColor;
-        yield return new WaitForSeconds(flashDuration);
+        yield return new WaitForSecondsRealtime(flashDuration);
         damageImage.color = Color.clear;
+
+        _flashCoroutine = null;
+    }
+
+    private void OnDisable()
+    {
+        if (_flashCoroutine != null)
+        {
+            StopCoroutine(_flashCoroutine);
+            _flashCoroutine = null;
+        }
+
+        if (damageImage != null)
+        {
+            damageImage.color = Color.clear;
+        }
     }
 }
