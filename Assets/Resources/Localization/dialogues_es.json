@@ -13,6 +13,10 @@
             "value": "Antipático"
         },
         {
+            "key": "CHAR_COMERCIANTE",
+            "value": "Comerciante"
+        },
+        {
             "key": "CHAR_ELDRAN",
             "value": "Eldran"
         },
@@ -47,6 +51,10 @@
         {
             "key": "CHAR_VERONICA",
             "value": "Verónica"
+        },
+        {
+            "key": "CHAR_VICTORIA",
+            "value": "Victoria"
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -303,6 +311,26 @@
         {
             "key": "DLG_VERONICA_05",
             "value": "Mejor no lo pruebes..."
+        },
+        {
+            "key": "DLG_VICTORIA_01",
+            "value": "Asi que te manda Eldran... en qué estará metido ahora..."
+        },
+        {
+            "key": "DLG_VICTORIA_02",
+            "value": "Bueno cariño tu no te preocupes, que Victoria está aquí para ayudarte."
+        },
+        {
+            "key": "DLG_VICTORIA_03",
+            "value": "¿Una capa de mago? Claro que sí, lo que mi Eldran necesite..."
+        },
+        {
+            "key": "DLG_VICTORIA_04",
+            "value": "Aunque me da a mi que esta capa es para una futura promesa de mago, ¿no?"
+        },
+        {
+            "key": "DLG_VICTORIA_05",
+            "value": "Dale saludos a Eldran de mi parte."
         },
         {
             "key": "DLG_WOODS_GUARD",

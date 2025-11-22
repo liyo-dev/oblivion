@@ -86,6 +86,7 @@ public static class NarrativeGraphValidator
         ValidateWaitQuestNodes(graph, result);
         ValidateWaitCustomEventNodes(graph, result);
         ValidateStartQuestNodes(graph, result);
+        ValidateCompleteQuestStepsNodes(graph, result);
         ValidateSavePoints(graph, result);
         
         return result;
@@ -106,6 +107,12 @@ public static class NarrativeGraphValidator
         // Los nodos no alcanzados son huérfanos
         foreach (var node in graph.nodes)
         {
+            if (node == null)
+            {
+                UnityEngine.Debug.LogWarning($"[NarrativeGraphValidator] Nodo null encontrado en el grafo '{graph.name}', saltando validación de huérfanos para este nodo.");
+                continue;
+            }
+            
             if (!connectedNodes.Contains(node.guid))
             {
                 orphans.Add(node);
@@ -138,7 +145,7 @@ public static class NarrativeGraphValidator
         
         foreach (var node in graph.nodes)
         {
-            if (string.IsNullOrEmpty(node.guid)) continue;
+            if (node == null || string.IsNullOrEmpty(node.guid)) continue;
             
             if (!guids.ContainsKey(node.guid))
                 guids[node.guid] = 0;
@@ -205,6 +212,29 @@ public static class NarrativeGraphValidator
         }
     }
     
+    static void ValidateCompleteQuestStepsNodes(NarrativeGraph graph, ValidationResult result)
+    {
+        foreach (var node in graph.nodes.OfType<CompleteQuestStepsNode>())
+        {
+            if (string.IsNullOrEmpty(node.questId))
+            {
+                result.Warnings.Add("CompleteQuestStepsNode tiene questId vacío");
+                continue;
+            }
+
+            bool hasSteps = node.steps != null && node.steps.Count > 0;
+            if (!hasSteps && !node.completeQuest)
+            {
+                result.Warnings.Add($"CompleteQuestStepsNode para '{node.questId}' no tiene pasos configurados ni completará la quest.");
+            }
+
+            if (hasSteps && node.steps.Any(step => step < 0))
+            {
+                result.Warnings.Add($"CompleteQuestStepsNode para '{node.questId}' contiene índices de paso negativos.");
+            }
+        }
+    }
+
     static void ValidateSavePoints(NarrativeGraph graph, ValidationResult result)
     {
         int safeNodes = 0;
@@ -212,6 +242,8 @@ public static class NarrativeGraphValidator
         
         foreach (var node in graph.nodes)
         {
+            if (node == null) continue;
+            
             var nodeType = node.GetType();
             var hasSavePoint = nodeType.GetCustomAttributes(typeof(SavePointAttribute), false).Length > 0;
             var hasUnsafe = nodeType.GetCustomAttributes(typeof(UnsafeForSaveAttribute), false).Length > 0;

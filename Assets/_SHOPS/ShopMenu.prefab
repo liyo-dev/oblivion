@@ -47,17 +47,17 @@ MonoBehaviour:
   currencyItem: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
   stock:
   - item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
-    buyPriceOverride: 0
-    sellPriceOverride: 0
+    buyPriceOverride: -1
+    sellPriceOverride: -1
     limitedStock: 0
     startingStock: 0
   - item: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
-    buyPriceOverride: 0
-    sellPriceOverride: 0
+    buyPriceOverride: -1
+    sellPriceOverride: -1
     limitedStock: 0
     startingStock: 0
   - item: {fileID: 11400000, guid: 6e49c2acf94484241bdfa6fef0997fd6, type: 2}
-    buyPriceOverride: 0
-    sellPriceOverride: 0
+    buyPriceOverride: -1
+    sellPriceOverride: -1
     limitedStock: 1
     startingStock: 1

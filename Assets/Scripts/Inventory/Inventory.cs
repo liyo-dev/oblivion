@@ -48,16 +48,19 @@ public class Inventory : MonoBehaviour
     public int Count(string itemId) => _bag.TryGetValue(itemId, out var v) ? v : 0;
 
     /// <summary>
-    /// Returns a snapshot list of all items in the inventory.
+    /// Returns a snapshot list of items currently owned (>0 units).
     /// </summary>
     public List<Entry> GetAllItems()
     {
-        var list = new List<Entry>(_definitions.Count);
-        foreach (var kv in _definitions)
+        var list = new List<Entry>(_bag.Count);
+        foreach (var kv in _bag)
         {
-            int cnt = 0;
-            _bag.TryGetValue(kv.Key, out cnt);
-            list.Add(new Entry { item = kv.Value, count = cnt });
+            if (kv.Value <= 0) continue;
+
+            if (!_definitions.TryGetValue(kv.Key, out var item) || item == null)
+                item = ResolveOrCreateDefinition(kv.Key);
+
+            list.Add(new Entry { item = item, count = kv.Value });
         }
         return list;
     }

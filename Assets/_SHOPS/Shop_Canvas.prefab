@@ -195,7 +195,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShopUI
   shopController: {fileID: 8000676482111591366, guid: 2cc83c60312b60a4399fe4a4026f649e, type: 3}
-  playerInventory: {fileID: 0}
   windowRoot: {fileID: 2475764957181917471}
   itemListContainer: {fileID: 873540482510531563}
   itemCardPrefab: {fileID: 1692135204216458003, guid: 51bd8a0683827d844b953c0599d905a5, type: 3}
@@ -1056,7 +1055,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.1, g: 0.1, b: 0.1, a: 0}
+  m_Color: {r: 0.1, g: 0.1, b: 0.1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

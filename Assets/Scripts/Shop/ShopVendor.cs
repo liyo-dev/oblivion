@@ -2,28 +2,46 @@ using UnityEngine;
 
 /// <summary>
 /// Componente que se añade al NPC para abrir una instancia de ShopUI al interactuar.
+/// El ShopUI prefab debe tener ya configurado su ShopController con el inventario de la tienda.
+/// Requiere un componente Interactable en el mismo GameObject.
 /// </summary>
-[RequireComponent(typeof(ShopController))]
+[RequireComponent(typeof(Interactable))]
 public class ShopVendor : MonoBehaviour
 {
     [SerializeField] private ShopUI shopUIPrefab;
-    [SerializeField] private Transform uiParent;
 
     ShopUI _runtimeUI;
-    ShopController _controller;
+    Interactable _interactable;
 
     void Awake()
     {
-        _controller = GetComponent<ShopController>();
-        if (uiParent == null)
+        _interactable = GetComponent<Interactable>();
+    }
+
+    void OnEnable()
+    {
+        if (_interactable != null)
         {
-            var canvas = FindFirstObjectByType<Canvas>();
-            if (canvas != null)
-                uiParent = canvas.transform;
+            // Suscribirse a OnFinished: se dispara cuando el diálogo termina
+            _interactable.OnFinished.AddListener(OnDialogueFinished);
         }
     }
 
-    public void Interact()
+    void OnDisable()
+    {
+        if (_interactable != null)
+        {
+            _interactable.OnFinished.RemoveListener(OnDialogueFinished);
+        }
+    }
+
+    void OnDialogueFinished()
+    {
+        // Cuando el diálogo del vendedor termina, abrir la tienda
+        OpenShop();
+    }
+
+    public void OpenShop()
     {
         if (_runtimeUI == null)
         {
@@ -32,11 +50,10 @@ public class ShopVendor : MonoBehaviour
                 Debug.LogWarning("[ShopVendor] No se ha asignado el prefab de ShopUI.");
                 return;
             }
-            _runtimeUI = Instantiate(shopUIPrefab, uiParent ?? transform);
+            _runtimeUI = Instantiate(shopUIPrefab);
         }
 
         _runtimeUI.gameObject.SetActive(true);
-        _runtimeUI.BindController(_controller);
         _runtimeUI.Open();
     }
 

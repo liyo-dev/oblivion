@@ -51,38 +51,13 @@ MonoBehaviour:
     de pedir poder, pide salvar al Hermano del Antagonista, restaurando as\xED el
     equilibrio y devolviendo la paz al mundo.\n\nEl cielo vuelve a brillar. El Sendero,
     ahora sellado, permanece como s\xEDmbolo de que la verdadera grandeza no proviene
-    de los deseos cumplidos, sino de los sacrificios que se hacen por amor."
-  toneAndGoals: 
-  storyBeats:
-  - title: Prologo
-    description: 
-    tags: 
-  - title: Intro
-    description: 
-    tags: 
-  - title: Intro
-    description: 
-    tags: 
-  graphNotes:
-  - title: 
-    note: 
-    graph: {fileID: 11400000, guid: b7b7637be2dc369419dbdc79e516e99d, type: 2}
-    nodeGuid: 78455749-f638-46de-a00c-c00cb1e61e5d
-    cachedNodeTitle: CUANDO LEE LA CARTA
-    tags: 
+    de los deseos cumplidos, sino de los sacrificios que se hacen por amor.\n"
+  storyCards: []
+  storyLinks: []
   quickNotes:
+  - title: Misiones
+    note: "A\xF1adir el menu de misiones al playerEquipment"
+    tags: 
   - title: 
     note: 
     tags: 
-  levelIdeas:
-  - name: 
-    fantasy: 
-    challenges: 
-    rewards: 
-    tags: 
-  tasks:
-  - title: 
-    description: 
-    state: 1
-    owner: 
-    relatedScene: 

@@ -11,6 +11,7 @@ public enum GamePhase
     Inventory,
     Equipment,
     Map,
+    Shop,
     Cutscene,
     Loading,
     GameOver
@@ -64,7 +65,8 @@ public static class GameState
                   GamePhase.SavePrompt,
                   GamePhase.Loading,
                   GamePhase.Inventory,
-                  GamePhase.Equipment);
+                  GamePhase.Equipment,
+                  GamePhase.Shop);
 
     public static bool CanOpenPause
         => !IsAny(GamePhase.PauseMenu,

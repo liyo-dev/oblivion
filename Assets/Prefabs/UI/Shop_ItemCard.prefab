@@ -92,7 +92,7 @@ GameObject:
   - component: {fileID: 6038150611997030783}
   - component: {fileID: 1477334569330975743}
   - component: {fileID: 2749952625262098156}
-  - component: {fileID: 5884386249581044876}
+  - component: {fileID: 3176686302535707291}
   m_Layer: 0
   m_Name: Shop_ItemCard
   m_TagString: Untagged
@@ -225,7 +225,7 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
---- !u!114 &5884386249581044876
+--- !u!114 &3176686302535707291
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -234,7 +234,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1692135204216458003}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 22c232f1793926046aeb1d44789b3243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShopItemCard
   iconImage: {fileID: 8147757143877165490}
