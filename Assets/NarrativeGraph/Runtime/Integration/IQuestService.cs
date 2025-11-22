@@ -6,4 +6,5 @@ public interface IQuestService
     void OffCompleted(string questId, System.Action cb);
     void Complete(string questId);
     void StartQuest(string questId);
+    void CompleteStep(string questId, int stepIndex);
 }

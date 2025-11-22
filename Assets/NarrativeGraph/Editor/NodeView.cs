@@ -15,6 +15,7 @@ namespace Sendero.Narrative.Editor
             { typeof(OfferQuestNode),           new Color(0.13f, 0.64f, 0.38f) },
             { typeof(WaitQuestCompleteNode),    new Color(0.09f, 0.49f, 0.28f) },
             { typeof(DeliverQuestCompleteNode), new Color(0.55f, 0.36f, 0.10f) },
+            { typeof(CompleteQuestStepsNode),   new Color(0.32f, 0.68f, 0.45f) },
             { typeof(DeliverItemProximityNode), new Color(0.85f, 0.60f, 0.20f) },
             { typeof(UnlockAbilitiesNode),      new Color(0.90f, 0.48f, 0.18f) },
             { typeof(UnlockTriggerNode),        new Color(0.90f, 0.52f, 0.22f) },

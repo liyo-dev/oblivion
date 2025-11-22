@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -215,15 +216,9 @@ public class DesignNotebookWindow : EditorWindow
 
     private void InsertSnippet(SerializedProperty prop, string snippet)
     {
-        if (prop == null || prop.serializedObject == null)
-            return;
-
-        Undo.RecordObject(prop.serializedObject.targetObject, "Insertar formato");
         prop.stringValue = string.IsNullOrEmpty(prop.stringValue)
             ? snippet
             : prop.stringValue + "\n" + snippet;
-        prop.serializedObject.ApplyModifiedProperties();
-        EditorUtility.SetDirty(prop.serializedObject.targetObject);
     }
 
     private void DrawListSection(ReorderableList list, string title)
@@ -685,8 +680,6 @@ internal class DesignStoryGraphView : GraphView
             var edge = from.Output.ConnectTo(to.Input);
             AddElement(edge);
         }
-
-        MarkDirtyRepaint();
     }
 
     private GraphViewChange GraphChanged(GraphViewChange changes)

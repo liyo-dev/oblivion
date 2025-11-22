@@ -140,5 +140,14 @@ public static class UnlockService
         preset.flags.Add(flag);
         return true;
     }
+
+    /// Verifica si un flag existe en el preset activo.
+    public static bool HasFlag(string flag)
+    {
+        if (string.IsNullOrEmpty(flag)) return false;
+        var preset = GetActivePreset();
+        if (!preset || preset.flags == null) return false;
+        return preset.flags.Contains(flag);
+    }
 }
 

@@ -47,6 +47,12 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     public ActionMode lockMode = ActionMode.Cinematic;
     [Range(0f, 0.5f)] public float offscreenPadding = 0.05f;
     public float cameraHeightOffset = 1.5f;
+    
+    [Header("Desactivar NPC")]
+    [Tooltip("Si está marcado, el NPC se desactivará cuando llegue al destino o salga de cámara.")]
+    public bool deactivateOnComplete = false;
+    [Tooltip("Si está marcado, guardará el estado desactivado del NPC para que no vuelva a aparecer.")]
+    public bool persistDeactivation = false;
 
     [Header("Debug")]
     public bool debugLogs = false;
@@ -82,6 +88,30 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             done?.Invoke();
             yield break;
         }
+        
+        // Si el NPC fue desactivado permanentemente por un nodo previo, saltar ejecución
+        // Solo verificar si el GameObject específico está desactivado (no padres)
+        if (!npc.gameObject.activeSelf)
+        {
+            // Verificar si fue desactivado por persistencia (tiene entrada en preset con isActive=false)
+            PlayerPresetSO preset = null;
+            var gb = GameBootService.Profile;
+            if (gb != null)
+            {
+                try { preset = gb.GetActivePresetResolved(); } catch { }
+            }
+            
+            if (preset != null && preset.npcPositions != null)
+            {
+                var entry = preset.npcPositions.Find(e => e.npcId == npc.gameObject.name);
+                if (entry.hasActiveState && !entry.isActive)
+                {
+                    Log($"NPC '{npc.name}' fue desactivado permanentemente, saltando ejecución del nodo");
+                    done?.Invoke();
+                    yield break;
+                }
+            }
+        }
 
         npc.EnsurePlayerReference();
 
@@ -107,6 +137,19 @@ public sealed class NpcAutoMoveNode : NarrativeNode
 
             yield return PlayDialogue(npc);
             yield return MoveNpc(npc);
+            
+            // Desactivar NPC si está configurado
+            if (deactivateOnComplete)
+            {
+                Log($"Desactivando NPC '{npc.name}' (persistDeactivation={persistDeactivation})");
+                
+                if (persistDeactivation)
+                {
+                    PersistNpcDeactivation(npc);
+                }
+                
+                npc.gameObject.SetActive(false);
+            }
         }
         finally
         {
@@ -245,7 +288,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 break;
             }
 
-            if (!agent.pathPending)
+            if (!agent.pathPending && agent.isOnNavMesh && agent.enabled)
             {
                 if (agent.remainingDistance <= Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f)
                 {
@@ -279,14 +322,16 @@ public sealed class NpcAutoMoveNode : NarrativeNode
 
         // Decidir cómo finalizar
         float reachThresh = Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f;
-        bool reached = (!agent.pathPending && agent.remainingDistance <= reachThresh) || forcedReachNoPath;
+        bool reached = (!agent.pathPending && agent.isOnNavMesh && agent.enabled && agent.remainingDistance <= reachThresh) || forcedReachNoPath;
 
         if (leftCamera)
         {
             // Fuera de cámara: teletransportar para terminar limpio
             NavMeshAgentUtility.SafeSetStopped(agent, true);
-            agent.ResetPath();
-            agent.Warp(destination);
+            if (agent.isOnNavMesh && agent.enabled)
+                agent.ResetPath();
+            if (agent.isOnNavMesh)
+                agent.Warp(destination);
             PersistNpcPositionIfNeeded(npc, destination);
             EnsureNpcIdle(animator);
             Log("Finished by offscreen → teleported and persisted position");
@@ -295,8 +340,9 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         {
             // Llegó al destino: detener agente y asegurar posición final
             NavMeshAgentUtility.SafeSetStopped(agent, true);
-            agent.ResetPath();
-            if (Vector3.Distance(agent.transform.position, destination) > 0.2f)
+            if (agent.isOnNavMesh && agent.enabled)
+                agent.ResetPath();
+            if (agent.isOnNavMesh && Vector3.Distance(agent.transform.position, destination) > 0.2f)
                 agent.Warp(destination);
             PersistNpcPositionIfNeeded(npc, destination);
             EnsureNpcIdle(animator);
@@ -406,6 +452,71 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 npcId = id,
                 position = destination
             });
+        }
+    }
+    
+    void PersistNpcDeactivation(NPCBehaviourManager npc)
+    {
+        if (npc == null) return;
+
+        PlayerPresetSO preset = null;
+
+        // 1) Intentar a través de GameBootService.Profile
+        var gb = GameBootService.Profile;
+        if (gb != null)
+        {
+            try { preset = gb.GetActivePresetResolved(); } catch { }
+        }
+
+        // 2) ServiceLocator
+        if (preset == null)
+        {
+            try { preset = ServiceLocator.Get<PlayerPresetSO>(logIfMissing: false); } catch { }
+        }
+
+        // 3) Fallback: buscar en memoria
+        if (preset == null)
+        {
+            var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
+            if (all != null && all.Length > 0) preset = all[0];
+        }
+
+        if (preset == null)
+        {
+            Debug.LogWarning("[NpcAutoMoveNode] No se pudo obtener PlayerPresetSO para persistir desactivación del NPC");
+            return;
+        }
+
+        if (preset.npcPositions == null)
+            preset.npcPositions = new System.Collections.Generic.List<PlayerPresetSO.NpcPosEntry>();
+
+        var id = npc.gameObject.name;
+        bool updated = false;
+        
+        for (int i = 0; i < preset.npcPositions.Count; i++)
+        {
+            if (preset.npcPositions[i].npcId == id)
+            {
+                var e = preset.npcPositions[i];
+                e.hasActiveState = true; // Marcar que se guardó el estado
+                e.isActive = false; // Marcar como inactivo
+                preset.npcPositions[i] = e;
+                updated = true;
+                Log($"Actualizado estado de NPC '{id}' → isActive=false en preset");
+                break;
+            }
+        }
+        
+        if (!updated)
+        {
+            preset.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
+            {
+                npcId = id,
+                position = npc.transform.position,
+                hasActiveState = true,
+                isActive = false
+            });
+            Log($"Añadido nuevo NPC '{id}' al preset con isActive=false");
         }
     }
 

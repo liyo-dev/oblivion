@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,11 +45,13 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Estado de grafos narrativos")]
     public List<PlayerSaveData.NarrativeBlackboardSnapshot> narrativeBlackboards = new();
 
-    [System.Serializable]
+    [Serializable]
     public struct NpcPosEntry
     {
         public string npcId;        // normalizado: nombre del GameObject
         public Vector3 position;    // última posición persistida
+        public bool hasActiveState; // si se ha guardado explícitamente el estado activo
+        public bool isActive;       // si el NPC debe estar activo o no (solo válido si hasActiveState=true)
     }
 
     [Header("NPCs (persistencia opcional)")]

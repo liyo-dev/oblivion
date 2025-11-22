@@ -26,6 +26,17 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
+        // Si tiene oneShotFlag configurado, verificar si ya se ejecutó
+        if (!string.IsNullOrEmpty(oneShotFlag))
+        {
+            if (UnlockService.HasFlag(oneShotFlag))
+            {
+                Debug.Log($"[UnlockAbilitiesNode] Ya se ejecutó previamente (flag: {oneShotFlag}), saltando.");
+                onReadyToAdvance?.Invoke();
+                return;
+            }
+        }
+
         bool changed = false;
         
             try

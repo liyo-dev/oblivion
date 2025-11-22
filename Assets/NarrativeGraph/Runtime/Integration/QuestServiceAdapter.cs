@@ -185,6 +185,21 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         else if (debugLogs) Debug.Log("[QuestServiceAdapter] QuestManager no tiene método de completar (no-op).");
     }
 
+    public void CompleteStep(string questId, int stepIndex)
+    {
+        if (Qm == null) return;
+        if (string.IsNullOrEmpty(questId) || stepIndex < 0) return;
+        try
+        {
+            Qm.MarkStepDone(questId, stepIndex);
+            if (debugLogs) Debug.Log($"[QuestServiceAdapter] CompleteStep {questId} -> {stepIndex}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
     // Disparo inmediato cuando QuestManager anuncia completada
     void HandleQuestCompleted(string questId)
     {

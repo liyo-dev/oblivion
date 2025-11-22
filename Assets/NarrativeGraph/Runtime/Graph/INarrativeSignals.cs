@@ -9,6 +9,7 @@ public interface INarrativeSignals
     void OffQuestCompleted(string questId, Action cb);
     void StartQuest(string questId, object npcContext);
     void CompleteQuest(string questId);
+    void CompleteQuestStep(string questId, int stepIndex);
 
     // BATTLE
     void OnBattleWon(object arena, Action cb);

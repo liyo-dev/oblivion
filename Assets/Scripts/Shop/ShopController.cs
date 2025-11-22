@@ -31,6 +31,21 @@ public class ShopController : MonoBehaviour
             stock[i]?.ResetRuntime();
     }
 
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        // Establecer valores por defecto cuando se añaden nuevos items
+        foreach (var entry in stock)
+        {
+            if (entry != null && entry.buyPriceOverride == 0 && entry.sellPriceOverride == 0)
+            {
+                entry.buyPriceOverride = -1;
+                entry.sellPriceOverride = -1;
+            }
+        }
+    }
+#endif
+
     public bool TryBuy(int index, out string message)
     {
         message = null;
@@ -57,6 +72,8 @@ public class ShopController : MonoBehaviour
             return false;
 
         int price = entry.GetBuyPrice();
+        Debug.Log($"[ShopController] TryBuy: item={entry.item.displayName}, precio={price}, buyPriceOverride={entry.buyPriceOverride}, item.buyPrice={entry.item.buyPrice}");
+        
         if (price > 0 && !HasCurrency(price))
         {
             message = "No tienes suficientes monedas.";
@@ -103,14 +120,23 @@ public class ShopController : MonoBehaviour
 
     bool HasInventoryReferences(out string message)
     {
+        // Intentar obtener referencias si son null
+        if (playerInventory == null)
+            PlayerService.TryGetComponent(out playerInventory, includeInactive: true, allowSceneLookup: true);
+        
+        if (wardrobeInventory == null)
+            PlayerService.TryGetComponent(out wardrobeInventory, includeInactive: true, allowSceneLookup: true);
+        
         if (playerInventory == null)
         {
             message = "No hay inventario configurado.";
+            Debug.LogError("[ShopController] No se pudo encontrar Inventory del jugador");
             return false;
         }
         if (currencyItem == null)
         {
             message = "No se ha asignado item de monedas.";
+            Debug.LogError("[ShopController] currencyItem no está asignado en el inspector");
             return false;
         }
         message = null;

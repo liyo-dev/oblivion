@@ -124,6 +124,12 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 
     public void CompleteQuest(string questId) => QS?.Complete(questId);
 
+    public void CompleteQuestStep(string questId, int stepIndex)
+    {
+        if (string.IsNullOrEmpty(questId)) return;
+        QS?.CompleteStep(questId, stepIndex);
+    }
+
     // ============= CUSTOM (sticky) =============
     public void RaiseCustom(string key)
     {

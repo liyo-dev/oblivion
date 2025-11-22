@@ -120,6 +120,16 @@ public class WorldBootstrap : MonoBehaviour
 
             var mgr = go.GetComponent<NPCBehaviourManager>();
             if (mgr == null) continue;
+            
+            // Aplicar estado activo/inactivo solo si se guardó explícitamente
+            if (entry.hasActiveState && !entry.isActive)
+            {
+                go.SetActive(false);
+                Debug.Log($"[WorldBootstrap] NPC '{entry.npcId}' desactivado según preset");
+                continue; // No aplicar posición si está desactivado
+            }
+            
+            // Solo aplicar posición si el NPC tiene persistencia habilitada
             if (!mgr.persistLastPosition) continue;
 
             mgr.lastPosition = entry.position;

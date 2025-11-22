@@ -121,6 +121,10 @@
             "value": "Idioma"
         },
         {
+            "key": "SHOP_VENDOR",
+            "value": "¿Qué te apetece comprar hoy?"
+        },
+        {
             "key": "System_Error",
             "value": "Error"
         },

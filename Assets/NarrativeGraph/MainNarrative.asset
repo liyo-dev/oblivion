@@ -27,9 +27,17 @@ MonoBehaviour:
   - rid: 5623891390812389407
   - rid: 5623891407965258066
   - rid: 5623891407965258211
+  - rid: 5623891431555334813
+  - rid: 5623891431555334814
+  - rid: 5623891431555334824
+  - rid: 5623891431555334913
+  - rid: 5623891431555335063
+  - rid: -2
   references:
     version: 2
     RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -39,7 +47,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: 13, y: -615}
+        position: {x: 12.8, y: -615.2}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -52,7 +60,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -376, y: -158}
+        position: {x: -376, y: -158.4}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
@@ -66,7 +74,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 529, y: -615}
+        position: {x: 528.8, y: -615.2}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -79,7 +87,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 1088, y: -2}
+        position: {x: 1088, y: -2.3999996}
         outputs: []
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -96,7 +104,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 222, y: -158}
+        position: {x: 222.4, y: -158.4}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         cinematicSceneName: Cinematic_DemonAppears
@@ -110,7 +118,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 737, y: -158}
+        position: {x: 736.8, y: -158.4}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         - d038b916-5571-48b0-a896-7dbc2af3e05c
@@ -124,7 +132,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 605, y: 18}
+        position: {x: 604.8, y: 17.6}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -143,7 +151,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 114, y: 56}
+        position: {x: 114.4, y: 56}
         outputs:
         - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
@@ -157,7 +165,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: -442, y: 170}
+        position: {x: -441.6, y: 174.40001}
         outputs:
         - a5599863-a03c-443e-8ab8-8f0883a196b9
         npcName: Eldran
@@ -183,6 +191,8 @@ MonoBehaviour:
         lockMode: 3
         offscreenPadding: 0.05
         cameraHeightOffset: 1.5
+        deactivateOnComplete: 0
+        persistDeactivation: 0
         debugLogs: 0
         treatNoPathAsReach: 1
     - rid: 5623891259268006347
@@ -194,7 +204,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
-        position: {x: -376, y: -327}
+        position: {x: -376, y: -327.19998}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
     - rid: 5623891390812389407
@@ -206,8 +216,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5599863-a03c-443e-8ab8-8f0883a196b9
-        position: {x: 65, y: 361}
-        outputs: []
+        position: {x: 54.4, y: 293.6}
+        outputs:
+        - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
+        - eea578d0-b7c5-4ca9-92f0-0816b720155f
         questId: ELDRAN_MISSION4
     - rid: 5623891407965258066
       type: {class: GraphNoteNode, ns: , asm: Assembly-CSharp}
@@ -218,7 +230,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 717edf65-1098-4c74-b95c-c9fff9a2e1ef
-        position: {x: 251, y: -327}
+        position: {x: 251.2, y: -327.19998}
         outputs: []
         note: La amenaza del demonio despierta la magia del interior de Alex.
         accent: {r: 1, g: 0.93, b: 0.55, a: 1}
@@ -231,7 +243,105 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f7b1c0c7-a92f-4e47-9ecb-d1e3aa95d619
-        position: {x: 157, y: 482}
+        position: {x: 35.2, y: 418.4}
         outputs: []
         note: En este punto hay libertad para explorar y hacer misiones secundarias
         accent: {r: 1, g: 0.93, b: 0.55, a: 1}
+    - rid: 5623891431555334813
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: HABLO CON VICTORIA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
+        position: {x: 539.2, y: 464}
+        outputs:
+        - d1615064-86a0-4afb-b350-4a8b6519554e
+        eventKey: ADD_CLOAK
+    - rid: 5623891431555334814
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recibo capa de mago
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: d1615064-86a0-4afb-b350-4a8b6519554e
+        position: {x: 915.2, y: 464}
+        outputs:
+        - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
+        - a2f041b9-7d2d-4ebd-9d01-767f08b00e21
+        item: {fileID: 11400000, guid: 6e49c2acf94484241bdfa6fef0997fd6, type: 2}
+        amount: 1
+        logWarnings: 1
+    - rid: 5623891431555334824
+      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Victoria se va
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: fe467d0d-ec2b-40a3-bee0-ac728d838d3e
+        position: {x: 1429.6, y: 693.6}
+        outputs: []
+        npcName: Victoria
+        npcTag: 
+        dialogueOverride: {fileID: 0}
+        triggerInteractableIfNoOverride: 1
+        dialogueTimeout: 60
+        targetAnchorName: House_FrontDoor
+        targetPosition: {x: 0, y: 0, z: 0}
+        anchorOffset: {x: 0, y: 0, z: 0}
+        useAnchorPosition: 1
+        useRelativeOffset: 0
+        relativeOffsetIsLocal: 1
+        relativeOffset: {x: 0, y: 0, z: 5}
+        navmeshSampleRadius: 2
+        stoppingDistance: 0.35
+        maxWalkSeconds: 12
+        minAnimSpeed: 0.25
+        resetAnimationOnEnd: 1
+        minVisibleWalkSeconds: 0.5
+        minDistanceBeforeTeleport: 0.5
+        lockPlayer: 1
+        lockMode: 3
+        offscreenPadding: 0.05
+        cameraHeightOffset: 1.5
+        deactivateOnComplete: 1
+        persistDeactivation: 1
+        debugLogs: 0
+        treatNoPathAsReach: 1
+    - rid: 5623891431555334913
+      type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "A\xF1adimos una poci\xF3n de vida al inventario"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
+        position: {x: 434.4, y: 693.6}
+        outputs:
+        - 1771837a-5269-4791-81da-c842d6ebac44
+        itemToWaitFor: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
+        minimumAmount: 1
+        completeIfAlreadyOwned: 1
+        debugLogs: 0
+    - rid: 5623891431555335063
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Completamos el primer paso de la misi\xF3n"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: a2f041b9-7d2d-4ebd-9d01-767f08b00e21
+        position: {x: 1320.8, y: 424.80002}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        steps: 00000000
+        completeQuest: 0
+        logWarnings: 0

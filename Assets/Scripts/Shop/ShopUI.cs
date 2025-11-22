@@ -3,6 +3,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+#endif
+
 /// <summary>
 /// UI genérica para tiendas. Se conecta a un ShopController y muestra sus items.
 /// Reutilizable para múltiples tiendas.
@@ -35,6 +40,8 @@ public class ShopUI : MonoBehaviour
     private int _selectedIndex = -1;
     private bool _isOpen;
     private Inventory _playerInventory;
+    private float _navCooldown;
+    private const float NAV_REPEAT_DELAY = 0.18f;
 
     void Awake()
     {
@@ -66,6 +73,71 @@ public class ShopUI : MonoBehaviour
             shopController.OnStockChanged -= RefreshUI;
     }
 
+    void Update()
+    {
+        if (!_isOpen) return;
+        
+        _navCooldown -= Time.unscaledDeltaTime;
+        
+        if (_navCooldown <= 0f)
+        {
+            int move = ReadVerticalInput();
+            if (move != 0)
+            {
+                NavigateItems(move);
+                _navCooldown = NAV_REPEAT_DELAY;
+            }
+        }
+        
+        if (ReadSubmitInput())
+        {
+            OnBuyClicked();
+        }
+        
+        // Cerrar con ESC o botón B del gamepad
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetButtonDown("Cancel"))
+        {
+            Close();
+        }
+    }
+    
+    int ReadVerticalInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null)
+        {
+            if (gp.dpad.up.wasPressedThisFrame || gp.leftStick.up.wasPressedThisFrame) return -1;
+            if (gp.dpad.down.wasPressedThisFrame || gp.leftStick.down.wasPressedThisFrame) return +1;
+        }
+#endif
+        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) return -1;
+        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) return +1;
+        return 0;
+    }
+    
+    bool ReadSubmitInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null && gp.buttonSouth.wasPressedThisFrame) return true;
+#endif
+        return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space);
+    }
+    
+    void NavigateItems(int direction)
+    {
+        if (_itemCards.Count == 0) return;
+        
+        int newIndex = _selectedIndex + direction;
+        
+        // Wrap around
+        if (newIndex < 0) newIndex = _itemCards.Count - 1;
+        if (newIndex >= _itemCards.Count) newIndex = 0;
+        
+        SelectItem(newIndex);
+    }
+
     void Start()
     {
         if (_playerInventory == null)
@@ -92,10 +164,21 @@ public class ShopUI : MonoBehaviour
             windowRoot.SetActive(true);
         
         if (shopController == null)
-            PlayerService.TryGetComponent(out shopController, includeInactive: true, allowSceneLookup: true);
+        {
+            shopController = GetComponent<ShopController>();
+            if (shopController == null)
+                shopController = GetComponentInChildren<ShopController>();
+        }
+        
+        if (shopController == null)
+        {
+            Debug.LogError("[ShopUI] No se encontró ShopController en este GameObject ni en sus hijos.");
+        }
+        
         RefreshUI();
         SelectFirstItem();
         
+        GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
     }
 
@@ -107,6 +190,7 @@ public class ShopUI : MonoBehaviour
         if (windowRoot != null)
             windowRoot.SetActive(false);
         
+        GameState.Pop(GamePhase.Shop);
         Time.timeScale = 1f;
     }
 
@@ -161,16 +245,37 @@ public class ShopUI : MonoBehaviour
         }
         _itemCards.Clear();
         
-        if (shopController == null || itemCardPrefab == null || itemListContainer == null)
+        if (shopController == null)
+        {
+            Debug.LogError("[ShopUI] RebuildItemList: shopController es NULL");
             return;
+        }
+        
+        if (itemCardPrefab == null)
+        {
+            Debug.LogError("[ShopUI] RebuildItemList: itemCardPrefab es NULL");
+            return;
+        }
+        
+        if (itemListContainer == null)
+        {
+            Debug.LogError("[ShopUI] RebuildItemList: itemListContainer es NULL");
+            return;
+        }
+        
+        Debug.Log($"[ShopUI] RebuildItemList: Stock tiene {shopController.Stock.Count} items");
         
         // Crear cards para cada item en stock
         for (int i = 0; i < shopController.Stock.Count; i++)
         {
             var entry = shopController.Stock[i];
             if (entry == null || entry.item == null)
+            {
+                Debug.LogWarning($"[ShopUI] Item en índice {i} es null o no tiene ItemData");
                 continue;
+            }
             
+            Debug.Log($"[ShopUI] Creando card para item: {entry.item.displayName}");
             var cardObj = Instantiate(itemCardPrefab, itemListContainer);
             var card = cardObj.GetComponent<ShopItemCard>();
             
@@ -180,7 +285,13 @@ public class ShopUI : MonoBehaviour
                 card.Setup(entry, index, () => SelectItem(index));
                 _itemCards.Add(card);
             }
+            else
+            {
+                Debug.LogError($"[ShopUI] itemCardPrefab no tiene componente ShopItemCard");
+            }
         }
+        
+        Debug.Log($"[ShopUI] Se crearon {_itemCards.Count} cards en total");
     }
 
     void SelectItem(int index)
@@ -206,20 +317,9 @@ public class ShopUI : MonoBehaviour
 
     void SelectFirstItem()
     {
-        if (shopController != null && shopController.Stock.Count > 0)
+        if (shopController != null && shopController.Stock.Count > 0 && _itemCards.Count > 0)
         {
             SelectItem(0);
-            
-            // Auto-seleccionar la primera card
-            if (_itemCards.Count > 0 && _itemCards[0] != null)
-            {
-                var selectable = _itemCards[0].GetComponent<Selectable>();
-                if (selectable != null)
-                {
-                    EventSystem.current?.SetSelectedGameObject(selectable.gameObject);
-                    selectable.Select();
-                }
-            }
         }
     }
 
@@ -306,77 +406,5 @@ public class ShopUI : MonoBehaviour
         // TODO: Implementar venta de items del inventario
         if (messageText != null)
             messageText.text = "Función de venta no implementada aún.";
-    }
-
-    void Update()
-    {
-        if (!_isOpen) return;
-        
-        // Cerrar con ESC o botón B del gamepad
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetButtonDown("Cancel"))
-        {
-            Close();
-        }
-    }
-}
-
-/// <summary>
-/// Componente para cada card de item en la lista de la tienda.
-/// </summary>
-public class ShopItemCard : MonoBehaviour
-{
-    [SerializeField] private Image iconImage;
-    [SerializeField] private Text nameText;
-    [SerializeField] private Text priceText;
-    [SerializeField] private Text stockText;
-    [SerializeField] private Button button;
-    [SerializeField] private Image background;
-    
-    [Header("Visual Feedback")]
-    [SerializeField] private Color normalColor = Color.white;
-    [SerializeField] private Color selectedColor = new Color(1f, 0.82f, 0.16f, 1f);
-    
-    private System.Action _onSelect;
-
-    void Awake()
-    {
-        if (button != null)
-            button.onClick.AddListener(() => _onSelect?.Invoke());
-    }
-
-    public void Setup(ShopController.ShopItemEntry entry, int index, System.Action onSelect)
-    {
-        _onSelect = onSelect;
-        
-        if (entry == null || entry.item == null)
-            return;
-        
-        var item = entry.item;
-        
-        if (iconImage != null)
-            iconImage.sprite = item.icon;
-        
-        if (nameText != null)
-            nameText.text = item.displayName;
-        
-        if (priceText != null)
-            priceText.text = $"{entry.GetBuyPrice()} 💰";
-        
-        if (stockText != null)
-        {
-            if (entry.limitedStock)
-                stockText.text = entry.HasStock ? "Disponible" : "Agotado";
-            else
-                stockText.text = "";
-        }
-        
-        if (button != null)
-            button.interactable = entry.HasStock;
-    }
-
-    public void SetSelected(bool selected)
-    {
-        if (background != null)
-            background.color = selected ? selectedColor : normalColor;
     }
 }
