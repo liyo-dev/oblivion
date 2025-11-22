@@ -616,6 +616,7 @@ internal class DesignStoryGraphView : GraphView
     private DesignNotebook _notebook;
     private readonly Dictionary<string, StoryCardNodeView> _nodes = new();
     private Action _onDirty;
+    private bool _isRebuilding;
 
     public DesignStoryGraphView()
     {
@@ -662,8 +663,17 @@ internal class DesignStoryGraphView : GraphView
 
     private void Rebuild()
     {
-        DeleteElements(graphElements.ToList());
-        _nodes.Clear();
+        _isRebuilding = true;
+        try
+        {
+            DeleteElements(graphElements.ToList());
+            _nodes.Clear();
+        }
+        finally
+        {
+            _isRebuilding = false;
+        }
+
         if (_notebook == null) return;
 
         foreach (var card in _notebook.storyCards)
@@ -684,6 +694,9 @@ internal class DesignStoryGraphView : GraphView
 
     private GraphViewChange GraphChanged(GraphViewChange changes)
     {
+        if (_isRebuilding)
+            return changes;
+
         if (changes.edgesToCreate != null)
         {
             foreach (var e in changes.edgesToCreate)

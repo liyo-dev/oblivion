@@ -1,6 +1,7 @@
 // NpcAutoMoveNode.cs
 using System;
 using System.Collections;
+using System.Linq;
 using Alex.NPC;
 using Alex.NPC.Common;
 using UnityEngine;
@@ -84,7 +85,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         var npc = ResolveNpc();
         if (npc == null)
         {
-            Debug.LogWarning("[NpcAutoMoveNode] No se encontró el NPC configurado.");
+            // El warning detallado ya se mostró en ResolveNpc()
             done?.Invoke();
             yield break;
         }
@@ -532,11 +533,18 @@ public sealed class NpcAutoMoveNode : NarrativeNode
 
         if (!string.IsNullOrWhiteSpace(npcName))
         {
+            var trimmedName = npcName.Trim();
             foreach (var n in npcs)
             {
-                if (n != null && string.Equals(n.name, npcName, StringComparison.OrdinalIgnoreCase))
-                    return n;
+                if (n != null)
+                {
+                    var npcGameObjectName = n.name.Trim();
+                    if (string.Equals(npcGameObjectName, trimmedName, StringComparison.OrdinalIgnoreCase))
+                        return n;
+                }
             }
+            // Log para debugging si no se encuentra
+            Debug.LogWarning($"[NpcAutoMoveNode] No se encontró NPC con nombre exacto '{trimmedName}'. NPCs disponibles: {string.Join(", ", npcs.Where(n => n != null).Select(n => $"'{n.name}'"))}");
         }
 
         if (!string.IsNullOrWhiteSpace(npcTag))
@@ -562,7 +570,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
 
         if (!string.IsNullOrWhiteSpace(npcName))
         {
-            var go = GameObject.Find(npcName);
+            var trimmedName = npcName.Trim();
+            var go = GameObject.Find(trimmedName);
             if (go != null)
                 candidate = go.GetComponent<NPCBehaviourManager>();
         }

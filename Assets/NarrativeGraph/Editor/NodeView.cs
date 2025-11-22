@@ -47,6 +47,12 @@ namespace Sendero.Narrative.Editor
 
         public NodeView(NarrativeNode model)
         {
+            if (model == null)
+            {
+                Debug.LogError("NodeView: Cannot create view for null node model");
+                return;
+            }
+
             Model = model;
 
             var isNote = model is GraphNoteNode;

@@ -28,39 +28,37 @@ MonoBehaviour:
   - rid: 5623891407965258066
   - rid: 5623891407965258211
   - rid: 5623891431555334813
-  - rid: 5623891431555334814
   - rid: 5623891431555334824
   - rid: 5623891431555334913
   - rid: 5623891431555335063
-  - rid: -2
+  - rid: 5623891444353466377
+  - rid: 5623891444353466616
   references:
     version: 2
     RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: CUANDO LEE LA CARTA
+        displayTitle: 1.- CUANDO LEE LA CARTA
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: 12.8, y: -615.2}
+        position: {x: -249, y: -596}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
     - rid: 4128268622357594632
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: ' ELDRAN LE PIDE QUE BUSQUE UNA CAJA'
+        displayTitle: 3.-  ELDRAN LE PIDE QUE BUSQUE UNA CAJA
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -376, y: -158.4}
+        position: {x: -376, y: -158}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
@@ -68,13 +66,13 @@ MonoBehaviour:
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: TIENE QUE HABLAR CON ELDRAN
+        displayTitle: 2.- TIENE QUE HABLAR CON ELDRAN
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 528.8, y: -615.2}
+        position: {x: -280, y: -386}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -87,7 +85,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 1088, y: -2.3999996}
+        position: {x: 1183, y: -552}
         outputs: []
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -98,13 +96,13 @@ MonoBehaviour:
     - rid: 4128268641526088494
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 'CINEMATICA: APARECE UN DEMONIO'
+        displayTitle: '4.- CINEMATICA: APARECE UN DEMONIO'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 222.4, y: -158.4}
+        position: {x: 222, y: -158}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         cinematicSceneName: Cinematic_DemonAppears
@@ -112,13 +110,13 @@ MonoBehaviour:
     - rid: 4128268641526088533
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: HAY QUE DERROTAR AL DEMONIO
+        displayTitle: 5.- HAY QUE DERROTAR AL DEMONIO
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 736.8, y: -158.4}
+        position: {x: 697, y: -158}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         - d038b916-5571-48b0-a896-7dbc2af3e05c
@@ -126,13 +124,13 @@ MonoBehaviour:
     - rid: 4128268648164098057
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 'ARENA DE BATALLA: DEMONIO'
+        displayTitle: '5.1.- ARENA DE BATALLA: DEMONIO'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 604.8, y: 17.6}
+        position: {x: 1183, y: -34}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -145,13 +143,13 @@ MonoBehaviour:
     - rid: 4128268764951085534
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 'CINEMATICA: LOS PLANES DEL VILLANO'
+        displayTitle: '6.- CINEMATICA: LOS PLANES DEL VILLANO'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 114.4, y: 56}
+        position: {x: 642, y: 60}
         outputs:
         - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
         cinematicSceneName: Cinematic_VillainPlans
@@ -159,13 +157,13 @@ MonoBehaviour:
     - rid: 5623891023686795667
       type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: ELDRAN SE VA A CASA DE ALEX
+        displayTitle: 7.- ELDRAN SE VA A CASA DE ALEX
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: -441.6, y: 174.40001}
+        position: {x: -376, y: 60}
         outputs:
         - a5599863-a03c-443e-8ab8-8f0883a196b9
         npcName: Eldran
@@ -204,19 +202,19 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
-        position: {x: -376, y: -327.19998}
+        position: {x: -577, y: -596}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
     - rid: 5623891390812389407
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: HAY QUE VER A ELDRAN CUANDO ESTE PREPARADO
+        displayTitle: 8.- HAY QUE VER A ELDRAN CUANDO ESTE PREPARADO
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5599863-a03c-443e-8ab8-8f0883a196b9
-        position: {x: 54.4, y: 293.6}
+        position: {x: 129, y: 763}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - eea578d0-b7c5-4ca9-92f0-0816b720155f
@@ -230,9 +228,12 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 717edf65-1098-4c74-b95c-c9fff9a2e1ef
-        position: {x: 251.2, y: -327.19998}
+        position: {x: 288, y: -407}
         outputs: []
-        note: La amenaza del demonio despierta la magia del interior de Alex.
+        note: 'La amenaza del demonio despierta la magia del interior de Alex. Se
+          desbloquea la magia y
+
+          Alex aaprende bola de fuego.'
         accent: {r: 1, g: 0.93, b: 0.55, a: 1}
     - rid: 5623891407965258211
       type: {class: GraphNoteNode, ns: , asm: Assembly-CSharp}
@@ -243,49 +244,34 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f7b1c0c7-a92f-4e47-9ecb-d1e3aa95d619
-        position: {x: 35.2, y: 418.4}
+        position: {x: 179, y: 574}
         outputs: []
         note: En este punto hay libertad para explorar y hacer misiones secundarias
         accent: {r: 1, g: 0.93, b: 0.55, a: 1}
     - rid: 5623891431555334813
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: HABLO CON VICTORIA
+        displayTitle: 9.1.- HABLO CON VICTORIA
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
-        position: {x: 539.2, y: 464}
+        position: {x: 642, y: 625}
         outputs:
-        - d1615064-86a0-4afb-b350-4a8b6519554e
-        eventKey: ADD_CLOAK
-    - rid: 5623891431555334814
-      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: Recibo capa de mago
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: d1615064-86a0-4afb-b350-4a8b6519554e
-        position: {x: 915.2, y: 464}
-        outputs:
+        - 56879a1a-c46a-4bab-a132-eab0b6cbaead
         - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
-        - a2f041b9-7d2d-4ebd-9d01-767f08b00e21
-        item: {fileID: 11400000, guid: 6e49c2acf94484241bdfa6fef0997fd6, type: 2}
-        amount: 1
-        logWarnings: 1
+        eventKey: ADD_CLOAK
     - rid: 5623891431555334824
       type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: Victoria se va
+        displayTitle: VICTORIA SE VA
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: fe467d0d-ec2b-40a3-bee0-ac728d838d3e
-        position: {x: 1429.6, y: 693.6}
+        position: {x: 1052, y: 761}
         outputs: []
         npcName: Victoria
         npcTag: 
@@ -317,15 +303,16 @@ MonoBehaviour:
     - rid: 5623891431555334913
       type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: "A\xF1adimos una poci\xF3n de vida al inventario"
+        displayTitle: 9.2.- COMPRO UNA POCION DE VIDA
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: 434.4, y: 693.6}
+        position: {x: 104, y: 1003}
         outputs:
         - 1771837a-5269-4791-81da-c842d6ebac44
+        - acdb775f-f475-47a8-8a8c-732de6cbd1fb
         itemToWaitFor: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
         minimumAmount: 1
         completeIfAlreadyOwned: 1
@@ -333,15 +320,44 @@ MonoBehaviour:
     - rid: 5623891431555335063
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: "Completamos el primer paso de la misi\xF3n"
+        displayTitle: SE COMPLETA EL PASO 1
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a2f041b9-7d2d-4ebd-9d01-767f08b00e21
-        position: {x: 1320.8, y: 424.80002}
+        position: {x: 1448, y: 625}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 00000000
         completeQuest: 0
         logWarnings: 0
+    - rid: 5623891444353466377
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE COMPLETA EL PASO 2
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
+        position: {x: 104, y: 1315}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        steps: 0000000000000000
+        completeQuest: 0
+        logWarnings: 0
+    - rid: 5623891444353466616
+      type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: RECIBO CAPA DE MAGO
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 56879a1a-c46a-4bab-a132-eab0b6cbaead
+        position: {x: 1052, y: 441}
+        outputs:
+        - a2f041b9-7d2d-4ebd-9d01-767f08b00e21
+        wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
+        logWarnings: 1
