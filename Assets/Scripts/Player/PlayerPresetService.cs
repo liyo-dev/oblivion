@@ -408,8 +408,12 @@ public class PlayerPresetService : MonoBehaviour
         if (right && right.slotType == SpellSlotType.SpecialOnly) { Debug.LogWarning("[PlayerPresetService] Right es SpecialOnly, se descarta"); right = null; }
         if (special && special.slotType != SpellSlotType.SpecialOnly) { Debug.LogWarning("[PlayerPresetService] Special no es SpecialOnly, se descarta"); special = null; }
 
-        // Evitar duplicados en slots izq/der
-        if (left && right && leftId == rightId) { Debug.LogWarning("[PlayerPresetService] Left y Right tienen el mismo ID, se borra Right"); right = null; }
+        // Evitar duplicados en slots izq/der (limpieza automática, normal en transiciones)
+        if (left && right && leftId == rightId) 
+        { 
+            Debug.Log($"[PlayerPresetService] Duplicado detectado en Left/Right ({leftId}), se limpia automáticamente"); 
+            right = null; 
+        }
 
         // Auto-completar slots vacíos (opcional o por fallback si todos estaban None)
         if ((autoFillEmptySlotsFromUnlocked || allNone) && preset.unlockedSpells != null)
@@ -455,7 +459,7 @@ public class PlayerPresetService : MonoBehaviour
     }
 
     // === NUEVO: API pública para re-aplicar el preset activo en runtime (incluye mana) ===
-    public void ApplyCurrentPreset()
+    public void ApplyCurrentPreset(bool includeInventory = false)
     {
         if (!GameBootService.IsAvailable)
         {
@@ -473,7 +477,14 @@ public class PlayerPresetService : MonoBehaviour
 
         // Aplicar stats (maná) y luego los hechizos
         ApplyManaFromPreset(preset);
-        ApplyInventoryFromPreset(preset);
+        
+        // IMPORTANTE: Solo restaurar inventario cuando cargamos partida o iniciamos nueva
+        // NO cuando solo cambiamos equipamiento en runtime (evita perder items recogidos)
+        if (includeInventory)
+        {
+            ApplyInventoryFromPreset(preset);
+        }
+        
         ConfigureSpells(preset);
         ApplyAppearanceFromPreset(preset);
         ApplyWardrobeFromPreset(preset);

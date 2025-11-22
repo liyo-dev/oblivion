@@ -204,7 +204,8 @@ public class UnlockTrigger : MonoBehaviour
         // Aplicar preset una sola vez si fue marcado
         if (pendingApplyPreset && presetService)
         {
-            presetService.ApplyCurrentPreset();
+            // No restaurar inventario al desbloquear abilities (solo actualizar abilities/mana)
+            presetService.ApplyCurrentPreset(includeInventory: false);
         }
 
         // === Guardado ===

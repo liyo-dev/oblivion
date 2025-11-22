@@ -100,14 +100,21 @@ namespace Sendero.Narrative.Editor
                 return;
             }
 
+            // Clean up null nodes first
+            _graph.nodes.RemoveAll(n => n == null);
+
             if (string.IsNullOrEmpty(_graph.startNodeGuid) && _graph.nodes.Count > 0)
                 _graph.startNodeGuid = _graph.nodes[0].guid;
 
-            foreach (var model in _graph.nodes) DrawNode(model);
+            foreach (var model in _graph.nodes)
+            {
+                if (model == null) continue;
+                DrawNode(model);
+            }
 
             foreach (var model in _graph.nodes)
             {
-                if (model.outputs == null) continue;
+                if (model == null || model.outputs == null) continue;
                 foreach (var outGuid in model.outputs.Where(s => !string.IsNullOrEmpty(s)))
                     if (_nodeViews.TryGetValue(model.guid, out var from) && _nodeViews.TryGetValue(outGuid, out var to))
                     {
@@ -267,7 +274,10 @@ namespace Sendero.Narrative.Editor
 
             // Quita referencias desde otros nodos
             foreach (var n in _graph.nodes)
+            {
+                if (n == null) continue;
                 n.outputs?.RemoveAll(g => g == nv.Model.guid);
+            }
 
             // Borra el propio nodo
             _graph.nodes.Remove(nv.Model);

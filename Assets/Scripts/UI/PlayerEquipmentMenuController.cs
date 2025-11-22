@@ -1376,6 +1376,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_preset == null) return;
 
+            // Primero limpiamos duplicados de otros slots antes de asignar
+            // para evitar que ConfigureSpells vea duplicados temporales
+            EnsureUniqueAssignment(id, slot);
+
             switch (slot)
             {
                 case MagicSlot.Left: _preset.leftSpellId = id; break;
@@ -1383,8 +1387,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 case MagicSlot.Special: _preset.specialSpellId = id; break;
             }
 
-            EnsureUniqueAssignment(id, slot);
-            _presetService?.ApplyCurrentPreset();
+            // No restaurar inventario al cambiar hechizos (solo actualizar spells)
+            _presetService?.ApplyCurrentPreset(includeInventory: false);
             UpdateSlotLabels();
             PlaySlotConfirmFeedback(slot);
         }
@@ -1725,7 +1729,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _preset.leftSpellId = left;
                 _preset.rightSpellId = right;
                 _preset.specialSpellId = special;
-                _presetService?.ApplyCurrentPreset();
+                // No restaurar inventario al limpiar duplicados (solo actualizar spells)
+                _presetService?.ApplyCurrentPreset(includeInventory: false);
             }
         }
 
@@ -2056,7 +2061,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void Snapshot()
         {
             _presetService?.SnapshotAppearanceToPreset();
-            _presetService?.ApplyCurrentPreset();
+            // No restaurar inventario al cambiar apariencia (solo actualizar appearance)
+            _presetService?.ApplyCurrentPreset(includeInventory: false);
         }
 
         void UpdateLabels()

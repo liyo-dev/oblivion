@@ -51,8 +51,33 @@ MonoBehaviour:
     de pedir poder, pide salvar al Hermano del Antagonista, restaurando as\xED el
     equilibrio y devolviendo la paz al mundo.\n\nEl cielo vuelve a brillar. El Sendero,
     ahora sellado, permanece como s\xEDmbolo de que la verdadera grandeza no proviene
-    de los deseos cumplidos, sino de los sacrificios que se hacen por amor.\n"
-  storyCards: []
+    de los deseos cumplidos, sino de los sacrificios que se hacen por amor.\n\n<b>texto</b>\n<b>texto</b>\n<size=18>texto</size>"
+  storyCards:
+  - guid: edccfafb-5a1c-4d26-a4c4-b89e9c503559
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: be9da337-a01b-458b-8ed7-edef98c4c4aa
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: c4087d36-3eb4-4951-84eb-e231404356ea
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 75d449c5-1fa8-43be-ae45-369cd1644586
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 912c6b89-65e7-4d74-8475-1e7ad7261a6b
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
   storyLinks: []
   quickNotes:
   - title: Misiones

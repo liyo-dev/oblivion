@@ -19,7 +19,6 @@ MonoBehaviour:
   - rid: 5623891252771815605
   - rid: 5623891252771815606
   - rid: 5623891259268006325
-  - rid: 5623891390812389746
   references:
     version: 2
     RefIds:
@@ -88,16 +87,3 @@ MonoBehaviour:
         outputs:
         - b637fe58-dba2-46e0-a474-9ce5cea8914e
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
-    - rid: 5623891390812389746
-      type: {class: GraphNoteNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 70e914dd-2cde-40c7-8fe9-21e2486b288d
-        position: {x: -109, y: -298}
-        outputs: []
-        note: 
-        accent: {r: 1, g: 0.93, b: 0.55, a: 1}

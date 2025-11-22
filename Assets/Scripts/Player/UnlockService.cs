@@ -76,13 +76,18 @@ public static class UnlockService
         if (preset.unlockedSpells == null) preset.unlockedSpells = new List<SpellId>();
 
         bool changed = false;
+        bool isNewUnlock = false;
+        
         if (!preset.unlockedSpells.Contains(spell))
         {
             preset.unlockedSpells.Add(spell);
             changed = true;
+            isNewUnlock = true;
         }
 
-        if (assignToEmptySlot)
+        // Solo asignar a un slot vacío si es la PRIMERA VEZ que se desbloquea
+        // Si ya estaba desbloqueado (carga de partida), respetar la configuración del usuario
+        if (assignToEmptySlot && isNewUnlock)
         {
             // Si es Special y el slot está vacío, asignarlo ahí; si no, usar Left/Right vacíos
             if (spell == SpellId.None)

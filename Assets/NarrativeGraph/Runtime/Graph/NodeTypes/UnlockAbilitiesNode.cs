@@ -73,7 +73,8 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
 
                     if (ps != null)
                     {
-                        ps.ApplyCurrentPreset();
+                        // No restaurar inventario al desbloquear abilities (solo actualizar abilities)
+                        ps.ApplyCurrentPreset(includeInventory: false);
                     }
                     else
                     {
