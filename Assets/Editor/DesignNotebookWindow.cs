@@ -714,9 +714,10 @@ public class DesignNotebookWindow : EditorWindow
                 normal = { textColor = new Color(0.18f, 0.18f, 0.18f) }
             };
 
-            NoteTitleField = new GUIStyle(EditorStyles.boldTextField)
+            NoteTitleField = new GUIStyle(EditorStyles.textField)
             {
-                fontSize = 12
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
             };
 
             NoteBody = new GUIStyle(EditorStyles.textArea)

@@ -18,11 +18,11 @@
         },
         {
             "id": "EVT_01",
-            "text": "Alex llega con esfuerzo cargando una caja de frutas para Eldran."
+            "text": "Will ven a verme cuando despiertes."
         },
         {
             "id": "EVT_02",
-            "text": "De pronto Alex presiente algo."
+            "text": "De pronto Will presiente algo."
         },
         {
             "id": "EVT_03",
@@ -30,7 +30,7 @@
         },
         {
             "id": "EVT_04",
-            "text": "Alex cierra los ojos y desata sin saberlo una poderosa magia."
+            "text": "Will cierra los ojos y desata sin saberlo una poderosa magia."
         },
         {
             "id": "EVT_05",
@@ -38,7 +38,7 @@
         },
         {
             "id": "EVT_06",
-            "text": "Alex se sorprende, sin entender lo que acaba de hacer."
+            "text": "Wi cierra los ojos y desata sin saberlo una poderosa magia."
         },
         {
             "id": "EVT_07",
@@ -46,7 +46,7 @@
         },
         {
             "id": "EVT_08",
-            "text": "Eldran grita: '¡Alex! Usa tu magia, presiona X y derrota al demonio.'"
+            "text": "Eldran grita: '¡Will! Usa tu magia, presiona X y derrota al demonio.'"
         }
     ]
 }
