@@ -139,6 +139,7 @@ public class GameBootProfile : ScriptableObject
         p.abilities.swim = data.canSwim;
         p.abilities.jump = data.canJump;
         p.abilities.climb = data.canClimb;
+        p.abilities.fly = data.canFly;
     }
 
     /// <summary>Preset activo: siempre runtimePreset (creado desde bootPreset, save o default)</summary>
@@ -192,6 +193,7 @@ public class GameBootProfile : ScriptableObject
             data.canSwim = activePreset.abilities.swim;
             data.canJump = activePreset.abilities.jump;
             data.canClimb = activePreset.abilities.climb;
+            data.canFly = activePreset.abilities.fly;
         }
 
         // === NUEVO: incluir posiciones de NPCs ===
@@ -388,7 +390,8 @@ public class GameBootProfile : ScriptableObject
             p.abilities.swim = actionManager.AllowSwim;
             p.abilities.jump = actionManager.AllowJump;
             p.abilities.climb = actionManager.AllowClimb;
-            syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb})");
+            p.abilities.fly = actionManager.AllowFly;
+            syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb},F:{actionManager.AllowFly})");
          }
 
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
