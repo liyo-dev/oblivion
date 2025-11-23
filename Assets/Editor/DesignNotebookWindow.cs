@@ -79,7 +79,39 @@ public class DesignNotebookWindow : EditorWindow
         if (notebook == _asset) return;
         _asset = notebook;
         _serialized = _asset != null ? new SerializedObject(_asset) : null;
+        EnsureNotebookCollections();
         RefreshStoryGraph();
+    }
+
+    private void EnsureNotebookCollections()
+    {
+        if (_asset == null) return;
+
+        bool changed = false;
+
+        if (_asset.storyCards == null)
+        {
+            _asset.storyCards = new List<DesignStoryCard>();
+            changed = true;
+        }
+
+        if (_asset.storyLinks == null)
+        {
+            _asset.storyLinks = new List<DesignStoryLink>();
+            changed = true;
+        }
+
+        if (_asset.quickNotes == null)
+        {
+            _asset.quickNotes = new List<DesignScratch>();
+            changed = true;
+        }
+
+        if (changed)
+        {
+            MarkAssetDirty();
+            _serialized?.UpdateIfRequiredOrScript();
+        }
     }
 
     private void OnGUI()
