@@ -230,12 +230,14 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (mp != null)
         {
             mp.SetKinematic(false);
+            Debug.Log($"[MagicProjectileSpawner] Launching projectile '{spell.displayName}' prefab='{spell.prefab?.name ?? "null"}' dir={dir} useGravity={spell.useGravity} initialSpeed={spell.initialSpeed}");
             mp.Launch(dir, spell.initialSpeed, spell.useGravity);
         }
         else if (go.TryGetComponent<Rigidbody>(out var rb))
         {
             rb.isKinematic = false;
             rb.useGravity = spell.useGravity;
+            Debug.Log($"[MagicProjectileSpawner] Launching Rigidbody prefab='{go.name}' dir={dir} useGravity={spell.useGravity} initialSpeed={spell.initialSpeed}");
             rb.angularVelocity = Vector3.zero;
             rb.velocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
@@ -246,6 +248,7 @@ public class MagicProjectileSpawner : MonoBehaviour
             // Si el cuerpo quedó dinámico tras restaurar, aplicamos velocidad limpia
             if (!cachedRb.isKinematic)
             {
+                Debug.Log($"[MagicProjectileSpawner] Launching cachedRb for prefab='{go.name}' dir={dir} useGravity={spell.useGravity} initialSpeed={spell.initialSpeed}");
                 cachedRb.angularVelocity = Vector3.zero;
                 cachedRb.velocity = dir * Mathf.Max(0f, spell.initialSpeed);
             }
