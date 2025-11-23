@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,6 +20,9 @@ public enum MenuKind
 /// </summary>
 public static class MenuManager
 {
+    public static event Action<MenuKind> MenuOpened;
+    public static event Action<MenuKind> MenuClosed;
+
     static readonly Dictionary<MenuKind, bool> s_open = new();
 
     /// <summary>Return true if this menu kind is currently registered as open.</summary>
@@ -86,23 +90,30 @@ public static class MenuManager
 
         s_open[kind] = true;
         Debug.Log($"[MenuManager] Opened {kind}");
+        MenuOpened?.Invoke(kind);
         return true;
     }
 
     /// <summary>Mark a menu as closed.</summary>
     public static void Close(MenuKind kind)
     {
+        bool wasOpen = IsOpen(kind);
         if (s_open.ContainsKey(kind))
             s_open[kind] = false;
         else
             s_open[kind] = false;
         Debug.Log($"[MenuManager] Closed {kind}");
+        if (wasOpen)
+            MenuClosed?.Invoke(kind);
     }
 
     /// <summary>Utility that registers a menu as open (used if a menu is opened externally).</summary>
     public static void RegisterOpen(MenuKind kind)
     {
+        bool alreadyOpen = IsOpen(kind);
         s_open[kind] = true;
+        if (!alreadyOpen)
+            MenuOpened?.Invoke(kind);
     }
 
     /// <summary>Reset internal state (for debug/tests).</summary>
