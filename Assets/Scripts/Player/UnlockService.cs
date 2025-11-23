@@ -4,6 +4,8 @@ using UnityEngine;
 /// Utilidades para modificar el preset activo del jugador (runtimePreset) de forma segura/idempotente.
 public static class UnlockService
 {
+    public static event System.Action<AbilityId> OnAbilityUnlocked;
+
     /// Intenta obtener el preset activo (runtime) del GameBootProfile.
     public static PlayerPresetSO GetActivePreset()
     {
@@ -30,6 +32,7 @@ public static class UnlockService
         {
             preset.unlockedAbilities.Add(ability);
             changed = true;
+            OnAbilityUnlocked?.Invoke(ability);
         }
 
         switch (ability)
