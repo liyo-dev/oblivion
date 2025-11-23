@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec039437ea2c63f4fa571092c671014a, type: 3}
   m_Name: DesignNotebook
   m_EditorClassIdentifier: Assembly-CSharp::DesignNotebook
-  highLevelSynopsis: "<b>texto</b></b>El S<u><color=#FFEB3B><color=#FFEB3B></color></color></u>endero
+  highLevelSynopsis: "<b>texto</b><b></b></b>El S<u><color=#FFEB3B><color=#FFEB3B></color></color></u>endero
     de las Estrellas: Resumen de la Trama\n\nHace eones, un mago desafi\xF3 a los
     dioses recorriendo el Sendero de las Estrellas, una serie de portales c\xF3smicos
     que ofrec\xEDan poder a quienes superaban sus pruebas. Su deseo final fue convertirse
@@ -119,8 +119,27 @@ MonoBehaviour:
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
+  - guid: 533cabc7-cbe4-4328-b9d2-54037de0e004
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 5c6aa1b4-8d51-4f50-886f-b8650ad830ac
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 096b48f2-0ade-4a28-9698-848ffd51b479
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
   storyLinks: []
   quickNotes:
+  - title: 
+    note: 
+    tags: 
+    color: {r: 1, g: 0.95, b: 0.65, a: 1}
   - title: Misiones
     note: "Mejoras en el panel de las misiones: Mostrar en el panel rapido solo las
       que no estan completas. El panel debe ocultarse solo. La flecha del Dpad arriba
@@ -128,7 +147,7 @@ MonoBehaviour:
       \r\n"
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
-  - title: 
+  - title: Nueva nota
     note: 
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}

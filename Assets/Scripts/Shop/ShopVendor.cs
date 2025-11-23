@@ -51,6 +51,15 @@ public class ShopVendor : MonoBehaviour
         // Esperar al final de frame para que DialogueManager termine de cerrar y libere GameState/Input
         yield return new WaitForEndOfFrame();
 
+        // Esperar unos frames extra hasta que el estado de diálogo se haya salido.
+        // Esto evita que MenuManager deniegue la apertura mientras Dialogue sigue activo.
+        int waitFrames = 0;
+        while (waitFrames < 10 && GameState.Is(GamePhase.Dialogue))
+        {
+            waitFrames++;
+            yield return null;
+        }
+
         if (_runtimeUI == null)
         {
             if (shopUIPrefab == null)
