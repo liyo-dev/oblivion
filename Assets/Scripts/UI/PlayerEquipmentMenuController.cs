@@ -102,6 +102,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private Text hpText;
     [SerializeField] private Text mpText;
 
+    [Header("Habilidades")]
+    [SerializeField] private GameObject abilitiesRoot;
+    [SerializeField] private Transform abilitiesContainer;
+    [SerializeField] private GameObject abilityRowPrefab;
+    [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
+
     [Header("Selección inicial")]
     [SerializeField] private GameObject initialSelectionOverride;
 
@@ -121,6 +127,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
+    readonly List<GameObject> _abilityEntries = new();
+    readonly List<AbilityId> _renderedAbilities = new();
     [Header("Cámara de equipamiento")]
     [SerializeField] private Camera equipmentPreviewCamera;
     [SerializeField] private float equipmentCameraDistance = 3f;
@@ -659,34 +667,116 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void UpdatePlayerInfoPanel()
     {
-        if (levelText == null && hpText == null && mpText == null) return;
+        bool hasStatsText = levelText != null || hpText != null || mpText != null;
+        bool hasAbilityUI = abilitiesContainer != null && abilityRowPrefab != null;
+        if (!hasStatsText && !hasAbilityUI) return;
 
         PlayerPresetSO preset = null;
         if (GameBootService.IsAvailable && GameBootService.Profile != null)
             preset = GameBootService.Profile.GetActivePresetResolved();
 
-        if (levelText != null)
-            levelText.text = preset != null ? $"Nivel: {preset.level}" : "Nivel: ?";
-
-        if (hpText != null)
+        if (hasStatsText)
         {
-            if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
-                hpText.text = $"Salud: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
-            else if (preset != null)
-                hpText.text = $"Salud: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
-            else
-                hpText.text = "Salud: ?";
+            if (levelText != null)
+                levelText.text = preset != null ? $"Nivel: {preset.level}" : "Nivel: ?";
+
+            if (hpText != null)
+            {
+                if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
+                    hpText.text = $"Salud: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
+                else if (preset != null)
+                    hpText.text = $"Salud: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
+                else
+                    hpText.text = "Salud: ?";
+            }
+
+            if (mpText != null)
+            {
+                if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
+                    mpText.text = $"Magia: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
+                else if (preset != null)
+                    mpText.text = $"Magia: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
+                else
+                    mpText.text = "Magia: ?";
+            }
         }
 
-        if (mpText != null)
+        UpdateAbilitiesPanel(preset);
+    }
+
+    void UpdateAbilitiesPanel(PlayerPresetSO preset)
+    {
+        if (abilitiesContainer == null || abilityRowPrefab == null)
         {
-            if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
-                mpText.text = $"Magia: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
-            else if (preset != null)
-                mpText.text = $"Magia: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
-            else
-                mpText.text = "Magia: ?";
+            if (abilitiesRoot != null)
+                abilitiesRoot.SetActive(false);
+            return;
         }
+
+        var unlocked = preset?.unlockedAbilities ?? System.Array.Empty<AbilityId>();
+
+        if (!NeedsAbilityRefresh(unlocked))
+            return;
+
+        for (int i = 0; i < _abilityEntries.Count; i++)
+        {
+            if (_abilityEntries[i] != null)
+                Destroy(_abilityEntries[i]);
+        }
+        _abilityEntries.Clear();
+        _renderedAbilities.Clear();
+
+        for (int i = 0; i < unlocked.Count; i++)
+        {
+            var abilityId = unlocked[i];
+            var row = Instantiate(abilityRowPrefab, abilitiesContainer);
+            var presentation = AbilityPresentationLookup.Resolve(abilityId, abilityPresentations);
+
+            if (row.TryGetComponent<AbilityInventoryEntry>(out var entry))
+            {
+                entry.SetPresentation(presentation);
+            }
+            else
+            {
+                var texts = row.GetComponentsInChildren<Text>();
+                if (texts != null && texts.Length > 0)
+                    texts[0].text = presentation.title;
+                if (texts != null && texts.Length > 1)
+                    texts[1].text = presentation.description;
+
+                var image = row.GetComponentInChildren<Image>();
+                if (image != null)
+                {
+                    image.sprite = presentation.icon;
+                    image.enabled = presentation.icon != null;
+                }
+            }
+
+            _abilityEntries.Add(row);
+            _renderedAbilities.Add(abilityId);
+        }
+
+        if (abilitiesRoot != null)
+            abilitiesRoot.SetActive(_renderedAbilities.Count > 0);
+    }
+
+    bool NeedsAbilityRefresh(IReadOnlyList<AbilityId> unlocked)
+    {
+        if (unlocked == null || unlocked.Count == 0)
+        {
+            return _renderedAbilities.Count != 0;
+        }
+
+        if (unlocked.Count != _renderedAbilities.Count)
+            return true;
+
+        for (int i = 0; i < unlocked.Count; i++)
+        {
+            if (unlocked[i] != _renderedAbilities[i])
+                return true;
+        }
+
+        return false;
     }
 
     bool EnsureViews()
