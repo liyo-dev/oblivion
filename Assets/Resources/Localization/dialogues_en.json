@@ -335,10 +335,6 @@
         {
             "key": "DLG_WOODS_GUARD",
             "value": "[EN] Solo los magos pueden pasar al bosque prohibido."
-        },
-        {
-            "key": "WATER_ENTER_NEEDS",
-            "value": "Before entering the water, you need: {0}\r\n"
         }
     ]
 }

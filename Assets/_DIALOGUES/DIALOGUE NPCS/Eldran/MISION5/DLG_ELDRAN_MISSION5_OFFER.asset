@@ -50,6 +50,6 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION5_OFFER_08
+    textId: DLG_ELDRAN_MISSION5_OFFER_10
     text: 
     portrait: {fileID: 0}
