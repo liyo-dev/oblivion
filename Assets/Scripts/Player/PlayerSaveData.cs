@@ -49,6 +49,7 @@ public class PlayerSaveData
     public bool canSwim;
     public bool canJump;
     public bool canClimb;
+    public bool canFly;
 
     // Nota: Eliminado el soporte de snapshot narrativo (redundante con flags)
 
@@ -116,6 +117,7 @@ public class PlayerSaveData
             d.canSwim = preset.abilities.swim;
             d.canJump = preset.abilities.jump;
             d.canClimb = preset.abilities.climb;
+            d.canFly = preset.abilities.fly;
         }
 
         return d;

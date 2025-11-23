@@ -89,7 +89,8 @@ public enum ActionMode
     Cinematic,
     Inventory,
     Stunned,
-    Swimming
+    Swimming,
+    Flying
 }
 
 /// <summary>Habilidades básicas que puede usar el jugador.</summary>
@@ -103,7 +104,8 @@ public enum PlayerAbility
     Magic,
     Interact,
     Carry,
-    Aim
+    Aim,
+    Fly
 }
 
 // Interactable / Session
