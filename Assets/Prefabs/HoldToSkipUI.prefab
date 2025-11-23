@@ -90,7 +90,7 @@ GameObject:
   - component: {fileID: 3751930814669221003}
   - component: {fileID: 8832130299040915484}
   m_Layer: 5
-  m_Name: Canvas Skip
+  m_Name: HoldToSkipUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

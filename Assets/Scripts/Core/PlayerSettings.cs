@@ -17,8 +17,13 @@ public static class PlayerSettings
         public string language = "es";
         public float masterVolume = 1f;
         public float sfxVolume = 1f;
+        public float musicVolume = 1f;
         public bool invertLook = false;
         public bool invertFlightLook = false;
+        public float lookSensitivity = 1f;
+        public bool vibration = true;
+        public bool subtitles = true;
+        public bool fullscreen = true;
     }
 
     private static bool _loaded;
@@ -51,6 +56,15 @@ public static class PlayerSettings
         }
     }
 
+    public static float MusicVolume
+    {
+        get
+        {
+            EnsureLoaded();
+            return _data.musicVolume;
+        }
+    }
+
     public static bool InvertLook
     {
         get
@@ -67,6 +81,30 @@ public static class PlayerSettings
             EnsureLoaded();
             return _data.invertFlightLook;
         }
+    }
+
+    public static float LookSensitivity
+    {
+        get
+        {
+            EnsureLoaded();
+            return _data.lookSensitivity;
+        }
+    }
+
+    public static bool Vibration
+    {
+        get { EnsureLoaded(); return _data.vibration; }
+    }
+
+    public static bool Subtitles
+    {
+        get { EnsureLoaded(); return _data.subtitles; }
+    }
+
+    public static bool Fullscreen
+    {
+        get { EnsureLoaded(); return _data.fullscreen; }
     }
 
     public static void EnsureLoaded()
@@ -114,6 +152,18 @@ public static class PlayerSettings
         ApplyVolume(AudioBus.Sfx, clamped);
     }
 
+    public static void SetMusicVolume(float value01)
+    {
+        EnsureLoaded();
+        float clamped = Mathf.Clamp01(value01);
+        if (Mathf.Approximately(_data.musicVolume, clamped))
+            return;
+
+        _data.musicVolume = clamped;
+        SaveToDisk();
+        ApplyVolume(AudioBus.Music, clamped);
+    }
+
     public static void SetInvertLook(bool invert)
     {
         EnsureLoaded();
@@ -136,6 +186,41 @@ public static class PlayerSettings
         InvertFlightLookChanged?.Invoke(invert);
     }
 
+    public static void SetLookSensitivity(float value)
+    {
+        EnsureLoaded();
+        float clamped = Mathf.Clamp(value, 0.1f, 5f);
+        if (Mathf.Approximately(_data.lookSensitivity, clamped))
+            return;
+        _data.lookSensitivity = clamped;
+        SaveToDisk();
+    }
+
+    public static void SetVibration(bool enabled)
+    {
+        EnsureLoaded();
+        if (_data.vibration == enabled) return;
+        _data.vibration = enabled;
+        SaveToDisk();
+    }
+
+    public static void SetSubtitles(bool enabled)
+    {
+        EnsureLoaded();
+        if (_data.subtitles == enabled) return;
+        _data.subtitles = enabled;
+        SaveToDisk();
+    }
+
+    public static void SetFullscreen(bool enabled)
+    {
+        EnsureLoaded();
+        if (_data.fullscreen == enabled) return;
+        _data.fullscreen = enabled;
+        SaveToDisk();
+        Screen.fullScreen = enabled;
+    }
+
     public static Vector2 ApplyLookInversion(Vector2 lookInput, bool flightContext = false)
     {
         EnsureLoaded();
@@ -153,6 +238,7 @@ public static class PlayerSettings
 
         service.SetVolume(AudioBus.Master, _data.masterVolume);
         service.SetVolume(AudioBus.Sfx, _data.sfxVolume);
+        service.SetVolume(AudioBus.Music, _data.musicVolume);
     }
 
     private static void ApplyVolume(AudioBus bus, float value)

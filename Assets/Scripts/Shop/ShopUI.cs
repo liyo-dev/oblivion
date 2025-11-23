@@ -44,6 +44,9 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private float buyButtonPulseScale = 1.08f;
     [SerializeField] private float buyButtonPulseDuration = 0.14f;
     [SerializeField] private Ease buyButtonPulseEase = Ease.OutBack;
+    [Header("Input")]
+    [Tooltip("When the shop opens, ignore player input (submit/cancel/navigation) for this many seconds to avoid the 'close dialogue' button press from affecting the shop.")]
+    [SerializeField, Min(0f)] private float openIgnoreInputDuration = 0.15f;
 
     private List<ShopItemCard> _itemCards = new();
     private ShopController.ShopItemEntry _selectedEntry;
@@ -51,6 +54,7 @@ public class ShopUI : MonoBehaviour
     private bool _isOpen;
     private Inventory _playerInventory;
     private float _navCooldown;
+    private float _ignoreInputUntil = 0f;
     private const float NAV_REPEAT_DELAY = 0.18f;
     private Tween _buyButtonTween;
     private Vector3 _buyButtonBaseScale;
@@ -147,6 +151,7 @@ public class ShopUI : MonoBehaviour
     
     int ReadVerticalInput()
     {
+        if (Time.unscaledTime < _ignoreInputUntil) return 0;
 #if ENABLE_INPUT_SYSTEM
         var gp = Gamepad.current;
         if (gp != null)
@@ -162,6 +167,7 @@ public class ShopUI : MonoBehaviour
 
     bool ReadSubmitInput()
     {
+        if (Time.unscaledTime < _ignoreInputUntil) return false;
 #if ENABLE_INPUT_SYSTEM
         var gp = Gamepad.current;
         if (gp != null && gp.buttonSouth.wasPressedThisFrame) return true;
@@ -171,6 +177,7 @@ public class ShopUI : MonoBehaviour
 
     bool ReadCancelInput()
     {
+        if (Time.unscaledTime < _ignoreInputUntil) return false;
 #if ENABLE_INPUT_SYSTEM
         var gp = Gamepad.current;
         if (gp != null)
@@ -181,6 +188,7 @@ public class ShopUI : MonoBehaviour
 
     int ReadHorizontalInput()
     {
+        if (Time.unscaledTime < _ignoreInputUntil) return 0;
 #if ENABLE_INPUT_SYSTEM
         var gp = Gamepad.current;
         if (gp != null)
@@ -290,6 +298,9 @@ public class ShopUI : MonoBehaviour
         RefreshUI();
         // No seleccionar ningún producto al abrir
         ClearSelection();
+
+        // Ignore input for a short moment so the button used to close dialogue doesn't propagate into the shop UI.
+        _ignoreInputUntil = Time.unscaledTime + openIgnoreInputDuration;
 
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;

@@ -128,7 +128,40 @@ namespace Invector.vCharacterController
         private void OnJumpInput(InputAction.CallbackContext context)   { if (context.performed) jumpPressed = true; }
         private void OnSprintInput(InputAction.CallbackContext context) => sprintHeld = context.ReadValueAsButton();
         private void OnStrafeInput(InputAction.CallbackContext context) { if (context.performed) strafePressed = true; }
-        private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = PlayerSettings.ApplyLookInversion(context.ReadValue<Vector2>());
+        private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = ApplyLookInversionSafe(context.ReadValue<Vector2>());
+
+        // Some projects may provide a `PlayerSettings` helper class. The Invector plugin
+        // ships under Plugins and may compile in a different assembly where `PlayerSettings`
+        // (defined in the main Assembly-CSharp) is not available. To avoid a hard dependency
+        // we call it via reflection if present; otherwise we return the original input.
+        private static Vector2 ApplyLookInversionSafe(Vector2 input)
+        {
+            try
+            {
+                var t = System.Type.GetType("PlayerSettings");
+                if (t != null)
+                {
+                    var mi = t.GetMethod("ApplyLookInversion", new System.Type[] { typeof(Vector2) });
+                    if (mi != null)
+                    {
+                        var res = mi.Invoke(null, new object[] { input });
+                        if (res is Vector2 v) return v;
+                    }
+                    // overload with flightContext bool?
+                    mi = t.GetMethod("ApplyLookInversion", new System.Type[] { typeof(Vector2), typeof(bool) });
+                    if (mi != null)
+                    {
+                        var res2 = mi.Invoke(null, new object[] { input, false });
+                        if (res2 is Vector2 v2) return v2;
+                    }
+                }
+            }
+            catch (System.Exception)
+            {
+                // swallow reflection errors and fall back to raw input
+            }
+            return input;
+        }
 
         protected virtual void InitilizeController()
         {

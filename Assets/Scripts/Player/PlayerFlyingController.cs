@@ -17,6 +17,7 @@ public class PlayerFlyingController : MonoBehaviour
     [Header("Animación")]
     [SerializeField] private int locomotionLayerIndex = 0;
     [SerializeField] private string flyIdleState = "fly_idle";
+    [SerializeField] private string flyMoveState = "fly_move";
     [SerializeField] private string flyDiveState = "fly_dive";
     [SerializeField] private string locomotionStateName = "Free Locomotion";
 
@@ -27,6 +28,7 @@ public class PlayerFlyingController : MonoBehaviour
     [SerializeField] private float acceleration = 10f;
     [SerializeField] private float turnSpeed = 9f;
     [SerializeField] private float doubleTapWindow = 0.35f;
+    [SerializeField] private float boostMultiplier = 1.5f;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
@@ -50,9 +52,23 @@ public class PlayerFlyingController : MonoBehaviour
     private bool _isFlying;
     private bool _extraGravitySuspended;
     private float _cachedExtraGravity;
-    private float _lastJumpTime = -999f;
     private bool _gravityStored;
     private bool _storedUseGravity;
+    private float _flightArmUntil = -1f;
+    private float _currentPlanarSpeed;
+    private bool _isBoosting;
+
+    [Header("FX Vuelo")]
+    [SerializeField] private Transform vfxAttach;
+    [SerializeField] private GameObject trailPrefab;
+    [SerializeField] private float trailSpeedThreshold = 1.5f;
+    [SerializeField] private GameObject boostVfxPrefab;
+    [SerializeField] private GameObject landingVfxPrefab;
+
+    private GameObject _trailInstance;
+    private ParticleSystem _trailPs;
+    private GameObject _boostInstance;
+    private ParticleSystem _boostPs;
 
     void Awake()
     {
@@ -63,6 +79,7 @@ public class PlayerFlyingController : MonoBehaviour
         _capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
         CacheControllerLockFields();
         CacheCameraTransform();
+        _flightArmUntil = -1f;
 
         _controls = new PlayerControls();
         _moveAction = _controls.GamePlay.Move;
@@ -94,6 +111,8 @@ public class PlayerFlyingController : MonoBehaviour
     {
         if (_isFlying)
             ExitFlight(force: true);
+        StopFlightVfx();
+        _flightArmUntil = -1f;
 
         if (_jumpAction != null)
         {
@@ -148,11 +167,15 @@ public class PlayerFlyingController : MonoBehaviour
             return;
 
         float now = Time.time;
-        if (now - _lastJumpTime <= doubleTapWindow)
+        if (now <= _flightArmUntil)
         {
             EnterFlight();
+            _flightArmUntil = -1f;
         }
-        _lastJumpTime = now;
+        else
+        {
+            _flightArmUntil = now + doubleTapWindow;
+        }
     }
 
     private void OnJumpCanceled(InputAction.CallbackContext ctx) => _jumpHeld = false;
@@ -174,11 +197,14 @@ public class PlayerFlyingController : MonoBehaviour
             return;
 
         _isFlying = true;
+        _flightArmUntil = -1f;
+        _isBoosting = false;
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Flying);
 
         CacheCameraTransform();
         PlayFlightState(flyIdleState);
+        SpawnTrailIfNeeded();
 
         if (_rigidbody != null)
         {
@@ -215,12 +241,16 @@ public class PlayerFlyingController : MonoBehaviour
 
         bool wasFlying = _isFlying;
         _isFlying = false;
+        _currentPlanarSpeed = 0f;
+        _isBoosting = false;
 
         if (wasFlying && _actionManager != null)
             _actionManager.PopMode(ActionMode.Flying);
 
         if (wasFlying && _animator != null)
             _animator.CrossFade(locomotionStateName, 0.1f, locomotionLayerIndex);
+        PlayLandingVfx();
+        StopFlightVfx();
 
         if (_rigidbody != null && _gravityStored)
             _rigidbody.useGravity = _storedUseGravity;
@@ -249,7 +279,9 @@ public class PlayerFlyingController : MonoBehaviour
 
         Vector3 planar = (forward * _moveInput.y) + (right * _moveInput.x);
         if (planar.sqrMagnitude > 1f) planar.Normalize();
-        Vector3 desired = planar * horizontalSpeed;
+        _isBoosting = planar.sqrMagnitude > 0.01f && Mathf.Abs(_moveInput.y) > 0.8f;
+        float speedMul = _isBoosting ? boostMultiplier : 1f;
+        Vector3 desired = planar * horizontalSpeed * speedMul;
 
         float verticalInput = 0f;
         // Solo el stick derecho controla altura, y solo mientras avanzas con el izquierdo.
@@ -265,6 +297,8 @@ public class PlayerFlyingController : MonoBehaviour
         Vector3 current = _rigidbody.linearVelocity;
         Vector3 target = Vector3.Lerp(current, desired, acceleration * Time.fixedDeltaTime);
         _rigidbody.linearVelocity = target;
+        _currentPlanarSpeed = planar.magnitude * horizontalSpeed * speedMul;
+        UpdateFlightVfx();
 
         Vector3 faceDir = planar;
         if (faceDir.sqrMagnitude < 0.1f && Mathf.Abs(verticalInput) > 0.5f)
@@ -283,7 +317,14 @@ public class PlayerFlyingController : MonoBehaviour
 
         float verticalVel = _rigidbody != null ? _rigidbody.linearVelocity.y : 0f;
         bool diving = verticalVel < -0.5f || _jumpHeld;
-        PlayFlightState(diving ? flyDiveState : flyIdleState);
+        bool moving = _currentPlanarSpeed > 0.5f;
+
+        if (diving)
+            PlayFlightState(flyDiveState);
+        else if (moving && !string.IsNullOrEmpty(flyMoveState))
+            PlayFlightState(flyMoveState);
+        else
+            PlayFlightState(flyIdleState);
     }
 
     private void PlayFlightState(string stateName)
@@ -317,6 +358,64 @@ public class PlayerFlyingController : MonoBehaviour
         _cameraTransform = Camera.main ? Camera.main.transform : FindObjectOfType<Camera>()?.transform;
 #pragma warning restore 618
 #endif
+    }
+
+    void SpawnTrailIfNeeded()
+    {
+        if (_trailInstance != null || trailPrefab == null) return;
+        var parent = vfxAttach != null ? vfxAttach : transform;
+        _trailInstance = Instantiate(trailPrefab, parent);
+        _trailPs = _trailInstance.GetComponent<ParticleSystem>();
+        _trailInstance.SetActive(false);
+    }
+
+    void UpdateFlightVfx()
+    {
+        if (_trailInstance != null)
+        {
+            bool shouldTrail = _isFlying && _currentPlanarSpeed >= trailSpeedThreshold;
+            if (_trailInstance.activeSelf != shouldTrail)
+                _trailInstance.SetActive(shouldTrail);
+            if (shouldTrail && _trailPs != null && !_trailPs.isPlaying) _trailPs.Play();
+        }
+
+        if (_isFlying && _isBoosting && boostVfxPrefab != null)
+        {
+            if (_boostInstance == null)
+            {
+                var parent = vfxAttach != null ? vfxAttach : transform;
+                _boostInstance = Instantiate(boostVfxPrefab, parent);
+                _boostPs = _boostInstance.GetComponent<ParticleSystem>();
+            }
+            if (!_boostInstance.activeSelf) _boostInstance.SetActive(true);
+            if (_boostPs != null && !_boostPs.isPlaying) _boostPs.Play();
+        }
+        else if (_boostInstance != null && _boostInstance.activeSelf)
+        {
+            if (_boostPs != null) _boostPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            _boostInstance.SetActive(false);
+        }
+    }
+
+    void PlayLandingVfx()
+    {
+        if (landingVfxPrefab == null) return;
+        var parent = vfxAttach != null ? vfxAttach : transform;
+        Instantiate(landingVfxPrefab, parent.position, parent.rotation);
+    }
+
+    void StopFlightVfx()
+    {
+        if (_trailInstance != null)
+        {
+            if (_trailPs != null) _trailPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            _trailInstance.SetActive(false);
+        }
+        if (_boostInstance != null)
+        {
+            if (_boostPs != null) _boostPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            _boostInstance.SetActive(false);
+        }
     }
 
     private void CacheControllerLockFields()
