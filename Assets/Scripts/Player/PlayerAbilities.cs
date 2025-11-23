@@ -10,5 +10,6 @@ public class PlayerAbilities
     [Tooltip("Permite saltar")] public bool jump;
     [Tooltip("Permite trepar / escalar")] public bool climb;
     [Tooltip("Permite usar magia (casts)")] public bool magic = true;
+    [Tooltip("Permite volar")] public bool fly;
 }
 

@@ -31,6 +31,7 @@ MonoBehaviour:
     jump: 0
     climb: 0
     magic: 0
+    fly: 0
   appearance: []
   inventoryItems:
   - itemId: coin
