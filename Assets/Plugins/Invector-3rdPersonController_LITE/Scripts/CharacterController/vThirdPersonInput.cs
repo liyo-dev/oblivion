@@ -128,7 +128,7 @@ namespace Invector.vCharacterController
         private void OnJumpInput(InputAction.CallbackContext context)   { if (context.performed) jumpPressed = true; }
         private void OnSprintInput(InputAction.CallbackContext context) => sprintHeld = context.ReadValueAsButton();
         private void OnStrafeInput(InputAction.CallbackContext context) { if (context.performed) strafePressed = true; }
-        private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = context.ReadValue<Vector2>();
+        private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = PlayerSettings.ApplyLookInversion(context.ReadValue<Vector2>());
 
         protected virtual void InitilizeController()
         {
