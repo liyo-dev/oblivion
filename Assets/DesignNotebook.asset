@@ -52,7 +52,7 @@ MonoBehaviour:
     salvar al Hermano del Antagonista, restaurando as\xED el equilibrio y devolviendo
     la paz al mundo.\n\nEl cielo vuelve a brillar. El Sendero, ahora sellado, permanece
     como s\xEDmbolo de que la verdadera grandeza no proviene de los deseos cumplidos,
-    sino de los sacrificios que se hacen por amor.\n<b>texto</b>"
+    sino de los sacrificios que se hacen por amor.</b>"
   storyCards:
   - guid: edccfafb-5a1c-4d26-a4c4-b89e9c503559
     title: Nueva tarjeta
@@ -134,12 +134,38 @@ MonoBehaviour:
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
+  - guid: 36291186-c4f6-4bb3-a6c8-44a7a47eed81
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 9293cb08-f4ed-4ff0-9dc2-8cd9b2c8da82
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 74c72893-f71b-47d0-bc58-f6793763f074
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 03665745-f523-4765-ba17-c6f611d27c11
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: b0e4e165-b043-4cb3-b452-c4df3447a689
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
   storyLinks: []
   quickNotes:
   - title: 
     note: 
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
+    position: {x: 0, y: 0}
   - title: Misiones
     note: "Mejoras en el panel de las misiones: Mostrar en el panel rapido solo las
       que no estan completas. El panel debe ocultarse solo. La flecha del Dpad arriba
@@ -147,7 +173,9 @@ MonoBehaviour:
       \r\n"
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
+    position: {x: 0, y: 0}
   - title: Nueva nota
     note: 
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
+    position: {x: 0, y: 0}

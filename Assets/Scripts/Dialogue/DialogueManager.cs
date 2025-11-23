@@ -47,6 +47,12 @@ public class DialogueManager : MonoBehaviour
     private Action onEnd;
     public bool IsOpen => current != null;
 
+    // Expose a few internal state values to allow external callers
+    // to react to line progress (e.g. open shop when last line finishes).
+    public int CurrentIndex => index;
+    public int CurrentLineCount => current != null && current.lines != null ? current.lines.Length : 0;
+    public bool IsTyping => _isTyping;
+
     [Header("Choices (optional)")]
     [SerializeField] private CanvasGroup choicesRoot;   // contenedor de los botones
     [SerializeField] private Button yesButton;

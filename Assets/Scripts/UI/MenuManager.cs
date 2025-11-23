@@ -73,7 +73,7 @@ public static class MenuManager
                 case MenuKind.Shop:
                     // Locate any ShopUI instances that are part of a scene (skip assets/prefabs)
 #if UNITY_2022_3_OR_NEWER
-                    var shops = Object.FindObjectsByType<ShopUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    var shops = UnityEngine.Object.FindObjectsByType<ShopUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 #else
                     var shops = Resources.FindObjectsOfTypeAll(typeof(ShopUI)) as ShopUI[];
 #endif
