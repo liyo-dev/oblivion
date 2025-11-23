@@ -71,9 +71,25 @@ public static class MenuManager
                     stillOpen = GameState.Is(GamePhase.Dialogue);
                     break;
                 case MenuKind.Shop:
-                    // Use Resources.FindObjectsOfTypeAll to locate inactive instances too
+                    // Locate any ShopUI instances that are part of a scene (skip assets/prefabs)
+#if UNITY_2022_3_OR_NEWER
+                    var shops = Object.FindObjectsByType<ShopUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
                     var shops = Resources.FindObjectsOfTypeAll(typeof(ShopUI)) as ShopUI[];
-                    stillOpen = shops != null && shops.Length > 0 && shops[0].IsOpen;
+#endif
+                    stillOpen = false;
+                    if (shops != null)
+                    {
+                        foreach (var shop in shops)
+                        {
+                            if (shop == null || !shop.gameObject.scene.IsValid()) continue;
+                            if (shop.IsOpen)
+                            {
+                                stillOpen = true;
+                                break;
+                            }
+                        }
+                    }
                     break;
                 default:
                     stillOpen = val;
