@@ -68,6 +68,74 @@ public static class UnlockService
         return changed;
     }
 
+    /// Desbloquea volar en el preset activo.
+    public static bool UnlockFly()
+    {
+        var preset = GetActivePreset();
+        if (!preset) return false;
+
+        if (preset.abilities == null)
+            preset.abilities = new PlayerAbilities();
+
+        if (!preset.abilities.fly)
+        {
+            preset.abilities.fly = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// Desbloquea nadar en el preset activo.
+    public static bool UnlockSwim()
+    {
+        var preset = GetActivePreset();
+        if (!preset) return false;
+
+        if (preset.abilities == null)
+            preset.abilities = new PlayerAbilities();
+
+        if (!preset.abilities.swim)
+        {
+            preset.abilities.swim = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// Desbloquea trepar en el preset activo.
+    public static bool UnlockClimb()
+    {
+        var preset = GetActivePreset();
+        if (!preset) return false;
+
+        if (preset.abilities == null)
+            preset.abilities = new PlayerAbilities();
+
+        if (!preset.abilities.climb)
+        {
+            preset.abilities.climb = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// Desbloquea saltar en el preset activo.
+    public static bool UnlockJump()
+    {
+        var preset = GetActivePreset();
+        if (!preset) return false;
+
+        if (preset.abilities == null)
+            preset.abilities = new PlayerAbilities();
+
+        if (!preset.abilities.jump)
+        {
+            preset.abilities.jump = true;
+            return true;
+        }
+        return false;
+    }
+
     /// Desbloquea un hechizo y opcionalmente lo asigna a un slot vacío.
     public static bool UnlockSpell(SpellId spell, bool assignToEmptySlot = true)
     {

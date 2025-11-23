@@ -19,7 +19,7 @@ MonoBehaviour:
   maxMP: 100
   currentMP: 25
   unlockedAbilities: 01000000
-  unlockedSpells: 050000000100000002000000
+  unlockedSpells: 030000000100000002000000
   leftSpellId: 1
   rightSpellId: 2
   specialSpellId: 3
@@ -29,7 +29,7 @@ MonoBehaviour:
     jump: 1
     climb: 0
     magic: 1
-    fly: 0
+    fly: 1
   appearance: []
   unlockedWardrobeIds: []
   inventoryItems: []

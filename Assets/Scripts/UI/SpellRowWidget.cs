@@ -68,13 +68,6 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
         if (es == null || target == null)
             return;
 
-        // Avoid re-entrant selection while the EventSystem is already processing a select event.
-        if (es.alreadySelecting)
-            return;
-
-        if (es.currentSelectedGameObject == target)
-            return;
-
         es.SetSelectedGameObject(target);
     }
 

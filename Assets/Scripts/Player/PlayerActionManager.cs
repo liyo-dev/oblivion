@@ -51,7 +51,11 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos
     public void ApplyAbilities(PlayerAbilities abilities)
     {
-        if (abilities == null) return;
+        if (abilities == null)
+        {
+            Debug.LogWarning("[PlayerActionManager] ApplyAbilities called with null abilities!");
+            return;
+        }
         // _allowPhysical = abilities.physical;
         _allowSwim = abilities.swim;
         _allowJump = abilities.jump;
@@ -77,7 +81,8 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             _allowMagic = true;
         }
 
-        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Magic={_allowMagic}");
+        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Fly={_allowFly} Magic={_allowMagic}");
+        else Debug.Log($"[PlayerActionManager] Abilities applied: Fly={_allowFly}");
     }
 
     // Opcional: getters públicos si otros sistemas necesitan consultarlos
