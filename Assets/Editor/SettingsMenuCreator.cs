@@ -6,6 +6,8 @@ using UnityEngine.UI;
 public static class SettingsMenuCreator
 {
     private const string MenuPath = "Tools/Create/Settings Menu";
+    private static Font NunitoRegular => AssetDatabase.LoadAssetAtPath<Font>("Assets/Plugins/Fonts/Nunito-Regular.ttf");
+    private static Font NunitoBold => AssetDatabase.LoadAssetAtPath<Font>("Assets/Plugins/Fonts/Nunito-Bold.ttf");
 
     [MenuItem(MenuPath, priority = 210)]
     public static void CreateMenu()
@@ -76,12 +78,30 @@ public static class SettingsMenuCreator
         sfxSlider.maxValue = 1f;
         sfxSlider.value = 1f;
 
+        CreateSliderRow(content.transform, "Volumen música", resources, out Slider musicSlider);
+        musicSlider.minValue = 0f;
+        musicSlider.maxValue = 1f;
+        musicSlider.value = 1f;
+
         // Camera section
-        CreateSectionLabel(content.transform, "Cámara");
+        CreateSectionLabel(content.transform, "Cámara / Controles");
         CreateToggleRow(content.transform, "Invertir eje Y (suelo)", resources, out Toggle invertLook);
         CreateToggleRow(content.transform, "Invertir eje Y (vuelo)", resources, out Toggle invertFlight);
         invertLook.isOn = false;
         invertFlight.isOn = false;
+        CreateSliderRow(content.transform, "Sensibilidad cámara", resources, out Slider lookSensitivity);
+        lookSensitivity.minValue = 0.1f;
+        lookSensitivity.maxValue = 5f;
+        lookSensitivity.value = 1f;
+
+        // General / accesibilidad
+        CreateSectionLabel(content.transform, "General");
+        CreateToggleRow(content.transform, "Subtítulos", resources, out Toggle subtitlesToggle);
+        subtitlesToggle.isOn = true;
+        CreateToggleRow(content.transform, "Vibración", resources, out Toggle vibrationToggle);
+        vibrationToggle.isOn = true;
+        CreateToggleRow(content.transform, "Pantalla completa", resources, out Toggle fullscreenToggle);
+        fullscreenToggle.isOn = true;
 
         // Back button
         var backRow = CreateRow(content.transform, spacing: 0f, childAlignment: TextAnchor.MiddleCenter);
@@ -98,8 +118,13 @@ public static class SettingsMenuCreator
         so.FindProperty("englishButton").objectReferenceValue = englishButton;
         so.FindProperty("masterVolumeSlider").objectReferenceValue = masterSlider;
         so.FindProperty("sfxVolumeSlider").objectReferenceValue = sfxSlider;
+        so.FindProperty("musicVolumeSlider").objectReferenceValue = musicSlider;
         so.FindProperty("invertLookToggle").objectReferenceValue = invertLook;
         so.FindProperty("invertFlightToggle").objectReferenceValue = invertFlight;
+        so.FindProperty("lookSensitivitySlider").objectReferenceValue = lookSensitivity;
+        so.FindProperty("subtitlesToggle").objectReferenceValue = subtitlesToggle;
+        so.FindProperty("vibrationToggle").objectReferenceValue = vibrationToggle;
+        so.FindProperty("fullscreenToggle").objectReferenceValue = fullscreenToggle;
         so.ApplyModifiedProperties();
 
         Selection.activeObject = canvasGO;
@@ -158,7 +183,7 @@ public static class SettingsMenuCreator
         txt.fontStyle = style;
         txt.color = Color.white;
         txt.alignment = TextAnchor.MiddleLeft;
-        txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        txt.font = style == FontStyle.Bold && NunitoBold != null ? NunitoBold : NunitoRegular != null ? NunitoRegular : Resources.GetBuiltinResource<Font>("Arial.ttf");
         go.AddComponent<LayoutElement>();
         return txt;
     }
@@ -184,7 +209,9 @@ public static class SettingsMenuCreator
         var rect = buttonGO.GetComponent<RectTransform>();
         rect.SetParent(parent, false);
         rect.sizeDelta = new Vector2(0f, 50f);
-        buttonGO.GetComponentInChildren<Text>().text = text;
+        var btnText = buttonGO.GetComponentInChildren<Text>();
+        btnText.text = text;
+        btnText.font = NunitoBold != null ? NunitoBold : btnText.font;
         var layout = buttonGO.AddComponent<LayoutElement>();
         layout.preferredHeight = 50f;
         layout.flexibleWidth = 1f;
@@ -211,6 +238,9 @@ public static class SettingsMenuCreator
         var layout = sliderGO.AddComponent<LayoutElement>();
         layout.flexibleWidth = 1f;
         layout.preferredHeight = 30f;
+        var sliderLabel = sliderGO.GetComponentInChildren<Text>();
+        if (sliderLabel != null && NunitoRegular != null)
+            sliderLabel.font = NunitoRegular;
         return row;
     }
 
@@ -233,6 +263,8 @@ public static class SettingsMenuCreator
         labelText.alignment = TextAnchor.MiddleLeft;
         var labelLayout = labelText.GetComponent<LayoutElement>();
         labelLayout.flexibleWidth = 1f;
+        var toggleText = toggleGO.GetComponentInChildren<Text>();
+        if (toggleText != null && NunitoRegular != null) toggleText.font = NunitoRegular;
         return row;
     }
 }

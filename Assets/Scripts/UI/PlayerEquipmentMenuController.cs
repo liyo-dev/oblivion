@@ -713,7 +713,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        var unlocked = preset?.unlockedAbilities ?? System.Array.Empty<AbilityId>();
+        IReadOnlyList<AbilityId> unlocked = preset?.unlockedAbilities ?? (IReadOnlyList<AbilityId>)System.Array.Empty<AbilityId>();
 
         if (!NeedsAbilityRefresh(unlocked))
             return;
