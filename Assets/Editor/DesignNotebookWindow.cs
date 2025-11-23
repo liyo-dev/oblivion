@@ -22,6 +22,9 @@ public class DesignNotebookWindow : EditorWindow
     private Vector2 _synopsisScroll;
     private int _cachedSelectionStart = -1;
     private int _cachedSelectionEnd = -1;
+    private Vector2 _quickNotesScroll;
+    private int _draggingNoteIndex = -1;
+    private Vector2 _dragOffset;
 
     private const string SynopsisControlName = "DesignNotebook_Synopsis";
 
@@ -209,42 +212,29 @@ public class DesignNotebookWindow : EditorWindow
     private void WrapSelection(SerializedProperty prop, string prefix, string suffix)
     {
         var text = prop.stringValue ?? string.Empty;
-        var editor = GetFocusedTextEditor();
-        bool hasFocus = GUI.GetNameOfFocusedControl() == SynopsisControlName && editor != null;
+        var editor = GetSynopsisTextEditor();
 
-        int start = hasFocus ? Mathf.Min(editor.cursorIndex, editor.selectIndex) : _cachedSelectionStart;
-        int end = hasFocus ? Mathf.Max(editor.cursorIndex, editor.selectIndex) : _cachedSelectionEnd;
-        bool hasCachedSelection = start >= 0 && end >= 0;
+        int start = _cachedSelectionStart;
+        int end = _cachedSelectionEnd;
+        bool hasSelection = TryGetSelectionFromEditor(editor, ref start, ref end);
 
-        if (hasCachedSelection)
+        if (!hasSelection)
         {
-            if (start != end)
-            {
-                prop.stringValue = text.Insert(end, suffix).Insert(start, prefix);
-                if (hasFocus)
-                {
-                    editor.cursorIndex = start + prefix.Length;
-                    editor.selectIndex = end + prefix.Length;
-                }
-                _cachedSelectionStart = start;
-                _cachedSelectionEnd = end + prefix.Length + suffix.Length;
-                return;
-            }
-            else
-            {
-                prop.stringValue = text.Insert(end, prefix + "texto" + suffix);
-                if (hasFocus)
-                {
-                    editor.cursorIndex = editor.selectIndex = end + prefix.Length;
-                }
-                _cachedSelectionStart = _cachedSelectionEnd = end + prefix.Length + suffix.Length + "texto".Length;
-                return;
-            }
+            start = end = text.Length;
         }
 
-        prop.stringValue = string.IsNullOrEmpty(text)
-            ? prefix + "texto" + suffix
-            : text + "\n" + prefix + "texto" + suffix;
+        if (start != end)
+        {
+            prop.stringValue = text.Insert(end, suffix).Insert(start, prefix);
+            UpdateEditorSelection(editor, start + prefix.Length, end + prefix.Length);
+            _cachedSelectionStart = start;
+            _cachedSelectionEnd = end + prefix.Length + suffix.Length;
+            return;
+        }
+
+        prop.stringValue = text.Insert(end, prefix + "texto" + suffix);
+        UpdateEditorSelection(editor, end + prefix.Length, end + prefix.Length);
+        _cachedSelectionStart = _cachedSelectionEnd = end + prefix.Length + suffix.Length + "texto".Length;
     }
 
     private void CacheSynopsisSelection()
@@ -264,12 +254,41 @@ public class DesignNotebookWindow : EditorWindow
             : null;
     }
 
+    private TextEditor GetSynopsisTextEditor()
+    {
+        if (GUI.GetNameOfFocusedControl() != SynopsisControlName)
+            EditorGUI.FocusTextInControl(SynopsisControlName);
+
+        return GetFocusedTextEditor();
+    }
+
+    private bool TryGetSelectionFromEditor(TextEditor editor, ref int start, ref int end)
+    {
+        if (editor == null)
+            return start >= 0 && end >= 0;
+
+        start = Mathf.Min(editor.cursorIndex, editor.selectIndex);
+        end = Mathf.Max(editor.cursorIndex, editor.selectIndex);
+        return start >= 0 && end >= 0;
+    }
+
+    private void UpdateEditorSelection(TextEditor editor, int start, int end)
+    {
+        if (editor == null) return;
+        editor.cursorIndex = start;
+        editor.selectIndex = end;
+    }
+
     private void DrawQuickNotesBoard()
     {
         EditorGUILayout.LabelField("Notas rápidas", Styles.SectionTitle);
         EditorGUILayout.HelpBox("Organiza ideas en un tablero tipo corcho con tarjetas visibles.", MessageType.None);
 
         var quickNotesProp = _serialized.FindProperty("quickNotes");
+        const float cardWidth = 230f;
+        const float cardHeight = 190f;
+        const float cardSpacing = 18f;
+        float viewWidth = position.width - 56f;
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Nueva nota", GUILayout.Width(110f)))
         {
@@ -279,21 +298,19 @@ public class DesignNotebookWindow : EditorWindow
             element.FindPropertyRelative("note").stringValue = string.Empty;
             element.FindPropertyRelative("tags").stringValue = string.Empty;
             element.FindPropertyRelative("color").colorValue = Styles.DefaultNoteColor;
+            var positionProp = element.FindPropertyRelative("position");
+            positionProp.vector2Value = GetQuickNoteGridPosition(quickNotesProp.arraySize - 1, viewWidth, cardWidth, cardHeight, cardSpacing);
         }
 
         if (quickNotesProp.arraySize > 0 && GUILayout.Button("Ordenar por título", GUILayout.Width(140f)))
         {
             SortQuickNotes(quickNotesProp);
+            ReflowQuickNotePositions(quickNotesProp, viewWidth, cardWidth, cardHeight, cardSpacing);
         }
         EditorGUILayout.EndHorizontal();
 
-        float cardWidth = 230f;
-        float cardHeight = 190f;
-        float viewWidth = position.width - 56f;
-        int columns = Mathf.Max(1, Mathf.FloorToInt(viewWidth / cardWidth));
-        int rows = Mathf.Max(1, Mathf.CeilToInt(quickNotesProp.arraySize / (float)columns));
-        float boardHeight = Mathf.Max(cardHeight, (cardHeight + 14f) * rows);
-        var boardRect = GUILayoutUtility.GetRect(viewWidth, boardHeight, GUILayout.ExpandWidth(true));
+        float boardHeight = Mathf.Max(position.height - 260f, cardHeight + 40f);
+        var boardRect = GUILayoutUtility.GetRect(viewWidth, boardHeight, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
         if (quickNotesProp.arraySize == 0)
         {
@@ -301,23 +318,117 @@ public class DesignNotebookWindow : EditorWindow
             return;
         }
 
+        EnsureQuickNotePositions(quickNotesProp, viewWidth, cardWidth, cardHeight, cardSpacing);
+
+        var contentSize = CalculateQuickNotesContentSize(quickNotesProp, cardWidth, cardHeight, cardSpacing, boardRect);
+        _quickNotesScroll = GUI.BeginScrollView(boardRect, _quickNotesScroll, new Rect(0, 0, contentSize.x, contentSize.y));
+
         int deleteIndex = -1;
+        var evt = Event.current;
         for (int i = 0; i < quickNotesProp.arraySize; i++)
         {
-            int row = i / columns;
-            int col = i % columns;
-            var cardRect = new Rect(
-                boardRect.xMin + (col * (cardWidth + 14f)),
-                boardRect.yMin + (row * (cardHeight + 14f)),
-                cardWidth,
-                cardHeight);
+            var element = quickNotesProp.GetArrayElementAtIndex(i);
+            var positionProp = element.FindPropertyRelative("position");
+            var cardRect = new Rect(positionProp.vector2Value.x, positionProp.vector2Value.y, cardWidth, cardHeight);
 
-            if (DrawQuickNoteCard(cardRect, quickNotesProp.GetArrayElementAtIndex(i)))
+            HandleQuickNoteDragging(evt, cardRect, i, positionProp);
+
+            if (DrawQuickNoteCard(cardRect, element))
                 deleteIndex = i;
         }
 
+        GUI.EndScrollView();
+
+        if (evt.type == EventType.MouseUp && _draggingNoteIndex >= 0)
+            _draggingNoteIndex = -1;
+
         if (deleteIndex >= 0)
             quickNotesProp.DeleteArrayElementAtIndex(deleteIndex);
+    }
+
+    private Vector2 CalculateQuickNotesContentSize(SerializedProperty quickNotesProp, float cardWidth, float cardHeight, float spacing, Rect viewRect)
+    {
+        float maxX = 0f;
+        float maxY = 0f;
+        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        {
+            var pos = quickNotesProp.GetArrayElementAtIndex(i).FindPropertyRelative("position").vector2Value;
+            maxX = Mathf.Max(maxX, pos.x + cardWidth + spacing);
+            maxY = Mathf.Max(maxY, pos.y + cardHeight + spacing);
+        }
+
+        return new Vector2(
+            Mathf.Max(viewRect.width, maxX),
+            Mathf.Max(viewRect.height, maxY));
+    }
+
+    private void HandleQuickNoteDragging(Event evt, Rect cardRect, int index, SerializedProperty positionProp)
+    {
+        switch (evt.type)
+        {
+            case EventType.MouseDown:
+                if (evt.button == 0 && cardRect.Contains(evt.mousePosition))
+                {
+                    _draggingNoteIndex = index;
+                    _dragOffset = evt.mousePosition - cardRect.position;
+                    GUI.FocusControl(null);
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseDrag:
+                if (_draggingNoteIndex == index)
+                {
+                    var newPos = evt.mousePosition - _dragOffset;
+                    newPos.x = Mathf.Max(0f, newPos.x);
+                    newPos.y = Mathf.Max(0f, newPos.y);
+                    positionProp.vector2Value = newPos;
+                    MarkAssetDirty();
+                    Repaint();
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseUp:
+                if (_draggingNoteIndex == index)
+                {
+                    _draggingNoteIndex = -1;
+                    evt.Use();
+                }
+                break;
+        }
+    }
+
+    private Vector2 GetQuickNoteGridPosition(int index, float viewWidth, float cardWidth, float cardHeight, float spacing)
+    {
+        int columns = Mathf.Max(1, Mathf.FloorToInt(viewWidth / (cardWidth + spacing)));
+        int col = index % columns;
+        int row = Mathf.Max(0, index / columns);
+        return new Vector2(col * (cardWidth + spacing), row * (cardHeight + spacing));
+    }
+
+    private void ReflowQuickNotePositions(SerializedProperty quickNotesProp, float viewWidth, float cardWidth, float cardHeight, float spacing)
+    {
+        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        {
+            var element = quickNotesProp.GetArrayElementAtIndex(i);
+            element.FindPropertyRelative("position").vector2Value = GetQuickNoteGridPosition(i, viewWidth, cardWidth, cardHeight, spacing);
+        }
+    }
+
+    private void EnsureQuickNotePositions(SerializedProperty quickNotesProp, float viewWidth, float cardWidth, float cardHeight, float spacing)
+    {
+        bool needsLayout = false;
+        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        {
+            var positionProp = quickNotesProp.GetArrayElementAtIndex(i).FindPropertyRelative("position");
+            if (positionProp.vector2Value == Vector2.zero)
+            {
+                positionProp.vector2Value = GetQuickNoteGridPosition(i, viewWidth, cardWidth, cardHeight, spacing);
+                needsLayout = true;
+            }
+        }
+
+        if (needsLayout)
+            MarkAssetDirty();
     }
 
     private bool DrawQuickNoteCard(Rect rect, SerializedProperty element)
@@ -393,6 +504,7 @@ public class DesignNotebookWindow : EditorWindow
         EnsureGraphView();
         _storyGraphView.style.display = DisplayStyle.Flex;
         _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+        _storyGraphView.BringToFront();
 
         EditorGUILayout.BeginVertical(Styles.SectionBox);
         EditorGUILayout.Space();
