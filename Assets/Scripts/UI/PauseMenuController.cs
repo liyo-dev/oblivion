@@ -51,6 +51,7 @@ public class PauseMenuController : MonoBehaviour
     public Button resumeButton;
     public Button optionsButton;
     public Button quitToMainButton;
+    [SerializeField] private SettingsMenuController settingsMenu;
 
     [Header("Main Menu Scene")]
     public string mainMenuScene = "MainMenu";
@@ -131,6 +132,9 @@ public class PauseMenuController : MonoBehaviour
                 else if (quitToMainButton == null && (btnName.Contains("quit") || btnName.Contains("main"))) quitToMainButton = b;
             }
         }
+
+        if (settingsMenu == null)
+            settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
         // Listeners
         if (resumeButton != null) resumeButton.onClick.AddListener(Resume);
@@ -501,6 +505,21 @@ public class PauseMenuController : MonoBehaviour
 
     public void OnOptions()
     {
+        if (settingsMenu == null)
+            settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
+
+        if (settingsMenu != null)
+        {
+            var es = EventSystem.current;
+            var previous = es ? es.currentSelectedGameObject : null;
+            settingsMenu.Show(null, () =>
+            {
+                if (es != null && previous != null)
+                    es.SetSelectedGameObject(previous);
+            });
+            return;
+        }
+
         var optionsPanel = transform.Find("OptionsPanel");
         if (optionsPanel != null) optionsPanel.gameObject.SetActive(true);
     }
