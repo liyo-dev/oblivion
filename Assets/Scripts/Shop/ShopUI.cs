@@ -63,6 +63,9 @@ public class ShopUI : MonoBehaviour
         Confirming
     }
 
+    // Public accessor for MenuManager / external callers
+    public bool IsOpen => _isOpen;
+
     ShopState _state = ShopState.Browsing;
 
     void Awake()
@@ -258,6 +261,12 @@ public class ShopUI : MonoBehaviour
     public void Open()
     {
         if (_isOpen) return;
+        // Ask central MenuManager for permission
+        if (!MenuManager.TryOpen(MenuKind.Shop))
+        {
+            Debug.Log("[ShopUI] Apertura denegada por MenuManager");
+            return;
+        }
         _isOpen = true;
         _state = ShopState.Browsing;
         HideConfirmationVisuals();
@@ -279,8 +288,8 @@ public class ShopUI : MonoBehaviour
         }
         
         RefreshUI();
-        SelectFirstItem();
-        FocusSelectedCard();
+        // No seleccionar ningún producto al abrir
+        ClearSelection();
 
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
@@ -298,6 +307,9 @@ public class ShopUI : MonoBehaviour
         Time.timeScale = 1f;
         ResetBuyButtonFeedback();
         HideConfirmationVisuals();
+
+        // Unregister from central manager
+        MenuManager.Close(MenuKind.Shop);
     }
 
     void RefreshUI()
@@ -576,12 +588,13 @@ public class ShopUI : MonoBehaviour
             _buyButtonScaleCached = true;
         }
 
-        _buyButtonTween?.Kill();
-        _buyButtonTween = buyButton.transform
-            .DOScale(_buyButtonBaseScale * buyButtonPulseScale, buyButtonPulseDuration)
-            .SetEase(buyButtonPulseEase)
-            .SetLoops(-1, LoopType.Yoyo)
-            .SetUpdate(true);
+        // Solo escalar el botón una vez y mantener color verde
+        buyButton.transform.localScale = _buyButtonBaseScale * buyButtonPulseScale;
+        var colors = buyButton.colors;
+        colors.normalColor = Color.green;
+        colors.highlightedColor = Color.green;
+        colors.pressedColor = Color.green;
+        buyButton.colors = colors;
     }
 
     void ResetBuyButtonFeedback()
