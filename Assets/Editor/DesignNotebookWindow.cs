@@ -16,14 +16,22 @@ public class DesignNotebookWindow : EditorWindow
     private SerializedObject _serialized;
     private Vector2 _scroll;
     private int _tabIndex;
-
-    private ReorderableList _quickNotesList;
     private DesignStoryGraphView _storyGraphView;
     private Color _highlightColor = new Color(1f, 0.92f, 0.23f);
     private int _fontSize = 18;
 
+    private const string SynopsisControlName = "DesignNotebook_Synopsis";
+
     [MenuItem("Tools/Design/Notebook")]
     public static void Open()
+    {
+        var window = GetWindow<DesignNotebookWindow>();
+        window.titleContent = new GUIContent("Design Notebook");
+        window.Show();
+    }
+
+    [MenuItem("Window/General/Design Notebook")]
+    public static void OpenDocked()
     {
         var window = GetWindow<DesignNotebookWindow>();
         window.titleContent = new GUIContent("Design Notebook");
@@ -36,7 +44,6 @@ public class DesignNotebookWindow : EditorWindow
         rootVisualElement.style.position = Position.Relative;
         EnsureGraphView();
         TryUseSelectedAsset();
-        RebuildLists();
     }
 
     private void OnDisable()
@@ -66,35 +73,7 @@ public class DesignNotebookWindow : EditorWindow
         if (notebook == _asset) return;
         _asset = notebook;
         _serialized = _asset != null ? new SerializedObject(_asset) : null;
-        RebuildLists();
         RefreshStoryGraph();
-    }
-
-    private void RebuildLists()
-    {
-        if (_asset == null || _serialized == null)
-            return;
-
-        _quickNotesList = CreateList("quickNotes", DrawQuickNote, "Notas rápidas", 6.5f);
-    }
-
-    private ReorderableList CreateList(string property, ReorderableList.ElementCallbackDelegate drawElement, string header, float heightMultiplier = 5f)
-    {
-        var prop = _serialized.FindProperty(property);
-        var list = new ReorderableList(_serialized, prop, true, true, true, true)
-        {
-            drawHeaderCallback = rect => EditorGUI.LabelField(rect, header, Styles.ListHeader),
-            elementHeight = (EditorGUIUtility.singleLineHeight * heightMultiplier) + Styles.Card.padding.vertical + 6f
-        };
-
-        list.drawElementCallback = drawElement;
-        list.drawElementBackgroundCallback = (rect, index, active, focused) =>
-        {
-            rect = Styles.Card.PaddingRect(rect, 2f);
-            var bg = active ? Styles.ElementBackgroundActive : Styles.ElementBackground;
-            EditorGUI.DrawRect(rect, bg);
-        };
-        return list;
     }
 
     private void OnGUI()
@@ -123,9 +102,6 @@ public class DesignNotebookWindow : EditorWindow
 
         if (_serialized == null)
             _serialized = new SerializedObject(_asset);
-
-        if (_quickNotesList == null)
-            RebuildLists();
 
         _serialized.Update();
 
@@ -176,7 +152,7 @@ public class DesignNotebookWindow : EditorWindow
                 DrawSummary();
                 break;
             case 2:
-                DrawListSection(_quickNotesList, "Notas rápidas");
+                DrawQuickNotesBoard();
                 break;
             case 3:
                 DrawExportButtons();
@@ -193,55 +169,194 @@ public class DesignNotebookWindow : EditorWindow
         DrawTextFormattingTools(synopsisProp);
 
         var minHeight = Mathf.Max(position.height - 220f, 300f);
-        var rect = GUILayoutUtility.GetRect(position.width - 32f, minHeight, GUILayout.ExpandHeight(true));
-        EditorGUI.PropertyField(rect, synopsisProp, new GUIContent("Sinopsis"), true);
+        GUI.SetNextControlName(SynopsisControlName);
+        EditorGUI.BeginChangeCheck();
+        var synopsis = EditorGUILayout.TextArea(
+            synopsisProp.stringValue,
+            Styles.GetRichTextArea(_fontSize),
+            GUILayout.MinHeight(minHeight));
+        if (EditorGUI.EndChangeCheck())
+            synopsisProp.stringValue = synopsis;
     }
 
     private void DrawTextFormattingTools(SerializedProperty prop)
     {
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Negrita", GUILayout.Width(70f)))
-            InsertSnippet(prop, "<b>texto</b>");
+            WrapSelection(prop, "<b>", "</b>");
         if (GUILayout.Button("Subrayar", GUILayout.Width(80f)))
-            InsertSnippet(prop, "<u>texto</u>");
+            WrapSelection(prop, "<u>", "</u>");
         if (GUILayout.Button("Resaltar", GUILayout.Width(80f)))
-            InsertSnippet(prop, $"<color=#{ColorUtility.ToHtmlStringRGB(_highlightColor)}>texto</color>");
+            WrapSelection(prop, $"<color=#{ColorUtility.ToHtmlStringRGB(_highlightColor)}>", "</color>");
 
         _highlightColor = EditorGUILayout.ColorField(_highlightColor, GUILayout.Width(80f));
         _fontSize = EditorGUILayout.IntSlider("Tamaño de fuente", _fontSize, 10, 48);
         if (GUILayout.Button("Aplicar tamaño", GUILayout.Width(110f)))
-            InsertSnippet(prop, $"<size={_fontSize}>texto</size>");
+            WrapSelection(prop, $"<size={_fontSize}>", "</size>");
         EditorGUILayout.EndHorizontal();
+        EditorGUILayout.HelpBox("Selecciona el texto en la sinopsis para aplicar el formato. Si no hay selección se insertará un marcador editable en la posición del cursor.", MessageType.None);
     }
 
-    private void InsertSnippet(SerializedProperty prop, string snippet)
+    private void WrapSelection(SerializedProperty prop, string prefix, string suffix)
     {
-        prop.stringValue = string.IsNullOrEmpty(prop.stringValue)
-            ? snippet
-            : prop.stringValue + "\n" + snippet;
-    }
+        var text = prop.stringValue ?? string.Empty;
+        var editor = GetFocusedTextEditor();
+        bool hasFocus = GUI.GetNameOfFocusedControl() == SynopsisControlName && editor != null;
 
-    private void DrawListSection(ReorderableList list, string title)
-    {
-        EditorGUILayout.LabelField(title, Styles.SectionTitle);
-        using (new EditorGUILayout.VerticalScope(Styles.Card))
+        if (hasFocus)
         {
-            if (list == null)
-                EditorGUILayout.LabelField("Sin elementos", Styles.GhostLabel);
+            int start = Mathf.Min(editor.cursorIndex, editor.selectIndex);
+            int end = Mathf.Max(editor.cursorIndex, editor.selectIndex);
+
+            if (start != end)
+            {
+                prop.stringValue = text.Insert(end, suffix).Insert(start, prefix);
+                editor.cursorIndex = start + prefix.Length;
+                editor.selectIndex = end + prefix.Length;
+                return;
+            }
             else
-                list.DoLayoutList();
+            {
+                prop.stringValue = text.Insert(end, prefix + "texto" + suffix);
+                editor.cursorIndex = editor.selectIndex = end + prefix.Length;
+                return;
+            }
         }
+
+        prop.stringValue = string.IsNullOrEmpty(text)
+            ? prefix + "texto" + suffix
+            : text + "\n" + prefix + "texto" + suffix;
     }
 
-    private void DrawQuickNote(Rect rect, int index, bool isActive, bool isFocused)
+    private TextEditor GetFocusedTextEditor()
     {
-        var element = _quickNotesList.serializedProperty.GetArrayElementAtIndex(index);
-        float line = rect.y;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight), element.FindPropertyRelative("title"), new GUIContent("Título"));
+        return GUIUtility.keyboardControl != 0
+            ? (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl)
+            : null;
+    }
+
+    private void DrawQuickNotesBoard()
+    {
+        EditorGUILayout.LabelField("Notas rápidas", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Organiza ideas en un tablero tipo corcho con tarjetas visibles.", MessageType.None);
+
+        var quickNotesProp = _serialized.FindProperty("quickNotes");
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Nueva nota", GUILayout.Width(110f)))
+        {
+            quickNotesProp.arraySize++;
+            var element = quickNotesProp.GetArrayElementAtIndex(quickNotesProp.arraySize - 1);
+            element.FindPropertyRelative("title").stringValue = "Nueva nota";
+            element.FindPropertyRelative("note").stringValue = string.Empty;
+            element.FindPropertyRelative("tags").stringValue = string.Empty;
+            element.FindPropertyRelative("color").colorValue = Styles.DefaultNoteColor;
+        }
+
+        if (quickNotesProp.arraySize > 0 && GUILayout.Button("Ordenar por título", GUILayout.Width(140f)))
+        {
+            SortQuickNotes(quickNotesProp);
+        }
+        EditorGUILayout.EndHorizontal();
+
+        float cardWidth = 230f;
+        float cardHeight = 190f;
+        float viewWidth = position.width - 56f;
+        int columns = Mathf.Max(1, Mathf.FloorToInt(viewWidth / cardWidth));
+        int rows = Mathf.Max(1, Mathf.CeilToInt(quickNotesProp.arraySize / (float)columns));
+        float boardHeight = Mathf.Max(cardHeight, (cardHeight + 14f) * rows);
+        var boardRect = GUILayoutUtility.GetRect(viewWidth, boardHeight, GUILayout.ExpandWidth(true));
+
+        if (quickNotesProp.arraySize == 0)
+        {
+            EditorGUI.LabelField(boardRect, "Añade tu primera nota para empezar a organizar.", Styles.GhostLabelCentered);
+            return;
+        }
+
+        int deleteIndex = -1;
+        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        {
+            int row = i / columns;
+            int col = i % columns;
+            var cardRect = new Rect(
+                boardRect.xMin + (col * (cardWidth + 14f)),
+                boardRect.yMin + (row * (cardHeight + 14f)),
+                cardWidth,
+                cardHeight);
+
+            if (DrawQuickNoteCard(cardRect, quickNotesProp.GetArrayElementAtIndex(i)))
+                deleteIndex = i;
+        }
+
+        if (deleteIndex >= 0)
+            quickNotesProp.DeleteArrayElementAtIndex(deleteIndex);
+    }
+
+    private bool DrawQuickNoteCard(Rect rect, SerializedProperty element)
+    {
+        var colorProp = element.FindPropertyRelative("color");
+        var titleProp = element.FindPropertyRelative("title");
+        var noteProp = element.FindPropertyRelative("note");
+        var tagsProp = element.FindPropertyRelative("tags");
+
+        EditorGUI.DrawRect(rect, Styles.NoteShadow);
+        var inner = Styles.NoteCard.PaddingRect(rect, 6f);
+        EditorGUI.DrawRect(inner, colorProp.colorValue);
+
+        var pinRect = new Rect(inner.x + (inner.width * 0.5f) - 6f, inner.y - 6f, 12f, 12f);
+        EditorGUI.DrawRect(pinRect, Styles.PinShadow);
+        EditorGUI.DrawRect(new Rect(pinRect.x + 1f, pinRect.y + 1f, pinRect.width - 2f, pinRect.height - 2f), Styles.PinColor);
+
+        var deleteRect = new Rect(inner.xMax - 18f, inner.y + 4f, 14f, 14f);
+        if (GUI.Button(deleteRect, new GUIContent("✕", "Eliminar nota"), Styles.MiniIconButton))
+            return true;
+
+        var contentRect = Styles.Card.PaddingRect(inner, 6f);
+        var line = contentRect.y;
+
+        EditorGUI.LabelField(new Rect(contentRect.x, line, contentRect.width - 20f, EditorGUIUtility.singleLineHeight), "Título", Styles.NoteLabel);
         line += EditorGUIUtility.singleLineHeight + 2f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 3f), element.FindPropertyRelative("note"), new GUIContent("Nota"));
-        line += EditorGUIUtility.singleLineHeight * 3f + 4f;
-        EditorGUI.PropertyField(new Rect(rect.x, line, rect.width, EditorGUIUtility.singleLineHeight * 1.1f), element.FindPropertyRelative("tags"), new GUIContent("Tags"));
+        titleProp.stringValue = EditorGUI.TextField(new Rect(contentRect.x, line, contentRect.width - 20f, EditorGUIUtility.singleLineHeight), titleProp.stringValue, Styles.NoteTitleField);
+
+        line += EditorGUIUtility.singleLineHeight + 4f;
+        EditorGUI.LabelField(new Rect(contentRect.x, line, contentRect.width, EditorGUIUtility.singleLineHeight), "Nota", Styles.NoteLabel);
+        line += EditorGUIUtility.singleLineHeight + 2f;
+        var noteRect = new Rect(contentRect.x, line, contentRect.width, contentRect.height - (EditorGUIUtility.singleLineHeight * 3.2f));
+        noteProp.stringValue = EditorGUI.TextArea(noteRect, noteProp.stringValue, Styles.NoteBody);
+
+        line = noteRect.yMax + 4f;
+        EditorGUI.LabelField(new Rect(contentRect.x, line, contentRect.width, EditorGUIUtility.singleLineHeight), "Tags", Styles.NoteLabel);
+        line += EditorGUIUtility.singleLineHeight + 2f;
+        tagsProp.stringValue = EditorGUI.TextField(new Rect(contentRect.x, line, contentRect.width - 80f, EditorGUIUtility.singleLineHeight), tagsProp.stringValue, Styles.NoteTitleField);
+
+        var colorPickerRect = new Rect(contentRect.xMax - 70f, line - 2f, 68f, EditorGUIUtility.singleLineHeight + 4f);
+        colorProp.colorValue = EditorGUI.ColorField(colorPickerRect, GUIContent.none, colorProp.colorValue, true, true, false);
+
+        return false;
+    }
+
+    private void SortQuickNotes(SerializedProperty quickNotesProp)
+    {
+        var notes = new List<(string title, string note, string tags, Color color)>();
+        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        {
+            var element = quickNotesProp.GetArrayElementAtIndex(i);
+            notes.Add((
+                element.FindPropertyRelative("title").stringValue,
+                element.FindPropertyRelative("note").stringValue,
+                element.FindPropertyRelative("tags").stringValue,
+                element.FindPropertyRelative("color").colorValue));
+        }
+
+        notes = notes.OrderBy(n => n.title).ToList();
+        quickNotesProp.arraySize = notes.Count;
+        for (int i = 0; i < notes.Count; i++)
+        {
+            var element = quickNotesProp.GetArrayElementAtIndex(i);
+            element.FindPropertyRelative("title").stringValue = notes[i].title;
+            element.FindPropertyRelative("note").stringValue = notes[i].note;
+            element.FindPropertyRelative("tags").stringValue = notes[i].tags;
+            element.FindPropertyRelative("color").colorValue = notes[i].color;
+        }
     }
 
     private void DrawStoryTab()
@@ -535,10 +650,20 @@ public class DesignNotebookWindow : EditorWindow
         public static readonly GUIStyle SectionTitle;
         public static readonly GUIStyle ListHeader;
         public static readonly GUIStyle Card;
+        public static readonly GUIStyle NoteCard;
+        public static readonly GUIStyle NoteLabel;
+        public static readonly GUIStyle NoteTitleField;
+        public static readonly GUIStyle NoteBody;
+        public static readonly GUIStyle MiniIconButton;
+        public static readonly GUIStyle GhostLabelCentered;
+        public static readonly GUIStyle RichTextArea;
         public static readonly GUIStyle TabButton;
-        public static readonly GUIStyle GhostLabel;
         public static readonly Color ElementBackground;
         public static readonly Color ElementBackgroundActive;
+        public static readonly Color NoteShadow;
+        public static readonly Color PinColor;
+        public static readonly Color PinShadow;
+        public static readonly Color DefaultNoteColor;
 
         static Styles()
         {
@@ -578,17 +703,50 @@ public class DesignNotebookWindow : EditorWindow
                 normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.13f, 0.16f, 0.2f) : new Color(0.88f, 0.92f, 0.98f)) }
             };
 
+            NoteCard = new GUIStyle(Card)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(12, 12, 12, 12)
+            };
+
+            NoteLabel = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal = { textColor = new Color(0.18f, 0.18f, 0.18f) }
+            };
+
+            NoteTitleField = new GUIStyle(EditorStyles.boldTextField)
+            {
+                fontSize = 12
+            };
+
+            NoteBody = new GUIStyle(EditorStyles.textArea)
+            {
+                wordWrap = true,
+                richText = true
+            };
+
+            MiniIconButton = new GUIStyle("MiniToolbarButton")
+            {
+                padding = new RectOffset(2, 2, 2, 2),
+                fontSize = 10
+            };
+
+            GhostLabelCentered = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+            {
+                fontStyle = FontStyle.Italic
+            };
+
+            RichTextArea = new GUIStyle(EditorStyles.textArea)
+            {
+                wordWrap = true,
+                richText = true
+            };
+
             TabButton = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedHeight = 24,
                 fontSize = 11,
                 margin = new RectOffset(2, 2, 2, 2)
-            };
-
-            GhostLabel = new GUIStyle(EditorStyles.miniLabel)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Italic
             };
 
             ElementBackground = EditorGUIUtility.isProSkin
@@ -598,6 +756,20 @@ public class DesignNotebookWindow : EditorWindow
             ElementBackgroundActive = EditorGUIUtility.isProSkin
                 ? new Color(0.2f, 0.34f, 0.48f)
                 : new Color(0.75f, 0.84f, 0.95f);
+
+            NoteShadow = new Color(0f, 0f, 0f, 0.08f);
+            PinColor = new Color(0.8f, 0.2f, 0.2f);
+            PinShadow = new Color(0f, 0f, 0f, 0.2f);
+            DefaultNoteColor = new Color(1f, 0.95f, 0.65f);
+        }
+
+        public static GUIStyle GetRichTextArea(int fontSize)
+        {
+            var style = new GUIStyle(RichTextArea)
+            {
+                fontSize = fontSize
+            };
+            return style;
         }
 
         private static Texture2D MakeTex(Color color)
@@ -617,12 +789,13 @@ internal class DesignStoryGraphView : GraphView
     private readonly Dictionary<string, StoryCardNodeView> _nodes = new();
     private Action _onDirty;
     private bool _isRebuilding;
+    private readonly GridBackground _grid;
 
     public DesignStoryGraphView()
     {
-        var grid = new GridBackground();
-        Insert(0, grid);
-        grid.StretchToParentSize();
+        _grid = new GridBackground();
+        Insert(0, _grid);
+        _grid.StretchToParentSize();
 
         SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
         this.AddManipulator(new ContentDragger());
@@ -659,6 +832,13 @@ internal class DesignStoryGraphView : GraphView
         _notebook.storyCards.Add(card);
         _onDirty?.Invoke();
         Rebuild();
+
+        if (_nodes.TryGetValue(card.guid, out var view))
+        {
+            ClearSelection();
+            AddToSelection(view);
+            FrameSelection();
+        }
     }
 
     private void Rebuild()
@@ -675,6 +855,12 @@ internal class DesignStoryGraphView : GraphView
         }
 
         if (_notebook == null) return;
+
+        if (_grid.parent == null)
+        {
+            Insert(0, _grid);
+            _grid.StretchToParentSize();
+        }
 
         foreach (var card in _notebook.storyCards)
         {
