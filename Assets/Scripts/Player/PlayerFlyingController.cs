@@ -131,7 +131,7 @@ public class PlayerFlyingController : MonoBehaviour
 
     private void OnMovePerformed(InputAction.CallbackContext ctx) => _moveInput = ctx.ReadValue<Vector2>();
     private void OnMoveCanceled(InputAction.CallbackContext ctx) => _moveInput = Vector2.zero;
-    private void OnCameraPerformed(InputAction.CallbackContext ctx) => _cameraInput = ctx.ReadValue<Vector2>();
+    private void OnCameraPerformed(InputAction.CallbackContext ctx) => _cameraInput = PlayerSettings.ApplyLookInversion(ctx.ReadValue<Vector2>(), true);
     private void OnCameraCanceled(InputAction.CallbackContext ctx) => _cameraInput = Vector2.zero;
 
     private void OnJumpPerformed(InputAction.CallbackContext ctx)
