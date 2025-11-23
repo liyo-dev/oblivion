@@ -27,6 +27,12 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Button de la fila NUEVA PARTIDA.")]
     [SerializeField] private Button newGameButton;
 
+    [Tooltip("Button de la fila AJUSTES.")]
+    [SerializeField] private Button settingsButton;
+
+    [Header("Settings")]
+    [SerializeField] private SettingsMenuController settingsMenu;
+
     [Header("Scene when continuing")]
     [SerializeField] private string nextSceneContinue = "MainWorld";
 
@@ -78,8 +84,15 @@ public class MainMenuController : MonoBehaviour
         if (!newGameButton)
             newGameButton = TryFindNewGameButton();
 
+        if (!settingsButton)
+            settingsButton = TryFindSettingsButton();
+
+        if (!settingsMenu)
+            settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
+
         WireButton(continueButton, OnClickContinue, "CONTINUE");
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
+        WireButton(settingsButton, OnClickSettings, "SETTINGS");
     }
 
     void OnEnable()
@@ -288,6 +301,27 @@ public class MainMenuController : MonoBehaviour
         LoadNewGameScene();
     }
 
+    public void OnClickSettings()
+    {
+        if (!settingsMenu)
+            settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
+
+        if (settingsMenu != null)
+        {
+            var es = EventSystem.current;
+            var previous = es ? es.currentSelectedGameObject : null;
+            settingsMenu.Show(null, () =>
+            {
+                if (es != null && previous != null)
+                    es.SetSelectedGameObject(previous);
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[MainMenu] No se encontró SettingsMenuController en la jerarquía.");
+        }
+    }
+
     public void OnClickExit()
     {
         Application.Quit();
@@ -368,6 +402,18 @@ public class MainMenuController : MonoBehaviour
         {
             var n = b.gameObject.name.ToLowerInvariant();
             if (n.Contains("new") || n.Contains("nueva") || n.Contains("newgame") || n.Contains("nueva_partida"))
+                return b;
+        }
+        return null;
+    }
+
+    Button TryFindSettingsButton()
+    {
+        var all = GetComponentsInChildren<Button>(true);
+        foreach (var b in all)
+        {
+            var n = b.gameObject.name.ToLowerInvariant();
+            if (n.Contains("setting") || n.Contains("ajuste") || n.Contains("config"))
                 return b;
         }
         return null;
