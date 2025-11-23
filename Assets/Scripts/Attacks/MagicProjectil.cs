@@ -138,12 +138,18 @@ public class MagicProjectile : MonoBehaviour
         if (_rb != null)
         {
             _rb.useGravity = useGravity;
-            _rb.linearVelocity = direction.normalized * Mathf.Max(0f, speed);
+                // Asegurar estado físico limpio antes de aplicar velocidad
+                _rb.angularVelocity = Vector3.zero;
+                _rb.linearVelocity = direction.normalized * Mathf.Max(0f, speed);
+                // Garantizar que el proyectil usa la posición actual como origen de rango
+                _spawnPos = transform.position;
+                _movementEnabled = true;
         }
         else
         {
             // Movimiento manual en Update usa _cfg.initialSpeed
             transform.forward = direction.normalized;
+                _spawnPos = transform.position;
         }
     }
 

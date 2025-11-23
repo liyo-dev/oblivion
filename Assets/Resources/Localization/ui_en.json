@@ -86,7 +86,7 @@
         },
         {
             "key": "ROOM_EXIT_NEEDS",
-            "value": "Before you leave, you need: {0}"
+            "value": "Before you leave, you need: "
         },
         {
             "key": "SAVEPOINT_PROMPT",
@@ -151,6 +151,10 @@
         {
             "key": "UI_Mana",
             "value": "Mana"
+        },
+        {
+            "key": "WATER_ENTER_NEEDS",
+            "value": "Before entering the water, you need:"
         },
         {
             "key": "WOODS_EXIT_BLOCKED",
