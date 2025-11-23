@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -9,11 +10,21 @@ public class WorldPickup : MonoBehaviour
     [Header("Effects")]
     [SerializeField] private List<PickupEffect> effects = new();
 
+    [Header("Persistencia")]
+    [Tooltip("Si es true, al recogerlo se guardará su estado y no volverá a aparecer tras cargar partida.")]
+    [SerializeField] private bool persistState = true;
+    [Tooltip("ID único para este pickup. Debe ser estable entre sesiones/escenas.")]
+    [SerializeField] private string pickupId;
+
     [Header("Consumption")]
     [SerializeField] private bool destroyOnCollect = true;
     [SerializeField] private float destroyDelay;
     [SerializeField] private bool deactivateRootOnCollect;
     [SerializeField] private GameObject[] disableOnCollect;
+    
+    [Header("Behavior")]
+    [Tooltip("If true, the pickup will be collected automatically when a PlayerPickupCollector enters the trigger. If false, collection must be triggered explicitly (e.g. via an Interactable/Chest).")]
+    [SerializeField] private bool collectOnTrigger = true;
 
     [Header("Feedback")]
     [SerializeField] private GameObject vfxPrefab;
@@ -34,12 +45,17 @@ public class WorldPickup : MonoBehaviour
     {
         _collider = GetComponent<Collider>();
         if (_collider) _collider.isTrigger = true;
+        CheckPersistedState();
     }
 
     void OnTriggerEnter(Collider other)
     {
+        if (!collectOnTrigger) return;
+
         TryCollectFrom(other);
     }
+
+    
 
     /// <summary>
     /// Attempts to apply all configured effects to the provided collector.
@@ -115,6 +131,8 @@ public class WorldPickup : MonoBehaviour
         if (_collected) return;
         _collected = true;
 
+        PersistCollectedFlag();
+
         if (_collider) _collider.enabled = false;
 
         if (pickupSfx)
@@ -156,6 +174,73 @@ public class WorldPickup : MonoBehaviour
         {
             _collider.isTrigger = true;
         }
+
+        if (!Application.isPlaying && string.IsNullOrEmpty(pickupId))
+        {
+            pickupId = Guid.NewGuid().ToString("N");
+        }
     }
 #endif
+
+    void CheckPersistedState()
+    {
+        if (!persistState) return;
+
+        if (IsFlagSet())
+        {
+            _collected = true;
+            if (_collider) _collider.enabled = false;
+
+            if (disableOnCollect != null)
+            {
+                for (int i = 0; i < disableOnCollect.Length; i++)
+                {
+                    if (disableOnCollect[i]) disableOnCollect[i].SetActive(false);
+                }
+            }
+
+            if (deactivateRootOnCollect)
+            {
+                gameObject.SetActive(false);
+            }
+            else if (destroyOnCollect)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    void PersistCollectedFlag()
+    {
+        if (!persistState) return;
+        if (string.IsNullOrEmpty(pickupId))
+        {
+            Debug.LogWarning($"[WorldPickup] persistState=true pero pickupId vacío en {name}. El estado no se guardará.");
+            return;
+        }
+
+        var profile = GameBootService.Profile;
+        if (profile == null) return;
+
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return;
+
+        if (preset.flags == null) preset.flags = new List<string>();
+        string flag = GetFlag();
+        if (!preset.flags.Contains(flag))
+            preset.flags.Add(flag);
+    }
+
+    bool IsFlagSet()
+    {
+        if (!persistState || string.IsNullOrEmpty(pickupId)) return false;
+
+        var profile = GameBootService.Profile;
+        var preset = profile != null ? profile.GetActivePresetResolved() : null;
+        if (preset == null || preset.flags == null) return false;
+
+        return preset.flags.Contains(GetFlag());
+    }
+
+    string GetFlag() => $"PICKUP_{pickupId}";
 }

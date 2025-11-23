@@ -252,12 +252,11 @@ public class PlayerFlyingController : MonoBehaviour
         Vector3 desired = planar * horizontalSpeed;
 
         float verticalInput = 0f;
-        if (Mathf.Abs(_cameraInput.y) > 0.1f)
+        // Solo el stick derecho controla altura, y solo mientras avanzas con el izquierdo.
+        if (planar.sqrMagnitude > 0.01f && Mathf.Abs(_cameraInput.y) > 0.1f)
             verticalInput += _cameraInput.y * verticalSpeed;
-        if (_moveInput.y > 0.2f)
-            verticalInput += verticalSpeed * 0.35f;
-        else if (_moveInput.y < -0.2f)
-            verticalInput -= verticalSpeed * 0.35f;
+
+        // Mantener salto para descender siempre (independiente del stick)
         if (_jumpHeld)
             verticalInput -= descendSpeed;
 
