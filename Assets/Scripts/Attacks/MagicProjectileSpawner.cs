@@ -167,6 +167,21 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (spell.useScaleOverride)
             go.transform.localScale = spell.scaleOverride;
 
+        // Pausar física mientras carga
+        Rigidbody cachedRb = null;
+        bool cachedKinematic = false;
+        bool cachedUseGravity = false;
+        if (go.TryGetComponent<Rigidbody>(out var rbDuringCharge))
+        {
+            cachedRb = rbDuringCharge;
+            cachedKinematic = rbDuringCharge.isKinematic;
+            cachedUseGravity = rbDuringCharge.useGravity;
+            rbDuringCharge.isKinematic = true;
+            rbDuringCharge.useGravity = false;
+            rbDuringCharge.linearVelocity = Vector3.zero;
+            rbDuringCharge.angularVelocity = Vector3.zero;
+        }
+
         Transform previousParent = null;
         if (spell.followOriginDuringCharge && origin != null)
         {
@@ -221,6 +236,12 @@ public class MagicProjectileSpawner : MonoBehaviour
             rb.isKinematic = false;
             rb.useGravity = spell.useGravity;
             rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+        }
+        else if (cachedRb != null)
+        {
+            cachedRb.isKinematic = cachedKinematic;
+            cachedRb.useGravity = spell.useGravity;
+            cachedRb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
     }
 
