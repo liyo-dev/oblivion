@@ -40,4 +40,5 @@ public class DesignScratch
     [TextArea(3, 8)] public string note;
     public string tags;
     public Color color = new Color(1f, 0.95f, 0.65f);
+    public Vector2 position;
 }
