@@ -217,6 +217,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         RegisterTabButtons();
         EnsureViews();
         SetEquipmentCameraActive(false);
+        // Unregister from MenuManager
+        MenuManager.Close(MenuKind.Equipment);
     }
 
     void OnDestroy()
@@ -401,7 +403,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         if (!GameState.CanOpenInventory) return;
         if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
-        if (!EnsureViews()) return;
+
+        // Ask central manager for permission to open
+        if (!MenuManager.TryOpen(MenuKind.Equipment))
+        {
+            Debug.Log("[PlayerEquipmentMenuController] Apertura denegada por MenuManager");
+            return;
+        }
+
+        if (!EnsureViews())
+        {
+            MenuManager.Close(MenuKind.Equipment);
+            return;
+        }
 
         EnsureEventSystem();
         EnsureActionManager();
@@ -844,17 +858,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             else
                 UpdateRowTexts();
 
-            if (_selectedItem == null && _rows.Count > 0)
+            // No seleccionar automáticamente ningún item al abrir el menú
+            // El usuario puede navegar y seleccionar manualmente
+            if (_selectedItem != null)
             {
-                // Seleccionar el primer item tanto lógicamente como visualmente
-                var firstWidget = _rows[0];
-                var firstItem = firstWidget.Item;
-                HandleRowActivated(firstWidget, firstItem, false);
-                firstWidget.Focus();
+                UpdateSelectedItemDetails();
             }
             else
             {
-                UpdateSelectedItemDetails();
+                // Limpiar detalles si no hay selección
+                if (_ui.itemName != null) _ui.itemName.text = "";
+                if (_ui.itemDescription != null) _ui.itemDescription.text = "";
+                if (_ui.useButton != null) _ui.useButton.gameObject.SetActive(false);
             }
         }
 
@@ -1001,14 +1016,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_rows.Count == 0) return false;
 
+            // Solo restaurar el foco si ya había una selección previa
+            // No forzar selección automática al abrir el menú
             if (_lastSelectedRow != null)
             {
                 _lastSelectedRow.Focus();
                 return true;
             }
 
-            _rows[0].InvokeClick();
-            return true;
+            return false;
         }
 
         public bool TryHandleCancel() => false;
@@ -1156,8 +1172,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             BuildSpellList();
             UpdateSlotButtonVisuals();
             CancelSlotSelection(true);
-            ShowSpellDetails(_highlightedSpell);
-            FocusSpellList();
+            // No seleccionar ningún hechizo al abrir, limpiar detalles
+            _highlightedSpell = SpellId.None;
+            _highlightedRow = null;
+            ShowSpellDetails(SpellId.None);
         }
 
         public void HandleInput()
@@ -1259,7 +1277,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void BuildSpellList()
         {
-            var previous = _highlightedSpell;
             ClearList();
 
             if (_preset == null)
@@ -1276,16 +1293,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 }
             }
 
-            if (!SelectRow(previous))
-            {
-                if (!SelectRow(_preset.leftSpellId))
-                    SelectFirstRow();
-            }
-
+            // No seleccionar ninguna fila al abrir
+            _highlightedRow = null;
+            _highlightedSpell = SpellId.None;
             UpdateRowVisuals();
             ConfigureRowNavigation();
             UpdateSlotNavigationTargets();
-            FocusSpellList();
         }
 
         void AddSpellRow(SpellId spellId)
@@ -1935,6 +1948,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             UpdateLabels();
             _rowOrderDirty = true;
             ConfigureNavigation();
+            // Limpiar selección visual en filas de vestuario
+            foreach (var row in _rows.Values)
+            {
+                if (row?.label != null)
+                    row.label.color = Color.white;
+            }
         }
 
         void ConfigureNavigation()

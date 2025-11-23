@@ -167,11 +167,6 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (spell.useScaleOverride)
             go.transform.localScale = spell.scaleOverride;
 
-        Vector3 targetScale = go.transform.localScale;
-        float startScaleFactor = Mathf.Clamp(spell.chargeStartScale, 0.01f, 1f);
-        Vector3 startScale = targetScale * startScaleFactor;
-        go.transform.localScale = startScale;
-
         Transform previousParent = null;
         if (spell.followOriginDuringCharge && origin != null)
         {
@@ -209,12 +204,9 @@ public class MagicProjectileSpawner : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < charge)
         {
-            float t = charge > 0f ? elapsed / charge : 1f;
-            go.transform.localScale = Vector3.Lerp(startScale, targetScale, t);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        go.transform.localScale = targetScale;
 
         if (spell.followOriginDuringCharge && origin != null)
             go.transform.SetParent(previousParent, worldPositionStays: true);
