@@ -19,6 +19,9 @@ public class DesignNotebookWindow : EditorWindow
     private DesignStoryGraphView _storyGraphView;
     private Color _highlightColor = new Color(1f, 0.92f, 0.23f);
     private int _fontSize = 18;
+    private Vector2 _synopsisScroll;
+    private int _cachedSelectionStart = -1;
+    private int _cachedSelectionEnd = -1;
 
     private const string SynopsisControlName = "DesignNotebook_Synopsis";
 
@@ -169,14 +172,20 @@ public class DesignNotebookWindow : EditorWindow
         DrawTextFormattingTools(synopsisProp);
 
         var minHeight = Mathf.Max(position.height - 220f, 300f);
-        GUI.SetNextControlName(SynopsisControlName);
-        EditorGUI.BeginChangeCheck();
-        var synopsis = EditorGUILayout.TextArea(
-            synopsisProp.stringValue,
-            Styles.GetRichTextArea(_fontSize),
-            GUILayout.MinHeight(minHeight));
-        if (EditorGUI.EndChangeCheck())
-            synopsisProp.stringValue = synopsis;
+        using (var synopsisScroll = new EditorGUILayout.ScrollViewScope(_synopsisScroll, GUILayout.Height(minHeight)))
+        {
+            _synopsisScroll = synopsisScroll.scrollPosition;
+            GUI.SetNextControlName(SynopsisControlName);
+            EditorGUI.BeginChangeCheck();
+            var synopsis = EditorGUILayout.TextArea(
+                synopsisProp.stringValue,
+                Styles.GetRichTextArea(_fontSize),
+                GUILayout.ExpandHeight(true));
+            if (EditorGUI.EndChangeCheck())
+                synopsisProp.stringValue = synopsis;
+        }
+
+        CacheSynopsisSelection();
     }
 
     private void DrawTextFormattingTools(SerializedProperty prop)
@@ -203,22 +212,32 @@ public class DesignNotebookWindow : EditorWindow
         var editor = GetFocusedTextEditor();
         bool hasFocus = GUI.GetNameOfFocusedControl() == SynopsisControlName && editor != null;
 
-        if (hasFocus)
-        {
-            int start = Mathf.Min(editor.cursorIndex, editor.selectIndex);
-            int end = Mathf.Max(editor.cursorIndex, editor.selectIndex);
+        int start = hasFocus ? Mathf.Min(editor.cursorIndex, editor.selectIndex) : _cachedSelectionStart;
+        int end = hasFocus ? Mathf.Max(editor.cursorIndex, editor.selectIndex) : _cachedSelectionEnd;
+        bool hasCachedSelection = start >= 0 && end >= 0;
 
+        if (hasCachedSelection)
+        {
             if (start != end)
             {
                 prop.stringValue = text.Insert(end, suffix).Insert(start, prefix);
-                editor.cursorIndex = start + prefix.Length;
-                editor.selectIndex = end + prefix.Length;
+                if (hasFocus)
+                {
+                    editor.cursorIndex = start + prefix.Length;
+                    editor.selectIndex = end + prefix.Length;
+                }
+                _cachedSelectionStart = start;
+                _cachedSelectionEnd = end + prefix.Length + suffix.Length;
                 return;
             }
             else
             {
                 prop.stringValue = text.Insert(end, prefix + "texto" + suffix);
-                editor.cursorIndex = editor.selectIndex = end + prefix.Length;
+                if (hasFocus)
+                {
+                    editor.cursorIndex = editor.selectIndex = end + prefix.Length;
+                }
+                _cachedSelectionStart = _cachedSelectionEnd = end + prefix.Length + suffix.Length + "texto".Length;
                 return;
             }
         }
@@ -226,6 +245,16 @@ public class DesignNotebookWindow : EditorWindow
         prop.stringValue = string.IsNullOrEmpty(text)
             ? prefix + "texto" + suffix
             : text + "\n" + prefix + "texto" + suffix;
+    }
+
+    private void CacheSynopsisSelection()
+    {
+        var editor = GetFocusedTextEditor();
+        if (GUI.GetNameOfFocusedControl() != SynopsisControlName || editor == null)
+            return;
+
+        _cachedSelectionStart = Mathf.Min(editor.cursorIndex, editor.selectIndex);
+        _cachedSelectionEnd = Mathf.Max(editor.cursorIndex, editor.selectIndex);
     }
 
     private TextEditor GetFocusedTextEditor()
@@ -372,7 +401,11 @@ public class DesignNotebookWindow : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+        {
+            EnsureGraphView();
+            _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
             _storyGraphView.CreateCard(new Vector2(position.width * 0.1f, position.height * 0.1f));
+        }
         if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
             _storyGraphView.FrameAll();
         if (GUILayout.Button("Centrar", GUILayout.Width(100f)))
