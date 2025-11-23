@@ -91,6 +91,9 @@ public sealed class AudioService : MonoBehaviour
 
         // Música para la escena actual
         OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+
+        // Aplicar preferencias persistidas
+        PlayerSettings.ApplyAudioToService(this);
     }
 
     void OnDestroy()
