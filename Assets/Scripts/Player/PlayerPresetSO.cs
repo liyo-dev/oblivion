@@ -27,7 +27,7 @@ public class PlayerPresetSO : ScriptableObject
     public List<string> flags = new();
 
     // Usar la clase separada PlayerAbilities para evitar problemas de resolución entre archivos
-    [Header("Abilities (Swim, Jump, Climb)")]
+    [Header("Abilities (Swim, Jump, Climb, Fly)")]
     public PlayerAbilities abilities = new PlayerAbilities();
 
     [Header("Apariencia")]

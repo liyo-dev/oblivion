@@ -46,6 +46,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private bool _allowJump = true;     // saltar
     private bool _allowClimb = true;    // trepar
     private bool _allowMagic = true;    // lanzar magia
+    private bool _allowFly = true;      // volar
 
     // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos
     public void ApplyAbilities(PlayerAbilities abilities)
@@ -55,6 +56,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _allowSwim = abilities.swim;
         _allowJump = abilities.jump;
         _allowClimb = abilities.climb;
+        _allowFly = abilities.fly;
         // 'magic' read with reflection as fallback (some analyzers/assemblies may not resolve the member)
         try
         {
@@ -84,6 +86,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool AllowJump => _allowJump;
     public bool AllowClimb => _allowClimb;
     public bool AllowMagic => _allowMagic;
+    public bool AllowFly => _allowFly;
 
     public event Action<ActionMode> OnTopModeChanged;
 
@@ -172,6 +175,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Swimming].Add(PlayerAbility.Carry);
         _blockedByMode[ActionMode.Swimming].Add(PlayerAbility.Interact);
 
+        // GARANTIZAR bloqueos básicos para Flying (independiente del Inspector)
+        if (!_blockedByMode.ContainsKey(ActionMode.Flying))
+            _blockedByMode[ActionMode.Flying] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.Flying].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.Flying].Add(PlayerAbility.Roll);
+
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
     }
 
@@ -209,6 +219,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                 if (!_allowJump)
                 {
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump deshabilitado por preset");
+                    return false;
+                }
+                break;
+            case PlayerAbility.Fly:
+                if (!_allowFly)
+                {
+                    if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Fly deshabilitado por preset");
                     return false;
                 }
                 break;
@@ -341,4 +358,5 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool CanCastMagic() => CanUse(PlayerAbility.Magic);
     public bool CanInteract() => CanUse(PlayerAbility.Interact);
     public bool CanSwim() => _allowSwim;
+    public bool CanFly() => CanUse(PlayerAbility.Fly);
 }
