@@ -1306,7 +1306,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             _highlightedSpell = entry.spellId;
             _highlightedRow = entry;
-            entry.widget?.Focus();
+
+            // Only force selection when the EventSystem is not already pointing at this row.
+            if (!fromUser)
+            {
+                entry.widget?.Focus();
+            }
+            else
+            {
+                var es = EventSystem.current;
+                if (es == null || es.currentSelectedGameObject != entry.widget?.ButtonGameObject)
+                    entry.widget?.Focus();
+            }
+
             if (fromUser)
                 _focusArea = FocusArea.SpellList;
             UpdateRowVisuals();

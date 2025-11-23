@@ -15036,6 +15036,7 @@ GameObject:
   - component: {fileID: 4979874908035186640}
   - component: {fileID: 2867862484367358980}
   - component: {fileID: 7239899565305807384}
+  - component: {fileID: 6478806357405352346}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -15570,6 +15571,29 @@ MonoBehaviour:
   unlockAllByDefault: 0
   initialUnlocked:
   - {fileID: 11400000, guid: 2631dadb4faec8f46a9d16a4535fd5de, type: 2}
+--- !u!114 &6478806357405352346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5cf0cd5b031cd2e4e9a3ce1ca2301b19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFlyingController
+  locomotionLayerIndex: 0
+  flyIdleState: fly_idle
+  flyDiveState: fly_dive
+  locomotionStateName: Free Locomotion
+  horizontalSpeed: 12
+  verticalSpeed: 8
+  descendSpeed: 12
+  acceleration: 10
+  turnSpeed: 9
+  doubleTapWindow: 0.35
+  debugLogs: 1
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

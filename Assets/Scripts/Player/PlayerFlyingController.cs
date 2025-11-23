@@ -1,4 +1,5 @@
 using Invector.vCharacterController;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -33,6 +34,8 @@ public class PlayerFlyingController : MonoBehaviour
     private Animator _animator;
     private Rigidbody _rigidbody;
     private vThirdPersonController _controller;
+    private FieldInfo _lockMovementField;
+    private FieldInfo _lockRotationField;
     private PlayerActionManager _actionManager;
     private CapsuleCollider _capsule;
     private Transform _cameraTransform;
@@ -58,6 +61,7 @@ public class PlayerFlyingController : MonoBehaviour
         _controller = GetComponent<vThirdPersonController>();
         _actionManager = GetComponent<PlayerActionManager>();
         _capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
+        CacheControllerLockFields();
         CacheCameraTransform();
 
         _controls = new PlayerControls();
@@ -191,8 +195,7 @@ public class PlayerFlyingController : MonoBehaviour
 
         if (_controller != null)
         {
-            _controller.lockMovement = true;
-            _controller.lockRotation = true;
+            SetControllerLocks(true);
             if (!_extraGravitySuspended)
             {
                 _cachedExtraGravity = _controller.extraGravity;
@@ -224,8 +227,7 @@ public class PlayerFlyingController : MonoBehaviour
 
         if (_controller != null)
         {
-            _controller.lockMovement = false;
-            _controller.lockRotation = false;
+            SetControllerLocks(false);
             if (_extraGravitySuspended)
             {
                 _controller.extraGravity = _cachedExtraGravity;
@@ -316,6 +318,26 @@ public class PlayerFlyingController : MonoBehaviour
         _cameraTransform = Camera.main ? Camera.main.transform : FindObjectOfType<Camera>()?.transform;
 #pragma warning restore 618
 #endif
+    }
+
+    private void CacheControllerLockFields()
+    {
+        if (_controller == null) return;
+
+        var type = _controller.GetType();
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy;
+        _lockMovementField = type.GetField("lockMovement", flags);
+        _lockRotationField = type.GetField("lockRotation", flags);
+    }
+
+    private void SetControllerLocks(bool value)
+    {
+        if (_controller == null) return;
+        if (_lockMovementField == null || _lockRotationField == null)
+            CacheControllerLockFields();
+
+        _lockMovementField?.SetValue(_controller, value);
+        _lockRotationField?.SetValue(_controller, value);
     }
 
     private Vector3 GetCameraForwardOnPlane()

@@ -32,6 +32,7 @@ public class MagicProjectile : MonoBehaviour
     Rigidbody _rb;
     bool      _hasRb;
     bool      _ended;
+    bool      _initialized;
 
     ProjectileConfig _cfg;
     GameObject       _instigator;
@@ -62,8 +63,8 @@ public class MagicProjectile : MonoBehaviour
         var col = GetComponent<Collider>();
         if (col != null) col.isTrigger = false;
 
-        // Consideramos "con RB" solo si no es cinemático (usaremos física para mover)
-        _hasRb = _rb != null && !_rb.isKinematic;
+        RefreshHasRigidbody();
+        _initialized = true;
     }
 
     bool _ttlScheduled;
@@ -104,6 +105,47 @@ public class MagicProjectile : MonoBehaviour
                 foreach (var b in hisCols)
                     if (a && b) Physics.IgnoreCollision(a, b, true);
         }
+    }
+
+    /// <summary>
+    /// Activa o desactiva el uso de Rigidbody en runtime (para cargas).
+    /// Recalcula los flags internos para que el proyectil se mueva correctamente tras el cambio.
+    /// </summary>
+    public void SetKinematic(bool value)
+    {
+        if (_rb == null) return;
+        _rb.isKinematic = value;
+        RefreshHasRigidbody();
+        if (!_hasRb)
+            _rb.useGravity = false;
+    }
+
+    /// <summary>
+    /// Lanza el proyectil en la dirección dada aplicando velocidad/rotación.
+    /// </summary>
+    public void Launch(Vector3 direction, float speed, bool useGravity)
+    {
+        if (direction.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+        _cfg.initialSpeed = speed;
+        _cfg.useGravity = useGravity;
+
+        if (_rb != null)
+        {
+            _rb.useGravity = useGravity;
+            _rb.linearVelocity = direction.normalized * Mathf.Max(0f, speed);
+        }
+        else
+        {
+            // Movimiento manual en Update usa _cfg.initialSpeed
+            transform.forward = direction.normalized;
+        }
+    }
+
+    void RefreshHasRigidbody()
+    {
+        _hasRb = _rb != null && !_rb.isKinematic;
     }
 
     void Update()

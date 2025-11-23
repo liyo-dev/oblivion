@@ -104,7 +104,11 @@ public class MagicProjectileSpawner : MonoBehaviour
     {
         float d = Mathf.Max(0f, spell.castDelaySeconds);
         if (d > 0f) yield return new WaitForSeconds(d);
-        SpawnNow(spell, origin);
+
+        if (spell.chargeTime > 0f)
+            yield return Co_SpawnWithCharge(spell, origin);
+        else
+            SpawnNow(spell, origin);
     }
 
     public void SpawnLeft()    => Spawn(MagicSlot.Left);
@@ -133,6 +137,99 @@ public class MagicProjectileSpawner : MonoBehaviour
         Transform origin = originOverride ? originOverride : transform;
 
         LaunchProjectile(spell, origin, null);
+    }
+
+    private IEnumerator Co_SpawnWithCharge(MagicSpellSO spell, Transform originOverride)
+    {
+        if (!spell || !spell.prefab) yield break;
+
+        Transform origin = originOverride ? originOverride : transform;
+
+        // Dirección y rotación inicial
+        Vector3 baseForward = transform.forward;
+        Vector3 dir = (targeting != null)
+            ? targeting.GetAimDirectionFrom(origin ? origin : transform, baseForward)
+            : baseForward;
+        dir = spell.flattenDirection ? Vector3.ProjectOnPlane(dir, Vector3.up).normalized : dir.normalized;
+        if (dir.sqrMagnitude < 0.001f) dir = baseForward;
+
+        Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
+        Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
+
+        if (spell.spawnVFX)
+        {
+            var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
+            if (spell.useScaleOverride)
+                fx.transform.localScale = spell.scaleOverride;
+        }
+
+        GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
+        if (spell.useScaleOverride)
+            go.transform.localScale = spell.scaleOverride;
+
+        Vector3 targetScale = go.transform.localScale;
+        float startScaleFactor = Mathf.Clamp(spell.chargeStartScale, 0.01f, 1f);
+        Vector3 startScale = targetScale * startScaleFactor;
+        go.transform.localScale = startScale;
+
+        Transform previousParent = null;
+        if (spell.followOriginDuringCharge && origin != null)
+        {
+            previousParent = go.transform.parent;
+            go.transform.SetParent(origin, worldPositionStays: true);
+        }
+
+        GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
+        IgnoreCollisionsBetween(go, instigator);
+
+        MagicProjectile mp = null;
+        if (go.TryGetComponent<MagicProjectile>(out var proj))
+        {
+            mp = proj;
+            var cfg = new MagicProjectile.ProjectileConfig
+            {
+                damage         = spell.damage,
+                aoeRadius      = spell.aoeRadius,
+                knockbackForce = spell.knockbackForce,
+                hitLayers      = GetDamageLayers(),
+                collisionLayers = GetDamageLayers(),
+                destroyOnHit   = spell.destroyOnHit,
+                lifeTime       = spell.lifeTime,
+                maxRange       = spell.maxRange,
+                initialSpeed   = spell.initialSpeed,
+                useGravity     = spell.useGravity,
+                impactVFX      = spell.impactVFX,
+                despawnVFX     = spell.despawnVFX
+            };
+            mp.Configure(cfg, instigator);
+            mp.SetKinematic(true);
+        }
+
+        float charge = Mathf.Max(0f, spell.chargeTime);
+        float elapsed = 0f;
+        while (elapsed < charge)
+        {
+            float t = charge > 0f ? elapsed / charge : 1f;
+            go.transform.localScale = Vector3.Lerp(startScale, targetScale, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        go.transform.localScale = targetScale;
+
+        if (spell.followOriginDuringCharge && origin != null)
+            go.transform.SetParent(previousParent, worldPositionStays: true);
+
+        if (mp != null)
+        {
+            mp.SetKinematic(false);
+            mp.Launch(dir, spell.initialSpeed, spell.useGravity);
+        }
+        else if (go.TryGetComponent<Rigidbody>(out var rb))
+        {
+            rb.isKinematic = false;
+            rb.useGravity = spell.useGravity;
+            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+        }
     }
 
     private void LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)
