@@ -197,6 +197,7 @@ public class GameBootProfileDebugger : MonoBehaviour
                     DrawKeyValue("Can Swim", p.abilities.swim ? "✅" : "❌");
                     DrawKeyValue("Can Jump", p.abilities.jump ? "✅" : "❌");
                     DrawKeyValue("Can Climb", p.abilities.climb ? "✅" : "❌");
+                    DrawKeyValue("Can Fly", p.abilities.fly ? "✅" : "❌");
                 }
                 else
                 {
