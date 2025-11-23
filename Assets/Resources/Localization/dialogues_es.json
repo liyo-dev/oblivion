@@ -1,10 +1,6 @@
 {
     "texts": [
         {
-            "key": "CHAR_ALEX",
-            "value": "Alex"
-        },
-        {
             "key": "CHAR_AMIGAPEZ",
             "value": "Amiga del Niño Pez"
         },
@@ -55,6 +51,10 @@
         {
             "key": "CHAR_VICTORIA",
             "value": "Victoria"
+        },
+        {
+            "key": "CHAR_WILL",
+            "value": "Will"
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -138,7 +138,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_01",
-            "value": "Alex, la amenaza del demonio ha despertado la magia de tu interior."
+            "value": "Will, la amenaza del demonio ha despertado la magia de tu interior."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_02",
@@ -230,7 +230,7 @@
         },
         {
             "key": "DLG_LETTER_INTRO_01",
-            "value": "Alex ven a verme cuando despiertes."
+            "value": "Will ven a verme cuando despiertes."
         },
         {
             "key": "DLG_LETTER_INTRO_02",

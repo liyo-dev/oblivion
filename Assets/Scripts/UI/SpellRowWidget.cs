@@ -64,10 +64,18 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
     public void Focus()
     {
         var es = EventSystem.current;
-        if (es != null && ButtonGameObject != null)
-            es.SetSelectedGameObject(ButtonGameObject);
-        if (button != null)
-            button.Select();
+        var target = ButtonGameObject;
+        if (es == null || target == null)
+            return;
+
+        // Avoid re-entrant selection while the EventSystem is already processing a select event.
+        if (es.alreadySelecting)
+            return;
+
+        if (es.currentSelectedGameObject == target)
+            return;
+
+        es.SetSelectedGameObject(target);
     }
 
     public void SetSelectionCallbacksEnabled(bool enabled)
