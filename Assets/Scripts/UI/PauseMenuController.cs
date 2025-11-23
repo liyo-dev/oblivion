@@ -86,6 +86,7 @@ public class PauseMenuController : MonoBehaviour
     public static bool IsOpen { get; private set; }
 
     float _navCooldown;
+    int _navHeldSign; // -1,0,1 para evitar saltos al mantener el stick
     [Min(0f)] public float navRepeatDelay = 0.15f;
     [Range(0f,1f)] public float navDeadzone = 0.3f;
     [Header("Debug")]
@@ -218,6 +219,8 @@ public class PauseMenuController : MonoBehaviour
         IsOpen = false;
         _introSeq?.Kill();
         DisableUIInput();
+        // Seguridad: si se desactiva externamente, asegurarse de liberar el GameState
+        if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
     }
 
 #if ENABLE_INPUT_SYSTEM
@@ -229,6 +232,13 @@ public class PauseMenuController : MonoBehaviour
         if (this == null) return;
         try
         {
+            // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
+            if (_isPaused)
+            {
+                TogglePause();
+                return;
+            }
+
             if (!GameState.CanOpenPause) return;
             TogglePause();
         }
@@ -388,6 +398,10 @@ public class PauseMenuController : MonoBehaviour
             _navCooldown -= Time.unscaledDeltaTime;
             if (_navCooldown < 0f) _navCooldown = 0f;
         }
+        else
+        {
+            _navHeldSign = 0; // soltar bloqueo cuando expira cooldown
+        }
 
 #if ENABLE_INPUT_SYSTEM
         if (_isPaused && _navCooldown <= 0f)
@@ -403,8 +417,7 @@ public class PauseMenuController : MonoBehaviour
                     {
                         Vector2 v = nav.ReadValue<Vector2>();
                         if (inputDebug && (v.y > navDeadzone || v.y < -navDeadzone)) Debug.Log($"PauseMenu: UI.Navigate -> {v}");
-                        if (v.y > navDeadzone) { MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
-                        else if (v.y < -navDeadzone) { MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                        moved = ConsumeStick(v.y);
                     }
 
                     // 2) Si no movimos con Navigate, chequear acciones DPad (botones)
@@ -415,12 +428,12 @@ public class PauseMenuController : MonoBehaviour
                         if (dUp != null && dUp.enabled)
                         {
                             var valUp = dUp.ReadValue<float>();
-                            if (valUp > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: DPadUp action"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
+                            if (valUp > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: DPadUp action"); moved = true; }
                         }
                         if (!moved && dDown != null && dDown.enabled)
                         {
                             var valDown = dDown.ReadValue<float>();
-                            if (valDown > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: DPadDown action"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                            if (valDown > 0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: DPadDown action"); moved = true; }
                         }
                     }
                 }
@@ -432,13 +445,13 @@ public class PauseMenuController : MonoBehaviour
                     if (gp != null)
                     {
                         var d = gp.dpad.ReadValue();
-                        if (d.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
-                        else if (d.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                        if (d.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad up"); moved = true; }
+                        else if (d.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad down"); moved = true; }
                         else
                         {
                             var s = gp.leftStick.ReadValue();
-                            if (s.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
-                            else if (s.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                            if (s.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick up"); moved = true; }
+                            else if (s.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick down"); moved = true; }
                         }
                     }
 
@@ -451,8 +464,8 @@ public class PauseMenuController : MonoBehaviour
                             try
                             {
                                 var s = js.stick.ReadValue();
-                                if (s.y > 0.5f) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick up"); MoveSelection(Vector2.up); _navCooldown = navRepeatDelay; moved = true; }
-                                else if (s.y < -0.5f) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick down"); MoveSelection(Vector2.down); _navCooldown = navRepeatDelay; moved = true; }
+                                if (s.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick up"); moved = true; }
+                                else if (s.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick down"); moved = true; }
                             }
                             catch { }
                         }
@@ -465,6 +478,25 @@ public class PauseMenuController : MonoBehaviour
             }
         }
 #endif
+    }
+
+    bool ConsumeStick(float y)
+    {
+        if (Mathf.Abs(y) <= navDeadzone)
+        {
+            _navHeldSign = 0;
+            return false;
+        }
+
+        int sign = y > 0f ? 1 : -1;
+        if (_navHeldSign == sign)
+            return false; // ya se movió en esta dirección, esperar a soltar
+
+        _navHeldSign = sign;
+        if (sign > 0) MoveSelection(Vector2.up);
+        else MoveSelection(Vector2.down);
+        _navCooldown = navRepeatDelay;
+        return true;
     }
 
     public void OnOptions()

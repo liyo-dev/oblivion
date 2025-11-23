@@ -33,6 +33,7 @@ public class MagicProjectile : MonoBehaviour
     bool      _hasRb;
     bool      _ended;
     bool      _initialized;
+    bool      _movementEnabled = true;
 
     ProjectileConfig _cfg;
     GameObject       _instigator;
@@ -116,6 +117,9 @@ public class MagicProjectile : MonoBehaviour
         if (_rb == null) return;
         _rb.isKinematic = value;
         RefreshHasRigidbody();
+        // Cuando el proyectil se marca como kinematic queremos PAUSAR
+        // su movimiento manual (esto se usa durante cargas/charge).
+        _movementEnabled = !value;
         if (!_hasRb)
             _rb.useGravity = false;
     }
@@ -153,7 +157,7 @@ public class MagicProjectile : MonoBehaviour
         if (_ended) return;
 
         // Movimiento manual si no hay Rigidbody
-        if (!_hasRb && _cfg.initialSpeed > 0f)
+        if (!_hasRb && _movementEnabled && _cfg.initialSpeed > 0f)
             transform.position += transform.forward * (_cfg.initialSpeed * Time.deltaTime);
 
         // Fin por rango

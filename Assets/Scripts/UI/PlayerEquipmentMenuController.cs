@@ -457,6 +457,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
         SetEquipmentCameraActive(false);
+        MenuManager.Close(MenuKind.Equipment);
     }
 
     void SetCanvasState(bool visible)
