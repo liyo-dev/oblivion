@@ -114,6 +114,11 @@ MonoBehaviour:
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
+  - guid: 4056ed91-d991-4f11-9c20-1f4ac5856e83
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
   storyLinks: []
   quickNotes:
   - title: Misiones

@@ -178,8 +178,9 @@ public class MagicProjectileSpawner : MonoBehaviour
             cachedUseGravity = rbDuringCharge.useGravity;
             rbDuringCharge.isKinematic = true;
             rbDuringCharge.useGravity = false;
-            rbDuringCharge.linearVelocity = Vector3.zero;
-            rbDuringCharge.angularVelocity = Vector3.zero;
+                // Poner kinematic durante la carga para pausar la física.
+                // NO toques `velocity` ni `angularVelocity` mientras sea kinematic
+                // porque Unity lanza warnings y no aplica cambios a cuerpos kinematic.
         }
 
         Transform previousParent = null;
@@ -235,13 +236,19 @@ public class MagicProjectileSpawner : MonoBehaviour
         {
             rb.isKinematic = false;
             rb.useGravity = spell.useGravity;
-            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            rb.angularVelocity = Vector3.zero;
+            rb.velocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
         else if (cachedRb != null)
         {
             cachedRb.isKinematic = cachedKinematic;
             cachedRb.useGravity = spell.useGravity;
-            cachedRb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            // Si el cuerpo quedó dinámico tras restaurar, aplicamos velocidad limpia
+            if (!cachedRb.isKinematic)
+            {
+                cachedRb.angularVelocity = Vector3.zero;
+                cachedRb.velocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            }
         }
     }
 
@@ -309,7 +316,8 @@ public class MagicProjectileSpawner : MonoBehaviour
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.constraints = RigidbodyConstraints.FreezeRotation; // Evitar giros al colisionar
-            rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+            rb.angularVelocity = Vector3.zero;
+            rb.velocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
     }
 

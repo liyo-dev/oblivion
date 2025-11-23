@@ -61,6 +61,15 @@ public static class MenuManager
                 case MenuKind.Equipment:
                     stillOpen = PlayerEquipmentMenuController.IsOpen;
                     break;
+                case MenuKind.Pause:
+                    stillOpen = GameState.Is(GamePhase.PauseMenu);
+                    break;
+                case MenuKind.Inventory:
+                    stillOpen = GameState.Is(GamePhase.Inventory) || GameState.Is(GamePhase.Equipment);
+                    break;
+                case MenuKind.Dialog:
+                    stillOpen = GameState.Is(GamePhase.Dialogue);
+                    break;
                 case MenuKind.Shop:
                     // Use Resources.FindObjectsOfTypeAll to locate inactive instances too
                     var shops = Resources.FindObjectsOfTypeAll(typeof(ShopUI)) as ShopUI[];
