@@ -43,12 +43,20 @@ public class ShopVendor : MonoBehaviour
 
     public void OpenShop()
     {
+        StartCoroutine(OpenShopNextFrame());
+    }
+
+    System.Collections.IEnumerator OpenShopNextFrame()
+    {
+        // Esperar al final de frame para que DialogueManager termine de cerrar y libere GameState/Input
+        yield return new WaitForEndOfFrame();
+
         if (_runtimeUI == null)
         {
             if (shopUIPrefab == null)
             {
                 Debug.LogWarning("[ShopVendor] No se ha asignado el prefab de ShopUI.");
-                return;
+                yield break;
             }
             _runtimeUI = Instantiate(shopUIPrefab);
         }
