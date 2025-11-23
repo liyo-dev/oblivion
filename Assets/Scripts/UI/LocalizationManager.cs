@@ -30,7 +30,8 @@ public class LocalizationManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        var locale = PlayerPrefs.GetString("locale", defaultLocale);
+        PlayerSettings.EnsureLoaded();
+        var locale = string.IsNullOrWhiteSpace(PlayerSettings.Language) ? defaultLocale : PlayerSettings.Language;
         LoadLocale(locale);
     }
 
@@ -68,7 +69,6 @@ public class LocalizationManager : MonoBehaviour
             }
         }
 
-        PlayerPrefs.SetString("locale", locale);
         OnLocaleChanged?.Invoke();
         
         Debug.Log($"[LocalizationManager] Localización completa. Total de {_table.Count} traducciones cargadas.");
