@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -34,7 +35,16 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private Button buyButton;
     [SerializeField] private Button sellButton;
     [SerializeField] private Text messageText;
-    
+    [Header("Confirmación de compra")]
+    [SerializeField] private GameObject confirmPopupRoot;
+    [SerializeField] private Text confirmPopupText;
+    [SerializeField] private Button confirmYesButton;
+    [SerializeField] private Button confirmNoButton;
+    [SerializeField] private string confirmMessage = "¿Estás seguro?";
+    [SerializeField] private float buyButtonPulseScale = 1.08f;
+    [SerializeField] private float buyButtonPulseDuration = 0.14f;
+    [SerializeField] private Ease buyButtonPulseEase = Ease.OutBack;
+
     private List<ShopItemCard> _itemCards = new();
     private ShopController.ShopItemEntry _selectedEntry;
     private int _selectedIndex = -1;
@@ -42,23 +52,53 @@ public class ShopUI : MonoBehaviour
     private Inventory _playerInventory;
     private float _navCooldown;
     private const float NAV_REPEAT_DELAY = 0.18f;
+    private Tween _buyButtonTween;
+    private Vector3 _buyButtonBaseScale;
+    private bool _buyButtonScaleCached;
+
+    enum ShopState
+    {
+        Browsing,
+        BuyButtonFocused,
+        Confirming
+    }
+
+    ShopState _state = ShopState.Browsing;
 
     void Awake()
     {
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
-        
+
         if (buyButton != null)
-            buyButton.onClick.AddListener(OnBuyClicked);
-        
+        {
+            buyButton.onClick.RemoveAllListeners();
+            buyButton.onClick.AddListener(HandleBuyButtonPressed);
+        }
+
         if (sellButton != null)
             sellButton.onClick.AddListener(OnSellClicked);
-        
+
+        if (confirmYesButton != null)
+        {
+            confirmYesButton.onClick.RemoveAllListeners();
+            confirmYesButton.onClick.AddListener(ConfirmPurchase);
+        }
+
+        if (confirmNoButton != null)
+        {
+            confirmNoButton.onClick.RemoveAllListeners();
+            confirmNoButton.onClick.AddListener(CancelConfirmation);
+        }
+
         if (windowRoot != null)
             windowRoot.SetActive(false);
-        
+
         if (detailPanel != null)
             detailPanel.SetActive(false);
+
+        if (confirmPopupRoot != null)
+            confirmPopupRoot.SetActive(false);
     }
 
     void OnEnable()
@@ -76,10 +116,10 @@ public class ShopUI : MonoBehaviour
     void Update()
     {
         if (!_isOpen) return;
-        
+
         _navCooldown -= Time.unscaledDeltaTime;
-        
-        if (_navCooldown <= 0f)
+
+        if (_navCooldown <= 0f && _state != ShopState.Confirming)
         {
             int move = ReadVerticalInput();
             if (move != 0)
@@ -87,18 +127,19 @@ public class ShopUI : MonoBehaviour
                 NavigateItems(move);
                 _navCooldown = NAV_REPEAT_DELAY;
             }
+
+            int horizontal = ReadHorizontalInput();
+            if (horizontal > 0)
+                HandleSubmitInput();
+            else if (horizontal < 0 && _state == ShopState.BuyButtonFocused)
+                ReturnToItemList();
         }
-        
+
         if (ReadSubmitInput())
-        {
-            OnBuyClicked();
-        }
-        
-        // Cerrar con ESC o botón B del gamepad
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetButtonDown("Cancel"))
-        {
-            Close();
-        }
+            HandleSubmitInput();
+
+        if (ReadCancelInput())
+            HandleCancelInput();
     }
     
     int ReadVerticalInput()
@@ -115,7 +156,7 @@ public class ShopUI : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) return +1;
         return 0;
     }
-    
+
     bool ReadSubmitInput()
     {
 #if ENABLE_INPUT_SYSTEM
@@ -124,17 +165,76 @@ public class ShopUI : MonoBehaviour
 #endif
         return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space);
     }
+
+    bool ReadCancelInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null)
+            return gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame;
+#endif
+        return Input.GetKeyDown(KeyCode.Escape) || Input.GetButtonDown("Cancel");
+    }
+
+    int ReadHorizontalInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null)
+        {
+            if (gp.dpad.right.wasPressedThisFrame || gp.leftStick.right.wasPressedThisFrame) return 1;
+            if (gp.dpad.left.wasPressedThisFrame || gp.leftStick.left.wasPressedThisFrame) return -1;
+        }
+#endif
+        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) return 1;
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) return -1;
+        return 0;
+    }
+
+    void HandleSubmitInput()
+    {
+        switch (_state)
+        {
+            case ShopState.Browsing:
+                FocusBuyButton();
+                break;
+            case ShopState.BuyButtonFocused:
+                ShowConfirmation();
+                break;
+            case ShopState.Confirming:
+                ConfirmPurchase();
+                break;
+        }
+    }
+
+    void HandleCancelInput()
+    {
+        if (_state == ShopState.Confirming)
+        {
+            CancelConfirmation();
+            return;
+        }
+
+        if (_state == ShopState.BuyButtonFocused)
+        {
+            ReturnToItemList();
+            return;
+        }
+
+        Close();
+    }
     
     void NavigateItems(int direction)
     {
         if (_itemCards.Count == 0) return;
-        
+        if (_state != ShopState.Browsing) return;
+
         int newIndex = _selectedIndex + direction;
-        
+
         // Wrap around
         if (newIndex < 0) newIndex = _itemCards.Count - 1;
         if (newIndex >= _itemCards.Count) newIndex = 0;
-        
+
         SelectItem(newIndex);
     }
 
@@ -159,7 +259,10 @@ public class ShopUI : MonoBehaviour
     {
         if (_isOpen) return;
         _isOpen = true;
-        
+        _state = ShopState.Browsing;
+        HideConfirmationVisuals();
+        ResetBuyButtonFeedback();
+
         if (windowRoot != null)
             windowRoot.SetActive(true);
         
@@ -177,7 +280,8 @@ public class ShopUI : MonoBehaviour
         
         RefreshUI();
         SelectFirstItem();
-        
+        FocusSelectedCard();
+
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
     }
@@ -189,9 +293,11 @@ public class ShopUI : MonoBehaviour
         
         if (windowRoot != null)
             windowRoot.SetActive(false);
-        
+
         GameState.Pop(GamePhase.Shop);
         Time.timeScale = 1f;
+        ResetBuyButtonFeedback();
+        HideConfirmationVisuals();
     }
 
     void RefreshUI()
@@ -298,7 +404,7 @@ public class ShopUI : MonoBehaviour
     {
         if (index < 0 || index >= shopController.Stock.Count)
             return;
-        
+
         _selectedIndex = index;
         _selectedEntry = shopController.Stock[index];
         
@@ -306,13 +412,16 @@ public class ShopUI : MonoBehaviour
             detailPanel.SetActive(true);
         
         UpdateDetailPanel();
-        
+
         // Resaltar card seleccionada
         for (int i = 0; i < _itemCards.Count; i++)
         {
             if (_itemCards[i] != null)
                 _itemCards[i].SetSelected(i == index);
         }
+
+        if (_state == ShopState.Browsing)
+            FocusSelectedCard();
     }
 
     void SelectFirstItem()
@@ -321,6 +430,20 @@ public class ShopUI : MonoBehaviour
         {
             SelectItem(0);
         }
+    }
+
+    void FocusSelectedCard()
+    {
+        if (_selectedIndex < 0 || _selectedIndex >= _itemCards.Count) return;
+        var button = _itemCards[_selectedIndex]?.GetButton();
+        if (button == null) return;
+        var es = EventSystem.current;
+        if (es != null)
+        {
+            es.SetSelectedGameObject(null);
+            es.SetSelectedGameObject(button.gameObject);
+        }
+        button.Select();
     }
 
     void UpdateDetailPanel()
@@ -406,5 +529,136 @@ public class ShopUI : MonoBehaviour
         // TODO: Implementar venta de items del inventario
         if (messageText != null)
             messageText.text = "Función de venta no implementada aún.";
+    }
+
+    void HandleBuyButtonPressed()
+    {
+        if (_state == ShopState.Browsing)
+        {
+            FocusBuyButton();
+            return;
+        }
+
+        if (_state == ShopState.BuyButtonFocused)
+        {
+            ShowConfirmation();
+        }
+    }
+
+    void FocusBuyButton()
+    {
+        if (buyButton == null) return;
+        _state = ShopState.BuyButtonFocused;
+        var es = EventSystem.current;
+        if (es != null)
+        {
+            es.SetSelectedGameObject(null);
+            es.SetSelectedGameObject(buyButton.gameObject);
+        }
+        buyButton.Select();
+        PlayBuyButtonFeedback();
+    }
+
+    void ReturnToItemList()
+    {
+        _state = ShopState.Browsing;
+        ResetBuyButtonFeedback();
+        FocusSelectedCard();
+    }
+
+    void PlayBuyButtonFeedback()
+    {
+        if (buyButton == null) return;
+
+        if (!_buyButtonScaleCached)
+        {
+            _buyButtonBaseScale = buyButton.transform.localScale;
+            _buyButtonScaleCached = true;
+        }
+
+        _buyButtonTween?.Kill();
+        _buyButtonTween = buyButton.transform
+            .DOScale(_buyButtonBaseScale * buyButtonPulseScale, buyButtonPulseDuration)
+            .SetEase(buyButtonPulseEase)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetUpdate(true);
+    }
+
+    void ResetBuyButtonFeedback()
+    {
+        _buyButtonTween?.Kill();
+        _buyButtonTween = null;
+        if (buyButton != null && _buyButtonScaleCached)
+            buyButton.transform.localScale = _buyButtonBaseScale;
+    }
+
+    void ShowConfirmation()
+    {
+        if (_selectedEntry == null || _selectedEntry.item == null)
+            return;
+
+        _state = ShopState.Confirming;
+        ResetBuyButtonFeedback();
+
+        string itemName = _selectedEntry.item.displayName;
+        int price = _selectedEntry.GetBuyPrice();
+        string message = $"{confirmMessage}\nComprar {itemName} por {price} 💰?";
+
+        if (confirmPopupText != null)
+            confirmPopupText.text = message;
+
+        if (confirmPopupRoot != null)
+            confirmPopupRoot.SetActive(true);
+
+        if (confirmYesButton != null)
+        {
+            var es = EventSystem.current;
+            if (es != null)
+                es.SetSelectedGameObject(confirmYesButton.gameObject);
+            confirmYesButton.Select();
+        }
+    }
+
+    void HideConfirmationVisuals()
+    {
+        if (confirmPopupRoot != null)
+            confirmPopupRoot.SetActive(false);
+    }
+
+    void CancelConfirmation()
+    {
+        HideConfirmationVisuals();
+        _state = ShopState.BuyButtonFocused;
+        FocusBuyButton();
+    }
+
+    void ConfirmPurchase()
+    {
+        if (_selectedIndex < 0 || shopController == null)
+        {
+            CancelConfirmation();
+            return;
+        }
+
+        HideConfirmationVisuals();
+        var success = shopController.TryBuy(_selectedIndex, out string message);
+
+        if (messageText != null)
+        {
+            messageText.text = message ?? (success ? "¡Comprado!" : "Error");
+            messageText.color = success ? Color.green : Color.red;
+        }
+
+        _state = ShopState.Browsing;
+        RefreshUI();
+        if (_itemCards.Count == 0)
+        {
+            _selectedIndex = -1;
+        }
+        else
+        {
+            _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
+            FocusSelectedCard();
+        }
     }
 }

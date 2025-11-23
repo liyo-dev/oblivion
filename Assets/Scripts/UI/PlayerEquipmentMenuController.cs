@@ -893,9 +893,16 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _lastSelectedRow.SetSelectedState(false);
             _lastSelectedRow = widget;
             _lastSelectedRow?.SetSelectedState(true);
-            if (focus)
-                widget?.Focus();
+            FocusRow(widget, focus);
             UpdateSelectedItemDetails();
+        }
+
+        void FocusRow(InventoryRowWidget widget, bool forceFocus)
+        {
+            if (widget == null) return;
+
+            if (forceFocus || EventSystem.current == null || EventSystem.current.currentSelectedGameObject != widget.ButtonGameObject)
+                widget.Focus();
         }
 
         void UpdateRowTexts()
@@ -1299,6 +1306,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             _highlightedSpell = entry.spellId;
             _highlightedRow = entry;
+            entry.widget?.Focus();
             if (fromUser)
                 _focusArea = FocusArea.SpellList;
             UpdateRowVisuals();
