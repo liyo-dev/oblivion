@@ -51,7 +51,7 @@ MonoBehaviour:
     de pedir poder, pide salvar al Hermano del Antagonista, restaurando as\xED el
     equilibrio y devolviendo la paz al mundo.\n\nEl cielo vuelve a brillar. El Sendero,
     ahora sellado, permanece como s\xEDmbolo de que la verdadera grandeza no proviene
-    de los deseos cumplidos, sino de los sacrificios que se hacen por amor.\n\n<b>texto</b>\n<b>texto</b>\n<size=18>texto</size>"
+    de los deseos cumplidos, sino de los sacrificios que se hacen por amor."
   storyCards:
   - guid: edccfafb-5a1c-4d26-a4c4-b89e9c503559
     title: Nueva tarjeta
@@ -78,10 +78,23 @@ MonoBehaviour:
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
+  - guid: 1f03bd9a-a0c3-44b9-b7d9-e4b68a3091dc
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: c4d19bf0-e6c9-4d35-918f-783900ec1592
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
   storyLinks: []
   quickNotes:
   - title: Misiones
-    note: "A\xF1adir el menu de misiones al playerEquipment"
+    note: "Mejoras en el panel de las misiones: Mostrar en el panel rapido solo las
+      que no estan completas. El panel debe ocultarse solo. La flecha del Dpad arriba
+      abre / cierra el menu rapido de misiones. Si se deja pulsado abre el extendido.
+      \r\n"
     tags: 
   - title: 
     note: 
