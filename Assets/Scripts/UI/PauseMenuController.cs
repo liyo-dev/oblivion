@@ -93,6 +93,8 @@ public class PauseMenuController : MonoBehaviour
     [Header("Debug")]
     public bool inputDebug = false;
 
+    bool _pauseRequestPending; // consolidar triggers de pausa en Update
+
     void Awake()
     {
         if (_instance != null && _instance != this)
@@ -236,15 +238,7 @@ public class PauseMenuController : MonoBehaviour
         if (this == null) return;
         try
         {
-            // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
-            if (_isPaused)
-            {
-                TogglePause();
-                return;
-            }
-
-            if (!GameState.CanOpenPause) return;
-            TogglePause();
+            _pauseRequestPending = true;
         }
         catch (MissingReferenceException)
         {
@@ -409,6 +403,18 @@ public class PauseMenuController : MonoBehaviour
 
     void Update()
     {
+        if (_pauseRequestPending || WasPausePressedThisFrame())
+        {
+            _pauseRequestPending = false;
+
+            // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
+            if (_isPaused || GameState.CanOpenPause)
+            {
+                TogglePause();
+                return;
+            }
+        }
+
         // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
         if (_isPaused && WasCancelPressedThisFrame())
         {
@@ -508,6 +514,21 @@ public class PauseMenuController : MonoBehaviour
             }
         }
 #endif
+    }
+
+    bool WasPausePressedThisFrame()
+    {
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            var gp = UnityEngine.InputSystem.Gamepad.current;
+            if (gp != null && gp.startButton.wasPressedThisFrame)
+                return true;
+        }
+        catch { }
+#endif
+
+        return Input.GetKeyDown(KeyCode.JoystickButton7);
     }
 
     bool WasCancelPressedThisFrame()

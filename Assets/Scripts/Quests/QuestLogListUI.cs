@@ -26,7 +26,7 @@ public class QuestLogListUI : MonoBehaviour
     bool _bound;                    // ya suscrito al manager
     QuestManager _qm;               // cache del manager suscrito
     Coroutine _waitCo;
-    private bool _isPanelVisible = true; // Estado del panel
+    private bool _isPanelVisible = false; // Estado del panel (oculto por defecto)
     private float _holdTimer;
     private bool _holding;
     private bool _mainMenuTriggered;
@@ -47,8 +47,9 @@ public class QuestLogListUI : MonoBehaviour
             animatedRoot.anchoredPosition = _hiddenPos;
         }
 
-        if (panelRoot) panelRoot.SetActive(true);
-        AnimateShow();
+        if (panelRoot) panelRoot.SetActive(false);
+        if (scrollView) scrollView.SetActive(false);
+        UpdateHelpText();
     }
 
     void OnDisable()
