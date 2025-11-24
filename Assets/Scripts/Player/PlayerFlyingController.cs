@@ -40,12 +40,14 @@ public class PlayerFlyingController : MonoBehaviour
     private FieldInfo _lockMovementField;
     private FieldInfo _lockRotationField;
     private PlayerActionManager _actionManager;
+    private PlayerInputManager _inputManager;
     private CapsuleCollider _capsule;
     private Transform _cameraTransform;
     private PlayerControls _controls;
     private InputAction _moveAction;
     private InputAction _cameraAction;
     private InputAction _jumpAction;
+    private bool _ownsControls;
 
     private Vector2 _moveInput;
     private Vector2 _cameraInput;
@@ -85,15 +87,26 @@ public class PlayerFlyingController : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         _controller = GetComponent<vThirdPersonController>();
         _actionManager = GetComponent<PlayerActionManager>();
+        _inputManager = ServiceLocator.Get<PlayerInputManager>(logIfMissing: false) ?? GetComponent<PlayerInputManager>();
         _capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
         CacheControllerLockFields();
         CacheCameraTransform();
         _flightArmUntil = -1f;
 
-        _controls = new PlayerControls();
-        _moveAction = _controls.GamePlay.Move;
-        _cameraAction = _controls.GamePlay.CameraLook;
-        _jumpAction = _controls.GamePlay.Jump;
+        if (_inputManager != null && _inputManager.Controls != null)
+        {
+            _controls = _inputManager.Controls;
+            _ownsControls = false;
+        }
+        else
+        {
+            _controls = new PlayerControls();
+            _ownsControls = true;
+        }
+
+        _moveAction = _inputManager?.GetGameplayAction(g => g.Move) ?? _controls.GamePlay.Move;
+        _cameraAction = _inputManager?.GetGameplayAction(g => g.CameraLook) ?? _controls.GamePlay.CameraLook;
+        _jumpAction = _inputManager?.GetGameplayAction(g => g.Jump) ?? _controls.GamePlay.Jump;
 
         // Try to auto-detect the animator layer that contains the flight states
         DetectFlightLayer();
@@ -133,7 +146,8 @@ public class PlayerFlyingController : MonoBehaviour
 
     void OnEnable()
     {
-        _controls?.Enable();
+        if (_ownsControls)
+            _controls?.Enable();
         if (_jumpAction != null)
         {
             _jumpAction.performed += OnJumpPerformed;
@@ -174,7 +188,8 @@ public class PlayerFlyingController : MonoBehaviour
             _cameraAction.canceled -= OnCameraCanceled;
         }
 
-        _controls?.Disable();
+        if (_ownsControls)
+            _controls?.Disable();
     }
 
     void Update()
@@ -217,6 +232,12 @@ public class PlayerFlyingController : MonoBehaviour
 
     private void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
+        if (_inputManager != null && !_inputManager.CanProcess(PlayerAbility.Jump))
+        {
+            if (debugLogs) Debug.Log("[PlayerFlyingController] Salto ignorado: acción bloqueada por PlayerActionManager.");
+            return;
+        }
+
         _jumpHeld = true;
 
         if (_isFlying)
