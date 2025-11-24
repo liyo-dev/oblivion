@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using DG.Tweening;
 
 public class QuestLogListUI : MonoBehaviour
 {
@@ -12,22 +13,50 @@ public class QuestLogListUI : MonoBehaviour
     [SerializeField] private GameObject panelRoot;       // El panel completo para show/hide
     [SerializeField] private GameObject scrollView;      // Solo el ScrollView para ocultar
     [SerializeField] private TextMeshProUGUI helpText;   // Texto de ayuda para cambiar
+    [SerializeField] private QuestMainMenuUI mainMenu;   // menú principal de misiones
+
+    [Header("Animación (DOTween)")]
+    [SerializeField] private RectTransform animatedRoot;
+    [SerializeField] private CanvasGroup panelGroup;
+    [SerializeField] private float hideAfterSeconds = 4f;
+    [SerializeField] private float hideDistance = 420f;
+    [SerializeField] private float tweenDuration = 0.35f;
+    [SerializeField] private Ease tweenEase = Ease.InOutSine;
 
     bool _bound;                    // ya suscrito al manager
     QuestManager _qm;               // cache del manager suscrito
     Coroutine _waitCo;
     private bool _isPanelVisible = true; // Estado del panel
+    private float _holdTimer;
+    private bool _holding;
+    private bool _mainMenuTriggered;
+    private Tween _panelTween;
+    private Vector2 _shownPos;
+    private Vector2 _hiddenPos;
+    private Coroutine _autoHideCo;
 
     void OnEnable()
     {
         // Empieza a esperar al manager si aún no existe
         _waitCo = StartCoroutine(BindWhenReady());
+
+        if (animatedRoot)
+        {
+            _shownPos = animatedRoot.anchoredPosition;
+            _hiddenPos = _shownPos + Vector2.down * hideDistance;
+            animatedRoot.anchoredPosition = _hiddenPos;
+        }
+
+        if (panelRoot) panelRoot.SetActive(true);
+        AnimateShow();
     }
 
     void OnDisable()
     {
         Unbind();
         if (_waitCo != null) { StopCoroutine(_waitCo); _waitCo = null; }
+        KillTween();
+        if (_autoHideCo != null) StopCoroutine(_autoHideCo);
     }
 
     void Update()
@@ -39,46 +68,43 @@ public class QuestLogListUI : MonoBehaviour
         }
 
         // Control con D-pad arriba SOLAMENTE (no joystick izquierdo)
-        bool dpadUpPressed = false;
-        
-        #if ENABLE_INPUT_SYSTEM
-        // Nuevo Input System
-        if (UnityEngine.InputSystem.Gamepad.current != null)
-        {
-            dpadUpPressed = UnityEngine.InputSystem.Gamepad.current.dpad.up.wasPressedThisFrame;
-        }
-        #endif
-        
-        // Sistema antiguo - prueba varias opciones comunes para D-pad Up
-        if (!dpadUpPressed)
-        {
-            // Intenta con el botón configurado
-            try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
-            
-            // Alternativas comunes para D-pad Up en diferentes mandos
-            if (!dpadUpPressed) dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow); // Flecha arriba del teclado
-            
-            // Eje 7 para D-pad vertical SOLAMENTE (NO usa joystick izquierdo)
-            // El eje "7th axis" es específico del D-Pad en la mayoría de los mandos
-            float dpadVertical = 0f;
-            try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
-            
-            // Detectar solo cuando se presiona (transición de no presionado a presionado)
-            if (!dpadUpPressed && dpadVertical > 0.5f && !_lastFrameDpadUp)
-            {
-                dpadUpPressed = true;
-            }
-        }
-        
+        bool dpadUpPressed = DetectDpadUpPressed();
+        bool dpadUpHeld = DetectDpadUpHeld();
+
         if (dpadUpPressed)
         {
-            TogglePanel();
+            _holding = true;
+            _holdTimer = 0f;
+            _mainMenuTriggered = false;
         }
-        
-        // Guardar estado anterior del D-Pad (eje 7, NO el joystick)
-        float currentDpad = 0f;
-        try { currentDpad = Input.GetAxis("7th axis"); } catch { }
-        _lastFrameDpadUp = currentDpad > 0.5f;
+
+        if (_holding)
+        {
+            _holdTimer += Time.unscaledDeltaTime;
+            if (_holdTimer >= 0.65f && !_mainMenuTriggered && _isPanelVisible)
+            {
+                _mainMenuTriggered = true;
+                mainMenu?.ShowMenu();
+            }
+
+            if (!dpadUpHeld)
+            {
+                if (!_mainMenuTriggered)
+                {
+                    TogglePanel();
+                }
+                _holding = false;
+                _holdTimer = 0f;
+                _mainMenuTriggered = false;
+            }
+        }
+        else
+        {
+            // Guardar estado anterior del D-Pad (eje 7, NO el joystick)
+            float currentDpad = 0f;
+            try { currentDpad = Input.GetAxis("7th axis"); } catch { }
+            _lastFrameDpadUp = currentDpad > 0.5f;
+        }
     }
 
     private bool _lastFrameDpadUp = false;
@@ -94,6 +120,8 @@ public class QuestLogListUI : MonoBehaviour
             Unbind();
             _qm = QuestManager.Instance;
             _qm.OnQuestsChanged += Rebuild;
+            _qm.OnQuestStarted += OnQuestStarted;
+            _qm.OnQuestVisibilityChanged += OnQuestVisibilityChanged;
             _bound = true;
         }
 
@@ -105,6 +133,8 @@ public class QuestLogListUI : MonoBehaviour
         if (_bound && _qm != null)
         {
             _qm.OnQuestsChanged -= Rebuild;
+            _qm.OnQuestStarted -= OnQuestStarted;
+            _qm.OnQuestVisibilityChanged -= OnQuestVisibilityChanged;
         }
         _bound = false;
         _qm = null;
@@ -122,6 +152,7 @@ public class QuestLogListUI : MonoBehaviour
         // poblar
         foreach (var rq in QuestManager.Instance.GetAll())
         {
+            if (QuestManager.Instance.GetVisibility(rq.Id) == QuestVisibility.Hidden) continue;
             if (!showInactive && rq.State == QuestState.Inactive) continue;
             var go = Instantiate(itemPrefab, contentRoot);
             go.Bind(rq); // el propio item gestiona nulls internos
@@ -130,31 +161,76 @@ public class QuestLogListUI : MonoBehaviour
         if (headerText) headerText.text = "Misiones";
     }
 
+    void OnQuestStarted(string questId)
+    {
+        // Mostrar automáticamente el panel cuando aparece una nueva misión
+        ShowPanel(true);
+        RestartAutoHide();
+    }
+
+    void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
+    {
+        Rebuild();
+    }
+
+    bool DetectDpadUpPressed()
+    {
+        bool dpadUpPressed = false;
+
+#if ENABLE_INPUT_SYSTEM
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            dpadUpPressed = UnityEngine.InputSystem.Gamepad.current.dpad.up.wasPressedThisFrame;
+        }
+#endif
+
+        if (!dpadUpPressed)
+        {
+            try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
+            if (!dpadUpPressed) dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow);
+
+            float dpadVertical = 0f;
+            try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
+            if (!dpadUpPressed && dpadVertical > 0.5f && !_lastFrameDpadUp)
+            {
+                dpadUpPressed = true;
+            }
+        }
+
+        return dpadUpPressed;
+    }
+
+    bool DetectDpadUpHeld()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            if (UnityEngine.InputSystem.Gamepad.current.dpad.up.isPressed) return true;
+        }
+#endif
+
+        try { if (Input.GetButton("DPadUp")) return true; } catch { }
+        if (Input.GetKey(KeyCode.UpArrow)) return true;
+
+        float dpadVertical = 0f;
+        try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
+        _lastFrameDpadUp = dpadVertical > 0.5f;
+        return _lastFrameDpadUp;
+    }
+
     public void TogglePanel()
     {
         if (!GameState.CanOpenInventory) return;
         if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
 
         _isPanelVisible = !_isPanelVisible;
-        
-        // Solo ocultar el ScrollView, no todo el panel
-        if (scrollView)
-        {
-            scrollView.SetActive(_isPanelVisible);
-        }
-        
-        // Actualizar el texto de ayuda según el estado
-        if (helpText)
-        {
-            if (_isPanelVisible)
-            {
-                helpText.text = "[D-Pad ▲] Ocultar";
-            }
-            else
-            {
-                helpText.text = "[D-Pad ▲] Mostrar";
-            }
-        }
+
+        if (_isPanelVisible)
+            AnimateShow();
+        else
+            AnimateHide();
+
+        UpdateHelpText();
     }
 
     public void ShowPanel(bool show)
@@ -164,21 +240,76 @@ public class QuestLogListUI : MonoBehaviour
 
         _isPanelVisible = show;
         
-        if (scrollView)
+        if (_isPanelVisible)
+            AnimateShow();
+        else
+            AnimateHide();
+
+        UpdateHelpText();
+    }
+
+    void AnimateShow()
+    {
+        if (panelRoot) panelRoot.SetActive(true);
+        if (scrollView) scrollView.SetActive(true);
+        KillTween();
+        if (panelGroup)
         {
-            scrollView.SetActive(_isPanelVisible);
+            panelGroup.alpha = 0f;
+            panelGroup.blocksRaycasts = true;
+            panelGroup.interactable = true;
+            _panelTween = panelGroup.DOFade(1f, tweenDuration).SetEase(tweenEase).SetUpdate(true);
         }
-        
-        if (helpText)
+        if (animatedRoot)
         {
-            if (_isPanelVisible)
-            {
-                helpText.text = "[D-Pad ▲] Ocultar";
-            }
-            else
-            {
-                helpText.text = "[D-Pad ▲] Mostrar";
-            }
+            animatedRoot.anchoredPosition = _hiddenPos;
+            _panelTween = animatedRoot.DOAnchorPos(_shownPos, tweenDuration).SetEase(tweenEase).SetUpdate(true);
         }
+        RestartAutoHide();
+    }
+
+    void AnimateHide()
+    {
+        KillTween();
+        if (panelGroup)
+        {
+            panelGroup.interactable = false;
+            panelGroup.blocksRaycasts = false;
+            _panelTween = panelGroup.DOFade(0f, tweenDuration).SetEase(tweenEase).SetUpdate(true)
+                .OnComplete(() => { if (panelRoot) panelRoot.SetActive(false); });
+        }
+        if (animatedRoot)
+        {
+            _panelTween = animatedRoot.DOAnchorPos(_hiddenPos, tweenDuration).SetEase(tweenEase).SetUpdate(true)
+                .OnComplete(() => { if (scrollView) scrollView.SetActive(false); });
+        }
+        if (_autoHideCo != null) { StopCoroutine(_autoHideCo); _autoHideCo = null; }
+    }
+
+    void RestartAutoHide()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (_autoHideCo != null) StopCoroutine(_autoHideCo);
+        _autoHideCo = StartCoroutine(AutoHideAfterDelay());
+    }
+
+    IEnumerator AutoHideAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(hideAfterSeconds);
+        _isPanelVisible = false;
+        AnimateHide();
+        UpdateHelpText();
+    }
+
+    void UpdateHelpText()
+    {
+        if (!helpText) return;
+        helpText.text = _isPanelVisible ? "[D-Pad ▲] Ocultar" : "[D-Pad ▲] Mostrar";
+    }
+
+    void KillTween()
+    {
+        if (_panelTween != null && _panelTween.IsActive()) _panelTween.Kill();
+        _panelTween = null;
     }
 }
