@@ -3072,6 +3072,7 @@ GameObject:
   - component: {fileID: 1499195797074369868}
   - component: {fileID: 3501598276737225068}
   - component: {fileID: 8220368983866029882}
+  - component: {fileID: 1832700000000000000}
   m_Layer: 0
   m_Name: Collectibles_Canvas
   m_TagString: Untagged
@@ -3162,6 +3163,25 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1832700000000000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1139260863915081409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  uniqueId: Collectibles_UI
+  allowedScenes:
+  - MainWorld
+  - Test
+  allowWhenListEmpty: 0
+  persistAcrossScenes: 1
+  detachFromParent: 1
 --- !u!1 &1162284283722129840
 GameObject:
   m_ObjectHideFlags: 0
@@ -10639,6 +10659,7 @@ GameObject:
   - component: {fileID: 8939713875794165889}
   - component: {fileID: 4384773528993466647}
   - component: {fileID: 8480257688679758028}
+  - component: {fileID: 1832700000000000001}
   m_Layer: 0
   m_Name: PlayerHUD_Canvas
   m_TagString: Untagged
@@ -10729,6 +10750,25 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1832700000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3515348540330938707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  uniqueId: PlayerHUD_UI
+  allowedScenes:
+  - MainWorld
+  - Test
+  allowWhenListEmpty: 0
+  persistAcrossScenes: 1
+  detachFromParent: 1
 --- !u!114 &8480257688679758028
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12238,6 +12278,7 @@ GameObject:
   - component: {fileID: 8811451557186659925}
   - component: {fileID: 4486802549279097214}
   - component: {fileID: 4749989758053319202}
+  - component: {fileID: 1832700000000000002}
   m_Layer: 5
   m_Name: Misiones_Canvas
   m_TagString: Untagged
@@ -12328,6 +12369,25 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1832700000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4018089133319162479}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  uniqueId: Misiones_UI
+  allowedScenes:
+  - MainWorld
+  - Test
+  allowWhenListEmpty: 0
+  persistAcrossScenes: 1
+  detachFromParent: 1
 --- !u!1 &4107437959031357972
 GameObject:
   m_ObjectHideFlags: 0
@@ -25920,6 +25980,7 @@ GameObject:
   - component: {fileID: 7569484724495521073}
   - component: {fileID: 6984521606135625138}
   - component: {fileID: 2591743229308425582}
+  - component: {fileID: 1832700000000000003}
   m_Layer: 5
   m_Name: CanvasDamageOverlay
   m_TagString: Untagged
@@ -26010,6 +26071,25 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1832700000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8363901372599272807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  uniqueId: DamageOverlay_UI
+  allowedScenes:
+  - MainWorld
+  - Test
+  allowWhenListEmpty: 0
+  persistAcrossScenes: 1
+  detachFromParent: 1
 --- !u!114 &2591743229308425582
 MonoBehaviour:
   m_ObjectHideFlags: 0
