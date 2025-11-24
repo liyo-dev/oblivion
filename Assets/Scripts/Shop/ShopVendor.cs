@@ -12,7 +12,6 @@ public class ShopVendor : MonoBehaviour
 
     ShopUI _runtimeUI;
     Interactable _interactable;
-    System.Collections.IEnumerator _openingCoroutine;
 
     void Awake()
     {
@@ -26,8 +25,6 @@ public class ShopVendor : MonoBehaviour
             // Suscribirse a OnFinished: se dispara cuando el diálogo termina
             _interactable.OnFinished.AddListener(OnDialogueFinished);
             Debug.Log($"[ShopVendor] Subscribed to Interactable.OnFinished on {_interactable.gameObject.name}");
-            // También suscribirse a OnInteract para arrancar un wait-and-open que no dependa exclusivamente de OnFinished
-            _interactable.OnInteract.AddListener(OnInteractStart);
         }
         else
         {
@@ -40,7 +37,6 @@ public class ShopVendor : MonoBehaviour
         if (_interactable != null)
         {
             _interactable.OnFinished.RemoveListener(OnDialogueFinished);
-            _interactable.OnInteract.RemoveListener(OnInteractStart);
             Debug.Log($"[ShopVendor] Unsubscribed from Interactable.OnFinished on {_interactable.gameObject.name}");
         }
     }
@@ -50,51 +46,6 @@ public class ShopVendor : MonoBehaviour
         Debug.Log("[ShopVendor] OnDialogueFinished called - attempting to open shop");
         // Cuando el diálogo del vendedor termina, abrir la tienda
         OpenShop();
-    }
-
-    void OnInteractStart(GameObject interactor)
-    {
-        // If there is dialogue, wait until it finishes; otherwise open immediately after next frame
-        if (_openingCoroutine != null)
-            StopCoroutine(_openingCoroutine);
-        _openingCoroutine = WaitForDialogueEndAndOpen();
-        StartCoroutine(_openingCoroutine);
-    }
-
-    System.Collections.IEnumerator WaitForDialogueEndAndOpen()
-    {
-        // If DialogueManager exists and is open, wait until it closes
-        var dm = DialogueManager.Instance;
-        if (dm != null && dm.IsOpen)
-        {
-            // Preferred behavior: wait until the last line is fully shown (typewriter finished)
-            // so the shop opens immediately after the NPC finishes speaking (no press required).
-            int maxChecks = 600; // safety timeout (~10s at 60fps)
-            int checks = 0;
-            while (checks < maxChecks)
-            {
-                checks++;
-                // If we can detect last line index and that typing finished, break and open
-                int currentIndex = dm.CurrentIndex;
-                int total = dm.CurrentLineCount;
-                bool typing = dm.IsTyping;
-
-                if (total > 0 && currentIndex == total - 1 && !typing)
-                {
-                    // give one frame to let UI settle
-                    yield return new WaitForEndOfFrame();
-                    break;
-                }
-
-                // If the dialogue was closed early, fall back
-                if (!dm.IsOpen) break;
-
-                yield return null;
-            }
-        }
-
-        // Now attempt to open the shop (uses existing retry logic)
-        yield return OpenShopNextFrame();
     }
 
     public void OpenShop()
