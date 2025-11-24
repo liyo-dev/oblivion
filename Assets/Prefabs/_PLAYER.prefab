@@ -13215,6 +13215,13 @@ MonoBehaviour:
   panelRoot: {fileID: 4355243572248093471}
   scrollView: {fileID: 4107437959031357972}
   helpText: {fileID: 6407471287239659553}
+  mainMenu: {fileID: 0}
+  animatedRoot: {fileID: 0}
+  panelGroup: {fileID: 0}
+  hideAfterSeconds: 4
+  hideDistance: 420
+  tweenDuration: 0.35
+  tweenEase: 4
 --- !u!1 &4357821678574352327
 GameObject:
   m_ObjectHideFlags: 0
@@ -15585,6 +15592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerFlyingController
   locomotionLayerIndex: 0
   flyIdleState: fly_idle
+  flyMoveState: fly_dive
   flyDiveState: fly_dive
   locomotionStateName: Free Locomotion
   horizontalSpeed: 12
@@ -15593,7 +15601,13 @@ MonoBehaviour:
   acceleration: 10
   turnSpeed: 9
   doubleTapWindow: 0.35
+  boostMultiplier: 1.5
   debugLogs: 1
+  vfxAttach: {fileID: 0}
+  trailPrefab: {fileID: 0}
+  trailSpeedThreshold: 1.5
+  boostVfxPrefab: {fileID: 0}
+  landingVfxPrefab: {fileID: 0}
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

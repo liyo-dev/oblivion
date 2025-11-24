@@ -25,6 +25,10 @@ public class DialogueManager : MonoBehaviour
     [Header("Input (solo mando)")]
     [Tooltip("Acción para AVANZAR. Usa UI/Submit (Gamepad South = A).")]
     [SerializeField] private InputActionReference advanceAction;
+    [Tooltip("Opcional: PlayerInput para resolver automáticamente UI/Submit del action map UI.")]
+    [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private string uiActionMapName = "UI";
+    [SerializeField] private string uiSubmitActionName = "Submit";
 
     [Header("Bloqueo de Inputs")]
     [Tooltip("Referencias a InputActionReference que se deshabilitan mientras el diálogo esté abierto (p.ej. movimiento, ataque, etc.).")]
@@ -73,6 +77,11 @@ public class DialogueManager : MonoBehaviour
 
     // NPC para cámara de diálogo
     private Transform currentNPC = null;
+#if ENABLE_INPUT_SYSTEM
+    private InputAction _uiSubmitAction;
+    private PlayerControls _uiPlayerControls;
+    private bool _ownsUiPlayerControls;
+#endif
 
     void Awake()
     {
@@ -105,17 +114,16 @@ public class DialogueManager : MonoBehaviour
 
     void OnEnable()
     {
-        if (advanceAction?.action != null)
-        {
-            if (!advanceAction.action.enabled) advanceAction.action.Enable();
-            advanceAction.action.performed += OnAdvance;
-        }
+#if ENABLE_INPUT_SYSTEM
+        BindAdvanceInputs();
+#endif
     }
 
     void OnDisable()
     {
-        if (advanceAction?.action != null)
-            advanceAction.action.performed -= OnAdvance;
+#if ENABLE_INPUT_SYSTEM
+        UnbindAdvanceInputs();
+#endif
     }
 
     void Update()
@@ -168,6 +176,11 @@ public class DialogueManager : MonoBehaviour
         current = asset;
         onEnd = onFinished;
         index = -1;
+
+#if ENABLE_INPUT_SYSTEM
+        // Reasegurar el binding por si se creó un PlayerInput nuevo en esta escena
+        BindAdvanceInputs();
+#endif
 
         // Mostrar UI
         if (group != null)
@@ -589,4 +602,94 @@ public class DialogueManager : MonoBehaviour
             Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
         }
     }
+
+#if ENABLE_INPUT_SYSTEM
+    void BindAdvanceInputs()
+    {
+        UnbindAdvanceInputs();
+
+        // Preferir el action map de UI (PlayerControls.UI.Submit)
+        _uiSubmitAction = ResolveUiSubmitAction();
+        if (_uiSubmitAction != null)
+        {
+            if (!_uiSubmitAction.enabled) _uiSubmitAction.Enable();
+            _uiSubmitAction.performed += OnAdvance;
+        }
+
+        // Mantener el fallback del inspector si apunta a otra acción
+        var fallback = advanceAction?.action;
+        if (fallback != null && fallback != _uiSubmitAction)
+        {
+            if (!fallback.enabled) fallback.Enable();
+            fallback.performed += OnAdvance;
+        }
+    }
+
+    void UnbindAdvanceInputs()
+    {
+        if (_uiSubmitAction != null)
+        {
+            _uiSubmitAction.performed -= OnAdvance;
+            if (_ownsUiPlayerControls && _uiPlayerControls != null && _uiSubmitAction == _uiPlayerControls.UI.Submit)
+            {
+                _uiSubmitAction.Disable();
+            }
+            _uiSubmitAction = null;
+        }
+
+        var fallback = advanceAction?.action;
+        if (fallback != null)
+            fallback.performed -= OnAdvance;
+    }
+
+    InputAction ResolveUiSubmitAction()
+    {
+        // 1) Usar el PlayerInput existente en escena si está disponible
+        var pi = ResolvePlayerInput();
+        if (pi != null && pi.actions != null)
+        {
+            var map = pi.actions.FindActionMap(uiActionMapName, throwIfNotFound: false);
+            var action = map?.FindAction(uiSubmitActionName, throwIfNotFound: false);
+            if (action != null) return action;
+        }
+
+        // 2) Fallback: crear un PlayerControls local solo para UI
+        if (_uiPlayerControls == null)
+        {
+            try
+            {
+                _uiPlayerControls = new PlayerControls();
+                _ownsUiPlayerControls = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DialogueManager] No se pudo crear PlayerControls para UI: {ex.Message}");
+                return null;
+            }
+        }
+        _uiPlayerControls.UI.Enable();
+        return _uiPlayerControls.UI.Submit;
+    }
+
+    PlayerInput ResolvePlayerInput()
+    {
+        if (playerInput != null) return playerInput;
+#if UNITY_2022_3_OR_NEWER
+        playerInput = FindFirstObjectByType<PlayerInput>(FindObjectsInactive.Include);
+#else
+        playerInput = FindObjectOfType<PlayerInput>(true);
+#endif
+        return playerInput;
+    }
+
+    void OnDestroy()
+    {
+        UnbindAdvanceInputs();
+        if (_ownsUiPlayerControls && _uiPlayerControls != null)
+        {
+            _uiPlayerControls.Dispose();
+            _uiPlayerControls = null;
+        }
+    }
+#endif
 }

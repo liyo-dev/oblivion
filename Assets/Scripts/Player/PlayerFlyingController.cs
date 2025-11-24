@@ -87,6 +87,34 @@ public class PlayerFlyingController : MonoBehaviour
         _moveAction = _controls.GamePlay.Move;
         _cameraAction = _controls.GamePlay.CameraLook;
         _jumpAction = _controls.GamePlay.Jump;
+
+        // Try to auto-detect the animator layer that contains the flight states
+        DetectFlightLayer();
+    }
+
+    private void DetectFlightLayer()
+    {
+        if (_animator == null) return;
+
+        string[] statesToFind = new string[] { flyIdleState, flyMoveState, flyDiveState };
+        for (int layer = 0; layer < _animator.layerCount; layer++)
+        {
+            foreach (var s in statesToFind)
+            {
+                if (string.IsNullOrEmpty(s)) continue;
+                int hash = Animator.StringToHash(s);
+                try
+                {
+                    if (_animator.HasState(layer, hash))
+                    {
+                        locomotionLayerIndex = layer;
+                        if (debugLogs) Debug.Log($"[PlayerFlyingController] Detected flight state '{s}' on animator layer {layer}. Using that layer for flight animations.");
+                        return;
+                    }
+                }
+                catch { }
+            }
+        }
     }
 
     void OnEnable()
@@ -336,11 +364,21 @@ public class PlayerFlyingController : MonoBehaviour
         bool moving = _currentPlanarSpeed > 0.5f;
 
         if (diving)
+        {
             PlayFlightState(flyDiveState);
-        else if (moving && !string.IsNullOrEmpty(flyMoveState))
-            PlayFlightState(flyMoveState);
+        }
         else
-            PlayFlightState(flyIdleState);
+        {
+            // Use move state only when it is explicitly different from idle/dive
+            bool useMove = moving && !string.IsNullOrEmpty(flyMoveState)
+                           && !string.Equals(flyMoveState, flyIdleState, StringComparison.Ordinal)
+                           && !string.Equals(flyMoveState, flyDiveState, StringComparison.Ordinal);
+
+            if (useMove)
+                PlayFlightState(flyMoveState);
+            else
+                PlayFlightState(flyIdleState);
+        }
     }
 
     private void PlayFlightState(string stateName)
