@@ -105,6 +105,11 @@ public class PauseMenuController : MonoBehaviour
 
     void Awake()
     {
+#if ENABLE_INPUT_SYSTEM
+        // Asegurar el listener global lo antes posible, incluso si el método de inicialización
+        // automática no se dispara (p.ej. escenas que cargan el menú de pausa desactivado).
+        EnsureGlobalPauseListener();
+#endif
         if (_instance != null && _instance != this)
         {
             Debug.Log("[PauseMenuController] Duplicate detected in scene, destroying extra instance.");

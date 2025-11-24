@@ -2,6 +2,9 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using DG.Tweening;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class QuestLogListUI : MonoBehaviour
 {
@@ -31,11 +34,26 @@ public class QuestLogListUI : MonoBehaviour
     private Vector2 _shownPos;
     private Vector2 _hiddenPos;
     private Coroutine _autoHideCo;
+#if ENABLE_INPUT_SYSTEM
+    private InputAction _quickAccessAction;
+#endif
 
     void OnEnable()
     {
         // Empieza a esperar al manager si aún no existe
         _waitCo = StartCoroutine(BindWhenReady());
+
+#if ENABLE_INPUT_SYSTEM
+        if (_quickAccessAction == null)
+        {
+            _quickAccessAction = new InputAction("QuestLogQuick", InputActionType.Button);
+            _quickAccessAction.AddBinding("<Gamepad>/dpad/up");
+            _quickAccessAction.AddBinding("<Keyboard>/upArrow");
+        }
+        _quickAccessAction.performed += OnQuickAccessPerformed;
+        try { _quickAccessAction.Enable(); }
+        catch { }
+#endif
 
         if (animatedRoot)
         {
@@ -55,6 +73,13 @@ public class QuestLogListUI : MonoBehaviour
         if (_waitCo != null) { StopCoroutine(_waitCo); _waitCo = null; }
         KillTween();
         if (_autoHideCo != null) StopCoroutine(_autoHideCo);
+#if ENABLE_INPUT_SYSTEM
+        if (_quickAccessAction != null)
+        {
+            _quickAccessAction.performed -= OnQuickAccessPerformed;
+            _quickAccessAction.Disable();
+        }
+#endif
     }
 
     void Update()
@@ -87,25 +112,7 @@ public class QuestLogListUI : MonoBehaviour
 
         if (dpadUpPressed)
         {
-            if (_isPanelVisible)
-            {
-                if (mainMenu != null)
-                {
-                    if (mainMenu.IsOpen)
-                        mainMenu.HideMenu();
-                    else
-                        mainMenu.ShowMenu();
-                }
-                else
-                {
-                    TogglePanel();
-                }
-            }
-            else
-            {
-                ShowPanel(true);
-            }
-            RestartAutoHide();
+            HandleToggleOrMenu();
         }
         else
         {
@@ -117,6 +124,44 @@ public class QuestLogListUI : MonoBehaviour
     }
 
     private bool _lastFrameDpadUp = false;
+
+#if ENABLE_INPUT_SYSTEM
+    void OnQuickAccessPerformed(InputAction.CallbackContext ctx)
+    {
+        // Evitar que el callback intente abrir el panel cuando el objeto ya no existe o está inactivo
+        if (!isActiveAndEnabled) return;
+
+        // Imitar el flujo de Update para mantener la lógica centralizada
+        if (!GameState.CanOpenInventory || (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen))
+            return;
+
+        HandleToggleOrMenu();
+    }
+#endif
+
+    void HandleToggleOrMenu()
+    {
+        if (_isPanelVisible)
+        {
+            if (mainMenu != null)
+            {
+                if (mainMenu.IsOpen)
+                    mainMenu.HideMenu();
+                else
+                    mainMenu.ShowMenu();
+            }
+            else
+            {
+                TogglePanel();
+            }
+        }
+        else
+        {
+            ShowPanel(true);
+        }
+
+        RestartAutoHide();
+    }
 
     IEnumerator BindWhenReady()
     {
