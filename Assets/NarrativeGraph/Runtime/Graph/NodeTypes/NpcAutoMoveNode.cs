@@ -62,6 +62,10 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     [Tooltip("Si el agente no consigue path tras un breve intento, finalizar igualmente y warp al destino.")]
     public bool treatNoPathAsReach = true;
 
+    [Header("Persistencia")]
+    [Tooltip("Si está marcado, este nodo solo se ejecutará una vez por perfil y se saltará en cargas futuras.")]
+    public bool runOnlyOncePerProfile = true;
+
     void Log(string message)
     {
         if (debugLogs)
@@ -76,11 +80,19 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             return;
         }
 
+        var completionKey = GetCompletionKey();
+        if (runOnlyOncePerProfile && IsMarkedCompleted(ctx.Blackboard, completionKey))
+        {
+            Log($"Skip → runOnlyOncePerProfile=true y flag '{completionKey}' ya está marcado");
+            onReadyToAdvance?.Invoke();
+            return;
+        }
+
         Log($"Enter → npcName='{npcName}', npcTag='{npcTag}'");
-        ctx.Runner.StartCoroutine(RunSequence(onReadyToAdvance));
+        ctx.Runner.StartCoroutine(RunSequence(ctx, onReadyToAdvance, completionKey));
     }
 
-    IEnumerator RunSequence(Action done)
+    IEnumerator RunSequence(NarrativeContext ctx, Action done, string completionKey)
     {
         var npc = ResolveNpc();
         if (npc == null)
@@ -154,6 +166,11 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
         finally
         {
+            if (runOnlyOncePerProfile)
+            {
+                MarkCompleted(ctx?.Blackboard, completionKey);
+            }
+
             if (lockApplied && pam != null)
             {
                 pam.PopMode(lockMode);
@@ -612,6 +629,37 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         if (PlayerService.TryGetComponent(out PlayerActionManager pam, true, true))
             return pam;
         return UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
+    }
+
+    string GetCompletionKey()
+    {
+        return string.IsNullOrEmpty(guid)
+            ? $"npcAutoMoveNode__{GetHashCode()}__completed"
+            : $"npcAutoMoveNode__{guid}__completed";
+    }
+
+    bool IsMarkedCompleted(SimpleBlackboard blackboard, string key)
+    {
+        if (blackboard == null || string.IsNullOrEmpty(key))
+            return false;
+
+        try { return blackboard.Get<bool>(key, false); } catch { return false; }
+    }
+
+    void MarkCompleted(SimpleBlackboard blackboard, string key)
+    {
+        if (blackboard == null || string.IsNullOrEmpty(key))
+            return;
+
+        try
+        {
+            blackboard.Set(key, true);
+            Log($"Persistencia → marcado flag '{key}' en blackboard");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[NpcAutoMoveNode] No se pudo marcar persistencia en blackboard: {ex.Message}");
+        }
     }
 
     Camera ResolveCamera()
