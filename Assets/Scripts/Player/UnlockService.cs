@@ -5,6 +5,8 @@ using UnityEngine;
 public static class UnlockService
 {
     public static event System.Action<AbilityId> OnAbilityUnlocked;
+    // New event for the boolean-based abilities (PlayerAbilities -> AbilityKey)
+    public static event System.Action<AbilityKey> OnAbilityUnlockedKey;
 
     /// Intenta obtener el preset activo (runtime) del GameBootProfile.
     public static PlayerPresetSO GetActivePreset()
@@ -83,6 +85,7 @@ public static class UnlockService
         if (!preset.abilities.fly)
         {
             preset.abilities.fly = true;
+            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Fly); } catch { }
             return true;
         }
         return false;
@@ -100,6 +103,7 @@ public static class UnlockService
         if (!preset.abilities.swim)
         {
             preset.abilities.swim = true;
+            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Swim); } catch { }
             return true;
         }
         return false;
@@ -117,6 +121,7 @@ public static class UnlockService
         if (!preset.abilities.climb)
         {
             preset.abilities.climb = true;
+            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Climb); } catch { }
             return true;
         }
         return false;
@@ -134,6 +139,7 @@ public static class UnlockService
         if (!preset.abilities.jump)
         {
             preset.abilities.jump = true;
+            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Jump); } catch { }
             return true;
         }
         return false;

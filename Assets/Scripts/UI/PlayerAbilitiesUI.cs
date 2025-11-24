@@ -24,6 +24,9 @@ public class PlayerAbilitiesUI : MonoBehaviour
     [SerializeField] private bool autoRefresh = true;
     [SerializeField] private bool showDebugInfo; // default false implícito
     [SerializeField] private float refreshInterval = 1f;
+    [Header("Presentaciones")]
+    [Tooltip("Lista opcional de presentaciones para habilidades. Si está vacía se usarán valores por defecto de AbilityPresentationLookup.")]
+    [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
     
     private ManaPool _manaPool;
     
@@ -125,20 +128,60 @@ public class PlayerAbilitiesUI : MonoBehaviour
         }
         _abilityUIObjects.Clear();
         
-        // Crear UI para habilidades desbloqueadas
-        if (preset.unlockedAbilities != null)
+        // Crear UI para habilidades desbloqueadas.
+        // Compatibilidad: si el preset tiene una lista `unlockedAbilities` (enum-based), la usamos.
+        if (preset.unlockedAbilities != null && preset.unlockedAbilities.Count > 0)
         {
             foreach (var abilityId in preset.unlockedAbilities)
             {
                 var uiObject = Instantiate(abilityUIPrefab, abilitiesContainer);
-                
-                // Configurar el objeto UI (asume que tiene TextMeshProUGUI o similar)
+
+                // Resolver presentación (título, descripción, icono)
+                var pres = AbilityPresentationLookup.Resolve(abilityId, abilityPresentations);
+
+                // Configurar el objeto UI: buscar texto e imagen si existen
                 var text = uiObject.GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
                 {
-                    text.text = abilityId.ToString();
+                    text.text = pres.title;
                 }
-                
+
+                var img = uiObject.GetComponentInChildren<UnityEngine.UI.Image>();
+                if (img != null)
+                {
+                    img.sprite = pres.icon;
+                    img.enabled = pres.icon != null;
+                }
+
+                _abilityUIObjects.Add(uiObject);
+            }
+        }
+        else
+        {
+            // Si no hay lista enum-based, leer las booleans de PlayerAbilities y mostrarlas
+            var abilities = preset.abilities ?? new PlayerAbilities();
+            var keys = new System.Collections.Generic.List<AbilityKey>();
+            if (abilities.swim) keys.Add(AbilityKey.Swim);
+            if (abilities.jump) keys.Add(AbilityKey.Jump);
+            if (abilities.climb) keys.Add(AbilityKey.Climb);
+            if (abilities.magic) keys.Add(AbilityKey.Magic);
+            if (abilities.fly) keys.Add(AbilityKey.Fly);
+
+            foreach (var key in keys)
+            {
+                var uiObject = Instantiate(abilityUIPrefab, abilitiesContainer);
+                var pres = AbilityPresentationKeyLookup.Resolve(key, null);
+
+                var text = uiObject.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null) text.text = pres.title;
+
+                var img = uiObject.GetComponentInChildren<UnityEngine.UI.Image>();
+                if (img != null)
+                {
+                    img.sprite = pres.icon;
+                    img.enabled = pres.icon != null;
+                }
+
                 _abilityUIObjects.Add(uiObject);
             }
         }

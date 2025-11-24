@@ -57,6 +57,8 @@ public class PlayerFlyingController : MonoBehaviour
     private float _flightArmUntil = -1f;
     private float _currentPlanarSpeed;
     private bool _isBoosting;
+    private bool _controllerWasEnabled = true;
+    private bool _animRootMotionPrev;
 
     [Header("FX Vuelo")]
     [SerializeField] private Transform vfxAttach;
@@ -201,6 +203,16 @@ public class PlayerFlyingController : MonoBehaviour
         _isBoosting = false;
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Flying);
+        if (_controller != null)
+        {
+            _controllerWasEnabled = _controller.enabled;
+            _controller.enabled = false; // evitar que el controlador base fuerce animaciones de caída
+        }
+        if (_animator != null)
+        {
+            _animRootMotionPrev = _animator.applyRootMotion;
+            _animator.applyRootMotion = false; // controlamos el movimiento vía Rigidbody
+        }
 
         CacheCameraTransform();
         PlayFlightState(flyIdleState);
@@ -263,10 +275,14 @@ public class PlayerFlyingController : MonoBehaviour
                 _controller.extraGravity = _cachedExtraGravity;
                 _extraGravitySuspended = false;
             }
+            _controller.enabled = _controllerWasEnabled;
         }
 
         if (wasFlying && debugLogs)
             Debug.Log("[PlayerFlyingController] Exit Flight");
+
+        if (_animator != null)
+            _animator.applyRootMotion = _animRootMotionPrev;
     }
 
     private void ApplyFlightMovement()

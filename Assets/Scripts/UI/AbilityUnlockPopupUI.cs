@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,8 +10,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private GameObject popupRoot;
-    [SerializeField] private Text abilityTitleText;
-    [SerializeField] private Text abilityDescriptionText;
+    [SerializeField] private TextMeshProUGUI abilityTitleText;
+    [SerializeField] private TextMeshProUGUI abilityDescriptionText;
     [SerializeField] private Image abilityIcon;
 
     [Header("Hold to close")]
@@ -19,8 +20,10 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     [Header("Datos")]
     [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
+    [SerializeField] private List<AbilityPresentationForKey> abilityKeyPresentations = new();
 
     AbilityId? _pendingAbility;
+    AbilityKey? _pendingAbilityKey;
 
     void Awake()
     {
@@ -37,11 +40,13 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     void OnEnable()
     {
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
     }
 
     void OnDisable()
     {
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
     }
 
     void OnDestroy()
@@ -53,25 +58,42 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     private void HandleAbilityUnlocked(AbilityId ability)
     {
         _pendingAbility = ability;
+        _pendingAbilityKey = null;
+        ShowPopup();
+    }
+
+    private void HandleAbilityUnlockedKey(AbilityKey key)
+    {
+        _pendingAbilityKey = key;
+        _pendingAbility = null;
         ShowPopup();
     }
 
     private void ShowPopup()
     {
-        if (_pendingAbility == null) return;
+        if (_pendingAbility == null && _pendingAbilityKey == null) return;
 
-        var presentation = AbilityPresentationLookup.Resolve(_pendingAbility.Value, abilityPresentations);
-
-        if (abilityTitleText != null)
-            abilityTitleText.text = presentation.title;
-
-        if (abilityDescriptionText != null)
-            abilityDescriptionText.text = presentation.description;
-
-        if (abilityIcon != null)
+        if (_pendingAbility != null)
         {
-            abilityIcon.sprite = presentation.icon;
-            abilityIcon.enabled = presentation.icon != null;
+            var presentation = AbilityPresentationLookup.Resolve(_pendingAbility.Value, abilityPresentations);
+            if (abilityTitleText != null) abilityTitleText.text = presentation.title;
+            if (abilityDescriptionText != null) abilityDescriptionText.text = presentation.description;
+            if (abilityIcon != null)
+            {
+                abilityIcon.sprite = presentation.icon;
+                abilityIcon.enabled = presentation.icon != null;
+            }
+        }
+        else if (_pendingAbilityKey != null)
+        {
+            var presentation = AbilityPresentationKeyLookup.Resolve(_pendingAbilityKey.Value, abilityKeyPresentations);
+            if (abilityTitleText != null) abilityTitleText.text = presentation.title;
+            if (abilityDescriptionText != null) abilityDescriptionText.text = presentation.description;
+            if (abilityIcon != null)
+            {
+                abilityIcon.sprite = presentation.icon;
+                abilityIcon.enabled = presentation.icon != null;
+            }
         }
 
         if (popupRoot != null)
