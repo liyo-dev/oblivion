@@ -15,6 +15,8 @@ public class PauseMenuController : MonoBehaviour
     private static InputAction _globalPauseListener;
 #endif
 
+    public static PauseMenuController Instance => _instance;
+
     // Asegura que si hay un PauseMenuController en la escena inicial, persista entre escenas.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentInstance()
@@ -118,6 +120,9 @@ public class PauseMenuController : MonoBehaviour
         }
 
         _instance = this;
+
+        // Registrar como servicio para que los managers de entrada puedan localizarlo rápidamente.
+        ServiceLocator.Register(this);
         DontDestroyOnLoad(gameObject);
 
         _es = EventSystem.current;
@@ -219,6 +224,7 @@ public class PauseMenuController : MonoBehaviour
         Time.timeScale = 0f;
         _isPaused = true;
         IsOpen = true;
+        MenuManager.RegisterOpen(MenuKind.Pause);
         GameState.Push(GamePhase.PauseMenu);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -236,6 +242,7 @@ public class PauseMenuController : MonoBehaviour
         Time.timeScale = 1f;
         _isPaused = false;
         IsOpen = false;
+        MenuManager.Close(MenuKind.Pause);
         _introSeq?.Kill();
         DisableUIInput();
         // Seguridad: si se desactiva externamente, asegurarse de liberar el GameState
@@ -269,6 +276,8 @@ public class PauseMenuController : MonoBehaviour
     public void ShowPauseMenu()
     {
         if (!GameState.CanOpenPause) return;
+        if (!MenuManager.IsOpen(MenuKind.Pause) && !MenuManager.TryOpen(MenuKind.Pause))
+            return;
         gameObject.SetActive(true);
         EnsureUISelection();
     }
@@ -690,6 +699,15 @@ public class PauseMenuController : MonoBehaviour
         Time.timeScale = 1f;
         MainMenuController.RequestInputDebounce();
         UnityEngine.SceneManagement.SceneManager.LoadScene(mainMenuScene);
+    }
+
+    void OnDestroy()
+    {
+        if (_instance == this)
+        {
+            ServiceLocator.Unregister(this);
+            _instance = null;
+        }
     }
 }
 
