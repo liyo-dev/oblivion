@@ -2452,7 +2452,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
   ambientModule:
-    enableWander: 1
+    enableWander: 0
     wanderRadius: 2
     minIdleTime: 1.2
     maxIdleTime: 3

@@ -57,6 +57,9 @@ public class BossArenaController : MonoBehaviour
     public string playerTag = "Player";
     public AudioSource musicBoss;    // opcional
 
+    [Header("Debug")]
+    [SerializeField] private bool showDebugLogs = false;
+
     [Header("Progreso")]
     [Tooltip("ID único del boss para registrar su derrota en el guardado (ej: 'DEMONIO_01').")]
     [SerializeField] private string bossId;
@@ -98,6 +101,7 @@ public class BossArenaController : MonoBehaviour
     bool started = false;
     bool _bossDefeatHandled = false;
     bool _bossDeathConfirmed = false;
+    bool _pendingStartBattle = false;
     EnemyMarker _activeBossMarker;
     Damageable _activeBossDamageable;
 
@@ -164,6 +168,15 @@ public class BossArenaController : MonoBehaviour
                 Debug.Log($"[BossArenaController] OnEnable: Registrada arena con BattleId='{key}' (scene='{gameObject.scene.name}', active={gameObject.activeInHierarchy}).");
             }
         }
+
+        // Si el inicio de batalla fue solicitado mientras el componente estaba inactivo,
+        // arranquemos la batalla ahora que estamos habilitados.
+        if (_pendingStartBattle)
+        {
+            _pendingStartBattle = false;
+            if (showDebugLogs) Debug.Log("[BossArenaController] OnEnable: procesando StartBattle pendiente.");
+            StartBattleInternal();
+        }
     }
 
     void OnDisable()
@@ -225,6 +238,15 @@ public class BossArenaController : MonoBehaviour
     private void StartBattleInternal()
     {
         if (started) return;
+
+        // If this component is not active/enabled, defer starting the battle until OnEnable.
+        if (!isActiveAndEnabled)
+        {
+            _pendingStartBattle = true;
+            if (showDebugLogs) Debug.Log("[BossArenaController] StartBattleInternal deferred: component inactive; will start on OnEnable.");
+            return;
+        }
+
         started = true;
         _bossDeathConfirmed = false;
 
