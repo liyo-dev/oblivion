@@ -18,6 +18,9 @@ namespace Invector.vCharacterController
         private InputAction attackMagicEastAction;   // B  -> derecha
         private InputAction attackMagicNorthAction;  // Y  -> especial
 
+        [SerializeField] private PlayerInputManager inputManager;
+        [SerializeField] private PlayerActionManager actionManager;
+
         [HideInInspector] public vThirdPersonController cc;
         [HideInInspector] public vThirdPersonCamera tpCamera;
         [HideInInspector] public Camera cameraMain;
@@ -31,38 +34,56 @@ namespace Invector.vCharacterController
 
         protected virtual void Awake()
         {
+            ResolveServices();
             InitializeInputActions();
+        }
+
+        private void ResolveServices()
+        {
+            if (inputManager == null)
+                ServiceLocator.TryGet(out inputManager);
+
+            if (actionManager == null)
+            {
+                actionManager = GetComponent<PlayerActionManager>();
+                if (actionManager == null)
+                    ServiceLocator.TryGet(out actionManager);
+            }
         }
 
         private void InitializeInputActions()
         {
-            if (inputActions == null)
+            if (inputManager != null)
             {
-                inputActions = Resources.Load<InputActionAsset>("PlayerControls");
-                if (inputActions == null)
-                {
-                    var found = Resources.FindObjectsOfTypeAll<InputActionAsset>();
-                    if (found.Length > 0) inputActions = found[0];
-                }
+                // Compartir el asset centralizado para evitar duplicados y búsquedas.
+                inputActions = inputManager.PlayerInput != null ? inputManager.PlayerInput.actions : inputManager.Controls?.asset;
             }
 
-            if (inputActions != null)
+            if (inputActions == null)
             {
-                var gameplay = inputActions.FindActionMap("GamePlay");
-                if (gameplay != null)
-                {
-                    moveAction             = gameplay.FindAction("Move");
-                    jumpAction             = gameplay.FindAction("Jump");
-                    sprintAction           = gameplay.FindAction("Sprint");
-                    strafeAction           = gameplay.FindAction("Strafe");
-                    cameraAction           = gameplay.FindAction("CameraLook");
-                    attackMagicWestAction  = gameplay.FindAction("AttackMagicWest");
-                    attackMagicEastAction  = gameplay.FindAction("AttackMagicEast");
-                    attackMagicNorthAction = gameplay.FindAction("AttackMagicNorth");
-                }
-                else Debug.LogWarning("GamePlay action map not found in InputActionAsset");
+                // Permitir asignación manual desde el inspector como respaldo.
+                inputActions = this.inputActions;
             }
-            else Debug.LogError("No InputActionAsset found. Assign it in the inspector.");
+
+            if (inputActions == null)
+            {
+                Debug.LogError("[vThirdPersonInput] No InputActionAsset assigned. Please provide one or ensure PlayerInputManager is present.");
+                return;
+            }
+
+            var gameplay = inputActions.FindActionMap("GamePlay");
+            if (gameplay != null)
+            {
+                moveAction             = gameplay.FindAction("Move");
+                jumpAction             = gameplay.FindAction("Jump");
+                sprintAction           = gameplay.FindAction("Sprint");
+                strafeAction           = gameplay.FindAction("Strafe");
+                cameraAction           = gameplay.FindAction("CameraLook");
+                attackMagicWestAction  = gameplay.FindAction("AttackMagicWest");
+                attackMagicEastAction  = gameplay.FindAction("AttackMagicEast");
+                attackMagicNorthAction = gameplay.FindAction("AttackMagicNorth");
+            }
+            else Debug.LogWarning("[vThirdPersonInput] GamePlay action map not found in InputActionAsset");
         }
 
         protected virtual void OnEnable()
@@ -125,8 +146,21 @@ namespace Invector.vCharacterController
 
         // ===== Helpers / movimiento =====
         private void OnMoveInput(InputAction.CallbackContext context)   => moveInput = context.ReadValue<Vector2>();
-        private void OnJumpInput(InputAction.CallbackContext context)   { if (context.performed) jumpPressed = true; }
-        private void OnSprintInput(InputAction.CallbackContext context) => sprintHeld = context.ReadValueAsButton();
+        private void OnJumpInput(InputAction.CallbackContext context)
+        {
+            if (context.performed && CanUse(PlayerAbility.Jump))
+                jumpPressed = true;
+        }
+
+        private void OnSprintInput(InputAction.CallbackContext context)
+        {
+            if (!CanUse(PlayerAbility.Sprint))
+            {
+                sprintHeld = false;
+                return;
+            }
+            sprintHeld = context.ReadValueAsButton();
+        }
         private void OnStrafeInput(InputAction.CallbackContext context) { if (context.performed) strafePressed = true; }
         private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = ApplyLookInversionSafe(context.ReadValue<Vector2>());
 
@@ -239,19 +273,28 @@ namespace Invector.vCharacterController
             }
         }
 
+        private bool CanUse(PlayerAbility ability)
+        {
+            var validator = (IActionValidator)actionManager ?? inputManager?.ActionManager;
+            return validator == null || validator.CanUse(ability);
+        }
+
         // Named callbacks for magic inputs so they can be unsubscribed reliably
         private void OnAttackMagicWestStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
+            if (!CanUse(PlayerAbility.Magic)) return;
             if (cc != null) cc.CastMagicLeft();
         }
 
         private void OnAttackMagicEastStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
+            if (!CanUse(PlayerAbility.Magic)) return;
             if (cc != null) cc.CastMagicRight();
         }
 
         private void OnAttackMagicNorthStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
+            if (!CanUse(PlayerAbility.Magic)) return;
             if (cc != null) cc.CastMagicSpecial();
         }
     }
