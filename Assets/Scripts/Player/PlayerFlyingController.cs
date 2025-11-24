@@ -1,4 +1,5 @@
 using Invector.vCharacterController;
+using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -59,6 +60,7 @@ public class PlayerFlyingController : MonoBehaviour
     private bool _isBoosting;
     private bool _controllerWasEnabled = true;
     private bool _animRootMotionPrev;
+    private float _prevFlightLayerWeight = -1f;
 
     [Header("FX Vuelo")]
     [SerializeField] private Transform vfxAttach;
@@ -246,6 +248,17 @@ public class PlayerFlyingController : MonoBehaviour
         PlayFlightState(flyIdleState);
         SpawnTrailIfNeeded();
 
+        // Ensure flight animator layer has full weight so flight states take precedence
+        if (_animator != null && locomotionLayerIndex >= 0 && locomotionLayerIndex < _animator.layerCount)
+        {
+            try
+            {
+                _prevFlightLayerWeight = _animator.GetLayerWeight(locomotionLayerIndex);
+                _animator.SetLayerWeight(locomotionLayerIndex, 1f);
+            }
+            catch { }
+        }
+
         if (_rigidbody != null)
         {
             if (!_gravityStored)
@@ -311,6 +324,18 @@ public class PlayerFlyingController : MonoBehaviour
 
         if (_animator != null)
             _animator.applyRootMotion = _animRootMotionPrev;
+
+        // Restore previous flight layer weight if we changed it
+        if (_animator != null && locomotionLayerIndex >= 0 && locomotionLayerIndex < _animator.layerCount)
+        {
+            try
+            {
+                if (_prevFlightLayerWeight >= 0f)
+                    _animator.SetLayerWeight(locomotionLayerIndex, _prevFlightLayerWeight);
+            }
+            catch { }
+            _prevFlightLayerWeight = -1f;
+        }
     }
 
     private void ApplyFlightMovement()
