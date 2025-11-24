@@ -32,6 +32,13 @@ public class SettingsMenuController : MonoBehaviour
     private Action _onClosed;
     private EventSystem _eventSystem;
 
+    [Header("Navigation")]
+    [Min(0f)] public float navRepeatDelay = 0.15f;
+    [Range(0f,1f)] public float navDeadzone = 0.3f;
+    private float _navCooldown;
+    private int _navHeldSign; // -1,0,1
+    public bool enableManualNavigation = true; // enable fallback navigation polling
+
     void Awake()
     {
         if (!root)
@@ -73,6 +80,110 @@ public class SettingsMenuController : MonoBehaviour
     void OnEnable()
     {
         RefreshUI();
+    }
+
+    void Update()
+    {
+        if (!enableManualNavigation) return;
+        if (root == null || !root.activeInHierarchy) return;
+
+        // Reduce cooldown timer
+        if (_navCooldown > 0f) _navCooldown -= Time.unscaledDeltaTime;
+        else _navHeldSign = 0;
+
+        // Read input from common sources and move selection accordingly
+        float vert = 0f;
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            var gp = UnityEngine.InputSystem.Gamepad.current;
+            if (gp != null)
+            {
+                var d = gp.dpad.ReadValue();
+                if (Mathf.Abs(d.y) > navDeadzone) vert = d.y;
+                else
+                {
+                    var s = gp.leftStick.ReadValue();
+                    if (Mathf.Abs(s.y) > navDeadzone) vert = s.y;
+                }
+            }
+            else
+            {
+                var js = UnityEngine.InputSystem.Joystick.current;
+                if (js != null)
+                {
+                    var s = js.stick.ReadValue();
+                    if (Mathf.Abs(s.y) > navDeadzone) vert = s.y;
+                }
+            }
+        }
+        catch { }
+#else
+        vert = Input.GetAxisRaw("Vertical");
+#endif
+
+        if (Mathf.Abs(vert) > navDeadzone && _navCooldown <= 0f)
+        {
+            int sign = vert > 0f ? 1 : -1;
+            if (_navHeldSign != sign)
+            {
+                _navHeldSign = sign;
+                if (sign > 0) MoveSelection(Vector2.up);
+                else MoveSelection(Vector2.down);
+                _navCooldown = navRepeatDelay;
+            }
+        }
+
+        // Submit handling (basic)
+        bool submit = false;
+#if ENABLE_INPUT_SYSTEM
+        var g = UnityEngine.InputSystem.Gamepad.current;
+        if (g != null && g.buttonSouth.wasPressedThisFrame) submit = true;
+#else
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)) submit = true;
+#endif
+
+        if (submit)
+        {
+            var es = EventSystem.current;
+            var go = es?.currentSelectedGameObject;
+            if (go != null)
+            {
+                var sel = go.GetComponent<UnityEngine.UI.Button>();
+                if (sel != null) sel.onClick.Invoke();
+                else
+                {
+                    // try to execute submit handler
+                    ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
+                }
+            }
+        }
+    }
+
+    void MoveSelection(Vector2 dir)
+    {
+        var es = EventSystem.current;
+        if (es == null) return;
+        var current = es.currentSelectedGameObject;
+        var sel = current ? current.GetComponent<Selectable>() : null;
+        Selectable next = null;
+        if (sel == null)
+        {
+            // pick first selectable in this root
+            var all = root.GetComponentsInChildren<Selectable>(true);
+            if (all != null && all.Length > 0) next = all[0];
+        }
+        else
+        {
+            if (dir == Vector2.up) next = sel.FindSelectableOnUp();
+            else if (dir == Vector2.down) next = sel.FindSelectableOnDown();
+        }
+
+        if (next != null)
+        {
+            es.SetSelectedGameObject(next.gameObject);
+            next.Select();
+        }
     }
 
     void OnDestroy()

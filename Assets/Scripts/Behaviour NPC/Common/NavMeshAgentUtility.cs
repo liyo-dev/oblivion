@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Alex.NPC.Common
+namespace Game.NPC.Common
 {
     public static class NavMeshAgentUtility
     {

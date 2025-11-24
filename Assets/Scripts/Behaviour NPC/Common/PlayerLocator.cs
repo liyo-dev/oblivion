@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Alex.NPC.Common
+namespace Game.NPC.Common
 {
     public static class PlayerLocator
     {
