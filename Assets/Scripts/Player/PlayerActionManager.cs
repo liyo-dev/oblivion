@@ -272,6 +272,19 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
         var top = Top;
 
+        // Special-case: when flying, ensure base locomotion animator doesn't transition to falling.
+        // Some animator controllers check IsGrounded/InputMagnitude to play fall states — force safe values while Flying.
+        if (top == ActionMode.Flying && _anim != null)
+        {
+            try
+            {
+                _anim.SetBool(Invector.vCharacterController.vAnimatorParameters.IsGrounded, true);
+                _anim.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, 0f);
+                if (debugLogs) Debug.Log("[PlayerActionManager] Flight mode active - forcing IsGrounded=true and InputMagnitude=0 on animator to avoid fall animations.");
+            }
+            catch { }
+        }
+
         // NUEVO: Resetear visuales de daño al entrar en modo Cinematic
         if (top == ActionMode.Cinematic)
         {
