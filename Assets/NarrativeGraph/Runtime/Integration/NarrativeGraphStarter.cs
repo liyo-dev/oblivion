@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Script para iniciar grafos narrativos específicos en una escena de gameplay.
@@ -13,6 +14,8 @@ public class NarrativeGraphStarter : MonoBehaviour
     [Header("Configuración")]
     [Tooltip("Si está activado, los grafos se inician en Start(). Si no, debes llamar a StartGraphs() manualmente.")]
     [SerializeField] private bool startOnAwake = true;
+    [Tooltip("Si está activo, solo se inician los grafos cuando la escena que contiene este componente es la activa.")]
+    [SerializeField] private bool requireActiveScene = true;
 
     [Header("Debug")]
     [SerializeField] private bool logDebug = true;
@@ -37,6 +40,25 @@ public class NarrativeGraphStarter : MonoBehaviour
             yield return null;
         }
 
+        // Evitar iniciar grafos si la escena aún no es la activa (p.ej. Start cargada aditivamente en el editor)
+        if (requireActiveScene)
+        {
+            while (gameObject != null
+                && gameObject.scene.IsValid()
+                && gameObject.scene.isLoaded
+                && SceneManager.GetActiveScene() != gameObject.scene)
+            {
+                yield return null;
+            }
+
+            if (gameObject == null || !gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
+            {
+                if (logDebug)
+                    Debug.LogWarning("[NarrativeGraphStarter] Escena no válida o destruida antes de iniciar grafos.");
+                yield break;
+            }
+        }
+
         StartGraphs();
     }
 
@@ -46,6 +68,13 @@ public class NarrativeGraphStarter : MonoBehaviour
     /// </summary>
     public void StartGraphs()
     {
+        if (requireActiveScene && SceneManager.GetActiveScene() != gameObject.scene)
+        {
+            if (logDebug)
+                Debug.Log($"[NarrativeGraphStarter] Escena '{gameObject.scene.name}' no es la activa. Inicio de grafos omitido.");
+            return;
+        }
+
         if (graphLabels == null || graphLabels.Length == 0)
         {
             if (logDebug)
