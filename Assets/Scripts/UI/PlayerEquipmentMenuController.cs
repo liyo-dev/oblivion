@@ -104,9 +104,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     [Header("Habilidades")]
     [SerializeField] private GameObject abilitiesRoot;
-    [SerializeField] private Transform abilitiesContainer;
-    [SerializeField] private GameObject abilityRowPrefab;
-    [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
+    [SerializeField] private AbilityEntryReferences abilityEntries = new();
 
     [Header("Selección inicial")]
     [SerializeField] private GameObject initialSelectionOverride;
@@ -127,8 +125,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
-    readonly List<GameObject> _abilityEntries = new();
-    readonly List<AbilityId> _renderedAbilities = new();
     [Header("Cámara de equipamiento")]
     [SerializeField] private Camera equipmentPreviewCamera;
     [SerializeField] private float equipmentCameraDistance = 3f;
@@ -668,7 +664,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void UpdatePlayerInfoPanel()
     {
         bool hasStatsText = levelText != null || hpText != null || mpText != null;
-        bool hasAbilityUI = abilitiesContainer != null && abilityRowPrefab != null;
+        bool hasAbilityUI = abilitiesRoot != null || abilityEntries.HasAnyEntry;
         if (!hasStatsText && !hasAbilityUI) return;
 
         PlayerPresetSO preset = null;
@@ -706,77 +702,32 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void UpdateAbilitiesPanel(PlayerPresetSO preset)
     {
-        if (abilitiesContainer == null || abilityRowPrefab == null)
+        if (!abilityEntries.HasAnyEntry)
         {
             if (abilitiesRoot != null)
                 abilitiesRoot.SetActive(false);
             return;
         }
 
-        IReadOnlyList<AbilityId> unlocked = preset?.unlockedAbilities ?? (IReadOnlyList<AbilityId>)System.Array.Empty<AbilityId>();
+        var abilities = preset?.abilities ?? new PlayerAbilities();
 
-        if (!NeedsAbilityRefresh(unlocked))
-            return;
-
-        for (int i = 0; i < _abilityEntries.Count; i++)
-        {
-            if (_abilityEntries[i] != null)
-                Destroy(_abilityEntries[i]);
-        }
-        _abilityEntries.Clear();
-        _renderedAbilities.Clear();
-
-        for (int i = 0; i < unlocked.Count; i++)
-        {
-            var abilityId = unlocked[i];
-            var row = Instantiate(abilityRowPrefab, abilitiesContainer);
-            var presentation = AbilityPresentationLookup.Resolve(abilityId, abilityPresentations);
-
-            if (row.TryGetComponent<AbilityInventoryEntry>(out var entry))
-            {
-                entry.SetPresentation(presentation);
-            }
-            else
-            {
-                var texts = row.GetComponentsInChildren<Text>();
-                if (texts != null && texts.Length > 0)
-                    texts[0].text = presentation.title;
-                if (texts != null && texts.Length > 1)
-                    texts[1].text = presentation.description;
-
-                var image = row.GetComponentInChildren<Image>();
-                if (image != null)
-                {
-                    image.sprite = presentation.icon;
-                    image.enabled = presentation.icon != null;
-                }
-            }
-
-            _abilityEntries.Add(row);
-            _renderedAbilities.Add(abilityId);
-        }
+        SetAbilityEntryActive(AbilityKey.Swim, abilities.swim);
+        SetAbilityEntryActive(AbilityKey.Jump, abilities.jump);
+        SetAbilityEntryActive(AbilityKey.Climb, abilities.climb);
+        SetAbilityEntryActive(AbilityKey.Magic, abilities.magic);
+        SetAbilityEntryActive(AbilityKey.Fly, abilities.fly);
 
         if (abilitiesRoot != null)
-            abilitiesRoot.SetActive(_renderedAbilities.Count > 0);
+        {
+            abilitiesRoot.SetActive(abilityEntries.HasAnyEntry);
+        }
     }
 
-    bool NeedsAbilityRefresh(IReadOnlyList<AbilityId> unlocked)
+    void SetAbilityEntryActive(AbilityKey key, bool active)
     {
-        if (unlocked == null || unlocked.Count == 0)
-        {
-            return _renderedAbilities.Count != 0;
-        }
-
-        if (unlocked.Count != _renderedAbilities.Count)
-            return true;
-
-        for (int i = 0; i < unlocked.Count; i++)
-        {
-            if (unlocked[i] != _renderedAbilities[i])
-                return true;
-        }
-
-        return false;
+        var entry = abilityEntries.Get(key);
+        if (entry != null)
+            entry.SetActive(active);
     }
 
     bool EnsureViews()
@@ -855,6 +806,31 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         var esGO = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         DontDestroyOnLoad(esGO);
+    }
+
+    [Serializable]
+    struct AbilityEntryReferences
+    {
+        public GameObject swim;
+        public GameObject jump;
+        public GameObject climb;
+        public GameObject magic;
+        public GameObject fly;
+
+        public bool HasAnyEntry => swim != null || jump != null || climb != null || magic != null || fly != null;
+
+        public GameObject Get(AbilityKey key)
+        {
+            return key switch
+            {
+                AbilityKey.Swim => swim,
+                AbilityKey.Jump => jump,
+                AbilityKey.Climb => climb,
+                AbilityKey.Magic => magic,
+                AbilityKey.Fly => fly,
+                _ => null
+            };
+        }
     }
 
     [Serializable]
