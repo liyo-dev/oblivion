@@ -19,6 +19,8 @@ public class InputActionMapRouter : MonoBehaviour
     [SerializeField] private PlayerInput playerInput;
     [Tooltip("Asset de acciones a usar si no hay PlayerInput disponible.")]
     [SerializeField] private InputActionAsset actionsAsset;
+    [Tooltip("Proveedor centralizado de controles para evitar búsquedas repetidas.")]
+    [SerializeField] private PlayerInputManager inputManager;
 
     [Header("Nombres de Action Map")]
     [SerializeField] private string gameplayMapName = "GamePlay";
@@ -45,6 +47,9 @@ public class InputActionMapRouter : MonoBehaviour
         Instance = this;
         if (dontDestroyOnLoad)
             DontDestroyOnLoad(gameObject);
+
+        if (inputManager == null)
+            ServiceLocator.TryGet(out inputManager);
 
         ResolvePlayerInput();
     }
@@ -114,6 +119,21 @@ public class InputActionMapRouter : MonoBehaviour
     void ResolvePlayerInput()
     {
         if (playerInput != null) return;
+
+        if (inputManager == null)
+            ServiceLocator.TryGet(out inputManager);
+
+        if (inputManager != null)
+        {
+            playerInput = inputManager.PlayerInput;
+            if (playerInput != null && playerInput.actions != null && actionsAsset == null)
+                actionsAsset = playerInput.actions;
+
+            if (actionsAsset == null)
+                actionsAsset = inputManager.Controls?.asset;
+
+            if (playerInput != null) return;
+        }
 
 #if UNITY_2022_3_OR_NEWER
         playerInput = FindFirstObjectByType<PlayerInput>(FindObjectsInactive.Include);
