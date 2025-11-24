@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Alex.NPC.Common
+namespace Game.NPC.Common
 {
     /// <summary>
     /// Lightweight cache around Animator state hashes/layers so we avoid repeated resolution work.

@@ -1,5 +1,5 @@
 using UnityEngine;
-using Alex.NPC; // NPCBehaviourManager
+using Game.NPC; // NPCBehaviourManager
 
 public class WorldBootstrap : MonoBehaviour
 {

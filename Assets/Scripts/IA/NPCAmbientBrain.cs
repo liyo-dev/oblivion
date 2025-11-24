@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Alex.NPC.Common;
+using Game.NPC.Common;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;

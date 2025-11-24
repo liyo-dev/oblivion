@@ -2,8 +2,8 @@
 using System;
 using System.Collections;
 using System.Linq;
-using Alex.NPC;
-using Alex.NPC.Common;
+using Game.NPC;
+using Game.NPC.Common;
 using UnityEngine;
 using UnityEngine.AI;
 

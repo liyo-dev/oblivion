@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Alex.NPC.Common
+namespace Game.NPC.Common
 {
     /// <summary>
     /// Utility to cache AnimationClip lengths to avoid repeated lookups through the controller.

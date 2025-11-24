@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Alex.NPC.Common;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
+using Game.NPC.Common;
 
-namespace Alex.NPC
+namespace Game.NPC
 {
     /// <summary>
     /// Gestor centralizado que orquesta el comportamiento de cada NPC. Se apoya en módulos serializados

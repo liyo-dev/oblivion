@@ -1,5 +1,5 @@
 using System.Collections;
-using Alex.NPC.Common;
+using Game.NPC.Common;
 using UnityEngine;
 using UnityEngine.AI;
 

@@ -1,4 +1,4 @@
-using Alex.NPC;
+using Game.NPC;
 using UnityEngine;
 using UnityEngine.Events;
 
