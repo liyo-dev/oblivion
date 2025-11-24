@@ -11,6 +11,9 @@ using UnityEngine.InputSystem;
 public class PauseMenuController : MonoBehaviour
 {
     private static PauseMenuController _instance;
+#if ENABLE_INPUT_SYSTEM
+    private static InputAction _globalPauseListener;
+#endif
 
     // Asegura que si hay un PauseMenuController en la escena inicial, persista entre escenas.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -40,6 +43,10 @@ public class PauseMenuController : MonoBehaviour
                 var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
                 UnityEngine.Object.DontDestroyOnLoad(es);
             }
+
+#if ENABLE_INPUT_SYSTEM
+            EnsureGlobalPauseListener();
+#endif
         }
         catch (System.Exception ex)
         {
@@ -94,6 +101,7 @@ public class PauseMenuController : MonoBehaviour
     public bool inputDebug = false;
 
     bool _pauseRequestPending; // consolidar triggers de pausa en Update
+    float _lastPauseInputTime;
 
     void Awake()
     {
@@ -238,7 +246,7 @@ public class PauseMenuController : MonoBehaviour
         if (this == null) return;
         try
         {
-            _pauseRequestPending = true;
+            RequestPauseToggle();
         }
         catch (MissingReferenceException)
         {
@@ -405,14 +413,8 @@ public class PauseMenuController : MonoBehaviour
     {
         if (_pauseRequestPending || WasPausePressedThisFrame())
         {
-            _pauseRequestPending = false;
-
-            // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
-            if (_isPaused || GameState.CanOpenPause)
-            {
-                TogglePause();
-                return;
-            }
+            ProcessPauseRequest();
+            return;
         }
 
         // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
@@ -571,6 +573,73 @@ public class PauseMenuController : MonoBehaviour
         _navCooldown = navRepeatDelay;
         return true;
     }
+
+    void RequestPauseToggle()
+    {
+        if (ShouldThrottlePauseInput()) return;
+
+        _pauseRequestPending = true;
+
+        // Si el objeto está inactivo, Update no se ejecutará, así que procesar ya.
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            ProcessPauseRequest();
+    }
+
+    void ProcessPauseRequest()
+    {
+        _pauseRequestPending = false;
+
+        // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
+        if (_isPaused || GameState.CanOpenPause)
+        {
+            TogglePause();
+        }
+    }
+
+    bool ShouldThrottlePauseInput()
+    {
+        // Evitar doble toggle en el mismo frame por callbacks múltiples (InputAction + polling)
+        if (Time.unscaledTime - _lastPauseInputTime < 0.05f)
+            return true;
+
+        _lastPauseInputTime = Time.unscaledTime;
+        return false;
+    }
+
+#if ENABLE_INPUT_SYSTEM
+    static void EnsureGlobalPauseListener()
+    {
+        if (_globalPauseListener != null) return;
+
+        _globalPauseListener = new InputAction("GlobalPause", InputActionType.Button);
+        _globalPauseListener.AddBinding("<Gamepad>/start");
+        _globalPauseListener.AddBinding("<Keyboard>/escape");
+        _globalPauseListener.AddBinding("<Keyboard>/backspace");
+        _globalPauseListener.performed += OnGlobalPausePerformed;
+        try { _globalPauseListener.Enable(); }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[PauseMenu] No se pudo habilitar el listener global de pausa: {ex.Message}");
+        }
+    }
+
+    static void OnGlobalPausePerformed(InputAction.CallbackContext ctx)
+    {
+        // Resolver instancia si aún no se asignó (p.ej. el GO sigue inactivo)
+        if (_instance == null)
+        {
+#if UNITY_2022_3_OR_NEWER
+            _instance = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            _instance = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
+#pragma warning restore 618
+#endif
+        }
+
+        _instance?.RequestPauseToggle();
+    }
+#endif
 
     public void OnOptions()
     {

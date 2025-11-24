@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 [RequireComponent(typeof(Collider))]
 public class SavePoint : MonoBehaviour
@@ -8,6 +9,10 @@ public class SavePoint : MonoBehaviour
     public bool healOnSave = true;
     public bool teleportAfterSave;
     public string teleportAnchorId;
+
+    [Header("Feedback")]
+    [SerializeField] private string saveSuccessLocalizationKey = "SAVEPOINT_SAVED";
+    [SerializeField] private string saveSuccessFallback = "¡Partida guardada con éxito!";
 
     CanvasGroup _promptCg;
     GameObject _playerInRange; // cache del jugador dentro del trigger
@@ -147,6 +152,7 @@ public class SavePoint : MonoBehaviour
             {
                 Debug.Log("[SavePoint] Partida guardada correctamente");
                 OnSaveCompleted?.Invoke();
+                ShowSaveSuccessFeedback();
             }
             else
             {
@@ -180,4 +186,40 @@ public class SavePoint : MonoBehaviour
 
     // Evento opcional para notificar cuando la partida se guarda correctamente
     public event System.Action OnSaveCompleted;
+
+    void ShowSaveSuccessFeedback()
+    {
+        string message = saveSuccessFallback;
+        if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(saveSuccessLocalizationKey))
+            message = LocalizationManager.Instance.Get(saveSuccessLocalizationKey, saveSuccessFallback);
+
+        StartCoroutine(ShowSaveFeedbackNextFrame(message));
+    }
+
+    IEnumerator ShowSaveFeedbackNextFrame(string message)
+    {
+        // Esperar un frame para permitir que los follow-ups de diálogo se activen primero
+        yield return null;
+
+        // Evitar apilar mensajes si ya hay un diálogo activo mostrando el seguimiento del guardado
+        if (DialogueManager.Instance != null && !DialogueManager.Instance.IsOpen)
+        {
+            var temp = ScriptableObject.CreateInstance<DialogueAsset>();
+            temp.lines = new[]
+            {
+                new DialogueLine
+                {
+                    speakerNameId = string.Empty,
+                    textId = null,
+                    text = message,
+                    portrait = null
+                }
+            };
+            DialogueManager.Instance.StartDialogue(temp, () => Destroy(temp));
+        }
+        else
+        {
+            Debug.Log(message);
+        }
+    }
 }

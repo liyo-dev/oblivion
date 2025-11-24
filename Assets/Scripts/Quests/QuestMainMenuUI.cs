@@ -20,6 +20,16 @@ public class QuestMainMenuUI : MonoBehaviour
     private bool _bound;
     private Tween _currentTween;
 
+    public bool IsOpen
+    {
+        get
+        {
+            if (panelGroup != null)
+                return panelGroup.gameObject.activeSelf && panelGroup.alpha > 0.001f && panelGroup.blocksRaycasts;
+            return panelRoot != null && panelRoot.activeSelf;
+        }
+    }
+
     void OnEnable()
     {
         Bind();

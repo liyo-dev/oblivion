@@ -316,7 +316,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (_isOpen)
         {
-            CloseMenu();
+            // D-Pad abajo solo abre el menú; el cierre se hace con B o Start.
+            return;
         }
         else
         {

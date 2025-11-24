@@ -27,9 +27,6 @@ public class QuestLogListUI : MonoBehaviour
     QuestManager _qm;               // cache del manager suscrito
     Coroutine _waitCo;
     private bool _isPanelVisible = false; // Estado del panel (oculto por defecto)
-    private float _holdTimer;
-    private bool _holding;
-    private bool _mainMenuTriggered;
     private Tween _panelTween;
     private Vector2 _shownPos;
     private Vector2 _hiddenPos;
@@ -68,36 +65,47 @@ public class QuestLogListUI : MonoBehaviour
             return;
         }
 
-        // Control con D-pad arriba SOLAMENTE (no joystick izquierdo)
         bool dpadUpPressed = DetectDpadUpPressed();
-        bool dpadUpHeld = DetectDpadUpHeld();
+        bool cancelPressed = DetectCancelPressed();
+
+        if (cancelPressed)
+        {
+            bool closedAny = false;
+            if (mainMenu != null && mainMenu.IsOpen)
+            {
+                mainMenu.HideMenu();
+                closedAny = true;
+            }
+            if (_isPanelVisible)
+            {
+                ShowPanel(false);
+                closedAny = true;
+            }
+
+            if (closedAny) return;
+        }
 
         if (dpadUpPressed)
         {
-            _holding = true;
-            _holdTimer = 0f;
-            _mainMenuTriggered = false;
-        }
-
-        if (_holding)
-        {
-            _holdTimer += Time.unscaledDeltaTime;
-            if (_holdTimer >= 0.65f && !_mainMenuTriggered && _isPanelVisible)
+            if (_isPanelVisible)
             {
-                _mainMenuTriggered = true;
-                mainMenu?.ShowMenu();
-            }
-
-            if (!dpadUpHeld)
-            {
-                if (!_mainMenuTriggered)
+                if (mainMenu != null)
+                {
+                    if (mainMenu.IsOpen)
+                        mainMenu.HideMenu();
+                    else
+                        mainMenu.ShowMenu();
+                }
+                else
                 {
                     TogglePanel();
                 }
-                _holding = false;
-                _holdTimer = 0f;
-                _mainMenuTriggered = false;
             }
+            else
+            {
+                ShowPanel(true);
+            }
+            RestartAutoHide();
         }
         else
         {
@@ -201,22 +209,22 @@ public class QuestLogListUI : MonoBehaviour
         return dpadUpPressed;
     }
 
-    bool DetectDpadUpHeld()
+    bool DetectCancelPressed()
     {
 #if ENABLE_INPUT_SYSTEM
-        if (UnityEngine.InputSystem.Gamepad.current != null)
-        {
-            if (UnityEngine.InputSystem.Gamepad.current.dpad.up.isPressed) return true;
-        }
+        var gp = UnityEngine.InputSystem.Gamepad.current;
+        if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
+            return true;
+
+        var kb = UnityEngine.InputSystem.Keyboard.current;
+        if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+            return true;
 #endif
 
-        try { if (Input.GetButton("DPadUp")) return true; } catch { }
-        if (Input.GetKey(KeyCode.UpArrow)) return true;
-
-        float dpadVertical = 0f;
-        try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
-        _lastFrameDpadUp = dpadVertical > 0.5f;
-        return _lastFrameDpadUp;
+        return Input.GetKeyDown(KeyCode.Escape)
+            || Input.GetKeyDown(KeyCode.Backspace)
+            || Input.GetKeyDown(KeyCode.JoystickButton1)
+            || Input.GetKeyDown(KeyCode.JoystickButton7);
     }
 
     public void TogglePanel()
@@ -236,8 +244,11 @@ public class QuestLogListUI : MonoBehaviour
 
     public void ShowPanel(bool show)
     {
-        if (!GameState.CanOpenInventory) return;
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
+        if (show)
+        {
+            if (!GameState.CanOpenInventory) return;
+            if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
+        }
 
         _isPanelVisible = show;
         
@@ -285,6 +296,8 @@ public class QuestLogListUI : MonoBehaviour
                 .OnComplete(() => { if (scrollView) scrollView.SetActive(false); });
         }
         if (_autoHideCo != null) { StopCoroutine(_autoHideCo); _autoHideCo = null; }
+        if (mainMenu != null && mainMenu.IsOpen)
+            mainMenu.HideMenu();
     }
 
     void RestartAutoHide()

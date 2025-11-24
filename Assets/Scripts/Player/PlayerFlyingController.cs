@@ -61,6 +61,11 @@ public class PlayerFlyingController : MonoBehaviour
     private bool _controllerWasEnabled = true;
     private bool _animRootMotionPrev;
     private float _prevFlightLayerWeight = -1f;
+    private int _isFlyingHash = -1;
+    private bool _pendingEnterFlight = false;
+    private bool _flightArmed = false;
+    private float _flightArmedExpires = -1f;
+    [SerializeField] private float flightArmedDuration = 2f;
 
     [Header("FX Vuelo")]
     [SerializeField] private Transform vfxAttach;
@@ -92,6 +97,13 @@ public class PlayerFlyingController : MonoBehaviour
 
         // Try to auto-detect the animator layer that contains the flight states
         DetectFlightLayer();
+
+        // cache isFlying parameter hash if present
+        if (_animator != null)
+        {
+            try { _isFlyingHash = Animator.StringToHash("isFlying"); }
+            catch { _isFlyingHash = -1; }
+        }
     }
 
     private void DetectFlightLayer()
@@ -172,6 +184,24 @@ public class PlayerFlyingController : MonoBehaviour
             CacheCameraTransform();
             UpdateFlightAnimation();
         }
+
+        // If user pressed jump twice but second press happened while still considered grounded,
+        // wait until the player is airborne then auto-enter flight.
+        if (!_isFlying && _pendingEnterFlight)
+        {
+            if (debugLogs) Debug.Log($"[PlayerFlyingController] Pending check now={Time.time:F2} flightArmUntil={_flightArmUntil:F2} IsGrounded={IsGrounded()} CanEnter={CanEnterFlight()}");
+            // clear pending if window expired
+            if (_flightArmUntil > 0f && Time.time > _flightArmUntil)
+            {
+                _pendingEnterFlight = false;
+            }
+            else if (CanEnterFlight() && !IsGrounded())
+            {
+                EnterFlight();
+                _pendingEnterFlight = false;
+                _flightArmUntil = -1f;
+            }
+        }
     }
 
     void FixedUpdate()
@@ -195,18 +225,53 @@ public class PlayerFlyingController : MonoBehaviour
             return;
         }
 
-        if (!CanEnterFlight())
-            return;
-
-        float now = Time.time;
-        if (now <= _flightArmUntil)
+        // If player presses Jump while already airborne, enter flight immediately.
+        // This covers the common case: jump from ground, then press jump again in air.
+        if (!IsGrounded())
         {
-            EnterFlight();
-            _flightArmUntil = -1f;
+            if (CanEnterFlight())
+            {
+                if (debugLogs) Debug.Log("[PlayerFlyingController] Jump performed while airborne -> EnterFlight immediate.");
+                EnterFlight();
+                return;
+            }
+        }
+
+        // Arm or attempt to enter flight. We allow the first press (from ground) to arm
+        // and the second press while airborne to actually enter flight.
+        float now = Time.time;
+        if (debugLogs) Debug.Log($"[PlayerFlyingController] OnJumpPerformed now={now:F2} flightArmUntil={_flightArmUntil:F2} isGrounded={IsGrounded()} pending={_pendingEnterFlight} armed={_flightArmed}");
+
+        bool inDoubleTapWindow = now <= _flightArmUntil;
+        bool armedAndAirborne = _flightArmed && !IsGrounded() && now <= _flightArmedExpires;
+
+        if (inDoubleTapWindow || armedAndAirborne)
+        {
+            // Second press within window or armed-and-now-airborne -> try to enter flight now.
+            if (CanEnterFlight())
+            {
+                EnterFlight();
+                _flightArmUntil = -1f;
+                _pendingEnterFlight = false;
+                _flightArmed = false;
+            }
+            else
+            {
+                // Not ready yet (likely still considered grounded). Mark pending so that
+                // when the player becomes airborne we enter flight automatically.
+                _pendingEnterFlight = true;
+                _flightArmUntil = now + doubleTapWindow; // extend window while pending
+                if (debugLogs) Debug.Log($"[PlayerFlyingController] Second jump but can't enter yet. Marked pending. new flightArmUntil={_flightArmUntil:F2}");
+            }
         }
         else
         {
+            // First press (or outside window): arm the flight trigger.
             _flightArmUntil = now + doubleTapWindow;
+            _pendingEnterFlight = false;
+            _flightArmed = true;
+            _flightArmedExpires = now + flightArmedDuration;
+            if (debugLogs) Debug.Log($"[PlayerFlyingController] First jump pressed - armed flight (expires {_flightArmedExpires:F2}) and window until {_flightArmUntil:F2}");
         }
     }
 
@@ -283,6 +348,13 @@ public class PlayerFlyingController : MonoBehaviour
             }
         }
 
+        // set animator flag
+        if (_animator != null && _isFlyingHash != -1)
+        {
+            try { _animator.SetBool(_isFlyingHash, true); }
+            catch { }
+        }
+
         if (debugLogs)
             Debug.Log("[PlayerFlyingController] Enter Flight");
     }
@@ -336,6 +408,13 @@ public class PlayerFlyingController : MonoBehaviour
             catch { }
             _prevFlightLayerWeight = -1f;
         }
+
+        // clear animator flag
+        if (_animator != null && _isFlyingHash != -1)
+        {
+            try { _animator.SetBool(_isFlyingHash, false); }
+            catch { }
+        }
     }
 
     private void ApplyFlightMovement()
@@ -386,6 +465,15 @@ public class PlayerFlyingController : MonoBehaviour
 
         float verticalVel = _rigidbody != null ? _rigidbody.linearVelocity.y : 0f;
         bool diving = verticalVel < -0.5f || _jumpHeld;
+        // Consider joystick (left stick) movement as input to switch to dive state.
+        bool stickMoved = _moveInput.sqrMagnitude > 0.01f; // small deadzone
+
+        if (stickMoved)
+        {
+            PlayFlightState(flyDiveState);
+            return;
+        }
+
         bool moving = _currentPlanarSpeed > 0.5f;
 
         if (diving)
