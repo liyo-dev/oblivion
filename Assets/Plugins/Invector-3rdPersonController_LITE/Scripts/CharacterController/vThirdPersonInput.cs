@@ -19,7 +19,10 @@ namespace Invector.vCharacterController
         private InputAction attackMagicNorthAction;  // Y  -> especial
 
         [SerializeField] private PlayerInputManager inputManager;
-        [SerializeField] private PlayerActionManager actionManager;
+        [SerializeField, Tooltip("Optional reference that implements IActionValidator (e.g. PlayerActionManager)")]
+        private MonoBehaviour actionValidatorSource;
+
+        private IActionValidator actionValidator;
 
         [HideInInspector] public vThirdPersonController cc;
         [HideInInspector] public vThirdPersonCamera tpCamera;
@@ -43,11 +46,19 @@ namespace Invector.vCharacterController
             if (inputManager == null)
                 ServiceLocator.TryGet(out inputManager);
 
-            if (actionManager == null)
+            if (actionValidator == null)
             {
-                actionManager = GetComponent<PlayerActionManager>();
-                if (actionManager == null)
-                    ServiceLocator.TryGet(out actionManager);
+                if (actionValidatorSource != null)
+                    actionValidator = actionValidatorSource as IActionValidator;
+
+                if (actionValidator == null)
+                    actionValidator = GetComponent<IActionValidator>();
+
+                if (actionValidator == null && inputManager != null)
+                    actionValidator = inputManager.GetComponent<IActionValidator>();
+
+                if (actionValidator == null)
+                    ServiceLocator.TryGet(out actionValidator);
             }
         }
 
@@ -148,13 +159,13 @@ namespace Invector.vCharacterController
         private void OnMoveInput(InputAction.CallbackContext context)   => moveInput = context.ReadValue<Vector2>();
         private void OnJumpInput(InputAction.CallbackContext context)
         {
-            if (context.performed && CanUse(PlayerAbility.Jump))
+            if (context.performed && CanJump())
                 jumpPressed = true;
         }
 
         private void OnSprintInput(InputAction.CallbackContext context)
         {
-            if (!CanUse(PlayerAbility.Sprint))
+            if (!CanSprint())
             {
                 sprintHeld = false;
                 return;
@@ -273,28 +284,37 @@ namespace Invector.vCharacterController
             }
         }
 
-        private bool CanUse(PlayerAbility ability)
+        private IActionValidator GetValidator()
         {
-            var validator = (IActionValidator)actionManager ?? inputManager?.ActionManager;
-            return validator == null || validator.CanUse(ability);
+            if (actionValidator != null)
+                return actionValidator;
+
+            if (inputManager != null)
+                actionValidator = inputManager.GetComponent<IActionValidator>();
+
+            return actionValidator;
         }
+
+        private bool CanJump()   => GetValidator()?.CanJump() ?? true;
+        private bool CanSprint() => GetValidator()?.CanSprint() ?? true;
+        private bool CanMagic()  => GetValidator()?.CanCastMagic() ?? true;
 
         // Named callbacks for magic inputs so they can be unsubscribed reliably
         private void OnAttackMagicWestStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
-            if (!CanUse(PlayerAbility.Magic)) return;
+            if (!CanMagic()) return;
             if (cc != null) cc.CastMagicLeft();
         }
 
         private void OnAttackMagicEastStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
-            if (!CanUse(PlayerAbility.Magic)) return;
+            if (!CanMagic()) return;
             if (cc != null) cc.CastMagicRight();
         }
 
         private void OnAttackMagicNorthStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
         {
-            if (!CanUse(PlayerAbility.Magic)) return;
+            if (!CanMagic()) return;
             if (cc != null) cc.CastMagicSpecial();
         }
     }
