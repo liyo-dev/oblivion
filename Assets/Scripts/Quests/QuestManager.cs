@@ -13,6 +13,9 @@ public class QuestManager : MonoBehaviour
     // runtime: questId -> RuntimeQuest
     private readonly Dictionary<string, RuntimeQuest> _runtime = new(64);
 
+    // visibilidad/seguimiento por quest
+    private readonly Dictionary<string, QuestVisibility> _visibility = new(StringComparer.Ordinal);
+
     // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
     private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
 
@@ -21,6 +24,7 @@ public class QuestManager : MonoBehaviour
     public event Action<string> OnQuestCompleted;
     public event Action<string, int> OnStepCompleted;
     public event Action OnQuestsChanged;
+    public event Action<string, QuestVisibility> OnQuestVisibilityChanged;
 
     #region Unity
     void Awake()
@@ -39,12 +43,33 @@ public class QuestManager : MonoBehaviour
 
     public IEnumerable<RuntimeQuest> GetAll() => _runtime.Values;
 
+    public QuestVisibility GetVisibility(string questId)
+    {
+        if (string.IsNullOrEmpty(questId)) return QuestVisibility.Visible;
+        if (_visibility.TryGetValue(questId, out var v)) return v;
+        return QuestVisibility.Visible;
+    }
+
+    public void SetVisibility(string questId, QuestVisibility state)
+    {
+        if (string.IsNullOrEmpty(questId)) return;
+        if (!_runtime.ContainsKey(questId)) return;
+
+        var current = GetVisibility(questId);
+        if (current == state) return;
+
+        _visibility[questId] = state;
+        OnQuestVisibilityChanged?.Invoke(questId, state);
+        OnQuestsChanged?.Invoke();
+    }
+
     public void AddQuest(QuestData data)
     {
         if (!data || string.IsNullOrEmpty(data.questId) || _runtime.ContainsKey(data.questId)) return;
 
         var rq = new RuntimeQuest(data);
         _runtime[data.questId] = rq;
+        _visibility[data.questId] = QuestVisibility.Visible;
         IndexQuestConditions(rq);
         OnQuestsChanged?.Invoke();
     }
@@ -58,6 +83,7 @@ public class QuestManager : MonoBehaviour
 
             rq = new RuntimeQuest(data);
             _runtime[questId] = rq;
+            _visibility[questId] = QuestVisibility.Visible;
             IndexQuestConditions(rq);
         }
 
@@ -312,6 +338,7 @@ public class QuestManager : MonoBehaviour
     {
         _runtime.Clear();
         _conditionIndex.Clear();
+        _visibility.Clear();
         OnQuestsChanged?.Invoke();
     }
 }
