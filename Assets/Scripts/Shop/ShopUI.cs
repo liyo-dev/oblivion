@@ -48,6 +48,8 @@ public class ShopUI : MonoBehaviour
     [Tooltip("When the shop opens, ignore player input (submit/cancel/navigation) for this many seconds to avoid the 'close dialogue' button press from affecting the shop.")]
     [SerializeField, Min(0f)] private float openIgnoreInputDuration = 0.15f;
 
+    private const float MIN_OPEN_INPUT_BLOCK = 0.25f;
+
     private List<ShopItemCard> _itemCards = new();
     private ShopController.ShopItemEntry _selectedEntry;
     private int _selectedIndex = -1;
@@ -300,7 +302,8 @@ public class ShopUI : MonoBehaviour
         ClearSelection();
 
         // Ignore input for a short moment so the button used to close dialogue doesn't propagate into the shop UI.
-        _ignoreInputUntil = Time.unscaledTime + openIgnoreInputDuration;
+        float ignoreDuration = Mathf.Max(openIgnoreInputDuration, MIN_OPEN_INPUT_BLOCK);
+        _ignoreInputUntil = Time.unscaledTime + ignoreDuration;
 
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
