@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Linq;
 using UnityEngine.UI;
 
 public class SettingsMenuController : MonoBehaviour
@@ -8,7 +9,6 @@ public class SettingsMenuController : MonoBehaviour
     [Header("Root")]
     [SerializeField] private GameObject root;
     [SerializeField] private Selectable firstSelection;
-    [SerializeField] private Button backButton;
 
     [Header("Language")]
     [SerializeField] private Button spanishButton;
@@ -25,12 +25,15 @@ public class SettingsMenuController : MonoBehaviour
     [SerializeField] private Slider lookSensitivitySlider;
 
     [Header("Accesibilidad / General")]
-    [SerializeField] private Toggle subtitlesToggle;
     [SerializeField] private Toggle vibrationToggle;
     [SerializeField] private Toggle fullscreenToggle;
 
     private Action _onClosed;
     private EventSystem _eventSystem;
+
+    [Header("Visuals")]
+    [Tooltip("Auto-add UISelectVisual to selectables under this root to show navigation feedback.")]
+    [SerializeField] private bool autoAddSelectVisuals = true;
 
     [Header("Navigation")]
     [Min(0f)] public float navRepeatDelay = 0.15f;
@@ -46,8 +49,7 @@ public class SettingsMenuController : MonoBehaviour
 
         _eventSystem = EventSystem.current;
 
-        if (backButton)
-            backButton.onClick.AddListener(Close);
+        // In this menu we use the shared cancel/input mapping (B) instead of a dedicated back button.
 
         if (spanishButton)
             spanishButton.onClick.AddListener(() => SetLanguage("es"));
@@ -67,14 +69,33 @@ public class SettingsMenuController : MonoBehaviour
             invertFlightToggle.onValueChanged.AddListener(PlayerSettings.SetInvertFlightLook);
         if (lookSensitivitySlider)
             lookSensitivitySlider.onValueChanged.AddListener(PlayerSettings.SetLookSensitivity);
-        if (subtitlesToggle)
-            subtitlesToggle.onValueChanged.AddListener(PlayerSettings.SetSubtitles);
         if (vibrationToggle)
             vibrationToggle.onValueChanged.AddListener(PlayerSettings.SetVibration);
         if (fullscreenToggle)
             fullscreenToggle.onValueChanged.AddListener(PlayerSettings.SetFullscreen);
 
         RefreshUI();
+
+        // Ensure select visuals exist on selectable controls so navigation shows DOTween highlight/pulse
+        if (autoAddSelectVisuals && root != null)
+        {
+            var selects = root.GetComponentsInChildren<Selectable>(true);
+            foreach (var s in selects)
+            {
+                if (s == null) continue;
+                var go = s.gameObject;
+                if (!go.GetComponent<UISelectVisual>())
+                {
+                    var v = go.AddComponent<UISelectVisual>();
+                    v.normalColor = Color.white;
+                    v.highlightColor = new Color(0.95f, 0.9f, 0.7f);
+                    v.selectedScale = 1.06f;
+                    v.animDuration = 0.12f;
+                    v.enablePulse = true;
+                    v.enableShadowPunch = true;
+                }
+            }
+        }
     }
 
     void OnEnable()
@@ -128,6 +149,7 @@ public class SettingsMenuController : MonoBehaviour
             if (_navHeldSign != sign)
             {
                 _navHeldSign = sign;
+                // Use spatial navigation to pick the most sensible selectable
                 if (sign > 0) MoveSelection(Vector2.up);
                 else MoveSelection(Vector2.down);
                 _navCooldown = navRepeatDelay;
@@ -149,12 +171,21 @@ public class SettingsMenuController : MonoBehaviour
             var go = es?.currentSelectedGameObject;
             if (go != null)
             {
-                var sel = go.GetComponent<UnityEngine.UI.Button>();
-                if (sel != null) sel.onClick.Invoke();
+                var btn = go.GetComponent<UnityEngine.UI.Button>();
+                if (btn != null) btn.onClick.Invoke();
                 else
                 {
-                    // try to execute submit handler
-                    ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
+                    var tog = go.GetComponent<UnityEngine.UI.Toggle>();
+                    if (tog != null)
+                    {
+                        tog.isOn = !tog.isOn;
+                        tog.onValueChanged?.Invoke(tog.isOn);
+                    }
+                    else
+                    {
+                        // try to execute submit handler
+                        ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
+                    }
                 }
             }
         }
@@ -163,34 +194,71 @@ public class SettingsMenuController : MonoBehaviour
     void MoveSelection(Vector2 dir)
     {
         var es = EventSystem.current;
-        if (es == null) return;
-        var current = es.currentSelectedGameObject;
-        var sel = current ? current.GetComponent<Selectable>() : null;
-        Selectable next = null;
-        if (sel == null)
+        if (es == null || root == null) return;
+
+        var all = root.GetComponentsInChildren<Selectable>(true)
+            .Where(s => s != null && s.IsActive() && s.interactable)
+            .ToArray();
+
+        if (all == null || all.Length == 0) return;
+
+        var currentGO = es.currentSelectedGameObject;
+        // If nothing selected, pick top-most (highest Y)
+        if (currentGO == null)
         {
-            // pick first selectable in this root
-            var all = root.GetComponentsInChildren<Selectable>(true);
-            if (all != null && all.Length > 0) next = all[0];
-        }
-        else
-        {
-            if (dir == Vector2.up) next = sel.FindSelectableOnUp();
-            else if (dir == Vector2.down) next = sel.FindSelectableOnDown();
+            var top = all.OrderByDescending(s => RectTransformUtility.WorldToScreenPoint(null, s.transform.position).y).FirstOrDefault();
+            if (top != null)
+            {
+                es.SetSelectedGameObject(top.gameObject);
+                top.Select();
+            }
+            return;
         }
 
-        if (next != null)
+        var sel = currentGO.GetComponent<Selectable>();
+        Vector2 curPos = RectTransformUtility.WorldToScreenPoint(null, currentGO.transform.position);
+
+        bool moveUp = dir == Vector2.up;
+
+        // Candidates in desired vertical direction
+        var candidates = all.Where(s =>
         {
-            es.SetSelectedGameObject(next.gameObject);
-            next.Select();
+            var p = RectTransformUtility.WorldToScreenPoint(null, s.transform.position);
+            return moveUp ? p.y > curPos.y + 2f : p.y < curPos.y - 2f;
+        }).ToArray();
+
+        if (candidates.Length == 0)
+        {
+            // no candidate in that direction: do nothing
+            return;
+        }
+
+        // Choose closest by vertical distance, then horizontal distance
+        Selectable best = null;
+        float bestScore = float.MaxValue;
+        foreach (var c in candidates)
+        {
+            var p = RectTransformUtility.WorldToScreenPoint(null, c.transform.position);
+            float dy = Mathf.Abs(p.y - curPos.y);
+            float dx = Mathf.Abs(p.x - curPos.x);
+            float score = dy * 1000f + dx; // prioritize vertical closeness
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = c;
+            }
+        }
+
+        if (best != null)
+        {
+            es.SetSelectedGameObject(best.gameObject);
+            best.Select();
         }
     }
 
     void OnDestroy()
     {
-        if (backButton)
-            backButton.onClick.RemoveListener(Close);
-
+        // no dedicated backButton listener to remove (uses shared cancel mapping)
         if (spanishButton)
             spanishButton.onClick.RemoveAllListeners();
         if (englishButton)
@@ -209,8 +277,6 @@ public class SettingsMenuController : MonoBehaviour
             invertFlightToggle.onValueChanged.RemoveAllListeners();
         if (lookSensitivitySlider)
             lookSensitivitySlider.onValueChanged.RemoveAllListeners();
-        if (subtitlesToggle)
-            subtitlesToggle.onValueChanged.RemoveAllListeners();
         if (vibrationToggle)
             vibrationToggle.onValueChanged.RemoveAllListeners();
         if (fullscreenToggle)
@@ -279,8 +345,6 @@ public class SettingsMenuController : MonoBehaviour
             invertFlightToggle.SetIsOnWithoutNotify(PlayerSettings.InvertFlightLook);
         if (lookSensitivitySlider)
             lookSensitivitySlider.SetValueWithoutNotify(PlayerSettings.LookSensitivity);
-        if (subtitlesToggle)
-            subtitlesToggle.SetIsOnWithoutNotify(PlayerSettings.Subtitles);
         if (vibrationToggle)
             vibrationToggle.SetIsOnWithoutNotify(PlayerSettings.Vibration);
         if (fullscreenToggle)
