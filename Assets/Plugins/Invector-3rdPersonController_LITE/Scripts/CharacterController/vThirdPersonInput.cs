@@ -18,7 +18,7 @@ namespace Invector.vCharacterController
         private InputAction attackMagicEastAction;   // B  -> derecha
         private InputAction attackMagicNorthAction;  // Y  -> especial
 
-        [SerializeField] private PlayerInputManager inputManager;
+        [SerializeField] private global::PlayerInputManager inputManager;
         [SerializeField, Tooltip("Optional reference that implements IActionValidator (e.g. PlayerActionManager)")]
         private MonoBehaviour actionValidatorSource;
 
@@ -44,7 +44,7 @@ namespace Invector.vCharacterController
         private void ResolveServices()
         {
             if (inputManager == null)
-                ServiceLocator.TryGet(out inputManager);
+                global::ServiceLocator.TryGet(out inputManager);
 
             if (actionValidator == null)
             {
@@ -58,7 +58,7 @@ namespace Invector.vCharacterController
                     actionValidator = inputManager.GetComponent<IActionValidator>();
 
                 if (actionValidator == null)
-                    ServiceLocator.TryGet(out actionValidator);
+                    global::ServiceLocator.TryGet(out actionValidator);
             }
         }
 
