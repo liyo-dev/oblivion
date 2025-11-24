@@ -93,6 +93,23 @@ public class MainMenuController : MonoBehaviour
         WireButton(continueButton, OnClickContinue, "CONTINUE");
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
         WireButton(settingsButton, OnClickSettings, "SETTINGS");
+
+        // Ensure UISelectVisual exists on main menu buttons so selection visuals (highlight/pulse) work.
+        var menuButtons = GetComponentsInChildren<Button>(true);
+        foreach (var b in menuButtons)
+        {
+            if (b == null) continue;
+            if (!b.GetComponent<UISelectVisual>())
+            {
+                var v = b.gameObject.AddComponent<UISelectVisual>();
+                v.normalColor = Color.white;
+                v.highlightColor = new Color(0.95f, 0.9f, 0.7f);
+                v.selectedScale = 1.08f;
+                v.animDuration = 0.12f;
+                v.enablePulse = true;
+                v.enableShadowPunch = true;
+            }
+        }
     }
 
     void OnEnable()
@@ -306,6 +323,13 @@ public class MainMenuController : MonoBehaviour
         if (!settingsMenu)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
+        // Fallback: search the whole scene (including inactive) if not found as child
+        if (!settingsMenu)
+        {
+            settingsMenu = UnityEngine.Object.FindObjectOfType<SettingsMenuController>(includeInactive: true);
+            Debug.Log($"[MainMenu] OnClickSettings fallback FindObjectOfType -> {(settingsMenu != null ? settingsMenu.name : "<null>")}");
+        }
+
         if (settingsMenu != null)
         {
             var es = EventSystem.current;
@@ -318,7 +342,7 @@ public class MainMenuController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MainMenu] No se encontró SettingsMenuController en la jerarquía.");
+            Debug.LogWarning("[MainMenu] No se encontró SettingsMenuController en la jerarquía ni en la escena.");
         }
     }
 
