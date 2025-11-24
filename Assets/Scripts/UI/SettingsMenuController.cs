@@ -3,6 +3,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -41,6 +44,8 @@ public class SettingsMenuController : MonoBehaviour
     private float _navCooldown;
     private int _navHeldSign; // -1,0,1
     public bool enableManualNavigation = true; // enable fallback navigation polling
+
+    public bool IsVisible => root != null && root.activeInHierarchy;
 
     void Awake()
     {
@@ -107,6 +112,12 @@ public class SettingsMenuController : MonoBehaviour
     {
         if (!enableManualNavigation) return;
         if (root == null || !root.activeInHierarchy) return;
+
+        if (WasCancelPressedThisFrame())
+        {
+            Close();
+            return;
+        }
 
         // Reduce cooldown timer
         if (_navCooldown > 0f) _navCooldown -= Time.unscaledDeltaTime;
@@ -368,5 +379,27 @@ public class SettingsMenuController : MonoBehaviour
         var target = initialSelection != null ? initialSelection : firstSelection ? firstSelection.gameObject : null;
         if (_eventSystem != null && target != null)
             _eventSystem.SetSelectedGameObject(target);
+    }
+
+    bool WasCancelPressedThisFrame()
+    {
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            var gp = Gamepad.current;
+            if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
+                return true;
+
+            var kb = Keyboard.current;
+            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+                return true;
+        }
+        catch { }
+#endif
+
+        return Input.GetKeyDown(KeyCode.Escape)
+            || Input.GetKeyDown(KeyCode.Backspace)
+            || Input.GetKeyDown(KeyCode.JoystickButton1)
+            || Input.GetKeyDown(KeyCode.JoystickButton7);
     }
 }
