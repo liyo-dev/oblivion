@@ -20,6 +20,9 @@ public class PlayerFlyingController : MonoBehaviour
     [SerializeField] private string flyIdleState = "fly_idle";
     [SerializeField] private string flyMoveState = "fly_move";
     [SerializeField] private string flyDiveState = "fly_dive";
+    [SerializeField] private string flyLandingState = "Landing";
+    [SerializeField] private float landingCrossfade = 0.08f;
+    [SerializeField] private float hardLandingSpeed = -6f;
     [SerializeField] private string locomotionStateName = "Free Locomotion";
 
     [Header("Movimiento")]
@@ -65,6 +68,7 @@ public class PlayerFlyingController : MonoBehaviour
     private bool _pendingEnterFlight = false;
     private bool _flightArmed = false;
     private float _flightArmedExpires = -1f;
+    private bool _justEnteredFlight;
     [SerializeField] private float flightArmedDuration = 2f;
 
     [Header("FX Vuelo")]
@@ -181,6 +185,11 @@ public class PlayerFlyingController : MonoBehaviour
     {
         if (_isFlying)
         {
+            if (IsGrounded())
+            {
+                ExitFlight();
+                return;
+            }
             CacheCameraTransform();
             UpdateFlightAnimation();
         }
@@ -296,6 +305,8 @@ public class PlayerFlyingController : MonoBehaviour
         _isFlying = true;
         _flightArmUntil = -1f;
         _isBoosting = false;
+        _justEnteredFlight = true;
+        _jumpHeld = false; // evitar que el primer frame se considere dive por mantener salto
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Flying);
         if (_controller != null)
@@ -372,13 +383,26 @@ public class PlayerFlyingController : MonoBehaviour
         if (wasFlying && _actionManager != null)
             _actionManager.PopMode(ActionMode.Flying);
 
+        float verticalVel = _rigidbody != null ? _rigidbody.linearVelocity.y : 0f;
+        bool hardLanding = verticalVel <= hardLandingSpeed || IsGrounded();
         if (wasFlying && _animator != null)
-            _animator.CrossFade(locomotionStateName, 0.1f, locomotionLayerIndex);
+        {
+            if (hardLanding && HasAnimatorState(flyLandingState))
+                _animator.CrossFade(flyLandingState, landingCrossfade, locomotionLayerIndex);
+            else
+                _animator.CrossFade(locomotionStateName, 0.1f, locomotionLayerIndex);
+        }
         PlayLandingVfx();
         StopFlightVfx();
 
-        if (_rigidbody != null && _gravityStored)
-            _rigidbody.useGravity = _storedUseGravity;
+        if (_rigidbody != null)
+        {
+            var vel = _rigidbody.linearVelocity;
+            vel.y = 0f;
+            _rigidbody.linearVelocity = vel;
+            if (_gravityStored)
+                _rigidbody.useGravity = _storedUseGravity;
+        }
 
         if (_controller != null)
         {
@@ -468,6 +492,13 @@ public class PlayerFlyingController : MonoBehaviour
         // Consider joystick (left stick) movement as input to switch to dive state.
         bool stickMoved = _moveInput.sqrMagnitude > 0.01f; // small deadzone
 
+        if (_justEnteredFlight)
+        {
+            _justEnteredFlight = false;
+            PlayFlightState(flyIdleState);
+            return;
+        }
+
         if (stickMoved)
         {
             PlayFlightState(flyDiveState);
@@ -499,6 +530,18 @@ public class PlayerFlyingController : MonoBehaviour
         if (string.IsNullOrEmpty(stateName) || _animator == null)
             return;
         _animator.Play(stateName, locomotionLayerIndex);
+    }
+
+    private bool HasAnimatorState(string stateName)
+    {
+        if (string.IsNullOrEmpty(stateName) || _animator == null)
+            return false;
+        try
+        {
+            int hash = Animator.StringToHash(stateName);
+            return _animator.HasState(locomotionLayerIndex, hash);
+        }
+        catch { return false; }
     }
 
     private bool IsGrounded()
