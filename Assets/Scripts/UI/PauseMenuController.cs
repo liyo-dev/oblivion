@@ -410,6 +410,19 @@ public class PauseMenuController : MonoBehaviour
     void Update()
     {
         // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
+        if (_isPaused && WasCancelPressedThisFrame())
+        {
+            if (settingsMenu != null && settingsMenu.gameObject.activeInHierarchy)
+            {
+                settingsMenu.Close();
+                EnsureUISelection();
+                return;
+            }
+
+            TogglePause();
+            return;
+        }
+
         if (_navCooldown > 0f)
         {
             _navCooldown -= Time.unscaledDeltaTime;
@@ -495,6 +508,28 @@ public class PauseMenuController : MonoBehaviour
             }
         }
 #endif
+    }
+
+    bool WasCancelPressedThisFrame()
+    {
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            var gp = UnityEngine.InputSystem.Gamepad.current;
+            if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
+                return true;
+
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+                return true;
+        }
+        catch { }
+#endif
+
+        return Input.GetKeyDown(KeyCode.Escape)
+            || Input.GetKeyDown(KeyCode.Backspace)
+            || Input.GetKeyDown(KeyCode.JoystickButton1)
+            || Input.GetKeyDown(KeyCode.JoystickButton7);
     }
 
     bool ConsumeStick(float y)
