@@ -68,6 +68,8 @@ public class MainMenuController : MonoBehaviour
     private bool _armSnapshotRaycasts;
     private bool _armSnapshotContinueInteractable;
     private bool _armSnapshotNewInteractable;
+    private bool _settingsSnapshotRaycasts;
+    private bool _settingsSnapshotInteractable;
 
     void Awake()
     {
@@ -337,8 +339,10 @@ public class MainMenuController : MonoBehaviour
         {
             var es = EventSystem.current;
             var previous = es ? es.currentSelectedGameObject : null;
+            SuspendMainMenuInteraction();
             settingsMenu.Show(null, () =>
             {
+                RestoreMainMenuInteraction();
                 if (es != null && previous != null)
                     es.SetSelectedGameObject(previous);
             });
@@ -512,6 +516,26 @@ public class MainMenuController : MonoBehaviour
             newGameButton.interactable = _armSnapshotNewInteractable;
 
         _armSnapshotValid = false;
+    }
+
+    void SuspendMainMenuInteraction()
+    {
+        if (rootGroup != null)
+        {
+            _settingsSnapshotRaycasts = rootGroup.blocksRaycasts;
+            _settingsSnapshotInteractable = rootGroup.interactable;
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+    }
+
+    void RestoreMainMenuInteraction()
+    {
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = _settingsSnapshotRaycasts;
+            rootGroup.interactable = _settingsSnapshotInteractable;
+        }
     }
 
     System.Collections.IEnumerator ArmMenuAfterDelay(float delay)
