@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 7ff61f087decd4247bf63a36d10f13dd
+timeCreated: 1515371541
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Materials/VFXMeshParticleFloor02DarkMetal.mat
+  uploadId: 753957

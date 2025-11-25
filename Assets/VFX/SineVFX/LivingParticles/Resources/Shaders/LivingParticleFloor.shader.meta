@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2b6cdd1bf15d4914481d23cb528e7327
+timeCreated: 1571225693
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Shaders/LivingParticleFloor.shader
+  uploadId: 753957

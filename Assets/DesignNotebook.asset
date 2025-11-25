@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec039437ea2c63f4fa571092c671014a, type: 3}
   m_Name: DesignNotebook
   m_EditorClassIdentifier: Assembly-CSharp::DesignNotebook
-  highLevelSynopsis: "<b>texto</b><b></b></b>El S<u><color=#FFEB3B><color=#FFEB3B></color></color></u>endero
+  highLevelSynopsis: "</b><b></b></b>El S<u><color=#FFEB3B><color=#FFEB3B></color></color></u>endero
     de las Estrellas: Resumen de la Trama\n\nHace eones, un mago desafi\xF3 a los
     dioses recorriendo el Sendero de las Estrellas, una serie de portales c\xF3smicos
     que ofrec\xEDan poder a quienes superaban sus pruebas. Su deseo final fue convertirse
@@ -155,6 +155,16 @@ MonoBehaviour:
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
   - guid: b0e4e165-b043-4cb3-b452-c4df3447a689
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 21a5dbbd-6b6f-4766-8a5b-d992023b74fa
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 134.40001, y: 65.5}
+  - guid: 3723cf6d-a4d1-4d24-b98e-edcc0bd84daa
     title: Nueva tarjeta
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}

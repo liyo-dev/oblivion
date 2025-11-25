@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 4d88f8877a61e584a85b39d9888a8479
+timeCreated: 1532518831
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/Gamma/LivingParticlesMorph02.prefab
+  uploadId: 753957

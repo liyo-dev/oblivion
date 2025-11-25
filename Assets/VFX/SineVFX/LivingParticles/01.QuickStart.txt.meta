@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 85ce312cfdb6f5f4b88810052d43a30c
+timeCreated: 1576942460
+licenseType: Store
+TextScriptImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/01.QuickStart.txt
+  uploadId: 753957

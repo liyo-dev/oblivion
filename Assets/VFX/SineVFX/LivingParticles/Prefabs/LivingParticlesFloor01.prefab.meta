@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 48947c277d5f6bf42931b4371e5e4ccb
+timeCreated: 1511764503
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/LivingParticlesFloor01.prefab
+  uploadId: 753957

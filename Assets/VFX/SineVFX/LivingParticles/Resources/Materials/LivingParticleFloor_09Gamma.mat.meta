@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 41cbd2520da25d8478e8f227da5eae93
+timeCreated: 1510763176
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Materials/LivingParticleFloor_09Gamma.mat
+  uploadId: 753957
