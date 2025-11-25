@@ -107,8 +107,26 @@ public class InputActionMapRouter : MonoBehaviour
             if (!playerInput.enabled)
                 playerInput.enabled = true;
 
+            // Si el GameObject sigue inactivo no podemos activar el input todavía.
+            if (!playerInput.gameObject.activeInHierarchy)
+            {
+                if (debugLogs)
+                    Debug.LogWarning("[InputActionMapRouter] PlayerInput está inactivo en la jerarquía; se reintentará cuando se active.");
+                return;
+            }
+
             if (!playerInput.inputIsActive)
-                playerInput.ActivateInput();
+            {
+                try
+                {
+                    playerInput.ActivateInput();
+                }
+                catch (System.InvalidOperationException ex)
+                {
+                    Debug.LogWarning($"[InputActionMapRouter] No se pudo activar el input aún: {ex.Message}");
+                    return;
+                }
+            }
 
             playerInput.SwitchCurrentActionMap(targetMap);
         }
