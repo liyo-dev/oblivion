@@ -195,6 +195,31 @@ public class PlayerHUDComplete : MonoBehaviour
                 _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 _canvas.sortingOrder = 1000;
                 _createdCanvas = false; // no lo creamos nosotros ahora
+
+                // Si ya existe un HUD dentro del Canvas, reutilizarlo en lugar de crear uno nuevo
+                var existingRoot = existing.transform.Find("PlayerHUD_Main");
+                if (existingRoot != null)
+                {
+                    _rootPanel = existingRoot.gameObject;
+                    _rootPanel.SetActive(true); // Asegurar que el HUD reutilizado esté visible
+
+                    // Asegurar componentes críticos del Canvas para que el HUD pueda renderizarse
+                    if (existing.GetComponent<CanvasScaler>() == null)
+                    {
+                        var scaler = existing.AddComponent<CanvasScaler>();
+                        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                        scaler.referenceResolution = new Vector2(1920, 1080);
+                    }
+                    if (existing.GetComponent<GraphicRaycaster>() == null)
+                    {
+                        existing.AddComponent<GraphicRaycaster>();
+                    }
+
+                    Canvas.ForceUpdateCanvases();
+                    BindUIElementsFromRoot(_rootPanel);
+                    return;
+                }
+
                 _rootPanel = CreateIntegratedHUD();
                 // Si creamos aquí en runtime, enlazar elementos para uso inmediato
                 BindUIElementsFromRoot(_rootPanel);
@@ -232,8 +257,10 @@ public class PlayerHUDComplete : MonoBehaviour
              _createdCanvas = true;
          }
 
-         _rootPanel = CreateIntegratedHUD(); // ← guarda el panel raíz
-        // Enlazar elementos creados dinámicamente
+        // Reutilizar HUD existente si ya está presente en el Canvas
+        var canvasRoot = _canvas.transform.Find("PlayerHUD_Main");
+        _rootPanel = canvasRoot != null ? canvasRoot.gameObject : CreateIntegratedHUD(); // ← guarda el panel raíz
+        // Enlazar elementos creados dinámicamente o preexistentes
         BindUIElementsFromRoot(_rootPanel);
         // Forzar actualización de canvas para evitar que no se renderice en algunas plataformas
         Canvas.ForceUpdateCanvases();
