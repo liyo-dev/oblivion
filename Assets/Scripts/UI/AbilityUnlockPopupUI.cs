@@ -35,10 +35,17 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             holdToSkip.OnSkipCompleted.AddListener(HidePopup);
             holdToSkip.gameObject.SetActive(false);
         }
+
+        // Suscribirse lo antes posible para no perder eventos de desbloqueo si la UI
+        // todavía no fue activada en la jerarquía cuando se otorga la habilidad.
+        UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
     }
 
     void OnEnable()
     {
+        // Awake ya suscribe, pero mantener OnEnable para asegurar que la suscripción
+        // siga activa si el dominio se recarga en modo editor.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
     }
@@ -53,6 +60,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     {
         if (holdToSkip != null)
             holdToSkip.OnSkipCompleted.RemoveListener(HidePopup);
+
+        UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
     }
 
     private void HandleAbilityUnlocked(AbilityId ability)

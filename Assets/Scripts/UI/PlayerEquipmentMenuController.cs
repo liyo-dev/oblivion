@@ -132,12 +132,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
     [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
     [SerializeField] private float previewOrbitSpeed = 120f;
+    [Header("Navegación UI")]
+    [SerializeField, Min(0f)] private float uiNavRepeatDelay = 0.18f;
+    [SerializeField, Range(0f, 1f)] private float uiNavDeadzone = 0.45f;
     bool _equipmentCameraActive;
     Transform _playerPreviewTarget;
     Quaternion _storedPlayerRotation;
     Vector3 _previewBaseForward = Vector3.forward;
     float _previewPlayerYaw;
     PlayerActionManager _actionManager;
+    float _uiNavCooldown;
+    Vector2 _lastUiNav;
     bool _actionModeActive;
 
     bool _isOpen;
@@ -263,6 +268,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             HandleCloseInput();
             HandleTabNavigationInput();
+            HandleUiNavigationInput();
             UpdatePlayerInfoPanel();
             if (_activeTab == 1)
                 _spellView?.HandleInput();
@@ -395,6 +401,92 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         int nextTab = availableTabs[nextIndex];
         bool forceRebuild = nextTab == 0 && nextTab != _activeTab;
         ShowTab(nextTab, forceRebuild);
+    }
+
+    void HandleUiNavigationInput()
+    {
+        if (!_isOpen) return;
+
+        if (_uiNavCooldown > 0f)
+        {
+            _uiNavCooldown -= Time.unscaledDeltaTime;
+            if (_uiNavCooldown < 0f) _uiNavCooldown = 0f;
+        }
+
+        var es = EventSystem.current;
+        if (es == null)
+            return;
+
+        Vector2 nav = Vector2.zero;
+#if ENABLE_INPUT_SYSTEM
+        try
+        {
+            var pad = Gamepad.current;
+            if (pad != null)
+            {
+                var d = pad.dpad.ReadValue();
+                if (Mathf.Abs(d.x) > uiNavDeadzone || Mathf.Abs(d.y) > uiNavDeadzone)
+                    nav = d;
+                else
+                {
+                    var s = pad.leftStick.ReadValue();
+                    if (Mathf.Abs(s.x) > uiNavDeadzone || Mathf.Abs(s.y) > uiNavDeadzone)
+                        nav = s;
+                }
+            }
+            else
+            {
+                var js = Joystick.current;
+                if (js != null)
+                {
+                    var s = js.stick.ReadValue();
+                    if (Mathf.Abs(s.x) > uiNavDeadzone || Mathf.Abs(s.y) > uiNavDeadzone)
+                        nav = s;
+                }
+            }
+        }
+        catch { }
+#endif
+
+        if (nav == Vector2.zero)
+        {
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+            if (Mathf.Abs(h) > uiNavDeadzone || Mathf.Abs(v) > uiNavDeadzone)
+                nav = new Vector2(h, v);
+        }
+
+        if (nav == Vector2.zero)
+            return;
+
+        Vector2 dir = nav.normalized;
+        if (_uiNavCooldown > 0f && Vector2.Dot(dir, _lastUiNav) > 0.9f)
+            return;
+
+        _lastUiNav = dir;
+        _uiNavCooldown = uiNavRepeatDelay;
+
+        if (es.currentSelectedGameObject == null)
+            SelectInitial();
+
+        var axisEvent = new AxisEventData(es)
+        {
+            moveVector = dir,
+            moveDir = ToMoveDirection(dir)
+        };
+
+        var target = es.currentSelectedGameObject;
+        if (target != null)
+            ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
+    }
+
+    static MoveDirection ToMoveDirection(Vector2 dir)
+    {
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+            return dir.x > 0 ? MoveDirection.Right : MoveDirection.Left;
+        if (Mathf.Abs(dir.y) > 0f)
+            return dir.y > 0 ? MoveDirection.Up : MoveDirection.Down;
+        return MoveDirection.None;
     }
 
     List<int> GetAvailableTabs()
