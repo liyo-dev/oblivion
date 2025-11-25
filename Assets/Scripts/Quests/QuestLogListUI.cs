@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using System.Linq;
 using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -17,6 +18,7 @@ public class QuestLogListUI : MonoBehaviour
     [SerializeField] private GameObject scrollView;      // Solo el ScrollView para ocultar
     [SerializeField] private TextMeshProUGUI helpText;   // Texto de ayuda para cambiar
     [SerializeField] private QuestMainMenuUI mainMenu;   // menú principal de misiones
+    [SerializeField] private bool debugLogs = false;
 
     [Header("Animación (DOTween)")]
     [SerializeField] private RectTransform animatedRoot;
@@ -40,8 +42,11 @@ public class QuestLogListUI : MonoBehaviour
 
     void OnEnable()
     {
+        Debug.Log("[QuestLogListUI] OnEnable: starting BindWhenReady (always logged)");
         // Empieza a esperar al manager si aún no existe
         _waitCo = StartCoroutine(BindWhenReady());
+
+        Debug.Log($"[QuestLogListUI] Refs: contentRoot={(contentRoot!=null)}, itemPrefab={(itemPrefab!=null)}, panelRoot={(panelRoot!=null)}, scrollView={(scrollView!=null)}");
 
 #if ENABLE_INPUT_SYSTEM
         if (_quickAccessAction == null)
@@ -87,6 +92,7 @@ public class QuestLogListUI : MonoBehaviour
         // Respetar GameState: no abrir/cerrar si UI global no lo permite
         if (!GameState.CanOpenInventory || (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen))
         {
+            if (debugLogs) Debug.Log($"[QuestLogListUI] Update: blocked CanOpenInventory={GameState.CanOpenInventory} DialogueOpen={(DialogueManager.Instance!=null?DialogueManager.Instance.IsOpen:false)}");
             return;
         }
 
@@ -112,6 +118,7 @@ public class QuestLogListUI : MonoBehaviour
 
         if (dpadUpPressed)
         {
+            if (debugLogs) Debug.Log("[QuestLogListUI] DPadUp detected -> HandleToggleOrMenu");
             HandleToggleOrMenu();
         }
         else
@@ -120,6 +127,13 @@ public class QuestLogListUI : MonoBehaviour
             float currentDpad = 0f;
             try { currentDpad = Input.GetAxis("7th axis"); } catch { }
             _lastFrameDpadUp = currentDpad > 0.5f;
+        }
+
+        // Debug hotkey: for testing, permite abrir el panel forzando la apertura aunque GameState lo bloquee.
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            if (debugLogs) Debug.Log("[QuestLogListUI] Debug hotkey L pressed -> forcing ShowPanel(true, force:true)");
+            ShowPanel(true, force: true);
         }
     }
 
@@ -180,6 +194,7 @@ public class QuestLogListUI : MonoBehaviour
         }
 
         Rebuild();
+        Debug.Log($"[QuestLogListUI] Bound to QuestManager and rebuilt UI. Quest count={(QuestManager.Instance.GetAll()==null?0:QuestManager.Instance.GetAll().Count())} GameState.CanOpenInventory={GameState.CanOpenInventory} DialogueOpen={(DialogueManager.Instance!=null?DialogueManager.Instance.IsOpen:false)}");
     }
 
     void Unbind()
@@ -232,21 +247,45 @@ public class QuestLogListUI : MonoBehaviour
         bool dpadUpPressed = false;
 
 #if ENABLE_INPUT_SYSTEM
-        if (UnityEngine.InputSystem.Gamepad.current != null)
+        var gpCur = UnityEngine.InputSystem.Gamepad.current;
+        if (gpCur != null)
         {
-            dpadUpPressed = UnityEngine.InputSystem.Gamepad.current.dpad.up.wasPressedThisFrame;
+            try { dpadUpPressed = gpCur.dpad.up.wasPressedThisFrame; }
+            catch { dpadUpPressed = gpCur.dpad.up.isPressed; }
+            if (!dpadUpPressed)
+            {
+                // fallback: any dpad up pressed
+                dpadUpPressed = gpCur.dpad.up.isPressed;
+            }
+            Debug.Log($"[QuestLogListUI] Gamepad present: {gpCur != null}, dpadUpPressed={dpadUpPressed}");
         }
 #endif
 
         if (!dpadUpPressed)
         {
-            try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
-            if (!dpadUpPressed) dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow);
+            bool tryButton = false;
+            try
+            {
+                tryButton = Input.GetButtonDown("DPadUp");
+                if (tryButton)
+                {
+                    Debug.Log("[QuestLogListUI] Input.GetButtonDown('DPadUp') returned true");
+                    dpadUpPressed = true;
+                }
+            }
+            catch { }
+
+            if (!dpadUpPressed && Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                Debug.Log("[QuestLogListUI] Keyboard UpArrow detected (Input.GetKeyDown)");
+                dpadUpPressed = true;
+            }
 
             float dpadVertical = 0f;
             try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
             if (!dpadUpPressed && dpadVertical > 0.5f && !_lastFrameDpadUp)
             {
+                Debug.Log($"[QuestLogListUI] Axis '7th axis' value={dpadVertical} -> treating as DPadUp");
                 dpadUpPressed = true;
             }
         }
@@ -358,6 +397,13 @@ public class QuestLogListUI : MonoBehaviour
         _isPanelVisible = false;
         AnimateHide();
         UpdateHelpText();
+    }
+
+    [ContextMenu("Force Show Panel (Editor)")]
+    private void ContextMenuForceShow()
+    {
+        Debug.Log("[QuestLogListUI] ContextMenuForceShow invoked");
+        ShowPanel(true, force: true);
     }
 
     void UpdateHelpText()
