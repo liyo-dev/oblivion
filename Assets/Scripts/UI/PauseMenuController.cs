@@ -93,6 +93,14 @@ public class PauseMenuController : MonoBehaviour
     Sequence _introSeq;
     bool _isPaused;
 
+    // Snapshots para suspender interacción cuando abrimos Settings desde Pause
+    bool _settingsSnapshotRaycasts;
+    bool _settingsSnapshotInteractable;
+    bool _settingsButtonsSnapshotValid = false;
+    bool _resumeButtonActiveSnapshot;
+    bool _optionsButtonActiveSnapshot;
+    bool _quitButtonActiveSnapshot;
+
     public static bool IsOpen { get; private set; }
 
     float _navCooldown;
@@ -664,11 +672,70 @@ public class PauseMenuController : MonoBehaviour
 
         if (settingsMenu != null)
         {
-            settingsMenu.Show();
+            // Suspendemos la interacción del menú de pausa igual que hace MainMenu
+            SuspendPauseInteraction();
+
+            var es = EventSystem.current;
+            var previous = es ? es.currentSelectedGameObject : null;
+            var initial = settingsMenu.GetDefaultSelection();
+
+            settingsMenu.Show(initial, () =>
+            {
+                // Al cerrar settings, restaurar la interacción del pause menu
+                RestorePauseInteraction();
+                if (es != null && previous != null)
+                    es.SetSelectedGameObject(previous);
+                // Asegurar selección en el menú de pausa
+                EnsureUISelection();
+            });
+
+            if (es != null && initial != null)
+                es.SetSelectedGameObject(initial);
         }
         else
         {
             Debug.LogWarning("[PauseMenu] SettingsMenuController reference not found!");
+        }
+    }
+
+    void SuspendPauseInteraction()
+    {
+        if (rootGroup != null)
+        {
+            _settingsSnapshotRaycasts = rootGroup.blocksRaycasts;
+            _settingsSnapshotInteractable = rootGroup.interactable;
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+
+        // Ocultar botones principales del Pause para evitar interferencias con inputs
+        if (!_settingsButtonsSnapshotValid)
+        {
+            _resumeButtonActiveSnapshot = resumeButton ? resumeButton.gameObject.activeSelf : false;
+            _optionsButtonActiveSnapshot = optionsButton ? optionsButton.gameObject.activeSelf : false;
+            _quitButtonActiveSnapshot = quitToMainButton ? quitToMainButton.gameObject.activeSelf : false;
+            _settingsButtonsSnapshotValid = true;
+        }
+
+        if (resumeButton) resumeButton.gameObject.SetActive(false);
+        if (optionsButton) optionsButton.gameObject.SetActive(false);
+        if (quitToMainButton) quitToMainButton.gameObject.SetActive(false);
+    }
+
+    void RestorePauseInteraction()
+    {
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = _settingsSnapshotRaycasts;
+            rootGroup.interactable = _settingsSnapshotInteractable;
+        }
+
+        if (_settingsButtonsSnapshotValid)
+        {
+            if (resumeButton) resumeButton.gameObject.SetActive(_resumeButtonActiveSnapshot);
+            if (optionsButton) optionsButton.gameObject.SetActive(_optionsButtonActiveSnapshot);
+            if (quitToMainButton) quitToMainButton.gameObject.SetActive(_quitButtonActiveSnapshot);
+            _settingsButtonsSnapshotValid = false;
         }
     }
 

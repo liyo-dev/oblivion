@@ -354,8 +354,10 @@ public class MainMenuController : MonoBehaviour
                 if (buttonPanel != null)
                     buttonPanel.SetActive(true);
 
+                // Restaurar la selección en el siguiente frame para evitar que
+                // el primer input del D-Pad sea consumido al cerrar Settings.
                 if (es != null && previous != null)
-                    es.SetSelectedGameObject(previous);
+                    StartCoroutine(RestoreSelectionNextFrame(previous));
             });
 
             if (es != null && initial != null)
@@ -418,6 +420,19 @@ public class MainMenuController : MonoBehaviour
             else
                 SceneTransitionLoader.Load(sceneName);
         }
+    }
+
+    System.Collections.IEnumerator RestoreSelectionNextFrame(GameObject previous)
+    {
+        yield return null; // esperar un frame
+        var es = EventSystem.current;
+        if (es == null) yield break;
+
+        // Limpiar y re-aplicar selección para forzar estado claro
+        es.SetSelectedGameObject(null);
+        es.SetSelectedGameObject(previous);
+        var sel = previous.GetComponent<UnityEngine.UI.Selectable>();
+        if (sel != null) sel.Select();
     }
 
     // ===== Utilidades =======================================================
