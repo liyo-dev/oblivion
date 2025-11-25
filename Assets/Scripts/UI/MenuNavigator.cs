@@ -151,6 +151,24 @@ public class MenuNavigator : MonoBehaviour
 
     Button CurrentButton() => (_idx >= 0 && _idx < items.Count) ? items[_idx] : null;
 
+    /// <summary>
+    /// Fuerza la selección a un botón concreto y opcionalmente reinicia el cooldown de navegación.
+    /// </summary>
+    public void ForceSelect(Button button, bool resetCooldown = true)
+    {
+        if (button == null) return;
+
+        AutoPopulateIfNeeded();
+        int idx = items.IndexOf(button);
+        if (idx < 0) return;
+
+        SetSelection(idx);
+        if (resetCooldown) _cooldown = 0f;
+    }
+
+    public void ForceSelect(GameObject go, bool resetCooldown = true)
+        => ForceSelect(go != null ? go.GetComponent<Button>() : null, resetCooldown);
+
     int ReadUpDownThisFrame()
     {
 #if ENABLE_INPUT_SYSTEM
