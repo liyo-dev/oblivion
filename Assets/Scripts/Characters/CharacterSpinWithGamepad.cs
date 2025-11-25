@@ -5,9 +5,20 @@ public class CharacterSpinWithGamepad : MonoBehaviour
     public float rotateSpeed = 120f;
     public float deadZone = 0.15f;
     private PlayerControls input;
+    private bool ownsControls;
 
-    void Awake(){ input = new PlayerControls(); input.Enable(); }
-    void OnDestroy(){ input?.Disable(); }
+    void Awake()
+    {
+        input = PlayerInputManager.GetSharedOrNew(out ownsControls);
+        if (ownsControls)
+            input?.Enable();
+    }
+
+    void OnDestroy()
+    {
+        if (ownsControls)
+            input?.Disable();
+    }
 
     void Update()
     {
