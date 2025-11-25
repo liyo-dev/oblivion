@@ -61,6 +61,8 @@ public class ShopUI : MonoBehaviour
     private Tween _buyButtonTween;
     private Vector3 _buyButtonBaseScale;
     private bool _buyButtonScaleCached;
+    private bool _buyButtonColorsCached;
+    private ColorBlock _buyButtonDefaultColors;
 
     enum ShopState
     {
@@ -76,6 +78,8 @@ public class ShopUI : MonoBehaviour
 
     void Awake()
     {
+        EnsurePlayerInventory();
+
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
@@ -253,8 +257,7 @@ public class ShopUI : MonoBehaviour
 
     void Start()
     {
-        if (_playerInventory == null)
-            PlayerService.TryGetComponent(out _playerInventory, includeInactive: true, allowSceneLookup: true);
+        EnsurePlayerInventory();
     }
 
     public void BindController(ShopController controller)
@@ -346,6 +349,8 @@ public class ShopUI : MonoBehaviour
 
     void UpdateCurrencyDisplay()
     {
+        EnsurePlayerInventory();
+
         if (currencyText == null || _playerInventory == null || shopController == null)
             return;
         
@@ -365,6 +370,12 @@ public class ShopUI : MonoBehaviour
         }
         
         currencyText.text = "💰 0";
+    }
+
+    void EnsurePlayerInventory()
+    {
+        if (_playerInventory == null)
+            PlayerService.TryGetComponent(out _playerInventory, includeInactive: true, allowSceneLookup: true);
     }
 
     void RebuildItemList()
@@ -596,6 +607,12 @@ public class ShopUI : MonoBehaviour
     {
         if (buyButton == null) return;
 
+        if (!_buyButtonColorsCached)
+        {
+            _buyButtonDefaultColors = buyButton.colors;
+            _buyButtonColorsCached = true;
+        }
+
         if (!_buyButtonScaleCached)
         {
             _buyButtonBaseScale = buyButton.transform.localScale;
@@ -605,9 +622,11 @@ public class ShopUI : MonoBehaviour
         // Solo escalar el botón una vez y mantener color verde
         buyButton.transform.localScale = _buyButtonBaseScale * buyButtonPulseScale;
         var colors = buyButton.colors;
-        colors.normalColor = Color.green;
-        colors.highlightedColor = Color.green;
-        colors.pressedColor = Color.green;
+        var activeGreen = new Color(0.05f, 0.75f, 0.2f, 1f);
+        colors.normalColor = activeGreen;
+        colors.highlightedColor = activeGreen * 1.05f;
+        colors.selectedColor = activeGreen * 1.05f;
+        colors.pressedColor = activeGreen * 0.9f;
         buyButton.colors = colors;
     }
 
@@ -617,6 +636,9 @@ public class ShopUI : MonoBehaviour
         _buyButtonTween = null;
         if (buyButton != null && _buyButtonScaleCached)
             buyButton.transform.localScale = _buyButtonBaseScale;
+
+        if (buyButton != null && _buyButtonColorsCached)
+            buyButton.colors = _buyButtonDefaultColors;
     }
 
     void ShowConfirmation()
