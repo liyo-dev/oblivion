@@ -11,17 +11,18 @@ public class SceneBoundUI : MonoBehaviour
     [SerializeField] private bool detachFromParent = true;
 
     private static readonly Dictionary<string, SceneBoundUI> Instances = new();
+    private string instanceKey;
 
     private void Awake()
     {
-        var key = string.IsNullOrEmpty(uniqueId) ? name : uniqueId;
-        if (Instances.TryGetValue(key, out var existing) && existing != null && existing != this)
+        instanceKey = string.IsNullOrEmpty(uniqueId) ? name : uniqueId;
+        if (Instances.TryGetValue(instanceKey, out var existing) && existing != null && existing != this)
         {
             Destroy(gameObject);
             return;
         }
 
-        Instances[key] = this;
+        Instances[instanceKey] = this;
 
         if (detachFromParent && transform.parent != null)
         {
@@ -33,23 +34,23 @@ public class SceneBoundUI : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         }
 
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.activeSceneChanged += OnActiveSceneChanged;
         ApplySceneState(SceneManager.GetActiveScene().name);
     }
 
     private void OnDestroy()
     {
-        if (Instances.TryGetValue(string.IsNullOrEmpty(uniqueId) ? name : uniqueId, out var existing) && existing == this)
+        if (Instances.TryGetValue(instanceKey, out var existing) && existing == this)
         {
-            Instances.Remove(string.IsNullOrEmpty(uniqueId) ? name : uniqueId);
+            Instances.Remove(instanceKey);
         }
 
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.activeSceneChanged -= OnActiveSceneChanged;
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    private void OnActiveSceneChanged(Scene _, Scene newScene)
     {
-        ApplySceneState(scene.name);
+        ApplySceneState(newScene.name);
     }
 
     private void ApplySceneState(string sceneName)
