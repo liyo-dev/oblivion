@@ -45,7 +45,7 @@ public sealed class PlayerInputManager : MonoBehaviour
         if (playerInput == null)
             playerInput = GetComponent<PlayerInput>();
         if (actionManager == null)
-            actionManager = GetComponent<PlayerActionManager>();
+            actionManager = GetComponentInChildren<PlayerActionManager>(true);
 
         // Reutiliza el asset de PlayerInput si existe. Si no, crea uno nuevo.
         _controls = new PlayerControls();
