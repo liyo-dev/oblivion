@@ -805,7 +805,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         if (EventSystem.current != null) return;
 
-        var esGO = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        var esGO = new GameObject("EventSystem", typeof(EventSystem)
+#if ENABLE_INPUT_SYSTEM
+            , typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule)
+#else
+            , typeof(StandaloneInputModule)
+#endif
+        );
         DontDestroyOnLoad(esGO);
     }
 
