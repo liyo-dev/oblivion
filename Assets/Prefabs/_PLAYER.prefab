@@ -12559,7 +12559,7 @@ MonoBehaviour:
   debugLogs: 1
   flightArmedDuration: 2
   vfxAttach: {fileID: 0}
-  trailPrefab: {fileID: 0}
+  trailPrefab: {fileID: 7700642936372213891, guid: 18be81955f2d925438bc7c873d04e297, type: 3}
   trailSpeedThreshold: 1.5
   boostVfxPrefab: {fileID: 0}
   landingVfxPrefab: {fileID: 0}
