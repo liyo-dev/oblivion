@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8ae9441f4715c4c9fb413c04570f19fb
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Planet Spheres/Prefab/SunGlow.prefab
+  uploadId: 772644

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8b93573ec0d057047833f145feb0f89b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Resources/Season_Time/0_1
+    Morning.asset
+  uploadId: 772644

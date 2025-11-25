@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!181963792 &2655988077585873504
+Preset:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CCP_Morning
+  m_TargetType:
+    m_NativeTypeID: 114
+    m_ManagedTypePPtr: {fileID: 11500000, guid: cccc02ec37e7bac4f8246f5022c297f3,
+      type: 3}
+    m_ManagedTypeFallback: 
+  m_Properties:
+  - target: {fileID: 0}
+    propertyPath: m_Enabled
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: m_EditorHideFlags
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: m_EditorClassIdentifier
+    value: 
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Tint.r
+    value: 0.8
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Tint.g
+    value: 0.8
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Tint.b
+    value: 0.8
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Tint.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Exposure
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: Contrast
+    value: 2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.r
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.g
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.b
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: LightColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SunColor.r
+    value: 5.992157
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SunColor.g
+    value: 2.233444
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SunColor.b
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SunColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SunSize
+    value: 0.25
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyColorBlend
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyColor.r
+    value: 0.49187198
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyColor.g
+    value: 0.7194881
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyColor.b
+    value: 0.809
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyBlend
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: EquatorBrightness
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: EquatorBlend
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: EquatorSmoothness
+    value: 0.0747
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: EquatorOffset
+    value: 7
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: GroundColor.r
+    value: 0.1509434
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: GroundColor.g
+    value: 0.11463154
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: GroundColor.b
+    value: 0.11463154
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: GroundColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: GroundBlend
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: SkyboxIntensityMultiplier
+    value: 1.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: reflectionIntensity
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogColor.r
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogColor.g
+    value: 0.8124307
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogColor.b
+    value: 0.6933962
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogColor.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogDensity
+    value: 0.02
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogStartDistance
+    value: 10
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: fogEndDistance
+    value: 100
+    objectReference: {fileID: 0}
+  m_ExcludedProperties: []

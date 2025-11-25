@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 65fe9bcd68890ab45b5fba0007783404
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Script/CelestialNightObject.cs
+  uploadId: 772644

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 33ee004cd98b0bb4c9f6bbdd00cb7547
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Demo/GameObject.controller
+  uploadId: 772644

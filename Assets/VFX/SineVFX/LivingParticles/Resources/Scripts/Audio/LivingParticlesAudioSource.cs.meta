@@ -15,5 +15,5 @@ AssetOrigin:
   productId: 105817
   packageName: Living Particles
   packageVersion: 1.5a
-  assetPath: Assets/SineVFX/LivingParticles/Resources/Scripts/Audio/LivingParticlesAudioSource.cs
+  assetPath: Assets/VFX/SineVFX/LivingParticles/Resources/Scripts/Audio/LivingParticlesAudioSource.cs
   uploadId: 753957

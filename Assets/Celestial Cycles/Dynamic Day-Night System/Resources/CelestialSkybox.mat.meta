@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1d112292febe7084fa763f2f63d01aa7
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Resources/CelestialSkybox.mat
+  uploadId: 772644

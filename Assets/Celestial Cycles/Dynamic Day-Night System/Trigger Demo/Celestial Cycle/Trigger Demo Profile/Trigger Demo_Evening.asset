@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cccc02ec37e7bac4f8246f5022c297f3, type: 3}
+  m_Name: Trigger Demo_Evening
+  m_EditorClassIdentifier: 
+  Tint: {r: 0.2924528, g: 0.20753345, b: 0.16967781, a: 1}
+  Exposure: 0.94
+  Contrast: 1.35
+  LightColor: {r: 0.990566, g: 0.5967202, b: 0.4906105, a: 1}
+  SunColor: {r: 1.9766749, g: 0.48076895, b: 0, a: 1}
+  SunSize: 0.2
+  SkyColorBlend: 1
+  SkyColor: {r: 0.28595585, g: 0.31086305, b: 0.3962264, a: 1}
+  SkyBlend: 0.5
+  EquatorBrightness: 1
+  EquatorBlend: 1
+  EquatorSmoothness: 0.0593
+  EquatorOffset: 5.9
+  GroundColor: {r: 0.36078432, g: 0.25490198, b: 0.25490198, a: 1}
+  GroundBlend: 1
+  SkyboxIntensityMultiplier: 1
+  reflectionIntensity: 0.65
+  fogColor: {r: 0.8207547, g: 0.35381472, b: 0.23616053, a: 1}
+  fogDensity: 0.015
+  fogStartDistance: 20
+  fogEndDistance: 120

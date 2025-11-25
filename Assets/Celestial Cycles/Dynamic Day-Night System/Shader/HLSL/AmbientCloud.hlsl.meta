@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: fbe8eb3c2fd2e4ad8b4f425f135ec2b0
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Shader/HLSL/AmbientCloud.hlsl
+  uploadId: 772644

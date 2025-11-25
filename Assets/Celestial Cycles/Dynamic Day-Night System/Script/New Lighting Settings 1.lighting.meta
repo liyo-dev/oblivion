@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: db56358dd2573234c8cb673597ec73a0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 4890085278179872738
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Script/New Lighting
+    Settings 1.lighting
+  uploadId: 772644

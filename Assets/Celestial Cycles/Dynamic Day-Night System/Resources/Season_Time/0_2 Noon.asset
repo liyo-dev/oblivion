@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cccc02ec37e7bac4f8246f5022c297f3, type: 3}
+  m_Name: 0_2 Noon
+  m_EditorClassIdentifier: 
+  Tint: {r: 0.5941171, g: 0.67551416, b: 0.745283, a: 1}
+  Exposure: 1.5
+  Contrast: 2
+  LightColor: {r: 1, g: 1, b: 1, a: 1}
+  SunColor: {r: 32, g: 32, b: 32, a: 1}
+  SunSize: 0.25
+  SkyColorBlend: 1
+  SkyColor: {r: 0.33490568, g: 0.40011096, b: 1, a: 1}
+  SkyBlend: 1
+  EquatorBrightness: 1
+  EquatorBlend: 0.38
+  EquatorSmoothness: 0.1
+  EquatorOffset: 8.1
+  GroundColor: {r: 0.3207547, g: 0.29200783, b: 0.29200783, a: 1}
+  GroundBlend: 1
+  SkyboxIntensityMultiplier: 1.5
+  reflectionIntensity: 1
+  fogColor: {r: 0.9302243, g: 0.97795033, b: 0.9811321, a: 1}
+  fogDensity: 0.005
+  fogStartDistance: 50
+  fogEndDistance: 200
