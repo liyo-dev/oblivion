@@ -39,11 +39,9 @@ public class SettingsMenuController : MonoBehaviour
     [SerializeField] private bool autoAddSelectVisuals = true;
 
     [Header("Navigation")]
-    [Min(0f)] public float navRepeatDelay = 0.15f;
-    [Range(0f,1f)] public float navDeadzone = 0.3f;
-    private float _navCooldown;
-    private int _navHeldSign; // -1,0,1
+    [Range(0f, 1f)] public float navDeadzone = 0.2f;
     public bool enableManualNavigation = true; // enable fallback navigation polling
+    private int _navHeldSign; // -1,0,1
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -93,7 +91,7 @@ public class SettingsMenuController : MonoBehaviour
                 {
                     var v = go.AddComponent<UISelectVisual>();
                     v.normalColor = Color.white;
-                    v.highlightColor = new Color(0.95f, 0.9f, 0.7f);
+                    v.highlightColor = new Color(1f, 0.92f, 0.16f);
                     v.selectedScale = 1.06f;
                     v.animDuration = 0.12f;
                     v.enablePulse = true;
@@ -118,10 +116,6 @@ public class SettingsMenuController : MonoBehaviour
             Close();
             return;
         }
-
-        // Reduce cooldown timer
-        if (_navCooldown > 0f) _navCooldown -= Time.unscaledDeltaTime;
-        else _navHeldSign = 0;
 
         // Read input from common sources and move selection accordingly
         float vert = 0f;
@@ -154,7 +148,7 @@ public class SettingsMenuController : MonoBehaviour
         vert = Input.GetAxisRaw("Vertical");
 #endif
 
-        if (Mathf.Abs(vert) > navDeadzone && _navCooldown <= 0f)
+        if (Mathf.Abs(vert) > navDeadzone)
         {
             int sign = vert > 0f ? 1 : -1;
             if (_navHeldSign != sign)
@@ -163,8 +157,11 @@ public class SettingsMenuController : MonoBehaviour
                 // Use spatial navigation to pick the most sensible selectable
                 if (sign > 0) MoveSelection(Vector2.up);
                 else MoveSelection(Vector2.down);
-                _navCooldown = navRepeatDelay;
             }
+        }
+        else
+        {
+            _navHeldSign = 0;
         }
 
         // Submit handling (basic)
@@ -173,7 +170,7 @@ public class SettingsMenuController : MonoBehaviour
         var g = UnityEngine.InputSystem.Gamepad.current;
         if (g != null && g.buttonSouth.wasPressedThisFrame) submit = true;
 #else
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)) submit = true;
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.JoystickButton0) || Input.GetButtonDown("Submit")) submit = true;
 #endif
 
         if (submit)
