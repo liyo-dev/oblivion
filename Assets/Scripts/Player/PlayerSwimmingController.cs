@@ -57,6 +57,7 @@ public sealed class PlayerSwimmingController : MonoBehaviour
     private float _originalAirSmooth;
     private bool _airTuningApplied;
     private PlayerControls _controls;
+    private bool _ownsControls;
 
     void Awake()
     {
@@ -76,17 +77,19 @@ public sealed class PlayerSwimmingController : MonoBehaviour
         _floorMask = LayerMask.GetMask("Floor");
         CacheCameraTransform();
 
-        _controls = new PlayerControls();
+        _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
     }
 
     void OnEnable()
     {
-        _controls?.Enable();
+        if (_ownsControls)
+            _controls?.Enable();
     }
 
     void OnDisable()
     {
-        _controls?.Disable();
+        if (_ownsControls)
+            _controls?.Disable();
         if (_isSwimming)
             ExitSwimming(force: true);
     }

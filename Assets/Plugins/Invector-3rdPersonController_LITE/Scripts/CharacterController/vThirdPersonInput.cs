@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace Invector.vCharacterController
@@ -24,6 +25,9 @@ namespace Invector.vCharacterController
 
         private IActionValidator actionValidator;
 
+        private static bool lookInversionCached;
+        private static Func<Vector2, Vector2> lookInversionDelegate;
+
         [HideInInspector] public vThirdPersonController cc;
         [HideInInspector] public vThirdPersonCamera tpCamera;
         [HideInInspector] public Camera cameraMain;
@@ -38,6 +42,7 @@ namespace Invector.vCharacterController
         protected virtual void Awake()
         {
             ResolveServices();
+            CacheLookInversionDelegate();
             InitializeInputActions();
         }
 
@@ -172,31 +177,57 @@ namespace Invector.vCharacterController
         // we call it via reflection if present; otherwise we return the original input.
         private static Vector2 ApplyLookInversionSafe(Vector2 input)
         {
+            if (lookInversionDelegate == null)
+                return input;
+
             try
             {
-                var t = System.Type.GetType("PlayerSettings");
-                if (t != null)
+                return lookInversionDelegate.Invoke(input);
+            }
+            catch (Exception)
+            {
+                return input;
+            }
+        }
+
+        private static void CacheLookInversionDelegate()
+        {
+            if (lookInversionCached)
+                return;
+
+            lookInversionCached = true;
+
+            try
+            {
+                var t = Type.GetType("PlayerSettings");
+                if (t == null)
+                    return;
+
+                // Preferred overload: Vector2 -> Vector2
+                var mi = t.GetMethod("ApplyLookInversion", new Type[] { typeof(Vector2) });
+                if (mi != null && mi.IsStatic)
                 {
-                    var mi = t.GetMethod("ApplyLookInversion", new System.Type[] { typeof(Vector2) });
-                    if (mi != null)
+                    lookInversionDelegate = Delegate.CreateDelegate(typeof(Func<Vector2, Vector2>), mi, throwOnBindFailure: false) as Func<Vector2, Vector2>;
+                }
+
+                if (lookInversionDelegate != null)
+                    return;
+
+                // Fallback overload: Vector2 + context bool
+                mi = t.GetMethod("ApplyLookInversion", new Type[] { typeof(Vector2), typeof(bool) });
+                if (mi != null && mi.IsStatic)
+                {
+                    lookInversionDelegate = (Vector2 v) =>
                     {
-                        var res = mi.Invoke(null, new object[] { input });
-                        if (res is Vector2 v) return v;
-                    }
-                    // overload with flightContext bool?
-                    mi = t.GetMethod("ApplyLookInversion", new System.Type[] { typeof(Vector2), typeof(bool) });
-                    if (mi != null)
-                    {
-                        var res2 = mi.Invoke(null, new object[] { input, false });
-                        if (res2 is Vector2 v2) return v2;
-                    }
+                        var res = mi.Invoke(null, new object[] { v, false });
+                        return res is Vector2 vec ? vec : v;
+                    };
                 }
             }
-            catch (System.Exception)
+            catch (Exception)
             {
-                // swallow reflection errors and fall back to raw input
+                lookInversionDelegate = null;
             }
-            return input;
         }
 
         protected virtual void InitilizeController()

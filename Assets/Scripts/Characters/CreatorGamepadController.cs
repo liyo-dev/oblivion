@@ -7,29 +7,44 @@ public class CreatorGamepadController : MonoBehaviour
     public CharacterCreatorUI ui;                    // arrastra el componente del Panel
 
     PlayerControls _input;
+    bool _ownsControls;
     float _lastNavY;
     float _lastNavX;
 
     void Awake()
     {
-        _input = new PlayerControls();
+        _input = PlayerInputManager.GetSharedOrNew(out _ownsControls);
     }
 
     void OnEnable()
     {
-        _input.Enable();
-        _input.UI.Enable();
-        _input.GamePlay.Enable();
+        if (_input == null) return;
+
+        if (_ownsControls)
+        {
+            _input.Enable();
+            _input.UI.Enable();
+            _input.GamePlay.Enable();
+        }
     }
 
     void OnDisable()
     {
-        _input.UI.Disable();
-        _input.GamePlay.Disable();
-        _input.Disable();
+        if (_input == null) return;
+
+        if (_ownsControls)
+        {
+            _input.UI.Disable();
+            _input.GamePlay.Disable();
+            _input.Disable();
+        }
     }
 
-    void OnDestroy() => _input?.Disable();
+    void OnDestroy()
+    {
+        if (_ownsControls)
+            _input?.Disable();
+    }
 
     void Start()
     {
