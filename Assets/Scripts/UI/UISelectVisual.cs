@@ -9,7 +9,7 @@ public class UISelectVisual : MonoBehaviour, ISelectHandler, IDeselectHandler, I
     [Header("Visuals")]
     public Graphic targetGraphic;
     public Color normalColor = Color.white;
-    public Color highlightColor = new Color(0.95f, 0.9f, 0.7f);
+    public Color highlightColor = new Color(1f, 0.92f, 0.16f);
 
     [Header("Scale")]
     public float selectedScale = 1.1f;
