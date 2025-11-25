@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 
 /// <summary>
@@ -26,6 +27,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
 
     private readonly Dictionary<string, NarrativeRunner> _runnersByLabel = new();
     private readonly List<NarrativeRunner> _allRunners = new();
+    private readonly HashSet<string> _validatedLabels = new();
 
     void Awake()
     {
@@ -46,10 +48,6 @@ public sealed class NarrativeGraphHub : MonoBehaviour
         {
             if (slot == null || slot.graph == null)
                 continue;
-
-            // Validar el grafo antes de registrarlo
-            var validation = NarrativeGraphValidator.ValidateGraph(slot.graph);
-            validation.LogResults(slot.label ?? slot.graph.name);
 
             var runnerGo = new GameObject(string.IsNullOrEmpty(slot.label) ? slot.graph.name : slot.label);
             runnerGo.transform.SetParent(transform, false);
@@ -73,10 +71,14 @@ public sealed class NarrativeGraphHub : MonoBehaviour
 
         if (signals == null)
             Debug.LogWarning("[NarrativeGraphHub] No se encontró DefaultNarrativeSignals. Los nodos que dependan de señales no funcionarán.");
+
+        SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        ValidateGraphsForScene(SceneManager.GetActiveScene().name);
     }
 
     void OnDestroy()
     {
+        SceneManager.activeSceneChanged -= OnActiveSceneChanged;
         if (_instance == this)
             _instance = null;
     }
@@ -93,6 +95,52 @@ public sealed class NarrativeGraphHub : MonoBehaviour
 
     /// <summary>Devuelve todos los runners registrados.</summary>
     public List<NarrativeRunner> GetAllRunners() => _allRunners;
+
+    void OnActiveSceneChanged(Scene current, Scene next)
+    {
+        ValidateGraphsForScene(next.name);
+    }
+
+    void ValidateGraphsForScene(string sceneName)
+    {
+        if (graphs == null || graphs.Length == 0)
+            return;
+
+        foreach (var slot in graphs)
+        {
+            if (slot == null || slot.graph == null)
+                continue;
+
+            var label = slot.label ?? slot.graph.name;
+            if (_validatedLabels.Contains(label))
+                continue;
+
+            if (!GraphAppliesToScene(slot.graph, sceneName))
+            {
+                Debug.Log($"[NarrativeGraphHub] Validación de '{label}' omitida: escena '{sceneName}' fuera del alcance configurado.");
+                continue;
+            }
+
+            var validation = NarrativeGraphValidator.ValidateGraph(slot.graph);
+            validation.LogResults(label);
+            _validatedLabels.Add(label);
+        }
+    }
+
+    static bool GraphAppliesToScene(NarrativeGraph graph, string sceneName)
+    {
+        if (graph == null) return false;
+        if (graph.applicableSceneNames == null || graph.applicableSceneNames.Count == 0)
+            return true;
+
+        foreach (var scene in graph.applicableSceneNames)
+        {
+            if (string.Equals(scene, sceneName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Limpia todos los blackboards. Útil al iniciar nueva partida.

@@ -6,6 +6,8 @@ public class NarrativeGraph : ScriptableObject
 {
     public string startNodeGuid;
     [SerializeReference] public List<NarrativeNode> nodes = new();
+    [Tooltip("Escenas en las que aplica este grafo. Vacío = todas.")]
+    public List<string> applicableSceneNames = new();
 
     private void OnValidate()
     {
