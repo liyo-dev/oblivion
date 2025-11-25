@@ -9,7 +9,7 @@ public class PlayerAbilities
     [Tooltip("Permite nadar (Swimming)")] public bool swim;
     [Tooltip("Permite saltar")] public bool jump;
     [Tooltip("Permite trepar / escalar")] public bool climb;
-    [Tooltip("Permite usar magia (casts)")] public bool magic = true;
+    [Tooltip("Permite usar magia (casts)")] public bool magic = false;
     [Tooltip("Permite volar")] public bool fly;
 }
 
