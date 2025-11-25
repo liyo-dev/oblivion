@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -95,5 +96,22 @@ public sealed class PlayerInputManager : MonoBehaviour
     {
         if (_controls == null || selector == null) return null;
         return selector.Invoke(_controls.GamePlay);
+    }
+
+    /// <summary>
+    /// Devuelve la instancia compartida de <see cref="PlayerControls"/> si existe.
+    /// Si no hay <see cref="PlayerInputManager"/>, crea una nueva instancia y
+    /// devuelve la propiedad de eliminación al llamador mediante <paramref name="ownsInstance"/>.
+    /// </summary>
+    public static PlayerControls GetSharedOrNew(out bool ownsInstance)
+    {
+        if (Instance != null && Instance._controls != null)
+        {
+            ownsInstance = false;
+            return Instance._controls;
+        }
+
+        ownsInstance = true;
+        return new PlayerControls();
     }
 }

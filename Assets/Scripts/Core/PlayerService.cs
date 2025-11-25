@@ -59,6 +59,8 @@ public sealed class PlayerService : MonoBehaviour
         if (persistAcrossScenes)
             DontDestroyOnLoad(gameObject);
 
+        ServiceLocator.Register(this);
+
         if (playerRoot != null)
             InternalRegister(playerRoot, true);
     }
@@ -71,6 +73,8 @@ public sealed class PlayerService : MonoBehaviour
             _componentCache.Clear();
             playerRoot = null;
             _isShuttingDown = true;
+
+            ServiceLocator.Unregister(this);
         }
     }
 
