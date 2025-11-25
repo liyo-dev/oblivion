@@ -253,9 +253,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        HandleToggleInput();
-
-        if (_isOpen)
+        // Si el menú ya está abierto, evita leer el input de apertura para que el D-Pad
+        // no interfiera con la navegación UI (el toggle se maneja al cerrarse).
+        if (!_isOpen)
+        {
+            HandleToggleInput();
+        }
+        else
         {
             HandleCloseInput();
             HandleTabNavigationInput();
