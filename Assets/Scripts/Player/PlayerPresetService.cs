@@ -129,7 +129,7 @@ public class PlayerPresetService : MonoBehaviour
             if (preset.abilities == null)
             {
                 Debug.LogWarning("[PlayerPresetService] preset.abilities es NULL — creando con valores por defecto");
-                preset.abilities = new PlayerAbilities { swim = true, jump = true, climb = true, magic = true, fly = true };
+                preset.abilities = new PlayerAbilities { swim = false, jump = false, climb = false, magic = false, fly = false };
             }
             Debug.Log($"[PlayerPresetService] Aplicando abilities del preset: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
             _actionManager.ApplyAbilities(preset.abilities);
@@ -504,7 +504,7 @@ public class PlayerPresetService : MonoBehaviour
             if (preset.abilities == null)
             {
                 Debug.LogWarning("[PlayerPresetService] preset.abilities es NULL en ApplyCurrentPreset — creando con valores por defecto");
-                preset.abilities = new PlayerAbilities { swim = true, jump = true, climb = true, magic = true, fly = true };
+                preset.abilities = new PlayerAbilities { swim = true, jump = true, climb = true, magic = false, fly = true };
             }
             Debug.Log($"[PlayerPresetService] Re-aplicando abilities: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
             _actionManager.ApplyAbilities(preset.abilities);
