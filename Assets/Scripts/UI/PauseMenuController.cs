@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
@@ -133,6 +134,8 @@ public class PauseMenuController : MonoBehaviour
         ServiceLocator.Register(this);
         DontDestroyOnLoad(gameObject);
 
+        SceneManager.activeSceneChanged += HandleActiveSceneChanged;
+
         _es = EventSystem.current;
 
         if (rootGroup == null)
@@ -255,6 +258,25 @@ public class PauseMenuController : MonoBehaviour
         DisableUIInput();
         // Seguridad: si se desactiva externamente, asegurarse de liberar el GameState
         if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
+    }
+
+    void HandleActiveSceneChanged(Scene previous, Scene next)
+    {
+        // Cerrar el menú de pausa persistente al cambiar de escena para evitar que quede abierto.
+        if (gameObject == null) return;
+
+        if (gameObject.activeSelf)
+        {
+            Resume();
+        }
+        else
+        {
+            Time.timeScale = 1f;
+            _isPaused = false;
+            IsOpen = false;
+            MenuManager.Close(MenuKind.Pause);
+            if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
+        }
     }
 
 #if ENABLE_INPUT_SYSTEM
@@ -750,6 +772,7 @@ public class PauseMenuController : MonoBehaviour
 
     void OnDestroy()
     {
+        SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
         if (_instance == this)
         {
             ServiceLocator.Unregister(this);

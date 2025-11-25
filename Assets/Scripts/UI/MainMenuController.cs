@@ -356,7 +356,7 @@ public class MainMenuController : MonoBehaviour
 
                 // Restaurar la selección en el siguiente frame para evitar que
                 // el primer input del D-Pad sea consumido al cerrar Settings.
-                if (es != null && previous != null)
+                if (es != null)
                     StartCoroutine(RestoreSelectionNextFrame(previous));
             });
 
@@ -428,17 +428,38 @@ public class MainMenuController : MonoBehaviour
         var es = EventSystem.current;
         if (es == null) yield break;
 
-        // Sincronizar selección interna del MenuNavigator con el botón restaurado para evitar
-        // que el primer input tras cerrar Settings se pierda o duplique.
         var navigator = GetComponentInChildren<MenuNavigator>(true);
+
+        // Si no tenemos selección previa, usar el primer botón activo visible
+        if (previous == null)
+        {
+            var fallback = FindFirstActiveButton();
+            if (fallback != null) previous = fallback.gameObject;
+        }
+
+        // Sincronizar selección interna del MenuNavigator con el botón restaurado para evitar
+        // que el primer input tras cerrar Settings se pierda o duplique. Siempre reiniciamos
+        // el cooldown de navegación para que el siguiente D-Pad mueva inmediatamente.
         if (navigator != null)
-            navigator.ForceSelect(previous, resetCooldown: true);
+        {
+            if (previous != null) navigator.ForceSelect(previous, resetCooldown: true);
+            else navigator.ResetCooldown();
+        }
 
         // Limpiar y re-aplicar selección para forzar estado claro
         es.SetSelectedGameObject(null);
-        es.SetSelectedGameObject(previous);
-        var sel = previous.GetComponent<UnityEngine.UI.Selectable>();
-        if (sel != null) sel.Select();
+        if (previous != null)
+        {
+            es.SetSelectedGameObject(previous);
+            var sel = previous.GetComponent<UnityEngine.UI.Selectable>();
+            if (sel != null) sel.Select();
+        }
+
+        yield return null; // Hacerlo un frame más tarde por seguridad
+
+        // Reseguro extra: si algo perdió la selección, volver a ponerla
+        if (previous != null && es.currentSelectedGameObject == null)
+            es.SetSelectedGameObject(previous);
     }
 
     // ===== Utilidades =======================================================
