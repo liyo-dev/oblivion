@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 7b00a6b99358c4c40a3f555b7670fe89
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Trigger Demo/Celestial
+    Cycle/Trigger Demo Profile/Trigger Demo_Night.asset
+  uploadId: 772644

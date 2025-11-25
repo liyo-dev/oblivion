@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: cee8ce83227d91141a1c26dab68841a0
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Prefab/TestSphere.prefab
+  uploadId: 772644

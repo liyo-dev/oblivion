@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6236318750150202440
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6573934697427192420}
+  - component: {fileID: 8689189268182504724}
+  m_Layer: 0
+  m_Name: CelestialCycleManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6573934697427192420
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6236318750150202440}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 22.000673, y: 1.4658588, z: -2.8045342}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8689189268182504724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6236318750150202440}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b84eaf297dac5bd4c9e9044d02042adb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Trigger: 1
+  updateGI: 1
+  giUpdateInterval: 0.2
+  shaderUpdateInterval: 0.1
+  timeOfDaySlider: {fileID: 0}
+  timeText: {fileID: 0}
+  currentTimeOfDay: 8
+  timeSpeed: 0
+  sunriseTime: 5
+  sunriseDuration: 1
+  sunsetTime: 19
+  sunsetDuration: 1
+  sunIntensity: 1
+  shadowIntensity: 0.85
+  moonIntensity: 0.3
+  shouldWindChange: 0
+  windChangeInterval: 1
+  currentWindDirection: 0
+  maxWindDirectionChange: 0
+  sunTransform: {fileID: 0}
+  sceneSkybox: {fileID: 0}
+  sunAzimuth: -30
+  sunriseOffset: 30
+  sunsetOffset: 30
+  skyboxIntensityModifier: 1
+  weatherModifier: 1
+  seasonModifier: 1
+  fogEnabled: 1
+  fogMode: 1
+  fogDistance: 5
+  overrideCloudControl: 1
+  CloudColor: {r: 1, g: 1, b: 1, a: 1}
+  DarkSky: 0
+  BlendCloud: 0.2
+  AmbientCloudProperty: {x: 2, y: 2, z: 1.5, w: 0.8}
+  AmbientCloudSpeed: 0.5
+  CloudScale_01: 1
+  CloudScale_02: 1
+  CloudAmount: 0.5
+  CloudIntensity: 1
+  CloudLayerIntensity01: 1
+  CloudLayerIntensity02: 1
+  CloudSpeed: 1
+  timeOfDayController: {fileID: 0}

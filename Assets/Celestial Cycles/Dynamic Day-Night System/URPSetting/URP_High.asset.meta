@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4231da04c68b45942a75ce26b483108b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/URPSetting/URP_High.asset
+  uploadId: 772644

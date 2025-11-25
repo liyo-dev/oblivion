@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b8a4d2f7e61a34c8c9f6f8b95e969af5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2655988077585873504
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Preset/CCP_Noon.preset
+  uploadId: 772644

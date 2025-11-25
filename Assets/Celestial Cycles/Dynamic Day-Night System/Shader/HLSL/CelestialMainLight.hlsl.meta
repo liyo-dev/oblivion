@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 9fd9c947cf324db88aac4598f6987849
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Shader/HLSL/CelestialMainLight.hlsl
+  uploadId: 772644

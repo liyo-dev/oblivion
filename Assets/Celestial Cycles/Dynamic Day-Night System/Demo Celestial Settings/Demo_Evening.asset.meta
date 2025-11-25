@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6fc384bc40e7b3c438ceab74bbf225a6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Demo Celestial Settings/Demo_Evening.asset
+  uploadId: 772644

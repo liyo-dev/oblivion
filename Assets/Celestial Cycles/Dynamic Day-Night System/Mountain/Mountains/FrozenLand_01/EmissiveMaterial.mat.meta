@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: edd53df3b3ab46840a8bf91afadbf644
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 279274
+  packageName: 'Celestial Cycles: Dynamic Day-Night System'
+  packageVersion: 2.1.2
+  assetPath: Assets/Celestial Cycles/Dynamic Day-Night System/Mountain/Mountains/FrozenLand_01/EmissiveMaterial.mat
+  uploadId: 772644

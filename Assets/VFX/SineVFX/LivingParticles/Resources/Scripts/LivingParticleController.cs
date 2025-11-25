@@ -1,18 +1,23 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class LivingParticleController : MonoBehaviour {
 
-    public Transform affector;
+    private Transform _playerTransform;
+    private ParticleSystemRenderer _psr;
 
-    private ParticleSystemRenderer psr;
+    void Start () {
+        _psr = GetComponent<ParticleSystemRenderer>();
 
-	void Start () {
-        psr = GetComponent<ParticleSystemRenderer>();
-	}
-	
-	void Update () {
-        psr.material.SetVector("_Affector", affector.position);
+        // Obtener la referencia al jugador desde el ServiceLocator
+        _playerTransform = ServiceLocator.Get<Transform>();
+        if (_playerTransform == null) {
+            Debug.LogError("No se pudo encontrar el Transform del jugador en el ServiceLocator.");
+        }
+    }
+
+    void Update () {
+        if (_playerTransform != null) {
+            _psr.material.SetVector(Shader.PropertyToID("_Affector"), _playerTransform.position);
+        }
     }
 }
