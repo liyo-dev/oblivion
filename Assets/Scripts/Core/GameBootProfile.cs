@@ -507,6 +507,10 @@ public class GameBootProfile : ScriptableObject
             GameBootProfileDebugger.Log("NewGameReset", "🆕 Nueva partida con preset vacío (sin defaultPlayerPreset)", LogType.Warning);
         }
 
+        // Garantizar que la magia arranca bloqueada en partidas nuevas, incluso si el preset
+        // por defecto tuviera valores residuales (por testing o saves previos).
+        LockMagicForNewGame(runtimePreset);
+
         // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
         if (runtimePreset != null)
         {
@@ -569,5 +573,32 @@ public class GameBootProfile : ScriptableObject
         p.defeatedBossIds = new List<string>();
         // === NUEVO: resetear abilities ===
         p.abilities = new PlayerAbilities();
+    }
+
+    /// <summary>
+    /// Elimina cualquier rastro de magia desbloqueada para una partida nueva.
+    /// </summary>
+    void LockMagicForNewGame(PlayerPresetSO preset)
+    {
+        if (preset == null) return;
+
+        // Bloquear habilidad de magia.
+        if (preset.abilities == null) preset.abilities = new PlayerAbilities();
+        preset.abilities.magic = false;
+
+        // Asegurar que el listado de habilidades no marca magia como desbloqueada.
+        preset.unlockedAbilities ??= new List<AbilityId>();
+        preset.unlockedAbilities.Remove(AbilityId.MagicAttack);
+
+        // Limpiar hechizos y slots asociados para que no aparezcan en UI.
+        preset.unlockedSpells ??= new List<SpellId>();
+        preset.unlockedSpells.Clear();
+        preset.leftSpellId = SpellId.None;
+        preset.rightSpellId = SpellId.None;
+        preset.specialSpellId = SpellId.None;
+
+        // Sin magia, el maná debe iniciar en 0 para evitar mostrar barra llena.
+        preset.maxMP = 0f;
+        preset.currentMP = 0f;
     }
 }

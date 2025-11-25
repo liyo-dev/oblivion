@@ -101,7 +101,7 @@ public class QuestLogListUI : MonoBehaviour
         if (dpadUpPressed)
         {
             if (debugLogs) Debug.Log("[QuestLogListUI] DPadUp detected -> showing panel sin restricciones");
-            ShowPanel(true);
+            TogglePanel();
         }
         else
         {
@@ -125,7 +125,7 @@ public class QuestLogListUI : MonoBehaviour
     void OnQuickAccessPerformed(InputAction.CallbackContext ctx)
     {
         if (!isActiveAndEnabled) return;
-        ShowPanel(true);
+        TogglePanel();
     }
 #endif
 
