@@ -218,7 +218,7 @@ public class QuestLogListUI : MonoBehaviour
     void OnQuestStarted(string questId)
     {
         // Mostrar automáticamente el panel cuando aparece una nueva misión
-        ShowPanel(true);
+        ShowPanel(true, force:true);
         RestartAutoHide();
     }
 
@@ -287,16 +287,16 @@ public class QuestLogListUI : MonoBehaviour
         UpdateHelpText();
     }
 
-    public void ShowPanel(bool show)
+    public void ShowPanel(bool show, bool force = false)
     {
-        if (show)
+        if (show && !force)
         {
             if (!GameState.CanOpenInventory) return;
             if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
         }
 
         _isPanelVisible = show;
-        
+
         if (_isPanelVisible)
             AnimateShow();
         else
