@@ -551,8 +551,8 @@ public class PauseMenuController : MonoBehaviour
         try
         {
             var gp = UnityEngine.InputSystem.Gamepad.current;
-            // Usar el botón "B" como cancel, pero evitar Start para no cerrar el menú
-            // inmediatamente después de abrirlo en el mismo frame.
+            // Usar el botón "B" como cancel. El botón Start gestiona el toggle de pausa
+            // a través del flujo principal para evitar cierres inmediatos en el mismo frame.
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
                 return true;
 
@@ -565,8 +565,7 @@ public class PauseMenuController : MonoBehaviour
 
         return Input.GetKeyDown(KeyCode.Escape)
             || Input.GetKeyDown(KeyCode.Backspace)
-            || Input.GetKeyDown(KeyCode.JoystickButton1)
-            || Input.GetKeyDown(KeyCode.JoystickButton7);
+            || Input.GetKeyDown(KeyCode.JoystickButton1);
     }
 
     bool ConsumeStick(float y)
