@@ -29,6 +29,7 @@ public class QuestLogListUI : MonoBehaviour
     QuestManager _qm;               // cache del manager suscrito
     Coroutine _waitCo;
     private bool _isPanelVisible = false; // Estado del panel (oculto por defecto)
+    private bool _panelRootIsSelf;
 #if ENABLE_INPUT_SYSTEM
     private InputAction _quickAccessAction;
 #endif
@@ -37,6 +38,7 @@ public class QuestLogListUI : MonoBehaviour
     {
         if (!panelRoot)
             panelRoot = gameObject;
+        _panelRootIsSelf = panelRoot == gameObject;
 
         if (!scrollView)
         {
@@ -249,7 +251,7 @@ public class QuestLogListUI : MonoBehaviour
     public void ShowPanel(bool show)
     {
         _isPanelVisible = show;
-        if (panelRoot) panelRoot.SetActive(_isPanelVisible);
+        if (panelRoot && !_panelRootIsSelf) panelRoot.SetActive(_isPanelVisible);
         if (scrollView) scrollView.SetActive(_isPanelVisible);
         if (panelGroup)
         {
