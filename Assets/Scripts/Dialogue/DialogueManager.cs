@@ -653,21 +653,22 @@ public class DialogueManager : MonoBehaviour
             if (action != null) return action;
         }
 
-        // 2) Fallback: crear un PlayerControls local solo para UI
+        // 2) Fallback: crear (o reutilizar) PlayerControls para UI
         if (_uiPlayerControls == null)
         {
             try
             {
-                _uiPlayerControls = new PlayerControls();
-                _ownsUiPlayerControls = true;
+                _uiPlayerControls = PlayerInputManager.GetSharedOrNew(out _ownsUiPlayerControls);
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[DialogueManager] No se pudo crear PlayerControls para UI: {ex.Message}");
+                Debug.LogWarning($"[DialogueManager] No se pudo obtener PlayerControls para UI: {ex.Message}");
                 return null;
             }
         }
-        _uiPlayerControls.UI.Enable();
+
+        if (_ownsUiPlayerControls || !_uiPlayerControls.UI.enabled)
+            _uiPlayerControls.UI.Enable();
         return _uiPlayerControls.UI.Submit;
     }
 
