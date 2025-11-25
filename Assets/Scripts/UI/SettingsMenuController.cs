@@ -50,6 +50,10 @@ public class SettingsMenuController : MonoBehaviour
     [Range(0f, 1f)] public float navDeadzone = 0.2f;
     public bool enableManualNavigation = true; // enable fallback navigation polling
     private Vector2Int _navHeldDir = Vector2Int.zero; // normalized cardinal dir of held input
+    private bool _editingSlider;
+    private Slider _activeSlider;
+    private float _sliderAdjustCooldown;
+    private const float SLIDER_REPEAT_DELAY = 0.16f;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -107,6 +111,8 @@ public class SettingsMenuController : MonoBehaviour
                 }
             }
         }
+
+        ConfigureNavigationLinks();
     }
 
     void OnEnable()
@@ -121,9 +127,14 @@ public class SettingsMenuController : MonoBehaviour
 
         if (WasCancelPressedThisFrame())
         {
-            Close();
+            if (_editingSlider)
+                EndSliderEdit();
+            else
+                Close();
             return;
         }
+
+        _sliderAdjustCooldown -= Time.unscaledDeltaTime;
 
         // Read input from common sources and move selection accordingly
         Vector2 navInput = Vector2.zero;
@@ -160,7 +171,15 @@ public class SettingsMenuController : MonoBehaviour
                 : new Vector2(0f, Mathf.Sign(navInput.y));
 
             var cardinal = new Vector2Int(Mathf.RoundToInt(dir.x), Mathf.RoundToInt(dir.y));
-            if (cardinal != Vector2Int.zero && cardinal != _navHeldDir)
+            if (_editingSlider)
+            {
+                if (cardinal.x != 0 && _sliderAdjustCooldown <= 0f)
+                {
+                    AdjustActiveSlider(cardinal.x);
+                    _sliderAdjustCooldown = SLIDER_REPEAT_DELAY;
+                }
+            }
+            else if (cardinal != Vector2Int.zero && cardinal != _navHeldDir)
             {
                 _navHeldDir = cardinal;
                 MoveSelection(dir);
@@ -169,6 +188,8 @@ public class SettingsMenuController : MonoBehaviour
         else
         {
             _navHeldDir = Vector2Int.zero;
+            if (!_editingSlider)
+                _sliderAdjustCooldown = 0f;
         }
 
         // Submit handling (basic)
@@ -184,22 +205,34 @@ public class SettingsMenuController : MonoBehaviour
         {
             var es = EventSystem.current;
             var go = es?.currentSelectedGameObject;
-            if (go != null)
+            if (_editingSlider)
             {
-                var btn = go.GetComponent<UnityEngine.UI.Button>();
-                if (btn != null) btn.onClick.Invoke();
+                EndSliderEdit();
+            }
+            else if (go != null)
+            {
+                var slider = go.GetComponent<UnityEngine.UI.Slider>();
+                if (slider != null)
+                {
+                    BeginSliderEdit(slider);
+                }
                 else
                 {
-                    var tog = go.GetComponent<UnityEngine.UI.Toggle>();
-                    if (tog != null)
-                    {
-                        tog.isOn = !tog.isOn;
-                        tog.onValueChanged?.Invoke(tog.isOn);
-                    }
+                    var btn = go.GetComponent<UnityEngine.UI.Button>();
+                    if (btn != null) btn.onClick.Invoke();
                     else
                     {
-                        // try to execute submit handler
-                        ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
+                        var tog = go.GetComponent<UnityEngine.UI.Toggle>();
+                        if (tog != null)
+                        {
+                            tog.isOn = !tog.isOn;
+                            tog.onValueChanged?.Invoke(tog.isOn);
+                        }
+                        else
+                        {
+                            // try to execute submit handler
+                            ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
+                        }
                     }
                 }
             }
@@ -268,6 +301,52 @@ public class SettingsMenuController : MonoBehaviour
         {
             es.SetSelectedGameObject(best.gameObject);
             best.Select();
+        }
+    }
+
+    void ConfigureNavigationLinks()
+    {
+        // Alinear la navegación vertical en el bloque de idiomas/audio
+        if (spanishButton && masterVolumeSlider)
+        {
+            var nav = spanishButton.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnDown = masterVolumeSlider;
+            spanishButton.navigation = nav;
+        }
+
+        if (englishButton && masterVolumeSlider)
+        {
+            var nav = englishButton.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnDown = masterVolumeSlider;
+            englishButton.navigation = nav;
+        }
+
+        if (masterVolumeSlider)
+        {
+            var nav = masterVolumeSlider.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnUp = spanishButton ? spanishButton : englishButton;
+            nav.selectOnDown = sfxVolumeSlider;
+            masterVolumeSlider.navigation = nav;
+        }
+
+        if (sfxVolumeSlider)
+        {
+            var nav = sfxVolumeSlider.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnUp = masterVolumeSlider;
+            nav.selectOnDown = musicVolumeSlider;
+            sfxVolumeSlider.navigation = nav;
+        }
+
+        if (musicVolumeSlider)
+        {
+            var nav = musicVolumeSlider.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            nav.selectOnUp = sfxVolumeSlider;
+            musicVolumeSlider.navigation = nav;
         }
     }
 
@@ -418,6 +497,39 @@ public class SettingsMenuController : MonoBehaviour
             : null;
 
         return firstSelectable ? firstSelectable.gameObject : null;
+    }
+
+    void BeginSliderEdit(Slider slider)
+    {
+        if (!slider) return;
+        _editingSlider = true;
+        _activeSlider = slider;
+        _navHeldDir = Vector2Int.zero;
+        _sliderAdjustCooldown = 0f;
+    }
+
+    void EndSliderEdit()
+    {
+        _editingSlider = false;
+        _activeSlider = null;
+        _navHeldDir = Vector2Int.zero;
+        _sliderAdjustCooldown = 0f;
+    }
+
+    void AdjustActiveSlider(int direction)
+    {
+        if (!_editingSlider || _activeSlider == null) return;
+
+        float step = _activeSlider.wholeNumbers
+            ? 1f
+            : Mathf.Max(0.01f, (_activeSlider.maxValue - _activeSlider.minValue) * 0.05f);
+
+        float next = Mathf.Clamp(
+            _activeSlider.value + (direction * step),
+            _activeSlider.minValue,
+            _activeSlider.maxValue);
+
+        _activeSlider.value = next;
     }
 
     void WireBinaryButton(Button btn, UnityEngine.Events.UnityAction action)
