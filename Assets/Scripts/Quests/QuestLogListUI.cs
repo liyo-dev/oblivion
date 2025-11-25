@@ -3,6 +3,11 @@ using TMPro;
 using System.Collections;
 using System.Linq;
 using DG.Tweening;
+#if UNITY_2021_1_OR_NEWER
+using UnityEngine.UI;
+#else
+using UnityEngine.UI;
+#endif
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -39,6 +44,35 @@ public class QuestLogListUI : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
     private InputAction _quickAccessAction;
 #endif
+
+    void Awake()
+    {
+        if (!panelRoot)
+            panelRoot = gameObject;
+
+        if (!animatedRoot)
+            animatedRoot = GetComponent<RectTransform>();
+
+        if (!panelGroup)
+            panelGroup = GetComponent<CanvasGroup>();
+
+        if (!scrollView)
+        {
+            var sr = GetComponentInChildren<ScrollRect>(true);
+            if (sr != null)
+                scrollView = sr.gameObject;
+        }
+
+        if (!contentRoot)
+        {
+            var sr = GetComponentInChildren<ScrollRect>(true);
+            if (sr != null && sr.content != null)
+                contentRoot = sr.content;
+        }
+
+        if (!mainMenu)
+            mainMenu = GetComponentInChildren<QuestMainMenuUI>(true);
+    }
 
     void OnEnable()
     {
