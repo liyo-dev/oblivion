@@ -56,7 +56,7 @@ public sealed class UiInputManager : MonoBehaviour
 
             if (WasPausePressed())
             {
-                //HandlePauseRequest();
+                HandlePauseRequest();
             }    }
 
     void OnDestroy()
@@ -84,7 +84,7 @@ public sealed class UiInputManager : MonoBehaviour
     private void OnPauseRequested(InputAction.CallbackContext ctx)
     {
         if (!ctx.performed) return;
-        //HandlePauseRequest();
+        HandlePauseRequest();
     }
 
     private void EnsurePauseMenu()
@@ -120,11 +120,10 @@ public sealed class UiInputManager : MonoBehaviour
             return;
         }
 
+        // Si ya está abierto, NO cerrarlo con Start: dejar solo el botón B para cerrar.
         if (MenuManager.IsOpen(MenuKind.Pause))
         {
-            MenuManager.Close(MenuKind.Pause);
-            _pauseMenu.Resume();
-            if (debugLogs) Debug.Log("[UiInputManager] Cerrando pausa");
+            if (debugLogs) Debug.Log("[UiInputManager] Pausa ya abierta: Start no la cierra (B cierra)");
             return;
         }
 

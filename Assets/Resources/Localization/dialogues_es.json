@@ -105,6 +105,14 @@
             "value": "¿Has leido la carta que te dejé en la mesita?"
         },
         {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
+            "value": "La caja debe estar cerca de un árbol."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
+            "value": "Búscala por esta zona no debe andar muy lejos."
+        },
+        {
             "key": "DLG_ELDRAN_MISSION2_OFFER_01",
             "value": "Gracias por venir."
         },

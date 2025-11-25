@@ -105,6 +105,14 @@
             "value": "Have you read the letter I left you on the nightstand?"
         },
         {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
+            "value": "[EN] La caja debe estar cerca de un árbol."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
+            "value": "[EN] Búscala por esta zona no debe andar muy lejos."
+        },
+        {
             "key": "DLG_ELDRAN_MISSION2_OFFER_01",
             "value": "Thanks for coming."
         },

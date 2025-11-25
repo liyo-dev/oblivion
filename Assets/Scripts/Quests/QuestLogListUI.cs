@@ -2,7 +2,6 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using System.Linq;
-using DG.Tweening;
 #if UNITY_2021_1_OR_NEWER
 using UnityEngine.UI;
 #else
@@ -22,25 +21,14 @@ public class QuestLogListUI : MonoBehaviour
     [SerializeField] private GameObject panelRoot;       // El panel completo para show/hide
     [SerializeField] private GameObject scrollView;      // Solo el ScrollView para ocultar
     [SerializeField] private TextMeshProUGUI helpText;   // Texto de ayuda para cambiar
-    [SerializeField] private QuestMainMenuUI mainMenu;   // menú principal de misiones
     [SerializeField] private bool debugLogs = false;
 
-    [Header("Animación (DOTween)")]
-    [SerializeField] private RectTransform animatedRoot;
     [SerializeField] private CanvasGroup panelGroup;
-    [SerializeField] private float hideAfterSeconds = 4f;
-    [SerializeField] private float hideDistance = 420f;
-    [SerializeField] private float tweenDuration = 0.35f;
-    [SerializeField] private Ease tweenEase = Ease.InOutSine;
 
     bool _bound;                    // ya suscrito al manager
     QuestManager _qm;               // cache del manager suscrito
     Coroutine _waitCo;
     private bool _isPanelVisible = false; // Estado del panel (oculto por defecto)
-    private Tween _panelTween;
-    private Vector2 _shownPos;
-    private Vector2 _hiddenPos;
-    private Coroutine _autoHideCo;
 #if ENABLE_INPUT_SYSTEM
     private InputAction _quickAccessAction;
 #endif
@@ -49,12 +37,6 @@ public class QuestLogListUI : MonoBehaviour
     {
         if (!panelRoot)
             panelRoot = gameObject;
-
-        if (!animatedRoot)
-            animatedRoot = GetComponent<RectTransform>();
-
-        if (!panelGroup)
-            panelGroup = GetComponent<CanvasGroup>();
 
         if (!scrollView)
         {
@@ -70,8 +52,8 @@ public class QuestLogListUI : MonoBehaviour
                 contentRoot = sr.content;
         }
 
-        if (!mainMenu)
-            mainMenu = GetComponentInChildren<QuestMainMenuUI>(true);
+        if (!panelGroup)
+            panelGroup = GetComponent<CanvasGroup>();
     }
 
     void OnEnable()
@@ -94,24 +76,13 @@ public class QuestLogListUI : MonoBehaviour
         catch { }
 #endif
 
-        if (animatedRoot)
-        {
-            _shownPos = animatedRoot.anchoredPosition;
-            _hiddenPos = _shownPos + Vector2.down * hideDistance;
-            animatedRoot.anchoredPosition = _hiddenPos;
-        }
-
-        if (panelRoot) panelRoot.SetActive(false);
-        if (scrollView) scrollView.SetActive(false);
-        UpdateHelpText();
+        ShowPanel(false);
     }
 
     void OnDisable()
     {
         Unbind();
         if (_waitCo != null) { StopCoroutine(_waitCo); _waitCo = null; }
-        KillTween();
-        if (_autoHideCo != null) StopCoroutine(_autoHideCo);
 #if ENABLE_INPUT_SYSTEM
         if (_quickAccessAction != null)
         {
@@ -123,51 +94,26 @@ public class QuestLogListUI : MonoBehaviour
 
     void Update()
     {
-        // Respetar GameState: no abrir/cerrar si UI global no lo permite
-        if (!GameState.CanOpenInventory || (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen))
-        {
-            if (debugLogs) Debug.Log($"[QuestLogListUI] Update: blocked CanOpenInventory={GameState.CanOpenInventory} DialogueOpen={(DialogueManager.Instance!=null?DialogueManager.Instance.IsOpen:false)}");
-            return;
-        }
-
         bool dpadUpPressed = DetectDpadUpPressed();
-        bool cancelPressed = DetectCancelPressed();
-
-        if (cancelPressed)
-        {
-            bool closedAny = false;
-            if (mainMenu != null && mainMenu.IsOpen)
-            {
-                mainMenu.HideMenu();
-                closedAny = true;
-            }
-            if (_isPanelVisible)
-            {
-                ShowPanel(false);
-                closedAny = true;
-            }
-
-            if (closedAny) return;
-        }
 
         if (dpadUpPressed)
         {
-            if (debugLogs) Debug.Log("[QuestLogListUI] DPadUp detected -> HandleToggleOrMenu");
-            HandleToggleOrMenu();
+            if (debugLogs) Debug.Log("[QuestLogListUI] DPadUp detected -> showing panel sin restricciones");
+            ShowPanel(true);
         }
         else
         {
             // Guardar estado anterior del D-Pad (eje 7, NO el joystick)
             float currentDpad = 0f;
-            try { currentDpad = Input.GetAxis("7th axis"); } catch { }
+            try { currentDpad = Input.GetAxis("7th axis"); }
+            catch { }
             _lastFrameDpadUp = currentDpad > 0.5f;
         }
 
-        // Debug hotkey: for testing, permite abrir el panel forzando la apertura aunque GameState lo bloquee.
         if (Input.GetKeyDown(KeyCode.L))
         {
-            if (debugLogs) Debug.Log("[QuestLogListUI] Debug hotkey L pressed -> forcing ShowPanel(true, force:true)");
-            ShowPanel(true, force: true);
+            if (debugLogs) Debug.Log("[QuestLogListUI] Debug hotkey L pressed -> forcing ShowPanel(true)");
+            ShowPanel(true);
         }
     }
 
@@ -176,40 +122,10 @@ public class QuestLogListUI : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
     void OnQuickAccessPerformed(InputAction.CallbackContext ctx)
     {
-        // Evitar que el callback intente abrir el panel cuando el objeto ya no existe o está inactivo
         if (!isActiveAndEnabled) return;
-
-        // Imitar el flujo de Update para mantener la lógica centralizada
-        if (!GameState.CanOpenInventory || (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen))
-            return;
-
-        HandleToggleOrMenu();
+        ShowPanel(true);
     }
 #endif
-
-    void HandleToggleOrMenu()
-    {
-        if (_isPanelVisible)
-        {
-            if (mainMenu != null)
-            {
-                if (mainMenu.IsOpen)
-                    mainMenu.HideMenu();
-                else
-                    mainMenu.ShowMenu();
-            }
-            else
-            {
-                TogglePanel();
-            }
-        }
-        else
-        {
-            ShowPanel(true);
-        }
-
-        RestartAutoHide();
-    }
 
     IEnumerator BindWhenReady()
     {
@@ -266,9 +182,7 @@ public class QuestLogListUI : MonoBehaviour
 
     void OnQuestStarted(string questId)
     {
-        // Mostrar automáticamente el panel cuando aparece una nueva misión
-        ShowPanel(true, force:true);
-        RestartAutoHide();
+        ShowPanel(true);
     }
 
     void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
@@ -327,117 +241,23 @@ public class QuestLogListUI : MonoBehaviour
         return dpadUpPressed;
     }
 
-    bool DetectCancelPressed()
-    {
-#if ENABLE_INPUT_SYSTEM
-        var gp = UnityEngine.InputSystem.Gamepad.current;
-        if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
-            return true;
-
-        var kb = UnityEngine.InputSystem.Keyboard.current;
-        if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
-            return true;
-#endif
-
-        return Input.GetKeyDown(KeyCode.Escape)
-            || Input.GetKeyDown(KeyCode.Backspace)
-            || Input.GetKeyDown(KeyCode.JoystickButton1)
-            || Input.GetKeyDown(KeyCode.JoystickButton7);
-    }
-
     public void TogglePanel()
     {
-        if (!GameState.CanOpenInventory) return;
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
-
-        _isPanelVisible = !_isPanelVisible;
-
-        if (_isPanelVisible)
-            AnimateShow();
-        else
-            AnimateHide();
-
-        UpdateHelpText();
+        ShowPanel(!_isPanelVisible);
     }
 
-    public void ShowPanel(bool show, bool force = false)
+    public void ShowPanel(bool show)
     {
-        if (show && !force)
-        {
-            if (!GameState.CanOpenInventory) return;
-            if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
-        }
-
         _isPanelVisible = show;
-
-        if (_isPanelVisible)
-            AnimateShow();
-        else
-            AnimateHide();
-
-        UpdateHelpText();
-    }
-
-    void AnimateShow()
-    {
-        if (panelRoot) panelRoot.SetActive(true);
-        if (scrollView) scrollView.SetActive(true);
-        KillTween();
+        if (panelRoot) panelRoot.SetActive(_isPanelVisible);
+        if (scrollView) scrollView.SetActive(_isPanelVisible);
         if (panelGroup)
         {
-            panelGroup.alpha = 0f;
-            panelGroup.blocksRaycasts = true;
-            panelGroup.interactable = true;
-            _panelTween = panelGroup.DOFade(1f, tweenDuration).SetEase(tweenEase).SetUpdate(true);
+            panelGroup.alpha = _isPanelVisible ? 1f : 0f;
+            panelGroup.blocksRaycasts = _isPanelVisible;
+            panelGroup.interactable = _isPanelVisible;
         }
-        if (animatedRoot)
-        {
-            animatedRoot.anchoredPosition = _hiddenPos;
-            _panelTween = animatedRoot.DOAnchorPos(_shownPos, tweenDuration).SetEase(tweenEase).SetUpdate(true);
-        }
-        RestartAutoHide();
-    }
-
-    void AnimateHide()
-    {
-        KillTween();
-        if (panelGroup)
-        {
-            panelGroup.interactable = false;
-            panelGroup.blocksRaycasts = false;
-            _panelTween = panelGroup.DOFade(0f, tweenDuration).SetEase(tweenEase).SetUpdate(true)
-                .OnComplete(() => { if (panelRoot) panelRoot.SetActive(false); });
-        }
-        if (animatedRoot)
-        {
-            _panelTween = animatedRoot.DOAnchorPos(_hiddenPos, tweenDuration).SetEase(tweenEase).SetUpdate(true)
-                .OnComplete(() => { if (scrollView) scrollView.SetActive(false); });
-        }
-        if (_autoHideCo != null) { StopCoroutine(_autoHideCo); _autoHideCo = null; }
-        if (mainMenu != null && mainMenu.IsOpen)
-            mainMenu.HideMenu();
-    }
-
-    void RestartAutoHide()
-    {
-        if (!gameObject.activeInHierarchy) return;
-        if (_autoHideCo != null) StopCoroutine(_autoHideCo);
-        _autoHideCo = StartCoroutine(AutoHideAfterDelay());
-    }
-
-    IEnumerator AutoHideAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(hideAfterSeconds);
-        _isPanelVisible = false;
-        AnimateHide();
         UpdateHelpText();
-    }
-
-    [ContextMenu("Force Show Panel (Editor)")]
-    private void ContextMenuForceShow()
-    {
-        Debug.Log("[QuestLogListUI] ContextMenuForceShow invoked");
-        ShowPanel(true, force: true);
     }
 
     void UpdateHelpText()
@@ -446,9 +266,4 @@ public class QuestLogListUI : MonoBehaviour
         helpText.text = _isPanelVisible ? "[D-Pad ▲] Ocultar" : "[D-Pad ▲] Mostrar";
     }
 
-    void KillTween()
-    {
-        if (_panelTween != null && _panelTween.IsActive()) _panelTween.Kill();
-        _panelTween = null;
-    }
 }

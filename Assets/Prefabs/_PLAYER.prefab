@@ -12405,7 +12405,7 @@ MonoBehaviour:
     disableInputActions: []
     forceUpperIdle: 1
     upperBodyWeight: 0
-  debugLogs: 1
+  debugLogs: 0
 --- !u!114 &1297097001791454143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12443,7 +12443,7 @@ MonoBehaviour:
   actionManager: {fileID: 8599661016629616348}
   spawner: {fileID: 5411191197508503009}
   specialChargeMeter: {fileID: 0}
-  showDebugLogs: 1
+  showDebugLogs: 0
 --- !u!114 &2207912406606354293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12556,7 +12556,7 @@ MonoBehaviour:
   tiltSpeed: 5
   doubleTapWindow: 0.35
   boostMultiplier: 1.5
-  debugLogs: 1
+  debugLogs: 0
   flightArmedDuration: 2
   vfxAttach: {fileID: 0}
   trailPrefab: {fileID: 7700642936372213891, guid: 18be81955f2d925438bc7c873d04e297, type: 3}
