@@ -104,11 +104,11 @@ public class InputActionMapRouter : MonoBehaviour
         {
             // Si el PlayerInput está desactivado (p.ej. al cambiar de escena) el switch lanza
             // "input is not enabled". Aseguramos la activación antes de conmutar.
-            if (!playerInput.inputIsActive)
-                playerInput.ActivateInput();
-
             if (!playerInput.enabled)
                 playerInput.enabled = true;
+
+            if (!playerInput.inputIsActive)
+                playerInput.ActivateInput();
 
             playerInput.SwitchCurrentActionMap(targetMap);
         }
