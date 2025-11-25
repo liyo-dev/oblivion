@@ -47,6 +47,17 @@ public sealed class UiInputManager : MonoBehaviour
         UnbindAction(pauseAction, OnPauseRequested);
     }
 
+    void Update()
+    {
+        // Si no hay InputAction configurado en el inspector, utiliza un fallback por polling
+        // para que Start/Escape sigan abriendo la pausa.
+        if (pauseAction != null && pauseAction.action != null && pauseAction.action.enabled)
+            return;
+
+        if (WasPausePressed())
+            HandlePauseRequest();
+    }
+
     void OnDestroy()
     {
         if (Instance == this)
@@ -72,6 +83,27 @@ public sealed class UiInputManager : MonoBehaviour
     private void OnPauseRequested(InputAction.CallbackContext ctx)
     {
         if (!ctx.performed) return;
+        HandlePauseRequest();
+    }
+
+    private void EnsurePauseMenu()
+    {
+        if (_pauseMenu != null) return;
+        _pauseMenu = ServiceLocator.Get<PauseMenuController>(logIfMissing: false);
+        if (_pauseMenu == null)
+        {
+#if UNITY_2022_3_OR_NEWER
+            _pauseMenu = FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+            _pauseMenu = FindObjectOfType<PauseMenuController>(true);
+#pragma warning restore 618
+#endif
+        }
+    }
+
+    private void HandlePauseRequest()
+    {
         EnsurePauseMenu();
 
         if (_pauseMenu == null)
@@ -105,19 +137,24 @@ public sealed class UiInputManager : MonoBehaviour
         }
     }
 
-    private void EnsurePauseMenu()
+    private bool WasPausePressed()
     {
-        if (_pauseMenu != null) return;
-        _pauseMenu = ServiceLocator.Get<PauseMenuController>(logIfMissing: false);
-        if (_pauseMenu == null)
+#if ENABLE_INPUT_SYSTEM
+        try
         {
-#if UNITY_2022_3_OR_NEWER
-            _pauseMenu = FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            _pauseMenu = FindObjectOfType<PauseMenuController>(true);
-#pragma warning restore 618
-#endif
+            var gp = Gamepad.current;
+            if (gp != null && gp.startButton.wasPressedThisFrame)
+                return true;
+
+            var kb = Keyboard.current;
+            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+                return true;
         }
+        catch { }
+#endif
+
+        return Input.GetKeyDown(KeyCode.Escape)
+            || Input.GetKeyDown(KeyCode.Backspace)
+            || Input.GetKeyDown(KeyCode.JoystickButton7);
     }
 }
