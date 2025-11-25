@@ -193,6 +193,7 @@ MonoBehaviour:
         persistDeactivation: 0
         debugLogs: 0
         treatNoPathAsReach: 1
+        runOnlyOncePerProfile: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -300,6 +301,7 @@ MonoBehaviour:
         persistDeactivation: 1
         debugLogs: 0
         treatNoPathAsReach: 1
+        runOnlyOncePerProfile: 1
     - rid: 5623891431555334913
       type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
       data:

@@ -155,8 +155,8 @@ namespace Sendero.Narrative.Editor
                 if (p.EndsWith(".position"))     continue;
                 if (p.EndsWith(".outputs"))      continue;
 
-                // Special case: abilitiesToUnlock and spellsToUnlock -> render ReorderableList
-                if (p.EndsWith(".abilitiesToUnlock") || p.EndsWith(".spellsToUnlock"))
+                // Special case: abilityKeysToUnlock / abilitiesToUnlock (legacy) and spellsToUnlock -> render ReorderableList
+                if (p.EndsWith(".abilityKeysToUnlock") || p.EndsWith(".abilitiesToUnlock") || p.EndsWith(".spellsToUnlock"))
                 {
 #if UNITY_EDITOR
                     try

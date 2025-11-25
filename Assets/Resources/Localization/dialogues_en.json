@@ -41,6 +41,10 @@
             "value": "Pirate"
         },
         {
+            "key": "CHAR_RUDOLFO",
+            "value": "Rudolph"
+        },
+        {
             "key": "CHAR_TENDERA",
             "value": "[EN] Tendera"
         },

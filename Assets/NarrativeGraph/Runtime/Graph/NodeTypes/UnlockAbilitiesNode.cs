@@ -7,8 +7,11 @@ using UnityEngine;
 public sealed class UnlockAbilitiesNode : NarrativeNode
 {
     [Header("Internal Unlock - Abilities & Spells")]
-    [Tooltip("Lista de habilidades a desbloquear desde el grafo")]
-    public List<AbilityId> abilitiesToUnlock = new();
+    [Tooltip("Habilidades principales (swim/jump/climb/magic/fly) a desbloquear desde el grafo")]
+    public List<AbilityKey> abilityKeysToUnlock = new();
+
+    [Obsolete("Usa abilityKeysToUnlock (AbilityKey). Este campo solo se mantiene para compatibilidad.")]
+    [SerializeField, HideInInspector] private List<AbilityId> abilitiesToUnlock = new();
 
     [Tooltip("Lista de hechizos a desbloquear desde el grafo")]
     public List<SpellId> spellsToUnlock = new();
@@ -41,6 +44,23 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
         
             try
             {
+                // Compatibilidad: si venimos de assets antiguos, mapear AbilityId -> AbilityKey (solo MagicAttack -> Magic).
+                if ((abilityKeysToUnlock == null || abilityKeysToUnlock.Count == 0) && abilitiesToUnlock != null && abilitiesToUnlock.Count > 0)
+                {
+                    foreach (var legacy in abilitiesToUnlock)
+                    {
+                        if (legacy == AbilityId.MagicAttack && !abilityKeysToUnlock.Contains(AbilityKey.Magic))
+                            abilityKeysToUnlock.Add(AbilityKey.Magic);
+                    }
+                }
+
+                if (abilityKeysToUnlock != null)
+                {
+                    for (int i = 0; i < abilityKeysToUnlock.Count; i++)
+                        changed |= UnlockService.UnlockAbility(abilityKeysToUnlock[i]);
+                }
+
+                // Legacy support: mantener UnlockAbility(AbilityId) por si queda algo en assets antiguos
                 if (abilitiesToUnlock != null)
                 {
                     for (int i = 0; i < abilitiesToUnlock.Count; i++)

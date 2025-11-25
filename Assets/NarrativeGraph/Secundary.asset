@@ -19,6 +19,8 @@ MonoBehaviour:
   - rid: 5623891252771815605
   - rid: 5623891252771815606
   - rid: 5623891259268006325
+  - rid: 5623891481250759426
+  - rid: 5623891481250759427
   references:
     version: 2
     RefIds:
@@ -87,3 +89,34 @@ MonoBehaviour:
         outputs:
         - b637fe58-dba2-46e0-a474-9ce5cea8914e
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
+        - b9132d4b-a2a1-40a0-9f41-de72c09cf571
+    - rid: 5623891481250759426
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Recibo habilidad Salto
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9132d4b-a2a1-40a0-9f41-de72c09cf571
+        position: {x: 262, y: 226}
+        outputs:
+        - 2edbde17-fe43-4c61-94b9-669844b03e69
+        eventKey: JUMP_ABILITY
+    - rid: 5623891481250759427
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2edbde17-fe43-4c61-94b9-669844b03e69
+        position: {x: 742, y: 226}
+        outputs: []
+        abilitiesToUnlock: 
+        spellsToUnlock: 00000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 1
