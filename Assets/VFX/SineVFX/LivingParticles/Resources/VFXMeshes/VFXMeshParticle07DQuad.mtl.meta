@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 208977ab3ac1a5c4ca686cf04107322a
+timeCreated: 1511390837
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/VFXMeshes/VFXMeshParticle07DQuad.mtl
+  uploadId: 753957

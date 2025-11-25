@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b71e0f8858c6a0d4abcfcda1a0b1fdf6
+timeCreated: 1511005254
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/VFXMeshes/VFXMeshParticleFloor01.mtl
+  uploadId: 753957

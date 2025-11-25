@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 9021b0321e140f34c9381504c1636eb0
+timeCreated: 1532498323
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Materials/LivingParticlesMorph_06Gamma.mat
+  uploadId: 753957

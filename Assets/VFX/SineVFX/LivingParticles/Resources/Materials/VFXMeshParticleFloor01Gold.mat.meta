@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 233e4c036dfc02542a09c861e8700589
+timeCreated: 1515371541
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Materials/VFXMeshParticleFloor01Gold.mat
+  uploadId: 753957

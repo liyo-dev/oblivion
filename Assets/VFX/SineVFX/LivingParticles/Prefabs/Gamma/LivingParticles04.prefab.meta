@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2b8f9d6045e177f4bb86c2a0717378f2
+timeCreated: 1511765668
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/Gamma/LivingParticles04.prefab
+  uploadId: 753957

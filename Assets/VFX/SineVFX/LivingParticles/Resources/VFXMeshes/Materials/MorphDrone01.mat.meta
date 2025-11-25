@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 3dc49cc0441bd9a4e98b4b763d536103
+timeCreated: 1532491889
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/VFXMeshes/Materials/MorphDrone01.mat
+  uploadId: 753957

@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 587ebe284e6cbbc45b90fba60192e91d
+timeCreated: 1507451677
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Scripts/UIController.cs
+  uploadId: 753957

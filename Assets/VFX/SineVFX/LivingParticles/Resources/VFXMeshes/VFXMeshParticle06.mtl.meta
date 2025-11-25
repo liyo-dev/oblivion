@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 86b14a8e679c80f4a8a51612031efc7f
+timeCreated: 1511363422
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/VFXMeshes/VFXMeshParticle06.mtl
+  uploadId: 753957

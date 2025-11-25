@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f47f858a428c71d498af73c345779bcc
+timeCreated: 1511764452
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/LivingParticles11.prefab
+  uploadId: 753957

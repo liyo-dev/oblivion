@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8496dda084b11bd4d8767e4bf1fc227c
+timeCreated: 1511183450
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Animation/MovingSpheres.controller
+  uploadId: 753957

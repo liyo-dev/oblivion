@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 4c17f7d540050304db766ee563bc995f
+timeCreated: 1511768232
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/Gamma/LivingParticlesFloor06.prefab
+  uploadId: 753957

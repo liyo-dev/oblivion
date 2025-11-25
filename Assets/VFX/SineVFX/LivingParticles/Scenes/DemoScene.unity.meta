@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f5582bea9e7ab4b4a96f90d52481a492
+timeCreated: 1510759708
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Scenes/DemoScene.unity
+  uploadId: 753957

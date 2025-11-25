@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: bb491c289a0e1ba4cbf4b22e3fea6598
+timeCreated: 1532517050
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Prefabs/LivingParticlesMorph03.prefab
+  uploadId: 753957

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 22b76273bb312154c8d2323a4907962e
+timeCreated: 1576942744
+licenseType: Store
+TextScriptImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/03.AudioReactiveEffects.txt
+  uploadId: 753957

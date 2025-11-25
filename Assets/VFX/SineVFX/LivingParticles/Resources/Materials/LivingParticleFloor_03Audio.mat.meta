@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 205880ff1d9ab8e40b50b586d5082360
+timeCreated: 1510763176
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/Materials/LivingParticleFloor_03Audio.mat
+  uploadId: 753957

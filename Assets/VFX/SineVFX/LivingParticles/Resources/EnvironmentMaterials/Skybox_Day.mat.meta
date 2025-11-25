@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 73c00744bc226f74c8d248993a5c21c3
+timeCreated: 1510371724
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 105817
+  packageName: Living Particles
+  packageVersion: 1.5a
+  assetPath: Assets/SineVFX/LivingParticles/Resources/EnvironmentMaterials/Skybox_Day.mat
+  uploadId: 753957
