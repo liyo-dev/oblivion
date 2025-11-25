@@ -1,0 +1,184 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class QuestMenuManager : MonoBehaviour
+{
+    [Header("Referencias")]
+    [SerializeField] private QuestLogListUI quickMenu; // El menú rápido (QuickQuestMenu)
+    [SerializeField] private QuestMainMenuUI mainMenu; // El menú principal (QuestMainMenu)
+
+    [Header("Auto apertura")]
+    [SerializeField] private bool autoShowQuickOnQuestInit = true;
+    [SerializeField] private float autoShowDelay = 0.35f;
+
+    private bool _lastFrameDpadUp;
+    private Coroutine _autoShowRoutine;
+    private QuestManager _lastQuestManager;
+
+    private void Awake()
+    {
+        if (quickMenu != null) quickMenu.ShowPanel(false, ignoreRestrictions: true);
+        if (mainMenu != null) mainMenu.HideMenu();
+    }
+
+    void OnEnable()
+    {
+        if (autoShowQuickOnQuestInit)
+        {
+            _autoShowRoutine = StartCoroutine(AutoShowQuickMenuRoutine());
+        }
+    }
+
+    void OnDisable()
+    {
+        if (_autoShowRoutine != null)
+        {
+            StopCoroutine(_autoShowRoutine);
+            _autoShowRoutine = null;
+        }
+    }
+
+    private void Update()
+    {
+        if (DetectStartPressed())
+        {
+            CloseAllMenus();
+            return;
+        }
+
+        if (DetectDpadUpPressed())
+        {
+            HandleDpadUpPressed();
+        }
+
+        if (DetectBPressed())
+        {
+            HandleBPressed();
+        }
+    }
+
+    private void HandleDpadUpPressed()
+    {
+        bool quickIsOpen = quickMenu != null && quickMenu.IsVisible;
+        bool mainIsOpen = mainMenu != null && mainMenu.IsOpen;
+
+        if (!quickIsOpen && !mainIsOpen)
+        {
+            if (quickMenu != null)
+                quickMenu.ShowPanel(true, ignoreRestrictions: true);
+        }
+        else if (quickIsOpen && !mainIsOpen)
+        {
+            if (mainMenu != null && CanOpenMainMenu())
+            {
+                if (quickMenu != null)
+                    quickMenu.ShowPanel(false, ignoreRestrictions: true);
+                mainMenu.ShowMenu();
+            }
+        }
+    }
+
+    private void HandleBPressed()
+    {
+        bool mainIsOpen = mainMenu != null && mainMenu.IsOpen;
+        bool quickIsOpen = quickMenu != null && quickMenu.IsVisible;
+
+        if (mainIsOpen)
+        {
+            mainMenu.HideMenu();
+            if (quickMenu != null)
+                quickMenu.ShowPanel(true, ignoreRestrictions: true);
+        }
+        else if (quickIsOpen)
+        {
+            quickMenu.ShowPanel(false, ignoreRestrictions: true);
+        }
+    }
+
+    private void CloseAllMenus()
+    {
+        if (mainMenu != null)
+            mainMenu.HideMenu();
+        if (quickMenu != null)
+            quickMenu.ShowPanel(false, ignoreRestrictions: true);
+    }
+
+    bool CanOpenMainMenu()
+    {
+        if (!GameState.CanOpenInventory) return false;
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return false;
+        return true;
+    }
+
+    private bool DetectDpadUpPressed()
+    {
+        bool dpadUpPressed = false;
+
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null && gp.dpad.up.wasPressedThisFrame)
+            dpadUpPressed = true;
+#endif
+
+        if (!dpadUpPressed)
+        {
+            try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
+            if (!dpadUpPressed) dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow);
+        }
+
+        float dpadVertical = 0f;
+        try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
+        if (!dpadUpPressed && dpadVertical > 0.5f && !_lastFrameDpadUp)
+        {
+            dpadUpPressed = true;
+        }
+
+        _lastFrameDpadUp = dpadVertical > 0.5f;
+        return dpadUpPressed;
+    }
+
+    private bool DetectBPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null && gp.buttonEast.wasPressedThisFrame)
+            return true;
+#endif
+        return Input.GetKeyDown(KeyCode.JoystickButton1) || Input.GetKeyDown(KeyCode.Escape);
+    }
+
+    private bool DetectStartPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var gp = Gamepad.current;
+        if (gp != null && gp.startButton.wasPressedThisFrame)
+            return true;
+#endif
+        return Input.GetKeyDown(KeyCode.JoystickButton7) || Input.GetKeyDown(KeyCode.Return);
+    }
+
+    private System.Collections.IEnumerator AutoShowQuickMenuRoutine()
+    {
+        while (autoShowQuickOnQuestInit)
+        {
+            var current = QuestManager.Instance;
+            if (current == null)
+            {
+                _lastQuestManager = null;
+            }
+            else if (current != _lastQuestManager)
+            {
+                _lastQuestManager = current;
+                if (autoShowDelay > 0f)
+                    yield return new WaitForSecondsRealtime(autoShowDelay);
+                else
+                    yield return null;
+
+                if (quickMenu != null)
+                    quickMenu.ShowPanel(true, ignoreRestrictions: true);
+            }
+
+            yield return null;
+        }
+    }
+}

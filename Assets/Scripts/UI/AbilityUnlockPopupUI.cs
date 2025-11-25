@@ -28,6 +28,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log("[AbilityUnlockPopupUI] Awake");
         if (popupRoot != null)
             popupRoot.SetActive(false);
 
@@ -68,6 +69,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void HandleAbilityUnlocked(AbilityId ability)
     {
+        Debug.Log($"[AbilityUnlockPopupUI] HandleAbilityUnlocked: {ability}");
         _pendingAbility = ability;
         _pendingAbilityKey = null;
         ShowPopup();
@@ -75,6 +77,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void HandleAbilityUnlockedKey(AbilityKey key)
     {
+        Debug.Log($"[AbilityUnlockPopupUI] HandleAbilityUnlockedKey: {key}");
         _pendingAbilityKey = key;
         _pendingAbility = null;
         ShowPopup();
@@ -83,6 +86,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     private void ShowPopup()
     {
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
+
+        Debug.Log($"[AbilityUnlockPopupUI] ShowPopup: pendingAbility={_pendingAbility}, pendingAbilityKey={_pendingAbilityKey}");
 
         if (_pendingAbility != null)
         {
@@ -123,6 +128,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     public void HidePopup()
     {
+        Debug.Log("[AbilityUnlockPopupUI] HidePopup");
         _pendingAbility = null;
         _listeningForAnyButton = false;
         if (popupRoot != null)

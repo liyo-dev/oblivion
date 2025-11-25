@@ -32,6 +32,9 @@ namespace Invector.vCharacterController
         [HideInInspector] public vThirdPersonCamera tpCamera;
         [HideInInspector] public Camera cameraMain;
 
+        // Flight control
+        public bool DisableVerticalCameraRotation { get; set; } = false;
+
         // Valores
         private Vector2 moveInput;
         private Vector2 cameraInput;
@@ -278,7 +281,8 @@ namespace Invector.vCharacterController
             if (cameraMain) cc.UpdateMoveDirection(cameraMain.transform);
             if (tpCamera == null) return;
 
-            tpCamera.RotateCamera(cameraInput.x, cameraInput.y);
+            float y = DisableVerticalCameraRotation ? 0f : cameraInput.y;
+            tpCamera.RotateCamera(cameraInput.x, y);
         }
 
         protected virtual void StrafeInput()

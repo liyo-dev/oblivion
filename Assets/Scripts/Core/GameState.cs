@@ -10,6 +10,7 @@ public enum GamePhase
     SavePrompt,
     Inventory,
     Equipment,
+    QuestMenu,
     Map,
     Shop,
     Cutscene,
@@ -56,7 +57,8 @@ public static class GameState
                   GamePhase.Loading,
                   GamePhase.GameOver,
                   GamePhase.Inventory,
-                  GamePhase.Equipment);
+                  GamePhase.Equipment,
+                  GamePhase.QuestMenu);
 
     public static bool CanInteractGlobally
         => !IsAny(GamePhase.PauseMenu,
@@ -66,7 +68,8 @@ public static class GameState
                   GamePhase.Loading,
                   GamePhase.Inventory,
                   GamePhase.Equipment,
-                  GamePhase.Shop);
+                  GamePhase.Shop,
+                  GamePhase.QuestMenu);
 
     public static bool CanOpenPause
         => !IsAny(GamePhase.PauseMenu,
@@ -77,8 +80,9 @@ public static class GameState
                   GamePhase.Loading,
                   GamePhase.GameOver,
                   GamePhase.Inventory,
-                  GamePhase.Equipment);
+                  GamePhase.Equipment,
+                  GamePhase.QuestMenu);
 
     public static bool CanOpenInventory
-        => CanProcessGameplayInput && !Is(GamePhase.Inventory) && !Is(GamePhase.Equipment);
+        => CanProcessGameplayInput && !Is(GamePhase.Inventory) && !Is(GamePhase.Equipment) && !Is(GamePhase.QuestMenu);
 }
