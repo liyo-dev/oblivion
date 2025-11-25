@@ -318,7 +318,7 @@ MonoBehaviour:
         position: {x: 104, y: 1315}
         outputs: []
         questId: ELDRAN_MISSION5
-        steps: 0000000000000000
+        steps: 01000000
         completeQuest: 0
         logWarnings: 0
     - rid: 5623891444353466616

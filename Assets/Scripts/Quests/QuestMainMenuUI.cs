@@ -12,12 +12,14 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private Transform contentRoot;
     [SerializeField] private QuestVisibilityItemUI itemPrefab;
     [SerializeField] private TextMeshProUGUI headerText;
+    [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
     [Header("Animación")]
     [SerializeField] private float introDuration = 0.25f;
     [SerializeField] private Ease introEase = Ease.OutCubic;
 
     private bool _bound;
+    private bool _phasePushed;
     private Tween _currentTween;
 
     public bool IsOpen
@@ -39,12 +41,13 @@ public class QuestMainMenuUI : MonoBehaviour
     void OnDisable()
     {
         Unbind();
+        ReleaseGamePhase();
+        KillTween();
     }
 
     public void ShowMenu()
     {
-        if (!GameState.CanOpenInventory) return;
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
+        if (!CanOpenMainMenu()) return;
 
         KillTween();
         if (panelRoot) panelRoot.SetActive(true);
@@ -55,6 +58,13 @@ public class QuestMainMenuUI : MonoBehaviour
             panelGroup.blocksRaycasts = true;
             _currentTween = panelGroup.DOFade(1f, introDuration).SetEase(introEase).SetUpdate(true);
         }
+
+        if (quickMenu != null && quickMenu.IsVisible)
+        {
+            quickMenu.ShowPanel(false, ignoreRestrictions: true);
+        }
+
+        EnsureGamePhasePushed();
     }
 
     public void HideMenu()
@@ -71,11 +81,13 @@ public class QuestMainMenuUI : MonoBehaviour
         {
             panelRoot.SetActive(false);
         }
+
+        ReleaseGamePhase();
     }
 
     public void ToggleMenu()
     {
-        if (panelRoot && panelRoot.activeSelf)
+        if (IsOpen)
             HideMenu();
         else
             ShowMenu();
@@ -201,5 +213,27 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         if (_currentTween != null && _currentTween.IsActive()) _currentTween.Kill();
         _currentTween = null;
+    }
+
+    bool CanOpenMainMenu()
+    {
+        if (!GameState.CanOpenInventory) return false;
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return false;
+        return true;
+    }
+
+    void EnsureGamePhasePushed()
+    {
+        if (_phasePushed) return;
+        GameState.Push(GamePhase.QuestMenu);
+        _phasePushed = true;
+    }
+
+    void ReleaseGamePhase()
+    {
+        if (!_phasePushed) return;
+        if (GameState.Is(GamePhase.QuestMenu))
+            GameState.Pop(GamePhase.QuestMenu);
+        _phasePushed = false;
     }
 }

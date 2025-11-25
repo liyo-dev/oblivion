@@ -42,6 +42,7 @@ public class PlayerFlyingController : MonoBehaviour
     private Animator _animator;
     private Rigidbody _rigidbody;
     private vThirdPersonController _controller;
+    private Invector.vCharacterController.vThirdPersonInput _inputController;
     private FieldInfo _lockMovementField;
     private FieldInfo _lockRotationField;
     private PlayerActionManager _actionManager;
@@ -93,6 +94,7 @@ public class PlayerFlyingController : MonoBehaviour
         _animator = GetComponent<Animator>();
         _rigidbody = GetComponent<Rigidbody>();
         _controller = GetComponent<vThirdPersonController>();
+        _inputController = GetComponent<Invector.vCharacterController.vThirdPersonInput>();
         _actionManager = GetComponent<PlayerActionManager>();
         _inputManager = ServiceLocator.Get<PlayerInputManager>(logIfMissing: false) ?? GetComponent<PlayerInputManager>();
         _capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
@@ -333,6 +335,8 @@ public class PlayerFlyingController : MonoBehaviour
         _jumpHeld = false; // evitar que el primer frame se considere dive por mantener salto
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Flying);
+        if (_inputController != null)
+            _inputController.DisableVerticalCameraRotation = true;
         if (_controller != null)
         {
             _controllerWasEnabled = _controller.enabled;
@@ -407,6 +411,8 @@ public class PlayerFlyingController : MonoBehaviour
 
         if (wasFlying && _actionManager != null)
             _actionManager.PopMode(ActionMode.Flying);
+        if (_inputController != null)
+            _inputController.DisableVerticalCameraRotation = false;
 
         float verticalVel = _rigidbody != null ? _rigidbody.linearVelocity.y : 0f;
         bool hardLanding = verticalVel <= hardLandingSpeed || IsGrounded();
@@ -564,6 +570,11 @@ public class PlayerFlyingController : MonoBehaviour
         if (string.IsNullOrEmpty(stateName) || _animator == null)
             return;
         _animator.Play(stateName, locomotionLayerIndex);
+
+        // Allow vertical camera rotation only in fly idle
+        bool isIdle = string.Equals(stateName, flyIdleState, StringComparison.Ordinal);
+        if (_inputController != null)
+            _inputController.DisableVerticalCameraRotation = !isIdle;
     }
 
     private bool HasAnimatorState(string stateName)
