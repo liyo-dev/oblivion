@@ -354,6 +354,11 @@ public class MainMenuController : MonoBehaviour
                 if (buttonPanel != null)
                     buttonPanel.SetActive(true);
 
+                _inputArmed = true;
+                var navigator = GetComponentInChildren<MenuNavigator>(true);
+                if (navigator != null)
+                    navigator.ResetCooldown();
+
                 // Restaurar la selección en el siguiente frame para evitar que
                 // el primer input del D-Pad sea consumido al cerrar Settings.
                 if (es != null)
