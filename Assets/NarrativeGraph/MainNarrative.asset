@@ -31,6 +31,8 @@ MonoBehaviour:
   - rid: 5623891431555335063
   - rid: 5623891444353466377
   - rid: 5623891444353466616
+  applicableSceneNames:
+  - MainWorld
   references:
     version: 2
     RefIds:
