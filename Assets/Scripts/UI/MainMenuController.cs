@@ -428,6 +428,12 @@ public class MainMenuController : MonoBehaviour
         var es = EventSystem.current;
         if (es == null) yield break;
 
+        // Sincronizar selección interna del MenuNavigator con el botón restaurado para evitar
+        // que el primer input tras cerrar Settings se pierda o duplique.
+        var navigator = GetComponentInChildren<MenuNavigator>(true);
+        if (navigator != null)
+            navigator.ForceSelect(previous, resetCooldown: true);
+
         // Limpiar y re-aplicar selección para forzar estado claro
         es.SetSelectedGameObject(null);
         es.SetSelectedGameObject(previous);
