@@ -115,6 +115,17 @@ public class InputActionMapRouter : MonoBehaviour
                 return;
             }
 
+            // Unity activa el input de PlayerInput en su propio OnEnable. Si este script se
+            // ejecuta antes de que PlayerInput haya terminado de inicializarse, la activación
+            // manual dispara el mensaje "input is not enabled". Esperamos al siguiente ciclo
+            // cuando el componente ya esté activo para reintentar.
+            if (!playerInput.isActiveAndEnabled)
+            {
+                if (debugLogs)
+                    Debug.LogWarning("[InputActionMapRouter] PlayerInput aún no está habilitado; se reintentará.");
+                return;
+            }
+
             if (!playerInput.inputIsActive)
             {
                 try
