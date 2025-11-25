@@ -553,7 +553,9 @@ public class PauseMenuController : MonoBehaviour
         try
         {
             var gp = UnityEngine.InputSystem.Gamepad.current;
-            if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
+            // Usar el botón "B" como cancel, pero evitar Start para no cerrar el menú
+            // inmediatamente después de abrirlo en el mismo frame.
+            if (gp != null && gp.buttonEast.wasPressedThisFrame)
                 return true;
 
             var kb = UnityEngine.InputSystem.Keyboard.current;
