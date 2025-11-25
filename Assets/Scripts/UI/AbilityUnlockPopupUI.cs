@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using TMPro;
+using System.Linq;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,17 +16,15 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI abilityTitleText;
     [SerializeField] private TextMeshProUGUI abilityDescriptionText;
     [SerializeField] private Image abilityIcon;
-
-    [Header("Hold to close")]
-    [Tooltip("Referencia al HoldToSkipUI que ya se usa en las cinemáticas.")]
     [SerializeField] private HoldToSkipUI holdToSkip;
-
+    
     [Header("Datos")]
     [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
     [SerializeField] private List<AbilityPresentationForKey> abilityKeyPresentations = new();
 
     AbilityId? _pendingAbility;
     AbilityKey? _pendingAbilityKey;
+    private bool _listeningForAnyButton = false;
 
     void Awake()
     {
@@ -109,6 +110,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (popupRoot != null)
             popupRoot.SetActive(true);
 
+        // Empezar a escuchar cualquier botón para poder cerrar el popup.
+        _listeningForAnyButton = true;
+
         if (holdToSkip != null)
         {
             holdToSkip.gameObject.SetActive(true);
@@ -120,9 +124,57 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     public void HidePopup()
     {
         _pendingAbility = null;
+        _listeningForAnyButton = false;
         if (popupRoot != null)
             popupRoot.SetActive(false);
         if (holdToSkip != null)
             holdToSkip.gameObject.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (!_listeningForAnyButton) return;
+        if (popupRoot == null || !popupRoot.activeInHierarchy) return;
+
+        // Legacy keyboard/mouse check (covers most keyboards)
+        if (Input.anyKeyDown)
+        {
+            HidePopup();
+            return;
+        }
+
+        // New Input System checks for gamepads, mice, joysticks
+        var mouse = Mouse.current;
+        if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame))
+        {
+            HidePopup();
+            return;
+        }
+
+        var gp = Gamepad.current;
+        if (gp != null)
+        {
+            foreach (var btn in gp.allControls.OfType<ButtonControl>())
+            {
+                if (btn.wasPressedThisFrame)
+                {
+                    HidePopup();
+                    return;
+                }
+            }
+        }
+
+        var joystick = Joystick.current;
+        if (joystick != null)
+        {
+            foreach (var btn in joystick.allControls.OfType<ButtonControl>())
+            {
+                if (btn.wasPressedThisFrame)
+                {
+                    HidePopup();
+                    return;
+                }
+            }
+        }
     }
 }

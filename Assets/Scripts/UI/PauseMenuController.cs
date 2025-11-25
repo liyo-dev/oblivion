@@ -425,13 +425,11 @@ public class PauseMenuController : MonoBehaviour
 
     void Update()
     {
-        if (_pauseRequestPending || WasPausePressedThisFrame())
-        {
-            ProcessPauseRequest();
-            return;
-        }
-
-        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
+                if (_pauseRequestPending || WasPausePressedThisFrame())
+                {
+                    ProcessPauseRequest();
+                    return;
+                }        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
         if (_isPaused && WasCancelPressedThisFrame())
         {
             if (settingsMenu != null && settingsMenu.gameObject.activeInHierarchy)
@@ -603,6 +601,8 @@ public class PauseMenuController : MonoBehaviour
 
     void ProcessPauseRequest()
     {
+        if (ShouldThrottlePauseInput()) return;
+
         _pauseRequestPending = false;
 
         // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
@@ -662,36 +662,14 @@ public class PauseMenuController : MonoBehaviour
         if (settingsMenu == null)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
-        Debug.Log("[PauseMenu] OnOptions called. settingsMenu reference: " + (settingsMenu != null ? settingsMenu.name : "<null>"));
-
         if (settingsMenu != null)
         {
-            // Diagnostics: log active state before showing
-            Debug.Log($"[PauseMenu] settingsMenu.gameObject.activeInHierarchy BEFORE Show: {settingsMenu.gameObject.activeInHierarchy}");
-
-            var es = EventSystem.current;
-            var previous = es ? es.currentSelectedGameObject : null;
-
-            // Defensive: ensure the settings container GameObject is active after Show.
-            settingsMenu.Show(null, () =>
-            {
-                if (es != null && previous != null)
-                    es.SetSelectedGameObject(previous);
-            });
-
-            // If the root of the settings was accidentally left inactive in a parent, force-activate the settings component's GameObject as a fallback.
-            if (!settingsMenu.gameObject.activeInHierarchy)
-            {
-                Debug.LogWarning("[PauseMenu] settingsMenu GameObject still inactive after Show(); forcing activation as fallback.");
-                settingsMenu.gameObject.SetActive(true);
-            }
-
-            Debug.Log($"[PauseMenu] settingsMenu.gameObject.activeInHierarchy AFTER Show: {settingsMenu.gameObject.activeInHierarchy}");
-            return;
+            settingsMenu.Show();
         }
-
-        var optionsPanel = transform.Find("OptionsPanel");
-        if (optionsPanel != null) optionsPanel.gameObject.SetActive(true);
+        else
+        {
+            Debug.LogWarning("[PauseMenu] SettingsMenuController reference not found!");
+        }
     }
 
     public void OnQuitToMain()

@@ -54,9 +54,10 @@ public sealed class UiInputManager : MonoBehaviour
         if (pauseAction != null && pauseAction.action != null && pauseAction.action.enabled)
             return;
 
-        if (WasPausePressed())
-            HandlePauseRequest();
-    }
+            if (WasPausePressed())
+            {
+                //HandlePauseRequest();
+            }    }
 
     void OnDestroy()
     {
@@ -83,7 +84,7 @@ public sealed class UiInputManager : MonoBehaviour
     private void OnPauseRequested(InputAction.CallbackContext ctx)
     {
         if (!ctx.performed) return;
-        HandlePauseRequest();
+        //HandlePauseRequest();
     }
 
     private void EnsurePauseMenu()
