@@ -201,6 +201,21 @@ public class PlayerHUDComplete : MonoBehaviour
                 if (existingRoot != null)
                 {
                     _rootPanel = existingRoot.gameObject;
+                    _rootPanel.SetActive(true); // Asegurar que el HUD reutilizado esté visible
+
+                    // Asegurar componentes críticos del Canvas para que el HUD pueda renderizarse
+                    if (existing.GetComponent<CanvasScaler>() == null)
+                    {
+                        var scaler = existing.AddComponent<CanvasScaler>();
+                        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                        scaler.referenceResolution = new Vector2(1920, 1080);
+                    }
+                    if (existing.GetComponent<GraphicRaycaster>() == null)
+                    {
+                        existing.AddComponent<GraphicRaycaster>();
+                    }
+
+                    Canvas.ForceUpdateCanvases();
                     BindUIElementsFromRoot(_rootPanel);
                     return;
                 }
