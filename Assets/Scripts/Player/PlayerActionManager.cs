@@ -45,7 +45,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private bool _allowSwim = true;     // nadar
     private bool _allowJump = true;     // saltar
     private bool _allowClimb = true;    // trepar
-    private bool _allowMagic = true;    // lanzar magia
+    private bool _allowMagic = false;   // lanzar magia
     private bool _allowFly = true;      // volar
 
     // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos

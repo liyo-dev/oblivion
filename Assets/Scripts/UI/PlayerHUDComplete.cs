@@ -866,8 +866,8 @@ public class PlayerHUDComplete : MonoBehaviour
         }
         if (_playerAbilities != null) return _playerAbilities.magic;
 
-        // Por defecto, asumir que sí tiene magia (compatibilidad hacia atrás)
-        return true;
+        // Por defecto, asumir que NO tiene magia hasta que algún sistema lo habilite
+        return false;
     }
 
     #region Slots Panel (Magia)
