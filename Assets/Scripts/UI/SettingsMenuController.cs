@@ -23,16 +23,24 @@ public class SettingsMenuController : MonoBehaviour
     [SerializeField] private Slider musicVolumeSlider;
 
     [Header("Camera")]
-    [SerializeField] private Toggle invertLookToggle;
-    [SerializeField] private Toggle invertFlightToggle;
+    [SerializeField] private Button invertLookYesButton;
+    [SerializeField] private Button invertLookNoButton;
+    [SerializeField] private Button invertFlightYesButton;
+    [SerializeField] private Button invertFlightNoButton;
     [SerializeField] private Slider lookSensitivitySlider;
 
     [Header("Accesibilidad / General")]
-    [SerializeField] private Toggle vibrationToggle;
-    [SerializeField] private Toggle fullscreenToggle;
+    [SerializeField] private Button vibrationYesButton;
+    [SerializeField] private Button vibrationNoButton;
+    [SerializeField] private Button fullscreenYesButton;
+    [SerializeField] private Button fullscreenNoButton;
 
     private Action _onClosed;
     private EventSystem _eventSystem;
+
+    [Header("State visuals")]
+    [SerializeField] private Color activeStateColor = new Color(1f, 0.92f, 0.16f);
+    [SerializeField] private Color inactiveStateColor = Color.white;
 
     [Header("Visuals")]
     [Tooltip("Auto-add UISelectVisual to selectables under this root to show navigation feedback.")]
@@ -66,16 +74,16 @@ public class SettingsMenuController : MonoBehaviour
         if (musicVolumeSlider)
             musicVolumeSlider.onValueChanged.AddListener(PlayerSettings.SetMusicVolume);
 
-        if (invertLookToggle)
-            invertLookToggle.onValueChanged.AddListener(PlayerSettings.SetInvertLook);
-        if (invertFlightToggle)
-            invertFlightToggle.onValueChanged.AddListener(PlayerSettings.SetInvertFlightLook);
+        WireBinaryButton(invertLookYesButton, () => OnInvertLookClicked(true));
+        WireBinaryButton(invertLookNoButton, () => OnInvertLookClicked(false));
+        WireBinaryButton(invertFlightYesButton, () => OnInvertFlightClicked(true));
+        WireBinaryButton(invertFlightNoButton, () => OnInvertFlightClicked(false));
         if (lookSensitivitySlider)
             lookSensitivitySlider.onValueChanged.AddListener(PlayerSettings.SetLookSensitivity);
-        if (vibrationToggle)
-            vibrationToggle.onValueChanged.AddListener(PlayerSettings.SetVibration);
-        if (fullscreenToggle)
-            fullscreenToggle.onValueChanged.AddListener(PlayerSettings.SetFullscreen);
+        WireBinaryButton(vibrationYesButton, () => OnVibrationClicked(true));
+        WireBinaryButton(vibrationNoButton, () => OnVibrationClicked(false));
+        WireBinaryButton(fullscreenYesButton, () => OnFullscreenClicked(true));
+        WireBinaryButton(fullscreenNoButton, () => OnFullscreenClicked(false));
 
         RefreshUI();
 
@@ -279,16 +287,16 @@ public class SettingsMenuController : MonoBehaviour
         if (musicVolumeSlider)
             musicVolumeSlider.onValueChanged.RemoveAllListeners();
 
-        if (invertLookToggle)
-            invertLookToggle.onValueChanged.RemoveAllListeners();
-        if (invertFlightToggle)
-            invertFlightToggle.onValueChanged.RemoveAllListeners();
+        RemoveBinaryListener(invertLookYesButton);
+        RemoveBinaryListener(invertLookNoButton);
+        RemoveBinaryListener(invertFlightYesButton);
+        RemoveBinaryListener(invertFlightNoButton);
         if (lookSensitivitySlider)
             lookSensitivitySlider.onValueChanged.RemoveAllListeners();
-        if (vibrationToggle)
-            vibrationToggle.onValueChanged.RemoveAllListeners();
-        if (fullscreenToggle)
-            fullscreenToggle.onValueChanged.RemoveAllListeners();
+        RemoveBinaryListener(vibrationYesButton);
+        RemoveBinaryListener(vibrationNoButton);
+        RemoveBinaryListener(fullscreenYesButton);
+        RemoveBinaryListener(fullscreenNoButton);
     }
 
     public void Show(GameObject initialSelection = null, Action onClosed = null)
@@ -347,16 +355,12 @@ public class SettingsMenuController : MonoBehaviour
         if (musicVolumeSlider)
             musicVolumeSlider.SetValueWithoutNotify(PlayerSettings.MusicVolume);
 
-        if (invertLookToggle)
-            invertLookToggle.SetIsOnWithoutNotify(PlayerSettings.InvertLook);
-        if (invertFlightToggle)
-            invertFlightToggle.SetIsOnWithoutNotify(PlayerSettings.InvertFlightLook);
+        UpdateBinaryGroup(invertLookYesButton, invertLookNoButton, PlayerSettings.InvertLook);
+        UpdateBinaryGroup(invertFlightYesButton, invertFlightNoButton, PlayerSettings.InvertFlightLook);
         if (lookSensitivitySlider)
             lookSensitivitySlider.SetValueWithoutNotify(PlayerSettings.LookSensitivity);
-        if (vibrationToggle)
-            vibrationToggle.SetIsOnWithoutNotify(PlayerSettings.Vibration);
-        if (fullscreenToggle)
-            fullscreenToggle.SetIsOnWithoutNotify(PlayerSettings.Fullscreen);
+        UpdateBinaryGroup(vibrationYesButton, vibrationNoButton, PlayerSettings.Vibration);
+        UpdateBinaryGroup(fullscreenYesButton, fullscreenNoButton, PlayerSettings.Fullscreen);
     }
 
     private void UpdateLanguageButtons()
@@ -373,10 +377,12 @@ public class SettingsMenuController : MonoBehaviour
         if (_eventSystem == null)
             _eventSystem = EventSystem.current;
 
-        var target = initialSelection != null ? initialSelection : firstSelection ? firstSelection.gameObject : null;
+        var target = ResolveInitialSelection(initialSelection);
         if (_eventSystem != null && target != null)
             _eventSystem.SetSelectedGameObject(target);
     }
+
+    public GameObject GetDefaultSelection() => ResolveInitialSelection(null);
 
     bool WasCancelPressedThisFrame()
     {
@@ -398,5 +404,85 @@ public class SettingsMenuController : MonoBehaviour
             || Input.GetKeyDown(KeyCode.Backspace)
             || Input.GetKeyDown(KeyCode.JoystickButton1)
             || Input.GetKeyDown(KeyCode.JoystickButton7);
+    }
+
+    GameObject ResolveInitialSelection(GameObject requested)
+    {
+        if (requested != null)
+            return requested;
+
+        if (firstSelection)
+            return firstSelection.gameObject;
+
+        var firstSelectable = root != null
+            ? root.GetComponentsInChildren<Selectable>(true).FirstOrDefault(s => s != null && s.IsActive() && s.interactable)
+            : null;
+
+        return firstSelectable ? firstSelectable.gameObject : null;
+    }
+
+    void WireBinaryButton(Button btn, UnityEngine.Events.UnityAction action)
+    {
+        if (!btn) return;
+        btn.onClick.RemoveListener(action);
+        btn.onClick.AddListener(action);
+    }
+
+    void RemoveBinaryListener(Button btn)
+    {
+        if (!btn) return;
+        btn.onClick.RemoveAllListeners();
+    }
+
+    void OnInvertLookClicked(bool invert)
+    {
+        PlayerSettings.SetInvertLook(invert);
+        UpdateBinaryGroup(invertLookYesButton, invertLookNoButton, invert);
+    }
+
+    void OnInvertFlightClicked(bool invert)
+    {
+        PlayerSettings.SetInvertFlightLook(invert);
+        UpdateBinaryGroup(invertFlightYesButton, invertFlightNoButton, invert);
+    }
+
+    void OnVibrationClicked(bool enabled)
+    {
+        PlayerSettings.SetVibration(enabled);
+        UpdateBinaryGroup(vibrationYesButton, vibrationNoButton, enabled);
+    }
+
+    void OnFullscreenClicked(bool enabled)
+    {
+        PlayerSettings.SetFullscreen(enabled);
+        UpdateBinaryGroup(fullscreenYesButton, fullscreenNoButton, enabled);
+    }
+
+    void UpdateBinaryGroup(Button yesButton, Button noButton, bool yesActive)
+    {
+        ApplyStateToButton(yesButton, yesActive);
+        ApplyStateToButton(noButton, !yesActive);
+    }
+
+    void ApplyStateToButton(Button btn, bool active)
+    {
+        if (!btn)
+            return;
+
+        var graphic = btn.targetGraphic ?? btn.GetComponentInChildren<Graphic>();
+        var color = active ? activeStateColor : inactiveStateColor;
+
+        var visual = btn.GetComponent<UISelectVisual>();
+        if (visual)
+        {
+            visual.normalColor = color;
+            visual.highlightColor = activeStateColor;
+            if (visual.targetGraphic)
+                visual.targetGraphic.color = color;
+        }
+        else if (graphic)
+        {
+            graphic.color = color;
+        }
     }
 }
