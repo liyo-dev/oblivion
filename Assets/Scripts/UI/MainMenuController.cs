@@ -339,13 +339,17 @@ public class MainMenuController : MonoBehaviour
         {
             var es = EventSystem.current;
             var previous = es ? es.currentSelectedGameObject : null;
+            var initial = settingsMenu.GetDefaultSelection();
             SuspendMainMenuInteraction();
-            settingsMenu.Show(null, () =>
+            settingsMenu.Show(initial, () =>
             {
                 RestoreMainMenuInteraction();
                 if (es != null && previous != null)
                     es.SetSelectedGameObject(previous);
             });
+
+            if (es != null && initial != null)
+                es.SetSelectedGameObject(initial);
         }
         else
         {
