@@ -49,7 +49,7 @@ public class SettingsMenuController : MonoBehaviour
     [Header("Navigation")]
     [Range(0f, 1f)] public float navDeadzone = 0.2f;
     public bool enableManualNavigation = true; // enable fallback navigation polling
-    private int _navHeldSign; // -1,0,1
+    private Vector2Int _navHeldDir = Vector2Int.zero; // normalized cardinal dir of held input
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -126,7 +126,7 @@ public class SettingsMenuController : MonoBehaviour
         }
 
         // Read input from common sources and move selection accordingly
-        float vert = 0f;
+        Vector2 navInput = Vector2.zero;
 #if ENABLE_INPUT_SYSTEM
         try
         {
@@ -134,42 +134,41 @@ public class SettingsMenuController : MonoBehaviour
             if (gp != null)
             {
                 var d = gp.dpad.ReadValue();
-                if (Mathf.Abs(d.y) > navDeadzone) vert = d.y;
-                else
-                {
-                    var s = gp.leftStick.ReadValue();
-                    if (Mathf.Abs(s.y) > navDeadzone) vert = s.y;
-                }
+                navInput = d;
+                if (navInput.magnitude <= navDeadzone)
+                    navInput = gp.leftStick.ReadValue();
             }
             else
             {
                 var js = UnityEngine.InputSystem.Joystick.current;
                 if (js != null)
                 {
-                    var s = js.stick.ReadValue();
-                    if (Mathf.Abs(s.y) > navDeadzone) vert = s.y;
+                    navInput = js.stick.ReadValue();
                 }
             }
         }
         catch { }
 #else
-        vert = Input.GetAxisRaw("Vertical");
+        navInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
 #endif
 
-        if (Mathf.Abs(vert) > navDeadzone)
+        if (navInput.magnitude > navDeadzone)
         {
-            int sign = vert > 0f ? 1 : -1;
-            if (_navHeldSign != sign)
+            // choose dominant axis (cardinal navigation)
+            Vector2 dir = Mathf.Abs(navInput.x) > Mathf.Abs(navInput.y)
+                ? new Vector2(Mathf.Sign(navInput.x), 0f)
+                : new Vector2(0f, Mathf.Sign(navInput.y));
+
+            var cardinal = new Vector2Int(Mathf.RoundToInt(dir.x), Mathf.RoundToInt(dir.y));
+            if (cardinal != Vector2Int.zero && cardinal != _navHeldDir)
             {
-                _navHeldSign = sign;
-                // Use spatial navigation to pick the most sensible selectable
-                if (sign > 0) MoveSelection(Vector2.up);
-                else MoveSelection(Vector2.down);
+                _navHeldDir = cardinal;
+                MoveSelection(dir);
             }
         }
         else
         {
-            _navHeldSign = 0;
+            _navHeldDir = Vector2Int.zero;
         }
 
         // Submit handling (basic)
@@ -212,6 +211,10 @@ public class SettingsMenuController : MonoBehaviour
         var es = EventSystem.current;
         if (es == null || root == null) return;
 
+        if (dir == Vector2.zero) return;
+
+        var dirNorm = dir.normalized;
+
         var all = root.GetComponentsInChildren<Selectable>(true)
             .Where(s => s != null && s.IsActive() && s.interactable)
             .ToArray();
@@ -234,30 +237,26 @@ public class SettingsMenuController : MonoBehaviour
         var sel = currentGO.GetComponent<Selectable>();
         Vector2 curPos = RectTransformUtility.WorldToScreenPoint(null, currentGO.transform.position);
 
-        bool moveUp = dir == Vector2.up;
-
-        // Candidates in desired vertical direction
-        var candidates = all.Where(s =>
-        {
-            var p = RectTransformUtility.WorldToScreenPoint(null, s.transform.position);
-            return moveUp ? p.y > curPos.y + 2f : p.y < curPos.y - 2f;
-        }).ToArray();
-
-        if (candidates.Length == 0)
-        {
-            // no candidate in that direction: do nothing
-            return;
-        }
-
-        // Choose closest by vertical distance, then horizontal distance
+        // Choose candidate in direction, prioritizing alignment then distance
         Selectable best = null;
         float bestScore = float.MaxValue;
-        foreach (var c in candidates)
+        foreach (var c in all)
         {
+            if (c == sel) continue;
+
             var p = RectTransformUtility.WorldToScreenPoint(null, c.transform.position);
-            float dy = Mathf.Abs(p.y - curPos.y);
-            float dx = Mathf.Abs(p.x - curPos.x);
-            float score = dy * 1000f + dx; // prioritize vertical closeness
+            var delta = p - curPos;
+            if (delta.sqrMagnitude < 1e-4f) continue;
+
+            var deltaNorm = delta.normalized;
+            float alignment = Vector2.Dot(deltaNorm, dirNorm);
+            if (alignment <= 0.3f) // discard options too far off desired direction
+                continue;
+
+            float distance = delta.magnitude;
+            float anglePenalty = 1f - alignment; // 0 when perfectly aligned
+            float score = anglePenalty * 1000f + distance; // prefer alignment, then closeness
+
             if (score < bestScore)
             {
                 bestScore = score;
