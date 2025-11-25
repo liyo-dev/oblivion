@@ -604,10 +604,11 @@ public class PauseMenuController : MonoBehaviour
 
         _pauseRequestPending = false;
 
-        // Si ya está abierto, permitir cerrar aunque GameState.CanOpenPause sea falso
-        if (_isPaused || GameState.CanOpenPause)
+        // Start abrirá el menú de pausa pero NO lo cerrará.
+        // Si no está pausado y el estado permite abrir pausa, abrir el menú.
+        if (!_isPaused && GameState.CanOpenPause)
         {
-            TogglePause();
+            ShowPauseMenu();
         }
     }
 
@@ -697,8 +698,12 @@ public class PauseMenuInputBridge : MonoBehaviour
     void Update()
     {
         if (controller == null) return;
+        // Con el sistema antiguo de input, Start/Escape solo deben abrir la pausa.
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton7))
-            controller.TogglePause();
+        {
+            if (!controller.gameObject.activeInHierarchy)
+                controller.ShowPauseMenu();
+        }
     }
 }
 #endif

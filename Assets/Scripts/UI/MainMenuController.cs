@@ -30,6 +30,9 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Button de la fila AJUSTES.")]
     [SerializeField] private Button settingsButton;
 
+    [Tooltip("Panel que contiene los botones principales del menú.")]
+    [SerializeField] private GameObject buttonPanel;
+
     [Header("Settings")]
     [SerializeField] private SettingsMenuController settingsMenu;
 
@@ -337,6 +340,9 @@ public class MainMenuController : MonoBehaviour
 
         if (settingsMenu != null)
         {
+            if (buttonPanel != null)
+                buttonPanel.SetActive(false);
+
             var es = EventSystem.current;
             var previous = es ? es.currentSelectedGameObject : null;
             var initial = settingsMenu.GetDefaultSelection();
@@ -344,6 +350,10 @@ public class MainMenuController : MonoBehaviour
             settingsMenu.Show(initial, () =>
             {
                 RestoreMainMenuInteraction();
+
+                if (buttonPanel != null)
+                    buttonPanel.SetActive(true);
+
                 if (es != null && previous != null)
                     es.SetSelectedGameObject(previous);
             });
