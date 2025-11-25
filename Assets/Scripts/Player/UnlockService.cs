@@ -67,7 +67,71 @@ public static class UnlockService
                     preset.currentMP = desiredCurrent;
                     changed = true;
                 }
+
+                // Propagar por el sistema un unlock de la habilidad "Magic" (AbilityKey)
+                try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Magic); } catch { }
                 break;
+        }
+
+        return changed;
+    }
+
+    /// Desbloquea una de las habilidades booleanas principales (Swim, Jump, Climb, Magic, Fly).
+    public static bool UnlockAbility(AbilityKey key)
+    {
+        var preset = GetActivePreset();
+        if (!preset) return false;
+
+        if (preset.abilities == null)
+            preset.abilities = new PlayerAbilities();
+
+        bool changed = false;
+        switch (key)
+        {
+            case AbilityKey.Swim:
+                if (!preset.abilities.swim)
+                {
+                    preset.abilities.swim = true;
+                    changed = true;
+                }
+                break;
+            case AbilityKey.Jump:
+                if (!preset.abilities.jump)
+                {
+                    preset.abilities.jump = true;
+                    changed = true;
+                }
+                break;
+            case AbilityKey.Climb:
+                if (!preset.abilities.climb)
+                {
+                    preset.abilities.climb = true;
+                    changed = true;
+                }
+                break;
+            case AbilityKey.Magic:
+                if (!preset.abilities.magic)
+                {
+                    preset.abilities.magic = true;
+                    changed = true;
+                }
+                // Asegurar valores mínimos de maná para que la magia sea utilizable.
+                changed |= EnsureMana(minMax: 50f, minCurrent: 50f);
+                break;
+            case AbilityKey.Fly:
+                if (!preset.abilities.fly)
+                {
+                    preset.abilities.fly = true;
+                    changed = true;
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (changed)
+        {
+            try { OnAbilityUnlockedKey?.Invoke(key); } catch { }
         }
 
         return changed;

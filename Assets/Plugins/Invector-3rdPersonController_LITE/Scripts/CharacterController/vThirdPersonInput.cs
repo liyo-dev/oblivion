@@ -18,7 +18,7 @@ namespace Invector.vCharacterController
         private InputAction attackMagicEastAction;   // B  -> derecha
         private InputAction attackMagicNorthAction;  // Y  -> especial
 
-        [SerializeField] private global::PlayerInputManager inputManager;
+        [SerializeField] private PlayerInput playerInput;
         [SerializeField, Tooltip("Optional reference that implements IActionValidator (e.g. PlayerActionManager)")]
         private MonoBehaviour actionValidatorSource;
 
@@ -43,8 +43,8 @@ namespace Invector.vCharacterController
 
         private void ResolveServices()
         {
-            if (inputManager == null)
-                global::ServiceLocator.TryGet(out inputManager);
+            if (playerInput == null)
+                playerInput = GetComponent<PlayerInput>();
 
             if (actionValidator == null)
             {
@@ -54,31 +54,22 @@ namespace Invector.vCharacterController
                 if (actionValidator == null)
                     actionValidator = GetComponent<IActionValidator>();
 
-                if (actionValidator == null && inputManager != null)
-                    actionValidator = inputManager.GetComponent<IActionValidator>();
-
-                if (actionValidator == null)
-                    global::ServiceLocator.TryGet(out actionValidator);
+                if (actionValidator == null && playerInput != null)
+                    actionValidator = playerInput.GetComponent<IActionValidator>();
             }
         }
 
         private void InitializeInputActions()
         {
-            if (inputManager != null)
-            {
-                // Compartir el asset centralizado para evitar duplicados y búsquedas.
-                inputActions = inputManager.PlayerInput != null ? inputManager.PlayerInput.actions : inputManager.Controls?.asset;
-            }
+            if (playerInput != null)
+                inputActions = playerInput.actions;
+
+            if (inputActions == null)
+                inputActions = this.inputActions; // inspector fallback
 
             if (inputActions == null)
             {
-                // Permitir asignación manual desde el inspector como respaldo.
-                inputActions = this.inputActions;
-            }
-
-            if (inputActions == null)
-            {
-                Debug.LogError("[vThirdPersonInput] No InputActionAsset assigned. Please provide one or ensure PlayerInputManager is present.");
+                Debug.LogError("[vThirdPersonInput] No InputActionAsset assigned. Please assign one or ensure a PlayerInput component references it.");
                 return;
             }
 
@@ -288,9 +279,6 @@ namespace Invector.vCharacterController
         {
             if (actionValidator != null)
                 return actionValidator;
-
-            if (inputManager != null)
-                actionValidator = inputManager.GetComponent<IActionValidator>();
 
             return actionValidator;
         }

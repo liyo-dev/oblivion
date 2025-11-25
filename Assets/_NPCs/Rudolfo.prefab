@@ -80,8 +80,9 @@ GameObject:
   - component: {fileID: 3451600089544343385}
   - component: {fileID: 2085083583302660588}
   - component: {fileID: 8764602802918601779}
+  - component: {fileID: 8493776749281197897}
   m_Layer: 8
-  m_Name: Antipatico
+  m_Name: Rudolfo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -210,7 +211,19 @@ MonoBehaviour:
       m_Calls: []
   OnFinished:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 8493776749281197897}
+        m_TargetAssemblyTypeName: InteractableToNarrativeEvent, Assembly-CSharp
+        m_MethodName: Send
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
@@ -332,6 +345,20 @@ MonoBehaviour:
   lastPosition: {x: 0, y: 0, z: 0}
   rotateOnInteract: 0
   rotateOnInteractSeconds: 0.3
+--- !u!114 &8493776749281197897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 571374797890102318}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35821e7abd7d67d4da3628200f9aaea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
+  eventKey: JUMP_ABILITY
+  sendNow: 0
 --- !u!1 &1100543303406463527
 GameObject:
   m_ObjectHideFlags: 0

@@ -31,6 +31,8 @@ public class PlayerFlyingController : MonoBehaviour
     [SerializeField] private float descendSpeed = 12f;
     [SerializeField] private float acceleration = 10f;
     [SerializeField] private float turnSpeed = 9f;
+    [SerializeField] private float tiltAngleMultiplier = 15f;
+    [SerializeField] private float tiltSpeed = 5f;
     [SerializeField] private float doubleTapWindow = 0.35f;
     [SerializeField] private float boostMultiplier = 1.5f;
 
@@ -71,6 +73,7 @@ public class PlayerFlyingController : MonoBehaviour
     private bool _flightArmed = false;
     private float _flightArmedExpires = -1f;
     private bool _justEnteredFlight;
+    private float _currentPitch = 0f;
     [SerializeField] private float flightArmedDuration = 2f;
 
     [Header("FX Vuelo")]
@@ -399,6 +402,7 @@ public class PlayerFlyingController : MonoBehaviour
         bool wasFlying = _isFlying;
         _isFlying = false;
         _currentPlanarSpeed = 0f;
+        _currentPitch = 0f; // Reset pitch on exit
         _isBoosting = false;
 
         if (wasFlying && _actionManager != null)
@@ -498,8 +502,17 @@ public class PlayerFlyingController : MonoBehaviour
             faceDir = forward;
         if (faceDir.sqrMagnitude > 0.0001f)
         {
+            // Lógica de inclinación (pitch)
+            float maxVertSpeed = Mathf.Max(verticalSpeed, descendSpeed);
+            float normalizedVertical = maxVertSpeed > 0.01f ? verticalInput / maxVertSpeed : 0f;
+            float targetPitch = -normalizedVertical * tiltAngleMultiplier; // Negativo para que al subir (positivo) incline hacia arriba
+            _currentPitch = Mathf.Lerp(_currentPitch, targetPitch, tiltSpeed * Time.fixedDeltaTime);
+
             Quaternion targetRot = Quaternion.LookRotation(faceDir, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.fixedDeltaTime);
+            // Aplicar la inclinación en el eje X local del personaje
+            Quaternion pitchRotation = Quaternion.AngleAxis(_currentPitch, Vector3.right);
+            Quaternion finalRot = targetRot * pitchRotation;
+            transform.rotation = Quaternion.Slerp(transform.rotation, finalRot, turnSpeed * Time.fixedDeltaTime);
         }
     }
 
