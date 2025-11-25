@@ -166,6 +166,14 @@ public class MenuNavigator : MonoBehaviour
         if (resetCooldown) _cooldown = 0f;
     }
 
+    /// <summary>
+    /// Resetea el cooldown de navegación para que el siguiente input se procese inmediatamente.
+    /// </summary>
+    public void ResetCooldown()
+    {
+        _cooldown = 0f;
+    }
+
     public void ForceSelect(GameObject go, bool resetCooldown = true)
         => ForceSelect(go != null ? go.GetComponent<Button>() : null, resetCooldown);
 
