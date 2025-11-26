@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6b64f85c5ee58984a8e4d87ffdce9b5d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Example/Jammo-Character/Animations/Default/a_Idle.anim
+  uploadId: 753194

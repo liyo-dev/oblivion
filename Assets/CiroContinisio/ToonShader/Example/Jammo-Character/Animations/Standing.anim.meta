@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d85664db4b473f64fb198bcc5a3c7099
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Example/Jammo-Character/Animations/Standing.anim
+  uploadId: 753194

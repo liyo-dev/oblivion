@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bd6ee82c5e06b3f4f86113cbf8261ae1
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Example/Jammo-Character/Prefabs/Jammo_Player.prefab
+  uploadId: 753194
