@@ -332,7 +332,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 380, y: -622}
+  m_AnchoredPosition: {x: 380, y: -724}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &5182842849053475337
@@ -1566,11 +1566,11 @@ MonoBehaviour:
   masterVolumeSlider: {fileID: 418116836470149676}
   sfxVolumeSlider: {fileID: 4115616137007246307}
   musicVolumeSlider: {fileID: 1063120537343761413}
-  invertLookYesButton: {fileID: 0}
-  invertLookNoButton: {fileID: 0}
-  invertFlightYesButton: {fileID: 0}
-  invertFlightNoButton: {fileID: 0}
-  lookSensitivitySlider: {fileID: 0}
+  invertLookYesButton: {fileID: 4124051455390651267}
+  invertLookNoButton: {fileID: 1153544491417535105}
+  invertFlightYesButton: {fileID: 6987481152674461052}
+  invertFlightNoButton: {fileID: 7215184604343534626}
+  lookSensitivitySlider: {fileID: 1313460959900758704}
   vibrationYesButton: {fileID: 9152518714369984413}
   vibrationNoButton: {fileID: 3049150387253160677}
   fullscreenYesButton: {fileID: 8144584666780166159}
@@ -4030,7 +4030,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 380, y: -520}
+  m_AnchoredPosition: {x: 380, y: -622}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &7668146276283936179
@@ -4416,7 +4416,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 380, y: -724}
+  m_AnchoredPosition: {x: 380, y: -520}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &7378668192645470808
@@ -6110,9 +6110,9 @@ RectTransform:
   - {fileID: 8068844662170514003}
   - {fileID: 2549802003713469660}
   - {fileID: 3951001318079303701}
+  - {fileID: 1662641628678752841}
   - {fileID: 8933062854309019136}
   - {fileID: 7200922494003438878}
-  - {fileID: 1662641628678752841}
   m_Father: {fileID: 2865229778091225670}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}

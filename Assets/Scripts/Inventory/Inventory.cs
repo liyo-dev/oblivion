@@ -124,17 +124,32 @@ public class Inventory : MonoBehaviour
             _bag.Clear();
         }
 
-        foreach (var entry in snapshot)
+        foreach (var itemSave in snapshot)
         {
-            if (string.IsNullOrEmpty(entry.itemId)) continue;
-            if (entry.count <= 0) continue;
+            if (string.IsNullOrEmpty(itemSave.itemId)) continue;
 
-            var item = ResolveOrCreateDefinition(entry.itemId);
-            _bag[entry.itemId] = entry.count;
+            // Registrar definición si no existe
+            if (!_definitions.ContainsKey(itemSave.itemId))
+            {
+                var resolvedItem = ResolveOrCreateDefinition(itemSave.itemId);
+                if (resolvedItem != null)
+                {
+                    RegisterDefinition(resolvedItem);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Inventory] No se pudo resolver definición para itemId '{itemSave.itemId}'");
+                }
+            }
 
+            // Agregar al inventario
+            _bag[itemSave.itemId] = itemSave.count;
             if (notifyChanges)
             {
-                OnInventoryChanged?.Invoke(item, entry.count);
+                if (_definitions.TryGetValue(itemSave.itemId, out var def) && def != null)
+                {
+                    OnInventoryChanged?.Invoke(def, itemSave.count);
+                }
             }
         }
     }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: CHAR_RUDOLFO
-    textId: DLG_ANTIPATICO_TURNIN
+    textId: DLG_ANTIPATICO_TURNIN_01
     text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_RUDOLFO

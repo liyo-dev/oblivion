@@ -123,18 +123,24 @@ public class QuestMenuManager : MonoBehaviour
         if (!dpadUpPressed)
         {
             try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
-            if (!dpadUpPressed) dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow);
+        }
+
+        if (!dpadUpPressed)
+        {
+            dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W);
+        }
+
+        if (!dpadUpPressed)
+        {
+            dpadUpPressed = Input.GetKeyDown(KeyCode.JoystickButton12);
         }
 
         float dpadVertical = 0f;
         try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
-        if (!dpadUpPressed && dpadVertical > 0.5f && !_lastFrameDpadUp)
-        {
-            dpadUpPressed = true;
-        }
-
+        bool axisPressed = dpadVertical > 0.5f && !_lastFrameDpadUp;
         _lastFrameDpadUp = dpadVertical > 0.5f;
-        return dpadUpPressed;
+
+        return dpadUpPressed || axisPressed;
     }
 
     private bool DetectBPressed()

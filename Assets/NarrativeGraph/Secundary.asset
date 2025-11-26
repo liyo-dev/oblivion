@@ -23,6 +23,8 @@ MonoBehaviour:
   - rid: 5623891481250759596
   - rid: 5623891500440224033
   - rid: 5623891500440224034
+  - rid: 5623891510977626690
+  - rid: 5623891510977626760
   applicableSceneNames:
   - MainWorld
   references:
@@ -63,20 +65,20 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 099fe10e-98f2-475b-ae44-0f435002ee2c
-        position: {x: 262, y: -44}
+        position: {x: -509, y: -103}
         outputs:
         - a5b0ec64-4604-458f-baa2-4363bad5d765
         eventKey: ALGAS_INVENTORY
     - rid: 5623891252771815606
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: "A\xF1ado Aa\xF1gas al Inventario"
+        displayTitle: "A\xF1ado Algas al Inventario"
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5b0ec64-4604-458f-baa2-4363bad5d765
-        position: {x: 742, y: -44}
+        position: {x: -949.0913, y: -103.00002}
         outputs: []
         item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
         amount: 1
@@ -90,11 +92,11 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 434108a8-8f50-407a-b807-74d22ff2a5ac
-        position: {x: -142, y: -103}
+        position: {x: -166, y: -103}
         outputs:
         - b637fe58-dba2-46e0-a474-9ce5cea8914e
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
-        - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
+        - 7e4a897f-d8ef-44aa-9eac-568b749bdc50
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -104,7 +106,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
-        position: {x: 280, y: 190}
+        position: {x: 925, y: 270}
         outputs:
         - f01dc9e7-de62-484e-8166-01c99735cb97
         questId: Q_RUDOLFO
@@ -118,7 +120,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f01dc9e7-de62-484e-8166-01c99735cb97
-        position: {x: 719, y: 190}
+        position: {x: 1369, y: 270}
         outputs: []
         abilityKeysToUnlock: 01000000
         abilitiesToUnlock: 
@@ -159,3 +161,29 @@ MonoBehaviour:
         oneShotFlag: 
         applyPresetAfterUnlock: 1
         saveAfterUnlock: 1
+    - rid: 5623891510977626690
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Comienzo de la misi\xF3n de SALTO"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 937c9ea3-582a-45e2-915c-633bd0d307bc
+        position: {x: 528, y: 270}
+        outputs:
+        - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
+        questId: Q_RUDOLFO
+    - rid: 5623891510977626760
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: MISION PARA CONSEGUIR EL SALTO
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 7e4a897f-d8ef-44aa-9eac-568b749bdc50
+        position: {x: 88, y: 270}
+        outputs:
+        - 937c9ea3-582a-45e2-915c-633bd0d307bc
+        eventKey: START_QUEST_RUDOLFO
