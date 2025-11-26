@@ -134,18 +134,8 @@ public class DialogueManager : MonoBehaviour
 
         if (_dpadCooldown > 0f) _dpadCooldown -= Time.unscaledDeltaTime;
 
-        bool left = false, right = false;
-#if ENABLE_INPUT_SYSTEM
-        var gp = UnityEngine.InputSystem.Gamepad.current;
-        if (gp != null)
-        {
-            left  |= gp.dpad.left.wasPressedThisFrame;
-            right |= gp.dpad.right.wasPressedThisFrame;
-        }
-#endif
-        // Teclado
-        left  |= Input.GetKeyDown(KeyCode.LeftArrow);
-        right |= Input.GetKeyDown(KeyCode.RightArrow);
+        bool left = GamepadInputReader.NavigateLeft;
+        bool right = GamepadInputReader.NavigateRight;
 
         if ((left || right) && _dpadCooldown <= 0f)
         {
