@@ -66,14 +66,7 @@ public class GameOverManager : MonoBehaviour
     {
         try
         {
-#if UNITY_2022_3_OR_NEWER
-            var existing = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            var existing = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
-#pragma warning restore 618
-#endif
-            if (existing != null)
+            if (ServiceLocator.TryGet(out GameOverManager existing) && existing != null)
             {
                 if (existing.transform.root != null)
                     UnityEngine.Object.DontDestroyOnLoad(existing.transform.root.gameObject);
@@ -101,6 +94,7 @@ public class GameOverManager : MonoBehaviour
             return;
         }
         Instance = this;
+        ServiceLocator.Register(this);
         SceneManager.sceneLoaded += HandleSceneLoaded;
         // Opcional: no destruir al cambiar de escena si quieres persistencia
         // DontDestroyOnLoad(gameObject);
@@ -191,6 +185,7 @@ public class GameOverManager : MonoBehaviour
         {
             Instance = null;
         }
+        ServiceLocator.Unregister(this);
     }
 
     void Update()
@@ -217,6 +212,7 @@ public class GameOverManager : MonoBehaviour
             OnBackToMainMenu();
             return;
         }
+#endif
     }
 
 // ---------------- UI Focus Keeper ----------------
@@ -535,13 +531,16 @@ public class GameOverManager : MonoBehaviour
                 var preset = profile.GetActivePresetResolved();
                 if (preset != null)
                 {
-                    // Intentar obtener PlayerHealthSystem del jugador
-                    PlayerHealthSystem phs = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
+                    // Intentar obtener PlayerHealthSystem del jugador sin usar FindObject directamente
+                    ServiceLocator.TryGet(out PlayerHealthSystem phs);
                     if (phs == null)
                     {
                         var playerGo = GameObject.FindWithTag("Player");
                         if (playerGo != null)
                             phs = playerGo.GetComponent<PlayerHealthSystem>();
+
+                        if (phs != null)
+                            ServiceLocator.Register(phs);
                     }
 
                     if (phs != null)
@@ -565,12 +564,15 @@ public class GameOverManager : MonoBehaviour
                     else
                     {
                         // Obtener ManaPool del jugador
-                        ManaPool mana = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
+                        ServiceLocator.TryGet(out ManaPool mana);
                         if (mana == null)
                         {
                             var playerGo = GameObject.FindWithTag("Player");
                             if (playerGo != null)
                                 mana = playerGo.GetComponentInChildren<ManaPool>() ?? playerGo.GetComponent<ManaPool>();
+
+                            if (mana != null)
+                                ServiceLocator.Register(mana);
                         }
 
                         if (mana != null)
@@ -631,31 +633,23 @@ public class GameOverManager : MonoBehaviour
     {
         if (transitionManager != null) return transitionManager;
 
+        if (ServiceLocator.TryGet(out TransitionManager cached) && cached != null)
+        {
+            transitionManager = cached;
+            return transitionManager;
+        }
+
         try
         {
             transitionManager = TransitionManager.Instance();
+            if (transitionManager != null)
+            {
+                ServiceLocator.Register(transitionManager);
+            }
         }
         catch (System.Exception ex)
         {
             Debug.LogWarning($"[GameOverManager] TransitionManager.Instance() falló: {ex.Message}");
-        }
-
-        if (transitionManager != null)
-            return transitionManager;
-
-        try
-        {
-#if UNITY_2022_3_OR_NEWER
-            transitionManager = UnityEngine.Object.FindFirstObjectByType<TransitionManager>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            transitionManager = UnityEngine.Object.FindObjectOfType<TransitionManager>(true);
-#pragma warning restore 618
-#endif
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[GameOverManager] Error buscando TransitionManager en escena: {ex.Message}");
         }
 
         return transitionManager;
@@ -770,31 +764,7 @@ public class GameOverManager : MonoBehaviour
     private static bool TryResolveInstance()
     {
         if (Instance != null) return true;
-
-        GameOverManager found = null;
-#if UNITY_2022_3_OR_NEWER
-        try
-        {
-            found = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[GameOverManager] Error al buscar instancia (FindFirstObjectByType): {ex.Message}");
-        }
-#else
-        try
-        {
-#pragma warning disable 618
-            found = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
-#pragma warning restore 618
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[GameOverManager] Error al buscar instancia (FindObjectOfType): {ex.Message}");
-        }
-#endif
-
-        if (found != null)
+        if (ServiceLocator.TryGet(out GameOverManager found) && found != null)
         {
             Instance = found;
             return true;
