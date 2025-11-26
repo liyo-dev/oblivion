@@ -10,10 +10,12 @@ public class QuestMenuManager : MonoBehaviour
     [Header("Auto apertura")]
     [SerializeField] private bool autoShowQuickOnQuestInit = true;
     [SerializeField] private float autoShowDelay = 0.35f;
+    [SerializeField] private float holdTimeForMainMenu = 0.6f;
 
     private bool _lastFrameDpadUp;
     private Coroutine _autoShowRoutine;
     private QuestManager _lastQuestManager;
+    private float _dpadHoldTime;
 
     private void Awake()
     {
@@ -46,6 +48,8 @@ public class QuestMenuManager : MonoBehaviour
             return;
         }
 
+        HandleDpadUpHeld();
+
         if (DetectDpadUpPressed())
         {
             HandleDpadUpPressed();
@@ -74,8 +78,49 @@ public class QuestMenuManager : MonoBehaviour
                 if (quickMenu != null)
                     quickMenu.ShowPanel(false, ignoreRestrictions: true);
                 mainMenu.ShowMenu();
+                ResetDpadHold();
             }
         }
+    }
+
+    private void HandleDpadUpHeld()
+    {
+        bool quickIsOpen = quickMenu != null && quickMenu.IsVisible;
+        bool mainIsOpen = mainMenu != null && mainMenu.IsOpen;
+
+        if (!quickIsOpen || mainIsOpen)
+        {
+            ResetDpadHold();
+            return;
+        }
+
+        if (DetectDpadUpHeld())
+        {
+            _dpadHoldTime += Time.unscaledDeltaTime;
+            if (_dpadHoldTime >= holdTimeForMainMenu && mainMenu != null && CanOpenMainMenu())
+            {
+                quickMenu.ShowPanel(false, ignoreRestrictions: true);
+                mainMenu.ShowMenu();
+                ResetDpadHold();
+            }
+        }
+        else
+        {
+            ResetDpadHold();
+        }
+    }
+
+    private bool DetectDpadUpHeld()
+    {
+        float dpadVertical = 0f;
+        var nav = GamepadInputReader.Navigation;
+        dpadVertical = nav.y;
+        return dpadVertical > 0.5f;
+    }
+
+    private void ResetDpadHold()
+    {
+        _dpadHoldTime = 0f;
     }
 
     private void HandleBPressed()
