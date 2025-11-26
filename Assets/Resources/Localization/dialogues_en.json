@@ -97,6 +97,22 @@
             "value": "...Still here? Impressive."
         },
         {
+            "key": "DLG_ANTIPATICO_IN_PROGRESS",
+            "value": "[EN] Busca las botas cerca del mar. Estuve nadando por ahí."
+        },
+        {
+            "key": "DLG_ANTIPATICO_TURNIN_01",
+            "value": "[EN] Ah pues mira, las has encontrado."
+        },
+        {
+            "key": "DLG_ANTIPATICO_TURNIN_02",
+            "value": "[EN] ¿Sabes qué? me da pereza ponermelas. Quedatelas."
+        },
+        {
+            "key": "DLG_ANTIPATICO_TURNIN_03",
+            "value": "[EN] Con ellas podrás saltar. Denada muchacho... Ahora fuera de mi vista."
+        },
+        {
             "key": "DLG_ELDRAN_MISSION1_01",
             "value": "I see you read my letter..."
         },
@@ -295,6 +311,18 @@
         {
             "key": "DLG_PIRATE_02",
             "value": "A sharktopus took it from me..."
+        },
+        {
+            "key": "DLG_RUDOLFO_COMPLETE_01",
+            "value": "[EN] ¿Vienes a molestar?"
+        },
+        {
+            "key": "DLG_RUDOLFO_COMPLETE_02",
+            "value": "[EN] No pienso darte nada más..."
+        },
+        {
+            "key": "DLG_RUDOLFO_COMPLETE_03",
+            "value": "[EN] Espero que te quedaran bien mis botas. Chao."
         },
         {
             "key": "DLG_TENDERA_01",

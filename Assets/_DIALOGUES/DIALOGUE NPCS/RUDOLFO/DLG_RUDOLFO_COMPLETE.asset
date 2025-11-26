@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: CHAR_RUDOLFO
-    textId: DLG_ANTIPATICO_01
+    textId: DLG_RUDOLFO_COMPLETE_01
     text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_RUDOLFO
-    textId: DLG_ANTIPATICO_02
+    textId: DLG_RUDOLFO_COMPLETE_02
     text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_RUDOLFO
-    textId: DLG_ANTIPATICO_03
+    textId: DLG_RUDOLFO_COMPLETE_03
     text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_RUDOLFO
-    textId: DLG_ANTIPATICO_04
+    textId: DLG_RUDOLFO_COMPLETE_04
     text: 
     portrait: {fileID: 0}
