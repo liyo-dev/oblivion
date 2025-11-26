@@ -139,22 +139,6 @@ public sealed class UiInputManager : MonoBehaviour
 
     private bool WasPausePressed()
     {
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var gp = Gamepad.current;
-            if (gp != null && gp.startButton.wasPressedThisFrame)
-                return true;
-
-            var kb = Keyboard.current;
-            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
-                return true;
-        }
-        catch { }
-#endif
-
-        return Input.GetKeyDown(KeyCode.Escape)
-            || Input.GetKeyDown(KeyCode.Backspace)
-            || Input.GetKeyDown(KeyCode.JoystickButton7);
+        return GamepadInputReader.StartPressed;
     }
 }

@@ -207,48 +207,16 @@ public class GameOverManager : MonoBehaviour
 
         // Cancel/back behavior: llevar al menú principal
 #if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-        {
-            var gp = Gamepad.current;
-            // Start / buttonSouth (A) -> continuar (ocultar GameOver)
-            if (gp.startButton.wasPressedThisFrame || gp.buttonSouth.wasPressedThisFrame)
-            {
-                HideGameOver();
-                return;
-            }
-            // buttonEast (B) -> volver al menú principal (cancel)
-            if (gp.buttonEast.wasPressedThisFrame)
-            {
-                OnBackToMainMenu();
-                return;
-            }
-        }
-        else if (Keyboard.current != null)
-        {
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                OnBackToMainMenu();
-                return;
-            }
-            if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame)
-            {
-                HideGameOver();
-                return;
-            }
-        }
-#else
-        // Legacy input: Submit resumes, Cancel/back goes to main menu
-        if (Input.GetButtonDown("Submit"))
+        if (GamepadInputReader.SubmitPressed || GamepadInputReader.StartPressed)
         {
             HideGameOver();
             return;
         }
-        if (Input.GetButtonDown("Cancel") || Input.GetKeyDown(KeyCode.Escape))
+        if (GamepadInputReader.CancelPressed)
         {
             OnBackToMainMenu();
             return;
         }
-#endif
     }
 
 // ---------------- UI Focus Keeper ----------------
@@ -282,29 +250,9 @@ public class GameOverManager : MonoBehaviour
 
         bool wantsPadFocus = false;
 
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-        {
-            var gp = Gamepad.current;
-            wantsPadFocus =
-                gp.dpad.up.wasPressedThisFrame || gp.dpad.down.wasPressedThisFrame ||
-                Mathf.Abs(gp.leftStick.ReadValue().y) > 0.25f ||
-                gp.buttonSouth.wasPressedThisFrame || gp.startButton.wasPressedThisFrame;
-        }
-        else
-        {
-            wantsPadFocus = Keyboard.current != null && (
-                Keyboard.current.upArrowKey.wasPressedThisFrame ||
-                Keyboard.current.downArrowKey.wasPressedThisFrame ||
-                Keyboard.current.wKey.wasPressedThisFrame ||
-                Keyboard.current.sKey.wasPressedThisFrame ||
-                Keyboard.current.enterKey.wasPressedThisFrame ||
-                Keyboard.current.spaceKey.wasPressedThisFrame
-            );
-        }
-#else
-        wantsPadFocus = Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.1f || Input.GetButtonDown("Submit");
-#endif
+        wantsPadFocus = GamepadInputReader.NavigateUp || GamepadInputReader.NavigateDown ||
+                        GamepadInputReader.Navigation.sqrMagnitude > 0.09f ||
+                        GamepadInputReader.SubmitPressed || GamepadInputReader.StartPressed;
 
         if (wantsPadFocus && (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy))
             EnsureUISelection();
@@ -326,27 +274,12 @@ public class GameOverManager : MonoBehaviour
         bool moveUp = false;
         bool moveDown = false;
 
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-        {
-            var gp = Gamepad.current;
-            moveUp |= gp.dpad.up.wasPressedThisFrame;
-            moveDown |= gp.dpad.down.wasPressedThisFrame;
+        moveUp |= GamepadInputReader.NavigateUp;
+        moveDown |= GamepadInputReader.NavigateDown;
 
-            var stickY = gp.leftStick.ReadValue().y;
-            moveUp |= stickY > 0.6f;
-            moveDown |= stickY < -0.6f;
-        }
-        else if (Keyboard.current != null)
-        {
-            moveUp |= Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame;
-            moveDown |= Keyboard.current.downArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame;
-        }
-#else
-        float axis = Input.GetAxisRaw("Vertical");
-        moveUp |= Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || axis > 0.6f;
-        moveDown |= Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) || axis < -0.6f;
-#endif
+        var nav = GamepadInputReader.Navigation.y;
+        moveUp |= nav > 0.6f;
+        moveDown |= nav < -0.6f;
 
         if (moveUp)
         {

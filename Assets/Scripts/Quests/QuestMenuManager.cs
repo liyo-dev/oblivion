@@ -112,31 +112,11 @@ public class QuestMenuManager : MonoBehaviour
 
     private bool DetectDpadUpPressed()
     {
-        bool dpadUpPressed = false;
-
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null && gp.dpad.up.wasPressedThisFrame)
-            dpadUpPressed = true;
-#endif
-
-        if (!dpadUpPressed)
-        {
-            try { dpadUpPressed = Input.GetButtonDown("DPadUp"); } catch { }
-        }
-
-        if (!dpadUpPressed)
-        {
-            dpadUpPressed = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W);
-        }
-
-        if (!dpadUpPressed)
-        {
-            dpadUpPressed = Input.GetKeyDown(KeyCode.JoystickButton12);
-        }
+        bool dpadUpPressed = GamepadInputReader.DpadUpPressed;
 
         float dpadVertical = 0f;
-        try { dpadVertical = Input.GetAxis("7th axis"); } catch { }
+        var nav = GamepadInputReader.Navigation;
+        dpadVertical = nav.y;
         bool axisPressed = dpadVertical > 0.5f && !_lastFrameDpadUp;
         _lastFrameDpadUp = dpadVertical > 0.5f;
 
@@ -145,22 +125,12 @@ public class QuestMenuManager : MonoBehaviour
 
     private bool DetectBPressed()
     {
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null && gp.buttonEast.wasPressedThisFrame)
-            return true;
-#endif
-        return Input.GetKeyDown(KeyCode.JoystickButton1) || Input.GetKeyDown(KeyCode.Escape);
+        return GamepadInputReader.CancelPressed;
     }
 
     private bool DetectStartPressed()
     {
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null && gp.startButton.wasPressedThisFrame)
-            return true;
-#endif
-        return Input.GetKeyDown(KeyCode.JoystickButton7) || Input.GetKeyDown(KeyCode.Return);
+        return GamepadInputReader.StartPressed;
     }
 
     private System.Collections.IEnumerator AutoShowQuickMenuRoutine()
