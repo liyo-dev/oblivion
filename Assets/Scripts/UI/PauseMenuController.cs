@@ -562,40 +562,12 @@ public class PauseMenuController : MonoBehaviour
 
     bool WasPausePressedThisFrame()
     {
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var gp = UnityEngine.InputSystem.Gamepad.current;
-            if (gp != null && gp.startButton.wasPressedThisFrame)
-                return true;
-        }
-        catch { }
-#endif
-
-        return Input.GetKeyDown(KeyCode.JoystickButton7);
+        return GamepadInputReader.StartPressed;
     }
 
     bool WasCancelPressedThisFrame()
     {
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var gp = UnityEngine.InputSystem.Gamepad.current;
-            // Usar el botón "B" como cancel. El botón Start gestiona el toggle de pausa
-            // a través del flujo principal para evitar cierres inmediatos en el mismo frame.
-            if (gp != null && gp.buttonEast.wasPressedThisFrame)
-                return true;
-
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
-                return true;
-        }
-        catch { }
-#endif
-
-        return Input.GetKeyDown(KeyCode.Escape)
-            || Input.GetKeyDown(KeyCode.Backspace)
-            || Input.GetKeyDown(KeyCode.JoystickButton1);
+        return GamepadInputReader.CancelPressed;
     }
 
     bool ConsumeStick(float y)
@@ -781,19 +753,3 @@ public class PauseMenuController : MonoBehaviour
     }
 }
 
-#if !ENABLE_INPUT_SYSTEM
-public class PauseMenuInputBridge : MonoBehaviour
-{
-    public PauseMenuController controller;
-    void Update()
-    {
-        if (controller == null) return;
-        // Con el sistema antiguo de input, Start/Escape solo deben abrir la pausa.
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton7))
-        {
-            if (!controller.gameObject.activeInHierarchy)
-                controller.ShowPauseMenu();
-        }
-    }
-}
-#endif

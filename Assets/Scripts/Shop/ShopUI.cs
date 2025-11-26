@@ -158,53 +158,34 @@ public class ShopUI : MonoBehaviour
     int ReadVerticalInput()
     {
         if (Time.unscaledTime < _ignoreInputUntil) return 0;
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null)
-        {
-            if (gp.dpad.up.wasPressedThisFrame || gp.leftStick.up.wasPressedThisFrame) return -1;
-            if (gp.dpad.down.wasPressedThisFrame || gp.leftStick.down.wasPressedThisFrame) return +1;
-        }
-#endif
-        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) return -1;
-        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) return +1;
+        if (GamepadInputReader.NavigateUp) return -1;
+        if (GamepadInputReader.NavigateDown) return +1;
+        var nav = GamepadInputReader.Navigation.y;
+        if (nav > 0.6f) return -1;
+        if (nav < -0.6f) return +1;
         return 0;
     }
 
     bool ReadSubmitInput()
     {
         if (Time.unscaledTime < _ignoreInputUntil) return false;
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null && gp.buttonSouth.wasPressedThisFrame) return true;
-#endif
-        return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space);
+        return GamepadInputReader.SubmitPressed;
     }
 
     bool ReadCancelInput()
     {
         if (Time.unscaledTime < _ignoreInputUntil) return false;
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null)
-            return gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame;
-#endif
-        return Input.GetKeyDown(KeyCode.Escape) || Input.GetButtonDown("Cancel");
+        return GamepadInputReader.CancelPressed || GamepadInputReader.StartPressed;
     }
 
     int ReadHorizontalInput()
     {
         if (Time.unscaledTime < _ignoreInputUntil) return 0;
-#if ENABLE_INPUT_SYSTEM
-        var gp = Gamepad.current;
-        if (gp != null)
-        {
-            if (gp.dpad.right.wasPressedThisFrame || gp.leftStick.right.wasPressedThisFrame) return 1;
-            if (gp.dpad.left.wasPressedThisFrame || gp.leftStick.left.wasPressedThisFrame) return -1;
-        }
-#endif
-        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) return 1;
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) return -1;
+        if (GamepadInputReader.NavigateRight) return 1;
+        if (GamepadInputReader.NavigateLeft) return -1;
+        var nav = GamepadInputReader.Navigation.x;
+        if (nav > 0.6f) return 1;
+        if (nav < -0.6f) return -1;
         return 0;
     }
 
