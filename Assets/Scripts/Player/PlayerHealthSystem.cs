@@ -572,16 +572,23 @@ public class PlayerHealthSystem : MonoBehaviour
     private void RestoreOriginalMaterials()
     {
         if (_renderers == null || _originalMaterials == null) return;
-        
+
         for (int i = 0; i < _renderers.Length && i < _originalMaterials.Length; i++)
         {
             if (_renderers[i] != null && _originalMaterials[i] != null)
             {
-                // Restaurar el color original del material
-                _renderers[i].material.color = _originalMaterials[i].color;
+                // Verificar si el material tiene la propiedad '_Color'
+                if (_renderers[i].material.HasProperty("_Color") && _originalMaterials[i].HasProperty("_Color"))
+                {
+                    _renderers[i].material.color = _originalMaterials[i].color;
+                }
+                else
+                {
+                    Debug.LogWarning($"El material {_renderers[i].material.name} no tiene la propiedad '_Color'.");
+                }
             }
         }
-        
+
         Debug.Log("[PlayerHealthSystem] Materiales restaurados al color original");
     }
     
