@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5614068afe191054e8eef9f398292bc2
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Shader/CustomLighting/README.md
+  uploadId: 753194

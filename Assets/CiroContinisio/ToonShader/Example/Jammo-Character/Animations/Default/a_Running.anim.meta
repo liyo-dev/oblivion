@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2e5cbd52f3af8384fafcc9a73ad2f1e0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Example/Jammo-Character/Animations/Default/a_Running.anim
+  uploadId: 753194

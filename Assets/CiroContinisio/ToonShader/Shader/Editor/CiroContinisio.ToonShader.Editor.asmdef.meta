@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: fdf4b066e77204ce899188d94d703a89
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 259777
+  packageName: URP Toon Shader
+  packageVersion: 1.0.4
+  assetPath: Assets/CiroContinisio/ToonShader/Shader/Editor/CiroContinisio.ToonShader.Editor.asmdef
+  uploadId: 753194

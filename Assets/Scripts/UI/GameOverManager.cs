@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using EasyTransition;
+using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -180,6 +181,11 @@ public class GameOverManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Detener y limpiar todas las animaciones activas de DOTween
+        DOTween.KillAll();
+        DOTween.Clear();
+        Debug.Log("[GameOverManager] Animaciones de DOTween limpiadas al destruir el objeto.");
+
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         if (Instance == this)
         {
