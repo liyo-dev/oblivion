@@ -25,6 +25,10 @@
             "value": "Guerrera China"
         },
         {
+            "key": "CHAR_MANUEL",
+            "value": "Manuel"
+        },
+        {
             "key": "CHAR_MERCHANT",
             "value": "Mercader"
         },
@@ -41,8 +45,16 @@
             "value": "Pirata"
         },
         {
+            "key": "CHAR_ROBERTO",
+            "value": "Roberto"
+        },
+        {
             "key": "CHAR_RUDOLFO",
             "value": "Rudolfo"
+        },
+        {
+            "key": "CHAR_SARA",
+            "value": "Sara"
         },
         {
             "key": "CHAR_TENDERA",
@@ -265,6 +277,10 @@
             "value": "Te espero en la entrada del reino."
         },
         {
+            "key": "DLG_MANUEL_01",
+            "value": "Caca."
+        },
+        {
             "key": "DLG_NIÑOPEZ_01",
             "value": "¡Glub! Perdón, a veces olvido hablar aire."
         },
@@ -313,6 +329,22 @@
             "value": "Me lo quitó un caridas..."
         },
         {
+            "key": "DLG_ROBERTO_01",
+            "value": "Ay que mareo tengo..."
+        },
+        {
+            "key": "DLG_ROBERTO_02",
+            "value": "Si me traes una poción te puedo dar algo que te va a gustar..."
+        },
+        {
+            "key": "DLG_ROBERTO_03",
+            "value": "Ojalá puedas conseguir una poción para mi mareo."
+        },
+        {
+            "key": "DLG_ROBERTO_04",
+            "value": "Oh Muchas gracias, ya me encuentro mucho mejor."
+        },
+        {
             "key": "DLG_RUDOLFO_COMPLETE_01",
             "value": "¿Vienes a molestar?"
         },
@@ -323,6 +355,10 @@
         {
             "key": "DLG_RUDOLFO_COMPLETE_03",
             "value": "Espero que te quedaran bien mis botas. Chao."
+        },
+        {
+            "key": "DLG_SARA_01",
+            "value": "Te quiero."
         },
         {
             "key": "DLG_TENDERA_01",
