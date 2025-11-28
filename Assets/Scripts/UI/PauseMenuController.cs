@@ -47,9 +47,6 @@ public class PauseMenuController : MonoBehaviour
                 UnityEngine.Object.DontDestroyOnLoad(es);
             }
 
-#if ENABLE_INPUT_SYSTEM
-            EnsureGlobalPauseListener();
-#endif
         }
         catch (System.Exception ex)
         {
@@ -116,11 +113,6 @@ public class PauseMenuController : MonoBehaviour
 
     void Awake()
     {
-#if ENABLE_INPUT_SYSTEM
-        // Asegurar el listener global lo antes posible, incluso si el método de inicialización
-        // automática no se dispara (p.ej. escenas que cargan el menú de pausa desactivado).
-        EnsureGlobalPauseListener();
-#endif
         if (_instance != null && _instance != this)
         {
             Debug.Log("[PauseMenuController] Duplicate detected in scene, destroying extra instance.");
@@ -192,12 +184,6 @@ public class PauseMenuController : MonoBehaviour
         BuildOrderedButtonsIfEmpty();
         FixExplicitNavigation();
 
-#if !ENABLE_INPUT_SYSTEM
-        var bridgeGO = new GameObject("PauseMenuInputBridge");
-        var bridge = bridgeGO.AddComponent<PauseMenuInputBridge>();
-        bridge.controller = this;
-        DontDestroyOnLoad(bridgeGO);
-#endif
 
 #if ENABLE_INPUT_SYSTEM
         if (playerControls == null)
@@ -655,41 +641,6 @@ public class PauseMenuController : MonoBehaviour
         Debug.Log("[PauseMenuController] Pausa input time updated to: " + _lastPauseInputTime);
         return false;
     }
-
-#if ENABLE_INPUT_SYSTEM
-    static void EnsureGlobalPauseListener()
-    {
-        if (_globalPauseListener != null) return;
-
-        _globalPauseListener = new InputAction("GlobalPause", InputActionType.Button);
-        _globalPauseListener.AddBinding("<Gamepad>/start");
-        _globalPauseListener.AddBinding("<Keyboard>/escape");
-        _globalPauseListener.AddBinding("<Keyboard>/backspace");
-        _globalPauseListener.performed += OnGlobalPausePerformed;
-        try { _globalPauseListener.Enable(); }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"[PauseMenu] No se pudo habilitar el listener global de pausa: {ex.Message}");
-        }
-    }
-
-    static void OnGlobalPausePerformed(InputAction.CallbackContext ctx)
-    {
-        // Resolver instancia si aún no se asignó (p.ej. el GO sigue inactivo)
-        if (_instance == null)
-        {
-#if UNITY_2022_3_OR_NEWER
-            _instance = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            _instance = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
-#pragma warning restore 618
-#endif
-        }
-
-        _instance?.RequestPauseToggle();
-    }
-#endif
 
     public void OnOptions()
     {
