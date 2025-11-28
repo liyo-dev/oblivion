@@ -107,7 +107,7 @@ public class PauseMenuController : MonoBehaviour
     float _navCooldown;
     int _navHeldSign; // -1,0,1 para evitar saltos al mantener el stick
     [Min(0f)] public float navRepeatDelay = 0.15f;
-    [Range(0f,1f)] public float navDeadzone = 0.3f;
+    [Range(0f, 1f)] public float navDeadzone = 0.3f;
     [Header("Debug")]
     public bool inputDebug = false;
 
@@ -305,6 +305,7 @@ public class PauseMenuController : MonoBehaviour
 
     public void ShowPauseMenu()
     {
+        Debug.Log("[PauseMenu] ShowPauseMenu called");
         if (!GameState.CanOpenPause) return;
         if (!MenuManager.IsOpen(MenuKind.Pause) && !MenuManager.TryOpen(MenuKind.Pause))
             return;
@@ -455,11 +456,11 @@ public class PauseMenuController : MonoBehaviour
 
     void Update()
     {
-                if (_pauseRequestPending || WasPausePressedThisFrame())
-                {
-                    ProcessPauseRequest();
-                    return;
-                }        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
+        if (_pauseRequestPending || WasPausePressedThisFrame())
+        {
+            ProcessPauseRequest();
+            return;
+        }        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
         if (_isPaused && WasCancelPressedThisFrame())
         {
             if (settingsMenu != null && settingsMenu.gameObject.activeInHierarchy)
@@ -597,21 +598,51 @@ public class PauseMenuController : MonoBehaviour
 
         // Si el objeto está inactivo, Update no se ejecutará, así que procesar ya.
         if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
-            ProcessPauseRequest();
+        {
+            Debug.Log("[PauseMenuController] Procesando solicitud de pausa inmediatamente.");
+            ExecutePauseRequest();
+
+        }
     }
 
     void ProcessPauseRequest()
     {
         if (ShouldThrottlePauseInput()) return;
+        ExecutePauseRequest();
+    }
 
+    void ExecutePauseRequest()
+    {
         _pauseRequestPending = false;
 
-        // Start abrirá el menú de pausa pero NO lo cerrará.
-        // Si no está pausado y el estado permite abrir pausa, abrir el menú.
+        Debug.Log("[PauseMenuController] Verificando condiciones para abrir el menú de pausa...");
+
+        // Verificar si el estado permite abrir pausa
+        Debug.Log("[PauseMenuController] GameState.CanOpenPause: " + GameState.CanOpenPause);
         if (!_isPaused && GameState.CanOpenPause)
         {
-            ShowPauseMenu();
+            Debug.Log("[PauseMenuController] Intentando abrir el menú de pausa...");
+            bool menuOpened = MenuManager.TryOpen(MenuKind.Pause);
+            Debug.Log("[PauseMenuController] Resultado de MenuManager.TryOpen: " + menuOpened);
+            if (menuOpened)
+            {
+                Debug.Log("[PauseMenuController] Menú de pausa abierto correctamente.");
+                ShowPauseMenu();
+            }
+            else
+            {
+                Debug.LogWarning("[PauseMenuController] Fallo al abrir el menú de pausa desde MenuManager.");
+            }
         }
+        else
+        {
+            Debug.LogWarning("[PauseMenuController] No se puede abrir el menú de pausa. Estado actual: " + _isPaused);
+        }
+
+        // Forzar apertura del menú para descartar problemas
+        Debug.Log("[PauseMenuController] Forzando apertura del menú de pausa...");
+        gameObject.SetActive(true);
+        Debug.Log("[PauseMenuController] Menú de pausa activado manualmente. Estado activo: " + gameObject.activeSelf);
     }
 
     bool ShouldThrottlePauseInput()
@@ -621,6 +652,7 @@ public class PauseMenuController : MonoBehaviour
             return true;
 
         _lastPauseInputTime = Time.unscaledTime;
+        Debug.Log("[PauseMenuController] Pausa input time updated to: " + _lastPauseInputTime);
         return false;
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System;
+using UnityEngine;
 
 public enum GamePhase
 {
@@ -72,16 +73,23 @@ public static class GameState
                   GamePhase.QuestMenu);
 
     public static bool CanOpenPause
-        => !IsAny(GamePhase.PauseMenu,
-                  GamePhase.MainMenu,
-                  GamePhase.Dialogue,
-                  GamePhase.SavePrompt,
-                  GamePhase.Cutscene,
-                  GamePhase.Loading,
-                  GamePhase.GameOver,
-                  GamePhase.Inventory,
-                  GamePhase.Equipment,
-                  GamePhase.QuestMenu);
+    {
+        get
+        {
+            bool result = !IsAny(GamePhase.PauseMenu,
+                                 GamePhase.MainMenu,
+                                 GamePhase.Dialogue,
+                                 GamePhase.SavePrompt,
+                                 GamePhase.Cutscene,
+                                 GamePhase.Loading,
+                                 GamePhase.GameOver,
+                                 GamePhase.Inventory,
+                                 GamePhase.Equipment,
+                                 GamePhase.QuestMenu);
+            Debug.Log("[GameState] CanOpenPause: " + result);
+            return result;
+        }
+    }
 
     public static bool CanOpenInventory
         => CanProcessGameplayInput && !Is(GamePhase.Inventory) && !Is(GamePhase.Equipment) && !Is(GamePhase.QuestMenu);

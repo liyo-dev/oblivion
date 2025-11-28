@@ -46,7 +46,12 @@ public static class MenuManager
     public static bool TryOpen(MenuKind kind)
     {
         if (IsOpen(kind))
+        {
+            Debug.Log("[MenuManager] Menú ya está abierto: " + kind);
             return true;
+        }
+
+        Debug.Log("[MenuManager] Intentando abrir menú: " + kind);
 
         // Clean up stale registrations by validating known menu instances.
         // If a menu was marked open in s_open but the actual UI reports closed,
@@ -95,6 +100,8 @@ public static class MenuManager
                     stillOpen = val;
                     break;
             }
+
+            Debug.Log("[MenuManager] Estado de menú " + k + ": " + stillOpen);
 
             if (!stillOpen)
             {
