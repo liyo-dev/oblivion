@@ -9,6 +9,10 @@
             "value": "Ayudar al niño pez."
         },
         {
+            "key": "Q_ROBERTO",
+            "value": "El mareo de Roberto."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
             "value": "Ve a hablar con Eldran en la entrada del reino"
         },
@@ -71,6 +75,10 @@
         {
             "key": "QUEST_NIÑOPEZ_DESC",
             "value": "Consigue algas para el niño pez."
+        },
+        {
+            "key": "QUEST_ROBERTO_MISSION1_DESC",
+            "value": "Consigue una poción de vida para Roberto."
         },
         {
             "key": "QUEST_STATE_ACTIVE",

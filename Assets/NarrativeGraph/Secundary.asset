@@ -25,6 +25,10 @@ MonoBehaviour:
   - rid: 5623891500440224034
   - rid: 5623891510977626690
   - rid: 5623891510977626760
+  - rid: 5623891572275806459
+  - rid: 5623891572275806460
+  - rid: 5623891572275806493
+  - rid: 5623891572275806494
   applicableSceneNames:
   - MainWorld
   references:
@@ -78,7 +82,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5b0ec64-4604-458f-baa2-4363bad5d765
-        position: {x: -949.0913, y: -103.00002}
+        position: {x: -949, y: -103}
         outputs: []
         item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
         amount: 1
@@ -92,11 +96,12 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 434108a8-8f50-407a-b807-74d22ff2a5ac
-        position: {x: -166, y: -103}
+        position: {x: -141, y: -119}
         outputs:
         - b637fe58-dba2-46e0-a474-9ce5cea8914e
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
         - 7e4a897f-d8ef-44aa-9eac-568b749bdc50
+        - 6b59ebae-3573-42a0-87fb-a451c65f40d8
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -187,3 +192,57 @@ MonoBehaviour:
         outputs:
         - 937c9ea3-582a-45e2-915c-633bd0d307bc
         eventKey: START_QUEST_RUDOLFO
+    - rid: 5623891572275806459
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: El mareo de Roberto
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 00079bce-e03b-4fa9-bf56-051f0f3b427c
+        position: {x: -670, y: 531}
+        outputs:
+        - b3cc61c7-023e-47cc-865a-06c7e4c93ab5
+        questId: ROBERTO_MISION1
+        debugLogs: 0
+    - rid: 5623891572275806460
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Nos da 5 pociones de magia
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b3cc61c7-023e-47cc-865a-06c7e4c93ab5
+        position: {x: -306, y: 210}
+        outputs: []
+        item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
+        amount: 5
+        logWarnings: 0
+    - rid: 5623891572275806493
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Esperamos para hablar con Roberto
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 6b59ebae-3573-42a0-87fb-a451c65f40d8
+        position: {x: -805, y: 172}
+        outputs:
+        - 4194f596-6816-443e-a04c-52b4499877a1
+        eventKey: START_ROBERTO_MISION
+    - rid: 5623891572275806494
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Empieza la misi\xF3n de Roberto"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4194f596-6816-443e-a04c-52b4499877a1
+        position: {x: -771, y: 348}
+        outputs:
+        - 00079bce-e03b-4fa9-bf56-051f0f3b427c
+        questId: ROBERTO_MISION1
