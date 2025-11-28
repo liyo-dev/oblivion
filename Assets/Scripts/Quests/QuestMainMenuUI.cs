@@ -96,7 +96,6 @@ public class QuestMainMenuUI : MonoBehaviour
     public void Rebuild()
     {
         if (QuestManager.Instance == null) return;
-        EnsureTemplate();
 
         if (contentRoot == null || itemPrefab == null) return;
 
@@ -144,69 +143,6 @@ public class QuestMainMenuUI : MonoBehaviour
     void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
     {
         Rebuild();
-    }
-
-    void EnsureTemplate()
-    {
-        if (itemPrefab != null) return;
-        // Crear un template muy sencillo en runtime para no depender de prefabs.
-        var go = new GameObject("QuestVisibilityItem_Temp", typeof(RectTransform));
-        var layout = go.AddComponent<HorizontalLayoutGroup>();
-        layout.childForceExpandHeight = false;
-        layout.childForceExpandWidth = false;
-        layout.spacing = 12f;
-
-        var nameObj = new GameObject("Name", typeof(RectTransform));
-        nameObj.transform.SetParent(go.transform, false);
-        var nameText = nameObj.AddComponent<TextMeshProUGUI>();
-        nameText.fontSize = 22;
-        nameText.enableAutoSizing = true;
-        var layoutElem = nameObj.AddComponent<LayoutElement>();
-        layoutElem.flexibleWidth = 1f;
-
-        var stateObj = new GameObject("State", typeof(RectTransform));
-        stateObj.transform.SetParent(go.transform, false);
-        var stateText = stateObj.AddComponent<TextMeshProUGUI>();
-        stateText.fontSize = 18;
-        stateText.alignment = TextAlignmentOptions.MidlineLeft;
-        var stateLayout = stateObj.AddComponent<LayoutElement>();
-        stateLayout.preferredWidth = 160f;
-
-        QuestVisibilityItemUI itemUi = go.AddComponent<QuestVisibilityItemUI>();
-
-        Button MakeButton(string label)
-        {
-            var btnGo = new GameObject(label + "Btn", typeof(RectTransform));
-            btnGo.transform.SetParent(go.transform, false);
-            var image = btnGo.AddComponent<Image>();
-            image.color = new Color(0.25f, 0.25f, 0.25f, 0.9f);
-            var btn = btnGo.AddComponent<Button>();
-            var txtGo = new GameObject("Text", typeof(RectTransform));
-            txtGo.transform.SetParent(btnGo.transform, false);
-            var txt = txtGo.AddComponent<TextMeshProUGUI>();
-            txt.text = label;
-            txt.fontSize = 18f;
-            txt.alignment = TextAlignmentOptions.Center;
-            var fitter = txtGo.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            var layoutB = btnGo.AddComponent<LayoutElement>();
-            layoutB.preferredWidth = 120f;
-            layoutB.preferredHeight = 32f;
-            return btn;
-        }
-
-        var follow = MakeButton("Seguir");
-        var show = MakeButton("Mostrar");
-        var hide = MakeButton("Ocultar");
-
-        itemUi.GetType().GetField("questName", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(itemUi, nameText);
-        itemUi.GetType().GetField("questState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(itemUi, stateText);
-        itemUi.GetType().GetField("followButton", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(itemUi, follow);
-        itemUi.GetType().GetField("showButton", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(itemUi, show);
-        itemUi.GetType().GetField("hideButton", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(itemUi, hide);
-
-        itemPrefab = itemUi;
     }
 
     void KillTween()

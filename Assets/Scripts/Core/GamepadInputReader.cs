@@ -146,6 +146,41 @@ public static class GamepadInputReader
         }
     }
 
+    /// <summary>
+    /// Lectura exclusiva del D-Pad (sin incluir el left stick ni bindings UI.Navigate).
+    /// Útil cuando queremos distinguir entradas del D-Pad del stick analógico.
+    /// </summary>
+    public static Vector2 DpadRaw
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null)
+            {
+                var v = gp.dpad.ReadValue();
+                if (v.sqrMagnitude > 0.0001f) return v;
+            }
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                try
+                {
+                    var hat = GetJoystickHat(js, "hat", "hatSwitch", "pov", "povHat");
+                    if (hat != null)
+                    {
+                        var value = hat.ReadValue();
+                        if (value.sqrMagnitude > 0.0001f) return value;
+                    }
+                }
+                catch { }
+            }
+#endif
+            return Vector2.zero;
+        }
+    }
+
     public static bool NavigateUp => DirectionStarted(Vector2.up);
     public static bool NavigateDown => DirectionStarted(Vector2.down);
     public static bool NavigateLeft => DirectionStarted(Vector2.left);

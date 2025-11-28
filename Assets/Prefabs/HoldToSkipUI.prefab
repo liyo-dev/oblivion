@@ -213,7 +213,7 @@ MonoBehaviour:
   fadeOut: 0.12
   disableSelfOnSkip: 1
   holdActionRef: {fileID: 4603114644073994948, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  skipAction: 0
+  skipAction: 1
   timelineToStop: {fileID: 0}
   OnSkipCompleted:
     m_PersistentCalls:

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class QuestMenuManager : MonoBehaviour
 {
@@ -20,23 +19,6 @@ public class QuestMenuManager : MonoBehaviour
     {
         if (quickMenu != null) quickMenu.ShowPanel(false, ignoreRestrictions: true);
         if (mainMenu != null) mainMenu.HideMenu();
-    }
-
-    void OnEnable()
-    {
-        if (autoShowQuickOnQuestInit)
-        {
-            _autoShowRoutine = StartCoroutine(AutoShowQuickMenuRoutine());
-        }
-    }
-
-    void OnDisable()
-    {
-        if (_autoShowRoutine != null)
-        {
-            StopCoroutine(_autoShowRoutine);
-            _autoShowRoutine = null;
-        }
     }
 
     private void Update()
@@ -70,10 +52,59 @@ public class QuestMenuManager : MonoBehaviour
 
         if (!quickIsOpen && !mainIsOpen)
         {
-            if (quickMenu != null)
+            Debug.Log("[QuestMenuManager] Opening quick menu.");
+            if (quickMenu == null)
             {
-                Debug.Log("[QuestMenuManager] Opening quick menu.");
+                Debug.LogWarning("[QuestMenuManager] quickMenu reference is null - cannot open quick menu.");
+                return;
+            }
+
+            Debug.Log($"[QuestMenuManager] quickMenu GO='{quickMenu.gameObject.name}', activeSelf={quickMenu.gameObject.activeSelf}, activeInHierarchy={quickMenu.gameObject.activeInHierarchy}");
+            // Asegurar que el GameObject del componente esté activo para permitir coroutines/animaciones
+            if (!quickMenu.gameObject.activeInHierarchy)
+            {
+                Debug.Log("[QuestMenuManager] Activating quickMenu GameObject before ShowPanel");
+                quickMenu.gameObject.SetActive(true);
+
+                // Log and activate any inactive ancestors (canvas or parent containers)
+                var inactiveAncestors = new System.Collections.Generic.List<Transform>();
+                var p = quickMenu.transform.parent;
+                while (p != null)
+                {
+                    if (!p.gameObject.activeSelf)
+                        inactiveAncestors.Add(p);
+                    p = p.parent;
+                }
+
+                if (inactiveAncestors.Count > 0)
+                {
+                    foreach (var anc in inactiveAncestors)
+                        Debug.Log($"[QuestMenuManager] Inactive ancestor: {anc.name} (activeSelf={anc.gameObject.activeSelf})");
+
+                    // Enable ancestors from top-down
+                    for (int i = inactiveAncestors.Count - 1; i >= 0; i--)
+                    {
+                        var anc = inactiveAncestors[i];
+                        Debug.Log($"[QuestMenuManager] Activating ancestor: {anc.name}");
+                        anc.gameObject.SetActive(true);
+                    }
+                }
+            }
+
+            // Attach ActiveStateDebugger to help detect who disables the GO
+            if (quickMenu.gameObject.GetComponent<ActiveStateDebugger>() == null)
+            {
+                quickMenu.gameObject.AddComponent<ActiveStateDebugger>();
+            }
+
+            try
+            {
                 quickMenu.ShowPanel(true, ignoreRestrictions: true);
+                Debug.Log("[QuestMenuManager] Called ShowPanel on quickMenu");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[QuestMenuManager] Exception while showing quickMenu: {ex}");
             }
         }
         else if (quickIsOpen && !mainIsOpen)
@@ -122,9 +153,10 @@ public class QuestMenuManager : MonoBehaviour
 
     private bool DetectDpadUpHeld()
     {
-        float dpadVertical = 0f;
-        var nav = GamepadInputReader.Navigation;
-        dpadVertical = nav.y;
+        // Usar lectura exclusiva del D-Pad para distinguir del stick analógico
+        var dpad = GamepadInputReader.DpadRaw;
+        float dpadVertical = dpad.y;
+     
         return dpadVertical > 0.5f;
     }
 
@@ -177,8 +209,10 @@ public class QuestMenuManager : MonoBehaviour
 
     private bool DetectDpadUpPressed()
     {
-        bool dpadUpPressed = GamepadInputReader.DpadUpPressed || GamepadInputReader.NavigateUp;
-        Debug.Log($"[QuestMenuManager] DetectDpadUpPressed: {dpadUpPressed}");
+        // Considerar D-Pad físico mediante la acción o la lectura raw del D-Pad/hat
+        var dpadRaw = GamepadInputReader.DpadRaw;
+        bool dpadUpPressed = GamepadInputReader.DpadUpPressed || dpadRaw.y > 0.5f;
+
         return dpadUpPressed;
     }
 
@@ -192,28 +226,4 @@ public class QuestMenuManager : MonoBehaviour
         return GamepadInputReader.StartPressed;
     }
 
-    private System.Collections.IEnumerator AutoShowQuickMenuRoutine()
-    {
-        while (autoShowQuickOnQuestInit)
-        {
-            var current = QuestManager.Instance;
-            if (current == null)
-            {
-                _lastQuestManager = null;
-            }
-            else if (current != _lastQuestManager)
-            {
-                _lastQuestManager = current;
-                if (autoShowDelay > 0f)
-                    yield return new WaitForSecondsRealtime(autoShowDelay);
-                else
-                    yield return null;
-
-                if (quickMenu != null)
-                    quickMenu.ShowPanel(true, ignoreRestrictions: true);
-            }
-
-            yield return null;
-        }
-    }
 }
