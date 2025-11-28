@@ -110,6 +110,8 @@ public class PauseMenuController : MonoBehaviour
 
     bool _pauseRequestPending; // consolidar triggers de pausa en Update
     float _lastPauseInputTime;
+    bool _pausePressedViaEvent;
+    bool _cancelPressedViaEvent;
 
     void Awake()
     {
@@ -227,6 +229,8 @@ public class PauseMenuController : MonoBehaviour
         Cursor.visible = true;
 
         EnableUIInput();
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
         if (rootGroup != null) { rootGroup.interactable = true; rootGroup.blocksRaycasts = true; }
 
         EnsureUISelection();
@@ -244,6 +248,8 @@ public class PauseMenuController : MonoBehaviour
         DisableUIInput();
         // Seguridad: si se desactiva externamente, asegurarse de liberar el GameState
         if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
+
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     void HandleActiveSceneChanged(Scene previous, Scene next)
@@ -549,12 +555,32 @@ public class PauseMenuController : MonoBehaviour
 
     bool WasPausePressedThisFrame()
     {
-        return GamepadInputReader.StartPressed;
+        if (_pausePressedViaEvent)
+        {
+            _pausePressedViaEvent = false;
+            return true;
+        }
+        return false;
     }
 
     bool WasCancelPressedThisFrame()
     {
-        return GamepadInputReader.CancelPressed;
+        if (_cancelPressedViaEvent)
+        {
+            _cancelPressedViaEvent = false;
+            return true;
+        }
+        return false;
+    }
+
+    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
+        if (input.Phase != InputActionPhase.Performed) return;
+
+        if (input.Type == GamepadInputReader.InputEventType.Start)
+            _pausePressedViaEvent = true;
+        else if (input.Type == GamepadInputReader.InputEventType.Cancel)
+            _cancelPressedViaEvent = true;
     }
 
     bool ConsumeStick(float y)

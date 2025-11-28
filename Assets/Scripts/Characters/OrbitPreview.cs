@@ -28,24 +28,16 @@ public class OrbitPreview : MonoBehaviour
     {
         bool anyInput = false;
 
-        // Rotación con botón izq o arrastre táctil
-        if (Input.GetMouseButton(0))
+        var look = GamepadInputReader.CameraLook;
+        if (look.sqrMagnitude > 0.0001f)
         {
-            yaw   += Input.GetAxis("Mouse X") * rotateSpeed * Time.deltaTime;
-            pitch -= Input.GetAxis("Mouse Y") * rotateSpeed * Time.deltaTime;
+            yaw   += look.x * rotateSpeed * Time.deltaTime;
+            pitch -= look.y * rotateSpeed * Time.deltaTime;
             pitch = Mathf.Clamp(pitch, -10f, 60f);
             anyInput = true;
         }
 
-        // Zoom con rueda
-        var wheel = Input.mouseScrollDelta.y;
-        if (Mathf.Abs(wheel) > 0.01f)
-        {
-            distance = Mathf.Clamp(distance * Mathf.Pow(0.9f, wheel * zoomSpeed), minDistance, maxDistance);
-            anyInput = true;
-        }
-
-        // Auto-spin si no tocas nada
+        // Auto-spin si no hay input
         if (!anyInput) yaw += autoSpinSpeed * Time.deltaTime;
         else idleTimer = 0f;
 

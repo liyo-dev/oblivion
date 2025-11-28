@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace UI
 {
@@ -22,12 +23,16 @@ namespace UI
             gameObject.SetActive(!startHidden);
             TryBindPlayer();
             PlayerService.OnPlayerRegistered += OnPlayerRegistered;
+
+            GamepadInputReader.EnsureInputEventsSubscribed();
+            GamepadInputReader.OnInput += HandleGamepadInput;
         }
 
         void OnDestroy()
         {
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             UnsubscribeInventory();
+            GamepadInputReader.OnInput -= HandleGamepadInput;
         }
 
         private void OnPlayerRegistered(GameObject player) => TryBindPlayer();
@@ -58,17 +63,12 @@ namespace UI
                 Refresh();
         }
 
-        void Update()
+        private void HandleGamepadInput(GamepadInputReader.InputEvent input)
         {
-            if (ShouldToggle())
+            if (input.Type == GamepadInputReader.InputEventType.DpadDown && input.Phase == InputActionPhase.Performed)
             {
                 ToggleMenu();
             }
-        }
-
-        bool ShouldToggle()
-        {
-            return GamepadInputReader.DpadDownPressed;
         }
 
         public void ToggleMenu()

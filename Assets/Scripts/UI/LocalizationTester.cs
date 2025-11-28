@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Script para testear el sistema de localización desde el inspector
@@ -11,11 +10,6 @@ public class LocalizationTester : MonoBehaviour
     [SerializeField] private string[] availableLanguages = { "es", "en" };
     [SerializeField] private int currentLanguageIndex = 0;
     
-    [Header("Input Keys (QWER)")]
-    [SerializeField] private bool enableKeyboardTesting = true;
-    [Tooltip("Q=Español, W=Inglés, E=Alternar entre ambos")]
-    [SerializeField] private bool showKeyboardHelp = true;
-    
     [Header("Debug")]
     [SerializeField] private bool showCurrentLanguage = true;
     
@@ -24,11 +18,6 @@ public class LocalizationTester : MonoBehaviour
         if (showCurrentLanguage && LocalizationManager.Instance != null)
         {
             Debug.Log($"[LocalizationTester] Idioma actual: {LocalizationManager.Instance.CurrentLocale}");
-        }
-        
-        if (showKeyboardHelp && enableKeyboardTesting)
-        {
-            Debug.Log("[LocalizationTester] Teclas de testing: Q=Español, W=Inglés, E=Alternar entre ambos");
         }
     }
     
@@ -67,78 +56,4 @@ public class LocalizationTester : MonoBehaviour
     public void ChangeToSpanish() => ChangeToLanguage("es");
     public void ChangeToEnglish() => ChangeToLanguage("en");
     
-    // Para usar desde teclas usando el nuevo Input System
-    private void Update()
-    {
-        if (!enableKeyboardTesting) return;
-        
-        // Teclas específicas para idiomas
-        if (Keyboard.current.qKey.wasPressedThisFrame)
-        {
-            ChangeToSpanish();
-        }
-        else if (Keyboard.current.wKey.wasPressedThisFrame)
-        {
-            ChangeToEnglish();
-        }
-        else if (Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            // Alternar entre los dos idiomas
-            NextLanguage();
-        }
-        // Teclas adicionales para más idiomas si se agregan
-        else if (Keyboard.current.yKey.wasPressedThisFrame)
-        {
-            // Reservada para futuro idioma
-            Debug.Log("[LocalizationTester] Tecla Y reservada para futuro idioma");
-        }
-        else if (Keyboard.current.uKey.wasPressedThisFrame)
-        {
-            // Mostrar ayuda
-            ShowKeyboardHelp();
-        }
-    }
-    
-    private void ShowKeyboardHelp()
-    {
-        Debug.Log("=== LOCALIZATION TESTER - AYUDA DE TECLAS ===");
-        Debug.Log("Q = Cambiar a Español");
-        Debug.Log("W = Cambiar a Inglés");
-        Debug.Log("E = Alternar entre Español e Inglés");
-        Debug.Log("U = Mostrar esta ayuda");
-        Debug.Log("============================================");
-    }
-    
-    private void OnGUI()
-    {
-        if (!showCurrentLanguage || LocalizationManager.Instance == null) return;
-        
-        GUI.Label(new Rect(10, 10, 300, 20), $"Idioma: {LocalizationManager.Instance.CurrentLocale}");
-        
-        if (enableKeyboardTesting)
-        {
-            GUI.Label(new Rect(10, 30, 400, 20), "Testing: Q=ES, W=EN, E=Toggle, U=Help");
-        }
-        
-        if (GUI.Button(new Rect(10, 55, 100, 25), "Siguiente"))
-        {
-            NextLanguage();
-        }
-        
-        if (GUI.Button(new Rect(115, 55, 100, 25), "Anterior"))
-        {
-            PreviousLanguage();
-        }
-        
-        // Botones específicos para cada idioma
-        if (GUI.Button(new Rect(220, 55, 60, 25), "ES"))
-        {
-            ChangeToSpanish();
-        }
-        
-        if (GUI.Button(new Rect(285, 55, 60, 25), "EN"))
-        {
-            ChangeToEnglish();
-        }
-    }
 }
