@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class SleepTrigger : MonoBehaviour
 {
@@ -13,6 +14,17 @@ public class SleepTrigger : MonoBehaviour
     private Animator playerAnimator;
     private CharacterController playerController;
     private bool wasControllerEnabled;
+
+    void OnEnable()
+    {
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
+
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
+    }
 
     void OnTriggerEnter(Collider other)
     {
@@ -40,18 +52,6 @@ public class SleepTrigger : MonoBehaviour
         player = other.gameObject;
     }
 
-    void Update()
-    {
-        if (!isSleeping) return;
-        // Detectar cualquier input (tecla, botón, joystick, etc.)
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
-        if (Input.anyKeyDown || Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
-        {
-            WakeUp();
-        }
-    }
-
     void WakeUp()
     {
         isSleeping = false;
@@ -61,5 +61,13 @@ public class SleepTrigger : MonoBehaviour
         // Reactivar el movimiento del jugador
         if (playerController != null)
             playerController.enabled = wasControllerEnabled;
+    }
+
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
+        if (!isSleeping) return;
+        if (input.Phase != InputActionPhase.Performed) return;
+
+        WakeUp();
     }
 }

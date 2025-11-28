@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using EasyTransition;
 using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
@@ -61,7 +62,7 @@ public class GameOverManager : MonoBehaviour
     [Header("Navegación")]
     [Tooltip("Tiempo entre repeticiones de navegación cuando se mantiene el D-Pad o stick.")]
     [Range(0.05f, 0.5f)] public float navRepeatDelay = 0.2f;
-    float _navCooldown;
+    float _nextNavTime;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentIfPlacedInStartScene()
     {
@@ -194,31 +195,15 @@ public class GameOverManager : MonoBehaviour
         ServiceLocator.Unregister(this);
     }
 
-    void Update()
+    void OnEnable()
     {
-#if ENABLE_INPUT_SYSTEM
-        // Solo procesar inputs cuando el Game Over está realmente mostrado, la UI está activa y las acciones están permitidas
-        if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
-#else
-        if (!_isGameOverShown || !_allowActions || (gameOverUI != null && !gameOverUI.activeInHierarchy)) return;
-#endif
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
 
-        KeepUIFocusForGamepad();
-        HandleNavigationInput();
-
-        // Cancel/back behavior: llevar al menú principal
-#if ENABLE_INPUT_SYSTEM
-        if (GamepadInputReader.SubmitPressed || GamepadInputReader.StartPressed)
-        {
-            HideGameOver();
-            return;
-        }
-        if (GamepadInputReader.CancelPressed)
-        {
-            OnBackToMainMenu();
-            return;
-        }
-#endif
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
 // ---------------- UI Focus Keeper ----------------
@@ -250,49 +235,54 @@ public class GameOverManager : MonoBehaviour
         if (_es == null) _es = EventSystem.current;
         if (_es == null) return;
 
-        bool wantsPadFocus = false;
-
-        wantsPadFocus = GamepadInputReader.NavigateUp || GamepadInputReader.NavigateDown ||
-                        GamepadInputReader.Navigation.sqrMagnitude > 0.09f ||
-                        GamepadInputReader.SubmitPressed || GamepadInputReader.StartPressed;
-
-        if (wantsPadFocus && (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy))
+        if (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy)
             EnsureUISelection();
     }
 
-    void HandleNavigationInput()
+    private bool ShouldHandleInput() => _isGameOverShown && _allowActions && (gameOverUI == null || gameOverUI.activeInHierarchy);
+
+    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (selectableItems == null || selectableItems.Length == 0) return;
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return;
+        if (!ShouldHandleInput()) return;
 
-        if (_navCooldown > 0f)
+        if (input.Type == GamepadInputReader.InputEventType.Submit && input.Phase == InputActionPhase.Performed)
         {
-            _navCooldown -= Time.unscaledDeltaTime;
-            if (_navCooldown > 0f) return;
-            _navCooldown = 0f;
+            KeepUIFocusForGamepad();
+            HideGameOver();
+            return;
+        }
+        if (input.Type == GamepadInputReader.InputEventType.Start && input.Phase == InputActionPhase.Performed)
+        {
+            KeepUIFocusForGamepad();
+            HideGameOver();
+            return;
+        }
+        if (input.Type == GamepadInputReader.InputEventType.Cancel && input.Phase == InputActionPhase.Performed)
+        {
+            KeepUIFocusForGamepad();
+            OnBackToMainMenu();
+            return;
         }
 
-        bool moveUp = false;
-        bool moveDown = false;
+        if (input.Phase != InputActionPhase.Performed) return;
 
-        moveUp |= GamepadInputReader.NavigateUp;
-        moveDown |= GamepadInputReader.NavigateDown;
-
-        var nav = GamepadInputReader.Navigation.y;
-        moveUp |= nav > 0.6f;
-        moveDown |= nav < -0.6f;
-
-        if (moveUp)
+        int direction = 0;
+        if (input.Type == GamepadInputReader.InputEventType.DpadUp)
+            direction = -1;
+        else if (input.Type == GamepadInputReader.InputEventType.DpadDown)
+            direction = 1;
+        else if (input.Type == GamepadInputReader.InputEventType.Navigate)
         {
-            MoveSelection(-1);
-            _navCooldown = navRepeatDelay;
+            if (input.Value.y > 0.6f) direction = -1;
+            else if (input.Value.y < -0.6f) direction = 1;
         }
-        else if (moveDown)
-        {
-            MoveSelection(+1);
-            _navCooldown = navRepeatDelay;
-        }
+
+        if (direction == 0) return;
+        if (Time.unscaledTime < _nextNavTime) return;
+
+        KeepUIFocusForGamepad();
+        MoveSelection(direction);
+        _nextNavTime = Time.unscaledTime + navRepeatDelay;
     }
 
     void MoveSelection(int direction)

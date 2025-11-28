@@ -55,7 +55,7 @@ public class ShopUI : MonoBehaviour
     private int _selectedIndex = -1;
     private bool _isOpen;
     private Inventory _playerInventory;
-    private float _navCooldown;
+    private float _nextNavTime;
     private float _ignoreInputUntil = 0f;
     private const float NAV_REPEAT_DELAY = 0.18f;
     private Tween _buyButtonTween;
@@ -118,75 +118,88 @@ public class ShopUI : MonoBehaviour
     {
         if (shopController != null)
             shopController.OnStockChanged += RefreshUI;
+
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
     }
 
     void OnDisable()
     {
         if (shopController != null)
             shopController.OnStockChanged -= RefreshUI;
+
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     void Update()
     {
+        // Mantener esta actualización para otras responsabilidades de UI (animaciones, etc.)
+        // pero la lectura de inputs se maneja vía eventos en HandleGamepadInput.
+    }
+
+    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
         if (!_isOpen) return;
+        if (Time.unscaledTime < _ignoreInputUntil) return;
 
-        _navCooldown -= Time.unscaledDeltaTime;
-
-        if (_navCooldown <= 0f && _state != ShopState.Confirming)
+        switch (input.Type)
         {
-            int move = ReadVerticalInput();
-            if (move != 0)
-            {
-                NavigateItems(move);
-                _navCooldown = NAV_REPEAT_DELAY;
-            }
-
-            int horizontal = ReadHorizontalInput();
-            if (horizontal > 0)
+            case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
                 HandleSubmitInput();
-            else if (horizontal < 0 && _state == ShopState.BuyButtonFocused)
-                ReturnToItemList();
+                break;
+            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
+                HandleCancelInput();
+                break;
+            case GamepadInputReader.InputEventType.DpadUp:
+                HandleVerticalNavigation(-1);
+                break;
+            case GamepadInputReader.InputEventType.DpadDown:
+                HandleVerticalNavigation(+1);
+                break;
+            case GamepadInputReader.InputEventType.DpadLeft:
+                HandleHorizontalNavigation(-1);
+                break;
+            case GamepadInputReader.InputEventType.DpadRight:
+                HandleHorizontalNavigation(+1);
+                break;
+            case GamepadInputReader.InputEventType.Navigate when input.Phase == InputActionPhase.Performed:
+                HandleNavigateVector(input.Value);
+                break;
         }
+    }
 
-        if (ReadSubmitInput())
+    private bool CanNavigate() => Time.unscaledTime >= _nextNavTime && _state != ShopState.Confirming;
+
+    private void HandleNavigateVector(Vector2 value)
+    {
+        if (!CanNavigate()) return;
+
+        if (value.y > 0.6f) HandleVerticalNavigation(-1);
+        else if (value.y < -0.6f) HandleVerticalNavigation(+1);
+
+        if (value.x > 0.6f) HandleHorizontalNavigation(1);
+        else if (value.x < -0.6f) HandleHorizontalNavigation(-1);
+    }
+
+    private void HandleVerticalNavigation(int direction)
+    {
+        if (!CanNavigate()) return;
+
+        NavigateItems(direction);
+        _nextNavTime = Time.unscaledTime + NAV_REPEAT_DELAY;
+    }
+
+    private void HandleHorizontalNavigation(int direction)
+    {
+        if (!CanNavigate()) return;
+
+        if (direction > 0)
             HandleSubmitInput();
+        else if (direction < 0 && _state == ShopState.BuyButtonFocused)
+            ReturnToItemList();
 
-        if (ReadCancelInput())
-            HandleCancelInput();
-    }
-    
-    int ReadVerticalInput()
-    {
-        if (Time.unscaledTime < _ignoreInputUntil) return 0;
-        if (GamepadInputReader.NavigateUp) return -1;
-        if (GamepadInputReader.NavigateDown) return +1;
-        var nav = GamepadInputReader.Navigation.y;
-        if (nav > 0.6f) return -1;
-        if (nav < -0.6f) return +1;
-        return 0;
-    }
-
-    bool ReadSubmitInput()
-    {
-        if (Time.unscaledTime < _ignoreInputUntil) return false;
-        return GamepadInputReader.SubmitPressed;
-    }
-
-    bool ReadCancelInput()
-    {
-        if (Time.unscaledTime < _ignoreInputUntil) return false;
-        return GamepadInputReader.CancelPressed || GamepadInputReader.StartPressed;
-    }
-
-    int ReadHorizontalInput()
-    {
-        if (Time.unscaledTime < _ignoreInputUntil) return 0;
-        if (GamepadInputReader.NavigateRight) return 1;
-        if (GamepadInputReader.NavigateLeft) return -1;
-        var nav = GamepadInputReader.Navigation.x;
-        if (nav > 0.6f) return 1;
-        if (nav < -0.6f) return -1;
-        return 0;
+        _nextNavTime = Time.unscaledTime + NAV_REPEAT_DELAY;
     }
 
     void HandleSubmitInput()

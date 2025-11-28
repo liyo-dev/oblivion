@@ -3,10 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
-
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 [DisallowMultipleComponent]
 public class MenuNavigator : MonoBehaviour
@@ -26,6 +23,10 @@ public class MenuNavigator : MonoBehaviour
     int _idx = -1;
     float _cooldown;
     readonly List<RectTransform> _nudged = new();
+    int _queuedMove;
+    Vector2 _heldNav;
+    float _navEventExpiry;
+    bool _submitRequested;
 
     void Awake()
     {
@@ -38,21 +39,43 @@ public class MenuNavigator : MonoBehaviour
     {
         AutoPopulateIfNeeded();
         SelectFirstInteractable();
+
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
+
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     void Update()
     {
         _cooldown -= Time.unscaledDeltaTime;
 
-        int move = ReadUpDownThisFrame();
+        if (_heldNav != Vector2.zero && Time.unscaledTime > _navEventExpiry)
+            _heldNav = Vector2.zero;
+
+        int move = 0;
+        if (_queuedMove != 0 && _cooldown <= 0f)
+        {
+            move = _queuedMove;
+            _queuedMove = 0;
+        }
+        else if (_cooldown <= 0f)
+        {
+            move = ReadHeldMoveFromEvents();
+        }
+
         if (move != 0 && _cooldown <= 0f)
         {
             MoveSelection(move);
             _cooldown = repeatDelay;
         }
 
-        if (PressedSubmitThisFrame())
+        if (_submitRequested)
         {
+            _submitRequested = false;
             var btn = CurrentButton();
             if (btn && btn.interactable) btn.onClick.Invoke();
         }
@@ -177,48 +200,45 @@ public class MenuNavigator : MonoBehaviour
     public void ForceSelect(GameObject go, bool resetCooldown = true)
         => ForceSelect(go != null ? go.GetComponent<Button>() : null, resetCooldown);
 
-    int ReadUpDownThisFrame()
+    int ReadHeldMoveFromEvents()
     {
-#if ENABLE_INPUT_SYSTEM
-        // Eventos discretos para teclado/gamepad
-        if (Gamepad.current != null)
-        {
-            var gp = Gamepad.current;
-            if (gp.dpad.up.wasPressedThisFrame   || gp.leftStick.up.wasPressedThisFrame)   return -1;
-            if (gp.dpad.down.wasPressedThisFrame || gp.leftStick.down.wasPressedThisFrame) return +1;
-        }
-        var kb = Keyboard.current;
-        if (kb != null)
-        {
-            if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame)   return -1;
-            if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) return +1;
-        }
+        if (_heldNav == Vector2.zero) return 0;
+
+        if (Mathf.Abs(_heldNav.y) >= Mathf.Abs(_heldNav.x))
+            return _heldNav.y > 0f ? -1 : +1;
+
         return 0;
-#else
-        // Entrada antigua (detecta flanco)
-        int v = (int)Mathf.Sign(Input.GetAxisRaw("Vertical"));
-        // convertimos a discreto por frame
-        if (v > 0 && Input.GetButtonDown("Vertical")) return +1;
-        if (v < 0 && Input.GetButtonDown("Vertical")) return -1;
-        // fallback
-        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))   return -1;
-        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) return +1;
-        return 0;
-#endif
     }
 
-    bool PressedSubmitThisFrame()
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
+        switch (input.Type)
         {
-            var gp = Gamepad.current;
-            if (gp.buttonSouth.wasPressedThisFrame || gp.startButton.wasPressedThisFrame) return true;
+            case GamepadInputReader.InputEventType.Navigate:
+                if (input.Phase == InputActionPhase.Canceled)
+                {
+                    _heldNav = Vector2.zero;
+                }
+                else
+                {
+                    _heldNav = input.Value;
+                    _navEventExpiry = Time.unscaledTime + 0.2f;
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.DpadUp when input.Phase == InputActionPhase.Performed:
+                _queuedMove = -1;
+                _navEventExpiry = Time.unscaledTime + 0.1f;
+                break;
+
+            case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
+                _queuedMove = +1;
+                _navEventExpiry = Time.unscaledTime + 0.1f;
+                break;
+
+            case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
+                _submitRequested = true;
+                break;
         }
-        var kb = Keyboard.current;
-        return kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame);
-#else
-        return Input.GetButtonDown("Submit");
-#endif
     }
 }

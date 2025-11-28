@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -9,10 +10,42 @@ using UnityEngine.InputSystem.Controls;
 /// </summary>
 public static class GamepadInputReader
 {
+    public enum InputEventType
+    {
+        Submit,
+        Cancel,
+        Start,
+        Navigate,
+        DpadUp,
+        DpadDown,
+        DpadLeft,
+        DpadRight,
+        Interact,
+        LeftShoulder,
+        RightShoulder
+    }
+
+    public readonly struct InputEvent
+    {
+        public readonly InputEventType Type;
+        public readonly Vector2 Value;
+        public readonly InputActionPhase Phase;
+
+        public InputEvent(InputEventType type, Vector2 value, InputActionPhase phase)
+        {
+            Type = type;
+            Value = value;
+            Phase = phase;
+        }
+    }
+
+    public static event Action<InputEvent> OnInput;
+
     private static PlayerControls _controls;
     private static Vector2 _navCurrent;
     private static Vector2 _navPrevious;
     private static int _navFrame = -1;
+    private static PlayerControls _boundControls;
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -79,10 +112,79 @@ public static class GamepadInputReader
             {
                 if (!_controls.GamePlay.enabled) _controls.GamePlay.Enable();
                 if (!_controls.UI.enabled) _controls.UI.Enable();
+
+                EnsureInputEventsSubscribed();
             }
 
             return _controls;
         }
+    }
+
+    public static void EnsureInputEventsSubscribed()
+    {
+        if (_boundControls == Controls || Controls == null) return;
+
+        UnsubscribeInputEvents();
+        SubscribeInputEvents(Controls);
+    }
+
+    private static void SubscribeInputEvents(PlayerControls controls)
+    {
+        if (controls == null) return;
+
+        _boundControls = controls;
+
+        controls.UI.Submit.performed += HandleSubmit;
+        controls.UI.Cancel.performed += HandleCancel;
+        controls.UI.Navigate.started += HandleNavigate;
+        controls.UI.Navigate.performed += HandleNavigate;
+        controls.UI.Navigate.canceled += HandleNavigate;
+        controls.GamePlay.DPadUp.performed += HandleDpadUp;
+        controls.GamePlay.DPadDown.performed += HandleDpadDown;
+        controls.GamePlay.DPadLeft.performed += HandleDpadLeft;
+        controls.GamePlay.DPadRight.performed += HandleDpadRight;
+        controls.GamePlay.Interact.performed += HandleInteract;
+        controls.GamePlay.Start.performed += HandleStart;
+        controls.GamePlay.Strafe.performed += HandleLeftShoulder;
+        controls.GamePlay.FlyToggle.performed += HandleRightShoulder;
+    }
+
+    private static void UnsubscribeInputEvents()
+    {
+        if (_boundControls == null) return;
+
+        _boundControls.UI.Submit.performed -= HandleSubmit;
+        _boundControls.UI.Cancel.performed -= HandleCancel;
+        _boundControls.UI.Navigate.started -= HandleNavigate;
+        _boundControls.UI.Navigate.performed -= HandleNavigate;
+        _boundControls.UI.Navigate.canceled -= HandleNavigate;
+        _boundControls.GamePlay.DPadUp.performed -= HandleDpadUp;
+        _boundControls.GamePlay.DPadDown.performed -= HandleDpadDown;
+        _boundControls.GamePlay.DPadLeft.performed -= HandleDpadLeft;
+        _boundControls.GamePlay.DPadRight.performed -= HandleDpadRight;
+        _boundControls.GamePlay.Interact.performed -= HandleInteract;
+        _boundControls.GamePlay.Start.performed -= HandleStart;
+        _boundControls.GamePlay.Strafe.performed -= HandleLeftShoulder;
+        _boundControls.GamePlay.FlyToggle.performed -= HandleRightShoulder;
+
+        _boundControls = null;
+    }
+
+    private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
+    private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
+    private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
+    private static void HandleDpadUp(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadUp, ctx, Vector2.up);
+    private static void HandleDpadDown(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadDown, ctx, Vector2.down);
+    private static void HandleDpadLeft(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadLeft, ctx, Vector2.left);
+    private static void HandleDpadRight(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadRight, ctx, Vector2.right);
+    private static void HandleInteract(InputAction.CallbackContext ctx) => Raise(InputEventType.Interact, ctx, Vector2.zero);
+    private static void HandleNavigate(InputAction.CallbackContext ctx) => Raise(InputEventType.Navigate, ctx, ctx.ReadValue<Vector2>());
+    private static void HandleLeftShoulder(InputAction.CallbackContext ctx) => Raise(InputEventType.LeftShoulder, ctx, Vector2.zero);
+    private static void HandleRightShoulder(InputAction.CallbackContext ctx) => Raise(InputEventType.RightShoulder, ctx, Vector2.zero);
+
+    private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
+    {
+        OnInput?.Invoke(new InputEvent(type, value, ctx.phase));
     }
 
     private static void UpdateNavigationCache()
@@ -199,10 +301,6 @@ public static class GamepadInputReader
             var gp = Gamepad.current;
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
                 return true;
-
-            var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame)
-                return true;
 #endif
 
             return false;
@@ -294,10 +392,6 @@ public static class GamepadInputReader
                 if (start != null && start.wasPressedThisFrame)
                     return true;
             }
-
-            var kb = Keyboard.current;
-            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
-                return true;
 #endif
 
             return false;
