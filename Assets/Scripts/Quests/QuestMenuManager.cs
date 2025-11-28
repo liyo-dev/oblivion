@@ -12,7 +12,6 @@ public class QuestMenuManager : MonoBehaviour
     [SerializeField] private float autoShowDelay = 0.35f;
     [SerializeField] private float holdTimeForMainMenu = 0.6f;
 
-    private bool _lastFrameDpadUp;
     private Coroutine _autoShowRoutine;
     private QuestManager _lastQuestManager;
     private float _dpadHoldTime;
@@ -63,22 +62,33 @@ public class QuestMenuManager : MonoBehaviour
 
     private void HandleDpadUpPressed()
     {
+        Debug.Log("[QuestMenuManager] HandleDpadUpPressed called.");
         bool quickIsOpen = quickMenu != null && quickMenu.IsVisible;
         bool mainIsOpen = mainMenu != null && mainMenu.IsOpen;
+
+        Debug.Log($"[QuestMenuManager] Quick menu open: {quickIsOpen}, Main menu open: {mainIsOpen}");
 
         if (!quickIsOpen && !mainIsOpen)
         {
             if (quickMenu != null)
+            {
+                Debug.Log("[QuestMenuManager] Opening quick menu.");
                 quickMenu.ShowPanel(true, ignoreRestrictions: true);
+            }
         }
         else if (quickIsOpen && !mainIsOpen)
         {
             if (mainMenu != null && CanOpenMainMenu())
             {
+                Debug.Log("[QuestMenuManager] Transitioning from quick menu to main menu.");
                 if (quickMenu != null)
                     quickMenu.ShowPanel(false, ignoreRestrictions: true);
                 mainMenu.ShowMenu();
                 ResetDpadHold();
+            }
+            else
+            {
+                Debug.LogWarning("[QuestMenuManager] Cannot open main menu. CanOpenMainMenu returned false.");
             }
         }
     }
@@ -150,22 +160,26 @@ public class QuestMenuManager : MonoBehaviour
 
     bool CanOpenMainMenu()
     {
-        if (!GameState.CanOpenInventory) return false;
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return false;
+        Debug.Log("[QuestMenuManager] Checking if main menu can open.");
+        if (!GameState.CanOpenInventory)
+        {
+            Debug.LogWarning("[QuestMenuManager] Cannot open main menu. GameState.CanOpenInventory is false.");
+            return false;
+        }
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+        {
+            Debug.LogWarning("[QuestMenuManager] Cannot open main menu. DialogueManager is open.");
+            return false;
+        }
+        Debug.Log("[QuestMenuManager] Main menu can open.");
         return true;
     }
 
     private bool DetectDpadUpPressed()
     {
-        bool dpadUpPressed = GamepadInputReader.DpadUpPressed;
-
-        float dpadVertical = 0f;
-        var nav = GamepadInputReader.Navigation;
-        dpadVertical = nav.y;
-        bool axisPressed = dpadVertical > 0.5f && !_lastFrameDpadUp;
-        _lastFrameDpadUp = dpadVertical > 0.5f;
-
-        return dpadUpPressed || axisPressed;
+        bool dpadUpPressed = GamepadInputReader.DpadUpPressed || GamepadInputReader.NavigateUp;
+        Debug.Log($"[QuestMenuManager] DetectDpadUpPressed: {dpadUpPressed}");
+        return dpadUpPressed;
     }
 
     private bool DetectBPressed()
