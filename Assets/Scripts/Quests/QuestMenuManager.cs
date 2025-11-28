@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class QuestMenuManager : MonoBehaviour
 {
@@ -14,6 +15,10 @@ public class QuestMenuManager : MonoBehaviour
     private Coroutine _autoShowRoutine;
     private QuestManager _lastQuestManager;
     private float _dpadHoldTime;
+    private bool _dpadUpHeld;
+    private bool _dpadUpPressed;
+    private bool _bPressed;
+    private bool _startPressed;
 
     private void Awake()
     {
@@ -21,24 +26,72 @@ public class QuestMenuManager : MonoBehaviour
         if (mainMenu != null) mainMenu.HideMenu();
     }
 
+    private void OnEnable()
+    {
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
+
+    private void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
+        ResetDpadHold();
+        _dpadUpPressed = false;
+        _bPressed = false;
+        _startPressed = false;
+    }
+
     private void Update()
     {
-        if (DetectStartPressed())
+        if (_startPressed)
         {
             CloseAllMenus();
+            _startPressed = false;
             return;
         }
 
         HandleDpadUpHeld();
 
-        if (DetectDpadUpPressed())
+        if (_dpadUpPressed)
         {
             HandleDpadUpPressed();
+            _dpadUpPressed = false;
         }
 
-        if (DetectBPressed())
+        if (_bPressed)
         {
             HandleBPressed();
+            _bPressed = false;
+        }
+    }
+
+    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
+        switch (input.Type)
+        {
+            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
+                _startPressed = true;
+                break;
+            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
+                _bPressed = true;
+                break;
+            case GamepadInputReader.InputEventType.DpadUp:
+                _dpadUpPressed |= input.Phase == InputActionPhase.Performed;
+                _dpadUpHeld = input.Phase == InputActionPhase.Performed;
+                if (input.Phase == InputActionPhase.Canceled)
+                    _dpadUpHeld = false;
+                break;
+            case GamepadInputReader.InputEventType.Navigate:
+                if (input.Phase == InputActionPhase.Canceled || input.Value.y <= 0.5f)
+                {
+                    _dpadUpHeld = false;
+                }
+                else if (input.Phase == InputActionPhase.Performed && input.Value.y > 0.5f)
+                {
+                    _dpadUpHeld = true;
+                    _dpadUpPressed = true;
+                }
+                break;
         }
     }
 
@@ -135,7 +188,7 @@ public class QuestMenuManager : MonoBehaviour
             return;
         }
 
-        if (DetectDpadUpHeld())
+        if (_dpadUpHeld)
         {
             _dpadHoldTime += Time.unscaledDeltaTime;
             if (_dpadHoldTime >= holdTimeForMainMenu && mainMenu != null && CanOpenMainMenu())
@@ -151,18 +204,10 @@ public class QuestMenuManager : MonoBehaviour
         }
     }
 
-    private bool DetectDpadUpHeld()
-    {
-        // Usar lectura exclusiva del D-Pad para distinguir del stick analógico
-        var dpad = GamepadInputReader.DpadRaw;
-        float dpadVertical = dpad.y;
-     
-        return dpadVertical > 0.5f;
-    }
-
     private void ResetDpadHold()
     {
         _dpadHoldTime = 0f;
+        _dpadUpHeld = false;
     }
 
     private void HandleBPressed()
@@ -205,25 +250,6 @@ public class QuestMenuManager : MonoBehaviour
         }
         Debug.Log("[QuestMenuManager] Main menu can open.");
         return true;
-    }
-
-    private bool DetectDpadUpPressed()
-    {
-        // Considerar D-Pad físico mediante la acción o la lectura raw del D-Pad/hat
-        var dpadRaw = GamepadInputReader.DpadRaw;
-        bool dpadUpPressed = GamepadInputReader.DpadUpPressed || dpadRaw.y > 0.5f;
-
-        return dpadUpPressed;
-    }
-
-    private bool DetectBPressed()
-    {
-        return GamepadInputReader.CancelPressed;
-    }
-
-    private bool DetectStartPressed()
-    {
-        return GamepadInputReader.StartPressed;
     }
 
 }

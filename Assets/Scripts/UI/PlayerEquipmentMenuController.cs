@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
@@ -144,6 +145,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     float _uiNavCooldown;
     Vector2 _lastUiNav;
     bool _actionModeActive;
+    bool _toggleRequested;
+    bool _cancelRequested;
+    int _tabDeltaRequested;
+    Vector2 _uiNavEvent;
+    bool _uiNavFromNavigate;
+    float _uiNavExpiry;
 
     bool _isOpen;
     int _activeTab;
@@ -230,6 +237,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         MenuManager.Close(MenuKind.Equipment);
     }
 
+    void OnEnable()
+    {
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
+
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
+    }
+
     void OnDestroy()
     {
         _inventoryView?.Dispose();
@@ -296,12 +314,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleToggleInput()
     {
-        bool pressed = false;
-
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-            pressed = Gamepad.current.dpad.down.wasPressedThisFrame;
-#endif
+        bool pressed = _toggleRequested;
+        _toggleRequested = false;
 
         if (!pressed)
         {
@@ -339,12 +353,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleCloseInput()
     {
-        bool cancel = false;
-
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-            cancel = Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.startButton.wasPressedThisFrame;
-#endif
+        bool cancel = _cancelRequested;
+        _cancelRequested = false;
 
         if (!cancel)
         {
@@ -372,16 +382,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleTabNavigationInput()
     {
-        int delta = 0;
-
-#if ENABLE_INPUT_SYSTEM
-        var pad = Gamepad.current;
-        if (pad != null)
-        {
-            if (pad.leftShoulder.wasPressedThisFrame) delta = -1;
-            else if (pad.rightShoulder.wasPressedThisFrame) delta = 1;
-        }
-#endif
+        int delta = _tabDeltaRequested;
+        _tabDeltaRequested = 0;
 
         if (delta == 0)
         {
@@ -417,36 +419,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (es == null)
             return;
 
-        Vector2 nav = Vector2.zero;
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var pad = Gamepad.current;
-            if (pad != null)
-            {
-                var d = pad.dpad.ReadValue();
-                if (Mathf.Abs(d.x) > uiNavDeadzone || Mathf.Abs(d.y) > uiNavDeadzone)
-                    nav = d;
-                else
-                {
-                    var s = pad.leftStick.ReadValue();
-                    if (Mathf.Abs(s.x) > uiNavDeadzone || Mathf.Abs(s.y) > uiNavDeadzone)
-                        nav = s;
-                }
-            }
-            else
-            {
-                var js = Joystick.current;
-                if (js != null)
-                {
-                    var s = js.stick.ReadValue();
-                    if (Mathf.Abs(s.x) > uiNavDeadzone || Mathf.Abs(s.y) > uiNavDeadzone)
-                        nav = s;
-                }
-            }
-        }
-        catch { }
-#endif
+        if (!_uiNavFromNavigate && _uiNavEvent != Vector2.zero && Time.unscaledTime > _uiNavExpiry)
+            _uiNavEvent = Vector2.zero;
+
+        Vector2 nav = _uiNavEvent;
 
         if (nav == Vector2.zero)
         {
@@ -478,6 +454,74 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         var target = es.currentSelectedGameObject;
         if (target != null)
             ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
+    }
+
+    void QueueUiNavigation(Vector2 nav, bool fromNavigate)
+    {
+        _uiNavEvent = nav;
+        _uiNavFromNavigate = fromNavigate;
+        _uiNavExpiry = Time.unscaledTime + 0.25f;
+    }
+
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
+        switch (input.Type)
+        {
+            case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
+                if (!_isOpen)
+                    _toggleRequested = true;
+                else
+                    QueueUiNavigation(Vector2.down, false);
+                break;
+
+            case GamepadInputReader.InputEventType.DpadUp when input.Phase == InputActionPhase.Performed:
+                if (_isOpen)
+                    QueueUiNavigation(Vector2.up, false);
+                break;
+
+            case GamepadInputReader.InputEventType.DpadLeft when input.Phase == InputActionPhase.Performed:
+                if (_isOpen)
+                {
+                    _tabDeltaRequested -= 1;
+                    QueueUiNavigation(Vector2.left, false);
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.DpadRight when input.Phase == InputActionPhase.Performed:
+                if (_isOpen)
+                {
+                    _tabDeltaRequested += 1;
+                    QueueUiNavigation(Vector2.right, false);
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.Navigate:
+                if (!_isOpen) return;
+
+                if (input.Phase == InputActionPhase.Canceled)
+                {
+                    _uiNavEvent = Vector2.zero;
+                    _uiNavFromNavigate = false;
+                }
+                else
+                {
+                    QueueUiNavigation(input.Value, true);
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
+                _cancelRequested = true;
+                break;
+
+            case GamepadInputReader.InputEventType.LeftShoulder when input.Phase == InputActionPhase.Performed:
+                if (_isOpen) _tabDeltaRequested -= 1;
+                break;
+
+            case GamepadInputReader.InputEventType.RightShoulder when input.Phase == InputActionPhase.Performed:
+                if (_isOpen) _tabDeltaRequested += 1;
+                break;
+        }
     }
 
     static MoveDirection ToMoveDirection(Vector2 dir)
@@ -637,11 +681,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
         }
 
-        float rotateInput = 0f;
-#if ENABLE_INPUT_SYSTEM
-        if (Gamepad.current != null)
-            rotateInput += Gamepad.current.rightStick.ReadValue().x;
-#endif
+        float rotateInput = GamepadInputReader.CameraLook.x;
         try { rotateInput += Input.GetAxis("RightStickHorizontal"); } catch { }
         try { rotateInput += Input.GetAxis("CameraHorizontal"); } catch { }
 

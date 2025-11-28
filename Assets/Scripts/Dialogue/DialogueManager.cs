@@ -65,7 +65,7 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private bool enableDpadHorizontalFallback = true; // si Navigate no recoge el D-Pad
     [SerializeField, Min(0f)] private float dpadRepeatDelay = 0.2f;
 
-    float _dpadCooldown;
+    float _nextDpadTime;
 
     System.Action _onYes;
     System.Action _onNo;
@@ -117,6 +117,8 @@ public class DialogueManager : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         BindAdvanceInputs();
 #endif
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
     }
 
     void OnDisable()
@@ -124,39 +126,50 @@ public class DialogueManager : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         UnbindAdvanceInputs();
 #endif
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
-    void Update()
+    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
         // Fallback explícito para D-Pad izquierda/derecha cuando las opciones están activas
         if (!enableDpadHorizontalFallback) return;
         if (choicesRoot == null || !choicesRoot.interactable) return;
+        if (input.Phase != InputActionPhase.Performed) return;
 
-        if (_dpadCooldown > 0f) _dpadCooldown -= Time.unscaledDeltaTime;
+        bool left = false;
+        bool right = false;
 
-        bool left = GamepadInputReader.NavigateLeft;
-        bool right = GamepadInputReader.NavigateRight;
-
-        if ((left || right) && _dpadCooldown <= 0f)
+        if (input.Type == GamepadInputReader.InputEventType.DpadLeft)
+            left = true;
+        else if (input.Type == GamepadInputReader.InputEventType.DpadRight)
+            right = true;
+        else if (input.Type == GamepadInputReader.InputEventType.Navigate)
         {
-            var es = EventSystem.current;
-            if (es != null)
-            {
-                var cur = es.currentSelectedGameObject;
-                if (cur == null || !cur.activeInHierarchy)
-                {
-                    if (yesButton) es.SetSelectedGameObject(yesButton.gameObject);
-                }
-                else if (yesButton != null && noButton != null)
-                {
-                    if (cur == yesButton.gameObject && right)
-                        es.SetSelectedGameObject(noButton.gameObject);
-                    else if (cur == noButton.gameObject && left)
-                        es.SetSelectedGameObject(yesButton.gameObject);
-                }
-            }
-            _dpadCooldown = dpadRepeatDelay;
+            left = input.Value.x < -0.6f;
+            right = input.Value.x > 0.6f;
         }
+
+        if (!(left || right)) return;
+        if (Time.unscaledTime < _nextDpadTime) return;
+
+        var es = EventSystem.current;
+        if (es != null)
+        {
+            var cur = es.currentSelectedGameObject;
+            if (cur == null || !cur.activeInHierarchy)
+            {
+                if (yesButton) es.SetSelectedGameObject(yesButton.gameObject);
+            }
+            else if (yesButton != null && noButton != null)
+            {
+                if (cur == yesButton.gameObject && right)
+                    es.SetSelectedGameObject(noButton.gameObject);
+                else if (cur == noButton.gameObject && left)
+                    es.SetSelectedGameObject(yesButton.gameObject);
+            }
+        }
+
+        _nextDpadTime = Time.unscaledTime + dpadRepeatDelay;
     }
 
     public void StartDialogue(DialogueAsset asset, Action onFinished = null)
