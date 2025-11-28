@@ -44,6 +44,20 @@ public static class GamepadInputReader
 
         return null;
     }
+
+    private static DpadControl GetJoystickHat(Joystick js, params string[] names)
+    {
+        if (js == null || names == null) return null;
+
+        foreach (var name in names)
+        {
+            var hat = js.TryGetChildControl<DpadControl>(name);
+            if (hat != null)
+                return hat;
+        }
+
+        return null;
+    }
 #endif
 
     private static PlayerControls Controls
@@ -117,8 +131,12 @@ public static class GamepadInputReader
                 if (nav.sqrMagnitude > 0.01f) return nav;
                 try
                 {
-                    var hat = js.hat.ReadValue();
-                    if (hat.sqrMagnitude > 0.01f) return hat;
+                    var hat = GetJoystickHat(js, "hat", "hatSwitch", "pov", "povHat");
+                    if (hat != null)
+                    {
+                        var value = hat.ReadValue();
+                        if (value.sqrMagnitude > 0.01f) return value;
+                    }
                 }
                 catch { }
             }
@@ -177,7 +195,7 @@ public static class GamepadInputReader
 
                 try
                 {
-                    var hat = js.hat;
+                    var hat = GetJoystickHat(js, "hat", "hatSwitch", "pov", "povHat");
                     if (hat != null && hat.up.wasPressedThisFrame)
                         return true;
                 }
@@ -210,7 +228,7 @@ public static class GamepadInputReader
 
                 try
                 {
-                    var hat = js.hat;
+                    var hat = GetJoystickHat(js, "hat", "hatSwitch", "pov", "povHat");
                     if (hat != null && hat.down.wasPressedThisFrame)
                         return true;
                 }
