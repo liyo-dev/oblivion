@@ -61,18 +61,110 @@ public static class GamepadInputReader
 
     public static PlayerControls ControlsOrNull => Controls;
 
-    public static Vector2 Navigation => Controls != null ? Controls.UI.Navigate.ReadValue<Vector2>() : Vector2.zero;
+    public static Vector2 Navigation
+    {
+        get
+        {
+            if (Controls != null && Controls.UI.Navigate.enabled)
+                return Controls.UI.Navigate.ReadValue<Vector2>();
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = Gamepad.current;
+            if (gp != null)
+            {
+                var nav = gp.leftStick.ReadValue();
+                if (nav.sqrMagnitude > 0.01f) return nav;
+                return gp.dpad.ReadValue();
+            }
+#endif
+
+            return Vector2.zero;
+        }
+    }
+
     public static bool NavigateUp => DirectionStarted(Vector2.up);
     public static bool NavigateDown => DirectionStarted(Vector2.down);
     public static bool NavigateLeft => DirectionStarted(Vector2.left);
     public static bool NavigateRight => DirectionStarted(Vector2.right);
 
     public static bool SubmitPressed => Controls != null && Controls.UI.Submit.triggered;
-    public static bool CancelPressed => Controls != null && Controls.UI.Cancel.triggered;
 
-    public static bool DpadUpPressed => Controls != null && Controls.GamePlay.DPadUp.triggered;
-    public static bool DpadDownPressed => Controls != null && Controls.GamePlay.DPadDown.triggered;
-    public static bool StartPressed => Controls != null && Controls.GamePlay.Start.triggered;
+    public static bool CancelPressed
+    {
+        get
+        {
+            if (Controls != null && Controls.UI.Cancel.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = Gamepad.current;
+            if (gp != null && gp.buttonEast.wasPressedThisFrame)
+                return true;
+
+            var kb = Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    public static bool DpadUpPressed
+    {
+        get
+        {
+            if (Controls != null && Controls.GamePlay.DPadUp.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = Gamepad.current;
+            if (gp != null && gp.dpad.up.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    public static bool DpadDownPressed
+    {
+        get
+        {
+            if (Controls != null && Controls.GamePlay.DPadDown.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = Gamepad.current;
+            if (gp != null && gp.dpad.down.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    public static bool StartPressed
+    {
+        get
+        {
+            if (Controls != null && Controls.GamePlay.Start.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = Gamepad.current;
+            if (gp != null && gp.startButton.wasPressedThisFrame)
+                return true;
+
+            var kb = Keyboard.current;
+            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
     public static bool InteractPressed => Controls != null && Controls.GamePlay.Interact.triggered;
     public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
