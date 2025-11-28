@@ -3,9 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -54,6 +52,11 @@ public class SettingsMenuController : MonoBehaviour
     private Slider _activeSlider;
     private float _sliderAdjustCooldown;
     private const float SLIDER_REPEAT_DELAY = 0.16f;
+    private Vector2 _navInputEvent;
+    private bool _navFromContinuous;
+    private float _navEventExpiry;
+    private bool _submitRequested;
+    private bool _cancelRequested;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -118,6 +121,14 @@ public class SettingsMenuController : MonoBehaviour
     void OnEnable()
     {
         RefreshUI();
+
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
+    }
+
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     void Update()
@@ -136,32 +147,13 @@ public class SettingsMenuController : MonoBehaviour
 
         _sliderAdjustCooldown -= Time.unscaledDeltaTime;
 
+        if (!_navFromContinuous && _navInputEvent != Vector2.zero && Time.unscaledTime > _navEventExpiry)
+            _navInputEvent = Vector2.zero;
+
         // Read input from common sources and move selection accordingly
-        Vector2 navInput = Vector2.zero;
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var gp = UnityEngine.InputSystem.Gamepad.current;
-            if (gp != null)
-            {
-                var d = gp.dpad.ReadValue();
-                navInput = d;
-                if (navInput.magnitude <= navDeadzone)
-                    navInput = gp.leftStick.ReadValue();
-            }
-            else
-            {
-                var js = UnityEngine.InputSystem.Joystick.current;
-                if (js != null)
-                {
-                    navInput = js.stick.ReadValue();
-                }
-            }
-        }
-        catch { }
-#else
-        navInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-#endif
+        Vector2 navInput = _navInputEvent;
+        if (navInput == Vector2.zero)
+            navInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
 
         if (navInput.magnitude > navDeadzone)
         {
@@ -193,13 +185,11 @@ public class SettingsMenuController : MonoBehaviour
         }
 
         // Submit handling (basic)
-        bool submit = false;
-#if ENABLE_INPUT_SYSTEM
-        var g = UnityEngine.InputSystem.Gamepad.current;
-        if (g != null && g.buttonSouth.wasPressedThisFrame) submit = true;
-#else
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.JoystickButton0) || Input.GetButtonDown("Submit")) submit = true;
-#endif
+        bool submit = _submitRequested;
+        _submitRequested = false;
+
+        if (!submit && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)))
+            submit = true;
 
         if (submit)
         {
@@ -464,24 +454,54 @@ public class SettingsMenuController : MonoBehaviour
 
     bool WasCancelPressedThisFrame()
     {
-#if ENABLE_INPUT_SYSTEM
-        try
-        {
-            var gp = Gamepad.current;
-            if (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame))
-                return true;
+        bool cancel = _cancelRequested;
+        _cancelRequested = false;
 
-            var kb = Keyboard.current;
-            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
-                return true;
-        }
-        catch { }
-#endif
-
-        return Input.GetKeyDown(KeyCode.Escape)
+        return cancel
+            || Input.GetKeyDown(KeyCode.Escape)
             || Input.GetKeyDown(KeyCode.Backspace)
             || Input.GetKeyDown(KeyCode.JoystickButton1)
             || Input.GetKeyDown(KeyCode.JoystickButton7);
+    }
+
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
+    {
+        switch (input.Type)
+        {
+            case GamepadInputReader.InputEventType.Navigate:
+                if (input.Phase == InputActionPhase.Canceled)
+                {
+                    _navInputEvent = Vector2.zero;
+                    _navFromContinuous = false;
+                }
+                else
+                {
+                    _navInputEvent = input.Value;
+                    _navFromContinuous = true;
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.DpadUp:
+            case GamepadInputReader.InputEventType.DpadDown:
+            case GamepadInputReader.InputEventType.DpadLeft:
+            case GamepadInputReader.InputEventType.DpadRight:
+                if (input.Phase == InputActionPhase.Performed)
+                {
+                    _navInputEvent = input.Value;
+                    _navFromContinuous = false;
+                    _navEventExpiry = Time.unscaledTime + 0.1f;
+                }
+                break;
+
+            case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
+                _submitRequested = true;
+                break;
+
+            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
+                _cancelRequested = true;
+                break;
+        }
     }
 
     GameObject ResolveInitialSelection(GameObject requested)

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using TMPro;
 using System.Linq;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -50,12 +49,17 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // siga activa si el dominio se recarga en modo editor.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
+
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleGamepadInput;
     }
 
     void OnDisable()
     {
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
+
+        GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     void OnDestroy()
@@ -137,50 +141,16 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             holdToSkip.gameObject.SetActive(false);
     }
 
-    void Update()
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (!_listeningForAnyButton) return;
-        if (popupRoot == null || !popupRoot.activeInHierarchy) return;
-
-        // Legacy keyboard/mouse check (covers most keyboards)
-        if (Input.anyKeyDown)
-        {
-            HidePopup();
+        if (!_listeningForAnyButton || popupRoot == null || !popupRoot.activeInHierarchy)
             return;
-        }
 
-        // New Input System checks for gamepads, mice, joysticks
-        var mouse = Mouse.current;
-        if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame))
-        {
-            HidePopup();
+        if (input.Phase != InputActionPhase.Performed)
             return;
-        }
 
-        var gp = Gamepad.current;
-        if (gp != null)
-        {
-            foreach (var btn in gp.allControls.OfType<ButtonControl>())
-            {
-                if (btn.wasPressedThisFrame)
-                {
-                    HidePopup();
-                    return;
-                }
-            }
-        }
-
-        var joystick = Joystick.current;
-        if (joystick != null)
-        {
-            foreach (var btn in joystick.allControls.OfType<ButtonControl>())
-            {
-                if (btn.wasPressedThisFrame)
-                {
-                    HidePopup();
-                    return;
-                }
-            }
-        }
+        // Cualquier evento de botón o navegación proveniente del GamepadInputReader
+        // es suficiente para cerrar el popup.
+        HidePopup();
     }
 }

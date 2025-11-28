@@ -8,8 +8,7 @@ using TMPro;
 #endif
 
 [DisallowMultipleComponent]
-public class MenuTextHighlight : MonoBehaviour,
-    IPointerEnterHandler, IPointerExitHandler
+public class MenuTextHighlight : MonoBehaviour
 {
     [Header("Target visual (auto si vacío)")]
     public Graphic targetGraphic;
@@ -80,10 +79,6 @@ public class MenuTextHighlight : MonoBehaviour,
             else HighlightOff();
         }
     }
-
-    // Mouse
-    public void OnPointerEnter(PointerEventData e) { _isHighlighted = true;  HighlightOn(); }
-    public void OnPointerExit (PointerEventData e) { _isHighlighted = false; HighlightOff(); }
 
     void HighlightOn()
     {
