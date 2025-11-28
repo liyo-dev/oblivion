@@ -45,7 +45,9 @@ public class QuestLogListUI : MonoBehaviour
             animatedRoot.anchoredPosition = _hiddenPos;
         }
 
-        if (panelRoot) panelRoot.SetActive(false);
+        // Avoid deactivating the panelRoot if it's the same GameObject that holds this component,
+        // because that would disable this component immediately after enabling it.
+        if (panelRoot && panelRoot != this.gameObject) panelRoot.SetActive(false);
         if (scrollView) scrollView.SetActive(false);
         if (panelGroup)
         {
