@@ -18,7 +18,7 @@ public class MenuTextHighlight : MonoBehaviour
 
     [Header("Colores")]
     public Color normalColor = new Color(1,1,1,0.85f);
-    public Color starColor   = new Color(0.55f, 0.95f, 1f, 1f); // cian “vórtice”
+    public Color starColor   = new Color(1f, 0.87f, 0.2f, 1f); // amarillo destacado
 
     [Header("Animación")]
     [Min(0f)] public float pulseDuration = 0.45f;

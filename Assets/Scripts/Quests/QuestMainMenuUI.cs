@@ -19,6 +19,7 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hiddenHeaderText;
     [SerializeField] private Button visibleTabButton;
     [SerializeField] private Button hiddenTabButton;
+    [SerializeField] private MenuNavigator navigator;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
     [Header("Animación")]
@@ -29,6 +30,8 @@ public class QuestMainMenuUI : MonoBehaviour
     private bool _phasePushed;
     private Tween _currentTween;
     private bool _showingHidden;
+    private PlayerActionManager _actionManager;
+    private bool _actionModeActive;
 
     public bool IsOpen
     {
@@ -51,6 +54,7 @@ public class QuestMainMenuUI : MonoBehaviour
         Unbind();
         ReleaseGamePhase();
         KillTween();
+        ReleaseActionMode();
     }
 
     public void ShowMenu()
@@ -74,6 +78,8 @@ public class QuestMainMenuUI : MonoBehaviour
 
         EnsureSelection();
         EnsureGamePhasePushed();
+        EnsureNavigatorReady();
+        EnsureActionMode();
     }
 
     public void HideMenu()
@@ -92,6 +98,7 @@ public class QuestMainMenuUI : MonoBehaviour
         }
 
         ReleaseGamePhase();
+        ReleaseActionMode();
     }
 
     public void ToggleMenu()
@@ -251,6 +258,17 @@ public class QuestMainMenuUI : MonoBehaviour
             es.SetSelectedGameObject(target);
     }
 
+    void EnsureNavigatorReady()
+    {
+        if (navigator == null) return;
+
+        navigator.ResetCooldown();
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == null)
+        {
+            navigator.ForceSelect(navigator.items.Count > 0 ? navigator.items[0] : null, resetCooldown: true);
+        }
+    }
+
     QuestVisibility NormalizeVisibility(string questId, QuestVisibility current, bool persist = false)
     {
         if (current == QuestVisibility.Tracked)
@@ -283,5 +301,25 @@ public class QuestMainMenuUI : MonoBehaviour
         if (GameState.Is(GamePhase.QuestMenu))
             GameState.Pop(GamePhase.QuestMenu);
         _phasePushed = false;
+    }
+
+    void EnsureActionMode()
+    {
+        if (_actionModeActive) return;
+        if (_actionManager == null)
+            PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
+
+        if (_actionManager != null)
+        {
+            _actionManager.PushMode(ActionMode.Inventory);
+            _actionModeActive = true;
+        }
+    }
+
+    void ReleaseActionMode()
+    {
+        if (!_actionModeActive || _actionManager == null) return;
+        _actionManager.PopMode(ActionMode.Inventory);
+        _actionModeActive = false;
     }
 }
