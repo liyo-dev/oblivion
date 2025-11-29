@@ -92,7 +92,7 @@ public class MenuNavigator : MonoBehaviour
     {
         if (!force && items.Count > 0) return;
         items.Clear();
-        var btns = GetComponentsInChildren<Button>(true);
+        var btns = GetComponentsInChildren<Button>();
         // Ordenar por posición vertical (arriba -> abajo)
         System.Array.Sort(btns, (a,b) =>
             -a.transform.position.y.CompareTo(b.transform.position.y));
