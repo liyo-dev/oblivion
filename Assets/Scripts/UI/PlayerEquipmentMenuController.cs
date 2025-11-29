@@ -151,6 +151,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     Vector2 _uiNavEvent;
     bool _uiNavFromNavigate;
     float _uiNavExpiry;
+    float _openedAt = -999f;
 
     bool _isOpen;
     int _activeTab;
@@ -353,6 +354,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleCloseInput()
     {
+        // Evitar cerrar inmediatamente si todavía estamos procesando el input que abrió el menú.
+        if (Time.unscaledTime - _openedAt < 0.15f)
+            return;
+
         bool cancel = _cancelRequested;
         _cancelRequested = false;
 
@@ -585,6 +590,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         GameState.Push(GamePhase.Equipment);
         SelectInitial();
         SetEquipmentCameraActive(_activeTab == 2);
+
+        // Marcar el instante de apertura para filtrar cierres accidentales en el mismo frame.
+        _openedAt = Time.unscaledTime;
     }
 
     void CloseMenu()
