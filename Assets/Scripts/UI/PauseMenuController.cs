@@ -257,18 +257,31 @@ public class PauseMenuController : MonoBehaviour
         // Cerrar el menú de pausa persistente al cambiar de escena para evitar que quede abierto.
         if (gameObject == null) return;
 
+        // Cancelar cualquier solicitud de pausa que haya quedado pendiente entre escenas
+        _pauseRequestPending = false;
+        _pausePressedViaEvent = false;
+        _cancelPressedViaEvent = false;
+
         if (gameObject.activeSelf)
         {
             Resume();
         }
-        else
+
+        // Asegurar que el estado quede limpio incluso si ya estaba desactivado
+        Time.timeScale = 1f;
+        _isPaused = false;
+        IsOpen = false;
+        MenuManager.Close(MenuKind.Pause);
+        if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
+
+        if (rootGroup != null)
         {
-            Time.timeScale = 1f;
-            _isPaused = false;
-            IsOpen = false;
-            MenuManager.Close(MenuKind.Pause);
-            if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
         }
+
+        if (gameObject.activeSelf)
+            gameObject.SetActive(false);
     }
 
 #if ENABLE_INPUT_SYSTEM
