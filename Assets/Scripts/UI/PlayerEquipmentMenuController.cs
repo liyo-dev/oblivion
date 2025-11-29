@@ -496,7 +496,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             case GamepadInputReader.InputEventType.DpadLeft when input.Phase == InputActionPhase.Performed:
                 if (_isOpen)
                 {
-                    _tabDeltaRequested -= 1;
+                    //_tabDeltaRequested -= 1;
                     QueueUiNavigation(Vector2.left, false);
                 }
                 break;
@@ -504,7 +504,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             case GamepadInputReader.InputEventType.DpadRight when input.Phase == InputActionPhase.Performed:
                 if (_isOpen)
                 {
-                    _tabDeltaRequested += 1;
+                    //_tabDeltaRequested += 1;
                     QueueUiNavigation(Vector2.right, false);
                 }
                 break;

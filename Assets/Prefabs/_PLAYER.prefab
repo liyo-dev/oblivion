@@ -10657,6 +10657,37 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &4450598749171368230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4420504159218681614}
+  m_Layer: 3
+  m_Name: FlyingTrailPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4420504159218681614
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4450598749171368230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.019, z: 0.007}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5899334287218393488}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4476508947805950591
 GameObject:
   m_ObjectHideFlags: 0
@@ -12036,6 +12067,7 @@ Transform:
   - {fileID: 2681353107411799443}
   - {fileID: 4449231942035717181}
   - {fileID: 2206090190173530099}
+  - {fileID: 4420504159218681614}
   m_Father: {fileID: 6673899346828621514}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &6005525575959977289
@@ -12558,11 +12590,11 @@ MonoBehaviour:
   boostMultiplier: 1.5
   debugLogs: 0
   flightArmedDuration: 2
-  vfxAttach: {fileID: 0}
+  vfxAttach: {fileID: 4420504159218681614}
   trailPrefab: {fileID: 7700642936372213891, guid: 18be81955f2d925438bc7c873d04e297, type: 3}
-  trailSpeedThreshold: 1.5
-  boostVfxPrefab: {fileID: 0}
-  landingVfxPrefab: {fileID: 0}
+  trailSpeedThreshold: 1
+  boostVfxPrefab: {fileID: 8460667080445658512, guid: a3e2c3406e02f2c4ba86cfb1604277bd, type: 3}
+  landingVfxPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0
