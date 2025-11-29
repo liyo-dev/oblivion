@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,9 @@ public class QuestVisibilityItemUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI questDescription;
     [SerializeField] private Button showButton;
     [SerializeField] private Button hideButton;
+    [Header("Visual")]
+    [SerializeField] private Color highlightColor = new(1f, 0.87f, 0.2f, 1f);
+    [SerializeField] private Color normalColor = new(1f, 1f, 1f, 0.85f);
 
     private QuestManager.RuntimeQuest _data;
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
@@ -39,12 +43,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
 
         if (questState)
         {
-            var stateLabel = visibility switch
-            {
-                QuestVisibility.Hidden => "Oculta",
-                _ => "Visible"
-            };
-            questState.text = stateLabel;
+            questState.text = GetStateLabel(data.State);
         }
 
         if (showButton)
@@ -52,6 +51,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
             showButton.onClick.RemoveAllListeners();
             showButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Visible));
             SetButtonState(showButton, visibility == QuestVisibility.Visible);
+            EnsureTextHighlight(showButton);
         }
 
         if (hideButton)
@@ -59,6 +59,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
             hideButton.onClick.RemoveAllListeners();
             hideButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Hidden));
             SetButtonState(hideButton, visibility == QuestVisibility.Hidden);
+            EnsureTextHighlight(hideButton);
         }
 
         DisableUnusedButtons();
@@ -89,6 +90,52 @@ public class QuestVisibilityItemUI : MonoBehaviour
         {
             if (button == showButton || button == hideButton) continue;
             button.gameObject.SetActive(false);
+        }
+    }
+
+    string GetStateLabel(QuestState state)
+    {
+        string fallback = state switch
+        {
+            QuestState.Inactive => "Inactiva",
+            QuestState.Active => "Activa",
+            QuestState.Completed => "Completada",
+            _ => state.ToString()
+        };
+
+        if (LocalizationManager.Instance != null)
+        {
+            string key = state switch
+            {
+                QuestState.Inactive => "QUEST_STATE_INACTIVE",
+                QuestState.Active => "QUEST_STATE_ACTIVE",
+                QuestState.Completed => "QUEST_STATE_COMPLETED",
+                _ => string.Empty
+            };
+
+            if (!string.IsNullOrEmpty(key))
+                fallback = LocalizationManager.Instance.Get(key, fallback);
+        }
+
+        return fallback;
+    }
+
+    void EnsureTextHighlight(Button button)
+    {
+        if (button == null) return;
+
+        var tmpLabels = new List<TextMeshProUGUI>();
+        button.GetComponentsInChildren(includeInactive: true, tmpLabels);
+        foreach (var label in tmpLabels)
+        {
+            if (label == null) continue;
+            var highlight = label.GetComponent<MenuTextHighlight>();
+            if (highlight == null)
+                highlight = label.gameObject.AddComponent<MenuTextHighlight>();
+
+            highlight.selectionOwner = button.gameObject;
+            highlight.normalColor = normalColor;
+            highlight.starColor = highlightColor;
         }
     }
 
