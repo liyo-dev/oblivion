@@ -81,17 +81,6 @@ public class QuestMenuManager : MonoBehaviour
                 if (input.Phase == InputActionPhase.Canceled)
                     _dpadUpHeld = false;
                 break;
-            case GamepadInputReader.InputEventType.Navigate:
-                if (input.Phase == InputActionPhase.Canceled || input.Value.y <= 0.5f)
-                {
-                    _dpadUpHeld = false;
-                }
-                else if (input.Phase == InputActionPhase.Performed && input.Value.y > 0.5f)
-                {
-                    _dpadUpHeld = true;
-                    _dpadUpPressed = true;
-                }
-                break;
         }
     }
 
@@ -105,6 +94,12 @@ public class QuestMenuManager : MonoBehaviour
 
         if (!quickIsOpen && !mainIsOpen)
         {
+            if (!CanOpenQuestMenus())
+            {
+                Debug.Log("[QuestMenuManager] Cannot open quick menu because another menu is active or access is blocked.");
+                return;
+            }
+
             Debug.Log("[QuestMenuManager] Opening quick menu.");
             if (quickMenu == null)
             {
@@ -162,7 +157,7 @@ public class QuestMenuManager : MonoBehaviour
         }
         else if (quickIsOpen && !mainIsOpen)
         {
-            if (mainMenu != null && CanOpenMainMenu())
+            if (mainMenu != null && CanOpenQuestMenus() && CanOpenMainMenu())
             {
                 Debug.Log("[QuestMenuManager] Transitioning from quick menu to main menu.");
                 if (quickMenu != null)
@@ -191,7 +186,7 @@ public class QuestMenuManager : MonoBehaviour
         if (_dpadUpHeld)
         {
             _dpadHoldTime += Time.unscaledDeltaTime;
-            if (_dpadHoldTime >= holdTimeForMainMenu && mainMenu != null && CanOpenMainMenu())
+            if (_dpadHoldTime >= holdTimeForMainMenu && mainMenu != null && CanOpenQuestMenus() && CanOpenMainMenu())
             {
                 quickMenu.ShowPanel(false, ignoreRestrictions: true);
                 mainMenu.ShowMenu();
@@ -249,6 +244,29 @@ public class QuestMenuManager : MonoBehaviour
             return false;
         }
         Debug.Log("[QuestMenuManager] Main menu can open.");
+        return true;
+    }
+
+    bool CanOpenQuestMenus()
+    {
+        if (MenuManager.AnyOpen())
+        {
+            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus because another menu is open.");
+            return false;
+        }
+
+        if (!GameState.CanOpenInventory)
+        {
+            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus. GameState denies inventory access.");
+            return false;
+        }
+
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+        {
+            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus. DialogueManager is open.");
+            return false;
+        }
+
         return true;
     }
 
