@@ -267,6 +267,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (PauseMenuController.IsOpen)
         {
+            // Ignorar y limpiar solicitudes de apertura cuando el menú de pausa está activo
+            // para que una pulsación de D-Pad abajo usada para navegar el pause no dispare
+            // la apertura del inventario al reanudar el juego.
+            _toggleRequested = false;
             if (_isOpen) CloseMenu();
             return;
         }
