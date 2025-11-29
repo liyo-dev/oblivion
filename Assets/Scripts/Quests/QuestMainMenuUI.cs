@@ -46,6 +46,7 @@ public class QuestMainMenuUI : MonoBehaviour
     void OnEnable()
     {
         Bind();
+        BindTabs();
         Rebuild();
     }
 
@@ -170,6 +171,21 @@ public class QuestMainMenuUI : MonoBehaviour
     void OnVisibilityChanged(QuestManager.RuntimeQuest rq, QuestVisibility vis)
     {
         QuestManager.Instance?.SetVisibility(rq.Id, NormalizeVisibility(rq.Id, vis, persist: true));
+    }
+
+    void BindTabs()
+    {
+        if (visibleTabButton != null)
+        {
+            visibleTabButton.onClick.RemoveListener(ShowVisibleTab);
+            visibleTabButton.onClick.AddListener(ShowVisibleTab);
+        }
+
+        if (hiddenTabButton != null)
+        {
+            hiddenTabButton.onClick.RemoveListener(ShowHiddenTab);
+            hiddenTabButton.onClick.AddListener(ShowHiddenTab);
+        }
     }
 
     void Bind()
