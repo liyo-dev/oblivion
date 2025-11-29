@@ -42,6 +42,21 @@ namespace Game.NPC.Common
                 agent.isStopped = stopped;
         }
 
+        public static void HardStop(NavMeshAgent agent)
+        {
+            if (agent == null)
+                return;
+
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+            }
+
+            agent.velocity = Vector3.zero;
+            agent.nextPosition = agent.transform.position;
+        }
+
         public static void SetDestination(NavMeshAgent agent, Vector3 destination, float stoppingDistance = -1f)
         {
             if (agent == null) return;
