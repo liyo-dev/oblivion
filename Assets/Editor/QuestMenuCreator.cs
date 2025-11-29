@@ -80,11 +80,33 @@ public static class QuestMenuCreator
         var mainHeader = CreateText("MainHeader", mainRoot.transform, "Misiones (principal)", 30, FontStyles.Bold);
         var mainScroll = CreateScroll(mainRoot.transform, out var mainContent);
 
+        var visibleHeader = CreateText("VisibleHeader", mainContent, "Misiones visibles", 24, FontStyles.Bold);
+        var visibleContent = new GameObject("VisibleContent", typeof(RectTransform));
+        visibleContent.transform.SetParent(mainContent, false);
+        var visibleLayout = visibleContent.AddComponent<VerticalLayoutGroup>();
+        visibleLayout.childForceExpandHeight = false;
+        visibleLayout.childForceExpandWidth = true;
+        visibleLayout.spacing = 8f;
+        visibleContent.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var hiddenHeader = CreateText("HiddenHeader", mainContent, "Misiones ocultas", 24, FontStyles.Bold);
+        var hiddenContent = new GameObject("HiddenContent", typeof(RectTransform));
+        hiddenContent.transform.SetParent(mainContent, false);
+        var hiddenLayout = hiddenContent.AddComponent<VerticalLayoutGroup>();
+        hiddenLayout.childForceExpandHeight = false;
+        hiddenLayout.childForceExpandWidth = true;
+        hiddenLayout.spacing = 8f;
+        hiddenContent.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
         var mainMenu = mainRoot.AddComponent<QuestMainMenuUI>();
         mainMenu.GetType().GetField("panelRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, mainRoot);
         mainMenu.GetType().GetField("panelGroup", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, mainGroup);
         mainMenu.GetType().GetField("contentRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, mainContent);
+        mainMenu.GetType().GetField("visibleContentRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, visibleContent.transform);
+        mainMenu.GetType().GetField("hiddenContentRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, hiddenContent.transform);
         mainMenu.GetType().GetField("headerText", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, mainHeader.GetComponent<TextMeshProUGUI>());
+        mainMenu.GetType().GetField("visibleHeaderText", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, visibleHeader.GetComponent<TextMeshProUGUI>());
+        mainMenu.GetType().GetField("hiddenHeaderText", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(mainMenu, hiddenHeader.GetComponent<TextMeshProUGUI>());
 
         questList.GetType()
             .GetField("mainMenu", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)

@@ -8,7 +8,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private TextMeshProUGUI questName;
     [SerializeField] private TextMeshProUGUI questState;
-    [SerializeField] private Button followButton;
+    [SerializeField] private TextMeshProUGUI questDescription;
     [SerializeField] private Button showButton;
     [SerializeField] private Button hideButton;
 
@@ -29,22 +29,20 @@ public class QuestVisibilityItemUI : MonoBehaviour
             questName.text = string.IsNullOrEmpty(display) ? data.Id : display;
         }
 
+        if (questDescription)
+        {
+            var description = data.Data.GetLocalizedDescription();
+            questDescription.text = string.IsNullOrEmpty(description) ? string.Empty : description;
+        }
+
         if (questState)
         {
             var stateLabel = visibility switch
             {
                 QuestVisibility.Hidden => "Oculta",
-                QuestVisibility.Tracked => "Siguiendo",
                 _ => "Visible"
             };
             questState.text = stateLabel;
-        }
-
-        if (followButton)
-        {
-            followButton.onClick.RemoveAllListeners();
-            followButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Tracked));
-            SetButtonState(followButton, visibility == QuestVisibility.Tracked);
         }
 
         if (showButton)
@@ -60,6 +58,8 @@ public class QuestVisibilityItemUI : MonoBehaviour
             hideButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Hidden));
             SetButtonState(hideButton, visibility == QuestVisibility.Hidden);
         }
+
+        DisableUnusedButtons();
     }
 
     void NotifyChange(QuestVisibility visibility)
@@ -74,5 +74,14 @@ public class QuestVisibilityItemUI : MonoBehaviour
         var colors = btn.colors;
         colors.colorMultiplier = active ? 1.2f : 1f;
         btn.colors = colors;
+    }
+
+    void DisableUnusedButtons()
+    {
+        foreach (var button in GetComponentsInChildren<Button>(true))
+        {
+            if (button == showButton || button == hideButton) continue;
+            button.gameObject.SetActive(false);
+        }
     }
 }
