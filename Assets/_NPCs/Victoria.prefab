@@ -2369,7 +2369,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8503697881313571355}
   hideHintAtStart: 1
-  singleUse: 0
+  singleUse: 1
   initiallyEnabled: 1
   dialogue: {fileID: 11400000, guid: 64a8cd4efa5486741a850640bd8a854f, type: 2}
   yesOption: {fileID: 0}

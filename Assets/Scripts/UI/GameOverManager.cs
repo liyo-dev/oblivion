@@ -114,22 +114,6 @@ public class GameOverManager : MonoBehaviour
         if (rootGroup == null && gameOverUI != null)
             rootGroup = gameOverUI.GetComponent<CanvasGroup>() ?? gameOverUI.AddComponent<CanvasGroup>();
 
-        // Si no se han proporcionado selectableItems, rellenar desde child Selectables
-        if (selectableItems == null || selectableItems.Length == 0)
-        {
-#pragma warning disable 300
-            var selectables = gameOverUI != null ? gameOverUI.GetComponentsInChildren<Selectable>(true) : GetComponentsInChildren<Selectable>(true);
-            if (selectables != null && selectables.Length > 0)
-            {
-                selectableItems = new RectTransform[selectables.Length];
-                for (int i = 0; i < selectables.Length; i++)
-                {
-                    var rt = selectables[i].transform as RectTransform;
-                    selectableItems[i] = rt;
-                }
-            }
-#pragma warning restore 300
-        }
 
         // Default selection prefer LoadLastSaveButton
         GameObject fallback = null;
@@ -169,23 +153,11 @@ public class GameOverManager : MonoBehaviour
         }
     }
 
-    private void OnEnable()
-    {
-        // No manejar la pausa/cursores aquí: OnEnable se llama cuando el GO se activa, pero
-        // el menú de Game Over puede estar oculto. Usar ShowGameOver/HideGameOver para eso.
-    }
-
-    private void OnDisable()
-    {
-        // No manejar la reanudación aquí por la misma razón.
-    }
-
     private void OnDestroy()
     {
         // Detener y limpiar todas las animaciones activas de DOTween
         DOTween.KillAll();
         DOTween.Clear();
-        Debug.Log("[GameOverManager] Animaciones de DOTween limpiadas al destruir el objeto.");
 
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         if (Instance == this)

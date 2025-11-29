@@ -131,6 +131,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "DPadLeft",
+                    "type": "Button",
+                    "id": "6f034bad-d317-4eb9-9671-01425f7a90cd",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DPadRight",
+                    "type": "Button",
+                    "id": "fd6f397d-33cb-43be-b9a1-ac5546190100",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -285,6 +303,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "DPadDown",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9ec0fd96-c2ee-4335-8695-44d0b1894d56",
+                    "path": "<Gamepad>/dpad/left",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DPadLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f3467757-cb65-421a-902f-69d35d3ef297",
+                    "path": "<Gamepad>/dpad/right",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DPadRight",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

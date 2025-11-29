@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DG_SHOP_VENDOR
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerNameId: CHAR_COMERCIANTE
+  - speakerNameId: CHAR_PATRICIA
     textId: SHOP_VENDOR
     text: 
     portrait: {fileID: 0}
