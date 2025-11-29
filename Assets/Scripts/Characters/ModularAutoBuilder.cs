@@ -38,6 +38,9 @@ public class ModularAutoBuilder : MonoBehaviour
     readonly Dictionary<PartCategory, List<GameObject>> parts = new();
     readonly Dictionary<PartCategory, int> idx = new();
 
+    // Snapshot de la selección inicial para poder restaurarla (ej: Nueva Partida)
+    Dictionary<PartCategory, string> _initialSelection;
+
     // Use central Hand enum from Identifiers.cs (None, Left, Right)
     readonly Dictionary<GameObject, Hand> handOf = new();
 
@@ -63,6 +66,10 @@ public class ModularAutoBuilder : MonoBehaviour
         {
             DeactivateAll();
         }
+
+        // Guardar una foto de lo que el prefab tenía activo al arrancar para poder
+        // resetear la apariencia cuando se inicie una partida nueva.
+        _initialSelection = GetSelection();
     }
 
     void Start()
@@ -275,6 +282,25 @@ public class ModularAutoBuilder : MonoBehaviour
             if (kv.Key == PartCategory.Bow) continue;
             SetByName(kv.Key, kv.Value);
         }
+    }
+
+    public void RestoreInitialSelection()
+    {
+        if (_initialSelection == null || _initialSelection.Count == 0)
+        {
+            // Si no había snapshot, mantener selección actual para no dejar el modelo vacío.
+            return;
+        }
+
+        // Limpiar selección actual y aplicar la inicial tal cual estaba en el prefab.
+        foreach (var kv in parts)
+        {
+            for (int i = 0; i < kv.Value.Count; i++)
+                kv.Value[i].SetActive(false);
+        }
+        idx.Clear();
+
+        ApplySelection(new Dictionary<PartCategory, string>(_initialSelection));
     }
 
     public void Next(PartCategory cat, int step = 1)

@@ -176,8 +176,9 @@ public class PlayerPresetService : MonoBehaviour
         var entries = preset.appearance;
         if (entries == null || entries.Count == 0)
         {
-            Debug.Log("[PlayerPresetService] Preset sin apariencia definida - manteniendo apariencia actual del prefab");
-            return; // No hacer snapshot automático, mantener apariencia del prefab
+            Debug.Log("[PlayerPresetService] Preset sin apariencia definida - restaurando apariencia inicial del prefab");
+            _appearanceBuilder.RestoreInitialSelection();
+            return;
         }
 
         var selection = new Dictionary<PartCategory, string>();
