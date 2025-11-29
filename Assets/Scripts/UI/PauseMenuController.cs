@@ -627,11 +627,26 @@ public class PauseMenuController : MonoBehaviour
     {
         _pauseRequestPending = false;
 
-        Debug.Log("[PauseMenuController] Verificando condiciones para abrir el menú de pausa...");
+        Debug.Log("[PauseMenuController] Verificando condiciones para abrir/cerrar el menú de pausa...");
+
+        // Si el menú de pausa ya está abierto, cerrar en lugar de volver a abrir
+        if (_isPaused)
+        {
+            Debug.Log("[PauseMenuController] Menú de pausa ya abierto, cerrándolo.");
+            TogglePause();
+            return;
+        }
+
+        // Si hay otro menú abierto, solo cerrarlo con este input y no abrir pausa
+        if (MenuManager.AnyOpen())
+        {
+            Debug.Log("[PauseMenuController] Otro menú está abierto, ignorando apertura de pausa.");
+            return;
+        }
 
         // Verificar si el estado permite abrir pausa
         Debug.Log("[PauseMenuController] GameState.CanOpenPause: " + GameState.CanOpenPause);
-        if (!_isPaused && GameState.CanOpenPause)
+        if (GameState.CanOpenPause)
         {
             Debug.Log("[PauseMenuController] Intentando abrir el menú de pausa...");
             bool menuOpened = MenuManager.TryOpen(MenuKind.Pause);
@@ -648,13 +663,8 @@ public class PauseMenuController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[PauseMenuController] No se puede abrir el menú de pausa. Estado actual: " + _isPaused);
+            Debug.LogWarning("[PauseMenuController] No se puede abrir el menú de pausa debido al estado del juego.");
         }
-
-        // Forzar apertura del menú para descartar problemas
-        Debug.Log("[PauseMenuController] Forzando apertura del menú de pausa...");
-        gameObject.SetActive(true);
-        Debug.Log("[PauseMenuController] Menú de pausa activado manualmente. Estado activo: " + gameObject.activeSelf);
     }
 
     bool ShouldThrottlePauseInput()
