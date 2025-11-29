@@ -47,11 +47,17 @@ namespace Game.NPC
         [Header("Debug")]
         [SerializeField] bool logDebug = false;
 
+        [Header("Física")]
+        [Tooltip("Si hay un Rigidbody en el NPC lo dejará en modo cinemático para evitar empujones físicos.")]
+        [SerializeField] bool forceKinematicRigidbody = true;
+        [SerializeField] RigidbodyConstraints rigidbodyConstraints = RigidbodyConstraints.FreezeRotation;
+
         INPCBehaviourModule[] _modules;
 
         NavMeshAgent _agent;
         NPCSimpleAnimator _animator;
         Interactable _interactable;
+        Rigidbody _rigidbody;
 
         Transform _player;
         Transform _playerCamera;
@@ -72,6 +78,14 @@ namespace Game.NPC
             _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponent<NPCSimpleAnimator>();
             _interactable = GetComponent<Interactable>();
+
+            if (forceKinematicRigidbody && TryGetComponent(out _rigidbody))
+            {
+                _rigidbody.isKinematic = true;
+                _rigidbody.constraints = rigidbodyConstraints;
+                _rigidbody.velocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
 
             _modules = new INPCBehaviourModule[] { ambientModule, questModule, combatModule };
             foreach (var module in _modules)
@@ -127,7 +141,7 @@ namespace Game.NPC
                 module?.OnDisable();
 
             _animator.ResetMovement();
-            NavMeshAgentUtility.SafeSetStopped(_agent, true);
+            NavMeshAgentUtility.HardStop(_agent);
         }
 
         // API pública para actualizar la última posición cuando la lógica externa
@@ -451,7 +465,7 @@ namespace Game.NPC
                     _wanderRoutine = null;
                  }
                  _ctx.Animator.ResetMovement();
-                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                 NavMeshAgentUtility.HardStop(_ctx.Agent);
              }
 
              public void Tick()
@@ -485,18 +499,27 @@ namespace Game.NPC
 
                     NavMeshAgentUtility.SetDestination(_ctx.Agent, destination);
 
+                    float stuckTimer = 0f;
+                    Vector3 lastPosition = _ctx.transform.position;
+
                     while (ShouldContinueWalking())
                     {
+                        if (IsPathBlocked())
+                            break;
+
                         float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
                         _ctx.Animator.SetMovementSpeed(speed);
 
                         if (!pickWhileMoving && _ctx.Agent.remainingDistance <= _ctx.Agent.stoppingDistance + 0.1f)
                             break;
 
+                        if (HasStalled(ref lastPosition, ref stuckTimer))
+                            break;
+
                         yield return null;
                     }
 
-                    NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                    NavMeshAgentUtility.HardStop(_ctx.Agent);
                     _ctx.Animator.ResetMovement();
                     yield return null;
                 }
@@ -510,6 +533,30 @@ namespace Game.NPC
                        agent.isOnNavMesh &&
                        !agent.pathPending &&
                        agent.remainingDistance > agent.stoppingDistance + 0.1f;
+            }
+
+            bool IsPathBlocked()
+            {
+                var agent = _ctx.Agent;
+                if (agent == null)
+                    return true;
+
+                return agent.pathStatus == NavMeshPathStatus.PathPartial ||
+                       agent.pathStatus == NavMeshPathStatus.PathInvalid;
+            }
+
+            bool HasStalled(ref Vector3 lastPosition, ref float stuckTimer)
+            {
+                var pos = _ctx.transform.position;
+                if ((pos - lastPosition).sqrMagnitude <= 0.0004f)
+                {
+                    stuckTimer += Time.deltaTime;
+                    return stuckTimer > 1.5f;
+                }
+
+                lastPosition = pos;
+                stuckTimer = 0f;
+                return false;
             }
         }
 
