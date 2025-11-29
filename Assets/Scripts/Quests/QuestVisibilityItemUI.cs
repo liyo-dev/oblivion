@@ -71,6 +71,8 @@ public class QuestVisibilityItemUI : MonoBehaviour
         if (_data == null) return;
         if (visibility == _currentVisibility) return;
 
+        Debug.Log($"QuestVisibilityItemUI: NotifyChange for '{_data.Id}' -> {visibility}");
+
         _currentVisibility = visibility;
         UpdateInteractableStates();
         _onChange?.Invoke(_data, visibility);
@@ -79,6 +81,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
     static void SetButtonState(Button btn, bool active)
     {
         if (btn == null) return;
+        Debug.Log($"QuestVisibilityItemUI: SetButtonState '{btn.name}' active={active}");
         var colors = btn.colors;
         colors.colorMultiplier = active ? 1.2f : 1f;
         btn.colors = colors;
