@@ -201,7 +201,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 00079bce-e03b-4fa9-bf56-051f0f3b427c
-        position: {x: -670, y: 531}
+        position: {x: 218, y: 495}
         outputs:
         - b3cc61c7-023e-47cc-865a-06c7e4c93ab5
         questId: ROBERTO_MISION1
@@ -215,7 +215,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b3cc61c7-023e-47cc-865a-06c7e4c93ab5
-        position: {x: -306, y: 210}
+        position: {x: 687, y: 495}
         outputs: []
         item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
         amount: 5
@@ -229,7 +229,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 6b59ebae-3573-42a0-87fb-a451c65f40d8
-        position: {x: -805, y: 172}
+        position: {x: -478, y: 250}
         outputs:
         - 4194f596-6816-443e-a04c-52b4499877a1
         eventKey: START_ROBERTO_MISION
@@ -242,7 +242,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4194f596-6816-443e-a04c-52b4499877a1
-        position: {x: -771, y: 348}
+        position: {x: -229, y: 495}
         outputs:
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
         questId: ROBERTO_MISION1
