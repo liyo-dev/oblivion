@@ -239,6 +239,9 @@ public class QuestMainMenuUI : MonoBehaviour
         if (hiddenContentRoot)
             hiddenContentRoot.gameObject.SetActive(showingHidden);
 
+        if (navigator != null)
+            navigator.RefreshItemsFromChildren(resetSelection: true);
+
         UpdateTabButtons(showingHidden);
         EnsureSelection();
     }
