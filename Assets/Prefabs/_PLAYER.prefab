@@ -12591,10 +12591,10 @@ MonoBehaviour:
   debugLogs: 0
   flightArmedDuration: 2
   vfxAttach: {fileID: 4420504159218681614}
-  trailPrefab: {fileID: 7700642936372213891, guid: 18be81955f2d925438bc7c873d04e297, type: 3}
+  trailPrefab: {fileID: 0}
   trailSpeedThreshold: 1
-  boostVfxPrefab: {fileID: 8460667080445658512, guid: a3e2c3406e02f2c4ba86cfb1604277bd, type: 3}
-  landingVfxPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
+  boostVfxPrefab: {fileID: 78255121319495919, guid: a8f00f828d57e9d45a9e38e078e82cdf, type: 3}
+  landingVfxPrefab: {fileID: 0}
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

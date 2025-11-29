@@ -221,7 +221,88 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
     {
+        var es = EventSystem.current;
+        GameObject selected = es != null ? es.currentSelectedGameObject : null;
+
+        Transform itemRoot = null;
+        Transform container = null;
+        int indexInContainer = -1;
+        bool inHidden = false;
+
+        if (selected != null)
+        {
+            var item = selected.GetComponentInParent<QuestVisibilityItemUI>();
+            if (item != null)
+            {
+                itemRoot = item.transform;
+
+                if (hiddenContentRoot != null && itemRoot.IsChildOf(hiddenContentRoot))
+                {
+                    container = hiddenContentRoot;
+                    inHidden = true;
+                }
+                else
+                {
+                    container = visibleContentRoot != null ? visibleContentRoot : contentRoot;
+                    inHidden = false;
+                }
+
+                indexInContainer = GetChildIndexInContainer(container, itemRoot);
+            }
+        }
+
         Rebuild();
+
+        // Intentar restaurar la selección en la misma posición (ahora sobre la siguiente misión)
+        if (itemRoot != null)
+        {
+            var targetContainer = inHidden ? hiddenContentRoot : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
+            TryRestoreSelection(targetContainer, indexInContainer);
+        }
+    }
+
+    int GetChildIndexInContainer(Transform container, Transform childRoot)
+    {
+        if (container == null || childRoot == null) return -1;
+        for (int i = 0; i < container.childCount; i++)
+        {
+            if (container.GetChild(i) == childRoot) return i;
+        }
+        return -1;
+    }
+
+    void TryRestoreSelection(Transform container, int desiredIndex)
+    {
+        if (container == null || navigator == null) return;
+
+        int count = container.childCount;
+        if (count == 0) return;
+
+        int idx = desiredIndex;
+        // If the item we came from was removed/moved, select the item that occupies the same slot (or the previous one)
+        if (idx >= count) idx = count - 1;
+        if (idx < 0) idx = 0;
+
+        var child = container.GetChild(idx);
+        if (child == null) return;
+
+        // Prefer to select a visible, interactable button inside the item (e.g. the same kind of button)
+        var btn = child.GetComponentInChildren<Button>();
+        if (btn != null && btn.gameObject.activeInHierarchy && btn.interactable)
+        {
+            navigator.ForceSelect(btn, resetCooldown: true);
+            return;
+        }
+
+        var btns = child.GetComponentsInChildren<Button>(true);
+        foreach (var b in btns)
+        {
+            if (b != null && b.gameObject.activeInHierarchy && b.interactable)
+            {
+                navigator.ForceSelect(b, resetCooldown: true);
+                return;
+            }
+        }
     }
 
     void KillTween()
@@ -257,7 +338,7 @@ public class QuestMainMenuUI : MonoBehaviour
             hiddenContentRoot.gameObject.SetActive(showingHidden);
 
         if (navigator != null)
-            navigator.RefreshItemsFromChildren(resetSelection: true);
+            navigator.RefreshItemsFromChildren(resetSelection: false);
 
         // Force UI/canvas/layout update so newly-activated content becomes visible immediately.
         Canvas.ForceUpdateCanvases();
@@ -278,24 +359,56 @@ public class QuestMainMenuUI : MonoBehaviour
 
         UpdateTabButtons(showingHidden);
 
-        // Force selection/visuals on the active tab so its selected state is shown immediately
+        // Avoid forcing the tab into selection if the content list already has a valid selection.
         var es = EventSystem.current;
         if (es != null)
         {
-            if (showingHidden)
+            bool shouldForceTab = true;
+
+            // If navigator has items and the current selected object is within the visible/hidden content
+            // or already one of the navigator items, don't force the tab selection (preserve focus).
+            if (navigator != null && navigator.items != null && navigator.items.Count > 0)
             {
-                if (hiddenTabButton != null)
+                var cur = es.currentSelectedGameObject;
+                if (cur != null)
                 {
-                    es.SetSelectedGameObject(hiddenTabButton.gameObject);
-                    hiddenTabButton.Select();
+                    if ((visibleContentRoot != null && cur.transform.IsChildOf(visibleContentRoot)) ||
+                        (hiddenContentRoot != null && cur.transform.IsChildOf(hiddenContentRoot)))
+                    {
+                        shouldForceTab = false;
+                    }
+
+                    if (shouldForceTab)
+                    {
+                        foreach (var it in navigator.items)
+                        {
+                            if (it != null && cur == it.gameObject)
+                            {
+                                shouldForceTab = false;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-            else
+
+            if (shouldForceTab)
             {
-                if (visibleTabButton != null)
+                if (showingHidden)
                 {
-                    es.SetSelectedGameObject(visibleTabButton.gameObject);
-                    visibleTabButton.Select();
+                    if (hiddenTabButton != null)
+                    {
+                        es.SetSelectedGameObject(hiddenTabButton.gameObject);
+                        hiddenTabButton.Select();
+                    }
+                }
+                else
+                {
+                    if (visibleTabButton != null)
+                    {
+                        es.SetSelectedGameObject(visibleTabButton.gameObject);
+                        visibleTabButton.Select();
+                    }
                 }
             }
         }
@@ -338,6 +451,30 @@ public class QuestMainMenuUI : MonoBehaviour
         if (navigator != null)
         {
             navigator.RefreshItemsFromChildren(resetSelection: false);
+
+            // If there's already a valid selection inside the content, keep it.
+            var cur = es.currentSelectedGameObject;
+            if (cur != null)
+            {
+                bool curIsValid = false;
+                if (visibleContentRoot != null && cur.transform.IsChildOf(visibleContentRoot)) curIsValid = true;
+                if (hiddenContentRoot != null && cur.transform.IsChildOf(hiddenContentRoot)) curIsValid = true;
+                if (!curIsValid && navigator.items != null)
+                {
+                    foreach (var it in navigator.items)
+                    {
+                        if (it != null && cur == it.gameObject && it.gameObject.activeInHierarchy && it.interactable)
+                        { curIsValid = true; break; }
+                    }
+                }
+
+                if (curIsValid)
+                {
+                    // keep existing selection
+                    return;
+                }
+            }
+
             var first = navigator.items.FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy && b.interactable);
             if (first != null)
             {
