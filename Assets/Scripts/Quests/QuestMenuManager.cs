@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -30,6 +31,7 @@ public class QuestMenuManager : MonoBehaviour
     {
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
+        TrySubscribeQuestManager();
     }
 
     private void OnDisable()
@@ -39,10 +41,13 @@ public class QuestMenuManager : MonoBehaviour
         _dpadUpPressed = false;
         _bPressed = false;
         _startPressed = false;
+        UnsubscribeQuestManager();
     }
 
     private void Update()
     {
+        TrySubscribeQuestManager();
+
         if (_startPressed)
         {
             CloseAllMenus();
@@ -82,6 +87,44 @@ public class QuestMenuManager : MonoBehaviour
                     _dpadUpHeld = false;
                 break;
         }
+    }
+
+    private void TrySubscribeQuestManager()
+    {
+        if (QuestManager.Instance == _lastQuestManager) return;
+
+        UnsubscribeQuestManager();
+        _lastQuestManager = QuestManager.Instance;
+
+        if (_lastQuestManager != null)
+            _lastQuestManager.OnQuestStarted += HandleQuestStarted;
+    }
+
+    private void UnsubscribeQuestManager()
+    {
+        if (_lastQuestManager == null) return;
+
+        _lastQuestManager.OnQuestStarted -= HandleQuestStarted;
+        _lastQuestManager = null;
+    }
+
+    private void HandleQuestStarted(string questId)
+    {
+        if (!autoShowQuickOnQuestInit || quickMenu == null) return;
+
+        if (_autoShowRoutine != null)
+            StopCoroutine(_autoShowRoutine);
+
+        _autoShowRoutine = StartCoroutine(AutoShowQuickMenu());
+    }
+
+    private IEnumerator AutoShowQuickMenu()
+    {
+        if (autoShowDelay > 0f)
+            yield return new WaitForSecondsRealtime(autoShowDelay);
+
+        quickMenu.ShowPanel(true, ignoreRestrictions: true);
+        _autoShowRoutine = null;
     }
 
     private void HandleDpadUpPressed()
