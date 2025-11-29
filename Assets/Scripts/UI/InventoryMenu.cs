@@ -17,6 +17,7 @@ namespace UI
         public bool startHidden = true;
 
         private Inventory _inventory;
+        private float _nextToggleTime;
 
         void Awake()
         {
@@ -65,10 +66,14 @@ namespace UI
 
         private void HandleGamepadInput(GamepadInputReader.InputEvent input)
         {
-            if (input.Type == GamepadInputReader.InputEventType.DpadDown && input.Phase == InputActionPhase.Performed)
-            {
-                ToggleMenu();
-            }
+            if (input.Type != GamepadInputReader.InputEventType.DpadDown || input.Phase != InputActionPhase.Performed)
+                return;
+
+            if (Time.unscaledTime < _nextToggleTime)
+                return;
+
+            ToggleMenu();
+            _nextToggleTime = Time.unscaledTime + 0.35f;
         }
 
         public void ToggleMenu()
