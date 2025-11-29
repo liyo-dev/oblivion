@@ -217,6 +217,24 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DPadLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""6f034bad-d317-4eb9-9671-01425f7a90cd"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DPadRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""fd6f397d-33cb-43be-b9a1-ac5546190100"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -371,6 +389,28 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""DPadDown"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9ec0fd96-c2ee-4335-8695-44d0b1894d56"",
+                    ""path"": ""<Gamepad>/dpad/left"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DPadLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f3467757-cb65-421a-902f-69d35d3ef297"",
+                    ""path"": ""<Gamepad>/dpad/right"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DPadRight"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -911,6 +951,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_GamePlay_DPadUp = m_GamePlay.FindAction("DPadUp", throwIfNotFound: true);
         m_GamePlay_Start = m_GamePlay.FindAction("Start", throwIfNotFound: true);
         m_GamePlay_DPadDown = m_GamePlay.FindAction("DPadDown", throwIfNotFound: true);
+        m_GamePlay_DPadLeft = m_GamePlay.FindAction("DPadLeft", throwIfNotFound: true);
+        m_GamePlay_DPadRight = m_GamePlay.FindAction("DPadRight", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1018,6 +1060,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_GamePlay_DPadUp;
     private readonly InputAction m_GamePlay_Start;
     private readonly InputAction m_GamePlay_DPadDown;
+    private readonly InputAction m_GamePlay_DPadLeft;
+    private readonly InputAction m_GamePlay_DPadRight;
     /// <summary>
     /// Provides access to input actions defined in input action map "GamePlay".
     /// </summary>
@@ -1086,6 +1130,14 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @DPadDown => m_Wrapper.m_GamePlay_DPadDown;
         /// <summary>
+        /// Provides access to the underlying input action "GamePlay/DPadLeft".
+        /// </summary>
+        public InputAction @DPadLeft => m_Wrapper.m_GamePlay_DPadLeft;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/DPadRight".
+        /// </summary>
+        public InputAction @DPadRight => m_Wrapper.m_GamePlay_DPadRight;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_GamePlay; }
@@ -1153,6 +1205,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @DPadDown.started += instance.OnDPadDown;
             @DPadDown.performed += instance.OnDPadDown;
             @DPadDown.canceled += instance.OnDPadDown;
+            @DPadLeft.started += instance.OnDPadLeft;
+            @DPadLeft.performed += instance.OnDPadLeft;
+            @DPadLeft.canceled += instance.OnDPadLeft;
+            @DPadRight.started += instance.OnDPadRight;
+            @DPadRight.performed += instance.OnDPadRight;
+            @DPadRight.canceled += instance.OnDPadRight;
         }
 
         /// <summary>
@@ -1206,6 +1264,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @DPadDown.started -= instance.OnDPadDown;
             @DPadDown.performed -= instance.OnDPadDown;
             @DPadDown.canceled -= instance.OnDPadDown;
+            @DPadLeft.started -= instance.OnDPadLeft;
+            @DPadLeft.performed -= instance.OnDPadLeft;
+            @DPadLeft.canceled -= instance.OnDPadLeft;
+            @DPadRight.started -= instance.OnDPadRight;
+            @DPadRight.performed -= instance.OnDPadRight;
+            @DPadRight.canceled -= instance.OnDPadRight;
         }
 
         /// <summary>
@@ -1539,6 +1603,20 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnDPadDown(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DPadLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDPadLeft(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DPadRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDPadRight(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
