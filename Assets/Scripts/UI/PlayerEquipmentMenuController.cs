@@ -152,6 +152,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     bool _uiNavFromNavigate;
     float _uiNavExpiry;
     float _openedAt = -999f;
+    float _toggleCooldownUntil;
 
     bool _isOpen;
     int _activeTab;
@@ -322,6 +323,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         bool pressed = _toggleRequested;
         _toggleRequested = false;
 
+        if (Time.unscaledTime < _toggleCooldownUntil)
+            return;
+
         if (!pressed)
         {
             try { pressed = Input.GetButtonDown("DPadDown"); } catch { }
@@ -353,6 +357,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (!GameState.CanOpenInventory) return;
             if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
             OpenMenu();
+            _toggleCooldownUntil = Time.unscaledTime + 0.25f;
         }
     }
 
@@ -610,6 +615,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _actionManager.PopMode(ActionMode.Inventory);
             _actionModeActive = false;
         }
+        _toggleCooldownUntil = Time.unscaledTime + 0.2f;
         Input.ResetInputAxes();
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
