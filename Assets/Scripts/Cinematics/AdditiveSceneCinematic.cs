@@ -88,6 +88,23 @@ public class AdditiveSceneCinematic : MonoBehaviour
             yield break;
         }
 
+        // Evitar instancias o cargas duplicadas cuando ya hay una cinemática en curso
+        if (isPlaying || isUnloading || (loadOp != null && !loadOp.isDone))
+        {
+            if (showDebugLogs)
+                Debug.Log("[AdditiveSceneCinematic] Ya hay una cinemática aditiva en curso o cargándose. Ignorando llamada.");
+            yield break;
+        }
+
+        // También impedir cargar si la escena aditiva ya está presente (p.ej. llamada doble desde el grafo narrativo)
+        var additiveScene = SceneManager.GetSceneByName(cinematicSceneName);
+        if (additiveScene.IsValid() && additiveScene.isLoaded)
+        {
+            if (showDebugLogs)
+                Debug.Log($"[AdditiveSceneCinematic] La escena '{cinematicSceneName}' ya está cargada. Ignorando llamada duplicada.");
+            yield break;
+        }
+
         // Determinar ID único
         string id = GetSinglePlayId();
 
