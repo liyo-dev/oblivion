@@ -225,7 +225,6 @@ public class QuestMainMenuUI : MonoBehaviour
         GameObject selected = es != null ? es.currentSelectedGameObject : null;
 
         Transform itemRoot = null;
-        Transform container = null;
         int indexInContainer = -1;
         bool inHidden = false;
 
@@ -236,18 +235,9 @@ public class QuestMainMenuUI : MonoBehaviour
             {
                 itemRoot = item.transform;
 
-                if (hiddenContentRoot != null && itemRoot.IsChildOf(hiddenContentRoot))
-                {
-                    container = hiddenContentRoot;
-                    inHidden = true;
-                }
-                else
-                {
-                    container = visibleContentRoot != null ? visibleContentRoot : contentRoot;
-                    inHidden = false;
-                }
-
-                indexInContainer = GetChildIndexInContainer(container, itemRoot);
+                inHidden = (hiddenContentRoot != null && itemRoot.IsChildOf(hiddenContentRoot));
+                // itemRoot is parented directly under the container created in Rebuild(), so sibling index is the position
+                indexInContainer = itemRoot.GetSiblingIndex();
             }
         }
 
@@ -261,15 +251,7 @@ public class QuestMainMenuUI : MonoBehaviour
         }
     }
 
-    int GetChildIndexInContainer(Transform container, Transform childRoot)
-    {
-        if (container == null || childRoot == null) return -1;
-        for (int i = 0; i < container.childCount; i++)
-        {
-            if (container.GetChild(i) == childRoot) return i;
-        }
-        return -1;
-    }
+    // Removed GetChildIndexInContainer: use Transform.GetSiblingIndex() instead.
 
     void TryRestoreSelection(Transform container, int desiredIndex)
     {
@@ -450,8 +432,6 @@ public class QuestMainMenuUI : MonoBehaviour
 
         if (navigator != null)
         {
-            navigator.RefreshItemsFromChildren(resetSelection: false);
-
             // If there's already a valid selection inside the content, keep it.
             var cur = es.currentSelectedGameObject;
             if (cur != null)
