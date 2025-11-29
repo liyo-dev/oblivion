@@ -32,6 +32,9 @@ public class QuestMainMenuUI : MonoBehaviour
     private bool _showingHidden;
     private PlayerActionManager _actionManager;
     private bool _actionModeActive;
+    private ColorBlock _visibleTabOriginalColors;
+    private ColorBlock _hiddenTabOriginalColors;
+    private bool _tabColorsCaptured;
 
     public bool IsOpen
     {
@@ -146,6 +149,7 @@ public class QuestMainMenuUI : MonoBehaviour
             var visibility = NormalizeVisibility(rq.Id, QuestManager.Instance.GetVisibility(rq.Id), persist: true);
             var parent = visibility == QuestVisibility.Hidden && hiddenRoot != null ? hiddenRoot : visibleRoot;
             var item = Instantiate(itemPrefab, parent);
+            Debug.Log($"QuestMainMenuUI: Instantiated item for '{rq.Id}' into {(parent == hiddenRoot ? "hidden" : "visible")} parent");
             item.Bind(rq, visibility, OnVisibilityChanged);
 
             if (visibility == QuestVisibility.Hidden)
@@ -165,6 +169,7 @@ public class QuestMainMenuUI : MonoBehaviour
         if (hiddenHeaderText)
             hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})"; //TODO este texto debe ir multificado
 
+        Debug.Log($"QuestMainMenuUI: Rebuild complete. Visible={visibleCount}, Hidden={hiddenCount}");
         UpdateTabVisibility();
     }
 
@@ -185,6 +190,16 @@ public class QuestMainMenuUI : MonoBehaviour
         {
             hiddenTabButton.onClick.RemoveListener(ShowHiddenTab);
             hiddenTabButton.onClick.AddListener(ShowHiddenTab);
+        }
+
+        // Capture original ColorBlocks so we don't mutate them repeatedly
+        if (!_tabColorsCaptured)
+        {
+            if (visibleTabButton != null)
+                _visibleTabOriginalColors = visibleTabButton.colors;
+            if (hiddenTabButton != null)
+                _hiddenTabOriginalColors = hiddenTabButton.colors;
+            _tabColorsCaptured = true;
         }
     }
 
@@ -227,6 +242,8 @@ public class QuestMainMenuUI : MonoBehaviour
         bool hasHiddenSection = hiddenContentRoot != null;
         bool showingHidden = _showingHidden && hasHiddenSection;
 
+        Debug.Log($"QuestMainMenuUI: UpdateTabVisibility showingHidden={showingHidden}");
+
         if (visibleHeaderText)
             visibleHeaderText.gameObject.SetActive(!showingHidden);
 
@@ -242,7 +259,47 @@ public class QuestMainMenuUI : MonoBehaviour
         if (navigator != null)
             navigator.RefreshItemsFromChildren(resetSelection: true);
 
+        // Force UI/canvas/layout update so newly-activated content becomes visible immediately.
+        Canvas.ForceUpdateCanvases();
+
+        if (visibleContentRoot != null && visibleContentRoot.gameObject.activeInHierarchy)
+        {
+            var rt = visibleContentRoot as RectTransform;
+            if (rt != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+        }
+
+        if (hiddenContentRoot != null && hiddenContentRoot.gameObject.activeInHierarchy)
+        {
+            var rt = hiddenContentRoot as RectTransform;
+            if (rt != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+        }
+
         UpdateTabButtons(showingHidden);
+
+        // Force selection/visuals on the active tab so its selected state is shown immediately
+        var es = EventSystem.current;
+        if (es != null)
+        {
+            if (showingHidden)
+            {
+                if (hiddenTabButton != null)
+                {
+                    es.SetSelectedGameObject(hiddenTabButton.gameObject);
+                    hiddenTabButton.Select();
+                }
+            }
+            else
+            {
+                if (visibleTabButton != null)
+                {
+                    es.SetSelectedGameObject(visibleTabButton.gameObject);
+                    visibleTabButton.Select();
+                }
+            }
+        }
+
         EnsureSelection();
     }
 
@@ -256,7 +313,17 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         if (button == null) return;
 
-        var colors = button.colors;
+        // Use captured original ColorBlock (if available) so we don't apply cumulative changes.
+        ColorBlock baseColors = button.colors;
+        if (_tabColorsCaptured)
+        {
+            if (button == visibleTabButton)
+                baseColors = _visibleTabOriginalColors;
+            else if (button == hiddenTabButton)
+                baseColors = _hiddenTabOriginalColors;
+        }
+
+        var colors = baseColors;
         colors.colorMultiplier = isActive ? 1.2f : 1f;
         button.colors = colors;
     }
@@ -283,6 +350,8 @@ public class QuestMainMenuUI : MonoBehaviour
             target = hiddenTabButton != null ? hiddenTabButton.gameObject : target;
         else
             target = visibleTabButton != null ? visibleTabButton.gameObject : target;
+
+        Debug.Log($"QuestMainMenuUI: EnsureSelection -> target={(target!=null?target.name:"null")}");
 
         if (target != null)
             es.SetSelectedGameObject(target);
