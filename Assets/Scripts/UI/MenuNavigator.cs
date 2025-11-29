@@ -14,6 +14,8 @@ public class MenuNavigator : MonoBehaviour
     [Header("Comportamiento")]
     public bool wrapAround = true;           // subir desde el primero -> último, y viceversa
     [Min(0.05f)] public float repeatDelay = 0.18f;  // anti-rebote del stick/dpad
+    [Tooltip("Si está activo, desactiva las imágenes de los botones para que solo se muestre el texto.")]
+    public bool hideButtonImages = false;
 
     [Header("Animación selección (sutil, opcional)")]
     public float nudge = 6f;                 // pequeño empujoncito horizontal en el item activo
@@ -110,8 +112,12 @@ public class MenuNavigator : MonoBehaviour
             var nav = b.navigation;
             nav.mode = Navigation.Mode.None;
             b.navigation = nav;
-            var img = b.GetComponent<Image>();
-            if (img) img.enabled = false; // “solo texto”
+
+            if (hideButtonImages)
+            {
+                var img = b.GetComponent<Image>();
+                if (img) img.enabled = false; // “solo texto”
+            }
         }
     }
 
