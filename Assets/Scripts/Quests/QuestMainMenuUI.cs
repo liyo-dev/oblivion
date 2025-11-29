@@ -249,6 +249,17 @@ public class QuestMainMenuUI : MonoBehaviour
 
         GameObject target = null;
 
+        if (navigator != null)
+        {
+            navigator.RefreshItemsFromChildren(resetSelection: false);
+            var first = navigator.items.FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy && b.interactable);
+            if (first != null)
+            {
+                navigator.ForceSelect(first, resetCooldown: true);
+                return;
+            }
+        }
+
         if (_showingHidden)
             target = hiddenTabButton != null ? hiddenTabButton.gameObject : target;
         else
