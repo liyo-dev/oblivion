@@ -14,6 +14,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
 
     private QuestManager.RuntimeQuest _data;
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
+    private QuestVisibility _currentVisibility;
 
     public void Bind(
         QuestManager.RuntimeQuest data,
@@ -22,6 +23,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
     {
         _data = data;
         _onChange = onChange;
+        _currentVisibility = visibility;
 
         if (questName)
         {
@@ -60,11 +62,16 @@ public class QuestVisibilityItemUI : MonoBehaviour
         }
 
         DisableUnusedButtons();
+        UpdateInteractableStates();
     }
 
     void NotifyChange(QuestVisibility visibility)
     {
         if (_data == null) return;
+        if (visibility == _currentVisibility) return;
+
+        _currentVisibility = visibility;
+        UpdateInteractableStates();
         _onChange?.Invoke(_data, visibility);
     }
 
@@ -83,5 +90,14 @@ public class QuestVisibilityItemUI : MonoBehaviour
             if (button == showButton || button == hideButton) continue;
             button.gameObject.SetActive(false);
         }
+    }
+
+    void UpdateInteractableStates()
+    {
+        if (showButton)
+            showButton.interactable = _currentVisibility != QuestVisibility.Visible;
+
+        if (hideButton)
+            hideButton.interactable = _currentVisibility != QuestVisibility.Hidden;
     }
 }
