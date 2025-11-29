@@ -345,7 +345,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
-  m_MinWidth: 75
+  m_MinWidth: 0
   m_MinHeight: -1
   m_PreferredWidth: 75
   m_PreferredHeight: 32
@@ -606,7 +606,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
-    m_Left: 40
+    m_Left: 0
     m_Right: 15
     m_Top: 15
     m_Bottom: 15
