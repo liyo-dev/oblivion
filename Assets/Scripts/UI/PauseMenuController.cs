@@ -330,6 +330,35 @@ public class PauseMenuController : MonoBehaviour
         if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
     }
 
+    /// <summary>
+    /// Cierra y reinicia el estado del menú de pausa de forma defensiva, sin depender
+    /// de los callbacks de Unity (OnDisable/OnDestroy). Útil antes de cambiar de escena
+    /// para evitar que reaparezca tras cargas desde el menú principal.
+    /// </summary>
+    public void ForceCloseAndReset()
+    {
+        _pauseRequestPending = false;
+        _pausePressedViaEvent = false;
+        _cancelPressedViaEvent = false;
+
+        Time.timeScale = 1f;
+        _isPaused = false;
+        IsOpen = false;
+        MenuManager.Close(MenuKind.Pause);
+
+        if (GameState.Is(GamePhase.PauseMenu))
+            GameState.Pop(GamePhase.PauseMenu);
+
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+
+        if (gameObject.activeSelf)
+            gameObject.SetActive(false);
+    }
+
     void BuildOrderedButtonsIfEmpty()
     {
         if (orderedButtons == null) orderedButtons = new List<Selectable>();
