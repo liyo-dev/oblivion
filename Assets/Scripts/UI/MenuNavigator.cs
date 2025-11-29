@@ -23,7 +23,7 @@ public class MenuNavigator : MonoBehaviour
     int _idx = -1;
     float _cooldown;
     readonly List<RectTransform> _nudged = new();
-    int _queuedMove;
+    Vector2 _queuedMove;
     Vector2 _heldNav;
     float _navEventExpiry;
     bool _submitRequested;
@@ -56,18 +56,18 @@ public class MenuNavigator : MonoBehaviour
         if (_heldNav != Vector2.zero && Time.unscaledTime > _navEventExpiry)
             _heldNav = Vector2.zero;
 
-        int move = 0;
-        if (_queuedMove != 0 && _cooldown <= 0f)
+        Vector2 move = Vector2.zero;
+        if (_queuedMove != Vector2.zero && _cooldown <= 0f)
         {
             move = _queuedMove;
-            _queuedMove = 0;
+            _queuedMove = Vector2.zero;
         }
         else if (_cooldown <= 0f)
         {
             move = ReadHeldMoveFromEvents();
         }
 
-        if (move != 0 && _cooldown <= 0f)
+        if (move != Vector2.zero && _cooldown <= 0f)
         {
             MoveSelection(move);
             _cooldown = repeatDelay;
@@ -122,26 +122,91 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    void MoveSelection(int dir) // dir: -1 arriba, +1 abajo
+    void MoveSelection(Vector2 dir)
     {
         if (items.Count == 0) return;
-        int start = _idx < 0 ? 0 : _idx;
-        int i = start;
+        AutoPopulateIfNeeded();
 
-        for (int step = 0; step < items.Count; step++)
+        if (_idx < 0 || _idx >= items.Count)
+            SelectFirstInteractable();
+
+        dir = dir.normalized;
+        if (dir == Vector2.zero) return;
+
+        var current = CurrentButton();
+        if (current == null)
         {
-            i = i + dir;
-            if (wrapAround) i = (i + items.Count) % items.Count;
-            else i = Mathf.Clamp(i, 0, items.Count - 1);
-
-            var b = items[i];
-            if (b && b.gameObject.activeInHierarchy && b.interactable)
-            { SetSelection(i); return; }
-
-            // si no hay wrap y chocamos en extremos, salimos
-            if (!wrapAround && (i == 0 || i == items.Count - 1))
-                return;
+            SelectFirstInteractable();
+            current = CurrentButton();
+            if (current == null) return;
         }
+
+        float bestScore = float.NegativeInfinity;
+        int bestIndex = -1;
+        var currentPos = (Vector2)current.transform.position;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var candidate = items[i];
+            if (candidate == null || candidate == current ||
+                !candidate.gameObject.activeInHierarchy || !candidate.interactable)
+                continue;
+
+            var toCandidate = (Vector2)candidate.transform.position - currentPos;
+            if (toCandidate.sqrMagnitude < 0.0001f) continue;
+
+            var toDir = toCandidate.normalized;
+            float alignment = Vector2.Dot(dir, toDir);
+            if (alignment <= 0.1f) continue; // debe estar razonablemente en la dirección pedida
+
+            // favorece elementos en la dirección solicitada y cercanos en distancia/perpendicularidad
+            float perpendicular = Mathf.Abs(Vector2.Dot(new Vector2(dir.y, -dir.x), toDir));
+            float distancePenalty = toCandidate.sqrMagnitude * 0.01f;
+            float score = alignment - perpendicular * 0.15f - distancePenalty;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = i;
+            }
+        }
+
+        if (bestIndex >= 0)
+        {
+            SetSelection(bestIndex);
+            return;
+        }
+
+        if (!wrapAround) return;
+
+        // Wrap-around: ir al más extremo en la dirección solicitada cuando no hay candidatos directos
+        int fallbackIndex = -1;
+        float extreme = dir.x != 0f ? dir.x > 0f ? float.NegativeInfinity : float.PositiveInfinity
+                                   : dir.y > 0f ? float.NegativeInfinity : float.PositiveInfinity;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var candidate = items[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy || !candidate.interactable)
+                continue;
+
+            var pos = candidate.transform.position;
+            float axisValue = dir.x != 0f ? pos.x : pos.y;
+
+            if (dir.x > 0f || dir.y > 0f)
+            {
+                if (axisValue > extreme)
+                { extreme = axisValue; fallbackIndex = i; }
+            }
+            else
+            {
+                if (axisValue < extreme)
+                { extreme = axisValue; fallbackIndex = i; }
+            }
+        }
+
+        if (fallbackIndex >= 0)
+            SetSelection(fallbackIndex);
     }
 
     void SetSelection(int i)
@@ -200,14 +265,14 @@ public class MenuNavigator : MonoBehaviour
     public void ForceSelect(GameObject go, bool resetCooldown = true)
         => ForceSelect(go != null ? go.GetComponent<Button>() : null, resetCooldown);
 
-    int ReadHeldMoveFromEvents()
+    Vector2 ReadHeldMoveFromEvents()
     {
-        if (_heldNav == Vector2.zero) return 0;
+        if (_heldNav == Vector2.zero) return Vector2.zero;
 
         if (Mathf.Abs(_heldNav.y) >= Mathf.Abs(_heldNav.x))
-            return _heldNav.y > 0f ? -1 : +1;
+            return new Vector2(0f, _heldNav.y > 0f ? 1f : -1f);
 
-        return 0;
+        return new Vector2(_heldNav.x > 0f ? 1f : -1f, 0f);
     }
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -227,12 +292,22 @@ public class MenuNavigator : MonoBehaviour
                 break;
 
             case GamepadInputReader.InputEventType.DpadUp when input.Phase == InputActionPhase.Performed:
-                _queuedMove = -1;
+                _queuedMove = Vector2.up;
                 _navEventExpiry = Time.unscaledTime + 0.1f;
                 break;
 
             case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
-                _queuedMove = +1;
+                _queuedMove = Vector2.down;
+                _navEventExpiry = Time.unscaledTime + 0.1f;
+                break;
+
+            case GamepadInputReader.InputEventType.DpadLeft when input.Phase == InputActionPhase.Performed:
+                _queuedMove = Vector2.left;
+                _navEventExpiry = Time.unscaledTime + 0.1f;
+                break;
+
+            case GamepadInputReader.InputEventType.DpadRight when input.Phase == InputActionPhase.Performed:
+                _queuedMove = Vector2.right;
                 _navEventExpiry = Time.unscaledTime + 0.1f;
                 break;
 
