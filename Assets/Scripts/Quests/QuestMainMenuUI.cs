@@ -1,6 +1,7 @@
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DG.Tweening;
 
@@ -16,6 +17,8 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI headerText;
     [SerializeField] private TextMeshProUGUI visibleHeaderText;
     [SerializeField] private TextMeshProUGUI hiddenHeaderText;
+    [SerializeField] private Button visibleTabButton;
+    [SerializeField] private Button hiddenTabButton;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
     [Header("Animación")]
@@ -25,6 +28,7 @@ public class QuestMainMenuUI : MonoBehaviour
     private bool _bound;
     private bool _phasePushed;
     private Tween _currentTween;
+    private bool _showingHidden;
 
     public bool IsOpen
     {
@@ -68,6 +72,7 @@ public class QuestMainMenuUI : MonoBehaviour
             quickMenu.ShowPanel(false, ignoreRestrictions: true);
         }
 
+        EnsureSelection();
         EnsureGamePhasePushed();
     }
 
@@ -95,6 +100,18 @@ public class QuestMainMenuUI : MonoBehaviour
             HideMenu();
         else
             ShowMenu();
+    }
+
+    public void ShowVisibleTab()
+    {
+        _showingHidden = false;
+        UpdateTabVisibility();
+    }
+
+    public void ShowHiddenTab()
+    {
+        _showingHidden = true;
+        UpdateTabVisibility();
     }
 
     public void Rebuild()
@@ -139,6 +156,8 @@ public class QuestMainMenuUI : MonoBehaviour
 
         if (hiddenHeaderText)
             hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})";
+
+        UpdateTabVisibility();
     }
 
     void OnVisibilityChanged(QuestManager.RuntimeQuest rq, QuestVisibility vis)
@@ -178,6 +197,58 @@ public class QuestMainMenuUI : MonoBehaviour
         if (container == null) return;
         for (int i = container.childCount - 1; i >= 0; i--)
             Destroy(container.GetChild(i).gameObject);
+    }
+
+    void UpdateTabVisibility()
+    {
+        bool hasHiddenSection = hiddenContentRoot != null;
+        bool showingHidden = _showingHidden && hasHiddenSection;
+
+        if (visibleHeaderText)
+            visibleHeaderText.gameObject.SetActive(!showingHidden);
+
+        if (hiddenHeaderText)
+            hiddenHeaderText.gameObject.SetActive(showingHidden);
+
+        if (visibleContentRoot)
+            visibleContentRoot.gameObject.SetActive(!showingHidden);
+
+        if (hiddenContentRoot)
+            hiddenContentRoot.gameObject.SetActive(showingHidden);
+
+        UpdateTabButtons(showingHidden);
+        EnsureSelection();
+    }
+
+    void UpdateTabButtons(bool showingHidden)
+    {
+        SetTabButtonState(visibleTabButton, !showingHidden);
+        SetTabButtonState(hiddenTabButton, showingHidden);
+    }
+
+    void SetTabButtonState(Button button, bool isActive)
+    {
+        if (button == null) return;
+
+        var colors = button.colors;
+        colors.colorMultiplier = isActive ? 1.2f : 1f;
+        button.colors = colors;
+    }
+
+    void EnsureSelection()
+    {
+        var es = EventSystem.current;
+        if (es == null) return;
+
+        GameObject target = null;
+
+        if (_showingHidden)
+            target = hiddenTabButton != null ? hiddenTabButton.gameObject : target;
+        else
+            target = visibleTabButton != null ? visibleTabButton.gameObject : target;
+
+        if (target != null)
+            es.SetSelectedGameObject(target);
     }
 
     QuestVisibility NormalizeVisibility(string questId, QuestVisibility current, bool persist = false)
