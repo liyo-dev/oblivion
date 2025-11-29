@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Bloquea la salida hasta que se cumpla un requisito de misiones.
@@ -65,11 +66,14 @@ public class RoomExitBlocker : MonoBehaviour
             EvaluateAndApplyState();
         else
             StartCoroutine(WaitForQuestManagerAndSubscribe());
+
+        SceneManager.sceneLoaded += HandleSceneLoaded;
     }
 
     void OnDisable()
     {
         TryUnsubscribe();
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
     void Start()
@@ -97,6 +101,12 @@ public class RoomExitBlocker : MonoBehaviour
             QuestManager.Instance.OnQuestsChanged += HandleQuestsChanged;
             _subscribed = true;
         }
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Re-evaluar tras cargar escena para reflejar el estado de misiones restaurado desde el save.
+        EvaluateAndApplyState();
     }
 
     private void TryUnsubscribe()
