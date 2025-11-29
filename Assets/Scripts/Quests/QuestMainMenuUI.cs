@@ -160,10 +160,10 @@ public class QuestMainMenuUI : MonoBehaviour
         }
 
         if (visibleHeaderText)
-            visibleHeaderText.text = $"Misiones visibles ({visibleCount})";
+            visibleHeaderText.text = $"Misiones visibles ({visibleCount})"; //TODO este texto debe ir multificado
 
         if (hiddenHeaderText)
-            hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})";
+            hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})"; //TODO este texto debe ir multificado
 
         UpdateTabVisibility();
     }
