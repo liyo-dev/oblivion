@@ -88,15 +88,17 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    void AutoPopulateIfNeeded()
+    void AutoPopulateIfNeeded(bool force = false)
     {
-        if (items.Count > 0) return;
+        if (!force && items.Count > 0) return;
         items.Clear();
         var btns = GetComponentsInChildren<Button>(true);
         // Ordenar por posición vertical (arriba -> abajo)
         System.Array.Sort(btns, (a,b) =>
             -a.transform.position.y.CompareTo(b.transform.position.y));
         items.AddRange(btns);
+
+        DisableUnityNavigation();
     }
 
     void DisableUnityNavigation()
@@ -238,6 +240,31 @@ public class MenuNavigator : MonoBehaviour
     }
 
     Button CurrentButton() => (_idx >= 0 && _idx < items.Count) ? items[_idx] : null;
+
+    /// <summary>
+    /// Reconstruye la lista de botones a partir de los hijos actuales.
+    /// </summary>
+    public void RefreshItemsFromChildren(bool resetSelection = true)
+    {
+        var current = CurrentButton();
+
+        AutoPopulateIfNeeded(force: true);
+
+        if (resetSelection)
+        {
+            SelectFirstInteractable();
+        }
+        else if (current != null)
+        {
+            int idx = items.IndexOf(current);
+            if (idx >= 0)
+                SetSelection(idx);
+            else
+                _idx = -1;
+        }
+
+        ResetCooldown();
+    }
 
     /// <summary>
     /// Fuerza la selección a un botón concreto y opcionalmente reinicia el cooldown de navegación.
