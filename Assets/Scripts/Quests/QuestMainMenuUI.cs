@@ -10,8 +10,12 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private CanvasGroup panelGroup;
     [SerializeField] private Transform contentRoot;
+    [SerializeField] private Transform visibleContentRoot;
+    [SerializeField] private Transform hiddenContentRoot;
     [SerializeField] private QuestVisibilityItemUI itemPrefab;
     [SerializeField] private TextMeshProUGUI headerText;
+    [SerializeField] private TextMeshProUGUI visibleHeaderText;
+    [SerializeField] private TextMeshProUGUI hiddenHeaderText;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
     [Header("Animación")]
@@ -97,31 +101,49 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         if (QuestManager.Instance == null) return;
 
-        if (contentRoot == null || itemPrefab == null) return;
+        var visibleRoot = visibleContentRoot != null ? visibleContentRoot : contentRoot;
+        var hiddenRoot = hiddenContentRoot;
 
-        for (int i = contentRoot.childCount - 1; i >= 0; i--)
-            Destroy(contentRoot.GetChild(i).gameObject);
+        if (visibleRoot == null || itemPrefab == null) return;
+
+        ClearContainer(visibleRoot);
+        if (hiddenRoot != null)
+            ClearContainer(hiddenRoot);
 
         var quests = QuestManager.Instance.GetAll()
-            .OrderByDescending(q => QuestManager.Instance.GetVisibility(q.Id) == QuestVisibility.Tracked)
-            .ThenBy(q => q.Data.GetLocalizedName());
+            .OrderBy(q => q.Data.GetLocalizedName());
+
+        int visibleCount = 0;
+        int hiddenCount = 0;
 
         foreach (var rq in quests)
         {
-            var item = Instantiate(itemPrefab, contentRoot);
-            var visibility = QuestManager.Instance.GetVisibility(rq.Id);
+            var visibility = NormalizeVisibility(rq.Id, QuestManager.Instance.GetVisibility(rq.Id), persist: true);
+            var parent = visibility == QuestVisibility.Hidden && hiddenRoot != null ? hiddenRoot : visibleRoot;
+            var item = Instantiate(itemPrefab, parent);
             item.Bind(rq, visibility, OnVisibilityChanged);
+
+            if (visibility == QuestVisibility.Hidden)
+                hiddenCount++;
+            else
+                visibleCount++;
         }
 
         if (headerText)
         {
             headerText.text = "Misiones (principal)";
         }
+
+        if (visibleHeaderText)
+            visibleHeaderText.text = $"Misiones visibles ({visibleCount})";
+
+        if (hiddenHeaderText)
+            hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})";
     }
 
     void OnVisibilityChanged(QuestManager.RuntimeQuest rq, QuestVisibility vis)
     {
-        QuestManager.Instance?.SetVisibility(rq.Id, vis);
+        QuestManager.Instance?.SetVisibility(rq.Id, NormalizeVisibility(rq.Id, vis, persist: true));
     }
 
     void Bind()
@@ -149,6 +171,25 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         if (_currentTween != null && _currentTween.IsActive()) _currentTween.Kill();
         _currentTween = null;
+    }
+
+    void ClearContainer(Transform container)
+    {
+        if (container == null) return;
+        for (int i = container.childCount - 1; i >= 0; i--)
+            Destroy(container.GetChild(i).gameObject);
+    }
+
+    QuestVisibility NormalizeVisibility(string questId, QuestVisibility current, bool persist = false)
+    {
+        if (current == QuestVisibility.Tracked)
+        {
+            if (persist)
+                QuestManager.Instance?.SetVisibility(questId, QuestVisibility.Visible);
+            return QuestVisibility.Visible;
+        }
+
+        return current;
     }
 
     bool CanOpenMainMenu()
