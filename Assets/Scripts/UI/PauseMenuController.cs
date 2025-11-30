@@ -671,6 +671,14 @@ public class PauseMenuController : MonoBehaviour
 
         Debug.Log("[PauseMenuController] Verificando condiciones para abrir/cerrar el menú de pausa...");
 
+        // Si el GameState quedó marcado como PauseMenu pero no hay menú activo, limpiarlo
+        if (!_isPaused && !gameObject.activeInHierarchy && GameState.Is(GamePhase.PauseMenu))
+        {
+            Debug.LogWarning("[PauseMenuController] Corrigiendo registro obsoleto de GamePhase.PauseMenu.");
+            GameState.Pop(GamePhase.PauseMenu);
+            MenuManager.Close(MenuKind.Pause);
+        }
+
         // Si el menú de pausa ya está abierto, cerrar en lugar de volver a abrir
         if (_isPaused)
         {
