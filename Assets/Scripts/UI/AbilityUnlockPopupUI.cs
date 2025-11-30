@@ -26,7 +26,6 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     AbilityId? _pendingAbility;
     AbilityKey? _pendingAbilityKey;
     private bool _listeningForAnyButton = false;
-    private float _previousTimeScale = 1f;
     private bool _blockingGameplay;
 
     void Awake()
@@ -156,8 +155,6 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // Empezar a escuchar cualquier botón para poder cerrar el popup.
         _listeningForAnyButton = true;
 
-        _previousTimeScale = Time.timeScale;
-        Time.timeScale = 0f;
         _blockingGameplay = true;
         GameState.Push(GamePhase.Cutscene);
 
@@ -177,7 +174,6 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         _listeningForAnyButton = false;
         if (_blockingGameplay)
         {
-            Time.timeScale = _previousTimeScale;
             _blockingGameplay = false;
             if (GameState.Is(GamePhase.Cutscene))
                 GameState.Pop(GamePhase.Cutscene);
