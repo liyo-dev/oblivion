@@ -14,14 +14,15 @@ public class QuestObjectDisabler : MonoBehaviour
 
     void OnEnable()
     {
-        QuestManager.Instance?.OnQuestsChanged += Check;
+        var qm = QuestManager.Instance;
+        if (qm) qm.OnQuestsChanged += Check;
         Check();
     }
 
     void OnDisable()
     {
-        if (QuestManager.Instance)
-            QuestManager.Instance.OnQuestsChanged -= Check;
+        var qm = QuestManager.Instance;
+        if (qm) qm.OnQuestsChanged -= Check;
     }
 
     private void Check()
