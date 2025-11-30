@@ -170,12 +170,7 @@ public static class SceneTransitionLoader
         // de que el menú de pausa no quede activo ni con flags pendientes. Si el
         // singleton existe, realizar un cierre defensivo; en caso contrario,
         // forzar timeScale a 1 por si alguna pausa previa lo dejó en 0.
-#if UNITY_2022_3_OR_NEWER
-        var pauseMenu = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
-#else
-        var pauseMenu = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
-#endif
-        if (pauseMenu != null)
+        if (ServiceLocator.TryGet(out PauseMenuController pauseMenu))
         {
             pauseMenu.ForceCloseAndReset();
         }
