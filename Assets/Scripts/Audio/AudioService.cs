@@ -355,12 +355,31 @@ public sealed class AudioService : MonoBehaviour
 
     void OnBattleWonRestoreMusic(AudioGraphProfile.BattleRule r)
     {
+        // Preferir la música de la escena actual (base) cuando termina la batalla
+        var activeScene = SceneManager.GetActiveScene();
+        var activeSceneClip = FindSceneMusicClipByName(activeScene.name);
+
+        AudioClip targetClip = null;
         if (_musicStack.Count > 0)
         {
             var prev = _musicStack.Pop();
-            if (prev.clip != null) PlayMusic(prev.clip, r.fade);
-            else StopMusic(r.fade);
+            targetClip = prev.clip;
         }
+
+        if (activeSceneClip != null)
+        {
+            targetClip = activeSceneClip;
+        }
+        else if (_lastRequestedSceneClip != null)
+        {
+            targetClip ??= _lastRequestedSceneClip;
+        }
+
+        if (targetClip != null)
+            PlayMusic(targetClip, r.fade);
+        else
+            StopMusic(r.fade);
+
         _battleActive = false;
     }
     
