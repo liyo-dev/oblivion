@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
@@ -307,6 +308,37 @@ namespace Game.NPC
                 _playerAnimator = pam.GetComponent<Animator>();
 
             _playerAnimator?.SetFloat(PlayerInputMagnitudeHash, 0f);
+            ResetPlayerMotion();
+        }
+
+        void ResetPlayerMotion()
+        {
+            if (_player == null)
+                return;
+
+            // Reflejo defensivo para no depender directamente de Invector en tiempo de compilación
+            var controllerType = Type.GetType("Invector.vCharacterController.vThirdPersonController, Invector-3rdPersonController_LITE", false)
+                                ?? Type.GetType("Invector.vCharacterController.vThirdPersonController, Invector-3rdPersonController", false)
+                                ?? Type.GetType("Invector.vCharacterController.vThirdPersonController", false);
+
+            if (controllerType != null)
+            {
+                var controller = _player.GetComponent(controllerType) ?? _player.GetComponentInChildren(controllerType, true);
+                if (controller != null)
+                {
+                    var moveDir = controllerType.GetField("moveDirection", BindingFlags.NonPublic | BindingFlags.Instance);
+                    moveDir?.SetValue(controller, Vector3.zero);
+
+                    var extraImpulse = controllerType.GetField("extraImpulse", BindingFlags.NonPublic | BindingFlags.Instance);
+                    extraImpulse?.SetValue(controller, Vector3.zero);
+                }
+            }
+
+            if (_player.TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
         internal bool IsPlayerInFov(float radius, float fov)
         {
@@ -1157,6 +1189,7 @@ namespace Game.NPC
             Damageable _resolvedHealth;
             bool _battleStarted;
             bool _battleFinished;
+            bool _forceHealthVisibleUntilDamage;
             GameObject _healthBarInstance;
             RectTransform _healthBarRect;
             Image _healthBarFill;
@@ -1182,13 +1215,14 @@ namespace Game.NPC
                  _homeRotation = _ctx.transform.rotation;
 
                  _ownsHealthComponent = false;
-                 _camera = null;
-                 _resolvedHealth = ResolveHealth();
-                 _battleStarted = false;
-                 _battleFinished = false;
-                 _alertMusicRaised = false;
-                 HideHealthBar();
-             }
+                _camera = null;
+                _resolvedHealth = ResolveHealth();
+                _battleStarted = false;
+                _battleFinished = false;
+                _forceHealthVisibleUntilDamage = false;
+                _alertMusicRaised = false;
+                HideHealthBar();
+            }
 
              public void OnDisable()
              {
@@ -1542,6 +1576,7 @@ namespace Game.NPC
                     _resolvedHealth.OnDied += HandleNpcDied;
                 }
 
+                _forceHealthVisibleUntilDamage = true;
                 ShowHealthBar();
 
                 TriggerBattleMusic();
@@ -1555,6 +1590,7 @@ namespace Game.NPC
                 if (_resolvedHealth == null)
                     return;
 
+                _forceHealthVisibleUntilDamage = false;
                 RefreshHealthBarImmediate();
 
                 if (_resolvedHealth.Current <= 0f && !_battleFinished)
@@ -1639,8 +1675,13 @@ namespace Game.NPC
                 _healthBarFill.fillAmount = ratio;
                 _healthBarFill.color = GetColorForRatio(ratio);
 
-                if (_healthBarCanvasGroup && hideHealthBarWhenFull)
-                    _healthBarCanvasGroup.alpha = ratio >= 0.999f ? 0f : 1f;
+                if (_healthBarCanvasGroup)
+                {
+                    if (_forceHealthVisibleUntilDamage)
+                        _healthBarCanvasGroup.alpha = 1f;
+                    else if (hideHealthBarWhenFull)
+                        _healthBarCanvasGroup.alpha = ratio >= 0.999f ? 0f : 1f;
+                }
             }
 
             void UpdateHealthBarVisual()
