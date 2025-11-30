@@ -183,6 +183,9 @@ public class GameBootProfile : ScriptableObject
         data.flags = new List<string>(activePreset.flags ?? new List<string>());
         data.appearance = activePreset.appearance != null ? new List<AppearanceEntry>(activePreset.appearance) : new List<AppearanceEntry>();
         data.unlockedWardrobeIds = activePreset.unlockedWardrobeIds != null ? new List<string>(activePreset.unlockedWardrobeIds) : new List<string>();
+        data.consumedInteractables = activePreset.consumedInteractableIds != null
+            ? new List<string>(activePreset.consumedInteractableIds)
+            : new List<string>();
         data.inventory = activePreset.inventoryItems != null ? new List<InventoryItemSave>(activePreset.inventoryItems) : new List<InventoryItemSave>();
         data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
         // Guardar slots actuales
