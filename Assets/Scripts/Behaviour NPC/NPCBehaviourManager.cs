@@ -1092,7 +1092,6 @@ namespace Game.NPC
             [Header("Battle")]
             public bool startBattleOnChallengeEnd = true;
             [Min(1f)] public float battleHealth = 120f;
-            public Damageable healthComponent;
             public Vector3 healthBarOffset = new(0f, 2.4f, 0f);
             public GameObject healthBarPrefab;
             public Canvas healthBarCanvasOverride;
@@ -1126,10 +1125,10 @@ namespace Game.NPC
             [Min(0f)] public float projectileDamage = 10f;
             [Min(0f)] public float projectileSpeed = 12f;
 
-            [Header("Bloqueo de jugador")]
-            public bool lockPlayer = true;
-            public bool lockOnSight = true;
-            public ActionMode lockMode = ActionMode.Stunned;
+            // Bloqueo de jugador: se fuerza internamente igual que el sistema de diálogo
+            const ActionMode PlayerLockMode = ActionMode.Stunned;
+            [SerializeField, HideInInspector] bool lockPlayer = true;
+            [SerializeField, HideInInspector] bool lockOnSight = true;
 
             [Header("Giro estilo 'entrenador Pokémon'")]
             public bool turnPlayerOnSight = true;     // ← NUEVO: activa el giro
@@ -1167,6 +1166,7 @@ namespace Game.NPC
             Vector3 _homePosition;
             Quaternion _homeRotation;
             bool _alertMusicRaised;
+            static Sprite _fallbackSprite;
 
              public void Initialize(NPCBehaviourManager context) => _ctx = context;
              public void OnStart() { }
@@ -1391,12 +1391,14 @@ namespace Game.NPC
                 var pam = _ctx.GetActionManager();
                 if (pam != null)
                 {
-                    pam.PushMode(lockMode);
+                    pam.PushMode(PlayerLockMode);
                     _lockModeApplied = true;
                 }
                 else
                 {
                     _ctx.DebugLog("PlayerActionManager no disponible para aplicar lock.");
+                    // Aún así marcamos el lock para seguir forzando Idle.
+                    _lockModeApplied = true;
                 }
 
                 _ctx.ForcePlayerIdle();
@@ -1423,7 +1425,7 @@ namespace Game.NPC
                 var pam = _ctx.GetActionManager();
                 if (_lockModeApplied && pam != null)
                 {
-                    pam.PopMode(lockMode);
+                    pam.PopMode(PlayerLockMode);
                     _lockModeApplied = false;
                 }
                 else if (_lockModeApplied)
@@ -1583,18 +1585,11 @@ namespace Game.NPC
 
             Damageable ResolveHealth()
             {
-                if (healthComponent != null)
-                    return healthComponent;
-
                 if (_ctx.TryGetComponent(out Damageable existing))
-                {
-                    healthComponent = existing;
                     return existing;
-                }
 
                 _ownsHealthComponent = true;
-                healthComponent = _ctx.gameObject.AddComponent<Damageable>();
-                return healthComponent;
+                return _ctx.gameObject.AddComponent<Damageable>();
             }
 
             void ShowHealthBar()
@@ -1681,8 +1676,8 @@ namespace Game.NPC
                 bgRect.offsetMax = Vector2.zero;
 
                 var bgImage = bg.GetComponent<Image>();
-                bgImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
-                bgImage.type = Image.Type.Sliced;
+                bgImage.sprite = GetFallbackSprite();
+                bgImage.type = Image.Type.Simple;
                 bgImage.color = new Color(0f, 0f, 0f, 0.65f);
 
                 var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
@@ -1694,12 +1689,23 @@ namespace Game.NPC
                 fillRect.offsetMax = new Vector2(-1f, -1f);
 
                 var fillImage = fill.GetComponent<Image>();
-                fillImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+                fillImage.sprite = GetFallbackSprite();
                 fillImage.type = Image.Type.Filled;
                 fillImage.fillMethod = Image.FillMethod.Horizontal;
                 fillImage.color = healthColor;
 
                 return root;
+            }
+
+            static Sprite GetFallbackSprite()
+            {
+                if (_fallbackSprite != null)
+                    return _fallbackSprite;
+
+                var tex = Texture2D.whiteTexture;
+                _fallbackSprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                _fallbackSprite.name = "NPCHealth_FallbackSprite";
+                return _fallbackSprite;
             }
 
             Image FindFillImage(GameObject root)
