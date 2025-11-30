@@ -150,19 +150,8 @@ public class PortalTrigger : MonoBehaviour
 
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            // Iniciar carga de la escena (usa SceneTransitionLoader para comportamiento consistente)
-            var overlayToUse = !string.IsNullOrEmpty(loadingOverlayScene)
-                ? loadingOverlayScene
-                : SceneTransitionLoader.DefaultOverlayScene;
-
-            if (!string.IsNullOrEmpty(overlayToUse))
-            {
-                SceneTransitionLoader.LoadWithOverlay(targetSceneName, overlayToUse);
-            }
-            else
-            {
-                SceneTransitionLoader.Load(targetSceneName);
-            }
+            // Iniciar carga de la escena directamente
+            SceneManager.LoadScene(targetSceneName);
         }
         else
         {
