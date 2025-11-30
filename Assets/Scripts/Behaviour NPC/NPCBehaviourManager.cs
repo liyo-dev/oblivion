@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
+using UnityEngine.UI;
 using Game.NPC.Common;
 
 namespace Game.NPC
@@ -1085,16 +1086,6 @@ namespace Game.NPC
             [Header("Battle")]
             public bool startBattleOnChallengeEnd = true;
             [Min(1f)] public float battleHealth = 120f;
-            public Damageable healthComponent;
-            public Vector3 healthBarOffset = new(0f, 2.4f, 0f);
-            public GameObject healthBarPrefab;
-            public Canvas healthBarCanvasOverride;
-            [Tooltip("Colores de la barra de vida (saludable / aviso / crítico).")]
-            public Color healthColor = Color.green;
-            public Color warningColor = Color.yellow;
-            public Color criticalColor = Color.red;
-            [Range(0f, 1f)] public float warningThreshold = 0.5f;
-            [Range(0f, 1f)] public float criticalThreshold = 0.25f;
 
             [Header("Diálogos")]
             public DialogueAsset dialogueOnChallenge;
@@ -1108,10 +1099,11 @@ namespace Game.NPC
             public string lightAttackStateLeft = "LeftAttack";
             public string lightAttackStateRight = "RightAttack";
             public string specialAttackState = "SpecialAttack";
-            [Tooltip("Animator Bool o Trigger para el estado de sprint/correr durante el combate (opcional).")]
-            public string runStateParameter = "IsRunning";
-            [Tooltip("Animator Trigger para esquivar (opcional)")]
-            public string dodgeTrigger = "Dodge";
+
+            [Header("Ataques (hechizos equipados)")]
+            public MagicSpellSO lightSpellLeft;
+            public MagicSpellSO lightSpellRight;
+            public MagicSpellSO specialSpell;
 
             [Header("Bloqueo de jugador")]
             public bool lockPlayer = true;
@@ -1146,7 +1138,18 @@ namespace Game.NPC
             bool _battleStarted;
             bool _battleFinished;
             GameObject _healthBarInstance;
-            NPCBattleHealthBar _healthBar;
+            RectTransform _healthBarRect;
+            Image _healthBarFill;
+            CanvasGroup _healthBarCanvasGroup;
+            Camera _camera;
+            bool _ownsHealthComponent;
+            readonly Vector3 _healthBarOffset = new(0f, 2.4f, 0f);
+            readonly Color _healthColor = Color.green;
+            readonly Color _warningColor = Color.yellow;
+            readonly Color _criticalColor = Color.red;
+            const float WarningThreshold = 0.5f;
+            const float CriticalThreshold = 0.25f;
+            const bool HideHealthBarWhenFull = true;
             Vector3 _homePosition;
             Quaternion _homeRotation;
             bool _alertMusicRaised;
@@ -1164,6 +1167,8 @@ namespace Game.NPC
                  _homePosition = _ctx.transform.position;
                  _homeRotation = _ctx.transform.rotation;
 
+                 _ownsHealthComponent = false;
+                 _camera = null;
                  _resolvedHealth = ResolveHealth();
                  _battleStarted = false;
                  _battleFinished = false;
@@ -1179,15 +1184,17 @@ namespace Game.NPC
                     _challengeRoutine = null;
                 }
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
-                 _ctx.Animator.ResetMovement();
-                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
-                 ReleasePlayer();
-                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
-                 HideHealthBar();
+                _ctx.Animator.ResetMovement();
+                NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                ReleasePlayer();
+                if (exclamationPrefab) exclamationPrefab.SetActive(false);
+                HideHealthBar();
              }
 
-             public void Tick()
-             {
+            public void Tick()
+            {
+                UpdateHealthBarVisual();
+
                 if (!enable || _isChallenging || sightRadius <= 0f) return;
                 if (_battleFinished) return;
 
@@ -1471,6 +1478,21 @@ namespace Game.NPC
                 }
             }
 
+            public MagicSpellSO GetSpellForSlot(MagicSlot slot)
+            {
+                switch (slot)
+                {
+                    case MagicSlot.Left:
+                        return lightSpellLeft;
+                    case MagicSlot.Right:
+                        return lightSpellRight;
+                    case MagicSlot.Special:
+                        return specialSpell;
+                    default:
+                        return null;
+                }
+            }
+
             void StartBattle()
             {
                 if (_battleStarted) return;
@@ -1481,7 +1503,9 @@ namespace Game.NPC
                 _resolvedHealth = ResolveHealth();
                 if (_resolvedHealth != null)
                 {
-                    _resolvedHealth.SetMaxAndCurrent(battleHealth, battleHealth);
+                    if (_ownsHealthComponent)
+                        _resolvedHealth.SetMaxAndCurrent(battleHealth, battleHealth);
+
                     _resolvedHealth.OnDamaged -= HandleNpcDamaged;
                     _resolvedHealth.OnDamaged += HandleNpcDamaged;
                     _resolvedHealth.OnDied -= HandleNpcDied;
@@ -1500,6 +1524,8 @@ namespace Game.NPC
             {
                 if (_resolvedHealth == null)
                     return;
+
+                RefreshHealthBarImmediate();
 
                 if (_resolvedHealth.Current <= 0f && !_battleFinished)
                     HandleNpcDied();
@@ -1523,38 +1549,40 @@ namespace Game.NPC
                 onBattleFinished?.Invoke();
                 _ctx.DebugLog("Batalla finalizada.");
 
+                RefreshHealthBarImmediate();
                 HideHealthBar();
                 enable = false; // evita repetir combate
             }
 
             Damageable ResolveHealth()
             {
-                if (healthComponent != null)
-                    return healthComponent;
+                if (_ctx.TryGetComponent(out Damageable existing))
+                    return existing;
 
-                if (!_ctx.TryGetComponent(out Damageable dmg))
-                    dmg = _ctx.gameObject.AddComponent<Damageable>();
-
-                healthComponent = dmg;
-                return dmg;
+                _ownsHealthComponent = true;
+                return _ctx.gameObject.AddComponent<Damageable>();
             }
 
             void ShowHealthBar()
             {
-                if (!_resolvedHealth || !healthBarPrefab)
+                if (!_resolvedHealth)
                     return;
 
-                if (_healthBarInstance)
-                    Destroy(_healthBarInstance);
+                HideHealthBar();
 
-                Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
-                _healthBarInstance = GameObject.Instantiate(healthBarPrefab, parent, false);
-                _healthBar = _healthBarInstance.GetComponent<NPCBattleHealthBar>()
-                             ?? _healthBarInstance.AddComponent<NPCBattleHealthBar>();
+                Transform parent = FindCanvas();
+                if (!parent)
+                    return;
 
-                _healthBar.Bind(_resolvedHealth, _ctx.transform);
-                _healthBar.SetOffset(healthBarOffset);
-                _healthBar.SetColors(healthColor, warningColor, criticalColor, warningThreshold, criticalThreshold);
+                _healthBarInstance = BuildRuntimeHealthBar(parent);
+
+                _healthBarRect = _healthBarInstance ? _healthBarInstance.GetComponent<RectTransform>() : null;
+                _healthBarFill = _healthBarInstance ? FindFillImage(_healthBarInstance) : null;
+                _healthBarCanvasGroup = _healthBarInstance
+                    ? _healthBarInstance.GetComponent<CanvasGroup>() ?? _healthBarInstance.AddComponent<CanvasGroup>()
+                    : null;
+
+                RefreshHealthBarImmediate();
             }
 
             void HideHealthBar()
@@ -1563,15 +1591,104 @@ namespace Game.NPC
                 {
                     GameObject.Destroy(_healthBarInstance);
                     _healthBarInstance = null;
-                    _healthBar = null;
                 }
+
+                _healthBarRect = null;
+                _healthBarFill = null;
+                _healthBarCanvasGroup = null;
+            }
+
+            void RefreshHealthBarImmediate()
+            {
+                if (_resolvedHealth == null || _healthBarFill == null)
+                    return;
+
+                float ratio = Mathf.Clamp01(_resolvedHealth.Current / Mathf.Max(1f, _resolvedHealth.Max));
+                _healthBarFill.fillAmount = ratio;
+                _healthBarFill.color = GetColorForRatio(ratio);
+
+                if (_healthBarCanvasGroup && HideHealthBarWhenFull)
+                    _healthBarCanvasGroup.alpha = ratio >= 0.999f ? 0f : 1f;
+            }
+
+            void UpdateHealthBarVisual()
+            {
+                if (_healthBarRect == null)
+                    return;
+
+                _camera ??= Camera.main;
+                if (_camera == null)
+                    return;
+
+                Vector3 targetPos = _ctx.transform.position + _healthBarOffset;
+                Vector3 screenPos = _camera.WorldToScreenPoint(targetPos);
+                if (screenPos.z < 0f)
+                    return;
+
+                _healthBarRect.position = Vector3.Lerp(_healthBarRect.position, screenPos, Time.unscaledDeltaTime * 12f);
+            }
+
+            GameObject BuildRuntimeHealthBar(Transform parent)
+            {
+                var root = new GameObject("NPC Health Bar", typeof(RectTransform), typeof(CanvasGroup));
+                root.transform.SetParent(parent, false);
+
+                var rect = root.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(120f, 18f);
+
+                var bg = new GameObject("Background", typeof(RectTransform), typeof(Image));
+                bg.transform.SetParent(root.transform, false);
+                var bgRect = bg.GetComponent<RectTransform>();
+                bgRect.anchorMin = Vector2.zero;
+                bgRect.anchorMax = Vector2.one;
+                bgRect.offsetMin = Vector2.zero;
+                bgRect.offsetMax = Vector2.zero;
+
+                var bgImage = bg.GetComponent<Image>();
+                bgImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+                bgImage.type = Image.Type.Sliced;
+                bgImage.color = new Color(0f, 0f, 0f, 0.65f);
+
+                var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+                fill.transform.SetParent(bg.transform, false);
+                var fillRect = fill.GetComponent<RectTransform>();
+                fillRect.anchorMin = Vector2.zero;
+                fillRect.anchorMax = Vector2.one;
+                fillRect.offsetMin = new Vector2(1f, 1f);
+                fillRect.offsetMax = new Vector2(-1f, -1f);
+
+                var fillImage = fill.GetComponent<Image>();
+                fillImage.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+                fillImage.type = Image.Type.Filled;
+                fillImage.fillMethod = Image.FillMethod.Horizontal;
+                fillImage.color = _healthColor;
+
+                return root;
+            }
+
+            Image FindFillImage(GameObject root)
+            {
+                var images = root.GetComponentsInChildren<Image>(true);
+                foreach (var img in images)
+                {
+                    if (img.gameObject != root && (img.type == Image.Type.Filled || img.fillMethod == Image.FillMethod.Horizontal))
+                        return img;
+                }
+
+                return root.GetComponentInChildren<Image>(true);
+            }
+
+            Color GetColorForRatio(float ratio)
+            {
+                if (ratio <= CriticalThreshold)
+                    return _criticalColor;
+                if (ratio <= WarningThreshold)
+                    return _warningColor;
+                return _healthColor;
             }
 
             Transform FindCanvas()
             {
-                if (healthBarCanvasOverride)
-                    return healthBarCanvasOverride.transform;
-
 #if UNITY_2022_3_OR_NEWER
                 var uiCanvas = GameObject.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
 #else
