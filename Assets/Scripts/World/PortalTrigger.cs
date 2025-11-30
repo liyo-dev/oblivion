@@ -9,6 +9,8 @@ public class PortalTrigger : MonoBehaviour
     public string targetAnchorId;
     [Tooltip("(Opcional) Nombre de la escena destino. Si está vacío, el portal teletransporta dentro de la misma escena.")]
     public string targetSceneName;
+    [Tooltip("(Opcional) Nombre de la escena overlay que muestra la pantalla de carga. Si se asigna, se usará al cargar la escena destino.")]
+    public string loadingOverlayScene;
     public string requiredFlag;
     public string setFlagOnEnter;
 
@@ -149,7 +151,14 @@ public class PortalTrigger : MonoBehaviour
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             // Iniciar carga de la escena (usa SceneTransitionLoader para comportamiento consistente)
-            SceneTransitionLoader.Load(targetSceneName);
+            if (!string.IsNullOrEmpty(loadingOverlayScene))
+            {
+                SceneTransitionLoader.LoadWithOverlay(targetSceneName, loadingOverlayScene);
+            }
+            else
+            {
+                SceneTransitionLoader.Load(targetSceneName);
+            }
         }
         else
         {
