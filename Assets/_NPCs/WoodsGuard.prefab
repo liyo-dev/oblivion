@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 8151440791340981766}
   - component: {fileID: 2619517613521268323}
   - component: {fileID: 586203263907906031}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: WoodsGuard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -191,7 +191,9 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  dialogue: {fileID: 0}
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
+  dialogue: {fileID: 11400000, guid: 3db30440f08d6d344af905875f2a7615, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}
