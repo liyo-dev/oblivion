@@ -136,6 +136,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [Header("Navegación UI")]
     [SerializeField, Min(0f)] private float uiNavRepeatDelay = 0.18f;
     [SerializeField, Range(0f, 1f)] private float uiNavDeadzone = 0.45f;
+    [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
+    private float closeInputGracePeriod = 0.3f;
     bool _equipmentCameraActive;
     Transform _playerPreviewTarget;
     Quaternion _storedPlayerRotation;
@@ -364,7 +366,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void HandleCloseInput()
     {
         // Evitar cerrar inmediatamente si todavía estamos procesando el input que abrió el menú.
-        if (Time.unscaledTime - _openedAt < 0.15f)
+        if (Time.unscaledTime - _openedAt < closeInputGracePeriod)
             return;
 
         bool cancel = _cancelRequested;
@@ -600,6 +602,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         // Marcar el instante de apertura para filtrar cierres accidentales en el mismo frame.
         _openedAt = Time.unscaledTime;
+        _cancelRequested = false; // Limpiar cualquier cancel previo para evitar cierres inmediatos.
     }
 
     void CloseMenu()
