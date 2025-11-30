@@ -112,6 +112,13 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     {
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
 
+        if (popupRoot == null)
+        {
+            Debug.LogWarning("[AbilityUnlockPopupUI] popupRoot no está asignado, se omite mostrar el popup para evitar bloquear la jugabilidad.");
+            HidePopup();
+            return;
+        }
+
         if (!TryMarkAsPendingAndUnique())
         {
             HidePopup();
