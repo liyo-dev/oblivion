@@ -797,7 +797,10 @@ public class PauseMenuController : MonoBehaviour
     public void OnQuitToMain()
     {
         // Cierra el menú antes de cambiar de escena para que no quede activo en el MainMenu.
-        Resume();
+        // Usar el cierre defensivo para limpiar flags y GameState incluso si ya estaba
+        // activo al cambiar de escena. Esto evita que permanezca visible al cargar
+        // nuevamente una partida desde el menú principal.
+        ForceCloseAndReset();
         Time.timeScale = 1f;
         MainMenuController.RequestInputDebounce();
         UnityEngine.SceneManagement.SceneManager.LoadScene(mainMenuScene);
