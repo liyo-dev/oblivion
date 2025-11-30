@@ -16,6 +16,12 @@ MonoBehaviour:
   - battleId: Demon_1
     music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
     fade: 0
+  - battleId: Npc_Battle
+    music: {fileID: 8300000, guid: 8cec8789bac768f42903e5eba038018e, type: 3}
+    fade: 0
+  - battleId: Npc_Battle_Alert
+    music: {fileID: 8300000, guid: 4f31d39e644aa2f45b28f909f29fda9d, type: 3}
+    fade: 0
   sceneMusic:
   - sceneName: Prologo
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
