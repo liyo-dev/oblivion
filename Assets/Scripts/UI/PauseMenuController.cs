@@ -228,6 +228,8 @@ public class PauseMenuController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        EnsureSettingsMenuClosed();
+
         EnableUIInput();
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
@@ -315,6 +317,7 @@ public class PauseMenuController : MonoBehaviour
         if (!MenuManager.IsOpen(MenuKind.Pause) && !MenuManager.TryOpen(MenuKind.Pause))
             return;
         gameObject.SetActive(true);
+        EnsureSettingsMenuClosed();
         EnsureUISelection();
     }
 
@@ -783,6 +786,18 @@ public class PauseMenuController : MonoBehaviour
         if (resumeButton) resumeButton.gameObject.SetActive(false);
         if (optionsButton) optionsButton.gameObject.SetActive(false);
         if (quitToMainButton) quitToMainButton.gameObject.SetActive(false);
+    }
+
+    void EnsureSettingsMenuClosed()
+    {
+        if (settingsMenu == null)
+            settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
+
+        if (settingsMenu != null && settingsMenu.IsVisible)
+            settingsMenu.Close();
+
+        if (_settingsButtonsSnapshotValid)
+            RestorePauseInteraction();
     }
 
     void RestorePauseInteraction()
