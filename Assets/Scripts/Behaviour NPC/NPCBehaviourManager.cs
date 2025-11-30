@@ -185,6 +185,12 @@ namespace Game.NPC
             return false;
         }
 
+        /// <summary>
+        /// Lanza el proyectil configurado para la fase de combate de NPCs.
+        /// Útil para ser invocado desde eventos de animación.
+        /// </summary>
+        public void FireCombatProjectile() => combatModule?.FireProjectile();
+
         #region Helpers accesibles desde los módulos
 
         internal NavMeshAgent Agent => _agent;
@@ -1112,10 +1118,13 @@ namespace Game.NPC
             public string lightAttackStateRight = "RightAttack";
             public string specialAttackState = "SpecialAttack";
 
-            [Header("Ataques (hechizos equipados)")]
-            public MagicSpellSO lightSpellLeft;
-            public MagicSpellSO lightSpellRight;
-            public MagicSpellSO specialSpell;
+            [Header("Ataques (prefab simple)")]
+            [Tooltip("Prefab de proyectil a instanciar durante el ataque.")]
+            public GameObject projectilePrefab;
+            [Tooltip("Punto opcional desde el que se lanzará el proyectil (usa el transform del NPC si está vacío).")]
+            public Transform projectileOrigin;
+            [Min(0f)] public float projectileDamage = 10f;
+            [Min(0f)] public float projectileSpeed = 12f;
 
             [Header("Bloqueo de jugador")]
             public bool lockPlayer = true;
@@ -1483,18 +1492,31 @@ namespace Game.NPC
                 }
             }
 
-            public MagicSpellSO GetSpellForSlot(MagicSlot slot)
+            public void FireProjectile()
             {
-                switch (slot)
+                if (!projectilePrefab)
+                    return;
+
+                var origin = projectileOrigin ? projectileOrigin : _ctx.transform;
+                var target = _ctx.Player ? _ctx.Player.position : (origin.position + origin.forward);
+                Vector3 dir = (target - origin.position);
+                if (dir.sqrMagnitude < 0.0001f)
+                    dir = origin.forward;
+
+                dir = dir.normalized;
+                Quaternion rot = dir.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(dir, Vector3.up) : origin.rotation;
+
+                var instance = GameObject.Instantiate(projectilePrefab, origin.position, rot);
+
+                if (instance.TryGetComponent<EnemyProjectile>(out var enemyProj))
                 {
-                    case MagicSlot.Left:
-                        return lightSpellLeft;
-                    case MagicSlot.Right:
-                        return lightSpellRight;
-                    case MagicSlot.Special:
-                        return specialSpell;
-                    default:
-                        return null;
+                    enemyProj.Initialize(dir, projectileDamage);
+                    return;
+                }
+
+                if (instance.TryGetComponent<Rigidbody>(out var rb))
+                {
+                    rb.linearVelocity = dir * projectileSpeed;
                 }
             }
 
