@@ -416,11 +416,10 @@ public class GameBootProfile : ScriptableObject
 
                 foreach (var kv in selection)
                 {
-                    if (string.IsNullOrEmpty(kv.Value)) continue;
                     p.appearance.Add(new AppearanceEntry
                     {
                         category = kv.Key,
-                        partName = kv.Value
+                        partName = string.IsNullOrEmpty(kv.Value) ? null : kv.Value
                     });
                 }
                 syncedSystems.Add($"Appearance({p.appearance.Count})");

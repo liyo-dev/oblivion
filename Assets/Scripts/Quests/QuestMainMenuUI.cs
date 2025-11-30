@@ -19,6 +19,8 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hiddenHeaderText;
     [SerializeField] private Button visibleTabButton;
     [SerializeField] private Button hiddenTabButton;
+    [SerializeField] private ScrollRect visibleScrollRect;
+    [SerializeField] private ScrollRect hiddenScrollRect;
     [SerializeField] private MenuNavigator navigator;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
@@ -170,6 +172,7 @@ public class QuestMainMenuUI : MonoBehaviour
             hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})"; //TODO este texto debe ir multificado
 
         Debug.Log($"QuestMainMenuUI: Rebuild complete. Visible={visibleCount}, Hidden={hiddenCount}");
+        RefreshScrollViews();
         UpdateTabVisibility();
     }
 
@@ -472,6 +475,19 @@ public class QuestMainMenuUI : MonoBehaviour
 
         if (target != null)
             es.SetSelectedGameObject(target);
+    }
+
+    void RefreshScrollViews()
+    {
+        if (visibleContentRoot is RectTransform visibleRt)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(visibleRt);
+        if (hiddenContentRoot is RectTransform hiddenRt)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(hiddenRt);
+
+        if (visibleScrollRect != null)
+            visibleScrollRect.verticalNormalizedPosition = 1f;
+        if (hiddenScrollRect != null)
+            hiddenScrollRect.verticalNormalizedPosition = 1f;
     }
 
     void EnsureNavigatorReady()
