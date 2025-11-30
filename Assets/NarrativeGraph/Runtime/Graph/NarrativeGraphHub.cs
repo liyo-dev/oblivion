@@ -217,8 +217,8 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                 if (node != null)
                     currentNodeName = $"{node.GetType().Name}";
             }
-            
-            Debug.Log($"[NarrativeGraphHub] Runner '{label}' - blackboard tiene {(blackboardData != null ? blackboardData.Count : 0)} entradas | Nodo actual: {currentNodeName} ({currentNodeGuid?.Substring(0, 8)}...)");
+
+            Debug.Log($"[NarrativeGraphHub] Runner '{label}' - blackboard tiene {(blackboardData != null ? blackboardData.Count : 0)} entradas | Nodo actual: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
             
             // Solo guardar si hay datos en el blackboard
             if (blackboardData != null && blackboardData.Count > 0)
@@ -286,10 +286,19 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                 if (node != null)
                     currentNodeName = $"{node.GetType().Name}";
             }
-            
-            Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({currentNodeGuid?.Substring(0, 8)}...)");
+
+            Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
         }
-        
+
         Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
+    }
+
+    static string ShortGuid(string guid)
+    {
+        if (string.IsNullOrEmpty(guid))
+            return "null";
+
+        const int previewLength = 8;
+        return guid.Length <= previewLength ? guid : guid.Substring(0, previewLength);
     }
 }
