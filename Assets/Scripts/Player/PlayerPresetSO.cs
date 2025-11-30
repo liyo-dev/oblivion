@@ -57,4 +57,8 @@ public class PlayerPresetSO : ScriptableObject
     [Header("NPCs (persistencia opcional)")]
     [Tooltip("Lista de posiciones persistidas por NPC. El id es el nombre único del GameObject del NPC.")]
     public List<NpcPosEntry> npcPositions = new();
+
+    [Header("Interactuables consumidos (single-use)")]
+    [Tooltip("IDs de Interactable marcados como singleUse que ya han sido consumidos.")]
+    public List<string> consumedInteractableIds = new();
 }
