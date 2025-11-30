@@ -122,6 +122,8 @@ public class MainMenuController : MonoBehaviour
 
     void OnEnable()
     {
+        GameState.Push(GamePhase.MainMenu);
+
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();
         PlayIntro();
@@ -159,6 +161,8 @@ public class MainMenuController : MonoBehaviour
 
     void OnDisable()
     {
+        GameState.Pop(GamePhase.MainMenu);
+
         _introSeq?.Kill(); _introSeq = null;
         if (_armRoutine != null)
         {
