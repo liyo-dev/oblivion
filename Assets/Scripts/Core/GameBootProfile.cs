@@ -88,6 +88,33 @@ public class GameBootProfile : ScriptableObject
         }
     }
 
+    private List<InventoryItemSave> SanitizeInventorySnapshot(IEnumerable<InventoryItemSave> source)
+    {
+        if (source == null) return new List<InventoryItemSave>();
+
+        var merged = new Dictionary<string, int>();
+        foreach (var entry in source)
+        {
+            if (string.IsNullOrWhiteSpace(entry.itemId)) continue;
+            if (entry.count <= 0) continue;
+
+            merged.TryGetValue(entry.itemId, out var current);
+            merged[entry.itemId] = current + entry.count;
+        }
+
+        var snapshot = new List<InventoryItemSave>(merged.Count);
+        foreach (var kvp in merged)
+        {
+            snapshot.Add(new InventoryItemSave
+            {
+                itemId = kvp.Key,
+                count = kvp.Value
+            });
+        }
+
+        return snapshot;
+    }
+
     public void SetRuntimePresetFromSave(PlayerSaveData data)
     {
         if (data == null) return;
@@ -103,7 +130,7 @@ public class GameBootProfile : ScriptableObject
         p.flags             = new List<string>(data.flags      ?? new List<string>());
         p.appearance        = data.appearance != null ? new List<AppearanceEntry>(data.appearance) : new List<AppearanceEntry>();
         p.unlockedWardrobeIds = data.unlockedWardrobeIds != null ? new List<string>(data.unlockedWardrobeIds) : new List<string>();
-        p.inventoryItems    = data.inventory != null ? new List<InventoryItemSave>(data.inventory) : new List<InventoryItemSave>();
+        p.inventoryItems    = SanitizeInventorySnapshot(data.inventory);
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         p.consumedInteractableIds = data.consumedInteractables != null ? new List<string>(data.consumedInteractables) : new List<string>();
@@ -186,7 +213,7 @@ public class GameBootProfile : ScriptableObject
         data.consumedInteractables = activePreset.consumedInteractableIds != null
             ? new List<string>(activePreset.consumedInteractableIds)
             : new List<string>();
-        data.inventory = activePreset.inventoryItems != null ? new List<InventoryItemSave>(activePreset.inventoryItems) : new List<InventoryItemSave>();
+        data.inventory = SanitizeInventorySnapshot(activePreset.inventoryItems);
         data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
         // Guardar slots actuales
         data.leftSpellId = activePreset.leftSpellId;
@@ -403,7 +430,7 @@ public class GameBootProfile : ScriptableObject
         // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
         if (PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true))
         {
-            p.inventoryItems = inventory.GetSaveSnapshot();
+            p.inventoryItems = SanitizeInventorySnapshot(inventory.GetSaveSnapshot());
             syncedSystems.Add($"Inventory({p.inventoryItems?.Count ?? 0})");
         }
         else
