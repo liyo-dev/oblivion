@@ -27,6 +27,10 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     AbilityKey? _pendingAbilityKey;
     private bool _listeningForAnyButton = false;
     private bool _blockingGameplay;
+    private float _blockingStartTime;
+
+    // Tiempo máximo que el popup puede bloquear la jugabilidad antes de liberarla automáticamente.
+    private const float MaxBlockingDuration = 12f;
 
     void Awake()
     {
@@ -170,6 +174,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             holdToSkip.enabled = false; // reiniciar estado
             holdToSkip.enabled = true;
         }
+
+        _blockingStartTime = Time.unscaledTime;
     }
 
     void EnsurePopupRoot()
@@ -206,6 +212,22 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             popupRoot.SetActive(false);
         if (holdToSkip != null)
             holdToSkip.gameObject.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (!_blockingGameplay)
+            return;
+
+        // Liberar automáticamente si el popup deja de estar activo (por ejemplo, destruido/oculto por la escena)
+        // o si excede un tiempo prudente de bloqueo para evitar que GameState quede atascado en Cutscene.
+        bool popupInvisible = popupRoot == null || !popupRoot.activeInHierarchy;
+        bool timedOut = Time.unscaledTime - _blockingStartTime > MaxBlockingDuration;
+        if (popupInvisible || timedOut)
+        {
+            Debug.LogWarning("[AbilityUnlockPopupUI] Liberando bloqueo porque el popup está oculto o excedió el tiempo máximo.");
+            HidePopup();
+        }
     }
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
