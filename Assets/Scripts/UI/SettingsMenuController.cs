@@ -261,6 +261,30 @@ public class SettingsMenuController : MonoBehaviour
         }
 
         var sel = currentGO.GetComponent<Selectable>();
+        if (sel == null) return;
+
+        // Respect explicit navigation links when defined on the current selectable
+        var nav = sel.navigation;
+        if (nav.mode == Navigation.Mode.Explicit)
+        {
+            Selectable explicitTarget = null;
+            if (dir.y > 0.1f)
+                explicitTarget = nav.selectOnUp;
+            else if (dir.y < -0.1f)
+                explicitTarget = nav.selectOnDown;
+            else if (dir.x > 0.1f)
+                explicitTarget = nav.selectOnRight;
+            else if (dir.x < -0.1f)
+                explicitTarget = nav.selectOnLeft;
+
+            if (explicitTarget != null && explicitTarget.IsActive() && explicitTarget.interactable)
+            {
+                es.SetSelectedGameObject(explicitTarget.gameObject);
+                explicitTarget.Select();
+                return;
+            }
+        }
+
         Vector2 curPos = RectTransformUtility.WorldToScreenPoint(null, currentGO.transform.position);
 
         // Choose candidate in direction, prioritizing alignment then distance
