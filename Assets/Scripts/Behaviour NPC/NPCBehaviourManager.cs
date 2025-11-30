@@ -1211,6 +1211,7 @@ namespace Game.NPC
 
                 if (!enable || _isChallenging || sightRadius <= 0f) return;
                 if (_battleFinished) return;
+                if (_battleStarted) return; // Ya estamos en combate, no relanzar el reto
 
                 _ctx.EnsurePlayerReference();
                 if (_ctx.Player == null) return;
