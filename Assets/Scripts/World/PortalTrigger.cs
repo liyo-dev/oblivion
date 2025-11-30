@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Invector.vCharacterController;
 using UnityEngine.AI;
 
@@ -6,6 +7,8 @@ using UnityEngine.AI;
 public class PortalTrigger : MonoBehaviour
 {
     public string targetAnchorId;
+    [Tooltip("(Opcional) Nombre de la escena destino. Si está vacío, el portal teletransporta dentro de la misma escena.")]
+    public string targetSceneName;
     public string requiredFlag;
     public string setFlagOnEnter;
 
@@ -13,6 +16,7 @@ public class PortalTrigger : MonoBehaviour
     public bool disableGravityDuringTeleport = false;
 
     private bool _pendingUse;
+    private bool _waitingForSceneLoad;
 
     void Reset(){ GetComponent<Collider>().isTrigger = true; }
 
@@ -111,9 +115,62 @@ public class PortalTrigger : MonoBehaviour
         };
         TeleportService.OnTeleportEnded += onEnd;
 
-        // 3) Ejecutar teletransporte (mantiene transición por defecto aquí)
-        SpawnManager.TeleportTo(targetAnchorId, true);
+        // 3) Si se pidió cambiar de escena, iniciar la carga y esperar a que termine
+        if (!string.IsNullOrEmpty(targetSceneName) && !string.Equals(SceneManager.GetActiveScene().name, targetSceneName, System.StringComparison.OrdinalIgnoreCase))
+        {
+            if (_waitingForSceneLoad)
+            {
+                Debug.LogWarning("[PortalTrigger] Ya esperando carga de escena. Ignorando trigger adicional.");
+                return;
+            }
+
+            _waitingForSceneLoad = true;
+
+            // Establecer el anchor deseado antes de cargar para persistir en runtimePreset
+            SpawnManager.SetCurrentAnchor(targetAnchorId);
+
+            // Suscribir al evento sceneLoaded para ejecutar el teleport cuando la escena esté activa
+            void OnSceneLoaded(Scene sc, LoadSceneMode mode)
+            {
+                if (!string.Equals(sc.name, targetSceneName, System.StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                _waitingForSceneLoad = false;
+
+                // Asegurar que el anchor actual está establecido
+                SpawnManager.SetCurrentAnchor(targetAnchorId);
+
+                // Esperar un frame para que la nueva escena inicialice sus objetos, luego teletransportar
+                var runner = new GameObject("_PortalTriggerTeleportRunner").AddComponent<PortalTriggerTeleportRunner>();
+                runner.Init(targetAnchorId);
+            }
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // Iniciar carga de la escena (usa SceneTransitionLoader para comportamiento consistente)
+            SceneTransitionLoader.Load(targetSceneName);
+        }
+        else
+        {
+            // Mismo escena: teletransportar inmediatamente
+            SpawnManager.TeleportTo(targetAnchorId, true);
+        }
+
         // NO guardar aquí
+    }
+
+    // Small helper MonoBehaviour to delay one frame then teleport (so scene has chance to init)
+    class PortalTriggerTeleportRunner : MonoBehaviour
+    {
+        string _anchorId;
+        public void Init(string anchorId) { _anchorId = anchorId; DontDestroyOnLoad(gameObject); StartCoroutine(Run()); }
+        System.Collections.IEnumerator Run()
+        {
+            yield return null; // wait a frame
+            SpawnManager.TeleportTo(_anchorId, true);
+            Destroy(gameObject);
+        }
     }
 
     // ---- Helpers de freeze/restore ----
