@@ -1074,6 +1074,45 @@ namespace Game.NPC
             public Vector3 exclamationOffset = new Vector3(0f, 2f, 0f);
             public float exclamationSeconds = 2f;
 
+            [Header("Música y eventos")]
+            [Tooltip("Evento custom para la fase de alerta/persecución. Se emite al detectar al jugador.")]
+            public string alertMusicEvent = "";
+            [Tooltip("ID de batalla para AudioGraphProfile (se usa en BATTLE_START:{id} y BattleWon)")]
+            public string battleMusicId = "";
+            [Tooltip("Evento custom opcional para restaurar/ajustar la música cuando acaba la batalla.")]
+            public string endMusicEvent = "";
+
+            [Header("Battle")]
+            public bool startBattleOnChallengeEnd = true;
+            [Min(1f)] public float battleHealth = 120f;
+            public Damageable healthComponent;
+            public Vector3 healthBarOffset = new(0f, 2.4f, 0f);
+            public GameObject healthBarPrefab;
+            public Canvas healthBarCanvasOverride;
+            [Tooltip("Colores de la barra de vida (saludable / aviso / crítico).")]
+            public Color healthColor = Color.green;
+            public Color warningColor = Color.yellow;
+            public Color criticalColor = Color.red;
+            [Range(0f, 1f)] public float warningThreshold = 0.5f;
+            [Range(0f, 1f)] public float criticalThreshold = 0.25f;
+
+            [Header("Diálogos")]
+            public DialogueAsset dialogueOnChallenge;
+            public DialogueAsset dialogueOnDefeat;
+            public DialogueAsset dialogueAfterBattle;
+
+            [Header("Recompensas")]
+            public RewardEntry[] rewards = Array.Empty<RewardEntry>();
+
+            [Header("Ataques (referencias de animación)")]
+            public string lightAttackStateLeft = "LeftAttack";
+            public string lightAttackStateRight = "RightAttack";
+            public string specialAttackState = "SpecialAttack";
+            [Tooltip("Animator Bool o Trigger para el estado de sprint/correr durante el combate (opcional).")]
+            public string runStateParameter = "IsRunning";
+            [Tooltip("Animator Trigger para esquivar (opcional)")]
+            public string dodgeTrigger = "Dodge";
+
             [Header("Bloqueo de jugador")]
             public bool lockPlayer = true;
             public bool lockOnSight = true;
@@ -1092,12 +1131,25 @@ namespace Game.NPC
             public UnityEvent onPlayerUnlock;
             public StringEvent onDialogueRequest;
 
+            [Header("Battle Events")]
+            public UnityEvent onBattleStarted;
+            public UnityEvent onBattleFinished;
+
             NPCBehaviourManager _ctx;
             RoutineHandle _challengeRoutine;
-            RoutineHandle _turnRoutine;   
-             bool _isChallenging;
-             bool _lockModeApplied;
-             bool _playerLockEventRaised;
+            RoutineHandle _turnRoutine;
+            bool _isChallenging;
+            bool _lockModeApplied;
+            bool _playerLockEventRaised;
+
+            Damageable _resolvedHealth;
+            bool _battleStarted;
+            bool _battleFinished;
+            GameObject _healthBarInstance;
+            NPCBattleHealthBar _healthBar;
+            Vector3 _homePosition;
+            Quaternion _homeRotation;
+            bool _alertMusicRaised;
 
              public void Initialize(NPCBehaviourManager context) => _ctx = context;
              public void OnStart() { }
@@ -1108,6 +1160,15 @@ namespace Game.NPC
                  _lockModeApplied = false;
                  _playerLockEventRaised = false;
                  if (exclamationPrefab) exclamationPrefab.SetActive(false);
+
+                 _homePosition = _ctx.transform.position;
+                 _homeRotation = _ctx.transform.rotation;
+
+                 _resolvedHealth = ResolveHealth();
+                 _battleStarted = false;
+                 _battleFinished = false;
+                 _alertMusicRaised = false;
+                 HideHealthBar();
              }
 
              public void OnDisable()
@@ -1122,11 +1183,13 @@ namespace Game.NPC
                  NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                  ReleasePlayer();
                  if (exclamationPrefab) exclamationPrefab.SetActive(false);
+                 HideHealthBar();
              }
 
              public void Tick()
              {
                 if (!enable || _isChallenging || sightRadius <= 0f) return;
+                if (_battleFinished) return;
 
                 _ctx.EnsurePlayerReference();
                 if (_ctx.Player == null) return;
@@ -1143,11 +1206,26 @@ namespace Game.NPC
                 if (turnPlayerOnSight && _turnRoutine == null && _lockModeApplied)
                     _turnRoutine = _ctx.RunCoroutine(TurnPlayerAfterDelay());
 
+                if (!_battleStarted)
+                    TriggerAlertMusic();
+
                 if (_challengeRoutine == null)
                     _challengeRoutine = _ctx.RunCoroutine(ChallengeFlow());
              }
 
-             public bool HandleInteraction(GameObject interactor) => false;
+             public bool HandleInteraction(GameObject interactor)
+             {
+                if (!enable)
+                    return false;
+
+                if (_battleFinished && dialogueAfterBattle)
+                {
+                    _ctx.PlayDialogue(dialogueAfterBattle);
+                    return true;
+                }
+
+                return false;
+             }
 
              IEnumerator ChallengeFlow()
              {
@@ -1263,16 +1341,7 @@ namespace Game.NPC
                 }
 
                 // Dispara la interacción o fallback
-                if (_ctx.Interactable && _ctx.Player)
-                {
-                    _ctx.Interactable.Interact(_ctx.Player.gameObject);
-                    _ctx.DebugLog("Interactable disparado; esperando cierre de diálogo.");
-                }
-                else if (!string.IsNullOrWhiteSpace(fallbackDialogue))
-                {
-                    onDialogueRequest?.Invoke(fallbackDialogue);
-                    _ctx.DebugLog("FallbackDialogue disparado.");
-                }
+                TriggerChallengeDialogue();
 
                 // Espera a que se cierre diálogo (directamente yield al IEnumerator)
                 yield return _ctx.WaitDialogueToClose();
@@ -1285,6 +1354,9 @@ namespace Game.NPC
 
                 // Libera al jugador tras el reto/diálogo
                 ReleasePlayer();
+
+                if (startBattleOnChallengeEnd && !_battleFinished)
+                    StartBattle();
 
                 _isChallenging = false;
                 _challengeRoutine = null;
@@ -1345,7 +1417,200 @@ namespace Game.NPC
                     _playerLockEventRaised = false;
                 }
             }
-            
+
+            void TriggerAlertMusic()
+            {
+                if (_alertMusicRaised)
+                    return;
+
+                if (string.IsNullOrWhiteSpace(alertMusicEvent))
+                    return;
+
+                DefaultNarrativeSignals.Instance?.RaiseCustom(alertMusicEvent);
+                _alertMusicRaised = true;
+            }
+
+            void TriggerBattleMusic()
+            {
+                if (!string.IsNullOrWhiteSpace(battleMusicId))
+                {
+                    DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleMusicId}");
+                    AudioService.Instance?.BeginBattleById(battleMusicId);
+                }
+            }
+
+            void RestoreBattleMusic()
+            {
+                if (!string.IsNullOrWhiteSpace(endMusicEvent))
+                    DefaultNarrativeSignals.Instance?.RaiseCustom(endMusicEvent);
+
+                if (!string.IsNullOrWhiteSpace(battleMusicId))
+                {
+                    DefaultNarrativeSignals.Instance?.RaiseBattleWon(battleMusicId);
+                    AudioService.Instance?.EndBattleById(battleMusicId);
+                }
+            }
+
+            void TriggerChallengeDialogue()
+            {
+                if (dialogueOnChallenge)
+                {
+                    _ctx.PlayDialogue(dialogueOnChallenge);
+                    return;
+                }
+
+                if (_ctx.Interactable && _ctx.Player)
+                {
+                    _ctx.Interactable.Interact(_ctx.Player.gameObject);
+                    _ctx.DebugLog("Interactable disparado; esperando cierre de diálogo.");
+                }
+                else if (!string.IsNullOrWhiteSpace(fallbackDialogue))
+                {
+                    onDialogueRequest?.Invoke(fallbackDialogue);
+                    _ctx.DebugLog("FallbackDialogue disparado.");
+                }
+            }
+
+            void StartBattle()
+            {
+                if (_battleStarted) return;
+
+                _battleStarted = true;
+                _battleFinished = false;
+
+                _resolvedHealth = ResolveHealth();
+                if (_resolvedHealth != null)
+                {
+                    _resolvedHealth.SetMaxAndCurrent(battleHealth, battleHealth);
+                    _resolvedHealth.OnDamaged -= HandleNpcDamaged;
+                    _resolvedHealth.OnDamaged += HandleNpcDamaged;
+                    _resolvedHealth.OnDied -= HandleNpcDied;
+                    _resolvedHealth.OnDied += HandleNpcDied;
+                }
+
+                ShowHealthBar();
+
+                TriggerBattleMusic();
+                onBattleStarted?.Invoke();
+
+                _ctx.DebugLog("Batalla iniciada.");
+            }
+
+            void HandleNpcDamaged(float amount)
+            {
+                if (_resolvedHealth == null)
+                    return;
+
+                if (_resolvedHealth.Current <= 0f && !_battleFinished)
+                    HandleNpcDied();
+            }
+
+            void HandleNpcDied()
+            {
+                if (_battleFinished)
+                    return;
+
+                _battleFinished = true;
+                _battleStarted = false;
+                RestoreBattleMusic();
+
+                if (dialogueOnDefeat)
+                    _ctx.PlayDialogue(dialogueOnDefeat);
+
+                GrantRewards();
+                ReturnToHome();
+
+                onBattleFinished?.Invoke();
+                _ctx.DebugLog("Batalla finalizada.");
+
+                HideHealthBar();
+                enable = false; // evita repetir combate
+            }
+
+            Damageable ResolveHealth()
+            {
+                if (healthComponent != null)
+                    return healthComponent;
+
+                if (!_ctx.TryGetComponent(out Damageable dmg))
+                    dmg = _ctx.gameObject.AddComponent<Damageable>();
+
+                healthComponent = dmg;
+                return dmg;
+            }
+
+            void ShowHealthBar()
+            {
+                if (!_resolvedHealth || !healthBarPrefab)
+                    return;
+
+                if (_healthBarInstance)
+                    Destroy(_healthBarInstance);
+
+                Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
+                _healthBarInstance = GameObject.Instantiate(healthBarPrefab, parent, false);
+                _healthBar = _healthBarInstance.GetComponent<NPCBattleHealthBar>()
+                             ?? _healthBarInstance.AddComponent<NPCBattleHealthBar>();
+
+                _healthBar.Bind(_resolvedHealth, _ctx.transform);
+                _healthBar.SetOffset(healthBarOffset);
+                _healthBar.SetColors(healthColor, warningColor, criticalColor, warningThreshold, criticalThreshold);
+            }
+
+            void HideHealthBar()
+            {
+                if (_healthBarInstance)
+                {
+                    GameObject.Destroy(_healthBarInstance);
+                    _healthBarInstance = null;
+                    _healthBar = null;
+                }
+            }
+
+            Transform FindCanvas()
+            {
+                if (healthBarCanvasOverride)
+                    return healthBarCanvasOverride.transform;
+
+#if UNITY_2022_3_OR_NEWER
+                var uiCanvas = GameObject.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+#else
+#pragma warning disable 618
+                var uiCanvas = GameObject.FindObjectOfType<Canvas>();
+#pragma warning restore 618
+#endif
+                return uiCanvas ? uiCanvas.transform : null;
+            }
+
+            void GrantRewards()
+            {
+                if (rewards == null || rewards.Length == 0)
+                    return;
+
+                if (!PlayerService.TryGetInventory(out var inventory))
+                {
+                    Debug.LogWarning("[NPC Combat] No se encontró el inventario del jugador para otorgar recompensas.");
+                    return;
+                }
+
+                foreach (var r in rewards)
+                {
+                    if (!r.item || r.amount <= 0) continue;
+                    inventory.Add(r.item, r.amount);
+                }
+            }
+
+            void ReturnToHome()
+            {
+                _ctx.transform.SetPositionAndRotation(_homePosition, _homeRotation);
+                _ctx.SetLastPosition(_homePosition);
+                if (_ctx.Agent && _ctx.Agent.enabled)
+                {
+                    NavMeshAgentUtility.HardStop(_ctx.Agent);
+                    _ctx.Agent.Warp(_homePosition);
+                }
+            }
+
             IEnumerator TurnPlayerAfterDelay()
             {
                 // Espera el retardo, pero aborta si perdemos el lock o el player
@@ -1383,6 +1648,13 @@ namespace Game.NPC
                  player.rotation = target;
                  _turnRoutine = null;
              }
+        }
+
+        [Serializable]
+        public struct RewardEntry
+        {
+            public ItemData item;
+            [Min(1)] public int amount;
         }
 
         #endregion
