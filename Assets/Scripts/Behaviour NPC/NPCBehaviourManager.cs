@@ -333,14 +333,14 @@ namespace Game.NPC
             float waitForOpen = 0f;
             while (!dm.IsOpen && waitForOpen < 2f)
             {
-                waitForOpen += Time.deltaTime;
+                waitForOpen += Time.unscaledDeltaTime;
                 yield return null;
             }
 
             float waitForClose = 0f;
             while (dm.IsOpen && waitForClose < timeout)
             {
-                waitForClose += Time.deltaTime;
+                waitForClose += Time.unscaledDeltaTime;
                 yield return null;
             }
         }
@@ -1397,11 +1397,11 @@ namespace Game.NPC
                 else
                 {
                     _ctx.DebugLog("PlayerActionManager no disponible para aplicar lock.");
-                    // Aún así marcamos el lock para seguir forzando Idle.
-                    _lockModeApplied = true;
+                    _lockModeApplied = false;
                 }
 
-                _ctx.ForcePlayerIdle();
+                if (_lockModeApplied)
+                    _ctx.ForcePlayerIdle();
             }
 
             void CleanupAndRelease(string reason)
