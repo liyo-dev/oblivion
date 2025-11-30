@@ -10,6 +10,8 @@ using UnityEngine.UI;
 /// </summary>
 public class AbilityUnlockPopupUI : MonoBehaviour
 {
+    static AbilityUnlockPopupUI _instance;
+
     [Header("UI")]
     [SerializeField] private GameObject popupRoot;
     [SerializeField] private TextMeshProUGUI abilityTitleText;
@@ -27,6 +29,14 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void Awake()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
         Debug.Log("[AbilityUnlockPopupUI] Awake");
         if (popupRoot != null)
             popupRoot.SetActive(false);
@@ -39,16 +49,14 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
         // Suscribirse lo antes posible para no perder eventos de desbloqueo si la UI
         // todavía no fue activada en la jerarquía cuando se otorga la habilidad.
-        UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
-        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
+        SubscribeEvents();
     }
 
     void OnEnable()
     {
         // Awake ya suscribe, pero mantener OnEnable para asegurar que la suscripción
         // siga activa si el dominio se recarga en modo editor.
-        UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
-        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
+        SubscribeEvents();
 
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
@@ -69,6 +77,14 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
+    }
+
+    void SubscribeEvents()
+    {
+        UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
+        UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
+        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
     }
 
     private void HandleAbilityUnlocked(AbilityId ability)
@@ -134,6 +150,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     {
         Debug.Log("[AbilityUnlockPopupUI] HidePopup");
         _pendingAbility = null;
+        _pendingAbilityKey = null;
         _listeningForAnyButton = false;
         if (popupRoot != null)
             popupRoot.SetActive(false);
