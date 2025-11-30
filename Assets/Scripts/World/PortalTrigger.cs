@@ -150,12 +150,19 @@ public class PortalTrigger : MonoBehaviour
 
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            // Iniciar carga de la escena directamente
-            SceneManager.LoadScene(targetSceneName);
+            // Iniciar carga de la escena con overlay de carga si es posible
+            var overlayScene = !string.IsNullOrEmpty(loadingOverlayScene)
+                ? loadingOverlayScene
+                : (!string.IsNullOrEmpty(SceneTransitionLoader.DefaultOverlayScene)
+                    ? SceneTransitionLoader.DefaultOverlayScene
+                    : "LoadingScreen");
+
+            SceneTransitionLoader.LoadWithOverlay(targetSceneName, overlayScene);
         }
         else
         {
             // Mismo escena: teletransportar inmediatamente
+            SpawnManager.SetCurrentAnchor(targetAnchorId);
             SpawnManager.TeleportTo(targetAnchorId, true);
         }
 
