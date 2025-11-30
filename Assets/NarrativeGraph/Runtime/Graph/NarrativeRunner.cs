@@ -140,6 +140,8 @@ public class NarrativeRunner : MonoBehaviour
         if (outs == null || outs.Count == 0)
         {
             Debug.Log($"[Narrative] '{_current.GetType().Name}' no tiene salidas. Flujo detenido.");
+            // Marcar que no hay nodo actual para evitar re-ejecutar acciones tras cargar partida
+            Blackboard.Set("__currentNodeGuid", string.Empty);
             return;
         }
 
@@ -165,6 +167,7 @@ public class NarrativeRunner : MonoBehaviour
         }
 
         // Si hay múltiples salidas -> lanzar cada rama en paralelo mediante coroutines independientes
+        Blackboard.Set("__currentNodeGuid", string.Empty);
         foreach (var guid in outs)
         {
             if (string.IsNullOrEmpty(guid)) continue;

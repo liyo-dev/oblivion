@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Game.NPC;
 using UnityEngine;
 using UnityEngine.Events;
@@ -17,6 +18,10 @@ public class Interactable : MonoBehaviour
     [Header("Uso")]
     [SerializeField] private bool singleUse = false;
     [SerializeField] private bool initiallyEnabled = true;
+
+    [Header("Persistencia single-use")]
+    [SerializeField] private string persistentIdOverride;
+    [SerializeField] private bool includeSceneInPersistentId = true;
 
     [Header("Abrir diálogo")]
     [SerializeField] private DialogueAsset dialogue;
@@ -42,6 +47,19 @@ public class Interactable : MonoBehaviour
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
         _npcManager = GetComponent<NPCBehaviourManager>();
+    }
+
+    void OnEnable()
+    {
+        GameBootService.OnProfileReady += RestoreSingleUseStateFromPreset;
+
+        if (GameBootService.IsAvailable)
+            RestoreSingleUseStateFromPreset();
+    }
+
+    void OnDisable()
+    {
+        GameBootService.OnProfileReady -= RestoreSingleUseStateFromPreset;
     }
 
     public void SetHintVisible(bool visible)
@@ -220,6 +238,7 @@ public class Interactable : MonoBehaviour
         if (singleUse && !used)
         {
             used = true;
+            MarkConsumedInPreset();
             OnConsumed?.Invoke();
         }
         SetHintVisible(false);
@@ -243,5 +262,57 @@ public class Interactable : MonoBehaviour
     {
         if (_npcManager == manager)
             _npcManager = null;
+    }
+
+    string GetPersistentId()
+    {
+        if (!string.IsNullOrEmpty(persistentIdOverride))
+            return persistentIdOverride;
+
+        var sceneName = includeSceneInPersistentId && gameObject.scene.IsValid()
+            ? gameObject.scene.name
+            : string.Empty;
+
+        return string.IsNullOrEmpty(sceneName)
+            ? gameObject.name
+            : $"{sceneName}:{gameObject.name}";
+    }
+
+    void MarkConsumedInPreset()
+    {
+        if (!GameBootService.IsAvailable || !singleUse)
+            return;
+
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset == null)
+            return;
+
+        var id = GetPersistentId();
+        if (string.IsNullOrEmpty(id))
+            return;
+
+        preset.consumedInteractableIds ??= new List<string>();
+        if (!preset.consumedInteractableIds.Contains(id))
+            preset.consumedInteractableIds.Add(id);
+    }
+
+    void RestoreSingleUseStateFromPreset()
+    {
+        if (!singleUse || used)
+            return;
+
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset == null || preset.consumedInteractableIds == null)
+            return;
+
+        var id = GetPersistentId();
+        if (string.IsNullOrEmpty(id))
+            return;
+
+        if (preset.consumedInteractableIds.Contains(id))
+        {
+            used = true;
+            SetHintVisible(false);
+        }
     }
 }
