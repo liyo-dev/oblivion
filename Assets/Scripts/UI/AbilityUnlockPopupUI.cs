@@ -26,6 +26,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     AbilityId? _pendingAbility;
     AbilityKey? _pendingAbilityKey;
     private bool _listeningForAnyButton = false;
+    private float _previousTimeScale = 1f;
+    private bool _blockingGameplay;
 
     void Awake()
     {
@@ -64,6 +66,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void OnDisable()
     {
+        if (_blockingGameplay)
+            HidePopup();
+
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
 
@@ -107,6 +112,12 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     {
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
 
+        if (!TryMarkAsPendingAndUnique())
+        {
+            HidePopup();
+            return;
+        }
+
         Debug.Log($"[AbilityUnlockPopupUI] ShowPopup: pendingAbility={_pendingAbility}, pendingAbilityKey={_pendingAbilityKey}");
 
         if (_pendingAbility != null)
@@ -138,6 +149,11 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // Empezar a escuchar cualquier botón para poder cerrar el popup.
         _listeningForAnyButton = true;
 
+        _previousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        _blockingGameplay = true;
+        GameState.Push(GamePhase.Cutscene);
+
         if (holdToSkip != null)
         {
             holdToSkip.gameObject.SetActive(true);
@@ -152,6 +168,13 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         _pendingAbility = null;
         _pendingAbilityKey = null;
         _listeningForAnyButton = false;
+        if (_blockingGameplay)
+        {
+            Time.timeScale = _previousTimeScale;
+            _blockingGameplay = false;
+            if (GameState.Is(GamePhase.Cutscene))
+                GameState.Pop(GamePhase.Cutscene);
+        }
         if (popupRoot != null)
             popupRoot.SetActive(false);
         if (holdToSkip != null)
@@ -166,8 +189,41 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (input.Phase != InputActionPhase.Performed)
             return;
 
-        // Cualquier evento de botón o navegación proveniente del GamepadInputReader
-        // es suficiente para cerrar el popup.
-        HidePopup();
+        // Solo el botón "Cancel" (B en control) debe cerrar el popup.
+        if (input.Type == GamepadInputReader.InputEventType.Cancel)
+            HidePopup();
+    }
+
+    private bool TryMarkAsPendingAndUnique()
+    {
+        string flag = BuildFlagKey();
+        if (string.IsNullOrEmpty(flag)) return false;
+
+        var profile = GameBootService.Profile;
+        var preset = profile != null ? profile.GetActivePresetResolved() : null;
+        var flags = preset != null ? preset.flags : null;
+
+        if (flags != null && flags.Contains(flag))
+            return false;
+
+        if (preset != null)
+        {
+            if (preset.flags == null)
+                preset.flags = new List<string>();
+
+            preset.flags.Add(flag);
+            Debug.Log($"[AbilityUnlockPopupUI] Marcando popup mostrado: {flag}");
+        }
+
+        return true;
+    }
+
+    private string BuildFlagKey()
+    {
+        if (_pendingAbility != null)
+            return $"ABILITY_POPUP_{_pendingAbility.Value}";
+        if (_pendingAbilityKey != null)
+            return $"ABILITY_POPUP_KEY_{_pendingAbilityKey.Value}";
+        return null;
     }
 }
