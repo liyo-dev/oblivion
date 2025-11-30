@@ -47,6 +47,8 @@ public class SettingsMenuController : MonoBehaviour
     [Header("Navigation")]
     [Range(0f, 1f)] public float navDeadzone = 0.2f;
     public bool enableManualNavigation = true; // enable fallback navigation polling
+    [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de aceptar una orden de cierre.")]
+    private float cancelInputGracePeriod = 0.25f;
     private Vector2Int _navHeldDir = Vector2Int.zero; // normalized cardinal dir of held input
     private bool _editingSlider;
     private Slider _activeSlider;
@@ -57,6 +59,7 @@ public class SettingsMenuController : MonoBehaviour
     private float _navEventExpiry;
     private bool _submitRequested;
     private bool _cancelRequested;
+    private float _openedAt = -999f;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -375,6 +378,8 @@ public class SettingsMenuController : MonoBehaviour
             root.SetActive(true);
 
         SelectInitial(initialSelection);
+        _cancelRequested = false;
+        _openedAt = Time.unscaledTime;
     }
 
     public void Close()
@@ -454,6 +459,9 @@ public class SettingsMenuController : MonoBehaviour
 
     bool WasCancelPressedThisFrame()
     {
+        if (Time.unscaledTime - _openedAt < cancelInputGracePeriod)
+            return false;
+
         bool cancel = _cancelRequested;
         _cancelRequested = false;
 
