@@ -45,19 +45,8 @@ public class SettingsMenuController : MonoBehaviour
     [SerializeField] private bool autoAddSelectVisuals = true;
 
     [Header("Navigation")]
-    [Range(0f, 1f)] public float navDeadzone = 0.2f;
-    public bool enableManualNavigation = true; // enable fallback navigation polling
     [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de aceptar una orden de cierre.")]
     private float cancelInputGracePeriod = 0.25f;
-    private Vector2Int _navHeldDir = Vector2Int.zero; // normalized cardinal dir of held input
-    private bool _editingSlider;
-    private Slider _activeSlider;
-    private float _sliderAdjustCooldown;
-    private const float SLIDER_REPEAT_DELAY = 0.16f;
-    private Vector2 _navInputEvent;
-    private bool _navFromContinuous;
-    private float _navEventExpiry;
-    private bool _submitRequested;
     private bool _cancelRequested;
     private float _openedAt = -999f;
 
@@ -118,7 +107,6 @@ public class SettingsMenuController : MonoBehaviour
             }
         }
 
-        ConfigureNavigationLinks();
     }
 
     void OnEnable()
@@ -136,235 +124,10 @@ public class SettingsMenuController : MonoBehaviour
 
     void Update()
     {
-        if (!enableManualNavigation) return;
         if (root == null || !root.activeInHierarchy) return;
 
         if (WasCancelPressedThisFrame())
-        {
-            if (_editingSlider)
-                EndSliderEdit();
-            else
-                Close();
-            return;
-        }
-
-        _sliderAdjustCooldown -= Time.unscaledDeltaTime;
-
-        if (!_navFromContinuous && _navInputEvent != Vector2.zero && Time.unscaledTime > _navEventExpiry)
-            _navInputEvent = Vector2.zero;
-
-        // Read input from common sources and move selection accordingly
-        Vector2 navInput = _navInputEvent;
-        if (navInput == Vector2.zero)
-            navInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-
-        if (navInput.magnitude > navDeadzone)
-        {
-            // choose dominant axis (cardinal navigation)
-            Vector2 dir = Mathf.Abs(navInput.x) > Mathf.Abs(navInput.y)
-                ? new Vector2(Mathf.Sign(navInput.x), 0f)
-                : new Vector2(0f, Mathf.Sign(navInput.y));
-
-            var cardinal = new Vector2Int(Mathf.RoundToInt(dir.x), Mathf.RoundToInt(dir.y));
-            if (_editingSlider)
-            {
-                if (cardinal.x != 0 && _sliderAdjustCooldown <= 0f)
-                {
-                    AdjustActiveSlider(cardinal.x);
-                    _sliderAdjustCooldown = SLIDER_REPEAT_DELAY;
-                }
-            }
-            else if (cardinal != Vector2Int.zero && cardinal != _navHeldDir)
-            {
-                _navHeldDir = cardinal;
-                MoveSelection(dir);
-            }
-        }
-        else
-        {
-            _navHeldDir = Vector2Int.zero;
-            if (!_editingSlider)
-                _sliderAdjustCooldown = 0f;
-        }
-
-        // Submit handling (basic)
-        bool submit = _submitRequested;
-        _submitRequested = false;
-
-        if (!submit && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)))
-            submit = true;
-
-        if (submit)
-        {
-            var es = EventSystem.current;
-            var go = es?.currentSelectedGameObject;
-            if (_editingSlider)
-            {
-                EndSliderEdit();
-            }
-            else if (go != null)
-            {
-                var slider = go.GetComponent<UnityEngine.UI.Slider>();
-                if (slider != null)
-                {
-                    BeginSliderEdit(slider);
-                }
-                else
-                {
-                    var btn = go.GetComponent<UnityEngine.UI.Button>();
-                    if (btn != null) btn.onClick.Invoke();
-                    else
-                    {
-                        var tog = go.GetComponent<UnityEngine.UI.Toggle>();
-                        if (tog != null)
-                        {
-                            tog.isOn = !tog.isOn;
-                            tog.onValueChanged?.Invoke(tog.isOn);
-                        }
-                        else
-                        {
-                            // try to execute submit handler
-                            ExecuteEvents.Execute(go, new UnityEngine.EventSystems.BaseEventData(es), UnityEngine.EventSystems.ExecuteEvents.submitHandler);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    void MoveSelection(Vector2 dir)
-    {
-        var es = EventSystem.current;
-        if (es == null || root == null) return;
-
-        if (dir == Vector2.zero) return;
-
-        var dirNorm = dir.normalized;
-
-        var all = root.GetComponentsInChildren<Selectable>(true)
-            .Where(s => s != null && s.IsActive() && s.interactable)
-            .ToArray();
-
-        if (all == null || all.Length == 0) return;
-
-        var currentGO = es.currentSelectedGameObject;
-        // If nothing selected, pick top-most (highest Y)
-        if (currentGO == null)
-        {
-            var top = all.OrderByDescending(s => RectTransformUtility.WorldToScreenPoint(null, s.transform.position).y).FirstOrDefault();
-            if (top != null)
-            {
-                es.SetSelectedGameObject(top.gameObject);
-                top.Select();
-            }
-            return;
-        }
-
-        var sel = currentGO.GetComponent<Selectable>();
-        if (sel == null) return;
-
-        // Respect explicit navigation links when defined on the current selectable
-        var nav = sel.navigation;
-        if (nav.mode == Navigation.Mode.Explicit)
-        {
-            Selectable explicitTarget = null;
-            if (dir.y > 0.1f)
-                explicitTarget = nav.selectOnUp;
-            else if (dir.y < -0.1f)
-                explicitTarget = nav.selectOnDown;
-            else if (dir.x > 0.1f)
-                explicitTarget = nav.selectOnRight;
-            else if (dir.x < -0.1f)
-                explicitTarget = nav.selectOnLeft;
-
-            if (explicitTarget != null && explicitTarget.IsActive() && explicitTarget.interactable)
-            {
-                es.SetSelectedGameObject(explicitTarget.gameObject);
-                explicitTarget.Select();
-                return;
-            }
-        }
-
-        Vector2 curPos = RectTransformUtility.WorldToScreenPoint(null, currentGO.transform.position);
-
-        // Choose candidate in direction, prioritizing alignment then distance
-        Selectable best = null;
-        float bestScore = float.MaxValue;
-        foreach (var c in all)
-        {
-            if (c == sel) continue;
-
-            var p = RectTransformUtility.WorldToScreenPoint(null, c.transform.position);
-            var delta = p - curPos;
-            if (delta.sqrMagnitude < 1e-4f) continue;
-
-            var deltaNorm = delta.normalized;
-            float alignment = Vector2.Dot(deltaNorm, dirNorm);
-            if (alignment <= 0.3f) // discard options too far off desired direction
-                continue;
-
-            float distance = delta.magnitude;
-            float anglePenalty = 1f - alignment; // 0 when perfectly aligned
-            float score = anglePenalty * 1000f + distance; // prefer alignment, then closeness
-
-            if (score < bestScore)
-            {
-                bestScore = score;
-                best = c;
-            }
-        }
-
-        if (best != null)
-        {
-            es.SetSelectedGameObject(best.gameObject);
-            best.Select();
-        }
-    }
-
-    void ConfigureNavigationLinks()
-    {
-        // Alinear la navegación vertical en el bloque de idiomas/audio
-        if (spanishButton && masterVolumeSlider)
-        {
-            var nav = spanishButton.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            nav.selectOnDown = masterVolumeSlider;
-            spanishButton.navigation = nav;
-        }
-
-        if (englishButton && masterVolumeSlider)
-        {
-            var nav = englishButton.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            nav.selectOnDown = masterVolumeSlider;
-            englishButton.navigation = nav;
-        }
-
-        if (masterVolumeSlider)
-        {
-            var nav = masterVolumeSlider.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            nav.selectOnUp = spanishButton ? spanishButton : englishButton;
-            nav.selectOnDown = sfxVolumeSlider;
-            masterVolumeSlider.navigation = nav;
-        }
-
-        if (sfxVolumeSlider)
-        {
-            var nav = sfxVolumeSlider.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            nav.selectOnUp = masterVolumeSlider;
-            nav.selectOnDown = musicVolumeSlider;
-            sfxVolumeSlider.navigation = nav;
-        }
-
-        if (musicVolumeSlider)
-        {
-            var nav = musicVolumeSlider.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            nav.selectOnUp = sfxVolumeSlider;
-            musicVolumeSlider.navigation = nav;
-        }
+            Close();
     }
 
     void OnDestroy()
@@ -498,42 +261,11 @@ public class SettingsMenuController : MonoBehaviour
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        switch (input.Type)
-        {
-            case GamepadInputReader.InputEventType.Navigate:
-                if (input.Phase == InputActionPhase.Canceled)
-                {
-                    _navInputEvent = Vector2.zero;
-                    _navFromContinuous = false;
-                }
-                else
-                {
-                    _navInputEvent = input.Value;
-                    _navFromContinuous = true;
-                }
-                break;
+        if (input.Phase != InputActionPhase.Performed)
+            return;
 
-            case GamepadInputReader.InputEventType.DpadUp:
-            case GamepadInputReader.InputEventType.DpadDown:
-            case GamepadInputReader.InputEventType.DpadLeft:
-            case GamepadInputReader.InputEventType.DpadRight:
-                if (input.Phase == InputActionPhase.Performed)
-                {
-                    _navInputEvent = input.Value;
-                    _navFromContinuous = false;
-                    _navEventExpiry = Time.unscaledTime + 0.1f;
-                }
-                break;
-
-            case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
-                _submitRequested = true;
-                break;
-
-            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
-            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
-                _cancelRequested = true;
-                break;
-        }
+        if (input.Type == GamepadInputReader.InputEventType.Cancel || input.Type == GamepadInputReader.InputEventType.Start)
+            _cancelRequested = true;
     }
 
     GameObject ResolveInitialSelection(GameObject requested)
@@ -549,39 +281,6 @@ public class SettingsMenuController : MonoBehaviour
             : null;
 
         return firstSelectable ? firstSelectable.gameObject : null;
-    }
-
-    void BeginSliderEdit(Slider slider)
-    {
-        if (!slider) return;
-        _editingSlider = true;
-        _activeSlider = slider;
-        _navHeldDir = Vector2Int.zero;
-        _sliderAdjustCooldown = 0f;
-    }
-
-    void EndSliderEdit()
-    {
-        _editingSlider = false;
-        _activeSlider = null;
-        _navHeldDir = Vector2Int.zero;
-        _sliderAdjustCooldown = 0f;
-    }
-
-    void AdjustActiveSlider(int direction)
-    {
-        if (!_editingSlider || _activeSlider == null) return;
-
-        float step = _activeSlider.wholeNumbers
-            ? 1f
-            : Mathf.Max(0.01f, (_activeSlider.maxValue - _activeSlider.minValue) * 0.05f);
-
-        float next = Mathf.Clamp(
-            _activeSlider.value + (direction * step),
-            _activeSlider.minValue,
-            _activeSlider.maxValue);
-
-        _activeSlider.value = next;
     }
 
     void WireBinaryButton(Button btn, UnityEngine.Events.UnityAction action)
