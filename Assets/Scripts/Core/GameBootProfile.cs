@@ -61,6 +61,7 @@ public class GameBootProfile : ScriptableObject
         dst.unlockedWardrobeIds = new List<string>(src.unlockedWardrobeIds ?? new List<string>());
         dst.inventoryItems = new List<InventoryItemSave>(src.inventoryItems ?? new List<InventoryItemSave>());
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
+        dst.consumedInteractableIds = new List<string>(src.consumedInteractableIds ?? new List<string>());
 
         // === NUEVO: copiar sección de abilities (permisos físicos/acciones) ===
         if (src.abilities != null)
@@ -105,6 +106,7 @@ public class GameBootProfile : ScriptableObject
         p.inventoryItems    = data.inventory != null ? new List<InventoryItemSave>(data.inventory) : new List<InventoryItemSave>();
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+        p.consumedInteractableIds = data.consumedInteractables != null ? new List<string>(data.consumedInteractables) : new List<string>();
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
             p.spawnAnchorId = data.lastSpawnAnchorId;
@@ -570,6 +572,7 @@ public class GameBootProfile : ScriptableObject
         p.appearance = new List<AppearanceEntry>();
         p.inventoryItems = new List<InventoryItemSave>();
         p.defeatedBossIds = new List<string>();
+        p.consumedInteractableIds = new List<string>();
         // === NUEVO: resetear abilities ===
         p.abilities = new PlayerAbilities();
     }
