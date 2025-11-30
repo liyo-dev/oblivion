@@ -39,6 +39,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         Debug.Log("[AbilityUnlockPopupUI] Awake");
+
+        EnsurePopupRoot();
         if (popupRoot != null)
             popupRoot.SetActive(false);
 
@@ -58,6 +60,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // Awake ya suscribe, pero mantener OnEnable para asegurar que la suscripción
         // siga activa si el dominio se recarga en modo editor.
         SubscribeEvents();
+
+        EnsurePopupRoot();
 
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
@@ -111,6 +115,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     {
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
 
+        EnsurePopupRoot();
+
         if (popupRoot == null)
         {
             Debug.LogWarning("[AbilityUnlockPopupUI] popupRoot no está asignado, se omite mostrar el popup para evitar bloquear la jugabilidad.");
@@ -163,6 +169,24 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             holdToSkip.gameObject.SetActive(true);
             holdToSkip.enabled = false; // reiniciar estado
             holdToSkip.enabled = true;
+        }
+    }
+
+    void EnsurePopupRoot()
+    {
+        if (popupRoot != null) return;
+
+        // Asignar un contenedor válido para evitar omitir el popup por referencias faltantes
+        var found = GetComponentInChildren<CanvasGroup>(true);
+        if (found != null)
+        {
+            popupRoot = found.gameObject;
+            Debug.LogWarning("[AbilityUnlockPopupUI] popupRoot asignado automáticamente desde CanvasGroup.");
+        }
+        else
+        {
+            popupRoot = gameObject;
+            Debug.LogWarning("[AbilityUnlockPopupUI] popupRoot no estaba asignado, usando el propio GameObject como raíz.");
         }
     }
 
