@@ -166,6 +166,24 @@ public static class SceneTransitionLoader
         // Llegados aquí, la escena destino está activa
         loadingUI?.SetProgress(1f);
 
+        // Seguridad: al volver del menú principal o cargar una partida, asegúrate
+        // de que el menú de pausa no quede activo ni con flags pendientes. Si el
+        // singleton existe, realizar un cierre defensivo; en caso contrario,
+        // forzar timeScale a 1 por si alguna pausa previa lo dejó en 0.
+#if UNITY_2022_3_OR_NEWER
+        var pauseMenu = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
+#else
+        var pauseMenu = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
+#endif
+        if (pauseMenu != null)
+        {
+            pauseMenu.ForceCloseAndReset();
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
+
         // 4) Apagar overlay con fade-out y limpieza
         if (ui != null)
         {
