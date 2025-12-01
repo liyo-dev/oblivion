@@ -1156,6 +1156,16 @@ namespace Game.NPC
             public Transform projectileOrigin;
             [Min(0f)] public float projectileDamage = 10f;
             [Min(0f)] public float projectileSpeed = 12f;
+            
+            [Header("IA de Combate")]
+            [Tooltip("Distancia mínima al jugador durante el combate")]
+            [Min(0f)] public float combatMinDistance = 3f;
+            [Tooltip("Distancia máxima para atacar al jugador")]
+            [Min(0f)] public float combatMaxDistance = 10f;
+            [Tooltip("Tiempo entre ataques (segundos)")]
+            [Min(0.1f)] public float attackCooldown = 2f;
+            [Tooltip("Probabilidad de usar ataque especial (0-1)")]
+            [Range(0f, 1f)] public float specialAttackChance = 0.3f;
 
             // Bloqueo de jugador: se fuerza internamente igual que el sistema de diálogo
             const ActionMode PlayerLockMode = ActionMode.Stunned;
@@ -1182,9 +1192,11 @@ namespace Game.NPC
             NPCBehaviourManager _ctx;
             RoutineHandle _challengeRoutine;
             RoutineHandle _turnRoutine;
+            RoutineHandle _combatRoutine;
             bool _isChallenging;
             bool _lockModeApplied;
             bool _playerLockEventRaised;
+            Behaviour _vThirdPersonInput;
 
             Damageable _resolvedHealth;
             bool _battleStarted;
@@ -1411,8 +1423,17 @@ namespace Game.NPC
                 // Libera al jugador tras el reto/diálogo
                 ReleasePlayer();
 
+                Debug.Log($"[CombatModule] Después de ReleasePlayer - startBattleOnChallengeEnd: {startBattleOnChallengeEnd}, _battleFinished: {_battleFinished}");
+                
                 if (startBattleOnChallengeEnd && !_battleFinished)
+                {
+                    Debug.Log("[CombatModule] Llamando a StartBattle()");
                     StartBattle();
+                }
+                else
+                {
+                    Debug.LogWarning($"[CombatModule] ⚠️ NO se llama a StartBattle - startBattleOnChallengeEnd: {startBattleOnChallengeEnd}, _battleFinished: {_battleFinished}");
+                }
 
                 _isChallenging = false;
                 _challengeRoutine = null;
@@ -1423,16 +1444,61 @@ namespace Game.NPC
                 onPlayerLock?.Invoke();
                 _playerLockEventRaised = true;
 
-                var pam = _ctx.GetActionManager();
-                if (pam != null)
+                // Buscar y deshabilitar vThirdPersonInput
+                if (_vThirdPersonInput == null)
                 {
-                    pam.PushMode(PlayerLockMode);
+                    GameObject playerGo = _ctx.Player ? _ctx.Player.gameObject : null;
+                    if (playerGo == null && PlayerService.TryGetPlayer(out var resolved, allowSceneLookup: true))
+                        playerGo = resolved;
+
+                    if (playerGo != null)
+                    {
+                        Debug.Log($"[CombatModule] Buscando vThirdPersonInput en jugador: {playerGo.name}");
+                        
+                        // Buscar por nombre de tipo usando diferentes variantes
+                        var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp-firstpass", false)
+                                       ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp", false)
+                                       ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
+                                       ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController", false)
+                                       ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput", false);
+                        
+                        Debug.Log($"[CombatModule] Tipo vThirdPersonInput resuelto: {inputType?.FullName ?? "NULL"}");
+                        
+                        if (inputType != null)
+                        {
+                            // Buscar en el objeto y en sus hijos
+                            _vThirdPersonInput = playerGo.GetComponent(inputType) as Behaviour;
+                            if (_vThirdPersonInput == null)
+                            {
+                                _vThirdPersonInput = playerGo.GetComponentInChildren(inputType, true) as Behaviour;
+                                Debug.Log($"[CombatModule] Buscado en hijos, encontrado: {_vThirdPersonInput != null}");
+                            }
+                            else
+                            {
+                                Debug.Log($"[CombatModule] Encontrado en objeto raíz");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[CombatModule] ⚠️ No se pudo resolver el tipo vThirdPersonInput");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CombatModule] ⚠️ No se encontró el GameObject del jugador");
+                    }
+                }
+
+                if (_vThirdPersonInput != null)
+                {
+                    Debug.Log($"[CombatModule] Deshabilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
+                    _vThirdPersonInput.enabled = false;
                     _lockModeApplied = true;
+                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
                 }
                 else
                 {
-                    _ctx.DebugLog("PlayerActionManager no disponible para aplicar lock.");
-                    _lockModeApplied = false;
+                    Debug.LogError("[CombatModule] ❌ No se pudo encontrar vThirdPersonInput para deshabilitar");
                 }
 
                 if (_lockModeApplied)
@@ -1457,16 +1523,24 @@ namespace Game.NPC
 
                 if (!lockPlayer) return;
 
-                var pam = _ctx.GetActionManager();
-                if (_lockModeApplied && pam != null)
+                // Habilitar vThirdPersonInput
+                if (_lockModeApplied && _vThirdPersonInput != null)
                 {
-                    pam.PopMode(PlayerLockMode);
+                    Debug.Log($"[CombatModule] Habilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
+                    
+                    // Resetear el movimiento del jugador antes de rehabilitar
+                    _ctx.ResetPlayerMotion();
+                    
+                    _vThirdPersonInput.enabled = true;
+                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
                     _lockModeApplied = false;
                 }
                 else if (_lockModeApplied)
                 {
+                    Debug.LogWarning("[CombatModule] ⚠️ _lockModeApplied=true pero _vThirdPersonInput es null");
                     _lockModeApplied = false;
                 }
+                
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
 
                 if (_playerLockEventRaised)
@@ -1583,6 +1657,99 @@ namespace Game.NPC
                 onBattleStarted?.Invoke();
 
                 _ctx.DebugLog("Batalla iniciada.");
+                
+                // Iniciar IA de combate
+                if (_combatRoutine == null)
+                    _combatRoutine = _ctx.RunCoroutine(CombatAI());
+            }
+
+            IEnumerator CombatAI()
+            {
+                float attackTimer = 0f;
+                
+                while (_battleStarted && !_battleFinished)
+                {
+                    if (_ctx.Player == null)
+                    {
+                        _ctx.DebugLog("[CombatAI] Jugador perdido, terminando combate");
+                        yield break;
+                    }
+
+                    float distanceToPlayer = Vector3.Distance(_ctx.transform.position, _ctx.Player.position);
+                    
+                    // Mirar hacia el jugador
+                    Vector3 directionToPlayer = (_ctx.Player.position - _ctx.transform.position).normalized;
+                    directionToPlayer.y = 0;
+                    if (directionToPlayer != Vector3.zero)
+                        _ctx.transform.rotation = Quaternion.Slerp(_ctx.transform.rotation, Quaternion.LookRotation(directionToPlayer), Time.deltaTime * 5f);
+
+                    // Moverse para mantener distancia óptima
+                    if (distanceToPlayer > combatMaxDistance)
+                    {
+                        // Acercarse al jugador
+                        if (_ctx.EnsureAgentOnNavMesh(sightRadius))
+                        {
+                            NavMeshAgentUtility.SetDestination(_ctx.Agent, _ctx.Player.position, combatMinDistance);
+                            float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
+                            _ctx.Animator.SetMovementSpeed(speed);
+                        }
+                    }
+                    else if (distanceToPlayer < combatMinDistance)
+                    {
+                        // Alejarse del jugador
+                        Vector3 awayFromPlayer = _ctx.transform.position - _ctx.Player.position;
+                        Vector3 targetPos = _ctx.transform.position + awayFromPlayer.normalized * 2f;
+                        
+                        if (_ctx.EnsureAgentOnNavMesh(sightRadius))
+                        {
+                            NavMeshAgentUtility.SetDestination(_ctx.Agent, targetPos, 0.5f);
+                            float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
+                            _ctx.Animator.SetMovementSpeed(speed);
+                        }
+                    }
+                    else
+                    {
+                        // Distancia buena, detenerse y atacar
+                        NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                        _ctx.Animator.ResetMovement();
+                        
+                        // Atacar si el cooldown terminó
+                        attackTimer -= Time.deltaTime;
+                        if (attackTimer <= 0f && distanceToPlayer <= combatMaxDistance)
+                        {
+                            PerformAttack();
+                            attackTimer = attackCooldown;
+                        }
+                    }
+
+                    yield return null;
+                }
+                
+                _ctx.DebugLog("[CombatAI] Combate terminado");
+                _combatRoutine = null;
+            }
+            
+            void PerformAttack()
+            {
+                // Elegir tipo de ataque
+                string attackState;
+                bool isSpecial = UnityEngine.Random.value < specialAttackChance;
+                
+                if (isSpecial && !string.IsNullOrEmpty(specialAttackState))
+                {
+                    attackState = specialAttackState;
+                }
+                else
+                {
+                    // Alternar entre ataque izquierdo y derecho
+                    attackState = UnityEngine.Random.value > 0.5f ? lightAttackStateLeft : lightAttackStateRight;
+                }
+                
+                if (!string.IsNullOrEmpty(attackState))
+                {
+                    _ctx.Animator.PlayOneShot(attackState);
+                    _ctx.DebugLog($"[CombatAI] Ejecutando ataque: {attackState}");
+                }
             }
 
             void HandleNpcDamaged(float amount)
