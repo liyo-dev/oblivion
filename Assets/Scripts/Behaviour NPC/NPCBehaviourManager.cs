@@ -1230,6 +1230,9 @@ namespace Game.NPC
             bool _lockModeApplied;
             bool _playerLockEventRaised;
             Behaviour _vThirdPersonInput;
+            Vector3 _lockedPlayerPosition;
+            Quaternion _lockedPlayerRotation;
+            bool _hasLockSnapshot;
 
             Damageable _resolvedHealth;
             bool _battleStarted;
@@ -1271,6 +1274,7 @@ namespace Game.NPC
                 _battleFinished = false;
                 _forceHealthVisibleUntilDamage = false;
                 _alertMusicRaised = false;
+                _hasLockSnapshot = false;
                 HideHealthBar();
             }
 
@@ -1534,6 +1538,12 @@ namespace Game.NPC
                 if (_vThirdPersonInput != null)
                 {
                     Debug.Log($"[CombatModule] Deshabilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
+                    if (_ctx.Player != null)
+                    {
+                        _lockedPlayerPosition = _ctx.Player.position;
+                        _lockedPlayerRotation = _ctx.Player.rotation;
+                        _hasLockSnapshot = true;
+                    }
                     _vThirdPersonInput.enabled = false;
                     _lockModeApplied = true;
                     Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
@@ -1569,13 +1579,19 @@ namespace Game.NPC
                 if (_lockModeApplied && _vThirdPersonInput != null)
                 {
                     Debug.Log($"[CombatModule] Habilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
-                    
+
                     // Resetear el movimiento del jugador antes de rehabilitar
                     _ctx.ResetPlayerMotion();
 
                     _vThirdPersonInput.enabled = true;
                     Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
                     _lockModeApplied = false;
+
+                    if (_hasLockSnapshot && _ctx.Player != null)
+                    {
+                        _ctx.Player.SetPositionAndRotation(_lockedPlayerPosition, _lockedPlayerRotation);
+                    }
+                    _hasLockSnapshot = false;
 
                     // Evita que la misma pulsación usada para cerrar el diálogo dispare un salto/rodar
                     var pam = _ctx.GetActionManager();
@@ -1586,6 +1602,7 @@ namespace Game.NPC
                 {
                     Debug.LogWarning("[CombatModule] ⚠️ _lockModeApplied=true pero _vThirdPersonInput es null");
                     _lockModeApplied = false;
+                    _hasLockSnapshot = false;
                 }
                 
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
@@ -1688,6 +1705,18 @@ namespace Game.NPC
             void StartBattle()
             {
                 if (_battleStarted) return;
+
+                _ctx.EnsurePlayerReference();
+                if (_ctx.Player == null)
+                {
+                    Debug.LogWarning("[CombatModule] ⚠️ No se puede iniciar batalla: player no resuelto.");
+                    return;
+                }
+
+                if (_ctx.Agent != null && !_ctx.Agent.enabled)
+                    _ctx.Agent.enabled = true;
+
+                _ctx.EnsureAgentOnNavMesh(sightRadius);
 
                 _battleStarted = true;
                 _battleFinished = false;
@@ -1932,6 +1961,22 @@ namespace Game.NPC
             {
                 if (healthBarCanvasOverride)
                     return healthBarCanvasOverride.transform;
+
+                if (_ctx != null)
+                {
+                    var localCanvases = _ctx.GetComponentsInChildren<Canvas>(true);
+                    foreach (var c in localCanvases)
+                    {
+                        if (c != null && c.isActiveAndEnabled && c.renderMode == RenderMode.ScreenSpaceOverlay)
+                            return c.transform;
+                    }
+
+                    foreach (var c in localCanvases)
+                    {
+                        if (c != null && c.isActiveAndEnabled)
+                            return c.transform;
+                    }
+                }
 
 #if UNITY_2022_3_OR_NEWER
                 var canvases = GameObject.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
