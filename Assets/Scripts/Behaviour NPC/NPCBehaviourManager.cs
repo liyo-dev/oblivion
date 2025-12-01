@@ -318,7 +318,9 @@ namespace Game.NPC
 
             // Intenta limpiar input residual del controlador para evitar que el
             // personaje salga corriendo al devolver el control tras un reto
-            var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
+            var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp-firstpass", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
                              ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController", false)
                              ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput", false);
 
@@ -1570,10 +1572,15 @@ namespace Game.NPC
                     
                     // Resetear el movimiento del jugador antes de rehabilitar
                     _ctx.ResetPlayerMotion();
-                    
+
                     _vThirdPersonInput.enabled = true;
                     Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
                     _lockModeApplied = false;
+
+                    // Evita que la misma pulsación usada para cerrar el diálogo dispare un salto/rodar
+                    var pam = _ctx.GetActionManager();
+                    if (pam != null)
+                        _ctx.RunCoroutine(TemporaryStun(pam, 0.12f));
                 }
                 else if (_lockModeApplied)
                 {
@@ -1588,6 +1595,13 @@ namespace Game.NPC
                     onPlayerUnlock?.Invoke();
                     _playerLockEventRaised = false;
                 }
+            }
+
+            IEnumerator TemporaryStun(PlayerActionManager pam, float seconds)
+            {
+                pam.PushMode(ActionMode.Stunned);
+                yield return new WaitForSeconds(seconds);
+                pam.PopMode(ActionMode.Stunned);
             }
 
             void TriggerAlertMusic()
@@ -1677,6 +1691,10 @@ namespace Game.NPC
 
                 _battleStarted = true;
                 _battleFinished = false;
+
+                // Asegura que la IA de combate esté activa antes de iniciar la lógica
+                if (_combatBrain != null && !_combatBrain.isActiveAndEnabled)
+                    _combatBrain.enabled = true;
 
                 _resolvedHealth = ResolveHealth();
                 if (_resolvedHealth != null)
@@ -1827,6 +1845,7 @@ namespace Game.NPC
                 if (_healthBarRect == null)
                     return;
 
+                _camera ??= _ctx.PlayerCamera ? _ctx.PlayerCamera.GetComponent<Camera>() : null;
                 _camera ??= Camera.main;
                 if (_camera == null)
                     return;
