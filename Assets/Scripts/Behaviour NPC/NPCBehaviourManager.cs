@@ -316,6 +316,25 @@ namespace Game.NPC
             if (_player == null)
                 return;
 
+            // Intenta limpiar input residual del controlador para evitar que el
+            // personaje salga corriendo al devolver el control tras un reto
+            var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput", false);
+
+            if (inputType != null)
+            {
+                var input = _player.GetComponent(inputType) ?? _player.GetComponentInChildren(inputType, true);
+                if (input != null)
+                {
+                    TrySetField(inputType, input, "moveInput", Vector2.zero);
+                    TrySetField(inputType, input, "cameraInput", Vector2.zero);
+                    TrySetField(inputType, input, "sprintHeld", false);
+                    TrySetField(inputType, input, "jumpPressed", false);
+                    TrySetField(inputType, input, "strafePressed", false);
+                }
+            }
+
             // Reflejo defensivo para no depender directamente de Invector en tiempo de compilación
             var controllerType = Type.GetType("Invector.vCharacterController.vThirdPersonController, Invector-3rdPersonController_LITE", false)
                                 ?? Type.GetType("Invector.vCharacterController.vThirdPersonController, Invector-3rdPersonController", false)
@@ -339,6 +358,12 @@ namespace Game.NPC
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
+        }
+
+        static void TrySetField<T>(Type type, object instance, string fieldName, T value)
+        {
+            var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            field?.SetValue(instance, value);
         }
         internal bool IsPlayerInFov(float radius, float fov)
         {
@@ -1436,9 +1461,12 @@ namespace Game.NPC
                 ReleasePlayer();
 
                 Debug.Log($"[CombatModule] Después de ReleasePlayer - startBattleOnChallengeEnd: {startBattleOnChallengeEnd}, _battleFinished: {_battleFinished}");
-                
+
                 if (startBattleOnChallengeEnd && !_battleFinished)
                 {
+                    // Asegura que el NPC abandona el saludo y entra en combate
+                    _battleFinished = false;
+                    _battleStarted = false;
                     Debug.Log("[CombatModule] Llamando a StartBattle()");
                     StartBattle();
                 }
