@@ -1166,6 +1166,12 @@ namespace Game.NPC
             [Min(0.1f)] public float attackCooldown = 2f;
             [Tooltip("Probabilidad de usar ataque especial (0-1)")]
             [Range(0f, 1f)] public float specialAttackChance = 0.3f;
+            [Tooltip("Intervalo de recálculo de ruta durante el combate")]
+            [Min(0.05f)] public float combatRepathInterval = 0.2f;
+            [Tooltip("Distancia que intenta tomar al retroceder")]
+            [Min(0.25f)] public float combatRetreatDistance = 2f;
+            [Tooltip("Velocidad de giro para encarar al jugador durante el combate")]
+            [Min(0.1f)] public float combatTurnSpeed = 6f;
 
             // Bloqueo de jugador: se fuerza internamente igual que el sistema de diálogo
             const ActionMode PlayerLockMode = ActionMode.Stunned;
@@ -1190,9 +1196,9 @@ namespace Game.NPC
             public UnityEvent onBattleFinished;
 
             NPCBehaviourManager _ctx;
+            NPCCombatBrain _combatBrain;
             RoutineHandle _challengeRoutine;
             RoutineHandle _turnRoutine;
-            RoutineHandle _combatRoutine;
             bool _isChallenging;
             bool _lockModeApplied;
             bool _playerLockEventRaised;
@@ -1213,7 +1219,12 @@ namespace Game.NPC
             bool _alertMusicRaised;
             static Sprite _fallbackSprite;
 
-             public void Initialize(NPCBehaviourManager context) => _ctx = context;
+             public void Initialize(NPCBehaviourManager context)
+             {
+                 _ctx = context;
+                 _combatBrain = context.GetComponent<NPCCombatBrain>() ?? context.gameObject.AddComponent<NPCCombatBrain>();
+                 _combatBrain.Initialize(context);
+             }
              public void OnStart() { }
 
              public void OnEnable()
@@ -1244,6 +1255,7 @@ namespace Game.NPC
                     _challengeRoutine = null;
                 }
                 if (_turnRoutine != null) { _ctx.StopCoroutineSafe(_turnRoutine); _turnRoutine = null; } // ← NUEVO
+                _combatBrain?.StopCombat();
                 _ctx.Animator.ResetMovement();
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 ReleasePlayer();
@@ -1657,99 +1669,27 @@ namespace Game.NPC
                 onBattleStarted?.Invoke();
 
                 _ctx.DebugLog("Batalla iniciada.");
-                
-                // Iniciar IA de combate
-                if (_combatRoutine == null)
-                    _combatRoutine = _ctx.RunCoroutine(CombatAI());
+
+                // Iniciar IA de combate delegada
+                _combatBrain?.BeginCombat(BuildCombatSettings());
             }
 
-            IEnumerator CombatAI()
+            NPCCombatBrain.Settings BuildCombatSettings()
             {
-                float attackTimer = 0f;
-                
-                while (_battleStarted && !_battleFinished)
+                return new NPCCombatBrain.Settings
                 {
-                    if (_ctx.Player == null)
-                    {
-                        _ctx.DebugLog("[CombatAI] Jugador perdido, terminando combate");
-                        yield break;
-                    }
-
-                    float distanceToPlayer = Vector3.Distance(_ctx.transform.position, _ctx.Player.position);
-                    
-                    // Mirar hacia el jugador
-                    Vector3 directionToPlayer = (_ctx.Player.position - _ctx.transform.position).normalized;
-                    directionToPlayer.y = 0;
-                    if (directionToPlayer != Vector3.zero)
-                        _ctx.transform.rotation = Quaternion.Slerp(_ctx.transform.rotation, Quaternion.LookRotation(directionToPlayer), Time.deltaTime * 5f);
-
-                    // Moverse para mantener distancia óptima
-                    if (distanceToPlayer > combatMaxDistance)
-                    {
-                        // Acercarse al jugador
-                        if (_ctx.EnsureAgentOnNavMesh(sightRadius))
-                        {
-                            NavMeshAgentUtility.SetDestination(_ctx.Agent, _ctx.Player.position, combatMinDistance);
-                            float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
-                            _ctx.Animator.SetMovementSpeed(speed);
-                        }
-                    }
-                    else if (distanceToPlayer < combatMinDistance)
-                    {
-                        // Alejarse del jugador
-                        Vector3 awayFromPlayer = _ctx.transform.position - _ctx.Player.position;
-                        Vector3 targetPos = _ctx.transform.position + awayFromPlayer.normalized * 2f;
-                        
-                        if (_ctx.EnsureAgentOnNavMesh(sightRadius))
-                        {
-                            NavMeshAgentUtility.SetDestination(_ctx.Agent, targetPos, 0.5f);
-                            float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
-                            _ctx.Animator.SetMovementSpeed(speed);
-                        }
-                    }
-                    else
-                    {
-                        // Distancia buena, detenerse y atacar
-                        NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
-                        _ctx.Animator.ResetMovement();
-                        
-                        // Atacar si el cooldown terminó
-                        attackTimer -= Time.deltaTime;
-                        if (attackTimer <= 0f && distanceToPlayer <= combatMaxDistance)
-                        {
-                            PerformAttack();
-                            attackTimer = attackCooldown;
-                        }
-                    }
-
-                    yield return null;
-                }
-                
-                _ctx.DebugLog("[CombatAI] Combate terminado");
-                _combatRoutine = null;
-            }
-            
-            void PerformAttack()
-            {
-                // Elegir tipo de ataque
-                string attackState;
-                bool isSpecial = UnityEngine.Random.value < specialAttackChance;
-                
-                if (isSpecial && !string.IsNullOrEmpty(specialAttackState))
-                {
-                    attackState = specialAttackState;
-                }
-                else
-                {
-                    // Alternar entre ataque izquierdo y derecho
-                    attackState = UnityEngine.Random.value > 0.5f ? lightAttackStateLeft : lightAttackStateRight;
-                }
-                
-                if (!string.IsNullOrEmpty(attackState))
-                {
-                    _ctx.Animator.PlayOneShot(attackState);
-                    _ctx.DebugLog($"[CombatAI] Ejecutando ataque: {attackState}");
-                }
+                    sightRadius = sightRadius,
+                    minDistance = combatMinDistance,
+                    maxDistance = combatMaxDistance,
+                    attackCooldown = attackCooldown,
+                    specialAttackChance = specialAttackChance,
+                    repathInterval = combatRepathInterval,
+                    retreatDistance = combatRetreatDistance,
+                    turnSpeed = combatTurnSpeed,
+                    lightAttackStateLeft = lightAttackStateLeft,
+                    lightAttackStateRight = lightAttackStateRight,
+                    specialAttackState = specialAttackState,
+                };
             }
 
             void HandleNpcDamaged(float amount)
@@ -1771,6 +1711,7 @@ namespace Game.NPC
 
                 _battleFinished = true;
                 _battleStarted = false;
+                _combatBrain?.StopCombat();
                 RestoreBattleMusic();
 
                 if (dialogueOnDefeat)
@@ -1804,6 +1745,8 @@ namespace Game.NPC
                 HideHealthBar();
 
                 Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
+                if (!parent)
+                    parent = BuildRuntimeCanvas();
                 if (!parent)
                     return;
 
@@ -1951,6 +1894,20 @@ namespace Game.NPC
 #pragma warning restore 618
 #endif
                 return uiCanvas ? uiCanvas.transform : null;
+            }
+
+            Transform BuildRuntimeCanvas()
+            {
+                var go = new GameObject("NPC Health Runtime Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+                var canvas = go.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 250;
+
+                var scaler = go.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+                return go.transform;
             }
 
             void GrantRewards()
