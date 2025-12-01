@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -33,6 +34,8 @@ public class DialogueManager : MonoBehaviour
     [Header("Bloqueo de Inputs")]
     [Tooltip("Referencias a InputActionReference que se deshabilitan mientras el diálogo esté abierto (p.ej. movimiento, ataque, etc.).")]
     [SerializeField] private InputActionReference[] inputActionsToDisable;
+    [Tooltip("Pequeño retardo antes de re-habilitar los inputs de gameplay tras cerrar el diálogo (evita saltos involuntarios)")]
+    [SerializeField, Min(0f)] private float inputRestoreDelay = 0.12f;
 
     [Header("Opcional")]
     [SerializeField] private bool pauseGameWhileOpen;
@@ -69,6 +72,7 @@ public class DialogueManager : MonoBehaviour
 
     System.Action _onYes;
     System.Action _onNo;
+    Coroutine _restoreGameplayRoutine;
 
     // Typewriter estado
     Coroutine _typeRoutine;
@@ -267,7 +271,7 @@ public class DialogueManager : MonoBehaviour
         ActivateDialogueMode(false);
 
         // Restaurar gameplay
-        SetGameplayEnabled(true);
+        RestoreGameplayAfterDelay();
         if (submitHint != null)
             submitHint.SetActive(false);
 
@@ -282,7 +286,7 @@ public class DialogueManager : MonoBehaviour
         // NUEVO: Desactivar modo DialogueActive
         ActivateDialogueMode(false);
         
-        SetGameplayEnabled(true);
+        RestoreGameplayAfterDelay();
         if (group != null)
         {
             group.alpha = 0f;
@@ -314,7 +318,7 @@ public class DialogueManager : MonoBehaviour
         if (restoreGameplay && !IsOpen)
         {
             ActivateDialogueMode(false);
-            SetGameplayEnabled(true);
+            RestoreGameplayAfterDelay();
         }
     }
 
@@ -555,6 +559,11 @@ public class DialogueManager : MonoBehaviour
 
     private void SetGameplayEnabled(bool enable)
     {
+        if (!enable && _restoreGameplayRoutine != null)
+        {
+            StopCoroutine(_restoreGameplayRoutine);
+            _restoreGameplayRoutine = null;
+        }
         if (inputActionsToDisable != null)
         {
             foreach (var actionRef in inputActionsToDisable)
@@ -570,6 +579,30 @@ public class DialogueManager : MonoBehaviour
         }
         if (enable && pauseGameWhileOpen)
             Time.timeScale = 1f;
+    }
+
+    private void RestoreGameplayAfterDelay()
+    {
+        if (_restoreGameplayRoutine != null)
+        {
+            StopCoroutine(_restoreGameplayRoutine);
+            _restoreGameplayRoutine = null;
+        }
+
+        if (inputRestoreDelay <= 0f)
+        {
+            SetGameplayEnabled(true);
+            return;
+        }
+
+        _restoreGameplayRoutine = StartCoroutine(RestoreGameplayRoutine());
+    }
+
+    private IEnumerator RestoreGameplayRoutine()
+    {
+        yield return new WaitForSecondsRealtime(inputRestoreDelay);
+        SetGameplayEnabled(true);
+        _restoreGameplayRoutine = null;
     }
 
     /// <summary>

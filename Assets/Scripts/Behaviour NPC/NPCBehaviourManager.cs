@@ -1600,7 +1600,7 @@ namespace Game.NPC
             IEnumerator TemporaryStun(PlayerActionManager pam, float seconds)
             {
                 pam.PushMode(ActionMode.Stunned);
-                yield return new WaitForSeconds(seconds);
+                yield return new WaitForSecondsRealtime(seconds);
                 pam.PopMode(ActionMode.Stunned);
             }
 
@@ -1934,13 +1934,27 @@ namespace Game.NPC
                     return healthBarCanvasOverride.transform;
 
 #if UNITY_2022_3_OR_NEWER
-                var uiCanvas = GameObject.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+                var canvases = GameObject.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 #else
 #pragma warning disable 618
-                var uiCanvas = GameObject.FindObjectOfType<Canvas>();
+                var canvases = GameObject.FindObjectsOfType<Canvas>();
 #pragma warning restore 618
 #endif
-                return uiCanvas ? uiCanvas.transform : null;
+
+                // Prioriza un canvas activo en pantalla (HUD) para no colgar la barra en menús pausados/inactivos
+                foreach (var c in canvases)
+                {
+                    if (c != null && c.isActiveAndEnabled && c.renderMode == RenderMode.ScreenSpaceOverlay)
+                        return c.transform;
+                }
+
+                foreach (var c in canvases)
+                {
+                    if (c != null && c.isActiveAndEnabled)
+                        return c.transform;
+                }
+
+                return null;
             }
 
             Transform BuildRuntimeCanvas()
