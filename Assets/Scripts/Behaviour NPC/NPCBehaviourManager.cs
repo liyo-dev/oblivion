@@ -318,7 +318,9 @@ namespace Game.NPC
 
             // Intenta limpiar input residual del controlador para evitar que el
             // personaje salga corriendo al devolver el control tras un reto
-            var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
+            var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp-firstpass", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp", false)
+                             ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController_LITE", false)
                              ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController", false)
                              ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput", false);
 
@@ -1827,6 +1829,7 @@ namespace Game.NPC
                 if (_healthBarRect == null)
                     return;
 
+                _camera ??= _ctx.PlayerCamera ? _ctx.PlayerCamera.GetComponent<Camera>() : null;
                 _camera ??= Camera.main;
                 if (_camera == null)
                     return;
