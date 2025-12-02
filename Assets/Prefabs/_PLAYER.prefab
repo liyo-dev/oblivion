@@ -12016,6 +12016,7 @@ GameObject:
   - component: {fileID: 8599661016629616348}
   - component: {fileID: 1297097001791454143}
   - component: {fileID: 4974162908857341787}
+  - component: {fileID: 3543219876543210987}
   - component: {fileID: 2207912406606354293}
   - component: {fileID: 2009112871374720472}
   - component: {fileID: 4979874908035186640}
@@ -12437,6 +12438,30 @@ MonoBehaviour:
     disableInputActions: []
     forceUpperIdle: 1
     upperBodyWeight: 0
+  debugLogs: 0
+--- !u!114 &3543219876543210987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e399751418aa4999856cb509533b3523, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  climbableLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  checkDistance: 0.6
+  checkRadius: 0.25
+  wallOffset: 0.35
+  climbSpeed: 2.5
+  stickToWallSpeed: 10
+  reattachDelay: 0.35
+  climbUpState: ClimbUp_RM_NoWeapon
+  climbDownState: ClimbDown_RM_NoWeapon
   debugLogs: 0
 --- !u!114 &1297097001791454143
 MonoBehaviour:

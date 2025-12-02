@@ -187,6 +187,18 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Flying].Add(PlayerAbility.Jump);
         _blockedByMode[ActionMode.Flying].Add(PlayerAbility.Roll);
 
+        // GARANTIZAR bloqueos básicos para Climbing (independiente del Inspector)
+        if (!_blockedByMode.ContainsKey(ActionMode.Climbing))
+            _blockedByMode[ActionMode.Climbing] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Sprint);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Magic);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Carry);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Interact);
+
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
     }
 
@@ -231,6 +243,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                 if (!_allowFly)
                 {
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Fly deshabilitado por preset");
+                    return false;
+                }
+                break;
+            case PlayerAbility.Climb:
+                if (!_allowClimb)
+                {
+                    if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Climb deshabilitado por preset");
                     return false;
                 }
                 break;
@@ -377,4 +396,5 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool CanInteract() => CanUse(PlayerAbility.Interact);
     public bool CanSwim() => _allowSwim;
     public bool CanFly() => CanUse(PlayerAbility.Fly);
+    public bool CanClimb() => CanUse(PlayerAbility.Climb);
 }
