@@ -15,6 +15,8 @@ public class PlayerShieldController : MonoBehaviour
     [SerializeField] private string defendAnimation = "Defend_NoWeapon";
     [SerializeField] private string defendHitAnimation = "DefendHit_NoWeapon";
     [SerializeField] private string locomotionAnimation = "Free Locomotion";
+    [SerializeField] private int upperBodyLayer = 1;
+    [SerializeField] private float upperBodyTransitionDuration = 0.1f;
 
     [Header("Colisiones a bloquear")]
     [SerializeField] private string[] blockLayerNames = { "Enemy", "ProjectileEnemy" };
@@ -26,13 +28,14 @@ public class PlayerShieldController : MonoBehaviour
     private readonly HashSet<int> _blockedLayers = new();
     private bool _isDefending;
     private int _playerLayer;
-    private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
+    private float _originalUpperBodyWeight;
 
     void Awake()
     {
         _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
         _animator = GetComponent<Animator>();
         _playerLayer = gameObject.layer;
+        CacheUpperBodyWeight();
         CacheBlockedLayers();
     }
 
@@ -101,9 +104,9 @@ public class PlayerShieldController : MonoBehaviour
             return;
 
         _isDefending = true;
-        ForceStopLocomotion();
         ActivateShield();
-        PlayAnimation(defendAnimation);
+        SetUpperBodyWeight(1f);
+        PlayUpperBodyAnimation(defendAnimation);
     }
 
     private void StopDefending()
@@ -113,6 +116,7 @@ public class PlayerShieldController : MonoBehaviour
 
         _isDefending = false;
         DeactivateShield();
+        ResetUpperBodyWeight();
         PlayAnimation(locomotionAnimation);
     }
 
@@ -154,10 +158,39 @@ public class PlayerShieldController : MonoBehaviour
         _animator.Play(animationName);
     }
 
-    private void ForceStopLocomotion()
+    private void PlayUpperBodyAnimation(string animationName)
     {
-        if (_animator == null) return;
-        _animator.SetFloat(InputMagnitudeHash, 0f);
+        if (_animator == null || string.IsNullOrEmpty(animationName)) return;
+
+        if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
+            _animator.CrossFade(animationName, upperBodyTransitionDuration, upperBodyLayer);
+        else
+            _animator.Play(animationName);
+    }
+
+    private void CacheUpperBodyWeight()
+    {
+        _originalUpperBodyWeight = 0f;
+
+        if (_animator == null)
+            return;
+
+        if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
+            _originalUpperBodyWeight = _animator.GetLayerWeight(upperBodyLayer);
+    }
+
+    private void SetUpperBodyWeight(float weight)
+    {
+        if (_animator == null)
+            return;
+
+        if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
+            _animator.SetLayerWeight(upperBodyLayer, weight);
+    }
+
+    private void ResetUpperBodyWeight()
+    {
+        SetUpperBodyWeight(_originalUpperBodyWeight);
     }
 
     private void CacheBlockedLayers()
