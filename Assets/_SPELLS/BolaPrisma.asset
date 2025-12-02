@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Bola Prisma
   kind: 0
   element: 2
-  prefab: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
+  prefab: {fileID: 100008, guid: 232bdd92f4fb5f642bb0d7a40d53380f, type: 3}
   castDelaySeconds: 0.5
   chargeTime: 0
   chargeStartScale: 0.1
@@ -28,9 +28,6 @@ MonoBehaviour:
   damage: 10
   aoeRadius: 0
   knockbackForce: 0
-  hitLayers:
-    serializedVersion: 2
-    m_Bits: 2177
   destroyOnHit: 1
   forwardOffset: 0.35
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
