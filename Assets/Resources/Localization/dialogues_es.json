@@ -25,6 +25,10 @@
             "value": "Guerrera China"
         },
         {
+            "key": "CHAR_LEONARDO",
+            "value": "Leonardo"
+        },
+        {
             "key": "CHAR_MANUEL",
             "value": "Manuel"
         },
@@ -273,6 +277,22 @@
             "value": "Tráeme una flor de loto del lago y hablaremos de entrenamiento."
         },
         {
+            "key": "DLG_LEONARDO_01",
+            "value": "¿Quieres que te cuente cómo funcionan los menús?"
+        },
+        {
+            "key": "DLG_LEONARDO_02",
+            "value": "Para abrir el menú de Pausa hazlo con el botón START."
+        },
+        {
+            "key": "DLG_LEONARDO_03",
+            "value": "Para abrir el menú de misiones pulsa dos veces la flecha hacia arriba del DPAD."
+        },
+        {
+            "key": "DLG_LEONARDO_04",
+            "value": "Para abrir el panel de inventario pulsa la flecha hacia abajo del DPAD."
+        },
+        {
             "key": "DLG_LETTER_INTRO_01",
             "value": "Will ven a verme cuando despiertes."
         },
@@ -331,6 +351,14 @@
         {
             "key": "DLG_PIRATE_02",
             "value": "Me lo quitó un caridas..."
+        },
+        {
+            "key": "DLG_PIRATE_03",
+            "value": "Te he subestimado grumete."
+        },
+        {
+            "key": "DLG_PIRATE_04",
+            "value": "Continúa así y serás un gran mago."
         },
         {
             "key": "DLG_ROBERTO_01",

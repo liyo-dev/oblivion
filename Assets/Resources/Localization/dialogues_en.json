@@ -25,6 +25,10 @@
             "value": "Warrior"
         },
         {
+            "key": "CHAR_LEONARDO",
+            "value": "Leonardo"
+        },
+        {
             "key": "CHAR_MANUEL",
             "value": "Manuel"
         },
@@ -273,6 +277,22 @@
             "value": "Bring me a lotus flower from the lake and we'll speak of training."
         },
         {
+            "key": "DLG_LEONARDO_01",
+            "value": "[EN] ¿Quieres que te cuente cómo funcionan los menús?"
+        },
+        {
+            "key": "DLG_LEONARDO_02",
+            "value": "[EN] Para abrir el menú de Pausa hazlo con el botón START."
+        },
+        {
+            "key": "DLG_LEONARDO_03",
+            "value": "[EN] Para abrir el menú de misiones pulsa dos veces la flecha hacia arriba del DPAD."
+        },
+        {
+            "key": "DLG_LEONARDO_04",
+            "value": "[EN] Para abrir el panel de inventario pulsa la flecha hacia abajo del DPAD."
+        },
+        {
             "key": "DLG_LETTER_INTRO_01",
             "value": "[EN] Will, la amenaza del demonio ha despertado la magia de tu interior."
         },
@@ -331,6 +351,14 @@
         {
             "key": "DLG_PIRATE_02",
             "value": "A sharktopus took it from me..."
+        },
+        {
+            "key": "DLG_PIRATE_03",
+            "value": "[EN] Te he subestimado grumete."
+        },
+        {
+            "key": "DLG_PIRATE_04",
+            "value": "[EN] Continúa así y serás un gran mago."
         },
         {
             "key": "DLG_ROBERTO_01",

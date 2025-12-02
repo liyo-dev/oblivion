@@ -229,8 +229,6 @@ public class PlayerHealthSystem : MonoBehaviour
         OnDamageReceived?.Invoke(damageAmount);
         UpdateUI();
         
-        Debug.Log($"[PlayerHealth] Jugador recibió {damageAmount} daño. Vida: {_currentHp}/{_maxHp}");
-        
         return true;
     }
     
@@ -627,7 +625,7 @@ public class PlayerHealthSystem : MonoBehaviour
         if (CrossFadeResolved(animationName, 0.05f))
         {
             int layer = _stateLayer.ContainsKey(animationName) ? _stateLayer[animationName] : 0;
-            Debug.Log($"[PlayerHealthSystem] Reproduciendo animación (CrossFade): {animationName} [layer {layer}]");
+            
             return;
         }
 

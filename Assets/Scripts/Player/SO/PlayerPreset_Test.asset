@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
   spawnAnchorId: TownFromWoods
   level: 1
-  maxHP: 20
-  currentHP: 10
+  maxHP: 1000
+  currentHP: 1000
   maxMP: 100
-  currentMP: 25
+  currentMP: 100
   unlockedAbilities: 01000000
   unlockedSpells: 030000000100000002000000
   leftSpellId: 1
@@ -36,3 +36,4 @@ MonoBehaviour:
   defeatedBossIds: []
   narrativeBlackboards: []
   npcPositions: []
+  consumedInteractableIds: []

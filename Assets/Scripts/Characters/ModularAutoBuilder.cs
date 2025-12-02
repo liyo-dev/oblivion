@@ -81,20 +81,13 @@ public class ModularAutoBuilder : MonoBehaviour
     }
     
     void RegisterActivePartsWithoutModifying()
-    {
-        // SOLO registra qué está activo, NO modifica nada
-        Debug.Log("[ModularAutoBuilder] Registrando partes activas sin modificar...");
-        
+    {   
         foreach (var kvp in parts)
         {
-            Debug.Log($"[ModularAutoBuilder] Revisando categoría {kvp.Key} con {kvp.Value.Count} partes");
-            
             foreach (var go in kvp.Value)
             {
                 bool isSelf = go.activeSelf;
                 bool isHierarchy = go.activeInHierarchy;
-                
-                Debug.Log($"[ModularAutoBuilder]   - {go.name}: activeSelf={isSelf}, activeInHierarchy={isHierarchy}");
                 
                 if (isSelf || isHierarchy)
                 {
@@ -103,21 +96,16 @@ public class ModularAutoBuilder : MonoBehaviour
                     if (index >= 0 && !idx.ContainsKey(kvp.Key))
                     {
                         idx[kvp.Key] = index;
-                        Debug.Log($"[ModularAutoBuilder] ✓ Registrado {kvp.Key}: {go.name} (índice {index})");
                     }
                 }
             }
         }
-        
-        Debug.Log($"[ModularAutoBuilder] Total registradas: {idx.Count} partes activas");
     }
     
     void DetectAndPreserveActiveParts()
     {
         // Primero, detecta qué partes están activas en el prefab
         var activePartsDetected = new Dictionary<PartCategory, GameObject>();
-        
-        Debug.Log("[ModularAutoBuilder] Detectando partes activas...");
         
         foreach (var kvp in parts)
         {
@@ -129,7 +117,6 @@ public class ModularAutoBuilder : MonoBehaviour
                     if (!activePartsDetected.ContainsKey(kvp.Key))
                     {
                         activePartsDetected[kvp.Key] = go;
-                        Debug.Log($"[ModularAutoBuilder] Detectado {kvp.Key}: {go.name} (activeSelf={go.activeSelf}, activeInHierarchy={go.activeInHierarchy})");
                     }
                 }
             }
@@ -196,7 +183,6 @@ public class ModularAutoBuilder : MonoBehaviour
             bool hasRenderer = go.GetComponent<Renderer>() != null;
             if (!hasRenderer)
             {
-                Debug.Log($"[ModularAutoBuilder.CacheAll] SKIP '{go.name}' (categoría {maybe}) - sin Renderer directo");
                 continue;
             }
             
