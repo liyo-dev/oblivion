@@ -47,6 +47,17 @@ public class PlayerClimbingController : MonoBehaviour
 
     private const float MinInputToAnimate = 0.1f;
 
+    void OnValidate()
+    {
+        // Si no se configuró explícitamente, usa automáticamente la capa "Climb"
+        if (climbableLayers == 0)
+        {
+            int climbLayer = LayerMask.NameToLayer("Climb");
+            if (climbLayer >= 0)
+                climbableLayers = 1 << climbLayer;
+        }
+    }
+
     void Awake()
     {
         _animator = GetComponent<Animator>();
@@ -55,6 +66,14 @@ public class PlayerClimbingController : MonoBehaviour
         _capsule = GetComponent<CapsuleCollider>();
         _controller = GetComponent<vThirdPersonController>() ?? GetComponentInParent<vThirdPersonController>();
         _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
+
+        // Refuerzo en runtime por si el prefab se quedó sin la capa asignada
+        if (climbableLayers == 0)
+        {
+            int climbLayer = LayerMask.NameToLayer("Climb");
+            if (climbLayer >= 0)
+                climbableLayers = 1 << climbLayer;
+        }
     }
 
     void OnEnable()
