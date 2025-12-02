@@ -7,15 +7,6 @@ using UnityEngine.AI;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using Game.NPC.Common;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.Events;
-using UnityEngine.UI;
-using Game.NPC.Common;
 
 namespace Game.NPC
 {
@@ -1358,14 +1349,23 @@ namespace Game.NPC
             public GameObject victoryFXPrefab;
             [Min(0f)] public float victoryFXDelay = 0.2f;
             [Min(0.2f)] public float victoryFocusSeconds = 1.0f;
+            [Min(0f)] public float victoryExtraSeconds = 0.25f;
             [Tooltip("Animación de muerte del NPC")]
             public string npcDeathAnimation = "Die02_NoWeapon";
+            [Tooltip("Tiempo que mantiene la pose tras morir antes de continuar la secuencia.")]
+            [Min(0f)] public float deathPoseHoldSeconds = 0.35f;
             [Tooltip("Animación de victoria del jugador")]
             public string playerVictoryAnimation = "Dance_NoWeapon";
+            [Tooltip("Cámara opcional a usar para la secuencia de victoria del jugador. Si está vacía, buscará un hijo en el player.")]
+            public GameObject playerVictoryCamera;
+            [Tooltip("Nombre del hijo que se buscará en el jugador para usar como cámara de victoria si no hay referencia directa.")]
+            public string playerVictoryCameraChildName = "VictoryCamera";
             [Tooltip("Layer Unity para combate (Enemy)")]
             public int enemyUnityLayer = 0;
             [Tooltip("Layer Unity post-derrota (Interactable)")]
             public int interactableUnityLayer = 0;
+            [Tooltip("Si está activo, reproducirá el diálogo de derrota tras la batalla si existe.")]
+            public bool useDialogueAfterBattle = true;
             [Tooltip("Diálogo repetible tras derrota")]
             // Usamos dialogueAfterBattle ya declarado en la sección de Diálogos
 
@@ -1488,6 +1488,28 @@ namespace Game.NPC
                     for (int i = 0; i < t.childCount; i++)
                         stack.Push(t.GetChild(i));
                 }
+                return null;
+            }
+
+            static Transform FindChildByName(Transform root, string name)
+            {
+                if (root == null || string.IsNullOrWhiteSpace(name))
+                    return null;
+
+                string target = name.ToLowerInvariant();
+                var stack = new System.Collections.Generic.Stack<Transform>();
+                stack.Push(root);
+                while (stack.Count > 0)
+                {
+                    var t = stack.Pop();
+                    string n = t.name.ToLowerInvariant();
+                    if (n == target || n.Contains(target))
+                        return t;
+
+                    for (int i = 0; i < t.childCount; i++)
+                        stack.Push(t.GetChild(i));
+                }
+
                 return null;
             }
 
@@ -2163,6 +2185,8 @@ namespace Game.NPC
             {
                 if (_battleFinished)
                     return;
+                // Impacto de cámara y slow-mo justo en el golpe letal
+                CameraImpactOnKill();
                 StartDefeatSequence();
             }
 
@@ -2180,15 +2204,53 @@ namespace Game.NPC
 
             IEnumerator DefeatFlow()
             {
-                // Reproducir animación de muerte o explosión
+                // Reproducir animación de muerte o explosión y aplicar feedback
                 if (!explodeOnDefeat && persistAfterDefeat && !string.IsNullOrEmpty(npcDeathAnimation))
                 {
-                    _ctx.Animator.PlayOneShot(npcDeathAnimation);
+                    // Detener movimiento y preparar animator para muerte
+                    NavMeshAgentUtility.HardStop(_ctx.Agent);
+                    _ctx.Animator.ResetMovement();
+                    _ctx.Animator.SetBattleMode(false);
+
+                    // Desactivar temporalmente el NPCSimpleAnimator para evitar que vuelva a locomotion
+                    var simpleAnim = _ctx.GetComponent<NPCSimpleAnimator>();
+                    bool reenableSimple = false;
+                    if (simpleAnim && simpleAnim.enabled) { simpleAnim.enabled = false; reenableSimple = true; }
+
+                    // Limpiar overrides y forzar muerte con Animator.Play (hash) y fallback CrossFade
+                    _ctx.Animator.ClearInteractOverride();
+                    var unityAnim = _ctx.GetComponent<UnityEngine.Animator>();
+                    if (unityAnim != null)
+                    {
+                        string shortName = npcDeathAnimation;
+                        string fullPath = "Base Layer." + npcDeathAnimation;
+                        int hashShort = UnityEngine.Animator.StringToHash(shortName);
+                        int hashFull = UnityEngine.Animator.StringToHash(fullPath);
+                        try { int layers = unityAnim.layerCount; for (int i = 1; i < layers; i++) unityAnim.SetLayerWeight(i, 0f); } catch { }
+                        bool played = false;
+                        try { if (unityAnim.HasState(0, hashFull)) { unityAnim.Play(hashFull, 0, 0f); played = true; } } catch { }
+                        if (!played) { try { if (unityAnim.HasState(0, hashShort)) { unityAnim.Play(hashShort, 0, 0f); played = true; } } catch { } }
+                        if (!played) { try { if (unityAnim.HasState(0, hashFull)) { unityAnim.CrossFadeInFixedTime(hashFull, 0.1f, 0, 0f); played = true; } } catch { } }
+                        if (!played) { try { if (unityAnim.HasState(0, hashShort)) { unityAnim.CrossFadeInFixedTime(hashShort, 0.1f, 0, 0f); played = true; } } catch { } }
+                        if (!played)
+                        {
+                            try { unityAnim.Play(fullPath, 0, 0f); played = true; } catch { }
+                            if (!played) { try { unityAnim.Play(shortName, 0, 0f); played = true; } catch { } }
+                            if (!played) { try { unityAnim.CrossFadeInFixedTime(fullPath, 0.1f, 0, 0f); played = true; } catch { } }
+                            if (!played) { try { unityAnim.CrossFadeInFixedTime(shortName, 0.1f, 0, 0f); played = true; } catch { } }
+                        }
+                        try { unityAnim.Update(0f); } catch { }
+                    }
+
+                    // Slow-mo sincronizado con la animación de muerte y mantener pose
+                    yield return DeathSlowmoRoutine(unityAnim, npcDeathAnimation);
+                    yield return new WaitForSeconds(deathPoseHoldSeconds);
+
+                    if (reenableSimple && simpleAnim) simpleAnim.enabled = true;
                 }
                 else if (explodeOnDefeat && defeatExplosionPrefab)
                 {
                     GameObject.Instantiate(defeatExplosionPrefab, _ctx.transform.position, Quaternion.identity);
-                    // No desactivar el NPC: mantenerlo visible tras la derrota
                 }
 
                 // Recompensas y música
@@ -2196,37 +2258,115 @@ namespace Game.NPC
                 RestoreBattleMusic();
                 HideHealthBar();
 
-                // Animación de victoria del jugador y FX
+                // Animación de victoria del jugador y FX (sin cambio de cámara)
                 if (_ctx.Player && !string.IsNullOrEmpty(playerVictoryAnimation))
                 {
-                    var playerAnim = _ctx.Player.GetComponent<Animator>();
+                    var playerAnim = _ctx.Player.GetComponent<UnityEngine.Animator>();
                     if (playerAnim)
                     {
                         Vector3 toNpc = (_ctx.transform.position - _ctx.Player.position); toNpc.y = 0f;
                         if (toNpc.sqrMagnitude > 0.001f)
                             _ctx.Player.rotation = Quaternion.LookRotation(toNpc.normalized, Vector3.up);
-                        playerAnim.CrossFadeInFixedTime(playerVictoryAnimation, 0.15f, 0, 0f);
+                        // Reproducir victoria y mantener 2s, luego volver a idle
+                        playerAnim.CrossFadeInFixedTime(playerVictoryAnimation, 0.12f, 0, 0f);
+                        if (victoryFXPrefab)
+                        {
+                            yield return new WaitForSeconds(victoryFXDelay);
+                            GameObject.Instantiate(victoryFXPrefab, _ctx.Player.position + Vector3.up * 1f, Quaternion.identity);
+                        }
+                        yield return new WaitForSeconds(2.0f);
+                        // Volver a locomotion (Free Locomotion)
+                        var locomotionState = "Free Locomotion";
+                        try
+                        {
+                            int locoHash = UnityEngine.Animator.StringToHash(locomotionState);
+                            if (playerAnim.HasState(0, locoHash))
+                                playerAnim.CrossFadeInFixedTime(locoHash, 0.12f, 0, 0f);
+                            else
+                                playerAnim.CrossFadeInFixedTime(locomotionState, 0.12f, 0, 0f);
+                        }
+                        catch { }
+
+                        // Rehabilitar control del jugador inmediatamente tras la victoria
+                        ReleasePlayer();
                     }
-                    // Foco de cámara hacia el jugador durante la celebración
-                    FocusCameraOnPlayer(victoryFocusSeconds);
-                    if (victoryFXPrefab)
-                    {
-                        yield return new WaitForSeconds(victoryFXDelay);
-                        GameObject.Instantiate(victoryFXPrefab, _ctx.Player.position + Vector3.up * 1f, Quaternion.identity);
-                    }
-                    yield return new WaitForSeconds(victoryFocusSeconds);
                 }
 
-                if (dialogueOnDefeat)
+                if (useDialogueAfterBattle && dialogueOnDefeat)
                     _ctx.PlayDialogue(dialogueOnDefeat);
 
                 hasBeenDefeated = true;
                 _ctx.gameObject.layer = interactableUnityLayer;
                 enable = false;
-                ReturnToHome();
+                if (useDialogueAfterBattle && dialogueOnDefeat)
+                    yield return _ctx.WaitDialogueToClose();
+                ReleasePlayer();
+
+                // Caminar de vuelta a casa
+                _ctx.Animator.SetBattleMode(false);
+                if (_ctx.Agent && _ctx.Agent.enabled)
+                {
+                    if (_ctx.EnsureAgentOnNavMesh(2f))
+                    {
+                        NavMeshAgentUtility.SetDestination(_ctx.Agent, _homePosition, 0.1f);
+                        while (_ctx.Agent.pathPending || _ctx.Agent.remainingDistance > _ctx.Agent.stoppingDistance + 0.05f)
+                        {
+                            float speed = NavMeshAgentUtility.ComputeSpeedFactor(_ctx.Agent);
+                            _ctx.Animator.SetMovementSpeed(speed);
+                            yield return null;
+                        }
+                        NavMeshAgentUtility.HardStop(_ctx.Agent);
+                        _ctx.Animator.ResetMovement();
+                        _ctx.transform.rotation = _homeRotation; // no teletransporte
+                    }
+                }
                 onBattleFinished?.Invoke();
                 _ctx.DebugLog("Batalla finalizada.");
                 _defeatSequenceRunning = false;
+            }
+
+            IEnumerator DeathSlowmoRoutine(UnityEngine.Animator unityAnim, string deathAnimation)
+            {
+                // Slow-mo más marcado al derrotar al NPC
+                float wait = 0.75f;
+                yield return new WaitForSecondsRealtime(wait);
+            }
+
+            void CameraImpactOnKill()
+            {
+                // Pequeño slow-mo y sacudida de cámara al golpe letal
+                _ctx.RunCoroutine(KillImpactRoutine());
+            }
+
+            IEnumerator KillImpactRoutine()
+            {
+                // Slowmo más fuerte usando timeScale
+                float originalTimeScale = Time.timeScale;
+                float originalFixedDelta = Time.fixedDeltaTime;
+                Time.timeScale = 0.2f;
+                Time.fixedDeltaTime = originalFixedDelta * Time.timeScale;
+
+                // Shake sobre la cámara del jugador si existe
+                Transform cam = _ctx.PlayerCamera;
+                Vector3 basePos = cam ? cam.localPosition : Vector3.zero;
+                float duration = 0.6f;
+                float t = 0f;
+                while (t < duration)
+                {
+                    t += Time.unscaledDeltaTime;
+                    if (cam)
+                    {
+                        float strength = Mathf.Lerp(0.25f, 0f, t / duration);
+                        cam.localPosition = basePos + new Vector3(
+                            UnityEngine.Random.Range(-strength, strength),
+                            UnityEngine.Random.Range(-strength, strength),
+                            0f);
+                    }
+                    yield return null;
+                }
+                if (cam) cam.localPosition = basePos;
+                Time.timeScale = originalTimeScale;
+                Time.fixedDeltaTime = originalFixedDelta;
             }
 
             void TryDisableDestroyOnDeath(object health)
@@ -2500,16 +2640,23 @@ namespace Game.NPC
              }
         }
 
-        [Serializable]
-        public struct RewardEntry
-        {
-            public ItemData item;
-            [Min(1)] public int amount;
-        }
-
         #endregion
-
-        [Serializable]
-        public class StringEvent : UnityEvent<string> { }
     }
+
+    /// <summary>
+    /// Entrada de recompensa para otorgar ítems al jugador tras derrotar un NPC.
+    /// </summary>
+    [Serializable]
+    public class RewardEntry
+    {
+        public ItemData item;
+        [Min(1)] public int amount = 1;
+    }
+
+    /// <summary>
+    /// Evento de Unity que recibe un string como parámetro.
+    /// </summary>
+    [Serializable]
+    public class StringEvent : UnityEvent<string> { }
 }
+
