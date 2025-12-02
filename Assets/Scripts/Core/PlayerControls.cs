@@ -235,6 +235,24 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""LT"",
+                    ""type"": ""Button"",
+                    ""id"": ""b4d42e57-993a-45e9-b2fb-0fe435d1e386"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RT"",
+                    ""type"": ""Button"",
+                    ""id"": ""7a229ca3-f22d-450a-88b7-8670e728f9d8"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -411,6 +429,28 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""DPadRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8d59c1cb-7c22-4246-a261-d56fe89d7542"",
+                    ""path"": ""<Gamepad>/leftTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LT"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6f0b52e9-c326-4046-828a-55bffae8d241"",
+                    ""path"": ""<Gamepad>/rightTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RT"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -953,6 +993,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_GamePlay_DPadDown = m_GamePlay.FindAction("DPadDown", throwIfNotFound: true);
         m_GamePlay_DPadLeft = m_GamePlay.FindAction("DPadLeft", throwIfNotFound: true);
         m_GamePlay_DPadRight = m_GamePlay.FindAction("DPadRight", throwIfNotFound: true);
+        m_GamePlay_LT = m_GamePlay.FindAction("LT", throwIfNotFound: true);
+        m_GamePlay_RT = m_GamePlay.FindAction("RT", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1062,6 +1104,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_GamePlay_DPadDown;
     private readonly InputAction m_GamePlay_DPadLeft;
     private readonly InputAction m_GamePlay_DPadRight;
+    private readonly InputAction m_GamePlay_LT;
+    private readonly InputAction m_GamePlay_RT;
     /// <summary>
     /// Provides access to input actions defined in input action map "GamePlay".
     /// </summary>
@@ -1138,6 +1182,14 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @DPadRight => m_Wrapper.m_GamePlay_DPadRight;
         /// <summary>
+        /// Provides access to the underlying input action "GamePlay/LT".
+        /// </summary>
+        public InputAction @LT => m_Wrapper.m_GamePlay_LT;
+        /// <summary>
+        /// Provides access to the underlying input action "GamePlay/RT".
+        /// </summary>
+        public InputAction @RT => m_Wrapper.m_GamePlay_RT;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_GamePlay; }
@@ -1211,6 +1263,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @DPadRight.started += instance.OnDPadRight;
             @DPadRight.performed += instance.OnDPadRight;
             @DPadRight.canceled += instance.OnDPadRight;
+            @LT.started += instance.OnLT;
+            @LT.performed += instance.OnLT;
+            @LT.canceled += instance.OnLT;
+            @RT.started += instance.OnRT;
+            @RT.performed += instance.OnRT;
+            @RT.canceled += instance.OnRT;
         }
 
         /// <summary>
@@ -1270,6 +1328,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @DPadRight.started -= instance.OnDPadRight;
             @DPadRight.performed -= instance.OnDPadRight;
             @DPadRight.canceled -= instance.OnDPadRight;
+            @LT.started -= instance.OnLT;
+            @LT.performed -= instance.OnLT;
+            @LT.canceled -= instance.OnLT;
+            @RT.started -= instance.OnRT;
+            @RT.performed -= instance.OnRT;
+            @RT.canceled -= instance.OnRT;
         }
 
         /// <summary>
@@ -1617,6 +1681,20 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnDPadRight(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LT" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLT(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RT" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRT(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
