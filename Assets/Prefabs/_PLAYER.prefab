@@ -12160,6 +12160,7 @@ GameObject:
   - component: {fileID: 2867862484367358980}
   - component: {fileID: 7239899565305807384}
   - component: {fileID: 6478806357405352346}
+  - component: {fileID: 7151600841813711728}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -12758,6 +12759,27 @@ MonoBehaviour:
   trailSpeedThreshold: 1
   boostVfxPrefab: {fileID: 78255121319495919, guid: a8f00f828d57e9d45a9e38e078e82cdf, type: 3}
   landingVfxPrefab: {fileID: 0}
+--- !u!114 &7151600841813711728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 773bab0ad22a9ab42a09c66d5b0d9c10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerShieldController
+  shieldPrefab: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+  shieldAnchor: {fileID: 0}
+  shieldOffset: {x: 0, y: 0, z: 0}
+  triggerThreshold: 0.5
+  defendAnimation: Defend_NoWeapon
+  defendHitAnimation: DefendHit_NoWeapon
+  blockLayerNames:
+  - Enemy
+  - ProjectileEnemy
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

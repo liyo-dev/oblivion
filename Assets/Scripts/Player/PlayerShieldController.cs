@@ -8,7 +8,7 @@ public class PlayerShieldController : MonoBehaviour
     [Header("Escudo")]
     [SerializeField] private GameObject shieldPrefab;
     [SerializeField] private Transform shieldAnchor;
-    [SerializeField] private Vector3 shieldOffset = new(0f, 0.9f, 0.6f);
+    [SerializeField] private Vector3 shieldOffset = Vector3.zero;
     [SerializeField, Range(0f, 1f)] private float triggerThreshold = 0.5f;
 
     [Header("Animaciones")]
@@ -122,8 +122,8 @@ public class PlayerShieldController : MonoBehaviour
                 return;
             }
 
-            Transform anchor = shieldAnchor ? shieldAnchor : transform;
-            _shieldInstance = Instantiate(shieldPrefab, anchor);
+            Transform parent = transform;
+            _shieldInstance = Instantiate(shieldPrefab, parent);
             _shieldInstance.transform.localPosition = shieldOffset;
             _shieldInstance.transform.localRotation = Quaternion.identity;
 
@@ -184,9 +184,7 @@ public class PlayerShieldController : MonoBehaviour
             collider.isTrigger = true;
         }
 
-        var rb = shield.GetComponent<Rigidbody>() ?? shield.AddComponent<Rigidbody>();
-        rb.isKinematic = true;
-        rb.useGravity = false;
+        // No se requiere Rigidbody para el escudo
 
         var detector = shield.GetComponent<ShieldHitDetector>() ?? shield.AddComponent<ShieldHitDetector>();
         detector.Initialize(this, _blockedLayers);
