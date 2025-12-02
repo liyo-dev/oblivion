@@ -7,6 +7,15 @@ using UnityEngine.AI;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using Game.NPC.Common;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.Events;
+using UnityEngine.UI;
+using Game.NPC.Common;
 
 namespace Game.NPC
 {
@@ -1199,7 +1208,8 @@ namespace Game.NPC
             public bool startBattleOnChallengeEnd = true;
             [Min(1f)] public float battleHealth = 120f;
             public Vector3 healthBarOffset = new(0f, 2.4f, 0f);
-            public GameObject healthBarPrefab;
+            public GameObject healthBarPrefab; // GO raíz (Canvas + barra)
+            public Image healthBarFillImage;   // Referencia directa a la Image (Fill) hija
             [Tooltip("Colores de la barra de vida (saludable / aviso / crítico).")]
             public Color healthColor = Color.green;
             public Color warningColor = Color.yellow;
@@ -1314,7 +1324,6 @@ namespace Game.NPC
             bool _battleStarted;
             bool _battleFinished;
             bool _forceHealthVisibleUntilDamage;
-            GameObject _healthBarInstance;
             RectTransform _healthBarRect;
             Image _healthBarFill;
             CanvasGroup _healthBarCanvasGroup;
@@ -1323,7 +1332,7 @@ namespace Game.NPC
             Vector3 _homePosition;
             Quaternion _homeRotation;
             bool _alertMusicRaised;
-            static Sprite _fallbackSprite;
+            // Eliminado fallback sprite: ya no se genera barra runtime
             float _damageReactTimer;
             Vector3 _lastPlayerPos;
             [HideInInspector] public bool usePredictiveAim = true;
@@ -1431,7 +1440,7 @@ namespace Game.NPC
                 NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
                 ReleasePlayer();
                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
-                HideHealthBar();
+                     HideHealthBar();
              }
              void LogSlotConfigWarnings()
              {
@@ -2227,27 +2236,20 @@ namespace Game.NPC
 
             void ShowHealthBar()
             {
-                if (!_resolvedHealth || !healthBarPrefab)
+                if (!_resolvedHealth || !healthBarPrefab || !healthBarFillImage)
                     return;
 
-                if (_healthBarInstance == null)
-                {
-                    Transform parent = FindCanvas();
-                    if (!parent)
-                        parent = BuildRuntimeCanvas();
-                    if (!parent)
-                        return;
+                _forceHealthVisibleUntilDamage = true;
 
-                    _healthBarInstance = GameObject.Instantiate(healthBarPrefab, parent, false);
-                }
-
-                _healthBarRect = _healthBarInstance.GetComponent<RectTransform>();
-                _healthBarFill = FindFillImage(_healthBarInstance);
-                _healthBarCanvasGroup = _healthBarInstance.GetComponent<CanvasGroup>();
+                _healthBarRect = healthBarPrefab.GetComponent<RectTransform>();
+                _healthBarFill = healthBarFillImage; // Asignación directa desde el inspector
+                _healthBarCanvasGroup = healthBarPrefab.GetComponent<CanvasGroup>();
                 if (!_healthBarCanvasGroup)
-                    _healthBarCanvasGroup = _healthBarInstance.AddComponent<CanvasGroup>();
+                    _healthBarCanvasGroup = healthBarPrefab.AddComponent<CanvasGroup>();
+                if (healthBarPrefab && _battleStarted && !_battleFinished && !healthBarPrefab.activeSelf)
+                    healthBarPrefab.SetActive(true);
 
-                _healthBarInstance.SetActive(true);
+                healthBarPrefab.SetActive(true);
 
                 if (_healthBarFill)
                     _healthBarFill.fillAmount = 0f;
@@ -2259,11 +2261,8 @@ namespace Game.NPC
 
             void HideHealthBar()
             {
-                if (_healthBarInstance)
-                {
-                    GameObject.Destroy(_healthBarInstance);
-                    _healthBarInstance = null;
-                }
+                if (healthBarPrefab)
+                    healthBarPrefab.SetActive(false);
                 _healthBarRect = null;
                 _healthBarFill = null;
                 _healthBarCanvasGroup = null;
@@ -2311,88 +2310,22 @@ namespace Game.NPC
                 _healthBarFill.fillAmount = to;
                 _healthBarFill.color = GetColorForRatio(to);
                 // Ocultar si está llena y la opción lo indica
-                if (_healthBarCanvasGroup && hideHealthBarWhenFull)
-                    _healthBarCanvasGroup.alpha = to >= 0.999f ? 0f : 1f;
+                if (_healthBarCanvasGroup)
+                {
+                    if (_forceHealthVisibleUntilDamage)
+                        _healthBarCanvasGroup.alpha = 1f;
+                    else if (hideHealthBarWhenFull)
+                        _healthBarCanvasGroup.alpha = to >= 0.999f ? 0f : 1f;
+                }
             }
 
             void UpdateHealthBarVisual()
             {
-                if (_healthBarRect == null)
-                    return;
-
-                _camera ??= _ctx.PlayerCamera ? _ctx.PlayerCamera.GetComponent<Camera>() : null;
-                _camera ??= Camera.main;
-                if (_camera == null)
-                    return;
-
-                Vector3 targetPos = _ctx.transform.position + healthBarOffset;
-                Vector3 screenPos = _camera.WorldToScreenPoint(targetPos);
-                if (screenPos.z < 0f)
-                    return;
-
-                _healthBarRect.position = Vector3.Lerp(_healthBarRect.position, screenPos, Time.unscaledDeltaTime * 12f);
+                // No re-posicionar en runtime: el prefab ya está colocado donde corresponde
+                return;
             }
 
-            GameObject BuildRuntimeHealthBar(Transform parent)
-            {
-                var root = new GameObject("NPC Health Bar", typeof(RectTransform), typeof(CanvasGroup));
-                root.transform.SetParent(parent, false);
-
-                var rect = root.GetComponent<RectTransform>();
-                rect.sizeDelta = new Vector2(120f, 18f);
-
-                var bg = new GameObject("Background", typeof(RectTransform), typeof(Image));
-                bg.transform.SetParent(root.transform, false);
-                var bgRect = bg.GetComponent<RectTransform>();
-                bgRect.anchorMin = Vector2.zero;
-                bgRect.anchorMax = Vector2.one;
-                bgRect.offsetMin = Vector2.zero;
-                bgRect.offsetMax = Vector2.zero;
-
-                var bgImage = bg.GetComponent<Image>();
-                bgImage.sprite = GetFallbackSprite();
-                bgImage.type = Image.Type.Simple;
-                bgImage.color = new Color(0f, 0f, 0f, 0.65f);
-
-                var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-                fill.transform.SetParent(bg.transform, false);
-                var fillRect = fill.GetComponent<RectTransform>();
-                fillRect.anchorMin = Vector2.zero;
-                fillRect.anchorMax = Vector2.one;
-                fillRect.offsetMin = new Vector2(1f, 1f);
-                fillRect.offsetMax = new Vector2(-1f, -1f);
-
-                var fillImage = fill.GetComponent<Image>();
-                fillImage.sprite = GetFallbackSprite();
-                fillImage.type = Image.Type.Filled;
-                fillImage.fillMethod = Image.FillMethod.Horizontal;
-                fillImage.color = healthColor;
-
-                return root;
-            }
-
-            static Sprite GetFallbackSprite()
-            {
-                if (_fallbackSprite != null)
-                    return _fallbackSprite;
-
-                var tex = Texture2D.whiteTexture;
-                _fallbackSprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                _fallbackSprite.name = "NPCHealth_FallbackSprite";
-                return _fallbackSprite;
-            }
-
-            Image FindFillImage(GameObject root)
-            {
-                var images = root.GetComponentsInChildren<Image>(true);
-                foreach (var img in images)
-                {
-                    if (img.gameObject != root && (img.type == Image.Type.Filled || img.fillMethod == Image.FillMethod.Horizontal))
-                        return img;
-                }
-
-                return root.GetComponentInChildren<Image>(true);
-            }
+            // Eliminado: FindFillImage ya no es necesario (se asigna por inspector)
 
             Color GetColorForRatio(float ratio)
             {
@@ -2403,41 +2336,7 @@ namespace Game.NPC
                 return healthColor;
             }
 
-            Transform FindCanvas()
-            {
-#if UNITY_2022_3_OR_NEWER
-                var canvases = GameObject.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-#else
-#pragma warning disable 618
-                var canvases = GameObject.FindObjectsOfType<Canvas>();
-#pragma warning restore 618
-#endif
-                foreach (var c in canvases)
-                {
-                    if (c != null && c.isActiveAndEnabled && c.renderMode == RenderMode.ScreenSpaceOverlay)
-                        return c.transform;
-                }
-                foreach (var c in canvases)
-                {
-                    if (c != null && c.isActiveAndEnabled)
-                        return c.transform;
-                }
-                return null;
-            }
-
-            Transform BuildRuntimeCanvas()
-            {
-                var go = new GameObject("NPC Health Runtime Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-                var canvas = go.GetComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = 250;
-
-                var scaler = go.GetComponent<CanvasScaler>();
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-                return go.transform;
-            }
+            // Eliminados métodos FindCanvas / BuildRuntimeCanvas (no usados con referencia directa de prefab)
 
             void GrantRewards()
             {
