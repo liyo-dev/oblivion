@@ -90,7 +90,8 @@ public enum ActionMode
     Inventory,
     Stunned,
     Swimming,
-    Flying
+    Flying,
+    Climbing
 }
 
 /// <summary>Habilidades básicas que puede usar el jugador.</summary>
@@ -105,7 +106,8 @@ public enum PlayerAbility
     Interact,
     Carry,
     Aim,
-    Fly
+    Fly,
+    Climb
 }
 
 // Interactable / Session
