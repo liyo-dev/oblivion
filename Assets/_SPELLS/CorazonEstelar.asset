@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "Coraz\xF3n Estelar"
   kind: 1
   element: 3
-  prefab: {fileID: 100012, guid: 517d26ab6aa4e1d4082a18f6d6d73814, type: 3}
+  prefab: {fileID: 100002, guid: 0b6e1ebc5f3b9a641854a0be50cef7f0, type: 3}
   castDelaySeconds: 0
   chargeTime: 0.5
   chargeStartScale: 1
