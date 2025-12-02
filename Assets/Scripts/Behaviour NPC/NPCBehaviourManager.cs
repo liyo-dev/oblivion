@@ -125,11 +125,10 @@ namespace Game.NPC
                         try
                         {
                             h.RunningCoroutine = StartCoroutine(h.Enumerator);
-                            Debug.Log($"[NPCBehaviourManager] Rutina arrancada desde OnEnable: {h.Enumerator}");
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            Debug.LogWarning($"[NPCBehaviourManager] No se pudo arrancar rutina en OnEnable: {ex.Message}");
+                            // Swallow start errors silently as requested (no debug)
                         }
                     }
                     _pendingRoutines.RemoveAt(i);
@@ -234,7 +233,6 @@ namespace Game.NPC
             {
                 var h = new RoutineHandle(routine, null);
                 _pendingRoutines.Add(h);
-                Debug.Log($"[NPCBehaviourManager] Rutina encolada: {routine}");
                 return h;
             }
         }
@@ -262,8 +260,8 @@ namespace Game.NPC
 
         internal void DebugLog(string message)
         {
-            if (!logDebug) return;
-            Debug.Log($"[NPCBehaviourManager:{name}] {message}", this);
+            // Debug logs disabled on request
+            return;
         }
 
         // Permite aplicar la última posición después de una carga cuando el valor se reinyecta tras Start().
@@ -1202,7 +1200,6 @@ namespace Game.NPC
             [Min(1f)] public float battleHealth = 120f;
             public Vector3 healthBarOffset = new(0f, 2.4f, 0f);
             public GameObject healthBarPrefab;
-            public Canvas healthBarCanvasOverride;
             [Tooltip("Colores de la barra de vida (saludable / aviso / crítico).")]
             public Color healthColor = Color.green;
             public Color warningColor = Color.yellow;
@@ -1436,20 +1433,9 @@ namespace Game.NPC
                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
                 HideHealthBar();
              }
-            void LogSlotConfigWarnings()
-            {
-                // Prefab checks
-                if (!leftProjectilePrefab) Debug.LogWarning("[CombatModule] Slot LEFT sin prefab asignado (usará fallback si se llama)", _ctx);
-                if (!rightProjectilePrefab) Debug.LogWarning("[CombatModule] Slot RIGHT sin prefab asignado (usará fallback si se llama)", _ctx);
-                if (!specialProjectilePrefab) Debug.LogWarning("[CombatModule] Slot SPECIAL sin prefab asignado (usará fallback si se llama)", _ctx);
-
-                // Origin checks (no es obligatorio; solo informar si todo está vacío)
-                bool hasAny = leftProjectileOrigin || rightProjectileOrigin || specialProjectileOrigin || projectileOrigin;
-                if (!hasAny)
-                    Debug.Log("[CombatModule] No hay orígenes de disparo asignados; se usará el transform del NPC para todos los slots.", _ctx);
-            }
-
-            // Busca automáticamente los orígenes por nombre de hueso/nodo estándar
+             void LogSlotConfigWarnings()
+             {
+             }            // Busca automáticamente los orígenes por nombre de hueso/nodo estándar
             void AutoAssignProjectileOrigins()
             {
                 if (_ctx == null) return;
@@ -1668,7 +1654,6 @@ namespace Game.NPC
 
                 // IMPORTANTE: Limpiar el override del challengeState ANTES de iniciar batalla
                 _ctx.Animator.ClearInteractOverride();
-                Debug.Log("[CombatModule] ClearInteractOverride después del diálogo, antes de batalla");
 
                 // CORREGIDO: NO detener el agente ni resetear animación aquí si vamos a iniciar combate
                 // NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
@@ -1677,19 +1662,16 @@ namespace Game.NPC
                 // Libera al jugador tras el reto/diálogo
                 ReleasePlayer();
 
-                Debug.Log($"[CombatModule] Después de ReleasePlayer - startBattleOnChallengeEnd: {startBattleOnChallengeEnd}, _battleFinished: {_battleFinished}");
-
                 if (startBattleOnChallengeEnd && !_battleFinished)
                 {
                     // Asegura que el NPC abandona el saludo y entra en combate
                     _battleFinished = false;
                     // CORREGIDO: NO resetear _battleStarted aquí para evitar conflictos
-                    Debug.Log("[CombatModule] Llamando a StartBattle()");
                     StartBattle();
                 }
                 else
                 {
-                    Debug.LogWarning($"[CombatModule] ⚠️ NO se llama a StartBattle - startBattleOnChallengeEnd: {startBattleOnChallengeEnd}, _battleFinished: {_battleFinished}");
+                    // no-op
                 }
 
                 _isChallenging = false;
@@ -1710,7 +1692,7 @@ namespace Game.NPC
 
                     if (playerGo != null)
                     {
-                        Debug.Log($"[CombatModule] Buscando vThirdPersonInput en jugador: {playerGo.name}");
+                        // debug removed
                         
                         // Buscar por nombre de tipo usando diferentes variantes
                         var inputType = Type.GetType("Invector.vCharacterController.vThirdPersonInput, Assembly-CSharp-firstpass", false)
@@ -1719,7 +1701,7 @@ namespace Game.NPC
                                        ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput, Invector-3rdPersonController", false)
                                        ?? Type.GetType("Invector.vCharacterController.vThirdPersonInput", false);
                         
-                        Debug.Log($"[CombatModule] Tipo vThirdPersonInput resuelto: {inputType?.FullName ?? "NULL"}");
+                        // debug removed
                         
                         if (inputType != null)
                         {
@@ -1728,27 +1710,27 @@ namespace Game.NPC
                             if (_vThirdPersonInput == null)
                             {
                                 _vThirdPersonInput = playerGo.GetComponentInChildren(inputType, true) as Behaviour;
-                                Debug.Log($"[CombatModule] Buscado en hijos, encontrado: {_vThirdPersonInput != null}");
+                                // debug removed
                             }
                             else
                             {
-                                Debug.Log($"[CombatModule] Encontrado en objeto raíz");
+                                // debug removed
                             }
                         }
                         else
                         {
-                            Debug.LogWarning("[CombatModule] ⚠️ No se pudo resolver el tipo vThirdPersonInput");
+                            // debug removed
                         }
                     }
                     else
                     {
-                        Debug.LogWarning("[CombatModule] ⚠️ No se encontró el GameObject del jugador");
+                        // debug removed
                     }
                 }
 
                 if (_vThirdPersonInput != null)
                 {
-                    Debug.Log($"[CombatModule] Deshabilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
+                    // debug removed
                     if (_ctx.Player != null)
                     {
                         _lockedPlayerPosition = _ctx.Player.position;
@@ -1757,11 +1739,11 @@ namespace Game.NPC
                     }
                     _vThirdPersonInput.enabled = false;
                     _lockModeApplied = true;
-                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
+                    // debug removed
                 }
                 else
                 {
-                    Debug.LogError("[CombatModule] ❌ No se pudo encontrar vThirdPersonInput para deshabilitar");
+                    // debug removed
                 }
 
                 if (_lockModeApplied)
@@ -1789,7 +1771,7 @@ namespace Game.NPC
                 // Habilitar vThirdPersonInput
                 if (_lockModeApplied && _vThirdPersonInput != null)
                 {
-                    Debug.Log($"[CombatModule] Habilitando vThirdPersonInput (enabled antes: {_vThirdPersonInput.enabled})");
+                    // debug removed
 
                     // Resetear el movimiento del jugador antes de rehabilitar
                     _ctx.ResetPlayerMotion();
@@ -1812,7 +1794,7 @@ namespace Game.NPC
                 }
                 else if (_lockModeApplied)
                 {
-                    Debug.LogWarning("[CombatModule] ⚠️ _lockModeApplied=true pero _vThirdPersonInput es null");
+                    // debug removed
                     _lockModeApplied = false;
                     _hasLockSnapshot = false;
                 }
@@ -1839,7 +1821,7 @@ namespace Game.NPC
                 if (inputComponent != null)
                 {
                     inputComponent.enabled = true;
-                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {inputComponent.enabled} (después de delay)");
+                    // debug removed
                 }
             }
 
@@ -1933,7 +1915,6 @@ namespace Game.NPC
 
                 if (!prefab)
                 {
-                    Debug.LogWarning($"[CombatModule] ⚠️ Slot {slotIndex} sin prefab configurado");
                     return;
                 }
 
@@ -1970,7 +1951,6 @@ namespace Game.NPC
                 Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
 
                 var instance = GameObject.Instantiate(prefab, origin.position, rot);
-                Debug.Log($"[CombatModule] 🔥 Spawn slot {slotIndex}: {instance.name} @ {origin.position}");
 
                 // Intentar inicialización genérica si existe un componente compatible
                 var enemyProjType = instance.GetComponent("EnemyProjectile");
@@ -1992,22 +1972,22 @@ namespace Game.NPC
 
             void StartBattle()
             {
-                Debug.Log($"[CombatModule] ===== INICIO StartBattle() ===== _battleStarted: {_battleStarted}, _battleFinished: {_battleFinished}");
+                
                 
                 if (_battleStarted)
                 {
-                    Debug.LogWarning("[CombatModule] ⚠️ StartBattle() llamado pero _battleStarted ya es true");
+                    
                     return;
                 }
 
                 _ctx.EnsurePlayerReference();
                 if (_ctx.Player == null)
                 {
-                    Debug.LogWarning("[CombatModule] ⚠️ No se puede iniciar batalla: player no resuelto.");
+                    
                     return;
                 }
 
-                Debug.Log($"[CombatModule] Player encontrado: {_ctx.Player.gameObject.name}");
+                
 
                 if (_ctx.Agent != null)
                 {
@@ -2016,15 +1996,15 @@ namespace Game.NPC
                     
                     // CORREGIDO: Asegurar que el agente NO esté detenido para que pueda moverse
                     NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, false);
-                    Debug.Log($"[CombatModule] NavMeshAgent habilitado y en movimiento: enabled={_ctx.Agent.enabled}, isStopped={_ctx.Agent.isStopped}");
+                    
                 }
                 else
                 {
-                    Debug.LogWarning("[CombatModule] ⚠️ NavMeshAgent es null");
+                    
                 }
 
                 _ctx.EnsureAgentOnNavMesh(sightRadius);
-                Debug.Log("[CombatModule] AgentOnNavMesh verificado");
+                
 
                 _battleStarted = true;
                 _battleFinished = false;
@@ -2032,7 +2012,7 @@ namespace Game.NPC
                 // Cambiar capa a Enemy al iniciar combate
                 _ctx.gameObject.layer = enemyUnityLayer;
 
-                Debug.Log($"[CombatModule] Batalla marcada como iniciada: _battleStarted={_battleStarted}, _battleFinished={_battleFinished}");
+                
 
                 // Asegura que la IA de combate esté activa ANTES de cualquier verificación
                 if (_combatBrain != null)
@@ -2040,11 +2020,11 @@ namespace Game.NPC
                     if (!_combatBrain.enabled)
                         _combatBrain.enabled = true;
                     
-                    Debug.Log($"[CombatModule] _combatBrain habilitado: {_combatBrain.enabled}, isActiveAndEnabled: {_combatBrain.isActiveAndEnabled}");
+                    
                 }
                 else
                 {
-                    Debug.LogError("[CombatModule] ❌ _combatBrain es null durante StartBattle");
+                    
                 }
 
                 _resolvedHealth = ResolveHealth();
@@ -2064,7 +2044,6 @@ namespace Game.NPC
 
                 // CORREGIDO: Limpiar cualquier override de animaci\u00f3n que pueda estar activo (ej. challengeState)
                 _ctx.Animator.ClearInteractOverride();
-                Debug.Log("[CombatModule] Override de animaci\u00f3n limpiado antes de iniciar combate");
 
                 TriggerBattleMusic();
                 onBattleStarted?.Invoke();
@@ -2076,13 +2055,12 @@ namespace Game.NPC
                 {
                     // Activar modo batalla en el animador para habilitar idle/upper body
                     _ctx.Animator.SetBattleMode(true);
-                    Debug.Log($"[CombatModule] Llamando a _combatBrain.BeginCombat() - _combatBrain.enabled: {_combatBrain.enabled}, isActiveAndEnabled: {_combatBrain.isActiveAndEnabled}");
                     _combatBrain.BeginCombat(BuildCombatSettings());
-                    Debug.Log("[CombatModule] ===== FIN StartBattle() - BeginCombat() llamado =====");
+                    
                 }
                 else
                 {
-                    Debug.LogError("[CombatModule] ❌ _combatBrain es null, no se puede iniciar combate");
+                    
                 }
             }
 
@@ -2184,7 +2162,7 @@ namespace Game.NPC
                 _battleStarted = false;
                 _combatBrain?.StopCombat();
                 _ctx.Animator.SetBattleMode(false);
-                Debug.Log("[CombatModule] Iniciando secuencia de derrota");
+                
                 _ctx.RunCoroutine(DefeatFlow());
             }
 
@@ -2249,57 +2227,33 @@ namespace Game.NPC
 
             void ShowHealthBar()
             {
-                if (!_resolvedHealth)
+                if (!_resolvedHealth || !healthBarPrefab)
                     return;
 
-                // Primero buscar una barra de vida ya existente en el NPC
-                if (_healthBarInstance == null && healthBarPrefab != null)
-                {
-                    // Buscar en los hijos del NPC primero
-                    var existingBar = _ctx.GetComponentInChildren<Image>(true);
-                    if (existingBar != null && existingBar.type == Image.Type.Filled)
-                    {
-                        _healthBarInstance = existingBar.gameObject;
-                        Debug.Log($"[CombatModule] Usando barra de vida existente en el NPC: {_healthBarInstance.name}");
-                    }
-                }
-
-                // Si no se encontró una existente, instanciar o crear
                 if (_healthBarInstance == null)
                 {
-                    HideHealthBar();
-
-                    Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
+                    Transform parent = FindCanvas();
                     if (!parent)
                         parent = BuildRuntimeCanvas();
                     if (!parent)
                         return;
 
-                    _healthBarInstance = healthBarPrefab
-                        ? GameObject.Instantiate(healthBarPrefab, parent, false)
-                        : BuildRuntimeHealthBar(parent);
-                    
-                    Debug.Log($"[CombatModule] Barra de vida instanciada en: {parent.name}");
+                    _healthBarInstance = GameObject.Instantiate(healthBarPrefab, parent, false);
                 }
 
-                _healthBarRect = _healthBarInstance ? _healthBarInstance.GetComponent<RectTransform>() : null;
-                _healthBarFill = _healthBarInstance ? FindFillImage(_healthBarInstance) : null;
-                _healthBarCanvasGroup = _healthBarInstance
-                    ? _healthBarInstance.GetComponent<CanvasGroup>() ?? _healthBarInstance.AddComponent<CanvasGroup>()
-                    : null;
+                _healthBarRect = _healthBarInstance.GetComponent<RectTransform>();
+                _healthBarFill = FindFillImage(_healthBarInstance);
+                _healthBarCanvasGroup = _healthBarInstance.GetComponent<CanvasGroup>();
+                if (!_healthBarCanvasGroup)
+                    _healthBarCanvasGroup = _healthBarInstance.AddComponent<CanvasGroup>();
 
-                if (_healthBarInstance != null)
-                    _healthBarInstance.SetActive(true);
+                _healthBarInstance.SetActive(true);
 
-                // Aparece vacía y se rellena rápidamente hasta el valor actual
                 if (_healthBarFill)
                     _healthBarFill.fillAmount = 0f;
                 if (_healthBarCanvasGroup)
-                {
-                    _healthBarCanvasGroup.alpha = 1f; // visible al iniciar combate
-                }
+                    _healthBarCanvasGroup.alpha = 1f;
 
-                Debug.Log($"[CombatModule] ShowHealthBar - instance: {_healthBarInstance != null}, fill: {_healthBarFill != null}, canvasGroup: {_healthBarCanvasGroup != null}");
                 AnimateHealthBarToCurrent(0.35f);
             }
 
@@ -2307,21 +2261,9 @@ namespace Game.NPC
             {
                 if (_healthBarInstance)
                 {
-                    // Si la barra está en el NPC (no instanciada), solo ocultarla
-                    if (_healthBarInstance.transform.IsChildOf(_ctx.transform))
-                    {
-                        _healthBarInstance.SetActive(false);
-                        Debug.Log("[CombatModule] Barra de vida ocultada (existente en NPC)");
-                    }
-                    else
-                    {
-                        // Si fue instanciada, destruirla
-                        GameObject.Destroy(_healthBarInstance);
-                        _healthBarInstance = null;
-                        Debug.Log("[CombatModule] Barra de vida destruida (instanciada)");
-                    }
+                    GameObject.Destroy(_healthBarInstance);
+                    _healthBarInstance = null;
                 }
-
                 _healthBarRect = null;
                 _healthBarFill = null;
                 _healthBarCanvasGroup = null;
@@ -2463,25 +2405,6 @@ namespace Game.NPC
 
             Transform FindCanvas()
             {
-                if (healthBarCanvasOverride)
-                    return healthBarCanvasOverride.transform;
-
-                if (_ctx != null)
-                {
-                    var localCanvases = _ctx.GetComponentsInChildren<Canvas>(true);
-                    foreach (var c in localCanvases)
-                    {
-                        if (c != null && c.isActiveAndEnabled && c.renderMode == RenderMode.ScreenSpaceOverlay)
-                            return c.transform;
-                    }
-
-                    foreach (var c in localCanvases)
-                    {
-                        if (c != null && c.isActiveAndEnabled)
-                            return c.transform;
-                    }
-                }
-
 #if UNITY_2022_3_OR_NEWER
                 var canvases = GameObject.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 #else
@@ -2489,20 +2412,16 @@ namespace Game.NPC
                 var canvases = GameObject.FindObjectsOfType<Canvas>();
 #pragma warning restore 618
 #endif
-
-                // Prioriza un canvas activo en pantalla (HUD) para no colgar la barra en menús pausados/inactivos
                 foreach (var c in canvases)
                 {
                     if (c != null && c.isActiveAndEnabled && c.renderMode == RenderMode.ScreenSpaceOverlay)
                         return c.transform;
                 }
-
                 foreach (var c in canvases)
                 {
                     if (c != null && c.isActiveAndEnabled)
                         return c.transform;
                 }
-
                 return null;
             }
 
@@ -2527,7 +2446,7 @@ namespace Game.NPC
 
                 if (!PlayerService.TryGetInventory(out var inventory))
                 {
-                    Debug.LogWarning("[NPC Combat] No se encontró el inventario del jugador para otorgar recompensas.");
+                    
                     return;
                 }
 
