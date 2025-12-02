@@ -1328,6 +1328,7 @@ namespace Game.NPC
             Image _healthBarFill;
             CanvasGroup _healthBarCanvasGroup;
             Camera _camera;
+            RoutineHandle _healthAnimRoutine;
             bool _ownsHealthComponent;
             Vector3 _homePosition;
             Quaternion _homeRotation;
@@ -2046,6 +2047,8 @@ namespace Game.NPC
                     _resolvedHealth.OnDamaged += HandleNpcDamaged;
                     _resolvedHealth.OnDied -= HandleNpcDied;
                     _resolvedHealth.OnDied += HandleNpcDied;
+
+                    TryDisableDestroyOnDeath(_resolvedHealth);
                 }
 
                 _forceHealthVisibleUntilDamage = true;
@@ -2185,8 +2188,7 @@ namespace Game.NPC
                 else if (explodeOnDefeat && defeatExplosionPrefab)
                 {
                     GameObject.Instantiate(defeatExplosionPrefab, _ctx.transform.position, Quaternion.identity);
-                    if (!persistAfterDefeat)
-                        _ctx.gameObject.SetActive(false);
+                    // No desactivar el NPC: mantenerlo visible tras la derrota
                 }
 
                 // Recompensas y música
@@ -2205,6 +2207,8 @@ namespace Game.NPC
                             _ctx.Player.rotation = Quaternion.LookRotation(toNpc.normalized, Vector3.up);
                         playerAnim.CrossFadeInFixedTime(playerVictoryAnimation, 0.15f, 0, 0f);
                     }
+                    // Foco de cámara hacia el jugador durante la celebración
+                    FocusCameraOnPlayer(victoryFocusSeconds);
                     if (victoryFXPrefab)
                     {
                         yield return new WaitForSeconds(victoryFXDelay);
@@ -2223,6 +2227,83 @@ namespace Game.NPC
                 onBattleFinished?.Invoke();
                 _ctx.DebugLog("Batalla finalizada.");
                 _defeatSequenceRunning = false;
+            }
+
+            void TryDisableDestroyOnDeath(object health)
+            {
+                if (health == null) return;
+                var t = health.GetType();
+                try
+                {
+                    var m = t.GetMethod("SetDestroyOnDeath", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (m != null)
+                    {
+                        m.Invoke(health, new object[] { false });
+                        return;
+                    }
+                    var f = t.GetField("destroyOnDeath", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (f != null && f.FieldType == typeof(bool))
+                    {
+                        f.SetValue(health, false);
+                        return;
+                    }
+                    var p = t.GetProperty("DestroyOnDeath", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (p != null && p.PropertyType == typeof(bool) && p.CanWrite)
+                    {
+                        p.SetValue(health, false, null);
+                    }
+                }
+                catch { }
+            }
+
+            void FocusCameraOnPlayer(float seconds)
+            {
+                if (_ctx.PlayerCamera == null) return;
+                var cam = _ctx.PlayerCamera;
+                _ctx.RunCoroutine(FocusCameraRoutine(cam, seconds));
+            }
+
+            IEnumerator FocusCameraRoutine(Transform cam, float seconds)
+            {
+                if (cam == null || _ctx.Player == null) yield break;
+                Quaternion startRot = cam.rotation;
+                Vector3 targetPos = _ctx.Player.position + Vector3.up * 1.5f;
+                Quaternion targetRot = Quaternion.LookRotation((targetPos - cam.position).normalized, Vector3.up);
+
+                float steer = 0.25f;
+                float t = 0f;
+                while (t < steer)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float u = Mathf.Clamp01(t / steer);
+                    u = u * u * (3f - 2f * u);
+                    cam.rotation = Quaternion.Slerp(startRot, targetRot, u);
+                    yield return null;
+                }
+
+                float hold = Mathf.Max(0f, seconds - steer);
+                float h = 0f;
+                while (h < hold)
+                {
+                    h += Time.unscaledDeltaTime;
+                    // Mantener mirando al jugador por si se mueve ligeramente
+                    targetPos = _ctx.Player.position + Vector3.up * 1.5f;
+                    targetRot = Quaternion.LookRotation((targetPos - cam.position).normalized, Vector3.up);
+                    cam.rotation = Quaternion.Slerp(cam.rotation, targetRot, 0.2f);
+                    yield return null;
+                }
+
+                // Restaurar suavemente
+                t = 0f;
+                while (t < steer)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float u = Mathf.Clamp01(t / steer);
+                    u = u * u * (3f - 2f * u);
+                    cam.rotation = Quaternion.Slerp(cam.rotation, startRot, u);
+                    yield return null;
+                }
+                cam.rotation = startRot;
             }
 
             Damageable ResolveHealth()
@@ -2261,6 +2342,11 @@ namespace Game.NPC
 
             void HideHealthBar()
             {
+                if (_healthAnimRoutine != null)
+                {
+                    _ctx.StopCoroutineSafe(_healthAnimRoutine);
+                    _healthAnimRoutine = null;
+                }
                 if (healthBarPrefab)
                     healthBarPrefab.SetActive(false);
                 _healthBarRect = null;
@@ -2291,7 +2377,12 @@ namespace Game.NPC
                 if (_resolvedHealth == null || _healthBarFill == null)
                     return;
                 float target = Mathf.Clamp01(_resolvedHealth.Current / Mathf.Max(1f, _resolvedHealth.Max));
-                _ctx.RunCoroutine(AnimateHealthBarFill(_healthBarFill.fillAmount, target, Mathf.Max(0.05f, seconds)));
+                if (_healthAnimRoutine != null)
+                {
+                    _ctx.StopCoroutineSafe(_healthAnimRoutine);
+                    _healthAnimRoutine = null;
+                }
+                _healthAnimRoutine = _ctx.RunCoroutine(AnimateHealthBarFill(_healthBarFill.fillAmount, target, Mathf.Max(0.05f, seconds)));
             }
 
             IEnumerator AnimateHealthBarFill(float from, float to, float seconds)
@@ -2303,10 +2394,12 @@ namespace Game.NPC
                     t += Time.deltaTime;
                     float k = Mathf.Clamp01(t / seconds);
                     float v = Mathf.Lerp(from, to, k);
+                    if (_healthBarFill == null) yield break;
                     _healthBarFill.fillAmount = v;
                     _healthBarFill.color = GetColorForRatio(v);
                     yield return null;
                 }
+                if (_healthBarFill == null) yield break;
                 _healthBarFill.fillAmount = to;
                 _healthBarFill.color = GetColorForRatio(to);
                 // Ocultar si está llena y la opción lo indica
@@ -2317,6 +2410,7 @@ namespace Game.NPC
                     else if (hideHealthBarWhenFull)
                         _healthBarCanvasGroup.alpha = to >= 0.999f ? 0f : 1f;
                 }
+                _healthAnimRoutine = null;
             }
 
             void UpdateHealthBarVisual()

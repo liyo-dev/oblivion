@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 2901665419787407899}
   - component: {fileID: 9212833412386566060}
   - component: {fileID: 817157532051505632}
-  - component: {fileID: 1062870669812164893}
   m_Layer: 6
   m_Name: AoE slash orange
   m_TagString: Untagged
@@ -4922,19 +4921,6 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.8698418
   m_Center: {x: 0, y: 0.045913696, z: 0}
---- !u!114 &1062870669812164893
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 689667626583958020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
-  lifeTimeSeconds: 3
 --- !u!1 &1883585034484120993
 GameObject:
   m_ObjectHideFlags: 0
