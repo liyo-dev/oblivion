@@ -159,6 +159,31 @@ namespace Game.NPC
             PlayerService.OnPlayerUnregistered -= HandlePlayerUnregistered;
         }
 
+#if UNITY_EDITOR
+        void OnDrawGizmosSelected()
+        {
+            // Gizmos para los orígenes de disparo por slot
+            if (combatModule == null) return;
+
+            DrawOriginGizmo(combatModule.leftProjectileOrigin ? combatModule.leftProjectileOrigin : (combatModule.projectileOrigin ? combatModule.projectileOrigin : transform),
+                new Color(0f, 1f, 1f, 0.9f)); // cian para izquierda
+            DrawOriginGizmo(combatModule.rightProjectileOrigin ? combatModule.rightProjectileOrigin : (combatModule.projectileOrigin ? combatModule.projectileOrigin : transform),
+                new Color(1f, 0f, 1f, 0.9f)); // magenta para derecha
+            DrawOriginGizmo(combatModule.specialProjectileOrigin ? combatModule.specialProjectileOrigin : (combatModule.projectileOrigin ? combatModule.projectileOrigin : transform),
+                new Color(1f, 0.9f, 0.2f, 0.9f)); // amarillo para especial
+        }
+
+        void DrawOriginGizmo(Transform origin, Color color)
+        {
+            if (origin == null) return;
+            var prev = Gizmos.color;
+            Gizmos.color = color;
+            Gizmos.DrawSphere(origin.position, 0.08f);
+            Gizmos.DrawRay(origin.position, origin.forward * 0.6f);
+            Gizmos.color = prev;
+        }
+#endif
+
         void Update()
         {
             foreach (var module in _modules)
@@ -186,11 +211,7 @@ namespace Game.NPC
             return false;
         }
 
-        /// <summary>
-        /// Lanza el proyectil configurado para la fase de combate de NPCs.
-        /// Útil para ser invocado desde eventos de animación.
-        /// </summary>
-        public void FireCombatProjectile() => combatModule?.FireProjectile();
+        
 
         #region Helpers accesibles desde los módulos
 
@@ -433,6 +454,30 @@ namespace Game.NPC
                 }
             });
         }
+
+        #endregion
+
+        #region Attack / Projectile
+
+        // Compatibilidad con llamadas antiguas sin índice (usa el slot izquierdo por defecto)
+        public void OnAttackTriggered()
+        {
+            combatModule?.FireProjectile(0);
+        }
+
+        // Nuevo: disparo de proyectil según slot: 0=izquierdo, 1=derecho, 2=especial
+        public void OnAttackTriggered(int slotIndex)
+        {
+            combatModule?.FireProjectile(slotIndex);
+        }
+
+        // También mantenemos el alias existente usado por animaciones
+        public void FireCombatProjectile() => combatModule?.FireProjectile(0);
+
+        // Métodos auxiliares pensados para Animation Events sin parámetros
+        public void AE_FireLeft() => combatModule?.FireProjectile(0);
+        public void AE_FireRight() => combatModule?.FireProjectile(1);
+        public void AE_FireSpecial() => combatModule?.FireProjectile(2);
 
         #endregion
 
@@ -1134,6 +1179,10 @@ namespace Game.NPC
             public string challengeAlertState = "SenseSomethingStart_NoWeapon";
             public float challengeAlertMinSeconds = 0.75f;
             public string challengeState = "Challenging_NoWeapon";
+            [Header("Reacciones de Daño")]
+            [HideInInspector] public string damageStatePrimary = "TakeDamage";
+            [HideInInspector] public string damageStateAlternate = "GetHit02_NoWeapon";
+            [Min(0f)] public float damageReactionMinInterval = 0.35f;
 
             [Header("UI / Feedback")]
             public GameObject exclamationPrefab;
@@ -1172,23 +1221,53 @@ namespace Game.NPC
             public RewardEntry[] rewards = Array.Empty<RewardEntry>();
 
             [Header("Ataques (referencias de animación)")]
-            public string lightAttackStateLeft = "LeftAttack";
-            public string lightAttackStateRight = "RightAttack";
-            public string specialAttackState = "SpecialAttack";
+            [Tooltip("Estado de idle durante batalla (ej: Idle_Battle_NoWeapon)")]
+            public string battleIdleState = "Idle_Battle_NoWeapon";
+            [Tooltip("Índice de la capa del animator para animaciones del torso superior (ataques)")]
+            public int upperBodyLayer = 1;
+            [HideInInspector] public string lightAttackStateLeft = "MagicLeft";
+            [HideInInspector] public string lightAttackStateRight = "MagicRight";
+            [HideInInspector] public string specialAttackState = "MagicSpecial";
 
-            [Header("Ataques (prefab simple)")]
-            [Tooltip("Prefab de proyectil a instanciar durante el ataque.")]
-            public GameObject projectilePrefab;
-            [Tooltip("Punto opcional desde el que se lanzará el proyectil (usa el transform del NPC si está vacío).")]
+            [Header("Ataques - Sistema de 3 Slots")]
+            [Tooltip("Slot izquierdo - Ataque rápido")]
+            public GameObject leftProjectilePrefab;
+            [Min(0f)] public float leftProjectileDamage = 10f;
+            [Min(0f)] public float leftProjectileSpeed = 12f;
+            [Min(0.1f)] public float leftAttackCooldown = 1.5f;
+            
+            [Tooltip("Slot derecho - Ataque medio")]
+            public GameObject rightProjectilePrefab;
+            [Min(0f)] public float rightProjectileDamage = 15f;
+            [Min(0f)] public float rightProjectileSpeed = 10f;
+            [Min(0.1f)] public float rightAttackCooldown = 2f;
+            
+            [Tooltip("Slot especial - Ataque poderoso")]
+            public GameObject specialProjectilePrefab;
+            [Min(0f)] public float specialProjectileDamage = 25f;
+            [Min(0f)] public float specialProjectileSpeed = 8f;
+            [Min(0.1f)] public float specialAttackCooldown = 4f;
+            
+            [Header("Orígenes de Disparo (opcionales)")]
+            [Tooltip("Punto genérico de disparo (fallback si el específico está vacío)")]
             public Transform projectileOrigin;
-            [Min(0f)] public float projectileDamage = 10f;
-            [Min(0f)] public float projectileSpeed = 12f;
+            [Tooltip("Origen de disparo para el slot izquierdo")]
+            public Transform leftProjectileOrigin;
+            [Tooltip("Origen de disparo para el slot derecho")]
+            public Transform rightProjectileOrigin;
+            [Tooltip("Origen de disparo para el slot especial")]
+            public Transform specialProjectileOrigin;
+            
+            [Header("Sincronización de Disparo")]
+            [Tooltip("Si está activo, el proyectil se instanciará desde un Animation Event y no al iniciar la animación.")]
+            [HideInInspector]
+            public bool spawnProjectileViaAnimationEvent = true;
             
             [Header("IA de Combate")]
             [Tooltip("Distancia mínima al jugador durante el combate")]
-            [Min(0f)] public float combatMinDistance = 3f;
+            [Min(0f)] public float combatMinDistance = 4f;
             [Tooltip("Distancia máxima para atacar al jugador")]
-            [Min(0f)] public float combatMaxDistance = 10f;
+            [Min(0f)] public float combatMaxDistance = 12f;
             [Tooltip("Tiempo entre ataques (segundos)")]
             [Min(0.1f)] public float attackCooldown = 2f;
             [Tooltip("Probabilidad de usar ataque especial (0-1)")]
@@ -1248,6 +1327,43 @@ namespace Game.NPC
             Quaternion _homeRotation;
             bool _alertMusicRaised;
             static Sprite _fallbackSprite;
+            float _damageReactTimer;
+            Vector3 _lastPlayerPos;
+            [HideInInspector] public bool usePredictiveAim = true;
+            [HideInInspector] public bool requireLineOfSight = true;
+
+            [Header("Dificultad")]
+            [Tooltip("Multiplicador de frecuencia de ataque (reduce cooldowns)")]
+            [Range(0.2f, 3f)] public float attackFrequencyMultiplier = 1f;
+            [Tooltip("Sesgo de agresividad de decisiones de ataque")]
+            [Range(0f, 1f)] public float aggressionBias = 0.5f;
+            [Tooltip("Probabilidad de solicitar esquiva al recibir daño")]
+            [Range(0f, 1f)] public float dodgeChance = 0.2f;
+
+            [Header("Derrota / Secuencia")]
+            [Tooltip("Si está activo, el NPC permanece tras la derrota y no se destruye.")]
+            public bool persistAfterDefeat = true;
+            [Tooltip("Si está activo y persistAfterDefeat es false: instancia FX de explosión y oculta NPC.")]
+            public bool explodeOnDefeat = false;
+            [Tooltip("Prefab FX para explosión (opcional)")]
+            public GameObject defeatExplosionPrefab;
+            [Tooltip("Prefab FX para victoria del jugador (confeti, etc.)")]
+            public GameObject victoryFXPrefab;
+            [Min(0f)] public float victoryFXDelay = 0.2f;
+            [Min(0.2f)] public float victoryFocusSeconds = 1.0f;
+            [Tooltip("Animación de muerte del NPC")]
+            public string npcDeathAnimation = "Die02_NoWeapon";
+            [Tooltip("Animación de victoria del jugador")]
+            public string playerVictoryAnimation = "Dance_NoWeapon";
+            [Tooltip("Layer Unity para combate (Enemy)")]
+            public int enemyUnityLayer = 0;
+            [Tooltip("Layer Unity post-derrota (Interactable)")]
+            public int interactableUnityLayer = 0;
+            [Tooltip("Diálogo repetible tras derrota")]
+            // Usamos dialogueAfterBattle ya declarado en la sección de Diálogos
+
+            bool hasBeenDefeated;
+            bool _defeatSequenceRunning;
 
              public void Initialize(NPCBehaviourManager context)
              {
@@ -1264,6 +1380,27 @@ namespace Game.NPC
                  _playerLockEventRaised = false;
                  if (exclamationPrefab) exclamationPrefab.SetActive(false);
 
+                 // Defaults por código para mantener el inspector limpio
+                 if (string.IsNullOrEmpty(lightAttackStateLeft)) lightAttackStateLeft = "MagicLeft";
+                 if (string.IsNullOrEmpty(lightAttackStateRight)) lightAttackStateRight = "MagicRight";
+                 if (string.IsNullOrEmpty(specialAttackState)) specialAttackState = "MagicSpecial";
+                 if (string.IsNullOrEmpty(challengeAlertState)) challengeAlertState = "SenseSomethingStart_NoWeapon";
+                 if (string.IsNullOrEmpty(challengeState)) challengeState = "Challenging_NoWeapon";
+                 if (string.IsNullOrEmpty(battleIdleState)) battleIdleState = "Idle_Battle_NoWeapon";
+                 // Por defecto NO requerimos Animation Events para spawnear (más robusto)
+                 // Si tus clips tienen eventos AE_FireX, puedes activarlo manualmente desde código.
+                 spawnProjectileViaAnimationEvent = false;
+
+                 // Auto-asignación de orígenes de disparo por convención (weapon_l / weapon_r)
+                 AutoAssignProjectileOrigins();
+
+                 // Validación y avisos de configuración
+                 LogSlotConfigWarnings();
+
+                 // Inicializar última posición del jugador para apuntado predictivo
+                 _ctx.EnsurePlayerReference();
+                 _lastPlayerPos = _ctx.Player ? _ctx.Player.position : _ctx.transform.position + _ctx.transform.forward;
+
                  _homePosition = _ctx.transform.position;
                  _homeRotation = _ctx.transform.rotation;
 
@@ -1275,6 +1412,12 @@ namespace Game.NPC
                 _forceHealthVisibleUntilDamage = false;
                 _alertMusicRaised = false;
                 _hasLockSnapshot = false;
+                _defeatSequenceRunning = false;
+                if (hasBeenDefeated)
+                {
+                    _ctx.gameObject.layer = interactableUnityLayer;
+                    enable = false; // impedir nuevo combate
+                }
                 HideHealthBar();
             }
 
@@ -1293,10 +1436,73 @@ namespace Game.NPC
                 if (exclamationPrefab) exclamationPrefab.SetActive(false);
                 HideHealthBar();
              }
+            void LogSlotConfigWarnings()
+            {
+                // Prefab checks
+                if (!leftProjectilePrefab) Debug.LogWarning("[CombatModule] Slot LEFT sin prefab asignado (usará fallback si se llama)", _ctx);
+                if (!rightProjectilePrefab) Debug.LogWarning("[CombatModule] Slot RIGHT sin prefab asignado (usará fallback si se llama)", _ctx);
+                if (!specialProjectilePrefab) Debug.LogWarning("[CombatModule] Slot SPECIAL sin prefab asignado (usará fallback si se llama)", _ctx);
+
+                // Origin checks (no es obligatorio; solo informar si todo está vacío)
+                bool hasAny = leftProjectileOrigin || rightProjectileOrigin || specialProjectileOrigin || projectileOrigin;
+                if (!hasAny)
+                    Debug.Log("[CombatModule] No hay orígenes de disparo asignados; se usará el transform del NPC para todos los slots.", _ctx);
+            }
+
+            // Busca automáticamente los orígenes por nombre de hueso/nodo estándar
+            void AutoAssignProjectileOrigins()
+            {
+                if (_ctx == null) return;
+
+                // Fallback general al propio transform del NPC si no está asignado
+                if (projectileOrigin == null)
+                    projectileOrigin = _ctx.transform;
+
+                // Resolver izquierda/derecha solo si no están ya asignados desde fuera
+                if (leftProjectileOrigin == null)
+                    leftProjectileOrigin = FindChildByNames(_ctx.transform, new[] { "weapon_l", "weapon-left", "Weapon_L", "WeaponLeft" });
+
+                if (rightProjectileOrigin == null)
+                    rightProjectileOrigin = FindChildByNames(_ctx.transform, new[] { "weapon_r", "weapon-right", "Weapon_R", "WeaponRight" });
+
+                // Si el especial no está asignado, usar el derecho por convención
+                if (specialProjectileOrigin == null)
+                    specialProjectileOrigin = rightProjectileOrigin ? rightProjectileOrigin : leftProjectileOrigin;
+            }
+
+            static Transform FindChildByNames(Transform root, string[] candidates)
+            {
+                if (root == null || candidates == null || candidates.Length == 0) return null;
+                for (int i = 0; i < candidates.Length; i++)
+                    candidates[i] = candidates[i]?.ToLowerInvariant();
+
+                // Búsqueda en profundidad (DFS) por nombre exacto o que contenga el candidato
+                var stack = new System.Collections.Generic.Stack<Transform>();
+                stack.Push(root);
+                while (stack.Count > 0)
+                {
+                    var t = stack.Pop();
+                    string name = t.name.ToLowerInvariant();
+                    foreach (var c in candidates)
+                    {
+                        if (string.IsNullOrEmpty(c)) continue;
+                        if (name == c || name.Contains(c))
+                            return t;
+                    }
+                    for (int i = 0; i < t.childCount; i++)
+                        stack.Push(t.GetChild(i));
+                }
+                return null;
+            }
 
             public void Tick()
             {
                 UpdateHealthBarVisual();
+                if (_damageReactTimer > 0f) _damageReactTimer -= Time.deltaTime;
+
+                // Capturar trayectoria del jugador para apuntado predictivo
+                if (_ctx.Player)
+                    _lastPlayerPos = _ctx.Player.position;
 
                 if (!enable || _isChallenging || sightRadius <= 0f) return;
                 if (_battleFinished) return;
@@ -1460,8 +1666,13 @@ namespace Game.NPC
                 onChallengeStarted?.Invoke();
                 _ctx.DebugLog("OnChallengeStarted invocado.");
 
-                NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
-                _ctx.Animator.ResetMovement();
+                // IMPORTANTE: Limpiar el override del challengeState ANTES de iniciar batalla
+                _ctx.Animator.ClearInteractOverride();
+                Debug.Log("[CombatModule] ClearInteractOverride después del diálogo, antes de batalla");
+
+                // CORREGIDO: NO detener el agente ni resetear animación aquí si vamos a iniciar combate
+                // NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, true);
+                // _ctx.Animator.ResetMovement();
 
                 // Libera al jugador tras el reto/diálogo
                 ReleasePlayer();
@@ -1472,7 +1683,7 @@ namespace Game.NPC
                 {
                     // Asegura que el NPC abandona el saludo y entra en combate
                     _battleFinished = false;
-                    _battleStarted = false;
+                    // CORREGIDO: NO resetear _battleStarted aquí para evitar conflictos
                     Debug.Log("[CombatModule] Llamando a StartBattle()");
                     StartBattle();
                 }
@@ -1583,20 +1794,21 @@ namespace Game.NPC
                     // Resetear el movimiento del jugador antes de rehabilitar
                     _ctx.ResetPlayerMotion();
 
-                    _vThirdPersonInput.enabled = true;
-                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {_vThirdPersonInput.enabled}");
+                    // Rehabilitar con un pequeño delay para evitar que inputs residuales causen saltos
+                    _ctx.RunCoroutine(ReenableInputAfterDelay(_vThirdPersonInput, 0.1f));
                     _lockModeApplied = false;
 
-                    if (_hasLockSnapshot && _ctx.Player != null)
-                    {
-                        _ctx.Player.SetPositionAndRotation(_lockedPlayerPosition, _lockedPlayerRotation);
-                    }
+                    // ELIMINADO: No restaurar posición/rotación para evitar teletransporte
+                    // if (_hasLockSnapshot && _ctx.Player != null)
+                    // {
+                    //     _ctx.Player.SetPositionAndRotation(_lockedPlayerPosition, _lockedPlayerRotation);
+                    // }
                     _hasLockSnapshot = false;
 
-                    // Evita que la misma pulsación usada para cerrar el diálogo dispare un salto/rodar
-                    var pam = _ctx.GetActionManager();
-                    if (pam != null)
-                        _ctx.RunCoroutine(TemporaryStun(pam, 0.12f));
+                    // ELIMINADO: No aplicar TemporaryStun aquí, el DialogueManager ya maneja el inputRestoreDelay
+                    // var pam = _ctx.GetActionManager();
+                    // if (pam != null)
+                    //     _ctx.RunCoroutine(TemporaryStun(pam, 0.12f));
                 }
                 else if (_lockModeApplied)
                 {
@@ -1619,6 +1831,16 @@ namespace Game.NPC
                 pam.PushMode(ActionMode.Stunned);
                 yield return new WaitForSecondsRealtime(seconds);
                 pam.PopMode(ActionMode.Stunned);
+            }
+
+            IEnumerator ReenableInputAfterDelay(UnityEngine.Behaviour inputComponent, float delay)
+            {
+                yield return new WaitForSecondsRealtime(delay);
+                if (inputComponent != null)
+                {
+                    inputComponent.enabled = true;
+                    Debug.Log($"[CombatModule] ✅ vThirdPersonInput.enabled = {inputComponent.enabled} (después de delay)");
+                }
             }
 
             void TriggerAlertMusic()
@@ -1674,37 +1896,109 @@ namespace Game.NPC
                 }
             }
 
-            public void FireProjectile()
+            public void FireProjectile(int slotIndex)
             {
-                if (!projectilePrefab)
-                    return;
+                GameObject prefab = null;
+                float damage = 0f;
+                float speed = 0f;
+                Transform originOverride = null;
 
-                var origin = projectileOrigin ? projectileOrigin : _ctx.transform;
-                var target = _ctx.Player ? _ctx.Player.position : (origin.position + origin.forward);
+                switch (slotIndex)
+                {
+                    case 0:
+                        prefab = leftProjectilePrefab;
+                        damage = leftProjectileDamage;
+                        speed = leftProjectileSpeed;
+                        originOverride = leftProjectileOrigin;
+                        break;
+                    case 1:
+                        prefab = rightProjectilePrefab;
+                        damage = rightProjectileDamage;
+                        speed = rightProjectileSpeed;
+                        originOverride = rightProjectileOrigin;
+                        break;
+                    case 2:
+                        prefab = specialProjectilePrefab;
+                        damage = specialProjectileDamage;
+                        speed = specialProjectileSpeed;
+                        originOverride = specialProjectileOrigin;
+                        break;
+                    default:
+                        prefab = leftProjectilePrefab;
+                        damage = leftProjectileDamage;
+                        speed = leftProjectileSpeed;
+                        originOverride = leftProjectileOrigin;
+                        break;
+                }
+
+                if (!prefab)
+                {
+                    Debug.LogWarning($"[CombatModule] ⚠️ Slot {slotIndex} sin prefab configurado");
+                    return;
+                }
+
+                var origin = originOverride ? originOverride : (projectileOrigin ? projectileOrigin : _ctx.transform);
+
+                // Objetivo con apuntado predictivo opcional
+                Vector3 playerPos = _ctx.Player ? _ctx.Player.position : (origin.position + origin.forward * 5f);
+                Vector3 dirToPlayer = (playerPos - origin.position);
+                Vector3 target = playerPos;
+
+                if (usePredictiveAim && _ctx.Player)
+                {
+                    Vector3 playerVel = Vector3.zero;
+                    if (_ctx.Player.TryGetComponent<Rigidbody>(out var prb))
+                        playerVel = prb.linearVelocity;
+                    else
+                    {
+                        // Aproximación por diferencia de posición
+                        float dt = Mathf.Max(0.016f, Time.deltaTime);
+                        playerVel = (_ctx.Player.position - _lastPlayerPos) / dt;
+                    }
+
+                    float projSpeed = Mathf.Max(0.1f, speed);
+                    Vector3 toTarget = playerPos - origin.position;
+                    float t = toTarget.magnitude / projSpeed;
+                    target = playerPos + playerVel * t;
+                }
+
                 Vector3 dir = (target - origin.position);
                 if (dir.sqrMagnitude < 0.0001f)
                     dir = origin.forward;
 
                 dir = dir.normalized;
-                Quaternion rot = dir.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(dir, Vector3.up) : origin.rotation;
+                Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
 
-                var instance = GameObject.Instantiate(projectilePrefab, origin.position, rot);
+                var instance = GameObject.Instantiate(prefab, origin.position, rot);
+                Debug.Log($"[CombatModule] 🔥 Spawn slot {slotIndex}: {instance.name} @ {origin.position}");
 
-                if (instance.TryGetComponent<EnemyProjectile>(out var enemyProj))
+                // Intentar inicialización genérica si existe un componente compatible
+                var enemyProjType = instance.GetComponent("EnemyProjectile");
+                if (enemyProjType != null)
                 {
-                    enemyProj.Initialize(dir, projectileDamage);
-                    return;
+                    // Llamada reflectiva sencilla: Initialize(Vector3 dir, float damage)
+                    var m = enemyProjType.GetType().GetMethod("Initialize", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (m != null)
+                    {
+                        try { m.Invoke(enemyProjType, new object[] { dir, damage }); return; } catch { /* fallback a Rigidbody */ }
+                    }
                 }
 
                 if (instance.TryGetComponent<Rigidbody>(out var rb))
                 {
-                    rb.linearVelocity = dir * projectileSpeed;
+                    rb.linearVelocity = dir * speed;
                 }
             }
 
             void StartBattle()
             {
-                if (_battleStarted) return;
+                Debug.Log($"[CombatModule] ===== INICIO StartBattle() ===== _battleStarted: {_battleStarted}, _battleFinished: {_battleFinished}");
+                
+                if (_battleStarted)
+                {
+                    Debug.LogWarning("[CombatModule] ⚠️ StartBattle() llamado pero _battleStarted ya es true");
+                    return;
+                }
 
                 _ctx.EnsurePlayerReference();
                 if (_ctx.Player == null)
@@ -1713,17 +2007,45 @@ namespace Game.NPC
                     return;
                 }
 
-                if (_ctx.Agent != null && !_ctx.Agent.enabled)
-                    _ctx.Agent.enabled = true;
+                Debug.Log($"[CombatModule] Player encontrado: {_ctx.Player.gameObject.name}");
+
+                if (_ctx.Agent != null)
+                {
+                    if (!_ctx.Agent.enabled)
+                        _ctx.Agent.enabled = true;
+                    
+                    // CORREGIDO: Asegurar que el agente NO esté detenido para que pueda moverse
+                    NavMeshAgentUtility.SafeSetStopped(_ctx.Agent, false);
+                    Debug.Log($"[CombatModule] NavMeshAgent habilitado y en movimiento: enabled={_ctx.Agent.enabled}, isStopped={_ctx.Agent.isStopped}");
+                }
+                else
+                {
+                    Debug.LogWarning("[CombatModule] ⚠️ NavMeshAgent es null");
+                }
 
                 _ctx.EnsureAgentOnNavMesh(sightRadius);
+                Debug.Log("[CombatModule] AgentOnNavMesh verificado");
 
                 _battleStarted = true;
                 _battleFinished = false;
 
-                // Asegura que la IA de combate esté activa antes de iniciar la lógica
-                if (_combatBrain != null && !_combatBrain.isActiveAndEnabled)
-                    _combatBrain.enabled = true;
+                // Cambiar capa a Enemy al iniciar combate
+                _ctx.gameObject.layer = enemyUnityLayer;
+
+                Debug.Log($"[CombatModule] Batalla marcada como iniciada: _battleStarted={_battleStarted}, _battleFinished={_battleFinished}");
+
+                // Asegura que la IA de combate esté activa ANTES de cualquier verificación
+                if (_combatBrain != null)
+                {
+                    if (!_combatBrain.enabled)
+                        _combatBrain.enabled = true;
+                    
+                    Debug.Log($"[CombatModule] _combatBrain habilitado: {_combatBrain.enabled}, isActiveAndEnabled: {_combatBrain.isActiveAndEnabled}");
+                }
+                else
+                {
+                    Debug.LogError("[CombatModule] ❌ _combatBrain es null durante StartBattle");
+                }
 
                 _resolvedHealth = ResolveHealth();
                 if (_resolvedHealth != null)
@@ -1740,13 +2062,28 @@ namespace Game.NPC
                 _forceHealthVisibleUntilDamage = true;
                 ShowHealthBar();
 
+                // CORREGIDO: Limpiar cualquier override de animaci\u00f3n que pueda estar activo (ej. challengeState)
+                _ctx.Animator.ClearInteractOverride();
+                Debug.Log("[CombatModule] Override de animaci\u00f3n limpiado antes de iniciar combate");
+
                 TriggerBattleMusic();
                 onBattleStarted?.Invoke();
 
                 _ctx.DebugLog("Batalla iniciada.");
 
                 // Iniciar IA de combate delegada
-                _combatBrain?.BeginCombat(BuildCombatSettings());
+                if (_combatBrain != null)
+                {
+                    // Activar modo batalla en el animador para habilitar idle/upper body
+                    _ctx.Animator.SetBattleMode(true);
+                    Debug.Log($"[CombatModule] Llamando a _combatBrain.BeginCombat() - _combatBrain.enabled: {_combatBrain.enabled}, isActiveAndEnabled: {_combatBrain.isActiveAndEnabled}");
+                    _combatBrain.BeginCombat(BuildCombatSettings());
+                    Debug.Log("[CombatModule] ===== FIN StartBattle() - BeginCombat() llamado =====");
+                }
+                else
+                {
+                    Debug.LogError("[CombatModule] ❌ _combatBrain es null, no se puede iniciar combate");
+                }
             }
 
             NPCCombatBrain.Settings BuildCombatSettings()
@@ -1756,14 +2093,49 @@ namespace Game.NPC
                     sightRadius = sightRadius,
                     minDistance = combatMinDistance,
                     maxDistance = combatMaxDistance,
-                    attackCooldown = attackCooldown,
-                    specialAttackChance = specialAttackChance,
                     repathInterval = combatRepathInterval,
                     retreatDistance = combatRetreatDistance,
                     turnSpeed = combatTurnSpeed,
-                    lightAttackStateLeft = lightAttackStateLeft,
-                    lightAttackStateRight = lightAttackStateRight,
-                    specialAttackState = specialAttackState,
+                    upperBodyLayer = upperBodyLayer,
+                    battleIdleState = battleIdleState,
+                    leftAttack = new NPCCombatBrain.AttackSlot { animationState = lightAttackStateLeft, cooldown = leftAttackCooldown, slotIndex = 0 },
+                    rightAttack = new NPCCombatBrain.AttackSlot { animationState = lightAttackStateRight, cooldown = rightAttackCooldown, slotIndex = 1 },
+                    specialAttack = new NPCCombatBrain.AttackSlot { animationState = specialAttackState, cooldown = specialAttackCooldown, slotIndex = 2 },
+                    aggressiveDistance = Mathf.Max(0f, combatMinDistance + 0.5f),
+                    retreatHealthPercent = 0.25f,
+                    circleDistance = Mathf.Max(0f, (combatMinDistance + combatMaxDistance) * 0.5f),
+                    circleSpeed = 90f,
+                    spawnProjectileViaAnimationEvent = spawnProjectileViaAnimationEvent,
+                    // Retardo para que se vea el gesto de disparo antes de generar el proyectil
+                    fireDelaySeconds = 0.5f,
+                    requireLineOfSight = requireLineOfSight,
+                    losMask = Physics.DefaultRaycastLayers,
+                    windupMin = 0.06f,
+                    windupMax = 0.18f,
+                    strafeFlipMin = 1.2f,
+                    strafeFlipMax = 2.4f,
+                    dodgeDistance = 1.2f,
+                    dodgeCooldown = 1.6f,
+                    // Micro-pausas: tamaño y cadencia
+                    microPauseDurationMin = 0.08f,
+                    microPauseDurationMax = 0.20f,
+                    microPauseIntervalMin = 1.1f,
+                    microPauseIntervalMax = 2.0f,
+                    // Burst & reposition tras 1–2 ataques
+                    burstRepositionDistance = 2.6f,
+                    burstRepositionCooldown = 2.4f,
+                    burstAttacksMin = 1,
+                    burstAttacksMax = 2,
+                    // Ventanas de quieto (mantener posición)
+                    holdDurationMin = 0.6f,
+                    holdDurationMax = 1.4f,
+                    holdIntervalMin = 1.2f,
+                    holdIntervalMax = 2.4f,
+                    attackHoldSeconds = 0.28f,
+                    // Dificultad (ajustable por inspector)
+                    attackFrequencyMultiplier = attackFrequencyMultiplier,
+                    aggressionBias = aggressionBias,
+                    dodgeChance = dodgeChance,
                 };
             }
 
@@ -1773,34 +2145,97 @@ namespace Game.NPC
                     return;
 
                 _forceHealthVisibleUntilDamage = false;
-                RefreshHealthBarImmediate();
+                // Animar el descenso de vida para que se perciba claramente
+                AnimateHealthBarToCurrent(0.25f);
+
+                TryPlayDamageReaction();
+
+                // Solicitar una pequeña esquiva lateral al cerebro de combate (si disponible)
+                _combatBrain?.RequestDodge();
 
                 if (_resolvedHealth.Current <= 0f && !_battleFinished)
                     HandleNpcDied();
+            }
+
+            void TryPlayDamageReaction()
+            {
+                if (_ctx == null) return;
+                if (damageReactionMinInterval > 0f && _damageReactTimer > 0f) return;
+
+                string state = !string.IsNullOrEmpty(damageStatePrimary) ? damageStatePrimary : damageStateAlternate;
+                if (string.IsNullOrEmpty(state)) return;
+
+                _ctx.Animator?.PlayOneShot(state);
+                _damageReactTimer = Mathf.Max(0f, damageReactionMinInterval);
             }
 
             void HandleNpcDied()
             {
                 if (_battleFinished)
                     return;
+                StartDefeatSequence();
+            }
 
+            void StartDefeatSequence()
+            {
+                if (_defeatSequenceRunning) return;
+                _defeatSequenceRunning = true;
                 _battleFinished = true;
                 _battleStarted = false;
                 _combatBrain?.StopCombat();
+                _ctx.Animator.SetBattleMode(false);
+                Debug.Log("[CombatModule] Iniciando secuencia de derrota");
+                _ctx.RunCoroutine(DefeatFlow());
+            }
+
+            IEnumerator DefeatFlow()
+            {
+                // Reproducir animación de muerte o explosión
+                if (!explodeOnDefeat && persistAfterDefeat && !string.IsNullOrEmpty(npcDeathAnimation))
+                {
+                    _ctx.Animator.PlayOneShot(npcDeathAnimation);
+                }
+                else if (explodeOnDefeat && defeatExplosionPrefab)
+                {
+                    GameObject.Instantiate(defeatExplosionPrefab, _ctx.transform.position, Quaternion.identity);
+                    if (!persistAfterDefeat)
+                        _ctx.gameObject.SetActive(false);
+                }
+
+                // Recompensas y música
+                GrantRewards();
                 RestoreBattleMusic();
+                HideHealthBar();
+
+                // Animación de victoria del jugador y FX
+                if (_ctx.Player && !string.IsNullOrEmpty(playerVictoryAnimation))
+                {
+                    var playerAnim = _ctx.Player.GetComponent<Animator>();
+                    if (playerAnim)
+                    {
+                        Vector3 toNpc = (_ctx.transform.position - _ctx.Player.position); toNpc.y = 0f;
+                        if (toNpc.sqrMagnitude > 0.001f)
+                            _ctx.Player.rotation = Quaternion.LookRotation(toNpc.normalized, Vector3.up);
+                        playerAnim.CrossFadeInFixedTime(playerVictoryAnimation, 0.15f, 0, 0f);
+                    }
+                    if (victoryFXPrefab)
+                    {
+                        yield return new WaitForSeconds(victoryFXDelay);
+                        GameObject.Instantiate(victoryFXPrefab, _ctx.Player.position + Vector3.up * 1f, Quaternion.identity);
+                    }
+                    yield return new WaitForSeconds(victoryFocusSeconds);
+                }
 
                 if (dialogueOnDefeat)
                     _ctx.PlayDialogue(dialogueOnDefeat);
 
-                GrantRewards();
+                hasBeenDefeated = true;
+                _ctx.gameObject.layer = interactableUnityLayer;
+                enable = false;
                 ReturnToHome();
-
                 onBattleFinished?.Invoke();
                 _ctx.DebugLog("Batalla finalizada.");
-
-                RefreshHealthBarImmediate();
-                HideHealthBar();
-                enable = false; // evita repetir combate
+                _defeatSequenceRunning = false;
             }
 
             Damageable ResolveHealth()
@@ -1817,17 +2252,35 @@ namespace Game.NPC
                 if (!_resolvedHealth)
                     return;
 
-                HideHealthBar();
+                // Primero buscar una barra de vida ya existente en el NPC
+                if (_healthBarInstance == null && healthBarPrefab != null)
+                {
+                    // Buscar en los hijos del NPC primero
+                    var existingBar = _ctx.GetComponentInChildren<Image>(true);
+                    if (existingBar != null && existingBar.type == Image.Type.Filled)
+                    {
+                        _healthBarInstance = existingBar.gameObject;
+                        Debug.Log($"[CombatModule] Usando barra de vida existente en el NPC: {_healthBarInstance.name}");
+                    }
+                }
 
-                Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
-                if (!parent)
-                    parent = BuildRuntimeCanvas();
-                if (!parent)
-                    return;
+                // Si no se encontró una existente, instanciar o crear
+                if (_healthBarInstance == null)
+                {
+                    HideHealthBar();
 
-                _healthBarInstance = healthBarPrefab
-                    ? GameObject.Instantiate(healthBarPrefab, parent, false)
-                    : BuildRuntimeHealthBar(parent);
+                    Transform parent = healthBarCanvasOverride ? healthBarCanvasOverride.transform : FindCanvas();
+                    if (!parent)
+                        parent = BuildRuntimeCanvas();
+                    if (!parent)
+                        return;
+
+                    _healthBarInstance = healthBarPrefab
+                        ? GameObject.Instantiate(healthBarPrefab, parent, false)
+                        : BuildRuntimeHealthBar(parent);
+                    
+                    Debug.Log($"[CombatModule] Barra de vida instanciada en: {parent.name}");
+                }
 
                 _healthBarRect = _healthBarInstance ? _healthBarInstance.GetComponent<RectTransform>() : null;
                 _healthBarFill = _healthBarInstance ? FindFillImage(_healthBarInstance) : null;
@@ -1835,15 +2288,38 @@ namespace Game.NPC
                     ? _healthBarInstance.GetComponent<CanvasGroup>() ?? _healthBarInstance.AddComponent<CanvasGroup>()
                     : null;
 
-                RefreshHealthBarImmediate();
+                if (_healthBarInstance != null)
+                    _healthBarInstance.SetActive(true);
+
+                // Aparece vacía y se rellena rápidamente hasta el valor actual
+                if (_healthBarFill)
+                    _healthBarFill.fillAmount = 0f;
+                if (_healthBarCanvasGroup)
+                {
+                    _healthBarCanvasGroup.alpha = 1f; // visible al iniciar combate
+                }
+
+                Debug.Log($"[CombatModule] ShowHealthBar - instance: {_healthBarInstance != null}, fill: {_healthBarFill != null}, canvasGroup: {_healthBarCanvasGroup != null}");
+                AnimateHealthBarToCurrent(0.35f);
             }
 
             void HideHealthBar()
             {
                 if (_healthBarInstance)
                 {
-                    GameObject.Destroy(_healthBarInstance);
-                    _healthBarInstance = null;
+                    // Si la barra está en el NPC (no instanciada), solo ocultarla
+                    if (_healthBarInstance.transform.IsChildOf(_ctx.transform))
+                    {
+                        _healthBarInstance.SetActive(false);
+                        Debug.Log("[CombatModule] Barra de vida ocultada (existente en NPC)");
+                    }
+                    else
+                    {
+                        // Si fue instanciada, destruirla
+                        GameObject.Destroy(_healthBarInstance);
+                        _healthBarInstance = null;
+                        Debug.Log("[CombatModule] Barra de vida destruida (instanciada)");
+                    }
                 }
 
                 _healthBarRect = null;
@@ -1867,6 +2343,34 @@ namespace Game.NPC
                     else if (hideHealthBarWhenFull)
                         _healthBarCanvasGroup.alpha = ratio >= 0.999f ? 0f : 1f;
                 }
+            }
+
+            void AnimateHealthBarToCurrent(float seconds)
+            {
+                if (_resolvedHealth == null || _healthBarFill == null)
+                    return;
+                float target = Mathf.Clamp01(_resolvedHealth.Current / Mathf.Max(1f, _resolvedHealth.Max));
+                _ctx.RunCoroutine(AnimateHealthBarFill(_healthBarFill.fillAmount, target, Mathf.Max(0.05f, seconds)));
+            }
+
+            IEnumerator AnimateHealthBarFill(float from, float to, float seconds)
+            {
+                if (_healthBarFill == null) yield break;
+                float t = 0f;
+                while (t < seconds)
+                {
+                    t += Time.deltaTime;
+                    float k = Mathf.Clamp01(t / seconds);
+                    float v = Mathf.Lerp(from, to, k);
+                    _healthBarFill.fillAmount = v;
+                    _healthBarFill.color = GetColorForRatio(v);
+                    yield return null;
+                }
+                _healthBarFill.fillAmount = to;
+                _healthBarFill.color = GetColorForRatio(to);
+                // Ocultar si está llena y la opción lo indica
+                if (_healthBarCanvasGroup && hideHealthBarWhenFull)
+                    _healthBarCanvasGroup.alpha = to >= 0.999f ? 0f : 1f;
             }
 
             void UpdateHealthBarVisual()

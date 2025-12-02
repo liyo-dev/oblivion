@@ -89,8 +89,6 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (hasHit) return; // Evitar múltiples hits
         
-        Debug.Log($"[DemonProjectile] Colisionó con: {other.gameObject.name}, Tag: {other.tag}, IsTrigger: {other.isTrigger}");
-        
         // Ignorar al propio demonio y sus triggers
         if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
         {

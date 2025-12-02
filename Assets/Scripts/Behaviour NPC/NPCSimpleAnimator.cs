@@ -11,6 +11,15 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Tooltip("Nombre EXACTO del estado (Blend Tree) de locomoción en la capa Base.")]
     [SerializeField] private string locomotionState = "Free Locomotion";
 
+    [Tooltip("Estado de idle durante batalla en la Base Layer (ej: Idle_Battle_NoWeapon)")]
+    [SerializeField] private string battleIdleState = "Idle_Battle_NoWeapon";
+
+    [Header("Layers del Animator")]
+    [Tooltip("Índice de la capa para animaciones del torso superior (ataques, etc.)")]
+    [SerializeField] private int upperBodyLayer = 1;
+    [Tooltip("Estado de idle de la capa UpperBody (ej: UpperIdle)")]
+    [SerializeField, HideInInspector] private string upperBodyIdleState = "UpperIdle";
+
     [SerializeField] private string greetState = "Greeting01_NoWeapon";
     [SerializeField] private string interactState = "InteractWithPeople_NoWeapon";
 
@@ -34,14 +43,23 @@ public class NPCSimpleAnimator : MonoBehaviour
 
     [Header("Depuración")]
     [SerializeField] private bool drawGizmos = true;
+    [SerializeField] private bool verboseLogs = false;
+    [Tooltip("Para depurar máscaras/capas: reproducir one-shots en capa base")]
+    [SerializeField] private bool forceOneShotsOnBaseLayer = false;
 
     static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
+    [Header("Locomoción - Tuning")]
+    [Tooltip("Escala para el parámetro de entrada de locomoción (InputMagnitude)")]
+    [SerializeField, Range(0.5f, 2.0f)] private float movementParamScale = 1.25f;
+    [Tooltip("Multiplicador de velocidad de reproducción del Animator durante locomoción")]
+    [SerializeField, Range(0.6f, 2.0f)] private float locomotionAnimSpeed = 1.25f;
 
     AnimatorStateCache _stateCache;
     AnimatorClipCache _clipCache;
 
     bool _isInteracting;
     bool _greetOnCooldown;
+    bool _inBattleMode;
     Transform _player;
     Transform _playerCam;
     Coroutine _faceRoutine;
@@ -247,27 +265,127 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void SetMovementSpeed(float normalizedSpeed, float dampTime = 0.1f)
     {
         if (!animator) return;
-        animator.SetFloat(InputMagnitudeHash, Mathf.Clamp01(normalizedSpeed), dampTime, Time.deltaTime);
+        // Calibrar el parámetro de locomoción y la velocidad de reproducción para reducir foot sliding
+        float scaled = Mathf.Clamp01(normalizedSpeed * movementParamScale);
+        animator.SetFloat(InputMagnitudeHash, scaled, dampTime, Time.deltaTime);
+        // Acelera la reproducción de la locomoción en función del movimiento, pero no sobrepasa el tope
+        animator.speed = Mathf.Lerp(1f, locomotionAnimSpeed, scaled);
+        // Si hay movimiento apreciable, asegurarse de estar en locomoción
+        if (_inBattleMode && normalizedSpeed >= 0.05f)
+            PlayLocomotion();
     }
 
     public void ResetMovement() => SetMovementSpeed(0f, 0f);
 
-    public void PlayOneShot(string stateName)
+    public void SetBattleMode(bool enable)
     {
-        StartCoroutine(CoPlayOneShot(stateName));
+        _inBattleMode = enable;
+        if (animator)
+        {
+            // Asegurar que la capa de UpperBody tenga peso cuando estamos en combate
+            float w = enable ? 1f : 0f;
+            int layer = Mathf.Clamp(upperBodyLayer, 0, animator.layerCount - 1);
+            if (layer > 0)
+                animator.SetLayerWeight(layer, w);
+        }
+        if (!enable)
+        {
+            PlayLocomotion();
+        }
+        // Resetear velocidad global para no afectar a futuros one-shots
+        if (animator) animator.speed = 1f;
+        // Cuando se activa el modo batalla, mantener locomotion activo para poder moverse
+        // El battleIdleState se activará automáticamente cuando speed = 0
     }
 
-    IEnumerator CoPlayOneShot(string stateName)
+    public void PlayBattleIdle()
+    {
+        if (_inBattleMode && !string.IsNullOrEmpty(battleIdleState))
+        {
+            if (animator) animator.speed = 1f;
+            CrossFade(battleIdleState, 0.2f);
+        }
+    }
+
+    public void PlayOneShot(string stateName, int layer = 0)
+    {
+        StartCoroutine(CoPlayOneShot(stateName, layer));
+    }
+
+    IEnumerator CoPlayOneShot(string stateName, int layer = 0)
     {
         if (string.IsNullOrEmpty(stateName) || animator == null)
             yield break;
 
-        CrossFade(stateName, 0.08f);
-        float len = Mathf.Max(0.01f, _clipCache?.GetLength(stateName) ?? 0f);
-        yield return new WaitForSeconds(len);
+        // Asegurar que la velocidad global es 1 para no acelerar el ataque
+        animator.speed = 1f;
+        int targetLayer = forceOneShotsOnBaseLayer ? 0 : Mathf.Clamp(layer, 0, animator.layerCount - 1);
+        // Si la capa es distinta de base, asegurar que tiene peso
+        if (targetLayer > 0)
+            animator.SetLayerWeight(targetLayer, 1f);
 
-        if (!_isInteracting)
+        // Lanzar el crossfade hacia el estado solicitado
+        int stateHash = Animator.StringToHash(stateName);
+        if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] PlayOneShot -> '{stateName}' en capa {targetLayer}", this);
+        CrossFade(stateName, 0.08f, targetLayer);
+
+        // Dejar arrancar la transición al siguiente frame
+        yield return null;
+
+        // Intentar determinar la duración real del estado activo en esa capa
+        float waitSeconds = 0.25f; // fallback breve por si no se puede resolver
+        var current = animator.GetCurrentAnimatorStateInfo(targetLayer);
+        var next = animator.GetNextAnimatorStateInfo(targetLayer);
+        if (current.shortNameHash == stateHash)
+        {
+            waitSeconds = Mathf.Max(0.01f, current.length);
+            if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] Estado activo coincide. len={waitSeconds:F2}", this);
+        }
+        else if (next.shortNameHash == stateHash)
+        {
+            waitSeconds = Mathf.Max(0.01f, next.length);
+            if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] Estado en transición coincide. len={waitSeconds:F2}", this);
+        }
+        else
+        {
+            // Fallback por nombre de clip en cache
+            float clipLen = _clipCache?.GetLength(stateName) ?? 0f;
+            if (clipLen > 0f) waitSeconds = clipLen;
+            if (verboseLogs) Debug.LogWarning($"[NPCSimpleAnimator] No se pudo resolver estado por hash en capa {targetLayer}. Fallback len={waitSeconds:F2}", this);
+        }
+
+        // Esperar a que la animación termine (preferible por normalizedTime)
+        float safetyCap = Mathf.Min(3.0f, waitSeconds + 0.2f);
+        float elapsed = 0f;
+        bool finished = false;
+        while (elapsed < safetyCap)
+        {
+            var st = animator.GetCurrentAnimatorStateInfo(targetLayer);
+            if (st.shortNameHash == stateHash && st.normalizedTime >= 0.98f)
+            {
+                finished = true;
+                break;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] PlayOneShot fin. finished={finished}, elapsed={elapsed:F2}", this);
+
+        // Después del ataque, volver al idle de batalla si estamos en modo batalla
+        // (El CombatBrain se encargará de cambiar a locomotion cuando necesite moverse)
+        if (_inBattleMode)
+        {
+            // Si fue una animación en upperBodyLayer, volver a idle correspondiente de UpperBody
+            if (targetLayer == upperBodyLayer && !string.IsNullOrEmpty(upperBodyIdleState))
+                CrossFade(upperBodyIdleState, 0.15f, targetLayer);
+            else if (!string.IsNullOrEmpty(battleIdleState))
+                CrossFade(battleIdleState, 0.15f);
+        }
+        else if (!_isInteracting)
+        {
+            if (animator) animator.speed = 1f;
             PlayLocomotion();
+        }
     }
 
     // ===== Helpers de animación =====
@@ -280,11 +398,40 @@ public class NPCSimpleAnimator : MonoBehaviour
             animator?.CrossFadeInFixedTime(locomotionState, 0.1f, 0, 0f);
     }
 
-    void CrossFade(string stateName, float fade)
+    void CrossFade(string stateName, float fade, int layer = 0)
     {
         if (string.IsNullOrEmpty(stateName) || animator == null)
             return;
 
+        // Si se especifica una capa != 0, usar directamente el animator
+        if (layer != 0)
+        {
+            int hash = Animator.StringToHash(stateName);
+            // Si el estado no existe en esa capa, intentar encontrar una capa válida
+            if (layer < animator.layerCount && animator.HasState(layer, hash))
+            {
+                animator.CrossFadeInFixedTime(hash, fade, layer, 0f);
+            }
+            else
+            {
+                // Buscar en otras capas
+                for (int i = 1; i < animator.layerCount; i++)
+                {
+                    if (animator.HasState(i, hash))
+                    {
+                        // Asegurar peso de la capa
+                        animator.SetLayerWeight(i, 1f);
+                        animator.CrossFadeInFixedTime(hash, fade, i, 0f);
+                        return;
+                    }
+                }
+                // Fallback a capa base si nada coincide
+                animator.CrossFadeInFixedTime(hash, fade, 0, 0f);
+            }
+            return;
+        }
+
+        // Para capa 0, usar el cache que resuelve automáticamente la capa
         if (!_stateCache?.CrossFade(stateName, fade) ?? true)
             animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
     }

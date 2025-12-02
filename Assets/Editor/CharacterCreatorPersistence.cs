@@ -52,12 +52,6 @@ public static class CharacterCreatorPersistence
             }
 
             _savedBuilderPath = GetGameObjectPath(builder.gameObject);
-            
-            Debug.Log($"[Persistence] Configuración guardada: {_savedSelection.Count} partes activas");
-            foreach (var part in _savedSelection)
-            {
-                Debug.Log($"  - {part.Key}: {part.Value}");
-            }
         }
     }
 

@@ -169,6 +169,11 @@ MonoBehaviour:
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 134.40001, y: 65.5}
+  - guid: f741fdce-a918-4e77-ba50-233c4a3aa8bd
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 84.200005, y: 59.5}
   storyLinks: []
   quickNotes:
   - title: 
