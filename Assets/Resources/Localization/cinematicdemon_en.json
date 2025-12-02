@@ -17,6 +17,14 @@
             "text": "There's a letter on the table... What might it contain?"
         },
         {
+            "id": "CIV_01",
+            "text": "So... the star has finally awakened."
+        },
+        {
+            "id": "CIV_02",
+            "text": "The first step is complete..."
+        },
+        {
             "id": "EVT_01",
             "text": "[EN] Will llega con la caja de frutas."
         },

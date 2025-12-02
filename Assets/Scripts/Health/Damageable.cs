@@ -103,6 +103,12 @@ public class Damageable : MonoBehaviour, IDamageable
         }
     }
 
+    // === Nuevo: permitir cambiar política de destrucción en runtime ===
+    public void SetDestroyOnDeath(bool destroy)
+    {
+        destroyOnDeath = destroy;
+    }
+
 #if UNITY_EDITOR
     void OnValidate()
     {
