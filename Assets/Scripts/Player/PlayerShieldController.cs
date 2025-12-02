@@ -14,6 +14,7 @@ public class PlayerShieldController : MonoBehaviour
     [Header("Animaciones")]
     [SerializeField] private string defendAnimation = "Defend_NoWeapon";
     [SerializeField] private string defendHitAnimation = "DefendHit_NoWeapon";
+    [SerializeField] private string locomotionAnimation = "Free Locomotion";
 
     [Header("Colisiones a bloquear")]
     [SerializeField] private string[] blockLayerNames = { "Enemy", "ProjectileEnemy" };
@@ -25,6 +26,7 @@ public class PlayerShieldController : MonoBehaviour
     private readonly HashSet<int> _blockedLayers = new();
     private bool _isDefending;
     private int _playerLayer;
+    private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
 
     void Awake()
     {
@@ -99,6 +101,7 @@ public class PlayerShieldController : MonoBehaviour
             return;
 
         _isDefending = true;
+        ForceStopLocomotion();
         ActivateShield();
         PlayAnimation(defendAnimation);
     }
@@ -110,6 +113,7 @@ public class PlayerShieldController : MonoBehaviour
 
         _isDefending = false;
         DeactivateShield();
+        PlayAnimation(locomotionAnimation);
     }
 
     private void ActivateShield()
@@ -148,6 +152,12 @@ public class PlayerShieldController : MonoBehaviour
     {
         if (_animator == null || string.IsNullOrEmpty(animationName)) return;
         _animator.Play(animationName);
+    }
+
+    private void ForceStopLocomotion()
+    {
+        if (_animator == null) return;
+        _animator.SetFloat(InputMagnitudeHash, 0f);
     }
 
     private void CacheBlockedLayers()
