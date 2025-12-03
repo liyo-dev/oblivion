@@ -138,7 +138,7 @@ public class PlayerShieldController : MonoBehaviour
             ConfigureShieldDetector(_shieldInstance);
         }
 
-        SetLayerIgnores(true);
+        SetLayerIgnores(false);
     }
 
     private void DeactivateShield()
