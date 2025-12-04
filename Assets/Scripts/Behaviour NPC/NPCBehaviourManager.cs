@@ -1189,9 +1189,9 @@ namespace Game.NPC
 
             [Header("Música y eventos")]
             [Tooltip("Evento custom para la fase de alerta/persecución. Se emite al detectar al jugador.")]
-            public string alertMusicEvent = "";
+            public string alertMusicEvent = "Npc_Battle_Alert";
             [Tooltip("ID de batalla para AudioGraphProfile (se usa en BATTLE_START:{id} y BattleWon)")]
-            public string battleMusicId = "";
+            public string battleMusicId = "Npc_Battle";
             [Tooltip("Evento custom opcional para restaurar/ajustar la música cuando acaba la batalla.")]
             public string endMusicEvent = "";
 
@@ -1298,6 +1298,7 @@ namespace Game.NPC
             [Header("Battle Events")]
             public UnityEvent onBattleStarted;
             public UnityEvent onBattleFinished;
+            public UnityEvent onBattleWon;
 
             NPCBehaviourManager _ctx;
             NPCCombatBrain _combatBrain;
@@ -1356,14 +1357,10 @@ namespace Game.NPC
             [Min(0f)] public float deathPoseHoldSeconds = 0.35f;
             [Tooltip("Animación de victoria del jugador")]
             public string playerVictoryAnimation = "Dance_NoWeapon";
-            [Tooltip("Cámara opcional a usar para la secuencia de victoria del jugador. Si está vacía, buscará un hijo en el player.")]
-            public GameObject playerVictoryCamera;
-            [Tooltip("Nombre del hijo que se buscará en el jugador para usar como cámara de victoria si no hay referencia directa.")]
-            public string playerVictoryCameraChildName = "VictoryCamera";
             [Tooltip("Layer Unity para combate (Enemy)")]
-            public int enemyUnityLayer = 0;
+            public int enemyUnityLayer = 7;
             [Tooltip("Layer Unity post-derrota (Interactable)")]
-            public int interactableUnityLayer = 0;
+            public int interactableUnityLayer = 8;
             [Tooltip("Si está activo, reproducirá el diálogo de derrota tras la batalla si existe.")]
             public bool useDialogueAfterBattle = true;
             [Tooltip("Diálogo repetible tras derrota")]
@@ -1394,6 +1391,10 @@ namespace Game.NPC
                  if (string.IsNullOrEmpty(challengeAlertState)) challengeAlertState = "SenseSomethingStart_NoWeapon";
                  if (string.IsNullOrEmpty(challengeState)) challengeState = "Challenging_NoWeapon";
                  if (string.IsNullOrEmpty(battleIdleState)) battleIdleState = "Idle_Battle_NoWeapon";
+                 // Defaults de música para facilitar creación rápida de NPCs de batalla
+                 if (string.IsNullOrWhiteSpace(alertMusicEvent)) alertMusicEvent = "Npc_Battle_Alert";
+                 if (string.IsNullOrWhiteSpace(battleMusicId)) battleMusicId = "Npc_Battle";
+                 if (string.IsNullOrWhiteSpace(endMusicEvent)) endMusicEvent = "Npc_Battle_Victory";
                  // Por defecto NO requerimos Animation Events para spawnear (más robusto)
                  // Si tus clips tienen eventos AE_FireX, puedes activarlo manualmente desde código.
                  spawnProjectileViaAnimationEvent = false;
@@ -1865,7 +1866,9 @@ namespace Game.NPC
                 if (string.IsNullOrWhiteSpace(alertMusicEvent))
                     return;
 
+                // Emitir evento custom (para otros sistemas) y pedir música de alerta al AudioService
                 DefaultNarrativeSignals.Instance?.RaiseCustom(alertMusicEvent);
+                AudioService.Instance?.BeginAlertById(alertMusicEvent);
                 _alertMusicRaised = true;
             }
 
@@ -1880,9 +1883,17 @@ namespace Game.NPC
 
             void RestoreBattleMusic()
             {
-                if (!string.IsNullOrWhiteSpace(endMusicEvent))
+                // Si hay evento de victoria, reproducir primero esa música y restaurar después
+                if (!string.IsNullOrWhiteSpace(endMusicEvent) && !string.IsNullOrWhiteSpace(battleMusicId))
+                {
                     DefaultNarrativeSignals.Instance?.RaiseCustom(endMusicEvent);
+                    // Mantener la victoria el tiempo suficiente para el focus + extra + anim de victoria (~2s)
+                    float hold = Mathf.Max(1.5f, victoryFocusSeconds + victoryExtraSeconds + 2.0f);
+                    AudioService.Instance?.PlayVictoryForBattle(battleMusicId, endMusicEvent, hold);
+                    return;
+                }
 
+                // Fallback: si no hay música de victoria configurada, restaurar inmediatamente
                 if (!string.IsNullOrWhiteSpace(battleMusicId))
                 {
                     DefaultNarrativeSignals.Instance?.RaiseBattleWon(battleMusicId);
@@ -2185,8 +2196,7 @@ namespace Game.NPC
             {
                 if (_battleFinished)
                     return;
-                // Impacto de cámara y slow-mo justo en el golpe letal
-                CameraImpactOnKill();
+                CameraImpactOnKillMain();
                 StartDefeatSequence();
             }
 
@@ -2256,6 +2266,7 @@ namespace Game.NPC
                 // Recompensas y música
                 GrantRewards();
                 RestoreBattleMusic();
+                onBattleWon?.Invoke();
                 HideHealthBar();
 
                 // Animación de victoria del jugador y FX (sin cambio de cámara)
@@ -2332,42 +2343,7 @@ namespace Game.NPC
                 yield return new WaitForSecondsRealtime(wait);
             }
 
-            void CameraImpactOnKill()
-            {
-                // Pequeño slow-mo y sacudida de cámara al golpe letal
-                _ctx.RunCoroutine(KillImpactRoutine());
-            }
-
-            IEnumerator KillImpactRoutine()
-            {
-                // Slowmo más fuerte usando timeScale
-                float originalTimeScale = Time.timeScale;
-                float originalFixedDelta = Time.fixedDeltaTime;
-                Time.timeScale = 0.2f;
-                Time.fixedDeltaTime = originalFixedDelta * Time.timeScale;
-
-                // Shake sobre la cámara del jugador si existe
-                Transform cam = _ctx.PlayerCamera;
-                Vector3 basePos = cam ? cam.localPosition : Vector3.zero;
-                float duration = 0.6f;
-                float t = 0f;
-                while (t < duration)
-                {
-                    t += Time.unscaledDeltaTime;
-                    if (cam)
-                    {
-                        float strength = Mathf.Lerp(0.25f, 0f, t / duration);
-                        cam.localPosition = basePos + new Vector3(
-                            UnityEngine.Random.Range(-strength, strength),
-                            UnityEngine.Random.Range(-strength, strength),
-                            0f);
-                    }
-                    yield return null;
-                }
-                if (cam) cam.localPosition = basePos;
-                Time.timeScale = originalTimeScale;
-                Time.fixedDeltaTime = originalFixedDelta;
-            }
+            // Eliminado: efectos de cámara sobre el jugador
 
             void TryDisableDestroyOnDeath(object health)
             {
@@ -2444,6 +2420,40 @@ namespace Game.NPC
                     yield return null;
                 }
                 cam.rotation = startRot;
+            }
+
+            void CameraImpactOnKillMain()
+            {
+                _ctx.RunCoroutine(KillImpactRoutineMain());
+            }
+
+            IEnumerator KillImpactRoutineMain()
+            {
+                float originalTimeScale = Time.timeScale;
+                float originalFixedDelta = Time.fixedDeltaTime;
+                Time.timeScale = 0.2f;
+                Time.fixedDeltaTime = originalFixedDelta * Time.timeScale;
+
+                var mainCam = Camera.main ? Camera.main.transform : null;
+                Vector3 basePos = mainCam ? mainCam.localPosition : Vector3.zero;
+                float duration = 0.6f;
+                float t = 0f;
+                while (t < duration)
+                {
+                    t += Time.unscaledDeltaTime;
+                    if (mainCam)
+                    {
+                        float strength = Mathf.Lerp(0.25f, 0f, t / duration);
+                        mainCam.localPosition = basePos + new Vector3(
+                            UnityEngine.Random.Range(-strength, strength),
+                            UnityEngine.Random.Range(-strength, strength),
+                            0f);
+                    }
+                    yield return null;
+                }
+                if (mainCam) mainCam.localPosition = basePos;
+                Time.timeScale = originalTimeScale;
+                Time.fixedDeltaTime = originalFixedDelta;
             }
 
             Damageable ResolveHealth()

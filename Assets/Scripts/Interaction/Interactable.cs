@@ -52,6 +52,8 @@ public class Interactable : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += RestoreSingleUseStateFromPreset;
+        // Re-aplicar estado single-use también cuando el preset se re-aplique en runtime (tras cargar save)
+        PlayerPresetService.OnPresetApplied += HandlePresetApplied;
 
         if (GameBootService.IsAvailable)
             RestoreSingleUseStateFromPreset();
@@ -60,6 +62,14 @@ public class Interactable : MonoBehaviour
     void OnDisable()
     {
         GameBootService.OnProfileReady -= RestoreSingleUseStateFromPreset;
+        PlayerPresetService.OnPresetApplied -= HandlePresetApplied;
+    }
+
+    void HandlePresetApplied()
+    {
+        // Cuando el PlayerPresetService re-aplica el preset (por ejemplo tras Load),
+        // refrescar el estado single-use desde el preset activo.
+        RestoreSingleUseStateFromPreset();
     }
 
     public void SetHintVisible(bool visible)

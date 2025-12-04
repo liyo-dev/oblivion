@@ -212,12 +212,26 @@ public class Inventory : MonoBehaviour
 
     private void PreloadKnownItems()
     {
-        if (knownItems == null) return;
-        for (int i = 0; i < knownItems.Count; i++)
+        if (knownItems != null)
         {
-            var item = knownItems[i];
-            if (!item) continue;
-            RegisterDefinition(item);
+            for (int i = 0; i < knownItems.Count; i++)
+            {
+                var item = knownItems[i];
+                if (!item) continue;
+                RegisterDefinition(item);
+            }
+        }
+
+        // Además, precargar todas las definiciones del ItemRegistry (si existe)
+        var registry = ItemRegistrySO.LoadDefault();
+        if (registry != null && registry.Items != null)
+        {
+            for (int i = 0; i < registry.Items.Count; i++)
+            {
+                var item = registry.Items[i];
+                if (!item) continue;
+                RegisterDefinition(item);
+            }
         }
     }
 

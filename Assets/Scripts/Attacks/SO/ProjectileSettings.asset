@@ -14,10 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileSettingsSO
   damageableLayers:
     serializedVersion: 2
-    m_Bits: 128
-  collisionLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  ignoreCollisionLayers:
-    serializedVersion: 2
-    m_Bits: 1048
+    m_Bits: 2193

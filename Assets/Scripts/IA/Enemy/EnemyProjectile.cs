@@ -18,6 +18,7 @@ public class EnemyProjectile : MonoBehaviour
     private bool initialized = false;
     private bool hasHit = false;
     private Rigidbody rb;
+    private System.Collections.Generic.List<GameObject> _attachedVfx;
 
     void Awake()
     {
@@ -68,6 +69,18 @@ public class EnemyProjectile : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
 
+    // Permite registrar VFX asociados al proyectil para que se destruyan cuando este desaparezca
+    public void RegisterAttachedVFX(GameObject vfx, bool parentToProjectile = true)
+    {
+        if (vfx == null) return;
+        _attachedVfx ??= new System.Collections.Generic.List<GameObject>();
+        _attachedVfx.Add(vfx);
+        if (parentToProjectile)
+        {
+            try { vfx.transform.SetParent(transform, true); } catch { }
+        }
+    }
+
     void FixedUpdate()
     {
         // Usar FixedUpdate para movimiento de física (más suave)
@@ -88,6 +101,14 @@ public class EnemyProjectile : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (hasHit) return; // Evitar múltiples hits
+        
+        // Si impacta contra el escudo del jugador (marcado explícitamente), se destruye y no aplica daño al player
+        if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
+        {
+            hasHit = true;
+            DestroyProjectile();
+            return;
+        }
         
         // Ignorar al propio demonio y sus triggers
         if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
@@ -164,6 +185,18 @@ public class EnemyProjectile : MonoBehaviour
             rb.isKinematic = true;
         }
 
+        // Destruir cualquier VFX registrado/adjunto
+        if (_attachedVfx != null)
+        {
+            for (int i = _attachedVfx.Count - 1; i >= 0; i--)
+            {
+                var go = _attachedVfx[i];
+                _attachedVfx.RemoveAt(i);
+                if (go == null) continue;
+                try { Destroy(go); } catch { }
+            }
+        }
+
         // Efecto visual de impacto
         if (hitEffectPrefab)
         {
@@ -172,5 +205,20 @@ public class EnemyProjectile : MonoBehaviour
 
         // Destruir el proyectil
         Destroy(gameObject);
+    }
+
+    void OnDestroy()
+    {
+        // Salvaguarda: si se destruye por lifetime o desde fuera, limpiar VFX registrados
+        if (_attachedVfx != null)
+        {
+            for (int i = _attachedVfx.Count - 1; i >= 0; i--)
+            {
+                var go = _attachedVfx[i];
+                _attachedVfx.RemoveAt(i);
+                if (go == null) continue;
+                try { Destroy(go); } catch { }
+            }
+        }
     }
 }

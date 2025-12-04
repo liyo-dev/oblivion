@@ -13,8 +13,10 @@ public class QuestManager : MonoBehaviour
     // runtime: questId -> RuntimeQuest
     private readonly Dictionary<string, RuntimeQuest> _runtime = new(64);
 
-    // visibilidad/seguimiento por quest
+    // visibilidad por quest (archivada vs visible)
     private readonly Dictionary<string, QuestVisibility> _visibility = new(StringComparer.Ordinal);
+    // seguimiento ("seguir" misión en el tracker)
+    private readonly HashSet<string> _followed = new(StringComparer.Ordinal);
 
     // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
     private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
@@ -25,6 +27,7 @@ public class QuestManager : MonoBehaviour
     public event Action<string, int> OnStepCompleted;
     public event Action OnQuestsChanged;
     public event Action<string, QuestVisibility> OnQuestVisibilityChanged;
+    public event Action<string, bool> OnQuestFollowChanged;
 
     #region Unity
     void Awake()
@@ -63,6 +66,30 @@ public class QuestManager : MonoBehaviour
         OnQuestsChanged?.Invoke();
     }
 
+    public bool IsFollowed(string questId)
+    {
+        if (string.IsNullOrEmpty(questId)) return false;
+        return _followed.Contains(questId);
+    }
+
+    public void SetFollowed(string questId, bool followed)
+    {
+        if (string.IsNullOrEmpty(questId)) return;
+        if (!_runtime.ContainsKey(questId)) return;
+
+        bool changed;
+        if (followed)
+            changed = _followed.Add(questId);
+        else
+            changed = _followed.Remove(questId);
+
+        if (changed)
+        {
+            OnQuestFollowChanged?.Invoke(questId, followed);
+            OnQuestsChanged?.Invoke();
+        }
+    }
+
     public void AddQuest(QuestData data)
     {
         if (!data || string.IsNullOrEmpty(data.questId) || _runtime.ContainsKey(data.questId)) return;
@@ -70,6 +97,7 @@ public class QuestManager : MonoBehaviour
         var rq = new RuntimeQuest(data);
         _runtime[data.questId] = rq;
         _visibility[data.questId] = QuestVisibility.Visible;
+        _followed.Remove(data.questId);
         IndexQuestConditions(rq);
         OnQuestsChanged?.Invoke();
     }
@@ -84,6 +112,7 @@ public class QuestManager : MonoBehaviour
             rq = new RuntimeQuest(data);
             _runtime[questId] = rq;
             _visibility[questId] = QuestVisibility.Visible;
+            _followed.Remove(questId);
             IndexQuestConditions(rq);
         }
 
@@ -153,10 +182,15 @@ public class QuestManager : MonoBehaviour
     //   QUEST_COMPLETED:<questId>
     //   QUEST_ACTIVE:<questId>
     //   QUEST_STEP_DONE:<questId>:<stepIndex>
+    //   QUEST_ARCHIVED:<questId>
+    //   QUEST_FOLLOWED:<questId>
 
     private const string Q_COMPLETED = "QUEST_COMPLETED:";
     private const string Q_ACTIVE    = "QUEST_ACTIVE:";
     private const string Q_STEP_DONE = "QUEST_STEP_DONE:";
+    private const string Q_ARCHIVED  = "QUEST_ARCHIVED:";
+    private const string Q_FOLLOWED  = "QUEST_FOLLOWED:"; // legacy alias
+    private const string Q_TRACKED   = "QUEST_TRACKED:";
 
     /// <summary>Reconstruye el estado a partir de flags del perfil.</summary>
     public void RestoreFromProfileFlags(IReadOnlyList<string> flags)
@@ -166,6 +200,8 @@ public class QuestManager : MonoBehaviour
         if (flags == null || flags.Count == 0) return;
 
         var toActive = new HashSet<string>(StringComparer.Ordinal);
+        var toArchived = new HashSet<string>(StringComparer.Ordinal);
+        var toFollowed = new HashSet<string>(StringComparer.Ordinal);
 
         // 1) Marcar completadas / recopilar activas
         for (int i = 0; i < flags.Count; i++)
@@ -193,6 +229,21 @@ public class QuestManager : MonoBehaviour
                 EnsureRuntimeQuest(qid, out _);
                 toActive.Add(qid);
             }
+            else if (f.StartsWith(Q_ARCHIVED, StringComparison.Ordinal))
+            {
+                var qid = f.Substring(Q_ARCHIVED.Length);
+                if (string.IsNullOrEmpty(qid)) continue;
+                EnsureRuntimeQuest(qid, out _);
+                toArchived.Add(qid);
+            }
+            else if (f.StartsWith(Q_FOLLOWED, StringComparison.Ordinal) || f.StartsWith(Q_TRACKED, StringComparison.Ordinal))
+            {
+                var prefixLen = f.StartsWith(Q_FOLLOWED, StringComparison.Ordinal) ? Q_FOLLOWED.Length : Q_TRACKED.Length;
+                var qid = f.Substring(prefixLen);
+                if (string.IsNullOrEmpty(qid)) continue;
+                EnsureRuntimeQuest(qid, out _);
+                toFollowed.Add(qid);
+            }
         }
 
         foreach (var qid in toActive)
@@ -201,7 +252,27 @@ public class QuestManager : MonoBehaviour
                 rq.State = QuestState.Active;
         }
 
-        // 2) Marcar pasos completados
+        // 2) Aplicar visibilidad archivada
+        foreach (var qid in toArchived)
+        {
+            if (_runtime.ContainsKey(qid))
+                _visibility[qid] = QuestVisibility.Hidden;
+        }
+
+        // 3) Aplicar seguimiento
+        _followed.Clear();
+        foreach (var qid in toFollowed)
+        {
+            if (_runtime.ContainsKey(qid))
+            {
+                _followed.Add(qid);
+                // No sobrescribir "Hidden" con "Tracked": si está archivada, mantener Hidden
+                if (GetVisibility(qid) != QuestVisibility.Hidden)
+                    _visibility[qid] = QuestVisibility.Tracked;
+            }
+        }
+
+        // 4) Marcar pasos completados
         for (int i = 0; i < flags.Count; i++)
         {
             var f = flags[i];
@@ -259,6 +330,22 @@ public class QuestManager : MonoBehaviour
                 for (int i = 0; i < rq.Steps.Length; i++)
                     if (rq.Steps[i].completed)
                         outFlags.Add($"{Q_STEP_DONE}{rq.Id}:{i}");
+            }
+
+            // Visibilidad: si está archivada, emitir flag
+            if (GetVisibility(rq.Id) == QuestVisibility.Hidden)
+            {
+                outFlags.Add(Q_ARCHIVED + rq.Id);
+            }
+            // Seguimiento: emitir solo si NO está archivada
+            // Evita que una misión archivada se restaure como seguida/"tracked" al cargar.
+            var vis = GetVisibility(rq.Id);
+            if (vis != QuestVisibility.Hidden)
+            {
+                if (IsFollowed(rq.Id) || vis == QuestVisibility.Tracked)
+                {
+                    outFlags.Add(Q_TRACKED + rq.Id);
+                }
             }
         }
     }
@@ -339,6 +426,7 @@ public class QuestManager : MonoBehaviour
         _runtime.Clear();
         _conditionIndex.Clear();
         _visibility.Clear();
+        _followed.Clear();
         OnQuestsChanged?.Invoke();
     }
 }

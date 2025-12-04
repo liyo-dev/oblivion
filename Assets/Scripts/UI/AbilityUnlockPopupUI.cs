@@ -24,6 +24,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     AbilityId? _pendingAbility;
     AbilityKey? _pendingAbilityKey;
     private bool _listeningForAnyButton = false;
+    private bool _deferredByCinematic = false;
+    private PlayerActionManager _actionManager;
 
     void Awake()
     {
@@ -41,6 +43,16 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // todavía no fue activada en la jerarquía cuando se otorga la habilidad.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
+
+        // Intentar resolver PlayerActionManager para detectar modo Cinematic
+        if (_actionManager == null)
+        {
+            _actionManager = GetComponentInParent<PlayerActionManager>();
+            if (_actionManager == null)
+            {
+                PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
+            }
+        }
     }
 
     void OnEnable()
@@ -52,6 +64,18 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
+
+        // Suscribirse a cambios de modo para saber cuándo termina la cinemática
+        if (_actionManager == null)
+        {
+            _actionManager = GetComponentInParent<PlayerActionManager>();
+            if (_actionManager == null)
+            {
+                PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
+            }
+        }
+        if (_actionManager != null)
+            _actionManager.OnTopModeChanged += HandleTopModeChanged;
     }
 
     void OnDisable()
@@ -60,6 +84,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
 
         GamepadInputReader.OnInput -= HandleGamepadInput;
+
+        if (_actionManager != null)
+            _actionManager.OnTopModeChanged -= HandleTopModeChanged;
     }
 
     void OnDestroy()
@@ -69,6 +96,9 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
+
+        if (_actionManager != null)
+            _actionManager.OnTopModeChanged -= HandleTopModeChanged;
     }
 
     private void HandleAbilityUnlocked(AbilityId ability)
@@ -92,6 +122,14 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
 
         Debug.Log($"[AbilityUnlockPopupUI] ShowPopup: pendingAbility={_pendingAbility}, pendingAbilityKey={_pendingAbilityKey}");
+
+        // Si estamos en modo Cinematic, aplazar el popup hasta que termine
+        if (_actionManager != null && _actionManager.Top == ActionMode.Cinematic)
+        {
+            _deferredByCinematic = true;
+            Debug.Log("[AbilityUnlockPopupUI] Cinemática activa → se aplaza el popup de habilidad");
+            return;
+        }
 
         if (_pendingAbility != null)
         {
@@ -152,5 +190,16 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // Cualquier evento de botón o navegación proveniente del GamepadInputReader
         // es suficiente para cerrar el popup.
         HidePopup();
+    }
+
+    void HandleTopModeChanged(ActionMode top)
+    {
+        // Cuando la cinemática termina y existe un popup aplazado, mostrarlo ahora
+        if (_deferredByCinematic && top != ActionMode.Cinematic)
+        {
+            _deferredByCinematic = false;
+            // Reintentar mostrar usando los datos pendientes
+            ShowPopup();
+        }
     }
 }

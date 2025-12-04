@@ -208,8 +208,6 @@ public class ModularAutoBuilder : MonoBehaviour
 
         foreach (var kv in parts)
             kv.Value.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
-            
-        Debug.Log($"[ModularAutoBuilder.CacheAll] Cacheado completo. Total categorías con partes: {parts.Count(p => p.Value.Count > 0)}");
     }
 
     static string GetPath(Transform t)

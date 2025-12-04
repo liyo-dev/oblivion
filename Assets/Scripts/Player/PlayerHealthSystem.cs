@@ -185,8 +185,7 @@ public class PlayerHealthSystem : MonoBehaviour
                 _renderers[i].material = _originalMaterials[i];
             }
         }
-        
-        Debug.Log($"[PlayerHealthSystem] Materiales originales cacheados para {_originalMaterials.Length} renderers");
+    
     }
     
     /// <summary>

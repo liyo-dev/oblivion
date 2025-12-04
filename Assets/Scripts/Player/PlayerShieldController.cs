@@ -17,15 +17,20 @@ public class PlayerShieldController : MonoBehaviour
     [SerializeField] private string locomotionAnimation = "Free Locomotion";
     [SerializeField] private int upperBodyLayer = 1;
     [SerializeField] private float upperBodyTransitionDuration = 0.1f;
+    [SerializeField, Min(0f)] private float hitFeedbackDuration = 0.3f; // tiempo de feedback antes de volver a defensa
 
     [Header("Colisiones a bloquear")]
     [SerializeField] private string[] blockLayerNames = { "Enemy", "ProjectileEnemy" };
+    
+    [Header("Ignorar daño al player (capas de proyectil)")]
+    [SerializeField] private string[] ignorePlayerLayerNames = { "ProjectileEnemy", "Projectile" };
 
     private PlayerControls _controls;
     private bool _ownsControls;
     private Animator _animator;
     private GameObject _shieldInstance;
     private readonly HashSet<int> _blockedLayers = new();
+    private readonly HashSet<int> _ignoredLayers = new();
     private bool _isDefending;
     private int _playerLayer;
     private float _originalUpperBodyWeight;
@@ -37,6 +42,7 @@ public class PlayerShieldController : MonoBehaviour
         _playerLayer = gameObject.layer;
         CacheUpperBodyWeight();
         CacheBlockedLayers();
+        CacheIgnoredLayers();
     }
 
     void OnEnable()
@@ -138,7 +144,7 @@ public class PlayerShieldController : MonoBehaviour
             ConfigureShieldDetector(_shieldInstance);
         }
 
-        SetLayerIgnores(false);
+        SetLayerIgnores(true);
     }
 
     private void DeactivateShield()
@@ -207,9 +213,23 @@ public class PlayerShieldController : MonoBehaviour
         }
     }
 
+    private void CacheIgnoredLayers()
+    {
+        _ignoredLayers.Clear();
+        foreach (var name in ignorePlayerLayerNames)
+        {
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            int layer = LayerMask.NameToLayer(name);
+            if (layer >= 0)
+                _ignoredLayers.Add(layer);
+            else
+                Debug.LogWarning($"[PlayerShieldController] No se encontró la capa '{name}' para ignorar con el Player.");
+        }
+    }
+
     private void SetLayerIgnores(bool ignore)
     {
-        foreach (int layer in _blockedLayers)
+        foreach (int layer in _ignoredLayers)
         {
             Physics.IgnoreLayerCollision(_playerLayer, layer, ignore);
         }
@@ -229,43 +249,98 @@ public class PlayerShieldController : MonoBehaviour
 
         // No se requiere Rigidbody para el escudo
 
+        // Marcador público para que proyectiles identifiquen el escudo explícitamente
+        if (!shield.TryGetComponent<ShieldMarker>(out var _))
+            shield.AddComponent<ShieldMarker>();
+
         var detector = shield.GetComponent<ShieldHitDetector>() ?? shield.AddComponent<ShieldHitDetector>();
         detector.Initialize(this, _blockedLayers);
     }
 
     internal void OnShieldHit()
     {
-        PlayAnimation(defendHitAnimation);
+        // Reproduce animación de impacto breve en la capa superior y vuelve a defensa.
+        if (string.IsNullOrEmpty(defendHitAnimation)) return;
+        PlayUpperBodyAnimation(defendHitAnimation);
+        if (hitFeedbackDuration > 0f)
+        {
+            // Reinicia el temporizador ante impactos consecutivos
+            CancelInvoke(nameof(ReturnToDefendAnimation));
+            Invoke(nameof(ReturnToDefendAnimation), hitFeedbackDuration);
+        }
+    }
+
+    private void ReturnToDefendAnimation()
+    {
+        if (_isDefending)
+            PlayUpperBodyAnimation(defendAnimation);
     }
 
     private class ShieldHitDetector : MonoBehaviour
     {
         private PlayerShieldController _owner;
         private HashSet<int> _blockedLayers;
+        private int _projectileEnemyLayer;
+        private int _projectileLayer;
 
         public void Initialize(PlayerShieldController owner, HashSet<int> blockedLayers)
         {
             _owner = owner;
             _blockedLayers = blockedLayers;
+            // Resolver capas en runtime (no en constructor/initializer)
+            _projectileEnemyLayer = LayerMask.NameToLayer("ProjectileEnemy");
+            _projectileLayer = LayerMask.NameToLayer("Projectile");
         }
 
         void OnTriggerEnter(Collider other)
         {
-            CheckLayer(other.gameObject.layer);
+            HandleHit(other);
         }
 
         void OnCollisionEnter(Collision collision)
         {
-            CheckLayer(collision.gameObject.layer);
+            HandleHit(collision.collider);
         }
 
-        private void CheckLayer(int layer)
+        private void HandleHit(Collider col)
         {
             if (_owner == null || _blockedLayers == null)
                 return;
 
+            var go = GetRootRigidbodyOrSelf(col);
+            int layer = go.layer;
+
             if (_blockedLayers.Contains(layer))
+            {
                 _owner.OnShieldHit();
+
+                if (IsProjectile(go))
+                {
+                    SafeDestroy(go);
+                }
+            }
+        }
+
+        private static GameObject GetRootRigidbodyOrSelf(Collider col)
+        {
+            return col.attachedRigidbody ? col.attachedRigidbody.gameObject : col.gameObject;
+        }
+
+        private bool IsProjectile(GameObject go)
+        {
+            if (go == null) return false;
+            if (go.GetComponentInParent<EnemyProjectile>() != null) return true;
+            if (go.layer == _projectileEnemyLayer || go.layer == _projectileLayer) return true;
+            return false;
+        }
+
+        private static void SafeDestroy(GameObject go)
+        {
+            if (!go) return;
+            Object.Destroy(go);
         }
     }
+
+    // Componente público y ligero para identificar el escudo en colisiones externas
+    public class ShieldMarker : MonoBehaviour {}
 }

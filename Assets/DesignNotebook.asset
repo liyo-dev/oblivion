@@ -12,17 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec039437ea2c63f4fa571092c671014a, type: 3}
   m_Name: DesignNotebook
   m_EditorClassIdentifier: Assembly-CSharp::DesignNotebook
-  highLevelSynopsis: "</b><b></b></b>El S<u><color=#FFEB3B><color=#FFEB3B></color></color></u>endero
-    de las Estrellas: Resumen de la Trama\n\nHace eones, un mago desafi\xF3 a los
-    dioses recorriendo el Sendero de las Estrellas, una serie de portales c\xF3smicos
-    que ofrec\xEDan poder a quienes superaban sus pruebas. Su deseo final fue convertirse
-    en un ser tan poderoso como los propios dioses. Pero ese deseo fue su perdici\xF3n:
-    al intentar contener tal fuerza, su cuerpo y su mente se quebraron, y su poder
-    desat\xF3 un cataclismo que fragment\xF3 el mundo, conocido como El Quebranto
-    del Alba.\n\nTemerosos de que alguien m\xE1s intentara repetir su error, los
-    dioses sellaron el conocimiento del Sendero en un libro prohibido: el Grimorio
-    de las Estrellas. En \xE9l quedaron escritos los hechizos m\xE1s peligrosos y
-    los secretos para abrir los portales divinos.\n\nEn la era actual, un Antagonista
+  highLevelSynopsis: "Hace eones, un mago desafi\xF3 a los dioses recorriendo el
+    Sendero de las Estrellas, una serie de portales m\xE1gicos que ofrec\xEDan poder
+    a quienes superaran todas sus pruebas. Su deseo final fue convertirse en un ser
+    tan poderoso como los propios dioses. Pero ese deseo fue su perdici\xF3n: al
+    intentar contener tal fuerza, su cuerpo y su mente se quebraron, y al no poder
+    controlar su poder se desat\xF3 un cataclismo que fragment\xF3 el mundo, evento
+    conocido como El Quebranto del Alba. \n\nTemerosos de que alguien m\xE1s intentara
+    repetir su error, los dioses sellaron el conocimiento del Sendero en un libro
+    prohibido: el Grimorio de las Estrellas. En \xE9l quedaron escritos los hechizos
+    m\xE1s peligrosos, entre ellos el peor de todos: El Quebranto del Alba y los
+    secretos para abrir los portales m\xE1gicos.\n\nEn la era actual, un Antagonista
     sin magia descubre la existencia del Grimorio. Desesperado por salvar a su Hermano
     enfermo, comienza a estudiar sus p\xE1ginas, convencido de que el Sendero puede
     concederle un deseo capaz de salvarlo. Sin embargo, el Or\xE1culo Arcano le revela
@@ -54,143 +54,34 @@ MonoBehaviour:
     como s\xEDmbolo de que la verdadera grandeza no proviene de los deseos cumplidos,
     sino de los sacrificios que se hacen por amor.</b>"
   storyCards:
-  - guid: edccfafb-5a1c-4d26-a4c4-b89e9c503559
+  - guid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
+    title: Aprendo proteccion y desbloqueo magia
+    note: Hasblar con Eldran para que me dejen pasar al bosque
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 32, y: 32}
+    size: {x: 320, y: 320}
+  - guid: 9ce4ba89-9370-41ef-a401-5e9125622ed2
     title: Nueva tarjeta
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: be9da337-a01b-458b-8ed7-edef98c4c4aa
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: c4087d36-3eb4-4951-84eb-e231404356ea
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 75d449c5-1fa8-43be-ae45-369cd1644586
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 912c6b89-65e7-4d74-8475-1e7ad7261a6b
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 1f03bd9a-a0c3-44b9-b7d9-e4b68a3091dc
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: c4d19bf0-e6c9-4d35-918f-783900ec1592
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 65b06dfb-8d48-481e-bde1-272402c97827
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: f0f00528-043f-4a9b-b383-13777c21c763
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: e7f6be5c-3f7a-4ef6-b1b2-cd04b17faddf
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 19506b79-fb2c-416f-9cd7-bfd7bdc66e22
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 8a241211-b2d2-4396-9180-e7075de9716a
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 4056ed91-d991-4f11-9c20-1f4ac5856e83
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 533cabc7-cbe4-4328-b9d2-54037de0e004
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 5c6aa1b4-8d51-4f50-886f-b8650ad830ac
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 096b48f2-0ade-4a28-9698-848ffd51b479
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 36291186-c4f6-4bb3-a6c8-44a7a47eed81
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 9293cb08-f4ed-4ff0-9dc2-8cd9b2c8da82
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 74c72893-f71b-47d0-bc58-f6793763f074
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 03665745-f523-4765-ba17-c6f611d27c11
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: b0e4e165-b043-4cb3-b452-c4df3447a689
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 21a5dbbd-6b6f-4766-8a5b-d992023b74fa
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: 3723cf6d-a4d1-4d24-b98e-edcc0bd84daa
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 134.40001, y: 65.5}
-  - guid: f741fdce-a918-4e77-ba50-233c4a3aa8bd
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 84.200005, y: 59.5}
-  storyLinks: []
+    position: {x: 395.02374, y: 31.99997}
+    size: {x: 320, y: 320}
+  storyLinks:
+  - fromGuid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
+    toGuid: 9ce4ba89-9370-41ef-a401-5e9125622ed2
   quickNotes:
-  - title: 
-    note: 
-    tags: 
+  - title: cc
+    note: www
+    tags: bb
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
     position: {x: 0, y: 0}
-  - title: Misiones
-    note: "Mejoras en el panel de las misiones: Mostrar en el panel rapido solo las
-      que no estan completas. El panel debe ocultarse solo. La flecha del Dpad arriba
-      abre / cierra el menu rapido de misiones. Si se deja pulsado abre el extendido.
-      \r\n"
-    tags: 
+  - title: aa
+    note: 222
+    tags: aa
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
-    position: {x: 0, y: 0}
+    position: {x: 248, y: 0}
   - title: Nueva nota
-    note: 
+    note: ccccc
     tags: 
     color: {r: 1, g: 0.95, b: 0.65, a: 1}
-    position: {x: 0, y: 0}
+    position: {x: 0, y: 208}

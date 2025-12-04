@@ -41,9 +41,6 @@ public class LocalizationManager : MonoBehaviour
         _subs.Clear();
         CurrentLocale = locale;
 
-        Debug.Log($"[LocalizationManager] Cargando idioma: {locale}");
-        Debug.Log($"[LocalizationManager] Catálogos a cargar: {string.Join(", ", catalogs)}");
-
         foreach (var cat in catalogs)
         {
             var path = $"Localization/{cat}_{locale}";
@@ -59,19 +56,16 @@ public class LocalizationManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"[LocalizationManager] ✗ No se encontró ni el catálogo {path} ni el fallback");
+                    Debug.LogError($"[Localization] Missing fallback catalog as well: {cat}_{defaultLocale}");
                 }
             }
             else
             {
                 MergeJsonIntoTables(textAsset.text);
-                Debug.Log($"[LocalizationManager] ✓ Cargado catálogo: {cat}_{locale} ({_table.Count} entradas totales)");
             }
         }
 
         OnLocaleChanged?.Invoke();
-        
-        Debug.Log($"[LocalizationManager] Localización completa. Total de {_table.Count} traducciones cargadas.");
         
         // Debug: Mostrar algunas claves cargadas
         int count = 0;
@@ -79,7 +73,6 @@ public class LocalizationManager : MonoBehaviour
         {
             if (key.StartsWith("DLG_") || key.StartsWith("CHAR_"))
             {
-                Debug.Log($"[LocalizationManager]   → {key} = {_table[key]}");
                 count++;
                 if (count >= 5) break; // Mostrar solo las primeras 5
             }

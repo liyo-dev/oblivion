@@ -6,23 +6,15 @@
         },
         {
             "id": "CH1_02",
-            "text": "Here our hero awakens."
+            "text": "Here our hero Will, awakens."
         },
         {
             "id": "CH1_03",
-            "text": "His neighbor, who cares for him, is his best friend."
+            "text": "His neighbor is named Eldran, and he has taken care of him since he was little.\r\n"
         },
         {
             "id": "CH1_04",
             "text": "There's a letter on the table... What might it contain?"
-        },
-        {
-            "id": "CIV_01",
-            "text": "So... the star has finally awakened."
-        },
-        {
-            "id": "CIV_02",
-            "text": "The first step is complete..."
         },
         {
             "id": "EVT_01",

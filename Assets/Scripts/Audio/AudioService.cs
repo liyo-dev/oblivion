@@ -437,6 +437,46 @@ public sealed class AudioService : MonoBehaviour
         }
     }
 
+    // ===========================================================
+    // Alerta (no inicia estado de batalla; solo cambia música)
+    public void BeginAlertById(string id)
+    {
+        var rule = FindBattleRuleForId(id);
+        if (rule != null && rule.music != null)
+        {
+            // No alterar _battleActive ni apilar stack: es solo una alerta temporal
+            PlayMusic(rule.music, rule.fade);
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] BeginAlertById: no hay BattleRule/music para id='{id}'.");
+        }
+    }
+
+    // Inicia música de victoria y tras un tiempo restaura a la escena actual
+    public void PlayVictoryForBattle(string battleId, string victoryId, float holdSeconds = 2f)
+    {
+        var battleRule = FindBattleRuleForId(battleId);
+        var victoryRule = FindBattleRuleForId(victoryId);
+        if (victoryRule != null && victoryRule.music != null)
+        {
+            PlayMusic(victoryRule.music, victoryRule.fade);
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] PlayVictoryForBattle: no hay música de victoria para id='{victoryId}'.");
+        }
+        if (battleRule != null)
+            StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
+    }
+
+    IEnumerator RestoreAfterVictoryDelay(AudioGraphProfile.BattleRule battleRule, float holdSeconds)
+    {
+        if (holdSeconds > 0f)
+            yield return new WaitForSecondsRealtime(holdSeconds);
+        OnBattleWonRestoreMusic(battleRule);
+    }
+
 
     // ===========================================================
     // Música

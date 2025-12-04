@@ -17,10 +17,13 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
     fade: 0
   - battleId: Npc_Battle
-    music: {fileID: 8300000, guid: 8cec8789bac768f42903e5eba038018e, type: 3}
+    music: {fileID: 8300000, guid: 316cecf77c02820419a4df496695d01f, type: 3}
     fade: 0
   - battleId: Npc_Battle_Alert
-    music: {fileID: 8300000, guid: 4f31d39e644aa2f45b28f909f29fda9d, type: 3}
+    music: {fileID: 8300000, guid: 62b4431cd362b8c48af97e06e697bb25, type: 3}
+    fade: 0
+  - battleId: Npc_Battle_Victory
+    music: {fileID: 8300000, guid: 5470781b602096348900f3a6c00ac749, type: 3}
     fade: 0
   sceneMusic:
   - sceneName: Prologo

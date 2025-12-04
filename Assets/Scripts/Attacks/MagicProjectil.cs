@@ -212,6 +212,7 @@ public class MagicProjectile : MonoBehaviour
         // Verificar si esta capa recibe daño
         bool shouldDamage = (_cfg.hitLayers.value & (1 << layer)) != 0;
 
+
         if (shouldDamage)
         {
             // AOE o impacto directo
@@ -266,6 +267,7 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_ended) return;
         _ended = true;
+
 
         // Si muere sin impactar (TTL o rango), dispara VFX de despawn
         if (!byImpact && _cfg.despawnVFX)

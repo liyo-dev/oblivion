@@ -22,7 +22,7 @@
         },
         {
             "key": "CHAR_GUERRERACHINA",
-            "value": "Guerrera China"
+            "value": "Erika"
         },
         {
             "key": "CHAR_LEONARDO",
@@ -66,7 +66,7 @@
         },
         {
             "key": "CHAR_TENDERA",
-            "value": "Tendera"
+            "value": "Bárbara"
         },
         {
             "key": "CHAR_VERONICA",
@@ -222,7 +222,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
-            "value": "Por último habla con ? y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
+            "value": "Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
@@ -258,23 +258,23 @@
         },
         {
             "key": "DLG_GUERRERACHINA_01",
-            "value": "Respira... tu postura tiembla. ¿Buscas fuerza?"
+            "value": "Así que tú eres Will… Eldran me habló de ti."
         },
         {
             "key": "DLG_GUERRERACHINA_02",
-            "value": "Viajé miles de leguas para perfeccionar un solo golpe."
+            "value": "Si te ha enviado aquí, es que cree que aún puedes mejorar."
         },
         {
             "key": "DLG_GUERRERACHINA_03",
-            "value": "La paciencia afila la espada más que la piedra."
+            "value": "Voy a enseñarte un nuevo ataque y una técnica de protección."
         },
         {
             "key": "DLG_GUERRERACHINA_04",
-            "value": "Cuando domines tu equilibrio, te enseñaré mi forma giratoria."
+            "value": "No será fácil, tendrás que esforzarte más que nunca."
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "Tráeme una flor de loto del lago y hablaremos de entrenamiento."
+            "value": "Prepárate, Will. El entrenamiento empieza ahora."
         },
         {
             "key": "DLG_LEONARDO_01",

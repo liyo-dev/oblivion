@@ -31,11 +31,75 @@ MonoBehaviour:
   - rid: 5623891431555335063
   - rid: 5623891444353466377
   - rid: 5623891444353466616
+  - rid: 857239824104947715
+  - rid: 857239824104947716
+  - rid: 857239824104947819
+  - rid: 857239824104947820
   applicableSceneNames:
   - MainWorld
   references:
     version: 2
     RefIds:
+    - rid: 857239824104947715
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: LUCHAMOS CON ERIKA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c235d486-6f5e-4a93-8d96-8721b6dad7d3
+        position: {x: 414, y: 985}
+        outputs:
+        - f5443754-fa40-4852-8b3d-c33d22d23958
+        eventKey: ERIKA_FIGHT
+    - rid: 857239824104947716
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: DESBLOQUEAMOS EL HECHIZO BOLA PRISMA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f5443754-fa40-4852-8b3d-c33d22d23958
+        position: {x: 414.00003, y: 1225.9999}
+        outputs:
+        - c9ca7493-60c5-44db-ae66-9b0e232343e3
+        abilityKeysToUnlock: 
+        abilitiesToUnlock: 
+        spellsToUnlock: 02000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 1
+    - rid: 857239824104947819
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: GANAMOS LA BATALLA CON ERIKA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c9ca7493-60c5-44db-ae66-9b0e232343e3
+        position: {x: 414, y: 1647}
+        outputs:
+        - e1be0c12-dbf5-4e8f-9eca-ba9561f56010
+        eventKey: ERIKA_BATTLE_WON
+    - rid: 857239824104947820
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE COMPLETA PASO DE LA MISION 5
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
+        position: {x: 413.99997, y: 1832.323}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        steps: 02000000
+        completeQuest: 0
+        logWarnings: 1
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -220,6 +284,7 @@ MonoBehaviour:
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - eea578d0-b7c5-4ca9-92f0-0816b720155f
+        - c235d486-6f5e-4a93-8d96-8721b6dad7d3
         questId: ELDRAN_MISSION4
     - rid: 5623891431555334813
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -283,7 +348,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: 104, y: 1003}
+        position: {x: -437.43158, y: 1047.1053}
         outputs:
         - 1771837a-5269-4791-81da-c842d6ebac44
         - acdb775f-f475-47a8-8a8c-732de6cbd1fb
@@ -315,7 +380,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        position: {x: 104, y: 1315}
+        position: {x: -476.9743, y: 1374.3141}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 01000000

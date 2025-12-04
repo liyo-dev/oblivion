@@ -24,6 +24,6 @@ MonoBehaviour:
   - descriptionId: QUEST_ELDRAN_MISSION5_DESC_02
     description: 
     conditionId: 
-  - descriptionId: QUEST_ELDRAN_MISSION4_DESC_03
+  - descriptionId: QUEST_ELDRAN_MISSION5_DESC_03
     description: 
     conditionId: 
