@@ -251,8 +251,37 @@ public class Inventory : MonoBehaviour
     {
         if (string.IsNullOrEmpty(itemId)) return null;
         if (_definitions.TryGetValue(itemId, out var existing) && existing != null)
-            return existing;
+        {
+            // Si la definición que tenemos es un placeholder temporal (sin icono ni nombre),
+            // intentar reemplazarla con la versión real del registro o la lista conocida.
+            if (IsPlaceholder(existing))
+            {
+                var upgraded = TryResolveFromSources(itemId);
+                if (upgraded != null)
+                {
+                    RegisterDefinition(upgraded);
+                    return upgraded;
+                }
+            }
 
+            return existing;
+        }
+
+        // No había definición previa, intentar resolver usando los orígenes conocidos.
+        var resolved = TryResolveFromSources(itemId);
+        if (resolved != null)
+            return resolved;
+
+        // Fallback: crear un ItemData temporal en runtime para no quedar sin referencia
+        var runtimeItem = ScriptableObject.CreateInstance<ItemData>();
+        runtimeItem.itemId = itemId;
+        runtimeItem.displayName = itemId;
+        RegisterDefinition(runtimeItem);
+        return runtimeItem;
+    }
+
+    private ItemData TryResolveFromSources(string itemId)
+    {
         // Intentar encontrarlo en la lista conocida
         if (knownItems != null)
         {
@@ -280,11 +309,16 @@ public class Inventory : MonoBehaviour
             }
         }
 
-        // Fallback: crear un ItemData temporal en runtime para no quedar sin referencia
-        var runtimeItem = ScriptableObject.CreateInstance<ItemData>();
-        runtimeItem.itemId = itemId;
-        runtimeItem.displayName = itemId;
-        RegisterDefinition(runtimeItem);
-        return runtimeItem;
+        return null;
+    }
+
+    private static bool IsPlaceholder(ItemData item)
+    {
+        if (!item) return true;
+
+        bool lacksIcon = item.icon == null;
+        bool lacksName = string.IsNullOrEmpty(item.displayName) || item.displayName == item.itemId;
+
+        return lacksIcon || lacksName;
     }
 }
