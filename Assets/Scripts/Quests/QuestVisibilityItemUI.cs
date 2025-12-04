@@ -12,9 +12,6 @@ public class QuestVisibilityItemUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI questDescription;
     [SerializeField] private Button showButton;
     [SerializeField] private Button hideButton;
-    [Header("Visual")]
-    [SerializeField] private Color highlightColor = new(1f, 0.87f, 0.2f, 1f);
-    [SerializeField] private Color normalColor = new(1f, 1f, 1f, 0.85f);
 
     private QuestManager.RuntimeQuest _data;
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
@@ -82,9 +79,6 @@ public class QuestVisibilityItemUI : MonoBehaviour
     {
         if (btn == null) return;
         Debug.Log($"QuestVisibilityItemUI: SetButtonState '{btn.name}' active={active}");
-        var colors = btn.colors;
-        colors.colorMultiplier = active ? 1.2f : 1f;
-        btn.colors = colors;
     }
 
     void DisableUnusedButtons()
@@ -137,8 +131,6 @@ public class QuestVisibilityItemUI : MonoBehaviour
                 highlight = label.gameObject.AddComponent<MenuTextHighlight>();
 
             highlight.selectionOwner = button.gameObject;
-            highlight.normalColor = normalColor;
-            highlight.starColor = highlightColor;
         }
     }
 

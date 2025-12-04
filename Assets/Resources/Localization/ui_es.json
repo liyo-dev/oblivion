@@ -137,6 +137,14 @@
             "value": "Guardando..."
         },
         {
+            "key": "UI_ARCHIVADAS",
+            "value": "Archivadas"
+        },
+        {
+            "key": "UI_ARCHIVAR",
+            "value": "Archivar"
+        },
+        {
             "key": "UI_Experience",
             "value": "Experiencia"
         },
@@ -151,6 +159,26 @@
         {
             "key": "UI_Mana",
             "value": "Maná"
+        },
+        {
+            "key": "UI_MISIONES",
+            "value": "Misiones"
+        },
+        {
+            "key": "UI_MISIONES_OCULTAR",
+            "value": "[D-Pad ▲] Ocultar"
+        },
+        {
+            "key": "UI_MISIONES_SHOW",
+            "value": "[D-Pad ▲] Mostrar"
+        },
+        {
+            "key": "UI_SEGUIR",
+            "value": "Seguir"
+        },
+        {
+            "key": "UI_SIGUIENDO",
+            "value": "Siguiendo"
         },
         {
             "key": "WATER_ENTER_NEEDS",
