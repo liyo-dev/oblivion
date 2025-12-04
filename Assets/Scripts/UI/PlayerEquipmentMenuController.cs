@@ -968,6 +968,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 #endif
         );
         DontDestroyOnLoad(esGO);
+
+#if ENABLE_INPUT_SYSTEM
+        var inputModule = esGO.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        if (inputModule != null && inputModule.actionsAsset == null)
+        {
+            var controls = GamepadInputReader.ControlsOrNull;
+            if (controls != null && controls.asset != null)
+            {
+                inputModule.actionsAsset = controls.asset;
+            }
+        }
+#endif
     }
 
     [Serializable]
