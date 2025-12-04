@@ -116,8 +116,6 @@ public class QuestLogListUI : MonoBehaviour
             var go = Instantiate(itemPrefab, contentRoot);
             go.Bind(rq); // el propio item gestiona nulls internos
         }
-
-        if (headerText) headerText.text = "Misiones";
     }
 
     void OnQuestStarted(string questId)
@@ -220,7 +218,16 @@ public class QuestLogListUI : MonoBehaviour
     void UpdateHelpText()
     {
         if (!helpText) return;
-        helpText.text = _isPanelVisible ? "[D-Pad ▲] Ocultar" : "[D-Pad ▲] Mostrar";
+        string key = _isPanelVisible ? "UI_MISIONES_OCULTAR" : "UI_MISIONES_SHOW";
+        string fallback = _isPanelVisible ? "Ocultar misiones" : "Mostrar misiones";
+        if (LocalizationManager.Instance != null)
+        {
+            helpText.text = LocalizationManager.Instance.Get(key, fallback);
+        }
+        else
+        {
+            helpText.text = fallback;
+        }
     }
 
     void KillTween()

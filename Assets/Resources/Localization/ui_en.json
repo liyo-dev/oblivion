@@ -137,6 +137,14 @@
             "value": "Saving..."
         },
         {
+            "key": "UI_ARCHIVADAS",
+            "value": "[EN] Archivadas"
+        },
+        {
+            "key": "UI_ARCHIVAR",
+            "value": "[EN] Archivar"
+        },
+        {
             "key": "UI_Experience",
             "value": "Experience"
         },
@@ -151,6 +159,26 @@
         {
             "key": "UI_Mana",
             "value": "Mana"
+        },
+        {
+            "key": "UI_MISIONES",
+            "value": "Quests"
+        },
+        {
+            "key": "UI_MISIONES_OCULTAR",
+            "value": "[D-Pad ▲] Hide"
+        },
+        {
+            "key": "UI_MISIONES_SHOW",
+            "value": "[D-Pad ▲] Show"
+        },
+        {
+            "key": "UI_SEGUIR",
+            "value": "[EN] Seguir"
+        },
+        {
+            "key": "UI_SIGUIENDO",
+            "value": "[EN] Siguiendo"
         },
         {
             "key": "WATER_ENTER_NEEDS",
