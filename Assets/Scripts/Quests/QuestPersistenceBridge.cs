@@ -13,6 +13,8 @@ using System.Collections.Generic;
 public class QuestPersistenceBridge : MonoBehaviour
 {
     private Coroutine _bindCo;
+    private Coroutine _autosaveCo;
+    [SerializeField, Min(0f)] private float autosaveDebounce = 0.6f;
 
     void OnEnable()
     {
@@ -74,11 +76,13 @@ public class QuestPersistenceBridge : MonoBehaviour
     private void HandleQuestVisibilityChanged(string questId, QuestVisibility visibility)
     {
         PushQuestFlagsToPreset();
+        ScheduleAutoSave();
     }
 
     private void HandleQuestFollowChanged(string questId, bool isFollowed)
     {
         PushQuestFlagsToPreset();
+        ScheduleAutoSave();
     }
 
     private void PushQuestFlagsToPreset()
@@ -112,6 +116,41 @@ public class QuestPersistenceBridge : MonoBehaviour
 
         preset.flags = newFlags;
         // Nota: no se escribe a disco aquí; el SavePoint/SaveSystem lo hará cuando se guarde la partida.
+    }
+
+    // === Auto-guardado tras cambios de visibilidad/seguimiento ==================
+    private void ScheduleAutoSave()
+    {
+        if (_autosaveCo != null) StopCoroutine(_autosaveCo);
+        _autosaveCo = StartCoroutine(AutoSaveAfterDelay());
+    }
+
+    private System.Collections.IEnumerator AutoSaveAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(autosaveDebounce);
+
+        // Obtener SaveSystem vía ServiceLocator (sin búsquedas caras)
+        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
+        if (saveSystem == null)
+        {
+            Debug.LogWarning("[QuestPersistenceBridge] No se encontró SaveSystem para auto-guardado de quests.");
+            yield break;
+        }
+        if (!GameBootService.IsAvailable)
+        {
+            Debug.LogWarning("[QuestPersistenceBridge] GameBootService no disponible; se omite auto-guardado.");
+            yield break;
+        }
+        var profile = GameBootService.Profile;
+        if (profile == null)
+        {
+            Debug.LogWarning("[QuestPersistenceBridge] Profile es null; se omite auto-guardado.");
+            yield break;
+        }
+
+        // Guardar directamente el profile (no pasa por allowAutoSaves)
+        profile.SaveProfile(saveSystem, SaveRequestContext.Auto);
+        _autosaveCo = null;
     }
 }
 
