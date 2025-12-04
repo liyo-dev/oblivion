@@ -1137,6 +1137,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void HandleRowActivated(InventoryRowWidget widget, ItemData item, bool focus)
         {
+            bool wasAlreadySelected = _selectedItem == item;
             _selectedItem = item;
             if (_lastSelectedRow != null && _lastSelectedRow != widget)
                 _lastSelectedRow.SetSelectedState(false);
@@ -1144,6 +1145,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _lastSelectedRow?.SetSelectedState(true);
             FocusRow(widget, focus);
             UpdateSelectedItemDetails();
+
+            // If the player presses submit on an already selected item, treat it as a use action.
+            if (focus && wasAlreadySelected)
+                UseSelectedItem();
         }
 
         void FocusRow(InventoryRowWidget widget, bool forceFocus)
