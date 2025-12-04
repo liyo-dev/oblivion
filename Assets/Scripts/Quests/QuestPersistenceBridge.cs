@@ -129,8 +129,8 @@ public class QuestPersistenceBridge : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(autosaveDebounce);
 
-        // Obtener SaveSystem vía ServiceLocator (sin búsquedas caras)
-        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
+        // Buscar SaveSystem y GameBootProfile para guardar
+        var saveSystem = FindFirstObjectByType<SaveSystem>(FindObjectsInactive.Include);
         if (saveSystem == null)
         {
             Debug.LogWarning("[QuestPersistenceBridge] No se encontró SaveSystem para auto-guardado de quests.");
