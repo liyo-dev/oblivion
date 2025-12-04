@@ -1084,6 +1084,14 @@ internal class StoryCardNodeView : Node
     private readonly VisualElement _accentStrip;
     private readonly Color _baseBody = new Color(0.12f, 0.12f, 0.12f);
     private readonly Color _baseHeader = new Color(0.18f, 0.18f, 0.18f);
+    private readonly Color[] _swatchColors = {
+        new Color(0.21f, 0.66f, 0.95f),
+        new Color(0.96f, 0.73f, 0.23f),
+        new Color(0.96f, 0.36f, 0.36f),
+        new Color(0.36f, 0.88f, 0.61f),
+        new Color(0.78f, 0.55f, 0.96f),
+        new Color(0.9f, 0.9f, 0.9f)
+    };
 
     public StoryCardNodeView(DesignStoryCard card, Action onDirty)
     {
@@ -1173,6 +1181,22 @@ internal class StoryCardNodeView : Node
             _onDirty?.Invoke();
         });
         mainContainer.Add(colorField);
+
+        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 6f } };
+        foreach (var c in _swatchColors)
+        {
+            var b = new Button { style = { width = 18f, height = 18f, marginRight = 4f, marginTop = 2f, marginBottom = 2f, paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0 } };
+            b.style.backgroundColor = new StyleColor(c);
+            b.clickable.clicked += () =>
+            {
+                card.color = c;
+                colorField.value = c;
+                UpdateColor();
+                _onDirty?.Invoke();
+            };
+            swatches.Add(b);
+        }
+        mainContainer.Add(swatches);
 
         UpdateColor();
         RefreshExpandedState();
