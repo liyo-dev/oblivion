@@ -6,9 +6,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using DG.Tweening;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 public class PlayerEquipmentMenuController : MonoBehaviour
 {
@@ -433,7 +430,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         var es = EventSystem.current;
         if (es == null)
+        {
+            Debug.LogWarning("[PlayerEquipmentMenu] EventSystem.current is null en HandleUiNavigationInput");
             return;
+        }
 
         if (!_uiNavFromNavigate && _uiNavEvent != Vector2.zero && Time.unscaledTime > _uiNavExpiry)
             _uiNavEvent = Vector2.zero;
@@ -458,8 +458,35 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _lastUiNav = dir;
         _uiNavCooldown = uiNavRepeatDelay;
 
-        if (es.currentSelectedGameObject == null)
-            SelectInitial();
+        var target = es.currentSelectedGameObject;
+
+        if (target == null)
+        {
+            Debug.Log("[PlayerEquipmentMenu] No hay objeto seleccionado, resolviendo foco inicial");
+            var resolved = ResolveInitialTarget();
+            if (resolved != null)
+            {
+                SelectGameObjectImmediate(resolved);
+                target = resolved;
+            }
+        }
+        else if (!IsInsideMenu(target))
+        {
+            var resolved = ResolveInitialTarget();
+            Debug.Log($"[PlayerEquipmentMenu] currentSelectedGameObject={target.name} fuera del menú, forzando {resolved?.name ?? "null"}");
+            if (resolved != null)
+            {
+                SelectGameObjectImmediate(resolved);
+                target = resolved;
+            }
+            else
+            {
+                target = null;
+            }
+        }
+
+        if (target == null)
+            return;
 
         var axisEvent = new AxisEventData(es)
         {
@@ -467,9 +494,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             moveDir = ToMoveDirection(dir)
         };
 
-        var target = es.currentSelectedGameObject;
-        if (target != null)
-            ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
+        Debug.Log($"[PlayerEquipmentMenu] Navegación: dir={dir}, target={target?.name}, moveDir={axisEvent.moveDir}");
+
+        var result = ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
+        Debug.Log($"[PlayerEquipmentMenu] ExecuteEvents.Execute result: {result}");
     }
 
     void QueueUiNavigation(Vector2 nav, bool fromNavigate)
@@ -654,7 +682,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_activeTab == 0)
             {
                 _inventoryView.Refresh(forceRebuild);
-                _inventoryView.EnsureSelection();
+                StartCoroutine(_inventoryView.EnsureSelectionDelayed());
             }
         }
 
@@ -787,23 +815,30 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void SelectInitial()
     {
-        GameObject target = initialSelectionOverride;
+        var finalTarget = ResolveInitialTarget();
+        Debug.Log($"[PlayerEquipmentMenu] SelectInitial tab={_activeTab} default={finalTarget?.name ?? "null"} rows={_inventoryView?.RowCount.ToString() ?? "-"} override={initialSelectionOverride?.name ?? "null"} -> target={finalTarget?.name ?? "null"}");
 
-        if (target == null)
+        if (finalTarget != null)
+            StartCoroutine(SelectOnNextFrame(finalTarget));
+    }
+
+    GameObject ResolveInitialTarget()
+    {
+        GameObject tabDefault = null;
+        switch (_activeTab)
         {
-            if (_activeTab == 0)
-                target = _inventoryView?.DefaultSelection;
-            else if (_activeTab == 1)
-                target = _spellView?.DefaultSelection;
-            else
-                target = _equipmentView?.DefaultSelection;
+            case 0:
+                tabDefault = _inventoryView?.DefaultSelection;
+                break;
+            case 1:
+                tabDefault = _spellView?.DefaultSelection;
+                break;
+            case 2:
+                tabDefault = _equipmentView?.DefaultSelection;
+                break;
         }
 
-        if (target == null && inventoryTabButton != null)
-            target = inventoryTabButton.gameObject;
-
-        if (target != null)
-            StartCoroutine(SelectOnNextFrame(target));
+        return tabDefault ?? initialSelectionOverride ?? inventoryTabButton?.gameObject;
     }
 
     System.Collections.IEnumerator SelectOnNextFrame(GameObject target)
@@ -812,9 +847,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         var es = EventSystem.current;
         if (es != null && target != null)
         {
-            es.SetSelectedGameObject(null);
-            es.SetSelectedGameObject(target);
+            SelectGameObjectImmediate(target);
         }
+    }
+
+    void SelectGameObjectImmediate(GameObject target)
+    {
+        if (target == null) return;
+        var es = EventSystem.current;
+        if (es == null) return;
+        es.SetSelectedGameObject(null);
+        es.SetSelectedGameObject(target);
+    }
+
+    bool IsInsideMenu(GameObject go)
+    {
+        if (go == null) return false;
+        if (windowRoot != null)
+            return go == windowRoot || go.transform.IsChildOf(windowRoot.transform);
+        return go == gameObject || go.transform.IsChildOf(transform);
     }
 
     void UpdatePlayerInfoPanel()
@@ -1053,6 +1104,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         public GameObject DefaultSelection => _rows.Count > 0 ? _rows[0].ButtonGameObject : null;
+        public int RowCount => _rows.Count;
 
         public void Dispose()
         {
@@ -1315,6 +1367,41 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var first = _rows[0];
             HandleRowActivated(first, first.Item, true);
             return true;
+        }
+
+        public System.Collections.IEnumerator EnsureSelectionDelayed()
+        {
+            // Esperar un frame para que Unity cree los elementos y el EventSystem los reconozca
+            yield return null;
+            
+            if (_rows.Count == 0) yield break;
+
+            EnsureEventSystem();
+            var es = EventSystem.current;
+            if (es == null)
+            {
+                Debug.LogWarning("[PlayerEquipmentMenu] EventSystem.current is null después de esperar");
+                yield break;
+            }
+
+            // Restaurar la selección previa si existe
+            if (_lastSelectedRow != null)
+            {
+                es.SetSelectedGameObject(null);
+                yield return null;
+                _lastSelectedRow.Focus();
+                yield break;
+            }
+
+            // Seleccionar el primer elemento
+            var first = _rows[0];
+            if (first != null && first.ButtonGameObject != null)
+            {
+                es.SetSelectedGameObject(null);
+                yield return null;
+                HandleRowActivated(first, first.Item, true);
+                Debug.Log($"[PlayerEquipmentMenu] Inventario - Seleccionado: {first.Item?.displayName}");
+            }
         }
 
         void UpdateRowNavigation()

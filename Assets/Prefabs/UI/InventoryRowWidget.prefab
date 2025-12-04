@@ -39,7 +39,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 800, y: 48}
+  m_SizeDelta: {x: 850, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5335054634102876678
 CanvasRenderer:
@@ -139,6 +139,7 @@ MonoBehaviour:
   label: {fileID: 7839857643587250768}
   iconImage: {fileID: 4867745132507412376}
   selectionColor: {r: 1, g: 0.82, b: 0.16, a: 1}
+  highlightGraphic: {fileID: 0}
 --- !u!1 &5442509483231980021
 GameObject:
   m_ObjectHideFlags: 0

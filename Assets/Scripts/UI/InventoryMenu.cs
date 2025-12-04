@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace UI
 {
@@ -80,7 +82,12 @@ namespace UI
         {
             bool next = !gameObject.activeSelf;
             gameObject.SetActive(next);
-            if (next) Refresh();
+            if (next)
+            {
+                EnsureEventSystem();
+                Refresh();
+                StartCoroutine(SelectFirstItemDelayed());
+            }
         }
 
         public void Refresh()
@@ -100,6 +107,8 @@ namespace UI
             }
 
             var items = _inventory.GetAllItems();
+            var rows = new System.Collections.Generic.List<InventoryItemRow>();
+            
             foreach (var e in items)
             {
                 var go = Instantiate(rowPrefab, contentParent);
@@ -107,8 +116,70 @@ namespace UI
                 if (row != null)
                 {
                     row.Setup(e.item, e.count);
+                    rows.Add(row);
                 }
             }
+
+            // Configurar navegación explícita entre items
+            ConfigureNavigation(rows);
+        }
+
+        private void ConfigureNavigation(System.Collections.Generic.List<InventoryItemRow> rows)
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var button = rows[i].GetButton();
+                if (button == null) continue;
+
+                var nav = new Navigation { mode = Navigation.Mode.Explicit };
+                
+                // Configurar navegación vertical
+                if (i > 0)
+                    nav.selectOnUp = rows[i - 1].GetButton();
+                if (i < rows.Count - 1)
+                    nav.selectOnDown = rows[i + 1].GetButton();
+                
+                button.navigation = nav;
+            }
+        }
+
+        private System.Collections.IEnumerator SelectFirstItemDelayed()
+        {
+            // Esperar un frame para que el EventSystem reconozca los nuevos elementos
+            yield return null;
+            
+            if (contentParent == null || contentParent.childCount == 0) yield break;
+
+            var es = EventSystem.current;
+            if (es == null)
+            {
+                Debug.LogWarning("[InventoryMenu] EventSystem.current is null");
+                yield break;
+            }
+
+            // Buscar el primer Selectable en los hijos
+            for (int i = 0; i < contentParent.childCount; i++)
+            {
+                var child = contentParent.GetChild(i);
+                var selectable = child.GetComponentInChildren<Selectable>();
+                if (selectable != null && selectable.interactable && selectable.gameObject.activeInHierarchy)
+                {
+                    es.SetSelectedGameObject(null);
+                    yield return null; // Esperar otro frame
+                    es.SetSelectedGameObject(selectable.gameObject);
+                    selectable.Select();
+                    Debug.Log($"[InventoryMenu] Selected: {selectable.gameObject.name}");
+                    break;
+                }
+            }
+        }
+
+        private static void EnsureEventSystem()
+        {
+            if (EventSystem.current != null) return;
+
+            var esGO = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            DontDestroyOnLoad(esGO);
         }
     }
 }
