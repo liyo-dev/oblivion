@@ -30,6 +30,8 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (!instigatorOverride) instigatorOverride = gameObject;
     }
 
+    // ClearSpawnPosition eliminado: ya no se ajusta el spawn dinámicamente
+
     void IgnoreCollisionsBetween(GameObject projectile, GameObject instigator)
     {
         if (!ignoreCasterColliders || projectile == null || instigator == null) return;
@@ -154,6 +156,8 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (dir.sqrMagnitude < 0.001f) dir = baseForward;
 
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
+        // Evitar que el proyectil nazca dentro de colliders del jugador (mano/cuerpo)
+        // Usar posición de spawn original definida por el caster/spell
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
 
         if (spell.spawnVFX)
@@ -166,12 +170,13 @@ public class MagicProjectileSpawner : MonoBehaviour
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
         if (spell.useScaleOverride)
             go.transform.localScale = spell.scaleOverride;
+        if (go == null) yield break;
 
         // Pausar física mientras carga
         Rigidbody cachedRb = null;
         bool cachedKinematic = false;
         bool cachedUseGravity = false;
-        if (go.TryGetComponent<Rigidbody>(out var rbDuringCharge))
+        if (go != null && go.TryGetComponent<Rigidbody>(out var rbDuringCharge))
         {
             cachedRb = rbDuringCharge;
             cachedKinematic = rbDuringCharge.isKinematic;
@@ -184,17 +189,17 @@ public class MagicProjectileSpawner : MonoBehaviour
         }
 
         Transform previousParent = null;
-        if (spell.followOriginDuringCharge && origin != null)
+        if (go != null && spell.followOriginDuringCharge && origin != null)
         {
             previousParent = go.transform.parent;
             go.transform.SetParent(origin, worldPositionStays: true);
         }
 
         GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
-        IgnoreCollisionsBetween(go, instigator);
+        if (go != null) IgnoreCollisionsBetween(go, instigator);
 
         MagicProjectile mp = null;
-        if (go.TryGetComponent<MagicProjectile>(out var proj))
+        if (go != null && go.TryGetComponent<MagicProjectile>(out var proj))
         {
             mp = proj;
             var cfg = new MagicProjectile.ProjectileConfig
@@ -222,9 +227,10 @@ public class MagicProjectileSpawner : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             yield return null;
+            if (go == null) yield break;
         }
 
-        if (spell.followOriginDuringCharge && origin != null)
+        if (go != null && spell.followOriginDuringCharge && origin != null)
             go.transform.SetParent(previousParent, worldPositionStays: true);
 
         if (mp != null)
@@ -232,7 +238,7 @@ public class MagicProjectileSpawner : MonoBehaviour
             mp.SetKinematic(false);
             mp.Launch(dir, spell.initialSpeed, spell.useGravity);
         }
-        else if (go.TryGetComponent<Rigidbody>(out var rb))
+        else if (go != null && go.TryGetComponent<Rigidbody>(out var rb))
         {
             rb.isKinematic = false;
             rb.useGravity = spell.useGravity;
@@ -267,7 +273,11 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (dir.sqrMagnitude < 0.001f) dir = baseForward;
 
         // Posición/rotación finales
+        // Configurar colisiones - ignorar jugador y todos sus hijos
+        GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
+        // Evitar que el proyectil nazca dentro de colliders del jugador
+        // Usar posición de spawn original definida por el caster/spell
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
 
         if (spell.spawnVFX)
@@ -285,8 +295,6 @@ public class MagicProjectileSpawner : MonoBehaviour
             go.transform.localScale = spell.scaleOverride;
         }
 
-        // Configurar colisiones - ignorar jugador y todos sus hijos
-        GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
         IgnoreCollisionsBetween(go, instigator);
 
         if (go.TryGetComponent<MagicProjectile>(out var mp))

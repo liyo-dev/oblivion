@@ -6,7 +6,6 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.UIElements;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,11 +16,9 @@ public class DesignNotebookWindow : EditorWindow
     private Vector2 _scroll;
     private int _tabIndex;
     private DesignStoryGraphView _storyGraphView;
-    private Color _highlightColor = new Color(1f, 0.92f, 0.23f);
     private int _fontSize = 18;
     private Vector2 _synopsisScroll;
-    private int _cachedSelectionStart = -1;
-    private int _cachedSelectionEnd = -1;
+    private bool _isPreviewMode;
     private Vector2 _quickNotesScroll;
     private int _draggingNoteIndex = -1;
     private Vector2 _dragOffset;
@@ -142,6 +139,8 @@ public class DesignNotebookWindow : EditorWindow
             _serialized = new SerializedObject(_asset);
 
         _serialized.Update();
+        EnsureNotebookCollections();
+        _serialized.UpdateIfRequiredOrScript();
 
         var tabs = new[]
         {
@@ -201,115 +200,36 @@ public class DesignNotebookWindow : EditorWindow
     private void DrawSummary()
     {
         EditorGUILayout.LabelField("Resumen general", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Captura la visión del proyecto con herramientas de formato enriquecido.", MessageType.None);
+        EditorGUILayout.HelpBox("Captura la visión del proyecto. Puedes alternar entre edición y vista previa.", MessageType.None);
 
         var synopsisProp = _serialized.FindProperty("highLevelSynopsis");
-        DrawTextFormattingTools(synopsisProp);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.FlexibleSpace();
+            var newPreview = GUILayout.Toolbar(_isPreviewMode ? 1 : 0, new[] { "Editar", "Ver" }, Styles.TabButton, GUILayout.Width(160f));
+            _isPreviewMode = newPreview == 1;
+        }
 
         var minHeight = Mathf.Max(position.height - 220f, 300f);
         using (var synopsisScroll = new EditorGUILayout.ScrollViewScope(_synopsisScroll, GUILayout.Height(minHeight)))
         {
             _synopsisScroll = synopsisScroll.scrollPosition;
-            GUI.SetNextControlName(SynopsisControlName);
-            EditorGUI.BeginChangeCheck();
-            var synopsis = EditorGUILayout.TextArea(
-                synopsisProp.stringValue,
-                Styles.GetRichTextArea(_fontSize),
-                GUILayout.ExpandHeight(true));
-            if (EditorGUI.EndChangeCheck())
+            if (_isPreviewMode)
+            {
+                EditorGUILayout.LabelField(synopsisProp.stringValue, Styles.RichPreview, GUILayout.ExpandHeight(true));
+            }
+            else
+            {
+                GUI.SetNextControlName(SynopsisControlName);
+                var synopsis = EditorGUILayout.TextArea(
+                    synopsisProp.stringValue,
+                    Styles.GetRichTextArea(_fontSize),
+                    GUILayout.ExpandHeight(true));
                 synopsisProp.stringValue = synopsis;
+            }
         }
-
-        CacheSynopsisSelection();
     }
 
-    private void DrawTextFormattingTools(SerializedProperty prop)
-    {
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Negrita", GUILayout.Width(70f)))
-            WrapSelection(prop, "<b>", "</b>");
-        if (GUILayout.Button("Subrayar", GUILayout.Width(80f)))
-            WrapSelection(prop, "<u>", "</u>");
-        if (GUILayout.Button("Resaltar", GUILayout.Width(80f)))
-            WrapSelection(prop, $"<color=#{ColorUtility.ToHtmlStringRGB(_highlightColor)}>", "</color>");
-
-        _highlightColor = EditorGUILayout.ColorField(_highlightColor, GUILayout.Width(80f));
-        _fontSize = EditorGUILayout.IntSlider("Tamaño de fuente", _fontSize, 10, 48);
-        if (GUILayout.Button("Aplicar tamaño", GUILayout.Width(110f)))
-            WrapSelection(prop, $"<size={_fontSize}>", "</size>");
-        EditorGUILayout.EndHorizontal();
-        EditorGUILayout.HelpBox("Selecciona el texto en la sinopsis para aplicar el formato. Si no hay selección se insertará un marcador editable en la posición del cursor.", MessageType.None);
-    }
-
-    private void WrapSelection(SerializedProperty prop, string prefix, string suffix)
-    {
-        var text = prop.stringValue ?? string.Empty;
-        var editor = GetSynopsisTextEditor();
-
-        int start = _cachedSelectionStart;
-        int end = _cachedSelectionEnd;
-        bool hasSelection = TryGetSelectionFromEditor(editor, ref start, ref end);
-
-        if (!hasSelection)
-        {
-            start = end = text.Length;
-        }
-
-        if (start != end)
-        {
-            prop.stringValue = text.Insert(end, suffix).Insert(start, prefix);
-            UpdateEditorSelection(editor, start + prefix.Length, end + prefix.Length);
-            _cachedSelectionStart = start;
-            _cachedSelectionEnd = end + prefix.Length + suffix.Length;
-            return;
-        }
-
-        prop.stringValue = text.Insert(end, prefix + "texto" + suffix);
-        UpdateEditorSelection(editor, end + prefix.Length, end + prefix.Length);
-        _cachedSelectionStart = _cachedSelectionEnd = end + prefix.Length + suffix.Length + "texto".Length;
-    }
-
-    private void CacheSynopsisSelection()
-    {
-        var editor = GetFocusedTextEditor();
-        if (GUI.GetNameOfFocusedControl() != SynopsisControlName || editor == null)
-            return;
-
-        _cachedSelectionStart = Mathf.Min(editor.cursorIndex, editor.selectIndex);
-        _cachedSelectionEnd = Mathf.Max(editor.cursorIndex, editor.selectIndex);
-    }
-
-    private TextEditor GetFocusedTextEditor()
-    {
-        return GUIUtility.keyboardControl != 0
-            ? (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl)
-            : null;
-    }
-
-    private TextEditor GetSynopsisTextEditor()
-    {
-        if (GUI.GetNameOfFocusedControl() != SynopsisControlName)
-            EditorGUI.FocusTextInControl(SynopsisControlName);
-
-        return GetFocusedTextEditor();
-    }
-
-    private bool TryGetSelectionFromEditor(TextEditor editor, ref int start, ref int end)
-    {
-        if (editor == null)
-            return start >= 0 && end >= 0;
-
-        start = Mathf.Min(editor.cursorIndex, editor.selectIndex);
-        end = Mathf.Max(editor.cursorIndex, editor.selectIndex);
-        return start >= 0 && end >= 0;
-    }
-
-    private void UpdateEditorSelection(TextEditor editor, int start, int end)
-    {
-        if (editor == null) return;
-        editor.cursorIndex = start;
-        editor.selectIndex = end;
-    }
 
     private void DrawQuickNotesBoard()
     {
@@ -332,13 +252,13 @@ public class DesignNotebookWindow : EditorWindow
             element.FindPropertyRelative("color").colorValue = Styles.DefaultNoteColor;
             var positionProp = element.FindPropertyRelative("position");
             positionProp.vector2Value = GetQuickNoteGridPosition(quickNotesProp.arraySize - 1, viewWidth, cardWidth, cardHeight, cardSpacing);
+            _quickNotesScroll = Vector2.zero;
+            quickNotesProp.serializedObject.ApplyModifiedProperties();
+            _serialized.Update();
+            MarkAssetDirty();
+            Repaint();
         }
 
-        if (quickNotesProp.arraySize > 0 && GUILayout.Button("Ordenar por título", GUILayout.Width(140f)))
-        {
-            SortQuickNotes(quickNotesProp);
-            ReflowQuickNotePositions(quickNotesProp, viewWidth, cardWidth, cardHeight, cardSpacing);
-        }
         EditorGUILayout.EndHorizontal();
 
         float boardHeight = Mathf.Max(position.height - 260f, cardHeight + 40f);
@@ -363,7 +283,10 @@ public class DesignNotebookWindow : EditorWindow
             var positionProp = element.FindPropertyRelative("position");
             var cardRect = new Rect(positionProp.vector2Value.x, positionProp.vector2Value.y, cardWidth, cardHeight);
 
-            HandleQuickNoteDragging(evt, cardRect, i, positionProp);
+            var dragRect = new Rect(cardRect.x + (cardWidth * 0.5f) - 40f, cardRect.y, 80f, 22f);
+            EditorGUIUtility.AddCursorRect(dragRect, MouseCursor.Pan);
+
+            HandleQuickNoteDragging(evt, cardRect, dragRect, i, positionProp);
 
             if (DrawQuickNoteCard(cardRect, element))
                 deleteIndex = i;
@@ -394,12 +317,12 @@ public class DesignNotebookWindow : EditorWindow
             Mathf.Max(viewRect.height, maxY));
     }
 
-    private void HandleQuickNoteDragging(Event evt, Rect cardRect, int index, SerializedProperty positionProp)
+    private void HandleQuickNoteDragging(Event evt, Rect cardRect, Rect dragRect, int index, SerializedProperty positionProp)
     {
         switch (evt.type)
         {
             case EventType.MouseDown:
-                if (evt.button == 0 && cardRect.Contains(evt.mousePosition))
+                if (evt.button == 0 && dragRect.Contains(evt.mousePosition))
                 {
                     _draggingNoteIndex = index;
                     _dragOffset = evt.mousePosition - cardRect.position;
@@ -506,29 +429,28 @@ public class DesignNotebookWindow : EditorWindow
         return false;
     }
 
-    private void SortQuickNotes(SerializedProperty quickNotesProp)
+    private Vector2 GetNextStoryCardPosition()
     {
-        var notes = new List<(string title, string note, string tags, Color color)>();
-        for (int i = 0; i < quickNotesProp.arraySize; i++)
+        const float cardWidth = 260f;
+        const float cardHeight = 200f;
+        const float spacing = 40f;
+        const float margin = 32f;
+
+        int columns = Mathf.Max(1, Mathf.FloorToInt((position.width - (margin * 2f)) / (cardWidth + spacing)));
+        var start = new Vector2(margin, margin);
+
+        var cards = _asset?.storyCards ?? new List<DesignStoryCard>();
+        for (int i = 0; i < cards.Count + 8; i++)
         {
-            var element = quickNotesProp.GetArrayElementAtIndex(i);
-            notes.Add((
-                element.FindPropertyRelative("title").stringValue,
-                element.FindPropertyRelative("note").stringValue,
-                element.FindPropertyRelative("tags").stringValue,
-                element.FindPropertyRelative("color").colorValue));
+            int col = i % columns;
+            int row = i / columns;
+            var candidate = start + new Vector2(col * (cardWidth + spacing), row * (cardHeight + spacing));
+            bool overlapsExisting = cards.Any(c => Vector2.Distance(c.position, candidate) < 0.5f);
+            if (!overlapsExisting)
+                return candidate;
         }
 
-        notes = notes.OrderBy(n => n.title).ToList();
-        quickNotesProp.arraySize = notes.Count;
-        for (int i = 0; i < notes.Count; i++)
-        {
-            var element = quickNotesProp.GetArrayElementAtIndex(i);
-            element.FindPropertyRelative("title").stringValue = notes[i].title;
-            element.FindPropertyRelative("note").stringValue = notes[i].note;
-            element.FindPropertyRelative("tags").stringValue = notes[i].tags;
-            element.FindPropertyRelative("color").colorValue = notes[i].color;
-        }
+        return start + new Vector2((cards.Count + 1) * (cardWidth + spacing) * 0.5f, cardHeight + spacing);
     }
 
     private void DrawStoryTab()
@@ -548,7 +470,7 @@ public class DesignNotebookWindow : EditorWindow
         {
             EnsureGraphView();
             _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-            _storyGraphView.CreateCard(new Vector2(position.width * 0.1f, position.height * 0.1f));
+            _storyGraphView.CreateCard(GetNextStoryCardPosition());
         }
         if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
             _storyGraphView.FrameAll();
@@ -662,7 +584,7 @@ public class DesignNotebookWindow : EditorWindow
         return card?.title;
     }
 
-    private void AppendList(StringBuilder sb, string header, IEnumerable<(string title, string body, string tags)> entries)
+    private void AppendList(StringBuilder sb, string header, IEnumerable<(string title, string body, string tags)> entries, string extraLabel = "Tags")
     {
         sb.AppendLine(header);
         sb.AppendLine(new string('-', header.Length));
@@ -670,7 +592,7 @@ public class DesignNotebookWindow : EditorWindow
         {
             sb.AppendLine(title);
             if (!string.IsNullOrEmpty(tags))
-                sb.AppendLine($"Tags: {tags}");
+                sb.AppendLine($"{extraLabel}: {tags}");
             sb.AppendLine(body);
             sb.AppendLine();
         }
@@ -834,6 +756,7 @@ public class DesignNotebookWindow : EditorWindow
         public static readonly GUIStyle MiniIconButton;
         public static readonly GUIStyle GhostLabelCentered;
         public static readonly GUIStyle RichTextArea;
+        public static readonly GUIStyle RichPreview;
         public static readonly GUIStyle TabButton;
         public static readonly Color ElementBackground;
         public static readonly Color ElementBackgroundActive;
@@ -920,6 +843,17 @@ public class DesignNotebookWindow : EditorWindow
                 richText = true
             };
 
+            RichPreview = new GUIStyle(RichTextArea)
+            {
+                normal =
+                {
+                    background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.11f, 0.13f, 0.16f) : new Color(0.95f, 0.97f, 1f)),
+                    textColor = EditorStyles.label.normal.textColor
+                },
+                padding = new RectOffset(8, 8, 8, 8),
+                margin = new RectOffset(4, 4, 6, 6)
+            };
+
             TabButton = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedHeight = 24,
@@ -993,6 +927,9 @@ internal class DesignStoryGraphView : GraphView
 
     public void SetNotebook(DesignNotebook notebook, Action onDirty)
     {
+        if (_notebook == notebook && _onDirty == onDirty)
+            return;
+
         _notebook = notebook;
         _onDirty = onDirty;
         Rebuild();
@@ -1141,12 +1078,20 @@ internal class StoryCardNodeView : Node
     public Port Input { get; }
     public Port Output { get; }
     private readonly Action _onDirty;
+    private Vector2 _lastSize;
 
     public StoryCardNodeView(DesignStoryCard card, Action onDirty)
     {
         Card = card;
         _onDirty = onDirty;
         title = string.IsNullOrEmpty(card.title) ? "Tarjeta" : card.title;
+        capabilities |= Capabilities.Resizable;
+        var initialSize = card.size;
+        if (initialSize == Vector2.zero)
+            initialSize = new Vector2(320f, 320f);
+        style.width = initialSize.x;
+        style.height = initialSize.y;
+        _lastSize = initialSize;
 
         Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
         Input.portName = "Entradas";
@@ -1156,7 +1101,20 @@ internal class StoryCardNodeView : Node
         Output.portName = "Salidas";
         outputContainer.Add(Output);
 
+        mainContainer.style.flexDirection = FlexDirection.Column;
+        mainContainer.style.paddingTop = 8f;
+        mainContainer.style.paddingBottom = 10f;
+        mainContainer.style.paddingLeft = 8f;
+        mainContainer.style.paddingRight = 8f;
+        mainContainer.style.backgroundColor = new StyleColor(new Color(0.18f, 0.22f, 0.28f));
+
         var titleField = new TextField("Título") { value = card.title };
+        titleField.style.marginBottom = 6f;
+        titleField.labelElement.style.minWidth = 50f;
+        titleField.labelElement.style.unityTextAlign = TextAnchor.MiddleLeft;
+        var titleInput = titleField.Q(TextField.textInputUssName);
+        if (titleInput != null)
+            titleInput.style.flexGrow = 1f;
         titleField.RegisterValueChangedCallback(evt =>
         {
             card.title = evt.newValue;
@@ -1166,7 +1124,22 @@ internal class StoryCardNodeView : Node
         mainContainer.Add(titleField);
 
         var noteField = new TextField("Detalle") { value = card.note, multiline = true };
-        noteField.style.minHeight = 80f;
+        noteField.style.minHeight = 300f;
+        noteField.style.height = 0f;
+        noteField.style.flexGrow = 1f;
+        noteField.style.flexShrink = 1f;
+        noteField.style.flexBasis = 300f;
+        noteField.style.marginTop = 2f;
+        noteField.style.marginBottom = 8f;
+        noteField.labelElement.style.minWidth = 50f;
+        noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
+        var noteInput = noteField.Q(TextField.textInputUssName);
+        if (noteInput != null)
+        {
+            noteInput.style.flexGrow = 1f;
+            noteInput.style.minHeight = 280f;
+            noteInput.style.whiteSpace = WhiteSpace.Normal;
+        }
         noteField.RegisterValueChangedCallback(evt =>
         {
             card.note = evt.newValue;
@@ -1175,6 +1148,9 @@ internal class StoryCardNodeView : Node
         mainContainer.Add(noteField);
 
         var colorField = new ColorField("Color") { value = card.color };
+        colorField.style.marginTop = 8f;
+        colorField.style.marginBottom = 4f;
+        colorField.labelElement.style.minWidth = 50f;
         colorField.RegisterValueChangedCallback(evt =>
         {
             card.color = evt.newValue;
@@ -1186,7 +1162,9 @@ internal class StoryCardNodeView : Node
         UpdateColor();
         RefreshExpandedState();
         RefreshPorts();
-        SetPosition(new Rect(card.position, new Vector2(260, 200)));
+        SetPosition(new Rect(card.position, initialSize));
+
+        RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
     }
 
     private void UpdateColor()
@@ -1204,6 +1182,17 @@ internal class StoryCardNodeView : Node
     {
         base.SetPosition(newPos);
         Card.position = newPos.position;
+        _onDirty?.Invoke();
+    }
+
+    private void OnGeometryChanged(GeometryChangedEvent evt)
+    {
+        var newSize = evt.newRect.size;
+        if (Mathf.Approximately(newSize.x, _lastSize.x) && Mathf.Approximately(newSize.y, _lastSize.y))
+            return;
+
+        Card.size = newSize;
+        _lastSize = newSize;
         _onDirty?.Invoke();
     }
 }

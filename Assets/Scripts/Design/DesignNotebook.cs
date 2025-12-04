@@ -24,6 +24,7 @@ public class DesignStoryCard
     [TextArea(3, 8)] public string note;
     public Color color = Color.white;
     public Vector2 position;
+    public Vector2 size = new Vector2(320f, 320f);
 }
 
 [Serializable]

@@ -89,6 +89,20 @@ public class WorldBootstrap : MonoBehaviour
             // Reubicar NPCs desde el SO si hay entradas persistidas
             TryApplyNpcPositionsFromPreset(bootProfile);
 
+            // Aplicar el preset recién cargado al jugador (incluye inventario y apariencia)
+            // para evitar que queden valores por defecto hasta el próximo cambio de escena.
+            if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
+            {
+                presetService.ApplyCurrentPreset(includeInventory: true);
+            }
+            else
+            {
+                // Fallback: buscar en escena si el servicio no está cacheado aún
+                var svc = Object.FindFirstObjectByType<PlayerPresetService>(FindObjectsInactive.Include);
+                if (svc != null)
+                    svc.ApplyCurrentPreset(includeInventory: true);
+            }
+
             Debug.Log("[WorldBootstrap] Save cargado correctamente");
         }
         else

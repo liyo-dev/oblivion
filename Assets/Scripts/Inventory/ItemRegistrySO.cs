@@ -10,6 +10,9 @@ public class ItemRegistrySO : ScriptableObject
 
     readonly Dictionary<string, ItemData> _map = new();
 
+    // Exponer lectura para que otros sistemas (Inventory) puedan precargar definiciones completas
+    public IReadOnlyList<ItemData> Items => items;
+
     void OnEnable() => Rebuild();
 #if UNITY_EDITOR
     void OnValidate() => Rebuild();

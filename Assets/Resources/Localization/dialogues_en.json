@@ -22,7 +22,7 @@
         },
         {
             "key": "CHAR_GUERRERACHINA",
-            "value": "Warrior"
+            "value": "Erika"
         },
         {
             "key": "CHAR_LEONARDO",
@@ -66,7 +66,7 @@
         },
         {
             "key": "CHAR_TENDERA",
-            "value": "[EN] Tendera"
+            "value": "Bárbara"
         },
         {
             "key": "CHAR_VERONICA",
@@ -222,7 +222,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
-            "value": "[EN] Por último habla con ? y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
+            "value": "[EN] Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
@@ -258,23 +258,23 @@
         },
         {
             "key": "DLG_GUERRERACHINA_01",
-            "value": "Breathe... your stance trembles. Seeking strength?"
+            "value": "So, you're Will… Eldran told me about you."
         },
         {
             "key": "DLG_GUERRERACHINA_02",
-            "value": "I traveled a thousand leagues to perfect a single strike."
+            "value": "If he sent you here, it means he believes you can still improve."
         },
         {
             "key": "DLG_GUERRERACHINA_03",
-            "value": "Patience sharpens the blade more than stone."
+            "value": "I’m going to teach you a new attack and a protection technique."
         },
         {
             "key": "DLG_GUERRERACHINA_04",
-            "value": "When you master balance, I'll teach you my spinning form."
+            "value": "It won’t be easy; you’ll have to push yourself harder than ever."
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "Bring me a lotus flower from the lake and we'll speak of training."
+            "value": "Get ready, Will. Training starts now."
         },
         {
             "key": "DLG_LEONARDO_01",
