@@ -235,6 +235,7 @@ public class PauseMenuController : MonoBehaviour
         GamepadInputReader.OnInput += HandleGamepadInput;
         if (rootGroup != null) { rootGroup.interactable = true; rootGroup.blocksRaycasts = true; }
 
+        ResetNavigationState();
         EnsureUISelection();
         PlayIntro();
         StartCoroutine(EnsureSelectionLater());
@@ -284,6 +285,12 @@ public class PauseMenuController : MonoBehaviour
 
         if (gameObject.activeSelf)
             gameObject.SetActive(false);
+    }
+
+    void ResetNavigationState()
+    {
+        _navCooldown = 0f;
+        _navHeldSign = 0;
     }
 
 #if ENABLE_INPUT_SYSTEM
