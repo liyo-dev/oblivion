@@ -542,6 +542,9 @@ public class GameBootProfile : ScriptableObject
         // por defecto tuviera valores residuales (por testing o saves previos).
         LockMagicForNewGame(runtimePreset);
 
+        // La apariencia ya se copió del defaultPlayerPreset en EnsureRuntimePresetFromTemplate
+        // No hace falta aplicar nada adicional, la apariencia del default ya está en runtimePreset
+
         // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
         if (runtimePreset != null)
         {
