@@ -318,13 +318,12 @@ public class QuestManager : MonoBehaviour
 
         foreach (var rq in _runtime.Values)
         {
-            if (rq.State == QuestState.Completed)
+            var state = rq.State;
+            if (state == QuestState.Completed)
             {
                 outFlags.Add(Q_COMPLETED + rq.Id);
-                continue; // no hacen falta ACTIVE ni STEP_DONE si ya está completada
             }
-
-            if (rq.State == QuestState.Active)
+            else if (state == QuestState.Active)
             {
                 outFlags.Add(Q_ACTIVE + rq.Id);
                 for (int i = 0; i < rq.Steps.Length; i++)
@@ -332,20 +331,16 @@ public class QuestManager : MonoBehaviour
                         outFlags.Add($"{Q_STEP_DONE}{rq.Id}:{i}");
             }
 
-            // Visibilidad: si está archivada, emitir flag
-            if (GetVisibility(rq.Id) == QuestVisibility.Hidden)
+            // Visibilidad: si está archivada, emitir flag incluso cuando esté completada
+            var vis = GetVisibility(rq.Id);
+            if (vis == QuestVisibility.Hidden)
             {
                 outFlags.Add(Q_ARCHIVED + rq.Id);
             }
-            // Seguimiento: emitir solo si NO está archivada
-            // Evita que una misión archivada se restaure como seguida/"tracked" al cargar.
-            var vis = GetVisibility(rq.Id);
-            if (vis != QuestVisibility.Hidden)
+            else if (IsFollowed(rq.Id) || vis == QuestVisibility.Tracked)
             {
-                if (IsFollowed(rq.Id) || vis == QuestVisibility.Tracked)
-                {
-                    outFlags.Add(Q_TRACKED + rq.Id);
-                }
+                // Seguimiento: emitir solo si NO está archivada. Evita restaurar archivadas como "tracked".
+                outFlags.Add(Q_TRACKED + rq.Id);
             }
         }
     }
