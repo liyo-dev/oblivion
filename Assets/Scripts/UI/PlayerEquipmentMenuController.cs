@@ -1129,6 +1129,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _rows.Add(widget);
             }
 
+            UpdateRowNavigation();
+
             if (_rows.Count == 0)
                 UpdateEmptyState("Inventario vacío");
         }
@@ -1296,6 +1298,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var first = _rows[0];
             HandleRowActivated(first, first.Item, true);
             return true;
+        }
+
+        void UpdateRowNavigation()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var button = _rows[i] != null ? _rows[i].GetComponent<Button>() : null;
+                if (button == null) continue;
+
+                var nav = button.navigation;
+                nav.mode = Navigation.Mode.Explicit;
+                nav.selectOnUp = i > 0 ? _rows[i - 1]?.GetComponent<Button>() : button;
+                nav.selectOnDown = i < _rows.Count - 1 ? _rows[i + 1]?.GetComponent<Button>() : button;
+                button.navigation = nav;
+            }
         }
 
         public bool TryHandleCancel() => false;
