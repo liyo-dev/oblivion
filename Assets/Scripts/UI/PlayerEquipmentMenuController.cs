@@ -1017,20 +1017,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             feedbackText != null;
     }
 
-    class InventoryView
-    {
-        readonly InventoryBindings _ui;
-        readonly List<InventoryRowWidget> _rows = new();
-        Inventory _inventory;
-        Inventory _boundInventory;
-        PlayerPickupCollector _collector;
-        ItemData _selectedItem;
-        InventoryRowWidget _lastSelectedRow;
+        class InventoryView
+        {
+            readonly InventoryBindings _ui;
+            readonly List<InventoryRowWidget> _rows = new();
+            Inventory _inventory;
+            Inventory _boundInventory;
+            PlayerPickupCollector _collector;
+            ItemData _selectedItem;
+            InventoryRowWidget _lastSelectedRow;
+            readonly ScrollRect _scrollRect;
 
         public InventoryView(InventoryBindings bindings)
         {
             _ui = bindings;
             _ui.root?.SetActive(false);
+
+            if (_ui.rowsParent != null)
+                _scrollRect = _ui.rowsParent.GetComponentInParent<ScrollRect>();
 
             if (_ui.useButton != null)
                 _ui.useButton.onClick.AddListener(UseSelectedItem);
@@ -1087,8 +1091,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             else
                 UpdateRowTexts();
 
-            // No seleccionar automáticamente ningún item al abrir el menú
-            // El usuario puede navegar y seleccionar manualmente
+            // Priorizar restaurar la selección previa; si no existe, enfocar la primera fila para permitir la navegación inmediata
             if (_selectedItem != null)
             {
                 UpdateSelectedItemDetails();
@@ -1147,6 +1150,40 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (forceFocus || EventSystem.current == null || EventSystem.current.currentSelectedGameObject != widget.ButtonGameObject)
                 widget.Focus();
+
+            ScrollToRow(widget);
+        }
+
+        void ScrollToRow(InventoryRowWidget widget)
+        {
+            if (_scrollRect == null || widget == null) return;
+
+            var content = _scrollRect.content;
+            var viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
+            var itemRect = widget.GetComponent<RectTransform>();
+
+            if (content == null || viewport == null || itemRect == null) return;
+
+            Canvas.ForceUpdateCanvases();
+
+            var itemBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(content, itemRect);
+            var viewBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(content, viewport);
+
+            float contentHeight = content.rect.height;
+            float viewportHeight = viewBounds.size.y;
+            if (contentHeight <= viewportHeight) return;
+
+            float offset = 0f;
+            if (itemBounds.max.y > viewBounds.max.y)
+                offset = itemBounds.max.y - viewBounds.max.y;
+            else if (itemBounds.min.y < viewBounds.min.y)
+                offset = itemBounds.min.y - viewBounds.min.y;
+
+            if (Mathf.Approximately(offset, 0f)) return;
+
+            var position = content.anchoredPosition;
+            position.y = Mathf.Clamp(position.y + offset, 0f, contentHeight - viewportHeight);
+            content.anchoredPosition = position;
         }
 
         void UpdateRowTexts()
@@ -1188,7 +1225,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             if (_ui.useButton != null)
+            {
+                _ui.useButton.gameObject.SetActive(true);
                 _ui.useButton.interactable = _selectedItem.usableFromInventory && _inventory.Count(_selectedItem.itemId) > 0;
+            }
 
             if (_ui.feedbackText != null)
                 _ui.feedbackText.text = string.Empty;
@@ -1253,7 +1293,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return true;
             }
 
-            return false;
+            var first = _rows[0];
+            HandleRowActivated(first, first.Item, true);
+            return true;
         }
 
         public bool TryHandleCancel() => false;
