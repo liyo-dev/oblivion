@@ -30,9 +30,20 @@ MonoBehaviour:
     climb: 0
     magic: 0
     fly: 0
-  appearance: []
+  appearance:
+  - category: 0
+    partName: Body05
+  - category: 2
+    partName: Head01_Male
+  - category: 3
+    partName: Hair01
+  - category: 4
+    partName: Eye01
+  - category: 5
+    partName: Mouth01
   unlockedWardrobeIds: []
   inventoryItems: []
   defeatedBossIds: []
   narrativeBlackboards: []
   npcPositions: []
+  consumedInteractableIds: []

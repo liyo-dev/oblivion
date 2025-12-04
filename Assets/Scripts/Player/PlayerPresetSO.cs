@@ -31,6 +31,7 @@ public class PlayerPresetSO : ScriptableObject
     public PlayerAbilities abilities = new PlayerAbilities();
 
     [Header("Apariencia")]
+    [Tooltip("Aspecto visual del jugador. En defaultPreset define el look inicial, en runtime contiene el aspecto actual.")]
     public List<AppearanceEntry> appearance = new();
 
     [Header("Vestuario desbloqueado")]

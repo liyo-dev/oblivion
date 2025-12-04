@@ -257,6 +257,14 @@ public class ModularAutoBuilder : MonoBehaviour
         return dict;
     }
 
+    public void DeactivateAllCategories()
+    {
+        foreach (var list in parts.Values)
+            foreach (var go in list)
+                go.SetActive(false);
+        idx.Clear();
+    }
+
     public void ApplySelection(Dictionary<PartCategory, string> sel)
     {
         // aplica Bow primero por su dependencia con Arrows
@@ -334,21 +342,20 @@ public class ModularAutoBuilder : MonoBehaviour
     }
     
     public void SetByName(PartCategory cat, string nameOrNull)
-{
-    if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
-
-    // apaga TODO lo de la categoría actual
-    foreach (var go in list) go.SetActive(false);
-
-    // si piden "None"
-    if (string.IsNullOrEmpty(nameOrNull))
     {
-        idx.Remove(cat);
+        if (!parts.TryGetValue(cat, out var list) || list.Count == 0) return;
 
-        // coherencia con Bow -> apaga flechas
-        if (cat == PartCategory.Bow) SetByName(PartCategory.Arrows, null);
-        return;
-    }
+        // apaga TODO lo de la categoría actual
+        foreach (var go in list) go.SetActive(false);
+
+        // si piden "None"
+        if (string.IsNullOrEmpty(nameOrNull))
+        {
+            idx.Remove(cat);
+            // coherencia con Bow -> apaga flechas
+            if (cat == PartCategory.Bow) SetByName(PartCategory.Arrows, null);
+            return;
+        }
 
     // encuentra el índice del elegido
     int i = list.FindIndex(g => g.name.Equals(nameOrNull, System.StringComparison.OrdinalIgnoreCase));

@@ -174,22 +174,45 @@ public class PlayerPresetService : MonoBehaviour
         if (_appearanceBuilder == null) return;
 
         var entries = preset.appearance;
+        
+        // Si el preset no tiene apariencia definida (lista vacía o null),
+        // significa que TODAS las partes deben estar desactivadas (reseteo completo)
         if (entries == null || entries.Count == 0)
         {
-            Debug.Log("[PlayerPresetService] Preset sin apariencia definida - restaurando apariencia inicial del prefab");
-            _appearanceBuilder.RestoreInitialSelection();
+            Debug.LogWarning($"[PlayerPresetService] ⚠️ Preset '{preset.name}' sin apariencia definida. " +
+                "Desactivando TODAS las partes visuales (reseteo completo). " +
+                "Define la apariencia en el Inspector del preset para control preciso.");
+            
+            // Crear un diccionario con TODAS las categorías en null para desactivar todo
+            var emptySelection = new Dictionary<PartCategory, string>();
+            foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
+            {
+                emptySelection[cat] = null;
+            }
+            _appearanceBuilder.ApplySelection(emptySelection);
             return;
         }
 
+        // IMPORTANTE: Cuando aplicamos un preset, debemos asegurar que SOLO las partes
+        // definidas en el preset estén activas. Para eso, creamos un diccionario completo
+        // con todas las categorías en null, y luego sobrescribimos con las del preset.
+        // Esto garantiza que partes no definidas (como Cloak si no está en el preset) se desactiven.
         var selection = new Dictionary<PartCategory, string>();
+        
+        // Inicializar todas las categorías a null (desactivadas)
         foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
+        {
             selection[cat] = null;
+        }
 
+        // Sobrescribir con las categorías definidas en el preset
         foreach (var entry in entries)
         {
             selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;
         }
 
+        // Desactivar todas las categorías antes de aplicar la selección del preset
+        _appearanceBuilder.DeactivateAllCategories();
         _appearanceBuilder.ApplySelection(selection);
     }
 

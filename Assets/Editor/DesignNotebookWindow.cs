@@ -145,7 +145,7 @@ public class DesignNotebookWindow : EditorWindow
         var tabs = new[]
         {
             "Resumen",
-            "Historia",
+            "Storyboard",
             "Notas rápidas",
             "Exportar"
         };
@@ -209,6 +209,8 @@ public class DesignNotebookWindow : EditorWindow
             var newPreview = GUILayout.Toolbar(_isPreviewMode ? 1 : 0, new[] { "Editar", "Ver" }, Styles.TabButton, GUILayout.Width(160f));
             _isPreviewMode = newPreview == 1;
         }
+
+        _fontSize = EditorGUILayout.IntSlider("Tamaño de fuente", _fontSize, 10, 48);
 
         var minHeight = Mathf.Max(position.height - 220f, 300f);
         using (var synopsisScroll = new EditorGUILayout.ScrollViewScope(_synopsisScroll, GUILayout.Height(minHeight)))
@@ -1079,6 +1081,9 @@ internal class StoryCardNodeView : Node
     public Port Output { get; }
     private readonly Action _onDirty;
     private Vector2 _lastSize;
+    private readonly VisualElement _accentStrip;
+    private readonly Color _baseBody = new Color(0.12f, 0.12f, 0.12f);
+    private readonly Color _baseHeader = new Color(0.18f, 0.18f, 0.18f);
 
     public StoryCardNodeView(DesignStoryCard card, Action onDirty)
     {
@@ -1092,6 +1097,16 @@ internal class StoryCardNodeView : Node
         style.width = initialSize.x;
         style.height = initialSize.y;
         _lastSize = initialSize;
+
+        _accentStrip = new VisualElement();
+        _accentStrip.style.width = 6f;
+        _accentStrip.style.backgroundColor = new StyleColor(Card.color);
+        _accentStrip.style.position = Position.Absolute;
+        _accentStrip.style.left = -2f;
+        _accentStrip.style.top = 0f;
+        _accentStrip.style.bottom = 0f;
+        _accentStrip.style.marginRight = 4f;
+        titleContainer.Add(_accentStrip);
 
         Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
         Input.portName = "Entradas";
@@ -1169,13 +1184,25 @@ internal class StoryCardNodeView : Node
 
     private void UpdateColor()
     {
-        mainContainer.style.backgroundColor = new StyleColor(Card.color);
-        var border = Card.color;
-        border.a = 1f;
-        style.borderLeftColor = border;
-        style.borderRightColor = border;
-        style.borderTopColor = border;
-        style.borderBottomColor = border;
+        var accent = Card.color;
+        var headerColor = Color.Lerp(accent, Color.white, 0.35f);
+        var bodyColor = Color.Lerp(accent, _baseBody, 0.7f);
+
+        mainContainer.style.backgroundColor = new StyleColor(bodyColor);
+        titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(headerColor, _baseHeader, 0.4f));
+
+        style.borderLeftWidth = 2f;
+        style.borderRightWidth = 2f;
+        style.borderTopWidth = 2f;
+        style.borderBottomWidth = 2f;
+        style.borderLeftColor = accent;
+        style.borderRightColor = accent;
+        style.borderTopColor = accent;
+        style.borderBottomColor = accent;
+
+        Input.portColor = accent;
+        Output.portColor = accent;
+        _accentStrip.style.backgroundColor = new StyleColor(accent);
     }
 
     public override void SetPosition(Rect newPos)
