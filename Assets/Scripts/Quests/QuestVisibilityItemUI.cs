@@ -16,6 +16,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
     private QuestManager.RuntimeQuest _data;
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
     private QuestVisibility _currentVisibility;
+    private ScrollRect _scrollRect;
 
     public void Bind(
         QuestManager.RuntimeQuest data,
@@ -61,6 +62,13 @@ public class QuestVisibilityItemUI : MonoBehaviour
 
         DisableUnusedButtons();
         UpdateInteractableStates();
+    }
+
+    public void ConfigureScrollRect(ScrollRect scrollRect)
+    {
+        _scrollRect = scrollRect;
+        AttachScrollRelay(showButton);
+        AttachScrollRelay(hideButton);
     }
 
     void NotifyChange(QuestVisibility visibility)
@@ -141,5 +149,15 @@ public class QuestVisibilityItemUI : MonoBehaviour
 
         if (hideButton)
             hideButton.interactable = _currentVisibility != QuestVisibility.Hidden;
+    }
+
+    void AttachScrollRelay(Selectable selectable)
+    {
+        if (selectable == null || _scrollRect == null) return;
+        var relay = selectable.gameObject.GetComponent<ScrollOnSelectRelay>();
+        if (relay == null)
+            relay = selectable.gameObject.AddComponent<ScrollOnSelectRelay>();
+        relay.scrollRect = _scrollRect;
+        relay.target = transform as RectTransform;
     }
 }

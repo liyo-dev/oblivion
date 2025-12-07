@@ -27,7 +27,7 @@ MonoBehaviour:
   abilities:
     swim: 1
     jump: 1
-    climb: 0
+    climb: 1
     magic: 1
     fly: 1
   appearance:

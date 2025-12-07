@@ -106,7 +106,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 8c033cc3-3046-49f4-96bd-373c132e7e61
-        position: {x: 78, y: -399}
+        position: {x: 92, y: -401}
         outputs:
         - befa0b8d-cb25-4ed4-8ef3-5225773ec796
         eventKey: INTRO
@@ -119,7 +119,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: befa0b8d-cb25-4ed4-8ef3-5225773ec796
-        position: {x: 456.0001, y: -505.99997}
+        position: {x: 400, y: -508}
         outputs: []
         clip: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
         fadeSeconds: 0.5

@@ -23,13 +23,20 @@ public class PlayerClimbingController : MonoBehaviour
     [SerializeField] private float climbSpeed = 2.5f;
     [SerializeField] private float stickToWallSpeed = 10f;
     [SerializeField] private float reattachDelay = 0.35f;
+    [SerializeField, Tooltip("Tiempo de gracia sin contacto antes de soltar la pared.")]
+    private float loseGripGrace = 0.2f;
 
     [Header("Animación")]
     [SerializeField] private string climbUpState = "ClimbUp_RM_NoWeapon";
     [SerializeField] private string climbDownState = "ClimbDown_RM_NoWeapon";
+    [SerializeField] private string climbIdleState = "ClimbIdle_RM_NoWeapon";
+    [SerializeField, Tooltip("Índice de capa del Animator que contiene los estados de escalar. Base layer = 0.")]
+    private int climbAnimatorLayer = 0;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
+    [SerializeField, Tooltip("Forzar al Animator como grounded mientras se escala para evitar estados de caída.")]
+    private bool forceGroundedWhileClimbing = true;
 
     private Animator _animator;
     private PlayerActionManager _actionManager;
@@ -41,9 +48,14 @@ public class PlayerClimbingController : MonoBehaviour
     private bool _isClimbing;
     private Vector3 _currentNormal;
     private float _lastDetachTime = -999f;
+    private float _lastValidHitTime = -999f;
     private float _originalExtraGravity;
     private bool _cachedExtraGravity;
     private bool _controllerWasEnabled = true;
+    private RaycastHit _lastHit;
+    private string _lastMissingStateWarn;
+    private int _lastClimbStateHash = -1;
+    private float _originalAnimatorSpeed = 1f;
 
     private const float MinInputToAnimate = 0.1f;
 
@@ -97,7 +109,7 @@ public class PlayerClimbingController : MonoBehaviour
 
         if (_isClimbing)
         {
-            if (!CanKeepClimbing(out var hit))
+            if (!TryGetClimbHit(out var hit))
             {
                 ExitClimb();
                 return;
@@ -122,31 +134,62 @@ public class PlayerClimbingController : MonoBehaviour
     {
         if (_actionManager != null)
         {
-            if (!_actionManager.CanClimb()) return false;
-            if (_actionManager.IsInMode(ActionMode.Swimming) || _actionManager.IsInMode(ActionMode.Flying))
+            if (!_actionManager.CanClimb())
+            {
+                if (debugLogs) Debug.Log("[PlayerClimbingController] Climb bloqueado por ActionManager");
                 return false;
+            }
+            if (_actionManager.IsInMode(ActionMode.Swimming) || _actionManager.IsInMode(ActionMode.Flying))
+            {
+                if (debugLogs) Debug.Log("[PlayerClimbingController] Climb bloqueado por modo Swimming/Flying");
+                return false;
+            }
         }
         return climbableLayers.value != 0; // se necesita una capa específica
     }
 
-    private bool CanKeepClimbing(out RaycastHit hit)
+    private bool TryGetClimbHit(out RaycastHit hit)
     {
-        bool valid = FindClimbable(out hit);
-        if (!valid)
-            return false;
-        if (_actionManager != null && !_actionManager.CanClimb())
-            return false;
-        return true;
+        bool detected = FindClimbable(out var newHit);
+        if (detected)
+        {
+            _lastHit = newHit;
+            _lastValidHitTime = Time.time;
+            hit = newHit;
+            return true;
+        }
+
+        // Permite un breve margen para no soltar instantáneamente si el spherecast pierde contacto un frame
+        if (Time.time - _lastValidHitTime <= loseGripGrace)
+        {
+            hit = _lastHit;
+            return true;
+        }
+
+        hit = default;
+        return false;
     }
 
     private bool FindClimbable(out RaycastHit hit)
     {
         Vector3 origin = transform.position + Vector3.up * (_capsule != null ? _capsule.height * 0.4f : 0.5f);
         Vector3 dir = transform.forward;
-        bool detected = Physics.SphereCast(origin, checkRadius, dir, out hit, checkDistance, climbableLayers, QueryTriggerInteraction.Ignore);
+        bool detected = Physics.SphereCast(origin, checkRadius, dir, out hit, checkDistance, climbableLayers, QueryTriggerInteraction.Collide);
         if (debugLogs)
             Debug.DrawRay(origin, dir * checkDistance, detected ? Color.green : Color.red);
         return detected;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        // Ayuda visual para depurar el spherecast de trepa
+        if (!debugLogs) return;
+        Vector3 origin = transform.position + Vector3.up * (_capsule != null ? _capsule.height * 0.4f : 0.5f);
+        Vector3 dir = transform.forward * checkDistance;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(origin, checkRadius);
+        Gizmos.DrawWireSphere(origin + dir, checkRadius);
+        Gizmos.DrawLine(origin, origin + dir);
     }
 
     private void AlignToWall(RaycastHit hit)
@@ -173,6 +216,12 @@ public class PlayerClimbingController : MonoBehaviour
         _currentNormal = hit.normal;
         AlignToWall(hit);
 
+        if (_animator != null)
+        {
+            _originalAnimatorSpeed = _animator.speed;
+            _animator.speed = 1f;
+        }
+
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Climbing);
 
@@ -191,7 +240,7 @@ public class PlayerClimbingController : MonoBehaviour
             _controller.enabled = false;
         }
 
-        PlayClimb(true);
+        PlayClimb(1f);
 
         if (debugLogs)
             Debug.Log("[PlayerClimbingController] Enter Climb");
@@ -202,11 +251,26 @@ public class PlayerClimbingController : MonoBehaviour
         Vector2 move = _controls != null ? _controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
         float vertical = Mathf.Clamp(move.y, -1f, 1f);
 
-        if (Mathf.Abs(vertical) > MinInputToAnimate)
-            PlayClimb(vertical > 0f);
+        PlayClimb(vertical);
 
         Vector3 motion = Vector3.up * vertical * climbSpeed * Time.deltaTime;
         transform.position += motion;
+
+        if (_rigidbody != null)
+        {
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+        }
+
+        if (forceGroundedWhileClimbing && _animator != null)
+        {
+            try
+            {
+                _animator.SetBool(Invector.vCharacterController.vAnimatorParameters.IsGrounded, true);
+                _animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, Mathf.Abs(vertical));
+            }
+            catch { }
+        }
     }
 
     private void MaintainAttachment(RaycastHit hit)
@@ -227,14 +291,62 @@ public class PlayerClimbingController : MonoBehaviour
         }
     }
 
-    private void PlayClimb(bool movingUp)
+    private void PlayClimb(float vertical)
     {
         if (_animator == null)
             return;
 
-        string state = movingUp ? climbUpState : climbDownState;
-        if (!string.IsNullOrEmpty(state))
-            _animator.CrossFade(state, 0.05f);
+        string state;
+        if (Mathf.Abs(vertical) <= MinInputToAnimate)
+            state = climbIdleState;
+        else
+            state = vertical > 0f ? climbUpState : climbDownState;
+
+        if (string.IsNullOrEmpty(state))
+            return;
+
+        if (climbAnimatorLayer < 0 || climbAnimatorLayer >= _animator.layerCount)
+        {
+            if (debugLogs && _lastMissingStateWarn != "_layer")
+            {
+                Debug.LogWarning("[PlayerClimbingController] Layer de escalada inválido (" + climbAnimatorLayer + ")");
+                _lastMissingStateWarn = "_layer";
+            }
+            return;
+        }
+
+        int hash = Animator.StringToHash(state);
+        if (!_animator.HasState(climbAnimatorLayer, hash))
+        {
+            if (debugLogs && _lastMissingStateWarn != state)
+            {
+                Debug.LogWarning("[PlayerClimbingController] Estado de animación no encontrado: " + state + " en capa " + climbAnimatorLayer);
+                _lastMissingStateWarn = state;
+            }
+            return;
+        }
+
+        var current = _animator.GetCurrentAnimatorStateInfo(climbAnimatorLayer);
+
+        // Si estamos casi quietos, usamos el último estado válido y pausamos la animación
+        if (Mathf.Abs(vertical) <= MinInputToAnimate)
+        {
+            int targetHash = _lastClimbStateHash >= 0 ? _lastClimbStateHash : hash;
+            if (current.shortNameHash != targetHash)
+            {
+                _animator.CrossFade(targetHash, 0.05f, climbAnimatorLayer);
+            }
+            _lastClimbStateHash = targetHash;
+            _animator.speed = 0f;
+            return;
+        }
+
+        // Con movimiento, reproducimos up/down y aseguramos velocidad normal
+        if (current.shortNameHash != hash)
+            _animator.CrossFade(hash, 0.05f, climbAnimatorLayer);
+
+        _lastClimbStateHash = hash;
+        _animator.speed = 1f;
     }
 
     private void ExitClimb(bool force = false)
@@ -258,6 +370,9 @@ public class PlayerClimbingController : MonoBehaviour
             if (_cachedExtraGravity)
                 _controller.extraGravity = _originalExtraGravity;
         }
+
+        if (_animator != null)
+            _animator.speed = _originalAnimatorSpeed;
 
         if (debugLogs)
             Debug.Log("[PlayerClimbingController] Exit Climb");

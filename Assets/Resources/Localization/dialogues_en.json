@@ -238,7 +238,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
-            "value": "[EN] Habla con ? suele ir de verde y debe andar por el Reino."
+            "value": "[EN] Habla con E suele ir de verde y debe andar por el Reino."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_TURNIN",
@@ -278,7 +278,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_09",
-            "value": "[EN] Nos vemos pronto Will."
+            "value": "[EN] Will aqui es donde empieza tu aventura."
         },
         {
             "key": "DLG_GUARD_01",
@@ -318,7 +318,7 @@
         },
         {
             "key": "DLG_LEONARDO_01",
-            "value": "[EN] ¿Quieres que te cuente cómo funcionan los menús?"
+            "value": "[EN] Habla con Erika suele ir de verde y debe andar por el Reino."
         },
         {
             "key": "DLG_LEONARDO_02",
