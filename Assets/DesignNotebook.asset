@@ -56,43 +56,14 @@ MonoBehaviour:
   storyCards:
   - guid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
     title: Aprendo proteccion y desbloqueo magia
-    note: Hasblar con Eldran para que me dejen pasar al bosque
+    note: Hasblar con Eldran para que me dejen pasar al bosque.
     color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 178, y: -473.4}
+    position: {x: 161, y: -1011.92}
     size: {x: 328, y: 140}
-  - guid: 9ce4ba89-9370-41ef-a401-5e9125622ed2
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 588, y: -473}
-    size: {x: 315, y: 153}
-  - guid: f8873013-78ff-4874-a34e-48b9a3ea9e7d
-    title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 178, y: -295}
-    size: {x: 320, y: 320}
-  storyLinks:
-  - fromGuid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
-    toGuid: 9ce4ba89-9370-41ef-a401-5e9125622ed2
+  storyLinks: []
   quickNotes:
-  - title: Nueva nota
+  - title: 
     note: 
     tags: 
-    color: {r: 1, g: 0.95, b: 0.65, a: 1}
+    color: {r: 0.19607845, g: 0.19607845, b: 0.19607845, a: 1}
     position: {x: 0, y: 0}
-  - title: Nueva nota
-    note: 
-    tags: 
-    color: {r: 1, g: 0.95, b: 0.65, a: 1}
-    position: {x: 248, y: 0}
-  - title: Nueva nota
-    note: 
-    tags: 
-    color: {r: 1, g: 0.95, b: 0.65, a: 1}
-    position: {x: 496, y: 0}
-  - title: Nueva nota
-    note: 
-    tags: 
-    color: {r: 1, g: 0.95, b: 0.65, a: 1}
-    position: {x: 0, y: 208}

@@ -39,16 +39,45 @@ public class LocalizationTableEditor : EditorWindow
     
     private const string LOCALIZATION_FOLDER = "Assets/Resources/Localization";
 
-    // Mapeo de archivos a categorías
-    private static readonly Dictionary<string, LocalizationCategory> FileCategoryMap = new Dictionary<string, LocalizationCategory>
+    private enum LocalizationFileFormat
     {
-        { "dialogues", LocalizationCategory.Dialogues },
-        { "quests", LocalizationCategory.Quests },
-        { "ui", LocalizationCategory.UI },
-        { "cinematicintro", LocalizationCategory.Cinematics },
-        { "cinematicdemon", LocalizationCategory.Cinematics }, 
-        { "prologue", LocalizationCategory.Prologue }
+        Texts,
+        Subtitles
+    }
+
+    private class LocalizationFileDefinition
+    {
+        public readonly string fileName;
+        public readonly LocalizationCategory category;
+        public readonly LocalizationFileFormat format;
+        public readonly bool legacy;
+
+        public LocalizationFileDefinition(string fileName, LocalizationCategory category, LocalizationFileFormat format, bool legacy = false)
+        {
+            this.fileName = fileName;
+            this.category = category;
+            this.format = format;
+            this.legacy = legacy;
+        }
+    }
+
+    private static readonly LocalizationFileDefinition[] FileDefinitions =
+    {
+        new LocalizationFileDefinition("dialogues", LocalizationCategory.Dialogues, LocalizationFileFormat.Texts),
+        new LocalizationFileDefinition("quests", LocalizationCategory.Quests, LocalizationFileFormat.Texts),
+        new LocalizationFileDefinition("ui", LocalizationCategory.UI, LocalizationFileFormat.Texts),
+        new LocalizationFileDefinition("cinematics", LocalizationCategory.Cinematics, LocalizationFileFormat.Subtitles),
+        new LocalizationFileDefinition("prologue", LocalizationCategory.Prologue, LocalizationFileFormat.Subtitles),
+        new LocalizationFileDefinition("other", LocalizationCategory.Other, LocalizationFileFormat.Texts),
+
+        // Archivos antiguos (solo lectura)
+        new LocalizationFileDefinition("cinematicintro", LocalizationCategory.Cinematics, LocalizationFileFormat.Subtitles, true),
+        new LocalizationFileDefinition("cinematicdemon", LocalizationCategory.Cinematics, LocalizationFileFormat.Subtitles, true),
+        new LocalizationFileDefinition("cinematicivillain", LocalizationCategory.Cinematics, LocalizationFileFormat.Subtitles, true)
     };
+
+    private static readonly Dictionary<string, LocalizationFileDefinition> FileDefinitionLookup =
+        FileDefinitions.ToDictionary(f => f.fileName.ToLowerInvariant());
 
     [MenuItem("Tools/Localization Table Editor")]
     public static void ShowWindow()
@@ -415,13 +444,13 @@ public class LocalizationTableEditor : EditorWindow
 
     LocalizationCategory GetCategoryFromFileName(string fileName)
     {
-        foreach (var kvp in FileCategoryMap)
-        {
-            if (fileName.ToLower().Contains(kvp.Key))
-            {
-                return kvp.Value;
-            }
-        }
+        var lower = fileName.ToLowerInvariant();
+        if (FileDefinitionLookup.TryGetValue(lower, out var definition))
+            return definition.category;
+
+        if (lower.StartsWith("cinematic"))
+            return LocalizationCategory.Cinematics;
+
         return LocalizationCategory.Other;
     }
 
@@ -439,7 +468,7 @@ public class LocalizationTableEditor : EditorWindow
             key.StartsWith("System_") || key.StartsWith("SAVEPOINT_") || key.StartsWith("INTERACT_"))
             return LocalizationCategory.UI;
         
-        if (key.StartsWith("CIN_") || key.StartsWith("CUTSCENE_") || key.StartsWith("INTRO_"))
+        if (key.StartsWith("CIN_") || key.StartsWith("CUTSCENE_") || key.StartsWith("INTRO_") || key.StartsWith("CIV_"))
             return LocalizationCategory.Cinematics;
         
         if (key.StartsWith("PROLOGUE_"))
@@ -499,47 +528,30 @@ public class LocalizationTableEditor : EditorWindow
 
     void SaveData()
     {
-        // Agrupar entradas por categoría
         var entriesByCategory = entries.Where(e => !e.isNew)
             .GroupBy(e => e.category)
             .ToDictionary(g => g.Key, g => g.ToList());
-        
-        // Guardar cada categoría en su archivo correspondiente
-        foreach (var kvp in FileCategoryMap)
+
+        foreach (var definition in FileDefinitions.Where(d => !d.legacy))
         {
-            var category = kvp.Value;
-            var fileName = kvp.Key;
-            
-            if (entriesByCategory.TryGetValue(category, out var categoryEntries))
+            entriesByCategory.TryGetValue(definition.category, out var categoryEntries);
+            var entriesToWrite = categoryEntries ?? new List<LocalizationEntry>();
+
+            var esPath = Path.Combine(LOCALIZATION_FOLDER, $"{definition.fileName}_es.json");
+            var enPath = Path.Combine(LOCALIZATION_FOLDER, $"{definition.fileName}_en.json");
+
+            if (definition.format == LocalizationFileFormat.Subtitles)
             {
-                // Determinar si es un archivo de subtítulos (prologue, cinematicintro, cinematicdemon)
-                bool isSubtitleFormat = fileName == "prologue" || fileName == "cinematicintro" || fileName == "cinematicdemon";
-                
-                // Guardar español
-                var esPath = Path.Combine(LOCALIZATION_FOLDER, $"{fileName}_es.json");
-                if (isSubtitleFormat)
-                    SaveSubtitleJsonFile(esPath, categoryEntries.Select(e => new SubtitleEntry { id = e.key, text = e.spanish }));
-                else
-                    SaveJsonFile(esPath, categoryEntries.Select(e => new TextEntry { key = e.key, value = e.spanish }));
-                
-                // Guardar inglés
-                var enPath = Path.Combine(LOCALIZATION_FOLDER, $"{fileName}_en.json");
-                if (isSubtitleFormat)
-                    SaveSubtitleJsonFile(enPath, categoryEntries.Select(e => new SubtitleEntry { id = e.key, text = e.english }));
-                else
-                    SaveJsonFile(enPath, categoryEntries.Select(e => new TextEntry { key = e.key, value = e.english }));
+                SaveSubtitleJsonFile(esPath, entriesToWrite.Select(e => new SubtitleEntry { id = e.key, text = e.spanish }));
+                SaveSubtitleJsonFile(enPath, entriesToWrite.Select(e => new SubtitleEntry { id = e.key, text = e.english }));
+            }
+            else
+            {
+                SaveJsonFile(esPath, entriesToWrite.Select(e => new TextEntry { key = e.key, value = e.spanish }));
+                SaveJsonFile(enPath, entriesToWrite.Select(e => new TextEntry { key = e.key, value = e.english }));
             }
         }
-        
-        // Guardar entradas "Other" en un archivo separado si existen
-        if (entriesByCategory.TryGetValue(LocalizationCategory.Other, out var otherEntries))
-        {
-            var esPath = Path.Combine(LOCALIZATION_FOLDER, "other_es.json");
-            var enPath = Path.Combine(LOCALIZATION_FOLDER, "other_en.json");
-            SaveJsonFile(esPath, otherEntries.Select(e => new TextEntry { key = e.key, value = e.spanish }));
-            SaveJsonFile(enPath, otherEntries.Select(e => new TextEntry { key = e.key, value = e.english }));
-        }
-        
+
         AssetDatabase.Refresh();
         Debug.Log("[LocalizationTableEditor] All files saved successfully");
     }

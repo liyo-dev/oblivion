@@ -1576,10 +1576,8 @@ MonoBehaviour:
   fullscreenYesButton: {fileID: 8144584666780166159}
   fullscreenNoButton: {fileID: 7708655203052666237}
   activeStateColor: {r: 1, g: 0.92, b: 0.16, a: 1}
-  inactiveStateColor: {r: 1, g: 1, b: 1, a: 1}
+  inactiveStateColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
   autoAddSelectVisuals: 1
-  navDeadzone: 0.3
-  enableManualNavigation: 1
   cancelInputGracePeriod: 0.25
 --- !u!1 &2532450884901455273
 GameObject:
