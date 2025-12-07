@@ -20,6 +20,8 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
     public UnityEvent onAccepted;         // justo tras aceptar
     public UnityEvent onTurnedIn;         // justo al entregar (antes de CompleteQuest)
     public UnityEvent onCompleted;        // tras CompleteQuest
+    [Tooltip("Se dispara cuando finaliza el diálogo de oferta (dlgAvailable).")]
+    public UnityEvent onOfferDialogueFinished;
 
     private Action _onFinish;
 
@@ -40,6 +42,7 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
             case QuestState.Inactive:
                 StartDlg(dlgAvailable, () =>
                 {
+                        onOfferDialogueFinished?.Invoke();
                     if (autoAcceptOnAvailable)
                     {
                         qm.StartQuest(quest.questId);

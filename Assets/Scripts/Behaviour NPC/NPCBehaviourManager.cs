@@ -753,7 +753,7 @@ namespace Game.NPC
                     switch (qm.GetState(questId))
                     {
                         case QuestState.Inactive:
-                            _ctx.PlayDialogue(entry.dlgBefore);
+                                _ctx.PlayDialogue(entry.dlgBefore, () => entry.onOfferDialogueFinished?.Invoke());
                             break;
                         case QuestState.Active:
                             HandleActive(entry, qm, questId, index);
@@ -766,7 +766,7 @@ namespace Game.NPC
                 else
                 {
                     var first = chain[0];
-                    _ctx.PlayDialogue(first.dlgBefore);
+                        _ctx.PlayDialogue(first.dlgBefore, () => first.onOfferDialogueFinished?.Invoke());
                 }
 
                 return true;
@@ -1156,6 +1156,8 @@ namespace Game.NPC
 
                 [Header("Eventos")]
                 public UnityEvent onQuestCompleted;
+                [Tooltip("Se dispara cuando termina el diálogo de oferta (dlgBefore) para esta etapa de la cadena.")]
+                public UnityEvent onOfferDialogueFinished;
             }
         }
 

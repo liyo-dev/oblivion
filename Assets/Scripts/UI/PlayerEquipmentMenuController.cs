@@ -1226,33 +1226,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void ScrollToRow(InventoryRowWidget widget)
         {
             if (_scrollRect == null || widget == null) return;
-
-            var content = _scrollRect.content;
-            var viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
-            var itemRect = widget.GetComponent<RectTransform>();
-
-            if (content == null || viewport == null || itemRect == null) return;
-
-            Canvas.ForceUpdateCanvases();
-
-            var itemBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(content, itemRect);
-            var viewBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(content, viewport);
-
-            float contentHeight = content.rect.height;
-            float viewportHeight = viewBounds.size.y;
-            if (contentHeight <= viewportHeight) return;
-
-            float offset = 0f;
-            if (itemBounds.max.y > viewBounds.max.y)
-                offset = itemBounds.max.y - viewBounds.max.y;
-            else if (itemBounds.min.y < viewBounds.min.y)
-                offset = itemBounds.min.y - viewBounds.min.y;
-
-            if (Mathf.Approximately(offset, 0f)) return;
-
-            var position = content.anchoredPosition;
-            position.y = Mathf.Clamp(position.y + offset, 0f, contentHeight - viewportHeight);
-            content.anchoredPosition = position;
+            var rect = widget.GetComponent<RectTransform>();
+            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect);
         }
 
         void UpdateRowTexts()
@@ -1480,6 +1455,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         readonly Dictionary<MagicSlot, Button> _slotToButton = new();
         readonly Dictionary<Button, Vector3> _slotBaseScales = new();
         readonly Dictionary<Button, Tween> _slotFeedbackTweens = new();
+        readonly ScrollRect _scrollRect;
 
         PlayerPresetSO _preset;
         SpellLibrarySO _library;
@@ -1506,6 +1482,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             ConfigureSlotButton(_ui.leftSlotButton, MagicSlot.Left);
             ConfigureSlotButton(_ui.rightSlotButton, MagicSlot.Right);
             ConfigureSlotButton(_ui.specialSlotButton, MagicSlot.Special);
+            if (_ui.rowsParent != null)
+                _scrollRect = _ui.rowsParent.GetComponentInParent<ScrollRect>();
         }
 
         public GameObject DefaultSelection
@@ -1726,6 +1704,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _focusArea = FocusArea.SpellList;
             UpdateRowVisuals();
             ShowSpellDetails(entry.spellId);
+            ScrollToEntry(entry);
         }
 
         void UpdateRowVisuals()
@@ -1935,6 +1914,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_rows.Count == 0) return;
             var first = _rows[0];
             HandleRowSelected(first, false);
+        }
+
+        void ScrollToEntry(RowEntry entry)
+        {
+            if (_scrollRect == null || entry?.widget == null)
+                return;
+            var rect = entry.widget.GetComponent<RectTransform>();
+            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect);
         }
 
         void ConfigureSlotButton(Button button, MagicSlot slot)

@@ -198,6 +198,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Magic);
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Carry);
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Interact);
+        _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Fly);
 
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
     }

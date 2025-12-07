@@ -2197,6 +2197,9 @@ MonoBehaviour:
       onQuestCompleted:
         m_PersistentCalls:
           m_Calls: []
+      onOfferDialogueFinished:
+        m_PersistentCalls:
+          m_Calls: []
     - questData: {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
       completionMode: 0
       autoDetectItemDelivery: 1
@@ -2213,6 +2216,9 @@ MonoBehaviour:
       dlgTurnIn: {fileID: 0}
       dlgCompleted: {fileID: 0}
       onQuestCompleted:
+        m_PersistentCalls:
+          m_Calls: []
+      onOfferDialogueFinished:
         m_PersistentCalls:
           m_Calls: []
     - questData: {fileID: 11400000, guid: b6bca4c14a2270847bce04a6eae9c353, type: 2}
@@ -2233,6 +2239,9 @@ MonoBehaviour:
       onQuestCompleted:
         m_PersistentCalls:
           m_Calls: []
+      onOfferDialogueFinished:
+        m_PersistentCalls:
+          m_Calls: []
     - questData: {fileID: 11400000, guid: f1a6c08b80e835a41a5afeb745dcf01e, type: 2}
       completionMode: 1
       autoDetectItemDelivery: 0
@@ -2249,6 +2258,9 @@ MonoBehaviour:
       dlgTurnIn: {fileID: 0}
       dlgCompleted: {fileID: 0}
       onQuestCompleted:
+        m_PersistentCalls:
+          m_Calls: []
+      onOfferDialogueFinished:
         m_PersistentCalls:
           m_Calls: []
     - questData: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
@@ -2269,6 +2281,9 @@ MonoBehaviour:
       onQuestCompleted:
         m_PersistentCalls:
           m_Calls: []
+      onOfferDialogueFinished:
+        m_PersistentCalls:
+          m_Calls: []
     - questData: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
       completionMode: 0
       autoDetectItemDelivery: 0
@@ -2287,6 +2302,45 @@ MonoBehaviour:
       onQuestCompleted:
         m_PersistentCalls:
           m_Calls: []
+      onOfferDialogueFinished:
+        m_PersistentCalls:
+          m_Calls:
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: InteractableToNarrativeEvent, Assembly-CSharp
+            m_MethodName: Send
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+            m_MethodName: SetActive
+            m_Mode: 6
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 1
+            m_CallState: 2
+          - m_Target: {fileID: 0}
+            m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+            m_MethodName: SetActive
+            m_Mode: 6
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 1
+            m_CallState: 2
     enableItemDetection: 1
     detectionRadius: 3
     detectionAngle: 90
