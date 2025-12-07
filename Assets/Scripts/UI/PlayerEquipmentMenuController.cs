@@ -327,20 +327,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (!pressed)
         {
-            try { pressed = Input.GetButtonDown("DPadDown"); } catch { }
-            if (!pressed) pressed = Input.GetKeyDown(KeyCode.DownArrow);
-
-            if (!pressed)
+            if (Input.GetKeyDown(KeyCode.DownArrow))
+            {
+                pressed = true;
+                _lastDpadVertical = -1f;
+            }
+            else
             {
                 float axis = 0f;
                 try { axis = Input.GetAxis("7th axis"); } catch { }
                 if (axis < -0.5f && _lastDpadVertical >= -0.5f)
                     pressed = true;
                 _lastDpadVertical = axis;
-            }
-            else
-            {
-                _lastDpadVertical = -1f;
             }
         }
 

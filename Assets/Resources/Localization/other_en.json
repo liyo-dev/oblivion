@@ -1,12 +1,3 @@
 {
-    "texts": [
-        {
-            "key": "CIV_01",
-            "value": "So... the star has finally awakened."
-        },
-        {
-            "key": "CIV_02",
-            "value": "The first step is complete..."
-        }
-    ]
+    "texts": []
 }

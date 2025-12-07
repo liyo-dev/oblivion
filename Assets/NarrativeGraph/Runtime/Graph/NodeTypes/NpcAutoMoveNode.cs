@@ -1,6 +1,7 @@
 // NpcAutoMoveNode.cs
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Game.NPC;
 using Game.NPC.Common;
@@ -14,6 +15,12 @@ using UnityEngine.AI;
 [Serializable]
 public sealed class NpcAutoMoveNode : NarrativeNode
 {
+    public enum SequenceMode
+    {
+        DialogueBeforeMove,
+        MoveBeforeDialogue
+    }
+
     [Header("NPC Lookup")]
     public string npcName;
     public string npcTag;
@@ -22,6 +29,13 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     public DialogueAsset dialogueOverride;
     public bool triggerInteractableIfNoOverride = true;
     [Min(1f)] public float dialogueTimeout = 60f;
+
+    [Header("Secuencia")]
+    public SequenceMode sequenceMode = SequenceMode.DialogueBeforeMove;
+    [Tooltip("Si está activo, el NPC regresará a su posición inicial al terminar la secuencia.")]
+    public bool returnToOrigin = false;
+    [Tooltip("Si el NPC vuelve al origen, restaurar también su rotación inicial.")]
+    public bool restoreRotationOnReturn = true;
 
     [Header("Destino")]
     public string targetAnchorName;
@@ -65,6 +79,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     [Header("Persistencia")]
     [Tooltip("Si está marcado, este nodo solo se ejecutará una vez por perfil y se saltará en cargas futuras.")]
     public bool runOnlyOncePerProfile = true;
+    [Tooltip("Persistir el flag de finalización dentro del PlayerPreset para evitar re-ejecuciones tras cargar partidas.")]
+    public bool persistCompletionToPreset = true;
 
     void Log(string message)
     {
@@ -81,9 +97,9 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
 
         var completionKey = GetCompletionKey();
-        if (runOnlyOncePerProfile && IsMarkedCompleted(ctx.Blackboard, completionKey))
+        if (runOnlyOncePerProfile && ShouldSkipBecauseCompleted(ctx.Blackboard, completionKey))
         {
-            Log($"Skip → runOnlyOncePerProfile=true y flag '{completionKey}' ya está marcado");
+            Log($"Skip → runOnlyOncePerProfile=true y flag '{completionKey}' ya está marcado/persistido");
             onReadyToAdvance?.Invoke();
             return;
         }
@@ -127,6 +143,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
 
         npc.EnsurePlayerReference();
+        Vector3 originalPosition = npc.transform.position;
+        Quaternion originalRotation = npc.transform.rotation;
 
         PlayerActionManager pam = null;
         bool lockApplied = false;
@@ -148,8 +166,28 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 }
             }
 
-            yield return PlayDialogue(npc);
-            yield return MoveNpc(npc);
+            bool persistForwardMovement = !returnToOrigin;
+            if (sequenceMode == SequenceMode.MoveBeforeDialogue)
+            {
+                yield return MoveNpc(npc, null, persistForwardMovement);
+                yield return PlayDialogue(npc);
+            }
+            else
+            {
+                yield return PlayDialogue(npc);
+                yield return MoveNpc(npc, null, persistForwardMovement);
+            }
+
+            if (returnToOrigin)
+            {
+                Log($"Returning NPC to origin: {originalPosition}");
+                yield return MoveNpc(npc, originalPosition, persistPosition: true, faceBackTowardsStart: false);
+                if (restoreRotationOnReturn)
+                {
+                    RestoreNpcRotation(npc, originalRotation);
+                    Log($"Restored original rotation");
+                }
+            }
             
             // Desactivar NPC si está configurado
             if (deactivateOnComplete)
@@ -223,12 +261,21 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
     }
 
-    IEnumerator MoveNpc(NPCBehaviourManager npc)
+    IEnumerator MoveNpc(NPCBehaviourManager npc, Vector3? forcedDestination = null, bool persistPosition = true, bool faceBackTowardsStart = true)
     {
-        if (!TryResolveDestination(npc, out var destination))
+        Vector3 destination;
+        if (forcedDestination.HasValue)
+        {
+            destination = forcedDestination.Value;
+            if (NavMesh.SamplePosition(destination, out var forcedHit, navmeshSampleRadius, NavMesh.AllAreas))
+                destination = forcedHit.position;
+        }
+        else if (!TryResolveDestination(npc, out destination))
         {
             Debug.LogWarning("[NpcAutoMoveNode] No se pudo resolver el destino. Teleportando al origen configurado.");
             npc.transform.position = targetPosition;
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, npc.transform.position);
             EnsureNpcIdle(npc.Animator);
             yield break;
         }
@@ -236,12 +283,12 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         var agent = npc.Agent;
         var animator = npc.Animator;
 
-        // Asegurar agente habilitado y en NavMesh. Si falla en origen, intenta en destino antes de rendirse.
         if (agent == null)
         {
             Debug.LogWarning("[NpcAutoMoveNode] NPC no tiene NavMeshAgent; no puede caminar. Teleport al destino.");
             npc.transform.position = destination;
-            PersistNpcPositionIfNeeded(npc, destination);
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, destination);
             EnsureNpcIdle(animator);
             yield break;
         }
@@ -251,7 +298,6 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         bool onMesh = npc.EnsureAgentOnNavMesh(navmeshSampleRadius);
         if (!onMesh)
         {
-            // Reintentar capturando el punto de NavMesh más cercano al destino
             if (NavMesh.SamplePosition(destination, out var hitNav, Mathf.Max(2f, navmeshSampleRadius * 2f), NavMesh.AllAreas))
             {
                 agent.Warp(hitNav.position);
@@ -263,7 +309,8 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         {
             Debug.LogWarning("[NpcAutoMoveNode] No se pudo proyectar el NPC en NavMesh; teletransportando al destino.");
             npc.transform.position = destination;
-            PersistNpcPositionIfNeeded(npc, destination);
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, destination);
             EnsureNpcIdle(animator);
             yield break;
         }
@@ -289,7 +336,6 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 animator.SetMovementSpeed(Mathf.Max(speed, minSpeed));
             }
 
-            // solo permitir teletransporte por offscreen tras cierto tiempo/distancia
             if (!offscreenAllowed)
             {
                 if (elapsed >= Mathf.Max(0f, minVisibleWalkSeconds) || Vector3.Distance(npc.transform.position, startPos) >= Mathf.Max(0f, minDistanceBeforeTeleport))
@@ -338,47 +384,47 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             }
         }
 
-        // Decidir cómo finalizar
         float reachThresh = Mathf.Max(stoppingDistance, agent.stoppingDistance) + 0.05f;
         bool reached = (!agent.pathPending && agent.isOnNavMesh && agent.enabled && agent.remainingDistance <= reachThresh) || forcedReachNoPath;
 
+        // Detener el agente ANTES de cualquier operación de finalización
+        NavMeshAgentUtility.SafeSetStopped(agent, true);
+        if (agent.isOnNavMesh && agent.enabled)
+            agent.ResetPath();
+        
+        // Resetear animación INMEDIATAMENTE después de detener el agente
+        EnsureNpcIdle(animator);
+
         if (leftCamera)
         {
-            // Fuera de cámara: teletransportar para terminar limpio
-            NavMeshAgentUtility.SafeSetStopped(agent, true);
-            if (agent.isOnNavMesh && agent.enabled)
-                agent.ResetPath();
             if (agent.isOnNavMesh)
                 agent.Warp(destination);
-            PersistNpcPositionIfNeeded(npc, destination);
-            EnsureNpcIdle(animator);
-            Log("Finished by offscreen → teleported and persisted position");
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, destination);
+            Log(persistPosition
+                ? "Finished by offscreen → teleported and persisted position"
+                : "Finished by offscreen → teleported (no persistence).");
         }
         else if (reached)
         {
-            // Llegó al destino: detener agente y asegurar posición final
-            NavMeshAgentUtility.SafeSetStopped(agent, true);
-            if (agent.isOnNavMesh && agent.enabled)
-                agent.ResetPath();
             if (agent.isOnNavMesh && Vector3.Distance(agent.transform.position, destination) > 0.2f)
                 agent.Warp(destination);
-            PersistNpcPositionIfNeeded(npc, destination);
-            EnsureNpcIdle(animator);
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, destination);
             Log(forcedReachNoPath ? "Finished by forced reach (no path) → warped to destination" : "Finished by reach → stopped at destination");
         }
         else
         {
-            // Caso límite: agotó el tiempo máximo visible pero sigue en cámara.
-            // Para evitar carreras eternas, moverlo al destino y dejarlo en idle.
-            NavMeshAgentUtility.SafeSetStopped(agent, true);
-            agent.ResetPath();
-            agent.Warp(destination);
-            PersistNpcPositionIfNeeded(npc, destination);
-            EnsureNpcIdle(animator);
+            if (agent.isOnNavMesh)
+                agent.Warp(destination);
+            if (persistPosition)
+                PersistNpcPositionIfNeeded(npc, destination);
             Log("Finished by timeout/in-camera → forced warp to destination");
         }
 
-        FaceBackTowardsStart(npc, startPos, destination);
+        // Solo girar hacia atrás en el movimiento inicial, no en el retorno
+        if (faceBackTowardsStart && forcedDestination == null)
+            FaceBackTowardsStart(npc, startPos, destination);
     }
 
     void EnsureNpcIdle(NPCSimpleAnimator animator)
@@ -418,37 +464,32 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             agent.nextPosition = npc.transform.position;
     }
 
+    void RestoreNpcRotation(NPCBehaviourManager npc, Quaternion targetRotation)
+    {
+        if (npc == null)
+            return;
+
+        npc.transform.rotation = targetRotation;
+
+        var agent = npc.Agent;
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            // Sincronizar la rotación y posición del agente después de restaurar
+            agent.nextPosition = npc.transform.position;
+            agent.velocity = Vector3.zero;
+        }
+    }
+
     void PersistNpcPositionIfNeeded(NPCBehaviourManager npc, Vector3 destination)
     {
         if (npc == null || !npc.persistLastPosition) return;
         npc.SetLastPosition(destination);
 
-        PlayerPresetSO preset = null;
-
-        // 1) Intentar a través de GameBootService.Profile
-        var gb = GameBootService.Profile;
-        if (gb != null)
-        {
-            try { preset = gb.GetActivePresetResolved(); } catch { }
-        }
-
-        // 2) ServiceLocator
-        if (preset == null)
-        {
-            try { preset = ServiceLocator.Get<PlayerPresetSO>(logIfMissing: false); } catch { }
-        }
-
-        // 3) Fallback: buscar en memoria
-        if (preset == null)
-        {
-            var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
-            if (all != null && all.Length > 0) preset = all[0];
-        }
-
-        if (preset == null) return;
+        if (!TryResolveActivePreset(out var preset))
+            return;
 
         if (preset.npcPositions == null)
-            preset.npcPositions = new System.Collections.Generic.List<PlayerPresetSO.NpcPosEntry>();
+            preset.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
 
         var id = npc.gameObject.name;
         bool updated = false;
@@ -477,36 +518,14 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     {
         if (npc == null) return;
 
-        PlayerPresetSO preset = null;
-
-        // 1) Intentar a través de GameBootService.Profile
-        var gb = GameBootService.Profile;
-        if (gb != null)
-        {
-            try { preset = gb.GetActivePresetResolved(); } catch { }
-        }
-
-        // 2) ServiceLocator
-        if (preset == null)
-        {
-            try { preset = ServiceLocator.Get<PlayerPresetSO>(logIfMissing: false); } catch { }
-        }
-
-        // 3) Fallback: buscar en memoria
-        if (preset == null)
-        {
-            var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
-            if (all != null && all.Length > 0) preset = all[0];
-        }
-
-        if (preset == null)
+        if (!TryResolveActivePreset(out var preset))
         {
             Debug.LogWarning("[NpcAutoMoveNode] No se pudo obtener PlayerPresetSO para persistir desactivación del NPC");
             return;
         }
 
         if (preset.npcPositions == null)
-            preset.npcPositions = new System.Collections.Generic.List<PlayerPresetSO.NpcPosEntry>();
+            preset.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
 
         var id = npc.gameObject.name;
         bool updated = false;
@@ -536,6 +555,37 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             });
             Log($"Añadido nuevo NPC '{id}' al preset con isActive=false");
         }
+    }
+
+    bool TryResolveActivePreset(out PlayerPresetSO preset)
+    {
+        preset = null;
+
+        var gb = GameBootService.Profile;
+        if (gb != null)
+        {
+            try { preset = gb.GetActivePresetResolved(); } catch { }
+        }
+
+        if (preset != null)
+            return true;
+
+        if (preset == null)
+        {
+            try { preset = ServiceLocator.Get<PlayerPresetSO>(logIfMissing: false); } catch { }
+        }
+
+        if (preset != null)
+            return true;
+
+        var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
+        if (all != null && all.Length > 0)
+        {
+            preset = all[0];
+            return true;
+        }
+
+        return false;
     }
 
     NPCBehaviourManager ResolveNpc()
@@ -638,6 +688,17 @@ public sealed class NpcAutoMoveNode : NarrativeNode
             : $"npcAutoMoveNode__{guid}__completed";
     }
 
+    bool ShouldSkipBecauseCompleted(SimpleBlackboard blackboard, string key)
+    {
+        if (!runOnlyOncePerProfile || string.IsNullOrEmpty(key))
+            return false;
+
+        if (IsMarkedCompleted(blackboard, key))
+            return true;
+
+        return persistCompletionToPreset && IsCompletionFlagInPreset(key);
+    }
+
     bool IsMarkedCompleted(SimpleBlackboard blackboard, string key)
     {
         if (blackboard == null || string.IsNullOrEmpty(key))
@@ -646,20 +707,57 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         try { return blackboard.Get<bool>(key, false); } catch { return false; }
     }
 
+    bool IsCompletionFlagInPreset(string key)
+    {
+        if (!persistCompletionToPreset || string.IsNullOrEmpty(key))
+            return false;
+
+        if (!TryResolveActivePreset(out var preset))
+            return false;
+
+        if (preset.flags == null)
+            return false;
+
+        return preset.flags.Contains(key);
+    }
+
     void MarkCompleted(SimpleBlackboard blackboard, string key)
     {
-        if (blackboard == null || string.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
             return;
 
-        try
+        if (blackboard != null)
         {
-            blackboard.Set(key, true);
-            Log($"Persistencia → marcado flag '{key}' en blackboard");
+            try
+            {
+                blackboard.Set(key, true);
+                Log($"Persistencia → marcado flag '{key}' en blackboard");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[NpcAutoMoveNode] No se pudo marcar persistencia en blackboard: {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[NpcAutoMoveNode] No se pudo marcar persistencia en blackboard: {ex.Message}");
-        }
+
+        PersistCompletionFlag(key);
+    }
+
+    void PersistCompletionFlag(string key)
+    {
+        if (!persistCompletionToPreset || string.IsNullOrEmpty(key))
+            return;
+
+        if (!TryResolveActivePreset(out var preset))
+            return;
+
+        if (preset.flags == null)
+            preset.flags = new List<string>();
+
+        if (preset.flags.Contains(key))
+            return;
+
+        preset.flags.Add(key);
+        Log($"Persistencia → flag '{key}' guardado en PlayerPreset");
     }
 
     Camera ResolveCamera()
