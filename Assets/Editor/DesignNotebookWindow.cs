@@ -417,7 +417,10 @@ public class DesignNotebookWindow : EditorWindow
         line += EditorGUIUtility.singleLineHeight + 4f;
         EditorGUI.LabelField(new Rect(contentRect.x, line, contentRect.width, EditorGUIUtility.singleLineHeight), "Nota", Styles.NoteLabel);
         line += EditorGUIUtility.singleLineHeight + 2f;
-        var noteRect = new Rect(contentRect.x, line, contentRect.width, contentRect.height - (EditorGUIUtility.singleLineHeight * 3.2f));
+        float usedHeight = line - contentRect.y;
+        float reservedForTags = EditorGUIUtility.singleLineHeight * 3.2f;
+        float noteHeight = Mathf.Max(EditorGUIUtility.singleLineHeight * 2f, contentRect.height - usedHeight - reservedForTags);
+        var noteRect = new Rect(contentRect.x, line, contentRect.width, noteHeight);
         noteProp.stringValue = EditorGUI.TextArea(noteRect, noteProp.stringValue, Styles.NoteBody);
 
         line = noteRect.yMax + 4f;

@@ -881,26 +881,26 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (hasStatsText)
         {
             if (levelText != null)
-                levelText.text = preset != null ? $"Nivel: {preset.level}" : "Nivel: ?";
+                levelText.text = preset != null ? $"{levelText.text}: {preset.level}" : "Nivel: ?";
 
             if (hpText != null)
             {
                 if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
-                    hpText.text = $"Salud: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
+                    hpText.text = $"{hpText.text}: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
                 else if (preset != null)
-                    hpText.text = $"Salud: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
+                    hpText.text = $"{hpText.text}: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
                 else
-                    hpText.text = "Salud: ?";
+                    hpText.text = $"{hpText.text}: ?";
             }
 
             if (mpText != null)
             {
                 if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
-                    mpText.text = $"Magia: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
+                    mpText.text = $"{mpText.text}: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
                 else if (preset != null)
-                    mpText.text = $"Magia: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
+                    mpText.text = $"{mpText.text}: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
                 else
-                    mpText.text = "Magia: ?";
+                    mpText.text = $"{mpText.text}: ?";
             }
         }
 

@@ -8,7 +8,8 @@ public class LocalizationManager : MonoBehaviour
     public static LocalizationManager Instance { get; private set; }
 
     [SerializeField] private string defaultLocale = "es";
-    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematicintro", "cinematicdemon", "dialogues", "quests" };
+    private static readonly string[] RequiredCatalogs = { "prologue", "ui", "cinematics", "dialogues", "quests", "other" };
+    [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematics", "dialogues", "quests", "other" };
 
     private readonly Dictionary<string, string> _table = new Dictionary<string, string>(1024);
     private readonly Dictionary<string, SubtitleInfo> _subs = new Dictionary<string, SubtitleInfo>(64);
@@ -29,6 +30,8 @@ public class LocalizationManager : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        catalogs = EnsureRequiredCatalogs(catalogs);
 
         PlayerSettings.EnsureLoaded();
         var locale = string.IsNullOrWhiteSpace(PlayerSettings.Language) ? defaultLocale : PlayerSettings.Language;
@@ -120,6 +123,28 @@ public class LocalizationManager : MonoBehaviour
     {
         if (CurrentLocale != newLocale)
             LoadLocale(newLocale);
+    }
+
+    private string[] EnsureRequiredCatalogs(string[] current)
+    {
+        if (current == null || current.Length == 0)
+            return (string[])RequiredCatalogs.Clone();
+
+        var ordered = new List<string>();
+        foreach (var entry in current)
+        {
+            if (string.IsNullOrWhiteSpace(entry)) continue;
+            if (!ordered.Contains(entry))
+                ordered.Add(entry);
+        }
+
+        foreach (var required in RequiredCatalogs)
+        {
+            if (!ordered.Contains(required))
+                ordered.Add(required);
+        }
+
+        return ordered.ToArray();
     }
 
     [Serializable]

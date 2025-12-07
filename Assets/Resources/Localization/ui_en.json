@@ -153,6 +153,18 @@
             "value": "Health"
         },
         {
+            "key": "UI_HECHIZOS",
+            "value": "Spells"
+        },
+        {
+            "key": "UI_HP",
+            "value": "Health Points:"
+        },
+        {
+            "key": "UI_INVENTARIO",
+            "value": "Inventory"
+        },
+        {
             "key": "UI_Level",
             "value": "Level"
         },
@@ -173,12 +185,28 @@
             "value": "[D-Pad ▲] Show"
         },
         {
+            "key": "UI_MP",
+            "value": "Magic points:"
+        },
+        {
+            "key": "UI_PAUSA",
+            "value": "Pause"
+        },
+        {
+            "key": "UI_REANUDAR",
+            "value": "Resume"
+        },
+        {
             "key": "UI_SEGUIR",
             "value": "[EN] Seguir"
         },
         {
             "key": "UI_SIGUIENDO",
             "value": "[EN] Siguiendo"
+        },
+        {
+            "key": "UI_VOLVER_MENU",
+            "value": "Back to menu"
         },
         {
             "key": "WATER_ENTER_NEEDS",

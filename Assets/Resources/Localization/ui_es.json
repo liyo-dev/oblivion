@@ -153,6 +153,18 @@
             "value": "Vida"
         },
         {
+            "key": "UI_HECHIZOS",
+            "value": "Hechizos"
+        },
+        {
+            "key": "UI_HP",
+            "value": "Puntos de vida:"
+        },
+        {
+            "key": "UI_INVENTARIO",
+            "value": "Inventario"
+        },
+        {
             "key": "UI_Level",
             "value": "Nivel"
         },
@@ -173,12 +185,28 @@
             "value": "[D-Pad ▲] Mostrar"
         },
         {
+            "key": "UI_MP",
+            "value": "Puntos de magia:"
+        },
+        {
+            "key": "UI_PAUSA",
+            "value": "Pausa"
+        },
+        {
+            "key": "UI_REANUDAR",
+            "value": "Reanudar"
+        },
+        {
             "key": "UI_SEGUIR",
             "value": "Seguir"
         },
         {
             "key": "UI_SIGUIENDO",
             "value": "Siguiendo"
+        },
+        {
+            "key": "UI_VOLVER_MENU",
+            "value": "Volver al menu"
         },
         {
             "key": "WATER_ENTER_NEEDS",

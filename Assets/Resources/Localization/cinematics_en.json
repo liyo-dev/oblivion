@@ -1,0 +1,52 @@
+{
+    "subtitles": [
+        {
+            "id": "CH1_01",
+            "text": "The story begins in a small kingdom."
+        },
+        {
+            "id": "CH1_02",
+            "text": "Here our hero Will, awakens."
+        },
+        {
+            "id": "CH1_03",
+            "text": "His neighbor is named Eldran, and he has taken care of him since he was little.\r\n"
+        },
+        {
+            "id": "CH1_04",
+            "text": "There's a letter on the table... What might it contain?"
+        },
+        {
+            "id": "EVT_01",
+            "text": "[EN] Will llega con la caja de frutas."
+        },
+        {
+            "id": "EVT_02",
+            "text": "[EN] De pronto presiente algo."
+        },
+        {
+            "id": "EVT_03",
+            "text": "[EN] Una bola de fuego se dirige hacia ellos."
+        },
+        {
+            "id": "EVT_04",
+            "text": "[EN] Will cierra los ojos y desata sin saberlo una poderosa magia."
+        },
+        {
+            "id": "EVT_05",
+            "text": "[EN] Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
+        },
+        {
+            "id": "EVT_06",
+            "text": "[EN] Will está confundido con lo que acaba de pasar cuando de pronto..."
+        },
+        {
+            "id": "EVT_07",
+            "text": "The ground trembles and a dark figure emerges amid smoke and fire: a demon."
+        },
+        {
+            "id": "EVT_08",
+            "text": "Eldran shouts: \"Will! Use your magic, press X and defeat the demon.\""
+        }
+    ]
+}
