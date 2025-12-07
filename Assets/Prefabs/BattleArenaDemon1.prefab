@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1543051359224744056}
   - component: {fileID: 7011547886733809324}
   - component: {fileID: 4571108151598832824}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: BattleArenaDemon1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -71,6 +71,7 @@ MonoBehaviour:
   roomGoal: {fileID: 0}
   playerTag: Player
   musicBoss: {fileID: 0}
+  showDebugLogs: 0
   bossId: Demon_1
   battleId: Demon_1
   onBossDefeated:

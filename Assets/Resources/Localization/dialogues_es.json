@@ -245,6 +245,42 @@
             "value": "Has conseguido todo y muy rápido."
         },
         {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_01",
+            "value": "Bien hecho Willl, ahora puedes ponerte la capa de mago desde el menú."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_02",
+            "value": "Pulsa el botón del DPad abajo y desplazate con RB hasta Equipo."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_03",
+            "value": "Baja hasta la sección capas y equipala."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_04",
+            "value": "Ahora siempre que consigas algo de vestimenta nueva podras cambiar tu apariencia desde este menú."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_05",
+            "value": "Pero bueno, a lo importante..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_06",
+            "value": "Sal del Reino hacia el bosque y encuentra el portal que te llevará al bosque prohibido."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_07",
+            "value": "Te mucho cuidado y usa las técnica que te ha enseñado Erika."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_08",
+            "value": "Una vez estés en el bosque busca a Estela y regresad."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_OFFER_09",
+            "value": "Nos vemos pronto Will."
+        },
+        {
             "key": "DLG_GUARD_01",
             "value": "Alto. El castillo no está abierto al público."
         },

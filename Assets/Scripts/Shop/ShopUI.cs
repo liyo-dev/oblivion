@@ -40,6 +40,7 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private Text confirmPopupText;
     [SerializeField] private Button confirmYesButton;
     [SerializeField] private Button confirmNoButton;
+    [SerializeField] private string confirmMessageKey = "SHOP_CONFIRM_BUY";
     [SerializeField] private string confirmMessage = "¿Estás seguro?";
     [SerializeField] private float buyButtonPulseScale = 1.08f;
     [SerializeField] private float buyButtonPulseDuration = 0.14f;
@@ -645,7 +646,14 @@ public class ShopUI : MonoBehaviour
 
         string itemName = _selectedEntry.item.displayName;
         int price = _selectedEntry.GetBuyPrice();
-        string message = $"{confirmMessage}\nComprar {itemName} por {price} 💰?";
+        // Localizar mensaje completo de confirmación con placeholders {0}=item, {1}=precio
+        string template = $"{confirmMessage}\nComprar {{0}} por {{1}} 💰?";
+        if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(confirmMessageKey))
+        {
+            template = LocalizationManager.Instance.Get(confirmMessageKey, template);
+        }
+
+        string message = string.Format(template, itemName, price);
 
         if (confirmPopupText != null)
             confirmPopupText.text = message;

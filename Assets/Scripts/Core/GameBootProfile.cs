@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Game.NPC;
 using UnityEngine;
-using System;
 
 public enum SaveRequestContext
 {
@@ -472,6 +474,10 @@ public class GameBootProfile : ScriptableObject
             p.defeatedBossIds = new List<string>();
         }
 
+        int npcCount = CaptureNpcPositionsFromScene(p);
+        if (npcCount >= 0)
+            syncedSystems.Add($"NPCs({npcCount})");
+
         // Capturar estado de los grafos narrativos
         if (NarrativeGraphHub.Instance != null)
         {
@@ -490,6 +496,100 @@ public class GameBootProfile : ScriptableObject
 
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
         GameBootProfileDebugger.Log("UpdateRuntimePreset", $"✅ Sincronizados: {string.Join(", ", syncedSystems)}", LogType.Log);
+    }
+
+    int CaptureNpcPositionsFromScene(PlayerPresetSO preset)
+    {
+        if (preset == null)
+            return -1;
+
+        if (preset.npcPositions == null)
+            preset.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
+
+        // IMPORTANTE: No hacer Clear() aquí para no borrar entradas añadidas por NpcAutoMoveNode
+        // En su lugar, trabajar con las entradas existentes y actualizar/añadir según sea necesario
+        var existingEntries = new Dictionary<string, int>(); // npcId -> index
+        for (int i = 0; i < preset.npcPositions.Count; i++)
+        {
+            var entry = preset.npcPositions[i];
+            if (!string.IsNullOrEmpty(entry.npcId))
+                existingEntries[entry.npcId] = i;
+        }
+
+        var processed = new HashSet<string>();
+
+#if UNITY_2022_3_OR_NEWER
+        var npcs = FindObjectsByType<NPCBehaviourManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+        var npcs = FindObjectsOfType<NPCBehaviourManager>(true);
+#endif
+        foreach (var npc in npcs)
+        {
+            if (npc == null || !npc.persistLastPosition)
+                continue;
+
+            var npcId = npc.gameObject.name;
+            processed.Add(npcId);
+
+            // Si ya existe una entrada en el preset (añadida por NpcAutoMoveNode), mantenerla
+            if (existingEntries.ContainsKey(npcId))
+            {
+                // La entrada ya existe, verificar si lastPosition es más reciente
+                var position = npc.lastPosition;
+                if (position != default)
+                {
+                    var existingIndex = existingEntries[npcId];
+                    var existing = preset.npcPositions[existingIndex];
+                    
+                    // Solo actualizar si lastPosition es diferente (por si hubo cambios posteriores)
+                    if (Vector3.Distance(existing.position, position) > 0.01f)
+                    {
+                        existing.position = position;
+                        preset.npcPositions[existingIndex] = existing;
+                        Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition: {position}");
+                    }
+                }
+                // Si lastPosition es default, mantener la entrada del preset sin cambios
+                continue;
+            }
+
+            // No existe entrada previa, crear una nueva solo si lastPosition no es default
+            var npcPosition = npc.lastPosition;
+            if (npcPosition == default)
+                continue;
+
+            var newEntry = new PlayerPresetSO.NpcPosEntry
+            {
+                npcId = npcId,
+                position = npcPosition,
+                hasActiveState = false,
+                isActive = true
+            };
+
+            preset.npcPositions.Add(newEntry);
+            existingEntries[npcId] = preset.npcPositions.Count - 1;
+        }
+
+        // Eliminar entradas de NPCs que ya no existen en la escena (fueron destruidos)
+        for (int i = preset.npcPositions.Count - 1; i >= 0; i--)
+        {
+            var entry = preset.npcPositions[i];
+            if (string.IsNullOrEmpty(entry.npcId))
+            {
+                preset.npcPositions.RemoveAt(i);
+                continue;
+            }
+
+            // Mantener entradas aunque el NPC no esté en escena (puede estar en otra escena)
+            // Solo remover si el NPC existe en escena pero ya no tiene persistLastPosition
+            var npcInScene = npcs.FirstOrDefault(n => n != null && n.gameObject.name == entry.npcId);
+            if (npcInScene != null && !npcInScene.persistLastPosition)
+            {
+                preset.npcPositions.RemoveAt(i);
+            }
+        }
+
+        return preset.npcPositions.Count;
     }
 
     /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automáticos.</summary>

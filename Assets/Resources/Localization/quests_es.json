@@ -65,6 +65,26 @@
             "value": "La preparación del Mago"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION6_DESC",
+            "value": "Busca el portal que te conduce al Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC_01",
+            "value": "Busca el portal que te conduce al Bosque Prohibido."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC_02",
+            "value": "Busca a Estela en el bosque prohibido."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_DESC_03",
+            "value": "Regresa con Estela a ver a Eldran."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION6_NAME",
+            "value": "Hacia el Bosque Prohibido"
+        },
+        {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
         },

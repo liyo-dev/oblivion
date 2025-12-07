@@ -31,6 +31,8 @@ MonoBehaviour:
   - rid: 5623891572275806494
   - rid: 857239905023820111
   - rid: 857239905023820122
+  - rid: 857239913217393070
+  - rid: 857239913217393071
   applicableSceneNames:
   - MainWorld
   references:
@@ -45,16 +47,17 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7a8b8424-a970-4c62-b79f-ced50da006f3
-        position: {x: -146, y: -1214}
+        position: {x: -495, y: -1567.92}
         outputs: []
         npcName: Oliver
         npcTag: 
         dialogueOverride: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
         triggerInteractableIfNoOverride: 1
         dialogueTimeout: 60
-        sequenceMode: 1
-        returnToOrigin: 1
+        sequenceMode: 0
+        returnToOrigin: 0
         restoreRotationOnReturn: 1
+        moveToPlayer: 0
         targetAnchorName: House_FrontDoor_Tutrial
         targetPosition: {x: 0, y: 0, z: 0}
         anchorOffset: {x: 0, y: 0, z: 0}
@@ -63,7 +66,8 @@ MonoBehaviour:
         relativeOffsetIsLocal: 1
         relativeOffset: {x: 0, y: 0, z: 5}
         navmeshSampleRadius: 2
-        stoppingDistance: 1
+        stoppingDistance: 0
+        turnAroundOnArrival: 1
         maxWalkSeconds: 12
         minAnimSpeed: 0.25
         resetAnimationOnEnd: 1
@@ -79,6 +83,7 @@ MonoBehaviour:
         treatNoPathAsReach: 1
         runOnlyOncePerProfile: 1
         persistCompletionToPreset: 1
+        persistPositionToSave: 1
     - rid: 857239905023820122
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -92,6 +97,33 @@ MonoBehaviour:
         outputs:
         - 7a8b8424-a970-4c62-b79f-ced50da006f3
         eventKey: WILL_EXITS
+    - rid: 857239913217393070
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: INTRO
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 8c033cc3-3046-49f4-96bd-373c132e7e61
+        position: {x: 78, y: -399}
+        outputs:
+        - befa0b8d-cb25-4ed4-8ef3-5225773ec796
+        eventKey: INTRO
+    - rid: 857239913217393071
+      type: {class: PlayMusicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Ponemos m\xFAsica para la intro"
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: befa0b8d-cb25-4ed4-8ef3-5225773ec796
+        position: {x: 456.0001, y: -505.99997}
+        outputs: []
+        clip: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
+        fadeSeconds: 0.5
+        loop: 1
     - rid: 5623891252771815603
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -162,6 +194,7 @@ MonoBehaviour:
         - 7e4a897f-d8ef-44aa-9eac-568b749bdc50
         - 6b59ebae-3573-42a0-87fb-a451c65f40d8
         - 00916d88-029c-464d-9308-c5ddc05f2870
+        - 8c033cc3-3046-49f4-96bd-373c132e7e61
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
