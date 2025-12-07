@@ -182,6 +182,8 @@ public class WorldPickup : MonoBehaviour
     }
 #endif
 
+    public bool HasBeenCollected => _collected;
+
     void CheckPersistedState()
     {
         if (!persistState) return;

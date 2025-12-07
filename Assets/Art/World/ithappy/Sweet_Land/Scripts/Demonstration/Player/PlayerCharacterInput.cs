@@ -10,7 +10,7 @@ namespace ithappy
         {
             base.Update();
             
-            if (Input.GetButtonDown("Jump"))
+            if (Input.GetKeyDown(KeyCode.Space))
             {
                 HandleJump();
             }

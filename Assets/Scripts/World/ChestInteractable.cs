@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System.Collections;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Interactable))]
@@ -52,6 +53,13 @@ public class ChestInteractable : MonoBehaviour
         }
     }
 
+    IEnumerator Start()
+    {
+        // Esperar un frame para que WorldPickup aplique su estado persistido en Awake.
+        yield return null;
+        ApplyPersistedStateIfNeeded();
+    }
+
     void OnEnable()
     {
         if (_interactable == null) _interactable = GetComponent<Interactable>();
@@ -61,10 +69,16 @@ public class ChestInteractable : MonoBehaviour
             _interactable.OnFinished.AddListener(OnFinished);
         else
             _interactable.OnInteract.AddListener(OnInteract);
+
+        PlayerPresetService.OnPresetApplied += ApplyPersistedStateIfNeeded;
+        if (PlayerPresetService.HasAppliedPreset)
+            ApplyPersistedStateIfNeeded();
     }
 
     void OnDisable()
     {
+        PlayerPresetService.OnPresetApplied -= ApplyPersistedStateIfNeeded;
+
         if (_interactable == null) return;
         if (collectOnFinished)
             _interactable.OnFinished.RemoveListener(OnFinished);
@@ -88,6 +102,7 @@ public class ChestInteractable : MonoBehaviour
                 {
                     _pickup.Collect(collector);
                     _collectedAlready = true;
+                    _interactable?.EnableInteraction(false);
                     AnimateCoinsDisappear();
                 }
             }, collectImmediately: !waitForAnimationBeforeCollect);
@@ -98,6 +113,7 @@ public class ChestInteractable : MonoBehaviour
             {
                 _pickup.Collect(collector);
                 _collectedAlready = true;
+                _interactable?.EnableInteraction(false);
             }
         }
     }
@@ -117,6 +133,7 @@ public class ChestInteractable : MonoBehaviour
                 {
                     _pickup.Collect(cached);
                     _collectedAlready = true;
+                    _interactable?.EnableInteraction(false);
                     AnimateCoinsDisappear();
                 }
             }, collectImmediately: !waitForAnimationBeforeCollect);
@@ -127,6 +144,7 @@ public class ChestInteractable : MonoBehaviour
             {
                 _pickup.Collect(cached);
                 _collectedAlready = true;
+                _interactable?.EnableInteraction(false);
             }
         }
     }
@@ -229,5 +247,35 @@ public class ChestInteractable : MonoBehaviour
         if (c != null) return c;
 
         return null;
+    }
+
+    void ApplyPersistedStateIfNeeded()
+    {
+        if (_pickup == null || !_pickup.HasBeenCollected)
+            return;
+
+        if (!_collectedAlready)
+            _collectedAlready = true;
+
+        if (_interactable != null)
+            _interactable.EnableInteraction(false);
+
+        if (lidTransform != null)
+        {
+            lidTransform.DOKill();
+            lidTransform.localRotation = Quaternion.Euler(lidOpenEuler);
+        }
+
+        if (coinsContainer != null)
+        {
+            coinsContainer.gameObject.SetActive(false);
+            foreach (Transform c in coinsContainer)
+            {
+                if (c == null) continue;
+                c.DOKill();
+                c.localScale = Vector3.zero;
+                c.gameObject.SetActive(false);
+            }
+        }
     }
 }
