@@ -35,6 +35,7 @@ MonoBehaviour:
   - rid: 857239824104947716
   - rid: 857239824104947819
   - rid: 857239824104947820
+  - rid: 857239908502995421
   applicableSceneNames:
   - MainWorld
   references:
@@ -62,7 +63,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f5443754-fa40-4852-8b3d-c33d22d23958
-        position: {x: 414.00003, y: 1225.9999}
+        position: {x: 414, y: 1226}
         outputs:
         - c9ca7493-60c5-44db-ae66-9b0e232343e3
         abilityKeysToUnlock: 
@@ -94,12 +95,26 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
-        position: {x: 413.99997, y: 1832.323}
+        position: {x: 414, y: 1832}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 02000000
         completeQuest: 0
         logWarnings: 1
+    - rid: 857239908502995421
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: CUANDO COMPLETAMOS TODOS LOS PASOS DE LA MISION 5
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1ddb1872-8a05-4cd6-be42-00d94a266d0a
+        position: {x: 425, y: 285}
+        outputs:
+        - d3b9a67c-d1e3-4672-a3be-46c6fed8e06b
+        questId: ELDRAN_MISSION5
+        debugLogs: 0
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -228,7 +243,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: -376, y: 60}
+        position: {x: -416, y: 13}
         outputs:
         - a5599863-a03c-443e-8ab8-8f0883a196b9
         npcName: Eldran
@@ -236,6 +251,10 @@ MonoBehaviour:
         dialogueOverride: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
         triggerInteractableIfNoOverride: 1
         dialogueTimeout: 60
+        sequenceMode: 0
+        returnToOrigin: 0
+        restoreRotationOnReturn: 1
+        moveToPlayer: 0
         targetAnchorName: House_FrontDoor
         targetPosition: {x: 0, y: 0, z: 0}
         anchorOffset: {x: 0, y: 0, z: 0}
@@ -245,6 +264,7 @@ MonoBehaviour:
         relativeOffset: {x: 0, y: 0, z: 5}
         navmeshSampleRadius: 2
         stoppingDistance: 0.35
+        turnAroundOnArrival: 0
         maxWalkSeconds: 12
         minAnimSpeed: 0.25
         resetAnimationOnEnd: 1
@@ -259,6 +279,8 @@ MonoBehaviour:
         debugLogs: 0
         treatNoPathAsReach: 1
         runOnlyOncePerProfile: 1
+        persistCompletionToPreset: 1
+        persistPositionToSave: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -285,6 +307,7 @@ MonoBehaviour:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - eea578d0-b7c5-4ca9-92f0-0816b720155f
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
+        - 1ddb1872-8a05-4cd6-be42-00d94a266d0a
         questId: ELDRAN_MISSION4
     - rid: 5623891431555334813
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -316,6 +339,10 @@ MonoBehaviour:
         dialogueOverride: {fileID: 0}
         triggerInteractableIfNoOverride: 1
         dialogueTimeout: 60
+        sequenceMode: 0
+        returnToOrigin: 0
+        restoreRotationOnReturn: 1
+        moveToPlayer: 0
         targetAnchorName: House_FrontDoor
         targetPosition: {x: 0, y: 0, z: 0}
         anchorOffset: {x: 0, y: 0, z: 0}
@@ -325,6 +352,7 @@ MonoBehaviour:
         relativeOffset: {x: 0, y: 0, z: 5}
         navmeshSampleRadius: 2
         stoppingDistance: 0.35
+        turnAroundOnArrival: 0
         maxWalkSeconds: 12
         minAnimSpeed: 0.25
         resetAnimationOnEnd: 1
@@ -339,6 +367,8 @@ MonoBehaviour:
         debugLogs: 0
         treatNoPathAsReach: 1
         runOnlyOncePerProfile: 1
+        persistCompletionToPreset: 1
+        persistPositionToSave: 0
     - rid: 5623891431555334913
       type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
       data:
@@ -348,7 +378,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: -437.43158, y: 1047.1053}
+        position: {x: -376, y: 1079}
         outputs:
         - 1771837a-5269-4791-81da-c842d6ebac44
         - acdb775f-f475-47a8-8a8c-732de6cbd1fb
@@ -380,7 +410,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        position: {x: -476.9743, y: 1374.3141}
+        position: {x: -477, y: 1374}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 01000000

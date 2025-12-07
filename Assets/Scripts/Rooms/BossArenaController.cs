@@ -322,6 +322,69 @@ public class BossArenaController : MonoBehaviour
             _activeBossDamageable.OnDied -= HandleBossDamageableDied;
             _activeBossDamageable.OnDied += HandleBossDamageableDied;
         }
+
+        // Activar NavMeshAgent del boss
+        var bossAgent = boss.GetComponent<NavMeshAgent>();
+        if (bossAgent != null)
+        {
+            bossAgent.enabled = true;
+            bossAgent.isStopped = false;
+            Debug.Log($"[BossArenaController] ✅ NavMeshAgent del boss habilitado en {resolvedPosition}");
+        }
+        else
+        {
+            Debug.LogWarning($"[BossArenaController] ⚠️ Boss '{boss.name}' no tiene NavMeshAgent. El boss no podrá moverse.");
+        }
+
+        // Buscar y activar el componente de IA del demonio
+        var demonAI = boss.GetComponent("ImpDemonAI");
+        if (demonAI != null)
+        {
+            var behaviour = demonAI as MonoBehaviour;
+            if (behaviour != null)
+            {
+                behaviour.enabled = true;
+                
+                // Asignar el jugador usando PlayerService
+                if (PlayerService.Player != null)
+                {
+                    var playerField = demonAI.GetType().GetField("player", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (playerField != null)
+                    {
+                        playerField.SetValue(demonAI, PlayerService.Player.transform);
+                        Debug.Log($"[BossArenaController] ✅ Jugador asignado al ImpDemonAI: {PlayerService.Player.name}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[BossArenaController] ⚠️ PlayerService.Player es null, no se puede asignar al demonio.");
+                }
+                
+                Debug.Log($"[BossArenaController] ✅ ImpDemonAI activado para el boss.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[BossArenaController] ⚠️ No se encontró el componente 'ImpDemonAI' en el boss '{boss.name}'.");
+            
+            // Fallback: activar todos los componentes desactivados
+            var allComponents = boss.GetComponents<MonoBehaviour>();
+            int enabledCount = 0;
+            foreach (var component in allComponents)
+            {
+                if (component != null && !component.enabled)
+                {
+                    component.enabled = true;
+                    enabledCount++;
+                    Debug.Log($"[BossArenaController] Componente activado (fallback): {component.GetType().Name}");
+                }
+            }
+            
+            if (enabledCount > 0)
+            {
+                Debug.Log($"[BossArenaController] ✅ {enabledCount} componentes activados mediante fallback.");
+            }
+        }
     }
 
     void OnTriggerExit(Collider other)

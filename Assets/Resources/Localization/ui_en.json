@@ -5,6 +5,10 @@
             "value": "No"
         },
         {
+            "key": "COMMON_SEGURO",
+            "value": "Are you sure?"
+        },
+        {
             "key": "COMMON_YES",
             "value": "Yes"
         },
