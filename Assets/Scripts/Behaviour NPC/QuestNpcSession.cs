@@ -20,6 +20,8 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
     public UnityEvent onAccepted;         // justo tras aceptar
     public UnityEvent onTurnedIn;         // justo al entregar (antes de CompleteQuest)
     public UnityEvent onCompleted;        // tras CompleteQuest
+    [Tooltip("Se dispara cuando inicia el diálogo de oferta (dlgAvailable).")]
+    public UnityEvent onOfferDialogueStarted;
     [Tooltip("Se dispara cuando finaliza el diálogo de oferta (dlgAvailable).")]
     public UnityEvent onOfferDialogueFinished;
 
@@ -30,7 +32,7 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
         _onFinish = onFinish;
 
         if (DialogueManager.Instance == null || quest == null) { End(); return; }
-        if (lockedAtStart) { StartDlg(dlgAvailable, End); return; }
+        if (lockedAtStart) { onOfferDialogueStarted?.Invoke(); StartDlg(dlgAvailable, End); return; }
 
         var qm = QuestManager.Instance;
         if (qm == null) { End(); return; }
@@ -40,6 +42,7 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
         switch (state)
         {
             case QuestState.Inactive:
+                onOfferDialogueStarted?.Invoke();
                 StartDlg(dlgAvailable, () =>
                 {
                         onOfferDialogueFinished?.Invoke();

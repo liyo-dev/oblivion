@@ -753,7 +753,8 @@ namespace Game.NPC
                     switch (qm.GetState(questId))
                     {
                         case QuestState.Inactive:
-                                _ctx.PlayDialogue(entry.dlgBefore, () => entry.onOfferDialogueFinished?.Invoke());
+                            entry.onOfferDialogueStarted?.Invoke();
+                            _ctx.PlayDialogue(entry.dlgBefore, () => entry.onOfferDialogueFinished?.Invoke());
                             break;
                         case QuestState.Active:
                             HandleActive(entry, qm, questId, index);
@@ -766,6 +767,7 @@ namespace Game.NPC
                 else
                 {
                     var first = chain[0];
+                        first.onOfferDialogueStarted?.Invoke();
                         _ctx.PlayDialogue(first.dlgBefore, () => first.onOfferDialogueFinished?.Invoke());
                 }
 
@@ -894,7 +896,11 @@ namespace Game.NPC
                     {
                         qm.AddQuest(entry.questData);
                         qm.StartQuest(nextId);
-                        if (entry.dlgBefore) _ctx.PlayDialogue(entry.dlgBefore);
+                        if (entry.dlgBefore)
+                        {
+                            entry.onOfferDialogueStarted?.Invoke();
+                            _ctx.PlayDialogue(entry.dlgBefore, () => entry.onOfferDialogueFinished?.Invoke());
+                        }
                     }
                     else if (state == QuestState.Active)
                     {
@@ -1156,6 +1162,8 @@ namespace Game.NPC
 
                 [Header("Eventos")]
                 public UnityEvent onQuestCompleted;
+                [Tooltip("Se dispara cuando inicia el diálogo de oferta (dlgBefore) para esta etapa de la cadena.")]
+                public UnityEvent onOfferDialogueStarted;
                 [Tooltip("Se dispara cuando termina el diálogo de oferta (dlgBefore) para esta etapa de la cadena.")]
                 public UnityEvent onOfferDialogueFinished;
             }
@@ -2374,56 +2382,6 @@ namespace Game.NPC
                 catch { }
             }
 
-            void FocusCameraOnPlayer(float seconds)
-            {
-                if (_ctx.PlayerCamera == null) return;
-                var cam = _ctx.PlayerCamera;
-                _ctx.RunCoroutine(FocusCameraRoutine(cam, seconds));
-            }
-
-            IEnumerator FocusCameraRoutine(Transform cam, float seconds)
-            {
-                if (cam == null || _ctx.Player == null) yield break;
-                Quaternion startRot = cam.rotation;
-                Vector3 targetPos = _ctx.Player.position + Vector3.up * 1.5f;
-                Quaternion targetRot = Quaternion.LookRotation((targetPos - cam.position).normalized, Vector3.up);
-
-                float steer = 0.25f;
-                float t = 0f;
-                while (t < steer)
-                {
-                    t += Time.unscaledDeltaTime;
-                    float u = Mathf.Clamp01(t / steer);
-                    u = u * u * (3f - 2f * u);
-                    cam.rotation = Quaternion.Slerp(startRot, targetRot, u);
-                    yield return null;
-                }
-
-                float hold = Mathf.Max(0f, seconds - steer);
-                float h = 0f;
-                while (h < hold)
-                {
-                    h += Time.unscaledDeltaTime;
-                    // Mantener mirando al jugador por si se mueve ligeramente
-                    targetPos = _ctx.Player.position + Vector3.up * 1.5f;
-                    targetRot = Quaternion.LookRotation((targetPos - cam.position).normalized, Vector3.up);
-                    cam.rotation = Quaternion.Slerp(cam.rotation, targetRot, 0.2f);
-                    yield return null;
-                }
-
-                // Restaurar suavemente
-                t = 0f;
-                while (t < steer)
-                {
-                    t += Time.unscaledDeltaTime;
-                    float u = Mathf.Clamp01(t / steer);
-                    u = u * u * (3f - 2f * u);
-                    cam.rotation = Quaternion.Slerp(cam.rotation, startRot, u);
-                    yield return null;
-                }
-                cam.rotation = startRot;
-            }
-
             void CameraImpactOnKillMain()
             {
                 _ctx.RunCoroutine(KillImpactRoutineMain());
@@ -2506,24 +2464,6 @@ namespace Game.NPC
                 _healthBarCanvasGroup = null;
             }
 
-            void RefreshHealthBarImmediate()
-            {
-                if (_resolvedHealth == null || _healthBarFill == null)
-                    return;
-
-                float ratio = Mathf.Clamp01(_resolvedHealth.Current / Mathf.Max(1f, _resolvedHealth.Max));
-                _healthBarFill.fillAmount = ratio;
-                _healthBarFill.color = GetColorForRatio(ratio);
-
-                if (_healthBarCanvasGroup)
-                {
-                    if (_forceHealthVisibleUntilDamage)
-                        _healthBarCanvasGroup.alpha = 1f;
-                    else if (hideHealthBarWhenFull)
-                        _healthBarCanvasGroup.alpha = ratio >= 0.999f ? 0f : 1f;
-                }
-            }
-
             void AnimateHealthBarToCurrent(float seconds)
             {
                 if (_resolvedHealth == null || _healthBarFill == null)
@@ -2599,17 +2539,6 @@ namespace Game.NPC
                 {
                     if (!r.item || r.amount <= 0) continue;
                     inventory.Add(r.item, r.amount);
-                }
-            }
-
-            void ReturnToHome()
-            {
-                _ctx.transform.SetPositionAndRotation(_homePosition, _homeRotation);
-                _ctx.SetLastPosition(_homePosition);
-                if (_ctx.Agent && _ctx.Agent.enabled)
-                {
-                    NavMeshAgentUtility.HardStop(_ctx.Agent);
-                    _ctx.Agent.Warp(_homePosition);
                 }
             }
 

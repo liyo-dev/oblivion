@@ -10,6 +10,7 @@ public class CameraMover : MonoBehaviour
     [SerializeField] private float moveHeight = 30f;    // Altura relativa a subir
     [SerializeField] private float duration = 5f;       // Segundos que dura la subida
     [SerializeField] private AnimationCurve ease = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private Vector3 startLocalPosition; // Posicion de partida definida en el inspector
 
     [Header("Opciones")]
     [SerializeField] private bool resetOnEnable = true; // Volver al punto inicial al reactivar
@@ -24,10 +25,12 @@ public class CameraMover : MonoBehaviour
         if (cameraTransform == null)
             cameraTransform = transform;
 
+        // Usar siempre la posicion indicada en el inspector como punto de partida
+        _startPos = startLocalPosition;
+
         if (resetOnEnable)
             cameraTransform.localPosition = _startPos;
 
-        _startPos = cameraTransform.localPosition;
         _endPos = _startPos + Vector3.up * moveHeight;
 
         _moveRoutine = StartCoroutine(MoveUp());
