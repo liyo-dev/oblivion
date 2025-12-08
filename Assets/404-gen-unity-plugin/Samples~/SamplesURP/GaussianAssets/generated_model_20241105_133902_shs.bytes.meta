@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ee6e09f75f2058947a0359cdcac7c263
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Samples~/SamplesURP/GaussianAssets/generated_model_20241105_133902_shs.bytes
+  uploadId: 825104

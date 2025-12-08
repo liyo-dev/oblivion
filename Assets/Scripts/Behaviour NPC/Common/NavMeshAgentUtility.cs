@@ -76,7 +76,16 @@ namespace Game.NPC.Common
             if (agent.speed <= 0.01f)
                 return 0f;
 
-            return Mathf.Clamp01(agent.velocity.magnitude / agent.speed);
+            // Usar la mayor entre velocidad real y deseada para reflejar la intención de locomoción
+            float vel = agent.velocity.magnitude;
+            float desired = agent.desiredVelocity.magnitude;
+            float refSpeed = Mathf.Max(vel, desired);
+
+            // Si hay camino y aún lejos, evitar que el factor caiga a cero por amortiguación
+            if (refSpeed < 0.05f && agent.hasPath && !agent.isStopped && agent.remainingDistance > agent.stoppingDistance + 0.05f)
+                refSpeed = 0.05f;
+
+            return Mathf.Clamp01(refSpeed / agent.speed);
         }
     }
 }

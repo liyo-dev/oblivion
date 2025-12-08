@@ -162,7 +162,7 @@
         },
         {
             "key": "UI_HP",
-            "value": "Puntos de vida:"
+            "value": "PV:"
         },
         {
             "key": "UI_INVENTARIO",
@@ -170,7 +170,7 @@
         },
         {
             "key": "UI_Level",
-            "value": "Nivel"
+            "value": "Nivel:"
         },
         {
             "key": "UI_Mana",
@@ -190,7 +190,7 @@
         },
         {
             "key": "UI_MP",
-            "value": "Puntos de magia:"
+            "value": "PM:"
         },
         {
             "key": "UI_PAUSA",

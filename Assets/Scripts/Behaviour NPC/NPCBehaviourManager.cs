@@ -1203,7 +1203,7 @@ namespace Game.NPC
             [Tooltip("ID de batalla para AudioGraphProfile (se usa en BATTLE_START:{id} y BattleWon)")]
             public string battleMusicId = "Npc_Battle";
             [Tooltip("Evento custom opcional para restaurar/ajustar la música cuando acaba la batalla.")]
-            public string endMusicEvent = "";
+            public string endMusicEvent = "Npc_Battle_Victory";
 
             [Header("Battle")]
             public bool startBattleOnChallengeEnd = true;

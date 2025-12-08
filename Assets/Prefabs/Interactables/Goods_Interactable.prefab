@@ -161,6 +161,8 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -221,11 +223,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 85b8730d75d345d7abfc3b680e784064, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: 
   questId: ELDRAN_MISSION2
-  target: {fileID: 0}
+  target: {fileID: 356326472222561346}
   destroyObject: 1
+  debugLogs: 1
 --- !u!1 &2349119106315196847
 GameObject:
   m_ObjectHideFlags: 0

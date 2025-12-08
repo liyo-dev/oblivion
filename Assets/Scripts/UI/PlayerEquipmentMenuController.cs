@@ -505,15 +505,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _uiNavExpiry = Time.unscaledTime + 0.25f;
     }
 
-    void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        switch (input.Type)
+        void HandleGamepadInput(GamepadInputReader.InputEvent input)
         {
-            case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
-                if (!_isOpen)
-                    _toggleRequested = true;
-                else
-                    QueueUiNavigation(Vector2.down, false);
+            switch (input.Type)
+            {
+                case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
+                    if (_isOpen && _activeTab == 0 && _inventoryView != null && _inventoryView.TryHandleSubmit())
+                        return;
+                    break;
+                case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
+                    if (!_isOpen)
+                        _toggleRequested = true;
+                    else
+                        QueueUiNavigation(Vector2.down, false);
                 break;
 
             case GamepadInputReader.InputEventType.DpadUp when input.Phase == InputActionPhase.Performed:
@@ -1088,6 +1092,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             ItemData _selectedItem;
             InventoryRowWidget _lastSelectedRow;
             readonly ScrollRect _scrollRect;
+            enum InventoryInteractionState { Browsing, UseButtonFocused }
+            InventoryInteractionState _interactionState = InventoryInteractionState.Browsing;
+            Vector3 _useButtonBaseScale;
+            ColorBlock _useButtonDefaultColors;
+            bool _useButtonVisualCached;
 
         public InventoryView(InventoryBindings bindings)
         {
@@ -1098,7 +1107,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _scrollRect = _ui.rowsParent.GetComponentInParent<ScrollRect>();
 
             if (_ui.useButton != null)
+            {
                 _ui.useButton.onClick.AddListener(UseSelectedItem);
+                _useButtonBaseScale = _ui.useButton.transform.localScale;
+                _useButtonDefaultColors = _ui.useButton.colors;
+                _useButtonVisualCached = true;
+            }
         }
 
         public GameObject DefaultSelection => _rows.Count > 0 ? _rows[0].ButtonGameObject : null;
@@ -1164,6 +1178,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (_ui.itemName != null) _ui.itemName.text = "";
                 if (_ui.itemDescription != null) _ui.itemDescription.text = "";
                 if (_ui.useButton != null) _ui.useButton.gameObject.SetActive(false);
+                _interactionState = InventoryInteractionState.Browsing;
+                ResetUseButtonFeedback();
             }
         }
 
@@ -1183,6 +1199,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 widget.RefreshLabel(_inventory);
                 widget.SetSelectedState(false);
 
+                // Garantizar auto-scroll al seleccionar: añadir/configurar ScrollOnSelectRelay
+                var rect = widget.GetComponent<RectTransform>();
+                if (rect != null && _scrollRect != null)
+                {
+                    var relay = widget.GetComponent<ScrollOnSelectRelay>();
+                    if (relay == null)
+                        relay = widget.gameObject.AddComponent<ScrollOnSelectRelay>();
+                    relay.scrollRect = _scrollRect;
+                    relay.target = rect;
+                }
+
                 var capturedWidget = widget;
                 var capturedItem = entry.item;
                 widget.RegisterClickHandler(() => HandleRowActivated(capturedWidget, capturedItem, true));
@@ -1199,7 +1226,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void HandleRowActivated(InventoryRowWidget widget, ItemData item, bool focus)
         {
-            bool wasAlreadySelected = _selectedItem == item;
+            bool selectionChanged = _selectedItem != item;
             _selectedItem = item;
             if (_lastSelectedRow != null && _lastSelectedRow != widget)
                 _lastSelectedRow.SetSelectedState(false);
@@ -1208,9 +1235,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             FocusRow(widget, focus);
             UpdateSelectedItemDetails();
 
-            // If the player presses submit on an already selected item, treat it as a use action.
-            if (focus && wasAlreadySelected)
-                UseSelectedItem();
+            if (selectionChanged)
+            {
+                ExitUseButtonFocus(false);
+                if (focus)
+                    return;
+            }
+
+            if (focus)
+                HandleRowSubmit();
         }
 
         void FocusRow(InventoryRowWidget widget, bool forceFocus)
@@ -1225,7 +1258,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void ScrollToRow(InventoryRowWidget widget)
         {
-            if (_scrollRect == null || widget == null) return;
+            if (widget == null) return;
+            if (_scrollRect == null)
+            {
+                Debug.LogWarning("[InventoryView] ScrollRect no encontrado en el padre de rowsParent. Verifica que el contenedor esté bajo un ScrollRect.");
+                return;
+            }
             var rect = widget.GetComponent<RectTransform>();
             ScrollRectAutoScroller.ScrollTo(_scrollRect, rect);
         }
@@ -1246,6 +1284,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _rows.Clear();
             _selectedItem = null;
             _lastSelectedRow = null;
+            _interactionState = InventoryInteractionState.Browsing;
+            ResetUseButtonFeedback();
         }
 
         void UpdateSelectedItemDetails()
@@ -1271,7 +1311,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton != null)
             {
                 _ui.useButton.gameObject.SetActive(true);
-                _ui.useButton.interactable = _selectedItem.usableFromInventory && _inventory.Count(_selectedItem.itemId) > 0;
+                _ui.useButton.interactable = CanUseSelectedItem();
             }
 
             if (_ui.feedbackText != null)
@@ -1284,12 +1324,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.itemDescription != null) _ui.itemDescription.text = string.Empty;
             if (_ui.itemCount != null) _ui.itemCount.text = string.Empty;
             if (_ui.feedbackText != null) _ui.feedbackText.text = string.Empty;
-            if (_ui.useButton != null) _ui.useButton.interactable = false;
+            if (_ui.useButton != null)
+            {
+                _ui.useButton.interactable = false;
+                ResetUseButtonFeedback();
+            }
+            _interactionState = InventoryInteractionState.Browsing;
         }
 
         void UseSelectedItem()
         {
             if (_inventory == null || _selectedItem == null) return;
+            ExitUseButtonFocus(false);
 
             var context = new InventoryItemUseContext(_inventory, _selectedItem, _collector);
             var result = DispatchInventoryUseRequest(context);
@@ -1392,7 +1438,108 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
         }
 
-        public bool TryHandleCancel() => false;
+        bool CanUseSelectedItem()
+        {
+            if (_selectedItem == null || !_selectedItem.usableFromInventory)
+                return false;
+            if (_inventory == null)
+                return false;
+            return _inventory.Count(_selectedItem.itemId) > 0;
+        }
+
+        void HandleRowSubmit()
+        {
+            if (!CanUseSelectedItem())
+                return;
+
+            FocusUseButton();
+        }
+
+        void FocusUseButton()
+        {
+            if (_ui.useButton == null) return;
+            _interactionState = InventoryInteractionState.UseButtonFocused;
+
+            var es = EventSystem.current;
+            if (es != null)
+            {
+                es.SetSelectedGameObject(null);
+                es.SetSelectedGameObject(_ui.useButton.gameObject);
+            }
+
+            _ui.useButton.Select();
+            PlayUseButtonFeedback();
+        }
+
+        void ExitUseButtonFocus(bool restoreSelection)
+        {
+            if (_interactionState != InventoryInteractionState.UseButtonFocused)
+                return;
+
+            _interactionState = InventoryInteractionState.Browsing;
+            ResetUseButtonFeedback();
+
+            if (restoreSelection && _lastSelectedRow != null)
+                FocusRow(_lastSelectedRow, true);
+        }
+
+        void PlayUseButtonFeedback()
+        {
+            if (_ui.useButton == null || !_ui.useButton.interactable)
+                return;
+
+            if (!_useButtonVisualCached)
+            {
+                _useButtonBaseScale = _ui.useButton.transform.localScale;
+                _useButtonDefaultColors = _ui.useButton.colors;
+                _useButtonVisualCached = true;
+            }
+
+            _ui.useButton.transform.localScale = _useButtonBaseScale * 1.08f;
+            var colors = _ui.useButton.colors;
+            var accent = new Color(0.1f, 0.75f, 0.25f, 1f);
+            colors.normalColor = accent;
+            colors.highlightedColor = accent * 1.05f;
+            colors.selectedColor = accent * 1.05f;
+            colors.pressedColor = accent * 0.9f;
+            _ui.useButton.colors = colors;
+        }
+
+        void ResetUseButtonFeedback()
+        {
+            if (_ui.useButton == null || !_useButtonVisualCached)
+                return;
+
+            _ui.useButton.transform.localScale = _useButtonBaseScale;
+            _ui.useButton.colors = _useButtonDefaultColors;
+        }
+
+        public bool TryHandleCancel()
+        {
+            if (_interactionState == InventoryInteractionState.UseButtonFocused)
+            {
+                ExitUseButtonFocus(true);
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryHandleSubmit()
+        {
+            if (_interactionState == InventoryInteractionState.UseButtonFocused)
+            {
+                UseSelectedItem();
+                return true;
+            }
+
+            if (_lastSelectedRow != null && _selectedItem != null)
+            {
+                HandleRowSubmit();
+                return true;
+            }
+
+            return false;
+        }
     }
 
     [Serializable]
@@ -1790,7 +1937,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             // No restaurar inventario al cambiar hechizos (solo actualizar spells)
-            _presetService?.ApplyCurrentPreset(includeInventory: false);
+            _presetService?.ApplyCurrentPreset(includeInventory: false, includeAbilities: false);
             UpdateSlotLabels();
             PlaySlotConfirmFeedback(slot);
         }
@@ -2140,7 +2287,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _preset.rightSpellId = right;
                 _preset.specialSpellId = special;
                 // No restaurar inventario al limpiar duplicados (solo actualizar spells)
-                _presetService?.ApplyCurrentPreset(includeInventory: false);
+                _presetService?.ApplyCurrentPreset(includeInventory: false, includeAbilities: false);
             }
         }
 
@@ -2478,7 +2625,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             _presetService?.SnapshotAppearanceToPreset();
             // No restaurar inventario al cambiar apariencia (solo actualizar appearance)
-            _presetService?.ApplyCurrentPreset(includeInventory: false);
+            _presetService?.ApplyCurrentPreset(includeInventory: false, includeAbilities: false);
         }
 
         void UpdateLabels()

@@ -1176,6 +1176,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 2781979959148783271}
   locomotionState: Free Locomotion
+  battleIdleState: Idle_Battle_NoWeapon
+  upperBodyLayer: 1
+  upperBodyIdleState: UpperIdle
   greetState: Greeting01_NoWeapon
   interactState: InteractWithPeople_NoWeapon
   greetOnSight: 1
@@ -1193,6 +1196,11 @@ MonoBehaviour:
   lookFrom: {fileID: 0}
   ambientInhibitor: {fileID: 0}
   drawGizmos: 1
+  verboseLogs: 0
+  forceOneShotsOnBaseLayer: 0
+  movementParamScale: 1.25
+  locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.6
 --- !u!114 &1556899006718849410
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1210,6 +1218,8 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
   dialogue: {fileID: 11400000, guid: 09d75e7556d2c364bbb2d874429a1a79, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}

@@ -14,6 +14,12 @@ public class DesignNotebook : ScriptableObject
 
     [Header("Notas rápidas de diseño")]
     public List<DesignScratch> quickNotes = new();
+
+    [Header("Pizarra de ideas")]
+    public List<DesignBlackboardStroke> blackboardStrokes = new();
+    public Color blackboardBackground = new Color(0.07f, 0.08f, 0.1f);
+    public Color blackboardBrushColor = Color.white;
+    public float blackboardBrushSize = 5f;
 }
 
 [Serializable]
@@ -42,4 +48,12 @@ public class DesignScratch
     public string tags;
     public Color color = new Color(1f, 0.95f, 0.65f);
     public Vector2 position;
+}
+
+[Serializable]
+public class DesignBlackboardStroke
+{
+    public Color color = Color.white;
+    public float thickness = 4f;
+    public List<Vector2> points = new();
 }

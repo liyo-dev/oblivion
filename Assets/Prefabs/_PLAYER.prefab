@@ -12499,9 +12499,13 @@ MonoBehaviour:
   climbSpeed: 2.5
   stickToWallSpeed: 10
   reattachDelay: 0.35
+  loseGripGrace: 0.2
   climbUpState: ClimbUp_RM_NoWeapon
   climbDownState: ClimbDown_RM_NoWeapon
-  debugLogs: 1
+  climbIdleState: ClimbIdle_RM_NoWeapon
+  climbAnimatorLayer: 0
+  debugLogs: 0
+  forceGroundedWhileClimbing: 1
 --- !u!114 &2207912406606354293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12646,9 +12650,6 @@ MonoBehaviour:
   blockLayerNames:
   - Enemy
   - ProjectileEnemy
-  ignorePlayerLayerNames:
-  - ProjectileEnemy
-  - Enemy
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a074100b61790e641ad0d17375ff7914
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Samples~/SamplesURP/GeneratedModels/generated_model_20241105_133902.ply
+  uploadId: 825104

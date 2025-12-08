@@ -35,13 +35,6 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private Button buyButton;
     [SerializeField] private Button sellButton;
     [SerializeField] private Text messageText;
-    [Header("Confirmación de compra")]
-    [SerializeField] private GameObject confirmPopupRoot;
-    [SerializeField] private Text confirmPopupText;
-    [SerializeField] private Button confirmYesButton;
-    [SerializeField] private Button confirmNoButton;
-    [SerializeField] private string confirmMessageKey = "SHOP_CONFIRM_BUY";
-    [SerializeField] private string confirmMessage = "¿Estás seguro?";
     [SerializeField] private float buyButtonPulseScale = 1.08f;
     [SerializeField] private float buyButtonPulseDuration = 0.14f;
     [SerializeField] private Ease buyButtonPulseEase = Ease.OutBack;
@@ -68,8 +61,7 @@ public class ShopUI : MonoBehaviour
     enum ShopState
     {
         Browsing,
-        BuyButtonFocused,
-        Confirming
+        BuyButtonFocused
     }
 
     // Public accessor for MenuManager / external callers
@@ -93,26 +85,11 @@ public class ShopUI : MonoBehaviour
         if (sellButton != null)
             sellButton.onClick.AddListener(OnSellClicked);
 
-        if (confirmYesButton != null)
-        {
-            confirmYesButton.onClick.RemoveAllListeners();
-            confirmYesButton.onClick.AddListener(ConfirmPurchase);
-        }
-
-        if (confirmNoButton != null)
-        {
-            confirmNoButton.onClick.RemoveAllListeners();
-            confirmNoButton.onClick.AddListener(CancelConfirmation);
-        }
-
         if (windowRoot != null)
             windowRoot.SetActive(false);
 
         if (detailPanel != null)
             detailPanel.SetActive(false);
-
-        if (confirmPopupRoot != null)
-            confirmPopupRoot.SetActive(false);
     }
 
     void OnEnable()
@@ -170,7 +147,7 @@ public class ShopUI : MonoBehaviour
         }
     }
 
-    private bool CanNavigate() => Time.unscaledTime >= _nextNavTime && _state != ShopState.Confirming;
+    private bool CanNavigate() => Time.unscaledTime >= _nextNavTime;
 
     private void HandleNavigateVector(Vector2 value)
     {
@@ -211,22 +188,13 @@ public class ShopUI : MonoBehaviour
                 FocusBuyButton();
                 break;
             case ShopState.BuyButtonFocused:
-                ShowConfirmation();
-                break;
-            case ShopState.Confirming:
-                ConfirmPurchase();
+                AttemptPurchase();
                 break;
         }
     }
 
     void HandleCancelInput()
     {
-        if (_state == ShopState.Confirming)
-        {
-            CancelConfirmation();
-            return;
-        }
-
         if (_state == ShopState.BuyButtonFocused)
         {
             ReturnToItemList();
@@ -277,7 +245,6 @@ public class ShopUI : MonoBehaviour
         }
         _isOpen = true;
         _state = ShopState.Browsing;
-        HideConfirmationVisuals();
         ResetBuyButtonFeedback();
 
         if (windowRoot != null)
@@ -318,7 +285,6 @@ public class ShopUI : MonoBehaviour
         GameState.Pop(GamePhase.Shop);
         Time.timeScale = 1f;
         ResetBuyButtonFeedback();
-        HideConfirmationVisuals();
 
         // Unregister from central manager
         MenuManager.Close(MenuKind.Shop);
@@ -573,7 +539,7 @@ public class ShopUI : MonoBehaviour
 
         if (_state == ShopState.BuyButtonFocused)
         {
-            ShowConfirmation();
+            AttemptPurchase();
         }
     }
 
@@ -636,62 +602,12 @@ public class ShopUI : MonoBehaviour
             buyButton.colors = _buyButtonDefaultColors;
     }
 
-    void ShowConfirmation()
-    {
-        if (_selectedEntry == null || _selectedEntry.item == null)
-            return;
-
-        _state = ShopState.Confirming;
-        ResetBuyButtonFeedback();
-
-        string itemName = _selectedEntry.item.displayName;
-        int price = _selectedEntry.GetBuyPrice();
-        // Localizar mensaje completo de confirmación con placeholders {0}=item, {1}=precio
-        string template = $"{confirmMessage}\nComprar {{0}} por {{1}} 💰?";
-        if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(confirmMessageKey))
-        {
-            template = LocalizationManager.Instance.Get(confirmMessageKey, template);
-        }
-
-        string message = string.Format(template, itemName, price);
-
-        if (confirmPopupText != null)
-            confirmPopupText.text = message;
-
-        if (confirmPopupRoot != null)
-            confirmPopupRoot.SetActive(true);
-
-        if (confirmYesButton != null)
-        {
-            var es = EventSystem.current;
-            if (es != null)
-                es.SetSelectedGameObject(confirmYesButton.gameObject);
-            confirmYesButton.Select();
-        }
-    }
-
-    void HideConfirmationVisuals()
-    {
-        if (confirmPopupRoot != null)
-            confirmPopupRoot.SetActive(false);
-    }
-
-    void CancelConfirmation()
-    {
-        HideConfirmationVisuals();
-        _state = ShopState.BuyButtonFocused;
-        FocusBuyButton();
-    }
-
-    void ConfirmPurchase()
+    void AttemptPurchase()
     {
         if (_selectedIndex < 0 || shopController == null)
-        {
-            CancelConfirmation();
             return;
-        }
 
-        HideConfirmationVisuals();
+        ResetBuyButtonFeedback();
         var success = shopController.TryBuy(_selectedIndex, out string message);
 
         if (messageText != null)

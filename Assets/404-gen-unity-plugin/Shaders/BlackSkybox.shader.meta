@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 094b9c170eb521687ab55b4f7b50c787
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Shaders/BlackSkybox.shader
+  uploadId: 825104

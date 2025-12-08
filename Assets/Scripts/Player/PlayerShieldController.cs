@@ -21,16 +21,12 @@ public class PlayerShieldController : MonoBehaviour
 
     [Header("Colisiones a bloquear")]
     [SerializeField] private string[] blockLayerNames = { "Enemy", "ProjectileEnemy" };
-    
-    [Header("Ignorar daño al player (capas de proyectil)")]
-    [SerializeField] private string[] ignorePlayerLayerNames = { "ProjectileEnemy", "Projectile" };
 
     private PlayerControls _controls;
     private bool _ownsControls;
     private Animator _animator;
     private GameObject _shieldInstance;
     private readonly HashSet<int> _blockedLayers = new();
-    private readonly HashSet<int> _ignoredLayers = new();
     private bool _isDefending;
     private int _playerLayer;
     private float _originalUpperBodyWeight;
@@ -42,7 +38,6 @@ public class PlayerShieldController : MonoBehaviour
         _playerLayer = gameObject.layer;
         CacheUpperBodyWeight();
         CacheBlockedLayers();
-        CacheIgnoredLayers();
     }
 
     void OnEnable()
@@ -144,7 +139,6 @@ public class PlayerShieldController : MonoBehaviour
             ConfigureShieldDetector(_shieldInstance);
         }
 
-        SetLayerIgnores(true);
     }
 
     private void DeactivateShield()
@@ -154,8 +148,6 @@ public class PlayerShieldController : MonoBehaviour
             Destroy(_shieldInstance);
             _shieldInstance = null;
         }
-
-        SetLayerIgnores(false);
     }
 
     private void PlayAnimation(string animationName)
@@ -210,28 +202,6 @@ public class PlayerShieldController : MonoBehaviour
                 _blockedLayers.Add(layer);
             else
                 Debug.LogWarning($"[PlayerShieldController] No se encontró la capa '{name}'.");
-        }
-    }
-
-    private void CacheIgnoredLayers()
-    {
-        _ignoredLayers.Clear();
-        foreach (var name in ignorePlayerLayerNames)
-        {
-            if (string.IsNullOrWhiteSpace(name)) continue;
-            int layer = LayerMask.NameToLayer(name);
-            if (layer >= 0)
-                _ignoredLayers.Add(layer);
-            else
-                Debug.LogWarning($"[PlayerShieldController] No se encontró la capa '{name}' para ignorar con el Player.");
-        }
-    }
-
-    private void SetLayerIgnores(bool ignore)
-    {
-        foreach (int layer in _ignoredLayers)
-        {
-            Physics.IgnoreLayerCollision(_playerLayer, layer, ignore);
         }
     }
 
@@ -329,8 +299,13 @@ public class PlayerShieldController : MonoBehaviour
         private bool IsProjectile(GameObject go)
         {
             if (go == null) return false;
+
+            // Component known for enemy projectiles
             if (go.GetComponentInParent<EnemyProjectile>() != null) return true;
+
+            // Common layers for projectiles
             if (go.layer == _projectileEnemyLayer || go.layer == _projectileLayer) return true;
+
             return false;
         }
 

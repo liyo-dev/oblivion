@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+
+// Necesario para feedback de desbloqueo de vestuario
+using System; // solo para Serializable wrappers si se requieren en el futuro
 using UnityEngine.UI;
 using System.Collections.Generic;
 
@@ -209,6 +212,22 @@ public class CollectiblePopupQueue : MonoBehaviour
     {
         Debug.Log("[CollectiblePopupQueue] TestSpawn called");
         SpawnPopup(item, amount);
+    }
+
+    /// <summary>
+    /// Permite disparar un popup usando datos de vestuario sin requerir un ItemData real.
+    /// </summary>
+    public void SpawnWardrobePopup(WardrobeItemSO wardrobeItem, int amount = 1)
+    {
+        if (wardrobeItem == null) return;
+
+        // Crear un ItemData efímero para reutilizar el flujo de popups existente
+        var temp = ScriptableObject.CreateInstance<ItemData>();
+        temp.itemId = $"WARDROBE:{wardrobeItem.WardrobeId}";
+        temp.displayName = wardrobeItem.DisplayName;
+        temp.icon = wardrobeItem.Icon;
+
+        SpawnPopup(temp, amount);
     }
 
     void ClearPendingState()
