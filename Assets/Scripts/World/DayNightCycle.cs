@@ -162,6 +162,12 @@ public class DayNightCycle : MonoBehaviour
         Debug.LogWarning($"[DayNightCycle] TimeOfDay '{timeOfDay}' no encontrado en la configuración.");
     }
 
+    // Método sin parámetros para invocar desde UnityEvent y forzar noche
+    public void SetNight()
+    {
+        SetTimeOfDay(TimeOfDay.Night, immediate: false);
+    }
+
     public void SetTimeOfDayByIndex(int index, bool immediate = false)
     {
         if (index < 0 || index >= timeSettings.Length)

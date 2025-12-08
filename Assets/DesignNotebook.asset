@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec039437ea2c63f4fa571092c671014a, type: 3}
   m_Name: DesignNotebook
   m_EditorClassIdentifier: Assembly-CSharp::DesignNotebook
-  highLevelSynopsis: "Hace eones, un mago desafi\xF3 a los dioses recorriendo el
-    Sendero de las Estrellas, una serie de portales m\xE1gicos que ofrec\xEDan poder
-    a quienes superaran todas sus pruebas. Su deseo final fue convertirse en un ser
-    tan poderoso como los propios dioses. Pero ese deseo fue su perdici\xF3n: al
-    intentar contener tal fuerza, su cuerpo y su mente se quebraron, y al no poder
+  highLevelSynopsis: "SINOPSIS\n\nHace eones, un mago desafi\xF3 a los dioses recorriendo
+    el Sendero de las Estrellas, una serie de portales m\xE1gicos que ofrec\xEDan
+    poder a quienes superaran todas sus pruebas. Su deseo final fue convertirse en
+    un ser tan poderoso como los propios dioses. Pero ese deseo fue su perdici\xF3n:
+    al intentar contener tal fuerza, su cuerpo y su mente se quebraron, y al no poder
     controlar su poder se desat\xF3 un cataclismo que fragment\xF3 el mundo, evento
     conocido como El Quebranto del Alba. \n\nTemerosos de que alguien m\xE1s intentara
     repetir su error, los dioses sellaron el conocimiento del Sendero en un libro
@@ -59,11 +59,17 @@ MonoBehaviour:
     note: Hasblar con Eldran para que me dejen pasar al bosque.
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: 161, y: -1011.92}
-    size: {x: 328, y: 140}
+    size: {x: 0, y: 0}
+  - guid: 245faea6-539b-4ff9-9102-206bb3b2c9cf
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    position: {x: 70.84, y: -51.51996}
+    size: {x: 0, y: 0}
   storyLinks: []
   quickNotes:
   - title: 
     note: 
     tags: 
-    color: {r: 0.19607845, g: 0.19607845, b: 0.19607845, a: 1}
+    color: {r: 0.8156863, g: 0.1254902, b: 0.5647059, a: 1}
     position: {x: 0, y: 0}
