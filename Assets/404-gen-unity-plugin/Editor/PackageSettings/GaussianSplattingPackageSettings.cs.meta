@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 9b6d15ca90f94a5b9806739839b5e208
+timeCreated: 1731579686
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Editor/PackageSettings/GaussianSplattingPackageSettings.cs
+  uploadId: 825104

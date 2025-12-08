@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 1c34766c06fff94cf8cca8acfa209ee5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Runtime/GaussianSplatURPFeature.cs
+  uploadId: 825104

@@ -243,7 +243,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: -416, y: 13}
+        position: {x: -376, y: 60}
         outputs:
         - a5599863-a03c-443e-8ab8-8f0883a196b9
         npcName: Eldran
@@ -378,7 +378,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: -376, y: 1079}
+        position: {x: -120, y: 1226}
         outputs:
         - 1771837a-5269-4791-81da-c842d6ebac44
         - acdb775f-f475-47a8-8a8c-732de6cbd1fb
@@ -410,7 +410,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        position: {x: -477, y: 1374}
+        position: {x: -221, y: 1521}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 01000000

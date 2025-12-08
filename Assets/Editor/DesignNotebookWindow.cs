@@ -22,6 +22,29 @@ public class DesignNotebookWindow : EditorWindow
     private Vector2 _quickNotesScroll;
     private int _draggingNoteIndex = -1;
     private Vector2 _dragOffset;
+    private bool _isDrawingBlackboard;
+    private DesignBlackboardStroke _activeStroke;
+    private Rect _currentBlackboardRect;
+    private Color _currentBrushColor = Color.white;
+    private float _currentBrushSize = 5f;
+    private readonly Color[] _chalkPalette =
+    {
+        Color.white,
+        new Color(1f, 0.85f, 0.35f),
+        new Color(0.96f, 0.56f, 0.56f),
+        new Color(0.56f, 0.78f, 0.98f),
+        new Color(0.63f, 0.9f, 0.64f),
+        new Color(0.8f, 0.7f, 0.96f)
+    };
+    private readonly Color[] _blackboardBackgroundPalette =
+    {
+        new Color(0.07f, 0.08f, 0.1f),
+        new Color(0.08f, 0.12f, 0.08f),
+        new Color(0.16f, 0.13f, 0.1f),
+        new Color(0.05f, 0.09f, 0.14f),
+        new Color(0.12f, 0.09f, 0.11f)
+    };
+    private readonly List<Vector3> _strokePoints = new();
 
     private const string SynopsisControlName = "DesignNotebook_Synopsis";
 
@@ -104,6 +127,30 @@ public class DesignNotebookWindow : EditorWindow
             changed = true;
         }
 
+        if (_asset.blackboardStrokes == null)
+        {
+            _asset.blackboardStrokes = new List<DesignBlackboardStroke>();
+            changed = true;
+        }
+
+        if (_asset.blackboardBrushSize <= 0f)
+        {
+            _asset.blackboardBrushSize = 5f;
+            changed = true;
+        }
+
+        if (_asset.blackboardBrushColor.a <= 0f)
+        {
+            _asset.blackboardBrushColor = Color.white;
+            changed = true;
+        }
+
+        if (_asset.blackboardBackground.a <= 0f)
+        {
+            _asset.blackboardBackground = new Color(0.07f, 0.08f, 0.1f);
+            changed = true;
+        }
+
         if (changed)
         {
             MarkAssetDirty();
@@ -147,6 +194,7 @@ public class DesignNotebookWindow : EditorWindow
             "Resumen",
             "Storyboard",
             "Notas rápidas",
+            "Blackboard",
             "Exportar"
         };
 
@@ -192,6 +240,9 @@ public class DesignNotebookWindow : EditorWindow
                 DrawQuickNotesBoard();
                 break;
             case 3:
+                DrawBlackboard();
+                break;
+            case 4:
                 DrawExportButtons();
                 break;
         }
@@ -301,6 +352,253 @@ public class DesignNotebookWindow : EditorWindow
 
         if (deleteIndex >= 0)
             quickNotesProp.DeleteArrayElementAtIndex(deleteIndex);
+    }
+
+    private void DrawBlackboard()
+    {
+        EditorGUILayout.LabelField("Blackboard", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Dibuja diagramas, ritmo o notas visuales como en una pizarra.", MessageType.None);
+
+        var backgroundProp = _serialized.FindProperty("blackboardBackground");
+        var brushColorProp = _serialized.FindProperty("blackboardBrushColor");
+        var brushSizeProp = _serialized.FindProperty("blackboardBrushSize");
+
+        EditorGUILayout.PropertyField(backgroundProp, new GUIContent("Color de fondo"));
+        DrawColorPresetRow("Fondos rápidos", _blackboardBackgroundPalette, backgroundProp.colorValue, color =>
+        {
+            if (_asset != null)
+                Undo.RecordObject(_asset, "Cambiar fondo de pizarra");
+            backgroundProp.colorValue = color;
+            MarkAssetDirty();
+            Repaint();
+        });
+
+        EditorGUILayout.Space();
+
+        EditorGUILayout.PropertyField(brushColorProp, new GUIContent("Color de tiza"));
+        DrawColorPresetRow("Colores de tiza", _chalkPalette, brushColorProp.colorValue, color =>
+        {
+            if (_asset != null)
+                Undo.RecordObject(_asset, "Cambiar color de tiza");
+            brushColorProp.colorValue = color;
+            MarkAssetDirty();
+            Repaint();
+        });
+
+        brushSizeProp.floatValue = Mathf.Clamp(EditorGUILayout.Slider("Grosor de línea", brushSizeProp.floatValue, 1f, 24f), 1f, 24f);
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Limpiar pizarra", GUILayout.Width(140f)))
+        {
+            Undo.RecordObject(_asset, "Limpiar pizarra");
+            _asset.blackboardStrokes.Clear();
+            _activeStroke = null;
+            _isDrawingBlackboard = false;
+            MarkAssetDirty();
+            Repaint();
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space();
+
+        _currentBrushColor = brushColorProp.colorValue;
+        _currentBrushSize = brushSizeProp.floatValue;
+
+        float boardHeight = Mathf.Max(position.height - 360f, 320f);
+        var boardRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(boardHeight), GUILayout.ExpandWidth(true));
+        DrawBlackboardCanvas(boardRect, backgroundProp.colorValue);
+    }
+
+    private void DrawColorPresetRow(string label, Color[] palette, Color selectedColor, Action<Color> onSelect)
+    {
+        if (palette == null || palette.Length == 0)
+            return;
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField(label, GUILayout.Width(120f));
+        for (int i = 0; i < palette.Length; i++)
+        {
+            var rect = GUILayoutUtility.GetRect(26f, 18f, GUILayout.Width(28f), GUILayout.Height(18f));
+            if (Event.current.type == EventType.Repaint)
+            {
+                var border = new Rect(rect.x - 1f, rect.y - 1f, rect.width + 2f, rect.height + 2f);
+                var isActive = ColorsSimilar(palette[i], selectedColor);
+                var borderColor = isActive ? new Color(1f, 1f, 1f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
+                EditorGUI.DrawRect(border, borderColor);
+                if (isActive)
+                {
+                    var inner = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
+                    EditorGUI.DrawRect(inner, palette[i]);
+                }
+                else
+                {
+                    EditorGUI.DrawRect(rect, palette[i]);
+                }
+            }
+            if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+            {
+                onSelect?.Invoke(palette[i]);
+                GUI.FocusControl(null);
+            }
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private static bool ColorsSimilar(Color a, Color b)
+    {
+        const float epsilon = 0.01f;
+        return Mathf.Abs(a.r - b.r) < epsilon
+               && Mathf.Abs(a.g - b.g) < epsilon
+               && Mathf.Abs(a.b - b.b) < epsilon
+               && Mathf.Abs(a.a - b.a) < epsilon;
+    }
+
+    private void DrawBlackboardCanvas(Rect rect, Color backgroundColor)
+    {
+        _currentBlackboardRect = rect;
+        int controlId = GUIUtility.GetControlID("DesignNotebookBlackboard".GetHashCode(), FocusType.Passive);
+        var evt = Event.current;
+        var type = evt.GetTypeForControl(controlId);
+
+        if (type == EventType.Repaint)
+        {
+            EditorGUI.DrawRect(rect, backgroundColor);
+            Handles.BeginGUI();
+            DrawBlackboardGrid(rect, backgroundColor);
+            DrawBlackboardStrokes(rect);
+            Handles.EndGUI();
+        }
+
+        switch (type)
+        {
+            case EventType.MouseDown:
+                if (evt.button == 0 && rect.Contains(evt.mousePosition))
+                {
+                    GUIUtility.hotControl = controlId;
+                    BeginBlackboardStroke(evt.mousePosition);
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseDrag:
+                if (GUIUtility.hotControl == controlId && _isDrawingBlackboard)
+                {
+                    AddPointToStroke(evt.mousePosition);
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseUp:
+                if (GUIUtility.hotControl == controlId && evt.button == 0)
+                {
+                    AddPointToStroke(evt.mousePosition);
+                    EndBlackboardStroke();
+                    GUIUtility.hotControl = 0;
+                    evt.Use();
+                }
+                break;
+            case EventType.Ignore:
+                if (GUIUtility.hotControl == controlId && evt.rawType == EventType.MouseUp)
+                {
+                    EndBlackboardStroke();
+                    GUIUtility.hotControl = 0;
+                }
+                break;
+        }
+    }
+
+    private void DrawBlackboardGrid(Rect rect, Color backgroundColor)
+    {
+        var previousColor = Handles.color;
+        var gridColor = Color.Lerp(Color.white, backgroundColor, 0.65f);
+        gridColor.a = 0.08f;
+        Handles.color = gridColor;
+        const float step = 32f;
+        for (float x = rect.xMin + step; x < rect.xMax; x += step)
+            Handles.DrawLine(new Vector3(x, rect.yMin, 0f), new Vector3(x, rect.yMax, 0f));
+        for (float y = rect.yMin + step; y < rect.yMax; y += step)
+            Handles.DrawLine(new Vector3(rect.xMin, y, 0f), new Vector3(rect.xMax, y, 0f));
+
+        Handles.color = new Color(0f, 0f, 0f, 0.4f);
+        Handles.DrawAAPolyLine(2f, new[]
+        {
+            new Vector3(rect.xMin, rect.yMin, 0f),
+            new Vector3(rect.xMax, rect.yMin, 0f),
+            new Vector3(rect.xMax, rect.yMax, 0f),
+            new Vector3(rect.xMin, rect.yMax, 0f),
+            new Vector3(rect.xMin, rect.yMin, 0f)
+        });
+        Handles.color = previousColor;
+    }
+
+    private void DrawBlackboardStrokes(Rect rect)
+    {
+        if (_asset?.blackboardStrokes == null)
+            return;
+
+        foreach (var stroke in _asset.blackboardStrokes)
+        {
+            if (stroke == null || stroke.points == null || stroke.points.Count < 2)
+                continue;
+
+            _strokePoints.Clear();
+            for (int i = 0; i < stroke.points.Count; i++)
+            {
+                var p = stroke.points[i];
+                _strokePoints.Add(new Vector3(rect.x + p.x, rect.y + p.y, 0f));
+            }
+            Handles.color = stroke.color;
+            Handles.DrawAAPolyLine(stroke.thickness, _strokePoints.ToArray());
+        }
+        Handles.color = Color.white;
+    }
+
+    private void BeginBlackboardStroke(Vector2 guiPosition)
+    {
+        if (_asset == null) return;
+
+        Undo.RecordObject(_asset, "Dibujar en pizarra");
+        _activeStroke = new DesignBlackboardStroke
+        {
+            color = _currentBrushColor,
+            thickness = _currentBrushSize
+        };
+        _asset.blackboardStrokes.Add(_activeStroke);
+        _isDrawingBlackboard = true;
+        AddPointToStroke(guiPosition);
+    }
+
+    private void AddPointToStroke(Vector2 guiPosition)
+    {
+        if (_activeStroke == null)
+            return;
+
+        var local = ClampToCanvas(guiPosition);
+        var points = _activeStroke.points;
+        if (points.Count == 0 || Vector2.Distance(points[points.Count - 1], local) > 0.5f)
+        {
+            points.Add(local);
+            MarkAssetDirty();
+            Repaint();
+        }
+    }
+
+    private void EndBlackboardStroke()
+    {
+        if (!_isDrawingBlackboard)
+            return;
+
+        _isDrawingBlackboard = false;
+        _activeStroke = null;
+        MarkAssetDirty();
+    }
+
+    private Vector2 ClampToCanvas(Vector2 guiPosition)
+    {
+        var local = guiPosition - new Vector2(_currentBlackboardRect.x, _currentBlackboardRect.y);
+        local.x = Mathf.Clamp(local.x, 0f, Mathf.Max(1f, _currentBlackboardRect.width));
+        local.y = Mathf.Clamp(local.y, 0f, Mathf.Max(1f, _currentBlackboardRect.height));
+        return local;
     }
 
     private Vector2 CalculateQuickNotesContentSize(SerializedProperty quickNotesProp, float cardWidth, float cardHeight, float spacing, Rect viewRect)
@@ -524,7 +822,8 @@ public class DesignNotebookWindow : EditorWindow
     {
         if (_asset == null) return;
         EditorUtility.SetDirty(_asset);
-        _serialized?.UpdateIfRequiredOrScript();
+        if (_serialized != null && !_serialized.hasModifiedProperties)
+            _serialized.UpdateIfRequiredOrScript();
     }
 
     private void DrawExportButtons()
@@ -623,9 +922,11 @@ public class DesignNotebookWindow : EditorWindow
         const float pageHeight = 792f; // 11in
         const float lineHeight = 14f;
         var maxLinesPerPage = Mathf.FloorToInt((pageHeight - (margin * 2f)) / lineHeight);
+        var usableWidth = pageWidth - (margin * 2f);
+        var maxCharsPerLine = Mathf.Max(32, Mathf.FloorToInt(usableWidth / 6f));
 
         var sanitized = content.Replace("\r\n", "\n");
-        var lines = sanitized.Split('\n');
+        var rawLines = sanitized.Split('\n');
 
         var pageContents = new List<string>();
         var current = new StringBuilder();
@@ -648,7 +949,7 @@ public class DesignNotebookWindow : EditorWindow
         }
 
         StartTextBlock();
-        foreach (var line in lines)
+        foreach (var line in WrapLinesForPdf(rawLines, maxCharsPerLine))
         {
             current.AppendLine($"({EscapePdf(line)}) Tj");
             current.AppendLine("T*");
@@ -735,6 +1036,57 @@ public class DesignNotebookWindow : EditorWindow
 
         writer.Flush();
         File.WriteAllBytes(path, ms.ToArray());
+    }
+
+    private IEnumerable<string> WrapLinesForPdf(IEnumerable<string> lines, int maxCharactersPerLine)
+    {
+        foreach (var line in lines)
+        {
+            foreach (var wrapped in WrapSingleLine(line, maxCharactersPerLine))
+                yield return wrapped;
+        }
+    }
+
+    private IEnumerable<string> WrapSingleLine(string line, int maxCharactersPerLine)
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            yield return string.Empty;
+            yield break;
+        }
+
+        int start = 0;
+        while (start < line.Length)
+        {
+            int length = Mathf.Min(maxCharactersPerLine, line.Length - start);
+            int endExclusive = start + length;
+
+            if (endExclusive < line.Length)
+            {
+                int lastBreak = FindLineBreakIndex(line, start, endExclusive);
+                if (lastBreak > start)
+                    endExclusive = lastBreak + 1;
+            }
+
+            int segmentLength = Mathf.Max(1, endExclusive - start);
+            var segment = line.Substring(start, segmentLength).TrimEnd();
+            yield return segment;
+            start = endExclusive;
+
+            while (start < line.Length && (line[start] == ' ' || line[start] == '\t'))
+                start++;
+        }
+    }
+
+    private int FindLineBreakIndex(string line, int start, int endExclusive)
+    {
+        for (int i = endExclusive - 1; i >= start; i--)
+        {
+            char c = line[i];
+            if (char.IsWhiteSpace(c) || c == '-' || c == ',')
+                return i;
+        }
+        return -1;
     }
 
     private string EscapePdf(string line)
@@ -1118,6 +1470,20 @@ internal class StoryCardNodeView : Node
         _accentStrip.style.bottom = 0f;
         _accentStrip.style.marginRight = 4f;
         titleContainer.Add(_accentStrip);
+        titleContainer.style.paddingTop = 8f;
+        titleContainer.style.paddingBottom = 6f;
+        titleContainer.style.paddingLeft = 10f;
+        titleContainer.style.paddingRight = 10f;
+        titleContainer.style.marginTop = 6f;
+        titleContainer.style.minHeight = 32f;
+        var titleLabel = titleContainer.Q<Label>("title-label");
+        if (titleLabel != null)
+        {
+            titleLabel.style.marginLeft = 4f;
+            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            titleLabel.style.fontSize = 14f;
+            titleLabel.style.color = new StyleColor(Color.black);
+        }
 
         Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
         Input.portName = "Entradas";
@@ -1132,6 +1498,7 @@ internal class StoryCardNodeView : Node
         mainContainer.style.paddingBottom = 10f;
         mainContainer.style.paddingLeft = 8f;
         mainContainer.style.paddingRight = 8f;
+        mainContainer.style.marginTop = 4f;
         mainContainer.style.backgroundColor = new StyleColor(new Color(0.18f, 0.22f, 0.28f));
 
         var titleField = new TextField("Título") { value = card.title };
@@ -1149,33 +1516,9 @@ internal class StoryCardNodeView : Node
         });
         mainContainer.Add(titleField);
 
-        var noteField = new TextField("Detalle") { value = card.note, multiline = true };
-        noteField.style.minHeight = 300f;
-        noteField.style.height = 0f;
-        noteField.style.flexGrow = 1f;
-        noteField.style.flexShrink = 1f;
-        noteField.style.flexBasis = 300f;
-        noteField.style.marginTop = 2f;
-        noteField.style.marginBottom = 8f;
-        noteField.labelElement.style.minWidth = 50f;
-        noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
-        var noteInput = noteField.Q(TextField.textInputUssName);
-        if (noteInput != null)
-        {
-            noteInput.style.flexGrow = 1f;
-            noteInput.style.minHeight = 280f;
-            noteInput.style.whiteSpace = WhiteSpace.Normal;
-        }
-        noteField.RegisterValueChangedCallback(evt =>
-        {
-            card.note = evt.newValue;
-            _onDirty?.Invoke();
-        });
-        mainContainer.Add(noteField);
-
         var colorField = new ColorField("Color") { value = card.color };
-        colorField.style.marginTop = 8f;
-        colorField.style.marginBottom = 4f;
+        colorField.style.marginTop = 6f;
+        colorField.style.marginBottom = 2f;
         colorField.labelElement.style.minWidth = 50f;
         colorField.RegisterValueChangedCallback(evt =>
         {
@@ -1185,7 +1528,7 @@ internal class StoryCardNodeView : Node
         });
         mainContainer.Add(colorField);
 
-        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 6f } };
+        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10f, marginTop = 4f } };
         foreach (var c in _swatchColors)
         {
             var b = new Button { style = { width = 18f, height = 18f, marginRight = 4f, marginTop = 2f, marginBottom = 2f, paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0 } };
@@ -1200,6 +1543,30 @@ internal class StoryCardNodeView : Node
             swatches.Add(b);
         }
         mainContainer.Add(swatches);
+
+        var noteField = new TextField("Detalle") { value = card.note, multiline = true };
+        noteField.style.minHeight = 260f;
+        noteField.style.height = 0f;
+        noteField.style.flexGrow = 1f;
+        noteField.style.flexShrink = 1f;
+        noteField.style.flexBasis = 260f;
+        noteField.style.marginTop = 4f;
+        noteField.style.marginBottom = 8f;
+        noteField.labelElement.style.minWidth = 50f;
+        noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
+        var noteInput = noteField.Q(TextField.textInputUssName);
+        if (noteInput != null)
+        {
+            noteInput.style.flexGrow = 1f;
+            noteInput.style.minHeight = 240f;
+            noteInput.style.whiteSpace = WhiteSpace.Normal;
+        }
+        noteField.RegisterValueChangedCallback(evt =>
+        {
+            card.note = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(noteField);
 
         UpdateColor();
         RefreshExpandedState();

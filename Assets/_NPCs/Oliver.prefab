@@ -614,7 +614,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1853791838701468352}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a765fc0f77ab9fa44aef0a473cfc2305, type: 3}
   m_Name: 
@@ -645,6 +645,7 @@ MonoBehaviour:
   forceOneShotsOnBaseLayer: 0
   movementParamScale: 1.25
   locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.6
 --- !u!114 &818761283699374176
 MonoBehaviour:
   m_ObjectHideFlags: 0

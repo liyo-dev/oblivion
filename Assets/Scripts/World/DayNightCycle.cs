@@ -213,7 +213,11 @@ public class DayNightCycle : MonoBehaviour
     void ApplyTimeOfDay(int index, bool immediate, bool invokeEvents)
     {
         if (_transitionCoroutine != null)
+        {
             StopCoroutine(_transitionCoroutine);
+            _transitionCoroutine = null;
+            _isTransitioning = false;
+        }
 
         _currentIndex = index;
         var settings = timeSettings[index];
@@ -278,10 +282,11 @@ public class DayNightCycle : MonoBehaviour
     {
         _isTransitioning = true;
 
+        var light = directionalLight;
         Material startSkybox = RenderSettings.skybox;
-        Color startColor = directionalLight != null ? directionalLight.color : Color.white;
-        float startIntensity = directionalLight != null ? directionalLight.intensity : 1f;
-        float startRotationX = directionalLight != null ? directionalLight.transform.eulerAngles.x : 0f;
+        Color startColor = light ? light.color : Color.white;
+        float startIntensity = light ? light.intensity : 1f;
+        float startRotationX = light ? light.transform.eulerAngles.x : 0f;
 
         float elapsed = 0f;
 
@@ -291,31 +296,28 @@ public class DayNightCycle : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / transitionDuration);
             float smoothT = Mathf.SmoothStep(0f, 1f, t);
 
-            // Transición de luz
-            if (directionalLight != null)
+            if (light != null)
             {
-                directionalLight.color = Color.Lerp(startColor, targetSettings.lightColor, smoothT);
-                directionalLight.intensity = Mathf.Lerp(startIntensity, targetSettings.lightIntensity, smoothT);
-                
-                Vector3 rotation = directionalLight.transform.eulerAngles;
-                rotation.x = Mathf.LerpAngle(startRotationX, targetSettings.sunRotationX, smoothT);
-                directionalLight.transform.eulerAngles = rotation;
-            }
+                light.color = Color.Lerp(startColor, targetSettings.lightColor, smoothT);
+                light.intensity = Mathf.Lerp(startIntensity, targetSettings.lightIntensity, smoothT);
 
-            // Para skybox, hacemos un cambio gradual al 50% de la transición
-            if (t >= 0.5f && startSkybox != targetSettings.skybox && targetSettings.skybox != null)
-            {
-                RenderSettings.skybox = targetSettings.skybox;
-                DynamicGI.UpdateEnvironment();
-                startSkybox = targetSettings.skybox;
+                Vector3 rotation = light.transform.eulerAngles;
+                rotation.x = Mathf.LerpAngle(startRotationX, targetSettings.sunRotationX, smoothT);
+                light.transform.eulerAngles = rotation;
             }
 
             yield return null;
         }
 
-        // Asegurar valores finales
+        // Aplicar skybox y GI una sola vez al finalizar para evitar parpadeos
+        if (targetSettings.skybox != null && RenderSettings.skybox != targetSettings.skybox)
+        {
+            RenderSettings.skybox = targetSettings.skybox;
+            DynamicGI.UpdateEnvironment();
+        }
+
         ApplySettingsImmediate(targetSettings);
-        
+
         _isTransitioning = false;
         _transitionCoroutine = null;
     }

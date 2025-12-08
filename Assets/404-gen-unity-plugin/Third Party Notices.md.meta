@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 1d8d32fc7413f7d4e8dc8418a8e8e243
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Third Party Notices.md
+  uploadId: 825104

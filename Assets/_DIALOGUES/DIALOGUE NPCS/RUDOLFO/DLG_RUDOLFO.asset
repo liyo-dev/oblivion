@@ -29,3 +29,15 @@ MonoBehaviour:
     textId: DLG_ANTIPATICO_04
     text: 
     portrait: {fileID: 0}
+  - speakerNameId: CHAR_RUDOLFO
+    textId: DLG_ANTIPATICO_05
+    text: 
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_RUDOLFO
+    textId: DLG_ANTIPATICO_06
+    text: 
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_RUDOLFO
+    textId: DLG_ANTIPATICO_07
+    text: 
+    portrait: {fileID: 0}

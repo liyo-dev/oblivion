@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e1260c1148f6143b28bae5ace5e9c5d1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Samples~/SamplesURP/URP-Balanced.asset
+  uploadId: 825104

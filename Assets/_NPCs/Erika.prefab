@@ -2025,6 +2025,7 @@ MonoBehaviour:
   forceOneShotsOnBaseLayer: 0
   movementParamScale: 1.25
   locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.6
 --- !u!114 &5727848368144605934
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2067,7 +2068,7 @@ MonoBehaviour:
     damageStateAlternate: GetHit02_NoWeapon
     damageReactionMinInterval: 0.35
     exclamationPrefab: {fileID: 52160857988958803}
-    exclamationOffset: {x: 0, y: 2, z: 0}
+    exclamationOffset: {x: 0, y: 1.5, z: 0}
     exclamationSeconds: 2
     alertMusicEvent: Npc_Battle_Alert
     battleMusicId: Npc_Battle
@@ -2086,8 +2087,10 @@ MonoBehaviour:
     dialogueOnChallenge: {fileID: 11400000, guid: bbce2255e6c942c41b8a5151012a8e08, type: 2}
     dialogueOnDefeat: {fileID: 0}
     dialogueAfterBattle: {fileID: 0}
-    rewards: []
-    battleIdleState: Idle_Battle_NoWeapon
+    rewards:
+    - item: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
+      amount: 5
+    battleIdleState: ' '
     upperBodyLayer: 1
     lightAttackStateLeft: MagicLeft
     lightAttackStateRight: MagicRight

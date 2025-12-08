@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c40be3174f62c4acf8c1216858c64956
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Samples~/SamplesURP/URP-HighFidelity-Renderer.asset
+  uploadId: 825104

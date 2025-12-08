@@ -47,7 +47,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7a8b8424-a970-4c62-b79f-ced50da006f3
-        position: {x: -495, y: -1567.92}
+        position: {x: -459.35498, y: -1535.8776}
         outputs: []
         npcName: Oliver
         npcTag: 

@@ -1,0 +1,10 @@
+fileFormatVersion: 2
+guid: dec5f0398c754e578706d48d8ed0b4a5
+timeCreated: 1747381501
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311107
+  packageName: "404\u2014GEN text-to-3D Generator"
+  packageVersion: 0.6.0
+  assetPath: Assets/404-gen-unity-plugin/Editor/Utils/FolderUtility.cs
+  uploadId: 825104

@@ -489,7 +489,7 @@ public class PlayerPresetService : MonoBehaviour
     }
 
     // === NUEVO: API pública para re-aplicar el preset activo en runtime (incluye mana) ===
-    public void ApplyCurrentPreset(bool includeInventory = false)
+    public void ApplyCurrentPreset(bool includeInventory = false, bool includeAbilities = true)
     {
         if (!GameBootService.IsAvailable)
         {
@@ -519,20 +519,23 @@ public class PlayerPresetService : MonoBehaviour
         ApplyAppearanceFromPreset(preset);
         ApplyWardrobeFromPreset(preset);
 
-        // NUEVO: aplicar abilities al action manager
-        if (_actionManager == null)
-            _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
-
-        if (_actionManager != null)
+        if (includeAbilities)
         {
-            if (preset.abilities == null)
+            // NUEVO: aplicar abilities al action manager solo cuando se solicita
+            if (_actionManager == null)
+                _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
+
+            if (_actionManager != null)
             {
-                Debug.LogWarning("[PlayerPresetService] preset.abilities es NULL en ApplyCurrentPreset — creando con valores por defecto");
-                preset.abilities = new PlayerAbilities { swim = true, jump = true, climb = true, magic = false, fly = true };
+                if (preset.abilities == null)
+                {
+                    Debug.LogWarning("[PlayerPresetService] preset.abilities es NULL en ApplyCurrentPreset — creando con valores por defecto");
+                    preset.abilities = new PlayerAbilities { swim = true, jump = true, climb = true, magic = false, fly = true };
+                }
+                Debug.Log($"[PlayerPresetService] Re-aplicando abilities: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
+                _actionManager.ApplyAbilities(preset.abilities);
+                Debug.Log("[PlayerPresetService] Re-aplicado preset: abilities actualizadas");
             }
-            Debug.Log($"[PlayerPresetService] Re-aplicando abilities: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
-            _actionManager.ApplyAbilities(preset.abilities);
-            Debug.Log("[PlayerPresetService] Re-aplicado preset: abilities actualizadas");
         }
 
         // Notificar a subscriptores que el preset ha sido aplicado (p.ej. UI)

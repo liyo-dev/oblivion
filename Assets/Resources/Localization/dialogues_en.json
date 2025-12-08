@@ -121,6 +121,18 @@
             "value": "...Still here? Impressive."
         },
         {
+            "key": "DLG_ANTIPATICO_05",
+            "value": "[EN] Mira hacemos una cosa: si encuentras mis botas te las puedes quedar."
+        },
+        {
+            "key": "DLG_ANTIPATICO_06",
+            "value": "[EN] Estuve nadando y olvidé ponermelas."
+        },
+        {
+            "key": "DLG_ANTIPATICO_07",
+            "value": "[EN] Ven a verme si las encuentras y te contaré un secreto."
+        },
+        {
             "key": "DLG_ANTIPATICO_IN_PROGRESS",
             "value": "[EN] Busca las botas cerca del mar. Estuve nadando por ahí."
         },
@@ -130,7 +142,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_02",
-            "value": "[EN] ¿Sabes qué? me da pereza ponermelas. Quedatelas."
+            "value": "[EN] ¿Sabes qué? Pensaba que no lo conseguirñias. Ahí va el secreto:"
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
@@ -279,6 +291,14 @@
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_09",
             "value": "[EN] Will aqui es donde empieza tu aventura."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_PROGRESS_01",
+            "value": "[EN] Busca a Estela en el bosque prohibido."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_PROGRESS_02",
+            "value": "[EN] Venid a verme cuanto antes."
         },
         {
             "key": "DLG_GUARD_01",

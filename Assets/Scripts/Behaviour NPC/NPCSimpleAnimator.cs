@@ -53,6 +53,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField, Range(0.5f, 2.0f)] private float movementParamScale = 1.25f;
     [Tooltip("Multiplicador de velocidad de reproducción del Animator durante locomoción")]
     [SerializeField, Range(0.6f, 2.0f)] private float locomotionAnimSpeed = 1.25f;
+    [Tooltip("Valor mínimo de blend cuando hay movimiento para evitar patinaje")]
+    [SerializeField, Range(0f, 1f)] public float minBlendWhileMoving = 0.7f;
 
     AnimatorStateCache _stateCache;
     AnimatorClipCache _clipCache;
@@ -265,6 +267,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void SetMovementSpeed(float normalizedSpeed, float dampTime = 0.1f)
     {
         if (!animator) return;
+        if (normalizedSpeed > 0.05f)
+            normalizedSpeed = Mathf.Max(normalizedSpeed, minBlendWhileMoving);
         // Calibrar el parámetro de locomoción y la velocidad de reproducción para reducir foot sliding
         float scaled = Mathf.Clamp01(normalizedSpeed * movementParamScale);
         animator.SetFloat(InputMagnitudeHash, scaled, dampTime, Time.deltaTime);

@@ -101,6 +101,10 @@
             "value": "[EN] Consigue una poción de vida para Roberto."
         },
         {
+            "key": "QUEST_RUDOLFO_DESC",
+            "value": "[EN] Busca las botas de Rudolfo cerca del agua."
+        },
+        {
             "key": "QUEST_STATE_ACTIVE",
             "value": "Active"
         },

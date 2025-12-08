@@ -8871,6 +8871,7 @@ MonoBehaviour:
   forceOneShotsOnBaseLayer: 0
   movementParamScale: 1.25
   locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.8
 --- !u!114 &4004413419459220566
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8913,7 +8914,7 @@ MonoBehaviour:
     damageStateAlternate: GetHit02_NoWeapon
     damageReactionMinInterval: 0.35
     exclamationPrefab: {fileID: 4130279561985425733}
-    exclamationOffset: {x: 0, y: 0, z: 0}
+    exclamationOffset: {x: 0, y: 1.5, z: 0}
     exclamationSeconds: 2
     alertMusicEvent: Npc_Battle_Alert
     battleMusicId: Npc_Battle
@@ -8986,6 +8987,9 @@ MonoBehaviour:
     onBattleFinished:
       m_PersistentCalls:
         m_Calls: []
+    onBattleWon:
+      m_PersistentCalls:
+        m_Calls: []
     usePredictiveAim: 1
     requireLineOfSight: 1
     attackFrequencyMultiplier: 1
@@ -9001,8 +9005,6 @@ MonoBehaviour:
     npcDeathAnimation: Die02_NoWeapon
     deathPoseHoldSeconds: 0.35
     playerVictoryAnimation: Dance_NoWeapon
-    playerVictoryCamera: {fileID: 0}
-    playerVictoryCameraChildName: VictoryCamera
     enemyUnityLayer: 7
     interactableUnityLayer: 8
     useDialogueAfterBattle: 1
