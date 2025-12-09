@@ -846,9 +846,9 @@ MonoBehaviour:
   logDebug: 0
   forceKinematicRigidbody: 1
   rigidbodyConstraints: 112
-  persistLastPosition: 0
+  persistLastPosition: 1
   lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 0
+  rotateOnInteract: 1
   rotateOnInteractSeconds: 0.3
 --- !u!1 &2012732618361199451
 GameObject:

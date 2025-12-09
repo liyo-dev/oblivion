@@ -317,6 +317,9 @@ public class GameBootProfile : ScriptableObject
 
         var questManager = QuestManager.Instance;
         questManager?.RestoreFromProfileFlags(preset?.flags);
+
+        // Aplicar posiciones de NPCs en la escena tras cargar el perfil
+        ApplyNpcPositionsToScene(preset);
     }
 
     public PlayerSaveData BuildDefaultSave()
@@ -624,6 +627,70 @@ public class GameBootProfile : ScriptableObject
         }
 
         return preset.npcPositions.Count;
+    }
+
+    /// <summary>
+    /// Aplica las posiciones de NPC guardadas en el preset a los NPCs presentes en la escena actual.
+    /// </summary>
+    void ApplyNpcPositionsToScene(PlayerPresetSO preset)
+    {
+        if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0)
+            return;
+
+#if UNITY_2022_3_OR_NEWER
+        var npcs = FindObjectsByType<NPCBehaviourManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+        var npcs = FindObjectsOfType<NPCBehaviourManager>(true);
+#endif
+        if (npcs == null || npcs.Length == 0)
+            return;
+
+        var map = new Dictionary<string, PlayerPresetSO.NpcPosEntry>(preset.npcPositions.Count);
+        foreach (var e in preset.npcPositions)
+        {
+            if (!string.IsNullOrEmpty(e.npcId) && !map.ContainsKey(e.npcId))
+                map[e.npcId] = e;
+        }
+
+        foreach (var npc in npcs)
+        {
+            if (npc == null) continue;
+            var id = npc.gameObject.name;
+            if (string.IsNullOrEmpty(id)) continue;
+            if (!map.TryGetValue(id, out var entry)) continue;
+
+            var pos = entry.position;
+            if (pos == default) continue;
+
+            try
+            {
+                // Si tiene NavMeshAgent, usar Warp para evitar física/paths
+                var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    agent.Warp(pos);
+                }
+                else
+                {
+                    npc.transform.position = pos;
+                }
+
+                // Aplicar estado activo si se guardó
+                if (entry.hasActiveState)
+                {
+                    npc.gameObject.SetActive(entry.isActive);
+                }
+
+                // Actualizar el lastPosition del NPC para futuras capturas
+                npc.lastPosition = pos;
+
+                Debug.Log($"[GameBootProfile] NPC '{id}' reposicionado a {pos} desde preset runtime.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GameBootProfile] No se pudo reposicionar NPC '{id}': {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automáticos.</summary>
