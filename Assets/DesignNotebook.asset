@@ -59,19 +59,19 @@ MonoBehaviour:
     note: Hasblar con Eldran para que me dejen pasar al bosque.
     color: {r: 0.36, g: 0.88, b: 0.61, a: 1}
     position: {x: -778.56, y: -240}
-    size: {x: 0, y: 0}
+    size: {x: 320, y: 320}
   - guid: d42b67cd-107a-4b62-b38f-d7a44bba20d2
     title: Nueva tarjeta
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
     position: {x: -395.00012, y: -240.00014}
-    size: {x: 0, y: 0}
+    size: {x: 320, y: 320}
   - guid: e8da93e2-6000-4cfe-bfc4-d53f8098014a
     title: Nueva tarjeta
-    note: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 0, y: -240}
-    size: {x: 0, y: 0}
+    note: "este input es el que hay que hacer mas peque\xF1o"
+    color: {r: 0.36, g: 0.88, b: 0.61, a: 1}
+    position: {x: -0.62463, y: -223.32822}
+    size: {x: 320, y: 320}
   storyLinks:
   - fromGuid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
     toGuid: d42b67cd-107a-4b62-b38f-d7a44bba20d2
@@ -135,6 +135,39 @@ MonoBehaviour:
     - {x: 106, y: 54}
     - {x: 108, y: 54}
     - {x: 109, y: 54}
+  - color: {r: 0.8, g: 0.7, b: 0.96, a: 1}
+    thickness: 3.23
+    points:
+    - {x: 271, y: 75}
+    - {x: 271, y: 77}
+    - {x: 271, y: 88}
+    - {x: 271, y: 114}
+    - {x: 271, y: 146}
+    - {x: 271, y: 175}
+    - {x: 271, y: 209}
+    - {x: 271, y: 233}
+    - {x: 271, y: 252}
+    - {x: 271, y: 259}
+    - {x: 272, y: 267}
+    - {x: 272, y: 270}
+  - color: {r: 0.56, g: 0.78, b: 0.98, a: 1}
+    thickness: 3.23
+    points:
+    - {x: 226, y: 29}
+    - {x: 226, y: 31}
+    - {x: 228, y: 34}
+    - {x: 234, y: 46}
+    - {x: 244, y: 63}
+    - {x: 260, y: 84}
+    - {x: 269, y: 96}
+    - {x: 289, y: 122}
+    - {x: 298, y: 134}
+    - {x: 318, y: 160}
+    - {x: 337, y: 185}
+    - {x: 350, y: 203}
+    - {x: 354, y: 212}
+    - {x: 359, y: 220}
+    - {x: 362, y: 224}
   blackboardBackground: {r: 0.07, g: 0.08, b: 0.1, a: 1}
-  blackboardBrushColor: {r: 1, g: 1, b: 1, a: 1}
+  blackboardBrushColor: {r: 0.56, g: 0.78, b: 0.98, a: 1}
   blackboardBrushSize: 3.23
