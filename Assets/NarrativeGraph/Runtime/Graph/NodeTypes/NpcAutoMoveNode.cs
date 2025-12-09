@@ -149,6 +149,14 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         }
 
         npc.EnsurePlayerReference();
+
+        // Asegurar que el NPC pueda persistir su posición si el nodo lo requiere.
+        if (persistPositionToSave && !npc.persistLastPosition)
+        {
+            npc.persistLastPosition = true;
+            npc.SetLastPosition(npc.transform.position);
+            Log($"Forzando persistencia de posición en NPC '{npc.name}' (persistLastPosition habilitado)");
+        }
         Vector3 originalPosition = npc.transform.position;
         Quaternion originalRotation = npc.transform.rotation;
 
