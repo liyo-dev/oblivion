@@ -35,6 +35,8 @@ public class PlayerSaveData
     {
         public string npcId;
         public Vector3 position;
+        public bool hasActiveState;
+        public bool isActive;
     }
 
     // Posiciones persistidas de NPCs (reflejadas desde/hacia el PlayerPresetSO)
@@ -104,7 +106,13 @@ public class PlayerSaveData
             for (int i = 0; i < preset.npcPositions.Count; i++)
             {
                 var e = preset.npcPositions[i];
-                d.npcPositions.Add(new NpcPosEntry { npcId = e.npcId, position = e.position });
+                d.npcPositions.Add(new NpcPosEntry
+                {
+                    npcId = e.npcId,
+                    position = e.position,
+                    hasActiveState = e.hasActiveState,
+                    isActive = e.isActive
+                });
             }
         }
 
