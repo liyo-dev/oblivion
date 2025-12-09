@@ -1501,9 +1501,12 @@ internal class StoryCardNodeView : Node
         mainContainer.style.marginTop = 4f;
         mainContainer.style.backgroundColor = new StyleColor(new Color(0.18f, 0.22f, 0.28f));
 
+        const float LabelWidth = 70f;
+
         var titleField = new TextField("Título") { value = card.title };
         titleField.style.marginBottom = 6f;
-        titleField.labelElement.style.minWidth = 50f;
+        titleField.labelElement.style.minWidth = LabelWidth;
+        titleField.labelElement.style.maxWidth = LabelWidth;
         titleField.labelElement.style.unityTextAlign = TextAnchor.MiddleLeft;
         var titleInput = titleField.Q(TextField.textInputUssName);
         if (titleInput != null)
@@ -1516,7 +1519,6 @@ internal class StoryCardNodeView : Node
         });
         mainContainer.Add(titleField);
 
-        const float ColorLabelWidth = 50f;
         var colorRow = new VisualElement
         {
             style =
@@ -1531,7 +1533,8 @@ internal class StoryCardNodeView : Node
         {
             style =
             {
-                minWidth = ColorLabelWidth,
+                minWidth = LabelWidth,
+                maxWidth = LabelWidth,
                 unityTextAlign = TextAnchor.MiddleLeft
             }
         };
@@ -1553,7 +1556,16 @@ internal class StoryCardNodeView : Node
         colorRow.Add(colorField);
         mainContainer.Add(colorRow);
 
-        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10f, marginTop = 4f, marginLeft = ColorLabelWidth + 4f } };
+        var swatches = new VisualElement
+        {
+            style =
+            {
+                flexDirection = FlexDirection.Row,
+                marginBottom = 12f,
+                marginTop = 6f,
+                marginLeft = LabelWidth + 4f
+            }
+        };
         foreach (var c in _swatchColors)
         {
             var b = new Button { style = { width = 18f, height = 18f, marginRight = 4f, marginTop = 2f, marginBottom = 2f, paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0 } };
@@ -1575,9 +1587,10 @@ internal class StoryCardNodeView : Node
         noteField.style.flexGrow = 1f;
         noteField.style.flexShrink = 1f;
         noteField.style.flexBasis = 260f;
-        noteField.style.marginTop = 4f;
+        noteField.style.marginTop = 8f;
         noteField.style.marginBottom = 8f;
-        noteField.labelElement.style.minWidth = 50f;
+        noteField.labelElement.style.minWidth = LabelWidth;
+        noteField.labelElement.style.maxWidth = LabelWidth;
         noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
         var noteInput = noteField.Q(TextField.textInputUssName);
         if (noteInput != null)
