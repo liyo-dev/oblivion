@@ -1518,7 +1518,8 @@ internal class StoryCardNodeView : Node
 
         var colorField = new ColorField("Color") { value = card.color };
         colorField.style.marginTop = 6f;
-        colorField.style.marginBottom = 2f;
+        colorField.style.marginBottom = 4f;
+        colorField.style.height = 18f;
         colorField.labelElement.style.minWidth = 50f;
         colorField.RegisterValueChangedCallback(evt =>
         {

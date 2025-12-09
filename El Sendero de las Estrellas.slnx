@@ -93,7 +93,6 @@
   <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
-  <Project Path="404-gen-unity-plugin.csproj" />
   <Project Path="Unity.AI.Toolkit.GenerationContextMenu.csproj" />
   <Project Path="Unity.AI.Generators.UI.AIDropdownIntegrations.csproj" />
   <Project Path="Unity.AI.Material.Srp.csproj" />
@@ -104,7 +103,6 @@
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.AI.Generators.Asset.csproj" />
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />
-  <Project Path="GaussianSplatting.csproj" />
   <Project Path="Unity.AI.Toolkit.Async.csproj" />
   <Project Path="Unity.VisualScripting.Shared.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Compliance.csproj" />
