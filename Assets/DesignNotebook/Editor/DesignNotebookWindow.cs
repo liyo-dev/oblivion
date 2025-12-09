@@ -163,16 +163,19 @@ public class DesignNotebookWindow : EditorWindow
         EditorGUILayout.Space();
         using (new EditorGUILayout.VerticalScope(Styles.HeaderBox))
         {
-            EditorGUILayout.LabelField("Cuaderno de diseño", Styles.HeaderTitle);
+            EditorGUILayout.LabelField("Design Notebook Studio", Styles.HeaderTitle);
+            EditorGUILayout.LabelField("Diseña, presenta y exporta con un panel curado para pitching.", Styles.HeaderSubtitle);
 
             EditorGUILayout.BeginHorizontal();
-            var newAsset = (DesignNotebook)EditorGUILayout.ObjectField("Documento", _asset, typeof(DesignNotebook), false);
+            var newAsset = (DesignNotebook)EditorGUILayout.ObjectField("Documento activo", _asset, typeof(DesignNotebook), false);
             if (newAsset != _asset)
                 LoadAsset(newAsset);
 
-            if (GUILayout.Button("Nuevo", GUILayout.Width(70f)))
+            if (GUILayout.Button("Nuevo", GUILayout.Width(90f)))
                 CreateNewAsset();
             EditorGUILayout.EndHorizontal();
+
+            DrawHeaderStats();
         }
 
         if (_asset == null)
@@ -227,6 +230,27 @@ public class DesignNotebookWindow : EditorWindow
 
         if (_serialized.ApplyModifiedProperties())
             EditorUtility.SetDirty(_asset);
+    }
+
+    private void DrawHeaderStats()
+    {
+        EditorGUILayout.Space(2f);
+        EditorGUILayout.BeginHorizontal();
+        DrawStatPill("Tarjetas", _asset?.storyCards?.Count ?? 0, "Storyboard estilizado");
+        DrawStatPill("Notas rápidas", _asset?.quickNotes?.Count ?? 0, "Tablero tipo corcho");
+        DrawStatPill("Trazos", _asset?.blackboardStrokes?.Count ?? 0, "Blackboard creativo");
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawStatPill(string label, int value, string helper)
+    {
+        using (new EditorGUILayout.VerticalScope(Styles.StatPill, GUILayout.Width(170f)))
+        {
+            EditorGUILayout.LabelField(label, Styles.StatLabel);
+            EditorGUILayout.LabelField(value.ToString(), Styles.StatValue);
+            EditorGUILayout.LabelField(helper, Styles.StatHelper);
+        }
     }
 
     private void DrawCurrentTab()
@@ -293,7 +317,7 @@ public class DesignNotebookWindow : EditorWindow
         const float cardWidth = 230f;
         const float cardHeight = 190f;
         const float cardSpacing = 18f;
-        float viewWidth = position.width - 56f;
+        float viewWidth = Mathf.Max(position.width - 56f, cardWidth + 60f);
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Nueva nota", GUILayout.Width(110f)))
         {
@@ -316,17 +340,20 @@ public class DesignNotebookWindow : EditorWindow
 
         float boardHeight = Mathf.Max(position.height - 260f, cardHeight + 40f);
         var boardRect = GUILayoutUtility.GetRect(viewWidth, boardHeight, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        DrawQuickNotesBackdrop(boardRect);
+        var innerBoard = InsetRect(boardRect, 12f);
+        viewWidth = innerBoard.width;
 
         if (quickNotesProp.arraySize == 0)
         {
-            EditorGUI.LabelField(boardRect, "Añade tu primera nota para empezar a organizar.", Styles.GhostLabelCentered);
+            EditorGUI.LabelField(innerBoard, "Añade tu primera nota para empezar a organizar.", Styles.GhostLabelCentered);
             return;
         }
 
         EnsureQuickNotePositions(quickNotesProp, viewWidth, cardWidth, cardHeight, cardSpacing);
 
-        var contentSize = CalculateQuickNotesContentSize(quickNotesProp, cardWidth, cardHeight, cardSpacing, boardRect);
-        _quickNotesScroll = GUI.BeginScrollView(boardRect, _quickNotesScroll, new Rect(0, 0, contentSize.x, contentSize.y));
+        var contentSize = CalculateQuickNotesContentSize(quickNotesProp, cardWidth, cardHeight, cardSpacing, innerBoard);
+        _quickNotesScroll = GUI.BeginScrollView(innerBoard, _quickNotesScroll, new Rect(0, 0, contentSize.x, contentSize.y));
 
         int deleteIndex = -1;
         var evt = Event.current;
@@ -352,6 +379,35 @@ public class DesignNotebookWindow : EditorWindow
 
         if (deleteIndex >= 0)
             quickNotesProp.DeleteArrayElementAtIndex(deleteIndex);
+    }
+
+    private void DrawQuickNotesBackdrop(Rect boardRect)
+    {
+        EditorGUI.DrawRect(boardRect, Styles.CorkShadow);
+        var frame = InsetRect(boardRect, 3f);
+        EditorGUI.DrawRect(frame, Styles.CorkFrame);
+        var cork = InsetRect(frame, 6f);
+        EditorGUI.DrawRect(cork, Styles.CorkBackground);
+
+        const float step = 30f;
+        Handles.BeginGUI();
+        var previousColor = Handles.color;
+        Handles.color = new Color(1f, 1f, 1f, 0.055f);
+        for (float x = cork.xMin + step; x < cork.xMax; x += step)
+            Handles.DrawLine(new Vector3(x, cork.yMin, 0f), new Vector3(x, cork.yMax, 0f));
+        for (float y = cork.yMin + step; y < cork.yMax; y += step)
+            Handles.DrawLine(new Vector3(cork.xMin, y, 0f), new Vector3(cork.xMax, y, 0f));
+        Handles.color = previousColor;
+        Handles.EndGUI();
+    }
+
+    private Rect InsetRect(Rect rect, float amount)
+    {
+        rect.xMin += amount;
+        rect.yMin += amount;
+        rect.xMax -= amount;
+        rect.yMax -= amount;
+        return rect;
     }
 
     private void DrawBlackboard()
@@ -1102,6 +1158,7 @@ public class DesignNotebookWindow : EditorWindow
     {
         public static readonly GUIStyle HeaderBox;
         public static readonly GUIStyle HeaderTitle;
+        public static readonly GUIStyle HeaderSubtitle;
         public static readonly GUIStyle SectionBox;
         public static readonly GUIStyle SectionTitle;
         public static readonly GUIStyle ListHeader;
@@ -1115,36 +1172,66 @@ public class DesignNotebookWindow : EditorWindow
         public static readonly GUIStyle RichTextArea;
         public static readonly GUIStyle RichPreview;
         public static readonly GUIStyle TabButton;
+        public static readonly GUIStyle StatPill;
+        public static readonly GUIStyle StatLabel;
+        public static readonly GUIStyle StatValue;
+        public static readonly GUIStyle StatHelper;
         public static readonly Color ElementBackground;
         public static readonly Color ElementBackgroundActive;
         public static readonly Color NoteShadow;
         public static readonly Color PinColor;
         public static readonly Color PinShadow;
         public static readonly Color DefaultNoteColor;
+        public static readonly Color CorkShadow;
+        public static readonly Color CorkFrame;
+        public static readonly Color CorkBackground;
+        public static readonly Color AccentColor;
+        public static readonly Color AccentSoft;
 
         static Styles()
         {
+            AccentColor = EditorGUIUtility.isProSkin ? new Color(0.33f, 0.73f, 0.94f) : new Color(0.12f, 0.4f, 0.74f);
+            AccentSoft = Color.Lerp(AccentColor, Color.white, 0.35f);
+
             HeaderBox = new GUIStyle("HelpBox")
             {
-                padding = new RectOffset(12, 12, 8, 10),
-                margin = new RectOffset(6, 6, 4, 4)
+                padding = new RectOffset(12, 12, 12, 14),
+                margin = new RectOffset(6, 6, 4, 4),
+                normal =
+                {
+                    background = MakeVerticalGradientTex(74,
+                        Color.Lerp(AccentColor, Color.black, 0.35f),
+                        Color.Lerp(AccentSoft, Color.white, 0.1f))
+                }
             };
 
             HeaderTitle = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 16,
-                alignment = TextAnchor.MiddleLeft
+                fontSize = 17,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.12f, 0.18f, 0.26f) }
+            };
+
+            HeaderSubtitle = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Italic,
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.85f, 0.92f, 1f) : new Color(0.2f, 0.3f, 0.42f) },
+                padding = new RectOffset(2, 2, 0, 4),
+                margin = new RectOffset(4, 4, 0, 6)
             };
 
             SectionBox = new GUIStyle("HelpBox")
             {
-                padding = new RectOffset(14, 14, 12, 14)
+                padding = new RectOffset(14, 14, 12, 14),
+                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.12f, 0.14f, 0.17f) : new Color(0.93f, 0.95f, 0.99f)) }
             };
 
             SectionTitle = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 13,
-                margin = new RectOffset(4, 4, 2, 6)
+                margin = new RectOffset(4, 4, 2, 6),
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.9f, 0.94f, 1f) : new Color(0.18f, 0.26f, 0.36f) }
             };
 
             ListHeader = new GUIStyle(EditorStyles.boldLabel)
@@ -1168,7 +1255,7 @@ public class DesignNotebookWindow : EditorWindow
 
             NoteLabel = new GUIStyle(EditorStyles.miniBoldLabel)
             {
-                normal = { textColor = new Color(0.18f, 0.18f, 0.18f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.95f, 0.95f, 0.95f) : new Color(0.18f, 0.18f, 0.18f) }
             };
 
             NoteTitleField = new GUIStyle(EditorStyles.textField)
@@ -1213,9 +1300,37 @@ public class DesignNotebookWindow : EditorWindow
 
             TabButton = new GUIStyle(EditorStyles.toolbarButton)
             {
-                fixedHeight = 24,
+                fixedHeight = 26,
                 fontSize = 11,
-                margin = new RectOffset(2, 2, 2, 2)
+                fontStyle = FontStyle.Bold,
+                margin = new RectOffset(2, 2, 2, 2),
+                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.1f, 0.16f, 0.22f) }
+            };
+
+            StatPill = new GUIStyle("HelpBox")
+            {
+                padding = new RectOffset(12, 12, 8, 10),
+                margin = new RectOffset(6, 6, 2, 2),
+                normal = { background = MakeVerticalGradientTex(56, Color.Lerp(AccentColor, Color.black, 0.45f), Color.Lerp(AccentSoft, Color.white, 0.25f)) }
+            };
+
+            StatLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 11,
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.86f, 0.9f, 0.96f) : new Color(0.18f, 0.26f, 0.35f) }
+            };
+
+            StatValue = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 16,
+                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.08f, 0.12f, 0.22f) }
+            };
+
+            StatHelper = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Italic,
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.8f, 0.88f, 1f, 0.9f) : new Color(0.24f, 0.32f, 0.44f) }
             };
 
             ElementBackground = EditorGUIUtility.isProSkin
@@ -1230,6 +1345,9 @@ public class DesignNotebookWindow : EditorWindow
             PinColor = new Color(0.8f, 0.2f, 0.2f);
             PinShadow = new Color(0f, 0f, 0f, 0.2f);
             DefaultNoteColor = new Color(1f, 0.95f, 0.65f);
+            CorkShadow = new Color(0f, 0f, 0f, 0.16f);
+            CorkFrame = new Color(0.34f, 0.26f, 0.18f);
+            CorkBackground = new Color(0.88f, 0.78f, 0.64f);
         }
 
         public static GUIStyle GetRichTextArea(int fontSize)
@@ -1245,6 +1363,18 @@ public class DesignNotebookWindow : EditorWindow
         {
             var tex = new Texture2D(1, 1);
             tex.SetPixel(0, 0, color);
+            tex.Apply();
+            return tex;
+        }
+
+        private static Texture2D MakeVerticalGradientTex(int height, Color top, Color bottom)
+        {
+            var tex = new Texture2D(1, Mathf.Max(2, height));
+            for (int y = 0; y < tex.height; y++)
+            {
+                float t = Mathf.InverseLerp(0, tex.height - 1, y);
+                tex.SetPixel(0, y, Color.Lerp(top, bottom, t));
+            }
             tex.Apply();
             return tex;
         }
