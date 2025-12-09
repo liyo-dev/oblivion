@@ -1516,20 +1516,44 @@ internal class StoryCardNodeView : Node
         });
         mainContainer.Add(titleField);
 
-        var colorField = new ColorField("Color") { value = card.color };
-        colorField.style.marginTop = 6f;
-        colorField.style.marginBottom = 4f;
-        colorField.style.height = 18f;
-        colorField.labelElement.style.minWidth = 50f;
+        const float ColorLabelWidth = 50f;
+        var colorRow = new VisualElement
+        {
+            style =
+            {
+                flexDirection = FlexDirection.Row,
+                alignItems = Align.Center,
+                marginTop = 4f,
+                marginBottom = 2f
+            }
+        };
+        var colorLabel = new Label("Color")
+        {
+            style =
+            {
+                minWidth = ColorLabelWidth,
+                unityTextAlign = TextAnchor.MiddleLeft
+            }
+        };
+        colorRow.Add(colorLabel);
+
+        var colorField = new ColorField { value = card.color };
+        colorField.style.height = 16f;
+        colorField.style.marginLeft = 4f;
+        colorField.style.marginRight = 4f;
+        colorField.style.width = 130f;
+        colorField.style.flexGrow = 0f;
+        colorField.labelElement.style.display = DisplayStyle.None;
         colorField.RegisterValueChangedCallback(evt =>
         {
             card.color = evt.newValue;
             UpdateColor();
             _onDirty?.Invoke();
         });
-        mainContainer.Add(colorField);
+        colorRow.Add(colorField);
+        mainContainer.Add(colorRow);
 
-        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10f, marginTop = 4f } };
+        var swatches = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10f, marginTop = 4f, marginLeft = ColorLabelWidth + 4f } };
         foreach (var c in _swatchColors)
         {
             var b = new Button { style = { width = 18f, height = 18f, marginRight = 4f, marginTop = 2f, marginBottom = 2f, paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0 } };
