@@ -536,25 +536,32 @@ public class GameBootProfile : ScriptableObject
             {
                 // La entrada ya existe, verificar si lastPosition es más reciente
                 var position = npc.lastPosition;
+                if (position == default)
+                    position = npc.transform.position;
+
                 if (position != default)
                 {
                     var existingIndex = existingEntries[npcId];
                     var existing = preset.npcPositions[existingIndex];
-                    
+
                     // Solo actualizar si lastPosition es diferente (por si hubo cambios posteriores)
                     if (Vector3.Distance(existing.position, position) > 0.01f)
                     {
                         existing.position = position;
                         preset.npcPositions[existingIndex] = existing;
-                        Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition: {position}");
+                        Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition/transform: {position}");
                     }
                 }
-                // Si lastPosition es default, mantener la entrada del preset sin cambios
+                // Si la posición sigue siendo default, mantener la entrada del preset sin cambios
                 continue;
             }
 
             // No existe entrada previa, crear una nueva solo si lastPosition no es default
             var npcPosition = npc.lastPosition;
+            // Si el NPC nunca persistió manualmente su posición, usar la posición actual de la escena
+            if (npcPosition == default)
+                npcPosition = npc.transform.position;
+
             if (npcPosition == default)
                 continue;
 
