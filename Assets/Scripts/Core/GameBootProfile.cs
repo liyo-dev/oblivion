@@ -136,6 +136,25 @@ public class GameBootProfile : ScriptableObject
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         p.consumedInteractableIds = data.consumedInteractables != null ? new List<string>(data.consumedInteractables) : new List<string>();
+
+        // Restaurar NPCs persistidos directamente en el runtimePreset para que otros sistemas puedan aplicarlos
+        if (p.npcPositions == null) p.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
+        else p.npcPositions.Clear();
+
+        if (data.npcPositions != null && data.npcPositions.Count > 0)
+        {
+            for (int i = 0; i < data.npcPositions.Count; i++)
+            {
+                var e = data.npcPositions[i];
+                p.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
+                {
+                    npcId = e.npcId,
+                    position = e.position,
+                    hasActiveState = e.hasActiveState,
+                    isActive = e.isActive
+                });
+            }
+        }
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
             p.spawnAnchorId = data.lastSpawnAnchorId;
@@ -238,7 +257,13 @@ public class GameBootProfile : ScriptableObject
             for (int i = 0; i < activePreset.npcPositions.Count; i++)
             {
                 var e = activePreset.npcPositions[i];
-                data.npcPositions.Add(new PlayerSaveData.NpcPosEntry { npcId = e.npcId, position = e.position });
+                data.npcPositions.Add(new PlayerSaveData.NpcPosEntry
+                {
+                    npcId = e.npcId,
+                    position = e.position,
+                    hasActiveState = e.hasActiveState,
+                    isActive = e.isActive
+                });
             }
         }
 
@@ -272,7 +297,9 @@ public class GameBootProfile : ScriptableObject
                     preset.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
                     {
                         npcId = e.npcId,
-                        position = e.position
+                        position = e.position,
+                        hasActiveState = e.hasActiveState,
+                        isActive = e.isActive
                     });
                 }
             }
