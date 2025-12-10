@@ -20,13 +20,23 @@ public class CameraOcclusionVisuals : MonoBehaviour
     public float fadeInSpeed = 10f;                      // hacia el estado ocluido
     public float fadeOutSpeed = 6f;                      // volver a normal
 
+    [Header("Deformación (opcional)")]
+    public bool deformWhenOccluded = true;               // si true, se aplasta suavemente
+    [Range(0f, 1f)] public float squashAmount = 0.18f;    // cuánto se reduce la escala
+    public Vector3 squashAxis = new Vector3(0.15f, 0.8f, 0.15f); // peso por eje
+    public float squashInSpeed = 8f;
+    public float squashOutSpeed = 6f;
+
     // --- internos ---
     struct Fadable
     {
         public Renderer renderer;
+        public Transform transform;
         public MaterialPropertyBlock mpb;
         public float curAlpha;
         public float curDesat;
+        public float curSquash;
+        public Vector3 baseScale;
     }
 
     private readonly Dictionary<Renderer, Fadable> _active = new Dictionary<Renderer, Fadable>();
@@ -74,9 +84,12 @@ public class CameraOcclusionVisuals : MonoBehaviour
                 f = new Fadable
                 {
                     renderer = rend,
+                    transform = rend.transform,
                     mpb = new MaterialPropertyBlock(),
                     curAlpha = 1f,
-                    curDesat = 0f
+                    curDesat = 0f,
+                    curSquash = 0f,
+                    baseScale = rend.transform.localScale
                 };
                 _active[rend] = f;
             }
@@ -92,12 +105,15 @@ public class CameraOcclusionVisuals : MonoBehaviour
             bool occluding = _thisFrame.Contains(rend);
             float aTarget  = occluding ? Mathf.Clamp01(targetAlpha) : 1f;
             float dTarget  = occluding ? Mathf.Clamp01(targetDesaturation) : 0f;
+            float sTarget  = occluding && deformWhenOccluded ? Mathf.Clamp01(squashAmount) : 0f;
 
             float spdA = occluding ? fadeInSpeed : fadeOutSpeed;
             float spdD = occluding ? fadeInSpeed : fadeOutSpeed;
+            float spdS = occluding ? squashInSpeed : squashOutSpeed;
 
             f.curAlpha = Mathf.Lerp(f.curAlpha, aTarget, Mathf.Clamp01(spdA * Time.deltaTime));
             f.curDesat = Mathf.Lerp(f.curDesat, dTarget, Mathf.Clamp01(spdD * Time.deltaTime));
+            f.curSquash = Mathf.Lerp(f.curSquash, sTarget, Mathf.Clamp01(spdS * Time.deltaTime));
 
             // Aplicar a MPB
             rend.GetPropertyBlock(f.mpb);
@@ -106,10 +122,20 @@ public class CameraOcclusionVisuals : MonoBehaviour
             f.mpb.SetFloat(ID_Desat, f.curDesat);
             rend.SetPropertyBlock(f.mpb);
 
+            // Deformar (aplastar) ligeramente para que parezca máscara que se pega
+            if (f.transform && deformWhenOccluded)
+            {
+                var squashVec = new Vector3(
+                    1f - (squashAxis.x * f.curSquash),
+                    1f - (squashAxis.y * f.curSquash),
+                    1f - (squashAxis.z * f.curSquash));
+                f.transform.localScale = Vector3.Scale(f.baseScale, squashVec);
+            }
+
             _active[rend] = f;
 
             // Si ya volvió “casi” a normal, limpiar
-            if (!occluding && f.curAlpha > 0.995f && f.curDesat < 0.005f)
+            if (!occluding && f.curAlpha > 0.995f && f.curDesat < 0.005f && f.curSquash < 0.005f)
                 toRestore.Add(rend);
         }
 
@@ -118,8 +144,24 @@ public class CameraOcclusionVisuals : MonoBehaviour
         {
             var r = toRestore[i];
             if (!r) continue;
+            if (_active.TryGetValue(r, out var f))
+            {
+                if (f.transform) f.transform.localScale = f.baseScale;
+            }
             r.SetPropertyBlock(null);
             _active.Remove(r);
         }
+    }
+
+    void OnDisable()
+    {
+        foreach (var kv in _active)
+        {
+            var f = kv.Value;
+            if (f.renderer) f.renderer.SetPropertyBlock(null);
+            if (f.transform) f.transform.localScale = f.baseScale;
+        }
+        _active.Clear();
+        _thisFrame.Clear();
     }
 }
