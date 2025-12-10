@@ -82,6 +82,10 @@ public class QuestMainMenuUI : MonoBehaviour
             quickMenu.ShowPanel(false, ignoreRestrictions: true);
         }
 
+        // Refresh the list on every open to ensure scroll rects receive the correct
+        // content size even if quests changed while the menu was hidden.
+        Rebuild();
+
         EnsureSelection();
         EnsureGamePhasePushed();
         EnsureNavigatorReady();
@@ -481,15 +485,29 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void RefreshScrollViews()
     {
-        if (visibleContentRoot is RectTransform visibleRt)
-            LayoutRebuilder.ForceRebuildLayoutImmediate(visibleRt);
-        if (hiddenContentRoot is RectTransform hiddenRt)
-            LayoutRebuilder.ForceRebuildLayoutImmediate(hiddenRt);
+        RefreshScrollView(visibleScrollRect, visibleContentRoot as RectTransform);
+        RefreshScrollView(hiddenScrollRect, hiddenContentRoot as RectTransform);
+    }
 
-        if (visibleScrollRect != null)
-            visibleScrollRect.verticalNormalizedPosition = 1f;
-        if (hiddenScrollRect != null)
-            hiddenScrollRect.verticalNormalizedPosition = 1f;
+    void RefreshScrollView(ScrollRect scrollRect, RectTransform content)
+    {
+        if (scrollRect == null || content == null)
+            return;
+
+        // Force a layout pass so the ScrollRect receives the correct content height
+        // before we reset the scroll position. This avoids situations where the
+        // content appears "stuck" because its size was still zero when the value
+        // was applied.
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+        var viewport = scrollRect.viewport != null ? scrollRect.viewport : scrollRect.transform as RectTransform;
+        if (viewport != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(viewport);
+
+        scrollRect.content = content;
+        content.anchoredPosition = Vector2.zero;
+        scrollRect.verticalNormalizedPosition = 1f;
     }
 
     void EnsureNavigatorReady()
