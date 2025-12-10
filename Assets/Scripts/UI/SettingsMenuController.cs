@@ -40,6 +40,10 @@ public class SettingsMenuController : MonoBehaviour
     [SerializeField] private Color activeStateColor = new Color(1f, 0.92f, 0.16f);
     [SerializeField] private Color inactiveStateColor = Color.white;
 
+    [Header("Slider input")]
+    [SerializeField, Tooltip("Incremento aplicado al ajustar sliders con el gamepad.")]
+    private float sliderStep = 0.05f;
+
     [Header("Visuals")]
     [Tooltip("Auto-add UISelectVisual to selectables under this root to show navigation feedback.")]
     [SerializeField] private bool autoAddSelectVisuals = true;
@@ -49,6 +53,8 @@ public class SettingsMenuController : MonoBehaviour
     private float cancelInputGracePeriod = 0.25f;
     private bool _cancelRequested;
     private float _openedAt = -999f;
+    private bool _sliderEditMode;
+    private Slider _activeSlider;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -120,14 +126,27 @@ public class SettingsMenuController : MonoBehaviour
     void OnDisable()
     {
         GamepadInputReader.OnInput -= HandleGamepadInput;
+        _sliderEditMode = false;
+        _activeSlider = null;
     }
 
     void Update()
     {
         if (root == null || !root.activeInHierarchy) return;
 
+        if (_sliderEditMode)
+        {
+            MaintainSliderSelection();
+            HandleSliderInput(GamepadInputReader.Navigation);
+        }
+
         if (WasCancelPressedThisFrame())
-            Close();
+        {
+            if (_sliderEditMode)
+                ExitSliderEditMode();
+            else
+                Close();
+        }
     }
 
     void OnDestroy()
@@ -252,11 +271,22 @@ public class SettingsMenuController : MonoBehaviour
         bool cancel = _cancelRequested;
         _cancelRequested = false;
 
-        return cancel
+        if (cancel
             || Input.GetKeyDown(KeyCode.Escape)
             || Input.GetKeyDown(KeyCode.Backspace)
             || Input.GetKeyDown(KeyCode.JoystickButton1)
-            || Input.GetKeyDown(KeyCode.JoystickButton7);
+            || Input.GetKeyDown(KeyCode.JoystickButton7))
+        {
+            if (_sliderEditMode)
+            {
+                ExitSliderEditMode();
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -265,7 +295,41 @@ public class SettingsMenuController : MonoBehaviour
             return;
 
         if (input.Type == GamepadInputReader.InputEventType.Cancel || input.Type == GamepadInputReader.InputEventType.Start)
-            _cancelRequested = true;
+        {
+            if (_sliderEditMode)
+                ExitSliderEditMode();
+            else
+                _cancelRequested = true;
+            return;
+        }
+
+        if (input.Type == GamepadInputReader.InputEventType.Submit)
+        {
+            if (TryToggleSliderEditMode())
+                return;
+        }
+
+        if (_sliderEditMode)
+        {
+            if (input.Type == GamepadInputReader.InputEventType.Navigate)
+            {
+                HandleSliderInput(input.Value);
+            }
+            else if (input.Type == GamepadInputReader.InputEventType.DpadLeft
+                  || input.Type == GamepadInputReader.InputEventType.DpadRight
+                  || input.Type == GamepadInputReader.InputEventType.DpadUp
+                  || input.Type == GamepadInputReader.InputEventType.DpadDown)
+            {
+                HandleSliderInput(input.Value);
+            }
+            return;
+        }
+
+        if (input.Type == GamepadInputReader.InputEventType.DpadLeft
+            || input.Type == GamepadInputReader.InputEventType.DpadRight)
+        {
+            TryMoveSelection(input.Value);
+        }
     }
 
     GameObject ResolveInitialSelection(GameObject requested)
@@ -346,5 +410,109 @@ public class SettingsMenuController : MonoBehaviour
         {
             graphic.color = color;
         }
+    }
+
+    bool TryToggleSliderEditMode()
+    {
+        if (_eventSystem == null)
+            _eventSystem = EventSystem.current;
+
+        var selected = _eventSystem != null ? _eventSystem.currentSelectedGameObject : null;
+        if (!selected)
+            return false;
+
+        var slider = selected.GetComponent<Slider>();
+        if (!IsEditableSlider(slider))
+            return false;
+
+        if (_sliderEditMode && _activeSlider == slider)
+        {
+            ExitSliderEditMode();
+        }
+        else
+        {
+            EnterSliderEditMode(slider);
+        }
+
+        return true;
+    }
+
+    bool IsEditableSlider(Slider slider)
+    {
+        return slider != null && (slider == masterVolumeSlider || slider == sfxVolumeSlider || slider == musicVolumeSlider || slider == lookSensitivitySlider);
+    }
+
+    void EnterSliderEditMode(Slider slider)
+    {
+        _sliderEditMode = true;
+        _activeSlider = slider;
+        MaintainSliderSelection();
+    }
+
+    void ExitSliderEditMode()
+    {
+        _sliderEditMode = false;
+        _activeSlider = null;
+    }
+
+    void MaintainSliderSelection()
+    {
+        if (!_eventSystem)
+            _eventSystem = EventSystem.current;
+
+        if (_eventSystem == null || _activeSlider == null)
+        {
+            ExitSliderEditMode();
+            return;
+        }
+
+        if (_eventSystem.currentSelectedGameObject != _activeSlider.gameObject)
+            _eventSystem.SetSelectedGameObject(_activeSlider.gameObject);
+    }
+
+    void HandleSliderInput(Vector2 value)
+    {
+        if (_activeSlider == null)
+            return;
+
+        float axis = Mathf.Abs(value.x) >= Mathf.Abs(value.y) ? value.x : value.y;
+        if (Mathf.Abs(axis) < 0.1f)
+            return;
+
+        float step = _activeSlider.wholeNumbers
+            ? Mathf.Max(1f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue))
+            : Mathf.Max(0.001f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue));
+
+        _activeSlider.value = Mathf.Clamp(_activeSlider.value + Mathf.Sign(axis) * step, _activeSlider.minValue, _activeSlider.maxValue);
+    }
+
+    void TryMoveSelection(Vector2 direction)
+    {
+        if (_eventSystem == null)
+            _eventSystem = EventSystem.current;
+
+        if (_eventSystem == null)
+            return;
+
+        var current = _eventSystem.currentSelectedGameObject;
+        if (current == null)
+            return;
+
+        var data = new AxisEventData(_eventSystem)
+        {
+            moveVector = direction,
+            moveDir = ResolveMoveDirection(direction)
+        };
+
+        ExecuteEvents.Execute(current, data, ExecuteEvents.moveHandler);
+    }
+
+    MoveDirection ResolveMoveDirection(Vector2 direction)
+    {
+        if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
+            return direction.x > 0 ? MoveDirection.Right : MoveDirection.Left;
+        if (Mathf.Abs(direction.y) > 0.001f)
+            return direction.y > 0 ? MoveDirection.Up : MoveDirection.Down;
+        return MoveDirection.None;
     }
 }
