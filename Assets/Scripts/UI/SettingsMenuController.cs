@@ -325,6 +325,12 @@ public class SettingsMenuController : MonoBehaviour
             return;
         }
 
+        if (input.Type == GamepadInputReader.InputEventType.Navigate && input.Phase == InputActionPhase.Performed)
+        {
+            TryMoveSelection(input.Value);
+            return;
+        }
+
         if (input.Type == GamepadInputReader.InputEventType.DpadLeft
             || input.Type == GamepadInputReader.InputEventType.DpadRight)
         {
