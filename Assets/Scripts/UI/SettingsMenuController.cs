@@ -498,6 +498,21 @@ public class SettingsMenuController : MonoBehaviour
         if (current == null)
             return;
 
+        var slider = current.GetComponent<Slider>();
+        bool editingSlider = _sliderEditMode && slider != null && _activeSlider == slider;
+
+        // Evitar que los sliders modifiquen su valor cuando solo queremos desplazarnos horizontalmente.
+        if (!editingSlider && slider != null && Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
+        {
+            var nav = slider.navigation;
+            var target = direction.x > 0 ? nav.selectOnRight : nav.selectOnLeft;
+            if (target != null)
+            {
+                _eventSystem.SetSelectedGameObject(target.gameObject);
+                return;
+            }
+        }
+
         var data = new AxisEventData(_eventSystem)
         {
             moveVector = direction,
