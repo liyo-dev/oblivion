@@ -107,6 +107,12 @@ public class CameraOcclusionVisuals : MonoBehaviour
         for (int i = 0; i < _activeKeysCache.Count; i++)
         {
             var rend = _activeKeysCache[i];
+            if (!rend)
+            {
+                _active.Remove(rend);
+                continue;
+            }
+
             if (!_active.TryGetValue(rend, out var f))
                 continue;
 
