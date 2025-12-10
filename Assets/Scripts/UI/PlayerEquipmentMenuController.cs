@@ -91,6 +91,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [Tooltip("Objeto raíz del contenido del menú (se activa/desactiva al abrir/cerrar).")]
     [SerializeField] private GameObject windowRoot;
 
+    [Header("Feedback")]
+    [SerializeField, Tooltip("Tiempo que se mantiene visible el mensaje de feedback tras usar un objeto.")]
+    private float feedbackDuration = 1.5f;
+
     [Header("Pestañas")]
     [SerializeField] private Button inventoryTabButton;
     [SerializeField] private Button spellsTabButton;
@@ -162,6 +166,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     int _activeTab;
     float _savedTimeScale = 1f;
     float _lastDpadVertical;
+
+    Coroutine _clearFeedbackRoutine;
 
     bool _warnedInventory;
     bool _warnedSpells;
@@ -1253,6 +1259,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (selectionChanged)
             {
+                ClearFeedbackImmediate();
                 ExitUseButtonFocus(false);
                 if (focus)
                     return;
@@ -1329,9 +1336,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _ui.useButton.gameObject.SetActive(true);
                 _ui.useButton.interactable = CanUseSelectedItem();
             }
-
-            if (_ui.feedbackText != null)
-                _ui.feedbackText.text = string.Empty;
         }
 
         void UpdateEmptyState(string message)
@@ -1339,7 +1343,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.itemName != null) _ui.itemName.text = message;
             if (_ui.itemDescription != null) _ui.itemDescription.text = string.Empty;
             if (_ui.itemCount != null) _ui.itemCount.text = string.Empty;
-            if (_ui.feedbackText != null) _ui.feedbackText.text = string.Empty;
+            ClearFeedbackImmediate();
             if (_ui.useButton != null)
             {
                 _ui.useButton.interactable = false;
@@ -1360,8 +1364,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 if (!InventoryUseUtility.TryUseItem(_inventory, _selectedItem, _collector, out var reason, out var consumed))
                 {
-                    if (_ui.feedbackText != null)
-                        _ui.feedbackText.text = string.IsNullOrEmpty(reason) ? "No se pudo usar." : reason;
+                    ShowFeedback(string.IsNullOrEmpty(reason) ? "No se pudo usar." : reason);
                     return;
                 }
 
@@ -1376,12 +1379,42 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             EnsureSelection();
 
+            if (string.IsNullOrEmpty(result.message))
+                result.message = "Usado correctamente.";
+
+            ShowFeedback(result.message);
+        }
+
+        void ShowFeedback(string message)
+        {
+            if (_ui.feedbackText == null)
+                return;
+
+            if (_clearFeedbackRoutine != null)
+                StopCoroutine(_clearFeedbackRoutine);
+
+            _ui.feedbackText.text = message ?? string.Empty;
+
+            if (feedbackDuration > 0f)
+                _clearFeedbackRoutine = StartCoroutine(ClearFeedbackAfterDelay(feedbackDuration));
+        }
+
+        void ClearFeedbackImmediate()
+        {
             if (_ui.feedbackText != null)
+                _ui.feedbackText.text = string.Empty;
+
+            if (_clearFeedbackRoutine != null)
             {
-                if (string.IsNullOrEmpty(result.message))
-                    result.message = "Usado correctamente.";
-                _ui.feedbackText.text = result.message;
+                StopCoroutine(_clearFeedbackRoutine);
+                _clearFeedbackRoutine = null;
             }
+        }
+
+        System.Collections.IEnumerator ClearFeedbackAfterDelay(float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            ClearFeedbackImmediate();
         }
 
         void HandleInventoryChanged(ItemData item, int newAmount)
