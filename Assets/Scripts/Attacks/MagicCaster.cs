@@ -11,6 +11,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     [SerializeField] private PlayerActionManager actionManager;
     [SerializeField] private MagicProjectileSpawner spawner;
     [SerializeField] private SpecialChargeMeter specialChargeMeter;
+    [SerializeField] private PlayerShieldController shieldController;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
@@ -20,6 +21,9 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
     
     // Hechizos actuales por slot
     private MagicSpellSO _leftSpell, _rightSpell, _specialSpell;
+    private float _castingUntil;
+
+    public bool IsCasting => Time.time < _castingUntil;
 
     void Awake()
     {
@@ -28,6 +32,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!actionManager) actionManager = GetComponentInParent<PlayerActionManager>();
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
         if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
+        if (!shieldController) shieldController = GetComponentInParent<PlayerShieldController>();
 
         // Inicializar cooldowns
         InitializeCooldowns();
@@ -86,6 +91,8 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         InitializeCooldowns();
         _slotCooldowns[slot] = spell.cooldown;
 
+        _castingUntil = Time.time + GetCastingLockDuration(spell);
+
         // Lanzar el hechizo usando el spawner existente
         spawner.Spawn(slot);
 
@@ -120,6 +127,12 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (actionManager && !actionManager.CanUse(PlayerAbility.Magic))
         {
             reason = "Acción bloqueada";
+            return false;
+        }
+
+        if (shieldController != null && shieldController.IsDefending)
+        {
+            reason = "Defendiendo";
             return false;
         }
 
@@ -183,6 +196,15 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (spawner) spawner.SetSpells(left, right, special);
     }
 
+    float GetCastingLockDuration(MagicSpellSO spell)
+    {
+        if (!spell)
+            return 0.1f;
+
+        float duration = Mathf.Max(0.1f, spell.castDelaySeconds + spell.chargeTime);
+        return duration;
+    }
+
     /// Obtiene el hechizo para un slot específico
     public MagicSpellSO GetSpellForSlot(MagicSlot slot)
     {
@@ -216,6 +238,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
         if (!actionManager) actionManager = GetComponentInParent<PlayerActionManager>();
         if (!spawner) spawner = GetComponentInParent<MagicProjectileSpawner>();
         if (!specialChargeMeter) specialChargeMeter = GetComponentInParent<SpecialChargeMeter>();
+        if (!shieldController) shieldController = GetComponentInParent<PlayerShieldController>();
     }
 #endif
 }
