@@ -35,6 +35,23 @@ public class WorldPickup : MonoBehaviour
     private bool _collected;
     private Collider _collider;
 
+    void OnEnable()
+    {
+        GameBootService.OnProfileReady += CheckPersistedState;
+
+        // Si el perfil ya está disponible (por ejemplo al volver a escena aditivamente),
+        // re-evaluar inmediatamente para evitar que los pickups reaparezcan erróneamente.
+        if (GameBootService.IsAvailable)
+        {
+            CheckPersistedState();
+        }
+    }
+
+    void OnDisable()
+    {
+        GameBootService.OnProfileReady -= CheckPersistedState;
+    }
+
     void Reset()
     {
         var col = GetComponent<Collider>();
