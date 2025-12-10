@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 #endif
 
 public class PauseMenuController : MonoBehaviour
@@ -529,7 +530,7 @@ public class PauseMenuController : MonoBehaviour
         }
 
 #if ENABLE_INPUT_SYSTEM
-        if (_isPaused && _navCooldown <= 0f)
+        if (_isPaused && _navCooldown <= 0f && !EventSystemHandlesNavigation())
         {
             bool moved = false;
             try
@@ -652,6 +653,21 @@ public class PauseMenuController : MonoBehaviour
         else MoveSelection(Vector2.down);
         _navCooldown = navRepeatDelay;
         return true;
+    }
+
+    bool EventSystemHandlesNavigation()
+    {
+        if (_es == null) _es = EventSystem.current;
+        if (_es == null) return false;
+
+        if (!_es.sendNavigationEvents) return false;
+
+        var module = _es.currentInputModule;
+#if ENABLE_INPUT_SYSTEM
+        if (module is InputSystemUIInputModule)
+            return true;
+#endif
+        return module is StandaloneInputModule;
     }
 
     void RequestPauseToggle()
