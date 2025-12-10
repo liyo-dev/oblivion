@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 [DisallowMultipleComponent]
 public class CameraOcclusionShadowsOnly : MonoBehaviour
@@ -10,11 +9,28 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     [SerializeField] private float checkRadius = 0.15f;        // radio del spherecast
     [SerializeField] private float releaseDelay = 0.2f;        // histéresis al soltar
 
+    [Header("Efecto de pintada")]
+    [SerializeField] private Shader occlusionShader;
+    [SerializeField, Range(0f, 1f)] private float revealAmount = 0.9f; // cuánto se "come" la pintada
+    [SerializeField, Range(0f, 1f)] private float minimumAlpha = 0.15f; // nunca desaparecer del todo
+    [SerializeField] private float fadeInSpeed = 6f;                    // velocidad al aplicar
+    [SerializeField] private float fadeOutSpeed = 3f;                   // velocidad al restaurar
+    [SerializeField] private float noiseScale = 5f;                     // deformación de la salpicadura
+    [SerializeField] private float edgeWidth = 0.2f;                    // borde suave de la salpicadura
+
     [Header("Debug")]
     [SerializeField] private bool debugRays = false;
 
-    // estado
-    private readonly Dictionary<Renderer, float> _active = new(); // renderer -> lastSeenTime
+    private class Entry
+    {
+        public Renderer Renderer;
+        public Material[] OriginalMaterials;
+        public Material[] PaintedMaterials;
+        public float LastSeen;
+        public float Progress; // 0 = normal, 1 = pintado
+    }
+
+    private readonly Dictionary<Renderer, Entry> _active = new();
     private readonly List<Renderer> _toRestore = new(32);
     private Transform _cam;
 
@@ -29,51 +45,132 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         if (dist < 0.0001f) return;
         dir /= dist;
 
+        if (!occlusionShader)
+            occlusionShader = Shader.Find("Custom/CameraOcclusionPaint");
+
         if (debugRays) Debug.DrawLine(from, to, Color.magenta, 0f, false);
 
-        // detecta todo lo que hay ENTRE cámara y objetivo
         var hits = Physics.SphereCastAll(from, checkRadius, dir, dist, obstructionMask, QueryTriggerInteraction.Ignore);
 
-        // marca / aplica ShadowsOnly a nuevos hits
         for (int i = 0; i < hits.Length; i++)
         {
-            var h = hits[i];
-            var r = h.collider.GetComponentInParent<Renderer>();
-            if (!r) continue;
+            var renderer = hits[i].collider.GetComponentInParent<Renderer>();
+            if (!renderer) continue;
 
-            // ignora si ya está en ShadowsOnly por diseño
-            if (r.shadowCastingMode == ShadowCastingMode.ShadowsOnly)
-            {
-                _active[r] = now;
-                continue;
-            }
-
-            // pon en sombrita
-            _active[r] = now;
-            r.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+            var entry = GetOrCreateEntry(renderer);
+            entry.LastSeen = now;
         }
 
-        // recolecta para restaurar los que no hemos visto hace un ratito
+        UpdateEntries(now);
+    }
+
+    private void UpdateEntries(float now)
+    {
         _toRestore.Clear();
-        foreach (var kv in _active)
+
+        foreach (var kvp in _active)
         {
-            if (now - kv.Value > releaseDelay) _toRestore.Add(kv.Key);
+            var entry = kvp.Value;
+            bool shouldOcclude = now - entry.LastSeen <= releaseDelay;
+            float speed = shouldOcclude ? fadeInSpeed : fadeOutSpeed;
+            float target = shouldOcclude ? 1f : 0f;
+
+            entry.Progress = Mathf.MoveTowards(entry.Progress, target, speed * Time.deltaTime);
+
+            ApplyMaterial(entry, entry.Progress);
+
+            if (!shouldOcclude && Mathf.Approximately(entry.Progress, 0f))
+                _toRestore.Add(entry.Renderer);
         }
 
-        // restaura a On
         for (int i = 0; i < _toRestore.Count; i++)
         {
-            var r = _toRestore[i];
-            if (r) r.shadowCastingMode = ShadowCastingMode.On;
-            _active.Remove(r);
+            var renderer = _toRestore[i];
+            if (renderer && _active.TryGetValue(renderer, out var entry))
+                RestoreEntry(entry);
+            _active.Remove(renderer);
         }
+    }
+
+    private Entry GetOrCreateEntry(Renderer renderer)
+    {
+        if (_active.TryGetValue(renderer, out var existing))
+            return existing;
+
+        var entry = new Entry
+        {
+            Renderer = renderer,
+            OriginalMaterials = renderer.sharedMaterials,
+            PaintedMaterials = BuildPaintedMaterials(renderer)
+        };
+
+        _active[renderer] = entry;
+        return entry;
+    }
+
+    private Material[] BuildPaintedMaterials(Renderer renderer)
+    {
+        var originalMats = renderer.sharedMaterials;
+        var painted = new Material[originalMats.Length];
+
+        for (int i = 0; i < originalMats.Length; i++)
+        {
+            var src = originalMats[i];
+            var dst = new Material(occlusionShader);
+
+            if (src)
+            {
+                if (src.HasProperty("_BaseMap")) dst.SetTexture("_BaseMap", src.GetTexture("_BaseMap"));
+                else if (src.HasProperty("_MainTex")) dst.SetTexture("_BaseMap", src.GetTexture("_MainTex"));
+
+                if (src.HasProperty("_BaseColor")) dst.SetColor("_BaseColor", src.GetColor("_BaseColor"));
+                else if (src.HasProperty("_Color")) dst.SetColor("_BaseColor", src.GetColor("_Color"));
+            }
+
+            dst.SetFloat("_NoiseScale", noiseScale);
+            dst.SetFloat("_EdgeWidth", edgeWidth);
+            painted[i] = dst;
+        }
+
+        return painted;
+    }
+
+    private void ApplyMaterial(Entry entry, float progress)
+    {
+        if (!entry.Renderer) return;
+
+        float reveal = Mathf.Lerp(0f, revealAmount, progress);
+        float holdAlpha = Mathf.Lerp(1f, minimumAlpha, progress);
+
+        var mats = progress > 0f ? entry.PaintedMaterials : entry.OriginalMaterials;
+        entry.Renderer.sharedMaterials = mats;
+
+        if (progress > 0f)
+        {
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var m = mats[i];
+                if (!m) continue;
+                m.SetFloat("_Reveal", reveal);
+                var color = m.GetColor("_BaseColor");
+                color.a = holdAlpha;
+                m.SetColor("_BaseColor", color);
+            }
+        }
+    }
+
+    private void RestoreEntry(Entry entry)
+    {
+        if (entry.Renderer)
+            entry.Renderer.sharedMaterials = entry.OriginalMaterials;
+        entry.Progress = 0f;
     }
 
     /// <summary>Restaura todo inmediatamente (p.ej. OnDisable).</summary>
     public void RestoreAll()
     {
-        foreach (var r in _active.Keys)
-            if (r) r.shadowCastingMode = ShadowCastingMode.On;
+        foreach (var entry in _active.Values)
+            RestoreEntry(entry);
         _active.Clear();
     }
 
