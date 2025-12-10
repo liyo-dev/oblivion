@@ -39,21 +39,36 @@ public static class ScrollRectAutoScroller
         if (contentHeight <= viewportHeight + 0.01f)
             return;
 
-        float upperLimit = viewBounds.max.y - padding;
-        float lowerLimit = viewBounds.min.y + padding;
+        float viewportCenter = (viewBounds.max.y + viewBounds.min.y) * 0.5f;
+        float targetCenter = (itemBounds.max.y + itemBounds.min.y) * 0.5f;
         float offset = 0f;
 
-        if (itemBounds.max.y > upperLimit)
+        // Mantén el elemento seleccionado dentro de una "zona segura" centrada en el viewport.
+        // Esto evita que la lista se quede fija en la parte inferior y que los elementos siguientes
+        // queden ocultos: al sobrepasar la mitad del viewport, el scroll acompaña al foco.
+        if (targetCenter > viewportCenter + padding)
         {
-            offset = itemBounds.max.y - upperLimit;
+            offset = targetCenter - (viewportCenter + padding);
         }
-        else if (itemBounds.min.y < lowerLimit)
+        else if (targetCenter < viewportCenter - padding)
         {
-            offset = itemBounds.min.y - lowerLimit;
+            offset = targetCenter - (viewportCenter - padding);
         }
 
+        // Asegura que el elemento siga siendo visible incluso si es más grande que la zona segura.
         if (Mathf.Approximately(offset, 0f))
-            return;
+        {
+            float upperLimit = viewBounds.max.y - padding;
+            float lowerLimit = viewBounds.min.y + padding;
+
+            if (itemBounds.max.y > upperLimit)
+                offset = itemBounds.max.y - upperLimit;
+            else if (itemBounds.min.y < lowerLimit)
+                offset = itemBounds.min.y - lowerLimit;
+
+            if (Mathf.Approximately(offset, 0f))
+                return;
+        }
 
         var anchored = content.anchoredPosition;
         anchored.y = Mathf.Clamp(anchored.y + offset, 0f, Mathf.Max(0f, contentHeight - viewportHeight));
