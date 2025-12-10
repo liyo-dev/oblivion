@@ -665,7 +665,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
-  dialogue: {fileID: 0}
+  dialogue: {fileID: 11400000, guid: 1b2633a3db9ef2741ab756606c66a0b1, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}
