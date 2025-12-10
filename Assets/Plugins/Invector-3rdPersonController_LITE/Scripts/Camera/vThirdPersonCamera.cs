@@ -36,9 +36,27 @@ public class vThirdPersonCamera : MonoBehaviour
     public float occlusionExpandDelay = 0.12f;
     public float cullingStableTolerance = 0.08f;
 
-    [Header("Oclusión → Sombras (recomendado)")]
+    [Header("Oclusión estilizada (fade / deform)")]
+    [Tooltip("Convierte ocluidores en máscaras suaves en vez de desaparecerlos")]
+    public bool useStylizedOcclusion = true;
+    public LayerMask stylizedOcclusionMask = ~0;
+    public float stylizedCheckRadius = 0.2f;
+    public float stylizedMaxDistancePadding = 0.1f;
+    [Range(0, 1)] public float stylizedTargetAlpha = 0.35f;
+    [Range(0, 1)] public float stylizedTargetDesat = 0.85f;
+    public Color stylizedTint = new Color(0.9f, 0.9f, 0.95f, 1f);
+    public float stylizedFadeIn = 9f;
+    public float stylizedFadeOut = 6f;
+    [Tooltip("Aplasta ligeramente los ocluidores para que parezca que se doblan alrededor de la cámara")]
+    public bool stylizedDeform = true;
+    [Range(0f, 1f)] public float stylizedSquash = 0.14f;
+    public Vector3 stylizedSquashAxis = new Vector3(0.2f, 0.85f, 0.2f);
+    public float stylizedSquashIn = 8f;
+    public float stylizedSquashOut = 6f;
+
+    [Header("Oclusión → Sombras (alternativa)")]
     [Tooltip("No acercar cámara; poner obstáculos en ShadowsOnly para ver al player")]
-    public bool useShadowsOnlyOcclusion = true;
+    public bool useShadowsOnlyOcclusion = false;
     [Tooltip("Capas que se volverán 'sombras' cuando tapen al player (excluye al Player)")]
     public LayerMask obstructionMask = ~0;
     [Tooltip("Radio del SphereCast entre cámara y objetivo (línea de visión)")]
@@ -79,6 +97,9 @@ public class vThirdPersonCamera : MonoBehaviour
     // fader a ShadowsOnly
     private CameraOcclusionShadowsOnly _occlusionFader;
 
+    // fader estilizado (alpha / desat / deform)
+    private CameraOcclusionVisuals _stylizedOcclusion;
+
     #endregion
 
     void Start() => Init();
@@ -110,8 +131,36 @@ public class vThirdPersonCamera : MonoBehaviour
         _occlusionTargetDistance = distance;
         _lastOcclusionHitTime = -999f;
 
+        // Oclusión estilizada (fade + deform): se añade solo
+        if (useStylizedOcclusion)
+        {
+            _stylizedOcclusion = GetComponent<CameraOcclusionVisuals>();
+            if (_stylizedOcclusion == null) _stylizedOcclusion = gameObject.AddComponent<CameraOcclusionVisuals>();
+
+            _stylizedOcclusion.enabled = true;
+            _stylizedOcclusion.cameraTransform = transform;
+            _stylizedOcclusion.target = target;
+            _stylizedOcclusion.fadeLayers = stylizedOcclusionMask;
+            _stylizedOcclusion.castRadius = stylizedCheckRadius;
+            _stylizedOcclusion.maxDistancePadding = stylizedMaxDistancePadding;
+            _stylizedOcclusion.targetAlpha = stylizedTargetAlpha;
+            _stylizedOcclusion.targetDesaturation = stylizedTargetDesat;
+            _stylizedOcclusion.tintWhenOccluded = stylizedTint;
+            _stylizedOcclusion.fadeInSpeed = stylizedFadeIn;
+            _stylizedOcclusion.fadeOutSpeed = stylizedFadeOut;
+            _stylizedOcclusion.deformWhenOccluded = stylizedDeform;
+            _stylizedOcclusion.squashAmount = stylizedSquash;
+            _stylizedOcclusion.squashAxis = stylizedSquashAxis;
+            _stylizedOcclusion.squashInSpeed = stylizedSquashIn;
+            _stylizedOcclusion.squashOutSpeed = stylizedSquashOut;
+        }
+        else if (_stylizedOcclusion)
+        {
+            _stylizedOcclusion.enabled = false;
+        }
+
         // Fader de oclusión (ShadowsOnly)
-        if (useShadowsOnlyOcclusion)
+        if (!useStylizedOcclusion && useShadowsOnlyOcclusion)
         {
             _occlusionFader = GetComponent<CameraOcclusionShadowsOnly>();
             if (_occlusionFader == null) _occlusionFader = gameObject.AddComponent<CameraOcclusionShadowsOnly>();
@@ -130,6 +179,7 @@ public class vThirdPersonCamera : MonoBehaviour
     public void SetTarget(Transform newTarget)
     {
         currentTarget = newTarget ? newTarget : target;
+        if (_stylizedOcclusion) _stylizedOcclusion.target = currentTarget;
     }
 
     /// <summary>Setea target principal y re-inicializa</summary>
@@ -198,8 +248,10 @@ public class vThirdPersonCamera : MonoBehaviour
         bool hadOcclusion = false;
         float newTargetDistance = defaultDistance;
 
-        // Solo calcular oclusión "clásica" si NO usamos ShadowsOnly
-        if (!useShadowsOnlyOcclusion)
+        bool usingStylized = useStylizedOcclusion && _stylizedOcclusion != null && _stylizedOcclusion.enabled;
+
+        // Solo calcular oclusión "clásica" si NO usamos modos de fade/ShadowOnly
+        if (!usingStylized && !useShadowsOnlyOcclusion)
         {
             // raycast desde posición deseada
             if (CullingRayCast(desired_cPos, oldPoints, out hitInfo, distance + 0.2f, cullingLayer, Color.blue))
@@ -255,7 +307,7 @@ public class vThirdPersonCamera : MonoBehaviour
         }
         else
         {
-            // MODO SHADOWS-ONLY: no tocamos la distancia, nos quedamos en defaultDistance con un leve lerp para estabilidad
+            // MODO SHADOWS-ONLY o ESTILIZADO: no tocamos la distancia, nos quedamos en defaultDistance con un leve lerp para estabilidad
             distance = Mathf.Lerp(distance, defaultDistance, smoothFollow * Time.deltaTime);
             currentHeight = height;
             current_cPos = currentTargetPos + new Vector3(0, currentHeight, 0);
@@ -275,7 +327,7 @@ public class vThirdPersonCamera : MonoBehaviour
         transform.rotation = Quaternion.LookRotation((lookPoint) - transform.position);
 
         // Línea de visión → convertir obstáculos a ShadowsOnly
-        if (useShadowsOnlyOcclusion && _occlusionFader != null)
+        if (!usingStylized && useShadowsOnlyOcclusion && _occlusionFader != null)
         {
             Vector3 from = transform.position;
             Vector3 to   = currentTargetPos + new Vector3(0, currentHeight, 0);
