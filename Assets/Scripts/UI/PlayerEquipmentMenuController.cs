@@ -101,6 +101,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
 
+    string _levelLabel = "Nivel";
+    string _hpLabel = "PV";
+    string _mpLabel = "PM";
+
     [Header("Habilidades")]
     [SerializeField] private GameObject abilitiesRoot;
     [SerializeField] private AbilityEntryReferences abilityEntries = new();
@@ -229,6 +233,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             canvasGroup = GetComponentInChildren<CanvasGroup>(true);
         if (windowRoot == null && canvas != null)
             windowRoot = canvas.gameObject;
+
+        if (levelText != null)
+            _levelLabel = levelText.text;
+        if (hpText != null)
+            _hpLabel = hpText.text;
+        if (mpText != null)
+            _mpLabel = mpText.text;
 
         SetCanvasState(false);
 
@@ -884,26 +895,26 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (hasStatsText)
         {
             if (levelText != null)
-                levelText.text = preset != null ? $"{levelText.text}: {preset.level}" : "Nivel: ?";
+                levelText.text = preset != null ? $"{_levelLabel}: {preset.level}" : $"{_levelLabel}: ?";
 
             if (hpText != null)
             {
                 if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
-                    hpText.text = $"{hpText.text}: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
+                    hpText.text = $"{_hpLabel}: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
                 else if (preset != null)
-                    hpText.text = $"{hpText.text}: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
+                    hpText.text = $"{_hpLabel}: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
                 else
-                    hpText.text = $"{hpText.text}: ?";
+                    hpText.text = $"{_hpLabel}: ?";
             }
 
             if (mpText != null)
             {
                 if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
-                    mpText.text = $"{mpText.text}: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
+                    mpText.text = $"{_mpLabel}: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
                 else if (preset != null)
-                    mpText.text = $"{mpText.text}: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
+                    mpText.text = $"{_mpLabel}: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
                 else
-                    mpText.text = $"{mpText.text}: ?";
+                    mpText.text = $"{_mpLabel}: ?";
             }
         }
 
@@ -1113,6 +1124,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _useButtonBaseScale = _ui.useButton.transform.localScale;
                 _useButtonDefaultColors = _ui.useButton.colors;
                 _useButtonVisualCached = true;
+
+                var nav = _ui.useButton.navigation;
+                nav.mode = Navigation.Mode.None;
+                _ui.useButton.navigation = nav;
             }
         }
 
@@ -1336,7 +1351,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UseSelectedItem()
         {
             if (_inventory == null || _selectedItem == null) return;
-            ExitUseButtonFocus(false);
+            ExitUseButtonFocus(true);
 
             var context = new InventoryItemUseContext(_inventory, _selectedItem, _collector);
             var result = DispatchInventoryUseRequest(context);
@@ -1358,6 +1373,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _selectedItem = null;
 
             Refresh(true);
+
+            EnsureSelection();
 
             if (_ui.feedbackText != null)
             {
