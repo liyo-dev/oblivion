@@ -358,7 +358,7 @@ public class MainMenuController : MonoBehaviour
                 if (buttonPanel != null)
                     buttonPanel.SetActive(true);
 
-                _inputArmed = true;
+                RestartArmAfterSettingsClose();
                 var navigator = GetComponentInChildren<MenuNavigator>(true);
                 if (navigator != null)
                     navigator.ResetCooldown();
@@ -376,6 +376,20 @@ public class MainMenuController : MonoBehaviour
         {
             Debug.LogWarning("[MainMenu] No se encontró SettingsMenuController en la jerarquía ni en la escena.");
         }
+    }
+
+    void RestartArmAfterSettingsClose()
+    {
+        _inputArmed = false;
+
+        if (_armRoutine != null)
+        {
+            StopCoroutine(_armRoutine);
+            _armRoutine = null;
+        }
+
+        float delay = Mathf.Max(0.01f, inputArmDelay);
+        _armRoutine = StartCoroutine(ArmMenuAfterDelay(delay));
     }
 
     public void OnClickExit()

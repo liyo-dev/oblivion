@@ -785,7 +785,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         _playerPreviewTarget = player.transform;
         _storedPlayerRotation = _playerPreviewTarget.rotation;
-        var forwardSource = Camera.main != null ? Camera.main.transform.forward : _playerPreviewTarget.forward;
+        Vector3 forwardSource;
+        if (equipmentPreviewCamera != null)
+            forwardSource = equipmentPreviewCamera.transform.forward;
+        else if (Camera.main != null)
+            forwardSource = Camera.main.transform.forward;
+        else
+            forwardSource = _playerPreviewTarget.forward;
         _previewBaseForward = Vector3.ProjectOnPlane(forwardSource, Vector3.up);
         if (_previewBaseForward.sqrMagnitude < 0.001f)
             _previewBaseForward = Vector3.forward;
