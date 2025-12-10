@@ -30,6 +30,9 @@ public class PlayerShieldController : MonoBehaviour
     private bool _isDefending;
     private int _playerLayer;
     private float _originalUpperBodyWeight;
+    private MagicCaster _magicCaster;
+
+    public bool IsDefending => _isDefending;
 
     void Awake()
     {
@@ -38,6 +41,7 @@ public class PlayerShieldController : MonoBehaviour
         _playerLayer = gameObject.layer;
         CacheUpperBodyWeight();
         CacheBlockedLayers();
+        _magicCaster = GetComponentInParent<MagicCaster>();
     }
 
     void OnEnable()
@@ -79,6 +83,12 @@ public class PlayerShieldController : MonoBehaviour
             return;
         }
 
+        if (_magicCaster != null && _magicCaster.IsCasting)
+        {
+            StopDefending();
+            return;
+        }
+
         EvaluateDefenseState();
     }
 
@@ -102,6 +112,9 @@ public class PlayerShieldController : MonoBehaviour
     private void StartDefending()
     {
         if (_isDefending)
+            return;
+
+        if (_magicCaster != null && _magicCaster.IsCasting)
             return;
 
         _isDefending = true;
