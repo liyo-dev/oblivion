@@ -1385,29 +1385,34 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             ShowFeedback(result.message);
         }
 
-        void ShowFeedback(string message)
+        static void ShowFeedback(string message)
         {
-            if (_ui.feedbackText == null)
+            var instance = Instance;
+            if (instance == null || instance._ui.feedbackText == null)
                 return;
 
-            if (_clearFeedbackRoutine != null)
-                StopCoroutine(_clearFeedbackRoutine);
+            if (instance._clearFeedbackRoutine != null)
+                instance.StopCoroutine(instance._clearFeedbackRoutine);
 
-            _ui.feedbackText.text = message ?? string.Empty;
+            instance._ui.feedbackText.text = message ?? string.Empty;
 
-            if (feedbackDuration > 0f)
-                _clearFeedbackRoutine = StartCoroutine(ClearFeedbackAfterDelay(feedbackDuration));
+            if (instance.feedbackDuration > 0f)
+                instance._clearFeedbackRoutine = instance.StartCoroutine(instance.ClearFeedbackAfterDelay(instance.feedbackDuration));
         }
 
-        void ClearFeedbackImmediate()
+        static void ClearFeedbackImmediate()
         {
-            if (_ui.feedbackText != null)
-                _ui.feedbackText.text = string.Empty;
+            var instance = Instance;
+            if (instance == null)
+                return;
 
-            if (_clearFeedbackRoutine != null)
+            if (instance._ui.feedbackText != null)
+                instance._ui.feedbackText.text = string.Empty;
+
+            if (instance._clearFeedbackRoutine != null)
             {
-                StopCoroutine(_clearFeedbackRoutine);
-                _clearFeedbackRoutine = null;
+                instance.StopCoroutine(instance._clearFeedbackRoutine);
+                instance._clearFeedbackRoutine = null;
             }
         }
 
