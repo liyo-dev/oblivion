@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using DG.Tweening;
+using TMPro;
 
 public class PlayerEquipmentMenuController : MonoBehaviour
 {
@@ -96,9 +97,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private Button equipmentTabButton;
 
     [Header("Panel de jugador")]
-    [SerializeField] private Text levelText;
-    [SerializeField] private Text hpText;
-    [SerializeField] private Text mpText;
+    [SerializeField] private TextMeshProUGUI levelText;
+    [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private TextMeshProUGUI mpText;
 
     [Header("Habilidades")]
     [SerializeField] private GameObject abilitiesRoot;
