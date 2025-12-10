@@ -41,6 +41,7 @@ public class CameraOcclusionVisuals : MonoBehaviour
 
     private readonly Dictionary<Renderer, Fadable> _active = new Dictionary<Renderer, Fadable>();
     private readonly HashSet<Renderer> _thisFrame = new HashSet<Renderer>();
+    private readonly List<Renderer> _activeKeysCache = new List<Renderer>();
 
     static readonly int ID_TintColor = Shader.PropertyToID("_TintColor");
     static readonly int ID_Desat     = Shader.PropertyToID("_Desat");
@@ -97,10 +98,17 @@ public class CameraOcclusionVisuals : MonoBehaviour
 
         // Actualizar todos los que tenemos registrados (fade in/out)
         var toRestore = new List<Renderer>();
+        _activeKeysCache.Clear();
         foreach (var kv in _active)
         {
-            var rend = kv.Key;
-            var f = kv.Value;
+            _activeKeysCache.Add(kv.Key);
+        }
+
+        for (int i = 0; i < _activeKeysCache.Count; i++)
+        {
+            var rend = _activeKeysCache[i];
+            if (!_active.TryGetValue(rend, out var f))
+                continue;
 
             bool occluding = _thisFrame.Contains(rend);
             float aTarget  = occluding ? Mathf.Clamp01(targetAlpha) : 1f;
@@ -163,5 +171,6 @@ public class CameraOcclusionVisuals : MonoBehaviour
         }
         _active.Clear();
         _thisFrame.Clear();
+        _activeKeysCache.Clear();
     }
 }
