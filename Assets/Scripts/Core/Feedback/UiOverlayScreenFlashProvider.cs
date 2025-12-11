@@ -45,7 +45,8 @@
 
         private FlashRoot EnsureFlashRoot()
         {
-            var existing = Object.FindFirstObjectByType<FlashRoot>(FindObjectsInactive.Include);
+            // Intentar obtener la instancia desde el ServiceLocator
+            var existing = ServiceLocator.Get<FlashRoot>(false);
             if (existing) return existing;
 
             var go = new GameObject("FS_ScreenFlash");
@@ -72,6 +73,8 @@
 
             var root = go.AddComponent<FlashRoot>();
             root.Image = image;
+            // Registrar la instancia en el ServiceLocator
+            ServiceLocator.Register(root);
             return root;
         }
     }

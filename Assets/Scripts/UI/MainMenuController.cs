@@ -335,11 +335,11 @@ public class MainMenuController : MonoBehaviour
         if (!settingsMenu)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
-        // Fallback: search the whole scene (including inactive) if not found as child
+        // Fallback: obtener desde el ServiceLocator si no se encuentra como hijo
         if (!settingsMenu)
         {
-            settingsMenu = UnityEngine.Object.FindObjectOfType<SettingsMenuController>(includeInactive: true);
-            Debug.Log($"[MainMenu] OnClickSettings fallback FindObjectOfType -> {(settingsMenu != null ? settingsMenu.name : "<null>")}");
+            settingsMenu = ServiceLocator.Get<SettingsMenuController>(false);
+            Debug.Log($"[MainMenu] OnClickSettings fallback ServiceLocator -> {(settingsMenu != null ? settingsMenu.name : "<null>")}");
         }
 
         if (settingsMenu != null)

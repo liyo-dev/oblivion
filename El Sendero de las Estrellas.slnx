@@ -90,7 +90,6 @@
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.AI.Navigation.csproj" />
   <Project Path="Unity.Collections.CodeGen.csproj" />
-  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.GenerationContextMenu.csproj" />
@@ -114,6 +113,7 @@
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="Unity.InferenceEngine.Editor.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
+  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
   <Project Path="Unity.AI.Assistant.Bridge.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Asset.csproj" />
   <Project Path="CiroContinisio.ToonShader.Editor.csproj" />

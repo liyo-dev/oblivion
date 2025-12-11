@@ -119,11 +119,11 @@ public class PlayerLockService : MonoBehaviour
             _rb.isKinematic = true;
         }
 
+        // Buscar específicamente los scripts de movimiento del jugador
         _movementScript = player.GetComponents<MonoBehaviour>()
             .FirstOrDefault(m => m != null && m.enabled && m != this && !(m is PlayerActionManager) && (
-                m.GetType().Name.Contains("Locomotion") ||
-                m.GetType().Name.Contains("Movement") ||
-                m.GetType().Name.Contains("Controller")
+                m.GetType().Name == "ThirdPersonController" ||
+                m.GetType().Name == "ThirdPersonInput"
             ));
         if (_movementScript != null)
         {

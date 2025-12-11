@@ -38,6 +38,10 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private float buyButtonPulseScale = 1.08f;
     [SerializeField] private float buyButtonPulseDuration = 0.14f;
     [SerializeField] private Ease buyButtonPulseEase = Ease.OutBack;
+    [SerializeField] private Color successMessageColor = new Color(0f, 0.75f, 0.2f, 1f);
+    [SerializeField] private Color errorMessageColor = new Color(0.9f, 0.2f, 0.2f, 1f);
+    [SerializeField] private float currencyPunchScale = 1.08f;
+    [SerializeField] private float currencyPunchDuration = 0.18f;
     [Header("Input")]
     [Tooltip("When the shop opens, ignore player input (submit/cancel/navigation) for this many seconds to avoid the 'close dialogue' button press from affecting the shop.")]
     [SerializeField, Min(0f)] private float openIgnoreInputDuration = 0.15f;
@@ -57,7 +61,11 @@ public class ShopUI : MonoBehaviour
     private bool _buyButtonScaleCached;
     private bool _buyButtonColorsCached;
     private ColorBlock _buyButtonDefaultColors;
+    private Tween _currencyTween;
 
+    // Variables de control de mensajes
+    private bool _skipMessageClearOnce = false;
+    private bool _messageLocked = false;
     enum ShopState
     {
         Browsing,
@@ -403,6 +411,14 @@ public class ShopUI : MonoBehaviour
         if (index < 0 || index >= shopController.Stock.Count)
             return;
 
+        if (_skipMessageClearOnce)
+        {
+            _skipMessageClearOnce = false;
+        }
+        else
+        {
+            ClearMessage(force: true);
+        }
         _selectedIndex = index;
         _selectedEntry = shopController.Stock[index];
         
@@ -483,9 +499,6 @@ public class ShopUI : MonoBehaviour
         // Por ahora deshabilitamos venta (se puede implementar después)
         if (sellButton != null)
             sellButton.gameObject.SetActive(false);
-        
-        if (messageText != null)
-            messageText.text = "";
     }
 
     void ClearSelection()
@@ -501,6 +514,8 @@ public class ShopUI : MonoBehaviour
             if (card != null)
                 card.SetSelected(false);
         }
+
+        ClearMessage();
     }
 
     void OnBuyClicked()
@@ -510,15 +525,31 @@ public class ShopUI : MonoBehaviour
         
         bool success = shopController.TryBuy(_selectedIndex, out string message);
         
-        if (messageText != null)
-        {
-            messageText.text = message ?? (success ? "¡Comprado!" : "Error");
-            messageText.color = success ? Color.green : Color.red;
-        }
+        if (success)
+            ShowMessage(string.IsNullOrEmpty(message) ? "¡Comprado!" : message, successMessageColor, pulseCurrency: true);
+        else
+            ShowMessage(string.IsNullOrEmpty(message) ? "No se pudo comprar." : message, errorMessageColor);
         
         if (success)
         {
+            _skipMessageClearOnce = true; // mantener el mensaje tras refrescar
             RefreshUI();
+            _state = ShopState.Browsing;
+            if (_itemCards.Count == 0)
+            {
+                _selectedIndex = -1;
+            }
+            else
+            {
+                _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
+                FocusSelectedCard();
+            }
+        }
+        else
+        {
+            // Mantener foco en el botón de compra para reintentar o cancelar con B
+            _state = ShopState.BuyButtonFocused;
+            FocusBuyButton();
         }
     }
 
@@ -529,10 +560,20 @@ public class ShopUI : MonoBehaviour
             messageText.text = "Función de venta no implementada aún.";
     }
 
+    void ClearMessage(bool force = false)
+    {
+        if (!force && _messageLocked)
+            return;
+        _messageLocked = false;
+        if (messageText != null)
+            messageText.text = string.Empty;
+    }
+
     void HandleBuyButtonPressed()
     {
         if (_state == ShopState.Browsing)
         {
+            _messageLocked = false;
             FocusBuyButton();
             return;
         }
@@ -562,6 +603,7 @@ public class ShopUI : MonoBehaviour
         _state = ShopState.Browsing;
         ResetBuyButtonFeedback();
         FocusSelectedCard();
+        _messageLocked = false;
     }
 
     void PlayBuyButtonFeedback()
@@ -607,25 +649,59 @@ public class ShopUI : MonoBehaviour
         if (_selectedIndex < 0 || shopController == null)
             return;
 
-        ResetBuyButtonFeedback();
         var success = shopController.TryBuy(_selectedIndex, out string message);
 
-        if (messageText != null)
-        {
-            messageText.text = message ?? (success ? "¡Comprado!" : "Error");
-            messageText.color = success ? Color.green : Color.red;
-        }
+        if (success)
+            ShowMessage(string.IsNullOrEmpty(message) ? "¡Comprado!" : message, successMessageColor, pulseCurrency: true);
+        else
+            ShowMessage(string.IsNullOrEmpty(message) ? "No se pudo comprar." : message, errorMessageColor);
 
-        _state = ShopState.Browsing;
-        RefreshUI();
-        if (_itemCards.Count == 0)
+        if (success)
         {
-            _selectedIndex = -1;
+            _state = ShopState.Browsing;
+            RefreshUI();
+            if (_itemCards.Count == 0)
+            {
+                _selectedIndex = -1;
+            }
+            else
+            {
+                _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
+                FocusSelectedCard();
+            }
         }
         else
         {
-            _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
-            FocusSelectedCard();
+            // Mantener foco en el botón de compra para que el jugador pueda reintentar o cancelar con B
+            _state = ShopState.BuyButtonFocused;
+            FocusBuyButton();
         }
+    }
+
+    void ShowMessage(string text, Color color, bool pulseCurrency = false)
+    {
+        if (messageText != null)
+        {
+            messageText.text = text ?? string.Empty;
+            messageText.color = color;
+        }
+        _messageLocked = true;
+
+        if (pulseCurrency)
+            PulseCurrencyDisplay();
+
+        if (_state == ShopState.BuyButtonFocused)
+            PlayBuyButtonFeedback();
+    }
+
+    void PulseCurrencyDisplay()
+    {
+        if (currencyText == null) return;
+        _currencyTween?.Kill();
+        var baseScale = currencyText.transform.localScale;
+        _currencyTween = currencyText.transform
+            .DOPunchScale(Vector3.one * (currencyPunchScale - 1f), currencyPunchDuration, vibrato: 6, elasticity: 0.4f)
+            .SetUpdate(true)
+            .OnComplete(() => currencyText.transform.localScale = baseScale);
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Events;
@@ -27,6 +26,7 @@ namespace EasyTransition
             {
                 instance = this;
                 DontDestroyOnLoad(gameObject);
+                ServiceLocator.Register(this);
             }
             else if (instance != this)
             {
@@ -39,6 +39,15 @@ namespace EasyTransition
 #endif
                 Destroy(gameObject);
                 return;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                ServiceLocator.Unregister(this);
+                instance = null;
             }
         }
 
@@ -197,11 +206,12 @@ namespace EasyTransition
         {
             while (this.gameObject.activeInHierarchy)
             {
-                //Check for multiple instances of the Transition Manager component
-                var managerCount = GameObject.FindObjectsOfType<TransitionManager>(true).Length;
-                if (managerCount > 1)
-                    Debug.LogError($"There are {managerCount.ToString()} Transition Managers in your scene. Please ensure there is only one Transition Manager in your scene or overlapping transitions may occur.");
-            
+                // Ensure only one TransitionManager instance exists using the singleton pattern
+                if (instance != this)
+                {
+                    Debug.LogError("[TransitionManager] Multiple TransitionManager instances detected. Ensure only one TransitionManager exists in the scene.");
+                }
+
                 yield return new WaitForSecondsRealtime(1f);
             }
         }

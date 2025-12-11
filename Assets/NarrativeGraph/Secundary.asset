@@ -58,7 +58,7 @@ MonoBehaviour:
         returnToOrigin: 0
         restoreRotationOnReturn: 1
         moveToPlayer: 0
-        targetAnchorName: House_FrontDoor_Tutrial
+        targetAnchorName: House_FrontDoor_Tutorial
         targetPosition: {x: 0, y: 0, z: 0}
         anchorOffset: {x: 0, y: 0, z: 0}
         useAnchorPosition: 1

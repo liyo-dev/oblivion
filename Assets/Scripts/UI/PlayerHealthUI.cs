@@ -67,22 +67,8 @@ public class PlayerHealthUI : MonoBehaviour
     
     private void FindPlayerHealthSystem()
     {
-        var player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            _playerHealthSystem = player.GetComponent<PlayerHealthSystem>();
-        }
-        
-        if (_playerHealthSystem == null)
-        {
-#if UNITY_2022_3_OR_NEWER
-            _playerHealthSystem = Object.FindFirstObjectByType<PlayerHealthSystem>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            _playerHealthSystem = FindObjectOfType<PlayerHealthSystem>(true);
-#pragma warning restore 618
-#endif
-        }
+        // Obtener PlayerHealthSystem directamente desde el ServiceLocator
+        _playerHealthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
         
         if (_playerHealthSystem != null)
         {

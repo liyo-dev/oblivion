@@ -45,6 +45,10 @@
             "value": "Niño Pez"
         },
         {
+            "key": "CHAR_NORA",
+            "value": "Nora"
+        },
+        {
             "key": "CHAR_OLIVER",
             "value": "Oliver"
         },
@@ -415,6 +419,10 @@
         {
             "key": "DLG_NIÑOPEZ_TURNIN_03",
             "value": "Pruebalo y ayúdame a buscar mi caracola."
+        },
+        {
+            "key": "DLG_NORA_01",
+            "value": "Me encantan los abrazos calentitos."
         },
         {
             "key": "DLG_OLIVER_MENUS_01",

@@ -19,12 +19,7 @@ public class SpawnAnchor : MonoBehaviour
 
     public static SpawnAnchor FindById(string id)
     {
-        // Fallback a registro en memoria
-        var a = AnchorRegistry.Get(id);
-        if (a) return a;
-        // Búsqueda lenta de respaldo si no estaba registrado (escena no inicializada aún, etc.)
-        foreach(var x in GameObject.FindObjectsByType<SpawnAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            if (x && x.anchorId == id) return x;
-        return null;
+        // Solo consultar el registro en memoria
+        return AnchorRegistry.Get(id);
     }
 }

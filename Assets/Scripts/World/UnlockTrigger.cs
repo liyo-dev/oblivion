@@ -124,7 +124,7 @@ public class UnlockTrigger : MonoBehaviour
         // Helper local para marcar que hay que aplicar el preset y refrescar HUD
         void MarkApplyPreset()
         {
-            if (!presetService) presetService = FindFirstObjectByType<PlayerPresetService>();
+            if (!presetService) presetService = ServiceLocator.Get<PlayerPresetService>(false);
             if (presetService)
             {
                 pendingApplyPreset = true;
@@ -155,7 +155,7 @@ public class UnlockTrigger : MonoBehaviour
         if (ensureFirstCast)
         {
             float needed;
-            var caster = FindFirstObjectByType<MagicCaster>();
+            var caster = ServiceLocator.Get<MagicCaster>(false);
 
             if (caster != null)
             {

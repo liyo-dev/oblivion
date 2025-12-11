@@ -258,6 +258,27 @@ public class QuestMainMenuUI : MonoBehaviour
             var targetContainer = inHidden ? hiddenContentRoot : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
             TryRestoreSelection(targetContainer, indexInContainer);
         }
+
+        // Fallback: si no hay nada seleccionado tras el rebuild, enfocar el primer botón disponible del tab visible
+        if (es == null || es.currentSelectedGameObject != null)
+            return;
+
+        var activeContainer = _showingHidden && hiddenContentRoot != null
+            ? hiddenContentRoot
+            : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
+
+        if (navigator != null && navigator.items.Count > 0)
+        {
+            var firstInteractable = navigator.items.FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy && b.interactable);
+            if (firstInteractable != null)
+                navigator.ForceSelect(firstInteractable, resetCooldown: true);
+        }
+        else if (activeContainer != null && activeContainer.childCount > 0)
+        {
+            var firstButton = activeContainer.GetChild(0).GetComponentInChildren<Button>(true);
+            if (firstButton != null)
+                es.SetSelectedGameObject(firstButton.gameObject);
+        }
     }
 
     // Removed GetChildIndexInContainer: use Transform.GetSiblingIndex() instead.

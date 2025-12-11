@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Servicio est�tico para localizar y cachear instancias globales (managers) sin repetir FindObject calls.
+/// Servicio estáatico para localizar y cachear instancias globales (managers) sin repetir FindObject calls.
 /// </summary>
 public static class ServiceLocator
 {
@@ -40,7 +40,7 @@ public static class ServiceLocator
     {
         if (TryGet(out T service)) return service;
         if (logIfMissing)
-            Debug.LogWarning($"[ServiceLocator] No se encontr� servicio de tipo {typeof(T).Name}.");
+            Debug.LogWarning($"[ServiceLocator] No se encontró servicio de tipo {typeof(T).Name}.");
         return null;
     }
 
@@ -90,18 +90,18 @@ public static class ServiceLocator
 
     private static T FindAndCache<T>() where T : UnityEngine.Object
     {
-        T found;
-#if UNITY_2022_3_OR_NEWER
-        found = UnityEngine.Object.FindFirstObjectByType<T>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        found = UnityEngine.Object.FindObjectOfType<T>(true);
-#pragma warning restore 618
-#endif
+        // Solo buscar y cachear servicios globales una vez. Evitar FindObjectOfType para mejorar el rendimiento.
+        // Solo buscar servicios globales en Unity 2022.3 o superior. Para versiones anteriores, se debe registrar explícitamente.
+    #if UNITY_2022_3_OR_NEWER
+        T found = UnityEngine.Object.FindFirstObjectByType<T>(FindObjectsInactive.Include);
+    #else
+        T found = null;
+    #endif
         if (found)
         {
             _services[typeof(T)] = found;
         }
+        // Si no se encuentra, se debe registrar explícitamente el servicio.
         return found;
     }
 }

@@ -97,8 +97,8 @@ public class WorldBootstrap : MonoBehaviour
             }
             else
             {
-                // Fallback: buscar en escena si el servicio no está cacheado aún
-                var svc = Object.FindFirstObjectByType<PlayerPresetService>(FindObjectsInactive.Include);
+                // Fallback: obtener desde el ServiceLocator
+                var svc = ServiceLocator.Get<PlayerPresetService>(false);
                 if (svc != null)
                     svc.ApplyCurrentPreset(includeInventory: true);
             }
@@ -163,29 +163,8 @@ public class WorldBootstrap : MonoBehaviour
         // Buscar al jugador (incluso si está desactivado)
         while (player == null && attempts < maxAttempts)
         {
-            try
-            {
-                player = GameObject.FindWithTag("Player");
-            }
-            catch (UnityException) { }
-            
-            if (player == null)
-            {
-                var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-                foreach (var obj in allObjects)
-                {
-                    try
-                    {
-                        if (obj != null && obj.CompareTag("Player") && obj.scene.isLoaded && !string.IsNullOrEmpty(obj.scene.name))
-                        {
-                            player = obj;
-                            break;
-                        }
-                    }
-                    catch (UnityException) { }
-                }
-            }
-
+            // Intentar obtener el objeto Player desde el ServiceLocator
+            player = ServiceLocator.Get<GameObject>(false);
             if (player == null)
             {
                 yield return new WaitForSeconds(0.05f);

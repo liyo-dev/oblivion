@@ -5,7 +5,7 @@ namespace EasyTransition
 {
     [CanEditMultipleObjects]
     [CustomEditor(typeof(TransitionManager))]
-    public class TransitionManagerEditor : Editor
+    public class TransitionManagerEditor : UnityEditor.Editor
     {
 
         public override void OnInspectorGUI()
@@ -15,4 +15,4 @@ namespace EasyTransition
     }
 
 }
-    
+

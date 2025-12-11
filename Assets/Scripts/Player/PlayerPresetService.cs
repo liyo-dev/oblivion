@@ -41,6 +41,10 @@ public class PlayerPresetService : MonoBehaviour
 
         _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
         _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>(); // ← NUEVO: obtener ManaPool
+        if (_manaPool != null)
+        {
+            ServiceLocator.Register(_manaPool);
+        }
         _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>(); // ← NUEVO: obtener PlayerActionManager
         _inventory = GetComponent<Inventory>() ?? GetComponentInParent<Inventory>(); // ← NUEVO: obtener Inventory
     }
@@ -317,24 +321,8 @@ public class PlayerPresetService : MonoBehaviour
         if (!preset) return;
         if (_manaPool == null)
         {
-            // Intentar obtener el ManaPool del jugador (preferente) para evitar apuntar a otras instancias en escena
-            var playerGO = GameObject.FindGameObjectWithTag("Player");
-            if (playerGO != null)
-            {
-                _manaPool = playerGO.GetComponentInChildren<ManaPool>() ?? playerGO.GetComponent<ManaPool>();
-            }
-            // Si no se encontró en el Player, seguir con la lógica previa
-            if (_manaPool == null)
-            {
-                _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
-            }
-#if UNITY_2022_3_OR_NEWER
-            if (_manaPool == null) _manaPool = FindFirstObjectByType<ManaPool>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-            if (_manaPool == null) _manaPool = FindObjectOfType<ManaPool>(true);
-#pragma warning restore 618
-#endif
+            // Obtener ManaPool directamente desde el ServiceLocator
+            _manaPool = ServiceLocator.Get<ManaPool>(false);
         }
         if (_manaPool != null)
         {

@@ -6,7 +6,7 @@ namespace EasyTransition
 
     [CanEditMultipleObjects]
     [CustomEditor(typeof(TransitionSettings))]
-    public class TransitionSettingsEditor : Editor
+    public class TransitionSettingsEditor : UnityEditor.Editor
     {
         public Texture transitionManagerSettingsLogo;
         SerializedProperty transitionsList;

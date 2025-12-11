@@ -86,17 +86,8 @@ public class PlayerAbilitiesUI : MonoBehaviour
 
     private void FindPlayerComponents()
     {
-        // Buscar ManaPool del jugador
-        var player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            _manaPool = player.GetComponent<ManaPool>();
-        }
-        
-        if (_manaPool == null)
-        {
-            _manaPool = FindAnyObjectByType<ManaPool>();
-        }
+        // Obtener ManaPool del jugador directamente desde el ServiceLocator
+        _manaPool = ServiceLocator.Get<ManaPool>(false);
         
         if (_manaPool == null && showDebugInfo)
         {
