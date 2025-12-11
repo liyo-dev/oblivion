@@ -7,6 +7,7 @@ using Game.NPC;
 using Game.NPC.Common;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Bloquea al jugador, fuerza el diálogo del NPC y lo hace caminar hacia una posición destino.
@@ -88,6 +89,16 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     [Tooltip("Guarda la nueva posición del NPC cuando llegue al destino. Si está desactivado, al cargar una partida volverá a su posición previa.")]
     public bool persistPositionToSave = false;
 
+    // Estado de bloqueo duro del jugador
+    PlayerInput _playerInput;
+    bool _playerInputWasEnabled;
+    CharacterController _playerCharController;
+    bool _charControllerWasEnabled;
+    Rigidbody _playerRb;
+    bool _rbWasKinematic;
+    MonoBehaviour _movementScript;
+    bool _movementScriptWasEnabled;
+
     void Log(string message)
     {
         if (debugLogs)
@@ -162,6 +173,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
 
         PlayerActionManager pam = null;
         bool lockApplied = false;
+        object lockOwner = this;
 
         try
         {
@@ -178,6 +190,9 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 {
                     Log("Player lock requested but PlayerActionManager not found");
                 }
+                // Centralizar bloqueo en PlayerLockService
+                PlayerLockService.Instance.Acquire(lockOwner);
+                Log("PlayerLockService Acquire");
             }
 
             bool persistForwardMovement = persistPositionToSave && !returnToOrigin;
@@ -228,6 +243,10 @@ public sealed class NpcAutoMoveNode : NarrativeNode
                 pam.PopMode(lockMode);
                 Log($"Player lock POP → mode={lockMode}");
             }
+
+            // Liberar bloqueo centralizado
+            PlayerLockService.Instance.Release(lockOwner);
+            Log("PlayerLockService Release");
 
             done?.Invoke();
         }

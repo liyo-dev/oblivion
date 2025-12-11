@@ -105,9 +105,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
 
-    string _levelLabel = "Nivel";
-    string _hpLabel = "PV";
-    string _mpLabel = "PM";
+    string _levelLabel = "";
+    string _hpLabel = "";
+    string _mpLabel = "";
+    bool _labelsCached;
 
     [Header("Habilidades")]
     [SerializeField] private GameObject abilitiesRoot;
@@ -139,9 +140,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
     [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
     [SerializeField] private float previewOrbitSpeed = 120f;
-    [Header("Navegación UI")]
-    [SerializeField, Min(0f)] private float uiNavRepeatDelay = 0.18f;
-    [SerializeField, Range(0f, 1f)] private float uiNavDeadzone = 0.45f;
+    [Header("Equipamiento - Visibilidad del jugador")]
+    [SerializeField] private bool bringPlayerInFrontOfUi = true;
+    [SerializeField] private int playerPreviewSortingOrder = 5000;
     [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
     private float closeInputGracePeriod = 0.3f;
     bool _equipmentCameraActive;
@@ -150,22 +151,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     Vector3 _previewBaseForward = Vector3.forward;
     float _previewPlayerYaw;
     PlayerActionManager _actionManager;
-    float _uiNavCooldown;
-    Vector2 _lastUiNav;
     bool _actionModeActive;
     bool _toggleRequested;
     bool _cancelRequested;
     int _tabDeltaRequested;
-    Vector2 _uiNavEvent;
-    bool _uiNavFromNavigate;
-    float _uiNavExpiry;
     float _openedAt = -999f;
     float _toggleCooldownUntil;
+
+    readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
     bool _isOpen;
     int _activeTab;
     float _savedTimeScale = 1f;
-    float _lastDpadVertical;
 
     Coroutine _clearFeedbackRoutine;
 
@@ -269,6 +266,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OnDestroy()
     {
+        ApplyPlayerPreviewSorting(false);
         _inventoryView?.Dispose();
         _equipmentView?.Dispose();
         if (_instance == this)
@@ -309,7 +307,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             HandleCloseInput();
             HandleTabNavigationInput();
-            HandleUiNavigationInput();
             UpdatePlayerInfoPanel();
             if (_activeTab == 1)
                 _spellView?.HandleInput();
@@ -343,23 +340,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (Time.unscaledTime < _toggleCooldownUntil)
             return;
 
-        if (!pressed)
-        {
-            if (Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                pressed = true;
-                _lastDpadVertical = -1f;
-            }
-            else
-            {
-                float axis = 0f;
-                try { axis = Input.GetAxis("7th axis"); } catch { }
-                if (axis < -0.5f && _lastDpadVertical >= -0.5f)
-                    pressed = true;
-                _lastDpadVertical = axis;
-            }
-        }
-
         if (!pressed) return;
 
         if (_isOpen)
@@ -385,13 +365,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         bool cancel = _cancelRequested;
         _cancelRequested = false;
 
-        if (!cancel)
-        {
-            cancel = Input.GetKeyDown(KeyCode.Escape) ||
-                     Input.GetKeyDown(KeyCode.Backspace) ||
-                     Input.GetKeyDown(KeyCode.JoystickButton1);
-        }
-
         if (cancel)
         {
             bool handled = false;
@@ -414,12 +387,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         int delta = _tabDeltaRequested;
         _tabDeltaRequested = 0;
 
-        if (delta == 0)
-        {
-            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.PageUp)) delta = -1;
-            else if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown)) delta = 1;
-        }
-
         if (delta == 0) return;
 
         var availableTabs = GetAvailableTabs();
@@ -434,165 +401,50 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         ShowTab(nextTab, forceRebuild);
     }
 
-    void HandleUiNavigationInput()
+    void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (!_isOpen) return;
-
-        if (_uiNavCooldown > 0f)
-        {
-            _uiNavCooldown -= Time.unscaledDeltaTime;
-            if (_uiNavCooldown < 0f) _uiNavCooldown = 0f;
-        }
-
-        var es = EventSystem.current;
-        if (es == null)
-        {
-            Debug.LogWarning("[PlayerEquipmentMenu] EventSystem.current is null en HandleUiNavigationInput");
-            return;
-        }
-
-        if (!_uiNavFromNavigate && _uiNavEvent != Vector2.zero && Time.unscaledTime > _uiNavExpiry)
-            _uiNavEvent = Vector2.zero;
-
-        Vector2 nav = _uiNavEvent;
-
-        if (nav == Vector2.zero)
-        {
-            float h = Input.GetAxisRaw("Horizontal");
-            float v = Input.GetAxisRaw("Vertical");
-            if (Mathf.Abs(h) > uiNavDeadzone || Mathf.Abs(v) > uiNavDeadzone)
-                nav = new Vector2(h, v);
-        }
-
-        if (nav == Vector2.zero)
+        if (input.Phase != InputActionPhase.Performed)
             return;
 
-        Vector2 dir = nav.normalized;
-        if (_uiNavCooldown > 0f && Vector2.Dot(dir, _lastUiNav) > 0.9f)
-            return;
-
-        _lastUiNav = dir;
-        _uiNavCooldown = uiNavRepeatDelay;
-
-        var target = es.currentSelectedGameObject;
-
-        if (target == null)
+        switch (input.Type)
         {
-            Debug.Log("[PlayerEquipmentMenu] No hay objeto seleccionado, resolviendo foco inicial");
-            var resolved = ResolveInitialTarget();
-            if (resolved != null)
-            {
-                SelectGameObjectImmediate(resolved);
-                target = resolved;
-            }
-        }
-        else if (!IsInsideMenu(target))
-        {
-            var resolved = ResolveInitialTarget();
-            Debug.Log($"[PlayerEquipmentMenu] currentSelectedGameObject={target.name} fuera del menú, forzando {resolved?.name ?? "null"}");
-            if (resolved != null)
-            {
-                SelectGameObjectImmediate(resolved);
-                target = resolved;
-            }
-            else
-            {
-                target = null;
-            }
-        }
-
-        if (target == null)
-            return;
-
-        var axisEvent = new AxisEventData(es)
-        {
-            moveVector = dir,
-            moveDir = ToMoveDirection(dir)
-        };
-
-        Debug.Log($"[PlayerEquipmentMenu] Navegación: dir={dir}, target={target?.name}, moveDir={axisEvent.moveDir}");
-
-        var result = ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
-        Debug.Log($"[PlayerEquipmentMenu] ExecuteEvents.Execute result: {result}");
-    }
-
-    void QueueUiNavigation(Vector2 nav, bool fromNavigate)
-    {
-        _uiNavEvent = nav;
-        _uiNavFromNavigate = fromNavigate;
-        _uiNavExpiry = Time.unscaledTime + 0.25f;
-    }
-
-        void HandleGamepadInput(GamepadInputReader.InputEvent input)
-        {
-            switch (input.Type)
-            {
-                case GamepadInputReader.InputEventType.Submit when input.Phase == InputActionPhase.Performed:
-                    if (_isOpen && _activeTab == 0 && _inventoryView != null && _inventoryView.TryHandleSubmit())
-                        return;
-                    break;
-                case GamepadInputReader.InputEventType.DpadDown when input.Phase == InputActionPhase.Performed:
-                    if (!_isOpen)
-                        _toggleRequested = true;
-                    else
-                        QueueUiNavigation(Vector2.down, false);
+            case GamepadInputReader.InputEventType.Submit:
+                if (_isOpen && _activeTab == 0 && _inventoryView != null && _inventoryView.TryHandleSubmit())
+                    return;
                 break;
 
-            case GamepadInputReader.InputEventType.DpadUp when input.Phase == InputActionPhase.Performed:
-                if (_isOpen)
-                    QueueUiNavigation(Vector2.up, false);
-                break;
-
-            case GamepadInputReader.InputEventType.DpadLeft when input.Phase == InputActionPhase.Performed:
-                if (_isOpen)
-                {
-                    QueueUiNavigation(Vector2.left, false);
-                }
-                break;
-
-            case GamepadInputReader.InputEventType.DpadRight when input.Phase == InputActionPhase.Performed:
-                if (_isOpen)
-                {
-                    QueueUiNavigation(Vector2.right, false);
-                }
-                break;
-
-            case GamepadInputReader.InputEventType.Navigate:
-                if (!_isOpen) return;
-
-                if (input.Phase == InputActionPhase.Canceled)
-                {
-                    _uiNavEvent = Vector2.zero;
-                    _uiNavFromNavigate = false;
-                }
+            case GamepadInputReader.InputEventType.DpadDown:
+                if (!_isOpen)
+                    _toggleRequested = true;
                 else
-                {
-                    QueueUiNavigation(input.Value, true);
-                }
+                    SendMove(Vector2.down);
+                break;
+            case GamepadInputReader.InputEventType.DpadUp:
+                if (_isOpen)
+                    SendMove(Vector2.up);
+                break;
+            case GamepadInputReader.InputEventType.DpadLeft:
+                if (_isOpen)
+                    SendMove(Vector2.left);
+                break;
+            case GamepadInputReader.InputEventType.DpadRight:
+                if (_isOpen)
+                    SendMove(Vector2.right);
                 break;
 
-            case GamepadInputReader.InputEventType.Cancel when input.Phase == InputActionPhase.Performed:
-            case GamepadInputReader.InputEventType.Start when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.Cancel:
+            case GamepadInputReader.InputEventType.Start:
                 _cancelRequested = true;
                 break;
 
-            case GamepadInputReader.InputEventType.LeftShoulder when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.LeftShoulder:
                 if (_isOpen) _tabDeltaRequested -= 1;
                 break;
 
-            case GamepadInputReader.InputEventType.RightShoulder when input.Phase == InputActionPhase.Performed:
+            case GamepadInputReader.InputEventType.RightShoulder:
                 if (_isOpen) _tabDeltaRequested += 1;
                 break;
         }
-    }
-
-    static MoveDirection ToMoveDirection(Vector2 dir)
-    {
-        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
-            return dir.x > 0 ? MoveDirection.Right : MoveDirection.Left;
-        if (Mathf.Abs(dir.y) > 0f)
-            return dir.y > 0 ? MoveDirection.Up : MoveDirection.Down;
-        return MoveDirection.None;
     }
 
     List<int> GetAvailableTabs()
@@ -665,7 +517,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _actionModeActive = false;
         }
         _toggleCooldownUntil = Time.unscaledTime + 0.2f;
-        Input.ResetInputAxes();
         if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
         SetEquipmentCameraActive(false);
@@ -749,8 +600,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         float rotateInput = GamepadInputReader.CameraLook.x;
-        try { rotateInput += Input.GetAxis("RightStickHorizontal"); } catch { }
-        try { rotateInput += Input.GetAxis("CameraHorizontal"); } catch { }
 
         if (Mathf.Abs(rotateInput) > 0.01f)
             _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
@@ -811,14 +660,68 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_equipmentCameraActive)
         {
             TrySetupPreviewTarget();
+            ApplyPlayerPreviewSorting(true);
         }
         else
         {
+            ApplyPlayerPreviewSorting(false);
             if (_playerPreviewTarget != null)
                 _playerPreviewTarget.rotation = _storedPlayerRotation;
             _playerPreviewTarget = null;
             equipmentPreviewCamera.enabled = false;
         }
+    }
+
+    void ApplyPlayerPreviewSorting(bool bringToFront)
+    {
+        if (!bringPlayerInFrontOfUi)
+            return;
+
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || player == null)
+        {
+            if (!bringToFront)
+                _playerRendererSortCache.Clear();
+            return;
+        }
+
+        if (bringToFront)
+        {
+            _playerRendererSortCache.Clear();
+            var renderers = player.GetComponentsInChildren<Renderer>(true);
+            int uiLayerId = ResolveUiSortingLayer();
+            foreach (var renderer in renderers)
+            {
+                if (renderer == null) continue;
+                _playerRendererSortCache[renderer] = new RendererSortState
+                {
+                    order = renderer.sortingOrder,
+                    layer = renderer.sortingLayerID
+                };
+                renderer.sortingOrder = playerPreviewSortingOrder;
+                if (uiLayerId >= 0)
+                    renderer.sortingLayerID = uiLayerId;
+            }
+        }
+        else
+        {
+            foreach (var kvp in _playerRendererSortCache)
+            {
+                if (kvp.Key == null) continue;
+                kvp.Key.sortingOrder = kvp.Value.order;
+                kvp.Key.sortingLayerID = kvp.Value.layer;
+            }
+            _playerRendererSortCache.Clear();
+        }
+    }
+
+    int ResolveUiSortingLayer()
+    {
+        foreach (var layer in SortingLayer.layers)
+        {
+            if (string.Equals(layer.name, "UI", StringComparison.OrdinalIgnoreCase))
+                return layer.id;
+        }
+        return -1;
     }
 
     int GetDefaultTab()
@@ -886,6 +789,39 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         es.SetSelectedGameObject(target);
     }
 
+    void SendMove(Vector2 dir)
+    {
+        var es = EventSystem.current;
+        if (es == null || !_isOpen) return;
+
+        var target = es.currentSelectedGameObject;
+        if (target == null)
+        {
+            target = ResolveInitialTarget();
+            if (target != null)
+                SelectGameObjectImmediate(target);
+        }
+
+        if (target == null) return;
+
+        var axisEvent = new AxisEventData(es)
+        {
+            moveVector = dir,
+            moveDir = ResolveMoveDirection(dir)
+        };
+
+        ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
+    }
+
+    static MoveDirection ResolveMoveDirection(Vector2 dir)
+    {
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+            return dir.x > 0 ? MoveDirection.Right : MoveDirection.Left;
+        if (Mathf.Abs(dir.y) > 0f)
+            return dir.y > 0 ? MoveDirection.Up : MoveDirection.Down;
+        return MoveDirection.None;
+    }
+
     bool IsInsideMenu(GameObject go)
     {
         if (go == null) return false;
@@ -906,31 +842,57 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (hasStatsText)
         {
+            CacheBaseLabelsIfNeeded();
+
             if (levelText != null)
-                levelText.text = preset != null ? $"{_levelLabel}: {preset.level}" : $"{_levelLabel}: ?";
+            {
+                var value = preset != null ? preset.level.ToString() : "?";
+                levelText.text = string.IsNullOrEmpty(_levelLabel) ? value : $"{_levelLabel} {value}";
+            }
 
             if (hpText != null)
             {
+                string hpValue;
                 if (PlayerService.TryGetComponent<PlayerHealthSystem>(out var health, includeInactive: true, allowSceneLookup: true))
-                    hpText.text = $"{_hpLabel}: {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
+                    hpValue = $"{Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.MaxHealth)}";
                 else if (preset != null)
-                    hpText.text = $"{_hpLabel}: {Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
+                    hpValue = $"{Mathf.CeilToInt(preset.currentHP)} / {Mathf.CeilToInt(preset.maxHP)}";
                 else
-                    hpText.text = $"{_hpLabel}: ?";
+                    hpValue = "?";
+
+                hpText.text = string.IsNullOrEmpty(_hpLabel) ? hpValue : $"{_hpLabel} {hpValue}";
             }
 
             if (mpText != null)
             {
+                string mpValue;
                 if (PlayerService.TryGetComponent<ManaPool>(out var mana, includeInactive: true, allowSceneLookup: true))
-                    mpText.text = $"{_mpLabel}: {Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
+                    mpValue = $"{Mathf.CeilToInt(mana.Current)} / {Mathf.CeilToInt(mana.Max)}";
                 else if (preset != null)
-                    mpText.text = $"{_mpLabel}: {Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
+                    mpValue = $"{Mathf.CeilToInt(preset.currentMP)} / {Mathf.CeilToInt(preset.maxMP)}";
                 else
-                    mpText.text = $"{_mpLabel}: ?";
+                    mpValue = "?";
+
+                mpText.text = string.IsNullOrEmpty(_mpLabel) ? mpValue : $"{_mpLabel} {mpValue}";
             }
         }
 
         UpdateAbilitiesPanel(preset);
+    }
+
+    void CacheBaseLabelsIfNeeded()
+    {
+        if (_labelsCached) return;
+
+        // Capturar las etiquetas ya traducidas por LocalizedText una sola vez
+        if (levelText != null)
+            _levelLabel = levelText.text;
+        if (hpText != null)
+            _hpLabel = hpText.text;
+        if (mpText != null)
+            _mpLabel = mpText.text;
+
+        _labelsCached = true;
     }
 
     void UpdateAbilitiesPanel(PlayerPresetSO preset)
@@ -1057,6 +1019,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
         }
 #endif
+    }
+
+    struct RendererSortState
+    {
+        public int order;
+        public int layer;
     }
 
     [Serializable]
@@ -1294,7 +1262,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
             }
             var rect = widget.GetComponent<RectTransform>();
-            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect);
+            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect, 10f);
         }
 
         void UpdateRowTexts()
@@ -2132,7 +2100,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_scrollRect == null || entry?.widget == null)
                 return;
             var rect = entry.widget.GetComponent<RectTransform>();
-            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect);
+            ScrollRectAutoScroller.ScrollTo(_scrollRect, rect, 10f);
         }
 
         void ConfigureSlotButton(Button button, MagicSlot slot)
@@ -2470,7 +2438,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             get
             {
                 var ordered = GetOrderedRows();
-                for (int i = 0; i < ordered.Count; i++)
+                for ( int i = 0; i < ordered.Count; i++)
                 {
                     var row = ordered[i];
                     var button = GetDefaultButton(row);
@@ -2486,6 +2454,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.root != null)
                 _ui.root.SetActive(value);
             
+            if (!value)
+                ResetAllHighlights();
+
             // Ocultar filas deshabilitadas
             if (value)
             {
@@ -2570,6 +2541,26 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             nav.selectOnDown = ResolveVertical(rowIndex, columnIndex, +1);
             button.navigation = nav;
             ApplyButtonHighlight(button);
+        }
+
+        void ResetAllHighlights()
+        {
+            foreach (var row in _rows.Values)
+            {
+                ResetButtonColor(row?.previousButton);
+                ResetButtonColor(row?.nextButton);
+                ResetButtonColor(row?.clearButton);
+            }
+        }
+
+        void ResetButtonColor(Button button)
+        {
+            if (button == null) return;
+            var highlight = button.GetComponent<ButtonHighlight>();
+            if (highlight != null)
+            {
+                highlight.ResetColor();
+            }
         }
 
         void ApplyButtonHighlight(Button button)
@@ -2945,6 +2936,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 if (target != null)
                     target.color = selected ? highlightColor : _baseColor;
+            }
+
+            public void ResetColor()
+            {
+                if (target != null)
+                    target.color = _baseColor;
             }
         }
     }

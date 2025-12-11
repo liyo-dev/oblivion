@@ -334,6 +334,18 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
+            "value": "Podrás usar PROTECCIÓN si presionas los triggers del mando derecho e izquierdo a la vez."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_06",
+            "value": "Voy a darte un hechizo nuevo: BOLA PRISMA. Usa el botón B y atacame con él."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_07",
+            "value": "Por último espero que traigas al menos una POCIÓN DE VIDA. Desde el menú inventario puedes usarla y recuperar vida."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_08",
             "value": "Prepárate, Will. El entrenamiento empieza ahora."
         },
         {

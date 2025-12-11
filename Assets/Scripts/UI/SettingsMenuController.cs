@@ -55,6 +55,8 @@ public class SettingsMenuController : MonoBehaviour
     private float _openedAt = -999f;
     private bool _sliderEditMode;
     private Slider _activeSlider;
+    private bool _previousNavigationState = true;
+    private bool _navigationOverridden;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -73,18 +75,18 @@ public class SettingsMenuController : MonoBehaviour
             englishButton.onClick.AddListener(() => SetLanguage("en"));
 
         if (masterVolumeSlider)
-            masterVolumeSlider.onValueChanged.AddListener(PlayerSettings.SetMasterVolume);
+            masterVolumeSlider.onValueChanged.AddListener(v => HandleSliderChanged(masterVolumeSlider, PlayerSettings.SetMasterVolume, v));
         if (sfxVolumeSlider)
-            sfxVolumeSlider.onValueChanged.AddListener(PlayerSettings.SetSfxVolume);
+            sfxVolumeSlider.onValueChanged.AddListener(v => HandleSliderChanged(sfxVolumeSlider, PlayerSettings.SetSfxVolume, v));
         if (musicVolumeSlider)
-            musicVolumeSlider.onValueChanged.AddListener(PlayerSettings.SetMusicVolume);
+            musicVolumeSlider.onValueChanged.AddListener(v => HandleSliderChanged(musicVolumeSlider, PlayerSettings.SetMusicVolume, v));
 
         WireBinaryButton(invertLookYesButton, () => OnInvertLookClicked(true));
         WireBinaryButton(invertLookNoButton, () => OnInvertLookClicked(false));
         WireBinaryButton(invertFlightYesButton, () => OnInvertFlightClicked(true));
         WireBinaryButton(invertFlightNoButton, () => OnInvertFlightClicked(false));
         if (lookSensitivitySlider)
-            lookSensitivitySlider.onValueChanged.AddListener(PlayerSettings.SetLookSensitivity);
+            lookSensitivitySlider.onValueChanged.AddListener(v => HandleSliderChanged(lookSensitivitySlider, PlayerSettings.SetLookSensitivity, v));
         WireBinaryButton(vibrationYesButton, () => OnVibrationClicked(true));
         WireBinaryButton(vibrationNoButton, () => OnVibrationClicked(false));
         WireBinaryButton(fullscreenYesButton, () => OnFullscreenClicked(true));
@@ -126,6 +128,7 @@ public class SettingsMenuController : MonoBehaviour
     void OnDisable()
     {
         GamepadInputReader.OnInput -= HandleGamepadInput;
+        RestoreNavigationEvents();
         _sliderEditMode = false;
         _activeSlider = null;
     }
@@ -271,11 +274,7 @@ public class SettingsMenuController : MonoBehaviour
         bool cancel = _cancelRequested;
         _cancelRequested = false;
 
-        if (cancel
-            || Input.GetKeyDown(KeyCode.Escape)
-            || Input.GetKeyDown(KeyCode.Backspace)
-            || Input.GetKeyDown(KeyCode.JoystickButton1)
-            || Input.GetKeyDown(KeyCode.JoystickButton7))
+        if (cancel)
         {
             if (_sliderEditMode)
             {
@@ -311,30 +310,15 @@ public class SettingsMenuController : MonoBehaviour
 
         if (_sliderEditMode)
         {
-            if (input.Type == GamepadInputReader.InputEventType.Navigate)
-            {
-                HandleSliderInput(input.Value);
-            }
-            else if (input.Type == GamepadInputReader.InputEventType.DpadLeft
-                  || input.Type == GamepadInputReader.InputEventType.DpadRight
-                  || input.Type == GamepadInputReader.InputEventType.DpadUp
-                  || input.Type == GamepadInputReader.InputEventType.DpadDown)
+            if (input.Type == GamepadInputReader.InputEventType.Navigate
+                || input.Type == GamepadInputReader.InputEventType.DpadLeft
+                || input.Type == GamepadInputReader.InputEventType.DpadRight
+                || input.Type == GamepadInputReader.InputEventType.DpadUp
+                || input.Type == GamepadInputReader.InputEventType.DpadDown)
             {
                 HandleSliderInput(input.Value);
             }
             return;
-        }
-
-        if (input.Type == GamepadInputReader.InputEventType.Navigate && input.Phase == InputActionPhase.Performed)
-        {
-            TryMoveSelection(input.Value);
-            return;
-        }
-
-        if (input.Type == GamepadInputReader.InputEventType.DpadLeft
-            || input.Type == GamepadInputReader.InputEventType.DpadRight)
-        {
-            TryMoveSelection(input.Value);
         }
     }
 
@@ -450,6 +434,16 @@ public class SettingsMenuController : MonoBehaviour
 
     void EnterSliderEditMode(Slider slider)
     {
+        if (!_eventSystem)
+            _eventSystem = EventSystem.current;
+
+        if (_eventSystem != null)
+        {
+            _previousNavigationState = _eventSystem.sendNavigationEvents;
+            _navigationOverridden = true;
+            _eventSystem.sendNavigationEvents = false;
+        }
+
         _sliderEditMode = true;
         _activeSlider = slider;
         MaintainSliderSelection();
@@ -457,8 +451,23 @@ public class SettingsMenuController : MonoBehaviour
 
     void ExitSliderEditMode()
     {
+        RestoreNavigationEvents();
         _sliderEditMode = false;
         _activeSlider = null;
+    }
+
+    void RestoreNavigationEvents()
+    {
+        if (!_navigationOverridden)
+            return;
+
+        if (!_eventSystem)
+            _eventSystem = EventSystem.current;
+
+        if (_eventSystem != null)
+            _eventSystem.sendNavigationEvents = _previousNavigationState;
+
+        _navigationOverridden = false;
     }
 
     void MaintainSliderSelection()
@@ -492,48 +501,26 @@ public class SettingsMenuController : MonoBehaviour
         _activeSlider.value = Mathf.Clamp(_activeSlider.value + Mathf.Sign(axis) * step, _activeSlider.minValue, _activeSlider.maxValue);
     }
 
-    void TryMoveSelection(Vector2 direction)
+    void HandleSliderChanged(Slider slider, Action<float> setter, float value)
     {
-        if (_eventSystem == null)
-            _eventSystem = EventSystem.current;
-
-        if (_eventSystem == null)
+        if (slider == null)
             return;
 
-        var current = _eventSystem.currentSelectedGameObject;
-        if (current == null)
-            return;
-
-        var slider = current.GetComponent<Slider>();
-        bool editingSlider = _sliderEditMode && slider != null && _activeSlider == slider;
-
-        // Evitar que los sliders modifiquen su valor cuando solo queremos desplazarnos horizontalmente.
-        if (!editingSlider && slider != null && Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
+        if (_sliderEditMode && _activeSlider == slider)
         {
-            var nav = slider.navigation;
-            var target = direction.x > 0 ? nav.selectOnRight : nav.selectOnLeft;
-            if (target != null)
-            {
-                _eventSystem.SetSelectedGameObject(target.gameObject);
-                return;
-            }
+            setter?.Invoke(value);
+            return;
         }
 
-        var data = new AxisEventData(_eventSystem)
-        {
-            moveVector = direction,
-            moveDir = ResolveMoveDirection(direction)
-        };
-
-        ExecuteEvents.Execute(current, data, ExecuteEvents.moveHandler);
+        slider.SetValueWithoutNotify(GetSettingValueForSlider(slider));
     }
 
-    MoveDirection ResolveMoveDirection(Vector2 direction)
+    float GetSettingValueForSlider(Slider slider)
     {
-        if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
-            return direction.x > 0 ? MoveDirection.Right : MoveDirection.Left;
-        if (Mathf.Abs(direction.y) > 0.001f)
-            return direction.y > 0 ? MoveDirection.Up : MoveDirection.Down;
-        return MoveDirection.None;
+        if (slider == masterVolumeSlider) return PlayerSettings.MasterVolume;
+        if (slider == sfxVolumeSlider) return PlayerSettings.SfxVolume;
+        if (slider == musicVolumeSlider) return PlayerSettings.MusicVolume;
+        if (slider == lookSensitivitySlider) return PlayerSettings.LookSensitivity;
+        return slider != null ? slider.value : 0f;
     }
 }

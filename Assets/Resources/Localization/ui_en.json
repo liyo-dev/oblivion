@@ -86,7 +86,7 @@
         },
         {
             "key": "ROOM_EXIT_BLOCKED",
-            "value": "[EN] Leer la carta que hay sobre la mesita."
+            "value": "[EN] Antes de salir necesitas leer la carta que hay sobre la mesita."
         },
         {
             "key": "ROOM_EXIT_NEEDS",
@@ -123,6 +123,10 @@
         {
             "key": "Settings_Language",
             "value": "Language"
+        },
+        {
+            "key": "SHOP_TITTLE",
+            "value": "Shop"
         },
         {
             "key": "SHOP_VENDOR",

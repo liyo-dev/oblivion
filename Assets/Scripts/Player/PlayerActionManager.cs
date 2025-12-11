@@ -101,6 +101,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private readonly Dictionary<ActionMode, ModeRule> _ruleByMode = new();
     private Animator _anim;
     private float _originalUpperWeight = 0f;
+    private readonly object _lockOwner = new();
 
     void Awake()
     {
@@ -356,6 +357,8 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
         OnTopModeChanged?.Invoke(top);
         if (debugLogs) Debug.Log($"[PlayerActionManager] ✅ Modo activo: {top}");
+
+        UpdatePlayerLock(top);
     }
 
     private void ReenableAll()
@@ -383,6 +386,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         ReenableAll();
         _stack.Clear();
         _stack.Add(ActionMode.Default);
+        UpdatePlayerLock(ActionMode.Default);
     }
 
     // API pública para consultar estado
@@ -398,4 +402,26 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public bool CanSwim() => _allowSwim;
     public bool CanFly() => CanUse(PlayerAbility.Fly);
     public bool CanClimb() => CanUse(PlayerAbility.Climb);
+
+    void UpdatePlayerLock(ActionMode top)
+    {
+        bool shouldLock = ShouldLockMovement(top);
+
+        if (shouldLock)
+        {
+            PlayerLockService.Instance.Acquire(_lockOwner);
+        }
+        else if (PlayerLockService.HasInstance)
+        {
+            PlayerLockService.Instance.Release(_lockOwner);
+        }
+    }
+
+    bool ShouldLockMovement(ActionMode mode)
+    {
+        if (_blockedByMode.TryGetValue(mode, out var blocked) && blocked.Contains(PlayerAbility.Move))
+            return true;
+
+        return mode == ActionMode.Cinematic;
+    }
 }

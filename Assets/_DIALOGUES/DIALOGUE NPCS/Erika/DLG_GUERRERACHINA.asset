@@ -15,16 +15,33 @@ MonoBehaviour:
   lines:
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_01
+    text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_02
+    text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_03
+    text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_04
+    text: 
     portrait: {fileID: 0}
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_05
+    text: 
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_GUERRERACHINA
+    textId: DLG_GUERRERACHINA_06
+    text: 
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_GUERRERACHINA
+    textId: DLG_GUERRERACHINA_07
+    text: 
+    portrait: {fileID: 0}
+  - speakerNameId: CHAR_GUERRERACHINA
+    textId: DLG_GUERRERACHINA_08
+    text: 
     portrait: {fileID: 0}

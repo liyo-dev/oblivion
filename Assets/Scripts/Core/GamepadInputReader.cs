@@ -46,6 +46,7 @@ public static class GamepadInputReader
     private static Vector2 _navPrevious;
     private static int _navFrame = -1;
     private static PlayerControls _boundControls;
+    private static bool _pollingRegistered;
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -114,6 +115,7 @@ public static class GamepadInputReader
                 if (!_controls.UI.enabled) _controls.UI.Enable();
 
                 EnsureInputEventsSubscribed();
+                EnsurePollingRegistered();
             }
 
             return _controls;
@@ -126,6 +128,7 @@ public static class GamepadInputReader
 
         UnsubscribeInputEvents();
         SubscribeInputEvents(Controls);
+        EnsurePollingRegistered();
     }
 
     private static void SubscribeInputEvents(PlayerControls controls)
@@ -170,6 +173,15 @@ public static class GamepadInputReader
         _boundControls = null;
     }
 
+    private static void EnsurePollingRegistered()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (_pollingRegistered) return;
+        InputSystem.onAfterUpdate += PollHardwareFallback;
+        _pollingRegistered = true;
+#endif
+    }
+
     private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
     private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
     private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
@@ -185,7 +197,38 @@ public static class GamepadInputReader
     private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
     {
         OnInput?.Invoke(new InputEvent(type, value, ctx.phase));
+
     }
+
+#if ENABLE_INPUT_SYSTEM
+    private static void PollHardwareFallback()
+    {
+        var gp = GetGamepad();
+        if (gp == null) return;
+
+        if (gp.startButton != null && gp.startButton.wasPressedThisFrame)
+        {
+            OnInput?.Invoke(new InputEvent(InputEventType.Start, Vector2.zero, InputActionPhase.Performed));
+        }
+
+        var dpad = gp.dpad;
+        if (dpad != null)
+        {
+            if (dpad.up.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadUp, Vector2.up, InputActionPhase.Performed));
+            if (dpad.down.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadDown, Vector2.down, InputActionPhase.Performed));
+            if (dpad.left.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadLeft, Vector2.left, InputActionPhase.Performed));
+            if (dpad.right.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed));
+        }
+        if (gp.buttonEast != null && gp.buttonEast.wasPressedThisFrame)
+            OnInput?.Invoke(new InputEvent(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed));
+        if (gp.buttonSouth != null && gp.buttonSouth.wasPressedThisFrame)
+            OnInput?.Invoke(new InputEvent(InputEventType.Submit, Vector2.zero, InputActionPhase.Performed));
+        if (gp.leftShoulder != null && gp.leftShoulder.wasPressedThisFrame)
+            OnInput?.Invoke(new InputEvent(InputEventType.LeftShoulder, Vector2.left, InputActionPhase.Performed));
+        if (gp.rightShoulder != null && gp.rightShoulder.wasPressedThisFrame)
+            OnInput?.Invoke(new InputEvent(InputEventType.RightShoulder, Vector2.right, InputActionPhase.Performed));
+    }
+#endif
 
     private static void UpdateNavigationCache()
     {

@@ -2,23 +2,21 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-/// <summary>
-/// Ensures that a ScrollRect scrolls when the associated selectable receives focus.
-/// </summary>
-public sealed class ScrollOnSelectRelay : MonoBehaviour, ISelectHandler, IPointerEnterHandler
+public class ScrollOnSelectRelay : MonoBehaviour, ISelectHandler, IPointerEnterHandler
 {
     public ScrollRect scrollRect;
     public RectTransform target;
     [SerializeField, Min(0f)] private float padding = 6f;
 
+    // Evento cuando este objeto pasa a estar seleccionado (teclado/mand mando)
     public void OnSelect(BaseEventData eventData)
     {
         ScrollIntoView();
     }
 
+    // Evento cuando el ratón entra en el objeto
     public void OnPointerEnter(PointerEventData eventData)
     {
-        // Permite que el uso con ratón también alinee la lista.
         ScrollIntoView();
     }
 
