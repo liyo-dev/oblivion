@@ -206,6 +206,8 @@ public class ShopUI : MonoBehaviour
         if (_state == ShopState.BuyButtonFocused)
         {
             ReturnToItemList();
+            // Evitar que la misma pulsación cierre la tienda inmediatamente
+            _ignoreInputUntil = Time.unscaledTime + 0.12f;
             return;
         }
 

@@ -8655,7 +8655,6 @@ GameObject:
   - component: {fileID: 1062031804521613182}
   - component: {fileID: 8489721875542008483}
   - component: {fileID: 1219957402610385003}
-  - component: {fileID: 3357432758329550378}
   - component: {fileID: 7378160220606803366}
   m_Layer: 0
   m_Name: vThirdPersonCamera
@@ -8762,7 +8761,7 @@ MonoBehaviour:
   occlusionLerpOut: 6
   occlusionExpandDelay: 0.12
   cullingStableTolerance: 0.08
-  useStylizedOcclusion: 1
+  useStylizedOcclusion: 0
   stylizedOcclusionMask:
     serializedVersion: 2
     m_Bits: 15351
@@ -8778,7 +8777,7 @@ MonoBehaviour:
   stylizedSquashAxis: {x: 0.2, y: 0.85, z: 0.2}
   stylizedSquashIn: 8
   stylizedSquashOut: 6
-  useShadowsOnlyOcclusion: 0
+  useShadowsOnlyOcclusion: 1
   obstructionMask:
     serializedVersion: 2
     m_Bits: 7159
@@ -8834,35 +8833,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &3357432758329550378
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3685603612852488389}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7458e5bc3c9b8d04394924f45d680653, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp-firstpass::CameraOcclusionVisuals
-  cameraTransform: {fileID: 3963618684758607025}
-  target: {fileID: 5899334287218393488}
-  fadeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  castRadius: 0.15
-  maxDistancePadding: 0.05
-  targetAlpha: 0.25
-  targetDesaturation: 0.8
-  tintWhenOccluded: {r: 1, g: 1, b: 1, a: 1}
-  fadeInSpeed: 10
-  fadeOutSpeed: 6
-  deformWhenOccluded: 1
-  squashAmount: 0.18
-  squashAxis: {x: 0.15, y: 0.8, z: 0.15}
-  squashInSpeed: 8
-  squashOutSpeed: 6
 --- !u!81 &7378160220606803366
 AudioListener:
   m_ObjectHideFlags: 0

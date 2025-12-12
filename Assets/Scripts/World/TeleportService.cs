@@ -163,9 +163,10 @@ public class TeleportService : MonoBehaviour
     
     private void TeleportWithTransition(GameObject player, Vector3 worldPos, Quaternion worldRot, Transform anchorForEnv)
     {
-        var tm = FindTM();
+        var tm = FindTM(); // ← seguro, no usa Instance()
         if (tm == null || teleportTransition == null)
         {
+            // Si el manager aún no está o no tienes settings, teleporta sin fade (no rompe)
             MoveNow(player, worldPos, worldRot, anchorForEnv);
             return;
         }
@@ -181,50 +182,28 @@ public class TeleportService : MonoBehaviour
 
         _sTransitionInProgress = true;
 
-        // Corrutina para el flujo fade in → mover → esperar → fade out
-        System.Collections.IEnumerator TeleportSequence()
+        void OnCut()
         {
-            bool cutReached = false;
-            void OnCut()
-            {
-                cutReached = true;
-                tm.onTransitionCutPointReached -= OnCut;
-            }
-            tm.onTransitionCutPointReached += OnCut;
-
-            // Iniciar transición (fade in)
-            tm.Transition(teleportTransition, transitionDelay);
-
-            // Esperar a que la pantalla esté negra (cut point)
-            while (!cutReached) yield return null;
-
-            // Mover al jugador y aplicar entorno
             MovePlayerSafely(player, worldPos, worldRot);
             ApplyEnvironmentForAnchor(anchorForEnv);
+            // Notificar corte (momento del movimiento)
             InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
-
-            // Esperar 1 segundo con la pantalla negra
-            yield return new WaitForSecondsRealtime(1f);
-
-            // Iniciar fade out (forzar transición de salida)
-            bool endReached = false;
-            void OnEnd()
-            {
-                endReached = true;
-                _sTransitionInProgress = false;
-                InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
-                tm.onTransitionEnd -= OnEnd;
-            }
-            tm.onTransitionEnd += OnEnd;
-
-            // Lanzar fade out (el plugin lo hace automáticamente tras cut, pero aquí forzamos el retardo)
-            tm.Transition(teleportTransition, 0f); // 0f para que el fade out empiece ya
-
-            // Esperar a que termine el fade out
-            while (!endReached) yield return null;
+            tm.onTransitionCutPointReached -= OnCut;
         }
 
-        StartCoroutine(TeleportSequence());
+        void OnEnd()
+        {
+            _sTransitionInProgress = false;
+            // Notificar fin
+            InvokeEvent(OnTeleportEnded, nameof(OnTeleportEnded));
+            tm.onTransitionEnd -= OnEnd;
+        }
+
+        tm.onTransitionCutPointReached += OnCut;
+        tm.onTransitionEnd            += OnEnd;
+
+        // OJO: usamos la versión SIN cambio de escena del plugin (la estable)
+        tm.Transition(teleportTransition, transitionDelay);
     }
 
     private void MoveNow(GameObject player, Vector3 pos, Quaternion rot, Transform anchorForEnv)
