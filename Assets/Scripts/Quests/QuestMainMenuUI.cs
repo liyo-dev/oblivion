@@ -236,6 +236,8 @@ public class QuestMainMenuUI : MonoBehaviour
         Transform itemRoot = null;
         int indexInContainer = -1;
         bool inHidden = false;
+        bool wasShowButton = false;
+        bool wasHideButton = false;
 
         if (selected != null)
         {
@@ -247,6 +249,13 @@ public class QuestMainMenuUI : MonoBehaviour
                 inHidden = (hiddenContentRoot != null && itemRoot.IsChildOf(hiddenContentRoot));
                 // itemRoot is parented directly under the container created in Rebuild(), so sibling index is the position
                 indexInContainer = itemRoot.GetSiblingIndex();
+
+                var btn = selected.GetComponent<Button>();
+                if (btn != null)
+                {
+                    wasShowButton = btn == item.GetShowButton();
+                    wasHideButton = btn == item.GetHideButton();
+                }
             }
         }
 
@@ -256,7 +265,7 @@ public class QuestMainMenuUI : MonoBehaviour
         if (itemRoot != null)
         {
             var targetContainer = inHidden ? hiddenContentRoot : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
-            TryRestoreSelection(targetContainer, indexInContainer);
+            TryRestoreSelection(targetContainer, indexInContainer, wasShowButton, wasHideButton);
         }
 
         // Fallback: si no hay nada seleccionado tras el rebuild, enfocar el primer botón disponible del tab visible
@@ -283,7 +292,7 @@ public class QuestMainMenuUI : MonoBehaviour
 
     // Removed GetChildIndexInContainer: use Transform.GetSiblingIndex() instead.
 
-    void TryRestoreSelection(Transform container, int desiredIndex)
+    void TryRestoreSelection(Transform container, int desiredIndex, bool preferShow, bool preferHide)
     {
         if (container == null || navigator == null) return;
 
@@ -298,23 +307,31 @@ public class QuestMainMenuUI : MonoBehaviour
         var child = container.GetChild(idx);
         if (child == null) return;
 
-        // Prefer to select a visible, interactable button inside the item (e.g. the same kind of button)
-        var btn = child.GetComponentInChildren<Button>();
-        if (btn != null && btn.gameObject.activeInHierarchy && btn.interactable)
+        // Prefer to select the same column (show/hide) that triggered the change
+        var itemUI = child.GetComponent<QuestVisibilityItemUI>();
+        Button targetButton = null;
+        if (itemUI != null)
         {
-            navigator.ForceSelect(btn, resetCooldown: true);
-            return;
+            if (preferShow) targetButton = itemUI.GetShowButton();
+            else if (preferHide) targetButton = itemUI.GetHideButton();
         }
 
-        var btns = child.GetComponentsInChildren<Button>(true);
-        foreach (var b in btns)
+        // Fallback to first interactable button
+        if (targetButton == null || !targetButton.interactable || !targetButton.gameObject.activeInHierarchy)
         {
-            if (b != null && b.gameObject.activeInHierarchy && b.interactable)
+            var btns = child.GetComponentsInChildren<Button>(true);
+            foreach (var b in btns)
             {
-                navigator.ForceSelect(b, resetCooldown: true);
-                return;
+                if (b != null && b.gameObject.activeInHierarchy && b.interactable)
+                {
+                    targetButton = b;
+                    break;
+                }
             }
         }
+
+        if (targetButton != null)
+            navigator.ForceSelect(targetButton, resetCooldown: true);
     }
 
     void KillTween()

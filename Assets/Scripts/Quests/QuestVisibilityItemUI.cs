@@ -17,6 +17,8 @@ public class QuestVisibilityItemUI : MonoBehaviour
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
     private QuestVisibility _currentVisibility;
     private ScrollRect _scrollRect;
+    public Button GetShowButton() => showButton;
+    public Button GetHideButton() => hideButton;
 
     public void Bind(
         QuestManager.RuntimeQuest data,

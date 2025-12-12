@@ -530,72 +530,21 @@ public class PauseMenuController : MonoBehaviour
         }
 
 #if ENABLE_INPUT_SYSTEM
-        if (_isPaused && _navCooldown <= 0f && !EventSystemHandlesNavigation())
+        if (_isPaused && _navCooldown <= 0f)
         {
             bool moved = false;
             try
             {
-                // 1) UI.Navigate (vector) - preferido
-                if (playerControls != null)
-                {
-                    var nav = playerControls.UI.Navigate;
-                    if (nav != null && nav.enabled)
-                    {
-                        Vector2 v = nav.ReadValue<Vector2>();
-                        if (inputDebug && (v.y > navDeadzone || v.y < -navDeadzone)) Debug.Log($"PauseMenu: UI.Navigate -> {v}");
-                        moved = ConsumeStick(v.y);
-                    }
+                // Normalizar navegación: usar siempre GamepadInputReader para que stick y D-Pad se comporten igual.
+                var nav = GamepadInputReader.Navigation;
+                moved = ConsumeStick(nav.y);
 
-                    // 2) Si no movimos con Navigate, chequear acciones DPad (botones)
-                    if (!moved)
-                    {
-                        var dUp = playerControls.GamePlay.DPadUp;
-                        var dDown = playerControls.GamePlay.DPadDown;
-                        if (dUp != null && dUp.enabled)
-                        {
-                            var valUp = dUp.ReadValue<float>();
-                            if (valUp > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: DPadUp action"); moved = true; }
-                        }
-                        if (!moved && dDown != null && dDown.enabled)
-                        {
-                            var valDown = dDown.ReadValue<float>();
-                            if (valDown > 0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: DPadDown action"); moved = true; }
-                        }
-                    }
-                }
-
-                // 3) Fallback a Gamepad.current si no hubo movimiento
                 if (!moved)
                 {
-                    var gp = UnityEngine.InputSystem.Gamepad.current;
-                    if (gp != null)
-                    {
-                        var d = gp.dpad.ReadValue();
-                        if (d.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad up"); moved = true; }
-                        else if (d.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current dpad down"); moved = true; }
-                        else
-                        {
-                            var s = gp.leftStick.ReadValue();
-                            if (s.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick up"); moved = true; }
-                            else if (s.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Gamepad.current leftStick down"); moved = true; }
-                        }
-                    }
-
-                    // Si no hay Gamepad, comprobar Joystick (algunos mandos genéricos aparecen como Joystick)
-                    if (!moved)
-                    {
-                        var js = UnityEngine.InputSystem.Joystick.current;
-                        if (js != null)
-                        {
-                            try
-                            {
-                                var s = js.stick.ReadValue();
-                                if (s.y > 0.5f && ConsumeStick(+1f)) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick up"); moved = true; }
-                                else if (s.y < -0.5f && ConsumeStick(-1f)) { if (inputDebug) Debug.Log("PauseMenu: Joystick.current stick down"); moved = true; }
-                            }
-                            catch { }
-                        }
-                    }
+                    if (GamepadInputReader.DpadUpPressed)
+                        moved = ConsumeStick(+1f);
+                    else if (GamepadInputReader.DpadDownPressed)
+                        moved = ConsumeStick(-1f);
                 }
             }
             catch (System.Exception)
