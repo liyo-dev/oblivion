@@ -1,0 +1,9 @@
+Open the project in common Unity 2018.03 or Unity 2019+
+
+Instruction for Unity 2019 + UP Template
+
+Run Unity with ready profile UP(the best with the use of Unity HUB). Download PolyVania Vampires Town from the Asset Store. You'll see the window with alert that there will be attached asset from the Package Manager (this is postprocessing asset). Choose Instal, thanks to which you'll get ready scene with ready postprocessing. After time, when installation is finished, you should see correctly the scene with ready to use project in the UP standard.
+
+Instruction for Unity 2019 + Standard Render Pipeline.
+
+Create empty project without any render pipeline. Download "PolyVania Vampires Town" from the Asset Store. You'll see the window with alert that there will be attached asset from the Package Manager. Chose Install. After time, when installation is finished, go to Project settings (Edit > Project settings > Graphics) put profile "UniversalRP" to slot Scriptable Render Pipeline Settings) which can be found in emaceart>polyvania>Setting. You should see correctly the scene with ready to use project in the UP standard.
