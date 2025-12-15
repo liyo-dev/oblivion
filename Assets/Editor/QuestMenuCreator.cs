@@ -14,7 +14,7 @@ public static class QuestMenuCreator
         canvasGo.AddComponent<CanvasScaler>();
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        var eventSystem = Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+        var eventSystem = UnityEngine.EventSystems.EventSystem.current;
         if (eventSystem == null)
         {
             var ev = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
