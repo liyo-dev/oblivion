@@ -43,6 +43,27 @@ public static class MenuManager
     }
 
     /// <summary>
+    /// Returns true if any menu is open excluding the provided list.
+    /// Useful for scenarios where a menu transitions between variants (e.g.,
+    /// quick and full quest menus) without blocking itself.
+    /// </summary>
+    public static bool AnyOpenExcept(params MenuKind[] allowed)
+    {
+        if (allowed == null || allowed.Length == 0)
+            return AnyOpen();
+
+        var allowedSet = new HashSet<MenuKind>(allowed);
+
+        foreach (var kv in s_open)
+        {
+            if (kv.Value && !allowedSet.Contains(kv.Key))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Try to open the requested menu. Returns true and registers it as open
     /// if no other menu is currently open. Does not automatically close others.
     /// </summary>
