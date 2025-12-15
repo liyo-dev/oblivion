@@ -112,18 +112,23 @@ public class QuestMenuManager : MonoBehaviour
 
     void HandleNavigateInput(GamepadInputReader.InputEvent input)
     {
-        if (input.Phase == InputActionPhase.Canceled || input.Value.sqrMagnitude < 0.01f)
+        // El menú de misiones solo debe reaccionar al D-Pad, no al stick analógico.
+        // Como los bindings de UI.Navigate pueden provenir de ambos, consultamos el
+        // DpadRaw para asegurarnos de ignorar movimientos del joystick.
+        var dpad = GamepadInputReader.DpadRaw;
+
+        if (input.Phase == InputActionPhase.Canceled || dpad.sqrMagnitude < 0.0001f)
         {
             _dpadUpHeld = false;
             return;
         }
 
-        if (input.Value.y > NavigateUpThreshold)
+        if (dpad.y > NavigateUpThreshold)
         {
             _dpadUpPressed = true;
             _dpadUpHeld = true;
         }
-        else if (input.Value.y < -NavigateUpThreshold)
+        else if (dpad.y < -NavigateUpThreshold)
         {
             _dpadUpHeld = false;
         }
