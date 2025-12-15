@@ -126,6 +126,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [Header("Equipamiento")]
     [SerializeField] private EquipmentBindings equipmentUI = new();
 
+    [Header("Navegación UI")]
+    [SerializeField, Min(0f), Tooltip("Tiempo antes de repetir el movimiento al mantener un eje de navegación.")]
+    private float navigationRepeatDelay = 0.5f;
+    [SerializeField, Min(0f), Tooltip("Intervalo entre repeticiones tras el primer retardo.")]
+    private float navigationRepeatRate = 0.1f;
+
     static PlayerEquipmentMenuController _instance;
 
     readonly List<Button> _tabButtons = new();
@@ -157,6 +163,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     int _tabDeltaRequested;
     float _openedAt = -999f;
     float _toggleCooldownUntil;
+    int _navSuppressionFrame = -1;
+    Vector2 _lastNavDir;
+    float _lastNavSentAt;
+    bool _navRepeating;
 
     readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
@@ -180,41 +190,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        // Pequeño delay para asegurar que Start está cargada si se carga aditivamente
-        UnityEngine.Object.FindFirstObjectByType<PlayerEquipmentMenuController>()?.StartCoroutine(DelayedBootstrap());
-    }
-
-    static System.Collections.IEnumerator DelayedBootstrap()
-    {
-        yield return null; // Esperar un frame para que Start termine de cargar
-
-        if (_instance != null) yield break;
-
-#if UNITY_2022_3_OR_NEWER
-        var existing = FindFirstObjectByType<PlayerEquipmentMenuController>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        var existing = FindObjectOfType<PlayerEquipmentMenuController>(true);
-#pragma warning restore 618
-#endif
-        if (existing != null)
+        // Intentar obtener desde ServiceLocator primero
+        if (ServiceLocator.TryGet<PlayerEquipmentMenuController>(out var existing) && existing != null)
         {
             _instance = existing;
-            // Asegurar persistencia si el usuario colocó el objeto en la escena inicial
-            try
-            {
-                if (existing.transform.root != null)
-                    DontDestroyOnLoad(existing.transform.root.gameObject);
-                else
-                    DontDestroyOnLoad(existing.gameObject);
-            }
-            catch { }
-            yield break;
+            return;
         }
-
+        // Si no existe, crear uno nuevo y registrar
         var go = new GameObject(nameof(PlayerEquipmentMenuController));
         DontDestroyOnLoad(go);
-        _instance = go.AddComponent<PlayerEquipmentMenuController>();
+        var controller = go.AddComponent<PlayerEquipmentMenuController>();
+        ServiceLocator.Register(controller);
+        _instance = controller;
     }
 
     void Awake()
@@ -226,6 +213,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         _instance = this;
+        ServiceLocator.Register(this);
 
         if (dontDestroyOnLoad && transform.parent == null)
             DontDestroyOnLoad(gameObject);
@@ -403,6 +391,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
+        if (input.Type == GamepadInputReader.InputEventType.Navigate)
+        {
+            HandleNavigateInput(input.Value, input.Phase);
+            return;
+        }
+
         if (input.Phase != InputActionPhase.Performed)
             return;
 
@@ -417,19 +411,31 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (!_isOpen)
                     _toggleRequested = true;
                 else
+                {
+                    _navSuppressionFrame = Time.frameCount;
                     SendMove(Vector2.down);
+                }
                 break;
             case GamepadInputReader.InputEventType.DpadUp:
                 if (_isOpen)
+                {
+                    _navSuppressionFrame = Time.frameCount;
                     SendMove(Vector2.up);
+                }
                 break;
             case GamepadInputReader.InputEventType.DpadLeft:
                 if (_isOpen)
+                {
+                    _navSuppressionFrame = Time.frameCount;
                     SendMove(Vector2.left);
+                }
                 break;
             case GamepadInputReader.InputEventType.DpadRight:
                 if (_isOpen)
+                {
+                    _navSuppressionFrame = Time.frameCount;
                     SendMove(Vector2.right);
+                }
                 break;
 
             case GamepadInputReader.InputEventType.Cancel:
@@ -445,6 +451,49 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (_isOpen) _tabDeltaRequested += 1;
                 break;
         }
+    }
+
+    void HandleNavigateInput(Vector2 value, InputActionPhase phase)
+    {
+        if (!_isOpen)
+            return;
+
+        if (_navSuppressionFrame == Time.frameCount)
+            return;
+
+        if (phase == InputActionPhase.Canceled || value.sqrMagnitude < 0.01f)
+        {
+            _navRepeating = false;
+            _lastNavDir = Vector2.zero;
+            return;
+        }
+
+        var dir = Mathf.Abs(value.x) > Mathf.Abs(value.y)
+            ? (value.x > 0 ? Vector2.right : Vector2.left)
+            : (value.y > 0 ? Vector2.up : Vector2.down);
+
+        float now = Time.unscaledTime;
+        bool directionChanged = _lastNavDir != dir;
+
+        float repeatInterval = _navRepeating ? navigationRepeatRate : navigationRepeatDelay;
+        bool canRepeat = directionChanged || (now - _lastNavSentAt) >= repeatInterval;
+
+        if (!canRepeat)
+            return;
+
+        _lastNavDir = dir;
+        _lastNavSentAt = now;
+        _navRepeating = !directionChanged;
+
+        SendMove(dir);
+    }
+
+    void ResetNavigationState()
+    {
+        _navSuppressionFrame = -1;
+        _navRepeating = false;
+        _lastNavDir = Vector2.zero;
+        _lastNavSentAt = 0f;
     }
 
     List<int> GetAvailableTabs()
@@ -487,6 +536,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
 
+        ResetNavigationState();
         SetCanvasState(true);
 
         int defaultTab = GetDefaultTab();
@@ -511,6 +561,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
+        ResetNavigationState();
         if (_actionModeActive && _actionManager != null)
         {
             _actionManager.PopMode(ActionMode.Inventory);

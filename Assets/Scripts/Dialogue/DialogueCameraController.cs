@@ -60,7 +60,7 @@ public class DialogueCameraController : MonoBehaviour
         // Buscar la cámara si no está asignada
         if (thirdPersonCamera == null)
         {
-            thirdPersonCamera = FindFirstObjectByType<vThirdPersonCamera>();
+            thirdPersonCamera = ServiceLocator.Get<vThirdPersonCamera>(false);
         }
         
         if (thirdPersonCamera != null)
@@ -92,7 +92,7 @@ public class DialogueCameraController : MonoBehaviour
         // Buscar la cámara si aún no está asignada
         if (thirdPersonCamera == null)
         {
-            thirdPersonCamera = FindFirstObjectByType<vThirdPersonCamera>();
+            thirdPersonCamera = ServiceLocator.Get<vThirdPersonCamera>(false);
         }
 
         if (thirdPersonCamera == null)

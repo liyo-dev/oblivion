@@ -22,9 +22,9 @@ public class UIController : MonoBehaviour
 
     void Start()
     {
-#if ENABLE_INPUT_SYSTEM
-        // Check for Standalone Input Module and replace it with Input System UI Input Module
-        var standaloneInputModule = FindFirstObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
+        #if ENABLE_INPUT_SYSTEM
+        // Usar ServiceLocator para obtener StandaloneInputModule
+        var standaloneInputModule = ServiceLocator.Get<UnityEngine.EventSystems.StandaloneInputModule>(false);
         if (standaloneInputModule != null)
         {
             Debug.Log("Replacing Standalone Input Module with Input System UI Input Module.");
@@ -32,7 +32,7 @@ public class UIController : MonoBehaviour
             Destroy(standaloneInputModule);
             var inputSystemUIModule = eventSystemGameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
-#endif
+        #endif
 
         // Existing initialization logic
         lt = new List<Transform>();

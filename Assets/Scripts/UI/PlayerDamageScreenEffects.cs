@@ -21,14 +21,9 @@ public class PlayerDamageScreenEffects : MonoBehaviour
         {
             _playerHealthSystem = player.GetComponent<PlayerHealthSystem>();
         }
-        
         if (_playerHealthSystem == null)
         {
-#if UNITY_2023_1_OR_NEWER
-            _playerHealthSystem = FindFirstObjectByType<PlayerHealthSystem>();
-#else
-            _playerHealthSystem = FindObjectOfType<PlayerHealthSystem>();
-#endif
+            _playerHealthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
         }
         
         if (_playerHealthSystem != null)

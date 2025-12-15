@@ -27,13 +27,7 @@ public class PauseMenuController : MonoBehaviour
         {
             if (_instance == null)
             {
-#if UNITY_2022_3_OR_NEWER
-                var existing = UnityEngine.Object.FindFirstObjectByType<PauseMenuController>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-                var existing = UnityEngine.Object.FindObjectOfType<PauseMenuController>(true);
-#pragma warning restore 618
-#endif
+                var existing = ServiceLocator.Get<PauseMenuController>(false);
                 if (existing != null)
                 {
                     _instance = existing;

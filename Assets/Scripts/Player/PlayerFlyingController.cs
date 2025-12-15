@@ -606,13 +606,7 @@ public class PlayerFlyingController : MonoBehaviour
         if (_cameraTransform != null)
             return;
 
-#if UNITY_2022_3_OR_NEWER
-        _cameraTransform = Camera.main ? Camera.main.transform : FindFirstObjectByType<Camera>()?.transform;
-#else
-#pragma warning disable 618
-        _cameraTransform = Camera.main ? Camera.main.transform : FindObjectOfType<Camera>()?.transform;
-#pragma warning restore 618
-#endif
+    _cameraTransform = Camera.main ? Camera.main.transform : ServiceLocator.Get<Camera>(false)?.transform;
     }
 
     void SpawnTrailIfNeeded()

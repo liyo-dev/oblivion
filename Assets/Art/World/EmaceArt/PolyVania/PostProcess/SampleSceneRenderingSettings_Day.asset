@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: LiftGammaGain
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   lift:
     m_OverrideState: 1
     m_Value: {x: 0.82069254, y: 0.7564788, z: 1, w: 0.036353137}
@@ -36,52 +35,33 @@ MonoBehaviour:
   m_Name: ChannelMixer
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   redOutRedIn:
     m_OverrideState: 1
     m_Value: 100
-    min: -200
-    max: 200
   redOutGreenIn:
     m_OverrideState: 0
     m_Value: 0
-    min: -200
-    max: 200
   redOutBlueIn:
     m_OverrideState: 0
     m_Value: 0
-    min: -200
-    max: 200
   greenOutRedIn:
     m_OverrideState: 1
     m_Value: -4
-    min: -200
-    max: 200
   greenOutGreenIn:
     m_OverrideState: 0
     m_Value: 100
-    min: -200
-    max: 200
   greenOutBlueIn:
     m_OverrideState: 0
     m_Value: 0
-    min: -200
-    max: 200
   blueOutRedIn:
     m_OverrideState: 1
     m_Value: -4
-    min: -200
-    max: 200
   blueOutGreenIn:
     m_OverrideState: 0
     m_Value: 0
-    min: -200
-    max: 200
   blueOutBlueIn:
     m_OverrideState: 0
     m_Value: 100
-    min: -200
-    max: 200
 --- !u!114 &-6155898613261831140
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -144,10 +124,33 @@ MonoBehaviour:
   m_Name: Tonemapping
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   mode:
     m_OverrideState: 1
     m_Value: 2
+  neutralHDRRangeReductionMode:
+    m_OverrideState: 0
+    m_Value: 2
+  acesPreset:
+    m_OverrideState: 0
+    m_Value: 3
+  hueShiftAmount:
+    m_OverrideState: 0
+    m_Value: 0
+  detectPaperWhite:
+    m_OverrideState: 0
+    m_Value: 0
+  paperWhite:
+    m_OverrideState: 0
+    m_Value: 300
+  detectBrightnessLimits:
+    m_OverrideState: 0
+    m_Value: 1
+  minNits:
+    m_OverrideState: 0
+    m_Value: 0.005
+  maxNits:
+    m_OverrideState: 0
+    m_Value: 1000
 --- !u!114 &-3352347674914365972
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -235,31 +238,21 @@ MonoBehaviour:
   m_Name: ColorAdjustments
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   postExposure:
     m_OverrideState: 1
     m_Value: 0.29
   contrast:
     m_OverrideState: 1
     m_Value: 84
-    min: -100
-    max: 100
   colorFilter:
     m_OverrideState: 1
     m_Value: {r: 0.8401555, g: 0.8329477, b: 0.9245283, a: 1}
-    hdr: 1
-    showAlpha: 0
-    showEyeDropper: 1
   hueShift:
     m_OverrideState: 1
     m_Value: 7
-    min: -180
-    max: 180
   saturation:
     m_OverrideState: 1
     m_Value: -50
-    min: -100
-    max: 100
 --- !u!114 &-508226189071653521
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -273,7 +266,6 @@ MonoBehaviour:
   m_Name: ShadowsMidtonesHighlights
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   shadows:
     m_OverrideState: 1
     m_Value: {x: 0.9303279, y: 0.9537777, z: 1, w: 0.058658674}
@@ -286,19 +278,15 @@ MonoBehaviour:
   shadowsStart:
     m_OverrideState: 1
     m_Value: 0.4
-    min: 0
   shadowsEnd:
     m_OverrideState: 1
     m_Value: 0.74
-    min: 0
   highlightsStart:
     m_OverrideState: 1
     m_Value: 0.66
-    min: 0
   highlightsEnd:
     m_OverrideState: 1
     m_Value: 1.74
-    min: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,17 +387,12 @@ MonoBehaviour:
   m_Name: WhiteBalance
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
   temperature:
     m_OverrideState: 1
     m_Value: 62
-    min: -100
-    max: 100
   tint:
     m_OverrideState: 1
     m_Value: -21
-    min: -100
-    max: 100
 --- !u!114 &9040339924311091734
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -423,26 +406,18 @@ MonoBehaviour:
   m_Name: Vignette
   m_EditorClassIdentifier: 
   active: 0
-  m_AdvancedMode: 0
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}
-    hdr: 0
-    showAlpha: 0
-    showEyeDropper: 1
   center:
     m_OverrideState: 1
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
     m_Value: 0.222
-    min: 0
-    max: 1
   smoothness:
     m_OverrideState: 1
     m_Value: 0.406
-    min: 0.01
-    max: 1
   rounded:
     m_OverrideState: 1
     m_Value: 0

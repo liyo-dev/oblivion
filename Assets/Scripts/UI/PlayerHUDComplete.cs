@@ -204,16 +204,7 @@ public class PlayerHUDComplete : MonoBehaviour
         }
          // Buscar Canvas existente que sea ScreenSpaceOverlay
          // Use la API moderna FindObjectsByType para evitar la advertencia de obsolescencia
-         Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-         _canvas = null;
-         foreach (var c in canvases)
-         {
-             if (c.renderMode == RenderMode.ScreenSpaceOverlay)
-             {
-                 _canvas = c;
-                 break;
-             }
-         }
+         _canvas = ServiceLocator.Get<Canvas>(false);
 
          // Si no hay un Canvas Overlay, crear uno propio para asegurar visibilidad en build
          if (_canvas == null)
@@ -753,10 +744,10 @@ public class PlayerHUDComplete : MonoBehaviour
         var presetDbg = GameBootService.Profile?.GetActivePresetResolved();
         Debug.Log($"[PlayerHUDComplete] preset abilities.magic={(presetDbg!=null && presetDbg.abilities!=null?presetDbg.abilities.magic.ToString():"null")} ");
         // Re-resolver referencias por si no estuvieran aún
-        if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
-        if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
-        if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
-        if (_actionManager == null) _actionManager = UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
+        if (_healthSystem == null) _healthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
+        if (_manaPool == null) _manaPool = ServiceLocator.Get<ManaPool>(false);
+        if (_magicCaster == null) _magicCaster = ServiceLocator.Get<MagicCaster>(false);
+        if (_actionManager == null) _actionManager = ServiceLocator.Get<PlayerActionManager>(false);
         if (_playerAbilities == null)
         {
             var playerGo = GameObject.FindGameObjectWithTag("Player");
@@ -1108,10 +1099,10 @@ public class PlayerHUDComplete : MonoBehaviour
 
     private void FindPlayerComponents()
     {
-        if (_healthSystem == null) _healthSystem = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>();
-        if (_manaPool == null) _manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>();
-        if (_magicCaster == null) _magicCaster = UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
-        if (_actionManager == null) _actionManager = UnityEngine.Object.FindFirstObjectByType<PlayerActionManager>();
+        if (_healthSystem == null) _healthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
+        if (_manaPool == null) _manaPool = ServiceLocator.Get<ManaPool>(false);
+        if (_magicCaster == null) _magicCaster = ServiceLocator.Get<MagicCaster>(false);
+        if (_actionManager == null) _actionManager = ServiceLocator.Get<PlayerActionManager>(false);
 
         var playerGo = GameObject.FindGameObjectWithTag("Player");
         if (playerGo != null)

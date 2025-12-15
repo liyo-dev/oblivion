@@ -9,7 +9,10 @@ public enum MenuKind
     Shop,
     Inventory,
     Pause,
-    Dialog
+    Dialog,
+    Mission, // Menú de misiones principal
+    GameOver // Menú de Game Over
+    // Agregar aquí otros menús principales si es necesario
 }
 
 /// <summary>
@@ -76,25 +79,9 @@ public static class MenuManager
                     stillOpen = GameState.Is(GamePhase.Dialogue);
                     break;
                 case MenuKind.Shop:
-                    // Locate any ShopUI instances that are part of a scene (skip assets/prefabs)
-#if UNITY_2022_3_OR_NEWER
-                    var shops = UnityEngine.Object.FindObjectsByType<ShopUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-                    var shops = Resources.FindObjectsOfTypeAll(typeof(ShopUI)) as ShopUI[];
-#endif
-                    stillOpen = false;
-                    if (shops != null)
-                    {
-                        foreach (var shop in shops)
-                        {
-                            if (shop == null || !shop.gameObject.scene.IsValid()) continue;
-                            if (shop.IsOpen)
-                            {
-                                stillOpen = true;
-                                break;
-                            }
-                        }
-                    }
+                    // Usar ServiceLocator para ShopUI global
+                    var shopUI = ServiceLocator.Get<ShopUI>(false);
+                    stillOpen = shopUI != null && shopUI.IsOpen;
                     break;
                 default:
                     stillOpen = val;

@@ -12,9 +12,8 @@ public class UIButtonSetNone : MonoBehaviour
         var btn = GetComponent<Button>();
         btn.onClick.AddListener(() =>
         {
-            if (ui == null) ui = FindFirstObjectByType<CharacterCreatorUI>();
+            if (ui == null) ui = ServiceLocator.Get<CharacterCreatorUI>(false);
             if (ui == null) return;
-
             ui.SetNone(category);
         });
     }

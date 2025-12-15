@@ -76,11 +76,7 @@ public class MagicSlotsUI : MonoBehaviour
     private void CreateSlotsUI()
     {
         // Buscar Canvas principal o usar el existente
-#if UNITY_2023_1_OR_NEWER
-        _canvas = FindFirstObjectByType<Canvas>();
-#else
-        _canvas = FindObjectOfType<Canvas>();
-#endif
+    _canvas = ServiceLocator.Get<Canvas>(false);
         if (!_canvas)
         {
             var canvasGO = new GameObject("MagicSlots_Canvas");
@@ -219,13 +215,8 @@ public class MagicSlotsUI : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         // Buscar en toda la escena como último recurso
-#if UNITY_2023_1_OR_NEWER
-        if (!_magicCaster) _magicCaster = FindFirstObjectByType<MagicCaster>();
-        if (!_manaPool) _manaPool = FindFirstObjectByType<ManaPool>();
-#else
-        if (!_magicCaster) _magicCaster = FindObjectOfType<MagicCaster>();
-        if (!_manaPool) _manaPool = FindObjectOfType<ManaPool>();
-#endif
+    if (!_magicCaster) _magicCaster = ServiceLocator.Get<MagicCaster>(false);
+    if (!_manaPool) _manaPool = ServiceLocator.Get<ManaPool>(false);
 
         if (showDebugInfo)
         {

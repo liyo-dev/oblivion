@@ -139,11 +139,11 @@ public class EnvironmentController : MonoBehaviour
         }
 
         // luces: apaga direccionales que no estén dentro del interior
-        foreach (var l in Resources.FindObjectsOfTypeAll<Light>())
+        var dirLight = ServiceLocator.Get<Light>(false);
+        if (dirLight && dirLight.type == LightType.Directional)
         {
-            if (!l || l.type != LightType.Directional) continue;
-            bool inside = env && IsChildOf(l.transform, env.transform);
-            l.gameObject.SetActive(inside);
+            bool inside = env && IsChildOf(dirLight.transform, env.transform);
+            dirLight.gameObject.SetActive(inside);
         }
 
         // enciende luces locales del interior (aunque no estén en los arrays)
@@ -184,8 +184,8 @@ public class EnvironmentController : MonoBehaviour
             }
         }
 
-        foreach (var l in Resources.FindObjectsOfTypeAll<Light>())
-            if (l && l.type == LightType.Directional) l.gameObject.SetActive(true);
+        var dirLight2 = ServiceLocator.Get<Light>(false);
+        if (dirLight2 && dirLight2.type == LightType.Directional) dirLight2.gameObject.SetActive(true);
 
         _appliedCam = cam;
         DynamicGI.UpdateEnvironment();
@@ -201,13 +201,12 @@ public class EnvironmentController : MonoBehaviour
         if (m && m.enabled && m.gameObject.activeInHierarchy) return _cam = m;
 
         // 2) mejor cámara disponible (incluye inactivas)
-        var cams = Resources.FindObjectsOfTypeAll<Camera>();
+        var cam = ServiceLocator.Get<Camera>(false);
         Camera best = null; float scoreBest = float.NegativeInfinity;
-        foreach (var c in cams)
+        if (cam)
         {
-            if (!c) continue;
             float s = 0f;
-            if (c.enabled && c.gameObject.activeInHierarchy) s += 1000f;
+            if (cam.enabled && cam.gameObject.activeInHierarchy) s += 1000f;
             if (c.targetDisplay == 0) s += 100f;
             s += c.depth;
             if (s > scoreBest) { scoreBest = s; best = c; }

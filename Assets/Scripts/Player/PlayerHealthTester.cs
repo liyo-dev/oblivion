@@ -18,7 +18,7 @@ public class PlayerHealthTester : MonoBehaviour
         // Auto-encontrar si no se asignó
         if (playerHealthSystem == null)
         {
-            playerHealthSystem = FindFirstObjectByType<PlayerHealthSystem>();
+            playerHealthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
         }
 
         if (playerHealthSystem == null)

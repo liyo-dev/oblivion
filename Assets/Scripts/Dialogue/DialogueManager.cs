@@ -678,11 +678,7 @@ public class DialogueManager : MonoBehaviour
     PlayerInput ResolvePlayerInput()
     {
         if (playerInput != null) return playerInput;
-#if UNITY_2022_3_OR_NEWER
-        playerInput = FindFirstObjectByType<PlayerInput>(FindObjectsInactive.Include);
-#else
-        playerInput = FindObjectOfType<PlayerInput>(true);
-#endif
+        playerInput = ServiceLocator.Get<PlayerInput>(false);
         return playerInput;
     }
 

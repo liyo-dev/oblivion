@@ -13,7 +13,7 @@ public class UIDebugHelper : MonoBehaviour
         Debug.Log("===== UI DIAGNOSTICS =====");
         
         // Verificar EventSystem
-        EventSystem es = FindFirstObjectByType<EventSystem>();
+        EventSystem es = ServiceLocator.Get<EventSystem>(false);
         if (es == null)
         {
             Debug.LogError("[UIDebug] ❌ NO HAY EventSystem en la escena!");
@@ -23,7 +23,6 @@ public class UIDebugHelper : MonoBehaviour
             Debug.Log($"[UIDebug] ✓ EventSystem encontrado: {es.gameObject.name}");
             Debug.Log($"[UIDebug]   - Active: {es.gameObject.activeInHierarchy}");
             Debug.Log($"[UIDebug]   - Enabled: {es.enabled}");
-            
             var inputModule = es.GetComponent<BaseInputModule>();
             if (inputModule == null)
             {
@@ -35,14 +34,12 @@ public class UIDebugHelper : MonoBehaviour
                 Debug.Log($"[UIDebug]   - Enabled: {inputModule.enabled}");
             }
         }
-        
+
         // Verificar Canvas
-        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-        Debug.Log($"[UIDebug] Canvas encontrados: {canvases.Length}");
-        foreach (var canvas in canvases)
+        var canvas = ServiceLocator.Get<Canvas>(false);
+        if (canvas != null)
         {
             Debug.Log($"[UIDebug]   - {canvas.gameObject.name}");
-            
             var raycaster = canvas.GetComponent<GraphicRaycaster>();
             if (raycaster == null)
             {
@@ -53,11 +50,13 @@ public class UIDebugHelper : MonoBehaviour
                 Debug.Log($"[UIDebug]   ✓ Tiene GraphicRaycaster (enabled: {raycaster.enabled})");
             }
         }
-        
+
         // Verificar botones
-        Button[] buttons = FindObjectsByType<Button>(FindObjectsSortMode.None);
-        Debug.Log($"[UIDebug] Botones encontrados: {buttons.Length}");
-        foreach (var button in buttons)
+        var button = ServiceLocator.Get<Button>(false);
+        if (button != null)
+        {
+            Debug.Log($"[UIDebug]   - {button.gameObject.name}");
+        }
         {
             Debug.Log($"[UIDebug]   - {button.gameObject.name}");
             Debug.Log($"[UIDebug]     · Active: {button.gameObject.activeInHierarchy}");

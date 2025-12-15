@@ -11,7 +11,7 @@ public class UITextCurrentPart : MonoBehaviour
     void Awake()
     {
         _txt = GetComponent<Text>();
-        if (builder == null) builder = FindFirstObjectByType<ModularAutoBuilder>();
+        if (builder == null) builder = ServiceLocator.Get<ModularAutoBuilder>(false);
     }
 
     void OnEnable()  => Refresh();

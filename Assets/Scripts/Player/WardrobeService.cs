@@ -61,9 +61,7 @@ public static class WardrobeService
         // Reutiliza CollectiblePopupQueue si está en escena
         if (_popupQueue == null || !_popupQueue)
         {
-            _popupQueue = Object.FindFirstObjectByType<CollectiblePopupQueue>();
-            if (_popupQueue == null)
-                _popupQueue = Object.FindAnyObjectByType<CollectiblePopupQueue>();
+            _popupQueue = ServiceLocator.Get<CollectiblePopupQueue>(false);
         }
 
         if (_popupQueue != null)
