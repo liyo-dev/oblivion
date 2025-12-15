@@ -11,7 +11,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         if (Instance != null)
             return Instance;
 
-        var existing = FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+        var existing = ServiceLocator.Get<DefaultNarrativeSignals>(false);
         if (existing != null)
         {
             Instance = existing;
@@ -49,6 +49,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
             return;
         }
         Instance = this;
+        ServiceLocator.Register(this);
         EnsureQuestServiceProvider();
     }
 
@@ -69,7 +70,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 
         if (questServiceProvider == null)
         {
-            var existing = FindAnyObjectByType<QuestServiceAdapter>(FindObjectsInactive.Include);
+            var existing = ServiceLocator.Get<QuestServiceAdapter>(false);
             if (existing != null)
             {
                 questServiceProvider = existing;
@@ -100,8 +101,17 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
             if (_qs != null) return _qs;
             _qs = questServiceProvider as IQuestService
                   ?? GetComponent<IQuestService>()
-                  ?? FindAnyObjectByType<QuestServiceAdapter>(FindObjectsInactive.Include);
+                  ?? ServiceLocator.Get<QuestServiceAdapter>(false);
             return _qs;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            ServiceLocator.Unregister(this);
+            Instance = null;
         }
     }
     

@@ -83,7 +83,8 @@ public sealed class AudioService : MonoBehaviour
 
         // Señales (incluye inactivos)
         _signals = DefaultNarrativeSignals.Instance
-                   ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+                   ?? ServiceLocator.Get<DefaultNarrativeSignals>(false)
+                   ?? DefaultNarrativeSignals.EnsureInstance();
 
         EnsureSignalsAndWireNow();
         if (!_signalsWired && _ensureSignalsCoro == null)
@@ -120,7 +121,8 @@ public sealed class AudioService : MonoBehaviour
         if (_signals == null)
         {
             _signals = DefaultNarrativeSignals.Instance
-                       ?? FindAnyObjectByType<DefaultNarrativeSignals>(FindObjectsInactive.Include);
+                       ?? ServiceLocator.Get<DefaultNarrativeSignals>(false)
+                       ?? DefaultNarrativeSignals.EnsureInstance();
             if (_signals == null) return; // aún no disponible
         }
         if (_signalsWired) return;
