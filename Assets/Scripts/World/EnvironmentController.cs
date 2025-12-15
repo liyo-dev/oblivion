@@ -207,9 +207,9 @@ public class EnvironmentController : MonoBehaviour
         {
             float s = 0f;
             if (cam.enabled && cam.gameObject.activeInHierarchy) s += 1000f;
-            if (c.targetDisplay == 0) s += 100f;
-            s += c.depth;
-            if (s > scoreBest) { scoreBest = s; best = c; }
+            if (cam.targetDisplay == 0) s += 100f;
+            s += cam.depth;
+            if (s > scoreBest) { scoreBest = s; best = cam; }
         }
         return _cam = best;
     }
