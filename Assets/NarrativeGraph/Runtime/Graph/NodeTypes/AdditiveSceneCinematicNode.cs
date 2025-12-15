@@ -14,7 +14,7 @@ public sealed class AdditiveSceneCinematicNode : NarrativeNode
         AdditiveSceneCinematic c = null;
         if (!string.IsNullOrEmpty(cinematicSceneName))
         {
-            var all = UnityEngine.Object.FindObjectsByType<AdditiveSceneCinematic>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var all = ServiceLocator.GetAll<AdditiveSceneCinematic>();
             foreach (var a in all)
             {
                 try { if (a.CinematicSceneName == cinematicSceneName) { c = a; break; } }

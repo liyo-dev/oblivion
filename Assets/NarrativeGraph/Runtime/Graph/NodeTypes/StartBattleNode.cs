@@ -259,11 +259,7 @@ public sealed class StartBattleNode : NarrativeNode
         // 1) Búsqueda rápida global (incluye inactivos) si tu versión la soporta
         try
         {
-#if UNITY_2022_2_OR_NEWER
-            var all = UnityEngine.Object.FindObjectsByType<BossArenaController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-            var all = UnityEngine.Object.FindObjectsOfType<BossArenaController>(true); // includeInactive en 2020/2021
-#endif
+            var all = ServiceLocator.GetAll<BossArenaController>();
             foreach (var a in all)
             {
                 if (a != null && !string.IsNullOrEmpty(a.BattleId) && string.Equals(a.BattleId, id, StringComparison.Ordinal))
@@ -438,11 +434,7 @@ public sealed class StartBattleNode : NarrativeNode
         if (instance != null) return instance;
 
         // Buscar en escena algún componente de ese tipo (o derivado)
-#if UNITY_2022_2_OR_NEWER
-        var behaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-        var behaviours = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>(true);
-#endif
+        var behaviours = ServiceLocator.GetAll<MonoBehaviour>();
         foreach (var mb in behaviours)
         {
             var t = mb.GetType();

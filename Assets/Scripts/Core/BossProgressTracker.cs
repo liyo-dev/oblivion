@@ -35,13 +35,7 @@ public class BossProgressTracker : MonoBehaviour
             return true;
         }
 
-#if UNITY_2022_3_OR_NEWER
-        var existing = FindFirstObjectByType<BossProgressTracker>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        var existing = FindObjectOfType<BossProgressTracker>(true);
-#pragma warning restore 618
-#endif
+        var existing = ServiceLocator.Get<BossProgressTracker>(false);
         if (existing != null)
         {
             _instance = existing;

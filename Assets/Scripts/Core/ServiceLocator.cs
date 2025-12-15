@@ -104,4 +104,19 @@ public static class ServiceLocator
         // Si no se encuentra, se debe registrar explícitamente el servicio.
         return found;
     }
+
+    /// <summary>
+    /// Devuelve todas las instancias del tipo indicado usando una única consulta centralizada.
+    /// </summary>
+    public static IReadOnlyList<T> GetAll<T>(bool includeInactive = true, FindObjectsSortMode sortMode = FindObjectsSortMode.None) where T : UnityEngine.Object
+    {
+#if UNITY_2022_3_OR_NEWER
+        var results = UnityEngine.Object.FindObjectsByType<T>(includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude, sortMode);
+#else
+#pragma warning disable 618
+        var results = UnityEngine.Object.FindObjectsOfType<T>(includeInactive);
+#pragma warning restore 618
+#endif
+        return results ?? Array.Empty<T>();
+    }
 }

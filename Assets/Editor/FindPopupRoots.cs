@@ -6,8 +6,8 @@ public static class FindPopupRoots
     [MenuItem("Tools/Debug/Find AbilityPopup popupRoot Assignments")]
     public static void Find()
     {
-        var popups = Object.FindObjectsOfType<AbilityUnlockPopupUI>(true);
-        Debug.Log($"[FindPopupRoots] Found {popups.Length} AbilityUnlockPopupUI instances:");
+        var popups = ServiceLocator.GetAll<AbilityUnlockPopupUI>();
+        Debug.Log($"[FindPopupRoots] Found {popups.Count} AbilityUnlockPopupUI instances:");
         foreach (var p in popups)
         {
             var f = p.GetType().GetField("popupRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);

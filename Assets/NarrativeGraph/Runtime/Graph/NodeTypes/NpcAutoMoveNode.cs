@@ -671,11 +671,7 @@ public sealed class NpcAutoMoveNode : NarrativeNode
     {
         NPCBehaviourManager candidate = null;
 
-#if UNITY_2022_3_OR_NEWER
-        var npcs = UnityEngine.Object.FindObjectsByType<NPCBehaviourManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-        var npcs = UnityEngine.Object.FindObjectsOfType<NPCBehaviourManager>(true);
-#endif
+        var npcs = ServiceLocator.GetAll<NPCBehaviourManager>();
 
         if (!string.IsNullOrWhiteSpace(npcName))
         {

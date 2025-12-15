@@ -741,7 +741,7 @@ public class NPCAmbientBrain : MonoBehaviour
     // ===== Utilidades varias =====
     void PopulateNearbyActionPoints()
     {
-        var all = FindObjectsOfType<NPCActionPoint>();
+        var all = ServiceLocator.GetAll<NPCActionPoint>(includeInactive: false);
         foreach (var ap in all)
         {
             if (!ap) continue;

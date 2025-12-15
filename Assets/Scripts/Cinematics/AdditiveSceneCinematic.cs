@@ -452,22 +452,10 @@ public class AdditiveSceneCinematic : MonoBehaviour
     {
         if (cachedPlayerTransform != null) return cachedPlayerTransform;
 
-        // Preferimos por Tag
-        var go = GameObject.FindGameObjectWithTag("Player");
+        // Preferimos el PlayerService o el tag directo
+        var go = PlayerService.Player;
         if (go == null)
-        {
-            // Fallback por nombre (menos fiable, pero útil si no hay tag configurado)
-            // Obsoleto: FindObjectsOfType(true) -> usar FindObjectsByType con IncludeInactive
-            var all = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var t in all)
-            {
-                if (t.name == "Player" || t.name.Contains("Player"))
-                {
-                    go = t.gameObject;
-                    break;
-                }
-            }
-        }
+            go = GameObject.FindGameObjectWithTag("Player");
 
         if (go != null) cachedPlayerTransform = go.transform;
         return cachedPlayerTransform;
