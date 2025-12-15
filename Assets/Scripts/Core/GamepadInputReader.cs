@@ -48,6 +48,7 @@ public static class GamepadInputReader
     private static PlayerControls _boundControls;
     private static bool _pollingRegistered;
     private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
+    private static int _uiNavigationScopeCount;
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -195,6 +196,16 @@ public static class GamepadInputReader
         _gameplaySuppressionOwners.Remove(owner);
     }
 
+    public static void PushUiNavigationScope()
+    {
+        _uiNavigationScopeCount = Mathf.Max(0, _uiNavigationScopeCount) + 1;
+    }
+
+    public static void PopUiNavigationScope()
+    {
+        _uiNavigationScopeCount = Mathf.Max(0, _uiNavigationScopeCount - 1);
+    }
+
     private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
     private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
     private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
@@ -217,6 +228,7 @@ public static class GamepadInputReader
     private static bool ShouldSuppress(InputEventType type)
     {
         bool suppressGameplay = _gameplaySuppressionOwners.Count > 0 || (_controls != null && !_controls.GamePlay.enabled);
+        bool allowNavigationDuringUi = _uiNavigationScopeCount > 0;
         if (!suppressGameplay) return false;
 
         switch (type)
@@ -225,7 +237,7 @@ public static class GamepadInputReader
             case InputEventType.DpadDown:
             case InputEventType.DpadLeft:
             case InputEventType.DpadRight:
-                return true;
+                return !allowNavigationDuringUi;
             default:
                 return false;
         }

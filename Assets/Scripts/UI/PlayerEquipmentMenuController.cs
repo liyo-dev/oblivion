@@ -715,6 +715,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             _controls = controls;
             GamepadInputReader.PushGameplaySuppression(this);
+            GamepadInputReader.PushUiNavigationScope();
 
             if (_controls == null)
                 return;
@@ -737,7 +738,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public static InputActionMapScope EnterUiScope()
         {
             var controls = ResolveControls();
-            return new InputActionMapScope(controls, ensureUiEnabled: true, disableGameplay: true);
+            return new InputActionMapScope(controls, ensureUiEnabled: true, disableGameplay: false);
         }
 
         public void Dispose()
@@ -758,6 +759,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _controls.UI.Disable();
 
             GamepadInputReader.PopGameplaySuppression(this);
+            GamepadInputReader.PopUiNavigationScope();
         }
 
         static PlayerControls ResolveControls()
@@ -1540,9 +1542,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _useButtonVisualCached = true;
             }
 
-            _ui.useButton.transform.localScale = _useButtonBaseScale * 1.08f;
+            _ui.useButton.transform.localScale = _useButtonBaseScale * 1.12f;
             var colors = _ui.useButton.colors;
-            var accent = new Color(0.1f, 0.75f, 0.25f, 1f);
+            var accent = new Color(1f, 0.85f, 0.2f, 1f);
             colors.normalColor = accent;
             colors.highlightedColor = accent * 1.05f;
             colors.selectedColor = accent * 1.05f;
