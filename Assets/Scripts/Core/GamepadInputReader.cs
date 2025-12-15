@@ -47,6 +47,7 @@ public static class GamepadInputReader
     private static int _navFrame = -1;
     private static PlayerControls _boundControls;
     private static bool _pollingRegistered;
+    private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -182,6 +183,18 @@ public static class GamepadInputReader
 #endif
     }
 
+    public static void PushGameplaySuppression(object owner)
+    {
+        if (owner == null) return;
+        _gameplaySuppressionOwners.Add(owner);
+    }
+
+    public static void PopGameplaySuppression(object owner)
+    {
+        if (owner == null) return;
+        _gameplaySuppressionOwners.Remove(owner);
+    }
+
     private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
     private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
     private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
@@ -196,8 +209,26 @@ public static class GamepadInputReader
 
     private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
     {
+        if (ShouldSuppress(type)) return;
         OnInput?.Invoke(new InputEvent(type, value, ctx.phase));
 
+    }
+
+    private static bool ShouldSuppress(InputEventType type)
+    {
+        bool suppressGameplay = _gameplaySuppressionOwners.Count > 0 || (_controls != null && !_controls.GamePlay.enabled);
+        if (!suppressGameplay) return false;
+
+        switch (type)
+        {
+            case InputEventType.DpadUp:
+            case InputEventType.DpadDown:
+            case InputEventType.DpadLeft:
+            case InputEventType.DpadRight:
+                return true;
+            default:
+                return false;
+        }
     }
 
 #if ENABLE_INPUT_SYSTEM
@@ -214,10 +245,10 @@ public static class GamepadInputReader
         var dpad = gp.dpad;
         if (dpad != null)
         {
-            if (dpad.up.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadUp, Vector2.up, InputActionPhase.Performed));
-            if (dpad.down.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadDown, Vector2.down, InputActionPhase.Performed));
-            if (dpad.left.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadLeft, Vector2.left, InputActionPhase.Performed));
-            if (dpad.right.wasPressedThisFrame) OnInput?.Invoke(new InputEvent(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed));
+            if (dpad.up.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadUp)) OnInput?.Invoke(new InputEvent(InputEventType.DpadUp, Vector2.up, InputActionPhase.Performed));
+            if (dpad.down.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadDown)) OnInput?.Invoke(new InputEvent(InputEventType.DpadDown, Vector2.down, InputActionPhase.Performed));
+            if (dpad.left.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadLeft)) OnInput?.Invoke(new InputEvent(InputEventType.DpadLeft, Vector2.left, InputActionPhase.Performed));
+            if (dpad.right.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadRight)) OnInput?.Invoke(new InputEvent(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed));
         }
         if (gp.buttonEast != null && gp.buttonEast.wasPressedThisFrame)
             OnInput?.Invoke(new InputEvent(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed));

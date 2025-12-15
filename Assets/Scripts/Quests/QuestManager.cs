@@ -131,6 +131,7 @@ public class QuestManager : MonoBehaviour
 
         rq.State = QuestState.Completed;
         OnQuestCompleted?.Invoke(questId);
+        ArchiveCompletedQuest(questId);
         OnQuestsChanged?.Invoke();
     }
 
@@ -150,6 +151,7 @@ public class QuestManager : MonoBehaviour
         {
             rq.State = QuestState.Completed;
             OnQuestCompleted?.Invoke(questId);
+            ArchiveCompletedQuest(questId);
         }
 
         OnQuestsChanged?.Invoke();
@@ -174,6 +176,13 @@ public class QuestManager : MonoBehaviour
             if (GetState(sr.questId) != QuestState.Active) continue;
             MarkStepDone(sr.questId, sr.stepIndex);
         }
+    }
+
+    void ArchiveCompletedQuest(string questId)
+    {
+        if (string.IsNullOrEmpty(questId)) return;
+        SetFollowed(questId, false);
+        SetVisibility(questId, QuestVisibility.Hidden);
     }
     #endregion
 
@@ -215,6 +224,7 @@ public class QuestManager : MonoBehaviour
                 if (string.IsNullOrEmpty(qid)) continue;
                 EnsureRuntimeQuest(qid, out var rq);
                 rq.State = QuestState.Completed;
+                _visibility[qid] = QuestVisibility.Hidden;
                 // Marcar todos los pasos como completados si la misión está completada
                 if (rq.Steps != null)
                 {
@@ -269,6 +279,16 @@ public class QuestManager : MonoBehaviour
                 // No sobrescribir "Hidden" con "Tracked": si está archivada, mantener Hidden
                 if (GetVisibility(qid) != QuestVisibility.Hidden)
                     _visibility[qid] = QuestVisibility.Tracked;
+            }
+        }
+
+        // 4b) Auto-archivar completadas y limpiar seguimiento
+        foreach (var kvp in _runtime)
+        {
+            if (kvp.Value.State == QuestState.Completed)
+            {
+                _followed.Remove(kvp.Key);
+                _visibility[kvp.Key] = QuestVisibility.Hidden;
             }
         }
 

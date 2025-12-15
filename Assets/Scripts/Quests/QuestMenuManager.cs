@@ -1,9 +1,13 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class QuestMenuManager : MonoBehaviour
 {
+    public static bool IsAnyQuestMenuOpen { get; private set; }
+    private const float NavigateUpThreshold = 0.6f;
+
     [Header("Referencias")]
     [SerializeField] private QuestLogListUI quickMenu; // El menú rápido (QuickQuestMenu)
     [SerializeField] private QuestMainMenuUI mainMenu; // El menú principal (QuestMainMenu)
@@ -20,6 +24,8 @@ public class QuestMenuManager : MonoBehaviour
     private bool _dpadUpPressed;
     private bool _bPressed;
     private bool _startPressed;
+    private bool _menuRegistered;
+    private InputScope _inputScope;
 
     private void Awake()
     {
@@ -42,6 +48,8 @@ public class QuestMenuManager : MonoBehaviour
         _bPressed = false;
         _startPressed = false;
         UnsubscribeQuestManager();
+        TearDownMenuRegistration();
+        ExitUiScope();
     }
 
     private void Update()
@@ -68,6 +76,8 @@ public class QuestMenuManager : MonoBehaviour
             HandleBPressed();
             _bPressed = false;
         }
+
+        RefreshMenuRegistration();
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -86,6 +96,36 @@ public class QuestMenuManager : MonoBehaviour
                 if (input.Phase == InputActionPhase.Canceled)
                     _dpadUpHeld = false;
                 break;
+            case GamepadInputReader.InputEventType.Navigate:
+                HandleNavigateInput(input);
+                break;
+            case GamepadInputReader.InputEventType.LeftShoulder when input.Phase == InputActionPhase.Performed:
+                if (mainMenu != null && mainMenu.IsOpen)
+                    mainMenu.ShowVisibleTab();
+                break;
+            case GamepadInputReader.InputEventType.RightShoulder when input.Phase == InputActionPhase.Performed:
+                if (mainMenu != null && mainMenu.IsOpen)
+                    mainMenu.ShowHiddenTab();
+                break;
+        }
+    }
+
+    void HandleNavigateInput(GamepadInputReader.InputEvent input)
+    {
+        if (input.Phase == InputActionPhase.Canceled || input.Value.sqrMagnitude < 0.01f)
+        {
+            _dpadUpHeld = false;
+            return;
+        }
+
+        if (input.Value.y > NavigateUpThreshold)
+        {
+            _dpadUpPressed = true;
+            _dpadUpHeld = true;
+        }
+        else if (input.Value.y < -NavigateUpThreshold)
+        {
+            _dpadUpHeld = false;
         }
     }
 
@@ -271,6 +311,7 @@ public class QuestMenuManager : MonoBehaviour
             mainMenu.HideMenu();
         if (quickMenu != null)
             quickMenu.ShowPanel(false, ignoreRestrictions: true);
+        RefreshMenuRegistration();
     }
 
     bool CanOpenMainMenu()
@@ -313,4 +354,100 @@ public class QuestMenuManager : MonoBehaviour
         return true;
     }
 
+    void RefreshMenuRegistration()
+    {
+        bool anyOpen = (mainMenu != null && mainMenu.IsOpen) || (quickMenu != null && quickMenu.IsVisible);
+
+        if (anyOpen)
+        {
+            IsAnyQuestMenuOpen = true;
+            if (!_menuRegistered)
+            {
+                MenuManager.RegisterOpen(MenuKind.Mission);
+                _menuRegistered = true;
+            }
+            EnsureUiScope();
+        }
+        else
+        {
+            TearDownMenuRegistration();
+        }
+    }
+
+    void TearDownMenuRegistration()
+    {
+        if (_menuRegistered)
+        {
+            MenuManager.Close(MenuKind.Mission);
+            _menuRegistered = false;
+        }
+        IsAnyQuestMenuOpen = false;
+        ExitUiScope();
+    }
+
+    void EnsureUiScope()
+    {
+        if (_inputScope != null) return;
+        _inputScope = InputScope.Enter();
+    }
+
+    void ExitUiScope()
+    {
+        _inputScope?.Dispose();
+        _inputScope = null;
+    }
+
+    sealed class InputScope : IDisposable
+    {
+        readonly PlayerControls _controls;
+        readonly bool _restoreGameplay;
+        readonly bool _restoreUi;
+        bool _disposed;
+        static int _stack;
+
+        InputScope(PlayerControls controls)
+        {
+            _controls = controls;
+            GamepadInputReader.PushGameplaySuppression(this);
+
+            if (_controls == null)
+                return;
+
+            _restoreUi = !_controls.UI.enabled;
+            if (_restoreUi)
+                _controls.UI.Enable();
+
+            if (_controls.GamePlay.enabled)
+            {
+                _restoreGameplay = true;
+                _controls.GamePlay.Disable();
+                _stack++;
+            }
+        }
+
+        public static InputScope Enter()
+        {
+            var controls = ServiceLocator.TryGet(out PlayerInputManager pim) ? pim.Controls : GamepadInputReader.ControlsOrNull;
+            return new InputScope(controls);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+
+            if (_controls != null && _restoreGameplay)
+            {
+                _stack = Math.Max(0, _stack - 1);
+                if (_stack == 0 && !_controls.GamePlay.enabled)
+                    _controls.GamePlay.Enable();
+            }
+
+            if (_controls != null && _restoreUi && _controls.UI.enabled)
+                _controls.UI.Disable();
+
+            GamepadInputReader.PopGameplaySuppression(this);
+        }
+    }
 }

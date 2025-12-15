@@ -126,12 +126,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [Header("Equipamiento")]
     [SerializeField] private EquipmentBindings equipmentUI = new();
 
-    [Header("Navegación UI")]
-    [SerializeField, Min(0f), Tooltip("Tiempo antes de repetir el movimiento al mantener un eje de navegación.")]
-    private float navigationRepeatDelay = 0.5f;
-    [SerializeField, Min(0f), Tooltip("Intervalo entre repeticiones tras el primer retardo.")]
-    private float navigationRepeatRate = 0.1f;
-
     static PlayerEquipmentMenuController _instance;
 
     readonly List<Button> _tabButtons = new();
@@ -160,13 +154,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     bool _actionModeActive;
     bool _toggleRequested;
     bool _cancelRequested;
-    int _tabDeltaRequested;
     float _openedAt = -999f;
     float _toggleCooldownUntil;
-    int _navSuppressionFrame = -1;
-    Vector2 _lastNavDir;
-    float _lastNavSentAt;
-    bool _navRepeating;
+    InputActionMapScope _inputScope;
 
     readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
@@ -250,10 +240,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void OnDisable()
     {
         GamepadInputReader.OnInput -= HandleGamepadInput;
+        if (_isOpen)
+            CloseMenu();
+        else
+            ExitUiInputScope();
     }
 
     void OnDestroy()
     {
+        ExitUiInputScope();
         ApplyPlayerPreviewSorting(false);
         _inventoryView?.Dispose();
         _equipmentView?.Dispose();
@@ -294,7 +289,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             HandleCloseInput();
-            HandleTabNavigationInput();
             UpdatePlayerInfoPanel();
             if (_activeTab == 1)
                 _spellView?.HandleInput();
@@ -370,11 +364,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
     }
 
-    void HandleTabNavigationInput()
+    void ChangeTab(int delta)
     {
-        int delta = _tabDeltaRequested;
-        _tabDeltaRequested = 0;
-
         if (delta == 0) return;
 
         var availableTabs = GetAvailableTabs();
@@ -391,12 +382,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (input.Type == GamepadInputReader.InputEventType.Navigate)
-        {
-            HandleNavigateInput(input.Value, input.Phase);
-            return;
-        }
-
         if (input.Phase != InputActionPhase.Performed)
             return;
 
@@ -410,32 +395,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             case GamepadInputReader.InputEventType.DpadDown:
                 if (!_isOpen)
                     _toggleRequested = true;
-                else
-                {
-                    _navSuppressionFrame = Time.frameCount;
-                    SendMove(Vector2.down);
-                }
-                break;
-            case GamepadInputReader.InputEventType.DpadUp:
-                if (_isOpen)
-                {
-                    _navSuppressionFrame = Time.frameCount;
-                    SendMove(Vector2.up);
-                }
-                break;
-            case GamepadInputReader.InputEventType.DpadLeft:
-                if (_isOpen)
-                {
-                    _navSuppressionFrame = Time.frameCount;
-                    SendMove(Vector2.left);
-                }
-                break;
-            case GamepadInputReader.InputEventType.DpadRight:
-                if (_isOpen)
-                {
-                    _navSuppressionFrame = Time.frameCount;
-                    SendMove(Vector2.right);
-                }
                 break;
 
             case GamepadInputReader.InputEventType.Cancel:
@@ -444,56 +403,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 break;
 
             case GamepadInputReader.InputEventType.LeftShoulder:
-                if (_isOpen) _tabDeltaRequested -= 1;
+                if (_isOpen) ChangeTab(-1);
                 break;
 
             case GamepadInputReader.InputEventType.RightShoulder:
-                if (_isOpen) _tabDeltaRequested += 1;
+                if (_isOpen) ChangeTab(1);
                 break;
         }
-    }
-
-    void HandleNavigateInput(Vector2 value, InputActionPhase phase)
-    {
-        if (!_isOpen)
-            return;
-
-        if (_navSuppressionFrame == Time.frameCount)
-            return;
-
-        if (phase == InputActionPhase.Canceled || value.sqrMagnitude < 0.01f)
-        {
-            _navRepeating = false;
-            _lastNavDir = Vector2.zero;
-            return;
-        }
-
-        var dir = Mathf.Abs(value.x) > Mathf.Abs(value.y)
-            ? (value.x > 0 ? Vector2.right : Vector2.left)
-            : (value.y > 0 ? Vector2.up : Vector2.down);
-
-        float now = Time.unscaledTime;
-        bool directionChanged = _lastNavDir != dir;
-
-        float repeatInterval = _navRepeating ? navigationRepeatRate : navigationRepeatDelay;
-        bool canRepeat = directionChanged || (now - _lastNavSentAt) >= repeatInterval;
-
-        if (!canRepeat)
-            return;
-
-        _lastNavDir = dir;
-        _lastNavSentAt = now;
-        _navRepeating = !directionChanged;
-
-        SendMove(dir);
-    }
-
-    void ResetNavigationState()
-    {
-        _navSuppressionFrame = -1;
-        _navRepeating = false;
-        _lastNavDir = Vector2.zero;
-        _lastNavSentAt = 0f;
     }
 
     List<int> GetAvailableTabs()
@@ -532,11 +448,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _actionManager.PushMode(ActionMode.Inventory);
             _actionModeActive = true;
         }
+        EnterUiInputScope();
 
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
 
-        ResetNavigationState();
         SetCanvasState(true);
 
         int defaultTab = GetDefaultTab();
@@ -561,7 +477,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
         _isOpen = false;
-        ResetNavigationState();
+        ExitUiInputScope();
         if (_actionModeActive && _actionManager != null)
         {
             _actionManager.PopMode(ActionMode.Inventory);
@@ -628,6 +544,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_isOpen && previousTab != _activeTab)
             SelectInitial();
         SetEquipmentCameraActive(_isOpen && _activeTab == 2);
+    }
+
+    void EnterUiInputScope()
+    {
+        _inputScope?.Dispose();
+        _inputScope = InputActionMapScope.EnterUiScope();
+    }
+
+    void ExitUiInputScope()
+    {
+        _inputScope?.Dispose();
+        _inputScope = null;
     }
 
     void EnsureActionManager()
@@ -775,6 +703,72 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         return -1;
     }
 
+    sealed class InputActionMapScope : IDisposable
+    {
+        readonly PlayerControls _controls;
+        readonly bool _restoreGameplay;
+        readonly bool _restoreUi;
+        bool _disposed;
+        static int _gameplayDisableCount;
+
+        InputActionMapScope(PlayerControls controls, bool ensureUiEnabled, bool disableGameplay)
+        {
+            _controls = controls;
+            GamepadInputReader.PushGameplaySuppression(this);
+
+            if (_controls == null)
+                return;
+
+            if (ensureUiEnabled)
+            {
+                _restoreUi = !_controls.UI.enabled;
+                if (_restoreUi)
+                    _controls.UI.Enable();
+            }
+
+            if (disableGameplay && _controls.GamePlay.enabled)
+            {
+                _restoreGameplay = true;
+                _gameplayDisableCount++;
+                _controls.GamePlay.Disable();
+            }
+        }
+
+        public static InputActionMapScope EnterUiScope()
+        {
+            var controls = ResolveControls();
+            return new InputActionMapScope(controls, ensureUiEnabled: true, disableGameplay: true);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
+            if (_controls != null && _restoreGameplay)
+            {
+                _gameplayDisableCount = Math.Max(0, _gameplayDisableCount - 1);
+                if (_gameplayDisableCount == 0 && !_controls.GamePlay.enabled)
+                    _controls.GamePlay.Enable();
+            }
+
+            if (_controls != null && _restoreUi && _controls.UI.enabled)
+                _controls.UI.Disable();
+
+            GamepadInputReader.PopGameplaySuppression(this);
+        }
+
+        static PlayerControls ResolveControls()
+        {
+            if (ServiceLocator.TryGet(out PlayerInputManager manager) && manager != null)
+                return manager.Controls;
+
+            return GamepadInputReader.ControlsOrNull;
+        }
+    }
+
     int GetDefaultTab()
     {
         if (_inventoryView != null) return 0;
@@ -838,39 +832,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (es == null) return;
         es.SetSelectedGameObject(null);
         es.SetSelectedGameObject(target);
-    }
-
-    void SendMove(Vector2 dir)
-    {
-        var es = EventSystem.current;
-        if (es == null || !_isOpen) return;
-
-        var target = es.currentSelectedGameObject;
-        if (target == null)
-        {
-            target = ResolveInitialTarget();
-            if (target != null)
-                SelectGameObjectImmediate(target);
-        }
-
-        if (target == null) return;
-
-        var axisEvent = new AxisEventData(es)
-        {
-            moveVector = dir,
-            moveDir = ResolveMoveDirection(dir)
-        };
-
-        ExecuteEvents.Execute(target, axisEvent, ExecuteEvents.moveHandler);
-    }
-
-    static MoveDirection ResolveMoveDirection(Vector2 dir)
-    {
-        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
-            return dir.x > 0 ? MoveDirection.Right : MoveDirection.Left;
-        if (Mathf.Abs(dir.y) > 0f)
-            return dir.y > 0 ? MoveDirection.Up : MoveDirection.Down;
-        return MoveDirection.None;
     }
 
     bool IsInsideMenu(GameObject go)

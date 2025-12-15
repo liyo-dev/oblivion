@@ -577,10 +577,6 @@ public class PauseMenuController : MonoBehaviour
             _pausePressedViaEvent = true;
         else if (input.Type == GamepadInputReader.InputEventType.Cancel)
             _cancelPressedViaEvent = true;
-        else if (input.Type == GamepadInputReader.InputEventType.DpadUp && _isPaused)
-            MoveSelection(Vector2.up);
-        else if (input.Type == GamepadInputReader.InputEventType.DpadDown && _isPaused)
-            MoveSelection(Vector2.down);
     }
 
     bool ConsumeStick(float y)

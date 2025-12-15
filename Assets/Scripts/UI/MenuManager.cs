@@ -83,6 +83,9 @@ public static class MenuManager
                     var shopUI = ServiceLocator.Get<ShopUI>(false);
                     stillOpen = shopUI != null && shopUI.IsOpen;
                     break;
+                case MenuKind.Mission:
+                    stillOpen = QuestMenuManager.IsAnyQuestMenuOpen || GameState.Is(GamePhase.QuestMenu);
+                    break;
                 default:
                     stillOpen = val;
                     break;
