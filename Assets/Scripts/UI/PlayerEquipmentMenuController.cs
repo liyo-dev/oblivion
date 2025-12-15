@@ -395,6 +395,37 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             case GamepadInputReader.InputEventType.DpadDown:
                 if (!_isOpen)
                     _toggleRequested = true;
+                else
+                    TriggerMoveEvent(Vector2.down);
+                break;
+
+            case GamepadInputReader.InputEventType.DpadUp:
+                if (_isOpen)
+                    TriggerMoveEvent(Vector2.up);
+                break;
+
+            case GamepadInputReader.InputEventType.DpadLeft:
+                if (_isOpen)
+                    TriggerMoveEvent(Vector2.left);
+                break;
+
+            case GamepadInputReader.InputEventType.DpadRight:
+                if (_isOpen)
+                    TriggerMoveEvent(Vector2.right);
+                break;
+
+            case GamepadInputReader.InputEventType.Navigate:
+                if (_isOpen && input.Phase == InputActionPhase.Performed)
+                {
+                    var dir = input.Value;
+                    if (dir.sqrMagnitude > 0.1f)
+                    {
+                        dir = Mathf.Abs(dir.y) >= Mathf.Abs(dir.x)
+                            ? new Vector2(0f, Mathf.Sign(dir.y))
+                            : new Vector2(Mathf.Sign(dir.x), 0f);
+                        TriggerMoveEvent(dir);
+                    }
+                }
                 break;
 
             case GamepadInputReader.InputEventType.Cancel:
@@ -410,6 +441,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 if (_isOpen) ChangeTab(1);
                 break;
         }
+    }
+
+    void TriggerMoveEvent(Vector2 direction)
+    {
+        var es = EventSystem.current;
+        if (es == null)
+            return;
+
+        var axisEvent = new AxisEventData(es)
+        {
+            moveVector = direction,
+            moveDir = direction.y > 0.1f ? MoveDirection.Up
+                : direction.y < -0.1f ? MoveDirection.Down
+                : direction.x < -0.1f ? MoveDirection.Left
+                : MoveDirection.Right
+        };
+
+        ExecuteEvents.Execute(es.currentSelectedGameObject, axisEvent, ExecuteEvents.moveHandler);
     }
 
     List<int> GetAvailableTabs()
@@ -1372,6 +1421,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 result.message = "Usado correctamente.";
 
             ShowFeedback(result.message);
+
+            // Refrescar panel de estadísticas inmediatamente (especialmente al usar pociones)
+            Instance?.UpdatePlayerInfoPanel();
         }
 
         static void ShowFeedback(string message)
@@ -2918,7 +2970,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             else if (row.previousButton != null) t = row.previousButton.transform;
             else if (row.nextButton != null) t = row.nextButton.transform;
             else if (row.clearButton != null) t = row.clearButton.transform;
-            return t != null ? t.position.y : float.MinValue;
+            return t != null ? -t.position.y : float.MinValue;
         }
 
         class ButtonHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler
