@@ -21,7 +21,7 @@ public sealed class PlayTimelineNode : NarrativeNode
         {
             try
             {
-                var gos = UnityEngine.Object.FindObjectsByType<PlayableDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var gos = ServiceLocator.GetAll<PlayableDirector>();
                 foreach (var pd in gos)
                 {
                     try { if (pd.gameObject.name == directorName) { _dir = pd; break; } }
@@ -37,8 +37,7 @@ public sealed class PlayTimelineNode : NarrativeNode
         if (_dir == null)
         {
             // Fallback: primer PlayableDirector en escena
-            try { _dir = UnityEngine.Object.FindFirstObjectByType<PlayableDirector>(FindObjectsInactive.Include); }
-            catch { _dir = UnityEngine.Object.FindFirstObjectByType<PlayableDirector>(); }
+            _dir = ServiceLocator.Get<PlayableDirector>(false);
         }
 
         if (!_dir) { onReadyToAdvance?.Invoke(); return; }

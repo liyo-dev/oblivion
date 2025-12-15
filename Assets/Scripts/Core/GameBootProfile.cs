@@ -548,11 +548,7 @@ public class GameBootProfile : ScriptableObject
 
         var processed = new HashSet<string>();
 
-#if UNITY_2022_3_OR_NEWER
-        var npcs = FindObjectsByType<NPCBehaviourManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-        var npcs = FindObjectsOfType<NPCBehaviourManager>(true);
-#endif
+        var npcs = ServiceLocator.GetAll<NPCBehaviourManager>();
         foreach (var npc in npcs)
         {
             if (npc == null || !npc.persistLastPosition)
@@ -637,12 +633,8 @@ public class GameBootProfile : ScriptableObject
         if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0)
             return;
 
-#if UNITY_2022_3_OR_NEWER
-        var npcs = FindObjectsByType<NPCBehaviourManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-        var npcs = FindObjectsOfType<NPCBehaviourManager>(true);
-#endif
-        if (npcs == null || npcs.Length == 0)
+        var npcs = ServiceLocator.GetAll<NPCBehaviourManager>();
+        if (npcs == null || npcs.Count == 0)
             return;
 
         var map = new Dictionary<string, PlayerPresetSO.NpcPosEntry>(preset.npcPositions.Count);

@@ -81,7 +81,7 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
                 if (changed && applyPresetAfterUnlock)
                 {
                     // Buscar PlayerPresetService incluyendo objetos inactivos.
-                    var ps = UnityEngine.Object.FindFirstObjectByType<PlayerPresetService>(FindObjectsInactive.Include);
+                    var ps = ServiceLocator.Get<PlayerPresetService>(false);
 
                     // Fallback: buscar por el Player y componentes en hijos (incluyendo inactivos).
                     if (ps == null)

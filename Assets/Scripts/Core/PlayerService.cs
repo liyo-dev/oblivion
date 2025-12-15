@@ -279,22 +279,10 @@ public sealed class PlayerService : MonoBehaviour
 
         if (byTag != null) return byTag;
 
-#if UNITY_2022_3_OR_NEWER
-        var health = UnityEngine.Object.FindFirstObjectByType<PlayerHealthSystem>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        var health = UnityEngine.Object.FindObjectOfType<PlayerHealthSystem>(true);
-#pragma warning restore 618
-#endif
+        var health = ServiceLocator.Get<PlayerHealthSystem>(false);
         if (health != null) return health.gameObject;
 
-#if UNITY_2022_3_OR_NEWER
-        var manaPool = UnityEngine.Object.FindFirstObjectByType<ManaPool>(FindObjectsInactive.Include);
-#else
-#pragma warning disable 618
-        var manaPool = UnityEngine.Object.FindObjectOfType<ManaPool>(true);
-#pragma warning restore 618
-#endif
+        var manaPool = ServiceLocator.Get<ManaPool>(false);
         if (manaPool != null) return manaPool.gameObject;
 
         return null;

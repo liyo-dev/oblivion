@@ -100,7 +100,7 @@ public static class SceneTransitionLoader
                 if (ui) break;
             }
             if (!ui)
-                ui = Object.FindFirstObjectByType<LoadingScreenController>(FindObjectsInactive.Include);
+                ui = ServiceLocator.Get<LoadingScreenController>(false);
 
             if (!ui)
             {
@@ -209,7 +209,7 @@ public static class SceneTransitionLoader
     {
         if (settings == null) return;
 
-        var mgr = Object.FindFirstObjectByType<TransitionManager>(FindObjectsInactive.Include);
+        var mgr = ServiceLocator.Get<TransitionManager>(false);
         if (!mgr) return;
 
         try
