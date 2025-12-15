@@ -657,13 +657,6 @@ public sealed class NpcAutoMoveNode : NarrativeNode
         if (preset != null)
             return true;
 
-        var all = Resources.FindObjectsOfTypeAll<PlayerPresetSO>();
-        if (all != null && all.Length > 0)
-        {
-            preset = all[0];
-            return true;
-        }
-
         return false;
     }
 
