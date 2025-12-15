@@ -140,7 +140,7 @@ public class SettingsMenuController : MonoBehaviour
         if (_sliderEditMode)
         {
             MaintainSliderSelection();
-            HandleSliderInput(GamepadInputReader.Navigation);
+            HandleSliderInput(GamepadInputReader.Navigation, true);
         }
 
         if (WasCancelPressedThisFrame())
@@ -316,8 +316,14 @@ public class SettingsMenuController : MonoBehaviour
                 || input.Type == GamepadInputReader.InputEventType.DpadUp
                 || input.Type == GamepadInputReader.InputEventType.DpadDown)
             {
-                HandleSliderInput(input.Value);
+                HandleSliderInput(input.Value, true);
             }
+            return;
+        }
+
+        if (input.Type == GamepadInputReader.InputEventType.DpadLeft || input.Type == GamepadInputReader.InputEventType.DpadRight)
+        {
+            TryMoveSelection(input.Type == GamepadInputReader.InputEventType.DpadLeft ? Vector2.left : Vector2.right);
             return;
         }
     }
@@ -485,12 +491,12 @@ public class SettingsMenuController : MonoBehaviour
             _eventSystem.SetSelectedGameObject(_activeSlider.gameObject);
     }
 
-    void HandleSliderInput(Vector2 value)
+    void HandleSliderInput(Vector2 value, bool horizontalOnly = false)
     {
         if (_activeSlider == null)
             return;
 
-        float axis = Mathf.Abs(value.x) >= Mathf.Abs(value.y) ? value.x : value.y;
+        float axis = horizontalOnly ? value.x : (Mathf.Abs(value.x) >= Mathf.Abs(value.y) ? value.x : value.y);
         if (Mathf.Abs(axis) < 0.1f)
             return;
 
@@ -499,6 +505,28 @@ public class SettingsMenuController : MonoBehaviour
             : Mathf.Max(0.001f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue));
 
         _activeSlider.value = Mathf.Clamp(_activeSlider.value + Mathf.Sign(axis) * step, _activeSlider.minValue, _activeSlider.maxValue);
+    }
+
+    void TryMoveSelection(Vector2 direction)
+    {
+        if (!_eventSystem)
+            _eventSystem = EventSystem.current;
+
+        if (_eventSystem == null || direction == Vector2.zero)
+            return;
+
+        var selected = _eventSystem.currentSelectedGameObject;
+        if (selected == null)
+            return;
+
+        var moveDir = direction.x < 0 ? MoveDirection.Left : MoveDirection.Right;
+        var axis = new AxisEventData(_eventSystem)
+        {
+            moveVector = direction,
+            moveDir = moveDir
+        };
+
+        ExecuteEvents.Execute(selected, axis, ExecuteEvents.moveHandler);
     }
 
     void HandleSliderChanged(Slider slider, Action<float> setter, float value)
