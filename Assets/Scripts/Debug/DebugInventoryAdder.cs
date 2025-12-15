@@ -34,9 +34,9 @@ public class DebugInventoryAdder : MonoBehaviour
             if (alsoForcePopup)
             {
 #if UNITY_2023_1_OR_NEWER
-                var queue = FindFirstObjectByType<CollectiblePopupQueue>();
+                var queue = ServiceLocator.Get<CollectiblePopupQueue>(false);
 #else
-                var queue = FindObjectOfType<CollectiblePopupQueue>();
+                var queue = ServiceLocator.Get<CollectiblePopupQueue>(false);
 #endif
                 if (queue != null)
                 {

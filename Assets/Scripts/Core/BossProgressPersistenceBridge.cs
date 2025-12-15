@@ -7,11 +7,14 @@ public class BossProgressPersistenceBridge : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
     {
-#if UNITY_2023_1_OR_NEWER
-        if (FindFirstObjectByType<BossProgressPersistenceBridge>() != null) return;
-#else
-        if (FindObjectOfType<BossProgressPersistenceBridge>() != null) return;
-#endif
+        if (_instance != null)
+            return;
+
+        if (ServiceLocator.TryGet(out BossProgressPersistenceBridge existing))
+        {
+            _instance = existing;
+            return;
+        }
 
         var go = new GameObject(nameof(BossProgressPersistenceBridge));
         DontDestroyOnLoad(go);
@@ -19,9 +22,18 @@ public class BossProgressPersistenceBridge : MonoBehaviour
     }
 
     private bool _initialized;
+    private static BossProgressPersistenceBridge _instance;
 
     private void OnEnable()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        ServiceLocator.Register(this);
         GameBootService.OnProfileReady += HandleProfileReady;
         BossProgressTracker.OnBossMarkedDefeated += HandleBossMarked;
 
@@ -35,6 +47,12 @@ public class BossProgressPersistenceBridge : MonoBehaviour
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
         BossProgressTracker.OnBossMarkedDefeated -= HandleBossMarked;
+
+        if (_instance == this)
+        {
+            ServiceLocator.Unregister(this);
+            _instance = null;
+        }
     }
 
     private void HandleProfileReady()
