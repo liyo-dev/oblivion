@@ -1009,19 +1009,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     static void EnsureEventSystem()
     {
-        if (EventSystem.current != null) return;
-
-        var esGO = new GameObject("EventSystem", typeof(EventSystem)
+        if (EventSystem.current == null)
+        {
+            var esGO = new GameObject("EventSystem", typeof(EventSystem)
 #if ENABLE_INPUT_SYSTEM
-            , typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule)
+                , typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule)
 #else
-            , typeof(StandaloneInputModule)
+                , typeof(StandaloneInputModule)
 #endif
-        );
-        DontDestroyOnLoad(esGO);
+            );
+            DontDestroyOnLoad(esGO);
+        }
 
 #if ENABLE_INPUT_SYSTEM
-        var inputModule = esGO.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        var inputModule = EventSystem.current?.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         if (inputModule != null && inputModule.actionsAsset == null)
         {
             var controls = GamepadInputReader.ControlsOrNull;

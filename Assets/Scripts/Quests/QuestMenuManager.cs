@@ -333,7 +333,10 @@ public class QuestMenuManager : MonoBehaviour
 
     bool CanOpenQuestMenus()
     {
-        if (MenuManager.AnyOpen())
+        // Ignorar el propio registro del menú de misiones cuando ya estamos
+        // dentro de la transición entre rápido y principal. Solo bloqueamos si
+        // hay otros menús abiertos.
+        if (MenuManager.AnyOpenExcept(MenuKind.Mission))
         {
             Debug.LogWarning("[QuestMenuManager] Cannot open quest menus because another menu is open.");
             return false;
