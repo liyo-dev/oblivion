@@ -206,8 +206,11 @@ public class PortalTrigger : MonoBehaviour
         var rb = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
         if (rb)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
             if (disableGravityDuringTeleport)
                 rb.useGravity = false; // Solo desactivar gravedad si está configurado
         }
@@ -287,8 +290,11 @@ public class PortalTrigger : MonoBehaviour
         if (rb) {
             if (disableGravityDuringTeleport)
                 rb.useGravity = true;   // Solo reactivar si fue desactivada
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
 
         var input = player.GetComponent<vThirdPersonInput>() ?? player.GetComponentInChildren<vThirdPersonInput>(true);

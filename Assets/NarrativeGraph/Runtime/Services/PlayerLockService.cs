@@ -84,8 +84,14 @@ public class PlayerLockService : MonoBehaviour
         if (_rb != null)
         {
             _rbWasKinematic = _rb.isKinematic;
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
+            
+            // Solo modificar velocidad si NO es kinematic
+            if (!_rb.isKinematic)
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+            }
+            
             _rb.isKinematic = true;
         }
 

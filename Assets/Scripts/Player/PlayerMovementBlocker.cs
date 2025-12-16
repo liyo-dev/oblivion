@@ -93,13 +93,15 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
         if (disableThirdPersonInput && _thirdPersonInput != null)
             _thirdPersonInput.enabled = false;
 
-        if (_rigidbody != null)
+        // No tocar linearVelocity si el Rigidbody es kinematic
+        if (_rigidbody != null && !_rigidbody.isKinematic)
         {
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
-            if (suspendGravity)
-                _rigidbody.useGravity = false;
         }
+
+        if (suspendGravity && _rigidbody != null)
+            _rigidbody.useGravity = false;
 
         if (disableCharacterController && _characterController != null)
             _characterController.enabled = false;
@@ -129,10 +131,12 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
             _characterController.SimpleMove(Vector3.zero);
         }
 
-        if (_rigidbody != null)
+        if (suspendGravity && _rigidbody != null)
+            _rigidbody.useGravity = true;
+
+        // No tocar linearVelocity si el Rigidbody es kinematic
+        if (_rigidbody != null && !_rigidbody.isKinematic)
         {
-            if (suspendGravity)
-                _rigidbody.useGravity = true;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
         }

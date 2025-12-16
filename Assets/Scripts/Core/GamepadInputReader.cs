@@ -124,16 +124,31 @@ namespace Core
             _controls = new PlayerControls();
         }
 
-        EnsureInputEventsSubscribed();
+        // Suscribirse a los eventos cuando se inicializa
+        if (_controls != null && _boundControls != _controls)
+        {
+            UnsubscribeInputEvents();
+            SubscribeInputEvents(_controls);
+        }
+        
         EnsurePollingRegistered();
     }
 
     public static void EnsureInputEventsSubscribed()
     {
-        if (_boundControls == Controls || Controls == null) return;
+        // Si _controls es null, inicializar primero
+        if (_controls == null)
+        {
+            InitializeControls();
+            return;
+        }
 
+        // Si ya está suscrito, no hacer nada
+        if (_boundControls == _controls) return;
+
+        // Suscribirse a los eventos
         UnsubscribeInputEvents();
-        SubscribeInputEvents(Controls);
+        SubscribeInputEvents(_controls);
         EnsurePollingRegistered();
     }
 

@@ -228,7 +228,8 @@ public class PlayerClimbingController : MonoBehaviour
 
         if (_rigidbody != null)
         {
-            _rigidbody.linearVelocity = Vector3.zero;
+            if (!_rigidbody.isKinematic)
+                _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.useGravity = false;
         }
 
@@ -257,7 +258,7 @@ public class PlayerClimbingController : MonoBehaviour
         Vector3 motion = Vector3.up * vertical * climbSpeed * Time.deltaTime;
         transform.position += motion;
 
-        if (_rigidbody != null)
+        if (_rigidbody != null && !_rigidbody.isKinematic)
         {
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;

@@ -222,7 +222,7 @@ public class TeleportService : MonoBehaviour
         player.transform.SetPositionAndRotation(pos, rot);
 
         var rb = player.GetComponent<Rigidbody>() ?? player.GetComponentInChildren<Rigidbody>(true);
-        if (rb)
+        if (rb && !rb.isKinematic)
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;

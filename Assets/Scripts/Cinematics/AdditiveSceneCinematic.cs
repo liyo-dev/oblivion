@@ -496,9 +496,9 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
         // Reset de físicas si aplica
         var rb = t.GetComponent<Rigidbody>();
-        if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
+        if (rb != null && !rb.isKinematic) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
         var rb2d = t.GetComponent<Rigidbody2D>();
-        if (rb2d != null) { rb2d.linearVelocity = Vector2.zero; rb2d.angularVelocity = 0f; }
+        if (rb2d != null && rb2d.bodyType != RigidbodyType2D.Kinematic) { rb2d.linearVelocity = Vector2.zero; rb2d.angularVelocity = 0f; }
 
         if (cc != null) cc.enabled = true;
 

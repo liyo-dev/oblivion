@@ -140,21 +140,6 @@ namespace Core
             }
         }
 
-        /// <summary>
-        /// Fuerza la restauración del modo Gameplay sin importar el contador.
-        /// Usar solo en casos excepcionales (ej: al cambiar de escena).
-        /// </summary>
-        public void ForceGameplayMode()
-        {
-            _uiModeRefCount = 0;
-            _isInUIMode = false;
-            _controls.UI.Disable();
-            _controls.GamePlay.Enable();
-
-            if (debugLogs)
-                Debug.Log("[PlayerInputManager] Modo GAMEPLAY forzado");
-        }
-
         void OnEnable()
         {
             EnableControls();

@@ -220,6 +220,34 @@ public class SettingsMenuController : MonoBehaviour
     {
         PlayerSettings.SetLanguage(locale);
         UpdateLanguageButtons();
+        
+        // Restaurar selección después de cambiar idioma
+        // porque el botón presionado ahora está deshabilitado
+        StartCoroutine(RestoreSelectionAfterLanguageChange());
+    }
+    
+    System.Collections.IEnumerator RestoreSelectionAfterLanguageChange()
+    {
+        yield return null; // Esperar un frame
+        
+        // Buscar el primer botón interactable (el que NO está seleccionado)
+        if (spanishButton && spanishButton.interactable)
+        {
+            spanishButton.Select();
+            if (_eventSystem != null)
+                _eventSystem.SetSelectedGameObject(spanishButton.gameObject);
+        }
+        else if (englishButton && englishButton.interactable)
+        {
+            englishButton.Select();
+            if (_eventSystem != null)
+                _eventSystem.SetSelectedGameObject(englishButton.gameObject);
+        }
+        else
+        {
+            // Fallback: seleccionar el primer elemento interactable del menú
+            SelectInitial(null);
+        }
     }
 
     public void SetMasterVolume(float value) => PlayerSettings.SetMasterVolume(value);

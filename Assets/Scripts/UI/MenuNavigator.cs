@@ -4,30 +4,53 @@ using UnityEngine.EventSystems;
 using DG.Tweening;
 
 /// <summary>
-/// Proporciona feedback visual cuando un botón del menú es seleccionado por el EventSystem.
-/// La navegación es manejada automáticamente por Unity EventSystem.
+/// Script simple que da feedback visual al botón seleccionado.
+/// Unity EventSystem maneja toda la navegación automáticamente.
 /// </summary>
 [DisallowMultipleComponent]
 public class MenuNavigator : MonoBehaviour
 {
     [Header("Animación selección")]
-    [Tooltip("Desplazamiento horizontal sutil cuando se selecciona un botón")]
+    [Tooltip("Desplazamiento horizontal cuando se selecciona un botón")]
     public float nudge = 6f;
     
-    [Tooltip("Duración de la animación del nudge")]
+    [Tooltip("Duración de la animación")]
     public float nudgeTime = 0.08f;
 
-    [Header("Opciones visuales")]
-    [Tooltip("Si está activo, desactiva las imágenes de los botones para que solo se muestre el texto")]
-    public bool hideButtonImages = false;
+    [Header("Debug")]
+    public bool debugLogs;
 
     private Button _lastSelected;
-    private readonly System.Collections.Generic.List<RectTransform> _nudged = new();
+    private RectTransform _lastNudgedText;
 
-    void Start()
+    void OnEnable()
     {
-        if (hideButtonImages)
-            ApplyHideButtonImages();
+        // Seleccionar el primer botón activo e interactable
+        Invoke(nameof(SelectFirstButton), 0.1f);
+    }
+
+    void SelectFirstButton()
+    {
+        var buttons = GetComponentsInChildren<Button>(false);
+        if (buttons.Length == 0) return;
+
+        // Ordenar por posición Y (arriba primero)
+        System.Array.Sort(buttons, (a, b) => 
+            b.transform.position.y.CompareTo(a.transform.position.y));
+
+        // Seleccionar el primero que esté activo e interactable
+        foreach (var btn in buttons)
+        {
+            if (btn.interactable && btn.gameObject.activeInHierarchy)
+            {
+                btn.Select();
+                if (EventSystem.current != null)
+                    EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                
+                if (debugLogs) Debug.Log($"[MenuNavigator] Primer botón seleccionado: {btn.name}");
+                return;
+            }
+        }
     }
 
     void Update()
@@ -39,67 +62,46 @@ public class MenuNavigator : MonoBehaviour
         if (!selected) return;
 
         var btn = selected.GetComponent<Button>();
-        if (btn != _lastSelected)
+        if (btn && btn != _lastSelected)
         {
             _lastSelected = btn;
-            ApplyNudgeFeedback(btn);
+            ApplyNudge(btn);
         }
     }
 
-    void ApplyNudgeFeedback(Button button)
+    void ApplyNudge(Button button)
     {
-        if (!button) return;
-
-        // Resetear animaciones previas
-        foreach (var prev in _nudged)
+        // Resetear el anterior
+        if (_lastNudgedText != null)
         {
-            if (prev)
-            {
-                prev.DOKill();
-                prev.anchoredPosition = Vector2.zero;
-            }
+            _lastNudgedText.DOKill();
+            _lastNudgedText.anchoredPosition = Vector2.zero;
         }
-        _nudged.Clear();
 
-        // Aplicar nudge al botón seleccionado
-        var rt = button.GetComponentInChildren<RectTransform>();
-        if (!rt) return;
+        // Buscar el texto hijo
+        var textTransform = button.GetComponentInChildren<TMPro.TextMeshProUGUI>()?.rectTransform;
+        if (textTransform == null) return;
 
-        var startPos = rt.anchoredPosition;
-        rt.DOKill();
-        rt.DOComplete();
-        rt.anchoredPosition = startPos;
+        _lastNudgedText = textTransform;
         
-        rt.DOAnchorPos(startPos + new Vector2(nudge, 0f), nudgeTime)
-          .SetEase(Ease.OutCubic)
-          .SetUpdate(true) // usar unscaled time para menús de pausa
-          .OnKill(() => { if (rt) rt.anchoredPosition = startPos; });
+        // Asegurar que empieza en (0,0)
+        textTransform.DOKill();
+        textTransform.anchoredPosition = Vector2.zero;
         
-        _nudged.Add(rt);
-    }
-
-    void ApplyHideButtonImages()
-    {
-        var buttons = GetComponentsInChildren<Button>(true);
-        foreach (var btn in buttons)
-        {
-            var img = btn.GetComponent<Image>();
-            if (img) img.enabled = false;
-        }
+        // Aplicar nudge
+        textTransform.DOAnchorPosX(nudge, nudgeTime).SetEase(Ease.OutCubic).SetUpdate(true);
+        
+        if (debugLogs) Debug.Log($"[MenuNavigator] Nudge aplicado a: {button.name}");
     }
 
     void OnDisable()
     {
-        // Limpiar animaciones al desactivar
-        foreach (var rt in _nudged)
+        if (_lastNudgedText != null)
         {
-            if (rt)
-            {
-                rt.DOKill();
-                rt.anchoredPosition = Vector2.zero;
-            }
+            _lastNudgedText.DOKill();
+            _lastNudgedText.anchoredPosition = Vector2.zero;
         }
-        _nudged.Clear();
+        _lastNudgedText = null;
         _lastSelected = null;
     }
 }

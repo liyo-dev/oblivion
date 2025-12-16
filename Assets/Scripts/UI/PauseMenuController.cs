@@ -65,47 +65,26 @@ public class PauseMenuController : MonoBehaviour
     [Min(0f)] public float introDuration = 0.35f;
     public float introYOffset = 40f;
 
-    [Header("Navegación UI (orden explícito)")]
-    public List<Selectable> orderedButtons = new();
-    public bool clampNavigationNoWrap = true;
-
     [Header("Input")]
-    public PlayerControls playerControls; // opcional: asignar en el inspector
 #if ENABLE_INPUT_SYSTEM
     private InputAction _pauseAction;
-    private InputAction _uiSubmitAction;
-    private InputAction _uiNavigateAction;
-    private bool _createdPlayerControls = false;
-    private InputAction _dpadUpAction; // añadido
-    private InputAction _dpadDownAction; // añadido
 #endif
 
     EventSystem _es;
-    GameObject _defaultSelection;
     Sequence _introSeq;
     bool _isPaused;
 
     // Snapshots para suspender interacción cuando abrimos Settings desde Pause
     bool _settingsSnapshotRaycasts;
     bool _settingsSnapshotInteractable;
-    bool _settingsButtonsSnapshotValid = false;
-    bool _resumeButtonActiveSnapshot;
-    bool _optionsButtonActiveSnapshot;
-    bool _quitButtonActiveSnapshot;
 
     public static bool IsOpen { get; private set; }
-
-    float _navCooldown;
-    int _navHeldSign; // -1,0,1 para evitar saltos al mantener el stick
-    [Min(0f)] public float navRepeatDelay = 0.15f;
-    [Range(0f, 1f)] public float navDeadzone = 0.3f;
+    
     [Header("Debug")]
-    public bool inputDebug = false;
+    public bool inputDebug;
 
-    bool _pauseRequestPending; // consolidar triggers de pausa en Update
+    bool _pauseRequestPending;
     float _lastPauseInputTime;
-    bool _pausePressedViaEvent;
-    bool _cancelPressedViaEvent;
 
     void Awake()
     {
@@ -177,38 +156,16 @@ public class PauseMenuController : MonoBehaviour
             }
         }
 
-        BuildOrderedButtonsIfEmpty();
-        FixExplicitNavigation();
-
-
 #if ENABLE_INPUT_SYSTEM
-        if (playerControls == null)
+        // Solo suscribirse al botón de pausa
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
         {
-            try { playerControls = new PlayerControls(); _createdPlayerControls = true; }
-            catch { }
-        }
-
-        if (playerControls != null)
-        {
-            _pauseAction = playerControls.GamePlay.Start;
-            _uiSubmitAction = playerControls.UI.Submit;
-            _uiNavigateAction = playerControls.UI.Navigate;
-
+            _pauseAction = pim.Controls.GamePlay.Start;
             _pauseAction?.Enable();
             _pauseAction.performed += OnPausePressed;
-            // Habilitar navigate (se leerá por polling en Update)
-            _uiNavigateAction?.Enable();
-
-            // Registrar D-Pad explícito (algunos gamepads pueden enviar dpad a acciones separadas)
-            _dpadUpAction = playerControls.GamePlay.DPadUp;
-            _dpadDownAction = playerControls.GamePlay.DPadDown;
-            _dpadUpAction?.Enable();
-            _dpadDownAction?.Enable();
-            // No subscripciones a performed: usamos polling en Update
         }
 #endif
 
-        _defaultSelection = resumeButton ? resumeButton.gameObject : orderedButtons.Count > 0 ? orderedButtons[0]?.gameObject : null;
         gameObject.SetActive(false);
     }
 
@@ -223,16 +180,30 @@ public class PauseMenuController : MonoBehaviour
         Cursor.visible = true;
 
         EnsureSettingsMenuClosed();
-
         EnableUIInput();
-        GamepadInputReader.EnsureInputEventsSubscribed();
-        GamepadInputReader.OnInput += HandleGamepadInput;
-        if (rootGroup != null) { rootGroup.interactable = true; rootGroup.blocksRaycasts = true; }
+        
+        if (rootGroup != null) 
+        { 
+            rootGroup.interactable = true; 
+            rootGroup.blocksRaycasts = true; 
+        }
 
-        ResetNavigationState();
-        EnsureUISelection();
         PlayIntro();
-        StartCoroutine(EnsureSelectionLater());
+        
+        // Seleccionar el primer botón después de un frame
+        StartCoroutine(SelectFirstButtonNextFrame());
+    }
+    
+    System.Collections.IEnumerator SelectFirstButtonNextFrame()
+    {
+        yield return null;
+        
+        if (resumeButton && resumeButton.interactable)
+        {
+            resumeButton.Select();
+            if (_es != null)
+                _es.SetSelectedGameObject(resumeButton.gameObject);
+        }
     }
 
     void OnDisable()
@@ -243,10 +214,10 @@ public class PauseMenuController : MonoBehaviour
         MenuManager.Close(MenuKind.Pause);
         _introSeq?.Kill();
         DisableUIInput();
+        
         // Seguridad: si se desactiva externamente, asegurarse de liberar el GameState
-        if (GameState.Is(GamePhase.PauseMenu)) GameState.Pop(GamePhase.PauseMenu);
-
-        GamepadInputReader.OnInput -= HandleGamepadInput;
+        if (GameState.Is(GamePhase.PauseMenu)) 
+            GameState.Pop(GamePhase.PauseMenu);
     }
 
     void HandleActiveSceneChanged(Scene previous, Scene next)
@@ -256,8 +227,6 @@ public class PauseMenuController : MonoBehaviour
 
         // Cancelar cualquier solicitud de pausa que haya quedado pendiente entre escenas
         _pauseRequestPending = false;
-        _pausePressedViaEvent = false;
-        _cancelPressedViaEvent = false;
 
         if (gameObject.activeSelf)
         {
@@ -279,12 +248,6 @@ public class PauseMenuController : MonoBehaviour
 
         if (gameObject.activeSelf)
             gameObject.SetActive(false);
-    }
-
-    void ResetNavigationState()
-    {
-        _navCooldown = 0f;
-        _navHeldSign = 0;
     }
 
 #if ENABLE_INPUT_SYSTEM
@@ -319,7 +282,6 @@ public class PauseMenuController : MonoBehaviour
             return;
         gameObject.SetActive(true);
         EnsureSettingsMenuClosed();
-        EnsureUISelection();
     }
 
     public void Resume()
@@ -342,8 +304,6 @@ public class PauseMenuController : MonoBehaviour
     public void ForceCloseAndReset()
     {
         _pauseRequestPending = false;
-        _pausePressedViaEvent = false;
-        _cancelPressedViaEvent = false;
 
         Time.timeScale = 1f;
         _isPaused = false;
@@ -363,49 +323,12 @@ public class PauseMenuController : MonoBehaviour
             gameObject.SetActive(false);
     }
 
-    void BuildOrderedButtonsIfEmpty()
-    {
-        if (orderedButtons == null) orderedButtons = new List<Selectable>();
-        orderedButtons.RemoveAll(s => s == null);
-        if (orderedButtons.Count == 0)
-        {
-            var all = new List<Selectable>(GetComponentsInChildren<Selectable>(true));
-            all.RemoveAll(s => s == null);
-            all.Sort((a, b) =>
-            {
-                var ra = a.transform as RectTransform;
-                var rb = b.transform as RectTransform;
-                return -ra.position.y.CompareTo(rb.position.y);
-            });
-            orderedButtons.AddRange(all);
-        }
-    }
-
-    void FixExplicitNavigation()
-    {
-        for (int i = 0; i < orderedButtons.Count; i++)
-        {
-            var s = orderedButtons[i];
-            if (!s) continue;
-            var nav = new Navigation { mode = Navigation.Mode.Explicit };
-            if (i > 0) nav.selectOnUp = orderedButtons[i - 1];
-            else if (!clampNavigationNoWrap) nav.selectOnUp = orderedButtons[^1];
-            if (i < orderedButtons.Count - 1) nav.selectOnDown = orderedButtons[i + 1];
-            else if (!clampNavigationNoWrap) nav.selectOnDown = orderedButtons[0];
-            s.navigation = nav;
-        }
-    }
-
     void EnableUIInput()
     {
 #if ENABLE_INPUT_SYSTEM
         // Cambiar a modo UI centralizado
         if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
             pim.PushUIMode();
-
-        // Asegurar que D-Pad también esté activo para navegación
-        _dpadUpAction?.Enable();
-        _dpadDownAction?.Enable();
 #endif
     }
 
@@ -415,44 +338,7 @@ public class PauseMenuController : MonoBehaviour
         // Restaurar modo Gameplay centralizado
         if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
             pim.PopUIMode();
-
-        _dpadUpAction?.Disable();
-        _dpadDownAction?.Disable();
 #endif
-    }
-
-    void EnsureUISelection()
-    {
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return;
-
-        var toSelect = _defaultSelection ?? orderedButtons[0]?.gameObject;
-        if (toSelect == null) return;
-
-        _es.SetSelectedGameObject(null);
-        _es.SetSelectedGameObject(toSelect);
-        toSelect.GetComponent<Selectable>()?.Select();
-    }
-
-    System.Collections.IEnumerator EnsureSelectionLater()
-    {
-        yield return new WaitForEndOfFrame();
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null)
-        {
-            if (inputDebug) Debug.LogWarning("[PauseMenu] EnsureSelectionLater: EventSystem.current is null, cannot set selection.");
-            yield break;
-        }
-
-        GameObject toSelect = _defaultSelection;
-        if (toSelect == null && orderedButtons != null && orderedButtons.Count > 0)
-            toSelect = orderedButtons[0]?.gameObject;
-
-        if (toSelect != null)
-        {
-            try { _es.SetSelectedGameObject(toSelect); }
-            catch (System.Exception ex) { Debug.LogWarning($"[PauseMenu] EnsureSelectionLater: failed to set selection: {ex}"); }
-        }
     }
 
     void PlayIntro()
@@ -478,144 +364,52 @@ public class PauseMenuController : MonoBehaviour
         }
     }
 
-    void MoveSelection(Vector2 dir)
-    {
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return;
-        var current = _es.currentSelectedGameObject;
-        var sel = current ? current.GetComponent<Selectable>() : null;
-        Selectable next = null;
-        if (sel == null) next = orderedButtons.Count > 0 ? orderedButtons[0] : null;
-        else
-        {
-            if (dir == Vector2.up) next = sel.FindSelectableOnUp();
-            else if (dir == Vector2.down) next = sel.FindSelectableOnDown();
-        }
-        if (next != null)
-        {
-            _es.SetSelectedGameObject(next.gameObject);
-            next.Select();
-        }
-    }
-
     void Update()
     {
+        // Procesar solicitud de toggle de pausa
         if (_pauseRequestPending || WasPausePressedThisFrame())
         {
             ProcessPauseRequest();
             return;
-        }        // Usar unscaledDeltaTime porque pausamos el juego con Time.timeScale = 0
+        }
+        
+        // Cerrar con Cancel/B button
         if (_isPaused && WasCancelPressedThisFrame())
         {
+            // Si settings está abierto, cerrar settings primero
             if (settingsMenu != null && settingsMenu.gameObject.activeInHierarchy)
             {
                 settingsMenu.Close();
-                EnsureUISelection();
+                StartCoroutine(SelectFirstButtonNextFrame());
                 return;
             }
 
+            // Sino, cerrar el menú de pausa
             TogglePause();
             return;
         }
-
-        if (_navCooldown > 0f)
-        {
-            _navCooldown -= Time.unscaledDeltaTime;
-            if (_navCooldown < 0f) _navCooldown = 0f;
-        }
-        else
-        {
-            _navHeldSign = 0; // soltar bloqueo cuando expira cooldown
-        }
-
-#if ENABLE_INPUT_SYSTEM
-        if (_isPaused && _navCooldown <= 0f)
-        {
-            bool moved = false;
-            try
-            {
-                // Normalizar navegación: usar siempre GamepadInputReader para que stick y D-Pad se comporten igual.
-                var nav = GamepadInputReader.Navigation;
-                moved = ConsumeStick(nav.y);
-
-                if (!moved)
-                {
-                    if (GamepadInputReader.DpadUpPressed)
-                        moved = ConsumeStick(+1f);
-                    else if (GamepadInputReader.DpadDownPressed)
-                        moved = ConsumeStick(-1f);
-                }
-            }
-            catch (System.Exception)
-            {
-                // lectura defensiva: si InputSystem cambia en runtime, evitar crash
-            }
-        }
-#endif
     }
 
     bool WasPausePressedThisFrame()
     {
-        if (_pausePressedViaEvent)
+#if ENABLE_INPUT_SYSTEM
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
         {
-            _pausePressedViaEvent = false;
-            return true;
+            return pim.Controls.GamePlay.Start.WasPressedThisFrame();
         }
+#endif
         return false;
     }
 
     bool WasCancelPressedThisFrame()
     {
-        if (_cancelPressedViaEvent)
-        {
-            _cancelPressedViaEvent = false;
-            return true;
-        }
-        return false;
-    }
-
-    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        if (input.Phase != InputActionPhase.Performed) return;
-
-        if (input.Type == GamepadInputReader.InputEventType.Start)
-            _pausePressedViaEvent = true;
-        else if (input.Type == GamepadInputReader.InputEventType.Cancel)
-            _cancelPressedViaEvent = true;
-    }
-
-    bool ConsumeStick(float y)
-    {
-        if (Mathf.Abs(y) <= navDeadzone)
-        {
-            _navHeldSign = 0;
-            return false;
-        }
-
-        int sign = y > 0f ? 1 : -1;
-        if (_navHeldSign == sign)
-            return false; // ya se movió en esta dirección, esperar a soltar
-
-        _navHeldSign = sign;
-        if (sign > 0) MoveSelection(Vector2.up);
-        else MoveSelection(Vector2.down);
-        _navCooldown = navRepeatDelay;
-        return true;
-    }
-
-    bool EventSystemHandlesNavigation()
-    {
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return false;
-
-        if (!_es.sendNavigationEvents) return false;
-
-        var module = _es.currentInputModule;
 #if ENABLE_INPUT_SYSTEM
-        if (module is InputSystemUIInputModule)
-            return true;
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+        {
+            return pim.Controls.UI.Cancel.WasPressedThisFrame();
+        }
 #endif
-        return module is StandaloneInputModule;
+        return false;
     }
 
     void RequestPauseToggle()
@@ -722,8 +516,8 @@ public class PauseMenuController : MonoBehaviour
                 RestorePauseInteraction();
                 if (es != null && previous != null)
                     es.SetSelectedGameObject(previous);
-                // Asegurar selección en el menú de pausa
-                EnsureUISelection();
+                // Reseleccionar el primer botón del pause menu
+                StartCoroutine(SelectFirstButtonNextFrame());
             });
 
             if (es != null && initial != null)
@@ -744,19 +538,6 @@ public class PauseMenuController : MonoBehaviour
             rootGroup.blocksRaycasts = false;
             rootGroup.interactable = false;
         }
-
-        // Ocultar botones principales del Pause para evitar interferencias con inputs
-        if (!_settingsButtonsSnapshotValid)
-        {
-            _resumeButtonActiveSnapshot = resumeButton ? resumeButton.gameObject.activeSelf : false;
-            _optionsButtonActiveSnapshot = optionsButton ? optionsButton.gameObject.activeSelf : false;
-            _quitButtonActiveSnapshot = quitToMainButton ? quitToMainButton.gameObject.activeSelf : false;
-            _settingsButtonsSnapshotValid = true;
-        }
-
-        if (resumeButton) resumeButton.gameObject.SetActive(false);
-        if (optionsButton) optionsButton.gameObject.SetActive(false);
-        if (quitToMainButton) quitToMainButton.gameObject.SetActive(false);
     }
 
     void EnsureSettingsMenuClosed()
@@ -767,8 +548,7 @@ public class PauseMenuController : MonoBehaviour
         if (settingsMenu != null && settingsMenu.IsVisible)
             settingsMenu.Close();
 
-        if (_settingsButtonsSnapshotValid)
-            RestorePauseInteraction();
+        RestorePauseInteraction();
     }
 
     void RestorePauseInteraction()
@@ -777,14 +557,6 @@ public class PauseMenuController : MonoBehaviour
         {
             rootGroup.blocksRaycasts = _settingsSnapshotRaycasts;
             rootGroup.interactable = _settingsSnapshotInteractable;
-        }
-
-        if (_settingsButtonsSnapshotValid)
-        {
-            if (resumeButton) resumeButton.gameObject.SetActive(_resumeButtonActiveSnapshot);
-            if (optionsButton) optionsButton.gameObject.SetActive(_optionsButtonActiveSnapshot);
-            if (quitToMainButton) quitToMainButton.gameObject.SetActive(_quitButtonActiveSnapshot);
-            _settingsButtonsSnapshotValid = false;
         }
     }
 
