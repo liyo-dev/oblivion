@@ -30,11 +30,11 @@ public class DesignNotebookWindow : EditorWindow
     private readonly Color[] _chalkPalette =
     {
         Color.white,
-        new Color(1f, 0.85f, 0.35f),
-        new Color(0.96f, 0.56f, 0.56f),
-        new Color(0.56f, 0.78f, 0.98f),
-        new Color(0.63f, 0.9f, 0.64f),
-        new Color(0.8f, 0.7f, 0.96f)
+        new Color(0.92f, 0.74f, 0.42f),
+        new Color(0.88f, 0.56f, 0.56f),
+        new Color(0.74f, 0.62f, 0.46f),
+        new Color(0.68f, 0.8f, 0.64f),
+        new Color(0.78f, 0.7f, 0.58f)
     };
     private readonly Color[] _blackboardBackgroundPalette =
     {
@@ -236,16 +236,23 @@ public class DesignNotebookWindow : EditorWindow
     {
         EditorGUILayout.Space(2f);
         EditorGUILayout.BeginHorizontal();
-        DrawStatPill("Tarjetas", _asset?.storyCards?.Count ?? 0, "Storyboard estilizado");
-        DrawStatPill("Notas rápidas", _asset?.quickNotes?.Count ?? 0, "Tablero tipo corcho");
-        DrawStatPill("Trazos", _asset?.blackboardStrokes?.Count ?? 0, "Blackboard creativo");
+        float availableWidth = Mathf.Max(position.width - 60f, 360f);
+        float targetWidth = Mathf.Clamp((availableWidth / 3f) - 8f, 140f, 260f);
+
+        DrawStatPill("Tarjetas", _asset?.storyCards?.Count ?? 0, "Storyboard estilizado", targetWidth);
+        DrawStatPill("Notas rápidas", _asset?.quickNotes?.Count ?? 0, "Tablero tipo corcho", targetWidth);
+        DrawStatPill("Trazos", _asset?.blackboardStrokes?.Count ?? 0, "Blackboard creativo", targetWidth);
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
     }
 
-    private void DrawStatPill(string label, int value, string helper)
+    private void DrawStatPill(string label, int value, string helper, float targetWidth)
     {
-        using (new EditorGUILayout.VerticalScope(Styles.StatPill, GUILayout.Width(170f)))
+        using (new EditorGUILayout.VerticalScope(
+                   Styles.StatPill,
+                   GUILayout.MinWidth(targetWidth),
+                   GUILayout.MaxWidth(targetWidth),
+                   GUILayout.ExpandWidth(true)))
         {
             EditorGUILayout.LabelField(label, Styles.StatLabel);
             EditorGUILayout.LabelField(value.ToString(), Styles.StatValue);
@@ -1190,8 +1197,8 @@ public class DesignNotebookWindow : EditorWindow
 
         static Styles()
         {
-            AccentColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.64f, 0.96f) : new Color(0.16f, 0.46f, 0.86f);
-            AccentSoft = Color.Lerp(new Color(0.24f, 0.92f, 0.82f), Color.white, 0.25f);
+            AccentColor = EditorGUIUtility.isProSkin ? new Color(0.34f, 0.28f, 0.22f) : new Color(0.42f, 0.36f, 0.3f);
+            AccentSoft = EditorGUIUtility.isProSkin ? new Color(0.44f, 0.36f, 0.28f) : new Color(0.52f, 0.46f, 0.38f);
 
             HeaderBox = new GUIStyle("HelpBox")
             {
@@ -1199,9 +1206,9 @@ public class DesignNotebookWindow : EditorWindow
                 margin = new RectOffset(6, 6, 4, 4),
                 normal =
                 {
-                    background = MakeVerticalGradientTex(74,
-                        Color.Lerp(AccentColor, Color.black, 0.35f),
-                        Color.Lerp(AccentSoft, Color.white, 0.1f))
+                    background = MakeTex(EditorGUIUtility.isProSkin
+                        ? new Color(0.12f, 0.12f, 0.13f)
+                        : new Color(0.2f, 0.2f, 0.22f))
                 }
             };
 
@@ -1209,14 +1216,14 @@ public class DesignNotebookWindow : EditorWindow
             {
                 fontSize = 17,
                 alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.12f, 0.18f, 0.26f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.94f, 0.9f, 0.86f) : new Color(0.18f, 0.16f, 0.14f) }
             };
 
             HeaderSubtitle = new GUIStyle(EditorStyles.label)
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Italic,
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.85f, 0.92f, 1f) : new Color(0.2f, 0.3f, 0.42f) },
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.82f, 0.78f, 0.72f) : new Color(0.28f, 0.24f, 0.2f) },
                 padding = new RectOffset(2, 2, 0, 4),
                 margin = new RectOffset(4, 4, 0, 6)
             };
@@ -1224,27 +1231,27 @@ public class DesignNotebookWindow : EditorWindow
             SectionBox = new GUIStyle("HelpBox")
             {
                 padding = new RectOffset(14, 14, 12, 14),
-                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.12f, 0.14f, 0.17f) : new Color(0.93f, 0.95f, 0.99f)) }
+                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.12f, 0.13f, 0.14f) : new Color(0.9f, 0.9f, 0.92f)) }
             };
 
             SectionTitle = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 13,
                 margin = new RectOffset(4, 4, 2, 6),
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.9f, 0.94f, 1f) : new Color(0.18f, 0.26f, 0.36f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.9f, 0.88f, 0.82f) : new Color(0.26f, 0.22f, 0.18f) }
             };
 
             ListHeader = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 12,
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.85f, 0.9f, 1f) : new Color(0.12f, 0.18f, 0.3f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.82f, 0.78f, 0.72f) : new Color(0.22f, 0.18f, 0.14f) }
             };
 
             Card = new GUIStyle("Box")
             {
                 padding = new RectOffset(10, 10, 8, 10),
                 margin = new RectOffset(0, 0, 10, 10),
-                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.13f, 0.16f, 0.2f) : new Color(0.88f, 0.92f, 0.98f)) }
+                normal = { background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.14f, 0.15f, 0.16f) : new Color(0.86f, 0.86f, 0.88f)) }
             };
 
             NoteCard = new GUIStyle(Card)
@@ -1255,7 +1262,7 @@ public class DesignNotebookWindow : EditorWindow
 
             NoteLabel = new GUIStyle(EditorStyles.miniBoldLabel)
             {
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.95f, 0.95f, 0.95f) : new Color(0.18f, 0.18f, 0.18f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.96f, 0.94f, 0.9f) : new Color(0.2f, 0.18f, 0.16f) }
             };
 
             NoteTitleField = new GUIStyle(EditorStyles.textField)
@@ -1291,7 +1298,7 @@ public class DesignNotebookWindow : EditorWindow
             {
                 normal =
                 {
-                    background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.11f, 0.13f, 0.16f) : new Color(0.95f, 0.97f, 1f)),
+                    background = MakeTex(EditorGUIUtility.isProSkin ? new Color(0.11f, 0.11f, 0.12f) : new Color(0.94f, 0.94f, 0.95f)),
                     textColor = EditorStyles.label.normal.textColor
                 },
                 padding = new RectOffset(8, 8, 8, 8),
@@ -1304,42 +1311,47 @@ public class DesignNotebookWindow : EditorWindow
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,
                 margin = new RectOffset(2, 2, 2, 2),
-                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.1f, 0.16f, 0.22f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.94f, 0.9f, 0.86f) : new Color(0.18f, 0.16f, 0.14f) }
             };
 
             StatPill = new GUIStyle("HelpBox")
             {
                 padding = new RectOffset(12, 12, 8, 10),
                 margin = new RectOffset(6, 6, 2, 2),
-                normal = { background = MakeVerticalGradientTex(56, Color.Lerp(AccentColor, Color.black, 0.45f), Color.Lerp(AccentSoft, Color.white, 0.25f)) }
+                normal =
+                {
+                    background = MakeTex(EditorGUIUtility.isProSkin
+                        ? new Color(0.14f, 0.14f, 0.16f)
+                        : new Color(0.25f, 0.25f, 0.27f))
+                }
             };
 
             StatLabel = new GUIStyle(EditorStyles.miniLabel)
             {
                 fontSize = 11,
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.86f, 0.9f, 0.96f) : new Color(0.18f, 0.26f, 0.35f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.86f, 0.84f, 0.8f) : new Color(0.28f, 0.24f, 0.2f) }
             };
 
             StatValue = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 16,
-                normal = { textColor = EditorGUIUtility.isProSkin ? Color.white : new Color(0.08f, 0.12f, 0.22f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.94f, 0.92f, 0.9f) : new Color(0.12f, 0.1f, 0.08f) }
             };
 
             StatHelper = new GUIStyle(EditorStyles.miniLabel)
             {
                 fontSize = 10,
                 fontStyle = FontStyle.Italic,
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.8f, 0.88f, 1f, 0.9f) : new Color(0.24f, 0.32f, 0.44f) }
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.78f, 0.74f, 0.68f, 0.9f) : new Color(0.32f, 0.28f, 0.22f) }
             };
 
             ElementBackground = EditorGUIUtility.isProSkin
-                ? new Color(0.18f, 0.22f, 0.28f)
-                : new Color(0.85f, 0.9f, 0.98f);
+                ? new Color(0.2f, 0.18f, 0.16f)
+                : new Color(0.84f, 0.82f, 0.8f);
 
             ElementBackgroundActive = EditorGUIUtility.isProSkin
-                ? new Color(0.2f, 0.34f, 0.48f)
-                : new Color(0.75f, 0.84f, 0.95f);
+                ? new Color(0.28f, 0.24f, 0.2f)
+                : new Color(0.76f, 0.72f, 0.68f);
 
             NoteShadow = new Color(0f, 0f, 0f, 0.08f);
             PinColor = new Color(0.8f, 0.2f, 0.2f);
@@ -1585,13 +1597,14 @@ internal class StoryCardNodeView : Node
     private readonly VisualElement _accentStrip;
     private readonly Color _baseBody = new Color(0.08f, 0.1f, 0.15f);
     private readonly Color _baseHeader = new Color(0.1f, 0.12f, 0.18f);
-    private readonly Color[] _swatchColors = {
-        new Color(0.25f, 0.78f, 0.96f),
-        new Color(0.48f, 0.86f, 0.66f),
-        new Color(0.72f, 0.62f, 0.98f),
-        new Color(0.98f, 0.62f, 0.42f),
-        new Color(0.28f, 0.56f, 0.98f),
-        new Color(0.9f, 0.93f, 0.95f)
+    private readonly Color[] _swatchColors =
+    {
+        new Color(0.54f, 0.38f, 0.3f),
+        new Color(0.48f, 0.58f, 0.46f),
+        new Color(0.64f, 0.52f, 0.4f),
+        new Color(0.56f, 0.44f, 0.52f),
+        new Color(0.66f, 0.46f, 0.34f),
+        new Color(0.32f, 0.32f, 0.32f)
     };
 
     public StoryCardNodeView(DesignStoryCard card, Action onDirty)
@@ -1718,6 +1731,16 @@ internal class StoryCardNodeView : Node
         settingsContainer.style.marginLeft = 4f;
         settingsContainer.style.marginRight = 4f;
 
+        var colorHeader = new Label("Color de la tarjeta")
+        {
+            style =
+            {
+                unityFontStyleAndWeight = FontStyle.Bold,
+                marginBottom = 2f
+            }
+        };
+        settingsContainer.Add(colorHeader);
+
         var colorRow = new VisualElement
         {
             style =
@@ -1840,8 +1863,8 @@ internal class StoryCardNodeView : Node
     private void UpdateColor()
     {
         var accent = Card.color;
-        var headerColor = Color.Lerp(accent, new Color(0.28f, 0.82f, 1f), 0.2f);
-        var bodyColor = Color.Lerp(accent, _baseBody, 0.65f);
+        var headerColor = Color.Lerp(accent, _baseHeader, 0.35f);
+        var bodyColor = Color.Lerp(accent, _baseBody, 0.55f);
 
         mainContainer.style.backgroundColor = new StyleColor(bodyColor);
         titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(headerColor, _baseHeader, 0.35f));
