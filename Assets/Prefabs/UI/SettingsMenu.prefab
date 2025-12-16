@@ -1554,7 +1554,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2300572267784613980}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9840de056e76fbd49b7a7c6a08c89031, type: 3}
   m_Name: 
@@ -1577,8 +1577,11 @@ MonoBehaviour:
   fullscreenNoButton: {fileID: 7708655203052666237}
   activeStateColor: {r: 1, g: 0.92, b: 0.16, a: 1}
   inactiveStateColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+  sliderStep: 0.05
   autoAddSelectVisuals: 1
   cancelInputGracePeriod: 0.25
+  navRepeatDelay: 0.2
+  navDeadzone: 0.5
 --- !u!1 &2532450884901455273
 GameObject:
   m_ObjectHideFlags: 0

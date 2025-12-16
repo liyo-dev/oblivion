@@ -1,6 +1,5 @@
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public static class SettingsMenuCreator
@@ -12,7 +11,6 @@ public static class SettingsMenuCreator
     [MenuItem(MenuPath, priority = 210)]
     public static void CreateMenu()
     {
-        EnsureEventSystem();
 
         var resources = new DefaultControls.Resources();
         var canvasGO = new GameObject("SettingsMenu");
@@ -129,20 +127,6 @@ public static class SettingsMenuCreator
 
         Selection.activeObject = canvasGO;
         EditorUtility.SetDirty(canvasGO);
-    }
-
-    private static void EnsureEventSystem()
-    {
-        if (Object.FindFirstObjectByType<EventSystem>() != null) return;
-
-        var es = new GameObject("EventSystem");
-        Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
-        es.AddComponent<EventSystem>();
-#if ENABLE_INPUT_SYSTEM
-        es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-#else
-        es.AddComponent<StandaloneInputModule>();
-#endif
     }
 
     private static GameObject CreateUIObject(string name, Transform parent)

@@ -1,10 +1,11 @@
-﻿// PauseMenuController.cs
+﻿﻿// PauseMenuController.cs
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using DG.Tweening;
+using Core;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -400,7 +401,10 @@ public class PauseMenuController : MonoBehaviour
     void EnableUIInput()
     {
 #if ENABLE_INPUT_SYSTEM
-        playerControls?.UI.Enable();
+        // Cambiar a modo UI centralizado
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+            pim.PushUIMode();
+
         // Asegurar que D-Pad también esté activo para navegación
         _dpadUpAction?.Enable();
         _dpadDownAction?.Enable();
@@ -410,7 +414,10 @@ public class PauseMenuController : MonoBehaviour
     void DisableUIInput()
     {
 #if ENABLE_INPUT_SYSTEM
-        playerControls?.UI.Disable();
+        // Restaurar modo Gameplay centralizado
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+            pim.PopUIMode();
+
         _dpadUpAction?.Disable();
         _dpadDownAction?.Disable();
 #endif

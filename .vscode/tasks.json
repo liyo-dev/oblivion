@@ -1,0 +1,20 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Unity Tests",
+			"type": "shell",
+			"command": "Unity.exe",
+			"args": [
+				"-runTests",
+				"-projectPath",
+				"c:\\Users\\luarb\\dev\\unity\\El Sendero de las Estrellas",
+				"-testResults",
+				"TestResults.xml"
+			],
+			"problemMatcher": [
+				"$unity-test"
+			]
+		}
+	]
+}

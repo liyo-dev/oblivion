@@ -4,7 +4,7 @@ using TMPro;
 using System;
 using UnityEngine.EventSystems;
 
-public class QuestLogItemUI : MonoBehaviour, IPointerClickHandler
+public class QuestLogItemUI : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI questName;

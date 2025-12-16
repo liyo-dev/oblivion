@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using Core;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -661,7 +662,7 @@ public class DialogueManager : MonoBehaviour
         {
             try
             {
-                _uiPlayerControls = PlayerInputManager.GetSharedOrNew(out _ownsUiPlayerControls);
+                _uiPlayerControls = Core.PlayerInputManager.GetSharedOrNew(out _ownsUiPlayerControls);
             }
             catch (Exception ex)
             {
@@ -685,11 +686,6 @@ public class DialogueManager : MonoBehaviour
     void OnDestroy()
     {
         UnbindAdvanceInputs();
-        if (_ownsUiPlayerControls && _uiPlayerControls != null)
-        {
-            _uiPlayerControls.Dispose();
-            _uiPlayerControls = null;
-        }
     }
 #endif
 }

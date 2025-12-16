@@ -46,7 +46,7 @@ public class PlayerFlyingController : MonoBehaviour
     private FieldInfo _lockMovementField;
     private FieldInfo _lockRotationField;
     private PlayerActionManager _actionManager;
-    private PlayerInputManager _inputManager;
+    private Core.PlayerInputManager _inputManager;
     private CapsuleCollider _capsule;
     private Transform _cameraTransform;
     private PlayerControls _controls;
@@ -96,7 +96,7 @@ public class PlayerFlyingController : MonoBehaviour
         _controller = GetComponent<vThirdPersonController>();
         _inputController = GetComponent<Invector.vCharacterController.vThirdPersonInput>();
         _actionManager = GetComponent<PlayerActionManager>();
-        _inputManager = ServiceLocator.Get<PlayerInputManager>(logIfMissing: false) ?? GetComponent<PlayerInputManager>();
+        _inputManager = ServiceLocator.Get<Core.PlayerInputManager>(logIfMissing: false);
         _capsule = GetComponent<CapsuleCollider>() ?? GetComponentInChildren<CapsuleCollider>();
         CacheControllerLockFields();
         CacheCameraTransform();

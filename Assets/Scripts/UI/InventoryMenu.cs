@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace UI
@@ -27,15 +26,15 @@ namespace UI
             TryBindPlayer();
             PlayerService.OnPlayerRegistered += OnPlayerRegistered;
 
-            GamepadInputReader.EnsureInputEventsSubscribed();
-            GamepadInputReader.OnInput += HandleGamepadInput;
+            Core.GamepadInputReader.EnsureInputEventsSubscribed();
+            Core.GamepadInputReader.OnInput += HandleGamepadInput;
         }
 
         void OnDestroy()
         {
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             UnsubscribeInventory();
-            GamepadInputReader.OnInput -= HandleGamepadInput;
+            Core.GamepadInputReader.OnInput -= HandleGamepadInput;
         }
 
         private void OnPlayerRegistered(GameObject player) => TryBindPlayer();
@@ -66,9 +65,9 @@ namespace UI
                 Refresh();
         }
 
-        private void HandleGamepadInput(GamepadInputReader.InputEvent input)
+        private void HandleGamepadInput(Core.GamepadInputReader.InputEvent input)
         {
-            if (input.Type != GamepadInputReader.InputEventType.DpadDown || input.Phase != InputActionPhase.Performed)
+            if (input.Type != Core.GamepadInputReader.InputEventType.DpadDown || input.Phase != InputActionPhase.Performed)
                 return;
 
             if (Time.unscaledTime < _nextToggleTime)
@@ -84,7 +83,6 @@ namespace UI
             gameObject.SetActive(next);
             if (next)
             {
-                EnsureEventSystem();
                 Refresh();
                 StartCoroutine(SelectFirstItemDelayed());
             }
@@ -145,17 +143,10 @@ namespace UI
 
         private System.Collections.IEnumerator SelectFirstItemDelayed()
         {
-            // Esperar un frame para que el EventSystem reconozca los nuevos elementos
+            // Esperar un frame para que los elementos estén listos
             yield return null;
             
             if (contentParent == null || contentParent.childCount == 0) yield break;
-
-            var es = EventSystem.current;
-            if (es == null)
-            {
-                Debug.LogWarning("[InventoryMenu] EventSystem.current is null");
-                yield break;
-            }
 
             // Buscar el primer Selectable en los hijos
             for (int i = 0; i < contentParent.childCount; i++)
@@ -164,22 +155,12 @@ namespace UI
                 var selectable = child.GetComponentInChildren<Selectable>();
                 if (selectable != null && selectable.interactable && selectable.gameObject.activeInHierarchy)
                 {
-                    es.SetSelectedGameObject(null);
                     yield return null; // Esperar otro frame
-                    es.SetSelectedGameObject(selectable.gameObject);
                     selectable.Select();
                     Debug.Log($"[InventoryMenu] Selected: {selectable.gameObject.name}");
                     break;
                 }
             }
-        }
-
-        private static void EnsureEventSystem()
-        {
-            if (EventSystem.current != null) return;
-
-            var esGO = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-            DontDestroyOnLoad(esGO);
         }
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Core;
 
 public class SleepTrigger : MonoBehaviour
 {

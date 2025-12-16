@@ -3,13 +3,15 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-/// <summary>
-/// Punto único para leer entradas del gamepad a través del <see cref="PlayerControls"/>
-/// registrado en el <see cref="ServiceLocator"/>. Evita el uso de <c>Input.Get*</c>
-/// y garantiza que todos los sistemas consultan el mismo asset de Input System.
-/// </summary>
-public static class GamepadInputReader
+namespace Core
 {
+    /// <summary>
+    /// Punto único para leer entradas del gamepad a través del <see cref="PlayerControls"/>
+    /// registrado en el <see cref="ServiceLocator"/>. Evita el uso de <c>Input.Get*</c>
+    /// y garantiza que todos los sistemas consultan el mismo asset de Input System.
+    /// </summary>
+    public static class GamepadInputReader
+    {
     public enum InputEventType
     {
         Submit,
@@ -102,26 +104,27 @@ public static class GamepadInputReader
         {
             if (_controls != null) return _controls;
 
-            if (ServiceLocator.TryGet(out PlayerInputManager pim) && pim.Controls != null)
-            {
-                _controls = pim.Controls;
-            }
-            else
-            {
-                _controls = PlayerInputManager.GetSharedOrNew(out _);
-            }
-
-            if (_controls != null)
-            {
-                if (!_controls.GamePlay.enabled) _controls.GamePlay.Enable();
-                if (!_controls.UI.enabled) _controls.UI.Enable();
-
-                EnsureInputEventsSubscribed();
-                EnsurePollingRegistered();
-            }
+            InitializeControls();
 
             return _controls;
         }
+    }
+
+    private static void InitializeControls()
+    {
+        if (_controls != null) return;
+
+        if (ServiceLocator.TryGet(out PlayerInputManager pim))
+        {
+            _controls = pim.Controls;
+        }
+        else
+        {
+            _controls = PlayerInputManager.GetSharedOrNew(out _);
+        }
+
+        EnsureInputEventsSubscribed();
+        EnsurePollingRegistered();
     }
 
     public static void EnsureInputEventsSubscribed()
@@ -487,4 +490,5 @@ public static class GamepadInputReader
     public static bool InteractPressed => Controls != null && Controls.GamePlay.Interact.triggered;
     public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
+    }
 }

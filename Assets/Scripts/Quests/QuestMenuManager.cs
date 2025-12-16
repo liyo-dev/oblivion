@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Core;
 
 public class QuestMenuManager : MonoBehaviour
 {
@@ -407,36 +408,20 @@ public class QuestMenuManager : MonoBehaviour
 
     sealed class InputScope : IDisposable
     {
-        readonly PlayerControls _controls;
-        readonly bool _restoreGameplay;
-        readonly bool _restoreUi;
         bool _disposed;
-        static int _stack;
 
-        InputScope(PlayerControls controls)
+        InputScope()
         {
-            _controls = controls;
             GamepadInputReader.PushGameplaySuppression(this);
 
-            if (_controls == null)
-                return;
-
-            _restoreUi = !_controls.UI.enabled;
-            if (_restoreUi)
-                _controls.UI.Enable();
-
-            if (_controls.GamePlay.enabled)
-            {
-                _restoreGameplay = true;
-                _controls.GamePlay.Disable();
-                _stack++;
-            }
+            // Cambiar a modo UI centralizado
+            if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+                pim.PushUIMode();
         }
 
         public static InputScope Enter()
         {
-            var controls = ServiceLocator.TryGet(out PlayerInputManager pim) ? pim.Controls : GamepadInputReader.ControlsOrNull;
-            return new InputScope(controls);
+            return new InputScope();
         }
 
         public void Dispose()
@@ -445,15 +430,9 @@ public class QuestMenuManager : MonoBehaviour
                 return;
             _disposed = true;
 
-            if (_controls != null && _restoreGameplay)
-            {
-                _stack = Math.Max(0, _stack - 1);
-                if (_stack == 0 && !_controls.GamePlay.enabled)
-                    _controls.GamePlay.Enable();
-            }
-
-            if (_controls != null && _restoreUi && _controls.UI.enabled)
-                _controls.UI.Disable();
+            // Restaurar modo Gameplay centralizado
+            if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+                pim.PopUIMode();
 
             GamepadInputReader.PopGameplaySuppression(this);
         }

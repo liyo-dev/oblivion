@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using DG.Tweening;
 
 [DisallowMultipleComponent]
@@ -187,22 +186,15 @@ public class MainMenuController : MonoBehaviour
 
     void AutoSelectFirstIfNeeded()
     {
-        var es = EventSystem.current;
-        if (!es) return;
-
-        // Solo forzar selección si NO hay selección válida ya
-        if (es.currentSelectedGameObject == null || !es.currentSelectedGameObject.activeInHierarchy)
+        // Seleccionar el primer botón interactivo disponible
+        if (continueRow && continueRow.activeInHierarchy && continueButton && continueButton.interactable)
         {
-            // Si hay partida y existe CONTINUAR, lo seleccionamos; si no, buscamos el primer Button activo
-            if (continueRow && continueRow.activeInHierarchy && continueButton && continueButton.interactable)
-            {
-                es.SetSelectedGameObject(continueButton.gameObject);
-            }
-            else
-            {
-                var firstBtn = FindFirstActiveButton();
-                if (firstBtn) es.SetSelectedGameObject(firstBtn.gameObject);
-            }
+            continueButton.Select();
+        }
+        else
+        {
+            var firstBtn = FindFirstActiveButton();
+            if (firstBtn) firstBtn.Select();
         }
     }
 
@@ -347,8 +339,6 @@ public class MainMenuController : MonoBehaviour
             if (buttonPanel != null)
                 buttonPanel.SetActive(false);
 
-            var es = EventSystem.current;
-            var previous = es ? es.currentSelectedGameObject : null;
             var initial = settingsMenu.GetDefaultSelection();
             SuspendMainMenuInteraction();
             settingsMenu.Show(initial, () =>
@@ -363,14 +353,16 @@ public class MainMenuController : MonoBehaviour
                 if (navigator != null)
                     navigator.ResetCooldown();
 
-                // Restaurar la selección en el siguiente frame para evitar que
-                // el primer input del D-Pad sea consumido al cerrar Settings.
-                if (es != null)
-                    StartCoroutine(RestoreSelectionNextFrame(previous));
+                // Restaurar la selección en el siguiente frame
+                StartCoroutine(RestoreSelectionNextFrame(null));
             });
 
-            if (es != null && initial != null)
-                es.SetSelectedGameObject(initial);
+            if (initial != null)
+            {
+                var selectable = initial.GetComponent<Selectable>();
+                if (selectable != null)
+                    selectable.Select();
+            }
         }
         else
         {
@@ -452,8 +444,6 @@ public class MainMenuController : MonoBehaviour
     System.Collections.IEnumerator RestoreSelectionNextFrame(GameObject previous)
     {
         yield return null; // esperar un frame
-        var es = EventSystem.current;
-        if (es == null) yield break;
 
         var navigator = GetComponentInChildren<MenuNavigator>(true);
 
@@ -473,20 +463,12 @@ public class MainMenuController : MonoBehaviour
             else navigator.ResetCooldown();
         }
 
-        // Limpiar y re-aplicar selección para forzar estado claro
-        es.SetSelectedGameObject(null);
+        // Re-aplicar selección
         if (previous != null)
         {
-            es.SetSelectedGameObject(previous);
             var sel = previous.GetComponent<UnityEngine.UI.Selectable>();
             if (sel != null) sel.Select();
         }
-
-        yield return null; // Hacerlo un frame más tarde por seguridad
-
-        // Reseguro extra: si algo perdió la selección, volver a ponerla
-        if (previous != null && es.currentSelectedGameObject == null)
-            es.SetSelectedGameObject(previous);
     }
 
     // ===== Utilidades =======================================================

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Core;
 
 [RequireComponent(typeof(Animator))]
 public class PlayerShieldController : MonoBehaviour
@@ -36,7 +37,7 @@ public class PlayerShieldController : MonoBehaviour
 
     void Awake()
     {
-        _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
+        _controls = Core.PlayerInputManager.GetSharedOrNew(out _ownsControls);
         _animator = GetComponent<Animator>();
         _playerLayer = gameObject.layer;
         CacheUpperBodyWeight();

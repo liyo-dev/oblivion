@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 using UnityEngine.InputSystem;
+using Core;
 
 [DisallowMultipleComponent]
 public class MenuNavigator : MonoBehaviour

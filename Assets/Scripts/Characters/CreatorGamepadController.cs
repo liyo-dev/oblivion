@@ -1,4 +1,5 @@
 using UnityEngine;
+using Core;
 
 public class CreatorGamepadController : MonoBehaviour
 {
@@ -6,44 +7,21 @@ public class CreatorGamepadController : MonoBehaviour
     public RowSelectionHighlighter highlighter;      // arrastra Panel (RowSelectionHighlighter)
     public CharacterCreatorUI ui;                    // arrastra el componente del Panel
 
-    PlayerControls _input;
-    bool _ownsControls;
     float _lastNavY;
     float _lastNavX;
 
-    void Awake()
-    {
-        _input = PlayerInputManager.GetSharedOrNew(out _ownsControls);
-    }
-
     void OnEnable()
     {
-        if (_input == null) return;
-
-        if (_ownsControls)
-        {
-            _input.Enable();
-            _input.UI.Enable();
-            _input.GamePlay.Enable();
-        }
+        // Cambiar a modo UI para el character creator
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+            pim.PushUIMode();
     }
 
     void OnDisable()
     {
-        if (_input == null) return;
-
-        if (_ownsControls)
-        {
-            _input.UI.Disable();
-            _input.GamePlay.Disable();
-            _input.Disable();
-        }
-    }
-
-    void OnDestroy()
-    {
-        if (_ownsControls)
-            _input?.Disable();
+        // Restaurar modo Gameplay
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+            pim.PopUIMode();
     }
 
     void Start()
@@ -68,8 +46,14 @@ public class CreatorGamepadController : MonoBehaviour
     {
         if (builder == null) return;
 
+        // Obtener controles del PlayerInputManager
+        if (!ServiceLocator.TryGet(out Core.PlayerInputManager pim) || pim.Controls == null)
+            return;
+
+        var controls = pim.Controls;
+
         // --- D-Pad / stick VERTICAL para cambiar categoría (arriba/abajo) ---
-        Vector2 nav = _input.UI.Navigate.ReadValue<Vector2>();
+        Vector2 nav = controls.UI.Navigate.ReadValue<Vector2>();
         
         // Abajo: categoría siguiente
         if (nav.y < -0.5f && _lastNavY >= -0.5f)
@@ -116,21 +100,21 @@ public class CreatorGamepadController : MonoBehaviour
         var cat = ui ? ui.CurrentHighlightedCategory() : PartCategory.Body;
 
         // --- A = Siguiente variante (derecha) ---
-        if (_input.UI.Submit.WasPressedThisFrame())
+        if (controls.UI.Submit.WasPressedThisFrame())
         {
             Debug.Log($"A presionado - Next en {cat}");
             builder.Next(cat);
         }
 
         // --- X = Variante anterior (izquierda) ---
-        if (_input.GamePlay.AttackMagicWest.WasPressedThisFrame())
+        if (controls.GamePlay.AttackMagicWest.WasPressedThisFrame())
         {
             Debug.Log($"X presionado - Prev en {cat}");
             builder.Prev(cat);
         }
 
         // --- B = Toggle on/off ---
-        if (_input.UI.Cancel.WasPressedThisFrame())
+        if (controls.UI.Cancel.WasPressedThisFrame())
         {
             Debug.Log($"B presionado - Toggle {cat}");
             var sel = builder.GetSelection();

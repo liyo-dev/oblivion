@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine.InputSystem;
 using UnityEngine;
 using UnityEngine.UI;
+using Core;
 
 /// <summary>
 /// Muestra un popup cuando se desbloquea una habilidad 

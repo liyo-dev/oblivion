@@ -1,12 +1,12 @@
 using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using DG.Tweening;
+using Core;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
 #endif
 
 /// <summary>
@@ -453,12 +453,6 @@ public class ShopUI : MonoBehaviour
         if (_selectedIndex < 0 || _selectedIndex >= _itemCards.Count) return;
         var button = _itemCards[_selectedIndex]?.GetButton();
         if (button == null) return;
-        var es = EventSystem.current;
-        if (es != null)
-        {
-            es.SetSelectedGameObject(null);
-            es.SetSelectedGameObject(button.gameObject);
-        }
         button.Select();
     }
 
@@ -590,12 +584,6 @@ public class ShopUI : MonoBehaviour
     {
         if (buyButton == null) return;
         _state = ShopState.BuyButtonFocused;
-        var es = EventSystem.current;
-        if (es != null)
-        {
-            es.SetSelectedGameObject(null);
-            es.SetSelectedGameObject(buyButton.gameObject);
-        }
         buyButton.Select();
         PlayBuyButtonFeedback();
     }

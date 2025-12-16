@@ -1,68 +1,46 @@
 using UnityEngine;
-using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using EasyTransition;
 using DG.Tweening;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
+using Core;
 
 /// <summary>
-/// Gestiona la pantalla de Game Over (mostrar/ocultar, pausar el juego y reiniciar escena).
-/// Asignar en el inspector un GameObject que contenga la UI de Game Over (Canvas con panel).
-/// Nota: versión simplificada - no gestiona animaciones ni desactiva componentes del jugador.
+/// Gestiona la pantalla de Game Over simple con dos opciones:
+/// - Cargar última partida guardada (solo si existe)
+/// - Volver al menú principal
 /// </summary>
 public class GameOverManager : MonoBehaviour
 {
     public static GameOverManager Instance { get; private set; }
 
-    [Tooltip("Referencia al objeto de UI que actúa como pantalla de Game Over. Puede estar desactivado por defecto.")]
+    [Header("UI")]
+    [Tooltip("Referencia al objeto de UI que actúa como pantalla de Game Over.")]
     [SerializeField] private GameObject gameOverUI;
-
-    [Tooltip("Si está activado, al mostrar GameOver se pausará el juego con Time.timeScale = 0.")]
-    [SerializeField] private bool pauseOnGameOver = true;
+    [SerializeField] private Button loadLastSaveButton;
+    [SerializeField] private Button backToMenuButton;
+    [SerializeField] private CanvasGroup rootGroup;
 
     [Header("Escenas")]
-    [Tooltip("Nombre de la escena del menú principal.")]
     [SerializeField] private string mainMenuScene = "MainMenu";
 
     [Header("Transiciones")]
-    [Tooltip("TransitionManager persistente que reproducira la transicion visual.")]
     [SerializeField] private TransitionManager transitionManager;
-    [Tooltip("TransitionSettings usado al recargar la escena actual (boton Cargar partida).")]
     [SerializeField] private TransitionSettings reloadTransitionSettings;
-    [Tooltip("TransitionSettings usado al volver al menu principal. Si es null, se reutiliza el de recarga.")]
     [SerializeField] private TransitionSettings mainMenuTransitionSettings;
-    [Tooltip("Retraso opcional antes de lanzar la transicion.")]
     [SerializeField] private float transitionStartDelay = 0f;
 
-    [Header("UI / Navegación")]
-    public Button loadLastSaveButton; // asignar desde inspector
-    public Button backToMenuButton; // asignar desde inspector
-    public CanvasGroup rootGroup; // opcional
-    public RectTransform[] selectableItems; // opcional: orden de selección
-
     [Header("Comportamiento")]
-    [Tooltip("Retraso en segundos antes de mostrar la UI de Game Over para permitir que la animación de muerte y la barra de vida terminen.")]
+    [Tooltip("Si está activado, al mostrar GameOver se pausará el juego.")]
+    [SerializeField] private bool pauseOnGameOver = true;
+    [Tooltip("Retraso en segundos antes de mostrar la UI.")]
     [SerializeField] private float delayBeforeShow = 0.75f;
-
-    // internos para mantener foco
-    EventSystem _es;
-    GameObject _defaultSelection;
 
     private bool _isGameOverShown = false;
     private Coroutine _showCoroutine = null;
-    // Solo cuando AttachUIButtonListeners() haya sido llamado permitimos ejecutar las acciones públicas.
-    bool _allowActions = false;
 
     public bool IsShown => _isGameOverShown;
-    [Header("Navegación")]
-    [Tooltip("Tiempo entre repeticiones de navegación cuando se mantiene el D-Pad o stick.")]
-    [Range(0.05f, 0.5f)] public float navRepeatDelay = 0.2f;
-    float _nextNavTime;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentIfPlacedInStartScene()
     {
@@ -75,16 +53,10 @@ public class GameOverManager : MonoBehaviour
                 else
                     UnityEngine.Object.DontDestroyOnLoad(existing.gameObject);
             }
-
-            if (UnityEngine.EventSystems.EventSystem.current == null)
-            {
-                var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
-                UnityEngine.Object.DontDestroyOnLoad(es);
-            }
         }
         catch (System.Exception ex)
         {
-            Debug.LogWarning($"EnsurePersistentIfPlacedInStartScene failed: {ex}");
+            Debug.LogWarning($"[GameOverManager] EnsurePersistentIfPlacedInStartScene failed: {ex}");
         }
     }
 
@@ -95,62 +67,31 @@ public class GameOverManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
         ServiceLocator.Register(this);
         SceneManager.sceneLoaded += HandleSceneLoaded;
-        // Opcional: no destruir al cambiar de escena si quieres persistencia
-        // DontDestroyOnLoad(gameObject);
-        // Si está en la escena inicial, preferimos persistir (se puede desactivar en inspector si no quieres)
+
+        // Persistir si está en la escena inicial
         if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
         {
-            DontDestroyOnLoad(gameObject);
+            UnityEngine.Object.DontDestroyOnLoad(gameObject);
         }
 
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
 
-        // Preparar refs UI
-        _es = EventSystem.current;
         if (rootGroup == null && gameOverUI != null)
             rootGroup = gameOverUI.GetComponent<CanvasGroup>() ?? gameOverUI.AddComponent<CanvasGroup>();
 
-
-        // Default selection prefer LoadLastSaveButton
-        GameObject fallback = null;
-        if (selectableItems != null)
-        {
-            for (int i = 0; i < selectableItems.Length; i++)
-            {
-                var rt = selectableItems[i];
-                if (rt != null) { fallback = rt.gameObject; break; }
-            }
-        }
-        _defaultSelection = loadLastSaveButton ? loadLastSaveButton.gameObject : fallback;
-
-        // No sobrescribimos ni re-sincronizamos los UnityEvents en Awake. Los listeners se añadirán
-        // y quitarán cuando el menú se muestre/oculte para evitar callbacks fuera de contexto.
-        // Asegurar estado inicial no interactivo para evitar que botones respondan si el GameObject
-        // se activa inadvertidamente.
+        // Estado inicial: no interactivo
         if (rootGroup != null)
         {
             rootGroup.blocksRaycasts = false;
             rootGroup.interactable = false;
         }
-        // Solo afectar botones que pertenecen al panel de GameOver para no interferir con HUD
-        if (loadLastSaveButton != null)
-        {
-            if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-                loadLastSaveButton.interactable = false;
-            else
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no es hijo de gameOverUI; no se modificará en Awake.");
-        }
-        if (backToMenuButton != null)
-        {
-            if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-                backToMenuButton.interactable = false;
-            else
-                Debug.LogWarning("[GameOverManager] backToMenuButton no es hijo de gameOverUI; no se modificará en Awake.");
-        }
+
+        SetButtonsInteractable(false);
     }
 
     private void OnDestroy()
@@ -178,209 +119,34 @@ public class GameOverManager : MonoBehaviour
         GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
-// ---------------- UI Focus Keeper ----------------
-#pragma warning disable 300
-    void EnsureUISelection()
-    {
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return;
-
-        if (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy)
-        {
-            var toSelect = _defaultSelection;
-            if (toSelect == null)
-            {
-                var firstSel = gameOverUI != null ? gameOverUI.GetComponentInChildren<Selectable>(true) : GetComponentInChildren<Selectable>(true);
-                if (!ReferenceEquals(firstSel, null)) toSelect = firstSel.gameObject;
-            }
-            if (toSelect != null)
-            {
-                _defaultSelection = toSelect;
-                _es.SetSelectedGameObject(toSelect);
-            }
-        }
-    }
-#pragma warning restore 300
-
-    void KeepUIFocusForGamepad()
-    {
-        if (_es == null) _es = EventSystem.current;
-        if (_es == null) return;
-
-        if (_es.currentSelectedGameObject == null || !_es.currentSelectedGameObject.activeInHierarchy)
-            EnsureUISelection();
-    }
-
-    private bool ShouldHandleInput() => _isGameOverShown && _allowActions && (gameOverUI == null || gameOverUI.activeInHierarchy);
-
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (!ShouldHandleInput()) return;
+        if (!_isGameOverShown || gameOverUI == null || !gameOverUI.activeInHierarchy)
+            return;
 
-        if (input.Type == GamepadInputReader.InputEventType.Submit && input.Phase == InputActionPhase.Performed)
-        {
-            KeepUIFocusForGamepad();
-            HideGameOver();
+        if (input.Phase != InputActionPhase.Performed)
             return;
-        }
-        if (input.Type == GamepadInputReader.InputEventType.Start && input.Phase == InputActionPhase.Performed)
+
+        // Cancel = volver al menú principal
+        if (input.Type == GamepadInputReader.InputEventType.Cancel)
         {
-            KeepUIFocusForGamepad();
-            HideGameOver();
-            return;
-        }
-        if (input.Type == GamepadInputReader.InputEventType.Cancel && input.Phase == InputActionPhase.Performed)
-        {
-            KeepUIFocusForGamepad();
             OnBackToMainMenu();
-            return;
-        }
-
-        if (input.Phase != InputActionPhase.Performed) return;
-
-        int direction = 0;
-        if (input.Type == GamepadInputReader.InputEventType.DpadUp)
-            direction = -1;
-        else if (input.Type == GamepadInputReader.InputEventType.DpadDown)
-            direction = 1;
-        else if (input.Type == GamepadInputReader.InputEventType.Navigate)
-        {
-            if (input.Value.y > 0.6f) direction = -1;
-            else if (input.Value.y < -0.6f) direction = 1;
-        }
-
-        if (direction == 0) return;
-        if (Time.unscaledTime < _nextNavTime) return;
-
-        KeepUIFocusForGamepad();
-        MoveSelection(direction);
-        _nextNavTime = Time.unscaledTime + navRepeatDelay;
-    }
-
-    void MoveSelection(int direction)
-    {
-        if (selectableItems == null || selectableItems.Length == 0) return;
-        EnsureUISelection();
-        if (_es == null) return;
-
-        var ordered = GetOrderedSelectables();
-        if (ordered.Count == 0) return;
-
-        var current = _es.currentSelectedGameObject;
-        int currentIndex = 0;
-        if (current != null)
-        {
-            for (int i = 0; i < ordered.Count; i++)
-            {
-                if (ordered[i] != null && ordered[i].gameObject == current)
-                {
-                    currentIndex = i;
-                    break;
-                }
-            }
-        }
-
-        int nextIndex = Mathf.Clamp(currentIndex + direction, 0, ordered.Count - 1);
-        if (nextIndex == currentIndex) return;
-
-        var next = ordered[nextIndex];
-        if (next != null)
-        {
-            _defaultSelection = next.gameObject;
-            _es.SetSelectedGameObject(next.gameObject);
-            next.Select();
         }
     }
 
-    readonly System.Collections.Generic.List<Selectable> _orderedSelectables = new System.Collections.Generic.List<Selectable>();
-
-    System.Collections.Generic.List<Selectable> GetOrderedSelectables()
+    private void SetButtonsInteractable(bool interactable)
     {
-        _orderedSelectables.Clear();
-        if (selectableItems != null && selectableItems.Length > 0)
+        if (loadLastSaveButton != null && gameOverUI != null && 
+            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
         {
-            foreach (var rt in selectableItems)
-            {
-                if (!rt) continue;
-                var sel = rt.GetComponent<Selectable>();
-                if (sel != null)
-                    _orderedSelectables.Add(sel);
-            }
-        }
-        else if (gameOverUI != null)
-        {
-            var selectables = gameOverUI.GetComponentsInChildren<Selectable>(true);
-            foreach (var sel in selectables)
-                if (sel != null)
-                    _orderedSelectables.Add(sel);
-        }
-        return _orderedSelectables;
-    }
-
-    // Attach/detach listeners: solo añadimos/quitan nuestro callback, no tocamos listeners serializados.
-    void AttachUIButtonListeners()
-    {
-        if (rootGroup != null)
-        {
-            rootGroup.blocksRaycasts = true;
-            rootGroup.interactable = true;
+            loadLastSaveButton.interactable = interactable;
         }
 
-        // Solo afectar botones que pertenecen al panel de GameOver
-        if (loadLastSaveButton != null)
+        if (backToMenuButton != null && gameOverUI != null && 
+            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
         {
-            if (gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-            {
-                loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
-                loadLastSaveButton.onClick.AddListener(OnLoadLastSave);
-                loadLastSaveButton.interactable = true;
-            }
-            else
-            {
-                Debug.LogWarning("[GameOverManager] loadLastSaveButton no pertenece a gameOverUI - no se añadirá listener");
-            }
+            backToMenuButton.interactable = interactable;
         }
-
-        if (backToMenuButton != null)
-        {
-            if (gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-            {
-                backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
-                backToMenuButton.onClick.AddListener(OnBackToMainMenu);
-                backToMenuButton.interactable = true;
-            }
-            else
-            {
-                Debug.LogWarning("[GameOverManager] backToMenuButton no pertenece a gameOverUI - no se añadirá listener");
-            }
-        }
-
-        // Permitir la ejecución de las acciones públicas ahora que los listeners están adjuntos
-        _allowActions = true;
-    }
-
-    void DetachUIButtonListeners()
-    {
-        if (rootGroup != null)
-        {
-            rootGroup.blocksRaycasts = false;
-            rootGroup.interactable = false;
-        }
-
-        if (loadLastSaveButton != null && gameOverUI != null && loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
-            loadLastSaveButton.interactable = false;
-        }
-
-        if (backToMenuButton != null && gameOverUI != null && backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
-            backToMenuButton.interactable = false;
-        }
-
-        // Desactivar la ejecución de acciones públicas
-        _allowActions = false;
     }
 
     /// <summary>
@@ -388,10 +154,9 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void ShowGameOver()
     {
-        // Evitar reentradas: si ya está mostrado o en proceso de mostrarse, ignorar
-        if (_isGameOverShown || _showCoroutine != null) return;
+        if (_isGameOverShown || _showCoroutine != null) 
+            return;
 
-        // Iniciar la coroutine que espera en tiempo real para permitir animaciones/efectos
         _showCoroutine = StartCoroutine(ShowGameOverRoutine());
     }
 
@@ -399,7 +164,6 @@ public class GameOverManager : MonoBehaviour
     {
         if (delayBeforeShow > 0f)
         {
-            // Esperar en tiempo real para que animaciones y barras puedan terminar aunque Time.timeScale siga en 1
             yield return new WaitForSecondsRealtime(delayBeforeShow);
         }
 
@@ -412,13 +176,45 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 0f;
 
-        // Asegurar selección inicial del UI
-        EnsureUISelection();
+        // Configurar botones según si hay save o no
+        ConfigureButtons();
 
-        // Adjuntar solo nuestros listeners y activar la interacción
-        AttachUIButtonListeners();
+        // Activar interacción
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = true;
+            rootGroup.interactable = true;
+        }
 
         Debug.Log("[GameOverManager] Game Over mostrado");
+    }
+
+    private void ConfigureButtons()
+    {
+        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
+        bool hasSave = saveSystem != null && saveSystem.HasSave();
+
+        // El botón de cargar solo está activo si hay save
+        if (loadLastSaveButton != null && gameOverUI != null && 
+            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            loadLastSaveButton.gameObject.SetActive(hasSave);
+            if (hasSave)
+            {
+                loadLastSaveButton.interactable = true;
+                loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
+                loadLastSaveButton.onClick.AddListener(OnLoadLastSave);
+            }
+        }
+
+        // El botón de volver al menú siempre está activo
+        if (backToMenuButton != null && gameOverUI != null && 
+            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            backToMenuButton.interactable = true;
+            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
+            backToMenuButton.onClick.AddListener(OnBackToMainMenu);
+        }
     }
 
     /// <summary>
@@ -426,14 +222,15 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void HideGameOver(bool resumeTime = true)
     {
-        // Si estamos en espera para mostrar, cancelarla
         if (_showCoroutine != null)
         {
             StopCoroutine(_showCoroutine);
             _showCoroutine = null;
         }
 
-        if (!_isGameOverShown) return;
+        if (!_isGameOverShown) 
+            return;
+
         _isGameOverShown = false;
 
         if (gameOverUI != null)
@@ -442,8 +239,26 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver && resumeTime)
             Time.timeScale = 1f;
 
-        // Quitar nuestros listeners y desactivar interacción
-        DetachUIButtonListeners();
+        // Desactivar interacción y remover listeners
+        if (rootGroup != null)
+        {
+            rootGroup.blocksRaycasts = false;
+            rootGroup.interactable = false;
+        }
+
+        if (loadLastSaveButton != null && gameOverUI != null && 
+            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
+        }
+
+        if (backToMenuButton != null && gameOverUI != null && 
+            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
+        {
+            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
+        }
+
+        SetButtonsInteractable(false);
 
         Debug.Log("[GameOverManager] Game Over ocultado");
     }
@@ -462,7 +277,6 @@ public class GameOverManager : MonoBehaviour
         }
 
         _isGameOverShown = false;
-        _allowActions = false;
 
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
@@ -476,7 +290,7 @@ public class GameOverManager : MonoBehaviour
         if (pauseOnGameOver)
             Time.timeScale = 1f;
 
-        DetachUIButtonListeners();
+        SetButtonsInteractable(false);
 
         if (!string.IsNullOrEmpty(reason))
             Debug.Log(reason);
@@ -574,22 +388,6 @@ public class GameOverManager : MonoBehaviour
         LoadSceneWithTransition(active.name, reloadTransitionSettings, mainMenuTransitionSettings, "Reiniciar nivel");
     }
 
-    /// <summary>
-    /// Llamado desde el botón "Continuar" en la UI. Wrapper público que garantiza la lógica correcta
-    /// y deja un log claro para depuración del mapeo del botón.
-    /// </summary>
-    public void OnContinueButtonPressed()
-    {
-        if (!_allowActions || !_isGameOverShown)
-        {
-            Debug.LogWarning("[GameOverManager] OnContinueButtonPressed ignorado porque el menú no permite acciones ahora.");
-            Debug.Log(new System.Diagnostics.StackTrace().ToString());
-            return;
-        }
-
-        Debug.Log("[GameOverManager] OnContinueButtonPressed invoked -> ocultando GameOver (resumir juego)");
-        HideGameOver();
-    }
 
     private TransitionSettings ResolveTransitionSettings(TransitionSettings preferred, TransitionSettings fallback)
     {
@@ -666,10 +464,9 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void OnLoadLastSave()
     {
-        if (!_allowActions || !_isGameOverShown)
+        if (!_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menú no permite acciones ahora.");
-            Debug.Log(new System.Diagnostics.StackTrace().ToString());
+            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menú no está visible.");
             return;
         }
 
@@ -709,10 +506,9 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void OnBackToMainMenu()
     {
-        if (!_allowActions || !_isGameOverShown)
+        if (!_isGameOverShown)
         {
-            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menú no permite acciones ahora.");
-            Debug.Log(new System.Diagnostics.StackTrace().ToString());
+            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menú no está visible.");
             return;
         }
 

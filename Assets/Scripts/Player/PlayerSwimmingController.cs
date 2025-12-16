@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Invector.vCharacterController;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Core;
 /// <summary>
 /// Gestiona el modo de nado del jugador: detecta agua, mantiene la altura y lanza animaciones/mode stack.
 /// </summary>
@@ -77,7 +78,7 @@ public sealed class PlayerSwimmingController : MonoBehaviour
         _floorMask = LayerMask.GetMask("Floor");
         CacheCameraTransform();
 
-        _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
+        _controls = Core.PlayerInputManager.GetSharedOrNew(out _ownsControls);
     }
 
     void OnEnable()

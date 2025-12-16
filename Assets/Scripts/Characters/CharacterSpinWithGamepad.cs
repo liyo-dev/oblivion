@@ -1,4 +1,5 @@
 using UnityEngine;
+using Core;
 
 public class CharacterSpinWithGamepad : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class CharacterSpinWithGamepad : MonoBehaviour
 
     void Awake()
     {
-        input = PlayerInputManager.GetSharedOrNew(out ownsControls);
+        input = Core.PlayerInputManager.GetSharedOrNew(out ownsControls);
         if (ownsControls)
             input?.Enable();
     }

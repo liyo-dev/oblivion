@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using System.Linq;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using Core;
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -57,6 +58,11 @@ public class SettingsMenuController : MonoBehaviour
     private Slider _activeSlider;
     private bool _previousNavigationState = true;
     private bool _navigationOverridden;
+    [Header("Nav")]
+    [SerializeField, Min(0f)] private float navRepeatDelay = 0.2f;
+    [SerializeField, Range(0f, 1f)] private float navDeadzone = 0.5f;
+    private Vector2 _lastNavDir;
+    private float _lastNavTime;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -131,6 +137,8 @@ public class SettingsMenuController : MonoBehaviour
         RestoreNavigationEvents();
         _sliderEditMode = false;
         _activeSlider = null;
+        _lastNavDir = Vector2.zero;
+        _lastNavTime = 0f;
     }
 
     void Update()
@@ -308,23 +316,23 @@ public class SettingsMenuController : MonoBehaviour
                 return;
         }
 
-        if (_sliderEditMode)
+        switch (input.Type)
         {
-            if (input.Type == GamepadInputReader.InputEventType.Navigate
-                || input.Type == GamepadInputReader.InputEventType.DpadLeft
-                || input.Type == GamepadInputReader.InputEventType.DpadRight
-                || input.Type == GamepadInputReader.InputEventType.DpadUp
-                || input.Type == GamepadInputReader.InputEventType.DpadDown)
-            {
-                HandleSliderInput(input.Value, true);
-            }
-            return;
-        }
-
-        if (input.Type == GamepadInputReader.InputEventType.DpadLeft || input.Type == GamepadInputReader.InputEventType.DpadRight)
-        {
-            TryMoveSelection(input.Type == GamepadInputReader.InputEventType.DpadLeft ? Vector2.left : Vector2.right);
-            return;
+            case GamepadInputReader.InputEventType.Navigate:
+                HandleDirectionalInput(input.Value, true);
+                break;
+            case GamepadInputReader.InputEventType.DpadLeft:
+                HandleDirectionalInput(Vector2.left, false);
+                break;
+            case GamepadInputReader.InputEventType.DpadRight:
+                HandleDirectionalInput(Vector2.right, false);
+                break;
+            case GamepadInputReader.InputEventType.DpadUp:
+                HandleDirectionalInput(Vector2.up, false);
+                break;
+            case GamepadInputReader.InputEventType.DpadDown:
+                HandleDirectionalInput(Vector2.down, false);
+                break;
         }
     }
 
@@ -505,6 +513,36 @@ public class SettingsMenuController : MonoBehaviour
             : Mathf.Max(0.001f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue));
 
         _activeSlider.value = Mathf.Clamp(_activeSlider.value + Mathf.Sign(axis) * step, _activeSlider.minValue, _activeSlider.maxValue);
+    }
+
+    void HandleDirectionalInput(Vector2 rawDir, bool fromAnalog)
+    {
+        if (_sliderEditMode)
+        {
+            HandleSliderInput(rawDir, true);
+            return;
+        }
+
+        if (rawDir.sqrMagnitude < 0.0001f)
+            return;
+
+        Vector2 dir;
+        if (Mathf.Abs(rawDir.x) >= Mathf.Abs(rawDir.y))
+            dir = rawDir.x > 0 ? Vector2.right : Vector2.left;
+        else
+            dir = rawDir.y > 0 ? Vector2.up : Vector2.down;
+
+        if (fromAnalog)
+        {
+            if (Mathf.Max(Mathf.Abs(rawDir.x), Mathf.Abs(rawDir.y)) < navDeadzone)
+                return;
+            if (dir == _lastNavDir && Time.unscaledTime - _lastNavTime < navRepeatDelay)
+                return;
+        }
+
+        _lastNavDir = dir;
+        _lastNavTime = Time.unscaledTime;
+        TryMoveSelection(dir);
     }
 
     void TryMoveSelection(Vector2 direction)

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Invector.vCharacterController;
+using Core;
 
 /// <summary>
 /// Control básico de escalada: detecta paredes en una capa concreta y bloquea el movimiento normal
@@ -77,7 +78,7 @@ public class PlayerClimbingController : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         _capsule = GetComponent<CapsuleCollider>();
         _controller = GetComponent<vThirdPersonController>() ?? GetComponentInParent<vThirdPersonController>();
-        _controls = PlayerInputManager.GetSharedOrNew(out _ownsControls);
+        _controls = Core.PlayerInputManager.GetSharedOrNew(out _ownsControls);
 
         // Refuerzo en runtime por si el prefab se quedó sin la capa asignada
         if (climbableLayers == 0)

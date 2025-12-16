@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Core;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using DG.Tweening;
 using TMPro;
 
@@ -445,20 +446,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void TriggerMoveEvent(Vector2 direction)
     {
-        var es = EventSystem.current;
-        if (es == null)
-            return;
-
-        var axisEvent = new AxisEventData(es)
-        {
-            moveVector = direction,
-            moveDir = direction.y > 0.1f ? MoveDirection.Up
-                : direction.y < -0.1f ? MoveDirection.Down
-                : direction.x < -0.1f ? MoveDirection.Left
-                : MoveDirection.Right
-        };
-
-        ExecuteEvents.Execute(es.currentSelectedGameObject, axisEvent, ExecuteEvents.moveHandler);
+        // La navegación se maneja automáticamente por Unity UI
+        // No necesitamos crear eventos manualmente
     }
 
     List<int> GetAvailableTabs()
@@ -490,7 +479,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        EnsureEventSystem();
         EnsureActionManager();
         if (_actionManager != null)
         {
@@ -752,42 +740,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         return -1;
     }
 
+    // Scope simple para gestionar el cambio UI/Gameplay usando PlayerInputManager centralizado
     sealed class InputActionMapScope : IDisposable
     {
-        readonly PlayerControls _controls;
-        readonly bool _restoreGameplay;
-        readonly bool _restoreUi;
         bool _disposed;
-        static int _gameplayDisableCount;
 
-        InputActionMapScope(PlayerControls controls, bool ensureUiEnabled, bool disableGameplay)
+        InputActionMapScope()
         {
-            _controls = controls;
             GamepadInputReader.PushGameplaySuppression(this);
             GamepadInputReader.PushUiNavigationScope();
 
-            if (_controls == null)
-                return;
-
-            if (ensureUiEnabled)
-            {
-                _restoreUi = !_controls.UI.enabled;
-                if (_restoreUi)
-                    _controls.UI.Enable();
-            }
-
-            if (disableGameplay && _controls.GamePlay.enabled)
-            {
-                _restoreGameplay = true;
-                _gameplayDisableCount++;
-                _controls.GamePlay.Disable();
-            }
+            // Cambiar a modo UI centralizado
+            if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+                pim.PushUIMode();
         }
 
         public static InputActionMapScope EnterUiScope()
         {
-            var controls = ResolveControls();
-            return new InputActionMapScope(controls, ensureUiEnabled: true, disableGameplay: false);
+            return new InputActionMapScope();
         }
 
         public void Dispose()
@@ -797,26 +767,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             _disposed = true;
 
-            if (_controls != null && _restoreGameplay)
-            {
-                _gameplayDisableCount = Math.Max(0, _gameplayDisableCount - 1);
-                if (_gameplayDisableCount == 0 && !_controls.GamePlay.enabled)
-                    _controls.GamePlay.Enable();
-            }
-
-            if (_controls != null && _restoreUi && _controls.UI.enabled)
-                _controls.UI.Disable();
+            // Restaurar modo Gameplay centralizado
+            if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+                pim.PopUIMode();
 
             GamepadInputReader.PopGameplaySuppression(this);
             GamepadInputReader.PopUiNavigationScope();
-        }
-
-        static PlayerControls ResolveControls()
-        {
-            if (ServiceLocator.TryGet(out PlayerInputManager manager) && manager != null)
-                return manager.Controls;
-
-            return GamepadInputReader.ControlsOrNull;
         }
     }
 
@@ -869,8 +825,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     System.Collections.IEnumerator SelectOnNextFrame(GameObject target)
     {
         yield return null;
-        var es = EventSystem.current;
-        if (es != null && target != null)
+        if (target != null)
         {
             SelectGameObjectImmediate(target);
         }
@@ -879,10 +834,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void SelectGameObjectImmediate(GameObject target)
     {
         if (target == null) return;
-        var es = EventSystem.current;
-        if (es == null) return;
-        es.SetSelectedGameObject(null);
-        es.SetSelectedGameObject(target);
+        var selectable = target.GetComponent<Selectable>();
+        if (selectable != null)
+            selectable.Select();
     }
 
     bool IsInsideMenu(GameObject go)
@@ -1056,33 +1010,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         var activeScene = SceneManager.GetActiveScene();
         return activeScene.IsValid() &&
                string.Equals(activeScene.name, allowedSceneName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    static void EnsureEventSystem()
-    {
-        if (EventSystem.current == null)
-        {
-            var esGO = new GameObject("EventSystem", typeof(EventSystem)
-#if ENABLE_INPUT_SYSTEM
-                , typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule)
-#else
-                , typeof(StandaloneInputModule)
-#endif
-            );
-            DontDestroyOnLoad(esGO);
-        }
-
-#if ENABLE_INPUT_SYSTEM
-        var inputModule = EventSystem.current?.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-        if (inputModule != null && inputModule.actionsAsset == null)
-        {
-            var controls = GamepadInputReader.ControlsOrNull;
-            if (controls != null && controls.asset != null)
-            {
-                inputModule.actionsAsset = controls.asset;
-            }
-        }
-#endif
     }
 
     struct RendererSortState
@@ -1311,7 +1238,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (widget == null) return;
 
-            if (forceFocus || EventSystem.current == null || EventSystem.current.currentSelectedGameObject != widget.ButtonGameObject)
+            if (forceFocus)
                 widget.Focus();
 
             ScrollToRow(widget);
@@ -1489,23 +1416,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         public System.Collections.IEnumerator EnsureSelectionDelayed()
         {
-            // Esperar un frame para que Unity cree los elementos y el EventSystem los reconozca
+            // Esperar un frame para que Unity cree los elementos
             yield return null;
             
             if (_rows.Count == 0) yield break;
 
-            EnsureEventSystem();
-            var es = EventSystem.current;
-            if (es == null)
-            {
-                Debug.LogWarning("[PlayerEquipmentMenu] EventSystem.current is null después de esperar");
-                yield break;
-            }
-
             // Restaurar la selección previa si existe
             if (_lastSelectedRow != null)
             {
-                es.SetSelectedGameObject(null);
                 yield return null;
                 _lastSelectedRow.Focus();
                 yield break;
@@ -1515,7 +1433,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var first = _rows[0];
             if (first != null && first.ButtonGameObject != null)
             {
-                es.SetSelectedGameObject(null);
                 yield return null;
                 HandleRowActivated(first, first.Item, true);
                 Debug.Log($"[PlayerEquipmentMenu] Inventario - Seleccionado: {first.Item?.displayName}");
@@ -1559,12 +1476,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton == null) return;
             _interactionState = InventoryInteractionState.UseButtonFocused;
 
-            var es = EventSystem.current;
-            if (es != null)
-            {
-                es.SetSelectedGameObject(null);
-                es.SetSelectedGameObject(_ui.useButton.gameObject);
-            }
 
             _ui.useButton.Select();
             PlayUseButtonFeedback();
@@ -1941,9 +1852,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             else
             {
-                var es = EventSystem.current;
-                if (es == null || es.currentSelectedGameObject != entry.widget?.ButtonGameObject)
-                    entry.widget?.Focus();
+                entry.widget?.Focus();
             }
 
             if (fromUser)
