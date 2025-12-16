@@ -1,5 +1,4 @@
-﻿﻿// PauseMenuController.cs
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -36,11 +35,10 @@ public class PauseMenuController : MonoBehaviour
                 }
             }
 
-            // Si no hay EventSystem en la escena, crear uno persistente para navegación
+            // Verificar que existe EventSystem en la escena
             if (UnityEngine.EventSystems.EventSystem.current == null)
             {
-                var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
-                UnityEngine.Object.DontDestroyOnLoad(es);
+                Debug.LogWarning("[PauseMenuController] No hay EventSystem en la escena. Asegúrate de añadir uno manualmente.");
             }
 
         }

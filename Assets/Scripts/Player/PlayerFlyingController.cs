@@ -113,9 +113,9 @@ public class PlayerFlyingController : MonoBehaviour
             _ownsControls = true;
         }
 
-        _moveAction = _inputManager?.GetGameplayAction(g => g.Move) ?? _controls.GamePlay.Move;
-        _cameraAction = _inputManager?.GetGameplayAction(g => g.CameraLook) ?? _controls.GamePlay.CameraLook;
-        _jumpAction = _inputManager?.GetGameplayAction(g => g.Jump) ?? _controls.GamePlay.Jump;
+        _moveAction = _controls.GamePlay.Move;
+        _cameraAction = _controls.GamePlay.CameraLook;
+        _jumpAction = _controls.GamePlay.Jump;
 
         // Try to auto-detect the animator layer that contains the flight states
         DetectFlightLayer();

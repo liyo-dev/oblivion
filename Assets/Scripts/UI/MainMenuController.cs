@@ -46,7 +46,7 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Fade override (opcional)")]
     [SerializeField] private EasyTransition.TransitionSettings fadeOverride;
-    [Min(0f)] public float fadeDelay = 0f;
+    [Min(0f)] public float fadeDelay;
 
     [Header("UI / Intro (opcional)")]
     [SerializeField] private CanvasGroup rootGroup;          // si está vacío, se añade en Awake
@@ -59,11 +59,11 @@ public class MainMenuController : MonoBehaviour
     public float introYOffset = 40f;
     [Header("Input Debounce")]
     [Tooltip("Activar para ignorar el Submit inicial al entrar al menú.")]
-    public bool enableInputDebounce = false;
+    public bool enableInputDebounce;
     [Min(0f)] public float inputArmDelay = 0.2f;
 
     private Sequence _introSeq;
-    private bool _isLoading = false;
+    private bool _isLoading;
     private bool _inputArmed = true;
     private Coroutine _armRoutine;
     private bool _armSnapshotValid;
@@ -349,9 +349,6 @@ public class MainMenuController : MonoBehaviour
                     buttonPanel.SetActive(true);
 
                 RestartArmAfterSettingsClose();
-                var navigator = GetComponentInChildren<MenuNavigator>(true);
-                if (navigator != null)
-                    navigator.ResetCooldown();
 
                 // Restaurar la selección en el siguiente frame
                 StartCoroutine(RestoreSelectionNextFrame(null));
@@ -445,8 +442,6 @@ public class MainMenuController : MonoBehaviour
     {
         yield return null; // esperar un frame
 
-        var navigator = GetComponentInChildren<MenuNavigator>(true);
-
         // Si no tenemos selección previa, usar el primer botón activo visible
         if (previous == null)
         {
@@ -454,19 +449,10 @@ public class MainMenuController : MonoBehaviour
             if (fallback != null) previous = fallback.gameObject;
         }
 
-        // Sincronizar selección interna del MenuNavigator con el botón restaurado para evitar
-        // que el primer input tras cerrar Settings se pierda o duplique. Siempre reiniciamos
-        // el cooldown de navegación para que el siguiente D-Pad mueva inmediatamente.
-        if (navigator != null)
-        {
-            if (previous != null) navigator.ForceSelect(previous, resetCooldown: true);
-            else navigator.ResetCooldown();
-        }
-
-        // Re-aplicar selección
+        // Re-aplicar selección usando EventSystem
         if (previous != null)
         {
-            var sel = previous.GetComponent<UnityEngine.UI.Selectable>();
+            var sel = previous.GetComponent<Selectable>();
             if (sel != null) sel.Select();
         }
     }
@@ -533,14 +519,14 @@ public class MainMenuController : MonoBehaviour
         {
             bool active = newGameButton.gameObject.activeInHierarchy;
             bool interact = newGameButton.interactable;
-            bool raycastOK = true;
+            bool raycastOk = true;
 
             foreach (var cg in newGameButton.GetComponentsInParent<CanvasGroup>(true))
             {
-                if (!cg.blocksRaycasts) { raycastOK = false; break; }
+                if (!cg.blocksRaycasts) { raycastOk = false; break; }
             }
 
-            Debug.Log($"[MainMenu][SelfTest] NewGame active={active}, interactable={interact}, blocksRaycasts={raycastOK}");
+            Debug.Log($"[MainMenu][SelfTest] NewGame active={active}, interactable={interact}, blocksRaycasts={raycastOk}");
         }
     }
 

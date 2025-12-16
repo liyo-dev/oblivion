@@ -2,6 +2,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using DG.Tweening;
 
 public class QuestMainMenuUI : MonoBehaviour
@@ -20,7 +21,6 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private Button hiddenTabButton;
     [SerializeField] private ScrollRect visibleScrollRect;
     [SerializeField] private ScrollRect hiddenScrollRect;
-    [SerializeField] private MenuNavigator navigator;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
 
     [Header("Animación")]
@@ -87,7 +87,6 @@ public class QuestMainMenuUI : MonoBehaviour
 
         EnsureSelection();
         EnsureGamePhasePushed();
-        EnsureNavigatorReady();
         EnsureActionMode();
     }
 
@@ -229,27 +228,13 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
     {
-        GameObject selected = null;
+        GameObject selected = EventSystem.current?.currentSelectedGameObject;
 
         Transform itemRoot = null;
         int indexInContainer = -1;
         bool inHidden = false;
         bool wasShowButton = false;
         bool wasHideButton = false;
-
-        // Intentar obtener el objeto seleccionado actual si hay un navegador
-        if (navigator != null && navigator.items != null)
-        {
-            // Buscar el primer item que esté activo e interactable
-            foreach (var item in navigator.items)
-            {
-                if (item != null && item.gameObject.activeInHierarchy && item.isActiveAndEnabled)
-                {
-                    selected = item.gameObject;
-                    break;
-                }
-            }
-        }
 
         if (selected != null)
         {
@@ -278,13 +263,10 @@ public class QuestMainMenuUI : MonoBehaviour
             var targetContainer = inHidden ? hiddenContentRoot : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
             TryRestoreSelection(targetContainer, indexInContainer, wasShowButton, wasHideButton);
         }
-
-        // Fallback: si no hay nada seleccionado, enfocar el primer botón disponible
-        if (navigator != null && navigator.items.Count > 0)
+        else
         {
-            var firstInteractable = navigator.items.FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy && b.interactable);
-            if (firstInteractable != null)
-                navigator.ForceSelect(firstInteractable, resetCooldown: true);
+            // Fallback: seleccionar el primer botón disponible
+            EnsureSelection();
         }
     }
 
@@ -292,7 +274,7 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void TryRestoreSelection(Transform container, int desiredIndex, bool preferShow, bool preferHide)
     {
-        if (container == null || navigator == null) return;
+        if (container == null) return;
 
         int count = container.childCount;
         if (count == 0) return;
@@ -329,7 +311,7 @@ public class QuestMainMenuUI : MonoBehaviour
         }
 
         if (targetButton != null)
-            navigator.ForceSelect(targetButton, resetCooldown: true);
+            targetButton.Select();
     }
 
     void KillTween()
@@ -364,9 +346,6 @@ public class QuestMainMenuUI : MonoBehaviour
         if (hiddenContentRoot)
             hiddenContentRoot.gameObject.SetActive(showingHidden);
 
-        if (navigator != null)
-            navigator.RefreshItemsFromChildren(resetSelection: false);
-
         // Force UI/canvas/layout update so newly-activated content becomes visible immediately.
         Canvas.ForceUpdateCanvases();
 
@@ -386,13 +365,16 @@ public class QuestMainMenuUI : MonoBehaviour
 
         UpdateTabButtons(showingHidden);
 
-        // Enfocar el primer item del navegador si está disponible
-        if (navigator != null && navigator.items != null && navigator.items.Count > 0)
+        // Seleccionar el primer botón del contenido activo
+        Transform activeContainer = showingHidden ? hiddenContentRoot : visibleContentRoot;
+        if (activeContainer != null && activeContainer.childCount > 0)
         {
-            var firstItem = navigator.items[0];
-            if (firstItem != null)
+            var firstChild = activeContainer.GetChild(0);
+            var firstButton = firstChild.GetComponentInChildren<Button>();
+            if (firstButton != null && firstButton.interactable)
             {
-                firstItem.Select();
+                firstButton.Select();
+                return;
             }
         }
 
@@ -426,43 +408,34 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void EnsureSelection()
     {
-        GameObject target = null;
-
-        if (navigator != null)
+        // Intentar seleccionar el primer botón en el contenido activo
+        Transform activeContainer = _showingHidden ? hiddenContentRoot : visibleContentRoot;
+        if (activeContainer != null && activeContainer.gameObject.activeInHierarchy)
         {
-            // Si hay una selección válida en el contenido, mantenerla
-            if (navigator.items != null)
+            for (int i = 0; i < activeContainer.childCount; i++)
             {
-                foreach (var it in navigator.items)
+                var child = activeContainer.GetChild(i);
+                var buttons = child.GetComponentsInChildren<Button>();
+                foreach (var btn in buttons)
                 {
-                    if (it != null && it.gameObject.activeInHierarchy && it.interactable)
+                    if (btn != null && btn.gameObject.activeInHierarchy && btn.interactable)
                     {
-                        bool isInVisibleContent = visibleContentRoot != null && it.transform.IsChildOf(visibleContentRoot);
-                        bool isInHiddenContent = hiddenContentRoot != null && it.transform.IsChildOf(hiddenContentRoot);
-                        
-                        if (isInVisibleContent || isInHiddenContent)
-                        {
-                            // Ya hay una selección válida, no hacer nada
-                            return;
-                        }
+                        btn.Select();
+                        Debug.Log($"QuestMainMenuUI: EnsureSelection -> selected {btn.name}");
+                        return;
                     }
                 }
             }
-
-            var first = navigator.items.FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy && b.interactable);
-            if (first != null)
-            {
-                navigator.ForceSelect(first, resetCooldown: true);
-                return;
-            }
         }
 
+        // Fallback: seleccionar el tab correspondiente
+        GameObject target = null;
         if (_showingHidden)
             target = hiddenTabButton != null ? hiddenTabButton.gameObject : target;
         else
             target = visibleTabButton != null ? visibleTabButton.gameObject : target;
 
-        Debug.Log($"QuestMainMenuUI: EnsureSelection -> target={(target!=null?target.name:"null")}");
+        Debug.Log($"QuestMainMenuUI: EnsureSelection -> fallback target={(target!=null?target.name:"null")}");
 
         if (target != null)
         {
@@ -499,16 +472,6 @@ public class QuestMainMenuUI : MonoBehaviour
         scrollRect.verticalNormalizedPosition = 1f;
     }
 
-    void EnsureNavigatorReady()
-    {
-        if (navigator == null) return;
-
-        navigator.ResetCooldown();
-        if (navigator.items.Count > 0)
-        {
-            navigator.ForceSelect(navigator.items[0], resetCooldown: true);
-        }
-    }
 
     QuestVisibility NormalizeVisibility(string questId, QuestVisibility current, bool persist = false)
     {

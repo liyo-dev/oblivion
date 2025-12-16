@@ -120,7 +120,8 @@ namespace Core
         }
         else
         {
-            _controls = PlayerInputManager.GetSharedOrNew(out _);
+            Debug.LogWarning("[GamepadInputReader] PlayerInputManager no encontrado en ServiceLocator. Asegúrate de que esté en la escena Start.");
+            _controls = new PlayerControls();
         }
 
         EnsureInputEventsSubscribed();
