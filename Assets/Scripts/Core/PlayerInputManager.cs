@@ -23,7 +23,7 @@ namespace Core
 
         [Header("Comportamiento")]
         [SerializeField] private bool dontDestroyOnLoad = true;
-        [SerializeField] private bool debugLogs;
+        [SerializeField] private bool debugLogs = true; // TEMPORAL: Activado para debugging
 
         private PlayerControls _controls;
         private bool _ownsControlsInstance;
@@ -91,16 +91,23 @@ namespace Core
         {
             _uiModeRefCount++;
             
+            Debug.Log($"[PlayerInputManager] PushUIMode() llamado. RefCount: {_uiModeRefCount}");
+            
             if (_uiModeRefCount == 1) // Primera llamada
             {
                 _isInUIMode = true;
+                
+                Debug.Log($"[PlayerInputManager] GamePlay antes: {_controls.GamePlay.enabled}");
                 _controls.GamePlay.Disable();
+                Debug.Log($"[PlayerInputManager] GamePlay después: {_controls.GamePlay.enabled}");
+                
+                Debug.Log($"[PlayerInputManager] UI antes: {_controls.UI.enabled}");
                 _controls.UI.Enable();
+                Debug.Log($"[PlayerInputManager] UI después: {_controls.UI.enabled}");
 
-                if (debugLogs)
-                    Debug.Log("[PlayerInputManager] Modo UI ACTIVADO (refCount=1)");
+                Debug.Log("[PlayerInputManager] Modo UI ACTIVADO (refCount=1)");
             }
-            else if (debugLogs)
+            else
             {
                 Debug.Log($"[PlayerInputManager] Modo UI ya activo (refCount={_uiModeRefCount})");
             }

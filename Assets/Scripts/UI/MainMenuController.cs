@@ -416,9 +416,8 @@ public class MainMenuController : MonoBehaviour
 
     void LoadTargetScene(string sceneName)
     {
-        // Asegurar que ningún menú de pausa persistente quede abierto al salir del menú principal.
-        if (PauseMenuController.Instance != null)
-            PauseMenuController.Instance.ForceCloseAndReset();
+        // Asegurar que timeScale esté a 1 al salir del menú principal
+        Time.timeScale = 1f;
 
         bool useOverlay = !string.IsNullOrEmpty(loadingOverlayScene);
 

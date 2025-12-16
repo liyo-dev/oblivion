@@ -68,7 +68,11 @@ public class SpellRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandle
         if (es == null || target == null)
             return;
 
-        es.SetSelectedGameObject(target);
+        // Evitar recursión: solo llamar a SetSelectedGameObject si no está ya seleccionado
+        if (es.currentSelectedGameObject != target)
+        {
+            es.SetSelectedGameObject(target);
+        }
     }
 
     public void SetSelectionCallbacksEnabled(bool enabled)

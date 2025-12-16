@@ -234,13 +234,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OnEnable()
     {
-        GamepadInputReader.EnsureInputEventsSubscribed();
-        GamepadInputReader.OnInput += HandleGamepadInput;
+        // El menú se abre con botón Start detectado en otro lugar
+        // No necesitamos suscribirnos a nada aquí
     }
 
     void OnDisable()
     {
-        GamepadInputReader.OnInput -= HandleGamepadInput;
         if (_isOpen)
             CloseMenu();
         else
@@ -265,20 +264,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        if (PauseMenuController.IsOpen)
-        {
-            // Ignorar y limpiar solicitudes de apertura cuando el menú de pausa está activo
-            // para que una pulsación de D-Pad abajo usada para navegar el pause no dispare
-            // la apertura del inventario al reanudar el juego.
-            _toggleRequested = false;
-            if (_isOpen) CloseMenu();
-            return;
-        }
 
         if (GameOverManager.Instance != null && GameOverManager.Instance.IsShown)
         {
             if (_isOpen) CloseMenu();
             return;
+        }
+
+        // Detectar botón Start para abrir/cerrar el menú
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            if (UnityEngine.InputSystem.Gamepad.current.startButton.wasPressedThisFrame)
+            {
+                _toggleRequested = true;
+            }
         }
 
         // Si el menú ya está abierto, evita leer el input de apertura para que el D-Pad
@@ -289,6 +288,42 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
         else
         {
+            // Detectar botones del gamepad directamente
+            if (UnityEngine.InputSystem.Gamepad.current != null)
+            {
+                var gamepad = UnityEngine.InputSystem.Gamepad.current;
+                
+                // Botón B (Cancel) para cerrar el menú
+                if (gamepad.buttonEast.wasPressedThisFrame)
+                {
+                    _cancelRequested = true;
+                }
+                
+                // Botón Start también cierra el menú
+                if (gamepad.startButton.wasPressedThisFrame)
+                {
+                    _cancelRequested = true;
+                }
+                
+                // Botón Y para volver al MainMenu
+                if (gamepad.yButton.wasPressedThisFrame)
+                {
+                    OnQuitToMainMenu();
+                }
+                
+                // LB (Left Bumper) para pestaña anterior
+                if (gamepad.leftShoulder.wasPressedThisFrame)
+                {
+                    ChangeTab(-1);
+                }
+                
+                // RB (Right Bumper) para pestaña siguiente
+                if (gamepad.rightShoulder.wasPressedThisFrame)
+                {
+                    ChangeTab(1);
+                }
+            }
+            
             HandleCloseInput();
             UpdatePlayerInfoPanel();
             if (_activeTab == 1)
@@ -327,8 +362,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (_isOpen)
         {
-            // D-Pad abajo solo abre el menú; el cierre se hace con B o Start.
-            return;
+            CloseMenu();
         }
         else
         {
@@ -338,6 +372,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _toggleCooldownUntil = Time.unscaledTime + 0.25f;
         }
     }
+
 
     void HandleCloseInput()
     {
@@ -383,72 +418,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        if (input.Phase != InputActionPhase.Performed)
-            return;
-
-        switch (input.Type)
-        {
-            case GamepadInputReader.InputEventType.Submit:
-                if (_isOpen && _activeTab == 0 && _inventoryView != null && _inventoryView.TryHandleSubmit())
-                    return;
-                break;
-
-            case GamepadInputReader.InputEventType.DpadDown:
-                if (!_isOpen)
-                    _toggleRequested = true;
-                else
-                    TriggerMoveEvent(Vector2.down);
-                break;
-
-            case GamepadInputReader.InputEventType.DpadUp:
-                if (_isOpen)
-                    TriggerMoveEvent(Vector2.up);
-                break;
-
-            case GamepadInputReader.InputEventType.DpadLeft:
-                if (_isOpen)
-                    TriggerMoveEvent(Vector2.left);
-                break;
-
-            case GamepadInputReader.InputEventType.DpadRight:
-                if (_isOpen)
-                    TriggerMoveEvent(Vector2.right);
-                break;
-
-            case GamepadInputReader.InputEventType.Navigate:
-                if (_isOpen && input.Phase == InputActionPhase.Performed)
-                {
-                    var dir = input.Value;
-                    if (dir.sqrMagnitude > 0.1f)
-                    {
-                        dir = Mathf.Abs(dir.y) >= Mathf.Abs(dir.x)
-                            ? new Vector2(0f, Mathf.Sign(dir.y))
-                            : new Vector2(Mathf.Sign(dir.x), 0f);
-                        TriggerMoveEvent(dir);
-                    }
-                }
-                break;
-
-            case GamepadInputReader.InputEventType.Cancel:
-            case GamepadInputReader.InputEventType.Start:
-                _cancelRequested = true;
-                break;
-
-            case GamepadInputReader.InputEventType.LeftShoulder:
-                if (_isOpen) ChangeTab(-1);
-                break;
-
-            case GamepadInputReader.InputEventType.RightShoulder:
-                if (_isOpen) ChangeTab(1);
-                break;
-        }
+        // NOTA: Este método ya no se usa. El menú ahora se abre con botón Start
+        // y usa PlayerInputManager directamente en lugar de GamepadInputReader.
+        // Se mantiene vacío para evitar errores de compilación si hay referencias.
     }
 
-    void TriggerMoveEvent(Vector2 direction)
-    {
-        // La navegación se maneja automáticamente por Unity UI
-        // No necesitamos crear eventos manualmente
-    }
 
     List<int> GetAvailableTabs()
     {
@@ -463,6 +437,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OpenMenu()
     {
+        Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
+        
         if (!GameState.CanOpenInventory) return;
         if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
 
@@ -485,6 +461,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _actionManager.PushMode(ActionMode.Inventory);
             _actionModeActive = true;
         }
+        
+        Debug.Log("[PlayerEquipmentMenu] Llamando a EnterUiInputScope()");
         EnterUiInputScope();
 
         _savedTimeScale = Time.timeScale;
@@ -506,6 +484,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // Marcar el instante de apertura para filtrar cierres accidentales en el mismo frame.
         _openedAt = Time.unscaledTime;
         _cancelRequested = false; // Limpiar cualquier cancel previo para evitar cierres inmediatos.
+        
+        Debug.Log("[PlayerEquipmentMenu] Menú abierto completamente");
     }
 
     void CloseMenu()
@@ -525,6 +505,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
         SetEquipmentCameraActive(false);
         MenuManager.Close(MenuKind.Equipment);
+    }
+
+    void OnQuitToMainMenu()
+    {
+        // Cerrar el menú (esto ya limpia los GameStates correspondientes)
+        if (_isOpen)
+        {
+            CloseMenu();
+        }
+        
+        // Asegurar que el tiempo está a escala normal
+        Time.timeScale = 1f;
+        
+        // Cargar la escena del MainMenu (esto limpiará automáticamente los estados)
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     void SetCanvasState(bool visible)
@@ -585,8 +580,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void EnterUiInputScope()
     {
+        Debug.Log("[PlayerEquipmentMenu] EnterUiInputScope() - Cambiando a modo UI");
         _inputScope?.Dispose();
         _inputScope = InputActionMapScope.EnterUiScope();
+        Debug.Log("[PlayerEquipmentMenu] InputScope creado");
     }
 
     void ExitUiInputScope()
@@ -747,12 +744,22 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         InputActionMapScope()
         {
+            Debug.Log("[InputActionMapScope] Constructor - Iniciando");
+            
             GamepadInputReader.PushGameplaySuppression(this);
             GamepadInputReader.PushUiNavigationScope();
 
             // Cambiar a modo UI centralizado
             if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+            {
+                Debug.Log("[InputActionMapScope] PlayerInputManager encontrado, llamando a PushUIMode()");
                 pim.PushUIMode();
+                Debug.Log($"[InputActionMapScope] PushUIMode ejecutado. IsInUIMode: {pim.IsInUIMode}");
+            }
+            else
+            {
+                Debug.LogError("[InputActionMapScope] PlayerInputManager NO encontrado en ServiceLocator!");
+            }
         }
 
         public static InputActionMapScope EnterUiScope()

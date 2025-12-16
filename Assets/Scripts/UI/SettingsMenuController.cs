@@ -133,11 +133,27 @@ public class SettingsMenuController : MonoBehaviour
     {
         if (root == null || !root.activeInHierarchy) return;
 
-        // Detectar botón Submit/A para entrar en modo edición de slider
-        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim) && 
-            pim.Controls.UI.Submit.WasPressedThisFrame())
+        // Detectar botones del gamepad directamente
+        bool submitPressed = false;
+        bool startPressed = false;
+        
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            var gamepad = UnityEngine.InputSystem.Gamepad.current;
+            submitPressed = gamepad.buttonSouth.wasPressedThisFrame;
+            startPressed = gamepad.startButton.wasPressedThisFrame;
+        }
+        
+        if (submitPressed)
         {
             TryToggleSliderEditMode();
+        }
+
+        // Start cierra el menú
+        if (startPressed && Time.unscaledTime - _openedAt >= cancelInputGracePeriod)
+        {
+            if (!_sliderEditMode)
+                Close();
         }
 
         if (_sliderEditMode)
@@ -157,9 +173,24 @@ public class SettingsMenuController : MonoBehaviour
     {
         if (_activeSlider == null) return;
         
-        if (!ServiceLocator.TryGet(out Core.PlayerInputManager pim)) return;
+        Vector2 nav = Vector2.zero;
         
-        var nav = pim.Controls.UI.Navigate.ReadValue<Vector2>();
+        // Leer directamente del gamepad (joystick izquierdo Y D-Pad)
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            var gamepad = UnityEngine.InputSystem.Gamepad.current;
+            
+            // Joystick izquierdo (analógico)
+            nav = gamepad.leftStick.ReadValue();
+            
+            // D-Pad (digital) - tiene prioridad sobre el joystick
+            var dpad = gamepad.dpad.ReadValue();
+            if (dpad.sqrMagnitude > 0.01f)
+            {
+                nav = dpad;
+            }
+        }
+        
         if (nav.sqrMagnitude <= 0.01f) return;
         
         float axis = Mathf.Abs(nav.x) >= Mathf.Abs(nav.y) ? nav.x : nav.y;
@@ -362,18 +393,16 @@ public class SettingsMenuController : MonoBehaviour
             return true;
         }
 
-        // Leer el botón Cancel directamente de PlayerInputManager si existe
-        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+        // Leer directamente del gamepad
+        if (UnityEngine.InputSystem.Gamepad.current != null && 
+            UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame)
         {
-            if (pim.Controls.UI.Cancel.WasPressedThisFrame())
+            if (_sliderEditMode)
             {
-                if (_sliderEditMode)
-                {
-                    ExitSliderEditMode();
-                    return false;
-                }
-                return true;
+                ExitSliderEditMode();
+                return false;
             }
+            return true;
         }
 
         return false;

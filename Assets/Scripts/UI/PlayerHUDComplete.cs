@@ -193,7 +193,7 @@ public class PlayerHUDComplete : MonoBehaviour
                 _canvas = existing.GetComponent<Canvas>();
                 if (_canvas == null) _canvas = existing.AddComponent<Canvas>();
                 _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                _canvas.sortingOrder = 1000;
+                _canvas.sortingOrder = 0;
                 _createdCanvas = false; // no lo creamos nosotros ahora
                 _rootPanel = CreateIntegratedHUD();
                 // Si creamos aquí en runtime, enlazar elementos para uso inmediato
@@ -212,7 +212,7 @@ public class PlayerHUDComplete : MonoBehaviour
              var canvasGO = new GameObject("PlayerHUD_Canvas");
              _canvas = canvasGO.AddComponent<Canvas>();
              _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-             _canvas.sortingOrder = 1000; // asegurar que esté por encima
+             _canvas.sortingOrder = 0; // HUD en capa base
              var scaler = canvasGO.AddComponent<CanvasScaler>();
              scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
              scaler.referenceResolution = new Vector2(1920, 1080);
