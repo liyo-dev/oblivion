@@ -58,8 +58,29 @@ MonoBehaviour:
     title: Aprendo proteccion y desbloqueo magia
     note: Hasblar con Eldran para que me dejen pasar al bosque.
     color: {r: 0.36, g: 0.88, b: 0.61, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 0
     position: {x: -979, y: -187}
-    size: {x: 320, y: 320}
+    size: {x: 0, y: 0}
+  - guid: 3b8dacb1-277b-4ff6-a246-2a4c39c9e1e5
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 0
+    position: {x: -106.16, y: -27.919983}
+    size: {x: 0, y: 0}
+  - guid: 4843749c-7ae3-492e-bccc-10571e8f2790
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 0
+    position: {x: 295, y: 41.320007}
+    size: {x: 0, y: 0}
   storyLinks: []
   quickNotes:
   - title: Nueva nota
@@ -67,91 +88,7 @@ MonoBehaviour:
     tags: 
     color: {r: 1, g: 0, b: 1, a: 1}
     position: {x: 0, y: 0}
-  blackboardStrokes:
-  - color: {r: 1, g: 1, b: 1, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 24, y: 44}
-    - {x: 24, y: 46}
-    - {x: 24, y: 64}
-    - {x: 24, y: 65}
-    - {x: 29, y: 41}
-    - {x: 31, y: 28}
-    - {x: 32, y: 27}
-    - {x: 39, y: 48}
-    - {x: 49, y: 76}
-    - {x: 53, y: 70}
-    - {x: 57, y: 42}
-    - {x: 55, y: 38}
-    - {x: 54, y: 36}
-  - color: {r: 1, g: 1, b: 1, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 65, y: 31}
-    - {x: 66, y: 39}
-    - {x: 70, y: 65}
-    - {x: 70, y: 66}
-    - {x: 70, y: 64}
-  - color: {r: 1, g: 1, b: 1, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 69, y: 29}
-    - {x: 70, y: 28}
-    - {x: 74, y: 29}
-    - {x: 85, y: 34}
-    - {x: 83, y: 37}
-    - {x: 73, y: 42}
-    - {x: 72, y: 42}
-    - {x: 70, y: 42}
-    - {x: 69, y: 42}
-    - {x: 68, y: 42}
-  - color: {r: 1, g: 1, b: 1, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 114, y: 33}
-    - {x: 94, y: 37}
-    - {x: 83, y: 42}
-    - {x: 85, y: 57}
-    - {x: 97, y: 57}
-    - {x: 101, y: 54}
-    - {x: 102, y: 54}
-    - {x: 104, y: 54}
-    - {x: 106, y: 54}
-    - {x: 108, y: 54}
-    - {x: 109, y: 54}
-  - color: {r: 0.8, g: 0.7, b: 0.96, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 271, y: 75}
-    - {x: 271, y: 77}
-    - {x: 271, y: 88}
-    - {x: 271, y: 114}
-    - {x: 271, y: 146}
-    - {x: 271, y: 175}
-    - {x: 271, y: 209}
-    - {x: 271, y: 233}
-    - {x: 271, y: 252}
-    - {x: 271, y: 259}
-    - {x: 272, y: 267}
-    - {x: 272, y: 270}
-  - color: {r: 0.56, g: 0.78, b: 0.98, a: 1}
-    thickness: 3.23
-    points:
-    - {x: 226, y: 29}
-    - {x: 226, y: 31}
-    - {x: 228, y: 34}
-    - {x: 234, y: 46}
-    - {x: 244, y: 63}
-    - {x: 260, y: 84}
-    - {x: 269, y: 96}
-    - {x: 289, y: 122}
-    - {x: 298, y: 134}
-    - {x: 318, y: 160}
-    - {x: 337, y: 185}
-    - {x: 350, y: 203}
-    - {x: 354, y: 212}
-    - {x: 359, y: 220}
-    - {x: 362, y: 224}
+  blackboardStrokes: []
   blackboardBackground: {r: 0.07, g: 0.08, b: 0.1, a: 1}
   blackboardBrushColor: {r: 0.56, g: 0.78, b: 0.98, a: 1}
   blackboardBrushSize: 3.23

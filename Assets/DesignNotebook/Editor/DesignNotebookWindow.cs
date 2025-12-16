@@ -1544,7 +1544,7 @@ internal class DesignStoryGraphView : GraphView
         var end = Color.Lerp(toColor, Color.white, 0.1f);
         edge.edgeControl.outputColor = start;
         edge.edgeControl.inputColor = end;
-        edge.edgeControl.edgeWidth = 3.6f;
+                edge.edgeControl.edgeWidth = 4;
         edge.edgeControl.capRadius = 6f;
     }
 

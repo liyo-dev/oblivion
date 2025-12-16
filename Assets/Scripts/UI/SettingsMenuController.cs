@@ -3,8 +3,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
-using Core;
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -58,11 +56,6 @@ public class SettingsMenuController : MonoBehaviour
     private Slider _activeSlider;
     private bool _previousNavigationState = true;
     private bool _navigationOverridden;
-    [Header("Nav")]
-    [SerializeField, Min(0f)] private float navRepeatDelay = 0.2f;
-    [SerializeField, Range(0f, 1f)] private float navDeadzone = 0.5f;
-    private Vector2 _lastNavDir;
-    private float _lastNavTime;
 
     public bool IsVisible => root != null && root.activeInHierarchy;
 
@@ -126,38 +119,86 @@ public class SettingsMenuController : MonoBehaviour
     void OnEnable()
     {
         RefreshUI();
-
-        GamepadInputReader.EnsureInputEventsSubscribed();
-        GamepadInputReader.OnInput += HandleGamepadInput;
+        // EventSystem maneja toda la navegación automáticamente
     }
 
     void OnDisable()
     {
-        GamepadInputReader.OnInput -= HandleGamepadInput;
         RestoreNavigationEvents();
         _sliderEditMode = false;
         _activeSlider = null;
-        _lastNavDir = Vector2.zero;
-        _lastNavTime = 0f;
     }
 
     void Update()
     {
         if (root == null || !root.activeInHierarchy) return;
 
+        // Detectar botón Submit/A para entrar en modo edición de slider
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim) && 
+            pim.Controls.UI.Submit.WasPressedThisFrame())
+        {
+            TryToggleSliderEditMode();
+        }
+
         if (_sliderEditMode)
         {
             MaintainSliderSelection();
-            HandleSliderInput(GamepadInputReader.Navigation, true);
+            HandleSliderInputFromControls();
         }
 
         if (WasCancelPressedThisFrame())
         {
-            if (_sliderEditMode)
-                ExitSliderEditMode();
-            else
+            if (!_sliderEditMode)
                 Close();
         }
+    }
+    
+    void HandleSliderInputFromControls()
+    {
+        if (_activeSlider == null) return;
+        
+        if (!ServiceLocator.TryGet(out Core.PlayerInputManager pim)) return;
+        
+        var nav = pim.Controls.UI.Navigate.ReadValue<Vector2>();
+        if (nav.sqrMagnitude <= 0.01f) return;
+        
+        float axis = Mathf.Abs(nav.x) >= Mathf.Abs(nav.y) ? nav.x : nav.y;
+        if (Mathf.Abs(axis) < 0.1f) return;
+        
+        float step = _activeSlider.wholeNumbers
+            ? Mathf.Max(1f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue))
+            : Mathf.Max(0.001f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue));
+
+        _activeSlider.value = Mathf.Clamp(
+            _activeSlider.value + Mathf.Sign(axis) * step, 
+            _activeSlider.minValue, 
+            _activeSlider.maxValue
+        );
+    }
+    
+    bool TryToggleSliderEditMode()
+    {
+        if (_eventSystem == null)
+            _eventSystem = EventSystem.current;
+
+        var selected = _eventSystem != null ? _eventSystem.currentSelectedGameObject : null;
+        if (!selected)
+            return false;
+
+        var slider = selected.GetComponent<Slider>();
+        if (!IsEditableSlider(slider))
+            return false;
+
+        if (_sliderEditMode && _activeSlider == slider)
+        {
+            ExitSliderEditMode();
+        }
+        else
+        {
+            EnterSliderEditMode(slider);
+        }
+
+        return true;
     }
 
     void OnDestroy()
@@ -321,48 +362,23 @@ public class SettingsMenuController : MonoBehaviour
             return true;
         }
 
+        // Leer el botón Cancel directamente de PlayerInputManager si existe
+        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+        {
+            if (pim.Controls.UI.Cancel.WasPressedThisFrame())
+            {
+                if (_sliderEditMode)
+                {
+                    ExitSliderEditMode();
+                    return false;
+                }
+                return true;
+            }
+        }
+
         return false;
     }
 
-    void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        if (input.Phase != InputActionPhase.Performed)
-            return;
-
-        if (input.Type == GamepadInputReader.InputEventType.Cancel || input.Type == GamepadInputReader.InputEventType.Start)
-        {
-            if (_sliderEditMode)
-                ExitSliderEditMode();
-            else
-                _cancelRequested = true;
-            return;
-        }
-
-        if (input.Type == GamepadInputReader.InputEventType.Submit)
-        {
-            if (TryToggleSliderEditMode())
-                return;
-        }
-
-        switch (input.Type)
-        {
-            case GamepadInputReader.InputEventType.Navigate:
-                HandleDirectionalInput(input.Value, true);
-                break;
-            case GamepadInputReader.InputEventType.DpadLeft:
-                HandleDirectionalInput(Vector2.left, false);
-                break;
-            case GamepadInputReader.InputEventType.DpadRight:
-                HandleDirectionalInput(Vector2.right, false);
-                break;
-            case GamepadInputReader.InputEventType.DpadUp:
-                HandleDirectionalInput(Vector2.up, false);
-                break;
-            case GamepadInputReader.InputEventType.DpadDown:
-                HandleDirectionalInput(Vector2.down, false);
-                break;
-        }
-    }
 
     GameObject ResolveInitialSelection(GameObject requested)
     {
@@ -444,31 +460,6 @@ public class SettingsMenuController : MonoBehaviour
         }
     }
 
-    bool TryToggleSliderEditMode()
-    {
-        if (_eventSystem == null)
-            _eventSystem = EventSystem.current;
-
-        var selected = _eventSystem != null ? _eventSystem.currentSelectedGameObject : null;
-        if (!selected)
-            return false;
-
-        var slider = selected.GetComponent<Slider>();
-        if (!IsEditableSlider(slider))
-            return false;
-
-        if (_sliderEditMode && _activeSlider == slider)
-        {
-            ExitSliderEditMode();
-        }
-        else
-        {
-            EnterSliderEditMode(slider);
-        }
-
-        return true;
-    }
-
     bool IsEditableSlider(Slider slider)
     {
         return slider != null && (slider == masterVolumeSlider || slider == sfxVolumeSlider || slider == musicVolumeSlider || slider == lookSensitivitySlider);
@@ -527,73 +518,6 @@ public class SettingsMenuController : MonoBehaviour
             _eventSystem.SetSelectedGameObject(_activeSlider.gameObject);
     }
 
-    void HandleSliderInput(Vector2 value, bool horizontalOnly = false)
-    {
-        if (_activeSlider == null)
-            return;
-
-        float axis = horizontalOnly ? value.x : (Mathf.Abs(value.x) >= Mathf.Abs(value.y) ? value.x : value.y);
-        if (Mathf.Abs(axis) < 0.1f)
-            return;
-
-        float step = _activeSlider.wholeNumbers
-            ? Mathf.Max(1f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue))
-            : Mathf.Max(0.001f, sliderStep * (_activeSlider.maxValue - _activeSlider.minValue));
-
-        _activeSlider.value = Mathf.Clamp(_activeSlider.value + Mathf.Sign(axis) * step, _activeSlider.minValue, _activeSlider.maxValue);
-    }
-
-    void HandleDirectionalInput(Vector2 rawDir, bool fromAnalog)
-    {
-        if (_sliderEditMode)
-        {
-            HandleSliderInput(rawDir, true);
-            return;
-        }
-
-        if (rawDir.sqrMagnitude < 0.0001f)
-            return;
-
-        Vector2 dir;
-        if (Mathf.Abs(rawDir.x) >= Mathf.Abs(rawDir.y))
-            dir = rawDir.x > 0 ? Vector2.right : Vector2.left;
-        else
-            dir = rawDir.y > 0 ? Vector2.up : Vector2.down;
-
-        if (fromAnalog)
-        {
-            if (Mathf.Max(Mathf.Abs(rawDir.x), Mathf.Abs(rawDir.y)) < navDeadzone)
-                return;
-            if (dir == _lastNavDir && Time.unscaledTime - _lastNavTime < navRepeatDelay)
-                return;
-        }
-
-        _lastNavDir = dir;
-        _lastNavTime = Time.unscaledTime;
-        TryMoveSelection(dir);
-    }
-
-    void TryMoveSelection(Vector2 direction)
-    {
-        if (!_eventSystem)
-            _eventSystem = EventSystem.current;
-
-        if (_eventSystem == null || direction == Vector2.zero)
-            return;
-
-        var selected = _eventSystem.currentSelectedGameObject;
-        if (selected == null)
-            return;
-
-        var moveDir = direction.x < 0 ? MoveDirection.Left : MoveDirection.Right;
-        var axis = new AxisEventData(_eventSystem)
-        {
-            moveVector = direction,
-            moveDir = moveDir
-        };
-
-        ExecuteEvents.Execute(selected, axis, ExecuteEvents.moveHandler);
-    }
 
     void HandleSliderChanged(Slider slider, Action<float> setter, float value)
     {

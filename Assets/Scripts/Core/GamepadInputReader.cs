@@ -117,30 +117,35 @@ namespace Core
         if (ServiceLocator.TryGet(out PlayerInputManager pim))
         {
             _controls = pim.Controls;
+            
+            // Suscribirse a los eventos cuando se inicializa
+            if (_controls != null && _boundControls != _controls)
+            {
+                UnsubscribeInputEvents();
+                SubscribeInputEvents(_controls);
+            }
+            
+            EnsurePollingRegistered();
         }
         else
         {
-            Debug.LogWarning("[GamepadInputReader] PlayerInputManager no encontrado en ServiceLocator. Asegúrate de que esté en la escena Start.");
-            _controls = new PlayerControls();
+            // NO crear controles si PlayerInputManager no existe
+            // Simplemente esperar a que esté disponible
+            if (UnityEngine.Application.isPlaying)
+            {
+                Debug.LogWarning("[GamepadInputReader] PlayerInputManager aún no está disponible. Se inicializará cuando esté listo.");
+            }
         }
-
-        // Suscribirse a los eventos cuando se inicializa
-        if (_controls != null && _boundControls != _controls)
-        {
-            UnsubscribeInputEvents();
-            SubscribeInputEvents(_controls);
-        }
-        
-        EnsurePollingRegistered();
     }
 
     public static void EnsureInputEventsSubscribed()
     {
-        // Si _controls es null, inicializar primero
+        // Si _controls es null, intentar inicializar
         if (_controls == null)
         {
             InitializeControls();
-            return;
+            // Si sigue siendo null después de inicializar, no hay nada que hacer
+            if (_controls == null) return;
         }
 
         // Si ya está suscrito, no hacer nada

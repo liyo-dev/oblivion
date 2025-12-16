@@ -29,6 +29,28 @@ public class MenuNavigator : MonoBehaviour
         Invoke(nameof(SelectFirstButton), 0.1f);
     }
 
+    void Update()
+    {
+        var es = EventSystem.current;
+        if (!es) return;
+
+        var selected = es.currentSelectedGameObject;
+        
+        // Si no hay nada seleccionado, seleccionar el primer botón automáticamente
+        if (selected == null)
+        {
+            SelectFirstButton();
+            return;
+        }
+
+        var btn = selected.GetComponent<Button>();
+        if (btn && btn != _lastSelected)
+        {
+            _lastSelected = btn;
+            ApplyNudge(btn);
+        }
+    }
+
     void SelectFirstButton()
     {
         var buttons = GetComponentsInChildren<Button>(false);
@@ -53,21 +75,6 @@ public class MenuNavigator : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        var es = EventSystem.current;
-        if (!es) return;
-
-        var selected = es.currentSelectedGameObject;
-        if (!selected) return;
-
-        var btn = selected.GetComponent<Button>();
-        if (btn && btn != _lastSelected)
-        {
-            _lastSelected = btn;
-            ApplyNudge(btn);
-        }
-    }
 
     void ApplyNudge(Button button)
     {

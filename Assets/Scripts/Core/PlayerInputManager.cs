@@ -21,10 +21,6 @@ namespace Core
     {
         public static PlayerInputManager Instance { get; private set; }
 
-        [Header("Referencias")]
-        [SerializeField] private PlayerInput playerInput;
-        [SerializeField] private PlayerActionManager actionManager;
-
         [Header("Comportamiento")]
         [SerializeField] private bool dontDestroyOnLoad = true;
         [SerializeField] private bool debugLogs;
@@ -32,12 +28,10 @@ namespace Core
         private PlayerControls _controls;
         private bool _ownsControlsInstance;
         private bool _isInUIMode;
-        private int _uiModeRefCount; // Contador para soportar nested UI contexts
+        private int _uiModeRefCount;
 
         /// <summary>Acceso único al asset de acciones de gameplay.</summary>
         public PlayerControls Controls => _controls;
-        public PlayerInput PlayerInput => playerInput;
-        public PlayerActionManager ActionManager => actionManager;
 
         /// <summary>Indica si actualmente estamos en modo UI (inputs de gameplay deshabilitados)</summary>
         public bool IsInUIMode => _isInUIMode;
@@ -54,11 +48,6 @@ namespace Core
             if (dontDestroyOnLoad)
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
 
-            if (playerInput == null)
-                playerInput = GetComponent<PlayerInput>();
-            if (actionManager == null)
-                actionManager = GetComponentInChildren<PlayerActionManager>(true);
-
             InitializeControls();
             ServiceLocator.Register(this);
 
@@ -71,10 +60,6 @@ namespace Core
             _controls = new PlayerControls();
             _ownsControlsInstance = true;
 
-            if (playerInput != null && playerInput.actions == null)
-            {
-                playerInput.actions = _controls.asset;
-            }
 
             // Iniciar en modo Gameplay por defecto
             _controls.GamePlay.Enable();
@@ -86,6 +71,16 @@ namespace Core
             {
                 Debug.Log("[PlayerInputManager] Controls initialized in Gameplay mode");
             }
+        }
+
+        /// <summary>
+        /// Comprueba si la acción está permitida.
+        /// Por ahora siempre retorna true ya que no hay sistema de bloqueo de acciones activo.
+        /// </summary>
+        public bool CanProcess(PlayerAbility ability)
+        {
+            // TODO: Si necesitas un sistema de bloqueo de acciones, implementarlo aquí
+            return true;
         }
 
         /// <summary>
@@ -191,12 +186,6 @@ namespace Core
             }
         }
 
-        /// <summary>Comprueba si la acción solicitada está permitida según <see cref="PlayerActionManager"/>.</summary>
-        public bool CanProcess(PlayerAbility ability)
-        {
-            if (actionManager == null) return true;
-            return actionManager.CanUse(ability);
-        }
 
         /// <summary>Acceso cómodo para obtener una acción de gameplay de forma segura.</summary>
         public InputAction GetGameplayAction(Func<PlayerControls.GamePlayActions, InputAction> selector)

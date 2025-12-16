@@ -157,7 +157,8 @@ public class PauseMenuController : MonoBehaviour
         }
 
 #if ENABLE_INPUT_SYSTEM
-        // Solo suscribirse al botón de pausa
+        // Intentar inicializar el pause action si PlayerInputManager existe
+        // Si no existe (ej: en MainMenu), simplemente no se suscribe
         if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
         {
             _pauseAction = pim.Controls.GamePlay.Start;
@@ -168,6 +169,7 @@ public class PauseMenuController : MonoBehaviour
 
         gameObject.SetActive(false);
     }
+
 
     void OnEnable()
     {
@@ -366,6 +368,12 @@ public class PauseMenuController : MonoBehaviour
 
     void Update()
     {
+        // Verificar que siempre haya algo seleccionado cuando el menú está activo
+        if (_isPaused && _es != null && _es.currentSelectedGameObject == null)
+        {
+            StartCoroutine(SelectFirstButtonNextFrame());
+        }
+
         // Procesar solicitud de toggle de pausa
         if (_pauseRequestPending || WasPausePressedThisFrame())
         {
