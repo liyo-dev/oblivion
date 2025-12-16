@@ -29,6 +29,9 @@ public class DesignStoryCard
     public string title;
     [TextArea(3, 8)] public string note;
     public Color color = Color.white;
+    public FontStyle titleFontStyle = FontStyle.Bold;
+    public int titleFontSize = 14;
+    public bool settingsExpanded;
     public Vector2 position;
     public Vector2 size = new Vector2(320f, 320f);
 }

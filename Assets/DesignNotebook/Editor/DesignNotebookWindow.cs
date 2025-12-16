@@ -1190,8 +1190,8 @@ public class DesignNotebookWindow : EditorWindow
 
         static Styles()
         {
-            AccentColor = EditorGUIUtility.isProSkin ? new Color(0.33f, 0.73f, 0.94f) : new Color(0.12f, 0.4f, 0.74f);
-            AccentSoft = Color.Lerp(AccentColor, Color.white, 0.35f);
+            AccentColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.64f, 0.96f) : new Color(0.16f, 0.46f, 0.86f);
+            AccentSoft = Color.Lerp(new Color(0.24f, 0.92f, 0.82f), Color.white, 0.25f);
 
             HeaderBox = new GUIStyle("HelpBox")
             {
@@ -1395,6 +1395,8 @@ internal class DesignStoryGraphView : GraphView
         _grid = new GridBackground();
         Insert(0, _grid);
         _grid.StretchToParentSize();
+        style.backgroundColor = new StyleColor(new Color(0.07f, 0.09f, 0.12f));
+        _grid.style.backgroundColor = new StyleColor(new Color(0.05f, 0.07f, 0.1f));
 
         SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
         this.AddManipulator(new ContentDragger());
@@ -1476,6 +1478,7 @@ internal class DesignStoryGraphView : GraphView
             if (!_nodes.TryGetValue(link.fromGuid, out var from) || !_nodes.TryGetValue(link.toGuid, out var to))
                 continue;
             var edge = from.Output.ConnectTo(to.Input);
+            StyleEdge(edge, from.Card.color, to.Card.color);
             AddElement(edge);
         }
     }
@@ -1498,6 +1501,7 @@ internal class DesignStoryGraphView : GraphView
 
                 Undo.RecordObject(_notebook, "Conectar tarjetas de historia");
                 _notebook.storyLinks.Add(new DesignStoryLink { fromGuid = from.Card.guid, toGuid = to.Card.guid });
+                StyleEdge(e, from.Card.color, to.Card.color);
                 AddElement(e);
                 MarkDirty();
             }
@@ -1530,6 +1534,18 @@ internal class DesignStoryGraphView : GraphView
         }
 
         return changes;
+    }
+
+    internal static void StyleEdge(Edge edge, Color fromColor, Color toColor)
+    {
+        if (edge?.edgeControl == null) return;
+
+        var start = Color.Lerp(fromColor, new Color(0.3f, 0.9f, 0.9f), 0.15f);
+        var end = Color.Lerp(toColor, Color.white, 0.1f);
+        edge.edgeControl.outputColor = start;
+        edge.edgeControl.inputColor = end;
+        edge.edgeControl.edgeWidth = 3.6f;
+        edge.edgeControl.capRadius = 6f;
     }
 
     private void RemoveNode(StoryCardNodeView node)
@@ -1567,15 +1583,15 @@ internal class StoryCardNodeView : Node
     private readonly Action _onDirty;
     private Vector2 _lastSize;
     private readonly VisualElement _accentStrip;
-    private readonly Color _baseBody = new Color(0.12f, 0.12f, 0.12f);
-    private readonly Color _baseHeader = new Color(0.18f, 0.18f, 0.18f);
+    private readonly Color _baseBody = new Color(0.08f, 0.1f, 0.15f);
+    private readonly Color _baseHeader = new Color(0.1f, 0.12f, 0.18f);
     private readonly Color[] _swatchColors = {
-        new Color(0.21f, 0.66f, 0.95f),
-        new Color(0.96f, 0.73f, 0.23f),
-        new Color(0.96f, 0.36f, 0.36f),
-        new Color(0.36f, 0.88f, 0.61f),
-        new Color(0.78f, 0.55f, 0.96f),
-        new Color(0.9f, 0.9f, 0.9f)
+        new Color(0.25f, 0.78f, 0.96f),
+        new Color(0.48f, 0.86f, 0.66f),
+        new Color(0.72f, 0.62f, 0.98f),
+        new Color(0.98f, 0.62f, 0.42f),
+        new Color(0.28f, 0.56f, 0.98f),
+        new Color(0.9f, 0.93f, 0.95f)
     };
 
     public StoryCardNodeView(DesignStoryCard card, Action onDirty)
@@ -1587,6 +1603,8 @@ internal class StoryCardNodeView : Node
         var initialSize = card.size;
         if (initialSize == Vector2.zero)
             initialSize = new Vector2(320f, 320f);
+        if (card.titleFontSize <= 0)
+            card.titleFontSize = 14;
         style.width = initialSize.x;
         style.height = initialSize.y;
         _lastSize = initialSize;
@@ -1610,9 +1628,9 @@ internal class StoryCardNodeView : Node
         if (titleLabel != null)
         {
             titleLabel.style.marginLeft = 4f;
-            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            titleLabel.style.fontSize = 14f;
-            titleLabel.style.color = new StyleColor(Color.black);
+            titleLabel.style.unityFontStyleAndWeight = card.titleFontStyle;
+            titleLabel.style.fontSize = card.titleFontSize > 0 ? card.titleFontSize : 14f;
+            titleLabel.style.color = new StyleColor(Color.white);
         }
 
         Input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
@@ -1629,7 +1647,12 @@ internal class StoryCardNodeView : Node
         mainContainer.style.paddingLeft = 8f;
         mainContainer.style.paddingRight = 8f;
         mainContainer.style.marginTop = 4f;
-        mainContainer.style.backgroundColor = new StyleColor(new Color(0.18f, 0.22f, 0.28f));
+        mainContainer.style.backgroundColor = new StyleColor(new Color(0.14f, 0.17f, 0.22f));
+        style.backgroundColor = new StyleColor(new Color(0.08f, 0.1f, 0.14f));
+        style.borderBottomLeftRadius = 10f;
+        style.borderBottomRightRadius = 10f;
+        style.borderTopLeftRadius = 10f;
+        style.borderTopRightRadius = 10f;
 
         const float LabelWidth = 70f;
 
@@ -1649,13 +1672,59 @@ internal class StoryCardNodeView : Node
         });
         mainContainer.Add(titleField);
 
+        var noteField = new TextField("Detalle") { value = card.note, multiline = true };
+        noteField.style.minHeight = 220f;
+        noteField.style.height = 0f;
+        noteField.style.flexGrow = 1f;
+        noteField.style.flexShrink = 1f;
+        noteField.style.flexBasis = 220f;
+        noteField.style.marginTop = 8f;
+        noteField.style.marginBottom = 8f;
+        noteField.labelElement.style.minWidth = LabelWidth;
+        noteField.labelElement.style.maxWidth = LabelWidth;
+        noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
+        var noteInput = noteField.Q(TextField.textInputUssName);
+        if (noteInput != null)
+        {
+            noteInput.style.flexGrow = 1f;
+            noteInput.style.minHeight = 200f;
+            noteInput.style.whiteSpace = WhiteSpace.Normal;
+        }
+        noteField.RegisterValueChangedCallback(evt =>
+        {
+            card.note = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(noteField);
+
+        var settingsFoldout = new Foldout
+        {
+            text = "Ajustes rápidos",
+            value = card.settingsExpanded,
+            style =
+            {
+                marginTop = 6f,
+                unityFontStyleAndWeight = FontStyle.Bold
+            }
+        };
+        settingsFoldout.RegisterValueChangedCallback(evt =>
+        {
+            card.settingsExpanded = evt.newValue;
+            _onDirty?.Invoke();
+        });
+
+        var settingsContainer = settingsFoldout.contentContainer;
+        settingsContainer.style.marginTop = 4f;
+        settingsContainer.style.marginLeft = 4f;
+        settingsContainer.style.marginRight = 4f;
+
         var colorRow = new VisualElement
         {
             style =
             {
                 flexDirection = FlexDirection.Row,
                 alignItems = Align.Center,
-                marginTop = 4f,
+                marginTop = 2f,
                 marginBottom = 2f
             }
         };
@@ -1684,15 +1753,15 @@ internal class StoryCardNodeView : Node
             _onDirty?.Invoke();
         });
         colorRow.Add(colorField);
-        mainContainer.Add(colorRow);
+        settingsContainer.Add(colorRow);
 
         var swatches = new VisualElement
         {
             style =
             {
                 flexDirection = FlexDirection.Row,
-                marginBottom = 12f,
-                marginTop = 6f,
+                marginBottom = 8f,
+                marginTop = 4f,
                 marginLeft = LabelWidth + 4f
             }
         };
@@ -1709,34 +1778,58 @@ internal class StoryCardNodeView : Node
             };
             swatches.Add(b);
         }
-        mainContainer.Add(swatches);
+        settingsContainer.Add(swatches);
 
-        var noteField = new TextField("Detalle") { value = card.note, multiline = true };
-        noteField.style.minHeight = 260f;
-        noteField.style.height = 0f;
-        noteField.style.flexGrow = 1f;
-        noteField.style.flexShrink = 1f;
-        noteField.style.flexBasis = 260f;
-        noteField.style.marginTop = 8f;
-        noteField.style.marginBottom = 8f;
-        noteField.labelElement.style.minWidth = LabelWidth;
-        noteField.labelElement.style.maxWidth = LabelWidth;
-        noteField.labelElement.style.unityTextAlign = TextAnchor.UpperLeft;
-        var noteInput = noteField.Q(TextField.textInputUssName);
-        if (noteInput != null)
+        var typographyRow = new VisualElement
         {
-            noteInput.style.flexGrow = 1f;
-            noteInput.style.minHeight = 240f;
-            noteInput.style.whiteSpace = WhiteSpace.Normal;
-        }
-        noteField.RegisterValueChangedCallback(evt =>
+            style =
+            {
+                flexDirection = FlexDirection.Row,
+                alignItems = Align.Center,
+                marginTop = 2f,
+                marginBottom = 2f
+            }
+        };
+        var fontLabel = new Label("Fuente")
         {
-            card.note = evt.newValue;
+            style =
+            {
+                minWidth = LabelWidth,
+                maxWidth = LabelWidth,
+                unityTextAlign = TextAnchor.MiddleLeft
+            }
+        };
+        typographyRow.Add(fontLabel);
+
+        var fontStyleField = new EnumField(card.titleFontStyle);
+        fontStyleField.style.width = 110f;
+        fontStyleField.RegisterValueChangedCallback(evt =>
+        {
+            card.titleFontStyle = (FontStyle)evt.newValue;
+            UpdateTypography(titleLabel, titleField, noteField);
             _onDirty?.Invoke();
         });
-        mainContainer.Add(noteField);
+        typographyRow.Add(fontStyleField);
+
+        var fontSizeField = new IntegerField { value = Mathf.Clamp(card.titleFontSize, 12, 28) };
+        fontSizeField.style.width = 70f;
+        fontSizeField.style.marginLeft = 8f;
+        fontSizeField.label = "Tamaño";
+        fontSizeField.labelElement.style.minWidth = 56f;
+        fontSizeField.RegisterValueChangedCallback(evt =>
+        {
+            card.titleFontSize = Mathf.Clamp(evt.newValue, 12, 28);
+            fontSizeField.SetValueWithoutNotify(card.titleFontSize);
+            UpdateTypography(titleLabel, titleField, noteField);
+            _onDirty?.Invoke();
+        });
+        typographyRow.Add(fontSizeField);
+        settingsContainer.Add(typographyRow);
+
+        mainContainer.Add(settingsFoldout);
 
         UpdateColor();
+        UpdateTypography(titleLabel, titleField, noteField);
         RefreshExpandedState();
         RefreshPorts();
         SetPosition(new Rect(card.position, initialSize));
@@ -1747,11 +1840,11 @@ internal class StoryCardNodeView : Node
     private void UpdateColor()
     {
         var accent = Card.color;
-        var headerColor = Color.Lerp(accent, Color.white, 0.35f);
-        var bodyColor = Color.Lerp(accent, _baseBody, 0.7f);
+        var headerColor = Color.Lerp(accent, new Color(0.28f, 0.82f, 1f), 0.2f);
+        var bodyColor = Color.Lerp(accent, _baseBody, 0.65f);
 
         mainContainer.style.backgroundColor = new StyleColor(bodyColor);
-        titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(headerColor, _baseHeader, 0.4f));
+        titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(headerColor, _baseHeader, 0.35f));
 
         style.borderLeftWidth = 2f;
         style.borderRightWidth = 2f;
@@ -1765,6 +1858,51 @@ internal class StoryCardNodeView : Node
         Input.portColor = accent;
         Output.portColor = accent;
         _accentStrip.style.backgroundColor = new StyleColor(accent);
+        UpdateConnectedEdges();
+    }
+
+    private void UpdateTypography(Label titleLabel, TextField titleField, TextField noteField)
+    {
+        if (Card.titleFontSize <= 0)
+            Card.titleFontSize = 14;
+
+        if (titleLabel != null)
+        {
+            titleLabel.style.unityFontStyleAndWeight = Card.titleFontStyle;
+            titleLabel.style.fontSize = Card.titleFontSize;
+            titleLabel.style.color = new StyleColor(Color.white);
+        }
+
+        if (titleField != null)
+        {
+            var input = titleField.Q(TextField.textInputUssName);
+            if (input != null)
+            {
+                input.style.fontSize = Card.titleFontSize;
+                input.style.unityFontStyleAndWeight = Card.titleFontStyle;
+            }
+        }
+
+        if (noteField != null)
+        {
+            var noteInput = noteField.Q(TextField.textInputUssName);
+            if (noteInput != null)
+            {
+                noteInput.style.fontSize = Mathf.Clamp(Card.titleFontSize - 1, 11, 28);
+            }
+        }
+    }
+
+    private void UpdateConnectedEdges()
+    {
+        foreach (var edge in Input.connections.Concat(Output.connections))
+        {
+            var fromNode = edge.output?.node as StoryCardNodeView;
+            var toNode = edge.input?.node as StoryCardNodeView;
+            var fromColor = fromNode?.Card.color ?? Card.color;
+            var toColor = toNode?.Card.color ?? Card.color;
+            DesignStoryGraphView.StyleEdge(edge, fromColor, toColor);
+        }
     }
 
     public override void SetPosition(Rect newPos)
