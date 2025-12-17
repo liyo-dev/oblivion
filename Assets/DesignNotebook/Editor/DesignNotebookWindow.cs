@@ -1615,11 +1615,12 @@ internal class StoryCardNodeView : Node
         capabilities |= Capabilities.Resizable;
         var initialSize = card.size;
         if (initialSize == Vector2.zero)
-            initialSize = new Vector2(320f, 320f);
+            initialSize = new Vector2(320f, 420f);
         if (card.titleFontSize <= 0)
             card.titleFontSize = 14;
         style.width = initialSize.x;
         style.height = initialSize.y;
+        style.minHeight = 380f;
         _lastSize = initialSize;
 
         _accentStrip = new VisualElement();

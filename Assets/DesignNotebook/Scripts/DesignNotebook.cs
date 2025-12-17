@@ -31,9 +31,9 @@ public class DesignStoryCard
     public Color color = Color.white;
     public FontStyle titleFontStyle = FontStyle.Bold;
     public int titleFontSize = 14;
-    public bool settingsExpanded;
+    public bool settingsExpanded = true;
     public Vector2 position;
-    public Vector2 size = new Vector2(320f, 320f);
+    public Vector2 size = new Vector2(320f, 420f);
 }
 
 [Serializable]
