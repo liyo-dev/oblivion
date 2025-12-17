@@ -1464,34 +1464,34 @@ internal class DesignStoryGraphView : GraphView
         {
             DeleteElements(graphElements.ToList());
             _nodes.Clear();
+
+            if (_notebook == null) return;
+
+            if (_grid.parent == null)
+            {
+                Insert(0, _grid);
+                _grid.StretchToParentSize();
+            }
+
+            foreach (var card in _notebook.storyCards)
+            {
+                var view = new StoryCardNodeView(card, MarkDirty);
+                _nodes[card.guid] = view;
+                AddElement(view);
+            }
+
+            foreach (var link in _notebook.storyLinks.ToList())
+            {
+                if (!_nodes.TryGetValue(link.fromGuid, out var from) || !_nodes.TryGetValue(link.toGuid, out var to))
+                    continue;
+                var edge = from.Output.ConnectTo(to.Input);
+                StyleEdge(edge, from.Card.color, to.Card.color);
+                AddElement(edge);
+            }
         }
         finally
         {
             _isRebuilding = false;
-        }
-
-        if (_notebook == null) return;
-
-        if (_grid.parent == null)
-        {
-            Insert(0, _grid);
-            _grid.StretchToParentSize();
-        }
-
-        foreach (var card in _notebook.storyCards)
-        {
-            var view = new StoryCardNodeView(card, MarkDirty);
-            _nodes[card.guid] = view;
-            AddElement(view);
-        }
-
-        foreach (var link in _notebook.storyLinks.ToList())
-        {
-            if (!_nodes.TryGetValue(link.fromGuid, out var from) || !_nodes.TryGetValue(link.toGuid, out var to))
-                continue;
-            var edge = from.Output.ConnectTo(to.Input);
-            StyleEdge(edge, from.Card.color, to.Card.color);
-            AddElement(edge);
         }
     }
 
