@@ -4,22 +4,13 @@ using UnityEngine.InputSystem;
 
 namespace Invector.vCharacterController
 {
+    /// <summary>
+    /// Input handler para vThirdPersonController.
+    /// IMPORTANTE: Ahora usa GamepadInputReader centralizado (via reflexión) en lugar de leer directamente del Input System.
+    /// Esto asegura que la supresión de gameplay funcione correctamente cuando hay menús abiertos.
+    /// </summary>
     public class vThirdPersonInput : MonoBehaviour
     {
-        [Header("New Input System")]
-        [SerializeField] private InputActionAsset inputActions;
-
-        // Acciones
-        private InputAction moveAction;
-        private InputAction jumpAction;
-        private InputAction sprintAction;
-        private InputAction strafeAction;
-        private InputAction cameraAction;
-        private InputAction attackMagicWestAction;   // X  -> izquierda
-        private InputAction attackMagicEastAction;   // B  -> derecha
-        private InputAction attackMagicNorthAction;  // Y  -> especial
-
-        [SerializeField] private PlayerInput playerInput;
         [SerializeField, Tooltip("Optional reference that implements IActionValidator (e.g. PlayerActionManager)")]
         private MonoBehaviour actionValidatorSource;
 
@@ -27,6 +18,18 @@ namespace Invector.vCharacterController
 
         private static bool lookInversionCached;
         private static Func<Vector2, Vector2> lookInversionDelegate;
+        
+        // Cache de reflexión para GamepadInputReader
+        private static Type gamepadInputReaderType;
+        private static System.Reflection.PropertyInfo moveProp;
+        private static System.Reflection.PropertyInfo cameraLookProp;
+        private static System.Reflection.PropertyInfo sprintHeldProp;
+        private static System.Reflection.PropertyInfo jumpPressedProp;
+        private static System.Reflection.PropertyInfo strafePressedProp;
+        private static System.Reflection.PropertyInfo attackMagicLeftPressedProp;
+        private static System.Reflection.PropertyInfo attackMagicRightPressedProp;
+        private static System.Reflection.PropertyInfo attackMagicSpecialPressedProp;
+        private static bool reflectionInitialized;
 
         [HideInInspector] public vThirdPersonController cc;
         [HideInInspector] public vThirdPersonCamera tpCamera;
@@ -35,7 +38,7 @@ namespace Invector.vCharacterController
         // Flight control
         public bool DisableVerticalCameraRotation { get; set; } = false;
 
-        // Valores
+        // Valores capturados del GamepadInputReader
         private Vector2 moveInput;
         private Vector2 cameraInput;
         private bool jumpPressed;
@@ -46,14 +49,40 @@ namespace Invector.vCharacterController
         {
             ResolveServices();
             CacheLookInversionDelegate();
-            InitializeInputActions();
+            InitializeReflection();
+        }
+        
+        private static void InitializeReflection()
+        {
+            if (reflectionInitialized) return;
+            reflectionInitialized = true;
+            
+            try
+            {
+                gamepadInputReaderType = Type.GetType("Core.GamepadInputReader, Assembly-CSharp");
+                if (gamepadInputReaderType == null)
+                {
+                    Debug.LogError("[vThirdPersonInput] No se pudo encontrar Core.GamepadInputReader. Inputs no funcionarán.");
+                    return;
+                }
+                
+                moveProp = gamepadInputReaderType.GetProperty("Move", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                cameraLookProp = gamepadInputReaderType.GetProperty("CameraLook", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                sprintHeldProp = gamepadInputReaderType.GetProperty("SprintHeld", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                jumpPressedProp = gamepadInputReaderType.GetProperty("JumpPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                strafePressedProp = gamepadInputReaderType.GetProperty("StrafePressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                attackMagicLeftPressedProp = gamepadInputReaderType.GetProperty("AttackMagicLeftPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                attackMagicRightPressedProp = gamepadInputReaderType.GetProperty("AttackMagicRightPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                attackMagicSpecialPressedProp = gamepadInputReaderType.GetProperty("AttackMagicSpecialPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[vThirdPersonInput] Error inicializando reflexión: {ex.Message}");
+            }
         }
 
         private void ResolveServices()
         {
-            if (playerInput == null)
-                playerInput = GetComponent<PlayerInput>();
-
             if (actionValidator == null)
             {
                 if (actionValidatorSource != null)
@@ -61,73 +90,17 @@ namespace Invector.vCharacterController
 
                 if (actionValidator == null)
                     actionValidator = GetComponent<IActionValidator>();
-
-                if (actionValidator == null && playerInput != null)
-                    actionValidator = playerInput.GetComponent<IActionValidator>();
             }
-        }
-
-        private void InitializeInputActions()
-        {
-            if (playerInput != null)
-                inputActions = playerInput.actions;
-
-            if (inputActions == null)
-                inputActions = this.inputActions; // inspector fallback
-
-            if (inputActions == null)
-            {
-                Debug.LogError("[vThirdPersonInput] No InputActionAsset assigned. Please assign one or ensure a PlayerInput component references it.");
-                return;
-            }
-
-            var gameplay = inputActions.FindActionMap("GamePlay");
-            if (gameplay != null)
-            {
-                moveAction             = gameplay.FindAction("Move");
-                jumpAction             = gameplay.FindAction("Jump");
-                sprintAction           = gameplay.FindAction("Sprint");
-                strafeAction           = gameplay.FindAction("Strafe");
-                cameraAction           = gameplay.FindAction("CameraLook");
-                attackMagicWestAction  = gameplay.FindAction("AttackMagicWest");
-                attackMagicEastAction  = gameplay.FindAction("AttackMagicEast");
-                attackMagicNorthAction = gameplay.FindAction("AttackMagicNorth");
-            }
-            else Debug.LogWarning("[vThirdPersonInput] GamePlay action map not found in InputActionAsset");
         }
 
         protected virtual void OnEnable()
         {
-            if (inputActions == null) return;
-            inputActions.Enable();
-
-            if (moveAction != null)   { moveAction.performed += OnMoveInput;   moveAction.canceled += OnMoveInput; }
-            if (jumpAction != null)   { jumpAction.performed += OnJumpInput; }
-            if (sprintAction != null) { sprintAction.performed += OnSprintInput; sprintAction.canceled += OnSprintInput; }
-            if (strafeAction != null) { strafeAction.performed += OnStrafeInput; }
-            if (cameraAction != null) { cameraAction.performed += OnCameraInput; cameraAction.canceled += OnCameraInput; }
-
-            // Magia (solo started para evitar dobles disparos)
-            if (attackMagicWestAction  != null) attackMagicWestAction.started  += OnAttackMagicWestStarted;
-            if (attackMagicEastAction  != null) attackMagicEastAction.started  += OnAttackMagicEastStarted;
-            if (attackMagicNorthAction != null) attackMagicNorthAction.started += OnAttackMagicNorthStarted;
+            // Ya no nos suscribimos a InputActions, leemos de GamepadInputReader en Update
         }
 
         protected virtual void OnDisable()
         {
-            if (inputActions == null) return;
-
-            if (moveAction != null)   { moveAction.performed -= OnMoveInput;   moveAction.canceled -= OnMoveInput; }
-            if (jumpAction != null)   { jumpAction.performed -= OnJumpInput; }
-            if (sprintAction != null) { sprintAction.performed -= OnSprintInput; sprintAction.canceled -= OnSprintInput; }
-            if (strafeAction != null) { strafeAction.performed -= OnStrafeInput; }
-            if (cameraAction != null) { cameraAction.performed -= OnCameraInput; cameraAction.canceled  -= OnCameraInput; }
-
-            if (attackMagicWestAction  != null) attackMagicWestAction.started  -= OnAttackMagicWestStarted;
-            if (attackMagicEastAction  != null) attackMagicEastAction.started  -= OnAttackMagicEastStarted;
-            if (attackMagicNorthAction != null) attackMagicNorthAction.started -= OnAttackMagicNorthStarted;
-
-            inputActions.Disable();
+            // Ya no nos desuscribimos de InputActions
         }
 
         protected virtual void Start()
@@ -145,8 +118,62 @@ namespace Invector.vCharacterController
 
         protected virtual void Update()
         {
+            // Leer inputs de GamepadInputReader (centralizado)
+            ReadInputsFromGamepadReader();
+            
             InputHandle();
             cc.UpdateAnimator();
+        }
+
+        /// <summary>
+        /// Lee todos los inputs del GamepadInputReader centralizado via reflexión.
+        /// Esto respeta la supresión de gameplay cuando hay menús abiertos.
+        /// </summary>
+        private void ReadInputsFromGamepadReader()
+        {
+            if (gamepadInputReaderType == null) return;
+            
+            try
+            {
+                // Movimiento (respeta supresión de gameplay)
+                if (moveProp != null)
+                    moveInput = (Vector2)moveProp.GetValue(null);
+                
+                // Cámara (siempre disponible)
+                if (cameraLookProp != null)
+                    cameraInput = ApplyLookInversionSafe((Vector2)cameraLookProp.GetValue(null));
+                
+                // Sprint (respeta supresión y validación)
+                if (CanSprint() && sprintHeldProp != null)
+                    sprintHeld = (bool)sprintHeldProp.GetValue(null);
+                else
+                    sprintHeld = false;
+                
+                // Jump (respeta supresión y validación)
+                if (CanJump() && jumpPressedProp != null && (bool)jumpPressedProp.GetValue(null))
+                    jumpPressed = true;
+                
+                // Strafe toggle
+                if (strafePressedProp != null && (bool)strafePressedProp.GetValue(null))
+                    strafePressed = true;
+                
+                // Magia (respeta supresión y validación)
+                if (CanMagic() && cc != null)
+                {
+                    if (attackMagicLeftPressedProp != null && (bool)attackMagicLeftPressedProp.GetValue(null))
+                        cc.CastMagicLeft();
+                    
+                    if (attackMagicRightPressedProp != null && (bool)attackMagicRightPressedProp.GetValue(null))
+                        cc.CastMagicRight();
+                    
+                    if (attackMagicSpecialPressedProp != null && (bool)attackMagicSpecialPressedProp.GetValue(null))
+                        cc.CastMagicSpecial();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[vThirdPersonInput] Error leyendo inputs: {ex.Message}");
+            }
         }
 
         public virtual void OnAnimatorMove()
@@ -154,29 +181,8 @@ namespace Invector.vCharacterController
             cc.ControlAnimatorRootMotion();
         }
 
-        // ===== Helpers / movimiento =====
-        private void OnMoveInput(InputAction.CallbackContext context)   => moveInput = context.ReadValue<Vector2>();
-        private void OnJumpInput(InputAction.CallbackContext context)
-        {
-            if (context.performed && CanJump())
-                jumpPressed = true;
-        }
-
-        private void OnSprintInput(InputAction.CallbackContext context)
-        {
-            if (!CanSprint())
-            {
-                sprintHeld = false;
-                return;
-            }
-            sprintHeld = context.ReadValueAsButton();
-        }
-        private void OnStrafeInput(InputAction.CallbackContext context) { if (context.performed) strafePressed = true; }
-        private void OnCameraInput(InputAction.CallbackContext context) => cameraInput = ApplyLookInversionSafe(context.ReadValue<Vector2>());
-
-        // Some projects may provide a `PlayerSettings` helper class. The Invector plugin
-        // ships under Plugins and may compile in a different assembly where `PlayerSettings`
-        // (defined in the main Assembly-CSharp) is not available. To avoid a hard dependency
+        // ===== Look inversion helper =====
+        // Some projects may provide a `PlayerSettings` helper class. To avoid a hard dependency
         // we call it via reflection if present; otherwise we return the original input.
         private static Vector2 ApplyLookInversionSafe(Vector2 input)
         {
@@ -321,24 +327,5 @@ namespace Invector.vCharacterController
         private bool CanJump()   => GetValidator()?.CanJump() ?? true;
         private bool CanSprint() => GetValidator()?.CanSprint() ?? true;
         private bool CanMagic()  => GetValidator()?.CanCastMagic() ?? true;
-
-        // Named callbacks for magic inputs so they can be unsubscribed reliably
-        private void OnAttackMagicWestStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
-        {
-            if (!CanMagic()) return;
-            if (cc != null) cc.CastMagicLeft();
-        }
-
-        private void OnAttackMagicEastStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
-        {
-            if (!CanMagic()) return;
-            if (cc != null) cc.CastMagicRight();
-        }
-
-        private void OnAttackMagicNorthStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
-        {
-            if (!CanMagic()) return;
-            if (cc != null) cc.CastMagicSpecial();
-        }
     }
 }

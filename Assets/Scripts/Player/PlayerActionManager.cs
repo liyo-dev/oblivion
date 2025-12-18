@@ -394,14 +394,92 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public int StackDepth => _stack.Count;
 
     // Implementación de IActionValidator para compatibilidad con otros namespaces
-    public bool CanJump() => CanUse(PlayerAbility.Jump);
-    public bool CanSprint() => CanUse(PlayerAbility.Sprint);
-    public bool CanAttack() => CanUse(PlayerAbility.Attack);
-    public bool CanCastMagic() => CanUse(PlayerAbility.Magic);
-    public bool CanInteract() => CanUse(PlayerAbility.Interact);
+    public bool CanJump()
+    {
+        // Si hay menús abiertos (Shop, Equipment, etc.), NO permitir saltar
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Jump);
+    }
+    
+    public bool CanSprint()
+    {
+        // Si hay menús abiertos, NO permitir sprint
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Sprint bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Sprint);
+    }
+    
+    public bool CanAttack()
+    {
+        // Si hay menús abiertos, NO permitir atacar
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Attack bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Attack);
+    }
+    
+    public bool CanCastMagic()
+    {
+        // Si hay menús abiertos, NO permitir magia
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Magic bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Magic);
+    }
+    
+    public bool CanInteract()
+    {
+        // IMPORTANTE: Interact puede usarse cuando NO hay menús abiertos
+        // Si hay menús abiertos, el botón A se usa para submit en UI, no para interactuar
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Interact bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Interact);
+    }
+    
     public bool CanSwim() => _allowSwim;
-    public bool CanFly() => CanUse(PlayerAbility.Fly);
-    public bool CanClimb() => CanUse(PlayerAbility.Climb);
+    
+    public bool CanFly()
+    {
+        // Si hay menús abiertos, NO permitir volar
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Fly bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Fly);
+    }
+    
+    public bool CanClimb()
+    {
+        // Si hay menús abiertos, NO permitir trepar
+        if (MenuManager.HasOpenMenus)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Climb bloqueado - hay menús abiertos");
+            return false;
+        }
+        
+        return CanUse(PlayerAbility.Climb);
+    }
 
     void UpdatePlayerLock(ActionMode top)
     {

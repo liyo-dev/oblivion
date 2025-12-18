@@ -51,6 +51,7 @@ namespace Core
     private static bool _pollingRegistered;
     private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
     private static int _uiNavigationScopeCount;
+    private static float _ignoreCancelUntil = 0f; // Tiempo hasta el cual ignorar el botón Cancel/B
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -230,6 +231,15 @@ namespace Core
         _uiNavigationScopeCount = Mathf.Max(0, _uiNavigationScopeCount - 1);
     }
 
+    /// <summary>
+    /// Ignora el botón Cancel/B durante el tiempo especificado.
+    /// Útil para evitar que el botón que cerró un menú se procese en gameplay.
+    /// </summary>
+    public static void IgnoreCancelButton(float duration)
+    {
+        _ignoreCancelUntil = Time.unscaledTime + duration;
+    }
+
     private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
     private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
     private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
@@ -295,7 +305,17 @@ namespace Core
             if (dpad.right.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadRight)) OnInput?.Invoke(new InputEvent(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed));
         }
         if (gp.buttonEast != null && gp.buttonEast.wasPressedThisFrame)
-            OnInput?.Invoke(new InputEvent(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed));
+        {
+            // Ignorar buttonEast si estamos dentro del período de ignorar (después de cerrar menús)
+            if (Time.unscaledTime < _ignoreCancelUntil)
+            {
+                // Botón ignorado, no hacer nada
+            }
+            else
+            {
+                OnInput?.Invoke(new InputEvent(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed));
+            }
+        }
         if (gp.buttonSouth != null && gp.buttonSouth.wasPressedThisFrame)
             OnInput?.Invoke(new InputEvent(InputEventType.Submit, Vector2.zero, InputActionPhase.Performed));
         if (gp.leftShoulder != null && gp.leftShoulder.wasPressedThisFrame)
@@ -633,8 +653,144 @@ namespace Core
         }
     }
 
+    /// <summary>
+    /// Botón X (West/Square) - Usado para magia izquierda.
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicLeftPressed
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonWest.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var x = GetJoystickButton(js, "buttonWest", "square", "button0");
+                if (x != null && x.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Botón B (East/Circle) - Usado para magia derecha.
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicRightPressed
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonEast.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var b = GetJoystickButton(js, "buttonEast", "circle", "button1");
+                if (b != null && b.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Botón Y (North/Triangle) - Usado para magia especial.
+    /// Respeta supresión de gameplay. Es un alias de YButtonPressed para consistencia.
+    /// </summary>
+    public static bool AttackMagicSpecialPressed => YButtonPressed;
+
     public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
+    
+    /// <summary>
+    /// Lee si el botón de sprint está mantenido presionado.
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool SprintHeld
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+            if (Controls != null && Controls.GamePlay.Sprint.IsPressed())
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.leftShoulder.isPressed)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Lee si el botón de jump fue presionado este frame.
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool JumpPressed
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+            if (Controls != null && Controls.GamePlay.Jump.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonSouth.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Lee si el botón de strafe fue presionado este frame.
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool StrafePressed
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+            if (Controls != null && Controls.GamePlay.Strafe.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
     
     /// <summary>
     /// Lee CameraLook directamente del hardware sin restricciones de supresión.

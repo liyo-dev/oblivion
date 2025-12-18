@@ -43,6 +43,12 @@ public static class MenuManager
     }
 
     /// <summary>
+    /// Alias para AnyOpen() - usado para validación de acciones del player.
+    /// Retorna true si hay al menos un menú abierto.
+    /// </summary>
+    public static bool HasOpenMenus => AnyOpen();
+
+    /// <summary>
     /// Returns true if any menu is open excluding the provided list.
     /// Useful for scenarios where a menu transitions between variants (e.g.,
     /// quick and full quest menus) without blocking itself.

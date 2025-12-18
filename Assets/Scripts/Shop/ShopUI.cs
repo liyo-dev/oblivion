@@ -66,6 +66,7 @@ public class ShopUI : MonoBehaviour
     // Variables de control de mensajes
     private bool _skipMessageClearOnce = false;
     private bool _messageLocked = false;
+    
     enum ShopState
     {
         Browsing,
@@ -282,6 +283,12 @@ public class ShopUI : MonoBehaviour
 
         GameState.Push(GamePhase.Shop);
         Time.timeScale = 0f;
+        
+        // IMPORTANTE: Suprimir inputs de gameplay mientras la tienda está abierta
+        // Pero permitir navegación UI (D-Pad, joystick, submit, cancel)
+        GamepadInputReader.PushGameplaySuppression(this);
+        GamepadInputReader.PushUiNavigationScope();
+        Debug.Log("[ShopUI] Gameplay suprimido - Solo inputs UI permitidos");
     }
 
     public void Close()
@@ -289,15 +296,30 @@ public class ShopUI : MonoBehaviour
         if (!_isOpen) return;
         _isOpen = false;
         
-        if (windowRoot != null)
-            windowRoot.SetActive(false);
-
         GameState.Pop(GamePhase.Shop);
         Time.timeScale = 1f;
         ResetBuyButtonFeedback();
-
+        
         // Unregister from central manager
         MenuManager.Close(MenuKind.Shop);
+        
+        // Desactivar el windowRoot inmediatamente
+        if (windowRoot != null)
+            windowRoot.SetActive(false);
+        
+        // CRÍTICO: Ignorar el botón Cancel/B durante 0.3 segundos para evitar que se procese en gameplay
+        GamepadInputReader.IgnoreCancelButton(0.3f);
+        
+        // Restaurar inputs de gameplay con un pequeño retraso
+        Invoke(nameof(RestoreGameplayInputs), 0.2f);
+    }
+
+    private void RestoreGameplayInputs()
+    {
+        // Restaurar los inputs de gameplay después del retraso
+        GamepadInputReader.PopUiNavigationScope();
+        GamepadInputReader.PopGameplaySuppression(this);
+        Debug.Log("[ShopUI] Gameplay restaurado - Inputs de gameplay desbloqueados (con retraso)");
     }
 
     void RefreshUI()
