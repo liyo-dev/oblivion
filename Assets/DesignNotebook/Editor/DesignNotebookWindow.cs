@@ -127,6 +127,12 @@ public class DesignNotebookWindow : EditorWindow
             changed = true;
         }
 
+        if (_asset.documents == null)
+        {
+            _asset.documents = new List<DesignDocumentNote>();
+            changed = true;
+        }
+
         if (_asset.blackboardStrokes == null)
         {
             _asset.blackboardStrokes = new List<DesignBlackboardStroke>();
@@ -148,6 +154,12 @@ public class DesignNotebookWindow : EditorWindow
         if (_asset.blackboardBackground.a <= 0f)
         {
             _asset.blackboardBackground = new Color(0.07f, 0.08f, 0.1f);
+            changed = true;
+        }
+
+        if (_asset.boardBackground.a <= 0f)
+        {
+            _asset.boardBackground = new Color(0.07f, 0.08f, 0.1f);
             changed = true;
         }
 
@@ -195,9 +207,7 @@ public class DesignNotebookWindow : EditorWindow
         var tabs = new[]
         {
             "Resumen",
-            "Storyboard",
-            "Notas rápidas",
-            "Blackboard",
+            "Board",
             "Exportar"
         };
 
@@ -239,9 +249,9 @@ public class DesignNotebookWindow : EditorWindow
         float availableWidth = Mathf.Max(position.width - 60f, 360f);
         float targetWidth = Mathf.Clamp((availableWidth / 3f) - 8f, 140f, 260f);
 
-        DrawStatPill("Tarjetas", _asset?.storyCards?.Count ?? 0, "Storyboard estilizado", targetWidth);
-        DrawStatPill("Notas rápidas", _asset?.quickNotes?.Count ?? 0, "Tablero tipo corcho", targetWidth);
-        DrawStatPill("Trazos", _asset?.blackboardStrokes?.Count ?? 0, "Blackboard creativo", targetWidth);
+        DrawStatPill("Tarjetas", _asset?.storyCards?.Count ?? 0, "Historias conectadas", targetWidth);
+        DrawStatPill("Notas rápidas", _asset?.quickNotes?.Count ?? 0, "Ideas sueltas en el board", targetWidth);
+        DrawStatPill("Docs", _asset?.documents?.Count ?? 0, "Sinopsis y referencias", targetWidth);
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
     }
@@ -268,12 +278,6 @@ public class DesignNotebookWindow : EditorWindow
                 DrawSummary();
                 break;
             case 2:
-                DrawQuickNotesBoard();
-                break;
-            case 3:
-                DrawBlackboard();
-                break;
-            case 4:
                 DrawExportButtons();
                 break;
         }
@@ -828,21 +832,50 @@ public class DesignNotebookWindow : EditorWindow
 
         EditorGUILayout.BeginVertical(Styles.SectionBox);
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Historia principal", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Añade tarjetas, cámbiales el color y conéctalas para aclarar el game design.", MessageType.Info);
+        EditorGUILayout.LabelField("Board unificado", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Un solo tablero donde combinar tarjetas, notas rápidas y documentos enlazables.", MessageType.Info);
 
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+        using (new EditorGUILayout.HorizontalScope())
         {
-            EnsureGraphView();
-            _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-            _storyGraphView.CreateCard(GetNextStoryCardPosition());
+            if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+            {
+                EnsureGraphView();
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                _storyGraphView.CreateCard(GetNextStoryCardPosition());
+            }
+
+            if (GUILayout.Button("Nota rápida", GUILayout.Width(110f)))
+            {
+                EnsureGraphView();
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                _storyGraphView.CreateQuickNote(GetNextStoryCardPosition());
+            }
+
+            if (GUILayout.Button("Documento", GUILayout.Width(110f)))
+            {
+                EnsureGraphView();
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                _storyGraphView.CreateDocument(GetNextStoryCardPosition());
+            }
+
+            if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
+                _storyGraphView.FrameAll();
+            if (GUILayout.Button("Centrar selección", GUILayout.Width(130f)))
+                _storyGraphView.FrameSelection();
         }
-        if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
-            _storyGraphView.FrameAll();
-        if (GUILayout.Button("Centrar", GUILayout.Width(100f)))
-            _storyGraphView.FrameSelection();
-        EditorGUILayout.EndHorizontal();
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.Label("Color del board", GUILayout.Width(110f));
+            var newColor = EditorGUILayout.ColorField(_asset.boardBackground);
+            if (newColor != _asset.boardBackground)
+            {
+                Undo.RecordObject(_asset, "Cambiar color del board");
+                _asset.boardBackground = newColor;
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                MarkAssetDirty();
+            }
+        }
 
         var rect = GUILayoutUtility.GetRect(position.width - 32f, position.height - 220f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         LayoutGraphView(rect);
@@ -941,6 +974,8 @@ public class DesignNotebookWindow : EditorWindow
         sb.AppendLine();
 
         AppendList(sb, "NOTAS RÁPIDAS", _asset.quickNotes.Select(n => ($"• {n.title}", n.note, n.tags)));
+        sb.AppendLine();
+        AppendList(sb, "DOCUMENTOS", _asset.documents.Select(d => ($"• {d.title}", d.body, "")), "");
 
         return sb.ToString();
     }
@@ -1397,7 +1432,9 @@ public class DesignNotebookWindow : EditorWindow
 internal class DesignStoryGraphView : GraphView
 {
     private DesignNotebook _notebook;
-    private readonly Dictionary<string, StoryCardNodeView> _nodes = new();
+    private readonly Dictionary<string, StoryCardNodeView> _cardNodes = new();
+    private readonly Dictionary<string, DocumentNodeView> _documentNodes = new();
+    private readonly List<QuickNoteNodeView> _quickNoteNodes = new();
     private Action _onDirty;
     private bool _isRebuilding;
     private readonly GridBackground _grid;
@@ -1418,9 +1455,10 @@ internal class DesignStoryGraphView : GraphView
 
         this.AddManipulator(new ContextualMenuManipulator(evt =>
         {
-            Vector2 world = evt.mousePosition;
-            Vector2 local = contentViewContainer.WorldToLocal(world);
-            CreateCard(local);
+            Vector2 local = contentViewContainer.WorldToLocal(evt.mousePosition);
+            evt.menu.AppendAction("Nueva tarjeta", _ => CreateCard(local));
+            evt.menu.AppendAction("Nota rápida", _ => CreateQuickNote(local));
+            evt.menu.AppendAction("Documento", _ => CreateDocument(local));
         }));
 
         graphViewChanged = GraphChanged;
@@ -1433,6 +1471,8 @@ internal class DesignStoryGraphView : GraphView
 
         _notebook = notebook;
         _onDirty = onDirty;
+        style.backgroundColor = new StyleColor(_notebook.boardBackground);
+        _grid.style.backgroundColor = new StyleColor(Color.Lerp(_notebook.boardBackground, Color.black, 0.35f));
         Rebuild();
     }
 
@@ -1449,12 +1489,39 @@ internal class DesignStoryGraphView : GraphView
         _onDirty?.Invoke();
         Rebuild();
 
-        if (_nodes.TryGetValue(card.guid, out var view))
+        if (_cardNodes.TryGetValue(card.guid, out var view))
         {
             ClearSelection();
             AddToSelection(view);
             FrameSelection();
         }
+    }
+
+    public void CreateQuickNote(Vector2 position)
+    {
+        if (_notebook == null) return;
+        Undo.RecordObject(_notebook, "Agregar nota rápida");
+        var note = new DesignScratch
+        {
+            title = "Nota rápida",
+            position = position
+        };
+        _notebook.quickNotes.Add(note);
+        _onDirty?.Invoke();
+        Rebuild();
+    }
+
+    public void CreateDocument(Vector2 position)
+    {
+        if (_notebook == null) return;
+        Undo.RecordObject(_notebook, "Agregar documento");
+        var doc = new DesignDocumentNote
+        {
+            position = position
+        };
+        _notebook.documents.Add(doc);
+        _onDirty?.Invoke();
+        Rebuild();
     }
 
     private void Rebuild()
@@ -1463,9 +1530,14 @@ internal class DesignStoryGraphView : GraphView
         try
         {
             DeleteElements(graphElements.ToList());
-            _nodes.Clear();
+            _cardNodes.Clear();
+            _quickNoteNodes.Clear();
+            _documentNodes.Clear();
 
             if (_notebook == null) return;
+
+            style.backgroundColor = new StyleColor(_notebook.boardBackground);
+            _grid.style.backgroundColor = new StyleColor(Color.Lerp(_notebook.boardBackground, Color.black, 0.35f));
 
             if (_grid.parent == null)
             {
@@ -1476,14 +1548,31 @@ internal class DesignStoryGraphView : GraphView
             foreach (var card in _notebook.storyCards)
             {
                 var view = new StoryCardNodeView(card, MarkDirty);
-                _nodes[card.guid] = view;
+                _cardNodes[card.guid] = view;
+                AddElement(view);
+            }
+
+            foreach (var note in _notebook.quickNotes)
+            {
+                var view = new QuickNoteNodeView(note, MarkDirty);
+                _quickNoteNodes.Add(view);
+                AddElement(view);
+            }
+
+            foreach (var doc in _notebook.documents)
+            {
+                var view = new DocumentNodeView(doc, MarkDirty);
+                _documentNodes[doc.guid] = view;
                 AddElement(view);
             }
 
             foreach (var link in _notebook.storyLinks.ToList())
             {
-                if (!_nodes.TryGetValue(link.fromGuid, out var from) || !_nodes.TryGetValue(link.toGuid, out var to))
+                if (!_cardNodes.TryGetValue(link.fromGuid, out var from) || !_cardNodes.TryGetValue(link.toGuid, out var to))
+                {
+                    _notebook.storyLinks.Remove(link);
                     continue;
+                }
                 var edge = from.Output.ConnectTo(to.Input);
                 StyleEdge(edge, from.Card.color, to.Card.color);
                 AddElement(edge);
@@ -1542,6 +1631,14 @@ internal class DesignStoryGraphView : GraphView
                 {
                     RemoveNode(node);
                 }
+                else if (el is QuickNoteNodeView note)
+                {
+                    RemoveQuickNote(note);
+                }
+                else if (el is DocumentNodeView doc)
+                {
+                    RemoveDocument(doc);
+                }
             }
         }
 
@@ -1565,6 +1662,20 @@ internal class DesignStoryGraphView : GraphView
         Undo.RecordObject(_notebook, "Eliminar tarjeta de historia");
         _notebook.storyCards.Remove(node.Card);
         _notebook.storyLinks.RemoveAll(l => l.fromGuid == node.Card.guid || l.toGuid == node.Card.guid);
+        MarkDirty();
+    }
+
+    private void RemoveQuickNote(QuickNoteNodeView node)
+    {
+        Undo.RecordObject(_notebook, "Eliminar nota rápida");
+        _notebook.quickNotes.Remove(node.Note);
+        MarkDirty();
+    }
+
+    private void RemoveDocument(DocumentNodeView node)
+    {
+        Undo.RecordObject(_notebook, "Eliminar documento");
+        _notebook.documents.Remove(node.Document);
         MarkDirty();
     }
 
@@ -1943,6 +2054,184 @@ internal class StoryCardNodeView : Node
             return;
 
         Card.size = newSize;
+        _lastSize = newSize;
+        _onDirty?.Invoke();
+    }
+}
+
+internal class QuickNoteNodeView : Node
+{
+    public DesignScratch Note { get; }
+    private readonly Action _onDirty;
+
+    public QuickNoteNodeView(DesignScratch note, Action onDirty)
+    {
+        Note = note;
+        _onDirty = onDirty;
+        title = string.IsNullOrEmpty(note.title) ? "Nota rápida" : note.title;
+        capabilities |= Capabilities.Movable;
+        style.width = 240f;
+        style.height = 220f;
+        style.borderBottomLeftRadius = 8f;
+        style.borderBottomRightRadius = 8f;
+        style.borderTopLeftRadius = 8f;
+        style.borderTopRightRadius = 8f;
+        style.marginTop = 6f;
+
+        UpdateColors();
+
+        const float LabelWidth = 60f;
+
+        var titleField = new TextField("Título") { value = note.title };
+        titleField.labelElement.style.minWidth = LabelWidth;
+        titleField.labelElement.style.maxWidth = LabelWidth;
+        titleField.RegisterValueChangedCallback(evt =>
+        {
+            Note.title = evt.newValue;
+            title = string.IsNullOrEmpty(evt.newValue) ? "Nota rápida" : evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(titleField);
+
+        var bodyField = new TextField("Nota") { value = note.note, multiline = true };
+        bodyField.style.minHeight = 110f;
+        bodyField.style.flexGrow = 1f;
+        bodyField.labelElement.style.minWidth = LabelWidth;
+        bodyField.labelElement.style.maxWidth = LabelWidth;
+        bodyField.RegisterValueChangedCallback(evt =>
+        {
+            Note.note = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(bodyField);
+
+        var tagsField = new TextField("Tags") { value = note.tags };
+        tagsField.labelElement.style.minWidth = LabelWidth;
+        tagsField.labelElement.style.maxWidth = LabelWidth;
+        tagsField.RegisterValueChangedCallback(evt =>
+        {
+            Note.tags = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(tagsField);
+
+        var colorField = new ColorField("Color") { value = note.color };
+        colorField.labelElement.style.minWidth = LabelWidth;
+        colorField.labelElement.style.maxWidth = LabelWidth;
+        colorField.RegisterValueChangedCallback(evt =>
+        {
+            Note.color = evt.newValue;
+            UpdateColors();
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(colorField);
+
+        SetPosition(new Rect(note.position, new Vector2(style.width.value.value, style.height.value.value)));
+    }
+
+    public override void SetPosition(Rect newPos)
+    {
+        base.SetPosition(newPos);
+        Note.position = newPos.position;
+        _onDirty?.Invoke();
+    }
+
+    private void UpdateColors()
+    {
+        var body = Color.Lerp(Note.color, new Color(0.05f, 0.05f, 0.05f), 0.2f);
+        mainContainer.style.backgroundColor = new StyleColor(body);
+        titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(body, Color.black, 0.35f));
+        style.borderLeftColor = Note.color;
+        style.borderRightColor = Note.color;
+        style.borderTopColor = Note.color;
+        style.borderBottomColor = Note.color;
+        style.borderLeftWidth = 2f;
+        style.borderRightWidth = 2f;
+        style.borderTopWidth = 2f;
+        style.borderBottomWidth = 2f;
+    }
+}
+
+internal class DocumentNodeView : Node
+{
+    public DesignDocumentNote Document { get; }
+    private readonly Action _onDirty;
+    private Vector2 _lastSize;
+
+    public DocumentNodeView(DesignDocumentNote document, Action onDirty)
+    {
+        Document = document;
+        _onDirty = onDirty;
+        title = string.IsNullOrEmpty(document.title) ? "Documento" : document.title;
+        capabilities |= Capabilities.Resizable;
+        style.width = document.size.x;
+        style.height = document.size.y;
+        _lastSize = document.size;
+
+        mainContainer.style.flexDirection = FlexDirection.Column;
+        mainContainer.style.paddingTop = 6f;
+        mainContainer.style.paddingLeft = 6f;
+        mainContainer.style.paddingRight = 6f;
+        mainContainer.style.paddingBottom = 6f;
+        mainContainer.style.backgroundColor = new StyleColor(Color.Lerp(document.color, Color.black, 0.25f));
+        titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(document.color, Color.black, 0.35f));
+        titleContainer.style.marginBottom = 4f;
+
+        const float LabelWidth = 70f;
+
+        var titleField = new TextField("Título") { value = document.title };
+        titleField.labelElement.style.minWidth = LabelWidth;
+        titleField.labelElement.style.maxWidth = LabelWidth;
+        titleField.RegisterValueChangedCallback(evt =>
+        {
+            Document.title = evt.newValue;
+            title = string.IsNullOrEmpty(evt.newValue) ? "Documento" : evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(titleField);
+
+        var bodyField = new TextField("Cuerpo") { value = document.body, multiline = true };
+        bodyField.style.minHeight = 260f;
+        bodyField.style.flexGrow = 1f;
+        bodyField.labelElement.style.minWidth = LabelWidth;
+        bodyField.labelElement.style.maxWidth = LabelWidth;
+        bodyField.RegisterValueChangedCallback(evt =>
+        {
+            Document.body = evt.newValue;
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(bodyField);
+
+        var colorField = new ColorField("Color") { value = document.color };
+        colorField.labelElement.style.minWidth = LabelWidth;
+        colorField.labelElement.style.maxWidth = LabelWidth;
+        colorField.RegisterValueChangedCallback(evt =>
+        {
+            Document.color = evt.newValue;
+            mainContainer.style.backgroundColor = new StyleColor(Color.Lerp(Document.color, Color.black, 0.25f));
+            titleContainer.style.backgroundColor = new StyleColor(Color.Lerp(Document.color, Color.black, 0.35f));
+            _onDirty?.Invoke();
+        });
+        mainContainer.Add(colorField);
+
+        SetPosition(new Rect(document.position, document.size));
+        RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+    }
+
+    public override void SetPosition(Rect newPos)
+    {
+        base.SetPosition(newPos);
+        Document.position = newPos.position;
+        _onDirty?.Invoke();
+    }
+
+    private void OnGeometryChanged(GeometryChangedEvent evt)
+    {
+        var newSize = evt.newRect.size;
+        if (Mathf.Approximately(newSize.x, _lastSize.x) && Mathf.Approximately(newSize.y, _lastSize.y))
+            return;
+
+        Document.size = newSize;
         _lastSize = newSize;
         _onDirty?.Invoke();
     }
