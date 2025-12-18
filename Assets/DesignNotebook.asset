@@ -54,28 +54,61 @@ MonoBehaviour:
     como s\xEDmbolo de que la verdadera grandeza no proviene de los deseos cumplidos,
     sino de los sacrificios que se hacen por amor.</b>"
   storyCards:
-  - guid: 472e1101-696a-4ec0-9bc8-3344c43d4b18
-    title: Aprendo proteccion y desbloqueo magia
-    note: Hasblar con Eldran para que me dejen pasar al bosque.
-    color: {r: 0.36, g: 0.88, b: 0.61, a: 1}
-    position: {x: -1035, y: -343.88}
-    size: {x: 0, y: 0}
   - guid: cd022793-b336-4c94-99ed-4124fe6ca8c2
-    title: "Pr\xF3logo"
-    note: "Contado mediante cinem\xE1ticas"
+    title: Habilidad Magia
+    note: "\xBFComo consigo la magia?"
     color: {r: 0.78, g: 0.55, b: 0.96, a: 1}
-    position: {x: 32, y: 32}
-    size: {x: 0, y: 0}
-  - guid: a9013bd2-a4ba-4596-af70-db4b59ad158b
-    title: Capitulo 1
+    titleFontStyle: 1
+    titleFontSize: 28
+    settingsExpanded: 0
+    position: {x: -478.9054, y: -2285.932}
+    size: {x: 376, y: 510.40015}
+  - guid: 80ef2ec8-d897-419f-a546-93472dc9aff7
+    title: Desbloqueo
+    note: Aparece un demonio y por defender a Eldran del interior de Will nace la
+      magia
+    color: {r: 0.78039217, g: 0.54901963, b: 0.9607843, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 28
+    settingsExpanded: 0
+    position: {x: -37.905403, y: -2285.932}
+    size: {x: 320.8, y: 492.80005}
+  - guid: 3ce656ef-e9a0-4c67-87d8-462e50f6f93f
+    title: Nueva tarjeta
     note: 
     color: {r: 1, g: 1, b: 1, a: 1}
-    position: {x: 395, y: -8}
-    size: {x: 0, y: 0}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 1
+    position: {x: 130.42073, y: 508.1436}
+    size: {x: 320, y: 420}
+  - guid: 0458c41f-bc1b-4635-8b96-d24d1eaed111
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 1
+    position: {x: 32, y: 32}
+    size: {x: 320, y: 420}
+  - guid: 2f0eb907-528f-4b72-ba39-3e6338dc9716
+    title: Nueva tarjeta
+    note: 
+    color: {r: 1, g: 1, b: 1, a: 1}
+    titleFontStyle: 1
+    titleFontSize: 14
+    settingsExpanded: 1
+    position: {x: 32, y: 272}
+    size: {x: 320, y: 420}
   storyLinks:
   - fromGuid: cd022793-b336-4c94-99ed-4124fe6ca8c2
-    toGuid: a9013bd2-a4ba-4596-af70-db4b59ad158b
-  quickNotes: []
+    toGuid: 80ef2ec8-d897-419f-a546-93472dc9aff7
+  quickNotes:
+  - title: Nueva nota
+    note: 
+    tags: 
+    color: {r: 1, g: 0.95, b: 0.65, a: 1}
+    position: {x: 0, y: 0}
   blackboardStrokes: []
   blackboardBackground: {r: 0.07, g: 0.08, b: 0.1, a: 1}
   blackboardBrushColor: {r: 1, g: 1, b: 1, a: 1}

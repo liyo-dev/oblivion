@@ -1,23 +1,21 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventoryRowWidget : MonoBehaviour
+public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHandler
 {
     [SerializeField] private Button button;
     [SerializeField] private Text label;
     [SerializeField] private Image iconImage;
-    [Header("Feedback visual")]
-    [SerializeField] private Color selectionColor = new Color(1f, 0.82f, 0.16f, 1f);
-    [SerializeField] private Graphic highlightGraphic;
 
     ItemData _item;
     string _fallbackName = "Item";
     Action _onClick;
     Action _onSelected;
-    Color _defaultLabelColor = Color.white;
-    Color _defaultIconColor = Color.white;
-    Color _defaultHighlightColor = Color.white;
+    ColorBlock _defaultColors;
+    bool _colorsInitialized;
+    bool _selectionCallbacksEnabled = true;
 
     public GameObject ButtonGameObject => button != null ? button.gameObject : gameObject;
     public ItemData Item => _item;
@@ -34,24 +32,12 @@ public class InventoryRowWidget : MonoBehaviour
             if (iconTransform != null)
                 iconImage = iconTransform.GetComponent<Image>();
         }
-        if (label != null) _defaultLabelColor = label.color;
-        if (iconImage != null) _defaultIconColor = iconImage.color;
-        if (highlightGraphic == null)
+        
+        if (button != null && !_colorsInitialized)
         {
-            var bg = GetComponent<Image>();
-            if (bg != null && bg != iconImage)
-                highlightGraphic = bg;
-            else if (button != null)
-            {
-                var candidate = button.GetComponent<Image>();
-                if (candidate != null && candidate != iconImage)
-                    highlightGraphic = candidate;
-                else if (button.targetGraphic != null && button.targetGraphic != label && button.targetGraphic != iconImage)
-                    highlightGraphic = button.targetGraphic;
-            }
+            _defaultColors = button.colors;
+            _colorsInitialized = true;
         }
-        if (highlightGraphic != null)
-            _defaultHighlightColor = highlightGraphic.color;
     }
 
     public void Configure(ItemData item)
@@ -109,14 +95,32 @@ public class InventoryRowWidget : MonoBehaviour
         }
     }
 
-    public void SetSelectedState(bool selected)
+    /// <summary>
+    /// Resalta la fila con el color especificado (usado para navegación, igual que en hechizos)
+    /// Usa el sistema de ColorBlock del Button, NO un Image separado
+    /// </summary>
+    public void SetHighlighted(bool highlighted, Color highlightColor)
     {
-        if (label != null)
-            label.color = _defaultLabelColor;
-        if (iconImage != null)
-            iconImage.color = _defaultIconColor;
-        if (highlightGraphic != null)
-            highlightGraphic.color = selected ? selectionColor : _defaultHighlightColor;
+        if (button == null) return;
+        
+        if (!_colorsInitialized)
+        {
+            _defaultColors = button.colors;
+            _colorsInitialized = true;
+        }
+
+        if (highlighted)
+        {
+            var colors = _defaultColors;
+            colors.normalColor = highlightColor;
+            colors.highlightedColor = highlightColor;
+            colors.selectedColor = highlightColor;
+            button.colors = colors;
+        }
+        else
+        {
+            button.colors = _defaultColors;
+        }
     }
     
     System.Collections.IEnumerator ForceSelectionVisual()
@@ -155,4 +159,15 @@ public class InventoryRowWidget : MonoBehaviour
         _onClick?.Invoke();
     }
 
+    public void OnSelect(BaseEventData eventData)
+    {
+        if (!_selectionCallbacksEnabled) return;
+        _onSelected?.Invoke();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!_selectionCallbacksEnabled) return;
+        _onSelected?.Invoke();
+    }
 }

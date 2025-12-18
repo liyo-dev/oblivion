@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
 using UnityEngine.UI;
+using Core;
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -133,16 +134,9 @@ public class SettingsMenuController : MonoBehaviour
     {
         if (root == null || !root.activeInHierarchy) return;
 
-        // Detectar botones del gamepad directamente
-        bool submitPressed = false;
-        bool startPressed = false;
-        
-        if (UnityEngine.InputSystem.Gamepad.current != null)
-        {
-            var gamepad = UnityEngine.InputSystem.Gamepad.current;
-            submitPressed = gamepad.buttonSouth.wasPressedThisFrame;
-            startPressed = gamepad.startButton.wasPressedThisFrame;
-        }
+        // Detectar botones del gamepad usando GamepadInputReader centralizado
+        bool submitPressed = GamepadInputReader.SubmitPressed;
+        bool startPressed = GamepadInputReader.StartPressed;
         
         if (submitPressed)
         {
@@ -173,22 +167,15 @@ public class SettingsMenuController : MonoBehaviour
     {
         if (_activeSlider == null) return;
         
-        Vector2 nav = Vector2.zero;
+        // Leer del gamepad usando GamepadInputReader centralizado
+        // Move incluye el joystick izquierdo
+        Vector2 nav = GamepadInputReader.Move;
         
-        // Leer directamente del gamepad (joystick izquierdo Y D-Pad)
-        if (UnityEngine.InputSystem.Gamepad.current != null)
+        // DpadRaw lee solo el D-Pad (tiene prioridad sobre el joystick)
+        var dpad = GamepadInputReader.DpadRaw;
+        if (dpad.sqrMagnitude > 0.01f)
         {
-            var gamepad = UnityEngine.InputSystem.Gamepad.current;
-            
-            // Joystick izquierdo (analógico)
-            nav = gamepad.leftStick.ReadValue();
-            
-            // D-Pad (digital) - tiene prioridad sobre el joystick
-            var dpad = gamepad.dpad.ReadValue();
-            if (dpad.sqrMagnitude > 0.01f)
-            {
-                nav = dpad;
-            }
+            nav = dpad;
         }
         
         if (nav.sqrMagnitude <= 0.01f) return;
@@ -393,9 +380,8 @@ public class SettingsMenuController : MonoBehaviour
             return true;
         }
 
-        // Leer directamente del gamepad
-        if (UnityEngine.InputSystem.Gamepad.current != null && 
-            UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame)
+        // Leer usando GamepadInputReader centralizado
+        if (GamepadInputReader.CancelPressed)
         {
             if (_sliderEditMode)
             {

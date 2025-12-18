@@ -434,7 +434,7 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_03",
-            "value": "[EN] Cuando quieras abrir el menú de pausa pulsa Start."
+            "value": "[EN] Cuando quieras abrir el MENÚ PRINCIPAL pulsa START"
         },
         {
             "key": "DLG_OLIVER_MENUS_04",
@@ -442,22 +442,18 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_05",
-            "value": "[EN] Pulsa el boton del DPad abajo para abrir el equipo."
+            "value": "[EN] ver tu inventario, y más cosillas que no te cuento para no enrollarme."
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "[EN] Ahí podrás ver tu inventario, y más cosillas que no te cuento para no enrollarme."
-        },
-        {
-            "key": "DLG_OLIVER_MENUS_07",
             "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar el botón del DPad arriba."
         },
         {
-            "key": "DLG_OLIVER_MENUS_08",
+            "key": "DLG_OLIVER_MENUS_07",
             "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo el botón del DPad arriba."
         },
         {
-            "key": "DLG_OLIVER_MENUS_09",
+            "key": "DLG_OLIVER_MENUS_08",
             "value": "[EN] Y ahora un descansito que menuda mañana..."
         },
         {

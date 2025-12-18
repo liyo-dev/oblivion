@@ -41,7 +41,3 @@ MonoBehaviour:
     textId: DLG_OLIVER_MENUS_07
     text: 
     portrait: {fileID: 0}
-  - speakerNameId: CHAR_OLIVER
-    textId: DLG_OLIVER_MENUS_08
-    text: 
-    portrait: {fileID: 0}

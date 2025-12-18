@@ -1295,6 +1295,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public Text itemCount;
         public Text feedbackText;
         public Button useButton;
+        
+        [Header("Feedback visual")]
+        public Color slotSelectionColor = new Color(1f, 0.82f, 0.16f, 1f); // Amarillo para resaltado
 
         public bool IsConfigured =>
             root != null &&
@@ -1315,6 +1318,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             PlayerPickupCollector _collector;
             ItemData _selectedItem;
             InventoryRowWidget _lastSelectedRow;
+            InventoryRowWidget _highlightedRow; // Fila actualmente resaltada (navegación)
             readonly ScrollRect _scrollRect;
             enum InventoryInteractionState { Browsing, UseButtonFocused }
             InventoryInteractionState _interactionState = InventoryInteractionState.Browsing;
@@ -1425,7 +1429,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 var widget = UnityEngine.Object.Instantiate(_ui.rowPrefab, _ui.rowsParent);
                 widget.Configure(entry.item);
                 widget.RefreshLabel(_inventory);
-                widget.SetSelectedState(false);
 
                 // Garantizar auto-scroll al seleccionar: añadir/configurar ScrollOnSelectRelay
                 var rect = widget.GetComponent<RectTransform>();
@@ -1447,6 +1450,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
 
             UpdateRowNavigation();
+            
+            // Inicializar sin selección
+            _highlightedRow = null;
+            _selectedItem = null;
+            UpdateRowVisuals();
 
             if (_rows.Count == 0)
                 UpdateEmptyState("Inventario vacío");
@@ -1456,23 +1464,40 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             bool selectionChanged = _selectedItem != item;
             _selectedItem = item;
-            if (_lastSelectedRow != null && _lastSelectedRow != widget)
-                _lastSelectedRow.SetSelectedState(false);
-            _lastSelectedRow = widget;
-            _lastSelectedRow?.SetSelectedState(true);
-            FocusRow(widget, focus);
+            _highlightedRow = widget;
+            
+            // Actualizar resaltado visual de todas las filas SIEMPRE (para que se vea al navegar)
+            UpdateRowVisuals();
+            
+            // Solo hacer focus si es necesario
+            if (focus)
+                FocusRow(widget, true);
+            
             UpdateSelectedItemDetails();
 
+            // Si cambió la selección, limpiar feedback
             if (selectionChanged)
             {
                 ClearFeedbackImmediate();
                 ExitUseButtonFocus(false);
-                if (focus)
-                    return;
             }
 
+            // Si es un click/submit (focus = true), manejar el submit
             if (focus)
                 HandleRowSubmit();
+        }
+
+        /// <summary>
+        /// Actualiza el resaltado visual de todas las filas (amarillo para la seleccionada)
+        /// </summary>
+        void UpdateRowVisuals()
+        {
+            foreach (var row in _rows)
+            {
+                if (row == null) continue;
+                bool isHighlighted = row == _highlightedRow;
+                row.SetHighlighted(isHighlighted, _ui.slotSelectionColor);
+            }
         }
 
         void FocusRow(InventoryRowWidget widget, bool forceFocus)
