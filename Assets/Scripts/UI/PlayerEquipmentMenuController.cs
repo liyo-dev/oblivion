@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
@@ -135,22 +135,32 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     SpellView _spellView;
     EquipmentView _equipmentView;
     [Header("Cámara de equipamiento")]
-    [SerializeField] private Camera equipmentPreviewCamera;
     [SerializeField] private float equipmentCameraDistance = 3f;
     [SerializeField] private float equipmentCameraHeight = 1.7f;
     [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
     [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
     [SerializeField] private float previewOrbitSpeed = 120f;
+    [SerializeField, Tooltip("Transform de referencia para centrar la cámara (busca 'PortraitAnchor' automáticamente si es null)")]
+    private Transform portraitAnchor;
+    [SerializeField, Tooltip("Componente que gestiona el cambio temporal de layers para aislar al player del mundo")]
+    private PortraitLayerSwapSRP portraitLayerSwap;
     [Header("Equipamiento - Visibilidad del jugador")]
     [SerializeField] private bool bringPlayerInFrontOfUi = true;
     [SerializeField] private int playerPreviewSortingOrder = 5000;
     [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
     private float closeInputGracePeriod = 0.3f;
+    
+    // Referencia a la cámara de retrato, encontrada automáticamente en el player
+    Camera _equipmentPreviewCamera;
+    
     bool _equipmentCameraActive;
     Transform _playerPreviewTarget;
     Quaternion _storedPlayerRotation;
     Vector3 _previewBaseForward = Vector3.forward;
     float _previewPlayerYaw;
+    Vector3 _fixedAnchorPosition; // Posición fija del anchor para que no se mueva cuando el player rota
+    Vector3 _fixedCameraPosition; // Posición fija de la cámara
+    bool _wasInOrbitMode; // Rastrear si estuvimos en modo orbit en el frame anterior
     PlayerActionManager _actionManager;
     bool _actionModeActive;
     bool _toggleRequested;
@@ -158,6 +168,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     float _openedAt = -999f;
     float _toggleCooldownUntil;
     InputActionMapScope _inputScope;
+    
+    // Para mantener animaciones del player en el menú
+    Animator _playerAnimator;
+    AnimatorUpdateMode _storedAnimatorUpdateMode;
 
     readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
@@ -232,12 +246,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         MenuManager.Close(MenuKind.Equipment);
     }
 
-    void OnEnable()
-    {
-        // El menú se abre con botón Start detectado en otro lugar
-        // No necesitamos suscribirnos a nada aquí
-    }
-
     void OnDisable()
     {
         if (_isOpen)
@@ -271,13 +279,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        // Detectar botón Start para abrir/cerrar el menú
-        if (UnityEngine.InputSystem.Gamepad.current != null)
+        // Detectar botón Start para abrir/cerrar el menú usando GamepadInputReader
+        if (GamepadInputReader.StartPressed)
         {
-            if (UnityEngine.InputSystem.Gamepad.current.startButton.wasPressedThisFrame)
-            {
-                _toggleRequested = true;
-            }
+            _toggleRequested = true;
         }
 
         // Si el menú ya está abierto, evita leer el input de apertura para que el D-Pad
@@ -288,40 +293,33 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
         else
         {
-            // Detectar botones del gamepad directamente
-            if (UnityEngine.InputSystem.Gamepad.current != null)
+            // Detectar botones del gamepad usando GamepadInputReader
+            
+            // Botón B (Cancel) o Start para cerrar el menú
+            if (GamepadInputReader.CancelPressed || GamepadInputReader.StartPressed)
             {
-                var gamepad = UnityEngine.InputSystem.Gamepad.current;
-                
-                // Botón B (Cancel) para cerrar el menú
-                if (gamepad.buttonEast.wasPressedThisFrame)
-                {
-                    _cancelRequested = true;
-                }
-                
-                // Botón Start también cierra el menú
-                if (gamepad.startButton.wasPressedThisFrame)
-                {
-                    _cancelRequested = true;
-                }
-                
-                // Botón Y para volver al MainMenu
-                if (gamepad.yButton.wasPressedThisFrame)
-                {
-                    OnQuitToMainMenu();
-                }
-                
-                // LB (Left Bumper) para pestaña anterior
-                if (gamepad.leftShoulder.wasPressedThisFrame)
-                {
-                    ChangeTab(-1);
-                }
-                
-                // RB (Right Bumper) para pestaña siguiente
-                if (gamepad.rightShoulder.wasPressedThisFrame)
-                {
-                    ChangeTab(1);
-                }
+                _cancelRequested = true;
+            }
+            
+            // Botón Y para volver al MainMenu
+            // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
+            if (IsYButtonPressed())
+            {
+                OnQuitToMainMenu();
+            }
+            
+            // LB (Left Bumper) para pestaña anterior
+            // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
+            if (IsLeftShoulderPressed())
+            {
+                ChangeTab(-1);
+            }
+            
+            // RB (Right Bumper) para pestaña siguiente
+            // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
+            if (IsRightShoulderPressed())
+            {
+                ChangeTab(1);
             }
             
             HandleCloseInput();
@@ -329,6 +327,23 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_activeTab == 1)
                 _spellView?.HandleInput();
         }
+    }
+
+    // Métodos auxiliares simplificados - usan GamepadInputReader centralizado
+    // Estos leen del Action Map UI para navegación de menús
+    bool IsLeftShoulderPressed()
+    {
+        return GamepadInputReader.LeftShoulderPressedUI;
+    }
+
+    bool IsRightShoulderPressed()
+    {
+        return GamepadInputReader.RightShoulderPressedUI;
+    }
+
+    bool IsYButtonPressed()
+    {
+        return GamepadInputReader.YButtonPressed;
     }
 
     void RegisterTabButtons()
@@ -416,12 +431,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         ShowTab(nextTab, forceRebuild);
     }
 
-    void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        // NOTA: Este método ya no se usa. El menú ahora se abre con botón Start
-        // y usa PlayerInputManager directamente en lugar de GamepadInputReader.
-        // Se mantiene vacío para evitar errores de compilación si hay referencias.
-    }
 
 
     List<int> GetAvailableTabs()
@@ -467,6 +476,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         _savedTimeScale = Time.timeScale;
         Time.timeScale = 0f;
+        
+        // Cambiar el Animator a Unscaled Time para que las animaciones sigan funcionando
+        if (_playerAnimator != null)
+        {
+            _storedAnimatorUpdateMode = _playerAnimator.updateMode;
+            _playerAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
+            Debug.Log("[PlayerEquipmentMenu] Animator cambiado a UnscaledTime para mantener animaciones en el menú");
+        }
 
         SetCanvasState(true);
 
@@ -479,7 +496,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         GameState.Push(GamePhase.Inventory);
         GameState.Push(GamePhase.Equipment);
         SelectInitial();
-        SetEquipmentCameraActive(_activeTab == 2);
+        
+        // Activar la cámara de equipamiento siempre que el menú esté abierto
+        SetEquipmentCameraActive(true);
 
         // Marcar el instante de apertura para filtrar cierres accidentales en el mismo frame.
         _openedAt = Time.unscaledTime;
@@ -493,6 +512,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SetCanvasState(false);
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
+        
+        // Restaurar el AnimatorUpdateMode original
+        if (_playerAnimator != null)
+        {
+            _playerAnimator.updateMode = _storedAnimatorUpdateMode;
+            Debug.Log("[PlayerEquipmentMenu] Animator restaurado a su UpdateMode original");
+        }
+        
+        // Resetear posiciones fijas para que se recalculen la próxima vez
+        _fixedCameraPosition = Vector3.zero;
+        _fixedAnchorPosition = Vector3.zero;
+        _wasInOrbitMode = false;
+        
         _isOpen = false;
         ExitUiInputScope();
         if (_actionModeActive && _actionManager != null)
@@ -575,7 +607,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         UpdateTabButtonStates();
         if (_isOpen && previousTab != _activeTab)
             SelectInitial();
-        SetEquipmentCameraActive(_isOpen && _activeTab == 2);
+        
+        // Mantener la cámara activa en todas las pestañas mientras el menú esté abierto
+        SetEquipmentCameraActive(_isOpen);
     }
 
     void EnterUiInputScope()
@@ -600,11 +634,26 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!_equipmentCameraActive || equipmentPreviewCamera == null) return;
-        UpdateEquipmentCamera();
+        if (!_equipmentCameraActive || _equipmentPreviewCamera == null) return;
+        
+        // Solo permitir órbita en la pestaña de Equipamiento (index 2)
+        bool allowOrbit = _activeTab == 2;
+        
+        // Si salimos del modo orbit, resetear las posiciones fijas
+        if (_wasInOrbitMode && !allowOrbit)
+        {
+            _fixedCameraPosition = Vector3.zero;
+            _fixedAnchorPosition = Vector3.zero;
+            
+            // Forzar recalculo inmediato de la cámara para evitar que el personaje se vea cortado
+            UpdateEquipmentCamera(allowOrbit);
+        }
+        _wasInOrbitMode = allowOrbit;
+        
+        UpdateEquipmentCamera(allowOrbit);
     }
 
-    void UpdateEquipmentCamera()
+    void UpdateEquipmentCamera(bool allowOrbit)
     {
         if (_playerPreviewTarget == null)
         {
@@ -612,77 +661,262 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
         }
 
-        float rotateInput = GamepadInputReader.CameraLook.x;
+        if (allowOrbit) 
+        {
+            // Leer directamente del hardware para evitar restricciones de supresión
+            float rotateInput = GamepadInputReader.CameraLookRaw.x;
+            
+            if (Mathf.Abs(rotateInput) > 0.01f)
+            {
+                _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
+            }
+            
+            // Rotar al player sobre sí mismo
+            // Inicia mirando hacia la cámara (180°) y gira según el input del joystick
+            _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f - _previewPlayerYaw, 0f);
+        }
+        else
+        {
+            // En modo normal, resetear el yaw del player y restaurar su rotación inicial
+            _previewPlayerYaw = 0f;
+            
+            // Restaurar la rotación del player para que mire hacia la cámara (180°)
+            if (_playerPreviewTarget != null)
+            {
+                _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f, 0f);
+            }
+        }
+        
+        if (allowOrbit)
+        {
+            // Modo ORBIT: La cámara está COMPLETAMENTE FIJA
+            // Usamos las posiciones guardadas del último frame sin orbit
+            
+            // Si aún no tenemos posiciones fijas guardadas, usar las actuales
+            if (_fixedCameraPosition == Vector3.zero)
+            {
+                _fixedCameraPosition = _equipmentPreviewCamera.transform.position;
+                Transform anchorPoint = portraitAnchor != null ? portraitAnchor : _playerPreviewTarget;
+                _fixedAnchorPosition = anchorPoint.position + equipmentCameraLookOffset;
+            }
+            
+            _equipmentPreviewCamera.transform.position = _fixedCameraPosition;
+            _equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation(
+                (_fixedAnchorPosition - _fixedCameraPosition).normalized, 
+                Vector3.up
+            );
+        }
+        else
+        {
+            // Modo NORMAL: La cámara puede orbitar (usado en otros tabs)
+            Transform anchorPoint = portraitAnchor != null ? portraitAnchor : _playerPreviewTarget;
+            
+            var cameraForward = _previewBaseForward;
+            if (cameraForward.sqrMagnitude < 0.001f) cameraForward = Vector3.forward;
+            cameraForward = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
+            
+            var rotatedForward = Quaternion.Euler(0f, _previewPlayerYaw, 0f) * cameraForward;
+            rotatedForward = Vector3.ProjectOnPlane(rotatedForward, Vector3.up).normalized;
+            Vector3 cameraRight = Vector3.Cross(Vector3.up, rotatedForward).normalized;
 
-        if (Mathf.Abs(rotateInput) > 0.01f)
-            _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
+            Vector3 anchorPos = anchorPoint.position + equipmentCameraLookOffset;
+            Vector3 cameraPos = anchorPos
+                                - rotatedForward * equipmentCameraDistance
+                                + Vector3.up * equipmentCameraHeight
+                                - cameraRight * equipmentCameraHorizontalOffset;
 
-        var cameraForward = _previewBaseForward;
-        if (cameraForward.sqrMagnitude < 0.001f) cameraForward = Vector3.forward;
-        cameraForward = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
-        Vector3 cameraRight = Vector3.Cross(Vector3.up, cameraForward).normalized;
-
-        Vector3 targetPos = _playerPreviewTarget.position + equipmentCameraLookOffset;
-        Vector3 cameraPos = targetPos
-                            - cameraForward * equipmentCameraDistance
-                            + Vector3.up * equipmentCameraHeight
-                            - cameraRight * equipmentCameraHorizontalOffset;
-
-        equipmentPreviewCamera.transform.position = cameraPos;
-        equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation((targetPos - cameraPos).normalized, Vector3.up);
-
-        var lookDir = Quaternion.Euler(0f, _previewPlayerYaw, 0f) * cameraForward;
-        var previewRotation = Quaternion.LookRotation(-lookDir, Vector3.up);
-        _playerPreviewTarget.rotation = previewRotation;
+            _equipmentPreviewCamera.transform.position = cameraPos;
+            _equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation((anchorPos - cameraPos).normalized, Vector3.up);
+            
+            // Guardar las posiciones para cuando cambiemos a modo orbit
+            _fixedCameraPosition = cameraPos;
+            _fixedAnchorPosition = anchorPos;
+        }
     }
 
     bool TrySetupPreviewTarget()
     {
         if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
         {
-            if (equipmentPreviewCamera != null)
-                equipmentPreviewCamera.enabled = false;
+            if (_equipmentPreviewCamera != null)
+                _equipmentPreviewCamera.enabled = false;
             return false;
         }
 
         _playerPreviewTarget = player.transform;
         _storedPlayerRotation = _playerPreviewTarget.rotation;
-        Vector3 forwardSource;
-        if (equipmentPreviewCamera != null)
-            forwardSource = equipmentPreviewCamera.transform.forward;
-        else if (Camera.main != null)
-            forwardSource = Camera.main.transform.forward;
-        else
-            forwardSource = _playerPreviewTarget.forward;
-        _previewBaseForward = Vector3.ProjectOnPlane(forwardSource, Vector3.up);
-        if (_previewBaseForward.sqrMagnitude < 0.001f)
-            _previewBaseForward = Vector3.forward;
-        _previewBaseForward.Normalize();
+        
+        // Buscar automáticamente el PortraitAnchor si no está asignado
+        if (portraitAnchor == null)
+        {
+            portraitAnchor = _playerPreviewTarget.Find("PortraitAnchor");
+            if (portraitAnchor != null)
+            {
+                Debug.Log($"[PlayerEquipmentMenuController] PortraitAnchor encontrado automáticamente: {portraitAnchor.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró 'PortraitAnchor' como hijo del player. Se usará el transform raíz.");
+            }
+        }
+        
+        // Buscar el Animator del player para poder mantener sus animaciones activas en el menú
+        if (_playerAnimator == null)
+        {
+            _playerAnimator = _playerPreviewTarget.GetComponentInChildren<Animator>();
+            if (_playerAnimator != null)
+            {
+                Debug.Log($"[PlayerEquipmentMenuController] Animator del player encontrado: {_playerAnimator.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró Animator en el player. Las animaciones no funcionarán en el menú.");
+            }
+        }
+        
+        // Forzar al Animator a ir a idle (detener animaciones de movimiento)
+        if (_playerAnimator != null)
+        {
+            // Resetear parámetros comunes de movimiento a 0 para forzar idle
+            if (_playerAnimator.parameters.Any(p => p.name == "InputMagnitude"))
+                _playerAnimator.SetFloat("InputMagnitude", 0f);
+            if (_playerAnimator.parameters.Any(p => p.name == "Speed"))
+                _playerAnimator.SetFloat("Speed", 0f);
+            if (_playerAnimator.parameters.Any(p => p.name == "VerticalVelocity"))
+                _playerAnimator.SetFloat("VerticalVelocity", 0f);
+            
+            Debug.Log("[PlayerEquipmentMenuController] Animator forzado a idle");
+        }
+        
+        // Usar Vector3.forward FIJO para que la cámara siempre esté en la misma posición relativa
+        _previewBaseForward = Vector3.forward;
         _previewPlayerYaw = 0f;
-        if (equipmentPreviewCamera != null)
-            equipmentPreviewCamera.enabled = true;
+        
+        // Rotar al player para que mire HACIA la cámara inicial (180° en Y)
+        _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f, 0f);
+        
+        if (_equipmentPreviewCamera != null)
+        {
+            _equipmentPreviewCamera.enabled = true;
+        }
+        
         return true;
     }
 
     void SetEquipmentCameraActive(bool value)
     {
-        if (equipmentPreviewCamera == null) return;
+        // Si no hay cámara encontrada, buscarla en el player
+        if (_equipmentPreviewCamera == null)
+        {
+            _equipmentPreviewCamera = FindPortraitCameraInPlayer();
+            if (_equipmentPreviewCamera == null)
+            {
+                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró la cámara de retrato en el player. Asegúrate de que existe y tiene el tag 'PortraitCamera' o se llama 'PortraitCamera'.");
+                return;
+            }
+        }
+        
         if (_equipmentCameraActive == value) return;
+        
         _equipmentCameraActive = value;
-        equipmentPreviewCamera.gameObject.SetActive(value);
+        _equipmentPreviewCamera.gameObject.SetActive(value);
+        
         if (_equipmentCameraActive)
         {
+            // IMPORTANTE: Forzar reset del preview target para garantizar posicionamiento consistente
+            // Esto asegura que _previewBaseForward y _previewPlayerYaw se recalculen desde cero
+            _playerPreviewTarget = null;
             TrySetupPreviewTarget();
             ApplyPlayerPreviewSorting(true);
+            
+            // Activar el sistema de cambio de layers
+            if (portraitLayerSwap != null && _playerPreviewTarget != null)
+            {
+                portraitLayerSwap.Setup(_equipmentPreviewCamera, _playerPreviewTarget);
+                portraitLayerSwap.enabled = true;
+            }
         }
         else
         {
+            // Desactivar y limpiar el sistema de cambio de layers
+            if (portraitLayerSwap != null)
+            {
+                portraitLayerSwap.Cleanup();
+                portraitLayerSwap.enabled = false;
+            }
+            
             ApplyPlayerPreviewSorting(false);
+            
             if (_playerPreviewTarget != null)
                 _playerPreviewTarget.rotation = _storedPlayerRotation;
+            
             _playerPreviewTarget = null;
-            equipmentPreviewCamera.enabled = false;
+            _equipmentPreviewCamera.enabled = false;
         }
+    }
+
+    /// <summary>
+    /// Busca la cámara de retrato dentro del player usando el ServiceLocator.
+    /// Primero intenta por tag "PortraitCamera", luego por nombre.
+    /// </summary>
+    Camera FindPortraitCameraInPlayer()
+    {
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || player == null)
+        {
+            Debug.LogWarning("[PlayerEquipmentMenuController] No se pudo encontrar el player en el ServiceLocator.");
+            return null;
+        }
+
+        // Buscar todas las cámaras en el player y sus hijos
+        var cameras = player.GetComponentsInChildren<Camera>(true);
+        
+        // Si no se encuentran en los hijos, buscar en hermanos (mismo padre)
+        if (cameras.Length == 0 && player.transform.parent != null)
+        {
+            Debug.Log("[PlayerEquipmentMenuController] No se encontraron cámaras en hijos del player, buscando en hermanos...");
+            cameras = player.transform.parent.GetComponentsInChildren<Camera>(true);
+        }
+        
+        // Si aún no se encuentra, buscar en la raíz de la escena
+        if (cameras.Length == 0)
+        {
+            Debug.Log("[PlayerEquipmentMenuController] No se encontraron cámaras en hermanos, buscando en toda la escena...");
+            cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        }
+        
+        Debug.Log($"[PlayerEquipmentMenuController] Total de cámaras encontradas: {cameras.Length}");
+        
+        // 1. Intentar por tag "PortraitCamera"
+        foreach (var cam in cameras)
+        {
+            if (cam.CompareTag("PortraitCamera"))
+            {
+                Debug.Log($"[PlayerEquipmentMenuController] Cámara de retrato encontrada por tag: {cam.name}");
+                return cam;
+            }
+        }
+        
+        // 2. Intentar por nombre que contenga "Portrait"
+        foreach (var cam in cameras)
+        {
+            if (cam.name.Contains("Portrait", StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.Log($"[PlayerEquipmentMenuController] Cámara de retrato encontrada por nombre: {cam.name}");
+                return cam;
+            }
+        }
+        
+        // 3. Si no hay ninguna, mostrar advertencia con las cámaras disponibles
+        if (cameras.Length > 0)
+        {
+            Debug.LogWarning($"[PlayerEquipmentMenuController] Se encontraron {cameras.Length} cámara(s), pero ninguna tiene tag 'PortraitCamera' o nombre 'Portrait'. Cámaras disponibles: {string.Join(", ", System.Array.ConvertAll(cameras, c => c.name))}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerEquipmentMenuController] No se encontraron cámaras en ningún lugar.");
+        }
+        
+        return null;
     }
 
     void ApplyPlayerPreviewSorting(bool bringToFront)

@@ -267,6 +267,14 @@ namespace Core
         }
     }
 
+    /// <summary>
+    /// Verifica si los inputs de gameplay están actualmente suprimidos (por estar en UI)
+    /// </summary>
+    private static bool IsGameplaySuppressed()
+    {
+        return _gameplaySuppressionOwners.Count > 0 || (_controls != null && !_controls.GamePlay.enabled);
+    }
+
 #if ENABLE_INPUT_SYSTEM
     private static void PollHardwareFallback()
     {
@@ -318,7 +326,6 @@ namespace Core
         return dot > 0.8f && prevDot <= 0.8f;
     }
 
-    public static PlayerControls ControlsOrNull => Controls;
 
     public static Vector2 Navigation
     {
@@ -394,11 +401,23 @@ namespace Core
     }
 
     public static bool NavigateUp => DirectionStarted(Vector2.up);
-    public static bool NavigateDown => DirectionStarted(Vector2.down);
-    public static bool NavigateLeft => DirectionStarted(Vector2.left);
-    public static bool NavigateRight => DirectionStarted(Vector2.right);
 
-    public static bool SubmitPressed => Controls != null && Controls.UI.Submit.triggered;
+    public static bool SubmitPressed
+    {
+        get
+        {
+            if (Controls != null && Controls.UI.Submit.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonSouth.wasPressedThisFrame)
+                return true;
+#endif
+
+            return false;
+        }
+    }
 
     public static bool CancelPressed
     {
@@ -411,6 +430,64 @@ namespace Core
             var gp = Gamepad.current;
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
                 return true;
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Lee el botón Left Shoulder (LB/L1) del Action Map UI para navegación de menús.
+    /// NO tiene restricciones de supresión.
+    /// </summary>
+    public static bool LeftShoulderPressedUI
+    {
+        get
+        {
+            if (Controls != null && Controls.UI.LB.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.leftShoulder.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var lb = GetJoystickButton(js, "leftShoulder", "L1", "button4", "button6");
+                if (lb != null && lb.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Lee el botón Right Shoulder (RB/R1) del Action Map UI para navegación de menús.
+    /// NO tiene restricciones de supresión.
+    /// </summary>
+    public static bool RightShoulderPressedUI
+    {
+        get
+        {
+            if (Controls != null && Controls.UI.RB.triggered)
+                return true;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var rb = GetJoystickButton(js, "rightShoulder", "R1", "button5", "button7");
+                if (rb != null && rb.wasPressedThisFrame)
+                    return true;
+            }
 #endif
 
             return false;
@@ -450,39 +527,6 @@ namespace Core
         }
     }
 
-    public static bool DpadDownPressed
-    {
-        get
-        {
-            if (Controls != null && Controls.GamePlay.DPadDown.triggered)
-                return true;
-
-#if ENABLE_INPUT_SYSTEM
-            var gp = GetGamepad();
-            if (gp != null && gp.dpad.down.wasPressedThisFrame)
-                return true;
-
-            var js = GetJoystick();
-            if (js != null)
-            {
-                var stick = js.stick;
-                if (stick != null && stick.down.wasPressedThisFrame)
-                    return true;
-
-                try
-                {
-                    var hat = GetJoystickHat(js, "hat", "hatSwitch", "pov", "povHat");
-                    if (hat != null && hat.down.wasPressedThisFrame)
-                        return true;
-                }
-                catch { }
-            }
-#endif
-
-            return false;
-        }
-    }
-
     public static bool StartPressed
     {
         get
@@ -508,8 +552,118 @@ namespace Core
         }
     }
 
-    public static bool InteractPressed => Controls != null && Controls.GamePlay.Interact.triggered;
+    public static bool LeftShoulderPressed
+    {
+        get
+        {
+            // Si los inputs de gameplay están suprimidos (menú abierto), NO leer el botón
+            // para que no afecte al player en gameplay
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.leftShoulder.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var lb = GetJoystickButton(js, "leftShoulder", "L1", "button4", "button6");
+                if (lb != null && lb.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    public static bool RightShoulderPressed
+    {
+        get
+        {
+            // Si los inputs de gameplay están suprimidos (menú abierto), NO leer el botón
+            // para que no afecte al player en gameplay
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var rb = GetJoystickButton(js, "rightShoulder", "R1", "button5", "button7");
+                if (rb != null && rb.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    public static bool YButtonPressed
+    {
+        get
+        {
+            // Si los inputs de gameplay están suprimidos (menú abierto), NO leer el botón
+            // para que no afecte al player en gameplay
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.yButton.wasPressedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var y = GetJoystickButton(js, "buttonNorth", "triangle", "button3");
+                if (y != null && y.wasPressedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
     public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
+    
+    /// <summary>
+    /// Lee CameraLook directamente del hardware sin restricciones de supresión.
+    /// Útil para sistemas que necesitan leer el input independientemente del estado del juego.
+    /// </summary>
+    public static Vector2 CameraLookRaw
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.rightStick != null)
+            {
+                return gp.rightStick.ReadValue();
+            }
+            
+            var js = GetJoystick();
+            if (js != null)
+            {
+                // Intentar leer del segundo stick si existe
+                var rightStick = js.TryGetChildControl<UnityEngine.InputSystem.Controls.StickControl>("rightStick");
+                if (rightStick != null)
+                {
+                    return rightStick.ReadValue();
+                }
+            }
+#endif
+            return Vector2.zero;
+        }
+    }
     }
 }

@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Enemy
   - Pickable
+  - PlayerEyes
+  - PortraitCamera
   layers:
   - Default
   - TransparentFX
@@ -21,7 +23,7 @@ TagManager:
   - ProjectileEnemy
   - PauseUI
   - Climb
-  - 
+  - UI_Portrait
   - 
   - 
   - 
