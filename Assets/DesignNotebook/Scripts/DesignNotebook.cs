@@ -12,6 +12,10 @@ public class DesignNotebook : ScriptableObject
     public List<DesignStoryCard> storyCards = new();
     public List<DesignStoryLink> storyLinks = new();
 
+    [Header("Tablero unificado")]
+    public Color boardBackground = new Color(0.07f, 0.08f, 0.1f);
+    public List<DesignDocumentNote> documents = new();
+
     [Header("Notas rápidas de diseño")]
     public List<DesignScratch> quickNotes = new();
 
@@ -51,6 +55,17 @@ public class DesignScratch
     public string tags;
     public Color color = new Color(1f, 0.95f, 0.65f);
     public Vector2 position;
+}
+
+[Serializable]
+public class DesignDocumentNote
+{
+    public string guid = Guid.NewGuid().ToString();
+    public string title = "Nuevo documento";
+    [TextArea(3, 12)] public string body = "Describe la escena, sinopsis o referencias.";
+    public Color color = new Color(0.16f, 0.21f, 0.28f);
+    public Vector2 position;
+    public Vector2 size = new Vector2(360f, 520f);
 }
 
 [Serializable]
