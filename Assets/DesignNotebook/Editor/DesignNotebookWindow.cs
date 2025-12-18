@@ -208,6 +208,7 @@ public class DesignNotebookWindow : EditorWindow
         {
             "Resumen",
             "Board",
+            "Pizarra",
             "Exportar"
         };
 
@@ -278,6 +279,9 @@ public class DesignNotebookWindow : EditorWindow
                 DrawSummary();
                 break;
             case 2:
+                DrawBlackboard();
+                break;
+            case 3:
                 DrawExportButtons();
                 break;
         }
@@ -1798,11 +1802,11 @@ internal class StoryCardNodeView : Node
         mainContainer.Add(titleField);
 
         var noteField = new TextField("Detalle") { value = card.note, multiline = true };
-        noteField.style.minHeight = 220f;
+        noteField.style.minHeight = 160f;
         noteField.style.height = 0f;
         noteField.style.flexGrow = 1f;
         noteField.style.flexShrink = 1f;
-        noteField.style.flexBasis = 220f;
+        noteField.style.flexBasis = 180f;
         noteField.style.marginTop = 8f;
         noteField.style.marginBottom = 8f;
         noteField.labelElement.style.minWidth = LabelWidth;
@@ -1812,7 +1816,7 @@ internal class StoryCardNodeView : Node
         if (noteInput != null)
         {
             noteInput.style.flexGrow = 1f;
-            noteInput.style.minHeight = 200f;
+            noteInput.style.minHeight = 140f;
             noteInput.style.whiteSpace = WhiteSpace.Normal;
         }
         noteField.RegisterValueChangedCallback(evt =>
@@ -2071,7 +2075,8 @@ internal class QuickNoteNodeView : Node
         title = string.IsNullOrEmpty(note.title) ? "Nota rápida" : note.title;
         capabilities |= Capabilities.Movable;
         style.width = 240f;
-        style.height = 220f;
+        style.height = 260f;
+        style.minHeight = 220f;
         style.borderBottomLeftRadius = 8f;
         style.borderBottomRightRadius = 8f;
         style.borderTopLeftRadius = 8f;
@@ -2094,7 +2099,8 @@ internal class QuickNoteNodeView : Node
         mainContainer.Add(titleField);
 
         var bodyField = new TextField("Nota") { value = note.note, multiline = true };
-        bodyField.style.minHeight = 110f;
+        bodyField.style.minHeight = 150f;
+        bodyField.style.flexBasis = 180f;
         bodyField.style.flexGrow = 1f;
         bodyField.labelElement.style.minWidth = LabelWidth;
         bodyField.labelElement.style.maxWidth = LabelWidth;
@@ -2164,9 +2170,13 @@ internal class DocumentNodeView : Node
         _onDirty = onDirty;
         title = string.IsNullOrEmpty(document.title) ? "Documento" : document.title;
         capabilities |= Capabilities.Resizable;
-        style.width = document.size.x;
-        style.height = document.size.y;
-        _lastSize = document.size;
+        var initialSize = document.size == Vector2.zero ? new Vector2(360f, 520f) : document.size;
+        if (document.size == Vector2.zero)
+            Document.size = initialSize;
+        style.width = initialSize.x;
+        style.height = initialSize.y;
+        style.minHeight = 480f;
+        _lastSize = initialSize;
 
         mainContainer.style.flexDirection = FlexDirection.Column;
         mainContainer.style.paddingTop = 6f;
@@ -2191,7 +2201,8 @@ internal class DocumentNodeView : Node
         mainContainer.Add(titleField);
 
         var bodyField = new TextField("Cuerpo") { value = document.body, multiline = true };
-        bodyField.style.minHeight = 260f;
+        bodyField.style.minHeight = 340f;
+        bodyField.style.flexBasis = 360f;
         bodyField.style.flexGrow = 1f;
         bodyField.labelElement.style.minWidth = LabelWidth;
         bodyField.labelElement.style.maxWidth = LabelWidth;
