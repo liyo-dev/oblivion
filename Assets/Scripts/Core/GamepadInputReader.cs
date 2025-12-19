@@ -459,27 +459,16 @@ namespace Core
     /// <summary>
     /// Lee el botón Left Shoulder (LB/L1) del Action Map UI para navegación de menús.
     /// NO tiene restricciones de supresión.
+    /// Solo lee del ActionMap UI, no del hardware directamente para evitar conflictos con gameplay.
     /// </summary>
     public static bool LeftShoulderPressedUI
     {
         get
         {
-            if (Controls != null && Controls.UI.LB.triggered)
+            // SOLO leer del ActionMap UI, no del hardware
+            if (Controls != null && Controls.UI.enabled && Controls.UI.LB.triggered)
                 return true;
 
-#if ENABLE_INPUT_SYSTEM
-            var gp = GetGamepad();
-            if (gp != null && gp.leftShoulder.wasPressedThisFrame)
-                return true;
-
-            var js = GetJoystick();
-            if (js != null)
-            {
-                var lb = GetJoystickButton(js, "leftShoulder", "L1", "button4", "button6");
-                if (lb != null && lb.wasPressedThisFrame)
-                    return true;
-            }
-#endif
 
             return false;
         }
@@ -488,24 +477,44 @@ namespace Core
     /// <summary>
     /// Lee el botón Right Shoulder (RB/R1) del Action Map UI para navegación de menús.
     /// NO tiene restricciones de supresión.
+    /// Solo lee del ActionMap UI, no del hardware directamente para evitar conflictos con gameplay.
     /// </summary>
     public static bool RightShoulderPressedUI
     {
         get
         {
-            if (Controls != null && Controls.UI.RB.triggered)
+            // SOLO leer del ActionMap UI, no del hardware
+            if (Controls != null && Controls.UI.enabled && Controls.UI.RB.triggered)
                 return true;
+
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Lee el botón Y (Triangle en PlayStation) del gamepad para la UI.
+    /// NO tiene restricciones de supresión - se usa específicamente en menús.
+    /// Lee directamente del hardware ya que no hay un action Y en el ActionMap UI.
+    /// </summary>
+    public static bool YButtonPressedUI
+    {
+        get
+        {
+            // Verificar que estemos en modo UI para evitar conflictos
+            if (ServiceLocator.TryGet(out PlayerInputManager pim) && !pim.IsInUIMode)
+                return false;
 
 #if ENABLE_INPUT_SYSTEM
             var gp = GetGamepad();
-            if (gp != null && gp.rightShoulder.wasPressedThisFrame)
+            if (gp != null && gp.yButton.wasPressedThisFrame)
                 return true;
 
             var js = GetJoystick();
             if (js != null)
             {
-                var rb = GetJoystickButton(js, "rightShoulder", "R1", "button5", "button7");
-                if (rb != null && rb.wasPressedThisFrame)
+                var y = GetJoystickButton(js, "buttonNorth", "triangle", "button3");
+                if (y != null && y.wasPressedThisFrame)
                     return true;
             }
 #endif

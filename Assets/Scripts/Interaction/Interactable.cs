@@ -90,6 +90,17 @@ public class Interactable : MonoBehaviour
     {
         if (!CanInteract(interactor)) return;
 
+        // IMPORTANTE: Establecer cooldown en PlayerActionManager para evitar que el botón A
+        // se procese como salto inmediatamente después de interactuar
+        if (interactor != null)
+        {
+            var actionManager = interactor.GetComponent<PlayerActionManager>();
+            if (actionManager != null)
+            {
+                actionManager.SetInteractCooldown();
+            }
+        }
+
         OnInteract?.Invoke(interactor);
 
         if (_npcManager != null && _npcManager.HandleInteraction(interactor))

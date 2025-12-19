@@ -23,17 +23,6 @@ public class DialogueManager : MonoBehaviour
     [Tooltip("Si se pulsa Avanzar mientras escribe, completa la línea al instante")] 
     [SerializeField] private bool allowSkipCurrentLine = true;
 
-    [Header("Input (solo mando)")]
-    [Tooltip("Acción para AVANZAR. Usa UI/Submit (Gamepad South = A).")]
-    [SerializeField] private InputActionReference advanceAction;
-    [Tooltip("Opcional: PlayerInput para resolver automáticamente UI/Submit del action map UI.")]
-    [SerializeField] private PlayerInput playerInput;
-    [SerializeField] private string uiActionMapName = "UI";
-    [SerializeField] private string uiSubmitActionName = "Submit";
-
-    [Header("Bloqueo de Inputs")]
-    [Tooltip("Referencias a InputActionReference que se deshabilitan mientras el diálogo esté abierto (p.ej. movimiento, ataque, etc.).")]
-    [SerializeField] private InputActionReference[] inputActionsToDisable;
 
     [Header("Opcional")]
     [SerializeField] private bool pauseGameWhileOpen;
@@ -78,11 +67,6 @@ public class DialogueManager : MonoBehaviour
 
     // NPC para cámara de diálogo
     private Transform currentNPC = null;
-#if ENABLE_INPUT_SYSTEM
-    private InputAction _uiSubmitAction;
-    private PlayerControls _uiPlayerControls;
-    private bool _ownsUiPlayerControls;
-#endif
 
     void Awake()
     {
@@ -115,27 +99,29 @@ public class DialogueManager : MonoBehaviour
 
     void OnEnable()
     {
-#if ENABLE_INPUT_SYSTEM
-        BindAdvanceInputs();
-#endif
         GamepadInputReader.EnsureInputEventsSubscribed();
         GamepadInputReader.OnInput += HandleGamepadInput;
     }
 
     void OnDisable()
     {
-#if ENABLE_INPUT_SYSTEM
-        UnbindAdvanceInputs();
-#endif
         GamepadInputReader.OnInput -= HandleGamepadInput;
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
-        // Fallback explícito para D-Pad izquierda/derecha cuando las opciones están activas
+        if (input.Phase != InputActionPhase.Performed) return;
+
+        // Manejar Submit/Avanzar diálogo
+        if (input.Type == GamepadInputReader.InputEventType.Submit && IsOpen)
+        {
+            Advance();
+            return;
+        }
+
+        // Navegación horizontal para opciones (Sí/No)
         if (!enableDpadHorizontalFallback) return;
         if (choicesRoot == null || !choicesRoot.interactable) return;
-        if (input.Phase != InputActionPhase.Performed) return;
 
         bool left = false;
         bool right = false;
@@ -159,14 +145,23 @@ public class DialogueManager : MonoBehaviour
             var cur = es.currentSelectedGameObject;
             if (cur == null || !cur.activeInHierarchy)
             {
+                // Si no hay selección, seleccionar el botón izquierdo (Yes)
                 if (yesButton) es.SetSelectedGameObject(yesButton.gameObject);
             }
             else if (yesButton != null && noButton != null)
             {
+                // CORREGIDO: Si estamos en Yes y presionamos derecha -> vamos a No
                 if (cur == yesButton.gameObject && right)
+                {
                     es.SetSelectedGameObject(noButton.gameObject);
+                    Debug.Log("[DialogueManager] Navegación: Yes -> No");
+                }
+                // CORREGIDO: Si estamos en No y presionamos izquierda -> vamos a Yes
                 else if (cur == noButton.gameObject && left)
+                {
                     es.SetSelectedGameObject(yesButton.gameObject);
+                    Debug.Log("[DialogueManager] Navegación: No -> Yes");
+                }
             }
         }
 
@@ -181,11 +176,6 @@ public class DialogueManager : MonoBehaviour
         onEnd = onFinished;
         index = -1;
 
-#if ENABLE_INPUT_SYSTEM
-        // Reasegurar el binding por si se creó un PlayerInput nuevo en esta escena
-        BindAdvanceInputs();
-#endif
-
         // Mostrar UI
         if (group != null)
         {
@@ -197,8 +187,6 @@ public class DialogueManager : MonoBehaviour
             submitHint.SetActive(true);
         if (pauseGameWhileOpen) Time.timeScale = 0f;
 
-        // Bloquear gameplay
-        SetGameplayEnabled(false);
 
         // NUEVO: Activar modo DialogueActive en PlayerActionManager
         ActivateDialogueMode(true);
@@ -267,8 +255,6 @@ public class DialogueManager : MonoBehaviour
         // NUEVO: Desactivar modo DialogueActive en PlayerActionManager
         ActivateDialogueMode(false);
 
-        // Restaurar gameplay
-        SetGameplayEnabled(true);
         if (submitHint != null)
             submitHint.SetActive(false);
 
@@ -283,7 +269,6 @@ public class DialogueManager : MonoBehaviour
         // NUEVO: Desactivar modo DialogueActive
         ActivateDialogueMode(false);
         
-        SetGameplayEnabled(true);
         if (group != null)
         {
             group.alpha = 0f;
@@ -315,7 +300,6 @@ public class DialogueManager : MonoBehaviour
         if (restoreGameplay && !IsOpen)
         {
             ActivateDialogueMode(false);
-            SetGameplayEnabled(true);
         }
     }
 
@@ -351,9 +335,6 @@ public class DialogueManager : MonoBehaviour
         }
         if (portraitImage) portraitImage.enabled = false;
         
-        // bloquear gameplay igual que StartDialogue
-        SetGameplayEnabled(false);
-        
         // NUEVO: Activar modo DialogueActive
         ActivateDialogueMode(true);
         
@@ -387,15 +368,17 @@ public class DialogueManager : MonoBehaviour
                 noButton.gameObject.AddComponent<ChoiceButtonFx>();
         }
 
-        // Navegación explícita izquierda/derecha entre ambos botones (UI/Navigate)
+        // CORREGIDO: Navegación explícita izquierda/derecha entre ambos botones
         if (yesButton != null && noButton != null)
         {
             var navYes = new Navigation { mode = Navigation.Mode.Explicit };
-            navYes.selectOnLeft = noButton; navYes.selectOnRight = noButton;
+            navYes.selectOnLeft = null; // No hay nada a la izquierda de Yes
+            navYes.selectOnRight = noButton; // Derecha va a No
             yesButton.navigation = navYes;
 
             var navNo = new Navigation { mode = Navigation.Mode.Explicit };
-            navNo.selectOnLeft = yesButton; navNo.selectOnRight = yesButton;
+            navNo.selectOnLeft = yesButton; // Izquierda va a Yes
+            navNo.selectOnRight = null; // No hay nada a la derecha de No
             noButton.navigation = navNo;
         }
 
@@ -447,11 +430,6 @@ public class DialogueManager : MonoBehaviour
             choicesRoot.blocksRaycasts = true;
             choicesRoot.interactable = true;
         }
-    }
-
-    private void OnAdvance(InputAction.CallbackContext _)
-    {
-        if (IsOpen) Advance();
     }
 
     private void Next()
@@ -554,25 +532,6 @@ public class DialogueManager : MonoBehaviour
         _isTyping = false;
     }
 
-    private void SetGameplayEnabled(bool enable)
-    {
-        if (inputActionsToDisable != null)
-        {
-            foreach (var actionRef in inputActionsToDisable)
-            {
-                if (actionRef?.action != null)
-                {
-                    if (enable)
-                        actionRef.action.Enable();
-                    else
-                        actionRef.action.Disable();
-                }
-            }
-        }
-        if (enable && pauseGameWhileOpen)
-            Time.timeScale = 1f;
-    }
-
     /// <summary>
     /// Activa/desactiva el modo Cinematic en PlayerActionManager para bloquear completamente al jugador durante diálogos
     /// </summary>
@@ -606,86 +565,4 @@ public class DialogueManager : MonoBehaviour
             Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
         }
     }
-
-#if ENABLE_INPUT_SYSTEM
-    void BindAdvanceInputs()
-    {
-        UnbindAdvanceInputs();
-
-        // Preferir el action map de UI (PlayerControls.UI.Submit)
-        _uiSubmitAction = ResolveUiSubmitAction();
-        if (_uiSubmitAction != null)
-        {
-            if (!_uiSubmitAction.enabled) _uiSubmitAction.Enable();
-            _uiSubmitAction.performed += OnAdvance;
-        }
-
-        // Mantener el fallback del inspector si apunta a otra acción
-        var fallback = advanceAction?.action;
-        if (fallback != null && fallback != _uiSubmitAction)
-        {
-            if (!fallback.enabled) fallback.Enable();
-            fallback.performed += OnAdvance;
-        }
-    }
-
-    void UnbindAdvanceInputs()
-    {
-        if (_uiSubmitAction != null)
-        {
-            _uiSubmitAction.performed -= OnAdvance;
-            if (_ownsUiPlayerControls && _uiPlayerControls != null && _uiSubmitAction == _uiPlayerControls.UI.Submit)
-            {
-                _uiSubmitAction.Disable();
-            }
-            _uiSubmitAction = null;
-        }
-
-        var fallback = advanceAction?.action;
-        if (fallback != null)
-            fallback.performed -= OnAdvance;
-    }
-
-    InputAction ResolveUiSubmitAction()
-    {
-        // 1) Usar el PlayerInput existente en escena si está disponible
-        var pi = ResolvePlayerInput();
-        if (pi != null && pi.actions != null)
-        {
-            var map = pi.actions.FindActionMap(uiActionMapName, throwIfNotFound: false);
-            var action = map?.FindAction(uiSubmitActionName, throwIfNotFound: false);
-            if (action != null) return action;
-        }
-
-        // 2) Fallback: crear (o reutilizar) PlayerControls para UI
-        if (_uiPlayerControls == null)
-        {
-            try
-            {
-                _uiPlayerControls = Core.PlayerInputManager.GetSharedOrNew(out _ownsUiPlayerControls);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[DialogueManager] No se pudo obtener PlayerControls para UI: {ex.Message}");
-                return null;
-            }
-        }
-
-        if (_ownsUiPlayerControls || !_uiPlayerControls.UI.enabled)
-            _uiPlayerControls.UI.Enable();
-        return _uiPlayerControls.UI.Submit;
-    }
-
-    PlayerInput ResolvePlayerInput()
-    {
-        if (playerInput != null) return playerInput;
-        playerInput = ServiceLocator.Get<PlayerInput>(false);
-        return playerInput;
-    }
-
-    void OnDestroy()
-    {
-        UnbindAdvanceInputs();
-    }
-#endif
 }

@@ -1,0 +1,66 @@
+
+- - - - - - - - - - - - - - - - - - - - - Monster Ghosts FREE- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+This pack contains many 3D animated model of different Ghost's.Best fit for Horror, Halloween related and any other types of Games.
+All materials and meshes are highly customizable, Adjust the properties and create your own easily.You can use this pack commercially.
+
+This is a Free version of the pack with same name :
+
+What's in PAID version - 10 Animation's (Idle x2, dance x3, attack x2, look, run x2), 
+18+ Prefabs, More Textures/Materials variation's for the ghost.
+
+Technical Details:-
+		- Material(s) : Unity standard material
+		- Model(s) : Ghost's, Props(Haxo blade, Angel ring)
+		- Animations : 1 x Idle
+		- Poly count (in Tris) :  3456
+		- Unwrapped : YES
+		- Prefab Variations : 9+
+		- Texture Size : 2048(.png)
+		- Built in support : YES
+	
+
+Features:-
+	- Different Ghost models
+	- Zombie and Monster Ghost's
+	- Comes with all basic animation's
+	- Highly Customizable Materials and Meshes
+	- Create your own color variation in just clicks
+	- Best fit for Horror, Scary, Halloween, Openworld 3D survival games (This is upto your choice)
+	- Optimized Lowpoly model's
+	- Models comes with simple colliders and rigidbodies
+	- PBR HQ beautifull Shaders and Materials
+	- Include many Prefab variations
+	- Mobile, AR supported
+	- 3D Model's are completely unwrapped.
+	- All nodes, materials and textures are appropriately named.
+	- Arranged pivots, well named folders
+	- Easy to use (Drag and drop)
+
+Folder details:-
+
+	Materials : Where the materials for the model located.
+	
+	Meshes : Contain FBX format of the 3d model.
+	
+	Textures : Contains Textures, that are in (.PNG) file format
+	
+	(Other folders - Prefabs, Scenes)
+
+Notes:
+Support URP, HDRP, LWRP, Built-in Render Pipeline.
+This project is submitted using Built-in Render Pipeline. If you are not using Built-in Render Pipeline, you need to manually reset the shader of the model to avoid it being pink
+
+How to use:-
+	
+	Simply drag and drop the prefab to your scene and use it.
+	(Prefab(s) located under 
+	Asset > Monster_Ghosts_FREE > Prefabs).
+
+..................................................................................
+
+About Me : "SR Studios Kerala", Indie Game developer & 3D-2D Artist from Alappuzha, Kerala, India
+
+Contact : srstudioskerala@gmail.com
+
+................Thank you for downloading this package................................

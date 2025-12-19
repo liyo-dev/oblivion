@@ -72,7 +72,7 @@ MonoBehaviour:
   lightFX: {fileID: 198850215624197792, guid: fa3bcbe95df54a94b9145adcf5fa1f1b, type: 3}
   igniteLayers:
     serializedVersion: 2
-    m_Bits: 576
+    m_Bits: 64
   consumeProjectileOnHit: 1
   sfxIgnite: {fileID: 0}
 --- !u!1001 &5511691556836319036

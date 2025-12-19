@@ -40,13 +40,12 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [SerializeField] private bool debugLogs = false;
 
     // --- Runtime: permisos globales aplicables desde presets u otros sistemas ---
-    // Por defecto true para mantener compatibilidad si no se aplica preset explícito.
     //private bool _allowPhysical = true; // ataques físicos
-    private bool _allowSwim = true;     // nadar
-    private bool _allowJump = true;     // saltar
-    private bool _allowClimb = true;    // trepar
+    private bool _allowSwim = false;     // nadar
+    private bool _allowJump = false;     // saltar
+    private bool _allowClimb = false;    // trepar
     private bool _allowMagic = false;   // lanzar magia
-    private bool _allowFly = true;      // volar
+    private bool _allowFly = false;      // volar
 
     // API pública para que otros sistemas (p.ej. PlayerPresetService) apliquen permisos
     public void ApplyAbilities(PlayerAbilities abilities)
@@ -102,6 +101,10 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private Animator _anim;
     private float _originalUpperWeight = 0f;
     private readonly object _lockOwner = new();
+    
+    // Cooldown para Interact - evita que el botón A se procese como salto justo después de interactuar
+    private float _interactCooldownUntil = 0f;
+    private const float INTERACT_COOLDOWN_DURATION = 0.3f;
 
     void Awake()
     {
@@ -444,7 +447,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     
     public bool CanInteract()
     {
-        // IMPORTANTE: Interact puede usarse cuando NO hay menús abiertos
+        // IMPORTANTE: Cooldown después de interactuar para evitar que el botón A se procese como salto
+        if (Time.unscaledTime < _interactCooldownUntil)
+        {
+            if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Interact en cooldown");
+            return false;
+        }
+        
         // Si hay menús abiertos, el botón A se usa para submit en UI, no para interactuar
         if (MenuManager.HasOpenMenus)
         {
@@ -453,6 +462,16 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
         
         return CanUse(PlayerAbility.Interact);
+    }
+    
+    /// <summary>
+    /// Llamar este método después de que el player interactúe con algo
+    /// para establecer un cooldown que evite procesamiento múltiple del botón A
+    /// </summary>
+    public void SetInteractCooldown()
+    {
+        _interactCooldownUntil = Time.unscaledTime + INTERACT_COOLDOWN_DURATION;
+        if (debugLogs) Debug.Log($"[PlayerActionManager] Interact cooldown activado por {INTERACT_COOLDOWN_DURATION}s");
     }
     
     public bool CanSwim() => _allowSwim;

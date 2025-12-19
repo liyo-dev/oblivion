@@ -366,6 +366,10 @@ public class QuestMenuManager : MonoBehaviour
     void RefreshMenuRegistration()
     {
         bool anyOpen = (mainMenu != null && mainMenu.IsOpen) || (quickMenu != null && quickMenu.IsVisible);
+        bool mainMenuOpen = mainMenu != null && mainMenu.IsOpen;
+        bool quickMenuOpen = quickMenu != null && quickMenu.IsVisible;
+
+        Debug.Log($"[QuestMenuManager] RefreshMenuRegistration: anyOpen={anyOpen}, mainMenuOpen={mainMenuOpen}, quickMenuOpen={quickMenuOpen}");
 
         if (anyOpen)
         {
@@ -374,8 +378,22 @@ public class QuestMenuManager : MonoBehaviour
             {
                 MenuManager.RegisterOpen(MenuKind.Mission);
                 _menuRegistered = true;
+                Debug.Log("[QuestMenuManager] Menu registered in MenuManager");
             }
-            EnsureUiScope();
+            
+            // IMPORTANTE: Solo bloquear inputs de gameplay si el menú PRINCIPAL está abierto
+            // El menú rápido debe permitir que el jugador se mueva
+            if (mainMenuOpen)
+            {
+                Debug.Log("[QuestMenuManager] Main menu open - BLOQUEANDO inputs de gameplay");
+                EnsureUiScope();
+            }
+            else
+            {
+                // Si solo está el menú rápido, NO bloquear gameplay
+                Debug.Log("[QuestMenuManager] Solo quick menu open - PERMITIENDO inputs de gameplay");
+                ExitUiScope();
+            }
         }
         else
         {

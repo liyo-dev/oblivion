@@ -448,8 +448,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
         
-        if (!GameState.CanOpenInventory) return;
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return;
+        if (!GameState.CanOpenInventory)
+        {
+            Debug.Log("[PlayerEquipmentMenu] No se puede abrir - GameState.CanOpenInventory = false");
+            return;
+        }
+        
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+        {
+            Debug.Log("[PlayerEquipmentMenu] No se puede abrir - Diálogo activo");
+            return;
+        }
 
         // Ask central manager for permission to open
         if (!MenuManager.TryOpen(MenuKind.Equipment))
@@ -458,12 +467,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
+        Debug.Log("[PlayerEquipmentMenu] MenuManager permitió la apertura, verificando vistas...");
+        
         if (!EnsureViews())
         {
+            Debug.LogError("[PlayerEquipmentMenu] EnsureViews() retornó false - cerrando menú");
             MenuManager.Close(MenuKind.Equipment);
             return;
         }
 
+        Debug.Log("[PlayerEquipmentMenu] Vistas verificadas, inicializando ActionManager...");
+        
         EnsureActionManager();
         if (_actionManager != null)
         {
@@ -485,6 +499,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             Debug.Log("[PlayerEquipmentMenu] Animator cambiado a UnscaledTime para mantener animaciones en el menú");
         }
 
+        Debug.Log("[PlayerEquipmentMenu] Configurando canvas y pestañas...");
         SetCanvasState(true);
 
         int defaultTab = GetDefaultTab();
@@ -497,6 +512,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         GameState.Push(GamePhase.Equipment);
         SelectInitial();
         
+        Debug.Log("[PlayerEquipmentMenu] Activando cámara de equipamiento...");
         // Activar la cámara de equipamiento siempre que el menú esté abierto
         SetEquipmentCameraActive(true);
 
@@ -1193,6 +1209,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 _inventoryView = new InventoryView(inventoryUI);
                 anyViewConfigured = true;
+                Debug.Log("[PlayerEquipmentMenuController] Vista de inventario creada");
             }
             else if (!_warnedInventory)
             {
@@ -1203,6 +1220,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
+            Debug.Log("[PlayerEquipmentMenuController] Vista de inventario ya existe");
         }
 
         if (_spellView == null)
@@ -1211,6 +1229,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 _spellView = new SpellView(spellUI);
                 anyViewConfigured = true;
+                Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos creada");
             }
             else if (!_warnedSpells)
             {
@@ -1221,6 +1240,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
+            Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos ya existe");
         }
 
         if (_equipmentView == null)
@@ -1229,6 +1249,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 _equipmentView = new EquipmentView(equipmentUI);
                 anyViewConfigured = true;
+                Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento creada");
             }
             else if (!_warnedEquipment)
             {
@@ -1239,8 +1260,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
+            Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento ya existe");
         }
 
+        Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() retornando: {anyViewConfigured}");
         return anyViewConfigured;
     }
 
