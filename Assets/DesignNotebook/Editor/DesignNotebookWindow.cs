@@ -681,8 +681,8 @@ public class DesignNotebookWindow : EditorWindow
 
             float availableHeight = Mathf.Max(position.height - 220f, 420f);
             float graphHeight = Mathf.Max(availableHeight * 0.8f, 420f);
-            var rect = GUILayoutUtility.GetRect(position.width - 32f, graphHeight, GUILayout.ExpandWidth(true), GUILayout.Height(graphHeight));
-            LayoutGraphView(rect);
+        var rect = GUILayoutUtility.GetRect(position.width - 32f, graphHeight, GUILayout.ExpandWidth(true), GUILayout.Height(graphHeight));
+        LayoutGraphView(rect);
 
             EditorGUILayout.EndVertical();
         }
@@ -737,11 +737,24 @@ public class DesignNotebookWindow : EditorWindow
 
     private void LayoutGraphView(Rect rect)
     {
+        var veRect = GuiToVisualElementRect(rect);
         _storyGraphView.style.position = Position.Absolute;
-        _storyGraphView.style.left = rect.xMin;
-        _storyGraphView.style.top = rect.yMin;
-        _storyGraphView.style.width = rect.width;
-        _storyGraphView.style.height = rect.height;
+        _storyGraphView.style.left = veRect.xMin;
+        _storyGraphView.style.top = veRect.yMin;
+        _storyGraphView.style.width = veRect.width;
+        _storyGraphView.style.height = veRect.height;
+    }
+
+    private Rect GuiToVisualElementRect(Rect guiRect)
+    {
+        var topLeft = GUIUtility.GUIToScreenPoint(new Vector2(guiRect.xMin, guiRect.yMin));
+        var bottomRight = GUIUtility.GUIToScreenPoint(new Vector2(guiRect.xMax, guiRect.yMax));
+
+        var root = rootVisualElement;
+        topLeft = root.WorldToLocal(topLeft);
+        bottomRight = root.WorldToLocal(bottomRight);
+
+        return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
     }
 
     private void HideGraphView()
