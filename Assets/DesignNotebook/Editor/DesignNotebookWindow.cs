@@ -14,6 +14,7 @@ public class DesignNotebookWindow : EditorWindow
     private DesignNotebook _asset;
     private SerializedObject _serialized;
     private Vector2 _scroll;
+    private Vector2 _boardScroll;
     private int _tabIndex;
     private DesignStoryGraphView _storyGraphView;
     private int _fontSize = 18;
@@ -208,7 +209,6 @@ public class DesignNotebookWindow : EditorWindow
         {
             "Resumen",
             "Board",
-            "Pizarra",
             "Exportar"
         };
 
@@ -218,6 +218,8 @@ public class DesignNotebookWindow : EditorWindow
             _tabIndex = GUILayout.Toolbar(_tabIndex, tabs, Styles.TabButton, GUILayout.Height(24));
             GUILayout.FlexibleSpace();
         }
+
+        _tabIndex = Mathf.Clamp(_tabIndex, 0, tabs.Length - 1);
 
         EditorGUILayout.Space();
 
@@ -279,9 +281,6 @@ public class DesignNotebookWindow : EditorWindow
                 DrawSummary();
                 break;
             case 2:
-                DrawBlackboard();
-                break;
-            case 3:
                 DrawExportButtons();
                 break;
         }
@@ -427,8 +426,8 @@ public class DesignNotebookWindow : EditorWindow
 
     private void DrawBlackboard()
     {
-        EditorGUILayout.LabelField("Blackboard", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Dibuja diagramas, ritmo o notas visuales como en una pizarra.", MessageType.None);
+        EditorGUILayout.LabelField("Pizarra integrada", Styles.SectionTitle);
+        EditorGUILayout.HelpBox("Dibuja diagramas, ritmo o notas visuales sin salir del board.", MessageType.None);
 
         var backgroundProp = _serialized.FindProperty("blackboardBackground");
         var brushColorProp = _serialized.FindProperty("blackboardBrushColor");
@@ -834,56 +833,67 @@ public class DesignNotebookWindow : EditorWindow
         _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
         _storyGraphView.BringToFront();
 
-        EditorGUILayout.BeginVertical(Styles.SectionBox);
-        EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Board unificado", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Un solo tablero donde combinar tarjetas, notas rápidas y documentos enlazables.", MessageType.Info);
-
-        using (new EditorGUILayout.HorizontalScope())
+        using (var scroll = new EditorGUILayout.ScrollViewScope(_boardScroll))
         {
-            if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+            _boardScroll = scroll.scrollPosition;
+
+            EditorGUILayout.BeginVertical(Styles.SectionBox);
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Board unificado", Styles.SectionTitle);
+            EditorGUILayout.HelpBox("Un solo tablero donde combinar tarjetas, notas rápidas y documentos enlazables.", MessageType.Info);
+
+            using (new EditorGUILayout.HorizontalScope())
             {
-                EnsureGraphView();
-                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-                _storyGraphView.CreateCard(GetNextStoryCardPosition());
+                if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+                {
+                    EnsureGraphView();
+                    _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                    _storyGraphView.CreateCard(GetNextStoryCardPosition());
+                }
+
+                if (GUILayout.Button("Nota rápida", GUILayout.Width(110f)))
+                {
+                    EnsureGraphView();
+                    _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                    _storyGraphView.CreateQuickNote(GetNextStoryCardPosition());
+                }
+
+                if (GUILayout.Button("Documento", GUILayout.Width(110f)))
+                {
+                    EnsureGraphView();
+                    _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                    _storyGraphView.CreateDocument(GetNextStoryCardPosition());
+                }
+
+                if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
+                    _storyGraphView.FrameAll();
+                if (GUILayout.Button("Centrar selección", GUILayout.Width(130f)))
+                    _storyGraphView.FrameSelection();
             }
 
-            if (GUILayout.Button("Nota rápida", GUILayout.Width(110f)))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                EnsureGraphView();
-                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-                _storyGraphView.CreateQuickNote(GetNextStoryCardPosition());
+                GUILayout.Label("Color del board", GUILayout.Width(110f));
+                var newColor = EditorGUILayout.ColorField(_asset.boardBackground);
+                if (newColor != _asset.boardBackground)
+                {
+                    Undo.RecordObject(_asset, "Cambiar color del board");
+                    _asset.boardBackground = newColor;
+                    _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                    MarkAssetDirty();
+                }
             }
 
-            if (GUILayout.Button("Documento", GUILayout.Width(110f)))
-            {
-                EnsureGraphView();
-                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-                _storyGraphView.CreateDocument(GetNextStoryCardPosition());
-            }
+            float availableHeight = Mathf.Max(position.height - 260f, 360f);
+            float graphHeight = Mathf.Max(availableHeight * 0.55f, 360f);
+            var rect = GUILayoutUtility.GetRect(position.width - 32f, graphHeight, GUILayout.ExpandWidth(true), GUILayout.Height(graphHeight));
+            LayoutGraphView(rect);
 
-            if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
-                _storyGraphView.FrameAll();
-            if (GUILayout.Button("Centrar selección", GUILayout.Width(130f)))
-                _storyGraphView.FrameSelection();
+            EditorGUILayout.Space(12f);
+            DrawBlackboard();
+
+            EditorGUILayout.EndVertical();
         }
-
-        using (new EditorGUILayout.HorizontalScope())
-        {
-            GUILayout.Label("Color del board", GUILayout.Width(110f));
-            var newColor = EditorGUILayout.ColorField(_asset.boardBackground);
-            if (newColor != _asset.boardBackground)
-            {
-                Undo.RecordObject(_asset, "Cambiar color del board");
-                _asset.boardBackground = newColor;
-                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-                MarkAssetDirty();
-            }
-        }
-
-        var rect = GUILayoutUtility.GetRect(position.width - 32f, position.height - 220f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-        LayoutGraphView(rect);
-        EditorGUILayout.EndVertical();
     }
 
     private void LayoutGraphView(Rect rect)
