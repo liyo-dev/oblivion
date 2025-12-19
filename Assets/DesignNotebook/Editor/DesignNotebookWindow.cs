@@ -650,30 +650,30 @@ public class DesignNotebookWindow : EditorWindow
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Nueva tarjeta", GUILayout.Width(120f)))
+                if (GUILayout.Button("Nueva tarjeta", Styles.ToolbarActionButton, GUILayout.Width(120f)))
                 {
                     EnsureGraphView();
                     _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
                     _storyGraphView.CreateCard(GetNextStoryCardPosition());
                 }
 
-                if (GUILayout.Button("Nota rápida", GUILayout.Width(110f)))
+                if (GUILayout.Button("Nota rápida", Styles.ToolbarActionButton, GUILayout.Width(110f)))
                 {
                     EnsureGraphView();
                     _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
                     _storyGraphView.CreateQuickNote(GetNextStoryCardPosition());
                 }
 
-                if (GUILayout.Button("Documento", GUILayout.Width(110f)))
+                if (GUILayout.Button("Documento", Styles.ToolbarActionButton, GUILayout.Width(110f)))
                 {
                     EnsureGraphView();
                     _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
                     _storyGraphView.CreateDocument(GetNextStoryCardPosition());
                 }
 
-                if (GUILayout.Button("Enmarcar todo", GUILayout.Width(120f)))
+                if (GUILayout.Button("Enmarcar todo", Styles.ToolbarActionButton, GUILayout.Width(120f)))
                     _storyGraphView.FrameAll();
-                if (GUILayout.Button("Centrar selección", GUILayout.Width(130f)))
+                if (GUILayout.Button("Centrar selección", Styles.ToolbarActionButton, GUILayout.Width(130f)))
                     _storyGraphView.FrameSelection();
             }
 
@@ -1071,6 +1071,7 @@ public class DesignNotebookWindow : EditorWindow
         public static readonly GUIStyle StatLabel;
         public static readonly GUIStyle StatValue;
         public static readonly GUIStyle StatHelper;
+        public static readonly GUIStyle ToolbarActionButton;
         public static readonly Color ElementBackground;
         public static readonly Color ElementBackgroundActive;
         public static readonly Color NoteShadow;
@@ -1193,14 +1194,38 @@ public class DesignNotebookWindow : EditorWindow
                 margin = new RectOffset(4, 4, 6, 6)
             };
 
+            var primaryTextColor = EditorGUIUtility.isProSkin ? new Color(0.94f, 0.9f, 0.86f) : new Color(0.18f, 0.16f, 0.14f);
+
             TabButton = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedHeight = 26,
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,
                 margin = new RectOffset(2, 2, 2, 2),
-                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.94f, 0.9f, 0.86f) : new Color(0.18f, 0.16f, 0.14f) }
             };
+            ApplyTextColorToStates(TabButton, primaryTextColor);
+
+            ToolbarActionButton = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                padding = new RectOffset(10, 10, 6, 6),
+                margin = new RectOffset(2, 2, 2, 2),
+                normal =
+                {
+                    background = MakeTex(EditorGUIUtility.isProSkin
+                        ? new Color(0.2f, 0.21f, 0.23f)
+                        : new Color(0.85f, 0.86f, 0.88f))
+                },
+                active =
+                {
+                    background = MakeTex(EditorGUIUtility.isProSkin
+                        ? new Color(0.26f, 0.27f, 0.29f)
+                        : new Color(0.78f, 0.79f, 0.8f))
+                },
+                alignment = TextAnchor.MiddleCenter
+            };
+            ApplyTextColorToStates(ToolbarActionButton, primaryTextColor);
 
             StatPill = new GUIStyle("HelpBox")
             {
@@ -1265,6 +1290,18 @@ public class DesignNotebookWindow : EditorWindow
             tex.SetPixel(0, 0, color);
             tex.Apply();
             return tex;
+        }
+
+        private static void ApplyTextColorToStates(GUIStyle style, Color color)
+        {
+            style.normal.textColor = color;
+            style.active.textColor = color;
+            style.focused.textColor = color;
+            style.hover.textColor = color;
+            style.onNormal.textColor = color;
+            style.onActive.textColor = color;
+            style.onFocused.textColor = color;
+            style.onHover.textColor = color;
         }
 
         private static Texture2D MakeVerticalGradientTex(int height, Color top, Color bottom)
