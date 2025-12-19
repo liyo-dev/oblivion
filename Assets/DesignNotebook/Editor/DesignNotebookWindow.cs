@@ -24,6 +24,10 @@ public class DesignNotebookWindow : EditorWindow
     private int _draggingNoteIndex = -1;
     private Vector2 _dragOffset;
     private bool _blackboardMode;
+    private GUIContent _addCardIcon;
+    private GUIContent _addNoteIcon;
+    private GUIContent _selectionIcon;
+    private GUIContent _brushIcon;
     private const string SynopsisControlName = "DesignNotebook_Synopsis";
 
     [MenuItem("Tools/Design/Notebook")]
@@ -557,6 +561,74 @@ public class DesignNotebookWindow : EditorWindow
         return start + new Vector2((cards.Count + 1) * (cardWidth + spacing) * 0.5f, cardHeight + spacing);
     }
 
+    private GUIContent GetIcon(ref GUIContent cache, string iconName, string fallback, string tooltip)
+    {
+        if (cache != null)
+            return cache;
+
+        var content = EditorGUIUtility.IconContent(iconName);
+        if (content == null || content.image == null)
+            content = new GUIContent(fallback);
+
+        cache = new GUIContent(content)
+        {
+            tooltip = tooltip
+        };
+
+        return cache;
+    }
+
+    private void EnsureToolbarIcons()
+    {
+        GetIcon(ref _addCardIcon, "d_CreateAddNew", "＋", "Nueva tarjeta");
+        GetIcon(ref _addNoteIcon, "d_UnityEditor.ConsoleWindow", "✦", "Nota rápida");
+        GetIcon(ref _selectionIcon, "d_MoveTool", "↖", "Modo selección");
+        GetIcon(ref _brushIcon, "d_TerrainInspector.TerrainToolSplat", "✎", "Modo dibujo");
+    }
+
+    private void UpdateBlackboardMode(bool enabled)
+    {
+        if (_blackboardMode == enabled)
+            return;
+
+        _blackboardMode = enabled;
+        _storyGraphView?.SetBlackboardMode(_blackboardMode);
+    }
+
+    private void DrawBoardToolbar()
+    {
+        EnsureToolbarIcons();
+
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            GUILayout.Space(4f);
+
+            if (GUILayout.Button(_addCardIcon, EditorStyles.toolbarButton, GUILayout.Width(32f)))
+            {
+                EnsureGraphView();
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                _storyGraphView.CreateCard(GetNextStoryCardPosition());
+            }
+
+            if (GUILayout.Button(_addNoteIcon, EditorStyles.toolbarButton, GUILayout.Width(32f)))
+            {
+                EnsureGraphView();
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                _storyGraphView.CreateQuickNote(GetNextStoryCardPosition());
+            }
+
+            GUILayout.FlexibleSpace();
+
+            bool wantsSelection = GUILayout.Toggle(!_blackboardMode, _selectionIcon, EditorStyles.toolbarButton, GUILayout.Width(30f));
+            bool wantsBrush = GUILayout.Toggle(_blackboardMode, _brushIcon, EditorStyles.toolbarButton, GUILayout.Width(30f));
+
+            if (wantsBrush && !_blackboardMode)
+                UpdateBlackboardMode(true);
+            else if (wantsSelection && _blackboardMode)
+                UpdateBlackboardMode(false);
+        }
+    }
+
     private void DrawStoryTab()
     {
         EnsureGraphView();
@@ -572,6 +644,9 @@ public class DesignNotebookWindow : EditorWindow
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Board unificado", Styles.SectionTitle);
             EditorGUILayout.HelpBox("Un solo tablero donde combinar tarjetas, notas rápidas y documentos enlazables.", MessageType.Info);
+
+            DrawBoardToolbar();
+            EditorGUILayout.Space();
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -634,11 +709,7 @@ public class DesignNotebookWindow : EditorWindow
             GUILayout.Space(12f);
             GUILayout.Label("Pizarra", GUILayout.Width(60f));
             var newMode = GUILayout.Toggle(_blackboardMode, "Modo pizarra", Styles.TabButton, GUILayout.Width(120f));
-            if (newMode != _blackboardMode)
-            {
-                _blackboardMode = newMode;
-                _storyGraphView.SetBlackboardMode(_blackboardMode);
-            }
+            UpdateBlackboardMode(newMode);
 
             GUILayout.Label("Tiza", GUILayout.Width(40f));
             var newBrushColor = EditorGUILayout.ColorField(brushColorProp.colorValue, GUILayout.Width(80f));
