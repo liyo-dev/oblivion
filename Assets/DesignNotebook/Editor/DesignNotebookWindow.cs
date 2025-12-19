@@ -23,30 +23,7 @@ public class DesignNotebookWindow : EditorWindow
     private Vector2 _quickNotesScroll;
     private int _draggingNoteIndex = -1;
     private Vector2 _dragOffset;
-    private bool _isDrawingBlackboard;
-    private DesignBlackboardStroke _activeStroke;
-    private Rect _currentBlackboardRect;
-    private Color _currentBrushColor = Color.white;
-    private float _currentBrushSize = 5f;
-    private readonly Color[] _chalkPalette =
-    {
-        Color.white,
-        new Color(0.92f, 0.74f, 0.42f),
-        new Color(0.88f, 0.56f, 0.56f),
-        new Color(0.74f, 0.62f, 0.46f),
-        new Color(0.68f, 0.8f, 0.64f),
-        new Color(0.78f, 0.7f, 0.58f)
-    };
-    private readonly Color[] _blackboardBackgroundPalette =
-    {
-        new Color(0.07f, 0.08f, 0.1f),
-        new Color(0.08f, 0.12f, 0.08f),
-        new Color(0.16f, 0.13f, 0.1f),
-        new Color(0.05f, 0.09f, 0.14f),
-        new Color(0.12f, 0.09f, 0.11f)
-    };
-    private readonly List<Vector3> _strokePoints = new();
-
+    private bool _blackboardMode;
     private const string SynopsisControlName = "DesignNotebook_Synopsis";
 
     [MenuItem("Tools/Design/Notebook")]
@@ -424,252 +401,6 @@ public class DesignNotebookWindow : EditorWindow
         return rect;
     }
 
-    private void DrawBlackboard()
-    {
-        EditorGUILayout.LabelField("Pizarra integrada", Styles.SectionTitle);
-        EditorGUILayout.HelpBox("Dibuja diagramas, ritmo o notas visuales sin salir del board.", MessageType.None);
-
-        var backgroundProp = _serialized.FindProperty("blackboardBackground");
-        var brushColorProp = _serialized.FindProperty("blackboardBrushColor");
-        var brushSizeProp = _serialized.FindProperty("blackboardBrushSize");
-
-        EditorGUILayout.PropertyField(backgroundProp, new GUIContent("Color de fondo"));
-        DrawColorPresetRow("Fondos rápidos", _blackboardBackgroundPalette, backgroundProp.colorValue, color =>
-        {
-            if (_asset != null)
-                Undo.RecordObject(_asset, "Cambiar fondo de pizarra");
-            backgroundProp.colorValue = color;
-            MarkAssetDirty();
-            Repaint();
-        });
-
-        EditorGUILayout.Space();
-
-        EditorGUILayout.PropertyField(brushColorProp, new GUIContent("Color de tiza"));
-        DrawColorPresetRow("Colores de tiza", _chalkPalette, brushColorProp.colorValue, color =>
-        {
-            if (_asset != null)
-                Undo.RecordObject(_asset, "Cambiar color de tiza");
-            brushColorProp.colorValue = color;
-            MarkAssetDirty();
-            Repaint();
-        });
-
-        brushSizeProp.floatValue = Mathf.Clamp(EditorGUILayout.Slider("Grosor de línea", brushSizeProp.floatValue, 1f, 24f), 1f, 24f);
-
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Limpiar pizarra", GUILayout.Width(140f)))
-        {
-            Undo.RecordObject(_asset, "Limpiar pizarra");
-            _asset.blackboardStrokes.Clear();
-            _activeStroke = null;
-            _isDrawingBlackboard = false;
-            MarkAssetDirty();
-            Repaint();
-        }
-        GUILayout.FlexibleSpace();
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.Space();
-
-        _currentBrushColor = brushColorProp.colorValue;
-        _currentBrushSize = brushSizeProp.floatValue;
-
-        float boardHeight = Mathf.Max(position.height - 360f, 320f);
-        var boardRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(boardHeight), GUILayout.ExpandWidth(true));
-        DrawBlackboardCanvas(boardRect, backgroundProp.colorValue);
-    }
-
-    private void DrawColorPresetRow(string label, Color[] palette, Color selectedColor, Action<Color> onSelect)
-    {
-        if (palette == null || palette.Length == 0)
-            return;
-
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField(label, GUILayout.Width(120f));
-        for (int i = 0; i < palette.Length; i++)
-        {
-            var rect = GUILayoutUtility.GetRect(26f, 18f, GUILayout.Width(28f), GUILayout.Height(18f));
-            if (Event.current.type == EventType.Repaint)
-            {
-                var border = new Rect(rect.x - 1f, rect.y - 1f, rect.width + 2f, rect.height + 2f);
-                var isActive = ColorsSimilar(palette[i], selectedColor);
-                var borderColor = isActive ? new Color(1f, 1f, 1f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
-                EditorGUI.DrawRect(border, borderColor);
-                if (isActive)
-                {
-                    var inner = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
-                    EditorGUI.DrawRect(inner, palette[i]);
-                }
-                else
-                {
-                    EditorGUI.DrawRect(rect, palette[i]);
-                }
-            }
-            if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
-            {
-                onSelect?.Invoke(palette[i]);
-                GUI.FocusControl(null);
-            }
-        }
-        GUILayout.FlexibleSpace();
-        EditorGUILayout.EndHorizontal();
-    }
-
-    private static bool ColorsSimilar(Color a, Color b)
-    {
-        const float epsilon = 0.01f;
-        return Mathf.Abs(a.r - b.r) < epsilon
-               && Mathf.Abs(a.g - b.g) < epsilon
-               && Mathf.Abs(a.b - b.b) < epsilon
-               && Mathf.Abs(a.a - b.a) < epsilon;
-    }
-
-    private void DrawBlackboardCanvas(Rect rect, Color backgroundColor)
-    {
-        _currentBlackboardRect = rect;
-        int controlId = GUIUtility.GetControlID("DesignNotebookBlackboard".GetHashCode(), FocusType.Passive);
-        var evt = Event.current;
-        var type = evt.GetTypeForControl(controlId);
-
-        if (type == EventType.Repaint)
-        {
-            EditorGUI.DrawRect(rect, backgroundColor);
-            Handles.BeginGUI();
-            DrawBlackboardGrid(rect, backgroundColor);
-            DrawBlackboardStrokes(rect);
-            Handles.EndGUI();
-        }
-
-        switch (type)
-        {
-            case EventType.MouseDown:
-                if (evt.button == 0 && rect.Contains(evt.mousePosition))
-                {
-                    GUIUtility.hotControl = controlId;
-                    BeginBlackboardStroke(evt.mousePosition);
-                    evt.Use();
-                }
-                break;
-            case EventType.MouseDrag:
-                if (GUIUtility.hotControl == controlId && _isDrawingBlackboard)
-                {
-                    AddPointToStroke(evt.mousePosition);
-                    evt.Use();
-                }
-                break;
-            case EventType.MouseUp:
-                if (GUIUtility.hotControl == controlId && evt.button == 0)
-                {
-                    AddPointToStroke(evt.mousePosition);
-                    EndBlackboardStroke();
-                    GUIUtility.hotControl = 0;
-                    evt.Use();
-                }
-                break;
-            case EventType.Ignore:
-                if (GUIUtility.hotControl == controlId && evt.rawType == EventType.MouseUp)
-                {
-                    EndBlackboardStroke();
-                    GUIUtility.hotControl = 0;
-                }
-                break;
-        }
-    }
-
-    private void DrawBlackboardGrid(Rect rect, Color backgroundColor)
-    {
-        var previousColor = Handles.color;
-        var gridColor = Color.Lerp(Color.white, backgroundColor, 0.65f);
-        gridColor.a = 0.08f;
-        Handles.color = gridColor;
-        const float step = 32f;
-        for (float x = rect.xMin + step; x < rect.xMax; x += step)
-            Handles.DrawLine(new Vector3(x, rect.yMin, 0f), new Vector3(x, rect.yMax, 0f));
-        for (float y = rect.yMin + step; y < rect.yMax; y += step)
-            Handles.DrawLine(new Vector3(rect.xMin, y, 0f), new Vector3(rect.xMax, y, 0f));
-
-        Handles.color = new Color(0f, 0f, 0f, 0.4f);
-        Handles.DrawAAPolyLine(2f, new[]
-        {
-            new Vector3(rect.xMin, rect.yMin, 0f),
-            new Vector3(rect.xMax, rect.yMin, 0f),
-            new Vector3(rect.xMax, rect.yMax, 0f),
-            new Vector3(rect.xMin, rect.yMax, 0f),
-            new Vector3(rect.xMin, rect.yMin, 0f)
-        });
-        Handles.color = previousColor;
-    }
-
-    private void DrawBlackboardStrokes(Rect rect)
-    {
-        if (_asset?.blackboardStrokes == null)
-            return;
-
-        foreach (var stroke in _asset.blackboardStrokes)
-        {
-            if (stroke == null || stroke.points == null || stroke.points.Count < 2)
-                continue;
-
-            _strokePoints.Clear();
-            for (int i = 0; i < stroke.points.Count; i++)
-            {
-                var p = stroke.points[i];
-                _strokePoints.Add(new Vector3(rect.x + p.x, rect.y + p.y, 0f));
-            }
-            Handles.color = stroke.color;
-            Handles.DrawAAPolyLine(stroke.thickness, _strokePoints.ToArray());
-        }
-        Handles.color = Color.white;
-    }
-
-    private void BeginBlackboardStroke(Vector2 guiPosition)
-    {
-        if (_asset == null) return;
-
-        Undo.RecordObject(_asset, "Dibujar en pizarra");
-        _activeStroke = new DesignBlackboardStroke
-        {
-            color = _currentBrushColor,
-            thickness = _currentBrushSize
-        };
-        _asset.blackboardStrokes.Add(_activeStroke);
-        _isDrawingBlackboard = true;
-        AddPointToStroke(guiPosition);
-    }
-
-    private void AddPointToStroke(Vector2 guiPosition)
-    {
-        if (_activeStroke == null)
-            return;
-
-        var local = ClampToCanvas(guiPosition);
-        var points = _activeStroke.points;
-        if (points.Count == 0 || Vector2.Distance(points[points.Count - 1], local) > 0.5f)
-        {
-            points.Add(local);
-            MarkAssetDirty();
-            Repaint();
-        }
-    }
-
-    private void EndBlackboardStroke()
-    {
-        if (!_isDrawingBlackboard)
-            return;
-
-        _isDrawingBlackboard = false;
-        _activeStroke = null;
-        MarkAssetDirty();
-    }
-
-    private Vector2 ClampToCanvas(Vector2 guiPosition)
-    {
-        var local = guiPosition - new Vector2(_currentBlackboardRect.x, _currentBlackboardRect.y);
-        local.x = Mathf.Clamp(local.x, 0f, Mathf.Max(1f, _currentBlackboardRect.width));
-        local.y = Mathf.Clamp(local.y, 0f, Mathf.Max(1f, _currentBlackboardRect.height));
-        return local;
-    }
 
     private Vector2 CalculateQuickNotesContentSize(SerializedProperty quickNotesProp, float cardWidth, float cardHeight, float spacing, Rect viewRect)
     {
@@ -871,28 +602,65 @@ public class DesignNotebookWindow : EditorWindow
                     _storyGraphView.FrameSelection();
             }
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Label("Color del board", GUILayout.Width(110f));
-                var newColor = EditorGUILayout.ColorField(_asset.boardBackground);
-                if (newColor != _asset.boardBackground)
-                {
-                    Undo.RecordObject(_asset, "Cambiar color del board");
-                    _asset.boardBackground = newColor;
-                    _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
-                    MarkAssetDirty();
-                }
-            }
+            DrawBoardSettingsRow();
 
-            float availableHeight = Mathf.Max(position.height - 260f, 360f);
-            float graphHeight = Mathf.Max(availableHeight * 0.55f, 360f);
+            float availableHeight = Mathf.Max(position.height - 220f, 420f);
+            float graphHeight = Mathf.Max(availableHeight * 0.8f, 420f);
             var rect = GUILayoutUtility.GetRect(position.width - 32f, graphHeight, GUILayout.ExpandWidth(true), GUILayout.Height(graphHeight));
             LayoutGraphView(rect);
 
-            EditorGUILayout.Space(12f);
-            DrawBlackboard();
-
             EditorGUILayout.EndVertical();
+        }
+    }
+
+    private void DrawBoardSettingsRow()
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.Label("Color del board", GUILayout.Width(110f));
+            var newColor = EditorGUILayout.ColorField(_asset.boardBackground);
+            if (newColor != _asset.boardBackground)
+            {
+                Undo.RecordObject(_asset, "Cambiar color del board");
+                _asset.boardBackground = newColor;
+                _storyGraphView.SetNotebook(_asset, MarkAssetDirty);
+                MarkAssetDirty();
+            }
+
+            var brushColorProp = _serialized.FindProperty("blackboardBrushColor");
+            var brushSizeProp = _serialized.FindProperty("blackboardBrushSize");
+            var backgroundProp = _serialized.FindProperty("blackboardBackground");
+
+            GUILayout.Space(12f);
+            GUILayout.Label("Pizarra", GUILayout.Width(60f));
+            var newMode = GUILayout.Toggle(_blackboardMode, "Modo pizarra", Styles.TabButton, GUILayout.Width(120f));
+            if (newMode != _blackboardMode)
+            {
+                _blackboardMode = newMode;
+                _storyGraphView.SetBlackboardMode(_blackboardMode);
+            }
+
+            GUILayout.Label("Tiza", GUILayout.Width(40f));
+            var newBrushColor = EditorGUILayout.ColorField(brushColorProp.colorValue, GUILayout.Width(80f));
+            if (newBrushColor != brushColorProp.colorValue)
+            {
+                brushColorProp.colorValue = newBrushColor;
+                _storyGraphView.UpdateBrushSettings(brushColorProp.colorValue, brushSizeProp.floatValue);
+            }
+
+            GUILayout.Label("Grosor", GUILayout.Width(55f));
+            brushSizeProp.floatValue = Mathf.Clamp(EditorGUILayout.Slider(brushSizeProp.floatValue, 1f, 24f, GUILayout.Width(180f)), 1f, 24f);
+            _storyGraphView.UpdateBrushSettings(brushColorProp.colorValue, brushSizeProp.floatValue);
+
+            var newBackground = EditorGUILayout.ColorField(backgroundProp.colorValue, GUILayout.Width(80f));
+            if (newBackground != backgroundProp.colorValue)
+            {
+                backgroundProp.colorValue = newBackground;
+                _storyGraphView.UpdateBlackboardBackground(newBackground);
+            }
+
+            if (GUILayout.Button("Limpiar pizarra", GUILayout.Width(140f)))
+                _storyGraphView.ClearBlackboard();
         }
     }
 
@@ -1452,6 +1220,13 @@ internal class DesignStoryGraphView : GraphView
     private Action _onDirty;
     private bool _isRebuilding;
     private readonly GridBackground _grid;
+    private readonly IMGUIContainer _blackboardOverlay;
+    private bool _blackboardMode;
+    private DesignBlackboardStroke _activeStroke;
+    private readonly List<Vector3> _strokePoints = new();
+    private Color _brushColor = Color.white;
+    private float _brushSize = 5f;
+    private Color _blackboardBackground = new Color(0.07f, 0.08f, 0.1f);
 
     public DesignStoryGraphView()
     {
@@ -1460,6 +1235,20 @@ internal class DesignStoryGraphView : GraphView
         _grid.StretchToParentSize();
         style.backgroundColor = new StyleColor(new Color(0.07f, 0.09f, 0.12f));
         _grid.style.backgroundColor = new StyleColor(new Color(0.05f, 0.07f, 0.1f));
+
+        _blackboardOverlay = new IMGUIContainer(DrawBlackboardOverlay)
+        {
+            style =
+            {
+                position = Position.Absolute,
+                left = 0,
+                right = 0,
+                top = 0,
+                bottom = 0
+            },
+            pickingMode = PickingMode.Ignore
+        };
+        Add(_blackboardOverlay);
 
         SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
         this.AddManipulator(new ContentDragger());
@@ -1487,7 +1276,194 @@ internal class DesignStoryGraphView : GraphView
         _onDirty = onDirty;
         style.backgroundColor = new StyleColor(_notebook.boardBackground);
         _grid.style.backgroundColor = new StyleColor(Color.Lerp(_notebook.boardBackground, Color.black, 0.35f));
+        _brushColor = _notebook.blackboardBrushColor;
+        _brushSize = _notebook.blackboardBrushSize;
+        _blackboardBackground = _notebook.blackboardBackground;
+        _blackboardOverlay.MarkDirtyRepaint();
         Rebuild();
+    }
+
+    public void SetBlackboardMode(bool enabled)
+    {
+        _blackboardMode = enabled;
+        _blackboardOverlay.pickingMode = enabled ? PickingMode.Position : PickingMode.Ignore;
+        _blackboardOverlay.MarkDirtyRepaint();
+    }
+
+    public void UpdateBrushSettings(Color color, float thickness)
+    {
+        _brushColor = color;
+        _brushSize = thickness;
+        _blackboardOverlay.MarkDirtyRepaint();
+    }
+
+    public void UpdateBlackboardBackground(Color background)
+    {
+        _blackboardBackground = background;
+        _blackboardOverlay.MarkDirtyRepaint();
+    }
+
+    public void ClearBlackboard()
+    {
+        if (_notebook == null) return;
+        Undo.RecordObject(_notebook, "Limpiar pizarra");
+        _notebook.blackboardStrokes.Clear();
+        _activeStroke = null;
+        _onDirty?.Invoke();
+        _blackboardOverlay.MarkDirtyRepaint();
+    }
+
+    private void DrawBlackboardOverlay()
+    {
+        if (_notebook == null)
+            return;
+
+        var rect = new Rect(Vector2.zero, layout.size);
+        if (Event.current.type == EventType.Repaint)
+        {
+            Handles.BeginGUI();
+            DrawBlackboardGrid(rect, _blackboardBackground);
+            DrawBlackboardStrokes(rect);
+            Handles.EndGUI();
+        }
+
+        HandleBlackboardInput(rect);
+    }
+
+    private void HandleBlackboardInput(Rect rect)
+    {
+        if (!_blackboardMode)
+            return;
+
+        int controlId = GUIUtility.GetControlID("DesignNotebookBlackboardOverlay".GetHashCode(), FocusType.Passive);
+        var evt = Event.current;
+        var type = evt.GetTypeForControl(controlId);
+
+        switch (type)
+        {
+            case EventType.MouseDown:
+                if (evt.button == 0 && rect.Contains(evt.mousePosition))
+                {
+                    GUIUtility.hotControl = controlId;
+                    BeginBlackboardStroke(evt.mousePosition, rect);
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseDrag:
+                if (GUIUtility.hotControl == controlId && _activeStroke != null)
+                {
+                    AddPointToStroke(evt.mousePosition, rect);
+                    evt.Use();
+                }
+                break;
+            case EventType.MouseUp:
+                if (GUIUtility.hotControl == controlId && evt.button == 0)
+                {
+                    AddPointToStroke(evt.mousePosition, rect);
+                    EndBlackboardStroke();
+                    GUIUtility.hotControl = 0;
+                    evt.Use();
+                }
+                break;
+            case EventType.Ignore:
+                if (GUIUtility.hotControl == controlId && evt.rawType == EventType.MouseUp)
+                {
+                    EndBlackboardStroke();
+                    GUIUtility.hotControl = 0;
+                }
+                break;
+        }
+    }
+
+    private void BeginBlackboardStroke(Vector2 guiPosition, Rect rect)
+    {
+        if (_notebook == null) return;
+
+        Undo.RecordObject(_notebook, "Dibujar en pizarra");
+        _activeStroke = new DesignBlackboardStroke
+        {
+            color = _brushColor,
+            thickness = _brushSize
+        };
+        _notebook.blackboardStrokes.Add(_activeStroke);
+        AddPointToStroke(guiPosition, rect);
+        _onDirty?.Invoke();
+    }
+
+    private void AddPointToStroke(Vector2 guiPosition, Rect rect)
+    {
+        if (_activeStroke == null)
+            return;
+
+        var local = ClampToRect(guiPosition, rect);
+        var points = _activeStroke.points;
+        if (points.Count == 0 || Vector2.Distance(points[points.Count - 1], local) > 0.5f)
+        {
+            points.Add(local);
+            _blackboardOverlay.MarkDirtyRepaint();
+            _onDirty?.Invoke();
+        }
+    }
+
+    private void EndBlackboardStroke()
+    {
+        _activeStroke = null;
+        _blackboardOverlay.MarkDirtyRepaint();
+        _onDirty?.Invoke();
+    }
+
+    private Vector2 ClampToRect(Vector2 guiPosition, Rect rect)
+    {
+        var local = guiPosition - rect.position;
+        local.x = Mathf.Clamp(local.x, 0f, Mathf.Max(1f, rect.width));
+        local.y = Mathf.Clamp(local.y, 0f, Mathf.Max(1f, rect.height));
+        return local;
+    }
+
+    private void DrawBlackboardGrid(Rect rect, Color backgroundColor)
+    {
+        var previousColor = Handles.color;
+        var gridColor = Color.Lerp(Color.white, backgroundColor, 0.65f);
+        gridColor.a = 0.04f;
+        Handles.color = gridColor;
+        const float step = 36f;
+        for (float x = rect.xMin + step; x < rect.xMax; x += step)
+            Handles.DrawLine(new Vector3(x, rect.yMin, 0f), new Vector3(x, rect.yMax, 0f));
+        for (float y = rect.yMin + step; y < rect.yMax; y += step)
+            Handles.DrawLine(new Vector3(rect.xMin, y, 0f), new Vector3(rect.xMax, y, 0f));
+
+        Handles.color = new Color(0f, 0f, 0f, 0.25f);
+        Handles.DrawAAPolyLine(2f, new[]
+        {
+            new Vector3(rect.xMin, rect.yMin, 0f),
+            new Vector3(rect.xMax, rect.yMin, 0f),
+            new Vector3(rect.xMax, rect.yMax, 0f),
+            new Vector3(rect.xMin, rect.yMax, 0f),
+            new Vector3(rect.xMin, rect.yMin, 0f)
+        });
+        Handles.color = previousColor;
+    }
+
+    private void DrawBlackboardStrokes(Rect rect)
+    {
+        if (_notebook?.blackboardStrokes == null)
+            return;
+
+        foreach (var stroke in _notebook.blackboardStrokes)
+        {
+            if (stroke == null || stroke.points == null || stroke.points.Count < 2)
+                continue;
+
+            _strokePoints.Clear();
+            for (int i = 0; i < stroke.points.Count; i++)
+            {
+                var p = stroke.points[i];
+                _strokePoints.Add(new Vector3(rect.x + p.x, rect.y + p.y, 0f));
+            }
+            Handles.color = stroke.color;
+            Handles.DrawAAPolyLine(stroke.thickness, _strokePoints.ToArray());
+        }
+        Handles.color = Color.white;
     }
 
     public void CreateCard(Vector2 position)
