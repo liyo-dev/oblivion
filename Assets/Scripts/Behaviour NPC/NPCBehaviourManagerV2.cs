@@ -327,6 +327,58 @@ namespace Game.NPC
         
         #endregion
         
+        #region Interaction System
+        
+        /// <summary>
+        /// Maneja la interacción con el jugador (llamado desde Interactable)
+        /// </summary>
+        public void HandleInteraction(GameObject interactor)
+        {
+            if (debugMode)
+                Debug.Log($"[NPCBehaviourV2:{name}] 🤝 HandleInteraction - interactor={interactor?.name}");
+            
+            // Sistema moderno: buscar NarrativeRunner para iniciar diálogos/quests
+            var narrativeRunner = GetComponent<NarrativeRunner>();
+            
+            if (narrativeRunner != null && narrativeRunner.graph != null)
+            {
+                if (debugMode)
+                    Debug.Log($"[NPCBehaviourV2:{name}] 🎬 Iniciando NarrativeRunner con graph: {narrativeRunner.graph.name}");
+                
+                narrativeRunner.StartFromStartNode();
+                return;
+            }
+            
+            // Fallback: sistema antiguo (IInteractionSession) - DEPRECADO
+            IInteractionSession session = null;
+            foreach (var component in GetComponents<MonoBehaviour>())
+            {
+                if (component is IInteractionSession interactionSession)
+                {
+                    session = interactionSession;
+                    if (debugMode)
+                        Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚠️ Usando sistema antiguo (IInteractionSession): {component.GetType().Name}");
+                    break;
+                }
+            }
+            
+            if (session != null)
+            {
+                session.BeginSession(interactor, () =>
+                {
+                    if (debugMode)
+                        Debug.Log($"[NPCBehaviourV2:{name}] 🔚 Sesión antigua terminada");
+                });
+            }
+            else
+            {
+                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ No se encontró NarrativeRunner ni IInteractionSession en el GameObject.\n" +
+                              $"SOLUCIÓN: Añade el componente 'NarrativeRunner' con un NarrativeGraph asignado al GameObject '{name}'.");
+            }
+        }
+        
+        #endregion
+        
         #region Gizmos
         
 #if UNITY_EDITOR

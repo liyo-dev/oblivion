@@ -80,14 +80,40 @@ public class Interactable : MonoBehaviour
     public bool CanInteract(GameObject _)
     {
         var dm = DialogueManager.Instance;
-        if (dm != null && dm.IsOpen) return false;
-        if (!GameState.CanInteractGlobally) return false; // bloquea durante pausa, main menu, prompts, etc.
-        if (Time.unscaledTime < s_globalCooldownUntil) return false;
-        return enabledForUse && (!singleUse || !used);
+        if (dm != null && dm.IsOpen)
+        {
+            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - Diálogo abierto");
+            return false;
+        }
+        if (!GameState.CanInteractGlobally)
+        {
+            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - GameState.CanInteractGlobally=false");
+            return false;
+        }
+        if (Time.unscaledTime < s_globalCooldownUntil)
+        {
+            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - En cooldown global");
+            return false;
+        }
+        if (!enabledForUse)
+        {
+            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - enabledForUse=false");
+            return false;
+        }
+        if (singleUse && used)
+        {
+            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - singleUse y ya usado");
+            return false;
+        }
+        
+        Debug.Log($"[Interactable:{name}] ✅ CanInteract=true");
+        return true;
     }
 
     public void Interact(GameObject interactor)
     {
+        Debug.Log($"[Interactable:{name}] 🔔 Interact llamado - interactor={interactor?.name}");
+        
         if (!CanInteract(interactor)) return;
 
         // IMPORTANTE: Establecer cooldown en PlayerActionManager para evitar que el botón A
@@ -101,19 +127,47 @@ public class Interactable : MonoBehaviour
             }
         }
 
+        Debug.Log($"[Interactable:{name}] 📣 Disparando OnInteract event (listeners={OnInteract?.GetPersistentEventCount()})");
         OnInteract?.Invoke(interactor);
 
-        // TODO: Implementar HandleInteraction en NPCBehaviourManagerV2
-        // if (_npcManager != null && _npcManager.HandleInteraction(interactor))
-        //     return;
+        // Modo HandOffToTarget: delegar al NPCBehaviourManagerV2
+        if (mode == InteractableMode.HandOffToTarget)
+        {
+            Debug.Log($"[Interactable:{name}] 🎯 Modo HandOffToTarget - buscando NPCBehaviourManagerV2");
+            
+            // Intentar obtener _npcManager si es NULL
+            if (_npcManager == null)
+            {
+                _npcManager = GetComponent<NPCBehaviourManagerV2>();
+                Debug.Log($"[Interactable:{name}] 🔍 _npcManager obtenido: {(_npcManager != null ? "✅ OK" : "❌ NULL")}");
+            }
+            
+            if (_npcManager != null)
+            {
+                Debug.Log($"[Interactable:{name}] ➡️ Delegando a NPCBehaviourManagerV2.HandleInteraction()");
+                _npcManager.HandleInteraction(interactor);
+                return;
+            }
+            else
+            {
+                Debug.LogError($"[Interactable:{name}] ❌ Modo HandOffToTarget pero NO hay NPCBehaviourManagerV2 en el GameObject");
+            }
+        }
 
+        Debug.Log($"[Interactable:{name}] 🔀 Evaluando mode={mode}");
+        
         switch (mode)
         {
             case InteractableMode.OpenDialogue:
+                Debug.Log($"[Interactable:{name}] 📖 Modo OpenDialogue");
                 StartDialogue();
                 break;
             case InteractableMode.OpenDialogueWithOptions:
+                Debug.Log($"[Interactable:{name}] 🔀 Modo OpenDialogueWithOptions");
                 StartDialogueWithOptions();
+                break;
+            default:
+                Debug.Log($"[Interactable:{name}] ⚠️ Modo '{mode}' no manejado - debe usar OnInteract event");
                 break;
         }
     }
@@ -142,13 +196,17 @@ public class Interactable : MonoBehaviour
 
     void StartDialogue()
     {
+        Debug.Log($"[Interactable:{name}] 📖 StartDialogue - dialogue={dialogue?.name}");
+        
         var dm = DialogueManager.Instance;
         if (dialogue && dm != null)
         {
+            Debug.Log($"[Interactable:{name}] ✅ Iniciando diálogo: {dialogue.name}");
             OnStarted?.Invoke();
             GameState.Push(GamePhase.Dialogue);
             dm.StartDialogue(dialogue, transform, () =>
             {
+                Debug.Log($"[Interactable:{name}] 🔚 Diálogo terminado");
                 OnFinished?.Invoke();
                 if (GameState.Is(GamePhase.Dialogue)) GameState.Pop(GamePhase.Dialogue);
                 AfterUse();

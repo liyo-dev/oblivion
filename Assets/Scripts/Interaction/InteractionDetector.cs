@@ -55,8 +55,20 @@ public class InteractionDetector : MonoBehaviour
         bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
         bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
         bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu y MainMenu
+        
         if (dialogueActive || choicePromptActive || menusBlock)
         {
+            // Log solo cuando cambia el estado
+            if (current != null)
+            {
+                if (dialogueActive)
+                    Debug.Log("[InteractionDetector] 💬 Diálogo activo, desenfocando interactable");
+                else if (choicePromptActive)
+                    Debug.Log("[InteractionDetector] ⚠️ SavePrompt activo, desenfocando interactable");
+                else if (menusBlock)
+                    Debug.Log("[InteractionDetector] 🚫 Menús bloqueando (CanInteractGlobally=false), desenfocando interactable");
+            }
+            
             SetCurrent(null);
             return;
         }
@@ -75,6 +87,8 @@ public class InteractionDetector : MonoBehaviour
 
     private void OnInteract(InputAction.CallbackContext _)
     {
+        Debug.Log($"[InteractionDetector] 🔘 OnInteract llamado - IsCarrying={_carrySystem?.IsCarrying}, current={current?.name}");
+        
         // Si está cargando algo, soltar
         if (_carrySystem != null && _carrySystem.IsCarrying)
         {
@@ -84,7 +98,18 @@ public class InteractionDetector : MonoBehaviour
 
         // Si no está cargando, intentar interactuar con objeto enfocado
         if (current != null && current.CanInteract(gameObject))
+        {
+            Debug.Log($"[InteractionDetector] ✅ Interactuando con: {current.name}");
             current.Interact(gameObject);
+        }
+        else if (current != null)
+        {
+            Debug.LogWarning($"[InteractionDetector] ⚠️ {current.name} NO puede interactuar (CanInteract=false)");
+        }
+        else
+        {
+            Debug.LogWarning($"[InteractionDetector] ⚠️ No hay objeto enfocado (current=null)");
+        }
     }
 
     private void SetCurrent(Interactable next)
