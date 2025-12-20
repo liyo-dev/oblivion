@@ -25,10 +25,6 @@ namespace Game.NPC
         [Tooltip("Layer de detección de ítems")]
         [SerializeField] private LayerMask detectionLayer = ~0;
         
-        [Tooltip("Intervalo de escaneo en segundos")]
-        [Min(0.1f)]
-        [SerializeField] private float scanInterval = 0.5f;
-        
         [Header("Tiempos de Animación")]
         [Tooltip("Duración de la animación de soltar el objeto")]
         [SerializeField] private float dropAnimationDuration = 0.5f;
@@ -43,10 +39,12 @@ namespace Game.NPC
         [SerializeField] private bool debugMode = false;
         [SerializeField] private bool drawGizmos = false;
         
-        private float _nextScanTime;
-        private bool _isScanning;
+        private bool _playerInRange;
         private bool _isProcessingDelivery;
         private QuestManager _cachedQuestManager;
+        private SphereCollider _triggerCollider;
+        private PlayerCarrySystem _playerCarrySystem;
+        private bool _subscribedToDropEvent;
         
         void Awake()
         {
@@ -59,6 +57,15 @@ namespace Game.NPC
                     Debug.LogError($"[NPCItemDetector:{name}] No se encontró NPCBehaviourManagerV2");
                 }
             }
+            
+            // Crear trigger collider para detección
+            _triggerCollider = gameObject.GetComponent<SphereCollider>();
+            if (_triggerCollider == null)
+            {
+                _triggerCollider = gameObject.AddComponent<SphereCollider>();
+            }
+            _triggerCollider.radius = detectionRadius;
+            _triggerCollider.isTrigger = true;
         }
         
         void Start()
@@ -76,30 +83,76 @@ namespace Game.NPC
                 return;
             }
             
-            _isScanning = true;
+            _playerInRange = false;
             _isProcessingDelivery = false;
-            _nextScanTime = Time.time + scanInterval;
             
             // Cachear QuestManager
             _cachedQuestManager = QuestManager.Instance;
             
             if (debugMode)
-                Debug.Log($"[NPCItemDetector:{name}] Sistema de detección activado. Radio: {detectionRadius}, Intervalo: {scanInterval}s");
+                Debug.Log($"[NPCItemDetector:{name}] Sistema de detección activado. Radio: {detectionRadius}");
         }
         
-        void Update()
+        void OnTriggerEnter(Collider other)
         {
-            if (!_isScanning)
-                return;
-            
-            if (Time.time < _nextScanTime)
-                return;
-            
-            _nextScanTime = Time.time + scanInterval;
-            ScanForItems();
+            if (other.CompareTag("Player"))
+            {
+                _playerInRange = true;
+                
+                // Suscribirse al evento de drop si no lo estamos ya
+                if (!_subscribedToDropEvent && PlayerService.TryGetComponent(out PlayerCarrySystem carrySystem))
+                {
+                    _playerCarrySystem = carrySystem;
+                    _playerCarrySystem.OnObjectDropped += OnPlayerDroppedObject;
+                    _subscribedToDropEvent = true;
+                }
+                
+                if (debugMode)
+                    Debug.Log($"[NPCItemDetector:{name}] Player entró en rango");
+            }
         }
         
-        void ScanForItems()
+        void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag("Player"))
+            {
+                _playerInRange = false;
+                
+                // Desuscribirse del evento
+                if (_subscribedToDropEvent && _playerCarrySystem != null)
+                {
+                    _playerCarrySystem.OnObjectDropped -= OnPlayerDroppedObject;
+                    _subscribedToDropEvent = false;
+                    _playerCarrySystem = null;
+                }
+                
+                if (debugMode)
+                    Debug.Log($"[NPCItemDetector:{name}] Player salió del rango");
+            }
+        }
+        
+        /// <summary>
+        /// Handler del evento OnObjectDropped del PlayerCarrySystem.
+        /// Se ejecuta cuando el player suelta un objeto.
+        /// </summary>
+        void OnPlayerDroppedObject(GameObject droppedObject)
+        {
+            // Solo procesar si estamos en rango y no estamos ya procesando
+            if (!_playerInRange || _isProcessingDelivery)
+                return;
+            
+            if (droppedObject != null)
+            {
+                // Verificar si el objeto tiene SimpleQuestPickup
+                var pickup = droppedObject.GetComponent<SimpleQuestPickup>();
+                if (pickup != null)
+                {
+                    CheckItemForQuest(droppedObject);
+                }
+            }
+        }
+        
+        void CheckItemForQuest(GameObject itemObject)
         {
             // Early exit si ya estamos procesando una entrega
             if (_isProcessingDelivery)
@@ -120,72 +173,58 @@ namespace Game.NPC
                     return;
             }
             
-            // Escanear objetos cercanos (máximo 10 para evitar sobrecarga)
-            var colliders = Physics.OverlapSphere(transform.position, detectionRadius, detectionLayer);
-            
-            // Early exit si no hay nada cercano
-            if (colliders.Length == 0)
+            // Buscar SimpleQuestPickup en el objeto
+            var pickup = itemObject.GetComponent<SimpleQuestPickup>();
+            if (pickup == null)
                 return;
             
-            foreach (var col in colliders)
+            // Verificar ángulo de visión (si no es 180°)
+            if (detectionAngle < 180f)
             {
-                // Buscar SimpleQuestPickup en el objeto
-                var pickup = col.GetComponent<SimpleQuestPickup>();
-                if (pickup == null)
+                Vector3 directionToItem = itemObject.transform.position - transform.position;
+                float dot = Vector3.Dot(transform.forward, directionToItem.normalized);
+                float angleThreshold = Mathf.Cos(detectionAngle * Mathf.Deg2Rad);
+                
+                if (dot < angleThreshold)
+                    return; // Fuera del ángulo de visión
+            }
+            
+        // Buscar quest activa que coincida
+            for (int i = 0; i < questConfig.questChain.Length; i++)
+            {
+                var entry = questConfig.questChain[i];
+                
+                // Solo procesar quests con auto-detección activada
+                if (!entry.autoDetectItemDelivery)
                     continue;
                 
-                // Verificar ángulo de visión (si no es 180°)
-                if (detectionAngle < 180f)
+                // Verificar que la quest esté activa
+                if (entry.questData == null)
+                    continue;
+                
+                string questId = entry.questData.questId;
+                var questState = _cachedQuestManager.GetState(questId);
+                
+                if (questState != QuestState.Active)
+                    continue;
+                
+                // Verificar tag del ítem (si está configurado)
+                if (!string.IsNullOrEmpty(entry.itemTag))
                 {
-                    Vector3 directionToItem = col.transform.position - transform.position;
-                    // Evitar normalización si es innecesario usando dot product
-                    float dot = Vector3.Dot(transform.forward, directionToItem.normalized);
-                    float angleThreshold = Mathf.Cos(detectionAngle * Mathf.Deg2Rad);
-                    
-                    if (dot < angleThreshold)
-                        continue; // Fuera del ángulo de visión
+                    if (!itemObject.CompareTag(entry.itemTag))
+                        continue;
                 }
                 
-                // Buscar quest activa que coincida
-                for (int i = 0; i < questConfig.questChain.Length; i++)
-                {
-                    var entry = questConfig.questChain[i];
-                    
-                    // Solo procesar quests con auto-detección activada
-                    if (!entry.autoDetectItemDelivery)
-                        continue;
-                    
-                    // Verificar que la quest esté activa
-                    if (entry.questData == null)
-                        continue;
-                    
-                    string questId = entry.questData.questId;
-                    var questState = _cachedQuestManager.GetState(questId);
-                    
-                    if (questState != QuestState.Active)
-                        continue;
-                    
-                    // Verificar tag del ítem (si está configurado)
-                    if (!string.IsNullOrEmpty(entry.itemTag))
-                    {
-                        if (!col.CompareTag(entry.itemTag))
-                            continue;
-                    }
-                    
-                    // ¡Encontrado! Completar el paso
-                    if (debugMode)
-                        Debug.Log($"[NPCItemDetector:{name}] Ítem detectado para quest {questId}, completando paso {entry.itemDeliveryStepIndex}");
-                    
-                    // Marcar que estamos procesando para evitar detecciones duplicadas
-                    _isProcessingDelivery = true;
-                    
-                    // IMPORTANTE: Procesar la entrega de forma asíncrona para que las animaciones se reseteen correctamente
-                    StartCoroutine(ProcessItemDelivery(col.gameObject, questId, entry.itemDeliveryStepIndex, entry));
-                    
-                    // Detener el escaneo - ya encontramos el item
-                    _isScanning = false;
-                    return;
-                }
+                // ¡Encontrado! Completar el paso
+                if (debugMode)
+                    Debug.Log($"[NPCItemDetector:{name}] Ítem detectado para quest {questId}, completando paso {entry.itemDeliveryStepIndex}");
+                
+                // Marcar que estamos procesando para evitar detecciones duplicadas
+                _isProcessingDelivery = true;
+                
+                // IMPORTANTE: Procesar la entrega de forma asíncrona para que las animaciones se reseteen correctamente
+                StartCoroutine(ProcessItemDelivery(itemObject, questId, entry.itemDeliveryStepIndex, entry));
+                return;
             }
         }
         
@@ -374,6 +413,15 @@ namespace Game.NPC
             
             if (debugMode)
                 Debug.Log($"[NPCItemDetector:{name}] Estado de carrying limpiado");
+        }
+        
+        void OnDestroy()
+        {
+            // Asegurar que nos desuscribimos del evento
+            if (_subscribedToDropEvent && _playerCarrySystem != null)
+            {
+                _playerCarrySystem.OnObjectDropped -= OnPlayerDroppedObject;
+            }
         }
     }
 }

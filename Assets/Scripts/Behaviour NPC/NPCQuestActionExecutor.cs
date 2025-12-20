@@ -21,6 +21,9 @@ namespace Game.NPC
         [Header("Debug")]
         [SerializeField] private bool debugMode = false;
         
+        // Control de ejecución
+        private bool _isExecutingPostAction = false;
+        
         void Awake()
         {
             if (npcManager == null)
@@ -140,6 +143,12 @@ namespace Game.NPC
         /// </summary>
         public void ExecutePostQuestAction(int questIndex)
         {
+            if (_isExecutingPostAction)
+            {
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] Ya hay una post-action ejecutándose, ignorando");
+                return;
+            }
+            
             if (npcManager == null || npcManager.Configuration == null)
             {
                 Debug.LogError($"[NPCQuestActionExecutor:{name}] NPC Manager o Configuration no disponible");
@@ -175,23 +184,25 @@ namespace Game.NPC
                 return;
             }
             
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor:{name}] ExecutePostQuestAction - questIndex={questIndex}, actionType={action.actionType}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ▶️ ExecutePostQuestAction - questIndex={questIndex}, actionType={action.actionType}");
             
-            // Ejecutar directamente la acción
+            // Ejecutar la acción con bloqueo
             StartCoroutine(ExecuteActionCoroutine(action, questIndex));
         }
         
         private IEnumerator ExecuteActionCoroutine(QuestPostAction action, int questIndex)
         {
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor:{name}] ExecuteActionCoroutine - actionType={action.actionType}");
+            _isExecutingPostAction = true;
+            
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🎬 ExecuteActionCoroutine - actionType={action.actionType}");
+            
+            // Esperar un frame para asegurar que todos los callbacks de CompleteQuest han terminado
+            yield return null;
             
             // 1. Diálogo pre-acción
             if (action.dialogueBeforeAction != null)
             {
-                if (debugMode)
-                    Debug.Log($"[NPCQuestActionExecutor] Reproduciendo diálogo pre-acción");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💬 Reproduciendo diálogo pre-acción");
                 
                 var dialogueManager = DialogueManager.Instance;
                 if (dialogueManager != null)
@@ -203,18 +214,20 @@ namespace Game.NPC
                         yield return null;
                     }
                 }
+                
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Diálogo pre-acción completado");
             }
             
             // 2. Espera opcional
             if (action.delayBeforeAction > 0f)
             {
-                if (debugMode)
-                    Debug.Log($"[NPCQuestActionExecutor] Esperando {action.delayBeforeAction}s");
-                
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ⏳ Esperando {action.delayBeforeAction}s");
                 yield return new WaitForSeconds(action.delayBeforeAction);
             }
             
             // 3. Ejecutar acción según tipo
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ⚙️ Ejecutando acción: {action.actionType}");
+            
             switch (action.actionType)
             {
                 case QuestActionType.Move:
@@ -238,25 +251,50 @@ namespace Game.NPC
                     break;
             }
             
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor] Acción post-quest {questIndex} completada");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Acción {action.actionType} completada");
+            
+            // Asegurar que el NPC salga del estado cinemático y vuelva a Idle
+            if (npcManager != null)
+            {
+                npcManager.ExitCinematic();
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🔄 NPC forzado a salir de cinemática → Idle");
+            }
+            
+            // Disparar evento onPostActionCompleted si está configurado
+            var questConfig = npcManager?.Configuration?.questConfig;
+            if (questConfig != null && questConfig.questChain != null)
+            {
+                if (questIndex >= 0 && questIndex < questConfig.questChain.Length)
+                {
+                    var entry = questConfig.questChain[questIndex];
+                    // Usar reflexión para acceder al evento (workaround para Unity)
+                    var fieldInfo = entry.GetType().GetField("onPostActionCompleted");
+                    if (fieldInfo != null)
+                    {
+                        var unityEvent = fieldInfo.GetValue(entry) as UnityEngine.Events.UnityEvent;
+                        unityEvent?.Invoke();
+                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📣 Evento onPostActionCompleted disparado");
+                    }
+                }
+            }
+            
+            _isExecutingPostAction = false;
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✨ Post-action {questIndex} COMPLETADA");
         }
         
         private IEnumerator ExecuteMoveAction(QuestPostAction action)
         {
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor:{name}] ExecuteMoveAction iniciado");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado");
             
             Vector3 targetPosition = GetTargetPosition(action);
             
             if (targetPosition == Vector3.zero)
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor] No se pudo obtener posición de destino para Move");
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ No se pudo obtener posición de destino para Move");
                 yield break;
             }
             
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor:{name}] Moviendo a {targetPosition}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Target position: {targetPosition}, NPC actual: {transform.position}, Distancia: {Vector3.Distance(transform.position, targetPosition):F2}m");
             
             // Esperar un frame para asegurar que cualquier cinemática en curso ha terminado
             yield return null;
@@ -264,25 +302,29 @@ namespace Game.NPC
             // Forzar salida de cinemática si el NPC está en ella
             if (npcManager.Context != null && npcManager.Context.IsInCinematic)
             {
-                if (debugMode)
-                    Debug.Log($"[NPCQuestActionExecutor:{name}] NPC está en cinemática, forzando salida");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🎬 NPC está en cinemática, forzando salida");
                 
                 npcManager.ExitCinematic();
                 yield return new WaitForSeconds(0.2f); // Esperar a que se procese la transición
             }
             
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC listo para moverse - Context.IsInCinematic={npcManager.Context?.IsInCinematic}");
+            
             // Crear secuencia de movimiento
             var moveSequence = new States.MoveToPoscionSequence(
+                npcManager,
                 targetPosition,
                 action.maxMovementDuration,
-                action.turnAroundOnArrival
+                action.turnAroundOnArrival,
+                action.walkDisplayDuration
             );
+            
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🎯 MoveToPoscionSequence creada - MaxDuration={action.maxMovementDuration}s, WalkDisplay={action.walkDisplayDuration}s, TurnAround={action.turnAroundOnArrival}");
             
             // Iniciar movimiento usando la secuencia cinemática
             npcManager.StartCinematicSequence(moveSequence);
             
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor:{name}] Secuencia de movimiento iniciada, esperando completación...");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ▶️ Secuencia de movimiento iniciada, esperando completación...");
             
             // Esperar a que llegue (con timeout)
             float timeout = action.maxMovementDuration + 2f;
@@ -290,17 +332,24 @@ namespace Game.NPC
             
             while (!moveSequence.IsCompleted && elapsed < timeout)
             {
+                // Log cada segundo para monitorear progreso
+                if (Mathf.FloorToInt(elapsed) != Mathf.FloorToInt(elapsed + Time.deltaTime))
+                {
+                    float remainingDistance = Vector3.Distance(transform.position, targetPosition);
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ⏱️ Movimiento en progreso: {elapsed:F1}s / {timeout:F1}s, Distancia restante: {remainingDistance:F2}m");
+                }
+                
                 yield return null;
                 elapsed += Time.deltaTime;
             }
             
             if (elapsed >= timeout)
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] Movimiento alcanzó timeout de {timeout}s");
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏰ Movimiento alcanzó timeout de {timeout}s");
             }
-            else if (debugMode)
+            else
             {
-                Debug.Log($"[NPCQuestActionExecutor:{name}] Movimiento completado en {elapsed:F2}s");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Movimiento completado en {elapsed:F2}s, Posición final: {transform.position}");
             }
         }
         
@@ -379,28 +428,28 @@ namespace Game.NPC
             // Prioridad 1: SpawnAnchor por ID (sistema existente)
             if (useAnchorSystem && !string.IsNullOrEmpty(action.targetAnchorName))
             {
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🔍 Buscando SpawnAnchor: '{action.targetAnchorName}'");
+                
                 var spawnAnchor = SpawnAnchor.FindById(action.targetAnchorName);
                 if (spawnAnchor != null)
                 {
-                    if (debugMode)
-                        Debug.Log($"[NPCQuestActionExecutor] SpawnAnchor encontrado: {action.targetAnchorName}");
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ SpawnAnchor encontrado: {action.targetAnchorName} en posición {spawnAnchor.transform.position}");
                     return spawnAnchor.transform.position;
                 }
                 else
                 {
-                    Debug.LogWarning($"[NPCQuestActionExecutor] SpawnAnchor con ID '{action.targetAnchorName}' no encontrado en AnchorRegistry");
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ SpawnAnchor con ID '{action.targetAnchorName}' no encontrado en AnchorRegistry");
                 }
             }
             
             // Prioridad 2: Transform directo
             if (action.targetTransform != null)
             {
-                if (debugMode)
-                    Debug.Log($"[NPCQuestActionExecutor] Usando Transform directo: {action.targetTransform.name}");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Usando Transform directo: {action.targetTransform.name} en posición {action.targetTransform.position}");
                 return action.targetTransform.position;
             }
             
-            Debug.LogError($"[NPCQuestActionExecutor] No se pudo obtener target position (anchor y transform son NULL)");
+            Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ No se pudo obtener target position (anchor y transform son NULL)");
             return Vector3.zero;
         }
     }

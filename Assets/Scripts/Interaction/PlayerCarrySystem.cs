@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using Invector.vCharacterController;
+using Core;
 
 [RequireComponent(typeof(Animator))]
 public class PlayerCarrySystem : MonoBehaviour
@@ -19,8 +20,11 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private float attachDelay = 0.5f;
     [SerializeField] private float throwAnimationDuration = 0.3f;
 
-    [Header("Interacción para soltar")]
-    [SerializeField] private bool dropOnInteract = true;
+    /// <summary>
+    /// Evento disparado cuando el player suelta un objeto.
+    /// Parámetro: GameObject que fue soltado.
+    /// </summary>
+    public System.Action<GameObject> OnObjectDropped;
 
     private Animator _animator;
     private PlayerActionManager _actionManager;
@@ -41,6 +45,29 @@ public class PlayerCarrySystem : MonoBehaviour
             cp.SetParent(transform);
             cp.localPosition = new Vector3(0, 1.2f, 0.5f);
             carryPoint = cp;
+        }
+        
+        // Suscribirse al evento de Interact del GamepadInputReader
+        GamepadInputReader.OnInput += OnGamepadInput;
+    }
+    
+    void OnDestroy()
+    {
+        // Desuscribirse para evitar memory leaks
+        GamepadInputReader.OnInput -= OnGamepadInput;
+    }
+    
+    void OnGamepadInput(GamepadInputReader.InputEvent inputEvent)
+    {
+        // Solo procesar cuando se presiona el botón de interactuar
+        if (inputEvent.Type == GamepadInputReader.InputEventType.Interact && 
+            inputEvent.Phase == UnityEngine.InputSystem.InputActionPhase.Performed)
+        {
+            // Si estamos cargando, soltar el objeto
+            if (_isCarrying)
+            {
+                DropObject();
+            }
         }
     }
 
@@ -142,6 +169,9 @@ public class PlayerCarrySystem : MonoBehaviour
             _animator.SetLayerWeight(animatorLayer, 0f);
         }
 
+        // Disparar evento antes de limpiar la referencia
+        OnObjectDropped?.Invoke(_carriedObject);
+
         _carriedObject = null;
         _carriedRigidbody = null;
         _carriedPickupObject = null;
@@ -166,12 +196,6 @@ public class PlayerCarrySystem : MonoBehaviour
     public bool IsCarrying => _isCarrying;
     public bool IsPickingUp => _isPickingUp;
     public GameObject CarriedObject => _carriedObject;
-
-    void Update()
-    {
-        if (dropOnInteract && _isCarrying && Input.GetKeyDown(KeyCode.A))
-            DropObject();
-    }
 
     void OnDrawGizmos()
     {

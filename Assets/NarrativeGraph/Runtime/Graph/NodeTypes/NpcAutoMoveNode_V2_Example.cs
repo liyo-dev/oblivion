@@ -118,7 +118,7 @@ public sealed class NpcAutoMoveNode_V2 : NarrativeNode
         if (returnToOrigin)
         {
             Log("Regresando al origen...");
-            var returnSequence = new Game.NPC.States.MoveToPoscionSequence(originPosition, maxWalkSeconds);
+            var returnSequence = new Game.NPC.States.MoveToPoscionSequence(npcBehaviour, originPosition, maxWalkSeconds);
             npcBehaviour.StartCinematicSequence(returnSequence);
 
             while (!returnSequence.IsCompleted)
@@ -187,7 +187,7 @@ public sealed class NpcAutoMoveNode_V2 : NarrativeNode
         else
         {
             // Secuencia simple
-            sequence = new Game.NPC.States.MoveToPoscionSequence(destination, maxWalkSeconds, turnAroundOnArrival);
+            sequence = new Game.NPC.States.MoveToPoscionSequence(npcBehaviour, destination, maxWalkSeconds, turnAroundOnArrival);
         }
 
         // Iniciar secuencia

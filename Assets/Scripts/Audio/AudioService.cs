@@ -58,6 +58,9 @@ public sealed class AudioService : MonoBehaviour
 
     // Recuerdo qué clip pidió la última escena base (no aditiva)
     AudioClip _lastRequestedSceneClip;
+    
+    // --- Footstep alternation ---
+    int _footstepIndex = 0;
 
     // --- reintentos de wiring de señales ---
     bool _signalsWired = false;
@@ -624,7 +627,83 @@ public sealed class AudioService : MonoBehaviour
     }
 
     // ===========================================================
-    // SFX
+    // SFX - API pública para reproducir efectos de sonido
+    
+    /// <summary>
+    /// Reproduce un SFX por clave de evento configurada en el AudioGraphProfile.
+    /// Ejemplo: PlaySFX("Ambience_Cave"), PlaySFX("Spell01"), PlaySFX("FootStep00")
+    /// </summary>
+    public void PlaySFX(string eventKey, float volume = 1f, Vector3? worldPosition = null)
+    {
+        if (string.IsNullOrWhiteSpace(eventKey)) return;
+        
+        AudioClip clip = FindSfxClipByKey(eventKey);
+        if (clip != null)
+        {
+            if (worldPosition.HasValue)
+                PlaySFXAt(clip, worldPosition.Value, volume);
+            else
+                PlaySFX(clip, volume);
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] SFX no encontrado para clave '{eventKey}'.");
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce un footstep alternando automáticamente entre FootStep00-04.
+    /// Llama desde el controlador de movimiento cada vez que el pie toca el suelo.
+    /// </summary>
+    public void PlayFootstep(float volume = 1f, Vector3? worldPosition = null)
+    {
+        string key = $"FootStep0{_footstepIndex}";
+        _footstepIndex = (_footstepIndex + 1) % 5; // Alterna entre 0-4
+        PlaySFX(key, volume, worldPosition);
+    }
+    
+    /// <summary>
+    /// Reproduce un spell SFX por número.
+    /// Ejemplo: PlaySpell(2) → reproduce Spell_02
+    /// </summary>
+    public void PlaySpell(int spellNumber, float volume = 1f, Vector3? worldPosition = null)
+    {
+        string key = $"Spell0{spellNumber}";
+        PlaySFX(key, volume, worldPosition);
+    }
+    
+    /// <summary>
+    /// Reproduce un SFX de ambiente por clave.
+    /// Ejemplo: PlayAmbience("Ambience_Cave")
+    /// </summary>
+    public void PlayAmbience(string ambienceKey, float volume = 1f, Vector3? worldPosition = null)
+    {
+        PlaySFX(ambienceKey, volume, worldPosition);
+    }
+    
+    /// <summary>
+    /// Busca un AudioClip en el profile por clave de evento.
+    /// </summary>
+    AudioClip FindSfxClipByKey(string key)
+    {
+        if (profile == null || string.IsNullOrWhiteSpace(key)) return null;
+        
+        for (int i = 0; i < profile.eventSfx.Count; i++)
+        {
+            var r = profile.eventSfx[i];
+            if (r != null &&
+                !string.IsNullOrWhiteSpace(r.eventKey) &&
+                string.Equals(r.eventKey, key, StringComparison.OrdinalIgnoreCase) &&
+                r.sfx != null)
+            {
+                return r.sfx;
+            }
+        }
+        return null;
+    }
+    
+    // ===========================================================
+    // SFX (métodos internos y legacy)
     public void PlaySFX(AudioClip clip, float volume = 1f)
     {
         if (!clip) return;

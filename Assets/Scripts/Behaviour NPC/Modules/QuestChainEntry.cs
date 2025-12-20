@@ -69,6 +69,9 @@ namespace Game.NPC.Modules
         [Tooltip("Se dispara cuando termina el diálogo de oferta (dlgBefore) para esta etapa de la cadena.")]
         public UnityEvent onOfferDialogueFinished;
         
+        [Tooltip("Se dispara cuando termina la post-action (movimiento, teleport, etc).")]
+        public UnityEvent onPostActionCompleted;
+        
         [Header("Acción Post-Quest")]
         [Tooltip("Qué hace el NPC automáticamente cuando se completa esta quest")]
         public QuestPostAction postAction = new QuestPostAction();
@@ -111,6 +114,10 @@ namespace Game.NPC.Modules
         [Min(1f)]
         public float maxMovementDuration = 15f;
         
+        [Tooltip("Tiempo que camina visible antes del fade+teleport (999 = camina todo el trayecto sin fade)")]
+        [Min(0.5f)]
+        public float walkDisplayDuration = 3f;
+        
         [Tooltip("Girar 180° al llegar")]
         public bool turnAroundOnArrival = false;
         
@@ -126,6 +133,21 @@ namespace Game.NPC.Modules
         [Tooltip("Espera antes de ejecutar la acción")]
         [Min(0f)]
         public float delayBeforeAction = 0f;
+        
+        [Header("Screen Fade")]
+        [Tooltip("Hacer fade a negro antes de la acción")]
+        public bool fadeOutBeforeAction = false;
+        
+        [Tooltip("Duración del fade a negro (segundos)")]
+        [Min(0.1f)]
+        public float fadeOutDuration = 0.5f;
+        
+        [Tooltip("Hacer fade desde negro después de la acción")]
+        public bool fadeInAfterAction = false;
+        
+        [Tooltip("Duración del fade desde negro (segundos)")]
+        [Min(0.1f)]
+        public float fadeInDuration = 0.5f;
         
         [Header("Custom Action")]
         [Tooltip("Evento personalizado (si actionType = Custom)")]

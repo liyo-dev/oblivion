@@ -36,6 +36,12 @@ namespace Invector.vCharacterController
         [SerializeField] private float impulseMoving = 1.2f;
         [SerializeField] private float impulseDamp   = 10f;
 
+        [Header("SFX")]
+        [SerializeField] private AudioClip jumpSfx;
+        [SerializeField] private AudioClip landSfx;
+        [SerializeField] private AudioClip attackSfx;
+        [SerializeField] private float sfxVolume = 1f;
+
         [Header("Debug")]
         [SerializeField] private bool debugLogs = false;
 
@@ -51,6 +57,7 @@ namespace Invector.vCharacterController
         private float nextPhysicalTime = 0f;
         private Vector3 extraImpulse = Vector3.zero;
         private Coroutine upperWeightCo;
+        private bool wasGrounded = true;
 
         [SerializeField] private bool autoAimMelee = true;
         private ITargetProvider _targeting;
@@ -164,6 +171,10 @@ namespace Invector.vCharacterController
             jumpCounter = jumpTimer;
             isJumping = true;
 
+            // Play jump SFX
+            if (jumpSfx != null)
+                PlaySFX(jumpSfx);
+
             if (input.sqrMagnitude < 0.1f) animator.CrossFadeInFixedTime("Jump", 0.1f, 0);
             else                            animator.CrossFadeInFixedTime("JumpMove", 0.2f, 0);
         }
@@ -198,6 +209,10 @@ namespace Invector.vCharacterController
             }
 
             animator.CrossFadeInFixedTime(state, attackFade, 0);
+
+            // Play attack SFX
+            if (attackSfx != null)
+                PlaySFX(attackSfx);
 
             var hitbox = GetComponentInChildren<IAttackHitbox>(true);
             if (hitbox != null) hitbox.ArmForSeconds(0.25f);
@@ -356,6 +371,36 @@ namespace Invector.vCharacterController
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;
 
+        // ========================= SFX Helper =========================
+        private void PlaySFX(AudioClip clip)
+        {
+            if (clip == null) return;
+            
+            // Try to use AudioService via reflection (avoid hard dependency on main assembly)
+            var audioServiceType = System.Type.GetType("AudioService");
+            if (audioServiceType != null)
+            {
+                var instanceProperty = audioServiceType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (instanceProperty != null)
+                {
+                    var instance = instanceProperty.GetValue(null);
+                    if (instance != null)
+                    {
+                        var playSfxMethod = audioServiceType.GetMethod("PlaySFX", new System.Type[] { typeof(AudioClip), typeof(float), typeof(Vector3) });
+                        if (playSfxMethod != null)
+                        {
+                            playSfxMethod.Invoke(instance, new object[] { clip, sfxVolume, transform.position });
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // Fallback: play at point
+            AudioSource.PlayClipAtPoint(clip, transform.position, sfxVolume);
+        }
+
+        // ========================= Lifecycle =========================
         // Limpiar coroutine y asegurar que el peso del layer no quede atascado si el objeto se desactiva o destruye
         private void OnDisable()
         {

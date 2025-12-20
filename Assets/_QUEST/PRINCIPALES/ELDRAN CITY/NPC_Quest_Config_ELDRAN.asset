@@ -49,6 +49,10 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 0
+      fadeInDuration: 0.5
       customAction:
         m_PersistentCalls:
           m_Calls: []
@@ -86,6 +90,10 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 0
+      fadeInDuration: 0.5
       customAction:
         m_PersistentCalls:
           m_Calls: []
@@ -119,10 +127,14 @@ MonoBehaviour:
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
-      turnAroundOnArrival: 0
+      turnAroundOnArrival: 1
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 1
+      fadeInDuration: 1
       customAction:
         m_PersistentCalls:
           m_Calls: []
@@ -137,7 +149,7 @@ MonoBehaviour:
     requiredItem: {fileID: 0}
     requiredAmount: 0
     consumeItemOnComplete: 0
-    dlgBefore: {fileID: 11400000, guid: b754cfa357b199d44a1c01b3ee6a09d9, type: 2}
+    dlgBefore: {fileID: 0}
     dlgInProgress: {fileID: 0}
     dlgTurnIn: {fileID: 0}
     dlgCompleted: {fileID: 0}
@@ -160,6 +172,10 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 0
+      fadeInDuration: 0.5
       customAction:
         m_PersistentCalls:
           m_Calls: []
@@ -197,6 +213,10 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 0
+      fadeInDuration: 0.5
       customAction:
         m_PersistentCalls:
           m_Calls: []
@@ -234,6 +254,10 @@ MonoBehaviour:
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
+      fadeOutBeforeAction: 0
+      fadeOutDuration: 0.5
+      fadeInAfterAction: 0
+      fadeInDuration: 0.5
       customAction:
         m_PersistentCalls:
           m_Calls: []

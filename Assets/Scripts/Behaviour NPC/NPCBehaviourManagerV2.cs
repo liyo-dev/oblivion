@@ -295,11 +295,16 @@ namespace Game.NPC
         }
         
         /// <summary>
-        /// Mueve el NPC a una posición específica (crea una secuencia simple)
+        /// Mueve el NPC a una posición específica con fade y teletransporte
         /// </summary>
-        public void MoveToPosition(Vector3 targetPosition, float maxDuration = 15f, bool turnAroundOnArrival = false, Action onComplete = null)
+        /// <param name="targetPosition">Posición destino</param>
+        /// <param name="walkDisplayDuration">Segundos que se muestra caminando antes del fade (por defecto 2s)</param>
+        /// <param name="maxDuration">Duración máxima total (timeout)</param>
+        /// <param name="turnAroundOnArrival">Girar 180° al llegar</param>
+        /// <param name="onComplete">Callback al completar</param>
+        public void MoveToPosition(Vector3 targetPosition, float walkDisplayDuration = 2f, float maxDuration = 15f, bool turnAroundOnArrival = false, Action onComplete = null)
         {
-            var sequence = new States.MoveToPoscionSequence(targetPosition, maxDuration, turnAroundOnArrival);
+            var sequence = new States.MoveToPoscionSequence(this, targetPosition, maxDuration, turnAroundOnArrival, walkDisplayDuration);
             
             // Si se proporciona callback, monitorearlo
             if (onComplete != null)

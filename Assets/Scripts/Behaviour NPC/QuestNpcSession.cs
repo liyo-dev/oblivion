@@ -30,6 +30,8 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
     public void BeginSession(GameObject interactor, Action onFinish)
     {
         _onFinish = onFinish;
+        
+        Debug.Log($"[QuestNpcSession:{name}] 🔔 BeginSession llamado - quest={quest?.questId}");
 
         if (DialogueManager.Instance == null || quest == null) { End(); return; }
         if (lockedAtStart) { onOfferDialogueStarted?.Invoke(); StartDlg(dlgAvailable, End); return; }
@@ -38,6 +40,8 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
         if (qm == null) { End(); return; }
 
         var state = qm.GetState(quest.questId);
+        
+        Debug.Log($"[QuestNpcSession:{name}] 📊 Quest state: {state}");
 
         switch (state)
         {
@@ -78,6 +82,7 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
                 break;
 
             case QuestState.Completed:
+                Debug.Log($"[QuestNpcSession:{name}] ✅ Quest completada, reproduciendo dlgCompleted");
                 StartDlg(dlgCompleted, End);
                 break;
         }
@@ -94,5 +99,25 @@ public class QuestNpcSession : MonoBehaviour, IInteractionSession
     {
         var cb = _onFinish; _onFinish = null;
         cb?.Invoke();
+    }
+    
+    /// <summary>
+    /// Inicia la siguiente quest (nextQuestToOffer).
+    /// Llámalo desde onPostActionCompleted para encadenar quests después del post-action.
+    /// </summary>
+    public void StartNextQuest()
+    {
+        if (nextQuestToOffer == null)
+        {
+            Debug.LogWarning($"[QuestNpcSession:{name}] StartNextQuest llamado pero nextQuestToOffer es NULL");
+            return;
+        }
+        
+        var qm = QuestManager.Instance;
+        if (qm != null)
+        {
+            Debug.Log($"[QuestNpcSession:{name}] 🔗 Iniciando siguiente quest: {nextQuestToOffer.questId}");
+            qm.StartQuest(nextQuestToOffer.questId);
+        }
     }
 }

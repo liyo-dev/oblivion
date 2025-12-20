@@ -102,21 +102,28 @@ namespace Game.NPC.States
     }
     
     /// <summary>
-    /// Secuencia simple de movimiento a un punto
+    /// Secuencia simple de movimiento a un punto con fade y teletransporte
     /// </summary>
     public class MoveToPoscionSequence : CinematicSequence
     {
         private readonly Vector3 _targetPosition;
         private readonly float _maxDuration;
         private readonly bool _turnAroundOnArrival;
+        private readonly float _walkDisplayDuration; // Tiempo que se muestra caminando antes del fade
+        private readonly MonoBehaviour _owner;
         private float _timer;
         private bool _hasSetDestination;
-        
-        public MoveToPoscionSequence(Vector3 targetPosition, float maxDuration = 15f, bool turnAroundOnArrival = false)
+        private bool _hasStartedFade;
+        private bool _hasTeleported;
+        private bool _playerLocked;
+
+        public MoveToPoscionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f, bool turnAroundOnArrival = false, float walkDisplayDuration = 999f)
         {
+            _owner = owner;
             _targetPosition = targetPosition;
             _maxDuration = maxDuration;
             _turnAroundOnArrival = turnAroundOnArrival;
+            _walkDisplayDuration = walkDisplayDuration;
         }
         
         public override void Update(Common.NPCStateContext context)
@@ -124,57 +131,131 @@ namespace Game.NPC.States
             if (IsCompleted)
                 return;
             
-            // Establecer destino en el primer frame
+            // Establecer destino y bloquear player en el primer frame
             if (!_hasSetDestination)
             {
+                // Bloquear movimiento del player
+                if (PlayerLockService.HasInstance)
+                {
+                    PlayerLockService.Instance.Acquire(this);
+                    _playerLocked = true;
+                }
+                
                 if (context.Agent == null || !context.Agent.isOnNavMesh)
                 {
                     context.LogWarning("[CinematicSequence] Agent no válido o no está en NavMesh, completando");
-                    IsCompleted = true;
+                    CleanupAndComplete(context);
                     return;
                 }
                 
                 Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
                 _hasSetDestination = true;
-                context.Log($"[CinematicSequence] Destino establecido: {_targetPosition}");
+                context.Log($"[CinematicSequence] Destino establecido: {_targetPosition}, mostrando caminata {_walkDisplayDuration}s");
             }
             
             _timer += Time.deltaTime;
             
-            // Timeout
-            if (_timer >= _maxDuration)
+            // Verificar si llegó naturalmente (antes del fade)
+            if (!_hasStartedFade && HasReachedDestination(context))
             {
-                context.LogWarning($"[CinematicSequence] Timeout alcanzado ({_maxDuration}s), completando");
-                IsCompleted = true;
+                context.Log("[CinematicSequence] Destino alcanzado naturalmente (sin fade)");
+                HandleArrival(context);
+                CleanupAndComplete(context);
                 return;
             }
             
-            // Actualizar animación
-            if (context.Agent != null && context.Animator != null)
+            // Después de X segundos de caminar, hacer fade y teletransportar
+            if (!_hasStartedFade && _timer >= _walkDisplayDuration)
+            {
+                _hasStartedFade = true;
+                context.Log($"[CinematicSequence] {_walkDisplayDuration}s transcurridos, iniciando fade y teletransporte");
+                // Iniciar fade a negro
+                if (_owner != null)
+                {
+                    _owner.StartCoroutine(FadeAndTeleport(context));
+                }
+                return;
+            }
+            
+            // Timeout global
+            if (_timer >= _maxDuration)
+            {
+                context.LogWarning($"[CinematicSequence] Timeout alcanzado ({_maxDuration}s), completando");
+                CleanupAndComplete(context);
+                return;
+            }
+            
+            // Actualizar animación mientras camina
+            if (!_hasTeleported && context.Agent != null && context.Animator != null)
             {
                 float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
                 context.Animator.SetMovementSpeed(speedFactor);
             }
+        }
+        
+        private System.Collections.IEnumerator FadeAndTeleport(Common.NPCStateContext context)
+        {
+            context.Log($"[CinematicSequence] 🌑 Iniciando FadeAndTeleport - Posición actual: {context.Transform.position}");
             
-            // Verificar si llegó
-            if (HasReachedDestination(context))
+            // Fade a negro rápido (0.3s)
+            Sendero.Core.Feedback.FeedbackService.ScreenFlash(UnityEngine.Color.black, 0.3f);
+            yield return new UnityEngine.WaitForSeconds(0.15f); // Esperar mitad del fade
+            
+            // Teletransportar al NPC
+            if (context.Agent != null)
             {
-                context.Log("[CinematicSequence] Destino alcanzado");
-                
-                // Girar 180° si está configurado
-                if (_turnAroundOnArrival)
-                {
-                    var newRotation = context.Transform.rotation * Quaternion.Euler(0, 180, 0);
-                    context.Transform.rotation = newRotation;
-                    context.Log("[CinematicSequence] Girado 180°");
-                }
-                
-                IsCompleted = true;
+                Common.NavMeshAgentUtility.HardStop(context.Agent);
+                context.Transform.position = _targetPosition;
+                _hasTeleported = true;
+                context.Log($"[CinematicSequence] ✅ NPC teletransportado a {_targetPosition}");
             }
+            else
+            {
+                context.LogWarning($"[CinematicSequence] ⚠️ Agent es NULL, no se puede teletransportar");
+            }
+            
+            // Manejar llegada (girar si es necesario)
+            HandleArrival(context);
+            
+            // Esperar a que termine el fade
+            yield return new UnityEngine.WaitForSeconds(0.15f);
+            
+            // Completar secuencia
+            CleanupAndComplete(context);
+        }
+        
+        private void HandleArrival(Common.NPCStateContext context)
+        {
+            // Girar 180° si está configurado
+            if (_turnAroundOnArrival)
+            {
+                var newRotation = context.Transform.rotation * UnityEngine.Quaternion.Euler(0, 180, 0);
+                context.Transform.rotation = newRotation;
+                context.Log("[CinematicSequence] Girado 180°");
+            }
+        }
+        
+        private void CleanupAndComplete(Common.NPCStateContext context)
+        {
+            // Desbloquear player
+            if (_playerLocked && PlayerLockService.HasInstance)
+            {
+                PlayerLockService.Instance.Release(this);
+                _playerLocked = false;
+            }
+            
+            IsCompleted = true;
         }
         
         public override void Cleanup(Common.NPCStateContext context)
         {
+            // Asegurar desbloqueo del player
+            if (_playerLocked && PlayerLockService.HasInstance)
+            {
+                PlayerLockService.Instance.Release(this);
+                _playerLocked = false;
+            }
+            
             if (context.Agent != null)
             {
                 Common.NavMeshAgentUtility.HardStop(context.Agent);
