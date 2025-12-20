@@ -15,7 +15,7 @@ namespace Game.NPC
     [RequireComponent(typeof(NPCSimpleAnimator))]
     public sealed class NPCCombatBrain : MonoBehaviour
     {
-        // Difficulty configurada desde NPCBehaviourManager (via Settings)
+        // Difficulty configurada desde NPCBehaviourManagerV2 (via Settings)
 
         [Serializable]
         public struct AttackSlot
@@ -90,7 +90,8 @@ namespace Game.NPC
             public float dodgeChance;                // probabilidad de esquiva
         }
 
-        NPCBehaviourManager _ctx;
+        NPCBehaviourManagerV2 _manager;
+        NPCStateContext _ctx;
         NavMeshAgent _agent;
         NPCSimpleAnimator _animator;
         Animator _rawAnimator;
@@ -129,22 +130,40 @@ namespace Game.NPC
         float _attackLockTimer;
         bool _isWindup;
         float _postAttackHoldTimer;
+        
+        // Smooth rotation
+        float _currentTurnVelocity;
+        const float _turnSmoothTime = 0.15f;
+        
+        // Smooth circular movement
+        Vector3 _lastCircleTarget;
+        Vector3 _circleVelocity;
+        
         // Animator validation
         bool _printedAnimatorValidation;
 
-        public void Initialize(NPCBehaviourManager ctx)
+        public void Initialize(NPCBehaviourManagerV2 manager)
         {
-            _ctx = ctx;
-            _agent = ctx ? ctx.Agent : null;
-            _animator = ctx ? ctx.Animator : null;
-            _rawAnimator = ctx ? ctx.GetComponent<Animator>() : GetComponent<Animator>();
+            _manager = manager;
+            _ctx = manager != null ? manager.Context : null;
+            _agent = _ctx != null ? _ctx.Agent : null;
+            _animator = _ctx != null ? _ctx.Animator : null;
+            _rawAnimator = _ctx != null ? _ctx.UnityAnimator : GetComponent<Animator>();
         }
 
         public void BeginCombat(Settings settings)
         {
             _settings = settings;
-            _ctx?.EnsurePlayerReference();
-            _player = _ctx ? _ctx.Player : null;
+            
+            // Ensure player reference
+            if (_ctx != null && _ctx.Player == null)
+            {
+                if (PlayerService.TryGetComponent<Transform>(out var player))
+                {
+                    _ctx.Player = player;
+                }
+            }
+            _player = _ctx != null ? _ctx.Player : null;
 
             Debug.Log($"[NPCCombatBrain] BeginCombat llamado - isActiveAndEnabled: {isActiveAndEnabled}, _player: {_player != null}, _ctx: {_ctx != null}");
 
@@ -198,6 +217,20 @@ namespace Game.NPC
                 Mathf.Max(0.5f, _settings.holdIntervalMin),
                 Mathf.Max(Mathf.Max(0.5f, _settings.holdIntervalMin), _settings.holdIntervalMax));
 
+            // Configurar NavMeshAgent para movimiento suave
+            if (_agent != null)
+            {
+                _agent.acceleration = 8f; // Aceleración gradual
+                _agent.angularSpeed = 180f; // Rotación moderada (no instantánea)
+                _agent.autoBraking = true; // Frenado automático suave
+                _agent.stoppingDistance = 0.1f;
+            }
+            
+            // Inicializar valores de suavizado
+            _lastCircleTarget = transform.position;
+            _circleVelocity = Vector3.zero;
+            _currentTurnVelocity = 0f;
+
             StopCombat();
             if (!isActiveAndEnabled)
             {
@@ -242,7 +275,7 @@ namespace Game.NPC
             Debug.Log($"[NPCCombatBrain] ===== CombatLoop INICIADO ===== _ctx: {_ctx != null}, _player: {_player != null}, _agent: {_agent != null}, _animator: {_animator != null}");
             int iterationCount = 0;
 
-            while (_ctx != null && _ctx.isActiveAndEnabled && _player != null)
+            while (_ctx != null && _manager != null && _manager.isActiveAndEnabled && _player != null)
             {
                 if (!_printedAnimatorValidation && _rawAnimator != null)
                 {
@@ -268,7 +301,14 @@ namespace Game.NPC
                     Debug.Log($"[NPCCombatBrain] CombatLoop iteración #{iterationCount} - Estado: {_currentState}");
                 }
 
-                _ctx.EnsurePlayerReference();
+                // Ensure player reference
+                if (_ctx != null && _ctx.Player == null)
+                {
+                    if (PlayerService.TryGetComponent<Transform>(out var player))
+                    {
+                        _ctx.Player = player;
+                    }
+                }
                 _player = _ctx.Player;
                 if (_player == null)
                 {
@@ -310,7 +350,7 @@ namespace Game.NPC
                 {
                     _pendingDodge = false;
                     Vector3 dodgeTarget = ComputeDodgePosition();
-                    if (_ctx.EnsureAgentOnNavMesh(_settings.sightRadius))
+                    if (EnsureAgentOnNavMesh(_settings.sightRadius))
                     {
                         NavMeshAgentUtility.SetDestination(_agent, dodgeTarget, 0.25f);
                         _dodgeCdTimer = Mathf.Max(0.25f, _settings.dodgeCooldown);
@@ -322,7 +362,7 @@ namespace Game.NPC
                 {
                     _burstPending = false;
                     Vector3 burstTarget = ComputeBurstRepositionPosition();
-                    if (_ctx.EnsureAgentOnNavMesh(_settings.sightRadius))
+                    if (EnsureAgentOnNavMesh(_settings.sightRadius))
                     {
                         NavMeshAgentUtility.SetDestination(_agent, burstTarget, 0.25f);
                         _burstCdTimer = Mathf.Max(0.5f, _settings.burstRepositionCooldown);
@@ -338,7 +378,7 @@ namespace Game.NPC
                     // Demasiado cerca: retroceder sin atacar
                     Vector3 retreatTarget = ComputeRetreatPosition(distanceToPlayer);
                     
-                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && _ctx.EnsureAgentOnNavMesh(_settings.sightRadius))
+                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
                     {
                         NavMeshAgentUtility.SetDestination(_agent, retreatTarget, 0.5f);
                         repathTimer = _settings.repathInterval;
@@ -366,7 +406,7 @@ namespace Game.NPC
                     // Demasiado lejos: acercarse
                     Vector3 approachTarget = ComputeApproachPosition(distanceToPlayer);
                     
-                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && _ctx.EnsureAgentOnNavMesh(_settings.sightRadius))
+                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
                     {
                         NavMeshAgentUtility.SetDestination(_agent, approachTarget, 0.5f);
                         repathTimer = _settings.repathInterval;
@@ -429,7 +469,7 @@ namespace Game.NPC
                             {
                                 // Circular alrededor del jugador para variar posición
                                 Vector3 circleTarget = ComputeCirclePosition(distanceToPlayer);
-                                if (repathTimer <= 0f && _ctx.EnsureAgentOnNavMesh(_settings.sightRadius))
+                                if (repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
                                 {
                                     NavMeshAgentUtility.SetDestination(_agent, circleTarget, 0.5f);
                                     repathTimer = _settings.repathInterval * 0.5f; // Actualizar más frecuentemente al circular
@@ -506,7 +546,7 @@ namespace Game.NPC
         void UpdateCombatState(float distance)
         {
             // Obtener salud si está disponible
-            var health = _ctx?.GetComponent<Damageable>();
+            var health = _ctx != null ? _ctx.Transform.GetComponent<Damageable>() : null;
             float healthPercent = health != null ? (health.Current / health.Max) : 1f;
 
             // Cambiar a defensivo si la salud es baja
@@ -582,9 +622,13 @@ namespace Game.NPC
             // Calcular posición en círculo alrededor del jugador
             float radius = _settings.circleDistance > 0f ? _settings.circleDistance : currentDistance;
             float radians = _circleAngle * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)) * radius;
+            Vector3 rawTarget = _player.position + new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)) * radius;
 
-            return _player.position + offset;
+            // Suavizar con SmoothDamp para evitar cambios bruscos
+            Vector3 smoothedTarget = Vector3.SmoothDamp(_lastCircleTarget, rawTarget, ref _circleVelocity, 0.3f);
+            _lastCircleTarget = smoothedTarget;
+
+            return smoothedTarget;
         }
 
         bool HasAttackAvailable()
@@ -733,7 +777,9 @@ namespace Game.NPC
             // Pequeña validación: si se canceló combate, no dispares
             if (_ctx == null || _player == null)
                 yield break;
-            _ctx.OnAttackTriggered(slotIndex);
+            
+            // TODO: Implementar sistema de eventos de ataque si es necesario
+            // _ctx.OnAttackTriggered(slotIndex);
         }
 
         public void RequestDodge()
@@ -802,8 +848,7 @@ namespace Game.NPC
             if (direction.sqrMagnitude < 0.0001f)
                 return;
 
-            Quaternion target = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * Mathf.Max(0.1f, _settings.turnSpeed));
+            SmoothRotateTowards(direction);
         }
 
         void FaceMovement()
@@ -819,8 +864,40 @@ namespace Game.NPC
                 }
             }
             if (v.sqrMagnitude < 0.0001f) return;
-            Quaternion target = Quaternion.LookRotation(v.normalized, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * Mathf.Max(0.1f, _settings.turnSpeed));
+            
+            SmoothRotateTowards(v);
+        }
+        
+        /// <summary>
+        /// Rotación suavizada usando SmoothDampAngle para movimiento más natural
+        /// </summary>
+        void SmoothRotateTowards(Vector3 direction)
+        {
+            if (direction.sqrMagnitude < 0.0001f) return;
+            
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float currentAngle = transform.eulerAngles.y;
+            float angle = Mathf.SmoothDampAngle(currentAngle, targetAngle, ref _currentTurnVelocity, _turnSmoothTime);
+            
+            transform.rotation = Quaternion.Euler(0f, angle, 0f);
+        }
+
+        bool EnsureAgentOnNavMesh(float maxDistance = 5f)
+        {
+            if (_agent == null)
+                return false;
+
+            if (_agent.isOnNavMesh)
+                return true;
+
+            // Try to find closest point on NavMesh
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, maxDistance, _agent.areaMask))
+            {
+                _agent.Warp(hit.position);
+                return true;
+            }
+
+            return false;
         }
 
 #if UNITY_EDITOR
@@ -837,3 +914,4 @@ namespace Game.NPC
 #endif
     }
 }
+

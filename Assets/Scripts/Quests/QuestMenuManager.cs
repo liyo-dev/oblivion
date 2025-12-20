@@ -175,35 +175,28 @@ public class QuestMenuManager : MonoBehaviour
 
     private void HandleDpadUpPressed()
     {
-        Debug.Log("[QuestMenuManager] HandleDpadUpPressed called.");
         bool quickIsOpen = quickMenu != null && quickMenu.IsVisible;
         bool mainIsOpen = mainMenu != null && mainMenu.IsOpen;
-
-        Debug.Log($"[QuestMenuManager] Quick menu open: {quickIsOpen}, Main menu open: {mainIsOpen}");
 
         if (!quickIsOpen && !mainIsOpen)
         {
             if (!CanOpenQuestMenus())
             {
-                Debug.Log("[QuestMenuManager] Cannot open quick menu because another menu is active or access is blocked.");
                 return;
             }
 
-            Debug.Log("[QuestMenuManager] Opening quick menu.");
             if (quickMenu == null)
             {
                 Debug.LogWarning("[QuestMenuManager] quickMenu reference is null - cannot open quick menu.");
                 return;
             }
 
-            Debug.Log($"[QuestMenuManager] quickMenu GO='{quickMenu.gameObject.name}', activeSelf={quickMenu.gameObject.activeSelf}, activeInHierarchy={quickMenu.gameObject.activeInHierarchy}");
             // Asegurar que el GameObject del componente esté activo para permitir coroutines/animaciones
             if (!quickMenu.gameObject.activeInHierarchy)
             {
-                Debug.Log("[QuestMenuManager] Activating quickMenu GameObject before ShowPanel");
                 quickMenu.gameObject.SetActive(true);
 
-                // Log and activate any inactive ancestors (canvas or parent containers)
+                // Activar ancestros inactivos si es necesario
                 var inactiveAncestors = new System.Collections.Generic.List<Transform>();
                 var p = quickMenu.transform.parent;
                 while (p != null)
@@ -213,18 +206,10 @@ public class QuestMenuManager : MonoBehaviour
                     p = p.parent;
                 }
 
-                if (inactiveAncestors.Count > 0)
+                // Enable ancestors from top-down
+                for (int i = inactiveAncestors.Count - 1; i >= 0; i--)
                 {
-                    foreach (var anc in inactiveAncestors)
-                        Debug.Log($"[QuestMenuManager] Inactive ancestor: {anc.name} (activeSelf={anc.gameObject.activeSelf})");
-
-                    // Enable ancestors from top-down
-                    for (int i = inactiveAncestors.Count - 1; i >= 0; i--)
-                    {
-                        var anc = inactiveAncestors[i];
-                        Debug.Log($"[QuestMenuManager] Activating ancestor: {anc.name}");
-                        anc.gameObject.SetActive(true);
-                    }
+                    inactiveAncestors[i].gameObject.SetActive(true);
                 }
             }
 
@@ -237,7 +222,6 @@ public class QuestMenuManager : MonoBehaviour
             try
             {
                 quickMenu.ShowPanel(true, ignoreRestrictions: true);
-                Debug.Log("[QuestMenuManager] Called ShowPanel on quickMenu");
             }
             catch (System.Exception ex)
             {
@@ -248,15 +232,10 @@ public class QuestMenuManager : MonoBehaviour
         {
             if (mainMenu != null && CanOpenQuestMenus() && CanOpenMainMenu())
             {
-                Debug.Log("[QuestMenuManager] Transitioning from quick menu to main menu.");
                 if (quickMenu != null)
                     quickMenu.ShowPanel(false, ignoreRestrictions: true);
                 mainMenu.ShowMenu();
                 ResetDpadHold();
-            }
-            else
-            {
-                Debug.LogWarning("[QuestMenuManager] Cannot open main menu. CanOpenMainMenu returned false.");
             }
         }
     }
@@ -322,18 +301,12 @@ public class QuestMenuManager : MonoBehaviour
 
     bool CanOpenMainMenu()
     {
-        Debug.Log("[QuestMenuManager] Checking if main menu can open.");
         if (!GameState.CanOpenInventory)
-        {
-            Debug.LogWarning("[QuestMenuManager] Cannot open main menu. GameState.CanOpenInventory is false.");
             return false;
-        }
+        
         if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
-        {
-            Debug.LogWarning("[QuestMenuManager] Cannot open main menu. DialogueManager is open.");
             return false;
-        }
-        Debug.Log("[QuestMenuManager] Main menu can open.");
+        
         return true;
     }
 
@@ -343,22 +316,13 @@ public class QuestMenuManager : MonoBehaviour
         // dentro de la transición entre rápido y principal. Solo bloqueamos si
         // hay otros menús abiertos.
         if (MenuManager.AnyOpenExcept(MenuKind.Mission))
-        {
-            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus because another menu is open.");
             return false;
-        }
 
         if (!GameState.CanOpenInventory)
-        {
-            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus. GameState denies inventory access.");
             return false;
-        }
 
         if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
-        {
-            Debug.LogWarning("[QuestMenuManager] Cannot open quest menus. DialogueManager is open.");
             return false;
-        }
 
         return true;
     }
@@ -367,9 +331,6 @@ public class QuestMenuManager : MonoBehaviour
     {
         bool anyOpen = (mainMenu != null && mainMenu.IsOpen) || (quickMenu != null && quickMenu.IsVisible);
         bool mainMenuOpen = mainMenu != null && mainMenu.IsOpen;
-        bool quickMenuOpen = quickMenu != null && quickMenu.IsVisible;
-
-        Debug.Log($"[QuestMenuManager] RefreshMenuRegistration: anyOpen={anyOpen}, mainMenuOpen={mainMenuOpen}, quickMenuOpen={quickMenuOpen}");
 
         if (anyOpen)
         {
@@ -378,20 +339,17 @@ public class QuestMenuManager : MonoBehaviour
             {
                 MenuManager.RegisterOpen(MenuKind.Mission);
                 _menuRegistered = true;
-                Debug.Log("[QuestMenuManager] Menu registered in MenuManager");
             }
             
             // IMPORTANTE: Solo bloquear inputs de gameplay si el menú PRINCIPAL está abierto
             // El menú rápido debe permitir que el jugador se mueva
             if (mainMenuOpen)
             {
-                Debug.Log("[QuestMenuManager] Main menu open - BLOQUEANDO inputs de gameplay");
                 EnsureUiScope();
             }
             else
             {
                 // Si solo está el menú rápido, NO bloquear gameplay
-                Debug.Log("[QuestMenuManager] Solo quick menu open - PERMITIENDO inputs de gameplay");
                 ExitUiScope();
             }
         }

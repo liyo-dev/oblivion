@@ -2225,7 +2225,6 @@ GameObject:
   - component: {fileID: 473005947799749894}
   - component: {fileID: 2097140776324860532}
   - component: {fileID: 1165701030903493255}
-  - component: {fileID: 7606056458327983231}
   m_Layer: 8
   m_Name: Victoria
   m_TagString: Untagged
@@ -2337,6 +2336,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 8529855521117386527}
   locomotionState: Free Locomotion
+  battleIdleState: Idle_Battle_NoWeapon
+  upperBodyLayer: 1
+  upperBodyIdleState: UpperIdle
   greetState: Greeting01_NoWeapon
   interactState: InteractWithPeople_NoWeapon
   greetOnSight: 1
@@ -2354,6 +2356,11 @@ MonoBehaviour:
   lookFrom: {fileID: 0}
   ambientInhibitor: {fileID: 0}
   drawGizmos: 1
+  verboseLogs: 0
+  forceOneShotsOnBaseLayer: 0
+  movementParamScale: 1.25
+  locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.7
 --- !u!114 &473005947799749894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2371,6 +2378,8 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 1
   initiallyEnabled: 1
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
   dialogue: {fileID: 11400000, guid: 64a8cd4efa5486741a850640bd8a854f, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -2439,68 +2448,3 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &7606056458327983231
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9091734439753928547}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
-  ambientModule:
-    enableWander: 0
-    wanderRadius: 2
-    minIdleTime: 1.2
-    maxIdleTime: 3
-    pickWhileMoving: 0
-  questModule:
-    enable: 0
-    chain: []
-    enableItemDetection: 1
-    detectionRadius: 3
-    detectionAngle: 90
-    detectionLayer:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    detectionInterval: 0.33
-  combatModule:
-    enable: 0
-    sightRadius: 8
-    fovDegrees: 120
-    challengeStopDistance: 2.2
-    approachRepathInterval: 0.25
-    loseSightGraceSeconds: 1.5
-    challengeAlertState: SenseSomethingStart_NoWeapon
-    challengeAlertMinSeconds: 0.75
-    challengeState: Challenging_NoWeapon
-    exclamationPrefab: {fileID: 0}
-    exclamationOffset: {x: 0, y: 2, z: 0}
-    exclamationSeconds: 2
-    lockPlayer: 1
-    lockOnSight: 1
-    lockMode: 5
-    turnPlayerOnSight: 1
-    turnDelaySeconds: 1
-    turnDurationSeconds: 0.35
-    fallbackDialogue: 
-    onChallengeStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerLock:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerUnlock:
-      m_PersistentCalls:
-        m_Calls: []
-    onDialogueRequest:
-      m_PersistentCalls:
-        m_Calls: []
-  logDebug: 0
-  persistLastPosition: 0
-  lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 0
-  rotateOnInteractSeconds: 0.3

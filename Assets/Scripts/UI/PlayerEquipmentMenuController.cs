@@ -195,24 +195,37 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
+        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Buscando instancia existente...");
+        
         // Intentar obtener desde ServiceLocator primero
         if (ServiceLocator.TryGet<PlayerEquipmentMenuController>(out var existing) && existing != null)
         {
+            Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Encontrada instancia existente en ServiceLocator");
             _instance = existing;
             return;
         }
-        // Si no existe, crear uno nuevo y registrar
-        var go = new GameObject(nameof(PlayerEquipmentMenuController));
-        DontDestroyOnLoad(go);
-        var controller = go.AddComponent<PlayerEquipmentMenuController>();
-        ServiceLocator.Register(controller);
-        _instance = controller;
+        
+        // Buscar si ya existe un Canvas con el controller en la escena
+        var existingController = FindObjectOfType<PlayerEquipmentMenuController>(true);
+        if (existingController != null)
+        {
+            Debug.Log($"[PlayerEquipmentMenuController] Bootstrap: Encontrado controller existente en '{existingController.gameObject.name}'");
+            _instance = existingController;
+            ServiceLocator.Register(existingController);
+            return;
+        }
+        
+        // Si no hay instancia, no hacer nada - el menú debe estar configurado manualmente en la escena
+        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontró instancia. El menú debe estar configurado manualmente en la escena.");
     }
 
     void Awake()
     {
+        Debug.Log($"[PlayerEquipmentMenuController] Awake en GameObject '{gameObject.name}'");
+        
         if (_instance != null && _instance != this)
         {
+            Debug.LogWarning($"[PlayerEquipmentMenuController] Instancia duplicada detectada en '{gameObject.name}', destruyendo...");
             Destroy(gameObject);
             return;
         }
@@ -221,14 +234,40 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         ServiceLocator.Register(this);
 
         if (dontDestroyOnLoad && transform.parent == null)
+        {
             DontDestroyOnLoad(gameObject);
+            Debug.Log($"[PlayerEquipmentMenuController] DontDestroyOnLoad aplicado a '{gameObject.name}'");
+        }
 
+        // Buscar componentes UI necesarios
         if (canvas == null)
+        {
             canvas = GetComponentInChildren<Canvas>(true);
+            Debug.Log($"[PlayerEquipmentMenuController] Canvas encontrado: {(canvas != null ? canvas.gameObject.name : "NULL")}");
+        }
+        
         if (canvasGroup == null)
+        {
             canvasGroup = GetComponentInChildren<CanvasGroup>(true);
+            Debug.Log($"[PlayerEquipmentMenuController] CanvasGroup encontrado: {(canvasGroup != null ? "Sí" : "No")}");
+        }
+        
         if (windowRoot == null && canvas != null)
+        {
             windowRoot = canvas.gameObject;
+            Debug.Log($"[PlayerEquipmentMenuController] WindowRoot asignado automáticamente a Canvas: '{windowRoot.name}'");
+        }
+        
+        // Verificar si tenemos lo mínimo necesario
+        if (canvas == null)
+        {
+            Debug.LogError($"[PlayerEquipmentMenuController] ⚠️ No se encontró Canvas en '{gameObject.name}'");
+            Debug.LogError("   El menú de equipamiento NO funcionará correctamente.");
+            Debug.LogError("   Asegúrate de que el PlayerEquipmentMenuController esté en un GameObject con Canvas configurado.");
+            // No desactivar el componente para que se pueda configurar después
+            enabled = false;
+            return;
+        }
 
         if (levelText != null)
             _levelLabel = levelText.text;
@@ -240,10 +279,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SetCanvasState(false);
 
         RegisterTabButtons();
-        EnsureViews();
+        
+        // EnsureViews retorna false si no hay vistas configuradas
+        if (!EnsureViews())
+        {
+            Debug.LogError("[PlayerEquipmentMenuController] ⚠️ No se pudo inicializar ninguna vista del menú");
+            Debug.LogError("   El menú no podrá abrirse hasta que se configuren las vistas en el Inspector.");
+            // No desactivar el componente para que se pueda configurar después
+        }
+        
         SetEquipmentCameraActive(false);
         // Unregister from MenuManager
         MenuManager.Close(MenuKind.Equipment);
+        
+        Debug.Log($"[PlayerEquipmentMenuController] Awake completado. Vistas configuradas: {(_inventoryView != null || _spellView != null || _equipmentView != null)}");
     }
 
     void OnDisable()
@@ -447,6 +496,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void OpenMenu()
     {
         Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
+        
+        // Verificación temprana: ¿tenemos Canvas?
+        if (canvas == null)
+        {
+            Debug.LogError("[PlayerEquipmentMenu] ❌ No se puede abrir - Canvas es NULL");
+            Debug.LogError("   El PlayerEquipmentMenuController no está correctamente configurado.");
+            Debug.LogError("   Debe estar en un GameObject con un Canvas configurado.");
+            return;
+        }
+        
+        // Verificación temprana: ¿hay al menos una vista configurada?
+        if (_inventoryView == null && _spellView == null && _equipmentView == null)
+        {
+            Debug.LogError("[PlayerEquipmentMenu] ❌ No se puede abrir - NINGUNA VISTA CONFIGURADA");
+            Debug.LogError("   Configura al menos una vista (Inventory, Spell o Equipment) en el Inspector.");
+            Debug.LogError("   Revisa los logs anteriores de EnsureViews() para más detalles.");
+            return;
+        }
         
         if (!GameState.CanOpenInventory)
         {
@@ -1202,9 +1269,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     bool EnsureViews()
     {
         bool anyViewConfigured = false;
+        
+        Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() - Verificando vistas...");
+        Debug.Log($"  - _inventoryView: {(_inventoryView != null ? "EXISTS" : "NULL")}");
+        Debug.Log($"  - _spellView: {(_spellView != null ? "EXISTS" : "NULL")}");
+        Debug.Log($"  - _equipmentView: {(_equipmentView != null ? "EXISTS" : "NULL")}");
 
         if (_inventoryView == null)
         {
+            Debug.Log($"[PlayerEquipmentMenuController] Verificando inventoryUI.IsConfigured...");
             if (inventoryUI.IsConfigured)
             {
                 _inventoryView = new InventoryView(inventoryUI);
@@ -1213,7 +1286,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             else if (!_warnedInventory)
             {
-                Debug.LogWarning("[PlayerEquipmentMenuController] Inventario no configurado: asigna root, contenedor y prefab de filas.");
+                Debug.LogWarning("[PlayerEquipmentMenuController] Inventario no configurado:");
+                Debug.LogWarning($"  - root: {(inventoryUI.root != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - rowsParent: {(inventoryUI.rowsParent != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - rowPrefab: {(inventoryUI.rowPrefab != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - itemName: {(inventoryUI.itemName != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - itemDescription: {(inventoryUI.itemDescription != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - itemCount: {(inventoryUI.itemCount != null ? "OK" : "FALTA")}");
+                Debug.LogWarning($"  - feedbackText: {(inventoryUI.feedbackText != null ? "OK" : "FALTA")}");
                 _warnedInventory = true;
             }
         }
@@ -1225,6 +1305,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (_spellView == null)
         {
+            Debug.Log($"[PlayerEquipmentMenuController] Verificando spellUI.IsConfigured...");
             if (spellUI.IsConfigured)
             {
                 _spellView = new SpellView(spellUI);
@@ -1245,6 +1326,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         if (_equipmentView == null)
         {
+            Debug.Log($"[PlayerEquipmentMenuController] Verificando equipmentUI.IsConfigured...");
             if (equipmentUI.IsConfigured)
             {
                 _equipmentView = new EquipmentView(equipmentUI);
@@ -1264,6 +1346,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
 
         Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() retornando: {anyViewConfigured}");
+        
+        if (!anyViewConfigured)
+        {
+            Debug.LogError("[PlayerEquipmentMenuController] ❌ NINGUNA VISTA ESTÁ CONFIGURADA");
+            Debug.LogError("╔════════════════════════════════════════════════════════════════════╗");
+            Debug.LogError("║ SOLUCIÓN: El PlayerEquipmentMenuController necesita un Canvas UI  ║");
+            Debug.LogError("║ correctamente configurado con las siguientes vistas:               ║");
+            Debug.LogError("╠════════════════════════════════════════════════════════════════════╣");
+            Debug.LogError("║ 1. Crea un prefab 'PlayerEquipmentMenuCanvas' en la escena        ║");
+            Debug.LogError("║ 2. Asigna en el Inspector:                                         ║");
+            Debug.LogError("║    • Inventory UI: root, rowsParent, rowPrefab, etc.               ║");
+            Debug.LogError("║    • Spell UI: root, slotsContainer, etc.                          ║");
+            Debug.LogError("║    • Equipment UI: root y categorías configuradas                  ║");
+            Debug.LogError("║ 3. Añade el componente PlayerEquipmentMenuController al Canvas    ║");
+            Debug.LogError("║ 4. El controller debe estar en la escena Start o como DontDestroy ║");
+            Debug.LogError("╚════════════════════════════════════════════════════════════════════╝");
+            Debug.LogError($"GameObject actual: '{gameObject.name}' (Canvas: {(canvas != null ? "Sí" : "No")}, WindowRoot: {(windowRoot != null ? "Sí" : "No")})");
+        }
+        
         return anyViewConfigured;
     }
 

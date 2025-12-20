@@ -113,7 +113,7 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
                 Debug.LogWarning($"[UnlockAbilitiesNode] Error al aplicar unlock interno: {ex.Message}");
             }
 
-        // Nodo de acción inmediata: avanza
+        // Avanzar inmediatamente sin esperar popup
         onReadyToAdvance?.Invoke();
     }
 }

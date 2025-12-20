@@ -45,12 +45,15 @@ public class BossArenaController : MonoBehaviour
     public GameObject bossPrefab;   // tu boss
     public Transform portalSpawn;
     public GameObject portalPrefab; // PF_PortalExit
-    [Tooltip("Radio para buscar NavMesh válido alrededor del punto de spawn.")]
-    [SerializeField] private float navMeshProbeRadius = 1.5f;
-    [Tooltip("Tiempo máximo (segundos) que se esperará a que el NavMesh esté listo antes de abortar el spawn.")]
-    [SerializeField] private float navMeshWaitTimeout = 5f;
-    [Tooltip("Intervalo entre reintentos al comprobar NavMesh.")]
-    [SerializeField] private float navMeshRetryInterval = 0.25f;
+    [Tooltip("Layer del suelo para colocar al boss después de la presentación.")]
+    [SerializeField] private LayerMask floorLayer = 1 << 6; // Floor por defecto
+    
+    [Header("Boss Presentation")]
+    [Tooltip("Componente opcional para presentación cinemática del boss")]
+    [SerializeField] private BossIntroPresentation bossIntroPresentation;
+    
+    [Tooltip("Nombre del boss para mostrar en la presentación (ej: 'DEMONIO')")]
+    [SerializeField] private string bossDisplayName = "DEMONIO";
 
     [Header("Refs")]
     public RoomGoal roomGoal;
@@ -274,41 +277,26 @@ public class BossArenaController : MonoBehaviour
                 AudioService.Instance.BeginBattleById(id);
         }
 
-        StartCoroutine(SpawnBossWhenNavMeshReady());
+        SpawnBoss();
     }
 
-    private IEnumerator SpawnBossWhenNavMeshReady()
+    private void SpawnBoss()
     {
-        Vector3 targetPosition = bossSpawn ? bossSpawn.position : transform.position;
-        Quaternion targetRotation = bossSpawn ? bossSpawn.rotation : transform.rotation;
-
-        float waited = 0f;
-        Vector3 resolvedPosition;
-        while (!TryResolveNavMeshPosition(targetPosition, out resolvedPosition))
-        {
-            if (waited >= navMeshWaitTimeout)
-            {
-                Debug.LogError("[BossArenaController] NavMesh no disponible en el punto de spawn tras esperar. Abortando batalla.");
-                started = false;
-                yield break;
-            }
-
-            yield return new WaitForSeconds(navMeshRetryInterval);
-            waited += navMeshRetryInterval;
-        }
+        Vector3 spawnPosition = bossSpawn ? bossSpawn.position : transform.position;
+        Quaternion spawnRotation = bossSpawn ? bossSpawn.rotation : transform.rotation;
 
         GameObject boss = null;
 
         if (bossPrefab)
-            boss = Instantiate(bossPrefab, resolvedPosition, targetRotation, transform.parent);
+            boss = Instantiate(bossPrefab, spawnPosition, spawnRotation, transform.parent);
         else
-            boss = FindExistingBossInRoom(); // por si ya lo dejaste colocado
+            boss = FindExistingBossInRoom();
 
         if (!boss)
         {
             Debug.LogError("[BossArenaController] No hay boss para esta sala.");
             started = false;
-            yield break;
+            return;
         }
 
         // Preparar referencias para escuchar la derrota real del boss
@@ -323,67 +311,67 @@ public class BossArenaController : MonoBehaviour
             _activeBossDamageable.OnDied += HandleBossDamageableDied;
         }
 
-        // Activar NavMeshAgent del boss
-        var bossAgent = boss.GetComponent<NavMeshAgent>();
-        if (bossAgent != null)
+        // Iniciar presentación o colocar directamente en el suelo
+        if (bossIntroPresentation != null)
         {
-            bossAgent.enabled = true;
-            bossAgent.isStopped = false;
-            Debug.Log($"[BossArenaController] ✅ NavMeshAgent del boss habilitado en {resolvedPosition}");
+            StartCoroutine(PlayPresentationAndPlaceBoss(boss));
         }
         else
         {
-            Debug.LogWarning($"[BossArenaController] ⚠️ Boss '{boss.name}' no tiene NavMeshAgent. El boss no podrá moverse.");
+            PlaceBossOnFloor(boss);
+            EnableBossCombat(boss);
         }
+    }
 
-        // Buscar y activar el componente de IA del demonio
-        var demonAI = boss.GetComponent("ImpDemonAI");
-        if (demonAI != null)
+    private IEnumerator PlayPresentationAndPlaceBoss(GameObject boss)
+    {
+        // Buscar la cámara hija del boss
+        Camera bossCamera = boss.GetComponentInChildren<Camera>();
+        
+        if (bossCamera == null)
         {
-            var behaviour = demonAI as MonoBehaviour;
-            if (behaviour != null)
-            {
-                behaviour.enabled = true;
-                
-                // Asignar el jugador usando PlayerService
-                if (PlayerService.Player != null)
-                {
-                    var playerField = demonAI.GetType().GetField("player", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (playerField != null)
-                    {
-                        playerField.SetValue(demonAI, PlayerService.Player.transform);
-                        Debug.Log($"[BossArenaController] ✅ Jugador asignado al ImpDemonAI: {PlayerService.Player.name}");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[BossArenaController] ⚠️ PlayerService.Player es null, no se puede asignar al demonio.");
-                }
-                
-                Debug.Log($"[BossArenaController] ✅ ImpDemonAI activado para el boss.");
-            }
+            Debug.LogWarning($"[BossArenaController] No se encontró cámara en el boss '{boss.name}'. Saltando presentación.");
+            PlaceBossOnFloor(boss);
+            EnableBossCombat(boss);
+            yield break;
+        }
+        
+        // Configurar y reproducir presentación
+        bossIntroPresentation.SetupBoss(boss.transform, bossCamera, bossDisplayName);
+        yield return StartCoroutine(bossIntroPresentation.PlayIntroduction());
+        
+        // Después de la presentación:
+        // 1. Desactivar la cámara del boss
+        bossCamera.gameObject.SetActive(false);
+        
+        // 2. Colocar en el suelo
+        PlaceBossOnFloor(boss);
+        
+        // 3. Activar combate del boss
+        EnableBossCombat(boss);
+    }
+
+    private void EnableBossCombat(GameObject boss)
+    {
+        // Activar el combate en el componente de IA del boss (si existe)
+        var impDemonAI = boss.GetComponent<ImpDemonAI>();
+        if (impDemonAI != null)
+        {
+            impDemonAI.canStartCombat = true;
+            Debug.Log("[BossArenaController] Combate del boss activado.");
+        }
+    }
+
+    private void PlaceBossOnFloor(GameObject boss)
+    {
+        // Raycast hacia abajo para encontrar el suelo
+        if (Physics.Raycast(boss.transform.position, Vector3.down, out RaycastHit hit, 100f, floorLayer))
+        {
+            boss.transform.position = hit.point;
         }
         else
         {
-            Debug.LogWarning($"[BossArenaController] ⚠️ No se encontró el componente 'ImpDemonAI' en el boss '{boss.name}'.");
-            
-            // Fallback: activar todos los componentes desactivados
-            var allComponents = boss.GetComponents<MonoBehaviour>();
-            int enabledCount = 0;
-            foreach (var component in allComponents)
-            {
-                if (component != null && !component.enabled)
-                {
-                    component.enabled = true;
-                    enabledCount++;
-                    Debug.Log($"[BossArenaController] Componente activado (fallback): {component.GetType().Name}");
-                }
-            }
-            
-            if (enabledCount > 0)
-            {
-                Debug.Log($"[BossArenaController] ✅ {enabledCount} componentes activados mediante fallback.");
-            }
+            Debug.LogWarning($"[BossArenaController] No se encontró Floor debajo del boss en {boss.transform.position}");
         }
     }
 
@@ -732,15 +720,6 @@ public class BossArenaController : MonoBehaviour
         }
 
         Debug.Log("[BossArenaController] Área del boss desbloqueada.");
-    }
-
-    private bool TryResolveNavMeshPosition(Vector3 desiredPosition, out Vector3 resolved)
-    {
-        resolved = desiredPosition;
-        if (!NavMesh.SamplePosition(desiredPosition, out var hit, navMeshProbeRadius, NavMesh.AllAreas))
-            return false;
-        resolved = hit.position;
-        return true;
     }
 
     // =========================== Battle toggles ===========================

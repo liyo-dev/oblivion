@@ -40,6 +40,10 @@ public class ImpDemonAI : MonoBehaviour
     [Header("DEBUG")]
     [SerializeField] private bool debugLogAnimator = false;
 
+    [Header("Combat Control")]
+    [Tooltip("Permite iniciar el combate. Se activa externamente después de la presentación.")]
+    public bool canStartCombat = false;
+
     // Estado interno
     private enum BossPhase { Phase1, Phase2, Phase3 }
     private enum BossState { Idle, Chasing, Attacking, CastingSpell, Underground, TakingDamage, Dead }
@@ -100,11 +104,11 @@ public class ImpDemonAI : MonoBehaviour
         if (!damageable) damageable = GetComponent<Damageable>();
         if (!agent) agent = GetComponent<NavMeshAgent>();
         
-        // Buscar al jugador si no está asignado
-        if (!player)
+        // IMPORTANTE: Usar PlayerService.Player en lugar de FindGameObjectWithTag
+        // Ver: DayNightCycle.cs línea 339-341, AdditiveSceneCinematic.cs línea 469
+        if (!player && PlayerService.Player != null)
         {
-            var playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj) player = playerObj.transform;
+            player = PlayerService.Player.transform;
         }
 
         // Construir cache de animaciones (intento de detectar estados con sufijos como 'Idle 0')
@@ -252,7 +256,7 @@ public class ImpDemonAI : MonoBehaviour
 
     void Update()
     {
-        if (!hasSpawned || isDead || !player) return;
+        if (!hasSpawned || isDead || !player || !canStartCombat) return;
 
         UpdatePhase();
         UpdateBehavior();

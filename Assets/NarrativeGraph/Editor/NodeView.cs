@@ -26,7 +26,6 @@ namespace Sendero.Narrative.Editor
             { typeof(StartBattleNode),          new Color(0.96f, 0.38f, 0.38f) },
             { typeof(BranchBoolNode),           new Color(0.78f, 0.51f, 0.15f) },
             { typeof(ActivateGameObjectNode),   new Color(0.90f, 0.56f, 0.20f) },
-            { typeof(NpcAutoMoveNode),          new Color(0.48f, 0.71f, 0.82f) },
             { typeof(PlayTimelineNode),         new Color(0.63f, 0.40f, 0.84f) },
             { typeof(PlayCinematicNode),        new Color(0.55f, 0.42f, 0.86f) },
             { typeof(PlayVoiceNode),            new Color(0.42f, 0.36f, 0.82f) },

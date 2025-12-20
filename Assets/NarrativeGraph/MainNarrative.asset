@@ -22,11 +22,9 @@ MonoBehaviour:
   - rid: 4128268641526088533
   - rid: 4128268648164098057
   - rid: 4128268764951085534
-  - rid: 5623891023686795667
   - rid: 5623891259268006347
   - rid: 5623891390812389407
   - rid: 5623891431555334813
-  - rid: 5623891431555334824
   - rid: 5623891431555334913
   - rid: 5623891431555335063
   - rid: 5623891444353466377
@@ -36,6 +34,9 @@ MonoBehaviour:
   - rid: 857239824104947819
   - rid: 857239824104947820
   - rid: 857239908502995421
+  - rid: 857240175331508836
+  - rid: 857240175331508933
+  - rid: 857240187951907077
   applicableSceneNames:
   - MainWorld
   references:
@@ -50,7 +51,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c235d486-6f5e-4a93-8d96-8721b6dad7d3
-        position: {x: 414, y: 985}
+        position: {x: 642, y: 844}
         outputs:
         - f5443754-fa40-4852-8b3d-c33d22d23958
         eventKey: ERIKA_FIGHT
@@ -63,7 +64,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f5443754-fa40-4852-8b3d-c33d22d23958
-        position: {x: 414, y: 1226}
+        position: {x: 1131, y: 681}
         outputs:
         - c9ca7493-60c5-44db-ae66-9b0e232343e3
         abilityKeysToUnlock: 
@@ -82,7 +83,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c9ca7493-60c5-44db-ae66-9b0e232343e3
-        position: {x: 414, y: 1647}
+        position: {x: 1612, y: 681}
         outputs:
         - e1be0c12-dbf5-4e8f-9eca-ba9561f56010
         eventKey: ERIKA_BATTLE_WON
@@ -95,10 +96,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
-        position: {x: 414, y: 1832}
+        position: {x: 2131, y: 681}
         outputs: []
         questId: ELDRAN_MISSION5
-        steps: 02000000
+        steps: 00000000
         completeQuest: 0
         logWarnings: 1
     - rid: 857239908502995421
@@ -110,10 +111,53 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 1ddb1872-8a05-4cd6-be42-00d94a266d0a
-        position: {x: 425, y: 285}
+        position: {x: 2812, y: 797}
         outputs:
         - d3b9a67c-d1e3-4672-a3be-46c6fed8e06b
         questId: ELDRAN_MISSION5
+        debugLogs: 0
+    - rid: 857240175331508836
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 7.- ELDRAN SE VA A CASA DE WILL
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9aed13d-e410-467b-a7ec-5c3e949debbf
+        position: {x: 234, y: 88}
+        outputs:
+        - a5599863-a03c-443e-8ab8-8f0883a196b9
+        questId: ELDRAN_MISSION3
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
+    - rid: 857240175331508933
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 3.-  ELDRAN PIDE BUSCAR UNA CAJA DE FRUTAS
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 71c84258-de93-4907-9cab-eaa99e68c750
+        position: {x: -840, y: -158}
+        outputs:
+        - 14dab578-84ac-40c4-8874-1f724ff76437
+        questId: ELDRAN_MISSION2
+    - rid: 857240187951907077
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 2.- TIENE QUE HABLAR CON ELDRAN
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e7f0a386-1e07-400f-9432-ef87cf2b2bce
+        position: {x: 633, y: -596}
+        outputs:
+        - 71c84258-de93-4907-9cab-eaa99e68c750
+        questId: ELDRAN_MISSION1
         debugLogs: 0
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -131,7 +175,7 @@ MonoBehaviour:
     - rid: 4128268622357594632
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 3.-  ELDRAN LE PIDE QUE BUSQUE UNA CAJA
+        displayTitle: 3.-  HAY QUE BUSCAR LA CAJA BAJO UN ARBOL
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -141,7 +185,7 @@ MonoBehaviour:
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         questId: ELDRAN_MISSION2
-        debugLogs: 1
+        debugLogs: 0
     - rid: 4128268622357594945
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -151,9 +195,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: -280, y: -386}
+        position: {x: 197, y: -596}
         outputs:
-        - 14dab578-84ac-40c4-8874-1f724ff76437
+        - e7f0a386-1e07-400f-9432-ef87cf2b2bce
         questId: ELDRAN_MISSION1
     - rid: 4128268641526088178
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
@@ -164,8 +208,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 1183, y: -552}
-        outputs: []
+        position: {x: 658, y: -355}
+        outputs:
+        - da331290-6f7e-4aa3-937d-83cb066bbfe7
         abilityKeysToUnlock: 03000000
         abilitiesToUnlock: 01000000
         spellsToUnlock: 01000000
@@ -184,7 +229,7 @@ MonoBehaviour:
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         position: {x: 222, y: -158}
         outputs:
-        - da331290-6f7e-4aa3-937d-83cb066bbfe7
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
         cinematicSceneName: Cinematic_DemonAppears
         useInternalCinematic: 1
     - rid: 4128268641526088533
@@ -196,10 +241,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 697, y: -158}
+        position: {x: 1221, y: -355}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
         questId: ELDRAN_MISSION3
     - rid: 4128268648164098057
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
@@ -210,14 +254,14 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 1183, y: -34}
+        position: {x: 1183, y: 88}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
         useBattleById: 1
-        completeMission: 1
-        missionStringId: ELDRAN_MISSION3
+        completeMission: 0
+        missionStringId: 
         missionId: 0
         arenaContext: 
     - rid: 4128268764951085534
@@ -229,58 +273,11 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 642, y: 60}
+        position: {x: 713, y: 88}
         outputs:
-        - 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
+        - b9aed13d-e410-467b-a7ec-5c3e949debbf
         cinematicSceneName: Cinematic_VillainPlans
         useInternalCinematic: 1
-    - rid: 5623891023686795667
-      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 7.- ELDRAN SE VA A CASA DE ALEX
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 90d0d7c6-7510-4b21-87aa-4bfb16a4c48b
-        position: {x: -376, y: 60}
-        outputs:
-        - a5599863-a03c-443e-8ab8-8f0883a196b9
-        npcName: Eldran
-        npcTag: 
-        dialogueOverride: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
-        triggerInteractableIfNoOverride: 1
-        dialogueTimeout: 60
-        sequenceMode: 0
-        returnToOrigin: 0
-        restoreRotationOnReturn: 1
-        moveToPlayer: 0
-        targetAnchorName: House_FrontDoor
-        targetPosition: {x: 0, y: 0, z: 0}
-        anchorOffset: {x: 0, y: 0, z: 0}
-        useAnchorPosition: 1
-        useRelativeOffset: 0
-        relativeOffsetIsLocal: 1
-        relativeOffset: {x: 0, y: 0, z: 5}
-        navmeshSampleRadius: 2
-        stoppingDistance: 0.35
-        turnAroundOnArrival: 0
-        maxWalkSeconds: 12
-        minAnimSpeed: 0.25
-        resetAnimationOnEnd: 1
-        minVisibleWalkSeconds: 0.5
-        minDistanceBeforeTeleport: 0.5
-        lockPlayer: 1
-        lockMode: 3
-        offscreenPadding: 0.05
-        cameraHeightOffset: 1.5
-        deactivateOnComplete: 0
-        persistDeactivation: 0
-        debugLogs: 0
-        treatNoPathAsReach: 1
-        runOnlyOncePerProfile: 1
-        persistCompletionToPreset: 1
-        persistPositionToSave: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -290,7 +287,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
-        position: {x: -577, y: -596}
+        position: {x: -723, y: -596}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
     - rid: 5623891390812389407
@@ -302,7 +299,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5599863-a03c-443e-8ab8-8f0883a196b9
-        position: {x: 129, y: 763}
+        position: {x: -134, y: 470}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - eea578d0-b7c5-4ca9-92f0-0816b720155f
@@ -318,57 +315,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
-        position: {x: 642, y: 625}
+        position: {x: 623, y: 441}
         outputs:
         - 56879a1a-c46a-4bab-a132-eab0b6cbaead
-        - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
         eventKey: ADD_CLOAK
-    - rid: 5623891431555334824
-      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: VICTORIA SE VA
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: fe467d0d-ec2b-40a3-bee0-ac728d838d3e
-        position: {x: 1052, y: 761}
-        outputs: []
-        npcName: Victoria
-        npcTag: 
-        dialogueOverride: {fileID: 0}
-        triggerInteractableIfNoOverride: 1
-        dialogueTimeout: 60
-        sequenceMode: 0
-        returnToOrigin: 0
-        restoreRotationOnReturn: 1
-        moveToPlayer: 0
-        targetAnchorName: House_FrontDoor
-        targetPosition: {x: 0, y: 0, z: 0}
-        anchorOffset: {x: 0, y: 0, z: 0}
-        useAnchorPosition: 1
-        useRelativeOffset: 0
-        relativeOffsetIsLocal: 1
-        relativeOffset: {x: 0, y: 0, z: 5}
-        navmeshSampleRadius: 2
-        stoppingDistance: 0.35
-        turnAroundOnArrival: 0
-        maxWalkSeconds: 12
-        minAnimSpeed: 0.25
-        resetAnimationOnEnd: 1
-        minVisibleWalkSeconds: 0.5
-        minDistanceBeforeTeleport: 0.5
-        lockPlayer: 1
-        lockMode: 3
-        offscreenPadding: 0.05
-        cameraHeightOffset: 1.5
-        deactivateOnComplete: 1
-        persistDeactivation: 1
-        debugLogs: 0
-        treatNoPathAsReach: 1
-        runOnlyOncePerProfile: 1
-        persistCompletionToPreset: 1
-        persistPositionToSave: 0
     - rid: 5623891431555334913
       type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
       data:
@@ -378,7 +328,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: -120, y: 1226}
+        position: {x: 642, y: 1109}
         outputs:
         - 1771837a-5269-4791-81da-c842d6ebac44
         - acdb775f-f475-47a8-8a8c-732de6cbd1fb
@@ -395,8 +345,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a2f041b9-7d2d-4ebd-9d01-767f08b00e21
-        position: {x: 1448, y: 625}
-        outputs: []
+        position: {x: 1540, y: 441}
+        outputs:
+        - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
         questId: ELDRAN_MISSION5
         steps: 00000000
         completeQuest: 0
@@ -410,7 +361,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        position: {x: -221, y: 1521}
+        position: {x: 1131, y: 1109}
         outputs: []
         questId: ELDRAN_MISSION5
         steps: 01000000

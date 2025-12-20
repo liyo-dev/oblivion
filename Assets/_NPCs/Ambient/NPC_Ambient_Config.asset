@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88c9475f86f244208b07742317d1e3a7, type: 3}
+  m_Name: NPC_Ambient_Config
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCAmbientConfig
+  moduleName: 
+  description: 
+  enableWander: 1
+  wanderRadius: 6
+  minIdleTime: 1.2
+  maxIdleTime: 3
+  walkSpeed: 1.5
+  minAnimSpeed: 0.25

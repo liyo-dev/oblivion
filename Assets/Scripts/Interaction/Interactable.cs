@@ -40,13 +40,13 @@ public class Interactable : MonoBehaviour
     public UnityEvent OnConsumed;
 
     bool used, enabledForUse;
-    NPCBehaviourManager _npcManager;
+    NPCBehaviourManagerV2 _npcManager;
 
     void Awake()
     {
         enabledForUse = initiallyEnabled;
         if (hint && hideHintAtStart) hint.SetActive(false);
-        _npcManager = GetComponent<NPCBehaviourManager>();
+        _npcManager = GetComponent<NPCBehaviourManagerV2>();
     }
 
     void OnEnable()
@@ -103,8 +103,9 @@ public class Interactable : MonoBehaviour
 
         OnInteract?.Invoke(interactor);
 
-        if (_npcManager != null && _npcManager.HandleInteraction(interactor))
-            return;
+        // TODO: Implementar HandleInteraction en NPCBehaviourManagerV2
+        // if (_npcManager != null && _npcManager.HandleInteraction(interactor))
+        //     return;
 
         switch (mode)
         {
@@ -274,12 +275,12 @@ public class Interactable : MonoBehaviour
     public void SetDialogue(DialogueAsset asset) => dialogue = asset;
     public void SetMode(InteractableMode newMode) => mode = newMode;
 
-    internal void RegisterNPCManager(NPCBehaviourManager manager)
+    internal void RegisterNPCManager(NPCBehaviourManagerV2 manager)
     {
         _npcManager = manager;
     }
 
-    internal void UnregisterNPCManager(NPCBehaviourManager manager)
+    internal void UnregisterNPCManager(NPCBehaviourManagerV2 manager)
     {
         if (_npcManager == manager)
             _npcManager = null;
@@ -337,3 +338,4 @@ public class Interactable : MonoBehaviour
         }
     }
 }
+

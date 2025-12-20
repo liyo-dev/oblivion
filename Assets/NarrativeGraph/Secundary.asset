@@ -41,13 +41,13 @@ MonoBehaviour:
     - rid: 857239905023820111
       type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: TUTORIAL MENUS
+        displayTitle: OLIVER SE MUEVE
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7a8b8424-a970-4c62-b79f-ced50da006f3
-        position: {x: -459.35498, y: -1535.8776}
+        position: {x: -185.24252, y: -1473.9484}
         outputs: []
         npcName: Oliver
         npcTag: 
@@ -87,7 +87,7 @@ MonoBehaviour:
     - rid: 857239905023820122
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: CUANDO WILL SALE DE SU CASA
+        displayTitle: 'MENUS TUTORIAL: CUANDO WILL SALE DE SU CASA'
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0

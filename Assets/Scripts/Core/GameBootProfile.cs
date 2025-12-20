@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Game.NPC;
@@ -65,7 +65,7 @@ public class GameBootProfile : ScriptableObject
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
         dst.consumedInteractableIds = new List<string>(src.consumedInteractableIds ?? new List<string>());
 
-        // === NUEVO: copiar sección de abilities (permisos físicos/acciones) ===
+        // === NUEVO: copiar secci�n de abilities (permisos f�sicos/acciones) ===
         if (src.abilities != null)
         {
             dst.abilities = new PlayerAbilities();
@@ -333,14 +333,14 @@ public class GameBootProfile : ScriptableObject
         return d;
     }
 
-    // === NUEVO: Métodos para guardar/cargar el profile completo ===
+    // === NUEVO: M�todos para guardar/cargar el profile completo ===
 
     /// <summary>Guarda el estado actual del profile en el SaveSystem</summary>
     public bool SaveProfile(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
         if (!saveSystem)
         {
-            GameBootProfileDebugger.Log("SaveProfile", "❌ SaveSystem no disponible", LogType.Error);
+            GameBootProfileDebugger.Log("SaveProfile", "? SaveSystem no disponible", LogType.Error);
             return false;
         }
 
@@ -349,11 +349,11 @@ public class GameBootProfile : ScriptableObject
         
         if (success)
         {
-            GameBootProfileDebugger.Log("SaveProfile", $"✅ Guardado exitoso (context: {context})", LogType.Log);
+            GameBootProfileDebugger.Log("SaveProfile", $"? Guardado exitoso (context: {context})", LogType.Log);
         }
         else
         {
-            GameBootProfileDebugger.Log("SaveProfile", "❌ Error al guardar", LogType.Error);
+            GameBootProfileDebugger.Log("SaveProfile", "? Error al guardar", LogType.Error);
         }
         
         return success;
@@ -364,7 +364,7 @@ public class GameBootProfile : ScriptableObject
     {
         if (!saveSystem || !saveSystem.HasSave())
         {
-            GameBootProfileDebugger.Log("LoadProfile", "❌ Sin SaveSystem o sin save disponible", LogType.Warning);
+            GameBootProfileDebugger.Log("LoadProfile", "? Sin SaveSystem o sin save disponible", LogType.Warning);
             return false;
         }
 
@@ -376,11 +376,11 @@ public class GameBootProfile : ScriptableObject
 
             NarrativeAutoSetup.ResetForLoadedProfile();
 
-            GameBootProfileDebugger.Log("LoadProfile", $"✅ Cargado exitoso - Anchor: {data.lastSpawnAnchorId}, HP: {data.currentHp:F0}", LogType.Log);
+            GameBootProfileDebugger.Log("LoadProfile", $"? Cargado exitoso - Anchor: {data.lastSpawnAnchorId}, HP: {data.currentHp:F0}", LogType.Log);
             return true;
         }
         
-        GameBootProfileDebugger.Log("LoadProfile", "❌ Error al cargar datos", LogType.Error);
+        GameBootProfileDebugger.Log("LoadProfile", "? Error al cargar datos", LogType.Error);
         return false;
     }
 
@@ -409,7 +409,7 @@ public class GameBootProfile : ScriptableObject
             syncedSystems.Add($"Health({p.currentHP:F0}/{p.maxHP:F0})");
         }
 
-        // Obtener datos del sistema de maná si existe
+        // Obtener datos del sistema de man� si existe
         var manaPool = FindFirstObjectByType<ManaPool>();
         if (manaPool != null)
         {
@@ -436,7 +436,7 @@ public class GameBootProfile : ScriptableObject
                 }
             }
 
-            // Añadir flags exportados por el QuestManager (active/completed/steps)
+            // A�adir flags exportados por el QuestManager (active/completed/steps)
             qm.ExportFlags(newFlags);
 
             // Log detallado de quests activas/completadas para debug
@@ -459,7 +459,7 @@ public class GameBootProfile : ScriptableObject
             syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb},F:{actionManager.AllowFly})");
          }
 
-        // Nota: Los demás datos (level, abilities, spells, flags) se mantienen del preset actual
+        // Nota: Los dem�s datos (level, abilities, spells, flags) se mantienen del preset actual
         if (PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true))
         {
             p.inventoryItems = SanitizeInventorySnapshot(inventory.GetSaveSnapshot());
@@ -525,7 +525,7 @@ public class GameBootProfile : ScriptableObject
         // Snapshot narrativo eliminado; no se captura
 
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
-        GameBootProfileDebugger.Log("UpdateRuntimePreset", $"✅ Sincronizados: {string.Join(", ", syncedSystems)}", LogType.Log);
+        GameBootProfileDebugger.Log("UpdateRuntimePreset", $"? Sincronizados: {string.Join(", ", syncedSystems)}", LogType.Log);
     }
 
     int CaptureNpcPositionsFromScene(PlayerPresetSO preset)
@@ -546,16 +546,13 @@ public class GameBootProfile : ScriptableObject
                 existingEntries[entry.npcId] = i;
         }
 
-        var processed = new HashSet<string>();
-
-        var npcs = ServiceLocator.GetAll<NPCBehaviourManager>();
+        var npcs = ServiceLocator.GetAll<NPCBehaviourManagerV2>();
         foreach (var npc in npcs)
         {
             if (npc == null || !npc.persistLastPosition)
                 continue;
 
             var npcId = npc.gameObject.name;
-            processed.Add(npcId);
 
             // Si ya existe una entrada en el preset (añadida por NpcAutoMoveNode), mantenerla
             if (existingEntries.ContainsKey(npcId))
@@ -633,7 +630,7 @@ public class GameBootProfile : ScriptableObject
         if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0)
             return;
 
-        var npcs = ServiceLocator.GetAll<NPCBehaviourManager>();
+        var npcs = ServiceLocator.GetAll<NPCBehaviourManagerV2>();
         if (npcs == null || npcs.Count == 0)
             return;
 
@@ -656,7 +653,7 @@ public class GameBootProfile : ScriptableObject
 
             try
             {
-                // Si tiene NavMeshAgent, usar Warp para evitar física/paths
+                // Si tiene NavMeshAgent, usar Warp para evitar f�sica/paths
                 var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (agent != null && agent.isOnNavMesh)
                 {
@@ -685,25 +682,25 @@ public class GameBootProfile : ScriptableObject
         }
     }
 
-    /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automáticos.</summary>
+    /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves autom�ticos.</summary>
     public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
         if (!saveSystem)
         {
-            GameBootProfileDebugger.Log("SaveCurrentGameState", "❌ SaveSystem no disponible", LogType.Error);
+            GameBootProfileDebugger.Log("SaveCurrentGameState", "? SaveSystem no disponible", LogType.Error);
             return false;
         }
 
         if (context == SaveRequestContext.Auto && !allowAutoSaves)
         {
             Debug.Log("[GameBootProfile] Auto-guardado omitido (allowAutoSaves = false)." );
-            GameBootProfileDebugger.Log("SaveCurrentGameState", "⏭️ Auto-guardado omitido (allowAutoSaves = false)", LogType.Warning);
+            GameBootProfileDebugger.Log("SaveCurrentGameState", "?? Auto-guardado omitido (allowAutoSaves = false)", LogType.Warning);
             return false;
         }
 
         // Sincronizar runtimePreset con estado actual del juego
         UpdateRuntimePresetFromCurrentState();
-        GameBootProfileDebugger.Log("SaveCurrentGameState", $"🔄 Runtime actualizado antes de guardar (context: {context})", LogType.Log);
+        GameBootProfileDebugger.Log("SaveCurrentGameState", $"?? Runtime actualizado antes de guardar (context: {context})", LogType.Log);
 
         // Guardar profile actualizado
         return SaveProfile(saveSystem, context);
@@ -722,21 +719,21 @@ public class GameBootProfile : ScriptableObject
         if (defaultPlayerPreset)
         {
             EnsureRuntimePresetFromTemplate(defaultPlayerPreset);
-            GameBootProfileDebugger.Log("NewGameReset", $"🆕 Nueva partida desde defaultPlayerPreset: {defaultPlayerPreset.name}", LogType.Log);
+            GameBootProfileDebugger.Log("NewGameReset", $"?? Nueva partida desde defaultPlayerPreset: {defaultPlayerPreset.name}", LogType.Log);
         }
         else
         {
             EnsureRuntimePreset();
             ResetPresetToEmpty(runtimePreset);
-            GameBootProfileDebugger.Log("NewGameReset", "🆕 Nueva partida con preset vacío (sin defaultPlayerPreset)", LogType.Warning);
+            GameBootProfileDebugger.Log("NewGameReset", "?? Nueva partida con preset vac�o (sin defaultPlayerPreset)", LogType.Warning);
         }
 
         // Garantizar que la magia arranca bloqueada en partidas nuevas, incluso si el preset
         // por defecto tuviera valores residuales (por testing o saves previos).
         LockMagicForNewGame(runtimePreset);
 
-        // La apariencia ya se copió del defaultPlayerPreset en EnsureRuntimePresetFromTemplate
-        // No hace falta aplicar nada adicional, la apariencia del default ya está en runtimePreset
+        // La apariencia ya se copi� del defaultPlayerPreset en EnsureRuntimePresetFromTemplate
+        // No hace falta aplicar nada adicional, la apariencia del default ya est� en runtimePreset
 
         // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
         if (runtimePreset != null)
@@ -745,7 +742,7 @@ public class GameBootProfile : ScriptableObject
                 runtimePreset.npcPositions.Clear();
         }
 
-        // Limpiar flags transitorias (ej: cinemáticas vistas) para garantizar que Nueva Partida siempre las repita.
+        // Limpiar flags transitorias (ej: cinem�ticas vistas) para garantizar que Nueva Partida siempre las repita.
         if (runtimePreset != null && runtimePreset.flags != null)
         {
             runtimePreset.flags.RemoveAll(flag => !string.IsNullOrEmpty(flag) && flag.StartsWith("CINEMATIC_SEEN:", StringComparison.OrdinalIgnoreCase));
@@ -779,7 +776,7 @@ public class GameBootProfile : ScriptableObject
         NarrativeAutoSetup.ResetForNewGame();
 
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
-        GameBootProfileDebugger.Log("NewGameReset", "✅ Reset completado - sistemas reiniciados", LogType.Log);
+        GameBootProfileDebugger.Log("NewGameReset", "? Reset completado - sistemas reiniciados", LogType.Log);
     }
 
     private void ResetPresetToEmpty(PlayerPresetSO p)
@@ -825,8 +822,9 @@ public class GameBootProfile : ScriptableObject
         preset.rightSpellId = SpellId.None;
         preset.specialSpellId = SpellId.None;
 
-        // Sin magia, el maná debe iniciar en 0 para evitar mostrar barra llena.
+        // Sin magia, el man� debe iniciar en 0 para evitar mostrar barra llena.
         preset.maxMP = 0f;
         preset.currentMP = 0f;
     }
 }
+

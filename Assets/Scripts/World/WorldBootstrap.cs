@@ -1,5 +1,5 @@
 using UnityEngine;
-using Game.NPC; // NPCBehaviourManager
+using Game.NPC; // NPCBehaviourManagerV2
 
 public class WorldBootstrap : MonoBehaviour
 {
@@ -132,7 +132,7 @@ public class WorldBootstrap : MonoBehaviour
             try { go = GameObject.Find(entry.npcId); } catch { }
             if (go == null) continue;
 
-            var mgr = go.GetComponent<NPCBehaviourManager>();
+            var mgr = go.GetComponent<NPCBehaviourManagerV2>();
             if (mgr == null) continue;
             
             // Aplicar estado activo/inactivo solo si se guardó explícitamente
@@ -215,3 +215,4 @@ public class WorldBootstrap : MonoBehaviour
         }
     }
 }
+

@@ -11,5 +11,6 @@ AssetOrigin:
   productId: 305701
   packageName: Mines and Cave Set
   packageVersion: 1.0
-  assetPath: Assets/LoafbrrAssets/MInesAndCaveSet/TestDemo/Global Volume Profile.asset
+  assetPath: Assets/Art/World/LoafbrrAssets/MInesAndCaveSet/TestDemo/Global Volume
+    Profile.asset
   uploadId: 718441
