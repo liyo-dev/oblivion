@@ -367,25 +367,80 @@ public class NPCCombatConfig : NPCModuleConfigBase
 
 ### 3.4 Sistema de Misiones
 
-#### SimpleQuestNPC (Legacy - Migrado a NPCConfiguration)
+#### ⚠️ Arquitectura Importante: FSM vs Módulos
 
-Sistema de cadenas de misiones configurable desde Inspector:
+**CRÍTICO:** El sistema de NPCs usa arquitectura modular:
+- **NPCBrain** = FSM controller (maneja estados, NO lógica de gameplay)
+- **NPCQuestConfig** = Módulo con lógica de quests (ScriptableObject)
+- **NPCCombatConfig** = Módulo con lógica de combate
+- **NPCNarrativeConfig** = Módulo con lógica narrativa
+
+**❌ NUNCA pongas lógica de quests/combate/narrativa en NPCBrain**
+**✅ SIEMPRE pon la lógica en el módulo correspondiente (NPCQuestConfig, etc.)**
+
+#### NPCQuestConfig (ScriptableObject)
+
+**Ubicación:** `Assets/Scripts/Behaviour NPC/Modules/NPCQuestConfig.cs`
+
+Módulo que maneja la lógica completa del sistema de quests para un NPC:
 
 ```csharp
-public class SimpleQuestNPC : MonoBehaviour
+[CreateAssetMenu(fileName = "NPC_Quest_Config", menuName = "NPC/Módulos/Quest Config")]
+public class NPCQuestConfig : NPCModuleConfigBase
 {
-    [Serializable]
-    public class QuestChainEntry
-    {
-        public QuestData quest;
-        public QuestCompletionMode completionMode;
-        public DialogueAsset dlgBefore;
-        public DialogueAsset dlgInProgress;
-        public DialogueAsset dlgTurnIn;
-        public DialogueAsset dlgCompleted;
-    }
+    [Header("Quest Chain")]
+    public QuestChainEntry[] questChain;
     
-    public List<QuestChainEntry> questChain;
+    [Header("Item Detection")]
+    public bool enableItemDetection = true;
+    public float detectionRadius = 3f;
+    
+    [Header("Behavior")]
+    public bool rotateToPlayerOnInteract = true;
+    public float rotationDuration = 0.3f;
+    
+    // MÉTODOS DE LÓGICA (no en NPCBrain)
+    public bool ProcessInteraction(GameObject interactor, NPCStateContext context)
+    {
+        // Busca quest activa en la cadena
+        // Procesa completion modes
+        // Reproduce diálogos
+        // Invoca eventos
+    }
+}
+```
+
+#### QuestChainEntry
+
+Cada entrada en la cadena de misiones del NPC:
+
+```csharp
+[Serializable]
+public class QuestChainEntry
+{
+    public QuestData questData;
+    public QuestCompletionMode completionMode;
+    
+    // Diálogos
+    public DialogueAsset dlgBefore;        // Antes de aceptar
+    public DialogueAsset dlgInProgress;    // Quest activa, pasos incompletos
+    public DialogueAsset dlgTurnIn;        // Al completar
+    public DialogueAsset dlgCompleted;     // Ya completada
+    
+    // Eventos
+    public UnityEvent onQuestCompleted;
+    public UnityEvent onOfferDialogueStarted;
+    public UnityEvent onOfferDialogueFinished;
+    public UnityEvent onPostActionCompleted;
+    
+    // Post-Action (movimiento, teleport, fade, etc.)
+    public QuestPostAction postAction;
+    
+    // Detección de ítems
+    public bool autoDetectItemDelivery;
+    public string itemTag;
+    public bool requireItemInInventory;
+    public ItemData requiredItem;
 }
 ```
 
@@ -395,25 +450,180 @@ public class SimpleQuestNPC : MonoBehaviour
 public enum QuestCompletionMode
 {
     Manual,                      // Requiere QuestManager.CompleteQuest() externo
-    AutoCompleteOnTalk,          // Se completa al hablar (ej. "Habla con Eldran")
-    CompleteOnTalkIfStepsReady   // Se completa al hablar SI todos los pasos están OK
+    AutoCompleteOnTalk,          // Autocompleta todos los pasos al hablar
+    CompleteOnTalkIfStepsReady   // Completa solo si todos los pasos están listos
 }
 ```
 
-#### Ejemplo: Misión de Eldran
+#### Flujo de Interacción
+
+```
+1. Player interactúa → Interactable.OnInteract()
+2. Interactable (HandOffToTarget mode) → NPCBehaviourManagerV2.HandleInteraction()
+3. NPCBehaviourManagerV2 → NPCBrain.HandleInteraction()
+4. NPCBrain marca context.IsInteracting = true
+5. NPCBrain delega → questConfig.ProcessInteraction(interactor, context)
+6. NPCQuestConfig:
+   - Busca quest activa en questChain (de atrás hacia adelante)
+   - Si encuentra quest activa → HandleQuestState()
+   - Procesa según QuestCompletionMode
+   - Reproduce diálogo correspondiente
+   - Invoca eventos (onQuestCompleted, etc.)
+   - Si no hay quest activa → Verifica primera quest
+```
+
+#### ⚠️ Sistema de Quest Chain: Timing Crítico
+
+**IMPORTANTE:** La quest solo aparece en UI **DESPUÉS** de que el NPC termine el diálogo de oferta.
+
+**Flujo correcto de completar y encadenar:**
+
+```
+1. Quest activa se completa:
+   ├─ qm.CompleteQuest() → marca como completada
+   ├─ PlayDialogue(dlgTurnIn) → NPC dice "Gracias, bien hecho"
+   └─ TryStartNextQuestInChain() → busca siguiente quest
+
+2. Si hay siguiente quest en la cadena:
+   ├─ SI tiene dlgBefore:
+   │  ├─ Reproduce dlgBefore → "Ahora necesito que me traigas..."
+   │  ├─ Se suscribe a DialogueManager.OnDialogueEnded
+   │  └─ Cuando diálogo TERMINA → qm.StartQuest() → ✅ APARECE EN UI
+   │
+   └─ SI NO tiene dlgBefore:
+      └─ NO hace nada → ⚠️ Quest se iniciará desde otro lugar (grafo narrativo)
+
+3. Primera quest de la cadena:
+   └─ Mismo comportamiento: solo inicia automáticamente si tiene dlgBefore
+```
+
+**Ejemplo del flujo:**
+
+```
+[Jugador lee carta] → "Ve a hablar con Eldran"
+[Jugador habla con Eldran]
+  → NPC dice: "Gracias por venir" (dlgTurnIn de quest anterior)
+  → ⏸️ UI aún NO muestra nueva quest
+  → NPC dice: "Necesito que me traigas una caja" (dlgBefore de siguiente quest)
+  → ✅ AHORA aparece "Trae la caja" en UI (diálogo terminó)
+```
+
+**Por qué es importante:**
+
+- ❌ **MAL:** Quest aparece en UI antes de que NPC la ofrezca → jugador confundido
+- ✅ **BIEN:** Quest aparece en UI solo después del diálogo completo → experiencia coherente
+
+**Quests sin dlgBefore:**
+
+Si una quest en la cadena NO tiene `dlgBefore`, significa que se iniciará desde otro lugar:
+- Grafo narrativo (NarrativeGraph con nodo StartQuest)
+- Evento del mundo (trigger, cinemática)
+- Script externo
+
+En este caso, NPCQuestConfig NO inicia la quest automáticamente al completar la anterior.
+
+#### Ejemplo: Configuración de Eldran
+
+```yaml
+NPC_Eldran_Config (NPCConfiguration):
+  behaviours: Quest | Wander
+  questConfig: NPC_Eldran_QuestConfig
+  
+NPC_Eldran_QuestConfig (NPCQuestConfig):
+  questChain[0]:
+    questData: ELDRAN_MISSION1
+    completionMode: AutoCompleteOnTalk
+    dlgBefore: DLG_ELDRAN_INTRO
+    dlgTurnIn: DLG_ELDRAN_MISSION1_COMPLETE
+    
+  questChain[1]:
+    questData: ELDRAN_MISSION2
+    completionMode: CompleteOnTalkIfStepsReady
+    dlgBefore: DLG_ELDRAN_MISSION2_OFFER
+    dlgInProgress: DLG_ELDRAN_WAITING
+    dlgTurnIn: DLG_ELDRAN_MISSION2_COMPLETE
+    requireItemInInventory: true
+    requiredItem: FruitBox
+```
+
+#### Ejemplo en Gameplay
 
 ```
 Misión 1: "Habla con Eldran"
   - Mode: AutoCompleteOnTalk
-  - Al interactuar → Completa automáticamente → Ofrece Misión 2
+  - dlgBefore: "Hola, necesito tu ayuda"
+  - dlgTurnIn: "Gracias por venir"
+  
+  Flujo:
+  1. Player habla con Eldran
+  2. Reproduce dlgBefore → "Hola, necesito tu ayuda"
+  3. Diálogo termina → Quest aparece en UI
+  4. Quest se autocompleta (AutoCompleteOnTalk)
+  5. Reproduce dlgTurnIn → "Gracias por venir"
+  6. Busca siguiente quest en cadena...
 
 Misión 2: "Trae la caja de frutas"
   - Mode: CompleteOnTalkIfStepsReady
-  - Paso 0: Hablar con Eldran ✓
-  - Paso 1: Recoger caja en bosque
-  - Si vuelves sin la caja → dlgInProgress
-  - Si vuelves con la caja → Completa automáticamente
+  - dlgBefore: "Ahora necesito que me traigas una caja del bosque"
+  - dlgInProgress: "¿Ya encontraste la caja?"
+  - dlgTurnIn: "¡Perfecto, muchas gracias!"
+  
+  Flujo:
+  1. Después de completar Misión 1
+  2. Reproduce dlgBefore → "Ahora necesito que me traigas..."
+  3. Diálogo termina → Quest aparece en UI ("Trae la caja")
+  4. Player busca caja en bosque
+  5. Player vuelve sin caja → dlgInProgress ("¿Ya la encontraste?")
+  6. Player vuelve con caja → Completa automáticamente → dlgTurnIn
+
+Misión 3: "Derrota al enemigo" (sin dlgBefore)
+  - Mode: Manual
+  - dlgBefore: null ← NO tiene diálogo de oferta
+  - dlgTurnIn: "¡Has derrotado al enemigo!"
+  
+  Flujo:
+  1. Después de completar Misión 2
+  2. NPCQuestConfig NO inicia esta quest (no tiene dlgBefore)
+  3. Quest se inicia desde NarrativeGraph (nodo StartQuest)
+  4. Player completa quest
+  5. Vuelve al NPC → dlgTurnIn
 ```
+
+#### Integración con QuestManager
+
+NPCQuestConfig usa QuestManager.Instance directamente:
+
+```csharp
+// En NPCQuestConfig.ProcessInteraction()
+var qm = QuestManager.Instance;
+var state = qm.GetState(questId);  // GetState(), NO GetQuestState()
+
+if (state == QuestState.Active)
+{
+    bool allDone = qm.AreAllStepsCompleted(questId);
+    if (entry.completionMode == QuestCompletionMode.AutoCompleteOnTalk)
+    {
+        CompleteAllSteps(qm, entry, questId, context);
+    }
+}
+
+// RuntimeQuest tiene propiedades: Id, State, Steps[]
+var quest = qm.GetAll().FirstOrDefault(q => q.Id == questId);
+if (quest?.Steps != null)
+{
+    for (int i = 0; i < quest.Steps.Length; i++)
+    {
+        if (!quest.Steps[i].completed)  // .completed, NO .isCompleted
+        {
+            qm.MarkStepDone(questId, i);
+        }
+    }
+}
+```
+
+#### ⚠️ Sistema Legacy (NO USAR)
+
+`SimpleQuestNPC` es obsoleto. Fue migrado a NPCQuestConfig. **No uses SimpleQuestNPC en nuevos NPCs.**
 
 ---
 

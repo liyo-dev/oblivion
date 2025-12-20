@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Linq;
+
 namespace Game.NPC.Modules
 {
     /// <summary>
@@ -31,6 +33,7 @@ namespace Game.NPC.Modules
         [Min(0f)]
         [Tooltip("Duración de la rotación")]
         public float rotationDuration = 0.3f;
+
         public override bool ValidateConfig(out string errorMessage)
         {
             errorMessage = "";
@@ -69,6 +72,205 @@ namespace Game.NPC.Modules
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Procesa la interacción del jugador con el NPC.
+        /// Maneja la lógica de quests, completion modes y diálogos.
+        /// </summary>
+        public bool ProcessInteraction(GameObject interactor, Common.NPCStateContext context)
+        {
+            var qm = QuestManager.Instance;
+            if (qm == null)
+            {
+                Debug.LogError("[NPCQuestConfig] QuestManager.Instance es null");
+                return false;
+            }
+
+            if (questChain == null || questChain.Length == 0)
+            {
+                Debug.LogWarning("[NPCQuestConfig] questChain vacío");
+                return false;
+            }
+
+            // Buscar quest activa en la cadena (de atrás hacia adelante)
+            for (int i = questChain.Length - 1; i >= 0; i--)
+            {
+                var entry = questChain[i];
+                if (entry?.questData == null) continue;
+
+                var questId = entry.questData.questId;
+                var state = qm.GetState(questId);
+
+                if (state == QuestState.Active || state == QuestState.Completed)
+                {
+                    HandleQuestState(qm, entry, questId, state, context);
+                    return true;
+                }
+            }
+
+            // Si no hay quest activa, iniciar la primera
+            var first = questChain[0];
+            if (first?.questData != null)
+            {
+                var firstState = qm.GetState(first.questData.questId);
+                if (firstState == QuestState.Inactive)
+                {
+                    // Si tiene dlgBefore, reproducir diálogo primero y luego iniciar quest
+                    if (first.dlgBefore != null)
+                    {
+                        first.onOfferDialogueStarted?.Invoke();
+                        PlayDialogueWithCallback(first.dlgBefore, context, () =>
+                        {
+                            // Callback ejecutado cuando termina el diálogo
+                            qm.AddQuest(first.questData);
+                            qm.StartQuest(first.questData.questId);
+                            first.onOfferDialogueFinished?.Invoke();
+                        });
+                    }
+                    else
+                    {
+                        // Sin diálogo, NO iniciar automáticamente (se iniciará desde otro lado)
+                        Debug.Log($"[NPCQuestConfig] Quest '{first.questData.questId}' sin dlgBefore - no se inicia automáticamente");
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void HandleQuestState(QuestManager qm, QuestChainEntry entry, string questId, QuestState state, Common.NPCStateContext context)
+        {
+            switch (state)
+            {
+                case QuestState.Active:
+                    bool allDone = qm.AreAllStepsCompleted(questId);
+
+                    switch (entry.completionMode)
+                    {
+                        case QuestCompletionMode.AutoCompleteOnTalk:
+                            CompleteAllSteps(qm, entry, questId, context);
+                            break;
+
+                        case QuestCompletionMode.CompleteOnTalkIfStepsReady:
+                        case QuestCompletionMode.Manual:
+                            if (allDone)
+                            {
+                                FinishQuest(qm, entry, questId, context);
+                            }
+                            else
+                            {
+                                PlayDialogue(entry.dlgInProgress, context);
+                            }
+                            break;
+                    }
+                    break;
+
+                case QuestState.Completed:
+                    PlayDialogue(entry.dlgCompleted, context);
+                    break;
+            }
+        }
+
+        private void CompleteAllSteps(QuestManager qm, QuestChainEntry entry, string questId, Common.NPCStateContext context)
+        {
+            var quest = qm.GetAll().FirstOrDefault(q => q.Id == questId);
+            if (quest?.Steps != null)
+            {
+                for (int i = 0; i < quest.Steps.Length; i++)
+                {
+                    if (!quest.Steps[i].completed)
+                    {
+                        qm.MarkStepDone(questId, i);
+                    }
+                }
+            }
+            FinishQuest(qm, entry, questId, context);
+        }
+
+        private void FinishQuest(QuestManager qm, QuestChainEntry entry, string questId, Common.NPCStateContext context)
+        {
+            qm.CompleteQuest(questId);
+            entry.onQuestCompleted?.Invoke();
+            PlayDialogue(entry.dlgTurnIn, context);
+            
+            // Buscar la siguiente quest en la cadena
+            TryStartNextQuestInChain(questId, context);
+        }
+
+        private void TryStartNextQuestInChain(string completedQuestId, Common.NPCStateContext context)
+        {
+            // Encontrar índice de la quest completada
+            int completedIndex = -1;
+            for (int i = 0; i < questChain.Length; i++)
+            {
+                if (questChain[i]?.questData?.questId == completedQuestId)
+                {
+                    completedIndex = i;
+                    break;
+                }
+            }
+
+            if (completedIndex < 0 || completedIndex >= questChain.Length - 1)
+                return; // No hay siguiente quest
+
+            var nextEntry = questChain[completedIndex + 1];
+            if (nextEntry?.questData == null) return;
+
+            var qm = QuestManager.Instance;
+            if (qm == null) return;
+
+            var nextState = qm.GetState(nextEntry.questData.questId);
+            if (nextState != QuestState.Inactive) return; // Ya está iniciada
+
+            // Si tiene dlgBefore, reproducir diálogo y luego iniciar quest
+            if (nextEntry.dlgBefore != null)
+            {
+                nextEntry.onOfferDialogueStarted?.Invoke();
+                PlayDialogueWithCallback(nextEntry.dlgBefore, context, () =>
+                {
+                    // Callback ejecutado cuando termina el diálogo
+                    qm.AddQuest(nextEntry.questData);
+                    qm.StartQuest(nextEntry.questData.questId);
+                    nextEntry.onOfferDialogueFinished?.Invoke();
+                });
+            }
+            // Si NO tiene dlgBefore, NO iniciar automáticamente
+            // (se iniciará desde otro lugar: grafo narrativo, etc.)
+        }
+
+        private void PlayDialogue(DialogueAsset dialogue, Common.NPCStateContext context)
+        {
+            if (dialogue == null) return;
+
+            var dm = DialogueManager.Instance;
+            if (dm == null)
+            {
+                Debug.LogError("[NPCQuestConfig] DialogueManager.Instance es null");
+                return;
+            }
+
+            dm.StartDialogue(dialogue, context.Transform, null);
+        }
+
+        private void PlayDialogueWithCallback(DialogueAsset dialogue, Common.NPCStateContext context, System.Action onFinished)
+        {
+            if (dialogue == null)
+            {
+                onFinished?.Invoke();
+                return;
+            }
+
+            var dm = DialogueManager.Instance;
+            if (dm == null)
+            {
+                Debug.LogError("[NPCQuestConfig] DialogueManager.Instance es null");
+                onFinished?.Invoke();
+                return;
+            }
+
+            dm.StartDialogue(dialogue, context.Transform, onFinished);
         }
     }
 }

@@ -29,7 +29,6 @@ MonoBehaviour:
   - rid: 5623891572275806460
   - rid: 5623891572275806493
   - rid: 5623891572275806494
-  - rid: 857239905023820111
   - rid: 857239905023820122
   - rid: 857239913217393070
   - rid: 857239913217393071
@@ -38,52 +37,6 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 857239905023820111
-      type: {class: NpcAutoMoveNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: OLIVER SE MUEVE
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 7a8b8424-a970-4c62-b79f-ced50da006f3
-        position: {x: -185.24252, y: -1473.9484}
-        outputs: []
-        npcName: Oliver
-        npcTag: 
-        dialogueOverride: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
-        triggerInteractableIfNoOverride: 1
-        dialogueTimeout: 60
-        sequenceMode: 0
-        returnToOrigin: 0
-        restoreRotationOnReturn: 1
-        moveToPlayer: 0
-        targetAnchorName: House_FrontDoor_Tutorial
-        targetPosition: {x: 0, y: 0, z: 0}
-        anchorOffset: {x: 0, y: 0, z: 0}
-        useAnchorPosition: 1
-        useRelativeOffset: 0
-        relativeOffsetIsLocal: 1
-        relativeOffset: {x: 0, y: 0, z: 5}
-        navmeshSampleRadius: 2
-        stoppingDistance: 0
-        turnAroundOnArrival: 1
-        maxWalkSeconds: 12
-        minAnimSpeed: 0.25
-        resetAnimationOnEnd: 1
-        minVisibleWalkSeconds: 0.5
-        minDistanceBeforeTeleport: 0.5
-        lockPlayer: 1
-        lockMode: 5
-        offscreenPadding: 0.05
-        cameraHeightOffset: 1.5
-        deactivateOnComplete: 0
-        persistDeactivation: 0
-        debugLogs: 0
-        treatNoPathAsReach: 1
-        runOnlyOncePerProfile: 1
-        persistCompletionToPreset: 1
-        persistPositionToSave: 1
     - rid: 857239905023820122
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

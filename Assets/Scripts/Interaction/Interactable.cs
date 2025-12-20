@@ -127,47 +127,22 @@ public class Interactable : MonoBehaviour
             }
         }
 
-        Debug.Log($"[Interactable:{name}] 📣 Disparando OnInteract event (listeners={OnInteract?.GetPersistentEventCount()})");
         OnInteract?.Invoke(interactor);
 
-        // Modo HandOffToTarget: delegar al NPCBehaviourManagerV2
-        if (mode == InteractableMode.HandOffToTarget)
+        // Modo HandOffToTarget: delegar al NPCBehaviourManagerV2 si existe
+        if (mode == InteractableMode.HandOffToTarget && _npcManager != null)
         {
-            Debug.Log($"[Interactable:{name}] 🎯 Modo HandOffToTarget - buscando NPCBehaviourManagerV2");
-            
-            // Intentar obtener _npcManager si es NULL
-            if (_npcManager == null)
-            {
-                _npcManager = GetComponent<NPCBehaviourManagerV2>();
-                Debug.Log($"[Interactable:{name}] 🔍 _npcManager obtenido: {(_npcManager != null ? "✅ OK" : "❌ NULL")}");
-            }
-            
-            if (_npcManager != null)
-            {
-                Debug.Log($"[Interactable:{name}] ➡️ Delegando a NPCBehaviourManagerV2.HandleInteraction()");
-                _npcManager.HandleInteraction(interactor);
-                return;
-            }
-            else
-            {
-                Debug.LogError($"[Interactable:{name}] ❌ Modo HandOffToTarget pero NO hay NPCBehaviourManagerV2 en el GameObject");
-            }
+            _npcManager.HandleInteraction(interactor);
+            return;
         }
-
-        Debug.Log($"[Interactable:{name}] 🔀 Evaluando mode={mode}");
         
         switch (mode)
         {
             case InteractableMode.OpenDialogue:
-                Debug.Log($"[Interactable:{name}] 📖 Modo OpenDialogue");
                 StartDialogue();
                 break;
             case InteractableMode.OpenDialogueWithOptions:
-                Debug.Log($"[Interactable:{name}] 🔀 Modo OpenDialogueWithOptions");
                 StartDialogueWithOptions();
-                break;
-            default:
-                Debug.Log($"[Interactable:{name}] ⚠️ Modo '{mode}' no manejado - debe usar OnInteract event");
                 break;
         }
     }

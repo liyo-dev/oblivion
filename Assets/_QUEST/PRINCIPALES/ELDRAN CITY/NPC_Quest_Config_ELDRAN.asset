@@ -39,12 +39,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
@@ -80,12 +84,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
@@ -121,12 +129,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
       actionType: 1
       dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 1
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
@@ -162,12 +174,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
-      actionType: 1
-      dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
+      actionType: 0
+      dialogueBeforeAction: {fileID: 0}
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
@@ -203,12 +219,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
-      actionType: 1
-      dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
+      actionType: 0
+      dialogueBeforeAction: {fileID: 0}
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
@@ -244,12 +264,16 @@ MonoBehaviour:
     onOfferDialogueFinished:
       m_PersistentCalls:
         m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     postAction:
-      actionType: 1
+      actionType: 0
       dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
+      walkDisplayDuration: 3
       turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}

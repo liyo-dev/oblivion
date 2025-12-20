@@ -23,9 +23,12 @@ public class QuestLogItemUI : MonoBehaviour
     [SerializeField] private Color colorCompleted = new Color(0.3f,0.8f,0.4f);
 
     private bool _isExpanded = false;
+    
+    public string QuestId { get; private set; }
 
     public void Bind(QuestManager.RuntimeQuest data)
     {
+        QuestId = data.Id;
         // Título de la quest (localizado)
         string display = data.Data.GetLocalizedName();
         if (string.IsNullOrEmpty(display)) display = data.Id;

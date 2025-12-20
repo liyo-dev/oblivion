@@ -82,5 +82,30 @@ namespace Game.NPC.Common
             ChangeState(_previousState);
             return true;
         }
+        
+        /// <summary>
+        /// Maneja la interacción del jugador con el NPC.
+        /// Delega a NPCQuestConfig para procesar la lógica.
+        /// </summary>
+        public bool HandleInteraction(GameObject interactor)
+        {
+            if (_context == null || _context.Config == null)
+            {
+                Debug.LogWarning($"[NPCBrain] No hay contexto o configuración disponible");
+                return false;
+            }
+            
+            var config = _context.Config;
+            
+            // Si tiene configuración de quest, delegar al config
+            if (config.HasBehaviour(NPCBehaviourType.Quest) && config.questConfig != null)
+            {
+                _context.IsInteracting = true;
+                return config.questConfig.ProcessInteraction(interactor, _context);
+            }
+            
+            Debug.LogWarning($"[NPCBrain] No hay configuración de Quest");
+            return false;
+        }
     }
 }

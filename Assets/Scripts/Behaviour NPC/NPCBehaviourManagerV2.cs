@@ -330,50 +330,18 @@ namespace Game.NPC
         #region Interaction System
         
         /// <summary>
-        /// Maneja la interacción con el jugador (llamado desde Interactable)
+        /// Maneja la interacción con el jugador (llamado desde Interactable).
+        /// Delega al NPCBrain/módulos para que manejen la interacción según el tipo de NPC.
         /// </summary>
         public void HandleInteraction(GameObject interactor)
         {
-            if (debugMode)
-                Debug.Log($"[NPCBehaviourV2:{name}] 🤝 HandleInteraction - interactor={interactor?.name}");
-            
-            // Sistema moderno: buscar NarrativeRunner para iniciar diálogos/quests
-            var narrativeRunner = GetComponent<NarrativeRunner>();
-            
-            if (narrativeRunner != null && narrativeRunner.graph != null)
+            if (_brain != null)
             {
-                if (debugMode)
-                    Debug.Log($"[NPCBehaviourV2:{name}] 🎬 Iniciando NarrativeRunner con graph: {narrativeRunner.graph.name}");
-                
-                narrativeRunner.StartFromStartNode();
-                return;
-            }
-            
-            // Fallback: sistema antiguo (IInteractionSession) - DEPRECADO
-            IInteractionSession session = null;
-            foreach (var component in GetComponents<MonoBehaviour>())
-            {
-                if (component is IInteractionSession interactionSession)
-                {
-                    session = interactionSession;
-                    if (debugMode)
-                        Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚠️ Usando sistema antiguo (IInteractionSession): {component.GetType().Name}");
-                    break;
-                }
-            }
-            
-            if (session != null)
-            {
-                session.BeginSession(interactor, () =>
-                {
-                    if (debugMode)
-                        Debug.Log($"[NPCBehaviourV2:{name}] 🔚 Sesión antigua terminada");
-                });
+                _brain.HandleInteraction(interactor);
             }
             else
             {
-                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ No se encontró NarrativeRunner ni IInteractionSession en el GameObject.\n" +
-                              $"SOLUCIÓN: Añade el componente 'NarrativeRunner' con un NarrativeGraph asignado al GameObject '{name}'.");
+                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Brain es NULL, no se puede manejar la interacción");
             }
         }
         

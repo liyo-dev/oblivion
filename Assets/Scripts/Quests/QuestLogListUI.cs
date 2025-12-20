@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using DG.Tweening;
@@ -21,6 +22,12 @@ public class QuestLogListUI : MonoBehaviour
     [SerializeField] private float hideDistance = 420f;
     [SerializeField] private float tweenDuration = 0.35f;
     [SerializeField] private Ease tweenEase = Ease.InOutSine;
+
+    [Header("Animación de Completado")]
+    [SerializeField] private Color completionColor = new Color(0.3f, 1f, 0.4f);
+    [SerializeField] private float completionAnimDuration = 0.8f;
+    [SerializeField] private float completionSlideDistance = 100f;
+    [SerializeField] private float completionScalePunch = 1.15f;
 
     bool _bound;                    // ya suscrito al manager
     QuestManager _qm;               // cache del manager suscrito
@@ -80,6 +87,7 @@ public class QuestLogListUI : MonoBehaviour
             _qm = QuestManager.Instance;
             _qm.OnQuestsChanged += Rebuild;
             _qm.OnQuestStarted += OnQuestStarted;
+            _qm.OnQuestCompleted += OnQuestCompleted;
             _qm.OnQuestVisibilityChanged += OnQuestVisibilityChanged;
             _bound = true;
         }
@@ -93,6 +101,7 @@ public class QuestLogListUI : MonoBehaviour
         {
             _qm.OnQuestsChanged -= Rebuild;
             _qm.OnQuestStarted -= OnQuestStarted;
+            _qm.OnQuestCompleted -= OnQuestCompleted;
             _qm.OnQuestVisibilityChanged -= OnQuestVisibilityChanged;
         }
         _bound = false;
@@ -123,6 +132,22 @@ public class QuestLogListUI : MonoBehaviour
         // Mostrar automáticamente el panel cuando aparece una nueva misión
         ShowPanel(true, ignoreRestrictions: true);
         RestartAutoHide();
+    }
+
+    void OnQuestCompleted(string questId)
+    {
+        // Buscar el item UI de esta quest y animarlo antes de archivar
+        if (contentRoot == null) return;
+
+        for (int i = 0; i < contentRoot.childCount; i++)
+        {
+            var itemUI = contentRoot.GetChild(i).GetComponent<QuestLogItemUI>();
+            if (itemUI != null && itemUI.QuestId == questId)
+            {
+                StartCoroutine(AnimateQuestCompletion(itemUI));
+                break;
+            }
+        }
     }
 
     void OnQuestVisibilityChanged(string questId, QuestVisibility vis)
@@ -234,5 +259,39 @@ public class QuestLogListUI : MonoBehaviour
     {
         if (_panelTween != null && _panelTween.IsActive()) _panelTween.Kill();
         _panelTween = null;
+    }
+
+    IEnumerator AnimateQuestCompletion(QuestLogItemUI itemUI)
+    {
+        if (itemUI == null) yield break;
+
+        var rect = itemUI.GetComponent<RectTransform>();
+        var canvasGroup = itemUI.GetComponent<CanvasGroup>();
+        if (canvasGroup == null) canvasGroup = itemUI.gameObject.AddComponent<CanvasGroup>();
+
+        var originalPos = rect.anchoredPosition;
+        var originalScale = rect.localScale;
+
+        // 1. Flash verde + punch scale
+        var image = itemUI.GetComponent<Image>();
+        if (image != null)
+        {
+            var originalColor = image.color;
+            image.DOColor(completionColor, completionAnimDuration * 0.3f).SetEase(Ease.OutQuad);
+        }
+        
+        rect.DOPunchScale(Vector3.one * (completionScalePunch - 1f), completionAnimDuration * 0.4f, 4, 0.5f);
+
+        yield return new WaitForSeconds(completionAnimDuration * 0.5f);
+
+        // 2. Slide hacia la derecha y fade out
+        var sequence = DOTween.Sequence();
+        sequence.Append(rect.DOAnchorPosX(originalPos.x + completionSlideDistance, completionAnimDuration * 0.5f).SetEase(Ease.InBack));
+        sequence.Join(canvasGroup.DOFade(0f, completionAnimDuration * 0.5f).SetEase(Ease.InQuad));
+
+        yield return sequence.WaitForCompletion();
+
+        // 3. Rebuild para eliminar el item (ahora archivado)
+        Rebuild();
     }
 }
