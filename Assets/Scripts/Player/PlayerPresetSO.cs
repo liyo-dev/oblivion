@@ -62,4 +62,8 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Interactuables consumidos (single-use)")]
     [Tooltip("IDs de Interactable marcados como singleUse que ya han sido consumidos.")]
     public List<string> consumedInteractableIds = new();
+
+    [Header("Narrativas interactivas completadas")]
+    [Tooltip("IDs de persistencia de narrativas interactivas de NPCs que ya se han ejecutado.")]
+    public List<string> completedInteractiveNarratives = new();
 }

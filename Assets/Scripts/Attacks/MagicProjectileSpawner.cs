@@ -137,6 +137,15 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (!spell || !spell.prefab) return;
 
         Transform origin = originOverride ? originOverride : transform;
+        
+        // Reproducir sonido de lanzamiento
+        if (!string.IsNullOrEmpty(spell.castSFXKey))
+        {
+            if (AudioService.Instance != null)
+            {
+                AudioService.Instance.PlaySFX(spell.castSFXKey, spell.castSFXVolume, origin.position);
+            }
+        }
 
         LaunchProjectile(spell, origin, null);
     }

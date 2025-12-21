@@ -509,7 +509,8 @@ GameObject:
   - component: {fileID: 7787774333170290176}
   - component: {fileID: 818761283699374176}
   - component: {fileID: 6847704002302643820}
-  - component: {fileID: 390815755249934702}
+  - component: {fileID: 6426971119197185592}
+  - component: {fileID: 6512968787183980352}
   m_Layer: 8
   m_Name: Oliver
   m_TagString: Untagged
@@ -614,7 +615,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1853791838701468352}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a765fc0f77ab9fa44aef0a473cfc2305, type: 3}
   m_Name: 
@@ -707,7 +708,7 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &390815755249934702
+--- !u!114 &6426971119197185592
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -716,140 +717,44 @@ MonoBehaviour:
   m_GameObject: {fileID: 1853791838701468352}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManager
-  ambientModule:
-    enableWander: 0
-    wanderRadius: 2
-    minIdleTime: 1.2
-    maxIdleTime: 3
-    pickWhileMoving: 0
-  questModule:
-    enable: 0
-    chain: []
-    enableItemDetection: 1
-    detectionRadius: 3
-    detectionAngle: 90
-    detectionLayer:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    detectionInterval: 0.33
-  combatModule:
-    enable: 0
-    sightRadius: 8
-    fovDegrees: 120
-    challengeStopDistance: 2.2
-    approachRepathInterval: 0.25
-    loseSightGraceSeconds: 1.5
-    challengeAlertState: SenseSomethingStart_NoWeapon
-    challengeAlertMinSeconds: 0.75
-    challengeState: Challenging_NoWeapon
-    damageStatePrimary: TakeDamage
-    damageStateAlternate: GetHit02_NoWeapon
-    damageReactionMinInterval: 0.35
-    exclamationPrefab: {fileID: 0}
-    exclamationOffset: {x: 0, y: 2, z: 0}
-    exclamationSeconds: 2
-    alertMusicEvent: Npc_Battle_Alert
-    battleMusicId: Npc_Battle
-    endMusicEvent: 
-    startBattleOnChallengeEnd: 1
-    battleHealth: 120
-    healthBarOffset: {x: 0, y: 2.4, z: 0}
-    healthBarPrefab: {fileID: 0}
-    healthBarFillImage: {fileID: 0}
-    healthColor: {r: 0, g: 1, b: 0, a: 1}
-    warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    criticalColor: {r: 1, g: 0, b: 0, a: 1}
-    warningThreshold: 0.5
-    criticalThreshold: 0.25
-    hideHealthBarWhenFull: 1
-    dialogueOnChallenge: {fileID: 0}
-    dialogueOnDefeat: {fileID: 0}
-    dialogueAfterBattle: {fileID: 0}
-    rewards: []
-    battleIdleState: Idle_Battle_NoWeapon
-    upperBodyLayer: 1
-    lightAttackStateLeft: MagicLeft
-    lightAttackStateRight: MagicRight
-    specialAttackState: MagicSpecial
-    leftProjectilePrefab: {fileID: 0}
-    leftProjectileDamage: 10
-    leftProjectileSpeed: 12
-    leftAttackCooldown: 1.5
-    rightProjectilePrefab: {fileID: 0}
-    rightProjectileDamage: 15
-    rightProjectileSpeed: 10
-    rightAttackCooldown: 2
-    specialProjectilePrefab: {fileID: 0}
-    specialProjectileDamage: 25
-    specialProjectileSpeed: 8
-    specialAttackCooldown: 4
-    projectileOrigin: {fileID: 0}
-    leftProjectileOrigin: {fileID: 0}
-    rightProjectileOrigin: {fileID: 0}
-    specialProjectileOrigin: {fileID: 0}
-    spawnProjectileViaAnimationEvent: 1
-    combatMinDistance: 4
-    combatMaxDistance: 12
-    attackCooldown: 2
-    specialAttackChance: 0.3
-    combatRepathInterval: 0.2
-    combatRetreatDistance: 2
-    combatTurnSpeed: 6
-    lockPlayer: 1
-    lockOnSight: 1
-    turnPlayerOnSight: 1
-    turnDelaySeconds: 1
-    turnDurationSeconds: 0.35
-    fallbackDialogue: 
-    onChallengeStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerLock:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerUnlock:
-      m_PersistentCalls:
-        m_Calls: []
-    onDialogueRequest:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleFinished:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleWon:
-      m_PersistentCalls:
-        m_Calls: []
-    usePredictiveAim: 1
-    requireLineOfSight: 1
-    attackFrequencyMultiplier: 1
-    aggressionBias: 0.5
-    dodgeChance: 0.2
-    persistAfterDefeat: 1
-    explodeOnDefeat: 0
-    defeatExplosionPrefab: {fileID: 0}
-    victoryFXPrefab: {fileID: 0}
-    victoryFXDelay: 0.2
-    victoryFocusSeconds: 1
-    victoryExtraSeconds: 0.25
-    npcDeathAnimation: Die02_NoWeapon
-    deathPoseHoldSeconds: 0.35
-    playerVictoryAnimation: Dance_NoWeapon
-    enemyUnityLayer: 7
-    interactableUnityLayer: 8
-    useDialogueAfterBattle: 1
-  logDebug: 0
-  forceKinematicRigidbody: 1
-  rigidbodyConstraints: 112
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 0
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 11400000, guid: 3fd0fbe367ce9104c99e4fbc53758f35, type: 2}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 0
   persistLastPosition: 1
-  lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 1
-  rotateOnInteractSeconds: 0.3
+--- !u!114 &6512968787183980352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1853791838701468352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f84ffc01df67bc46a621a4a01c5a918, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeExecutor
 --- !u!1 &2012732618361199451
 GameObject:
   m_ObjectHideFlags: 0

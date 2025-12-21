@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
+  m_Name: NPC_InteractiveNarrative_Config_Oliver
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
+  moduleName: 
+  description: 
+  narrativeChain:
+  - actionType: 0
+    dialogue: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
+    targetAnchorName: 
+    targetTransform: {fileID: 0}
+    maxMovementDuration: 0
+    walkDisplayDuration: 0
+    turnAroundOnArrival: 0
+    waitForPlayer: 0
+    maxPlayerDistance: 0
+    resumePlayerDistance: 0
+    animationTrigger: 
+    animationDuration: 0
+    questToStart: {fileID: 0}
+    combatTarget: {fileID: 0}
+    waitDuration: 0
+    customAction:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - actionType: 1
+    dialogue: {fileID: 0}
+    targetAnchorName: House_FrontDoor_Tutorial
+    targetTransform: {fileID: 0}
+    maxMovementDuration: 0
+    walkDisplayDuration: 0
+    turnAroundOnArrival: 0
+    waitForPlayer: 0
+    maxPlayerDistance: 0
+    resumePlayerDistance: 0
+    animationTrigger: 
+    animationDuration: 0
+    questToStart: {fileID: 0}
+    combatTarget: {fileID: 0}
+    waitDuration: 0
+    customAction:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - actionType: 2
+    dialogue: {fileID: 0}
+    targetAnchorName: 
+    targetTransform: {fileID: 0}
+    maxMovementDuration: 0
+    walkDisplayDuration: 0
+    turnAroundOnArrival: 0
+    waitForPlayer: 0
+    maxPlayerDistance: 0
+    resumePlayerDistance: 0
+    animationTrigger: Dizzy_NoWeapon
+    animationDuration: 1
+    questToStart: {fileID: 0}
+    combatTarget: {fileID: 0}
+    waitDuration: 0
+    customAction:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  singleUse: 1
+  persistState: 1
+  persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  postNarrativeState: 1
+  postNarrativeAmbientConfig: {fileID: 0}

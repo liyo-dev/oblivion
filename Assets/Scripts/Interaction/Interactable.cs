@@ -81,39 +81,21 @@ public class Interactable : MonoBehaviour
     {
         var dm = DialogueManager.Instance;
         if (dm != null && dm.IsOpen)
-        {
-            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - Diálogo abierto");
             return false;
-        }
         if (!GameState.CanInteractGlobally)
-        {
-            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - GameState.CanInteractGlobally=false");
             return false;
-        }
         if (Time.unscaledTime < s_globalCooldownUntil)
-        {
-            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - En cooldown global");
             return false;
-        }
         if (!enabledForUse)
-        {
-            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - enabledForUse=false");
             return false;
-        }
         if (singleUse && used)
-        {
-            Debug.Log($"[Interactable:{name}] ❌ CanInteract=false - singleUse y ya usado");
             return false;
-        }
         
-        Debug.Log($"[Interactable:{name}] ✅ CanInteract=true");
         return true;
     }
 
     public void Interact(GameObject interactor)
     {
-        Debug.Log($"[Interactable:{name}] 🔔 Interact llamado - interactor={interactor?.name}");
-        
         if (!CanInteract(interactor)) return;
 
         // IMPORTANTE: Establecer cooldown en PlayerActionManager para evitar que el botón A

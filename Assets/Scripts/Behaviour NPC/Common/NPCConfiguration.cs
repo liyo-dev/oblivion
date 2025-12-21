@@ -16,12 +16,18 @@ namespace Game.NPC.Common
         [Header("Módulos de Configuración")]
         [Tooltip("Config de comportamiento ambiental (Idle/Wander)")]
         public NPCAmbientConfig ambientConfig;
+        
         [Tooltip("Config de combate (stats, ataques, rangos)")]
         public NPCCombatConfig combatConfig;
+        
         [Tooltip("Config de misiones (quest chain)")]
         public NPCQuestConfig questConfig;
+        
         [Tooltip("Config de narrativa (ID para el grafo)")]
         public NPCNarrativeConfig narrativeConfig;
+        
+        [Tooltip("Config de narrativa interactiva (cadena de acciones al interactuar)")]
+        public NPCInteractiveNarrativeConfig interactiveNarrativeConfig;
         [Header("Configuración Base (Común a todos)")]
         [Min(0f)] public float walkSpeed = 1.5f;
         [Min(0f)] public float runSpeed = 4f;

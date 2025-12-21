@@ -212,6 +212,8 @@ public class ShopUI : MonoBehaviour
             return;
         }
 
+        // Reproducir sonido de cancelar/cerrar menú
+        GamepadInputReader.PlayUISound("UI_Cancel");
         Close();
     }
     

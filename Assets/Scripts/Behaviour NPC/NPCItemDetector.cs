@@ -66,6 +66,33 @@ namespace Game.NPC
             }
             _triggerCollider.radius = detectionRadius;
             _triggerCollider.isTrigger = true;
+            
+            // IMPORTANTE: Asegurarse de que el collider no interfiera con la física del player
+            // Configurarlo en una capa de triggers para evitar colisiones físicas
+            if (_triggerCollider.gameObject.layer == LayerMask.NameToLayer("Default"))
+            {
+                // Si está en Default, intentar cambiarlo a una capa de triggers
+                int triggerLayer = LayerMask.NameToLayer("Ignore Raycast");
+                if (triggerLayer != -1)
+                {
+                    // Crear un GameObject hijo para el trigger en lugar de modificar el NPC
+                    GameObject triggerObj = new GameObject("ItemDetectorTrigger");
+                    triggerObj.transform.SetParent(transform);
+                    triggerObj.transform.localPosition = Vector3.zero;
+                    triggerObj.transform.localRotation = Quaternion.identity;
+                    triggerObj.layer = triggerLayer;
+                    
+                    // Mover el collider al hijo
+                    var oldCollider = _triggerCollider;
+                    _triggerCollider = triggerObj.AddComponent<SphereCollider>();
+                    _triggerCollider.radius = oldCollider.radius;
+                    _triggerCollider.isTrigger = true;
+                    
+                    // Destruir el collider viejo
+                    if (oldCollider != null && oldCollider.gameObject == gameObject)
+                        Destroy(oldCollider);
+                }
+            }
         }
         
         void Start()

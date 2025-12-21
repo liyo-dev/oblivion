@@ -264,6 +264,13 @@ public class NPCSimpleAnimator : MonoBehaviour
             StartCoroutine(DoGreeting());
     }
 
+    public void SetTalking(bool isTalking)
+    {
+        if (!animator) return;
+        // Usar el animator directamente para establecer el parámetro booleano IsTalking
+        animator.SetBool("IsTalking", isTalking);
+    }
+
     public void SetMovementSpeed(float normalizedSpeed, float dampTime = 0.1f)
     {
         if (!animator) return;

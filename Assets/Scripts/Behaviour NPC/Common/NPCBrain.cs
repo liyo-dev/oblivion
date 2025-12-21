@@ -1,5 +1,7 @@
 ﻿using System;
 using UnityEngine;
+using Game.NPC.Modules;
+
 namespace Game.NPC.Common
 {
     public class NPCBrain
@@ -85,7 +87,7 @@ namespace Game.NPC.Common
         
         /// <summary>
         /// Maneja la interacción del jugador con el NPC.
-        /// Delega a NPCQuestConfig para procesar la lógica.
+        /// Delega según el tipo de configuración disponible.
         /// </summary>
         public bool HandleInteraction(GameObject interactor)
         {
@@ -97,14 +99,29 @@ namespace Game.NPC.Common
             
             var config = _context.Config;
             
-            // Si tiene configuración de quest, delegar al config
+            // Prioridad 1: Interactive Narrative Config (cadena de acciones)
+            if (config.interactiveNarrativeConfig != null)
+            {
+                var executor = _context.Transform.GetComponent<NPCInteractiveNarrativeExecutor>();
+                if (executor != null)
+                {
+                    _context.IsInteracting = true;
+                    return executor.TryExecuteNarrative();
+                }
+                else
+                {
+                    Debug.LogError($"[NPCBrain] InteractiveNarrativeConfig presente pero no hay NPCInteractiveNarrativeExecutor en GameObject");
+                }
+            }
+            
+            // Prioridad 2: Quest Config (sistema de quests)
             if (config.HasBehaviour(NPCBehaviourType.Quest) && config.questConfig != null)
             {
                 _context.IsInteracting = true;
                 return config.questConfig.ProcessInteraction(interactor, _context);
             }
             
-            Debug.LogWarning($"[NPCBrain] No hay configuración de Quest");
+            Debug.LogWarning($"[NPCBrain] No hay configuración de InteractiveNarrative ni Quest");
             return false;
         }
     }

@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using Core;
+using DG.Tweening;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -22,6 +23,14 @@ public class DialogueManager : MonoBehaviour
     [SerializeField, Min(1f)] private float charsPerSecond = 35f;
     [Tooltip("Si se pulsa Avanzar mientras escribe, completa la línea al instante")] 
     [SerializeField] private bool allowSkipCurrentLine = true;
+    
+    [Header("Typewriter Audio")]
+    [Tooltip("Reproducir sonido con cada letra del typewriter")]
+    [SerializeField] private bool useLetterSound = true;
+    [Tooltip("Clave del SFX en AudioGraphProfile para cada letra (ej: 'UI_DialogueLetter')")]
+    [SerializeField] private string letterSoundKey = "UI_DialogueLetter";
+    [Tooltip("Cada cuántos caracteres reproducir el sonido (1 = cada letra, 2 = cada 2 letras, etc.)")]
+    [SerializeField, Min(1)] private int letterSoundFrequency = 1;
 
 
     [Header("Opcional")]
@@ -30,7 +39,7 @@ public class DialogueManager : MonoBehaviour
 
     [Header("Cámara de Diálogo")]
     [Tooltip("Si está activo, la cámara se posicionará para enfocar la conversación con NPCs")]
-    [SerializeField] private bool useDialogueCamera = true;
+    [SerializeField] private bool useDialogueCamera = false;
 
     [Header("UI Hints")]
     [SerializeField] private GameObject submitHint;
@@ -67,12 +76,39 @@ public class DialogueManager : MonoBehaviour
 
     // NPC para cámara de diálogo
     private Transform currentNPC = null;
+    
+    // Protección contra input inmediato al abrir diálogo
+    private float _dialogueOpenedAt = -999f;
+    private const float INPUT_GRACE_PERIOD = 0.3f;
+    
+    // Protección contra avance doble al completar línea
+    private float _lastLineCompletedAt = -999f;
+    private const float LINE_COMPLETE_COOLDOWN = 0.2f;
 
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        
+        // Validar y forzar configuración correcta del typewriter
+        if (!useTypewriter)
+        {
+            Debug.LogWarning("[DialogueManager] ⚠️ useTypewriter está DESACTIVADO en el Inspector. Forzando activación.");
+            useTypewriter = true;
+        }
+        if (charsPerSecond <= 0f || charsPerSecond > 100f)
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ charsPerSecond tiene valor incorrecto ({charsPerSecond}). Ajustando a 35.");
+            charsPerSecond = 35f;
+        }
+        if (letterSoundFrequency < 1)
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ letterSoundFrequency tiene valor incorrecto ({letterSoundFrequency}). Ajustando a 1.");
+            letterSoundFrequency = 1;
+        }
+        
+        Debug.Log($"[DialogueManager] ✅ Configuración validada - Typewriter: {useTypewriter}, Velocidad: {charsPerSecond} chars/s, Audio: {useLetterSound}, Frecuencia: {letterSoundFrequency}");
 
         if (group != null)
         {
@@ -111,6 +147,20 @@ public class DialogueManager : MonoBehaviour
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
         if (input.Phase != InputActionPhase.Performed) return;
+
+        // PROTECCIÓN: Ignorar inputs durante el período de gracia después de abrir el diálogo
+        if (Time.unscaledTime - _dialogueOpenedAt < INPUT_GRACE_PERIOD)
+        {
+            Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante período de gracia inicial ({Time.unscaledTime - _dialogueOpenedAt:F3}s desde apertura)");
+            return;
+        }
+        
+        // PROTECCIÓN: Ignorar inputs durante el cooldown después de completar una línea
+        if (Time.unscaledTime - _lastLineCompletedAt < LINE_COMPLETE_COOLDOWN)
+        {
+            Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante cooldown de línea completada ({Time.unscaledTime - _lastLineCompletedAt:F3}s desde completado)");
+            return;
+        }
 
         // Manejar Submit/Avanzar diálogo
         if (input.Type == GamepadInputReader.InputEventType.Submit && IsOpen)
@@ -176,15 +226,27 @@ public class DialogueManager : MonoBehaviour
         onEnd = onFinished;
         index = -1;
 
+        // Marcar el momento en que se abre el diálogo para ignorar inputs inmediatos
+        _dialogueOpenedAt = Time.unscaledTime;
+        Debug.Log($"[DialogueManager] 🕐 Diálogo abierto en t={_dialogueOpenedAt:F3} - período de gracia activo");
+
         // Mostrar UI
         if (group != null)
         {
             group.alpha = 1f;
             group.blocksRaycasts = true;
             group.interactable = true;
+            Debug.Log($"[DialogueManager] ✅ UI activada - alpha={group.alpha}, blocksRaycasts={group.blocksRaycasts}, Canvas activo={group.gameObject.activeInHierarchy}");
         }
+        else
+        {
+            Debug.LogError("[DialogueManager] ❌ CanvasGroup es NULL - el diálogo no se mostrará");
+        }
+        
+        // NO mostrar el submitHint al inicio - se mostrará cuando termine de escribir la primera línea
         if (submitHint != null)
-            submitHint.SetActive(true);
+            submitHint.SetActive(false);
+            
         if (pauseGameWhileOpen) Time.timeScale = 0f;
 
 
@@ -194,7 +256,12 @@ public class DialogueManager : MonoBehaviour
         // Activar cámara de diálogo si hay un NPC asignado
         if (useDialogueCamera && currentNPC != null && DialogueCameraController.Instance != null)
         {
+            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo para NPC: {currentNPC.name}");
             DialogueCameraController.Instance.StartDialogueCamera(currentNPC);
+        }
+        else
+        {
+            Debug.Log($"[DialogueManager] ⚠️ Cámara de diálogo NO activada - useDialogueCamera={useDialogueCamera}, currentNPC={currentNPC?.name ?? "NULL"}, DialogueCameraController={DialogueCameraController.Instance != null}");
         }
 
         Next(); // pinta primera línea
@@ -440,6 +507,10 @@ public class DialogueManager : MonoBehaviour
             Close();
             return;
         }
+        
+        // Resetear el período de gracia para cada nueva línea
+        _dialogueOpenedAt = Time.unscaledTime;
+        Debug.Log($"[DialogueManager] 🕐 Nueva línea {index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
 
         var line = current.lines[index];
 
@@ -481,12 +552,14 @@ public class DialogueManager : MonoBehaviour
             bodyText.text = _currentText;
             if (useTypewriter)
             {
+                Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
                 bodyText.ForceMeshUpdate();
                 bodyText.maxVisibleCharacters = 0;
                 _typeRoutine = StartCoroutine(TypeRoutine());
             }
             else
             {
+                Debug.Log($"[DialogueManager] TYPEWRITER DESACTIVADO - Mostrando texto completo instantáneamente");
                 bodyText.maxVisibleCharacters = int.MaxValue;
             }
         }
@@ -495,23 +568,55 @@ public class DialogueManager : MonoBehaviour
     private System.Collections.IEnumerator TypeRoutine()
     {
         _isTyping = true;
+        
+        // Ocultar el icono de Submit mientras se escribe
+        HideSubmitHint();
+        
         // Asegurar mesh info
         bodyText.ForceMeshUpdate();
         int total = bodyText.textInfo.characterCount;
         int shown = 0;
+        int charactersSinceLastSound = 0;
         if (charsPerSecond <= 0f) charsPerSecond = 35f;
+        
+        float timePerChar = 1f / charsPerSecond; // Tiempo que debe pasar para mostrar 1 carácter
+        float timeAccumulated = 0f; // Acumulador de tiempo
+        
+        Debug.Log($"[DialogueManager TypeRoutine] ✅ Iniciando typewriter - Total: {total} chars, Velocidad: {charsPerSecond} chars/s ({timePerChar:F4}s por char)");
 
         while (shown < total)
         {
-            // avanzar con tiempo no escalado para funcionar si Time.timeScale=0
-            shown += Mathf.Max(1, Mathf.FloorToInt(charsPerSecond * Time.unscaledDeltaTime));
-            bodyText.maxVisibleCharacters = Mathf.Clamp(shown, 0, total);
+            // Acumular tiempo desde el último frame
+            timeAccumulated += Time.unscaledDeltaTime;
+            
+            // Mostrar caracteres según el tiempo acumulado
+            while (timeAccumulated >= timePerChar && shown < total)
+            {
+                shown++;
+                timeAccumulated -= timePerChar;
+                charactersSinceLastSound++;
+                
+                // Reproducir sonido cada X caracteres
+                if (useLetterSound && charactersSinceLastSound >= letterSoundFrequency)
+                {
+                    PlayLetterSound();
+                    charactersSinceLastSound = 0;
+                }
+            }
+            
+            bodyText.maxVisibleCharacters = shown;
+            
             yield return null;
         }
+        
+        Debug.Log($"[DialogueManager TypeRoutine] ✅ Completado - {shown}/{total} caracteres mostrados");
 
         bodyText.maxVisibleCharacters = total;
         _isTyping = false;
         _typeRoutine = null;
+        
+        // Mostrar el icono de Submit con animación cuando el texto está completo
+        ShowSubmitHintWithAnimation();
     }
 
     private void CompleteCurrentLineInstant()
@@ -520,6 +625,13 @@ public class DialogueManager : MonoBehaviour
         StopTypewriter();
         bodyText.ForceMeshUpdate();
         bodyText.maxVisibleCharacters = bodyText.textInfo.characterCount;
+        
+        // Marcar el momento en que se completó la línea para ignorar inputs inmediatos
+        _lastLineCompletedAt = Time.unscaledTime;
+        Debug.Log($"[DialogueManager] Línea completada instantáneamente en t={_lastLineCompletedAt:F3}");
+        
+        // Mostrar el icono de Submit con animación después de completar instantáneamente
+        ShowSubmitHintWithAnimation();
     }
 
     private void StopTypewriter()
@@ -530,6 +642,39 @@ public class DialogueManager : MonoBehaviour
             _typeRoutine = null;
         }
         _isTyping = false;
+    }
+    
+    private void HideSubmitHint()
+    {
+        if (submitHint != null)
+        {
+            submitHint.SetActive(false);
+        }
+    }
+    
+    private void ShowSubmitHintWithAnimation()
+    {
+        if (submitHint == null) return;
+        
+        submitHint.SetActive(true);
+        
+        // Reiniciar escala y aplicar animación de pulso
+        submitHint.transform.localScale = Vector3.one;
+        submitHint.transform.DOKill(); // Matar animaciones previas
+        
+        // Animación: escala a 1.15 y vuelve a 1.0 en loop
+        submitHint.transform.DOScale(1.15f, 0.5f)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetUpdate(true); // usar unscaled time
+    }
+    
+    private void PlayLetterSound()
+    {
+        if (string.IsNullOrEmpty(letterSoundKey)) return;
+        if (AudioService.Instance == null) return;
+        
+        AudioService.Instance.PlaySFX(letterSoundKey, volume: 0.5f);
     }
 
     /// <summary>

@@ -52,6 +52,11 @@ namespace Core
     private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
     private static int _uiNavigationScopeCount;
     private static float _ignoreCancelUntil = 0f; // Tiempo hasta el cual ignorar el botón Cancel/B
+    
+    /// <summary>
+    /// Si está activado, reproduce SFX de UI automáticamente en navegación, submit, cancel, etc.
+    /// </summary>
+    public static bool enableUIAudio = true;
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -240,17 +245,68 @@ namespace Core
         _ignoreCancelUntil = Time.unscaledTime + duration;
     }
 
-    private static void HandleSubmit(InputAction.CallbackContext ctx) => Raise(InputEventType.Submit, ctx, Vector2.zero);
-    private static void HandleCancel(InputAction.CallbackContext ctx) => Raise(InputEventType.Cancel, ctx, Vector2.zero);
-    private static void HandleStart(InputAction.CallbackContext ctx) => Raise(InputEventType.Start, ctx, Vector2.zero);
-    private static void HandleDpadUp(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadUp, ctx, Vector2.up);
-    private static void HandleDpadDown(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadDown, ctx, Vector2.down);
-    private static void HandleDpadLeft(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadLeft, ctx, Vector2.left);
-    private static void HandleDpadRight(InputAction.CallbackContext ctx) => Raise(InputEventType.DpadRight, ctx, Vector2.right);
-    private static void HandleInteract(InputAction.CallbackContext ctx) => Raise(InputEventType.Interact, ctx, Vector2.zero);
-    private static void HandleNavigate(InputAction.CallbackContext ctx) => Raise(InputEventType.Navigate, ctx, ctx.ReadValue<Vector2>());
-    private static void HandleLeftShoulder(InputAction.CallbackContext ctx) => Raise(InputEventType.LeftShoulder, ctx, Vector2.zero);
-    private static void HandleRightShoulder(InputAction.CallbackContext ctx) => Raise(InputEventType.RightShoulder, ctx, Vector2.zero);
+    public static void PlayUISound(string soundKey)
+    {
+        if (!enableUIAudio) return;
+        if (AudioService.Instance == null) return;
+        AudioService.Instance.PlaySFX(soundKey, volume: 1f);
+    }
+
+    private static void HandleSubmit(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.Submit, ctx, Vector2.zero);
+    }
+    
+    private static void HandleCancel(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.Cancel, ctx, Vector2.zero);
+    }
+    
+    private static void HandleStart(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.Start, ctx, Vector2.zero);
+    }
+    
+    private static void HandleDpadUp(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.DpadUp, ctx, Vector2.up);
+    }
+    
+    private static void HandleDpadDown(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.DpadDown, ctx, Vector2.down);
+    }
+    
+    private static void HandleDpadLeft(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.DpadLeft, ctx, Vector2.left);
+    }
+    
+    private static void HandleDpadRight(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.DpadRight, ctx, Vector2.right);
+    }
+    
+    private static void HandleInteract(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.Interact, ctx, Vector2.zero);
+    }
+    
+    private static void HandleNavigate(InputAction.CallbackContext ctx)
+    {
+        var value = ctx.ReadValue<Vector2>();
+        Raise(InputEventType.Navigate, ctx, value);
+    }
+    
+    private static void HandleLeftShoulder(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.LeftShoulder, ctx, Vector2.zero);
+    }
+    
+    private static void HandleRightShoulder(InputAction.CallbackContext ctx)
+    {
+        Raise(InputEventType.RightShoulder, ctx, Vector2.zero);
+    }
 
     private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
     {

@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using Invector.vCharacterController;
-using Core;
 
 [RequireComponent(typeof(Animator))]
 public class PlayerCarrySystem : MonoBehaviour
@@ -20,6 +19,9 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private float attachDelay = 0.5f;
     [SerializeField] private float throwAnimationDuration = 0.3f;
 
+    [Header("Interacción para soltar")]
+    [SerializeField] private bool dropOnInteract = true;
+
     /// <summary>
     /// Evento disparado cuando el player suelta un objeto.
     /// Parámetro: GameObject que fue soltado.
@@ -31,6 +33,7 @@ public class PlayerCarrySystem : MonoBehaviour
     private GameObject _carriedObject;
     private Rigidbody _carriedRigidbody;
     private PickupObject _carriedPickupObject;
+    private Collider[] _carriedColliders;
     private bool _isCarrying;
     private bool _isPickingUp;
 
@@ -45,29 +48,6 @@ public class PlayerCarrySystem : MonoBehaviour
             cp.SetParent(transform);
             cp.localPosition = new Vector3(0, 1.2f, 0.5f);
             carryPoint = cp;
-        }
-        
-        // Suscribirse al evento de Interact del GamepadInputReader
-        GamepadInputReader.OnInput += OnGamepadInput;
-    }
-    
-    void OnDestroy()
-    {
-        // Desuscribirse para evitar memory leaks
-        GamepadInputReader.OnInput -= OnGamepadInput;
-    }
-    
-    void OnGamepadInput(GamepadInputReader.InputEvent inputEvent)
-    {
-        // Solo procesar cuando se presiona el botón de interactuar
-        if (inputEvent.Type == GamepadInputReader.InputEventType.Interact && 
-            inputEvent.Phase == UnityEngine.InputSystem.InputActionPhase.Performed)
-        {
-            // Si estamos cargando, soltar el objeto
-            if (_isCarrying)
-            {
-                DropObject();
-            }
         }
     }
 
@@ -123,6 +103,14 @@ public class PlayerCarrySystem : MonoBehaviour
             _carriedRigidbody.isKinematic = true;
             _carriedRigidbody.useGravity = false;
         }
+        
+        // Desactivar colliders para evitar colisiones con el player
+        _carriedColliders = _carriedObject.GetComponentsInChildren<Collider>();
+        foreach (var col in _carriedColliders)
+        {
+            if (col != null)
+                col.enabled = false;
+        }
 
         _carriedObject.transform.SetParent(carryPoint, worldPositionStays:false);
         _carriedObject.transform.localPosition = Vector3.zero;
@@ -155,6 +143,17 @@ public class PlayerCarrySystem : MonoBehaviour
         _carriedPickupObject?.OnDropped();
 
         _carriedObject.transform.SetParent(null);
+        
+        // Reactivar colliders
+        if (_carriedColliders != null)
+        {
+            foreach (var col in _carriedColliders)
+            {
+                if (col != null)
+                    col.enabled = true;
+            }
+            _carriedColliders = null;
+        }
 
         if (_carriedRigidbody != null)
         {

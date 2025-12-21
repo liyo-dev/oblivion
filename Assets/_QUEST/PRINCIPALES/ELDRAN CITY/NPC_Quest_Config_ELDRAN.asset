@@ -65,7 +65,7 @@ MonoBehaviour:
     autoDetectItemDelivery: 1
     itemDeliveryStepIndex: 0
     itemTag: Pickable
-    ignoreFovForItem: 0
+    ignoreFovForItem: 1
     overrideDetectionRadius: 0
     requireItemInInventory: 0
     requiredItem: {fileID: 0}

@@ -35,14 +35,18 @@ MonoBehaviour:
   - sceneName: MainWorld
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   eventSfx:
-  - eventKey: Ambience_Cave
-    sfx: {fileID: 8300000, guid: dff547ca933eb4d72a80bbb104e16ab7, type: 3}
-  - eventKey: MenuSelect
-    sfx: {fileID: 8300000, guid: 4f13633ea56974e6dbf63eb99fa6c851, type: 3}
-  - eventKey: PickUpGold
-    sfx: {fileID: 8300000, guid: 0f579092c76764d8e8df04853e9a2c13, type: 3}
-  - eventKey: PickUp_Throw
-    sfx: {fileID: 8300000, guid: dfa3ab4123c43bd6fae58d0ed5b8e713, type: 3}
+  - eventKey: UI_Navigate
+    sfx: {fileID: 8300000, guid: 5c20f8509d7d267e3ab3cd4bc77d927c, type: 3}
+  - eventKey: UI_Submit
+    sfx: {fileID: 8300000, guid: 63abb224d3a104d0a9de133310638405, type: 3}
+  - eventKey: UI_Cancel
+    sfx: {fileID: 8300000, guid: 67c7dcab9e8a0eb459186be18c72da79, type: 3}
+  - eventKey: UI_MenuOpen
+    sfx: {fileID: 8300000, guid: 89ae9828e2f8913779b44d7d553bad9a, type: 3}
+  - eventKey: UI_TabChange
+    sfx: {fileID: 8300000, guid: 43ccdaf4e06a1324fa8c6defac11f3fe, type: 3}
+  - eventKey: UI_DialogueLetter
+    sfx: {fileID: 8300000, guid: 526eefc86463358579585529cc578a9c, type: 3}
   additiveCinematics:
   - sceneName: Cinematic_DemonAppears
     music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}

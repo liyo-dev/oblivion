@@ -401,6 +401,10 @@
             "value": "[EN] Si la encuentras te diré como puedes ayudarme a buscar mi caracola."
         },
         {
+            "key": "DLG_NIÑOPEZ_ALGAS_PROGRRESS",
+            "value": "[EN] Seguro que alguien del Reino tiene algas..."
+        },
+        {
             "key": "DLG_NIÑOPEZ_CARACOLA_01",
             "value": "[EN] Busca mi caracola porfa."
         },

@@ -10,18 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10d8708fd0f936346bad26dff04672db, type: 3}
-  m_Name: "DLG_NI\xD1OPEZ_TURNIN"
+  m_Name: "DLG_NI\xD1OPEZ_ALGAS_OFFER"
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: "CHAR_NI\xD1OPEZ"
-    textId: "DLG_NI\xD1OPEZ_TURNIN_01"
-    text: 
+    textId: "DLG_NI\xD1OPEZ_01"
     portrait: {fileID: 0}
   - speakerNameId: "CHAR_NI\xD1OPEZ"
-    textId: "DLG_NI\xD1OPEZ_TURNIN_02"
-    text: 
+    textId: "DLG_NI\xD1OPEZ_02"
     portrait: {fileID: 0}
   - speakerNameId: "CHAR_NI\xD1OPEZ"
-    textId: "DLG_NI\xD1OPEZ_TURNIN_03"
-    text: 
+    textId: "DLG_NI\xD1OPEZ_03"
+    portrait: {fileID: 0}
+  - speakerNameId: "CHAR_NI\xD1OPEZ"
+    textId: "DLG_NI\xD1OPEZ_04"
+    portrait: {fileID: 0}
+  - speakerNameId: "CHAR_NI\xD1OPEZ"
+    textId: "DLG_NI\xD1OPEZ_05"
     portrait: {fileID: 0}

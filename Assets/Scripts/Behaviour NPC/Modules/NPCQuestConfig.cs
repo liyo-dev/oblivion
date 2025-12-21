@@ -80,6 +80,19 @@ namespace Game.NPC.Modules
         /// </summary>
         public bool ProcessInteraction(GameObject interactor, Common.NPCStateContext context)
         {
+            Debug.Log($"[NPCQuestConfig.ProcessInteraction] Iniciando interacción con NPC. Interactor: {interactor?.name}, Context válido: {context != null}");
+            
+            // ANTES DE CUALQUIER COSA: Rotar hacia el player y activar animación de hablar
+            if (rotateToPlayerOnInteract && interactor != null)
+            {
+                Debug.Log($"[NPCQuestConfig.ProcessInteraction] Rotando NPC hacia player");
+                RotateToPlayer(interactor.transform, context);
+            }
+            
+            // Activar animación de hablar/interactuar
+            Debug.Log($"[NPCQuestConfig.ProcessInteraction] Activando animación de hablar");
+            StartTalkingAnimation(context);
+            
             var qm = QuestManager.Instance;
             if (qm == null)
             {
@@ -242,7 +255,11 @@ namespace Game.NPC.Modules
 
         private void PlayDialogue(DialogueAsset dialogue, Common.NPCStateContext context)
         {
-            if (dialogue == null) return;
+            if (dialogue == null)
+            {
+                Debug.LogWarning("[NPCQuestConfig.PlayDialogue] dialogue es null - no se reproduce diálogo");
+                return;
+            }
 
             var dm = DialogueManager.Instance;
             if (dm == null)
@@ -251,7 +268,14 @@ namespace Game.NPC.Modules
                 return;
             }
 
-            dm.StartDialogue(dialogue, context.Transform, null);
+            Debug.Log($"[NPCQuestConfig.PlayDialogue] Iniciando diálogo '{dialogue.name}' con NPC en {context.Transform?.position}. Líneas: {dialogue.lines?.Length ?? 0}");
+            
+            // Callback para detener animación de hablar cuando termine el diálogo
+            dm.StartDialogue(dialogue, context.Transform, () => 
+            {
+                Debug.Log($"[NPCQuestConfig.PlayDialogue] Diálogo '{dialogue.name}' terminado - deteniendo animación");
+                StopTalkingAnimation(context);
+            });
         }
 
         private void PlayDialogueWithCallback(DialogueAsset dialogue, Common.NPCStateContext context, System.Action onFinished)
@@ -270,7 +294,80 @@ namespace Game.NPC.Modules
                 return;
             }
 
-            dm.StartDialogue(dialogue, context.Transform, onFinished);
+            // Combinar callback original con detener animación de hablar
+            System.Action combinedCallback = () =>
+            {
+                StopTalkingAnimation(context);
+                onFinished?.Invoke();
+            };
+
+            dm.StartDialogue(dialogue, context.Transform, combinedCallback);
+        }
+        
+        /// <summary>
+        /// Rota suavemente el NPC hacia el player
+        /// </summary>
+        private void RotateToPlayer(Transform player, Common.NPCStateContext context)
+        {
+            if (player == null || context?.Transform == null) return;
+            
+            Vector3 directionToPlayer = player.position - context.Transform.position;
+            directionToPlayer.y = 0; // Mantener rotación solo en el plano horizontal
+            
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                
+                // Si hay un MonoBehaviour disponible, usar coroutine para rotación suave
+                var mono = context.Transform.GetComponent<UnityEngine.MonoBehaviour>();
+                if (mono != null && rotationDuration > 0f)
+                {
+                    mono.StartCoroutine(RotateToPlayerCoroutine(context.Transform, targetRotation, rotationDuration));
+                }
+                else
+                {
+                    // Rotación instantánea si no hay MonoBehaviour o duración es 0
+                    context.Transform.rotation = targetRotation;
+                }
+            }
+        }
+        
+        private System.Collections.IEnumerator RotateToPlayerCoroutine(Transform npcTransform, Quaternion targetRotation, float duration)
+        {
+            Quaternion startRotation = npcTransform.rotation;
+            float elapsed = 0f;
+            
+            while (elapsed < duration)
+            {
+                elapsed += UnityEngine.Time.deltaTime;
+                float t = elapsed / duration;
+                npcTransform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
+                yield return null;
+            }
+            
+            npcTransform.rotation = targetRotation;
+        }
+        
+        /// <summary>
+        /// Activa la animación de hablar en el NPC
+        /// </summary>
+        private void StartTalkingAnimation(Common.NPCStateContext context)
+        {
+            if (context?.Animator == null) return;
+            
+            // Usar el NPCSimpleAnimator para activar la animación de hablar
+            context.Animator.SetTalking(true);
+        }
+        
+        /// <summary>
+        /// Detiene la animación de hablar en el NPC
+        /// </summary>
+        private void StopTalkingAnimation(Common.NPCStateContext context)
+        {
+            if (context?.Animator == null) return;
+            
+            // Desactivar la animación de hablar
+            context.Animator.SetTalking(false);
         }
     }
 }
