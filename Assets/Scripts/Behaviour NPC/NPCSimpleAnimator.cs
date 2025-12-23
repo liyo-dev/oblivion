@@ -72,6 +72,16 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField] private string dieState = "Die02_NoWeapon";
     [SerializeField] private string victoryState = "Dance_NoWeapon"; // Usar Dance como victoria si no hay Victory
     
+    [Header("Spell Cast Animations (UpperBody Layer)")]
+    [Tooltip("Animación de disparo con mano izquierda")]
+    [SerializeField] private string spellCastLeftState = "MagicLeft";
+    
+    [Tooltip("Animación de disparo con mano derecha")]
+    [SerializeField] private string spellCastRightState = "MagicRight";
+    
+    [Tooltip("Animación de disparo especial (ambas manos)")]
+    [SerializeField] private string spellCastSpecialState = "MagicSpecial";
+    
     [Header("NavMesh Agent Sync")]
     [Tooltip("Sincronizar automáticamente con NavMeshAgent")]
     [SerializeField] private bool syncWithNavAgent = true;
@@ -94,6 +104,9 @@ public class NPCSimpleAnimator : MonoBehaviour
     private float _currentMovementSpeed;
     private Vector3 _lastPosition;
     private float _actualSpeed;
+    
+    // Spell casting hand alternation
+    private int _lastSpellHand = -1; // -1 = ninguno, 0 = izquierda, 1 = derecha
     
     // Animator parameters
     private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
@@ -623,6 +636,105 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             PlayOneShot(victoryState);
         }
+    }
+    
+    #endregion
+    
+    #region Public API - Spell Casting
+    
+    /// <summary>
+    /// Reproduce animación de disparo de hechizo con alternancia automática de manos.
+    /// Usa UpperBody layer y vuelve automáticamente a locomotion al terminar.
+    /// </summary>
+    public void PlaySpellCast()
+    {
+        // Alternar entre mano izquierda y derecha
+        if (_lastSpellHand != 0) // Si la última fue derecha o ninguna, usar izquierda
+        {
+            PlaySpellCastLeft();
+        }
+        else // Si la última fue izquierda, usar derecha
+        {
+            PlaySpellCastRight();
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de disparo con mano izquierda (UpperBody layer)
+    /// </summary>
+    public void PlaySpellCastLeft()
+    {
+        if (!string.IsNullOrEmpty(spellCastLeftState))
+        {
+            _lastSpellHand = 0;
+            
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] PlaySpellCastLeft: {spellCastLeftState} en layer {upperBodyLayer}");
+            
+            // Reproducir en el UpperBody layer con callback para volver a locomotion
+            PlaySpellCastInternal(spellCastLeftState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de disparo con mano derecha (UpperBody layer)
+    /// </summary>
+    public void PlaySpellCastRight()
+    {
+        if (!string.IsNullOrEmpty(spellCastRightState))
+        {
+            _lastSpellHand = 1;
+            
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] PlaySpellCastRight: {spellCastRightState} en layer {upperBodyLayer}");
+            
+            // Reproducir en el UpperBody layer con callback para volver a locomotion
+            PlaySpellCastInternal(spellCastRightState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de disparo especial con ambas manos (UpperBody layer)
+    /// </summary>
+    public void PlaySpellCastSpecial()
+    {
+        if (!string.IsNullOrEmpty(spellCastSpecialState))
+        {
+            _lastSpellHand = 2; // Marcar como especial
+            
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] PlaySpellCastSpecial: {spellCastSpecialState} en layer {upperBodyLayer}");
+            
+            // Reproducir en el UpperBody layer con callback para volver a locomotion
+            PlaySpellCastInternal(spellCastSpecialState);
+        }
+    }
+    
+    /// <summary>
+    /// Método interno para reproducir animaciones de spell cast en UpperBody layer
+    /// </summary>
+    private void PlaySpellCastInternal(string stateName)
+    {
+        if (string.IsNullOrEmpty(stateName) || animator == null)
+            return;
+        
+        // Asegurar que el UpperBody layer esté activo
+        if (upperBodyLayer > 0 && upperBodyLayer < animator.layerCount)
+        {
+            animator.SetLayerWeight(upperBodyLayer, 1f);
+        }
+        
+        // Reproducir la animación en el UpperBody layer usando PlayOneShot
+        // NO forzar transición a locomotion en el callback - dejar que el animator lo maneje naturalmente
+        PlayOneShot(stateName, upperBodyLayer, () =>
+        {
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] Spell cast completado en UpperBody layer");
+            
+            // El UpperBody layer volverá a su estado idle automáticamente
+            // El Base Layer (piernas) puede continuar con locomotion si se está moviendo
+            // NO hacer nada aquí - dejar que el sistema fluya naturalmente
+        });
     }
     
     #endregion

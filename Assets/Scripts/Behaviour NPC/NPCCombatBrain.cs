@@ -105,6 +105,9 @@ namespace Game.NPC
         float _rightAttackCooldown;
         float _specialAttackCooldown;
         
+        // Control de estado de movimiento para evitar spam de PlayBattleIdle
+        bool _wasMovingLastFrame;
+        
         // Estados tácticos
         enum CombatState { Aggressive, Neutral, Defensive }
         CombatState _currentState = CombatState.Neutral;
@@ -207,9 +210,10 @@ namespace Game.NPC
             _burstCdTimer = 0f;
             _burstPending = false;
             _attacksSinceBurst = 0;
-            _nextBurstCount = Mathf.Clamp(UnityEngine.Random.Range(
+            // Generar número aleatorio de ataques antes de reposicionar (1-3 ataques)
+            _nextBurstCount = UnityEngine.Random.Range(
                 Mathf.Max(1, _settings.burstAttacksMin),
-                Mathf.Max(Mathf.Max(1, _settings.burstAttacksMin), _settings.burstAttacksMax + 1)), 1, 3);
+                Mathf.Max(1, _settings.burstAttacksMax) + 1);
 
             // Ventanas de quieto
             _holdTimer = 0f;
@@ -376,15 +380,13 @@ namespace Game.NPC
 
                     if (_postAttackHoldTimer > 0f || _isWindup)
                     {
-                        NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                        _animator?.ResetMovement();
-                        _animator?.PlayBattleIdle();
+                        StopAndIdle();
                         FacePlayer();
                     }
                     else
                     {
                         float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                        _animator?.SetMovementSpeed(speed, 0.08f);
+                        StartMoving(speed);
                         FaceMovement(); // evitar andar de espaldas al retroceder
                     }
                 }
@@ -401,15 +403,13 @@ namespace Game.NPC
 
                     if (_postAttackHoldTimer > 0f || _isWindup)
                     {
-                        NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                        _animator?.ResetMovement();
-                        _animator?.PlayBattleIdle();
+                        StopAndIdle();
                         FacePlayer();
                     }
                     else
                     {
                         float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                        _animator?.SetMovementSpeed(speed, 0.08f);
+                        StartMoving(speed);
                         FaceMovement();
                     }
                 }
@@ -422,9 +422,7 @@ namespace Game.NPC
                     if (hasAttackReady && clearLos && _attackLockTimer <= 0f && !_isWindup && ShouldAttackNow(distanceToPlayer))
                     {
                         // Detenerse y atacar
-                        NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                        _animator?.ResetMovement();
-                        _animator?.PlayBattleIdle();
+                        StopAndIdle();
                         FacePlayer();
                         
                         TryExecuteAttack();
@@ -435,8 +433,7 @@ namespace Game.NPC
                         if (_microPauseTimer > 0f)
                         {
                             _microPauseTimer -= Time.deltaTime;
-                            NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                            _animator?.PlayBattleIdle();
+                            StopAndIdle();
                             FacePlayer();
                         }
                         else
@@ -445,8 +442,7 @@ namespace Game.NPC
                             if (_holdTimer > 0f || _postAttackHoldTimer > 0f || _isWindup)
                             {
                                 if (_holdTimer > 0f) _holdTimer -= Time.deltaTime;
-                                NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                                _animator?.PlayBattleIdle();
+                                StopAndIdle();
                                 FacePlayer();
                             }
                             else
@@ -459,7 +455,7 @@ namespace Game.NPC
                                     repathTimer = _settings.repathInterval * 0.5f; // Actualizar más frecuentemente al circular
                                 }
                                 float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                                _animator?.SetMovementSpeed(speed * 0.7f, 0.08f);
+                                StartMoving(speed * 0.7f);
                                 FaceMovement();
 
                                 // Programar la siguiente micro-pausa
@@ -639,38 +635,72 @@ namespace Game.NPC
 
         void TryExecuteAttack()
         {
-            // Priorizar el ataque especial si está disponible en estado agresivo
-            if (_currentState == CombatState.Aggressive && _specialAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.specialAttack.animationState))
-            {
-                TryExecuteWithWindup(_settings.specialAttack, () => { _specialAttackCooldown = _settings.specialAttack.cooldown; });
-                return;
-            }
-
-            // Elegir entre left y right si están disponibles
+            // Elegir entre left, right y special de forma COMPLETAMENTE aleatoria
             bool leftReady = _leftAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.leftAttack.animationState);
             bool rightReady = _rightAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.rightAttack.animationState);
             bool specialReady = _specialAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.specialAttack.animationState);
 
-            // Crear lista de ataques disponibles
-            var availableAttacks = new System.Collections.Generic.List<(AttackSlot slot, System.Action resetCooldown)>();
+            // Crear lista de ataques disponibles con PESOS aleatorios
+            var availableAttacks = new System.Collections.Generic.List<(AttackSlot slot, System.Action resetCooldown, float weight)>();
             
             if (leftReady)
-                availableAttacks.Add((_settings.leftAttack, () => _leftAttackCooldown = _settings.leftAttack.cooldown));
+            {
+                // Peso aleatorio entre 0.5 y 1.5
+                float weight = UnityEngine.Random.Range(0.5f, 1.5f);
+                availableAttacks.Add((_settings.leftAttack, () => {
+                    // Cooldown con variabilidad ±20%
+                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    _leftAttackCooldown = _settings.leftAttack.cooldown * variance;
+                }, weight));
+            }
             
             if (rightReady)
-                availableAttacks.Add((_settings.rightAttack, () => _rightAttackCooldown = _settings.rightAttack.cooldown));
+            {
+                float weight = UnityEngine.Random.Range(0.5f, 1.5f);
+                availableAttacks.Add((_settings.rightAttack, () => {
+                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    _rightAttackCooldown = _settings.rightAttack.cooldown * variance;
+                }, weight));
+            }
             
             if (specialReady)
-                availableAttacks.Add((_settings.specialAttack, () => _specialAttackCooldown = _settings.specialAttack.cooldown));
+            {
+                // El especial tiene peso variable según el estado
+                float weight = _currentState == CombatState.Aggressive ? 
+                    UnityEngine.Random.Range(1.5f, 2.5f) :  // Más probable en agresivo
+                    UnityEngine.Random.Range(0.3f, 0.8f);   // Menos probable en neutral/defensivo
+                    
+                availableAttacks.Add((_settings.specialAttack, () => {
+                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    _specialAttackCooldown = _settings.specialAttack.cooldown * variance;
+                }, weight));
+            }
 
             // Si no hay ataques disponibles, no hacer nada
             if (availableAttacks.Count == 0)
                 return;
 
-            // Elegir un ataque al azar
-            int randomIndex = UnityEngine.Random.Range(0, availableAttacks.Count);
-            var (selectedSlot, resetCooldown) = availableAttacks[randomIndex];
-            TryExecuteWithWindup(selectedSlot, resetCooldown);
+            // Elegir un ataque usando SELECCIÓN PONDERADA aleatoria
+            float totalWeight = 0f;
+            foreach (var (_, _, weight) in availableAttacks)
+                totalWeight += weight;
+            
+            float randomValue = UnityEngine.Random.Range(0f, totalWeight);
+            float cumulative = 0f;
+            
+            foreach (var (slot, resetCooldown, weight) in availableAttacks)
+            {
+                cumulative += weight;
+                if (randomValue <= cumulative)
+                {
+                    TryExecuteWithWindup(slot, resetCooldown);
+                    return;
+                }
+            }
+            
+            // Fallback: elegir el último si algo falla
+            var lastAttack = availableAttacks[availableAttacks.Count - 1];
+            TryExecuteWithWindup(lastAttack.slot, lastAttack.resetCooldown);
         }
 
         void TryExecuteWithWindup(AttackSlot slot, System.Action onExecuted)
@@ -705,8 +735,7 @@ namespace Game.NPC
                 float d = Vector3.Distance(transform.position, _player.position);
                 if (d < _settings.minDistance - 0.1f) { cancelled = true; break; }
                 // Detenerse y mirar al jugador durante el wind-up
-                NavMeshAgentUtility.SafeSetStopped(_agent, true);
-                _animator?.PlayBattleIdle();
+                StopAndIdle();
                 FacePlayer();
                 t += Time.deltaTime;
                 yield return null;
@@ -726,51 +755,43 @@ namespace Game.NPC
 
         void ExecuteAttack(AttackSlot slot)
         {
-            // Reproducir animación si existe
+            // ✅ Reproducir animación directamente en el Animator usando CrossFade
             if (_rawAnimator != null && !string.IsNullOrEmpty(slot.animationState))
             {
-                // Detectar en qué layer está la animación
                 int animHash = Animator.StringToHash(slot.animationState);
                 int targetLayer = _settings.upperBodyLayer;
                 
-                // Si no está en el upper body layer, intentar en el base layer
-                if (!_rawAnimator.HasState(_settings.upperBodyLayer, animHash))
+                // Verificar que la animación existe en el UpperBody layer
+                if (!_rawAnimator.HasState(targetLayer, animHash))
                 {
+                    // Si no está en UpperBody, buscar en base layer
                     if (_rawAnimator.HasState(0, animHash))
                     {
                         targetLayer = 0;
-                        Debug.Log($"[NPCCombatBrain] Animación '{slot.animationState}' encontrada en base layer (0) en vez del upper body layer ({_settings.upperBodyLayer})");
+                        Debug.Log($"[NPCCombatBrain] Animación '{slot.animationState}' encontrada en base layer");
                     }
                     else
                     {
-                        Debug.LogWarning($"[NPCCombatBrain] ⚠️ Animación '{slot.animationState}' no existe en ningún layer del Animator");
-                        targetLayer = -1;
+                        Debug.LogWarning($"[NPCCombatBrain] ⚠️ Animación '{slot.animationState}' NO EXISTE en el Animator");
+                        return;
                     }
                 }
                 
-                if (targetLayer >= 0)
+                // Asegurar que el layer esté visible
+                if (targetLayer > 0)
                 {
-                    // Asegurar que la capa esté visible (solo si no es base layer)
-                    if (targetLayer > 0)
-                    {
-                        _rawAnimator.SetLayerWeight(targetLayer, 1f);
-                    }
-                    
-                    try
-                    {
-                        // Usar CrossFadeInFixedTime directamente con el Animator
-                        _rawAnimator.CrossFadeInFixedTime(slot.animationState, 0.1f, targetLayer);
-                        Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando animación {slot.animationState} (slot {slot.slotIndex}) en layer {targetLayer}");
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogWarning($"[NPCCombatBrain] ⚠️ Error al reproducir animación '{slot.animationState}': {ex.Message}");
-                    }
+                    _rawAnimator.SetLayerWeight(targetLayer, 1f);
                 }
+                
+                // Reproducir animación con CrossFade corto para transición rápida
+                _rawAnimator.CrossFadeInFixedTime(slot.animationState, 0.1f, targetLayer);
+                
+                string handName = slot.slotIndex == 0 ? "LEFT" : slot.slotIndex == 1 ? "RIGHT" : "SPECIAL";
+                Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando spell cast {handName} (slot {slot.slotIndex}) - Animación: {slot.animationState}");
             }
             else
             {
-                Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando ataque slot {slot.slotIndex} (sin animación configurada o Animator faltante)");
+                Debug.LogWarning($"[NPCCombatBrain] ⚠️ No se puede ejecutar ataque: Animator={_rawAnimator != null}, Animation={slot.animationState}");
             }
 
             // SIEMPRE disparar proyectil (con o sin animación)
@@ -786,10 +807,13 @@ namespace Game.NPC
             if (_burstCdTimer <= 0f && _attacksSinceBurst >= _nextBurstCount)
             {
                 _attacksSinceBurst = 0;
-                _nextBurstCount = Mathf.Clamp(UnityEngine.Random.Range(
+                // Generar nuevo número aleatorio de ataques (1-3)
+                _nextBurstCount = UnityEngine.Random.Range(
                     Mathf.Max(1, _settings.burstAttacksMin),
-                    Mathf.Max(Mathf.Max(1, _settings.burstAttacksMin), _settings.burstAttacksMax + 1)), 1, 3);
+                    Mathf.Max(1, _settings.burstAttacksMax) + 1);
                 _burstPending = true;
+                
+                Debug.Log($"[NPCCombatBrain] Burst completado - próximo burst será de {_nextBurstCount} ataques");
             }
         }
 
@@ -964,6 +988,32 @@ namespace Game.NPC
             }
 
             return false;
+        }
+        
+        /// <summary>
+        /// Detiene el agente y reproduce Battle Idle solo si estaba moviéndose
+        /// Evita spam de PlayBattleIdle()
+        /// </summary>
+        void StopAndIdle()
+        {
+            NavMeshAgentUtility.SafeSetStopped(_agent, true);
+            _animator?.ResetMovement();
+            
+            // Solo llamar PlayBattleIdle si acabamos de detenernos
+            if (_wasMovingLastFrame)
+            {
+                _animator?.PlayBattleIdle();
+                _wasMovingLastFrame = false;
+            }
+        }
+        
+        /// <summary>
+        /// Inicia movimiento y marca que está en movimiento
+        /// </summary>
+        void StartMoving(float speed)
+        {
+            _animator?.SetMovementSpeed(speed, 0.08f);
+            _wasMovingLastFrame = true;
         }
 
 #if UNITY_EDITOR

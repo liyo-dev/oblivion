@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -71,22 +71,22 @@ namespace Game.NPC.States
                     upperBodyLayer = 1,
                     battleIdleState = "Battle Idle",
                     
-                    // Configurar slots de ataque
+                    // Configurar slots de ataque con nombres correctos del Animator
                     leftAttack = new NPCCombatBrain.AttackSlot 
                     { 
-                        animationState = "Attack_Left",
+                        animationState = "MagicLeft",  // UpperBody/Magic/MagicLeft
                         cooldown = combatConfig.attackCooldown,
                         slotIndex = 0
                     },
                     rightAttack = new NPCCombatBrain.AttackSlot 
                     { 
-                        animationState = "Attack_Right",
+                        animationState = "MagicRight",  // UpperBody/Magic/MagicRight
                         cooldown = combatConfig.attackCooldown * 1.2f,
                         slotIndex = 1
                     },
                     specialAttack = new NPCCombatBrain.AttackSlot 
                     { 
-                        animationState = "Attack_Special",
+                        animationState = "MagicSpecial",  // UpperBody/Magic/MagicSpecial
                         cooldown = combatConfig.attackCooldown * 2f,
                         slotIndex = 2
                     },
@@ -104,31 +104,31 @@ namespace Game.NPC.States
                     // Línea de visión
                     requireLineOfSight = true,
                     losMask = LayerMask.GetMask("Default"),
-                    windupMin = 0.2f,
-                    windupMax = 0.6f,
-                    strafeFlipMin = 2f,
-                    strafeFlipMax = 4f,
+                    windupMin = 0.05f,  // MUY rápido
+                    windupMax = 0.25f,  // Variabilidad mínima
+                    strafeFlipMin = 0.8f,  // Cambia dirección más rápido
+                    strafeFlipMax = 2f,
                     dodgeDistance = 2f,
                     dodgeCooldown = 3f,
                     
-                    // Micro-pausas para ritmo humano
-                    microPauseDurationMin = 0.3f,
-                    microPauseDurationMax = 0.8f,
-                    microPauseIntervalMin = 2f,
-                    microPauseIntervalMax = 5f,
+                    // Micro-pausas MUCHO más variadas y aleatorias
+                    microPauseDurationMin = 0.1f,  // Pausas muy cortas
+                    microPauseDurationMax = 0.6f,  // A veces más largas
+                    microPauseIntervalMin = 0.5f,  // Pausas MUY frecuentes
+                    microPauseIntervalMax = 2f,    // Máxima variabilidad
                     
-                    // Burst & reposition
-                    burstRepositionDistance = 3f,
-                    burstRepositionCooldown = 5f,
-                    burstAttacksMin = 2,
-                    burstAttacksMax = 4,
+                    // Burst EXTREMADAMENTE variable (1-4 ataques)
+                    burstRepositionDistance = 2.5f,
+                    burstRepositionCooldown = 1.5f,  // Reposiciona MUY frecuentemente
+                    burstAttacksMin = 1,  // A veces solo 1 ataque
+                    burstAttacksMax = 4,  // A veces hasta 4 ataques
                     
-                    // Ventanas de quieto
-                    holdDurationMin = 0.5f,
-                    holdDurationMax = 1.5f,
-                    holdIntervalMin = 3f,
-                    holdIntervalMax = 6f,
-                    attackHoldSeconds = 0.4f,
+                    // Ventanas de quieto MUY cortas y frecuentes
+                    holdDurationMin = 0.2f,
+                    holdDurationMax = 0.8f,
+                    holdIntervalMin = 1f,
+                    holdIntervalMax = 3f,
+                    attackHoldSeconds = 0.2f,  // Casi no se queda quieto después de atacar
                     
                     // Dificultad
                     attackFrequencyMultiplier = 1f,

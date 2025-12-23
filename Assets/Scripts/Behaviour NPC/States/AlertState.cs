@@ -17,6 +17,9 @@ namespace Game.NPC.States
         private bool _walkTowardsPlayer;
         private float _stopDistance;
         private bool _waitingForDialogue;
+        private float _senseSomethingTimer;
+        private bool _senseSomethingPlayed;
+        private bool _challengePlayed;
         
         public AlertState(float alertDuration = 2f, bool walkTowardsPlayer = true, float stopDistance = 3f)
         {
@@ -69,17 +72,20 @@ namespace Game.NPC.States
                 }
             }
             
-            // MANTENER el NPCSimpleAnimator activo - él maneja las animaciones correctamente
+            // ✅ SECUENCIA DE ANIMACIONES: SenseSomething → Challenge → Idle_Battle
             if (context.Animator != null)
             {
-                // Reproducir secuencia: Challenge → Idle_Battle
-                // PlayChallengingForBattle() reproduce Challenge y cuando termina, va a Idle_Battle
-                // Esto permite que el exit time de Idle_Battle permita transición natural a Locomotion
-                context.Animator.PlayChallengingForBattle();
-                context.Log("[AlertState] Reproduciendo Challenge → Idle de batalla");
+                // 1. Primero reproducir SenseSomething (animación corta de darse cuenta)
+                context.Animator.PlaySenseSomething();
+                context.Log("[AlertState] Reproduciendo SenseSomething - NPC se da cuenta del jugador");
+                
+                // Inicializar timers para la secuencia
+                _senseSomethingTimer = 1.2f; // Duración de SenseSomething
+                _senseSomethingPlayed = true;
+                _challengePlayed = false;
             }
             
-            // Iniciar diálogo de alerta si existe (DESPUÉS de girar)
+            // Iniciar diálogo de alerta si existe (DESPUÉS de girar y animar)
             StartAlertDialogue(context);
             
             _alertTimer = 0f;
@@ -93,6 +99,23 @@ namespace Game.NPC.States
             {
                 context.LogWarning("[AlertState] Jugador perdido durante alerta");
                 return;
+            }
+            
+            // ✅ Manejar secuencia de animaciones SenseSomething → Challenge
+            if (_senseSomethingPlayed && !_challengePlayed)
+            {
+                _senseSomethingTimer -= Time.deltaTime;
+                
+                // Cuando termine SenseSomething, reproducir Challenge
+                if (_senseSomethingTimer <= 0f)
+                {
+                    if (context.Animator != null)
+                    {
+                        context.Animator.PlayChallengingForBattle();
+                        context.Log("[AlertState] Secuencia: SenseSomething completado → Challenge → Idle_Battle");
+                    }
+                    _challengePlayed = true;
+                }
             }
             
             // SIEMPRE mirar al jugador durante la alerta (especialmente durante el diálogo)
