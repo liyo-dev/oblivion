@@ -253,6 +253,13 @@ namespace Game.NPC
                 Debug.LogWarning("[NPCCombatBrain] ⚠️ No se puede iniciar combate: _ctx es null");
                 return;
             }
+            
+            // ✅ ACTIVAR MODO BATALLA - Esto es CRÍTICO para que funcione la locomoción
+            if (_animator != null)
+            {
+                _animator.SetBattleMode(true);
+                Debug.Log("[NPCCombatBrain] ✅ Modo batalla activado en Animator");
+            }
 
             Debug.Log("[NPCCombatBrain] ✅ Iniciando CombatLoop()");
             _combatRoutine = StartCoroutine(CombatLoop());
@@ -270,6 +277,13 @@ namespace Game.NPC
                 NavMeshAgentUtility.SafeSetStopped(_agent, true);
 
             _animator?.ResetMovement();
+            
+            // Desactivar modo batalla
+            if (_animator != null)
+            {
+                _animator.SetBattleMode(false);
+                Debug.Log("[NPCCombatBrain] Modo batalla desactivado");
+            }
         }
 
         IEnumerator CombatLoop()
@@ -366,133 +380,75 @@ namespace Game.NPC
                     }
                 }
 
-                // Comportamiento según estado y distancia
-                if (tooClose)
+                // =====================================================
+                // ESTRATEGIA SIMPLE: PARADO para atacar, MOVERSE para reposicionar
+                // =====================================================
+                
+                bool hasAttackReady = HasAttackAvailable();
+                bool clearLos = !_settings.requireLineOfSight || HasLineOfSight();
+                
+                // ✅ PRIORIDAD 1: Si puede atacar → PARADO y atacar
+                if (hasAttackReady && clearLos && _attackLockTimer <= 0f && !_isWindup && inAttackRange)
                 {
-                    // Demasiado cerca: retroceder sin atacar
-                    Vector3 retreatTarget = ComputeRetreatPosition(distanceToPlayer);
+                    // PARADO - Atacar
+                    StopAndIdle();
+                    FacePlayer();
+                    TryExecuteAttack();
+                    Debug.Log($"[NPCCombatBrain] ⚔️ PARADO - Atacando");
+                }
+                // ✅ PRIORIDAD 2: Si está en windup o post-ataque → PARADO
+                else if (_isWindup || _postAttackHoldTimer > 0f)
+                {
+                    // PARADO - Esperando
+                    StopAndIdle();
+                    FacePlayer();
+                    Debug.Log($"[NPCCombatBrain] ⏸️ PARADO - Esperando (windup={_isWindup}, postAttack={_postAttackHoldTimer:F2})");
+                }
+                // ✅ PRIORIDAD 3: Necesita reposicionarse → MOVERSE
+                else
+                {
+                    // MOVIMIENTO - Buscar nueva posición
+                    Vector3 targetPos;
                     
-                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
+                    if (tooClose)
                     {
-                        NavMeshAgentUtility.SetDestination(_agent, retreatTarget, 0.5f);
+                        // Retroceder
+                        targetPos = ComputeRetreatPosition(distanceToPlayer);
+                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Retrocediendo");
+                    }
+                    else if (tooFar)
+                    {
+                        // Acercarse
+                        targetPos = ComputeApproachPosition(distanceToPlayer);
+                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Acercándose");
+                    }
+                    else
+                    {
+                        // Circular
+                        targetPos = ComputeCirclePosition(distanceToPlayer);
+                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Circulando");
+                    }
+                    
+                    // Actualizar destino NavMesh
+                    if (repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
+                    {
+                        NavMeshAgentUtility.SetDestination(_agent, targetPos, 0.5f);
                         repathTimer = _settings.repathInterval;
                     }
-
-                    if (_postAttackHoldTimer > 0f || _isWindup)
-                    {
-                        StopAndIdle();
-                        FacePlayer();
-                    }
-                    else
-                    {
-                        float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                        StartMoving(speed);
-                        FaceMovement(); // evitar andar de espaldas al retroceder
-                    }
-                }
-                else if (tooFar)
-                {
-                    // Demasiado lejos: acercarse
-                    Vector3 approachTarget = ComputeApproachPosition(distanceToPlayer);
                     
-                    if (_postAttackHoldTimer <= 0f && !_isWindup && repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
-                    {
-                        NavMeshAgentUtility.SetDestination(_agent, approachTarget, 0.5f);
-                        repathTimer = _settings.repathInterval;
-                    }
-
-                    if (_postAttackHoldTimer > 0f || _isWindup)
-                    {
-                        StopAndIdle();
-                        FacePlayer();
-                    }
-                    else
-                    {
-                        float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                        StartMoving(speed);
-                        FaceMovement();
-                    }
+                    // ACTIVAR LOCOMOCIÓN
+                    float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
+                    StartMoving(speed);
+                    FaceMovement();
                 }
-                else if (inAttackRange)
+
+                // Invertir sentido circular de vez en cuando
+                if (_circleFlipTimer <= 0f)
                 {
-                    // En rango de ataque: decidir entre atacar, circular o mantener posición
-                    bool hasAttackReady = HasAttackAvailable();
-                    bool clearLos = !_settings.requireLineOfSight || HasLineOfSight();
-
-                    if (hasAttackReady && clearLos && _attackLockTimer <= 0f && !_isWindup && ShouldAttackNow(distanceToPlayer))
-                    {
-                        // Detenerse y atacar
-                        StopAndIdle();
-                        FacePlayer();
-                        
-                        TryExecuteAttack();
-                    }
-                    else
-                    {
-                        // Micro-pausa ocasional para variar el ritmo
-                        if (_microPauseTimer > 0f)
-                        {
-                            _microPauseTimer -= Time.deltaTime;
-                            StopAndIdle();
-                            FacePlayer();
-                        }
-                        else
-                        {
-                            // Ventanas de quieto para no moverse todo el rato
-                            if (_holdTimer > 0f || _postAttackHoldTimer > 0f || _isWindup)
-                            {
-                                if (_holdTimer > 0f) _holdTimer -= Time.deltaTime;
-                                StopAndIdle();
-                                FacePlayer();
-                            }
-                            else
-                            {
-                                // Circular alrededor del jugador para variar posición
-                                Vector3 circleTarget = ComputeCirclePosition(distanceToPlayer);
-                                if (repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
-                                {
-                                    NavMeshAgentUtility.SetDestination(_agent, circleTarget, 0.5f);
-                                    repathTimer = _settings.repathInterval * 0.5f; // Actualizar más frecuentemente al circular
-                                }
-                                float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
-                                StartMoving(speed * 0.7f);
-                                FaceMovement();
-
-                                // Programar la siguiente micro-pausa
-                                _microPauseIntervalTimer -= Time.deltaTime;
-                                if (_microPauseIntervalTimer <= 0f)
-                                {
-                                    float dmin = Mathf.Max(0f, _settings.microPauseDurationMin);
-                                    float dmax = Mathf.Max(dmin, _settings.microPauseDurationMax);
-                                    _microPauseTimer = UnityEngine.Random.Range(dmin, dmax);
-                                    float imin = Mathf.Max(0.2f, _settings.microPauseIntervalMin);
-                                    float imax = Mathf.Max(imin, _settings.microPauseIntervalMax);
-                                    _microPauseIntervalTimer = UnityEngine.Random.Range(imin, imax);
-                                }
-
-                                // Programar ventana de quieto de vez en cuando
-                                _holdIntervalTimer -= Time.deltaTime;
-                                if (_holdIntervalTimer <= 0f)
-                                {
-                                    float hmin = Mathf.Max(0.2f, _settings.holdDurationMin);
-                                    float hmax = Mathf.Max(hmin, _settings.holdDurationMax);
-                                    _holdTimer = UnityEngine.Random.Range(hmin, hmax);
-                                    float i2min = Mathf.Max(0.6f, _settings.holdIntervalMin);
-                                    float i2max = Mathf.Max(i2min, _settings.holdIntervalMax);
-                                    _holdIntervalTimer = UnityEngine.Random.Range(i2min, i2max);
-                                }
-
-                                // Invertir sentido de vez en cuando para parecer humano
-                                if (_circleFlipTimer <= 0f)
-                                {
-                                    _circleClockwise = !_circleClockwise;
-                                    float min = Mathf.Max(0.4f, _settings.strafeFlipMin);
-                                    float max = Mathf.Max(min, _settings.strafeFlipMax);
-                                    _circleFlipTimer = UnityEngine.Random.Range(min, max);
-                                }
-                            }
-                        }
-                    }
+                    _circleClockwise = !_circleClockwise;
+                    float min = Mathf.Max(0.4f, _settings.strafeFlipMin);
+                    float max = Mathf.Max(min, _settings.strafeFlipMax);
+                    _circleFlipTimer = UnityEngine.Random.Range(min, max);
                 }
 
                 yield return null;
@@ -788,6 +744,9 @@ namespace Game.NPC
                 
                 string handName = slot.slotIndex == 0 ? "LEFT" : slot.slotIndex == 1 ? "RIGHT" : "SPECIAL";
                 Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando spell cast {handName} (slot {slot.slotIndex}) - Animación: {slot.animationState}");
+                
+                // ✅ Iniciar coroutine para monitorear cuando termina la animación
+                StartCoroutine(MonitorSpellCastEnd(slot.animationState, targetLayer));
             }
             else
             {
@@ -807,7 +766,7 @@ namespace Game.NPC
             if (_burstCdTimer <= 0f && _attacksSinceBurst >= _nextBurstCount)
             {
                 _attacksSinceBurst = 0;
-                // Generar nuevo número aleatorio de ataques (1-3)
+                // Generar nuevo número aleatorio de ataques (1-4)
                 _nextBurstCount = UnityEngine.Random.Range(
                     Mathf.Max(1, _settings.burstAttacksMin),
                     Mathf.Max(1, _settings.burstAttacksMax) + 1);
@@ -815,6 +774,37 @@ namespace Game.NPC
                 
                 Debug.Log($"[NPCCombatBrain] Burst completado - próximo burst será de {_nextBurstCount} ataques");
             }
+        }
+        
+        /// <summary>
+        /// Monitorea cuando termina la animación de spell cast
+        /// </summary>
+        IEnumerator MonitorSpellCastEnd(string animationName, int layer)
+        {
+            // Esperar un frame para que la animación empiece
+            yield return null;
+            
+            // Esperar a que la animación actual sea la del spell cast
+            float timeout = 0f;
+            while (!_rawAnimator.GetCurrentAnimatorStateInfo(layer).IsName(animationName) && timeout < 0.5f)
+            {
+                timeout += Time.deltaTime;
+                yield return null;
+            }
+            
+            // Esperar a que la animación termine (normalizedTime >= 0.9)
+            while (_rawAnimator.GetCurrentAnimatorStateInfo(layer).IsName(animationName))
+            {
+                var stateInfo = _rawAnimator.GetCurrentAnimatorStateInfo(layer);
+                if (stateInfo.normalizedTime >= 0.9f)
+                {
+                    break;
+                }
+                yield return null;
+            }
+            
+            // La animación terminó - el NPC puede volver a moverse
+            Debug.Log($"[NPCCombatBrain] ✅ Spell cast '{animationName}' completado");
         }
 
         IEnumerator FireAfterDelay(int slotIndex, float delay)
@@ -999,6 +989,16 @@ namespace Game.NPC
             NavMeshAgentUtility.SafeSetStopped(_agent, true);
             _animator?.ResetMovement();
             
+            // Reactivar sync del NavMeshAgent cuando nos detenemos
+            if (_animator != null)
+            {
+                var npcAnimator = _animator as NPCSimpleAnimator;
+                if (npcAnimator != null)
+                {
+                    npcAnimator.syncWithNavAgent = true;
+                }
+            }
+            
             // Solo llamar PlayBattleIdle si acabamos de detenernos
             if (_wasMovingLastFrame)
             {
@@ -1012,8 +1012,20 @@ namespace Game.NPC
         /// </summary>
         void StartMoving(float speed)
         {
+            // Desactivar sync del NavMeshAgent temporalmente para que no sobrescriba
+            if (_animator != null)
+            {
+                var npcAnimator = _animator as NPCSimpleAnimator;
+                if (npcAnimator != null)
+                {
+                    npcAnimator.syncWithNavAgent = false;
+                }
+            }
+            
             _animator?.SetMovementSpeed(speed, 0.08f);
             _wasMovingLastFrame = true;
+            
+            Debug.Log($"[NPCCombatBrain] StartMoving({speed:F2}) - NavAgent sync desactivado temporalmente");
         }
 
 #if UNITY_EDITOR

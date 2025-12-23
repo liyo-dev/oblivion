@@ -84,7 +84,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     [Header("NavMesh Agent Sync")]
     [Tooltip("Sincronizar automáticamente con NavMeshAgent")]
-    [SerializeField] private bool syncWithNavAgent = true;
+    public bool syncWithNavAgent = true;
     
     [Tooltip("Usar Root Motion durante animaciones especiales")]
     [SerializeField] private bool useRootMotionForSpecialAnims = false;
@@ -222,7 +222,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void SetMovementSpeed(float normalizedSpeed, float dampTime = -1f)
     {
         if (animator == null)
+        {
+            Debug.LogWarning("[NPCAnimator] SetMovementSpeed llamado pero animator es null");
             return;
+        }
         
         _currentMovementSpeed = Mathf.Clamp01(normalizedSpeed);
         
@@ -232,25 +235,44 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Set animator parameter
         animator.SetFloat(InputMagnitudeHash, _currentMovementSpeed, damp, Time.deltaTime);
         
+        Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2} | _currentState={_currentState} | _isInBattle={_isInBattle} | _isInteracting={_isInteracting} | threshold={movementThreshold}");
+        
         // Adjust animation speed to match movement speed (reduces foot sliding)
         if (_currentMovementSpeed > movementThreshold)
         {
             animator.speed = Mathf.Lerp(1f, locomotionSpeedMultiplier, _currentMovementSpeed);
             
             // Ensure we're in locomotion state if moving
-            // Permitir transición a locomoción desde Idle o Battle (para que funcione durante combate)
-            if ((_currentState == AnimationState.Idle || _currentState == AnimationState.Battle) && !_isInteracting)
+            // Permitir transición a locomoción cuando está en batalla Y se está moviendo
+            if (_isInBattle && !_isInteracting)
             {
+                // Siempre intentar transicionar a locomotion cuando está en batalla y moviéndose
+                // Esto funciona incluso si el UpperBody layer está reproduciendo spell casts
+                if (_currentState != AnimationState.Walking && _currentState != AnimationState.Running)
+                {
+                    Debug.Log($"[NPCAnimator] ✅ LLAMANDO TransitionToLocomotion (Battle mode, speed: {_currentMovementSpeed:F2})");
+                    TransitionToLocomotion();
+                }
+                else
+                {
+                    Debug.Log($"[NPCAnimator] Ya está en Walking/Running, no se llama TransitionToLocomotion");
+                }
+            }
+            else if ((_currentState == AnimationState.Idle) && !_isInteracting)
+            {
+                Debug.Log($"[NPCAnimator] ✅ LLAMANDO TransitionToLocomotion (Idle mode)");
                 TransitionToLocomotion();
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCAnimator] ❌ NO se transiciona a locomotion: _isInBattle={_isInBattle}, _isInteracting={_isInteracting}, _currentState={_currentState}");
             }
         }
         else
         {
             animator.speed = 1f;
+            Debug.Log($"[NPCAnimator] Speed {_currentMovementSpeed:F2} menor que threshold {movementThreshold}, no se mueve");
         }
-        
-        if (debugMode)
-            Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2}, actual speed: {_actualSpeed:F2}");
     }
     
     /// <summary>
@@ -916,12 +938,21 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (_currentMovementSpeed > movementThreshold * 2f)
         {
             _currentState = AnimationState.Running;
+            Debug.Log($"[NPCAnimator] TransitionToLocomotion → Running (speed: {_currentMovementSpeed:F2})");
         }
         else
         {
             _currentState = AnimationState.Walking;
+            Debug.Log($"[NPCAnimator] TransitionToLocomotion → Walking (speed: {_currentMovementSpeed:F2})");
         }
         
+        if (string.IsNullOrEmpty(locomotionState))
+        {
+            Debug.LogError($"[NPCAnimator] ❌ locomotionState está VACÍO! No se puede transicionar");
+            return;
+        }
+        
+        Debug.Log($"[NPCAnimator] ✅ CrossFadeToState('{locomotionState}', {locomotionBlendTime})");
         CrossFadeToState(locomotionState, locomotionBlendTime);
     }
     

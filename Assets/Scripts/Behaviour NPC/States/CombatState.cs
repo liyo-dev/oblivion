@@ -128,7 +128,7 @@ namespace Game.NPC.States
                     holdDurationMax = 0.8f,
                     holdIntervalMin = 1f,
                     holdIntervalMax = 3f,
-                    attackHoldSeconds = 0.2f,  // Casi no se queda quieto después de atacar
+                    attackHoldSeconds = 0.05f,  // MUY corto - casi no se queda quieto después de atacar
                     
                     // Dificultad
                     attackFrequencyMultiplier = 1f,
