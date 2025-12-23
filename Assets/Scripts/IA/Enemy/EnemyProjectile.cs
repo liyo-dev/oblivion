@@ -160,7 +160,7 @@ public class EnemyProjectile : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[DemonProjectile] Daño aplicado: {damage} (PlayerHealthSystem)");
+            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (PlayerHealthSystem)");
             return;
         }
 
@@ -169,11 +169,11 @@ public class EnemyProjectile : MonoBehaviour
         if (damageable != null && damageable.IsAlive)
         {
             damageable.TakeDamage(damage);
-            Debug.Log($"[DemonProjectile] Daño aplicado: {damage} (IDamageable)");
+            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (IDamageable)");
             return;
         }
 
-        Debug.LogWarning($"[DemonProjectile] No se pudo aplicar daño a {target.name}");
+        Debug.LogWarning($"[EnemyProjectile] No se pudo aplicar daño a {target.name}");
     }
 
     private void DestroyProjectile()

@@ -58,7 +58,6 @@ public class SubtitleController : MonoBehaviour
         if (autoRefreshOnLanguageChange)
         {
             LocalizationManager.Instance.OnLocaleChanged += RefreshCurrentSubtitle;
-            Debug.Log("[SubtitleController] Suscrito a cambios de idioma del LocalizationManager");
         }
     }
 
@@ -98,7 +97,6 @@ public class SubtitleController : MonoBehaviour
         if (LocalizationManager.Instance != null)
         {
             text = LocalizationManager.Instance.Get(id, id);
-            Debug.Log($"[SubtitleController] Mostrando subtítulo localizado - ID: '{id}' -> Texto: '{text}'");
         }
         else
         {
@@ -138,12 +136,7 @@ public class SubtitleController : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(_lastSubtitleId))
         {
-            Debug.Log($"[SubtitleController] Forzando actualización de subtítulo: {_lastSubtitleId}");
             ShowLineById(_lastSubtitleId);
-        }
-        else
-        {
-            Debug.Log("[SubtitleController] No hay subtítulo activo para actualizar");
         }
     }
 
@@ -152,19 +145,11 @@ public class SubtitleController : MonoBehaviour
     /// </summary>
     private void RefreshCurrentSubtitle()
     {
-        if (string.IsNullOrEmpty(_lastSubtitleId)) 
+        if (string.IsNullOrEmpty(_lastSubtitleId) || canvasGroup.alpha <= 0f)
         {
-            Debug.Log("[SubtitleController] RefreshCurrentSubtitle: No hay subtítulo activo");
-            return;
-        }
-        
-        if (canvasGroup.alpha <= 0f) 
-        {
-            Debug.Log("[SubtitleController] RefreshCurrentSubtitle: Subtítulo oculto, no refrescando");
-            return; // No refrescar si está oculto
+            return; // No refrescar si no hay subtítulo activo o está oculto
         }
 
-        Debug.Log($"[SubtitleController] RefreshCurrentSubtitle: Actualizando subtítulo '{_lastSubtitleId}' por cambio de idioma");
         // Volver a mostrar el subtítulo con el nuevo idioma
         ShowLineById(_lastSubtitleId);
     }

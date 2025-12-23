@@ -204,16 +204,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _instance = existing;
             return;
         }
-        
-        // Buscar si ya existe un Canvas con el controller en la escena
-        var existingController = FindObjectOfType<PlayerEquipmentMenuController>(true);
-        if (existingController != null)
-        {
-            Debug.Log($"[PlayerEquipmentMenuController] Bootstrap: Encontrado controller existente en '{existingController.gameObject.name}'");
-            _instance = existingController;
-            ServiceLocator.Register(existingController);
-            return;
-        }
+    
         
         // Si no hay instancia, no hacer nada - el menú debe estar configurado manualmente en la escena
         Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontró instancia. El menú debe estar configurado manualmente en la escena.");
@@ -354,6 +345,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
             if (IsYButtonPressed())
             {
+                GamepadInputReader.PlayUISound("UI_Cancel");
                 OnQuitToMainMenu();
             }
             
@@ -361,6 +353,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
             if (IsLeftShoulderPressed())
             {
+                GamepadInputReader.PlayUISound("UI_Navigate");
                 ChangeTab(-1);
             }
             
@@ -368,6 +361,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             // Leer directamente del gamepad porque GamepadInputReader suprime estos botones en UI
             if (IsRightShoulderPressed())
             {
+                GamepadInputReader.PlayUISound("UI_Navigate");
                 ChangeTab(1);
             }
             
@@ -392,7 +386,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     bool IsYButtonPressed()
     {
-        return GamepadInputReader.YButtonPressed;
+        return GamepadInputReader.YButtonPressedUI;
     }
 
     void RegisterTabButtons()
@@ -401,16 +395,28 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             inventoryTabButton.onClick.AddListener(() => ShowTab(0));
             _tabButtons.Add(inventoryTabButton);
+            
+            // Asegurar que tiene componente de audio
+            if (inventoryTabButton.GetComponent<UIButtonAudio>() == null)
+                inventoryTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
         if (spellsTabButton != null)
         {
             spellsTabButton.onClick.AddListener(() => ShowTab(1));
             _tabButtons.Add(spellsTabButton);
+            
+            // Asegurar que tiene componente de audio
+            if (spellsTabButton.GetComponent<UIButtonAudio>() == null)
+                spellsTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
         if (equipmentTabButton != null)
         {
             equipmentTabButton.onClick.AddListener(() => ShowTab(2));
             _tabButtons.Add(equipmentTabButton);
+            
+            // Asegurar que tiene componente de audio
+            if (equipmentTabButton.GetComponent<UIButtonAudio>() == null)
+                equipmentTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
     }
 
@@ -495,6 +501,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OpenMenu()
     {
+        // Reproducir sonido de apertura de menú
+        GamepadInputReader.PlayUISound("UI_Submit");
+        
         Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
         
         // Verificación temprana: ¿tenemos Canvas?
@@ -592,6 +601,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void CloseMenu()
     {
+        // Reproducir sonido de cierre de menú
+        GamepadInputReader.PlayUISound("UI_Cancel");
+        
         SetCanvasState(false);
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
@@ -700,6 +712,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Debug.Log("[PlayerEquipmentMenu] EnterUiInputScope() - Cambiando a modo UI");
         _inputScope?.Dispose();
         _inputScope = InputActionMapScope.EnterUiScope();
+        
+        // Asegurar que los eventos de input están suscritos (para sonidos automáticos de LB/RB)
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        
         Debug.Log("[PlayerEquipmentMenu] InputScope creado");
     }
 

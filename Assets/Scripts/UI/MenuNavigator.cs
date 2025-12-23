@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using Core;
 
 /// <summary>
 /// Script simple que da feedback visual al botón seleccionado.
@@ -27,6 +28,48 @@ public class MenuNavigator : MonoBehaviour
     {
         // Seleccionar el primer botón activo e interactable
         Invoke(nameof(SelectFirstButton), 0.1f);
+        
+        // Suscribirse a eventos de navegación para reproducir sonidos
+        GamepadInputReader.EnsureInputEventsSubscribed();
+        GamepadInputReader.OnInput += HandleNavigationInput;
+    }
+    
+    void OnDisable()
+    {
+        GamepadInputReader.OnInput -= HandleNavigationInput;
+        
+        if (_lastNudgedText != null)
+        {
+            _lastNudgedText.DOKill();
+            _lastNudgedText.anchoredPosition = Vector2.zero;
+        }
+        _lastNudgedText = null;
+        _lastSelected = null;
+    }
+    
+    void HandleNavigationInput(GamepadInputReader.InputEvent input)
+    {
+        // Solo reproducir sonido en navegación vertical (DPad o Navigate)
+        if (input.Phase != UnityEngine.InputSystem.InputActionPhase.Performed) return;
+        
+        bool isVerticalNav = false;
+        
+        if (input.Type == GamepadInputReader.InputEventType.Navigate)
+        {
+            // Detectar navegación vertical significativa
+            isVerticalNav = Mathf.Abs(input.Value.y) > 0.5f;
+        }
+        else if (input.Type == GamepadInputReader.InputEventType.DpadUp || 
+                 input.Type == GamepadInputReader.InputEventType.DpadDown)
+        {
+            isVerticalNav = true;
+        }
+        
+        if (isVerticalNav)
+        {
+            // El sonido ya se reproduce en GamepadInputReader, pero podemos añadir feedback extra aquí si queremos
+            if (debugLogs) Debug.Log("[MenuNavigator] Navegación vertical detectada");
+        }
     }
 
     void Update()
@@ -99,17 +142,6 @@ public class MenuNavigator : MonoBehaviour
         textTransform.DOAnchorPosX(nudge, nudgeTime).SetEase(Ease.OutCubic).SetUpdate(true);
         
         if (debugLogs) Debug.Log($"[MenuNavigator] Nudge aplicado a: {button.name}");
-    }
-
-    void OnDisable()
-    {
-        if (_lastNudgedText != null)
-        {
-            _lastNudgedText.DOKill();
-            _lastNudgedText.anchoredPosition = Vector2.zero;
-        }
-        _lastNudgedText = null;
-        _lastSelected = null;
     }
 }
 

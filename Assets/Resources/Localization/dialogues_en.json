@@ -353,6 +353,14 @@
             "value": "Get ready, Will. Training starts now."
         },
         {
+            "key": "DLG_GUERRERACHINA_AFTER",
+            "value": "[EN] Así se hace."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_DEFEAT",
+            "value": "[EN] Sigue entrenando para ser un gran mago."
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "[EN] Habla con Erika suele ir de verde y debe andar por el Reino."
         },

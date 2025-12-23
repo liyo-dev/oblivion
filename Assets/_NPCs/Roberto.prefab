@@ -2186,8 +2186,8 @@ GameObject:
   - component: {fileID: 1124403479084261394}
   - component: {fileID: 1794802797545067968}
   - component: {fileID: 5743570393974586435}
-  - component: {fileID: 7539277508907028274}
   - component: {fileID: 2462835152708611376}
+  - component: {fileID: 5728212917075174232}
   m_Layer: 8
   m_Name: Roberto
   m_TagString: Untagged
@@ -2298,25 +2298,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 1392410202429568542}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  battleIdleState: Idle_Battle_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
-  greetState: Greeting01_NoWeapon
+  upperBodyIdleState: UpperIdle
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  rotationSmoothness: 0.15
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  defendState: Defend_NoWeapon
+  getHitState: GetHit01_NoWeapon
+  dieState: Die02_NoWeapon
+  victoryState: Victory_NoWeapon
+  syncWithNavAgent: 1
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
 --- !u!114 &1794802797545067968
 MonoBehaviour:
@@ -2391,130 +2396,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &7539277508907028274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8704277811866107967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManager
-  ambientModule:
-    enableWander: 0
-    wanderRadius: 6
-    minIdleTime: 1.2
-    maxIdleTime: 3
-    pickWhileMoving: 0
-  questModule:
-    enable: 1
-    chain:
-    - questData: {fileID: 11400000, guid: b178523d91c8f6e46bde4691055b0dbe, type: 2}
-      completionMode: 0
-      autoDetectItemDelivery: 0
-      itemDeliveryStepIndex: 0
-      itemTag: 
-      ignoreFovForItem: 0
-      overrideDetectionRadius: 0
-      requireItemInInventory: 1
-      requiredItem: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
-      requiredAmount: 1
-      consumeItemOnComplete: 1
-      dlgBefore: {fileID: 11400000, guid: 609dba3ed6c65cd419426a928bcabebc, type: 2}
-      dlgInProgress: {fileID: 11400000, guid: 9d918d2744a90d846885875933551c02, type: 2}
-      dlgTurnIn: {fileID: 11400000, guid: 7c00c038583553e408f119b20825c282, type: 2}
-      dlgCompleted: {fileID: 11400000, guid: 7c00c038583553e408f119b20825c282, type: 2}
-      onQuestCompleted:
-        m_PersistentCalls:
-          m_Calls: []
-    enableItemDetection: 1
-    detectionRadius: 3
-    detectionAngle: 90
-    detectionLayer:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    detectionInterval: 0.33
-  combatModule:
-    enable: 0
-    sightRadius: 8
-    fovDegrees: 120
-    challengeStopDistance: 2.2
-    approachRepathInterval: 0.25
-    loseSightGraceSeconds: 1.5
-    challengeAlertState: SenseSomethingStart_NoWeapon
-    challengeAlertMinSeconds: 0.75
-    challengeState: Challenging_NoWeapon
-    exclamationPrefab: {fileID: 0}
-    exclamationOffset: {x: 0, y: 2, z: 0}
-    exclamationSeconds: 2
-    alertMusicEvent: 
-    battleMusicId: 
-    endMusicEvent: 
-    startBattleOnChallengeEnd: 1
-    battleHealth: 120
-    healthBarOffset: {x: 0, y: 2.4, z: 0}
-    healthBarPrefab: {fileID: 0}
-    healthBarCanvasOverride: {fileID: 0}
-    healthColor: {r: 0, g: 1, b: 0, a: 1}
-    warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    criticalColor: {r: 1, g: 0, b: 0, a: 1}
-    warningThreshold: 0.5
-    criticalThreshold: 0.25
-    hideHealthBarWhenFull: 1
-    dialogueOnChallenge: {fileID: 0}
-    dialogueOnDefeat: {fileID: 0}
-    dialogueAfterBattle: {fileID: 0}
-    rewards: []
-    battleIdleState: Idle_Battle_NoWeapon
-    upperBodyLayer: 1
-    lightAttackStateLeft: LeftAttack
-    lightAttackStateRight: RightAttack
-    specialAttackState: SpecialAttack
-    projectilePrefab: {fileID: 0}
-    projectileOrigin: {fileID: 0}
-    projectileDamage: 10
-    projectileSpeed: 12
-    combatMinDistance: 4
-    combatMaxDistance: 12
-    attackCooldown: 2
-    specialAttackChance: 0.3
-    combatRepathInterval: 0.2
-    combatRetreatDistance: 2
-    combatTurnSpeed: 6
-    lockPlayer: 1
-    lockOnSight: 1
-    turnPlayerOnSight: 1
-    turnDelaySeconds: 1
-    turnDurationSeconds: 0.35
-    fallbackDialogue: 
-    onChallengeStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerLock:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerUnlock:
-      m_PersistentCalls:
-        m_Calls: []
-    onDialogueRequest:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleFinished:
-      m_PersistentCalls:
-        m_Calls: []
-  logDebug: 0
-  forceKinematicRigidbody: 1
-  rigidbodyConstraints: 112
-  persistLastPosition: 0
-  lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 0
-  rotateOnInteractSeconds: 0.3
 --- !u!114 &2462835152708611376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2529,6 +2410,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
   eventKey: START_ROBERTO_MISION
   sendNow: 0
+--- !u!114 &5728212917075174232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8704277811866107967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 4
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: 36a08a55d0f41574d90fc42ff36c5908, type: 2}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &8735867368604078823
 GameObject:
   m_ObjectHideFlags: 0

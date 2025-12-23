@@ -1,469 +1,977 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using Game.NPC.Common;
 using UnityEngine;
+using UnityEngine.AI;
 
+/// <summary>
+/// Sistema profesional de animaciones para NPCs.
+/// El ÚNICO responsable de controlar las animaciones del NPC.
+/// Todos los demás sistemas (FSM, Combat, Quest, etc.) piden animaciones aquí.
+/// </summary>
 [DisallowMultipleComponent]
+[RequireComponent(typeof(Animator))]
 public class NPCSimpleAnimator : MonoBehaviour
 {
-    [Header("Animator")]
+    #region Serialized Fields
+    
+    [Header("Core Components")]
     [SerializeField] private Animator animator;
-
-    [Tooltip("Nombre EXACTO del estado (Blend Tree) de locomoción en la capa Base.")]
+    [SerializeField] private NavMeshAgent navAgent;
+    
+    [Header("Animation States")]
+    [Tooltip("Estado de locomotion base (ej: Free Locomotion blend tree)")]
     [SerializeField] private string locomotionState = "Free Locomotion";
-
-    [Tooltip("Estado de idle durante batalla en la Base Layer (ej: Idle_Battle_NoWeapon)")]
-    [SerializeField] private string battleIdleState = "Idle_Battle_NoWeapon";
-
-    [Header("Layers del Animator")]
-    [Tooltip("Índice de la capa para animaciones del torso superior (ataques, etc.)")]
+    
+    [Tooltip("Estado de idle normal")]
+    [SerializeField] private string idleNormalState = "Idle_Normal_NoWeapon";
+    
+    [Tooltip("Estado de idle en batalla")]
+    [SerializeField] private string idleBattleState = "Idle_Battle_NoWeapon";
+    
+    [Header("Animation Layers")]
+    [Tooltip("Índice de la capa para animaciones de torso superior (ataques)")]
     [SerializeField] private int upperBodyLayer = 1;
-    [Tooltip("Estado de idle de la capa UpperBody (ej: UpperIdle)")]
-    [SerializeField, HideInInspector] private string upperBodyIdleState = "UpperIdle";
-
-    [SerializeField] private string greetState = "Greeting01_NoWeapon";
+    
+    [Tooltip("Estado idle de la capa superior")]
+    [SerializeField] private string upperBodyIdleState = "UpperIdle";
+    
+    [Header("Locomotion Settings")]
+    [Tooltip("Velocidad mínima para considerar que está en movimiento")]
+    [SerializeField, Range(0.01f, 0.5f)] private float movementThreshold = 0.1f;
+    
+    [Tooltip("Multiplicador de velocidad de animación durante locomoción")]
+    [SerializeField, Range(0.5f, 2f)] private float locomotionSpeedMultiplier = 1.0f;
+    
+    [Tooltip("Tiempo de blend para transiciones de locomoción")]
+    [SerializeField, Range(0f, 0.5f)] private float locomotionBlendTime = 0.1f;
+    
+    [Tooltip("Dampening del parámetro InputMagnitude")]
+    [SerializeField, Range(0f, 0.5f)] private float inputMagnitudeDampTime = 0.1f;
+    
+    [Header("Rotation Settings")]
+    [Tooltip("Velocidad de rotación del NPC (grados/segundo)")]
+    [SerializeField, Range(90f, 720f)] private float rotationSpeed = 360f;
+    
+    [Tooltip("Suavizado de rotación")]
+    [SerializeField, Range(0f, 1f)] private float rotationSmoothness = 0.15f;
+    
+    [Tooltip("Ángulo mínimo para considerar que debe rotar")]
+    [SerializeField, Range(1f, 45f)] private float minRotationAngle = 5f;
+    
+    [Header("Interaction")]
     [SerializeField] private string interactState = "InteractWithPeople_NoWeapon";
-
-    [Header("Saludo automático")]
-    [SerializeField] private bool greetOnSight = true;
-    [SerializeField] private float greetRadius = 3.0f;
-    [Range(1f, 180f)] [SerializeField] private float fovDegrees = 110f;
-    [SerializeField] private bool requirePlayerLookingAtMe = true;
-    [Range(0f, 1f)] [SerializeField] private float playerLookDotThreshold = 0.6f;
-    [SerializeField] private float greetCooldown = 4.0f;
-    [SerializeField] private LayerMask occluders = ~0;
-
-    [Header("Rotación al interactuar")]
-    [SerializeField] private bool rotateToPlayerOnInteract = true;
-    [SerializeField] private float rotateSpeed = 10f;
-
-    [Header("Referencias")]
-    [SerializeField] private Transform playerOverride;
-    [SerializeField] private Transform lookFrom;
-    [SerializeField] private AmbientInhibitor ambientInhibitor;
-
-    [Header("Depuración")]
+    [SerializeField] private string greetingState = "Greeting01_NoWeapon";
+    
+    [Header("Combat Animations")]
+    [SerializeField] private string challengingState = "Challenging_NoWeapon";
+    [SerializeField] private string senseSomethingState = "SenseSomethingStart_NoWeapon";
+    [SerializeField] private string defendState = "Idle_Battle_NoWeapon"; // Fallback a Battle Idle si no existe Defend
+    [SerializeField] private string getHitState = "GetHit02_NoWeapon";
+    [SerializeField] private string dieState = "Die02_NoWeapon";
+    [SerializeField] private string victoryState = "Dance_NoWeapon"; // Usar Dance como victoria si no hay Victory
+    
+    [Header("NavMesh Agent Sync")]
+    [Tooltip("Sincronizar automáticamente con NavMeshAgent")]
+    [SerializeField] private bool syncWithNavAgent = true;
+    
+    [Tooltip("Usar Root Motion durante animaciones especiales")]
+    [SerializeField] private bool useRootMotionForSpecialAnims = false;
+    
+    [Header("Debug")]
+    [SerializeField] private bool debugMode = false;
     [SerializeField] private bool drawGizmos = true;
-    [SerializeField] private bool verboseLogs = false;
-    [Tooltip("Para depurar máscaras/capas: reproducir one-shots en capa base")]
-    [SerializeField] private bool forceOneShotsOnBaseLayer = false;
-
-    static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
-    [Header("Locomoción - Tuning")]
-    [Tooltip("Escala para el parámetro de entrada de locomoción (InputMagnitude)")]
-    [SerializeField, Range(0.5f, 2.0f)] private float movementParamScale = 1.25f;
-    [Tooltip("Multiplicador de velocidad de reproducción del Animator durante locomoción")]
-    [SerializeField, Range(0.6f, 2.0f)] private float locomotionAnimSpeed = 1.25f;
-    [Tooltip("Valor mínimo de blend cuando hay movimiento para evitar patinaje")]
-    [SerializeField, Range(0f, 1f)] public float minBlendWhileMoving = 0.7f;
-
-    AnimatorStateCache _stateCache;
-    AnimatorClipCache _clipCache;
-
-    bool _isInteracting;
-    bool _greetOnCooldown;
-    bool _inBattleMode;
-    Transform _player;
-    Transform _playerCam;
-    Coroutine _faceRoutine;
-    string _interactOverride;
-    bool _clearOverrideOnEnd;
-
+    
+    #endregion
+    
+    #region Private Fields
+    
+    // Animation state
+    private AnimationState _currentState = AnimationState.Idle;
+    private bool _isInBattle;
+    private bool _isInteracting;
+    private float _currentMovementSpeed;
+    private Vector3 _lastPosition;
+    private float _actualSpeed;
+    
+    // Animator parameters
+    private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
+    
+    // References
+    private Transform _player;
+    private Transform _playerCam;
+    private Interactable _interactable;
+    
+    // Coroutines
+    private Coroutine _oneShotCoroutine;
+    private Coroutine _rotationCoroutine;
+    
+    // Caches
+    private AnimatorStateCache _stateCache;
+    private Dictionary<string, float> _clipLengthCache = new Dictionary<string, float>();
+    
+    // Smooth rotation
+    private Quaternion _targetRotation;
+    private float _rotationVelocity;
+    
+    // Control flags
+    private bool _pauseAutoSync; // Pausa la sincronización automática durante animaciones manuales
+    
+    #endregion
+    
+    #region Enums
+    
+    public enum AnimationState
+    {
+        Idle,
+        Walking,
+        Running,
+        Battle,
+        Interacting,
+        OneShot,
+        Dead
+    }
+    
+    #endregion
+    
+    #region Unity Lifecycle
+    
     void Reset()
     {
-        animator = GetComponentInChildren<Animator>();
-        lookFrom = transform;
-        ambientInhibitor = GetComponent<AmbientInhibitor>();
+        animator = GetComponent<Animator>();
+        navAgent = GetComponent<NavMeshAgent>();
     }
-
+    
     void Awake()
     {
-        animator ??= GetComponentInChildren<Animator>(true);
-        lookFrom ??= transform;
-        ambientInhibitor ??= GetComponent<AmbientInhibitor>();
-
+        // Get components
+        if (animator == null)
+            animator = GetComponent<Animator>();
+        
+        if (navAgent == null)
+            navAgent = GetComponent<NavMeshAgent>();
+        
+        _interactable = GetComponent<Interactable>();
+        
+        // Initialize
         if (animator != null)
         {
-            animator.applyRootMotion = false;
+            animator.applyRootMotion = useRootMotionForSpecialAnims;
             _stateCache = new AnimatorStateCache(animator);
-            _clipCache = new AnimatorClipCache(animator);
+            CacheAnimationClips();
         }
-
+        
+        _lastPosition = transform.position;
+        _targetRotation = transform.rotation;
+        
+        // Bind to interactable if exists
+        if (_interactable != null)
+        {
+            _interactable.OnStarted.AddListener(OnInteractionStarted);
+            _interactable.OnFinished.AddListener(OnInteractionFinished);
+        }
+        
         ResolvePlayerReferences();
-        BindInteractable();
     }
-
+    
     void Start()
     {
-        PlayLocomotion();
-        if (animator != null)
-            animator.SetFloat(InputMagnitudeHash, 0f);
+        // Start in idle state
+        TransitionToIdle();
     }
-
+    
     void Update()
     {
-        if (!greetOnSight || _isInteracting || !_player || animator == null)
+        if (animator == null)
             return;
-
-        var origin = LookTransform;
-        var toPlayer = _player.position - origin.position;
-
-        if (toPlayer.sqrMagnitude > greetRadius * greetRadius)
-            return;
-
-        if (!IsInsideFov(origin.forward, toPlayer))
-            return;
-
-        if (requirePlayerLookingAtMe && _playerCam && !IsPlayerLookingAtNpc(origin.position))
-            return;
-
-        if (HasOcclusion(origin.position, toPlayer))
-            return;
-
-        if (!_greetOnCooldown)
-            StartCoroutine(DoGreeting());
-    }
-
-    void ResolvePlayerReferences()
-    {
-        _player = playerOverride ? playerOverride : PlayerLocator.ResolvePlayer();
-        if (_player)
-            PlayerService.RegisterComponent(_player, false);
-
-        _playerCam = PlayerLocator.ResolvePlayerCamera();
-    }
-
-    void BindInteractable()
-    {
-        var interactable = GetComponent<Interactable>();
-        if (interactable == null)
-            return;
-
-        interactable.OnStarted.AddListener(BeginInteraction);
-        interactable.OnFinished.AddListener(EndInteraction);
-    }
-
-    Transform LookTransform => lookFrom ? lookFrom : transform;
-
-    bool IsInsideFov(Vector3 forward, Vector3 toPlayer)
-    {
-        var dir = toPlayer.normalized;
-        float dot = Vector3.Dot(forward, dir);
-        float fovDot = Mathf.Cos(0.5f * fovDegrees * Mathf.Deg2Rad);
-        return dot >= fovDot;
-    }
-
-    bool IsPlayerLookingAtNpc(Vector3 npcPosition)
-    {
-        Vector3 toNpc = (npcPosition - _playerCam.position).normalized;
-        float lookDot = Vector3.Dot(_playerCam.forward, toNpc);
-        return lookDot >= playerLookDotThreshold;
-    }
-
-    bool HasOcclusion(Vector3 origin, Vector3 toPlayer)
-    {
-        var dir = toPlayer.normalized;
-        if (!Physics.Raycast(origin + Vector3.up * 1.6f, dir, out var hit, greetRadius, occluders))
-            return false;
-
-        return hit.transform != _player && !hit.transform.IsChildOf(_player);
-    }
-
-    // ===== Interacción =====
-    public void BeginInteraction()
-    {
-        if (_isInteracting)
-            return;
-
-        _isInteracting = true;
-        ambientInhibitor?.Lock();
-
-        StopFacing();
-        if (rotateToPlayerOnInteract && _player)
-            _faceRoutine = StartCoroutine(FaceTarget(_player));
-
-        string targetState = string.IsNullOrEmpty(_interactOverride) ? interactState : _interactOverride;
-        CrossFade(targetState, 0.1f);
-    }
-
-    public void EndInteraction()
-    {
-        if (!_isInteracting)
-            return;
-
-        _isInteracting = false;
-
-        StopFacing();
-        PlayLocomotion();
-        ambientInhibitor?.Unlock();
-
-        if (_clearOverrideOnEnd)
-            ClearInteractOverride();
-    }
-
-    IEnumerator FaceTarget(Transform target)
-    {
-        while (_isInteracting && target)
+        
+        // Update actual speed based on position
+        UpdateActualSpeed();
+        
+        // Sync with NavMeshAgent if enabled AND not paused
+        if (!_pauseAutoSync && syncWithNavAgent && navAgent != null && navAgent.enabled)
         {
-            var anchor = LookTransform;
-            Vector3 dir = target.position - anchor.position;
-            dir.y = 0f;
-            if (dir.sqrMagnitude > 0.0001f)
+            SyncWithNavMeshAgent();
+        }
+    }
+    
+    void LateUpdate()
+    {
+        // Apply smooth rotation in LateUpdate for best results
+        ApplySmoothRotation();
+    }
+    
+    #endregion
+    
+    #region Public API - Movement & Speed
+    
+    /// <summary>
+    /// Establece la velocidad de movimiento del NPC (0-1 normalizado)
+    /// </summary>
+    public void SetMovementSpeed(float normalizedSpeed, float dampTime = -1f)
+    {
+        if (animator == null)
+            return;
+        
+        _currentMovementSpeed = Mathf.Clamp01(normalizedSpeed);
+        
+        // Use configured damp time if not specified
+        float damp = dampTime < 0 ? inputMagnitudeDampTime : dampTime;
+        
+        // Set animator parameter
+        animator.SetFloat(InputMagnitudeHash, _currentMovementSpeed, damp, Time.deltaTime);
+        
+        // Adjust animation speed to match movement speed (reduces foot sliding)
+        if (_currentMovementSpeed > movementThreshold)
+        {
+            animator.speed = Mathf.Lerp(1f, locomotionSpeedMultiplier, _currentMovementSpeed);
+            
+            // Ensure we're in locomotion state if moving
+            if (_currentState == AnimationState.Idle && !_isInteracting)
             {
-                Quaternion desired = Quaternion.LookRotation(dir.normalized, Vector3.up);
-                anchor.rotation = Quaternion.Slerp(anchor.rotation, desired, Time.deltaTime * rotateSpeed);
+                TransitionToLocomotion();
             }
-            yield return null;
-        }
-    }
-
-    void StopFacing()
-    {
-        if (_faceRoutine == null) return;
-        StopCoroutine(_faceRoutine);
-        _faceRoutine = null;
-    }
-
-    // ===== Saludo =====
-    IEnumerator DoGreeting()
-    {
-        _greetOnCooldown = true;
-
-        CrossFade(greetState, 0.08f);
-        float len = Mathf.Max(0.01f, _clipCache?.GetLength(greetState) ?? 0f);
-        yield return new WaitForSeconds(len);
-
-        if (!_isInteracting)
-            PlayLocomotion();
-
-        yield return new WaitForSeconds(greetCooldown);
-        _greetOnCooldown = false;
-    }
-
-    // ===== API pública =====
-    public void SetPlayer(Transform newPlayer, Transform newPlayerCam = null)
-    {
-        _player = newPlayer;
-        _playerCam = newPlayerCam ? newPlayerCam : (_playerCam ?? PlayerLocator.ResolvePlayerCamera());
-    }
-
-    public void SetInteractOverride(string stateName, bool clearOnEnd = true)
-    {
-        _interactOverride = stateName;
-        _clearOverrideOnEnd = clearOnEnd && !string.IsNullOrEmpty(stateName);
-    }
-
-    public void ClearInteractOverride()
-    {
-        _interactOverride = null;
-        _clearOverrideOnEnd = false;
-    }
-
-    public void TriggerGreeting()
-    {
-        if (!_greetOnCooldown && !_isInteracting)
-            StartCoroutine(DoGreeting());
-    }
-
-    public void SetTalking(bool isTalking)
-    {
-        if (!animator) return;
-        // Usar el animator directamente para establecer el parámetro booleano IsTalking
-        animator.SetBool("IsTalking", isTalking);
-    }
-
-    public void SetMovementSpeed(float normalizedSpeed, float dampTime = 0.1f)
-    {
-        if (!animator) return;
-        if (normalizedSpeed > 0.05f)
-            normalizedSpeed = Mathf.Max(normalizedSpeed, minBlendWhileMoving);
-        // Calibrar el parámetro de locomoción y la velocidad de reproducción para reducir foot sliding
-        float scaled = Mathf.Clamp01(normalizedSpeed * movementParamScale);
-        animator.SetFloat(InputMagnitudeHash, scaled, dampTime, Time.deltaTime);
-        // Acelera la reproducción de la locomoción en función del movimiento, pero no sobrepasa el tope
-        animator.speed = Mathf.Lerp(1f, locomotionAnimSpeed, scaled);
-        // Si hay movimiento apreciable, asegurarse de estar en locomoción
-        if (_inBattleMode && normalizedSpeed >= 0.05f)
-            PlayLocomotion();
-    }
-
-    public void ResetMovement() => SetMovementSpeed(0f, 0f);
-
-    public void SetBattleMode(bool enable)
-    {
-        _inBattleMode = enable;
-        if (animator)
-        {
-            // Asegurar que la capa de UpperBody tenga peso cuando estamos en combate
-            float w = enable ? 1f : 0f;
-            int layer = Mathf.Clamp(upperBodyLayer, 0, animator.layerCount - 1);
-            if (layer > 0)
-                animator.SetLayerWeight(layer, w);
-        }
-        if (!enable)
-        {
-            PlayLocomotion();
-        }
-        // Resetear velocidad global para no afectar a futuros one-shots
-        if (animator) animator.speed = 1f;
-        // Cuando se activa el modo batalla, mantener locomotion activo para poder moverse
-        // El battleIdleState se activará automáticamente cuando speed = 0
-    }
-
-    public void PlayBattleIdle()
-    {
-        if (_inBattleMode && !string.IsNullOrEmpty(battleIdleState))
-        {
-            if (animator) animator.speed = 1f;
-            CrossFade(battleIdleState, 0.2f);
-        }
-    }
-
-    public void PlayOneShot(string stateName, int layer = 0)
-    {
-        StartCoroutine(CoPlayOneShot(stateName, layer));
-    }
-
-    IEnumerator CoPlayOneShot(string stateName, int layer = 0)
-    {
-        if (string.IsNullOrEmpty(stateName) || animator == null)
-            yield break;
-
-        // Asegurar que la velocidad global es 1 para no acelerar el ataque
-        animator.speed = 1f;
-        int targetLayer = forceOneShotsOnBaseLayer ? 0 : Mathf.Clamp(layer, 0, animator.layerCount - 1);
-        // Si la capa es distinta de base, asegurar que tiene peso
-        if (targetLayer > 0)
-            animator.SetLayerWeight(targetLayer, 1f);
-
-        // Lanzar el crossfade hacia el estado solicitado
-        int stateHash = Animator.StringToHash(stateName);
-        if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] PlayOneShot -> '{stateName}' en capa {targetLayer}", this);
-        CrossFade(stateName, 0.08f, targetLayer);
-
-        // Dejar arrancar la transición al siguiente frame
-        yield return null;
-
-        // Intentar determinar la duración real del estado activo en esa capa
-        float waitSeconds = 0.25f; // fallback breve por si no se puede resolver
-        var current = animator.GetCurrentAnimatorStateInfo(targetLayer);
-        var next = animator.GetNextAnimatorStateInfo(targetLayer);
-        if (current.shortNameHash == stateHash)
-        {
-            waitSeconds = Mathf.Max(0.01f, current.length);
-            if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] Estado activo coincide. len={waitSeconds:F2}", this);
-        }
-        else if (next.shortNameHash == stateHash)
-        {
-            waitSeconds = Mathf.Max(0.01f, next.length);
-            if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] Estado en transición coincide. len={waitSeconds:F2}", this);
         }
         else
         {
-            // Fallback por nombre de clip en cache
-            float clipLen = _clipCache?.GetLength(stateName) ?? 0f;
-            if (clipLen > 0f) waitSeconds = clipLen;
-            if (verboseLogs) Debug.LogWarning($"[NPCSimpleAnimator] No se pudo resolver estado por hash en capa {targetLayer}. Fallback len={waitSeconds:F2}", this);
-        }
-
-        // Esperar a que la animación termine (preferible por normalizedTime)
-        float safetyCap = Mathf.Min(3.0f, waitSeconds + 0.2f);
-        float elapsed = 0f;
-        bool finished = false;
-        while (elapsed < safetyCap)
-        {
-            var st = animator.GetCurrentAnimatorStateInfo(targetLayer);
-            if (st.shortNameHash == stateHash && st.normalizedTime >= 0.98f)
+            animator.speed = 1f;
+            
+            // ✅ FIX: Si está en batalla y parado, mantener Idle_Battle (no volver a Locomotion)
+            if (_isInBattle && _currentState != AnimationState.Battle)
             {
-                finished = true;
+                _currentState = AnimationState.Battle;
+                if (!string.IsNullOrEmpty(idleBattleState))
+                {
+                    CrossFadeToState(idleBattleState, 0.2f);
+                }
+            }
+        }
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2}, actual speed: {_actualSpeed:F2}, isInBattle: {_isInBattle}");
+    }
+    
+    /// <summary>
+    /// Resetea el movimiento a 0
+    /// </summary>
+    public void ResetMovement()
+    {
+        SetMovementSpeed(0f, 0f);
+    }
+    
+    /// <summary>
+    /// Para todo movimiento inmediatamente
+    /// </summary>
+    public void StopMovement()
+    {
+        ResetMovement();
+        if (animator != null)
+            animator.speed = 1f;
+    }
+    
+    #endregion
+    
+    #region Public API - Battle Mode
+    
+    /// <summary>
+    /// Activa/desactiva el modo batalla
+    /// </summary>
+    public void SetBattleMode(bool enable)
+    {
+        _isInBattle = enable;
+        
+        if (animator == null)
+            return;
+        
+        // Set upper body layer weight
+        if (upperBodyLayer > 0 && upperBodyLayer < animator.layerCount)
+        {
+            animator.SetLayerWeight(upperBodyLayer, enable ? 1f : 0f);
+        }
+        
+        // Transition to appropriate state
+        if (enable)
+        {
+            _currentState = AnimationState.Battle;
+            if (_currentMovementSpeed < movementThreshold)
+            {
+                CrossFadeToState(idleBattleState, 0.2f);
+            }
+        }
+        else
+        {
+            _currentState = AnimationState.Idle;
+            TransitionToIdle();
+        }
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator] Battle mode: {enable}");
+    }
+    
+    /// <summary>
+    /// Reproduce el idle de batalla
+    /// </summary>
+    public void PlayBattleIdle()
+    {
+        if (_isInBattle && !string.IsNullOrEmpty(idleBattleState))
+        {
+            CrossFadeToState(idleBattleState, 0.2f);
+        }
+    }
+    
+    /// <summary>
+    /// Entra en modo batalla (método de conveniencia)
+    /// </summary>
+    public void EnterBattleMode()
+    {
+        SetBattleMode(true);
+    }
+    
+    /// <summary>
+    /// Sale del modo batalla (método de conveniencia)
+    /// </summary>
+    public void ExitBattleMode()
+    {
+        SetBattleMode(false);
+    }
+    
+    /// <summary>
+    /// Reanuda la sincronización automática con NavMeshAgent
+    /// </summary>
+    public void ResumeAutoSync()
+    {
+        _pauseAutoSync = false;
+        if (debugMode)
+            Debug.Log("[NPCSimpleAnimator] Sincronización automática reanudada");
+    }
+    
+    /// <summary>
+    /// Pausa la sincronización automática con NavMeshAgent
+    /// </summary>
+    public void PauseAutoSync()
+    {
+        _pauseAutoSync = true;
+        if (debugMode)
+            Debug.Log("[NPCSimpleAnimator] Sincronización automática pausada");
+    }
+    
+    #endregion
+    
+    #region Public API - One Shot Animations
+    
+    /// <summary>
+    /// Reproduce una animación one-shot (ataque, habilidad, etc.)
+    /// </summary>
+    public void PlayOneShot(string stateName, int layer = 0, Action onComplete = null)
+    {
+        if (string.IsNullOrEmpty(stateName))
+            return;
+        
+        // Stop any current one-shot
+        if (_oneShotCoroutine != null)
+        {
+            StopCoroutine(_oneShotCoroutine);
+        }
+        
+        _oneShotCoroutine = StartCoroutine(PlayOneShotCoroutine(stateName, layer, onComplete));
+    }
+    
+    private IEnumerator PlayOneShotCoroutine(string stateName, int layer, Action onComplete)
+    {
+        AnimationState previousState = _currentState; // ✅ Guardar estado previo
+        _currentState = AnimationState.OneShot;
+        
+        // Ensure animation speed is normal
+        if (animator != null)
+            animator.speed = 1f;
+        
+        // Set layer weight if needed
+        if (layer > 0 && layer < animator.layerCount)
+        {
+            animator.SetLayerWeight(layer, 1f);
+        }
+        
+        // Play animation
+        CrossFadeToState(stateName, 0.08f, layer);
+        
+        yield return null; // Wait one frame for transition to start
+        
+        // Wait for animation to complete
+        float clipLength = GetClipLength(stateName);
+        float waitTime = Mathf.Max(0.1f, clipLength);
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator] Playing one-shot: {stateName}, length: {waitTime:F2}s");
+        
+        // Wait using normalized time for accuracy
+        float elapsed = 0f;
+        while (elapsed < waitTime + 0.2f)
+        {
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(layer);
+            if (stateInfo.IsName(stateName) && stateInfo.normalizedTime >= 0.95f)
+            {
                 break;
             }
             elapsed += Time.deltaTime;
             yield return null;
         }
-        if (verboseLogs) Debug.Log($"[NPCSimpleAnimator] PlayOneShot fin. finished={finished}, elapsed={elapsed:F2}", this);
-
-        // Después del ataque, volver al idle de batalla si estamos en modo batalla
-        // (El CombatBrain se encargará de cambiar a locomotion cuando necesite moverse)
-        if (_inBattleMode)
+        
+        // Callback
+        onComplete?.Invoke();
+        
+        // ✅ ARREGLO: Respetar el estado de batalla
+        // Return to appropriate state
+        if (_isInBattle)
         {
-            // Si fue una animación en upperBodyLayer, volver a idle correspondiente de UpperBody
-            if (targetLayer == upperBodyLayer && !string.IsNullOrEmpty(upperBodyIdleState))
-                CrossFade(upperBodyIdleState, 0.15f, targetLayer);
-            else if (!string.IsNullOrEmpty(battleIdleState))
-                CrossFade(battleIdleState, 0.15f);
+            _currentState = AnimationState.Battle; // ✅ Mantener estado Battle
+            
+            if (layer == upperBodyLayer && !string.IsNullOrEmpty(upperBodyIdleState))
+            {
+                CrossFadeToState(upperBodyIdleState, 0.15f, layer);
+            }
+            
+            // ✅ NO llamar TransitionToIdle si estamos en batalla
+            // PlayBattleIdle(); // Este se llama desde el callback si es necesario
         }
         else if (!_isInteracting)
         {
-            if (animator) animator.speed = 1f;
-            PlayLocomotion();
+            _currentState = AnimationState.Idle; // ✅ Solo volver a Idle si NO está en batalla
+            TransitionToIdle();
+        }
+        
+        _oneShotCoroutine = null;
+    }
+    
+    #endregion
+    
+    #region Public API - Interaction
+    
+    /// <summary>
+    /// Inicia una interacción
+    /// </summary>
+    public void BeginInteraction()
+    {
+        if (_isInteracting)
+            return;
+        
+        _isInteracting = true;
+        _currentState = AnimationState.Interacting;
+        
+        // Face player if available
+        if (_player != null)
+        {
+            FaceTarget(_player.position);
+        }
+        
+        // Play interaction animation
+        CrossFadeToState(interactState, 0.15f);
+        
+        if (debugMode)
+            Debug.Log("[NPCAnimator] Begin interaction");
+    }
+    
+    /// <summary>
+    /// Finaliza una interacción
+    /// </summary>
+    public void EndInteraction()
+    {
+        if (!_isInteracting)
+            return;
+        
+        _isInteracting = false;
+        
+        // Return to appropriate state
+        if (_isInBattle)
+        {
+            PlayBattleIdle();
+            _currentState = AnimationState.Battle;
+        }
+        else
+        {
+            TransitionToIdle();
+        }
+        
+        if (debugMode)
+            Debug.Log("[NPCAnimator] End interaction");
+    }
+    
+    /// <summary>
+    /// Reproduce un saludo
+    /// </summary>
+    public void PlayGreeting()
+    {
+        if (!_isInteracting && !string.IsNullOrEmpty(greetingState))
+        {
+            PlayOneShot(greetingState);
         }
     }
-
-    // ===== Helpers de animación =====
-    void PlayLocomotion()
+    
+    /// <summary>
+    /// Establece si está hablando (para animaciones de boca)
+    /// NOTA: Requiere parámetro 'IsTalking' en el Animator Controller
+    /// </summary>
+    public void SetTalking(bool isTalking)
     {
-        if (string.IsNullOrEmpty(locomotionState))
-            return;
-
-        if (!_stateCache?.CrossFade(locomotionState, 0.1f) ?? true)
-            animator?.CrossFadeInFixedTime(locomotionState, 0.1f, 0, 0f);
+        if (animator != null && animator.parameterCount > 0)
+        {
+            // Solo intentar si el parámetro existe
+            foreach (AnimatorControllerParameter param in animator.parameters)
+            {
+                if (param.name == "IsTalking")
+                {
+                    animator.SetBool("IsTalking", isTalking);
+                    return;
+                }
+            }
+            
+            if (debugMode)
+                Debug.LogWarning($"[NPCAnimator] Parámetro 'IsTalking' no encontrado en Animator Controller");
+        }
     }
+    
+    #endregion
+    
+    #region Public API - Combat Animations
+    
+    /// <summary>
+    /// Reproduce animación de desafío
+    /// </summary>
+    public void PlayChallenging()
+    {
+        if (!string.IsNullOrEmpty(challengingState))
+        {
+            Debug.Log($"[NPCSimpleAnimator] Reproduciendo animación de desafío: {challengingState}");
+            
+            // Usar PlayOneShot que maneja mejor las transiciones
+            // Esto permite que después vuelva automáticamente a la locomotion
+            PlayOneShot(challengingState, 0, () =>
+            {
+                if (debugMode)
+                    Debug.Log("[NPCSimpleAnimator] Animación de desafío completada, volviendo a locomotion");
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[NPCSimpleAnimator] No hay animación de desafío configurada");
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de Challenge y luego va a Idle de Batalla (para AlertState → CombatState)
+    /// </summary>
+    public void PlayChallengingForBattle()
+    {
+        if (!string.IsNullOrEmpty(challengingState))
+        {
+            Debug.Log($"[NPCSimpleAnimator] Reproduciendo Challenge para batalla: {challengingState}");
+            
+            // Activar modo batalla primero
+            _isInBattle = true;
+            _currentState = AnimationState.Battle; // ✅ Establecer estado batalla
+            
+            // Reproducir Challenge como animación One-Shot
+            PlayOneShot(challengingState, 0, () =>
+            {
+                // ✅ CLAVE: Mantener estado batalla después de Challenge
+                _currentState = AnimationState.Battle;
+                _isInBattle = true;
+                
+                // Cuando termina Challenge, ir a Idle de batalla y MANTENERLO en loop
+                if (!string.IsNullOrEmpty(idleBattleState))
+                {
+                    animator.CrossFadeInFixedTime(idleBattleState, 0.15f, 0);
+                    Debug.Log($"[NPCSimpleAnimator] Challenge completado → Idle de batalla: {idleBattleState}");
+                }
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[NPCSimpleAnimator] No hay animación de desafío configurada");
+            // Fallback: ir directo a Idle de batalla
+            _isInBattle = true;
+            _currentState = AnimationState.Battle;
+            if (!string.IsNullOrEmpty(idleBattleState))
+            {
+                animator.CrossFadeInFixedTime(idleBattleState, 0.15f, 0);
+            }
+        }
+    }
+    
 
-    void CrossFade(string stateName, float fade, int layer = 0)
+    /// <summary>
+    /// Reproduce animación de alerta
+    /// </summary>
+    public void PlaySenseSomething()
+    {
+        if (!string.IsNullOrEmpty(senseSomethingState))
+        {
+            PlayOneShot(senseSomethingState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de defensa
+    /// </summary>
+    public void PlayDefend()
+    {
+        if (!string.IsNullOrEmpty(defendState))
+        {
+            PlayOneShot(defendState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de recibir daño
+    /// </summary>
+    public void PlayGetHit()
+    {
+        if (!string.IsNullOrEmpty(getHitState))
+        {
+            PlayOneShot(getHitState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de muerte
+    /// </summary>
+    public void PlayDeath()
+    {
+        if (!string.IsNullOrEmpty(dieState))
+        {
+            _currentState = AnimationState.Dead;
+            CrossFadeToState(dieState, 0.1f);
+            
+            // Disable further updates
+            enabled = false;
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de victoria
+    /// </summary>
+    public void PlayVictory()
+    {
+        if (!string.IsNullOrEmpty(victoryState))
+        {
+            PlayOneShot(victoryState);
+        }
+    }
+    
+    #endregion
+    
+    #region Public API - Rotation
+    
+    /// <summary>
+    /// Hace que el NPC mire hacia un objetivo
+    /// </summary>
+    public void FaceTarget(Vector3 targetPosition)
+    {
+        Vector3 direction = targetPosition - transform.position;
+        direction.y = 0f;
+        
+        if (direction.sqrMagnitude < 0.001f)
+            return;
+        
+        _targetRotation = Quaternion.LookRotation(direction.normalized);
+    }
+    
+    /// <summary>
+    /// Hace que el NPC mire hacia una dirección
+    /// </summary>
+    public void FaceDirection(Vector3 direction)
+    {
+        direction.y = 0f;
+        
+        if (direction.sqrMagnitude < 0.001f)
+            return;
+        
+        _targetRotation = Quaternion.LookRotation(direction.normalized);
+    }
+    
+    /// <summary>
+    /// Rota el NPC suavemente hacia un objetivo durante un tiempo
+    /// </summary>
+    public void RotateTowardsTarget(Transform target, float duration = 0.3f)
+    {
+        if (_rotationCoroutine != null)
+        {
+            StopCoroutine(_rotationCoroutine);
+        }
+        
+        _rotationCoroutine = StartCoroutine(RotateTowardsCoroutine(target, duration));
+    }
+    
+    private IEnumerator RotateTowardsCoroutine(Transform target, float duration)
+    {
+        float elapsed = 0f;
+        Quaternion startRotation = transform.rotation;
+        
+        while (elapsed < duration && target != null)
+        {
+            Vector3 direction = target.position - transform.position;
+            direction.y = 0f;
+            
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(direction.normalized);
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.rotation = Quaternion.Slerp(startRotation, targetRot, t);
+            }
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        _rotationCoroutine = null;
+    }
+    
+    #endregion
+    
+    #region Public API - Utility
+    
+    /// <summary>
+    /// Establece el override de interacción (estado custom)
+    /// </summary>
+    public void SetInteractOverride(string stateName, bool clearOnEnd = true)
+    {
+        if (!string.IsNullOrEmpty(stateName))
+        {
+            interactState = stateName;
+        }
+    }
+    
+    /// <summary>
+    /// Limpia el override de interacción
+    /// </summary>
+    public void ClearInteractOverride()
+    {
+        interactState = "InteractWithPeople_NoWeapon";
+    }
+    
+    /// <summary>
+    /// Establece la referencia del jugador
+    /// </summary>
+    public void SetPlayer(Transform player, Transform playerCam = null)
+    {
+        _player = player;
+        if (playerCam != null)
+            _playerCam = playerCam;
+    }
+    
+    /// <summary>
+    /// Obtiene el estado actual de animación
+    /// </summary>
+    public AnimationState GetCurrentState() => _currentState;
+    
+    /// <summary>
+    /// Verifica si está reproduciendo una animación
+    /// </summary>
+    public bool IsPlayingAnimation() => _oneShotCoroutine != null;
+    
+    #endregion
+    
+    #region Private Methods - Core
+    
+    private void UpdateActualSpeed()
+    {
+        // Calculate actual movement speed based on position change
+        Vector3 currentPosition = transform.position;
+        float distance = Vector3.Distance(currentPosition, _lastPosition);
+        _actualSpeed = distance / Time.deltaTime;
+        _lastPosition = currentPosition;
+    }
+    
+    private void SyncWithNavMeshAgent()
+    {
+        if (!navAgent.enabled || !navAgent.isOnNavMesh)
+            return;
+        
+        // Get agent velocity
+        float agentSpeed = navAgent.velocity.magnitude;
+        float maxSpeed = navAgent.speed;
+        
+        // Normalize speed
+        float normalizedSpeed = maxSpeed > 0 ? Mathf.Clamp01(agentSpeed / maxSpeed) : 0f;
+        
+        // Apply to animation
+        SetMovementSpeed(normalizedSpeed);
+        
+        // Update rotation based on velocity
+        if (agentSpeed > movementThreshold && navAgent.velocity.sqrMagnitude > 0.01f)
+        {
+            Vector3 direction = navAgent.velocity.normalized;
+            FaceDirection(direction);
+        }
+    }
+    
+    private void ApplySmoothRotation()
+    {
+        // Calculate angle difference
+        float angle = Quaternion.Angle(transform.rotation, _targetRotation);
+        
+        if (angle < minRotationAngle)
+            return;
+        
+        // Apply smooth rotation
+        float maxDegreesDelta = rotationSpeed * Time.deltaTime;
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation,
+            _targetRotation,
+            maxDegreesDelta
+        );
+    }
+    
+    #endregion
+    
+    #region Private Methods - State Transitions
+    
+    private void TransitionToIdle()
+    {
+        _currentState = AnimationState.Idle;
+        CrossFadeToState(idleNormalState, 0.2f);
+    }
+    
+    private void TransitionToLocomotion()
+    {
+        if (_currentMovementSpeed > movementThreshold * 2f)
+        {
+            _currentState = AnimationState.Running;
+        }
+        else
+        {
+            _currentState = AnimationState.Walking;
+        }
+        
+        CrossFadeToState(locomotionState, locomotionBlendTime);
+    }
+    
+    #endregion
+    
+    #region Private Methods - Animation Helpers
+    
+    private void CrossFadeToState(string stateName, float transitionTime, int layer = 0)
     {
         if (string.IsNullOrEmpty(stateName) || animator == null)
             return;
-
-        // Si se especifica una capa != 0, usar directamente el animator
-        if (layer != 0)
+        
+        int stateHash = Animator.StringToHash(stateName);
+        
+        // Check if state exists in specified layer
+        if (animator.HasState(layer, stateHash))
         {
-            int hash = Animator.StringToHash(stateName);
-            // Si el estado no existe en esa capa, intentar encontrar una capa válida
-            if (layer < animator.layerCount && animator.HasState(layer, hash))
-            {
-                animator.CrossFadeInFixedTime(hash, fade, layer, 0f);
-            }
-            else
-            {
-                // Buscar en otras capas
-                for (int i = 1; i < animator.layerCount; i++)
-                {
-                    if (animator.HasState(i, hash))
-                    {
-                        // Asegurar peso de la capa
-                        animator.SetLayerWeight(i, 1f);
-                        animator.CrossFadeInFixedTime(hash, fade, i, 0f);
-                        return;
-                    }
-                }
-                // Fallback a capa base si nada coincide
-                animator.CrossFadeInFixedTime(hash, fade, 0, 0f);
-            }
-            return;
+            animator.CrossFadeInFixedTime(stateHash, transitionTime, layer, 0f);
         }
-
-        // Para capa 0, usar el cache que resuelve automáticamente la capa
-        if (!_stateCache?.CrossFade(stateName, fade) ?? true)
-            animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
+        else if (debugMode)
+        {
+            Debug.LogWarning($"[NPCAnimator] State '{stateName}' not found in layer {layer}");
+        }
     }
-
+    
+    private float GetClipLength(string stateName)
+    {
+        // Check cache first
+        if (_clipLengthCache.TryGetValue(stateName, out float cachedLength))
+        {
+            return cachedLength;
+        }
+        
+        // Try to find clip length
+        float length = 0f;
+        
+        if (animator != null)
+        {
+            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip.name.Contains(stateName))
+                {
+                    length = clip.length;
+                    break;
+                }
+            }
+        }
+        
+        // Cache result
+        if (length > 0f)
+        {
+            _clipLengthCache[stateName] = length;
+        }
+        
+        return length > 0f ? length : 1f; // Fallback to 1 second
+    }
+    
+    private void CacheAnimationClips()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null)
+            return;
+        
+        foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+        {
+            if (!_clipLengthCache.ContainsKey(clip.name))
+            {
+                _clipLengthCache[clip.name] = clip.length;
+            }
+        }
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator] Cached {_clipLengthCache.Count} animation clips");
+    }
+    
+    private void ResolvePlayerReferences()
+    {
+        _player = PlayerLocator.ResolvePlayer();
+        _playerCam = PlayerLocator.ResolvePlayerCamera();
+    }
+    
+    #endregion
+    
+    #region Event Handlers
+    
+    private void OnInteractionStarted()
+    {
+        BeginInteraction();
+    }
+    
+    private void OnInteractionFinished()
+    {
+        EndInteraction();
+    }
+    
+    #endregion
+    
+    #region Gizmos
+    
     void OnDrawGizmosSelected()
     {
         if (!drawGizmos)
             return;
-
-        var origin = LookTransform;
-        Vector3 pos = origin.position;
-        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
-        Gizmos.DrawSphere(pos, greetRadius);
-
-        float half = 0.5f * fovDegrees * Mathf.Deg2Rad;
-        Vector3 fwd = origin.forward;
-        Vector3 left = Quaternion.Euler(0, -Mathf.Rad2Deg * half, 0) * fwd;
-        Vector3 right = Quaternion.Euler(0, Mathf.Rad2Deg * half, 0) * fwd;
-
-        Gizmos.color = new Color(1f, 0.9f, 0.2f, 0.9f);
-        Gizmos.DrawLine(pos, pos + left.normalized * greetRadius);
-        Gizmos.DrawLine(pos, pos + right.normalized * greetRadius);
+        
+        // Draw movement direction
+        if (_currentMovementSpeed > movementThreshold)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawRay(transform.position + Vector3.up, transform.forward * 2f);
+        }
+        
+        // Draw target rotation
+        Gizmos.color = Color.yellow;
+        Vector3 targetDir = _targetRotation * Vector3.forward;
+        Gizmos.DrawRay(transform.position + Vector3.up * 1.5f, targetDir * 1.5f);
+        
+        // Draw state
+        #if UNITY_EDITOR
+        UnityEditor.Handles.Label(
+            transform.position + Vector3.up * 2.5f,
+            $"Anim: {_currentState}\nSpeed: {_currentMovementSpeed:F2}",
+            new GUIStyle()
+            {
+                normal = new GUIStyleState() { textColor = Color.white },
+                fontSize = 11,
+                alignment = TextAnchor.MiddleCenter
+            }
+        );
+        #endif
     }
+    
+    #endregion
 }

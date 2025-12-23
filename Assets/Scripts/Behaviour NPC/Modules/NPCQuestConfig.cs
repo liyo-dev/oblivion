@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -20,7 +20,7 @@ namespace Game.NPC.Modules
         [Tooltip("Radio de detección de ítems por defecto")]
         public float detectionRadius = 3f;
         [Range(0f, 180f)]
-        [Tooltip("Ángulo de detección de ítems por defecto")]
+        [Tooltip("Ángulo de detección de ítemsor defecto")]
         public float detectionAngle = 90f;
         [Tooltip("Layer de detección de ítems")]
         public LayerMask detectionLayer = ~0;
@@ -33,6 +33,10 @@ namespace Game.NPC.Modules
         [Min(0f)]
         [Tooltip("Duración de la rotación")]
         public float rotationDuration = 0.3f;
+        
+        [Header("Persistent Icon")]
+        [Tooltip("¿Ocultar el icono persistente automáticamente cuando todas las quests se completen?")]
+        public bool hideIconWhenAllCompleted = true;
 
         public override bool ValidateConfig(out string errorMessage)
         {

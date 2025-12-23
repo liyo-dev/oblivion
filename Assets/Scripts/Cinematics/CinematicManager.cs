@@ -1,5 +1,6 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Collections.Generic;
+using Core;
 
 namespace Game.Cinematics
 {
@@ -203,7 +204,7 @@ namespace Game.Cinematics
             _pausedParticleSystems.Clear();
             
             // Pausar Animators (excepto los de la capa cinemática)
-            var animators = FindObjectsOfType<Animator>();
+            var animators = ServiceLocator.GetAll<Animator>();
             foreach (var animator in animators)
             {
                 if (animator.gameObject.layer == cinematicLayer)
@@ -217,7 +218,7 @@ namespace Game.Cinematics
             }
             
             // Pausar Particle Systems (VFX de hechizos, etc)
-            var particleSystems = FindObjectsOfType<ParticleSystem>();
+            var particleSystems = ServiceLocator.GetAll<ParticleSystem>();
             foreach (var ps in particleSystems)
             {
                 if (ps.gameObject.layer == cinematicLayer)

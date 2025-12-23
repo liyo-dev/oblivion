@@ -982,7 +982,6 @@ GameObject:
   - component: {fileID: 4792316858911058041}
   - component: {fileID: 3602889977735178892}
   - component: {fileID: 4766078847098071890}
-  - component: {fileID: 7651434525087434288}
   m_Layer: 0
   m_Name: TownNpc#9
   m_TagString: Untagged
@@ -1096,6 +1095,7 @@ MonoBehaviour:
   locomotionState: Free Locomotion
   battleIdleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
+  upperBodyIdleState: UpperIdle
   greetState: Greeting01_NoWeapon
   interactState: InteractWithPeople_NoWeapon
   greetOnSight: 1
@@ -1113,6 +1113,11 @@ MonoBehaviour:
   lookFrom: {fileID: 0}
   ambientInhibitor: {fileID: 0}
   drawGizmos: 1
+  verboseLogs: 0
+  forceOneShotsOnBaseLayer: 0
+  movementParamScale: 1.25
+  locomotionAnimSpeed: 1.25
+  minBlendWhileMoving: 0.7
 --- !u!114 &3602889977735178892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1174,121 +1179,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &7651434525087434288
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3770335084438096160}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
-  ambientModule:
-    enableWander: 1
-    wanderRadius: 6
-    minIdleTime: 1.2
-    maxIdleTime: 3
-    pickWhileMoving: 0
-  questModule:
-    enable: 0
-    chain: []
-    enableItemDetection: 1
-    detectionRadius: 3
-    detectionAngle: 90
-    detectionLayer:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    detectionInterval: 0.33
-  combatModule:
-    enable: 0
-    sightRadius: 8
-    fovDegrees: 120
-    challengeStopDistance: 2.2
-    approachRepathInterval: 0.25
-    loseSightGraceSeconds: 1.5
-    challengeAlertState: SenseSomethingStart_NoWeapon
-    challengeAlertMinSeconds: 0.75
-    challengeState: Challenging_NoWeapon
-    exclamationPrefab: {fileID: 0}
-    exclamationOffset: {x: 0, y: 2, z: 0}
-    exclamationSeconds: 2
-    alertMusicEvent: 
-    battleMusicId: 
-    endMusicEvent: 
-    startBattleOnChallengeEnd: 1
-    battleHealth: 120
-    healthBarOffset: {x: 0, y: 2.4, z: 0}
-    healthBarPrefab: {fileID: 0}
-    healthBarCanvasOverride: {fileID: 0}
-    healthColor: {r: 0, g: 1, b: 0, a: 1}
-    warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    criticalColor: {r: 1, g: 0, b: 0, a: 1}
-    warningThreshold: 0.5
-    criticalThreshold: 0.25
-    hideHealthBarWhenFull: 1
-    dialogueOnChallenge: {fileID: 0}
-    dialogueOnDefeat: {fileID: 0}
-    dialogueAfterBattle: {fileID: 0}
-    rewards: []
-    battleIdleState: Idle_Battle_NoWeapon
-    upperBodyLayer: 1
-    lightAttackStateLeft: LeftAttack
-    lightAttackStateRight: RightAttack
-    specialAttackState: SpecialAttack
-    leftProjectilePrefab: {fileID: 0}
-    leftProjectileDamage: 10
-    leftProjectileSpeed: 12
-    leftAttackCooldown: 1.5
-    rightProjectilePrefab: {fileID: 0}
-    rightProjectileDamage: 15
-    rightProjectileSpeed: 10
-    rightAttackCooldown: 2
-    specialProjectilePrefab: {fileID: 0}
-    specialProjectileDamage: 25
-    specialProjectileSpeed: 8
-    specialAttackCooldown: 4
-    projectileOrigin: {fileID: 0}
-    combatMinDistance: 4
-    combatMaxDistance: 12
-    attackCooldown: 2
-    specialAttackChance: 0.3
-    combatRepathInterval: 0.2
-    combatRetreatDistance: 2
-    combatTurnSpeed: 6
-    lockPlayer: 1
-    lockOnSight: 1
-    turnPlayerOnSight: 1
-    turnDelaySeconds: 1
-    turnDurationSeconds: 0.35
-    fallbackDialogue: 
-    onChallengeStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerLock:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerUnlock:
-      m_PersistentCalls:
-        m_Calls: []
-    onDialogueRequest:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onBattleFinished:
-      m_PersistentCalls:
-        m_Calls: []
-  logDebug: 0
-  forceKinematicRigidbody: 1
-  rigidbodyConstraints: 112
-  persistLastPosition: 0
-  lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 0
-  rotateOnInteractSeconds: 0.3
 --- !u!1 &3837592727323950623
 GameObject:
   m_ObjectHideFlags: 0

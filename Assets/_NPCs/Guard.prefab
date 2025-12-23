@@ -3284,7 +3284,6 @@ GameObject:
   - component: {fileID: 2232853087552565767}
   - component: {fileID: 6353187348953647502}
   - component: {fileID: -4024873495936589470}
-  - component: {fileID: -6713473262831029304}
   m_Layer: 8
   m_Name: Guard
   m_TagString: Untagged
@@ -3372,6 +3371,8 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 1
   initiallyEnabled: 1
+  persistentIdOverride: 
+  includeSceneInPersistentId: 1
   dialogue: {fileID: 11400000, guid: 536121a2b7bf8fd47a33e05f022a2ec8, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -3427,89 +3428,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 3049972968634466059}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  greetState: Greeting01_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
+  upperBodyLayer: 1
+  upperBodyIdleState: UpperIdle
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  rotationSmoothness: 0.15
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 3059051994120085827}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  defendState: Defend_NoWeapon
+  getHitState: GetHit01_NoWeapon
+  dieState: Die02_NoWeapon
+  victoryState: Victory_NoWeapon
+  syncWithNavAgent: 1
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
---- !u!114 &-6713473262831029304
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6212661583293693831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a544be4e9849fa84798eb0371a5ad7ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Alex.NPC.NPCBehaviourManager
-  ambientModule:
-    enableWander: 0
-    wanderRadius: 0
-    minIdleTime: 1.2
-    maxIdleTime: 3
-    pickWhileMoving: 0
-  questModule:
-    enable: 0
-    chain: []
-    enableItemDetection: 1
-    detectionRadius: 3
-    detectionAngle: 90
-    detectionLayer:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    detectionInterval: 0.33
-  combatModule:
-    enable: 0
-    sightRadius: 8
-    fovDegrees: 120
-    challengeStopDistance: 2.2
-    approachRepathInterval: 0.25
-    loseSightGraceSeconds: 1.5
-    challengeAlertState: SenseSomethingStart_NoWeapon
-    challengeAlertMinSeconds: 0.75
-    challengeState: Challenging_NoWeapon
-    exclamationPrefab: {fileID: 0}
-    exclamationOffset: {x: 0, y: 2, z: 0}
-    exclamationSeconds: 2
-    lockPlayer: 1
-    lockOnSight: 1
-    lockMode: 4
-    turnPlayerOnSight: 1
-    turnDelaySeconds: 1
-    turnDurationSeconds: 0.35
-    fallbackDialogue: 
-    onChallengeStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerLock:
-      m_PersistentCalls:
-        m_Calls: []
-    onPlayerUnlock:
-      m_PersistentCalls:
-        m_Calls: []
-    onDialogueRequest:
-      m_PersistentCalls:
-        m_Calls: []
-  logDebug: 0
-  persistLastPosition: 0
-  lastPosition: {x: 0, y: 0, z: 0}
-  rotateOnInteract: 0
-  rotateOnInteractSeconds: 0.3
 --- !u!1 &6230429580550391881
 GameObject:
   m_ObjectHideFlags: 0

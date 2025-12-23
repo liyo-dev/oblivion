@@ -112,6 +112,20 @@ public class SettingsMenuController : MonoBehaviour
                     v.enablePulse = true;
                     v.enableShadowPunch = true;
                 }
+                
+                // Add UIButtonAudio to buttons for click and hover sounds
+                var btn = s as Button;
+                if (btn != null && !go.GetComponent<UIButtonAudio>())
+                {
+                    go.AddComponent<UIButtonAudio>();
+                }
+                
+                // Add UISliderAudio to sliders for select sounds
+                var slider = s as Slider;
+                if (slider != null && !go.GetComponent<UISliderAudio>())
+                {
+                    go.AddComponent<UISliderAudio>();
+                }
             }
         }
 
@@ -260,6 +274,12 @@ public class SettingsMenuController : MonoBehaviour
 
     public void Close()
     {
+        // Reproducir sonido de cancelar al cerrar
+        if (AudioService.Instance != null)
+        {
+            AudioService.Instance.PlaySFX("UI_Cancel", 1f);
+        }
+        
         if (root && root.activeSelf)
             root.SetActive(false);
 

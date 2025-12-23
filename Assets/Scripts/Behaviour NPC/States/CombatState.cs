@@ -1,4 +1,7 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
+using Game.NPC.Common;
+using Game.NPC.Modules;
+using Game.NPC;
 
 namespace Game.NPC.States
 {
@@ -16,19 +19,41 @@ namespace Game.NPC.States
         private const float PlayerDistanceCheckInterval = 0.5f;
         private const float MaxCombatDistance = 25f; // Distancia máxima para mantener combate
         
-        public override void OnEnter(Common.NPCStateContext context)
+        public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
             
+            // ✅ VERIFICAR SI EL NPC YA FUE DERROTADO - NO permitir que vuelva a entrar en combate
+            if (context.WasDefeatedInCombat)
+            {
+                context.Log("[CombatState] ⛔ NPC ya fue derrotado - NO puede volver a entrar en combate");
+                context.IsInCombat = false;
+                return;
+            }
+            
+            context.Log("[CombatState] Entrando en combate");
             context.IsInCombat = true;
-            StopMovement(context);
+            
+            // IMPORTANTE: El GameObject NPC debe estar en la layer "Enemy" para que:
+            // - El script Targetable funcione correctamente
+            // - Los hechizos del jugador puedan apuntar automáticamente al NPC
+            
+            // Reproducir música de batalla
+            TriggerBattleMusic(context);
+            
+            // Asegurar que el NPC tenga Damageable y CombatLifecycleHandler
+            InitializeCombatComponents(context);
             
             // Obtener o crear NPCCombatBrain
             _combatBrain = context.Transform.GetComponent<NPCCombatBrain>();
             if (_combatBrain == null)
             {
-                context.LogWarning("[CombatState] No se encontró NPCCombatBrain, el combate será básico");
-                return;
+                _combatBrain = context.Transform.gameObject.AddComponent<NPCCombatBrain>();
+                context.Log("[CombatState] ✅ NPCCombatBrain añadido automáticamente al NPC");
+            }
+            else
+            {
+                context.Log("[CombatState] NPCCombatBrain encontrado en el NPC");
             }
             
             // Inicializar combat brain con configuración
@@ -42,11 +67,11 @@ namespace Game.NPC.States
                     maxDistance = combatConfig.combatRange,
                     repathInterval = 0.5f,
                     retreatDistance = 2f,
-                    turnSpeed = 5f, // Valor por defecto razonable
-                    upperBodyLayer = 1, // Asumiendo que la capa UpperBody es 1
+                    turnSpeed = 5f,
+                    upperBodyLayer = 1,
                     battleIdleState = "Battle Idle",
                     
-                    // Configurar slots de ataque con valores por defecto
+                    // Configurar slots de ataque
                     leftAttack = new NPCCombatBrain.AttackSlot 
                     { 
                         animationState = "Attack_Left",
@@ -128,7 +153,91 @@ namespace Game.NPC.States
             _playerDistanceCheckTimer = 0f;
         }
         
-        public override void OnUpdate(Common.NPCStateContext context)
+        /// <summary>
+        /// Inicializa los componentes necesarios para el combate
+        /// </summary>
+        private void InitializeCombatComponents(Game.NPC.Common.NPCStateContext context)
+        {
+            if (context.Config == null || context.Config.combatConfig == null)
+                return;
+            
+            var combatConfig = context.Config.combatConfig;
+            
+            // ✅ MANTENER Targetable ACTIVADO durante el combate (necesario para auto-targeting de hechizos del player)
+            var targetable = context.Transform.GetComponent<Targetable>();
+            if (targetable == null)
+            {
+                targetable = context.Transform.gameObject.AddComponent<Targetable>();
+                context.Log("[CombatState] Targetable añadido al NPC para auto-targeting");
+            }
+            
+            // Asegurar que Targetable esté SIEMPRE activado en combate
+            if (!targetable.enabled)
+            {
+                targetable.enabled = true;
+                context.Log("[CombatState] Targetable activado para permitir auto-targeting de hechizos del jugador");
+            }
+            
+            // OCULTAR botón de interactuar durante el combate
+            var interactable = context.Transform.GetComponent<Interactable>();
+            if (interactable != null)
+            {
+                // Temporalmente deshabilitar la interacción durante el combate
+                interactable.enabled = false;
+                context.Log("[CombatState] Interactable deshabilitado durante el combate (el botón A no se mostrará)");
+            }
+            
+            // Asegurar que tiene Damageable
+            var damageable = context.Transform.GetComponent<Damageable>();
+            if (damageable == null)
+            {
+                damageable = context.Transform.gameObject.AddComponent<Damageable>();
+                context.Log("[CombatState] Damageable añadido al NPC");
+            }
+            
+            // Configurar vida del Damageable SOLO si el NPC NO ha sido derrotado antes
+            if (!context.WasDefeatedInCombat)
+            {
+                damageable.SetMaxAndCurrent(combatConfig.health, combatConfig.health);
+            }
+            else
+            {
+                context.Log("[CombatState] ⚠️ NPC ya fue derrotado - NO se reinicia la vida ni se permite combate");
+                // Salir del estado de combate inmediatamente
+                context.IsInCombat = false;
+                return;
+            }
+            
+            // Asegurar que tiene NPCCombatLifecycleHandler
+            var lifecycleHandler = context.Transform.GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycleHandler == null)
+            {
+                lifecycleHandler = context.Transform.gameObject.AddComponent<NPCCombatLifecycleHandler>();
+                lifecycleHandler.Initialize(); // ✅ IMPORTANTE: Inicializar manualmente cuando se añade en runtime
+                context.Log("[CombatState] NPCCombatLifecycleHandler añadido al NPC");
+            }
+            
+            // Asegurar que tiene NPCHealthBarSpawner
+            var healthBarSpawner = context.Transform.GetComponent<NPCHealthBarSpawner>();
+            if (healthBarSpawner == null)
+            {
+                healthBarSpawner = context.Transform.gameObject.AddComponent<NPCHealthBarSpawner>();
+                context.Log("[CombatState] NPCHealthBarSpawner añadido al NPC");
+            }
+            
+            // Asignar el prefab desde combatConfig si está configurado
+            if (combatConfig.healthBarPrefab != null)
+            {
+                healthBarSpawner.SetHealthBarPrefab(combatConfig.healthBarPrefab);
+                context.Log("[CombatState] Prefab de barra de vida asignado desde combatConfig");
+            }
+            
+            // Spawnear la barra de vida al entrar en combate
+            healthBarSpawner.SpawnHealthBar();
+            context.Log("[CombatState] ✅ Solicitado spawn de barra de vida");
+        }
+        
+        public override void OnUpdate(Game.NPC.Common.NPCStateContext context)
         {
             base.OnUpdate(context);
             
@@ -160,7 +269,7 @@ namespace Game.NPC.States
             }
         }
         
-        public override void OnExit(Common.NPCStateContext context)
+        public override void OnExit(Game.NPC.Common.NPCStateContext context)
         {
             base.OnExit(context);
             
@@ -173,16 +282,57 @@ namespace Game.NPC.States
                 context.Log("[CombatState] Combat brain stopped");
             }
             
+            // ✅ ASEGURAR QUE EL COLLIDER SE ACTIVE DESPUÉS DEL COMBATE
+            // Buscar TODOS los CapsuleColliders y activar el que es trigger (Interactable)
+            var colliders = context.Transform.GetComponentsInChildren<CapsuleCollider>(true);
+            foreach (var col in colliders)
+            {
+                // Solo activar si es trigger (el Interactable)
+                if (col.isTrigger && !col.enabled)
+                {
+                    col.enabled = true;
+                    context.Log($"[CombatState] ✅ CapsuleCollider trigger activado en {col.gameObject.name}");
+                }
+            }
+            
+            // Fallback: Si no hay colliders trigger, buscar en el propio Transform
+            var capsuleCollider = context.Transform.GetComponent<CapsuleCollider>();
+            if (capsuleCollider != null && !capsuleCollider.enabled)
+            {
+                // Si fue derrotado, debe ser trigger para la interacción
+                if (context.WasDefeatedInCombat)
+                {
+                    capsuleCollider.isTrigger = true;
+                    context.Log("[CombatState] ✅ CapsuleCollider activado como trigger (NPC derrotado)");
+                }
+                capsuleCollider.enabled = true;
+            }
+            
+            // RE-HABILITAR Interactable después del combate (para mostrar el botón A de nuevo)
+            var interactable = context.Transform.GetComponent<Interactable>();
+            if (interactable != null && !interactable.enabled)
+            {
+                interactable.enabled = true;
+                context.Log("[CombatState] Interactable re-habilitado después del combate");
+            }
+            
             // Resetear movimiento
             StopMovement(context);
         }
         
-        public override Common.INPCState CheckTransitions(Common.NPCStateContext context)
+        public override Game.NPC.Common.INPCState CheckTransitions(Game.NPC.Common.NPCStateContext context)
         {
             // Prioridad máxima: Cinemática
             if (context.IsInCinematic)
             {
                 return new CinematicState();
+            }
+            
+            // Si el NPC fue derrotado, salir del combate inmediatamente
+            if (context.WasDefeatedInCombat)
+            {
+                context.Log($"[{StateName}] NPC derrotado, saliendo de combate a Idle");
+                return new IdleState();
             }
             
             // Si ya no está en combate (flag desactivado externamente), volver a idle
@@ -193,7 +343,6 @@ namespace Game.NPC.States
             }
             
             // TODO: Verificar otras condiciones:
-            // - NPC derrotado -> DeathState
             // - Jugador derrotado -> VictoryState
             // - Necesita huir -> FleeState
             
@@ -203,7 +352,7 @@ namespace Game.NPC.States
         /// <summary>
         /// Comportamiento de combate básico cuando no hay CombatBrain
         /// </summary>
-        private void BasicCombatBehavior(Common.NPCStateContext context)
+        private void BasicCombatBehavior(Game.NPC.Common.NPCStateContext context)
         {
             if (context.Player == null) return;
             
@@ -241,6 +390,22 @@ namespace Game.NPC.States
             {
                 // En rango óptimo, detenerse
                 StopMovement(context);
+            }
+        }
+        
+        private void TriggerBattleMusic(Game.NPC.Common.NPCStateContext context)
+        {
+            if (context.Config == null || context.Config.combatConfig == null)
+                return;
+            
+            var combatConfig = context.Config.combatConfig;
+            
+            // Enviar evento de batalla al sistema de audio
+            if (!string.IsNullOrWhiteSpace(combatConfig.battleMusicId))
+            {
+                DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{combatConfig.battleMusicId}");
+                AudioService.Instance?.BeginBattleById(combatConfig.battleMusicId);
+                context.Log($"[CombatState] Música de batalla activada: {combatConfig.battleMusicId}");
             }
         }
     }

@@ -1,8 +1,9 @@
-﻿using System;
+﻿﻿﻿﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
 using Game.NPC.States;
+using Game.NPC.Modules;
 
 namespace Game.NPC
 {
@@ -62,10 +63,19 @@ namespace Game.NPC
         
         void Awake()
         {
+            Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚡⚡⚡ AWAKE DEL MANAGER ⚡⚡⚡ - Frame: {Time.frameCount}");
+            
             // Validar configuración
             if (!configuration.Validate(out string errors))
             {
-                Debug.LogError($"[NPCBehaviourV2:{name}] Configuración inválida:\n{errors}");
+                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Configuración inválida:\n{errors}\n\n" +
+                    "💡 AYUDA:\n" +
+                    "- Si tienes 'InteractiveNarrative' activado → Asigna 'Interactive Narrative Config'\n" +
+                    "- Si tienes 'Narrative' activado → Asigna 'Narrative Config' (sistema de grafo, deprecado)\n" +
+                    "- Si tienes 'Combat' activado → Asigna 'Combat Config'\n" +
+                    "- Si tienes 'Quest' activado → Asigna 'Quest Config'\n" +
+                    "- Si tienes 'Ambient' activado → Asigna 'Ambient Config'\n\n" +
+                    "⚠️ IMPORTANTE: Para cadenas narrativas (diálogo → mover → etc.) usa 'InteractiveNarrative', NO 'Narrative'");
             }
             
             // Get components
@@ -93,6 +103,9 @@ namespace Game.NPC
             // Create brain
             _brain = new NPCBrain(_context);
             _context.Brain = _brain; // Set circular reference after creation
+            
+            // Auto-añadir componentes según módulos configurados
+            EnsureRequiredComponents();
             
             // Registrar en NPCRegistry si tiene configuración narrativa
             if (configuration.HasBehaviour(NPCBehaviourType.Narrative) && configuration.narrativeConfig != null)
@@ -295,6 +308,24 @@ namespace Game.NPC
         }
         
         /// <summary>
+        /// Guarda la posición actual del NPC para persistencia.
+        /// SOLO debe llamarse cuando el jugador guarda manualmente en un punto de guardado.
+        /// Llamado por el SaveSystem.
+        /// </summary>
+        public void SaveCurrentPosition()
+        {
+            if (!persistLastPosition)
+                return;
+            
+            lastPosition = transform.position;
+            
+            if (debugMode)
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] 💾 Posición guardada: {lastPosition}");
+            }
+        }
+        
+        /// <summary>
         /// Mueve el NPC a una posición específica con fade y teletransporte
         /// </summary>
         /// <param name="targetPosition">Posición destino</param>
@@ -343,6 +374,176 @@ namespace Game.NPC
             {
                 Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Brain es NULL, no se puede manejar la interacción");
             }
+        }
+        
+        #endregion
+        
+        #region Auto-Component Management
+        
+        /// <summary>
+        /// Añade automáticamente los componentes necesarios según los módulos configurados.
+        /// Sistema inteligente que gestiona todos los módulos sin necesidad de añadir componentes manualmente.
+        /// </summary>
+        private void EnsureRequiredComponents()
+        {
+            if (debugMode)
+                Debug.Log($"[NPCBehaviourV2:{name}] 🔧 Verificando componentes necesarios según configuración...");
+            
+            // ============================================
+            // 1. QUEST MODULE → NPCQuestActionExecutor
+            // ============================================
+            bool hasQuestBehaviour = configuration.HasBehaviour(NPCBehaviourType.Quest);
+            bool hasQuestConfig = configuration.questConfig != null;
+            
+            if (hasQuestBehaviour && hasQuestConfig)
+            {
+                if (GetComponent<NPCQuestActionExecutor>() == null)
+                {
+                    gameObject.AddComponent<NPCQuestActionExecutor>();
+                    Debug.Log($"[NPCBehaviourV2:{name}] ✅ NPCQuestActionExecutor añadido automáticamente");
+                }
+                else if (debugMode)
+                {
+                    Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ NPCQuestActionExecutor ya existe");
+                }
+            }
+            else if (debugMode && hasQuestBehaviour && !hasQuestConfig)
+            {
+                Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚠️ Quest activado pero questConfig es NULL. Asigna un Quest Config SO.");
+            }
+            
+            // ============================================
+            // 2. INTERACTIVE NARRATIVE MODULE → NPCInteractiveNarrativeExecutor
+            // ============================================
+            bool hasInteractiveNarrativeBehaviour = configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative);
+            bool hasInteractiveNarrativeConfig = configuration.interactiveNarrativeConfig != null;
+            
+            if (debugMode)
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] Interactive Narrative: HasBehaviour={hasInteractiveNarrativeBehaviour}, HasConfig={hasInteractiveNarrativeConfig}");
+            }
+            
+            if (hasInteractiveNarrativeBehaviour && hasInteractiveNarrativeConfig)
+            {
+                var existingExecutor = GetComponent<NPCInteractiveNarrativeExecutor>();
+                bool needsReplacement = false;
+                
+                if (existingExecutor != null)
+                {
+                    // Verificar si es una versión vieja
+                    int currentVersion = existingExecutor.ComponentVersion;
+                    
+                    if (currentVersion < NPCInteractiveNarrativeExecutor.COMPONENT_VERSION)
+                    {
+                        Debug.LogWarning($"[NPCBehaviourV2:{name}] 🔄 Versión obsoleta detectada (v{currentVersion}), actualizando a v{NPCInteractiveNarrativeExecutor.COMPONENT_VERSION}...");
+                        DestroyImmediate(existingExecutor);
+                        needsReplacement = true;
+                    }
+                }
+                
+                if (existingExecutor == null || needsReplacement)
+                {
+                    try
+                    {
+                        gameObject.AddComponent<NPCInteractiveNarrativeExecutor>();
+                        
+                        if (debugMode)
+                        {
+                            Debug.Log($"[NPCBehaviourV2:{name}] ✅ NPCInteractiveNarrativeExecutor v{NPCInteractiveNarrativeExecutor.COMPONENT_VERSION} añadido");
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Error al añadir componente: {ex.Message}");
+                    }
+                }
+                else if (debugMode)
+                {
+                    Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ NPCInteractiveNarrativeExecutor v{existingExecutor.ComponentVersion} ya existe");
+                }
+            }
+            else if (hasInteractiveNarrativeBehaviour && !hasInteractiveNarrativeConfig)
+            {
+                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ InteractiveNarrative activado pero interactiveNarrativeConfig es NULL. Asigna un Interactive Narrative Config SO.");
+            }
+            
+            // ============================================
+            // 3. AMBIENT MODULE (No requiere componente adicional)
+            // ============================================
+            // El módulo Ambient se gestiona directamente en WanderState/IdleState
+            // No requiere componente adicional
+            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Ambient))
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Ambient activado - Gestionado por WanderState/IdleState (no requiere componente)");
+            }
+            
+            // ============================================
+            // 4. COMBAT MODULE (No requiere componente adicional)
+            // ============================================
+            // El módulo Combat se gestiona directamente en CombatState + NPCCombatBrain
+            // NPCCombatBrain se añade automáticamente por CombatState cuando es necesario
+            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Combat))
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Combat activado - Gestionado por CombatState + NPCCombatBrain (auto-añadido en combate)");
+            }
+            
+            // ============================================
+            // 5. NARRATIVE MODULE (Sistema de grafo - deprecado)
+            // ============================================
+            // Este módulo usa el sistema de grafo narrativo (NarrativeGraph)
+            // No requiere componente adicional, se comunica vía NPCRegistry
+            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Narrative))
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Narrative (grafo) activado - Registrado en NPCRegistry (no requiere componente)");
+            }
+            
+            // ============================================
+            // RESUMEN
+            // ============================================
+            if (debugMode)
+            {
+                Debug.Log($"[NPCBehaviourV2:{name}] ✅ Verificación de componentes completada");
+            }
+        }
+        
+        #endregion
+        
+        #region Persistent Icon API
+        
+        /// <summary>
+        /// Muestra el icono persistente del NPC
+        /// </summary>
+        public void ShowPersistentIcon()
+        {
+            var iconController = GetComponent<Common.NPCPersistentIconController>();
+            iconController?.ShowIcon();
+        }
+        
+        /// <summary>
+        /// Oculta el icono persistente del NPC
+        /// </summary>
+        public void HidePersistentIcon()
+        {
+            var iconController = GetComponent<Common.NPCPersistentIconController>();
+            iconController?.HideIcon();
+        }
+        
+        /// <summary>
+        /// Cambia el prefab del icono persistente
+        /// </summary>
+        public void SetPersistentIconPrefab(GameObject newPrefab)
+        {
+            var iconController = GetComponent<Common.NPCPersistentIconController>();
+            iconController?.SetIconPrefab(newPrefab);
+        }
+        
+        /// <summary>
+        /// Establece la visibilidad del icono persistente
+        /// </summary>
+        public void SetPersistentIconVisible(bool visible)
+        {
+            var iconController = GetComponent<Common.NPCPersistentIconController>();
+            iconController?.SetVisible(visible);
         }
         
         #endregion

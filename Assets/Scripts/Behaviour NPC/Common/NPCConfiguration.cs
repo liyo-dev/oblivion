@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 namespace Game.NPC.Common
@@ -29,65 +29,106 @@ namespace Game.NPC.Common
         [Tooltip("Config de narrativa interactiva (cadena de acciones al interactuar)")]
         public NPCInteractiveNarrativeConfig interactiveNarrativeConfig;
         [Header("Configuración Base (Común a todos)")]
-        [Min(0f)] public float walkSpeed = 1.5f;
-        [Min(0f)] public float runSpeed = 4f;
-        [Min(0f)] public float rotationSpeed = 180f;
-        [Min(0f)] public float stoppingDistance = 0.5f;
-        [Min(0f)] public float acceleration = 8f;
-        [Header("Animación")]
-        [Range(0f, 1f)] public float minAnimSpeed = 0.25f;
-        public bool resetAnimationOnStateExit = true;
-        [Header("NavMesh")]
-        [Min(0.1f)] public float navMeshSampleRadius = 2f;
-        [Min(0.1f)] public float stuckCheckInterval = 1.5f;
-        [Min(0.01f)] public float stuckThreshold = 0.02f;
-        [Header("Física")]
-        public bool useKinematicRigidbody = true;
-        public RigidbodyConstraints rigidbodyConstraints = RigidbodyConstraints.FreezeRotation;
+        [Min(0f)]
+        [Tooltip("Velocidad de caminata del NPC (m/s). Usado cuando el NPC se mueve normalmente.")]
+        public float walkSpeed = 1.5f;
+        
+        [Min(0f)]
+        [Tooltip("Velocidad de carrera del NPC (m/s). Usado en persecuciones o situaciones urgentes.")]
+        public float runSpeed = 4f;
+        
+        [Min(0f)]
+        [Tooltip("Velocidad de rotación del NPC (grados/segundo). Controla qué tan rápido gira.")]
+        public float rotationSpeed = 180f;
+        
+        [Min(0f)]
+        [Tooltip("Distancia de parada del NavMeshAgent (metros). El NPC para cuando está a esta distancia del destino.")]
+        public float stoppingDistance = 0.5f;
+        
+        [Min(0f)]
+        [Tooltip("Aceleración del NavMeshAgent (m/s²). Controla qué tan rápido acelera/desacelera.")]
+        public float acceleration = 8f;
+        
+        // Configuración avanzada (oculta en Inspector, usa valores por defecto razonables)
+        [HideInInspector] public float minAnimSpeed = 0.25f;
+        [HideInInspector] public bool resetAnimationOnStateExit = true;
+        [HideInInspector] public float navMeshSampleRadius = 2f;
+        [HideInInspector] public float stuckCheckInterval = 1.5f;
+        [HideInInspector] public float stuckThreshold = 0.02f;
+        [HideInInspector] public bool useKinematicRigidbody = true;
+        [HideInInspector] public RigidbodyConstraints rigidbodyConstraints = RigidbodyConstraints.FreezeRotation;
         public bool Validate(out string errors)
         {
             errors = "";
             bool isValid = true;
+            
+            // Validar Ambient
             if (HasBehaviour(NPCBehaviourType.Ambient) && ambientConfig == null)
             {
                 errors += "Behaviour Ambient activado pero no hay ambientConfig asignado.\n";
                 isValid = false;
             }
+            
+            // Validar Combat
             if (HasBehaviour(NPCBehaviourType.Combat) && combatConfig == null)
             {
                 errors += "Behaviour Combat activado pero no hay combatConfig asignado.\n";
                 isValid = false;
             }
+            
+            // Validar Quest
             if (HasBehaviour(NPCBehaviourType.Quest) && questConfig == null)
             {
                 errors += "Behaviour Quest activado pero no hay questConfig asignado.\n";
                 isValid = false;
             }
+            
+            // Validar Narrative (sistema de grafo - DEPRECADO)
             if (HasBehaviour(NPCBehaviourType.Narrative) && narrativeConfig == null)
             {
-                errors += "Behaviour Narrative activado pero no hay narrativeConfig asignado.\n";
+                errors += "⚠️ Behaviour Narrative activado pero no hay narrativeConfig asignado.\n";
+                errors += "   💡 SUGERENCIA: Si quieres cadenas narrativas, usa 'InteractiveNarrative' en su lugar.\n";
                 isValid = false;
             }
+            
+            // Validar Interactive Narrative
+            if (HasBehaviour(NPCBehaviourType.InteractiveNarrative) && interactiveNarrativeConfig == null)
+            {
+                errors += "Behaviour InteractiveNarrative activado pero no hay interactiveNarrativeConfig asignado.\n";
+                isValid = false;
+            }
+            
+            // Validar configs si están asignados
             if (ambientConfig != null && !ambientConfig.ValidateConfig(out string ambientError))
             {
                 errors += $"Ambient Config: {ambientError}\n";
                 isValid = false;
             }
+            
             if (combatConfig != null && !combatConfig.ValidateConfig(out string combatError))
             {
                 errors += $"Combat Config: {combatError}\n";
                 isValid = false;
             }
+            
             if (questConfig != null && !questConfig.ValidateConfig(out string questError))
             {
                 errors += $"Quest Config: {questError}\n";
                 isValid = false;
             }
+            
             if (narrativeConfig != null && !narrativeConfig.ValidateConfig(out string narrativeError))
             {
                 errors += $"Narrative Config: {narrativeError}\n";
                 isValid = false;
             }
+            
+            if (interactiveNarrativeConfig != null && !interactiveNarrativeConfig.ValidateConfig(out string interactiveError))
+            {
+                errors += $"Interactive Narrative Config: {interactiveError}\n";
+                isValid = false;
+            }
+            
             return isValid;
         }
         public bool HasBehaviour(NPCBehaviourType type)

@@ -36,6 +36,7 @@ public class RoomExitBlocker : MonoBehaviour
     private Collider _col;
     private bool _isBlocked = true;
     private bool _subscribed;
+    private bool _isShowingMessage; // ← NUEVO: Previene múltiples disparos del diálogo
 
     void Awake()
     {
@@ -133,7 +134,20 @@ public class RoomExitBlocker : MonoBehaviour
 
     private void TryShowMessage()
     {
-        if (Time.time - _lastMessageTime < Mathf.Max(0.1f, messageCooldown)) return;
+        // Si ya estamos mostrando un mensaje, ignorar
+        if (_isShowingMessage)
+        {
+            if (debugLogs) Debug.Log("[RoomExitBlocker] Ya hay un mensaje mostrándose, ignorando...");
+            return;
+        }
+        
+        // Cooldown entre mensajes
+        if (Time.time - _lastMessageTime < Mathf.Max(0.1f, messageCooldown))
+        {
+            if (debugLogs) Debug.Log("[RoomExitBlocker] Cooldown activo, ignorando...");
+            return;
+        }
+        
         _lastMessageTime = Time.time;
 
         // Texto final: traducir por clave
@@ -149,6 +163,9 @@ public class RoomExitBlocker : MonoBehaviour
             if (debugLogs) Debug.LogWarning("[RoomExitBlocker] DialogueManager no disponible.");
             return;
         }
+
+        // Marcar que estamos mostrando un mensaje
+        _isShowingMessage = true;
 
         // Diálogo temporal: usamos el campo 'text' directo
         var temp = ScriptableObject.CreateInstance<DialogueAsset>();
@@ -169,6 +186,7 @@ public class RoomExitBlocker : MonoBehaviour
             DialogueManager.Instance.StartDialogue(temp, transform, () =>
             {
                 if (debugLogs) Debug.Log("[RoomExitBlocker] Mensaje cerrado (con transform).");
+                _isShowingMessage = false; // ← Liberar flag cuando se cierra
             });
         }
         catch
@@ -176,6 +194,7 @@ public class RoomExitBlocker : MonoBehaviour
             DialogueManager.Instance.StartDialogue(temp, () =>
             {
                 if (debugLogs) Debug.Log("[RoomExitBlocker] Mensaje cerrado (sin transform).");
+                _isShowingMessage = false; // ← Liberar flag cuando se cierra
             });
         }
     }

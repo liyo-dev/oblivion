@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 
@@ -98,6 +98,21 @@ namespace Game.NPC.Common
             }
             
             var config = _context.Config;
+            
+            // Prioridad 0: Interacción post-derrota del sistema de combate
+            if (config.HasBehaviour(NPCBehaviourType.Combat) && config.combatConfig != null)
+            {
+                var lifecycleHandler = _context.Transform.GetComponent<NPCCombatLifecycleHandler>();
+                if (lifecycleHandler != null && lifecycleHandler.HasBeenDefeated)
+                {
+                    // Si el NPC fue derrotado, solo reproducir el diálogo post-derrota
+                    if (lifecycleHandler.HandlePostDefeatInteraction(interactor))
+                    {
+                        _context.Log("[NPCBrain] Interacción post-derrota manejada");
+                        return true;
+                    }
+                }
+            }
             
             // Prioridad 1: Interactive Narrative Config (cadena de acciones)
             if (config.interactiveNarrativeConfig != null)

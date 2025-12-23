@@ -14,83 +14,81 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
   moduleName: 
   description: 
-  narrativeChain:
-  - actionType: 0
-    dialogue: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
-    targetAnchorName: 
-    targetTransform: {fileID: 0}
-    maxMovementDuration: 0
-    walkDisplayDuration: 0
-    turnAroundOnArrival: 0
-    waitForPlayer: 0
-    maxPlayerDistance: 0
-    resumePlayerDistance: 0
-    animationTrigger: 
-    animationDuration: 0
-    questToStart: {fileID: 0}
-    combatTarget: {fileID: 0}
-    waitDuration: 0
-    customAction:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionCompleted:
-      m_PersistentCalls:
-        m_Calls: []
-  - actionType: 1
-    dialogue: {fileID: 0}
-    targetAnchorName: House_FrontDoor_Tutorial
-    targetTransform: {fileID: 0}
-    maxMovementDuration: 0
-    walkDisplayDuration: 0
-    turnAroundOnArrival: 0
-    waitForPlayer: 0
-    maxPlayerDistance: 0
-    resumePlayerDistance: 0
-    animationTrigger: 
-    animationDuration: 0
-    questToStart: {fileID: 0}
-    combatTarget: {fileID: 0}
-    waitDuration: 0
-    customAction:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionCompleted:
-      m_PersistentCalls:
-        m_Calls: []
-  - actionType: 2
-    dialogue: {fileID: 0}
-    targetAnchorName: 
-    targetTransform: {fileID: 0}
-    maxMovementDuration: 0
-    walkDisplayDuration: 0
-    turnAroundOnArrival: 0
-    waitForPlayer: 0
-    maxPlayerDistance: 0
-    resumePlayerDistance: 0
-    animationTrigger: Dizzy_NoWeapon
-    animationDuration: 1
-    questToStart: {fileID: 0}
-    combatTarget: {fileID: 0}
-    waitDuration: 0
-    customAction:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionCompleted:
-      m_PersistentCalls:
-        m_Calls: []
+  conditionalNarratives:
+  - condition:
+      conditionType: 0
+      targetQuest: {fileID: 0}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      walkDisplayDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatTarget: {fileID: 0}
+      waitDuration: 0
+      customAction:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionStarted:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionCompleted:
+        m_PersistentCalls:
+          m_Calls: []
+    - actionType: 1
+      dialogue: {fileID: 0}
+      targetAnchorName: House_FrontDoor_Tutorial
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 3
+      walkDisplayDuration: 3
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatTarget: {fileID: 0}
+      waitDuration: 0
+      customAction:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionStarted:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionCompleted:
+        m_PersistentCalls:
+          m_Calls: []
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    persistentIconSprite: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    singleUse: 1
+    priority: 0
+    description: 
+    debugMode: 0
   singleUse: 1
   persistState: 1
   persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
+  autoStartOnPlayerDetection: 1
+  detectionRange: 10
+  alertIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  alertIconDuration: 1
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 1
   postNarrativeState: 1
   postNarrativeAmbientConfig: {fileID: 0}

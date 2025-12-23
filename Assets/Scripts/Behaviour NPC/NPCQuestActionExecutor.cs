@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 
@@ -132,8 +132,53 @@ namespace Game.NPC
                         Debug.Log($"[NPCQuestActionExecutor:{name}] Ejecutando acción post-quest: {entry.postAction.actionType}");
 
                     ExecutePostQuestAction(i);
+                    
+                    // Verificar si todas las quests están completadas para ocultar el icono
+                    CheckAndHidePersistentIconIfAllCompleted();
+                    
                     break; // Ya encontramos la quest
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si todas las quests del NPC están completadas y oculta el icono persistente si está configurado
+        /// </summary>
+        private void CheckAndHidePersistentIconIfAllCompleted()
+        {
+            if (npcManager == null || npcManager.Configuration == null)
+                return;
+            
+            var questConfig = npcManager.Configuration.questConfig;
+            if (questConfig == null || !questConfig.hideIconWhenAllCompleted)
+                return;
+            
+            var questManager = QuestManager.Instance;
+            if (questManager == null)
+                return;
+            
+            // Verificar si todas las quests están completadas
+            bool allCompleted = true;
+            foreach (var entry in questConfig.questChain)
+            {
+                if (entry == null || entry.questData == null)
+                    continue;
+                
+                var state = questManager.GetState(entry.questData.questId);
+                if (state != QuestState.Completed)
+                {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            
+            // Si todas están completadas, ocultar el icono
+            if (allCompleted)
+            {
+                if (debugMode)
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Todas las quests completadas, ocultando icono persistente");
+                
+                npcManager.HidePersistentIcon();
             }
         }
 
@@ -351,6 +396,14 @@ namespace Game.NPC
             {
                 Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Movimiento completado en {elapsed:F2}s, Posición final: {transform.position}");
             }
+            
+            // 🎯 Persistir la nueva posición del NPC en runtimePreset
+            // Esto se guardará a JSON cuando el jugador guarde manualmente
+            if (npcManager != null && npcManager.persistLastPosition)
+            {
+                npcManager.SaveCurrentPosition();
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición guardada en runtimePreset (persistirá al guardar manualmente)");
+            }
         }
 
         private IEnumerator ExecuteTeleportAction(QuestPostAction action)
@@ -372,6 +425,14 @@ namespace Game.NPC
             if (action.turnAroundOnArrival)
             {
                 transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+            }
+            
+            // 🎯 Persistir la nueva posición del NPC en runtimePreset
+            // Esto se guardará a JSON cuando el jugador guarde manualmente
+            if (npcManager != null && npcManager.persistLastPosition)
+            {
+                npcManager.SaveCurrentPosition();
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición de teletransporte guardada en runtimePreset (persistirá al guardar manualmente)");
             }
 
             yield return null;
@@ -450,7 +511,7 @@ namespace Game.NPC
                 {
                     Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌❌❌ SpawnAnchor con ID '{action.targetAnchorName}' NO ENCONTRADO en AnchorRegistry");
 
-                    // Listar todos los anchors registrados (sin FindObjectsOfType)
+                    // Listar todos los anchors registrados
                     var allAnchors = AnchorRegistry.All;
                     Debug.LogError($"[NPCQuestActionExecutor:{name}] Anchors registrados en AnchorRegistry: {allAnchors.Count}");
                     foreach (var kvp in allAnchors)
@@ -461,21 +522,7 @@ namespace Game.NPC
                         }
                     }
                     
-                    // Buscar manualmente en la escena como fallback
-                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] 🔍 Buscando SpawnAnchor manualmente en la escena...");
-                    var allSpawnAnchors = UnityEngine.Object.FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
-                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] SpawnAnchors encontrados en escena: {allSpawnAnchors.Length}");
-                    foreach (var sa in allSpawnAnchors)
-                    {
-                        Debug.LogWarning($"  - anchorId: '{sa.anchorId}', GameObject: {sa.name}, Posición: {sa.transform.position}, Activo: {sa.gameObject.activeInHierarchy}");
-                        
-                        // Si encontramos uno que coincida, usarlo
-                        if (sa.anchorId == action.targetAnchorName)
-                        {
-                            Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Anchor encontrado en escena pero NO en registry. Usando posición: {sa.transform.position}");
-                            return sa.transform.position;
-                        }
-                    }
+                    Debug.LogError($"[NPCQuestActionExecutor:{name}] ⚠️ No se puede continuar sin un anchor válido registrado.");
                 }
             }
             else if (!useAnchorSystem)

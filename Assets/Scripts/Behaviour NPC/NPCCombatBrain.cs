@@ -273,7 +273,6 @@ namespace Game.NPC
             float repathTimer = 0f;
 
             Debug.Log($"[NPCCombatBrain] ===== CombatLoop INICIADO ===== _ctx: {_ctx != null}, _player: {_player != null}, _agent: {_agent != null}, _animator: {_animator != null}");
-            int iterationCount = 0;
 
             while (_ctx != null && _manager != null && _manager.isActiveAndEnabled && _player != null)
             {
@@ -294,11 +293,6 @@ namespace Game.NPC
                         bool baseSpecial = !string.IsNullOrEmpty(_settings.specialAttack.animationState) && _rawAnimator.HasState(0, specialHash);
                         Debug.Log($"[NPCCombatBrain] Base layer check: left={baseLeft}, right={baseRight}, special={baseSpecial}");
                     }
-                }
-                iterationCount++;
-                if (iterationCount <= 5 || iterationCount % 100 == 0)
-                {
-                    Debug.Log($"[NPCCombatBrain] CombatLoop iteración #{iterationCount} - Estado: {_currentState}");
                 }
 
                 // Ensure player reference
@@ -335,10 +329,6 @@ namespace Game.NPC
                 bool tooClose = distanceToPlayer < _settings.minDistance;
                 bool tooFar = distanceToPlayer > _settings.maxDistance;
 
-                if (iterationCount <= 5 || iterationCount % 100 == 0)
-                {
-                    Debug.Log($"[NPCCombatBrain] Distancia: {distanceToPlayer:F2}, Estado: {_currentState}, inRange: {inAttackRange}, tooClose: {tooClose}, tooFar: {tooFar}");
-                }
 
                 // Timers auxiliares
                 if (_circleFlipTimer > 0f) _circleFlipTimer -= Time.deltaTime;
@@ -382,9 +372,6 @@ namespace Game.NPC
                     {
                         NavMeshAgentUtility.SetDestination(_agent, retreatTarget, 0.5f);
                         repathTimer = _settings.repathInterval;
-                        
-                        if (iterationCount <= 5)
-                            Debug.Log($"[NPCCombatBrain] 🏃 RETROCEDIENDO desde distancia {distanceToPlayer:F2}");
                     }
 
                     if (_postAttackHoldTimer > 0f || _isWindup)
@@ -410,9 +397,6 @@ namespace Game.NPC
                     {
                         NavMeshAgentUtility.SetDestination(_agent, approachTarget, 0.5f);
                         repathTimer = _settings.repathInterval;
-                        
-                        if (iterationCount <= 5)
-                            Debug.Log($"[NPCCombatBrain] 🏃 ACERCÁNDOSE desde distancia {distanceToPlayer:F2}");
                     }
 
                     if (_postAttackHoldTimer > 0f || _isWindup)
@@ -518,7 +502,7 @@ namespace Game.NPC
                 yield return null;
             }
 
-            Debug.Log($"[NPCCombatBrain] ===== CombatLoop TERMINADO ===== (iteraciones: {iterationCount})");
+            Debug.Log($"[NPCCombatBrain] ===== CombatLoop TERMINADO =====");
             StopCombat();
         }
 
@@ -742,15 +726,54 @@ namespace Game.NPC
 
         void ExecuteAttack(AttackSlot slot)
         {
-            if (_animator == null || string.IsNullOrEmpty(slot.animationState))
-                return;
+            // Reproducir animación si existe
+            if (_rawAnimator != null && !string.IsNullOrEmpty(slot.animationState))
+            {
+                // Detectar en qué layer está la animación
+                int animHash = Animator.StringToHash(slot.animationState);
+                int targetLayer = _settings.upperBodyLayer;
+                
+                // Si no está en el upper body layer, intentar en el base layer
+                if (!_rawAnimator.HasState(_settings.upperBodyLayer, animHash))
+                {
+                    if (_rawAnimator.HasState(0, animHash))
+                    {
+                        targetLayer = 0;
+                        Debug.Log($"[NPCCombatBrain] Animación '{slot.animationState}' encontrada en base layer (0) en vez del upper body layer ({_settings.upperBodyLayer})");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[NPCCombatBrain] ⚠️ Animación '{slot.animationState}' no existe en ningún layer del Animator");
+                        targetLayer = -1;
+                    }
+                }
+                
+                if (targetLayer >= 0)
+                {
+                    // Asegurar que la capa esté visible (solo si no es base layer)
+                    if (targetLayer > 0)
+                    {
+                        _rawAnimator.SetLayerWeight(targetLayer, 1f);
+                    }
+                    
+                    try
+                    {
+                        // Usar CrossFadeInFixedTime directamente con el Animator
+                        _rawAnimator.CrossFadeInFixedTime(slot.animationState, 0.1f, targetLayer);
+                        Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando animación {slot.animationState} (slot {slot.slotIndex}) en layer {targetLayer}");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[NPCCombatBrain] ⚠️ Error al reproducir animación '{slot.animationState}': {ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando ataque slot {slot.slotIndex} (sin animación configurada o Animator faltante)");
+            }
 
-            // Reproducir animación en la capa del upperBody
-            // Asegurar que la capa esté visible
-            _rawAnimator?.SetLayerWeight(_settings.upperBodyLayer, 1f);
-            _animator.PlayOneShot(slot.animationState, _settings.upperBodyLayer);
-            Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando {slot.animationState} (slot {slot.slotIndex}) en layer {_settings.upperBodyLayer}");
-
+            // SIEMPRE disparar proyectil (con o sin animación)
             // Si NO usamos Animation Events, disparar proyectil tras un retardo configurable
             if (_ctx != null && !_settings.spawnProjectileViaAnimationEvent)
             {
@@ -774,12 +797,55 @@ namespace Game.NPC
         {
             if (delay > 0f)
                 yield return new WaitForSeconds(delay);
-            // Pequeña validación: si se canceló combate, no dispares
-            if (_ctx == null || _player == null)
+            
+            // Validación: si se canceló combate, no dispares
+            if (_ctx == null || _player == null || _manager == null)
                 yield break;
             
-            // TODO: Implementar sistema de eventos de ataque si es necesario
-            // _ctx.OnAttackTriggered(slotIndex);
+            // Obtener el prefab del hechizo desde el config
+            var combatConfig = _ctx.Config?.combatConfig;
+            if (combatConfig == null)
+            {
+                Debug.LogWarning($"[NPCCombatBrain] No hay combatConfig para disparar hechizo");
+                yield break;
+            }
+            
+            GameObject spellPrefab = combatConfig.GetSpellPrefab(slotIndex);
+            
+            if (spellPrefab == null)
+            {
+                Debug.LogWarning($"[NPCCombatBrain] No hay prefab configurado para slot {slotIndex}");
+                yield break;
+            }
+            
+            // Punto de origen del hechizo (frente al NPC, a altura del pecho)
+            Vector3 spawnPosition = transform.position + Vector3.up * 1.5f + transform.forward * 0.5f;
+            
+            // Dirección hacia el jugador
+            Vector3 directionToPlayer = (_player.position + Vector3.up * 1.0f) - spawnPosition;
+            directionToPlayer.Normalize();
+            Quaternion spawnRotation = Quaternion.LookRotation(directionToPlayer);
+            
+            // Instanciar el proyectil/hechizo
+            GameObject spellInstance = UnityEngine.Object.Instantiate(spellPrefab, spawnPosition, spawnRotation);
+            
+            // ✅ INICIALIZAR EL PROYECTIL
+            // Intentar obtener el componente EnemyProjectile
+            var enemyProjectile = spellInstance.GetComponent<EnemyProjectile>();
+            if (enemyProjectile != null)
+            {
+                // Obtener daño del config (usar el daño base del NPC)
+                float damage = combatConfig.attackDamage;
+                
+                // Inicializar el proyectil con dirección y daño
+                enemyProjectile.Initialize(directionToPlayer, damage);
+                
+                Debug.Log($"[NPCCombatBrain] 🔮 Hechizo disparado e inicializado: {spellPrefab.name} (slot {slotIndex}, daño: {damage})");
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCCombatBrain] ⚠️ El prefab '{spellPrefab.name}' no tiene componente EnemyProjectile. El proyectil no se inicializó.");
+            }
         }
 
         public void RequestDodge()

@@ -353,6 +353,14 @@
             "value": "Prepárate, Will. El entrenamiento empieza ahora."
         },
         {
+            "key": "DLG_GUERRERACHINA_AFTER",
+            "value": "Así se hace."
+        },
+        {
+            "key": "DLG_GUERRERACHINA_DEFEAT",
+            "value": "Sigue entrenando para ser un gran mago."
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "¿Quieres que te cuente cómo funcionan los menús?"
         },

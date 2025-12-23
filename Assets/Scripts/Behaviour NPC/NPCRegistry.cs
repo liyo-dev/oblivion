@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using UnityEngine;
 namespace Game.NPC
 {
@@ -11,13 +11,10 @@ namespace Game.NPC
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<NPCRegistry>();
-                    if (_instance == null)
-                    {
-                        var go = new GameObject("[NPCRegistry]");
-                        _instance = go.AddComponent<NPCRegistry>();
-                        DontDestroyOnLoad(go);
-                    }
+                    // Crear la instancia si no existe
+                    var go = new GameObject("[NPCRegistry]");
+                    _instance = go.AddComponent<NPCRegistry>();
+                    DontDestroyOnLoad(go);
                 }
                 return _instance;
             }

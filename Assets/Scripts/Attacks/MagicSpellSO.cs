@@ -54,11 +54,8 @@ public class MagicSpellSO : ScriptableObject
     public GameObject despawnVFX;
     
     [Header("Audio")]
-    [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al lanzar el hechizo (ej: 'Spell01', 'Spell02')")]
+    [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al lanzar el hechizo (ej: 'Spell_Fire', 'Spell_Ice')")]
     public string castSFXKey;
-    [Tooltip("Volumen del sonido de lanzamiento")]
-    [Range(0f, 1f)]
-    public float castSFXVolume = 1f;
 
     [Header("Reglas de slot")]
     public SpellSlotType slotType = SpellSlotType.Any;

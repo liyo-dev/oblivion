@@ -2074,32 +2074,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 4053936688121270491}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  battleIdleState: Idle_Battle_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
   upperBodyIdleState: UpperIdle
-  greetState: Greeting01_NoWeapon
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  rotationSmoothness: 0.15
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  defendState: Defend_NoWeapon
+  getHitState: GetHit01_NoWeapon
+  dieState: Die02_NoWeapon
+  victoryState: Victory_NoWeapon
+  syncWithNavAgent: 1
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
-  verboseLogs: 0
-  forceOneShotsOnBaseLayer: 0
-  movementParamScale: 1.25
-  locomotionAnimSpeed: 1.25
-  minBlendWhileMoving: 0.6
 --- !u!114 &1301072731070886384
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2179,11 +2178,14 @@ MonoBehaviour:
     combatConfig: {fileID: 0}
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
     narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
     stoppingDistance: 0.5
     acceleration: 8
+    persistentIconPrefab: {fileID: 0}
+    showPersistentIconOnStart: 0
     minAnimSpeed: 0.25
     resetAnimationOnStateExit: 1
     navMeshSampleRadius: 2
@@ -2194,7 +2196,7 @@ MonoBehaviour:
   debugMode: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
-  persistLastPosition: 0
+  persistLastPosition: 1
 --- !u!114 &1687942726773230502
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2213,7 +2215,9 @@ MonoBehaviour:
   detectionLayer:
     serializedVersion: 2
     m_Bits: 256
-  scanInterval: 0.33
+  dropAnimationDuration: 0.5
+  pauseAfterDrop: 0.3
+  pauseBeforeComplete: 0.2
   debugMode: 0
   drawGizmos: 0
 --- !u!114 &4359719461427911985
@@ -2230,7 +2234,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCQuestActionExecutor
   npcManager: {fileID: 7707363998424899796}
   useAnchorSystem: 1
-  debugMode: 0
+  debugMode: 1
 --- !u!1 &8932229672498769586
 GameObject:
   m_ObjectHideFlags: 0
