@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -71,23 +71,23 @@ namespace Game.NPC.States
                     upperBodyLayer = 1,
                     battleIdleState = "Battle Idle",
                     
-                    // Configurar slots de ataque con nombres correctos del Animator
+                    // ✅ Configurar slots de ataque con cooldowns específicos de cada spell
                     leftAttack = new NPCCombatBrain.AttackSlot 
                     { 
                         animationState = "MagicLeft",  // UpperBody/Magic/MagicLeft
-                        cooldown = combatConfig.attackCooldown,
+                        cooldown = combatConfig.spell1Cooldown,  // ✅ Usar cooldown específico
                         slotIndex = 0
                     },
                     rightAttack = new NPCCombatBrain.AttackSlot 
                     { 
                         animationState = "MagicRight",  // UpperBody/Magic/MagicRight
-                        cooldown = combatConfig.attackCooldown * 1.2f,
+                        cooldown = combatConfig.spell2Cooldown,  // ✅ Usar cooldown específico
                         slotIndex = 1
                     },
                     specialAttack = new NPCCombatBrain.AttackSlot 
                     { 
                         animationState = "MagicSpecial",  // UpperBody/Magic/MagicSpecial
-                        cooldown = combatConfig.attackCooldown * 2f,
+                        cooldown = combatConfig.spell3Cooldown,  // ✅ Usar cooldown específico
                         slotIndex = 2
                     },
                     
@@ -133,7 +133,24 @@ namespace Game.NPC.States
                     // Dificultad
                     attackFrequencyMultiplier = 1f,
                     aggressionBias = combatConfig.isAggressive ? 0.7f : 0.5f,
-                    dodgeChance = 0.3f
+                    dodgeChance = 0.3f,
+                    
+                    // ✅ Escudo defensivo
+                    useShield = combatConfig.useShield,
+                    shieldMinDuration = combatConfig.shieldMinDuration,
+                    shieldMaxDuration = combatConfig.shieldMaxDuration,
+                    shieldCooldown = combatConfig.shieldCooldown,
+                    
+                    // ✅ Huida táctica y cobertura
+                    useTacticalRetreat = combatConfig.useTacticalRetreat,
+                    retreatHealthThreshold = combatConfig.retreatHealthThreshold,
+                    retreatCooldown = combatConfig.retreatCooldown,
+                    coverSearchRadius = combatConfig.coverSearchRadius,
+                    coverLayerMask = combatConfig.coverLayerMask,
+                    minCoverDistance = combatConfig.minCoverDistance,
+                    maxCoverDistance = combatConfig.maxCoverDistance,
+                    coverStayDuration = combatConfig.coverStayDuration,
+                    preferShieldOverCover = combatConfig.preferShieldOverCover
                 };
                 
                 var manager = context.Transform.GetComponent<NPCBehaviourManagerV2>();
@@ -328,11 +345,11 @@ namespace Game.NPC.States
                 return new CinematicState();
             }
             
-            // Si el NPC fue derrotado, salir del combate inmediatamente
+            // Si el NPC fue derrotado, salir del combate inmediatamente a DeadState
             if (context.WasDefeatedInCombat)
             {
-                context.Log($"[{StateName}] NPC derrotado, saliendo de combate a Idle");
-                return new IdleState();
+                context.Log($"[{StateName}] NPC derrotado, saliendo de combate a Dead");
+                return new DeadState();
             }
             
             // Si ya no está en combate (flag desactivado externamente), volver a idle

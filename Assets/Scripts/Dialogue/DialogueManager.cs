@@ -276,6 +276,67 @@ public class DialogueManager : MonoBehaviour
         StartDialogue(asset, onFinished);
     }
 
+    /// <summary>
+    /// Inicia un diálogo de batalla pre-combate (el jugador mira al NPC y entra en stance de batalla)
+    /// </summary>
+    public void StartBattleDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
+    {
+        currentNPC = npc;
+        
+        // Preparar al jugador para el diálogo de batalla
+        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null && npc != null)
+        {
+            PreparPlayerForBattleDialogue(playerGo, npc);
+        }
+        
+        StartDialogue(asset, onFinished);
+    }
+    
+    /// <summary>
+    /// Prepara al jugador para un diálogo previo a batalla: lo gira hacia el NPC y activa stance de batalla
+    /// </summary>
+    private void PreparPlayerForBattleDialogue(GameObject player, Transform npc)
+    {
+        Debug.Log($"[DialogueManager] ⚔️ Preparando jugador para diálogo de batalla con '{npc.name}'");
+        
+        // 1. Girar al jugador hacia el NPC
+        Vector3 directionToNPC = npc.position - player.transform.position;
+        directionToNPC.y = 0f; // Mantener rotación en el plano horizontal
+        
+        if (directionToNPC.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(directionToNPC);
+            player.transform.rotation = targetRotation;
+            Debug.Log($"[DialogueManager] 👁️ Jugador girado hacia NPC '{npc.name}'");
+        }
+        
+        // 2. Activar animación de Idle de batalla
+        var playerAnimator = player.GetComponent<Animator>();
+        if (playerAnimator != null)
+        {
+            // Reproducir animación de Idle de batalla directamente
+            playerAnimator.CrossFade("Idle_Battle_NoWeapon", 0.2f, 0);
+            Debug.Log($"[DialogueManager] 🥋 Animación 'Idle_Battle_NoWeapon' activada");
+        }
+        else
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ No se encontró Animator en el jugador");
+        }
+        
+        // 3. EFECTOS CINEMATOGRÁFICOS DE CÁMARA
+        // Camera shake para impacto inicial
+        Sendero.Core.Feedback.FeedbackService.CameraShake(0.4f, 0.3f);
+        Debug.Log($"[DialogueManager] 📹 Camera shake aplicado");
+        
+        // Slowmo breve para dramatismo (0.5x velocidad durante 0.3 segundos)
+        Sendero.Core.Feedback.FeedbackService.HitStop(0.5f, 0.3f);
+        Debug.Log($"[DialogueManager] ⏱️ Slowmo breve aplicado para dramatismo");
+        
+        // Screen flash rojo sutil para tensión
+        Sendero.Core.Feedback.FeedbackService.ScreenFlash(new UnityEngine.Color(1f, 0f, 0f, 0.1f), 0.2f);
+        Debug.Log($"[DialogueManager] 🔴 Flash rojo sutil aplicado");
+    }
+
     public void Advance()
     {
         if (!IsOpen) return;

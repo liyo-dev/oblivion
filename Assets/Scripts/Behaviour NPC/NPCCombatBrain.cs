@@ -88,6 +88,23 @@ namespace Game.NPC
             public float attackFrequencyMultiplier; // escala de cooldown
             public float aggressionBias;             // sesgo de agresividad
             public float dodgeChance;                // probabilidad de esquiva
+            
+            // ✅ ESCUDO DEFENSIVO
+            public bool useShield;                   // Si el NPC puede usar escudo
+            public float shieldMinDuration;          // Duración mínima del escudo
+            public float shieldMaxDuration;          // Duración máxima del escudo
+            public float shieldCooldown;             // Cooldown entre usos del escudo
+            
+            // ✅ HUIDA TÁCTICA Y COBERTURA
+            public bool useTacticalRetreat;          // Puede buscar cobertura cuando está en desventaja
+            public float retreatHealthThreshold;     // % de salud para activar huida (ej: 0.3 = 30%)
+            public float retreatCooldown;            // Cooldown entre intentos de huida (segundos)
+            public float coverSearchRadius;          // Radio de búsqueda de cobertura (metros)
+            public LayerMask coverLayerMask;         // Capas que se consideran cobertura (Default, Environment, etc.)
+            public float minCoverDistance;           // Distancia mínima de la cobertura al NPC
+            public float maxCoverDistance;           // Distancia máxima de la cobertura al NPC
+            public float coverStayDuration;          // Tiempo que permanece en cobertura (segundos)
+            public bool preferShieldOverCover;       // Si true, prioriza escudo sobre buscar cobertura
         }
 
         NPCBehaviourManagerV2 _manager;
@@ -144,6 +161,19 @@ namespace Game.NPC
         
         // Animator validation
         bool _printedAnimatorValidation;
+        
+        // ✅ ESCUDO DEFENSIVO
+        NPCShieldController _shieldController;
+        float _shieldCooldownTimer;
+        bool _isDefending;
+        
+        // ✅ HUIDA TÁCTICA Y COBERTURA
+        bool _isRetreating;                    // Flag de estado de huida
+        float _retreatCooldownTimer;           // Timer de cooldown de huida
+        Vector3? _coverPosition;               // Posición de cobertura encontrada
+        float _coverStayTimer;                 // Tiempo restante en cobertura
+        Transform _currentCoverObject;         // Objeto usado como cobertura
+        bool _isBehindCover;                   // Flag: está actualmente detrás de cobertura
 
         public void Initialize(NPCBehaviourManagerV2 manager)
         {
@@ -196,6 +226,30 @@ namespace Game.NPC
             _leftAttackCooldown = 0f;
             _rightAttackCooldown = 0f;
             _specialAttackCooldown = 0f;
+            
+            // ✅ Inicializar escudo defensivo
+            _shieldCooldownTimer = 0f;
+            _isDefending = false;
+            if (_settings.useShield)
+            {
+                _shieldController = GetComponent<NPCShieldController>();
+                if (_shieldController == null)
+                {
+                    Debug.LogWarning($"[NPCCombatBrain] ⚠️ useShield=true pero no hay NPCShieldController en {gameObject.name}");
+                }
+                else
+                {
+                    Debug.Log($"[NPCCombatBrain] ✅ Shield controller encontrado");
+                }
+            }
+            
+            // ✅ Inicializar huida táctica y cobertura
+            _isRetreating = false;
+            _retreatCooldownTimer = 0f;
+            _coverPosition = null;
+            _coverStayTimer = 0f;
+            _currentCoverObject = null;
+            _isBehindCover = false;
             
             // Estado inicial neutral
             _currentState = CombatState.Neutral;
@@ -339,6 +393,15 @@ namespace Game.NPC
                 _leftAttackCooldown -= cdStep;
                 _rightAttackCooldown -= cdStep;
                 _specialAttackCooldown -= cdStep;
+                
+                // ✅ Reducir cooldown del escudo
+                if (_shieldCooldownTimer > 0f)
+                {
+                    _shieldCooldownTimer -= Time.deltaTime;
+                }
+                
+                // ✅ Reducir cooldown de huida táctica
+                UpdateRetreatCooldown();
 
                 repathTimer -= Time.deltaTime;
                 
@@ -589,52 +652,110 @@ namespace Game.NPC
             return UnityEngine.Random.value < p;
         }
 
+        int _lastUsedAttackSlot = -1;  // Track último ataque usado
+        
         void TryExecuteAttack()
         {
-            // Elegir entre left, right y special de forma COMPLETAMENTE aleatoria
+            // Elegir entre left, right y special de forma INTELIGENTE
             bool leftReady = _leftAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.leftAttack.animationState);
             bool rightReady = _rightAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.rightAttack.animationState);
             bool specialReady = _specialAttackCooldown <= 0f && !string.IsNullOrEmpty(_settings.specialAttack.animationState);
 
-            // Crear lista de ataques disponibles con PESOS aleatorios
+            // ✅ PENALIZAR repetir el mismo ataque
+            float leftPenalty = (_lastUsedAttackSlot == 0) ? 0.2f : 1f;
+            float rightPenalty = (_lastUsedAttackSlot == 1) ? 0.2f : 1f;
+            float specialPenalty = (_lastUsedAttackSlot == 2) ? 0.3f : 1f;
+
+            // Crear lista de ataques disponibles con PESOS variables
             var availableAttacks = new System.Collections.Generic.List<(AttackSlot slot, System.Action resetCooldown, float weight)>();
             
             if (leftReady)
             {
-                // Peso aleatorio entre 0.5 y 1.5
-                float weight = UnityEngine.Random.Range(0.5f, 1.5f);
+                // ✅ Peso base + penalización si fue el último usado
+                float baseWeight = UnityEngine.Random.Range(0.8f, 1.2f);
+                float weight = baseWeight * leftPenalty;
                 availableAttacks.Add((_settings.leftAttack, () => {
-                    // Cooldown con variabilidad ±20%
-                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    // ✅ RESPETAR cooldown del config con variabilidad MÍNIMA (±10%)
+                    float variance = UnityEngine.Random.Range(0.9f, 1.1f);
                     _leftAttackCooldown = _settings.leftAttack.cooldown * variance;
+                    _lastUsedAttackSlot = 0;
+                    Debug.Log($"[NPCCombatBrain] 🔄 LEFT cooldown: {_leftAttackCooldown:F2}s (config: {_settings.leftAttack.cooldown:F2}s)");
                 }, weight));
             }
             
             if (rightReady)
             {
-                float weight = UnityEngine.Random.Range(0.5f, 1.5f);
+                float baseWeight = UnityEngine.Random.Range(0.8f, 1.2f);
+                float weight = baseWeight * rightPenalty;
                 availableAttacks.Add((_settings.rightAttack, () => {
-                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    float variance = UnityEngine.Random.Range(0.9f, 1.1f);
                     _rightAttackCooldown = _settings.rightAttack.cooldown * variance;
+                    _lastUsedAttackSlot = 1;
+                    Debug.Log($"[NPCCombatBrain] 🔄 RIGHT cooldown: {_rightAttackCooldown:F2}s (config: {_settings.rightAttack.cooldown:F2}s)");
                 }, weight));
             }
             
             if (specialReady)
             {
-                // El especial tiene peso variable según el estado
-                float weight = _currentState == CombatState.Aggressive ? 
-                    UnityEngine.Random.Range(1.5f, 2.5f) :  // Más probable en agresivo
-                    UnityEngine.Random.Range(0.3f, 0.8f);   // Menos probable en neutral/defensivo
+                // ✅ El especial tiene peso variable según el estado + penalización
+                float baseWeight = _currentState == CombatState.Aggressive ? 
+                    UnityEngine.Random.Range(1.2f, 1.8f) :  // Más probable en agresivo
+                    UnityEngine.Random.Range(0.5f, 1f);     // Menos probable en neutral/defensivo
+                float weight = baseWeight * specialPenalty;
                     
                 availableAttacks.Add((_settings.specialAttack, () => {
-                    float variance = UnityEngine.Random.Range(0.8f, 1.2f);
+                    float variance = UnityEngine.Random.Range(0.9f, 1.1f);
                     _specialAttackCooldown = _settings.specialAttack.cooldown * variance;
+                    _lastUsedAttackSlot = 2;
+                    Debug.Log($"[NPCCombatBrain] 🔄 SPECIAL cooldown: {_specialAttackCooldown:F2}s (config: {_settings.specialAttack.cooldown:F2}s)");
                 }, weight));
             }
 
             // Si no hay ataques disponibles, no hacer nada
             if (availableAttacks.Count == 0)
+            {
+                Debug.Log($"[NPCCombatBrain] ⏳ Esperando cooldowns... LEFT:{_leftAttackCooldown:F1}s RIGHT:{_rightAttackCooldown:F1}s SPECIAL:{_specialAttackCooldown:F1}s");
+                
+                // ✅ SISTEMA DE HUIDA TÁCTICA
+                // Evaluar si debe huir/buscar cobertura o simplemente defenderse
+                bool shouldRetreat = ShouldRetreat();
+                
+                if (shouldRetreat && _settings.useTacticalRetreat && _retreatCooldownTimer <= 0f)
+                {
+                    // Prioridad 1: Buscar cobertura si está habilitado y no prefiere escudo
+                    if (!_settings.preferShieldOverCover)
+                    {
+                        if (TryFindAndMoveToCover())
+                        {
+                            // Movimiento a cobertura iniciado
+                            return;
+                        }
+                    }
+                    
+                    // Prioridad 2: Usar escudo si está disponible
+                    if (_settings.useShield)
+                    {
+                        TryActivateShield();
+                        return;
+                    }
+                    
+                    // Prioridad 3: Si prefiere escudo pero no puede, buscar cobertura
+                    if (_settings.preferShieldOverCover)
+                    {
+                        if (TryFindAndMoveToCover())
+                        {
+                            return;
+                        }
+                    }
+                }
+                else if (_settings.useShield)
+                {
+                    // Si no debe huir pero tiene escudo, usarlo como defensa pasiva
+                    TryActivateShield();
+                }
+                
                 return;
+            }
 
             // Elegir un ataque usando SELECCIÓN PONDERADA aleatoria
             float totalWeight = 0f;
@@ -684,24 +805,49 @@ namespace Game.NPC
         {
             float t = 0f;
             bool cancelled = false;
-            while (t < delay)
+            bool isFacingPlayer = false;
+            
+            while (t < delay || !isFacingPlayer)
             {
                 if (_player == null) { cancelled = true; break; }
                 if (_settings.requireLineOfSight && !HasLineOfSight()) { cancelled = true; break; }
                 float d = Vector3.Distance(transform.position, _player.position);
                 if (d < _settings.minDistance - 0.1f) { cancelled = true; break; }
+                
                 // Detenerse y mirar al jugador durante el wind-up
                 StopAndIdle();
                 FacePlayer();
+                
+                // ✅ VERIFICAR si está mirando al player (ángulo < 15°)
+                Vector3 dirToPlayer = (_player.position - transform.position).normalized;
+                dirToPlayer.y = 0f;
+                Vector3 forward = transform.forward;
+                forward.y = 0f;
+                float angle = Vector3.Angle(forward, dirToPlayer);
+                isFacingPlayer = angle < 15f;  // Debe estar casi de frente
+                
                 t += Time.deltaTime;
                 yield return null;
             }
+            
             if (cancelled)
             {
                 _isWindup = false;
                 _attackLockTimer = Mathf.Max(_attackLockTimer, 0.15f);
+                Debug.Log($"[NPCCombatBrain] ❌ Ataque CANCELADO (no mira al player o sin LoS)");
                 yield break;
             }
+            
+            // ✅ Solo atacar si está mirando al player
+            if (!isFacingPlayer)
+            {
+                _isWindup = false;
+                _attackLockTimer = Mathf.Max(_attackLockTimer, 0.2f);
+                Debug.Log($"[NPCCombatBrain] ❌ Ataque CANCELADO (no está de frente al player)");
+                yield break;
+            }
+            
+            Debug.Log($"[NPCCombatBrain] ✅ ATACANDO - Mirando al player correctamente");
             ExecuteAttack(slot);
             onExecuted?.Invoke();
             _isWindup = false;
@@ -766,13 +912,33 @@ namespace Game.NPC
             if (_burstCdTimer <= 0f && _attacksSinceBurst >= _nextBurstCount)
             {
                 _attacksSinceBurst = 0;
-                // Generar nuevo número aleatorio de ataques (1-4)
-                _nextBurstCount = UnityEngine.Random.Range(
-                    Mathf.Max(1, _settings.burstAttacksMin),
-                    Mathf.Max(1, _settings.burstAttacksMax) + 1);
+                
+                // ✅ Generar burst con distribución INTELIGENTE:
+                // - 40% probabilidad: 1 ataque solo
+                // - 35% probabilidad: 2 ataques
+                // - 20% probabilidad: 3 ataques
+                // - 5% probabilidad: 4 ataques
+                float roll = UnityEngine.Random.value;
+                if (roll < 0.4f)
+                {
+                    _nextBurstCount = 1;  // Ataque único (40%)
+                }
+                else if (roll < 0.75f)
+                {
+                    _nextBurstCount = 2;  // Ráfaga corta (35%)
+                }
+                else if (roll < 0.95f)
+                {
+                    _nextBurstCount = 3;  // Ráfaga media (20%)
+                }
+                else
+                {
+                    _nextBurstCount = 4;  // Ráfaga larga (5%)
+                }
+                
                 _burstPending = true;
                 
-                Debug.Log($"[NPCCombatBrain] Burst completado - próximo burst será de {_nextBurstCount} ataques");
+                Debug.Log($"[NPCCombatBrain] ✅ Burst completado - próximo burst: {_nextBurstCount} ataques");
             }
         }
         
@@ -928,7 +1094,8 @@ namespace Game.NPC
             if (direction.sqrMagnitude < 0.0001f)
                 return;
 
-            SmoothRotateTowards(direction);
+            // ✅ Rotación rápida durante windup/ataque
+            SmoothRotateTowards(direction, fast: _isWindup);
         }
 
         void FaceMovement()
@@ -951,13 +1118,16 @@ namespace Game.NPC
         /// <summary>
         /// Rotación suavizada usando SmoothDampAngle para movimiento más natural
         /// </summary>
-        void SmoothRotateTowards(Vector3 direction)
+        void SmoothRotateTowards(Vector3 direction, bool fast = false)
         {
             if (direction.sqrMagnitude < 0.0001f) return;
             
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
             float currentAngle = transform.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(currentAngle, targetAngle, ref _currentTurnVelocity, _turnSmoothTime);
+            
+            // ✅ Rotación más rápida durante windup/ataque
+            float smoothTime = fast ? 0.05f : _turnSmoothTime;
+            float angle = Mathf.SmoothDampAngle(currentAngle, targetAngle, ref _currentTurnVelocity, smoothTime);
             
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
         }
@@ -1026,6 +1196,169 @@ namespace Game.NPC
             _wasMovingLastFrame = true;
             
             Debug.Log($"[NPCCombatBrain] StartMoving({speed:F2}) - NavAgent sync desactivado temporalmente");
+        }
+        
+        /// <summary>
+        /// ✅ Intenta activar el escudo defensivo cuando no puede atacar
+        /// </summary>
+        void TryActivateShield()
+        {
+            // Verificar si puede usar escudo
+            if (!_settings.useShield)
+                return;
+                
+            if (_shieldController == null)
+                return;
+            
+            // Ya está defendiendo
+            if (_isDefending || _shieldController.IsDefending)
+                return;
+            
+            // Escudo en cooldown
+            if (_shieldCooldownTimer > 0f)
+            {
+                Debug.Log($"[NPCCombatBrain] 🛡️ Escudo en cooldown: {_shieldCooldownTimer:F1}s");
+                return;
+            }
+            
+            // Activar escudo
+            float duration = UnityEngine.Random.Range(
+                Mathf.Max(0.5f, _settings.shieldMinDuration),
+                Mathf.Max(Mathf.Max(0.5f, _settings.shieldMinDuration), _settings.shieldMaxDuration)
+            );
+            
+            _shieldController.StartDefending(duration);
+            _isDefending = true;
+            
+            // Aplicar cooldown
+            _shieldCooldownTimer = _settings.shieldCooldown;
+            
+            Debug.Log($"[NPCCombatBrain] 🛡️ ESCUDO ACTIVADO - Duración: {duration:F1}s, Cooldown: {_shieldCooldownTimer:F1}s");
+            
+            // Programar desactivación automática
+            StartCoroutine(DeactivateShieldAfter(duration));
+        }
+        
+        /// <summary>
+        /// Desactiva el escudo después de un delay
+        /// </summary>
+        IEnumerator DeactivateShieldAfter(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            _isDefending = false;
+            Debug.Log($"[NPCCombatBrain] 🛡️ Escudo desactivado automáticamente");
+        }
+        
+        // ========== SISTEMA DE HUIDA TÁCTICA Y COBERTURA ==========
+        
+        /// <summary>
+        /// Evalúa si el NPC debe activar huida táctica
+        /// </summary>
+        bool ShouldRetreat()
+        {
+            // Verificar salud
+            var health = _ctx?.Transform.GetComponent<Damageable>();
+            if (health == null)
+                return false;
+                
+            float healthPercent = health.Current / health.Max;
+            
+            // Huir si salud es baja
+            if (healthPercent <= _settings.retreatHealthThreshold)
+            {
+                Debug.Log($"[NPCCombatBrain] 🏃 Salud baja ({healthPercent:P0}), activando huida táctica");
+                return true;
+            }
+            
+            // Huir si todos los ataques están en cooldown Y escudo también en cooldown
+            bool allAttacksOnCooldown = !HasAttackAvailable();
+            bool shieldOnCooldown = _shieldCooldownTimer > 0f || _isDefending;
+            
+            if (allAttacksOnCooldown && shieldOnCooldown && _currentState == CombatState.Defensive)
+            {
+                Debug.Log($"[NPCCombatBrain] 🏃 Sin ataques ni escudo disponibles en modo defensivo, buscando cobertura");
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Intenta encontrar cobertura y moverse hacia ella
+        /// </summary>
+        bool TryFindAndMoveToCover()
+        {
+            if (_isRetreating)
+            {
+                Debug.Log($"[NPCCombatBrain] Ya está en proceso de huida");
+                return true;
+            }
+            
+            // Verificar componente de huida táctica
+            var retreatComponent = GetComponent<NPCTacticalRetreat>();
+            if (retreatComponent == null)
+            {
+                Debug.LogWarning($"[NPCCombatBrain] ⚠️ useTacticalRetreat=true pero no hay NPCTacticalRetreat en {gameObject.name}");
+                return false;
+            }
+            
+            // Intentar iniciar huida
+            if (!retreatComponent.StartRetreat(_player))
+            {
+                Debug.Log($"[NPCCombatBrain] ❌ No se pudo encontrar cobertura");
+                return false;
+            }
+            
+            _isRetreating = true;
+            _retreatCooldownTimer = _settings.retreatCooldown;
+            _isBehindCover = false;
+            
+            Debug.Log($"[NPCCombatBrain] 🏃 Iniciando huida táctica hacia cobertura");
+            
+            // Iniciar coroutine para gestionar el estado de cobertura
+            StartCoroutine(ManageCoverState(retreatComponent));
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Gestiona el estado mientras el NPC está en cobertura
+        /// </summary>
+        IEnumerator ManageCoverState(NPCTacticalRetreat retreatComponent)
+        {
+            Debug.Log($"[NPCCombatBrain] 🛡️ En cobertura, esperando...");
+            
+            // Esperar hasta que llegue a la cobertura o se cancele
+            while (_isRetreating && retreatComponent.IsRetreating)
+            {
+                // Actualizar el flag de estar detrás de cobertura
+                _isBehindCover = retreatComponent.IsBehindCover;
+                
+                // Si está detrás de cobertura, puede activar el escudo como defensa adicional
+                if (_isBehindCover && _settings.useShield && !_isDefending)
+                {
+                    TryActivateShield();
+                }
+                
+                yield return null;
+            }
+            
+            // Salir de la cobertura
+            _isRetreating = false;
+            _isBehindCover = false;
+            
+            Debug.Log($"[NPCCombatBrain] ✅ Saliendo de cobertura, volviendo a combate activo");
+        }
+        
+        /// <summary>
+        /// Reduce el cooldown de huida (se llama cada frame desde CombatLoop)
+        /// </summary>
+        void UpdateRetreatCooldown()
+        {
+            if (_retreatCooldownTimer > 0f)
+            {
+                _retreatCooldownTimer -= Time.deltaTime;
+            }
         }
 
 #if UNITY_EDITOR

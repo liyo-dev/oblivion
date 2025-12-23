@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fcb82a06aa064e73a10b4db55d05973c, type: 3}
-  m_Name: NPC_Combat_Config_Erika
+  m_Name: NPC_Combat_Config_BoyPirate
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCCombatConfig
   moduleName: 
   description: 
@@ -26,9 +26,9 @@ MonoBehaviour:
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
   alertIconDuration: 2
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
-  dialogueOnAlert: {fileID: 11400000, guid: 854490eab3bc56f469b497cce202cb64, type: 2}
-  dialogueOnDefeat: {fileID: 11400000, guid: 78f49fabca9477c43a5adeedf66786ab, type: 2}
-  dialogueAfterDefeat: {fileID: 11400000, guid: bbce2255e6c942c41b8a5151012a8e08, type: 2}
+  dialogueOnAlert: {fileID: 11400000, guid: 40ad844cb33491f43a9c99e4e09d95cb, type: 2}
+  dialogueOnDefeat: {fileID: 11400000, guid: a127d255143b43a4c93c55eeea0684f6, type: 2}
+  dialogueAfterDefeat: {fileID: 11400000, guid: c1edb2972b0c93d44ab8f40806103ebc, type: 2}
   waitForAlertDialogue: 1
   alertMusicEvent: Npc_Battle_Alert
   battleMusicId: Npc_Battle

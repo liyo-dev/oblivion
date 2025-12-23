@@ -68,7 +68,8 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField] private string challengingState = "Challenging_NoWeapon";
     [SerializeField] private string senseSomethingState = "SenseSomethingStart_NoWeapon";
     [SerializeField] private string defendState = "Idle_Battle_NoWeapon"; // Fallback a Battle Idle si no existe Defend
-    [SerializeField] private string getHitState = "GetHit02_NoWeapon";
+    [SerializeField] private string getHitState = "TakeDamage";
+    [SerializeField] private string defendHitState = "DefendHit_NoWeapon"; // Animación cuando el escudo bloquea un ataque
     [SerializeField] private string dieState = "Die02_NoWeapon";
     [SerializeField] private string victoryState = "Dance_NoWeapon"; // Usar Dance como victoria si no hay Victory
     
@@ -235,43 +236,27 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Set animator parameter
         animator.SetFloat(InputMagnitudeHash, _currentMovementSpeed, damp, Time.deltaTime);
         
-        Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2} | _currentState={_currentState} | _isInBattle={_isInBattle} | _isInteracting={_isInteracting} | threshold={movementThreshold}");
-        
         // Adjust animation speed to match movement speed (reduces foot sliding)
         if (_currentMovementSpeed > movementThreshold)
         {
             animator.speed = Mathf.Lerp(1f, locomotionSpeedMultiplier, _currentMovementSpeed);
             
             // Ensure we're in locomotion state if moving
-            // Permitir transición a locomoción cuando está en batalla Y se está moviendo
             if (_isInBattle && !_isInteracting)
             {
-                // Siempre intentar transicionar a locomotion cuando está en batalla y moviéndose
-                // Esto funciona incluso si el UpperBody layer está reproduciendo spell casts
                 if (_currentState != AnimationState.Walking && _currentState != AnimationState.Running)
                 {
-                    Debug.Log($"[NPCAnimator] ✅ LLAMANDO TransitionToLocomotion (Battle mode, speed: {_currentMovementSpeed:F2})");
                     TransitionToLocomotion();
-                }
-                else
-                {
-                    Debug.Log($"[NPCAnimator] Ya está en Walking/Running, no se llama TransitionToLocomotion");
                 }
             }
             else if ((_currentState == AnimationState.Idle) && !_isInteracting)
             {
-                Debug.Log($"[NPCAnimator] ✅ LLAMANDO TransitionToLocomotion (Idle mode)");
                 TransitionToLocomotion();
-            }
-            else
-            {
-                Debug.LogWarning($"[NPCAnimator] ❌ NO se transiciona a locomotion: _isInBattle={_isInBattle}, _isInteracting={_isInteracting}, _currentState={_currentState}");
             }
         }
         else
         {
             animator.speed = 1f;
-            Debug.Log($"[NPCAnimator] Speed {_currentMovementSpeed:F2} menor que threshold {movementThreshold}, no se mueve");
         }
     }
     
@@ -354,7 +339,6 @@ public class NPCSimpleAnimator : MonoBehaviour
             _isInBattle = false;
             _currentState = AnimationState.Idle;
             CrossFadeToState(idleNormalState, 0.2f);
-            Debug.Log($"[NPCSimpleAnimator] Restaurando Idle Normal: {idleNormalState}");
         }
     }
     
@@ -545,42 +529,22 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(challengingState))
         {
-            Debug.Log($"[NPCSimpleAnimator] Reproduciendo animación de desafío: {challengingState}");
-            
-            // Usar PlayOneShot que maneja mejor las transiciones
-            // Esto permite que después vuelva automáticamente a la locomotion
-            PlayOneShot(challengingState, 0, () =>
-            {
-                if (debugMode)
-                    Debug.Log("[NPCSimpleAnimator] Animación de desafío completada, volviendo a locomotion");
-            });
-        }
-        else
-        {
-            Debug.LogWarning("[NPCSimpleAnimator] No hay animación de desafío configurada");
+            PlayOneShot(challengingState);
         }
     }
     
     /// <summary>
-    /// Reproduce animación de Challenge y luego va a Idle Normal (para que el exit time permita Locomotion)
+    /// Reproduce animación de Challenge y luego va a Idle Battle
     /// </summary>
     public void PlayChallengingForBattle()
     {
         if (!string.IsNullOrEmpty(challengingState))
         {
-            Debug.Log($"[NPCSimpleAnimator] Reproduciendo Challenge para batalla: {challengingState}");
-            
-            // Usar PlayOneShot estándar con callback
             PlayOneShot(challengingState, 0, () =>
             {
-                // Al terminar Challenge, ir a Idle_Normal para permitir transición natural a Locomotion
-                Debug.Log($"[NPCSimpleAnimator] Challenge completado → Idle de batalla: {idleBattleState}");
-                
-                // Activar modo batalla
                 _isInBattle = true;
                 _currentState = AnimationState.Battle;
                 
-                // Transicionar a Idle_Battle
                 if (!string.IsNullOrEmpty(idleBattleState))
                 {
                     CrossFadeToState(idleBattleState, 0.2f);
@@ -589,8 +553,6 @@ public class NPCSimpleAnimator : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[NPCSimpleAnimator] No hay animación de desafío configurada");
-            // Fallback: ir directo a Idle de batalla
             _isInBattle = true;
             _currentState = AnimationState.Battle;
             if (!string.IsNullOrEmpty(idleBattleState))
@@ -635,17 +597,49 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
+    /// Reproduce animación de bloqueo con escudo (cuando el escudo absorbe un ataque)
+    /// </summary>
+    public void PlayDefendHit()
+    {
+        if (!string.IsNullOrEmpty(defendHitState))
+        {
+            PlayOneShot(defendHitState);
+        }
+    }
+    
+    /// <summary>
     /// Reproduce animación de muerte
     /// </summary>
     public void PlayDeath()
     {
+        Debug.Log($"[NPCAnimator:{gameObject.name}] 💀 PlayDeath() llamado - dieState: '{dieState}'");
+        
         if (!string.IsNullOrEmpty(dieState))
         {
             _currentState = AnimationState.Dead;
+            
+            Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de muerte: {dieState}");
+            
+            // Crossfade a la animación de muerte
             CrossFadeToState(dieState, 0.1f);
             
-            // Disable further updates
-            enabled = false;
+            // Desactivar el NavMeshAgent si existe
+            if (navAgent != null && navAgent.isOnNavMesh)
+            {
+                navAgent.isStopped = true;
+                navAgent.updateRotation = false;
+                navAgent.updatePosition = false;
+                Debug.Log($"[NPCAnimator:{gameObject.name}] NavMeshAgent detenido");
+            }
+            
+            // NO desactivar el componente inmediatamente - dejar que la animación se reproduzca
+            // enabled = false;  // ❌ COMENTADO - Esto evitaba que la animación se reprodujera
+            
+            Debug.Log($"[NPCAnimator:{gameObject.name}] ✅ Animación de muerte iniciada");
+        }
+        else
+        {
+            Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ dieState está vacío - no se puede reproducir animación de muerte");
         }
     }
     
@@ -938,21 +932,19 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (_currentMovementSpeed > movementThreshold * 2f)
         {
             _currentState = AnimationState.Running;
-            Debug.Log($"[NPCAnimator] TransitionToLocomotion → Running (speed: {_currentMovementSpeed:F2})");
         }
         else
         {
             _currentState = AnimationState.Walking;
-            Debug.Log($"[NPCAnimator] TransitionToLocomotion → Walking (speed: {_currentMovementSpeed:F2})");
         }
         
         if (string.IsNullOrEmpty(locomotionState))
         {
-            Debug.LogError($"[NPCAnimator] ❌ locomotionState está VACÍO! No se puede transicionar");
+            if (debugMode)
+                Debug.LogError($"[NPCAnimator] locomotionState está vacío");
             return;
         }
         
-        Debug.Log($"[NPCAnimator] ✅ CrossFadeToState('{locomotionState}', {locomotionBlendTime})");
         CrossFadeToState(locomotionState, locomotionBlendTime);
     }
     
@@ -963,18 +955,22 @@ public class NPCSimpleAnimator : MonoBehaviour
     private void CrossFadeToState(string stateName, float transitionTime, int layer = 0)
     {
         if (string.IsNullOrEmpty(stateName) || animator == null)
+        {
+            Debug.LogWarning($"[NPCAnimator] CrossFadeToState falló - stateName: {stateName}, animator: {animator != null}");
             return;
+        }
         
         int stateHash = Animator.StringToHash(stateName);
         
         // Check if state exists in specified layer
         if (animator.HasState(layer, stateHash))
         {
+            Debug.Log($"[NPCAnimator] ✅ CrossFade a estado '{stateName}' en layer {layer}, tiempo: {transitionTime}s");
             animator.CrossFadeInFixedTime(stateHash, transitionTime, layer, 0f);
         }
-        else if (debugMode)
+        else
         {
-            Debug.LogWarning($"[NPCAnimator] State '{stateName}' not found in layer {layer}");
+            Debug.LogError($"[NPCAnimator] ❌ Estado '{stateName}' NO ENCONTRADO en layer {layer}. Verificar Animator Controller.");
         }
     }
     

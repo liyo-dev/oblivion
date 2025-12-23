@@ -1,4 +1,4 @@
-﻿namespace Sendero.Core.Feedback
+﻿﻿namespace Sendero.Core.Feedback
 {
     using UnityEngine;
 
@@ -19,6 +19,7 @@
         private static IHitStopProvider _hitStopProvider;
         private static IVfxProvider _vfxProvider;
         private static ISfxProvider _sfxProvider;
+        private static DeathCameraEffect _deathCameraEffect;
 
         // ===================== API PÚBLICA =====================
 
@@ -51,6 +52,20 @@
         }
 
         public static void SetHitStopProvider(IHitStopProvider provider) => _hitStopProvider = provider;
+        
+        // Death Camera Effect (zoom + slowmotion cinematográfico)
+        public static void TriggerDeathEffect(Transform target)
+        {
+            if (target == null) return;
+            var inst = EnsureInstance();
+            EnsureDeathCameraEffect().TriggerDeathEffect(target);
+        }
+        
+        public static void CancelDeathEffect()
+        {
+            if (_deathCameraEffect != null)
+                _deathCameraEffect.CancelEffect();
+        }
 
         // VFX puntuales
         public static GameObject PlayVFX(GameObject prefab, Vector3 position, Quaternion rotation, float lifeTimeSeconds = 3f, Transform parent = null)
@@ -116,6 +131,20 @@
             if (_sfxProvider == null)
                 _sfxProvider = new SimpleSfxProvider();
             return _sfxProvider;
+        }
+        
+        private static DeathCameraEffect EnsureDeathCameraEffect()
+        {
+            if (_deathCameraEffect == null)
+            {
+                var inst = EnsureInstance();
+                _deathCameraEffect = inst.GetComponent<DeathCameraEffect>();
+                if (_deathCameraEffect == null)
+                {
+                    _deathCameraEffect = inst.gameObject.AddComponent<DeathCameraEffect>();
+                }
+            }
+            return _deathCameraEffect;
         }
     }
 }

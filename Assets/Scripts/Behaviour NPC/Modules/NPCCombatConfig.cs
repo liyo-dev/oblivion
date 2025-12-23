@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -14,11 +14,11 @@ namespace Game.NPC.Modules
         public float health = 100f;
         
         [Min(0f)]
-        [Tooltip("Daño base de ataque")]
+        [Tooltip("⚠️ DEPRECATED - No se usa. El daño se configura en cada Spell Prefab individual")]
         public float attackDamage = 10f;
         
         [Min(0f)]
-        [Tooltip("Tiempo entre ataques")]
+        [Tooltip("⚠️ DEPRECATED - No se usa. Usa spell1Cooldown, spell2Cooldown, spell3Cooldown más abajo")]
         public float attackCooldown = 1.5f;
         
         [Header("Ranges")]
@@ -115,6 +115,59 @@ namespace Game.NPC.Modules
         [Range(0f, 1f)]
         [Tooltip("Probabilidad de usar hechizo 3 especial (0-1)")]
         public float spell3Chance = 0.2f;
+        
+        [Header("🛡️ Escudo Defensivo")]
+        [Tooltip("¿El NPC puede usar escudo para defenderse cuando no puede atacar?")]
+        public bool useShield = false;
+        
+        [Tooltip("Prefab del escudo visual (esfera mágica, etc.)")]
+        public GameObject shieldPrefab;
+        
+        [Min(0.5f)]
+        [Tooltip("Duración mínima del escudo en segundos")]
+        public float shieldMinDuration = 2f;
+        
+        [Min(0.5f)]
+        [Tooltip("Duración máxima del escudo en segundos")]
+        public float shieldMaxDuration = 5f;
+        
+        [Min(0f)]
+        [Tooltip("Cooldown del escudo después de usarlo")]
+        public float shieldCooldown = 10f;
+        
+        [Header("🏃 Huida Táctica y Cobertura")]
+        [Tooltip("¿El NPC puede buscar cobertura cuando está en desventaja?")]
+        public bool useTacticalRetreat = false;
+        
+        [Range(0.1f, 0.5f)]
+        [Tooltip("% de salud para activar huida táctica (0.3 = 30% de salud)")]
+        public float retreatHealthThreshold = 0.3f;
+        
+        [Min(5f)]
+        [Tooltip("Cooldown entre intentos de huida en segundos")]
+        public float retreatCooldown = 15f;
+        
+        [Min(5f)]
+        [Tooltip("Radio de búsqueda de cobertura en metros")]
+        public float coverSearchRadius = 15f;
+        
+        [Tooltip("Capas que se consideran cobertura (Default, Environment, Props)")]
+        public LayerMask coverLayerMask = -1;
+        
+        [Min(2f)]
+        [Tooltip("Distancia mínima de la cobertura al NPC")]
+        public float minCoverDistance = 3f;
+        
+        [Min(5f)]
+        [Tooltip("Distancia máxima de la cobertura al NPC")]
+        public float maxCoverDistance = 15f;
+        
+        [Min(2f)]
+        [Tooltip("Tiempo que permanece en cobertura en segundos")]
+        public float coverStayDuration = 4f;
+        
+        [Tooltip("Si true, prioriza usar escudo sobre buscar cobertura")]
+        public bool preferShieldOverCover = false;
         
         public override bool ValidateConfig(out string errorMessage)
         {

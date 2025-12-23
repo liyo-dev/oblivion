@@ -138,13 +138,8 @@ public class Interactable : MonoBehaviour
     {
         if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
         {
-            var fallback = GameObject.FindGameObjectWithTag("Player");
-            if (!fallback)
-            {
-                Debug.LogWarning("[Interactable] Could not locate Player for interaction.");
-                return false;
-            }
-            playerGo = fallback;
+            Debug.LogWarning("[Interactable] Could not locate Player for interaction via PlayerService.");
+            return false;
         }
 
         Interact(playerGo);
@@ -154,6 +149,20 @@ public class Interactable : MonoBehaviour
     void StartDialogue()
     {
         Debug.Log($"[Interactable:{name}] 📖 StartDialogue - dialogue={dialogue?.name}");
+        
+        // ✅ HACER QUE EL NPC MIRE AL JUGADOR antes de hablar
+        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        {
+            Vector3 directionToPlayer = playerGo.transform.position - transform.position;
+            directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
+            
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                transform.rotation = targetRotation; // Rotación instantánea para el diálogo
+                Debug.Log($"[Interactable:{name}] 👁️ NPC girado hacia el jugador para diálogo");
+            }
+        }
         
         var dm = DialogueManager.Instance;
         if (dialogue && dm != null)
@@ -178,6 +187,20 @@ public class Interactable : MonoBehaviour
 
     void StartDialogueWithOptions()
     {
+        // ✅ HACER QUE EL NPC MIRE AL JUGADOR antes de hablar
+        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        {
+            Vector3 directionToPlayer = playerGo.transform.position - transform.position;
+            directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
+            
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                transform.rotation = targetRotation; // Rotación instantánea para el diálogo
+                Debug.Log($"[Interactable:{name}] 👁️ NPC girado hacia el jugador para diálogo con opciones");
+            }
+        }
+        
         var dm = DialogueManager.Instance;
         if (dm == null)
         {

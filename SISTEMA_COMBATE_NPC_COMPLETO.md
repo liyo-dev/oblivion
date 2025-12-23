@@ -1,7 +1,35 @@
 ﻿# 🎮 SISTEMA DE COMBATE NPC - DOCUMENTACIÓN COMPLETA
 
 **Fecha:** 23 Diciembre 2025  
-**Estado:** ✅ COMPLETADO Y FUNCIONAL
+**Estado:** ✅ COMPLETADO Y FUNCIONAL - ACTUALIZACIÓN V2
+
+---
+
+## 🆕 MEJORAS V2 (23 Diciembre 2025)
+
+### 1. ✅ **NPC SIEMPRE MIRA AL PLAYER ANTES DE ATACAR**
+- No más ataques de perfil
+- Rotación rápida durante windup (0.05s smooth time)
+- Verificación de ángulo: debe estar < 15° de frente
+- Si no puede mirar al player → ataque CANCELADO
+
+### 2. ✅ **COOLDOWNS RESPETADOS DEL CONFIG**
+- Variabilidad MÍNIMA (±10% en lugar de ±20%)
+- Logs muestran cooldown aplicado vs config
+- Se respetan los valores del ScriptableObject
+
+### 3. ✅ **NO REPETIR MISMO ATAQUE CONSECUTIVO**
+- Sistema de penalización (0.2x peso si fue el último usado)
+- Tracking del último ataque ejecutado
+- Variedad natural sin patrones obvios
+
+### 4. ✅ **BURST INTELIGENTE CON DISTRIBUCIÓN PONDERADA**
+```
+40% → 1 ataque solo
+35% → 2 ataques (ráfaga corta)
+20% → 3 ataques (ráfaga media)
+5%  → 4 ataques (ráfaga larga)
+```
 
 ---
 
@@ -26,6 +54,119 @@ Se ha implementado un sistema de combate NPC completamente funcional con:
 - ✅ **Combate dinámico** - Impredecible y desafiante
 - ✅ **Secuencias de alerta** - SenseSomething → Challenge → Idle_Battle
 - ✅ **Sistema anti-spam** - No más llamadas redundantes
+
+---
+
+## 🔥 NUEVAS MEJORAS V2
+
+### Problema 1: NPC Atacaba de Perfil ❌
+
+**Antes:**
+```
+NPC → se mueve → para → ataca (de perfil)
+Player → esquiva fácilmente
+```
+
+**Solución:**
+```csharp
+// DoWindup() ahora verifica ángulo
+Vector3 dirToPlayer = (_player.position - transform.position).normalized;
+float angle = Vector3.Angle(transform.forward, dirToPlayer);
+bool isFacingPlayer = angle < 15f;  // ✅ MUST be facing
+
+// Rotación RÁPIDA durante windup
+SmoothRotateTowards(direction, fast: _isWindup);  // 0.05s smooth time
+```
+
+**Ahora:**
+```
+NPC → se mueve → para → GIRA hacia player (rápido) → ataca de frente
+Player → debe esquivar o bloquear (más desafiante)
+```
+
+**Logs:**
+```
+[NPCCombatBrain] ✅ ATACANDO - Mirando al player correctamente
+```
+
+---
+
+### Problema 2: Cooldowns NO Respetados ❌
+
+**Antes:**
+```csharp
+// Variabilidad ±20%
+float variance = Random.Range(0.8f, 1.2f);
+_leftAttackCooldown = _settings.leftAttack.cooldown * variance;
+
+// Config: 3s → Aplicado: 2.4s - 3.6s (demasiado variable)
+```
+
+**Solución:**
+```csharp
+// Variabilidad MÍNIMA ±10%
+float variance = Random.Range(0.9f, 1.1f);
+_leftAttackCooldown = _settings.leftAttack.cooldown * variance;
+
+// Config: 3s → Aplicado: 2.7s - 3.3s (respeta el config)
+```
+
+**Logs:**
+```
+[NPCCombatBrain] 🔄 LEFT cooldown: 2.92s (config: 3.00s)
+[NPCCombatBrain] 🔄 RIGHT cooldown: 3.15s (config: 3.00s)
+[NPCCombatBrain] ⏳ Esperando cooldowns... LEFT:1.2s RIGHT:0.5s SPECIAL:4.8s
+```
+
+---
+
+### Problema 3: Patrón Repetitivo (LEFT → RIGHT → SPECIAL) ❌
+
+**Antes:**
+```
+Ataque 1: LEFT
+Ataque 2: RIGHT  ← Siempre en orden
+Ataque 3: SPECIAL
+Ataque 4: LEFT  ← Repite ciclo
+```
+
+**Solución A: Penalización por Repetición**
+```csharp
+int _lastUsedAttackSlot = -1;
+
+// Penalizar repetir el mismo ataque
+float leftPenalty = (_lastUsedAttackSlot == 0) ? 0.2f : 1f;   // 80% menos probable
+float rightPenalty = (_lastUsedAttackSlot == 1) ? 0.2f : 1f;
+float specialPenalty = (_lastUsedAttackSlot == 2) ? 0.3f : 1f; // 70% menos probable
+```
+
+**Solución B: Burst Inteligente**
+```csharp
+// Distribución ponderada (NO uniforme)
+float roll = Random.value;
+if (roll < 0.4f)      _nextBurstCount = 1;  // 40% → 1 solo
+else if (roll < 0.75f) _nextBurstCount = 2;  // 35% → 2 ataques
+else if (roll < 0.95f) _nextBurstCount = 3;  // 20% → 3 ataques
+else                  _nextBurstCount = 4;  // 5%  → 4 ataques
+```
+
+**Ahora:**
+```
+Secuencia 1: RIGHT (1 solo) → mueve
+Secuencia 2: LEFT → SPECIAL (2 ataques) → mueve
+Secuencia 3: RIGHT (1 solo) → mueve
+Secuencia 4: LEFT → LEFT → RIGHT (3 ataques) → mueve  ← NO repite mismo consecutivo
+Secuencia 5: SPECIAL (1 solo) → mueve
+```
+
+**Logs:**
+```
+[NPCCombatBrain] ✅ Burst completado - próximo burst: 1 ataques
+[NPCCombatBrain] ⚔️ Ejecutando spell cast RIGHT (slot 1)
+[NPCCombatBrain] ✅ Burst completado - próximo burst: 2 ataques
+[NPCCombatBrain] ⚔️ Ejecutando spell cast LEFT (slot 0)
+[NPCCombatBrain] ⚔️ Ejecutando spell cast SPECIAL (slot 2)
+```
 
 ---
 
@@ -730,16 +871,70 @@ void StopAndIdle()
 
 ### Comparación Final
 
-| Aspecto | Antes ❌ | Ahora ✅ |
-|---------|---------|---------|
-| **Animaciones hechizos** | NO funcionan | Fluidas y completas |
-| **Locomoción** | Sin animación | Walk/Run correcto |
-| **Temblor/Flotación** | Constante | ELIMINADO |
-| **Patrón de ataque** | Siempre igual | 100% impredecible |
-| **Burst** | Fijo (3) | Variable (1-4) |
-| **Velocidad** | Lento | Ultra rápido |
-| **Movimiento** | Ortopédico | Dinámico y ágil |
-| **Predecibilidad** | 100% | 0% (aleatorio) |
+| Aspecto | Antes ❌ | V1 ✅ | V2 🔥 |
+|---------|---------|---------|---------|
+| **Animaciones hechizos** | NO funcionan | Fluidas y completas | Fluidas + de frente |
+| **Locomoción** | Sin animación | Walk/Run correcto | Walk/Run correcto |
+| **Temblor/Flotación** | Constante | ELIMINADO | ELIMINADO |
+| **Orientación al atacar** | De perfil | De perfil | ✅ SIEMPRE de frente |
+| **Patrón de ataque** | Siempre igual | 100% aleatorio | ✅ Inteligente (no repite) |
+| **Burst** | Fijo (3) | Variable (1-4) | ✅ Ponderado (1-4) |
+| **Cooldowns** | ±20% varianza | ±20% varianza | ✅ ±10% (respeta config) |
+| **Velocidad** | Lento | Ultra rápido | Ultra rápido |
+| **Movimiento** | Ortopédico | Dinámico y ágil | Dinámico y ágil |
+| **Predecibilidad** | 100% | 0% (aleatorio) | ✅ 0% (inteligente) |
+
+---
+
+## 📊 COMPARATIVA DE VERSIONES
+
+### V1 vs V2 - ¿Qué Cambió?
+
+| Feature | V1 | V2 |
+|---------|----|----|
+| **Rotación durante ataque** | Suave (0.2s) | ✅ Rápida (0.05s) |
+| **Verifica orientación** | ❌ No | ✅ Sí (< 15°) |
+| **Cancela si no mira** | ❌ No | ✅ Sí |
+| **Cooldown variance** | ±20% | ✅ ±10% |
+| **Logs de cooldown** | ❌ No | ✅ Sí (debug) |
+| **Penaliza repetir ataque** | ❌ No | ✅ Sí (0.2x peso) |
+| **Burst distribución** | Uniforme | ✅ Ponderada |
+| **40% burst = 1 solo** | ❌ No | ✅ Sí |
+| **Logs de burst** | Básico | ✅ Detallado |
+
+---
+
+## 🎯 CONFIGURACIÓN RECOMENDADA
+
+### Para Combate Balanceado
+
+```csharp
+// CombatConfig ScriptableObject
+attackCooldown = 3f;           // ✅ Base 3s
+Spell 1 Cooldown = 3f;         // LEFT   (aplicado: 2.7s - 3.3s)
+Spell 2 Cooldown = 8f;         // RIGHT  (aplicado: 7.2s - 8.8s)
+Spell 3 Cooldown = 5f;         // SPECIAL (aplicado: 4.5s - 5.5s)
+```
+
+### Para Combate Rápido
+
+```csharp
+attackCooldown = 1.5f;         // Base 1.5s
+Spell 1 Cooldown = 1.5f;       // LEFT   (aplicado: 1.35s - 1.65s)
+Spell 2 Cooldown = 2f;         // RIGHT  (aplicado: 1.8s - 2.2s)
+Spell 3 Cooldown = 3f;         // SPECIAL (aplicado: 2.7s - 3.3s)
+```
+
+### Para Combate Difícil
+
+```csharp
+attackCooldown = 0.8f;         // Base 0.8s (muy rápido)
+Spell 1 Cooldown = 0.8f;       // LEFT   (aplicado: 0.72s - 0.88s)
+Spell 2 Cooldown = 1.2f;       // RIGHT  (aplicado: 1.08s - 1.32s)
+Spell 3 Cooldown = 2f;         // SPECIAL (aplicado: 1.8s - 2.2s)
+windupMin = 0.1f;              // Windup más largo
+windupMax = 0.4f;              // Player tiene tiempo de reaccionar
+```
 
 ---
 

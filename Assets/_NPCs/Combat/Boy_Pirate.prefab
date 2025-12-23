@@ -8690,9 +8690,13 @@ MonoBehaviour:
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: GetHit01_NoWeapon
+  getHitState: TakeDamage
+  defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
@@ -8755,7 +8759,7 @@ MonoBehaviour:
   configuration:
     behaviourType: 2
     ambientConfig: {fileID: 0}
-    combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
+    combatConfig: {fileID: 11400000, guid: 67318bc17bb9d9b4192dc2df70ced10e, type: 2}
     questConfig: {fileID: 0}
     narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}

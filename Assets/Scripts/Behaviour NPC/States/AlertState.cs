@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
@@ -209,13 +209,25 @@ namespace Game.NPC.States
                 var dm = DialogueManager.Instance;
                 if (dm != null)
                 {
-                    context.Log("[AlertState] Iniciando diálogo de alerta");
+                    context.Log("[AlertState] Iniciando diálogo de batalla (preparando jugador)");
                     
-                    // Iniciar el diálogo
-                    dm.StartDialogue(combatConfig.dialogueOnAlert, context.Transform, () =>
+                    // Iniciar el diálogo DE BATALLA (prepara al jugador automáticamente)
+                    dm.StartBattleDialogue(combatConfig.dialogueOnAlert, context.Transform, () =>
                     {
                         context.Log("[AlertState] Diálogo de alerta finalizado");
                         _waitingForDialogue = false;
+                        
+                        // Restaurar animación normal del jugador
+                        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+                        {
+                            var playerAnimator = playerGo.GetComponent<Animator>();
+                            if (playerAnimator != null)
+                            {
+                                // Volver a Idle normal (puede ser Idle o Free Locomotion según el sistema)
+                                playerAnimator.CrossFade("Idle", 0.2f, 0);
+                                context.Log("[AlertState] Jugador vuelve a animación Idle normal tras diálogo");
+                            }
+                        }
                     });
                     
                     // Si está configurado para esperar, activar flag
