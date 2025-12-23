@@ -115,9 +115,6 @@ public class NPCSimpleAnimator : MonoBehaviour
     private Quaternion _targetRotation;
     private float _rotationVelocity;
     
-    // Control flags
-    private bool _pauseAutoSync; // Pausa la sincronización automática durante animaciones manuales
-    
     #endregion
     
     #region Enums
@@ -189,8 +186,8 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Update actual speed based on position
         UpdateActualSpeed();
         
-        // Sync with NavMeshAgent if enabled AND not paused
-        if (!_pauseAutoSync && syncWithNavAgent && navAgent != null && navAgent.enabled)
+        // Sync with NavMeshAgent if enabled
+        if (syncWithNavAgent && navAgent != null && navAgent.enabled)
         {
             SyncWithNavMeshAgent();
         }
@@ -228,7 +225,8 @@ public class NPCSimpleAnimator : MonoBehaviour
             animator.speed = Mathf.Lerp(1f, locomotionSpeedMultiplier, _currentMovementSpeed);
             
             // Ensure we're in locomotion state if moving
-            if (_currentState == AnimationState.Idle && !_isInteracting)
+            // Permitir transición a locomoción desde Idle o Battle (para que funcione durante combate)
+            if ((_currentState == AnimationState.Idle || _currentState == AnimationState.Battle) && !_isInteracting)
             {
                 TransitionToLocomotion();
             }
@@ -236,20 +234,10 @@ public class NPCSimpleAnimator : MonoBehaviour
         else
         {
             animator.speed = 1f;
-            
-            // ✅ FIX: Si está en batalla y parado, mantener Idle_Battle (no volver a Locomotion)
-            if (_isInBattle && _currentState != AnimationState.Battle)
-            {
-                _currentState = AnimationState.Battle;
-                if (!string.IsNullOrEmpty(idleBattleState))
-                {
-                    CrossFadeToState(idleBattleState, 0.2f);
-                }
-            }
         }
         
         if (debugMode)
-            Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2}, actual speed: {_actualSpeed:F2}, isInBattle: {_isInBattle}");
+            Debug.Log($"[NPCAnimator] SetMovementSpeed: {normalizedSpeed:F2}, actual speed: {_actualSpeed:F2}");
     }
     
     /// <summary>
@@ -321,6 +309,21 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
+    /// Restaura el idle normal (permite transiciones de locomoción)
+    /// </summary>
+    public void PlayIdleNormal()
+    {
+        if (!string.IsNullOrEmpty(idleNormalState))
+        {
+            // Desactivar modo batalla para permitir transiciones de locomoción
+            _isInBattle = false;
+            _currentState = AnimationState.Idle;
+            CrossFadeToState(idleNormalState, 0.2f);
+            Debug.Log($"[NPCSimpleAnimator] Restaurando Idle Normal: {idleNormalState}");
+        }
+    }
+    
+    /// <summary>
     /// Entra en modo batalla (método de conveniencia)
     /// </summary>
     public void EnterBattleMode()
@@ -334,26 +337,6 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void ExitBattleMode()
     {
         SetBattleMode(false);
-    }
-    
-    /// <summary>
-    /// Reanuda la sincronización automática con NavMeshAgent
-    /// </summary>
-    public void ResumeAutoSync()
-    {
-        _pauseAutoSync = false;
-        if (debugMode)
-            Debug.Log("[NPCSimpleAnimator] Sincronización automática reanudada");
-    }
-    
-    /// <summary>
-    /// Pausa la sincronización automática con NavMeshAgent
-    /// </summary>
-    public void PauseAutoSync()
-    {
-        _pauseAutoSync = true;
-        if (debugMode)
-            Debug.Log("[NPCSimpleAnimator] Sincronización automática pausada");
     }
     
     #endregion
@@ -379,7 +362,6 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     private IEnumerator PlayOneShotCoroutine(string stateName, int layer, Action onComplete)
     {
-        AnimationState previousState = _currentState; // ✅ Guardar estado previo
         _currentState = AnimationState.OneShot;
         
         // Ensure animation speed is normal
@@ -420,23 +402,10 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Callback
         onComplete?.Invoke();
         
-        // ✅ ARREGLO: Respetar el estado de batalla
-        // Return to appropriate state
-        if (_isInBattle)
+        // Return to idle if not interacting (let the callback handle battle state)
+        if (!_isInteracting && !_isInBattle)
         {
-            _currentState = AnimationState.Battle; // ✅ Mantener estado Battle
-            
-            if (layer == upperBodyLayer && !string.IsNullOrEmpty(upperBodyIdleState))
-            {
-                CrossFadeToState(upperBodyIdleState, 0.15f, layer);
-            }
-            
-            // ✅ NO llamar TransitionToIdle si estamos en batalla
-            // PlayBattleIdle(); // Este se llama desde el callback si es necesario
-        }
-        else if (!_isInteracting)
-        {
-            _currentState = AnimationState.Idle; // ✅ Solo volver a Idle si NO está en batalla
+            _currentState = AnimationState.Idle;
             TransitionToIdle();
         }
         
@@ -558,7 +527,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
-    /// Reproduce animación de Challenge y luego va a Idle de Batalla (para AlertState → CombatState)
+    /// Reproduce animación de Challenge y luego va a Idle Normal (para que el exit time permita Locomotion)
     /// </summary>
     public void PlayChallengingForBattle()
     {
@@ -566,22 +535,20 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             Debug.Log($"[NPCSimpleAnimator] Reproduciendo Challenge para batalla: {challengingState}");
             
-            // Activar modo batalla primero
-            _isInBattle = true;
-            _currentState = AnimationState.Battle; // ✅ Establecer estado batalla
-            
-            // Reproducir Challenge como animación One-Shot
+            // Usar PlayOneShot estándar con callback
             PlayOneShot(challengingState, 0, () =>
             {
-                // ✅ CLAVE: Mantener estado batalla después de Challenge
-                _currentState = AnimationState.Battle;
-                _isInBattle = true;
+                // Al terminar Challenge, ir a Idle_Normal para permitir transición natural a Locomotion
+                Debug.Log($"[NPCSimpleAnimator] Challenge completado → Idle de batalla: {idleBattleState}");
                 
-                // Cuando termina Challenge, ir a Idle de batalla y MANTENERLO en loop
+                // Activar modo batalla
+                _isInBattle = true;
+                _currentState = AnimationState.Battle;
+                
+                // Transicionar a Idle_Battle
                 if (!string.IsNullOrEmpty(idleBattleState))
                 {
-                    animator.CrossFadeInFixedTime(idleBattleState, 0.15f, 0);
-                    Debug.Log($"[NPCSimpleAnimator] Challenge completado → Idle de batalla: {idleBattleState}");
+                    CrossFadeToState(idleBattleState, 0.2f);
                 }
             });
         }
@@ -593,11 +560,11 @@ public class NPCSimpleAnimator : MonoBehaviour
             _currentState = AnimationState.Battle;
             if (!string.IsNullOrEmpty(idleBattleState))
             {
-                animator.CrossFadeInFixedTime(idleBattleState, 0.15f, 0);
+                CrossFadeToState(idleBattleState, 0.15f);
             }
         }
     }
-    
+
 
     /// <summary>
     /// Reproduce animación de alerta

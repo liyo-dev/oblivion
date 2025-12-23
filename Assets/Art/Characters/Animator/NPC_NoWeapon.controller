@@ -1399,13 +1399,13 @@ AnimatorStateMachine:
     m_Position: {x: -170, y: 120, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -3417831862146181650}
-    m_Position: {x: 350, y: -130, z: 0}
+    m_Position: {x: -10, y: 190, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 7541771791810992750}
-    m_Position: {x: 60, y: 200, z: 0}
+    m_Position: {x: 340, y: -150, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 2564484485595620542}
-    m_Position: {x: 350, y: -70, z: 0}
+    m_Position: {x: 340, y: -80, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -703290753741381510}
     m_Position: {x: -390, y: 120, z: 0}
@@ -1438,6 +1438,28 @@ AnimatorStateTransition:
   m_Conditions: []
   m_DstStateMachine: {fileID: 704839005104493464}
   m_DstState: {fileID: 0}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0
+  m_TransitionOffset: 0
+  m_ExitTime: 1
+  m_HasExitTime: 1
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 1
+--- !u!1101 &5331686341802473270
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions: []
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 2564484485595620542}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
@@ -1665,7 +1687,8 @@ AnimatorState:
   m_Name: Challenging_NoWeapon
   m_Speed: 1
   m_CycleOffset: 0
-  m_Transitions: []
+  m_Transitions:
+  - {fileID: 5331686341802473270}
   m_StateMachineBehaviours: []
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0

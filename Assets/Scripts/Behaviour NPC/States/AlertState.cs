@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
@@ -72,9 +72,9 @@ namespace Game.NPC.States
             // MANTENER el NPCSimpleAnimator activo - él maneja las animaciones correctamente
             if (context.Animator != null)
             {
-                // Reproducir secuencia: Challenge → Idle de batalla
-                // Este método activa el modo batalla Y reproduce la animación de Challenge
-                // Cuando Challenge termina, automáticamente va a Idle_Battle_NoWeapon
+                // Reproducir secuencia: Challenge → Idle_Battle
+                // PlayChallengingForBattle() reproduce Challenge y cuando termina, va a Idle_Battle
+                // Esto permite que el exit time de Idle_Battle permita transición natural a Locomotion
                 context.Animator.PlayChallengingForBattle();
                 context.Log("[AlertState] Reproduciendo Challenge → Idle de batalla");
             }
