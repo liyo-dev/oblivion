@@ -78,7 +78,10 @@ namespace Game.NPC.Modules
         public QuestData questToStart;
 
         [Header("Combat")]
-        [Tooltip("Target del combate (si actionType = StartCombat)")]
+        [Tooltip("Configuración del combate a iniciar (si actionType = StartCombat)")]
+        public NPCCombatConfig combatConfig;
+        
+        [Tooltip("Target opcional del combate (si no se especifica, usa al jugador)")]
         public Transform combatTarget;
 
         [Header("Wait")]

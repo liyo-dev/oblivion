@@ -128,6 +128,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Smooth rotation
     private Quaternion _targetRotation;
     private float _rotationVelocity;
+    private bool _disableAutoRotation; // Flag para desactivar rotación automática (usado durante diálogos)
     
     #endregion
     
@@ -620,8 +621,13 @@ public class NPCSimpleAnimator : MonoBehaviour
             
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de muerte: {dieState}");
             
-            // Crossfade a la animación de muerte
-            CrossFadeToState(dieState, 0.1f);
+            // Usar Play directamente para reproducir la animación de muerte inmediatamente
+            // CrossFade puede causar que la animación no se vea si el NPC muere muy rápido
+            if (animator != null)
+            {
+                animator.Play(dieState, 0); // Layer 0, reproducción inmediata
+                Debug.Log($"[NPCAnimator:{gameObject.name}] ✅ animator.Play('{dieState}', 0) ejecutado");
+            }
             
             // Desactivar el NavMeshAgent si existe
             if (navAgent != null && navAgent.isOnNavMesh)
@@ -785,6 +791,22 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
+    /// Desactiva la rotación automática (útil durante diálogos cuando otro sistema controla la rotación)
+    /// </summary>
+    public void DisableAutoRotation()
+    {
+        _disableAutoRotation = true;
+    }
+    
+    /// <summary>
+    /// Reactiva la rotación automática
+    /// </summary>
+    public void EnableAutoRotation()
+    {
+        _disableAutoRotation = false;
+    }
+    
+    /// <summary>
     /// Rota el NPC suavemente hacia un objetivo durante un tiempo
     /// </summary>
     public void RotateTowardsTarget(Transform target, float duration = 0.3f)
@@ -902,6 +924,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     private void ApplySmoothRotation()
     {
+        // Skip if auto rotation is disabled (e.g. during dialogue)
+        if (_disableAutoRotation)
+            return;
+            
         // Calculate angle difference
         float angle = Quaternion.Angle(transform.rotation, _targetRotation);
         

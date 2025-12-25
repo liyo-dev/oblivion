@@ -1652,7 +1652,6 @@ GameObject:
   - component: {fileID: -6525812222826922307}
   - component: {fileID: 4776993247457690848}
   - component: {fileID: 7490619964796838480}
-  - component: {fileID: 3781621774241429224}
   - component: {fileID: 6743273565896207114}
   m_Layer: 8
   m_Name: Erika
@@ -1845,8 +1844,12 @@ MonoBehaviour:
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
   getHitState: GetHit01_NoWeapon
+  defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
@@ -1876,20 +1879,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
   targetingRadius: 10
---- !u!114 &3781621774241429224
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7770552252693826820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35821e7abd7d67d4da3628200f9aaea7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InteractableToNarrativeEvent
-  eventKey: ERIKA_FIGHT
-  sendNow: 0
 --- !u!114 &6743273565896207114
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1903,19 +1892,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 4
+    behaviourType: 128
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 0}
     narrativeConfig: {fileID: 0}
-    interactiveNarrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 11400000, guid: eef1d5d110a11e44bb9eeae5e9e1ebbb, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
     stoppingDistance: 0.5
     acceleration: 8
-    persistentIconPrefab: {fileID: 0}
-    showPersistentIconOnStart: 1
     minAnimSpeed: 0.25
     resetAnimationOnStateExit: 1
     navMeshSampleRadius: 2

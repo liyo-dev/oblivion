@@ -185,12 +185,28 @@
             "value": "Misiones"
         },
         {
+            "key": "UI_MISIONES_ACTIVAS",
+            "value": "Misiones Activas"
+        },
+        {
+            "key": "UI_MISIONES_ARCHIVADAS",
+            "value": "Misiones Archivadas"
+        },
+        {
             "key": "UI_MISIONES_OCULTAR",
             "value": "[D-Pad ▲] Detalle Misiones"
         },
         {
             "key": "UI_MISIONES_SHOW",
             "value": "[D-Pad ▲] Mostrar"
+        },
+        {
+            "key": "UI_MISIONES_VER_ACTIVAS",
+            "value": "Ver Activas"
+        },
+        {
+            "key": "UI_MISIONES_VER_ARCHIVADAS",
+            "value": "Ver Archivadas"
         },
         {
             "key": "UI_MP",

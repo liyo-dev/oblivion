@@ -76,17 +76,39 @@ public class HoldToSkipUI : MonoBehaviour
 
     void OnEnable()
     {
-        // Resolver acción
-        if (holdActionRef != null && holdActionRef.action != null)
+        // CRÍTICO: Durante cinemáticas, el sistema está en modo UI (Gameplay deshabilitado)
+        // Por lo tanto, SIEMPRE debemos usar UI/Submit en lugar de GamePlay/Interact
+        
+        // Prioridad 1: Usar UI/Submit desde PlayerInputManager (RECOMENDADO para cinemáticas)
+        if (Core.PlayerInputManager.Instance != null && Core.PlayerInputManager.Instance.Controls != null)
         {
-            holdAction = holdActionRef.action;
+            holdAction = Core.PlayerInputManager.Instance.Controls.UI.Submit;
+            Debug.Log("[HoldToSkipUI] ✅ Usando acción UI/Submit desde PlayerInputManager (modo cinemática)");
         }
+        // Prioridad 2: Usar InputActionReference SOLO si apunta a UI/Submit
+        else if (holdActionRef != null && holdActionRef.action != null)
+        {
+            // Verificar si la acción asignada es de UI o Gameplay
+            string actionName = holdActionRef.action.name;
+            if (actionName.Contains("Submit") || actionName.Contains("UI"))
+            {
+                holdAction = holdActionRef.action;
+                Debug.Log($"[HoldToSkipUI] Usando InputActionReference asignado: {actionName}");
+            }
+            else
+            {
+                Debug.LogWarning($"[HoldToSkipUI] ⚠️ InputActionReference apunta a '{actionName}' (Gameplay), pero durante cinemáticas debe ser UI/Submit. Ignorando.");
+                // Intentar obtener UI/Submit manualmente
+                holdAction = Core.PlayerInputManager.Instance?.Controls?.UI.Submit;
+            }
+        }
+        // Prioridad 3: Fallback manual (última opción)
         else
         {
-            // Fallback: botón A de gamepad
             fallback = new InputAction("HoldToSkipFallback", InputActionType.Button, "<Gamepad>/buttonSouth");
             fallback.Enable();
             holdAction = fallback;
+            Debug.LogWarning("[HoldToSkipUI] ⚠️ Usando fallback con <Gamepad>/buttonSouth");
         }
 
         if (holdAction != null)
@@ -94,6 +116,12 @@ public class HoldToSkipUI : MonoBehaviour
             if (!holdAction.enabled) holdAction.Enable();
             holdAction.started  += OnHoldStarted;
             holdAction.canceled += OnHoldCanceled;
+            
+            Debug.Log($"[HoldToSkipUI] ✅ Input configurado - Acción: {holdAction.name}, Enabled: {holdAction.enabled}, ActionMap: {holdAction.actionMap?.name ?? "N/A"}");
+        }
+        else
+        {
+            Debug.LogError("[HoldToSkipUI] ❌ No se pudo configurar ninguna acción de input");
         }
 
         ResetHold();
@@ -134,9 +162,16 @@ public class HoldToSkipUI : MonoBehaviour
             float t = Mathf.Clamp01(heldTime / holdSeconds);
             if (progressCircle) progressCircle.fillAmount = t;
 
+            // Log cada 0.25 segundos aprox
+            if (Mathf.FloorToInt(heldTime * 4f) != Mathf.FloorToInt((heldTime - Time.unscaledDeltaTime) * 4f))
+            {
+                Debug.Log($"[HoldToSkipUI] 📊 Progreso: {t:P0} ({heldTime:F2}s / {holdSeconds:F2}s)");
+            }
+
             if (t >= 1f)
             {
                 completed = true;
+                Debug.Log("[HoldToSkipUI] ✅ COMPLETADO - Ejecutando skip action");
                 ExecuteSkipAction();
                 if (disableSelfOnSkip) gameObject.SetActive(false);
             }
@@ -184,6 +219,8 @@ public class HoldToSkipUI : MonoBehaviour
         completed = false;
         if (progressCircle) progressCircle.fillAmount = 0f;
         if (showOnlyWhileHolding) targetAlpha = 1f;
+        
+        Debug.Log("[HoldToSkipUI] 🎮 Input STARTED - Botón presionado");
     }
 
     private void OnHoldCanceled(InputAction.CallbackContext _)
@@ -195,6 +232,8 @@ public class HoldToSkipUI : MonoBehaviour
             if (progressCircle) progressCircle.fillAmount = 0f;
         }
         if (showOnlyWhileHolding) targetAlpha = 0f;
+        
+        Debug.Log($"[HoldToSkipUI] 🎮 Input CANCELED - Botón soltado (completed={completed})");
     }
 
     private void ResetHold()

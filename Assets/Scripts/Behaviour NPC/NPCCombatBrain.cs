@@ -170,9 +170,11 @@ namespace Game.NPC
         // ✅ HUIDA TÁCTICA Y COBERTURA
         bool _isRetreating;                    // Flag de estado de huida
         float _retreatCooldownTimer;           // Timer de cooldown de huida
+#pragma warning disable CS0414 // Campos de sistema de cobertura - en desarrollo
         Vector3? _coverPosition;               // Posición de cobertura encontrada
         float _coverStayTimer;                 // Tiempo restante en cobertura
         Transform _currentCoverObject;         // Objeto usado como cobertura
+#pragma warning restore CS0414
         bool _isBehindCover;                   // Flag: está actualmente detrás de cobertura
 
         public void Initialize(NPCBehaviourManagerV2 manager)
@@ -891,6 +893,14 @@ namespace Game.NPC
                 string handName = slot.slotIndex == 0 ? "LEFT" : slot.slotIndex == 1 ? "RIGHT" : "SPECIAL";
                 Debug.Log($"[NPCCombatBrain] ⚔️ Ejecutando spell cast {handName} (slot {slot.slotIndex}) - Animación: {slot.animationState}");
                 
+                // ✅ Marcar que estamos en medio de un cast para poder interrumpirlo
+                var lifecycleHandler = GetComponent<Modules.NPCCombatLifecycleHandler>();
+                if (lifecycleHandler != null)
+                {
+                    lifecycleHandler.StartCasting(slot.animationState, targetLayer);
+                    Debug.Log($"[NPCCombatBrain] 🎭 Casting iniciado - puede ser interrumpido por daño");
+                }
+                
                 // ✅ Iniciar coroutine para monitorear cuando termina la animación
                 StartCoroutine(MonitorSpellCastEnd(slot.animationState, targetLayer));
             }
@@ -969,7 +979,13 @@ namespace Game.NPC
                 yield return null;
             }
             
-            // La animación terminó - el NPC puede volver a moverse
+            // La animación terminó - limpiar estado de casting
+            var lifecycleHandler = GetComponent<Modules.NPCCombatLifecycleHandler>();
+            if (lifecycleHandler != null)
+            {
+                lifecycleHandler.EndCasting();
+            }
+            
             Debug.Log($"[NPCCombatBrain] ✅ Spell cast '{animationName}' completado");
         }
 

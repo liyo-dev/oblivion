@@ -17,8 +17,8 @@ MonoBehaviour:
   health: 100
   attackDamage: 10
   attackCooldown: 1.5
-  detectionRange: 8
-  combatRange: 8
+  detectionRange: 3
+  combatRange: 2
   meleeRange: 2
   isAggressive: 1
   canChaseOutOfBounds: 0
@@ -36,9 +36,9 @@ MonoBehaviour:
   spell1Prefab: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
   spell2Prefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
   spell3Prefab: {fileID: 7541299261854152833, guid: 71b502122a0cfe640969b5a2538bcdc1, type: 3}
-  spell1Cooldown: 20
-  spell2Cooldown: 20
-  spell3Cooldown: 20
+  spell1Cooldown: 5
+  spell2Cooldown: 10
+  spell3Cooldown: 8
   spell1Chance: 0.5
   spell2Chance: 0.3
   spell3Chance: 0.2
@@ -47,7 +47,7 @@ MonoBehaviour:
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
-  useTacticalRetreat: 1
+  useTacticalRetreat: 0
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
   coverSearchRadius: 15

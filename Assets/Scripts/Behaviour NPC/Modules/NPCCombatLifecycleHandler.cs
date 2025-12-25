@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.States;
 using Sendero.Core.Feedback;
@@ -78,12 +78,71 @@ namespace Game.NPC.Modules
         private bool _hasBeenDefeated;
         private bool _isProcessingDefeat;
         private bool _isInvulnerable;
+        
+#pragma warning disable CS0414 // Reservado para sistema de stun futuro
         private bool _isStunned;
+#pragma warning restore CS0414
+        
+        // Sistema de interrupción de casting
+        private bool _isCasting;
+        private string _currentCastAnimation;
+        private int _currentCastLayer;
         
         /// <summary>
         /// Indica si el NPC ha sido derrotado y NO debe volver a entrar en combate
         /// </summary>
         public bool IsDefeatedAndInactive => _hasBeenDefeated;
+        
+        /// <summary>
+        /// Marca que el NPC está casteando un hechizo (puede ser interrumpido por daño)
+        /// </summary>
+        public void StartCasting(string animationName, int layer)
+        {
+            _isCasting = true;
+            _currentCastAnimation = animationName;
+            _currentCastLayer = layer;
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🎭 Casting iniciado: {animationName} (layer {layer})");
+        }
+        
+        /// <summary>
+        /// Marca que el casting terminó normalmente
+        /// </summary>
+        public void EndCasting()
+        {
+            if (_isCasting)
+            {
+                Debug.Log($"[NPCCombatLifecycleHandler:{name}] ✅ Casting completado: {_currentCastAnimation}");
+            }
+            _isCasting = false;
+            _currentCastAnimation = null;
+        }
+        
+        /// <summary>
+        /// Interrumpe el casting actual y reproduce la animación de TakeDamage
+        /// </summary>
+        private void InterruptCasting()
+        {
+            if (!_isCasting) return;
+            
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⚠️ CASTING INTERRUMPIDO por daño: {_currentCastAnimation}");
+            
+            // Reproducir animación de TakeDamage para interrumpir visualmente el casting
+            if (_animator != null)
+            {
+                _animator.PlayGetHit();
+            }
+            
+            // Limpiar estado de casting
+            _isCasting = false;
+            _currentCastAnimation = null;
+            
+            // Detener cualquier coroutine de MonitorSpellCastEnd activo
+            var combatBrain = GetComponent<NPCCombatBrain>();
+            if (combatBrain != null)
+            {
+                combatBrain.StopAllCoroutines(); // Esto detendrá MonitorSpellCastEnd
+            }
+        }
         
         private void Awake()
         {
@@ -153,6 +212,13 @@ namespace Game.NPC.Modules
             // No procesar daño si ya está derrotado o es invulnerable
             if (_hasBeenDefeated || _isProcessingDefeat || _isInvulnerable)
                 return;
+            
+            // ✅ INTERRUMPIR CASTING SI ESTÁ ACTIVO
+            if (_isCasting)
+            {
+                InterruptCasting();
+                return; // No hacer el stun normal, la interrupción ya reproduce TakeDamage
+            }
             
             // Iniciar coroutine de daño
             StartCoroutine(DamageStunSequence());
@@ -310,34 +376,85 @@ namespace Game.NPC.Modules
                 }
             }
             
-            // 4. Marcar como derrotado
+            // ✅ VERIFICACIÓN EXTRA #1: Asegurar que Time.timeScale está en 1 ANTES de continuar
+            if (Time.timeScale != 1f)
+            {
+                Debug.LogWarning($"[NPCCombatLifecycleHandler:{name}] ⚠️ Time.timeScale todavía no es 1 (actual: {Time.timeScale}), forzando restauración");
+                Time.timeScale = 1f;
+            }
+            
+            // Esperar un frame extra para asegurar que el cambio de timeScale se aplique
+            yield return null;
+            
+            // ✅ VERIFICACIÓN EXTRA #2: Doble check después del yield
+            if (Time.timeScale != 1f)
+            {
+                Debug.LogError($"[NPCCombatLifecycleHandler:{name}] ❌ CRÍTICO: Time.timeScale AÚN no es 1 después del yield (actual: {Time.timeScale}), forzando OTRA VEZ");
+                Time.timeScale = 1f;
+            }
+            
+            // 4. Marcar como derrotado y detener todo movimiento INMEDIATAMENTE
             if (_npcManager != null && _npcManager.Context != null)
             {
                 _npcManager.Context.IsInCombat = false;
                 _npcManager.Context.WasDefeatedInCombat = true;
-            }
-            
-            // 5. Reproducir diálogo de derrota si existe
-            if (_combatConfig != null && _combatConfig.dialogueOnDefeat != null)
-            {
-                // ✅ HACER QUE EL NPC MIRE AL JUGADOR antes de hablar
-                if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+                
+                // ✅ DETENER EL COMBAT BRAIN INMEDIATAMENTE para que no siga moviéndose
+                var combatBrain = _npcManager.GetComponent<NPCCombatBrain>();
+                if (combatBrain != null)
                 {
-                    Vector3 directionToPlayer = playerGo.transform.position - transform.position;
-                    directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
-                    
-                    if (directionToPlayer.sqrMagnitude > 0.001f)
-                    {
-                        Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                        transform.rotation = targetRotation; // Rotación instantánea para el diálogo
-                        Debug.Log($"[NPCCombatLifecycleHandler:{name}] 👁️ NPC girado hacia el jugador para diálogo de derrota");
-                    }
+                    combatBrain.StopCombat();
+                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🛑 Combat brain detenido inmediatamente");
                 }
                 
+                // ✅ DETENER EL NAVMESH AGENT INMEDIATAMENTE
+                if (_navAgent != null && _navAgent.enabled && _navAgent.isOnNavMesh)
+                {
+                    _navAgent.isStopped = true;
+                    _navAgent.velocity = Vector3.zero;
+                    _navAgent.updateRotation = false;
+                    _navAgent.updatePosition = false;
+                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🛑 NavMeshAgent detenido y bloqueado");
+                }
+            }
+            
+            // 5. ROTAR HACIA EL JUGADOR INMEDIATAMENTE (antes del delay)
+            if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+            {
+                Vector3 directionToPlayer = playerGo.transform.position - transform.position;
+                directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
+                
+                if (directionToPlayer.sqrMagnitude > 0.001f)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                    transform.rotation = targetRotation;
+                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 👁️ NPC girado hacia el jugador ANTES del delay");
+                }
+            }
+            
+            // 6. ESPERAR 2 SEGUNDOS para que se vea la animación de muerte
+            // USAR WaitForSecondsRealtime para que NO se vea afectado por Time.timeScale
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⏳ Esperando 2 segundos (tiempo real) para que se complete la animación de muerte...");
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 📊 Time.timeScale actual: {Time.timeScale}");
+            yield return new WaitForSecondsRealtime(2f);
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ✅ Animación de muerte completada, procediendo con el diálogo");
+            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 📊 Time.timeScale después del delay: {Time.timeScale}");
+            
+            // ✅ VERIFICACIÓN FINAL: Asegurar una última vez que Time.timeScale está en 1 antes del diálogo
+            if (Time.timeScale != 1f)
+            {
+                Debug.LogError($"[NPCCombatLifecycleHandler:{name}] ❌ CRÍTICO: Time.timeScale TODAVÍA no es 1 antes del diálogo (actual: {Time.timeScale}), forzando");
+                Time.timeScale = 1f;
+            }
+            
+            // 7. Reproducir diálogo de derrota si existe
+            if (_combatConfig != null && _combatConfig.dialogueOnDefeat != null)
+            {
                 var dm = DialogueManager.Instance;
                 if (dm != null)
                 {
-                    // ✅ IMPORTANTE: El Time.timeScale ya fue restaurado arriba
+                    // ✅ El NPC ya está mirando al jugador (rotado antes del delay)
+                    // ✅ Usar StartDialogue normal (NO StartBattleDialogue) para evitar efectos de pre-batalla
                     dm.StartDialogue(_combatConfig.dialogueOnDefeat, transform, OnDefeatDialogueComplete);
                     yield break;
                 }

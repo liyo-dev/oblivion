@@ -176,9 +176,9 @@ namespace Game.NPC.Modules
                     break;
 
                 case NarrativeActionType.StartCombat:
-                    if (entry.combatTarget == null)
+                    if (entry.combatConfig == null)
                     {
-                        errorMessage = $"Entry {index} tipo StartCombat requiere combatTarget";
+                        errorMessage = $"Entry {index} tipo StartCombat requiere combatConfig (NPCCombatConfig)";
                         return false;
                     }
                     break;

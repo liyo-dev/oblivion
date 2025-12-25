@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -28,11 +28,9 @@ namespace Game.NPC.Modules
         [Tooltip("Intervalo de escaneo de ítems")]
         public float detectionInterval = 0.33f;
         [Header("Behavior")]
-        [Tooltip("¿El NPC gira hacia el jugador al interactuar?")]
-        public bool rotateToPlayerOnInteract = true;
         [Min(0f)]
-        [Tooltip("Duración de la rotación")]
-        public float rotationDuration = 0.3f;
+        [Tooltip("Velocidad de rotación hacia el jugador (grados por segundo) - Ahora manejado por DialogueManager")]
+        public float rotationSpeed = 360f;
         
         [Header("Persistent Icon")]
         [Tooltip("¿Ocultar el icono persistente automáticamente cuando todas las quests se completen?")]
@@ -86,14 +84,8 @@ namespace Game.NPC.Modules
         {
             Debug.Log($"[NPCQuestConfig.ProcessInteraction] Iniciando interacción con NPC. Interactor: {interactor?.name}, Context válido: {context != null}");
             
-            // ANTES DE CUALQUIER COSA: Rotar hacia el player y activar animación de hablar
-            if (rotateToPlayerOnInteract && interactor != null)
-            {
-                Debug.Log($"[NPCQuestConfig.ProcessInteraction] Rotando NPC hacia player");
-                RotateToPlayer(interactor.transform, context);
-            }
-            
-            // Activar animación de hablar/interactuar
+            // ✅ Activar animación de hablar/interactuar
+            // La rotación ahora la maneja automáticamente DialogueManager.StartDialogue(dialogue, npcTransform, ...)
             Debug.Log($"[NPCQuestConfig.ProcessInteraction] Activando animación de hablar");
             StartTalkingAnimation(context);
             
@@ -305,59 +297,20 @@ namespace Game.NPC.Modules
                 onFinished?.Invoke();
             };
 
+            // ✅ DialogueManager maneja la rotación del NPC automáticamente
             dm.StartDialogue(dialogue, context.Transform, combinedCallback);
         }
         
-        /// <summary>
-        /// Rota suavemente el NPC hacia el player
-        /// </summary>
-        private void RotateToPlayer(Transform player, Common.NPCStateContext context)
-        {
-            if (player == null || context?.Transform == null) return;
-            
-            Vector3 directionToPlayer = player.position - context.Transform.position;
-            directionToPlayer.y = 0; // Mantener rotación solo en el plano horizontal
-            
-            if (directionToPlayer.sqrMagnitude > 0.001f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                
-                // Si hay un MonoBehaviour disponible, usar coroutine para rotación suave
-                var mono = context.Transform.GetComponent<UnityEngine.MonoBehaviour>();
-                if (mono != null && rotationDuration > 0f)
-                {
-                    mono.StartCoroutine(RotateToPlayerCoroutine(context.Transform, targetRotation, rotationDuration));
-                }
-                else
-                {
-                    // Rotación instantánea si no hay MonoBehaviour o duración es 0
-                    context.Transform.rotation = targetRotation;
-                }
-            }
-        }
-        
-        private System.Collections.IEnumerator RotateToPlayerCoroutine(Transform npcTransform, Quaternion targetRotation, float duration)
-        {
-            Quaternion startRotation = npcTransform.rotation;
-            float elapsed = 0f;
-            
-            while (elapsed < duration)
-            {
-                elapsed += UnityEngine.Time.deltaTime;
-                float t = elapsed / duration;
-                npcTransform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
-                yield return null;
-            }
-            
-            npcTransform.rotation = targetRotation;
-        }
-        
+
         /// <summary>
         /// Activa la animación de hablar en el NPC
         /// </summary>
         private void StartTalkingAnimation(Common.NPCStateContext context)
         {
             if (context?.Animator == null) return;
+            
+            // Reproducir animación de interacción (saludo/hablar)
+            context.Animator.PlayOneShot("InteractWithPeople_NoWeapon", 0, onComplete: null);
             
             // Usar el NPCSimpleAnimator para activar la animación de hablar
             context.Animator.SetTalking(true);

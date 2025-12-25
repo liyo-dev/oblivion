@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -292,11 +292,23 @@ namespace Game.NPC.States
             
             context.IsInCombat = false;
             
-            // Detener combat brain
-            if (_combatBrain != null && _combatBrainInitialized)
+            // ✅ SI EL NPC FUE DERROTADO, NO detener combat brain ni cambiar animaciones
+            // para no cancelar la animación de muerte que ya está reproduciéndose
+            if (!context.WasDefeatedInCombat)
             {
-                _combatBrain.StopCombat();
-                context.Log("[CombatState] Combat brain stopped");
+                // Detener combat brain SOLO si NO fue derrotado
+                if (_combatBrain != null && _combatBrainInitialized)
+                {
+                    _combatBrain.StopCombat();
+                    context.Log("[CombatState] Combat brain stopped");
+                }
+                
+                // Resetear movimiento SOLO si NO fue derrotado
+                StopMovement(context);
+            }
+            else
+            {
+                context.Log("[CombatState] NPC derrotado - NO se detiene combat brain para preservar animación de muerte");
             }
             
             // ✅ ASEGURAR QUE EL COLLIDER SE ACTIVE DESPUÉS DEL COMBATE
@@ -332,9 +344,6 @@ namespace Game.NPC.States
                 interactable.enabled = true;
                 context.Log("[CombatState] Interactable re-habilitado después del combate");
             }
-            
-            // Resetear movimiento
-            StopMovement(context);
         }
         
         public override Game.NPC.Common.INPCState CheckTransitions(Game.NPC.Common.NPCStateContext context)

@@ -240,8 +240,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Descripci\xF3n del paso"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
+  m_sharedMaterial: {fileID: -2149170724207242646, guid: 812c7b0dc56552d4aaa2319860b0c738, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -484,7 +484,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestStepItemUI
   icon: {fileID: 1180906490785688011}
   label: {fileID: 6827556829493145398}
-  spritePending: {fileID: 0}
-  spriteDone: {fileID: 0}
+  spritePending: {fileID: 21300000, guid: 37614220759e84b46867a21ad96287da, type: 3}
+  spriteDone: {fileID: 21300000, guid: aff166aaa3c98e541b43da1171ef200c, type: 3}
   colorPending: {r: 1, g: 1, b: 1, a: 1}
   colorDone: {r: 1, g: 1, b: 1, a: 1}

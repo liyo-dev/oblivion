@@ -34,7 +34,6 @@ public class PlayerLockService : MonoBehaviour
     CharacterController _charController;
     bool _charControllerWasEnabled;
     Rigidbody _rb;
-    bool _rbWasKinematic;
     MonoBehaviour _movementScript;
     bool _movementScriptWasEnabled;
 
@@ -83,8 +82,6 @@ public class PlayerLockService : MonoBehaviour
         _rb = player.GetComponent<Rigidbody>();
         if (_rb != null)
         {
-            _rbWasKinematic = _rb.isKinematic;
-            
             // Solo modificar velocidad si NO es kinematic
             if (!_rb.isKinematic)
             {
@@ -92,19 +89,27 @@ public class PlayerLockService : MonoBehaviour
                 _rb.angularVelocity = Vector3.zero;
             }
             
-            _rb.isKinematic = true;
+            // NO PONER EN KINEMATIC - dejar que los scripts de Invector se deshabiliten
+            // _rb.isKinematic = true; // ❌ ESTO CAUSA LOS WARNINGS
         }
 
-        // Buscar específicamente los scripts de movimiento del jugador
+        // Buscar específicamente los scripts de movimiento del jugador (Invector)
         _movementScript = player.GetComponents<MonoBehaviour>()
             .FirstOrDefault(m => m != null && m.enabled && m != this && !(m is PlayerActionManager) && (
-                m.GetType().Name == "ThirdPersonController" ||
-                m.GetType().Name == "ThirdPersonInput"
+                m.GetType().Name == "vThirdPersonController" || // ✅ NOMBRE CORRECTO CON 'v'
+                m.GetType().Name == "vThirdPersonInput" ||      // ✅ NOMBRE CORRECTO CON 'v'
+                m.GetType().Name == "ThirdPersonController" ||   // Fallback sin 'v'
+                m.GetType().Name == "ThirdPersonInput"           // Fallback sin 'v'
             ));
         if (_movementScript != null)
         {
             _movementScriptWasEnabled = _movementScript.enabled;
             _movementScript.enabled = false;
+            Debug.Log($"[PlayerLockService] Script de movimiento '{_movementScript.GetType().Name}' DESHABILITADO");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerLockService] No se encontró script de movimiento del jugador (vThirdPersonController/vThirdPersonInput)");
         }
     }
 
@@ -120,15 +125,17 @@ public class PlayerLockService : MonoBehaviour
         }
         _charController = null;
 
-        if (_rb != null)
-        {
-            _rb.isKinematic = _rbWasKinematic;
-        }
+        // NO restaurar isKinematic ya que nunca lo cambiamos
+        // if (_rb != null)
+        // {
+        //     _rb.isKinematic = _rbWasKinematic;
+        // }
         _rb = null;
 
         if (_movementScript != null)
         {
             _movementScript.enabled = _movementScriptWasEnabled;
+            Debug.Log($"[PlayerLockService] Script de movimiento '{_movementScript.GetType().Name}' RESTAURADO");
         }
         _movementScript = null;
     }

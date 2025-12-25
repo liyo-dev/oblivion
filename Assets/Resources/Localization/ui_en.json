@@ -185,12 +185,28 @@
             "value": "Quests"
         },
         {
+            "key": "UI_MISIONES_ACTIVAS",
+            "value": "[EN] Misiones Activas"
+        },
+        {
+            "key": "UI_MISIONES_ARCHIVADAS",
+            "value": "[EN] Misiones Archivadas"
+        },
+        {
             "key": "UI_MISIONES_OCULTAR",
             "value": "[D-Pad ▲] Quest Detail"
         },
         {
             "key": "UI_MISIONES_SHOW",
             "value": "[D-Pad ▲] Show"
+        },
+        {
+            "key": "UI_MISIONES_VER_ACTIVAS",
+            "value": "[EN] Ver Activas"
+        },
+        {
+            "key": "UI_MISIONES_VER_ARCHIVADAS",
+            "value": "[EN] Ver Archivadas"
         },
         {
             "key": "UI_MP",

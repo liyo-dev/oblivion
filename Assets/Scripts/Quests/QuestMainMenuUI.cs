@@ -17,11 +17,15 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI headerText;
     [SerializeField] private TextMeshProUGUI visibleHeaderText;
     [SerializeField] private TextMeshProUGUI hiddenHeaderText;
-    [SerializeField] private Button visibleTabButton;
-    [SerializeField] private Button hiddenTabButton;
     [SerializeField] private ScrollRect visibleScrollRect;
     [SerializeField] private ScrollRect hiddenScrollRect;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
+    
+    [Header("Input Icons")]
+    [Tooltip("Icono de LB para mostrar en el header de misiones visibles")]
+    [SerializeField] private Image lbIcon;
+    [Tooltip("Icono de RB para mostrar en el header de misiones archivadas")]
+    [SerializeField] private Image rbIcon;
 
     [Header("Animación")]
     [SerializeField] private float introDuration = 0.25f;
@@ -33,9 +37,6 @@ public class QuestMainMenuUI : MonoBehaviour
     private bool _showingHidden;
     private PlayerActionManager _actionManager;
     private bool _actionModeActive;
-    private ColorBlock _visibleTabOriginalColors;
-    private ColorBlock _hiddenTabOriginalColors;
-    private bool _tabColorsCaptured;
 
     public bool IsOpen
     {
@@ -50,7 +51,8 @@ public class QuestMainMenuUI : MonoBehaviour
     void OnEnable()
     {
         Bind();
-        BindTabs();
+        // Por defecto siempre mostrar misiones visibles/activas
+        _showingHidden = false;
         Rebuild();
     }
 
@@ -65,6 +67,9 @@ public class QuestMainMenuUI : MonoBehaviour
     public void ShowMenu()
     {
         if (!CanOpenMainMenu()) return;
+
+        // Por defecto siempre mostrar misiones visibles/activas
+        _showingHidden = false;
 
         KillTween();
         if (panelRoot) panelRoot.SetActive(true);
@@ -117,16 +122,28 @@ public class QuestMainMenuUI : MonoBehaviour
             ShowMenu();
     }
 
+    /// <summary>
+    /// Cambia a mostrar misiones visibles/activas (controlado por input LB)
+    /// </summary>
     public void ShowVisibleTab()
     {
-        _showingHidden = false;
-        UpdateTabVisibility();
+        if (_showingHidden)
+        {
+            _showingHidden = false;
+            UpdateTabVisibility();
+        }
     }
 
+    /// <summary>
+    /// Cambia a mostrar misiones archivadas/ocultas (controlado por input RB)
+    /// </summary>
     public void ShowHiddenTab()
     {
-        _showingHidden = true;
-        UpdateTabVisibility();
+        if (!_showingHidden)
+        {
+            _showingHidden = true;
+            UpdateTabVisibility();
+        }
     }
 
     public void Rebuild()
@@ -185,30 +202,6 @@ public class QuestMainMenuUI : MonoBehaviour
         QuestManager.Instance?.SetVisibility(rq.Id, NormalizeVisibility(rq.Id, vis, persist: true));
     }
 
-    void BindTabs()
-    {
-        if (visibleTabButton != null)
-        {
-            visibleTabButton.onClick.RemoveListener(ShowVisibleTab);
-            visibleTabButton.onClick.AddListener(ShowVisibleTab);
-        }
-
-        if (hiddenTabButton != null)
-        {
-            hiddenTabButton.onClick.RemoveListener(ShowHiddenTab);
-            hiddenTabButton.onClick.AddListener(ShowHiddenTab);
-        }
-
-        // Capture original ColorBlocks so we don't mutate them repeatedly
-        if (!_tabColorsCaptured)
-        {
-            if (visibleTabButton != null)
-                _visibleTabOriginalColors = visibleTabButton.colors;
-            if (hiddenTabButton != null)
-                _hiddenTabOriginalColors = hiddenTabButton.colors;
-            _tabColorsCaptured = true;
-        }
-    }
 
     void Bind()
     {
@@ -249,8 +242,8 @@ public class QuestMainMenuUI : MonoBehaviour
                 var btn = selected.GetComponent<Button>();
                 if (btn != null)
                 {
-                    wasShowButton = btn == item.GetShowButton();
-                    wasHideButton = btn == item.GetHideButton();
+                    wasShowButton = btn == item.GetArchiveButton();
+                    wasHideButton = btn == item.GetActivateButton();
                 }
             }
         }
@@ -287,13 +280,13 @@ public class QuestMainMenuUI : MonoBehaviour
         var child = container.GetChild(idx);
         if (child == null) return;
 
-        // Prefer to select the same column (show/hide) that triggered the change
+        // Prefer to select the same column (archive/activate) that triggered the change
         var itemUI = child.GetComponent<QuestVisibilityItemUI>();
         Button targetButton = null;
         if (itemUI != null)
         {
-            if (preferShow) targetButton = itemUI.GetShowButton();
-            else if (preferHide) targetButton = itemUI.GetHideButton();
+            if (preferShow) targetButton = itemUI.GetArchiveButton();
+            else if (preferHide) targetButton = itemUI.GetActivateButton();
         }
 
         // Fallback to first interactable button
@@ -363,7 +356,8 @@ public class QuestMainMenuUI : MonoBehaviour
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
         }
 
-        UpdateTabButtons(showingHidden);
+        // Actualizar visibilidad de los iconos de input (LB/RB)
+        UpdateInputIcons(showingHidden);
 
         // Seleccionar el primer botón del contenido activo
         Transform activeContainer = showingHidden ? hiddenContentRoot : visibleContentRoot;
@@ -381,29 +375,14 @@ public class QuestMainMenuUI : MonoBehaviour
         EnsureSelection();
     }
 
-    void UpdateTabButtons(bool showingHidden)
+    void UpdateInputIcons(bool showingHidden)
     {
-        SetTabButtonState(visibleTabButton, !showingHidden);
-        SetTabButtonState(hiddenTabButton, showingHidden);
-    }
-
-    void SetTabButtonState(Button button, bool isActive)
-    {
-        if (button == null) return;
-
-        // Use captured original ColorBlock (if available) so we don't apply cumulative changes.
-        ColorBlock baseColors = button.colors;
-        if (_tabColorsCaptured)
-        {
-            if (button == visibleTabButton)
-                baseColors = _visibleTabOriginalColors;
-            else if (button == hiddenTabButton)
-                baseColors = _hiddenTabOriginalColors;
-        }
-
-        var colors = baseColors;
-        colors.colorMultiplier = isActive ? 1.2f : 1f;
-        button.colors = colors;
+        // Mostrar el icono correspondiente según la tab activa
+        if (lbIcon != null)
+            lbIcon.gameObject.SetActive(!showingHidden);
+        
+        if (rbIcon != null)
+            rbIcon.gameObject.SetActive(showingHidden);
     }
 
     void EnsureSelection()
@@ -428,21 +407,7 @@ public class QuestMainMenuUI : MonoBehaviour
             }
         }
 
-        // Fallback: seleccionar el tab correspondiente
-        GameObject target = null;
-        if (_showingHidden)
-            target = hiddenTabButton != null ? hiddenTabButton.gameObject : target;
-        else
-            target = visibleTabButton != null ? visibleTabButton.gameObject : target;
-
-        Debug.Log($"QuestMainMenuUI: EnsureSelection -> fallback target={(target!=null?target.name:"null")}");
-
-        if (target != null)
-        {
-            var btn = target.GetComponent<Button>();
-            if (btn != null)
-                btn.Select();
-        }
+        Debug.Log($"QuestMainMenuUI: EnsureSelection -> no hay botones disponibles para seleccionar");
     }
 
     void RefreshScrollViews()

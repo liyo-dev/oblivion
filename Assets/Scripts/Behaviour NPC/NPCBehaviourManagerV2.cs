@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -108,7 +108,7 @@ namespace Game.NPC
             EnsureRequiredComponents();
             
             // Registrar en NPCRegistry si tiene configuración narrativa
-            if (configuration.HasBehaviour(NPCBehaviourType.Narrative) && configuration.narrativeConfig != null)
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
             {
                 NPCRegistry.Instance.RegisterNPC(
                     configuration.narrativeConfig.narrativeID,
@@ -170,7 +170,7 @@ namespace Game.NPC
         void OnDestroy()
         {
             // Des-registrar del NPCRegistry
-            if (configuration.HasBehaviour(NPCBehaviourType.Narrative) && configuration.narrativeConfig != null)
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
             {
                 NPCRegistry.Instance.UnregisterNPC(
                     configuration.narrativeConfig.narrativeID,
@@ -492,7 +492,7 @@ namespace Game.NPC
             // ============================================
             // Este módulo usa el sistema de grafo narrativo (NarrativeGraph)
             // No requiere componente adicional, se comunica vía NPCRegistry
-            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Narrative))
+            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative))
             {
                 Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Narrative (grafo) activado - Registrado en NPCRegistry (no requiere componente)");
             }

@@ -203,6 +203,14 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_ended || other == null) return;
 
+        // ✅ PRIORIDAD 1: Detectar colisión con proyectiles enemigos (layer "ProjectileEnemy")
+        if (other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy"))
+        {
+            Debug.Log($"[MagicProjectile] 💥 Colisión con proyectil enemigo detectada!");
+            ProjectileCollisionHandler.HandleCollision(gameObject, other.gameObject, hitPoint);
+            return; // El handler se encarga de destruir ambos proyectiles
+        }
+
         // Verificar si colisionamos con esta capa (para destruir el proyectil)
         int layer = other.gameObject.layer;
         bool shouldCollide = (_cfg.collisionLayers.value & (1 << layer)) != 0;
@@ -263,7 +271,7 @@ public class MagicProjectile : MonoBehaviour
 
     void EndByTTL() => End(false);
 
-    void End(bool byImpact)
+    public void End(bool byImpact)
     {
         if (_ended) return;
         _ended = true;

@@ -17,10 +17,16 @@ public class QuestLogItemUI : MonoBehaviour
     [SerializeField] private QuestStepItemUI stepPrefab;
     [SerializeField] private GameObject stepsContainer; // el GameObject completo para show/hide
 
-    [Header("Estilos")]
+    [Header("Estilos - Colores")]
     [SerializeField] private Color colorInactive = new Color(0.6f,0.6f,0.6f);
     [SerializeField] private Color colorActive = new Color(0.2f,0.6f,1f);
     [SerializeField] private Color colorCompleted = new Color(0.3f,0.8f,0.4f);
+    
+    [Header("Estilos - Sprites State Pill")]
+    [Tooltip("Sprite del state pill cuando la quest está activa (azul)")]
+    [SerializeField] private Sprite statePillSpriteActive;
+    [Tooltip("Sprite del state pill cuando la quest está completada (verde)")]
+    [SerializeField] private Sprite statePillSpriteCompleted;
 
     private bool _isExpanded = false;
     
@@ -83,14 +89,26 @@ public class QuestLogItemUI : MonoBehaviour
                 if (LocalizationManager.Instance != null)
                     activeText = LocalizationManager.Instance.Get("QUEST_STATE_ACTIVE", activeText);
                 if (statePillText) statePillText.text = activeText;
-                if (statePillBg) statePillBg.color = colorActive;
+                if (statePillBg)
+                {
+                    statePillBg.color = colorActive;
+                    // Aplicar sprite si está asignado
+                    if (statePillSpriteActive != null)
+                        statePillBg.sprite = statePillSpriteActive;
+                }
                 break;
             case QuestState.Completed:
                 string completedText = "Completada";
                 if (LocalizationManager.Instance != null)
                     completedText = LocalizationManager.Instance.Get("QUEST_STATE_COMPLETED", completedText);
                 if (statePillText) statePillText.text = completedText;
-                if (statePillBg) statePillBg.color = colorCompleted;
+                if (statePillBg)
+                {
+                    statePillBg.color = colorCompleted;
+                    // Aplicar sprite si está asignado
+                    if (statePillSpriteCompleted != null)
+                        statePillBg.sprite = statePillSpriteCompleted;
+                }
                 break;
         }
 

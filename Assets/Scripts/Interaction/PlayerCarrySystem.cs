@@ -18,6 +18,7 @@ public class PlayerCarrySystem : MonoBehaviour
     [SerializeField] private float transitionDuration = 0.2f;
     [SerializeField] private float attachDelay = 0.5f;
     [SerializeField] private float throwAnimationDuration = 0.3f;
+    [SerializeField] private float dropCooldown = 0.5f; // Cooldown después de soltar para evitar interacciones
 
     [Header("Interacción para soltar")]
     [SerializeField] private bool dropOnInteract = true;
@@ -36,6 +37,13 @@ public class PlayerCarrySystem : MonoBehaviour
     private Collider[] _carriedColliders;
     private bool _isCarrying;
     private bool _isPickingUp;
+    private float _lastDropTime = -999f;
+    
+    /// <summary>
+    /// Indica si el jugador acaba de soltar un objeto recientemente.
+    /// Usado por otros sistemas para evitar interacciones inmediatas.
+    /// </summary>
+    public bool JustDroppedObject => (Time.time - _lastDropTime) < dropCooldown;
 
     void Awake()
     {
@@ -171,6 +179,9 @@ public class PlayerCarrySystem : MonoBehaviour
         // Disparar evento antes de limpiar la referencia
         OnObjectDropped?.Invoke(_carriedObject);
 
+        // Marcar el tiempo de drop para cooldown
+        _lastDropTime = Time.time;
+
         _carriedObject = null;
         _carriedRigidbody = null;
         _carriedPickupObject = null;
@@ -184,10 +195,11 @@ public class PlayerCarrySystem : MonoBehaviour
     private System.Collections.IEnumerator ClearInputBufferAfterDrop()
     {
         // Bloquear brevemente las acciones para limpiar el buffer de inputs
+        // y evitar que se abran diálogos automáticamente
         if (_actionManager != null)
         {
             _actionManager.PushMode(ActionMode.Stunned);
-            yield return new WaitForSeconds(0.15f); // Pequeño delay para limpiar inputs
+            yield return new WaitForSeconds(dropCooldown); // Cooldown configurable
             _actionManager.PopMode(ActionMode.Stunned);
         }
     }

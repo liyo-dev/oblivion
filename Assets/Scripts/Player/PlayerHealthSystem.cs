@@ -1,4 +1,4 @@
-﻿using Sendero.Core.Feedback;
+using Sendero.Core.Feedback;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -64,6 +64,10 @@ public class PlayerHealthSystem : MonoBehaviour
     public UnityEvent OnPlayerDeath;
     public UnityEvent OnPlayerRevived;
     
+    // Property IDs para optimización de materiales (URP y Standard)
+    private static readonly int BaseColorPropertyID = Shader.PropertyToID("_BaseColor"); // URP
+    private static readonly int ColorPropertyID = Shader.PropertyToID("_Color");         // Standard
+    
     // Componentes
     private Animator _animator;
     private AudioSource _audioSource;
@@ -89,7 +93,9 @@ public class PlayerHealthSystem : MonoBehaviour
     private Coroutine _damageFlashCoroutine;
 
     // Estado de regeneración
+#pragma warning disable CS0414 // Usado para tracking de daño interno
     private float _lastDamageTime = -999f;
+#pragma warning restore CS0414
     private float _lastNotifiedHealth;
     
     // Propiedades públicas usando GameBootProfile
@@ -550,9 +556,49 @@ public class PlayerHealthSystem : MonoBehaviour
         {
             if (_renderers[i] != null && _originalMaterials[i] != null)
             {
-                _renderers[i].material.color = color;
+                SetMaterialColor(_renderers[i].material, color);
             }
         }
+    }
+    
+    /// <summary>
+    /// Establece el color de un material, soportando tanto Standard (_Color) como URP (_BaseColor)
+    /// </summary>
+    private void SetMaterialColor(Material material, Color color)
+    {
+        if (material == null) return;
+        
+        // Intentar URP primero (_BaseColor)
+        if (material.HasProperty(BaseColorPropertyID))
+        {
+            material.SetColor(BaseColorPropertyID, color);
+        }
+        // Fallback a Standard (_Color)
+        else if (material.HasProperty(ColorPropertyID))
+        {
+            material.SetColor(ColorPropertyID, color);
+        }
+    }
+    
+    /// <summary>
+    /// Obtiene el color de un material, soportando tanto Standard (_Color) como URP (_BaseColor)
+    /// </summary>
+    private Color GetMaterialColor(Material material)
+    {
+        if (material == null) return Color.white;
+        
+        // Intentar URP primero (_BaseColor)
+        if (material.HasProperty(BaseColorPropertyID))
+        {
+            return material.GetColor(BaseColorPropertyID);
+        }
+        // Fallback a Standard (_Color)
+        else if (material.HasProperty(ColorPropertyID))
+        {
+            return material.GetColor(ColorPropertyID);
+        }
+        
+        return Color.white;
     }
     
     private void SetRenderersVisibility(bool visible)
@@ -574,15 +620,9 @@ public class PlayerHealthSystem : MonoBehaviour
         {
             if (_renderers[i] != null && _originalMaterials[i] != null)
             {
-                // Verificar si el material tiene la propiedad '_Color'
-                if (_renderers[i].material.HasProperty("_Color") && _originalMaterials[i].HasProperty("_Color"))
-                {
-                    _renderers[i].material.color = _originalMaterials[i].color;
-                }
-                else
-                {
-                    Debug.LogWarning($"El material {_renderers[i].material.name} no tiene la propiedad '_Color'.");
-                }
+                // Restaurar el color usando el método que soporta URP y Standard
+                Color originalColor = GetMaterialColor(_originalMaterials[i]);
+                SetMaterialColor(_renderers[i].material, originalColor);
             }
         }
 

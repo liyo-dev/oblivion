@@ -1,0 +1,191 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Game.NPC.Modules
+{
+    /// <summary>
+    /// Registro estático y optimizado de NPCInteractiveNarrativeExecutor.
+    /// Evita el uso de FindObjectsByType() para mejor rendimiento.
+    /// Similar al patrón usado en AnchorRegistry.
+    /// </summary>
+    public static class NPCInteractiveNarrativeRegistry
+    {
+        private static readonly Dictionary<string, NPCInteractiveNarrativeExecutor> _byId = new Dictionary<string, NPCInteractiveNarrativeExecutor>();
+        private static readonly List<NPCInteractiveNarrativeExecutor> _all = new List<NPCInteractiveNarrativeExecutor>();
+
+        /// <summary>
+        /// Registra un executor. Debe ser llamado desde OnEnable del executor.
+        /// </summary>
+        public static void Register(NPCInteractiveNarrativeExecutor executor)
+        {
+            if (executor == null)
+            {
+                Debug.LogWarning("[NPCInteractiveNarrativeRegistry] Intento de registrar executor null");
+                return;
+            }
+
+            // Agregar a la lista general si no existe
+            if (!_all.Contains(executor))
+            {
+                _all.Add(executor);
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado en lista general: {executor.name}");
+            }
+
+            // Registrar por ID si tiene uno configurado
+            var config = executor.GetConfiguration();
+            if (config != null && config.persistState && !string.IsNullOrEmpty(config.persistenceId))
+            {
+                string id = config.persistenceId;
+                
+                if (_byId.TryGetValue(id, out var existing))
+                {
+                    if (existing != null && existing != executor)
+                    {
+                        Debug.LogWarning($"[NPCInteractiveNarrativeRegistry] ⚠️ Duplicado de persistenceId '{id}' - Reemplazando referencia.");
+                    }
+                    // Si es el mismo executor, solo actualizamos (re-registro)
+                }
+                
+                _byId[id] = executor;
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado por ID '{id}': {executor.name}");
+            }
+            else
+            {
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] ℹ️ Registrado sin ID persistente: {executor.name} (config={config != null}, persistState={config?.persistState}, id={config?.persistenceId})");
+            }
+        }
+
+        /// <summary>
+        /// Des-registra un executor. Debe ser llamado desde OnDisable del executor.
+        /// </summary>
+        public static void Unregister(NPCInteractiveNarrativeExecutor executor)
+        {
+            if (executor == null) return;
+
+            bool wasInList = _all.Remove(executor);
+            
+            if (wasInList)
+            {
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Des-registrado de lista general: {executor.name}");
+            }
+
+            // Remover del diccionario por ID si existe
+            var config = executor.GetConfiguration();
+            if (config != null && config.persistState && !string.IsNullOrEmpty(config.persistenceId))
+            {
+                string id = config.persistenceId;
+                if (_byId.TryGetValue(id, out var existing) && existing == executor)
+                {
+                    _byId.Remove(id);
+                    Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Des-registrado por ID '{id}': {executor.name}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Obtiene un executor por su persistence ID
+        /// </summary>
+        public static NPCInteractiveNarrativeExecutor GetById(string persistenceId)
+        {
+            if (string.IsNullOrEmpty(persistenceId)) return null;
+            _byId.TryGetValue(persistenceId, out var executor);
+            return executor;
+        }
+
+        /// <summary>
+        /// Obtiene todos los executors registrados (copia de seguridad)
+        /// </summary>
+        public static List<NPCInteractiveNarrativeExecutor> GetAll()
+        {
+            // Limpiar referencias null antes de devolver
+            _all.RemoveAll(e => e == null);
+            return new List<NPCInteractiveNarrativeExecutor>(_all);
+        }
+
+        /// <summary>
+        /// Obtiene un executor por nombre del GameObject
+        /// </summary>
+        public static NPCInteractiveNarrativeExecutor GetByName(string npcName)
+        {
+            if (string.IsNullOrEmpty(npcName)) return null;
+            
+            foreach (var executor in _all)
+            {
+                if (executor != null && executor.name == npcName)
+                {
+                    return executor;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Limpia el registro completamente
+        /// </summary>
+        public static void Clear()
+        {
+            _byId.Clear();
+            _all.Clear();
+            Debug.Log("[NPCInteractiveNarrativeRegistry] 🗑️ Registro limpiado");
+        }
+
+        /// <summary>
+        /// Obtiene estadísticas del registro para debug
+        /// </summary>
+        public static string GetDebugInfo()
+        {
+            _all.RemoveAll(e => e == null);
+            
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[NPCInteractiveNarrativeRegistry] 📊 Estado del Registro:");
+            sb.AppendLine($"  • Total executors: {_all.Count}");
+            sb.AppendLine($"  • Registrados con ID: {_byId.Count}");
+            sb.AppendLine();
+            
+            sb.AppendLine("Executors en lista general:");
+            for (int i = 0; i < _all.Count; i++)
+            {
+                var executor = _all[i];
+                if (executor != null)
+                {
+                    var config = executor.GetConfiguration();
+                    string id = config?.persistenceId ?? "SIN ID";
+                    bool hasConfig = config != null;
+                    bool persistState = config?.persistState ?? false;
+                    
+                    sb.AppendLine($"  {i + 1}. {executor.name}");
+                    sb.AppendLine($"     - ID: {id}");
+                    sb.AppendLine($"     - Config: {(hasConfig ? "✅" : "❌")}");
+                    sb.AppendLine($"     - PersistState: {persistState}");
+                    sb.AppendLine($"     - GameObject: {(executor.gameObject.activeInHierarchy ? "Activo" : "Inactivo")}");
+                }
+                else
+                {
+                    sb.AppendLine($"  {i + 1}. NULL");
+                }
+            }
+            
+            sb.AppendLine();
+            sb.AppendLine("Executors registrados por ID:");
+            foreach (var kvp in _byId)
+            {
+                if (kvp.Value != null)
+                {
+                    sb.AppendLine($"  • '{kvp.Key}' → {kvp.Value.name}");
+                }
+                else
+                {
+                    sb.AppendLine($"  • '{kvp.Key}' → NULL");
+                }
+            }
+            
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Diccionario de lectura para acceso directo (avanzado)
+        /// </summary>
+        public static IReadOnlyDictionary<string, NPCInteractiveNarrativeExecutor> AllById => _byId;
+    }
+}
+

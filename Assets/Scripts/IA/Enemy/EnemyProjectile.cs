@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 /// <summary>
 /// Proyectil disparado por el boss demonio
@@ -102,6 +102,16 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (hasHit) return; // Evitar múltiples hits
         
+        // ✅ PRIORIDAD 1: Detectar colisión con proyectiles del jugador (layer "Projectile")
+        if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
+        {
+            hasHit = true;
+            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador detectada!");
+            Vector3 collisionPoint = other.ClosestPoint(transform.position);
+            ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, collisionPoint);
+            return; // El handler se encarga de destruir ambos proyectiles
+        }
+        
         // Si impacta contra el escudo del jugador (marcado explícitamente), se destruye y no aplica daño al player
         if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
         {
@@ -176,7 +186,7 @@ public class EnemyProjectile : MonoBehaviour
         Debug.LogWarning($"[EnemyProjectile] No se pudo aplicar daño a {target.name}");
     }
 
-    private void DestroyProjectile()
+    public void DestroyProjectile()
     {
         // Detener movimiento antes de destruir
         if (rb)

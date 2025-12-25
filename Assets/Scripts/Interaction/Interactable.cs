@@ -150,17 +150,15 @@ public class Interactable : MonoBehaviour
     {
         Debug.Log($"[Interactable:{name}] 📖 StartDialogue - dialogue={dialogue?.name}");
         
-        // ✅ HACER QUE EL NPC MIRE AL JUGADOR antes de hablar
-        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        // ✅ REPRODUCIR ANIMACIÓN DE INTERACCIÓN (si no es batalla)
+        var npcAnimator = GetComponent<NPCSimpleAnimator>();
+        if (npcAnimator != null && _npcManager != null)
         {
-            Vector3 directionToPlayer = playerGo.transform.position - transform.position;
-            directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
-            
-            if (directionToPlayer.sqrMagnitude > 0.001f)
+            // Solo reproducir animación si NO está en combate
+            if (_npcManager.Context == null || !_npcManager.Context.IsInCombat)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                transform.rotation = targetRotation; // Rotación instantánea para el diálogo
-                Debug.Log($"[Interactable:{name}] 👁️ NPC girado hacia el jugador para diálogo");
+                StartCoroutine(PlayInteractionAnimation(npcAnimator));
+                Debug.Log($"[Interactable:{name}] 🎭 Reproduciendo animación de interacción");
             }
         }
         
@@ -170,6 +168,8 @@ public class Interactable : MonoBehaviour
             Debug.Log($"[Interactable:{name}] ✅ Iniciando diálogo: {dialogue.name}");
             OnStarted?.Invoke();
             GameState.Push(GamePhase.Dialogue);
+            
+            // ✅ El DialogueManager ahora maneja la rotación del NPC automáticamente
             dm.StartDialogue(dialogue, transform, () =>
             {
                 Debug.Log($"[Interactable:{name}] 🔚 Diálogo terminado");
@@ -184,20 +184,30 @@ public class Interactable : MonoBehaviour
             AfterUse();
         }
     }
+    
+    /// <summary>
+    /// Reproduce la animación de interacción en el NPC
+    /// </summary>
+    private System.Collections.IEnumerator PlayInteractionAnimation(NPCSimpleAnimator npcAnimator)
+    {
+        // Reproducir animación de interacción
+        npcAnimator.PlayOneShot("InteractWithPeople_NoWeapon", 0, onComplete: null);
+        
+        // Esperar un frame
+        yield return null;
+    }
 
     void StartDialogueWithOptions()
     {
-        // ✅ HACER QUE EL NPC MIRE AL JUGADOR antes de hablar
-        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        // ✅ REPRODUCIR ANIMACIÓN DE INTERACCIÓN (si no es batalla)
+        var npcAnimator = GetComponent<NPCSimpleAnimator>();
+        if (npcAnimator != null && _npcManager != null)
         {
-            Vector3 directionToPlayer = playerGo.transform.position - transform.position;
-            directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
-            
-            if (directionToPlayer.sqrMagnitude > 0.001f)
+            // Solo reproducir animación si NO está en combate
+            if (_npcManager.Context == null || !_npcManager.Context.IsInCombat)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                transform.rotation = targetRotation; // Rotación instantánea para el diálogo
-                Debug.Log($"[Interactable:{name}] 👁️ NPC girado hacia el jugador para diálogo con opciones");
+                StartCoroutine(PlayInteractionAnimation(npcAnimator));
+                Debug.Log($"[Interactable:{name}] 🎭 Reproduciendo animación de interacción (con opciones)");
             }
         }
         
@@ -218,6 +228,10 @@ public class Interactable : MonoBehaviour
         SetHintVisible(false);
         // Bloquear otros menús mientras se muestran las opciones
         GameState.Push(GamePhase.SavePrompt);
+        
+        // ✅ El DialogueManager maneja la rotación del NPC automáticamente
+        // (Aunque ShowWithChoices no usa el NPC transform, podríamos extenderlo en el futuro)
+        
         try
         {
             dm.ShowWithChoices(prompt, yes, no,

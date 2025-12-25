@@ -51,12 +51,13 @@ public class InteractionDetector : MonoBehaviour
 
     private void Update()
     {
-        // Si hay UI bloqueante (pausa/menús/diálogo/saveprompt), no enfocamos nada nuevo
+        // Si hay UI bloqueante (pausa/menús/diálogo/saveprompt/cinemáticas), no enfocamos nada nuevo
         bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
         bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
         bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu y MainMenu
+        bool cinematicPlaying = AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying;
         
-        if (dialogueActive || choicePromptActive || menusBlock)
+        if (dialogueActive || choicePromptActive || menusBlock || cinematicPlaying)
         {
             // Log solo cuando cambia el estado
             if (current != null)
@@ -67,9 +68,19 @@ public class InteractionDetector : MonoBehaviour
                     Debug.Log("[InteractionDetector] ⚠️ SavePrompt activo, desenfocando interactable");
                 else if (menusBlock)
                     Debug.Log("[InteractionDetector] 🚫 Menús bloqueando (CanInteractGlobally=false), desenfocando interactable");
+                else if (cinematicPlaying)
+                    Debug.Log("[InteractionDetector] 🎬 Cinemática activa, desenfocando interactable");
             }
             
             SetCurrent(null);
+            
+            // CRÍTICO: Deshabilitar completamente la acción de interact durante cinemáticas
+            // para evitar que interfiera con el HoldToSkipUI
+            if (cinematicPlaying)
+            {
+                EnableInteractAction(false);
+            }
+            
             return;
         }
 
@@ -93,10 +104,18 @@ public class InteractionDetector : MonoBehaviour
         if (_carrySystem != null && _carrySystem.IsCarrying)
         {
             _carrySystem.DropObject();
+            Debug.Log($"[InteractionDetector] 📦 Objeto soltado - bloqueando interacciones por cooldown");
             return;
         }
 
-        // Si no está cargando, intentar interactuar con objeto enfocado
+        // CRÍTICO: Verificar si acabamos de soltar un objeto (cooldown activo)
+        if (_carrySystem != null && _carrySystem.JustDroppedObject)
+        {
+            Debug.Log($"[InteractionDetector] ⏳ Cooldown activo después de soltar objeto - ignorando interacción");
+            return;
+        }
+
+        // Si no está cargando y no hay cooldown, intentar interactuar con objeto enfocado
         if (current != null && current.CanInteract(gameObject))
         {
             Debug.Log($"[InteractionDetector] ✅ Interactuando con: {current.name}");

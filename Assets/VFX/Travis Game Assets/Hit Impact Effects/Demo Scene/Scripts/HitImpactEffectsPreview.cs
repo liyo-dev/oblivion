@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +25,7 @@ namespace TravisGameAssets
 		public Image floorIcon;
 		public Image slowMotionIcon;
 		
-		public GameObject light;
+		public new GameObject light;
 		
 		private GameObject[] hitEffects;
 

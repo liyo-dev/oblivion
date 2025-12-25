@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
+  m_Name: NPC_InteractiveNarrative_Config_Erika
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
+  moduleName: 
+  description: 
+  conditionalNarratives:
+  - condition:
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: f1a6c08b80e835a41a5afeb745dcf01e, type: 2}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 4
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      walkDisplayDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
+      combatTarget: {fileID: 0}
+      waitDuration: 0
+      customAction:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionStarted:
+        m_PersistentCalls:
+          m_Calls: []
+      onActionCompleted:
+        m_PersistentCalls:
+          m_Calls: []
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    persistentIconSprite: {fileID: 0}
+    sendNarrativeEvent: 1
+    narrativeEventKey: ERIKA_FIGHT
+    singleUse: 1
+    priority: 0
+    description: 
+    debugMode: 0
+  singleUse: 1
+  persistState: 1
+  persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  autoStartOnPlayerDetection: 0
+  detectionRange: 10
+  alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  alertIconDuration: 2
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 1
+  postNarrativeState: 0
+  postNarrativeAmbientConfig: {fileID: 0}

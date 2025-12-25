@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿﻿﻿﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 namespace Game.NPC.Common
@@ -83,13 +83,8 @@ namespace Game.NPC.Common
                 isValid = false;
             }
             
-            // Validar Narrative (sistema de grafo - DEPRECADO)
-            if (HasBehaviour(NPCBehaviourType.Narrative) && narrativeConfig == null)
-            {
-                errors += "⚠️ Behaviour Narrative activado pero no hay narrativeConfig asignado.\n";
-                errors += "   💡 SUGERENCIA: Si quieres cadenas narrativas, usa 'InteractiveNarrative' en su lugar.\n";
-                isValid = false;
-            }
+            // Validar Narrative (sistema de grafo - DEPRECADO, ahora usa InteractiveNarrative)
+            // Ya no validamos Narrative porque está obsoleto
             
             // Validar Interactive Narrative
             if (HasBehaviour(NPCBehaviourType.InteractiveNarrative) && interactiveNarrativeConfig == null)

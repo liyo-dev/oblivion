@@ -17,8 +17,8 @@ MonoBehaviour:
   health: 100
   attackDamage: 10
   attackCooldown: 1.5
-  detectionRange: 8
-  combatRange: 8
+  detectionRange: 3
+  combatRange: 3
   meleeRange: 2
   isAggressive: 1
   canChaseOutOfBounds: 0
@@ -47,7 +47,7 @@ MonoBehaviour:
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
-  useTacticalRetreat: 1
+  useTacticalRetreat: 0
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
   coverSearchRadius: 15

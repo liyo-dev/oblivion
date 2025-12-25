@@ -34,7 +34,6 @@ namespace Game.NPC.Modules
         private int _currentActionIndex = -1;
 
         // Sistema de alerta automática
-        private bool _isWaitingForPlayer;
         private bool _hasDetectedPlayer;
         private NPCAlertIconController _alertIconController;
         private Transform _player;
@@ -57,6 +56,15 @@ namespace Game.NPC.Modules
         private void OnEnable()
         {
             Debug.LogWarning($"[NPCInteractiveNarrativeExecutor:{name}] 🟢🟢🟢 ON ENABLE ⚡⚡⚡ - Frame: {Time.frameCount}, GameObject activo: {gameObject.activeInHierarchy}");
+            
+            // Registrar en el registro global
+            NPCInteractiveNarrativeRegistry.Register(this);
+        }
+
+        private void OnDisable()
+        {
+            // Des-registrar del registro global
+            NPCInteractiveNarrativeRegistry.Unregister(this);
         }
 
         private void Start()
@@ -85,6 +93,9 @@ namespace Game.NPC.Modules
             {
                 Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] Config cargado - AutoStart: {_config.autoStartOnPlayerDetection}");
             }
+            
+            // Re-registrar ahora que tenemos la config cargada (para registrar por ID si tiene persistenceId)
+            NPCInteractiveNarrativeRegistry.Register(this);
 
             // Cargar estado persistente (del último guardado manual del jugador)
             if (_config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
@@ -207,6 +218,12 @@ namespace Game.NPC.Modules
             {
                 yield return RotateToPlayer();
             }
+            
+            // Reproducir animación de interacción (saludo/hablar)
+            if (_npcManager?.Context?.Animator != null)
+            {
+                _npcManager.Context.Animator.PlayOneShot("InteractWithPeople_NoWeapon", 0, onComplete: null);
+            }
 
             // Ejecutar cada acción secuencialmente
             for (int i = 0; i < chain.Length; i++)
@@ -317,7 +334,6 @@ namespace Game.NPC.Modules
             }
 
             // Flag para saber cuándo el diálogo ha terminado
-            bool dialogueFinished = false;
             bool callbackInvoked = false;
 
             Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 📖 Iniciando diálogo: {entry.dialogue.name}");
@@ -326,7 +342,6 @@ namespace Game.NPC.Modules
             dm.StartDialogue(entry.dialogue, transform, () =>
             {
                 Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🎬 Callback onFinished invocado - Diálogo completado");
-                dialogueFinished = true;
                 callbackInvoked = true;
             });
 
@@ -372,7 +387,6 @@ namespace Game.NPC.Modules
                 if (!dm.IsOpen && frameCount > 10) // Dar algunos frames para que el callback se ejecute
                 {
                     Debug.LogWarning($"[NPCInteractiveNarrativeExecutor:{name}] ⚠️ Diálogo cerrado pero callback NO invocado (fallback activado)");
-                    dialogueFinished = true;
                     break;
                 }
                 
@@ -390,7 +404,6 @@ namespace Game.NPC.Modules
             if (elapsed >= timeout)
             {
                 Debug.LogError($"[NPCInteractiveNarrativeExecutor:{name}] ❌ TIMEOUT: Diálogo no terminó después de {timeout}s, forzando continuación");
-                dialogueFinished = true;
             }
             
             // Pequeña espera adicional para asegurar que la UI se cierre completamente
@@ -605,14 +618,45 @@ namespace Game.NPC.Modules
 
         private IEnumerator ExecuteStartCombat(NarrativeChainEntry entry)
         {
-            if (entry.combatTarget == null)
+            if (entry.combatConfig == null)
+            {
+                Debug.LogError($"[NPCInteractiveNarrativeExecutor:{name}] ❌ StartCombat requiere combatConfig");
                 yield break;
+            }
+
+            Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ⚔️ Iniciando combate con config: {entry.combatConfig.name}");
+
+            // Asignar el combatConfig al NPC
+            if (_npcManager.Configuration != null)
+            {
+                _npcManager.Configuration.combatConfig = entry.combatConfig;
+                _npcManager.Configuration.behaviourType |= NPCBehaviourType.Combat; // Asegurar que tiene comportamiento de combate
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ CombatConfig asignado al NPC");
+            }
 
             // Activar comportamiento de combate
             if (_npcManager.Context != null)
             {
                 _npcManager.Context.IsInCombat = true;
+                
+                // Si hay un target específico, asignarlo
+                if (entry.combatTarget != null)
+                {
+                    _npcManager.Context.Player = entry.combatTarget;
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🎯 Target de combate: {entry.combatTarget.name}");
+                }
+                else
+                {
+                    // Si no hay target, usar al jugador
+                    if (PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+                    {
+                        _npcManager.Context.Player = player.transform;
+                        Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🎯 Target de combate: Jugador");
+                    }
+                }
+                
                 // El FSM debería transicionar a CombatState automáticamente
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🔄 FSM transicionará a CombatState");
             }
 
             yield return null;
@@ -650,6 +694,86 @@ namespace Game.NPC.Modules
                     gameObject.SetActive(false);
                     break;
             }
+        }
+
+        // ============================================
+        // PERSISTENCIA Y RESETEO
+        // ============================================
+        // Los métodos SaveState() y RestoreState() están más abajo usando GameBootService
+
+        /// <summary>
+        /// Resetea el estado de la narrativa (llamar al iniciar nueva partida)
+        /// </summary>
+        public void ResetState()
+        {
+            Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🔄 Iniciando ResetState...");
+            
+            _hasBeenUsed = false;
+            _hasDetectedPlayer = false;
+            _isExecuting = false;
+
+            // Resetear todas las narrativas condicionales
+            if (_config?.conditionalNarratives != null)
+            {
+                foreach (var narrative in _config.conditionalNarratives)
+                {
+                    narrative?.ResetExecutionState();
+                }
+            }
+
+            // Limpiar estado guardado en PlayerPrefs (sistema antiguo)
+            if (_config != null && _config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
+            {
+                string key = $"NarrativeState_{_config.persistenceId}";
+                PlayerPrefs.DeleteKey(key);
+
+                // Limpiar estado de narrativas condicionales
+                if (_config.conditionalNarratives != null)
+                {
+                    for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                    {
+                        string narrativeKey = $"NarrativeState_{_config.persistenceId}_Conditional_{i}";
+                        PlayerPrefs.DeleteKey(narrativeKey);
+                    }
+                }
+
+                PlayerPrefs.Save();
+                
+                // CRÍTICO: Limpiar también el GameBootService.Profile (donde realmente se lee el estado)
+                var preset = GameBootService.Profile?.GetActivePresetResolved();
+                if (preset != null && preset.completedInteractiveNarratives != null)
+                {
+                    bool wasCompleted = preset.completedInteractiveNarratives.Remove(_config.persistenceId);
+                    if (wasCompleted)
+                    {
+                        Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ Removido '{_config.persistenceId}' de completedInteractiveNarratives");
+                    }
+                }
+            }
+
+            Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🔄 Estado reseteado completamente");
+
+            // Reiniciar detección automática si está configurada
+            if (_config != null && _config.autoStartOnPlayerDetection && !_hasBeenUsed)
+            {
+                StopAllCoroutines();
+                StartCoroutine(DetectPlayerRoutine());
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🔍 Detección automática reiniciada");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene la configuración actual de narrativa interactiva
+        /// </summary>
+        public NPCInteractiveNarrativeConfig GetConfiguration()
+        {
+            // Lazy initialization si aún no se ha cargado
+            if (_config == null && _npcManager != null && _npcManager.Configuration != null)
+            {
+                _config = _npcManager.Configuration.interactiveNarrativeConfig;
+            }
+            
+            return _config;
         }
 
         private IEnumerator RotateToPlayer()
@@ -782,17 +906,8 @@ namespace Game.NPC.Modules
                     break;
                 }
                 
-                // Método 2: GameObject.FindGameObjectWithTag
-                GameObject playerGO = GameObject.FindGameObjectWithTag("Player");
-                if (playerGO != null)
-                {
-                    _player = playerGO.transform;
-                    Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ Player encontrado vía Tag: {_player.name}");
-                    break;
-                }
-                
-                // Método 3: Buscar por nombre
-                playerGO = GameObject.Find("vBasicController_MaleCharacterPBR");
+                // Método 2: Buscar por nombre (fallback extremo)
+                GameObject playerGO = GameObject.Find("vBasicController_MaleCharacterPBR");
                 if (playerGO != null)
                 {
                     _player = playerGO.transform;
@@ -833,6 +948,18 @@ namespace Game.NPC.Modules
 
                 if (distanceToPlayer <= _config.detectionRange)
                 {
+                    // Verificar si el jugador acaba de soltar un objeto para evitar interacciones inmediatas
+                    var carrySystem = _player.GetComponent<PlayerCarrySystem>();
+                    if (carrySystem != null && carrySystem.JustDroppedObject)
+                    {
+                        if (checkCount % 10 == 0) // Log periódico
+                        {
+                            Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ⏳ Jugador acaba de soltar objeto, esperando cooldown...");
+                        }
+                        yield return new WaitForSeconds(0.2f);
+                        continue; // Volver a checkear en el siguiente ciclo
+                    }
+                    
                     _hasDetectedPlayer = true;
                     Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ ¡Jugador detectado a {distanceToPlayer:F2}m!");
                     

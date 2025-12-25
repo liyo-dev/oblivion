@@ -71,7 +71,7 @@ MonoBehaviour:
     titleFontSize: 14
     settingsExpanded: 1
     position: {x: -980.6804, y: 65.48334}
-    size: {x: 320, y: 420}
+    size: {x: 0, y: 0}
   storyLinks: []
   boardBackground: {r: 0.07, g: 0.08, b: 0.1, a: 1}
   documents:
@@ -80,7 +80,7 @@ MonoBehaviour:
     body: Describe la escena, sinopsis o referencias.
     color: {r: 0.16, g: 0.21, b: 0.28, a: 1}
     position: {x: 351.90063, y: -755.247}
-    size: {x: 360, y: 520}
+    size: {x: 0, y: 0}
   quickNotes:
   - title: "Nota r\xE1pida"
     note: 

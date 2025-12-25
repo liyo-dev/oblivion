@@ -10,15 +10,27 @@ public class QuestVisibilityItemUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI questName;
     [SerializeField] private TextMeshProUGUI questState;
     [SerializeField] private TextMeshProUGUI questDescription;
-    [SerializeField] private Button showButton;
-    [SerializeField] private Button hideButton;
+    [SerializeField] private Image statePillBg;
+    
+    [Header("Buttons")]
+    [Tooltip("Botón para archivar la misión (se muestra solo en panel de visibles)")]
+    [SerializeField] private Button archiveButton;
+    [Tooltip("Botón para activar/seguir la misión (se muestra solo en panel de archivados)")]
+    [SerializeField] private Button activateButton;
+    
+    [Header("Sprites State Pill")]
+    [Tooltip("Sprite del state pill cuando la quest está activa (azul)")]
+    [SerializeField] private Sprite statePillSpriteActive;
+    [Tooltip("Sprite del state pill cuando la quest está completada (verde)")]
+    [SerializeField] private Sprite statePillSpriteCompleted;
 
     private QuestManager.RuntimeQuest _data;
     private Action<QuestManager.RuntimeQuest, QuestVisibility> _onChange;
     private QuestVisibility _currentVisibility;
     private ScrollRect _scrollRect;
-    public Button GetShowButton() => showButton;
-    public Button GetHideButton() => hideButton;
+    
+    public Button GetArchiveButton() => archiveButton;
+    public Button GetActivateButton() => activateButton;
 
     public void Bind(
         QuestManager.RuntimeQuest data,
@@ -46,31 +58,62 @@ public class QuestVisibilityItemUI : MonoBehaviour
             questState.text = GetStateLabel(data.State);
         }
 
-        if (showButton)
+        // Aplicar sprite del state pill según el estado
+        if (statePillBg != null)
         {
-            showButton.onClick.RemoveAllListeners();
-            showButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Visible));
-            SetButtonState(showButton, visibility == QuestVisibility.Visible);
-            EnsureTextHighlight(showButton);
+            switch (data.State)
+            {
+                case QuestState.Active:
+                    if (statePillSpriteActive != null)
+                        statePillBg.sprite = statePillSpriteActive;
+                    break;
+                
+                case QuestState.Completed:
+                    if (statePillSpriteCompleted != null)
+                        statePillBg.sprite = statePillSpriteCompleted;
+                    break;
+            }
         }
 
-        if (hideButton)
+        // Configurar botones según el panel actual
+        if (visibility == QuestVisibility.Visible)
         {
-            hideButton.onClick.RemoveAllListeners();
-            hideButton.onClick.AddListener(() => NotifyChange(QuestVisibility.Hidden));
-            SetButtonState(hideButton, visibility == QuestVisibility.Hidden);
-            EnsureTextHighlight(hideButton);
+            // Panel de visibles → Solo mostrar botón "Archivar"
+            ConfigureButton(archiveButton, QuestVisibility.Hidden, "Archivar");
+            if (activateButton) activateButton.gameObject.SetActive(false);
+        }
+        else // QuestVisibility.Hidden
+        {
+            // Panel de archivados → Solo mostrar botón "Activar"
+            ConfigureButton(activateButton, QuestVisibility.Visible, "Activar");
+            if (archiveButton) archiveButton.gameObject.SetActive(false);
         }
 
         DisableUnusedButtons();
-        UpdateInteractableStates();
     }
 
     public void ConfigureScrollRect(ScrollRect scrollRect)
     {
         _scrollRect = scrollRect;
-        AttachScrollRelay(showButton);
-        AttachScrollRelay(hideButton);
+        AttachScrollRelay(archiveButton);
+        AttachScrollRelay(activateButton);
+    }
+
+    /// <summary>
+    /// Configura un botón para cambiar la visibilidad de la quest
+    /// </summary>
+    void ConfigureButton(Button button, QuestVisibility targetVisibility, string actionName)
+    {
+        if (button == null) return;
+
+        button.gameObject.SetActive(true);
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() => NotifyChange(targetVisibility));
+        button.interactable = true;
+        
+        EnsureTextHighlight(button);
+        
+        Debug.Log($"QuestVisibilityItemUI: Botón '{actionName}' configurado para quest '{_data?.Id}'");
     }
 
     void NotifyChange(QuestVisibility visibility)
@@ -81,21 +124,14 @@ public class QuestVisibilityItemUI : MonoBehaviour
         Debug.Log($"QuestVisibilityItemUI: NotifyChange for '{_data.Id}' -> {visibility}");
 
         _currentVisibility = visibility;
-        UpdateInteractableStates();
         _onChange?.Invoke(_data, visibility);
-    }
-
-    static void SetButtonState(Button btn, bool active)
-    {
-        if (btn == null) return;
-        Debug.Log($"QuestVisibilityItemUI: SetButtonState '{btn.name}' active={active}");
     }
 
     void DisableUnusedButtons()
     {
         foreach (var button in GetComponentsInChildren<Button>(true))
         {
-            if (button == showButton || button == hideButton) continue;
+            if (button == archiveButton || button == activateButton) continue;
             button.gameObject.SetActive(false);
         }
     }
@@ -144,14 +180,6 @@ public class QuestVisibilityItemUI : MonoBehaviour
         }
     }
 
-    void UpdateInteractableStates()
-    {
-        if (showButton)
-            showButton.interactable = _currentVisibility != QuestVisibility.Visible;
-
-        if (hideButton)
-            hideButton.interactable = _currentVisibility != QuestVisibility.Hidden;
-    }
 
     void AttachScrollRelay(Selectable selectable)
     {
