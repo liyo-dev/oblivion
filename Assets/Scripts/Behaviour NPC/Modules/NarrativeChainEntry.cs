@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace Game.NPC.Modules
 {
@@ -14,8 +13,7 @@ namespace Game.NPC.Modules
         PlayAnimation,     // Reproducir animación
         StartQuest,        // Iniciar quest
         StartCombat,       // Iniciar combate
-        Wait,              // Esperar X segundos
-        Custom             // Evento personalizado (UnityEvent)
+        Wait               // Esperar X segundos
     }
 
     /// <summary>
@@ -39,13 +37,9 @@ namespace Game.NPC.Modules
         [Tooltip("O usa un Transform directo")]
         public Transform targetTransform;
         
-        [Tooltip("Duración máxima del movimiento")]
+        [Tooltip("Tiempo máximo permitido para que el NPC complete el movimiento (en segundos)")]
         [Min(1f)]
         public float maxMovementDuration = 15f;
-        
-        [Tooltip("Tiempo que camina visible antes del fade+teleport (999 = camina todo el trayecto)")]
-        [Min(0.5f)]
-        public float walkDisplayDuration = 999f;
         
         [Tooltip("Girar 180° al llegar")]
         public bool turnAroundOnArrival = false;
@@ -89,15 +83,28 @@ namespace Game.NPC.Modules
         [Min(0.1f)]
         public float waitDuration = 1f;
 
-        [Header("Custom")]
-        [Tooltip("Evento personalizado (si actionType = Custom)")]
-        public UnityEvent customAction;
-
-        [Header("Eventos")]
-        [Tooltip("Se dispara cuando esta acción comienza")]
-        public UnityEvent onActionStarted;
+        [Header("Alert Icon (Alerta Visual)")]
+        [Tooltip("¿Mostrar icono de alerta antes de esta acción?")]
+        public bool showAlertIcon = false;
         
-        [Tooltip("Se dispara cuando esta acción termina")]
-        public UnityEvent onActionCompleted;
+        [Tooltip("Prefab del icono de alerta (ej: Exclamation_Prefab)")]
+        public GameObject alertIconPrefab;
+        
+        [Tooltip("Duración del icono de alerta en segundos")]
+        [Min(0.5f)]
+        public float alertIconDuration = 2f;
+        
+        [Tooltip("Offset del icono respecto al NPC")]
+        public Vector3 alertIconOffset = new Vector3(0, 2.5f, 0);
+
+        [Header("Narrative Event (Evento al Grafo)")]
+        [Tooltip("¿Enviar evento al grafo narrativo al completar esta acción?")]
+        public bool sendNarrativeEvent = false;
+        
+        [Tooltip("Clave del evento a enviar (ej: 'NPC_ReachedTower', 'Item_Delivered')")]
+        public string narrativeEventKey = "";
+        
+        [Tooltip("¿Enviar el evento al INICIAR la acción? (por defecto se envía al completar)")]
+        public bool sendEventOnStart = false;
     }
 }

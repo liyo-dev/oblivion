@@ -116,11 +116,10 @@ public class PlayerHealthSystem : MonoBehaviour
         _animator = GetComponent<Animator>();
         _audioSource = GetComponent<AudioSource>();
         
-        // Si no hay AudioSource, creamos uno
+        // ⚠️ El AudioSource debe estar configurado manualmente en el prefab del player
         if (_audioSource == null)
         {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.playOnAwake = false;
+            Debug.LogWarning($"[PlayerHealthSystem] ⚠️ No se encontró AudioSource - debe agregarse manualmente en el Inspector del player");
         }
         
         // Obtener renderers para efectos visuales

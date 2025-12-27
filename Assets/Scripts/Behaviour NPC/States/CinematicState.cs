@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -226,13 +226,72 @@ namespace Game.NPC.States
         
         private void HandleArrival(Common.NPCStateContext context)
         {
-            // Girar 180° si está configurado
-            if (_turnAroundOnArrival)
+            // ✅ PRIORIDAD 1: Buscar si el destino es un SpawnAnchor
+            // Esto unifica el comportamiento con TeleportService (usado por el Player)
+            SpawnAnchor anchor = FindNearbySpawnAnchor(_targetPosition);
+            
+            if (anchor != null)
             {
+                // Usar la misma lógica que TeleportService para orientación
+                UnityEngine.Quaternion targetRotation;
+                
+                if (anchor.faceDoor)
+                {
+                    // Mirar hacia la puerta (forward del anchor)
+                    targetRotation = UnityEngine.Quaternion.LookRotation(anchor.transform.forward, UnityEngine.Vector3.up);
+                    context.Log($"[CinematicSequence] Orientación desde SpawnAnchor '{anchor.anchorId}' (faceDoor=true, mirando hacia forward)");
+                }
+                else
+                {
+                    // Mirar en dirección opuesta a la puerta (back del anchor)
+                    targetRotation = UnityEngine.Quaternion.LookRotation(-anchor.transform.forward, UnityEngine.Vector3.up);
+                    context.Log($"[CinematicSequence] Orientación desde SpawnAnchor '{anchor.anchorId}' (faceDoor=false, mirando hacia back)");
+                }
+                
+                context.Transform.rotation = targetRotation;
+            }
+            else if (_turnAroundOnArrival)
+            {
+                // FALLBACK: Si no hay SpawnAnchor, usar comportamiento legacy
                 var newRotation = context.Transform.rotation * UnityEngine.Quaternion.Euler(0, 180, 0);
                 context.Transform.rotation = newRotation;
-                context.Log("[CinematicSequence] Girado 180°");
+                context.Log("[CinematicSequence] Girado 180° (sin SpawnAnchor, usando turnAroundOnArrival)");
             }
+        }
+        
+        /// <summary>
+        /// Busca un SpawnAnchor cerca de la posición indicada
+        /// </summary>
+        private SpawnAnchor FindNearbySpawnAnchor(UnityEngine.Vector3 position)
+        {
+            // Buscar colliders en un radio de 2 metros (generoso para cubrir variaciones)
+            var nearbyColliders = UnityEngine.Physics.OverlapSphere(position, 2f);
+            
+            foreach (var col in nearbyColliders)
+            {
+                var anchor = col.GetComponentInParent<SpawnAnchor>();
+                if (anchor != null)
+                {
+                    return anchor;
+                }
+            }
+            
+            // Fallback: buscar por distancia directa si no hay colliders
+            var allAnchors = UnityEngine.Object.FindObjectsOfType<SpawnAnchor>();
+            SpawnAnchor closest = null;
+            float closestDistance = 2f; // Solo considerar anchors dentro de 2m
+            
+            foreach (var anchor in allAnchors)
+            {
+                float distance = UnityEngine.Vector3.Distance(anchor.transform.position, position);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closest = anchor;
+                }
+            }
+            
+            return closest;
         }
         
         private void CleanupAndComplete(Common.NPCStateContext context)

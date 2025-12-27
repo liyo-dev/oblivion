@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using UnityEngine;
+﻿﻿﻿﻿﻿using UnityEngine;
 
 namespace Game.NPC.States
 {
@@ -127,7 +127,7 @@ namespace Game.NPC.States
             var alertState = new AlertState(
                 combatConfig.alertIconDuration,
                 walkTowardsPlayer: true,
-                stopDistance: combatConfig.meleeRange + 1f
+                stopDistance: combatConfig.minAttackDistance + 1f
             );
             
             context.Brain?.ChangeState(alertState);

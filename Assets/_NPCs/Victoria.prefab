@@ -2354,9 +2354,13 @@ MonoBehaviour:
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: GetHit01_NoWeapon
+  getHitState: TakeDamage
+  defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
@@ -2472,8 +2476,6 @@ MonoBehaviour:
     rotationSpeed: 180
     stoppingDistance: 0.5
     acceleration: 8
-    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
-    showPersistentIconOnStart: 1
     minAnimSpeed: 0.25
     resetAnimationOnStateExit: 1
     navMeshSampleRadius: 2

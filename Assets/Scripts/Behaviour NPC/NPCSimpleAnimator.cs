@@ -266,7 +266,13 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// </summary>
     public void ResetMovement()
     {
-        SetMovementSpeed(0f, 0f);
+        // ✅ Forzar a 0 INMEDIATAMENTE sin dampening para evitar bugs de "andando en el sitio"
+        _currentMovementSpeed = 0f;
+        if (animator != null)
+        {
+            animator.SetFloat(InputMagnitudeHash, 0f);
+            animator.speed = 1f;
+        }
     }
     
     /// <summary>
@@ -320,12 +326,20 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     /// <summary>
     /// Reproduce el idle de batalla
+    /// Con protección anti-spam: solo cambia si no está ya en el estado
     /// </summary>
     public void PlayBattleIdle()
     {
         if (_isInBattle && !string.IsNullOrEmpty(idleBattleState))
         {
-            CrossFadeToState(idleBattleState, 0.2f);
+            // ✅ Solo crossfade si NO está ya en este estado (evita spam)
+            int targetHash = Animator.StringToHash(idleBattleState);
+            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
+            
+            if (currentState.shortNameHash != targetHash)
+            {
+                CrossFadeToState(idleBattleState, 0.2f);
+            }
         }
     }
     
@@ -947,10 +961,16 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     #region Private Methods - State Transitions
     
-    private void TransitionToIdle()
+    /// <summary>
+    /// Transiciona al estado Idle. Público para reseteo externo (ej: después de stun)
+    /// </summary>
+    public void TransitionToIdle()
     {
         _currentState = AnimationState.Idle;
-        CrossFadeToState(idleNormalState, 0.2f);
+        
+        // Elegir el idle correcto según el modo (batalla o normal)
+        string targetIdle = _isInBattle ? idleBattleState : idleNormalState;
+        CrossFadeToState(targetIdle, 0.2f);
     }
     
     private void TransitionToLocomotion()

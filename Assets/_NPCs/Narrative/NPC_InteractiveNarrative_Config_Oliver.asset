@@ -34,24 +34,23 @@ MonoBehaviour:
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
       waitDuration: 0
-      customAction:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionStarted:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionCompleted:
-        m_PersistentCalls:
-          m_Calls: []
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
     - actionType: 1
       dialogue: {fileID: 0}
       targetAnchorName: House_FrontDoor_Tutorial
       targetTransform: {fileID: 0}
       maxMovementDuration: 3
       walkDisplayDuration: 3
-      turnAroundOnArrival: 0
+      turnAroundOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -59,17 +58,16 @@ MonoBehaviour:
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
       waitDuration: 0
-      customAction:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionStarted:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionCompleted:
-        m_PersistentCalls:
-          m_Calls: []
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
     persistentIconSprite: {fileID: 0}
@@ -89,6 +87,6 @@ MonoBehaviour:
   alertIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   alertIconDuration: 1
   walkTowardsPlayerOnAlert: 1
-  stopDistanceFromPlayer: 1
-  postNarrativeState: 1
+  stopDistanceFromPlayer: 0.5
+  postNarrativeState: 0
   postNarrativeAmbientConfig: {fileID: 0}

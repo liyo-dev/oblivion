@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 
@@ -329,110 +329,241 @@ namespace Game.NPC
 
         private IEnumerator ExecuteMoveAction(QuestPostAction action)
         {
-            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado - SOLO MUEVE AL NPC");
 
-            Vector3 targetPosition = GetTargetPosition(action);
-
-            if (targetPosition == Vector3.zero)
+            // Verificar que tenemos un anchor válido
+            if (string.IsNullOrEmpty(action.targetAnchorName))
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ No se pudo obtener posición de destino para Move");
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ targetAnchorName está vacío - se requiere anchor para Move");
                 yield break;
             }
 
-            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Target position: {targetPosition}, NPC actual: {transform.position}, Distancia: {Vector3.Distance(transform.position, targetPosition):F2}m");
+            // Buscar el anchor
+            var targetAnchor = SpawnAnchor.FindById(action.targetAnchorName);
+            if (targetAnchor == null)
+            {
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ SpawnAnchor '{action.targetAnchorName}' no encontrado");
+                yield break;
+            }
 
-            // Esperar un frame para asegurar que cualquier cinemática en curso ha terminado
-            yield return null;
+            Vector3 targetPosition = targetAnchor.transform.position;
+            float distance = Vector3.Distance(transform.position, targetPosition);
+
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Destino: '{action.targetAnchorName}' en {targetPosition}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC actual: {transform.position}, Distancia: {distance:F2}m");
 
             // Forzar salida de cinemática si el NPC está en ella
             if (npcManager.Context != null && npcManager.Context.IsInCinematic)
             {
                 Debug.Log($"[NPCQuestActionExecutor:{name}] 🎬 NPC está en cinemática, forzando salida");
-
                 npcManager.ExitCinematic();
-                yield return new WaitForSeconds(0.2f); // Esperar a que se procese la transición
+                yield return new WaitForSeconds(0.2f);
             }
 
-            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC listo para moverse - Context.IsInCinematic={npcManager.Context?.IsInCinematic}");
+            // FASE 1: NPC camina visiblemente durante walkDisplayDuration o hasta llegar
+            float walkTime = action.walkDisplayDuration;
+            bool useTransition = action.useTransition && action.transitionSettings != null && walkTime < 999f;
 
-            // Crear secuencia de movimiento
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 Fase 1: Caminata visible durante {walkTime}s, useTransition={useTransition}");
+
+            // Crear secuencia de movimiento para la caminata visible
             var moveSequence = new States.MoveToPoscionSequence(
                 npcManager,
                 targetPosition,
-                action.maxMovementDuration,
-                action.turnAroundOnArrival,
-                action.walkDisplayDuration
+                walkTime, // Duración de caminata visible
+                false, // No girar todavía
+                walkTime // Camina durante este tiempo
             );
 
-            Debug.Log($"[NPCQuestActionExecutor:{name}] 🎯 MoveToPoscionSequence creada - MaxDuration={action.maxMovementDuration}s, WalkDisplay={action.walkDisplayDuration}s, TurnAround={action.turnAroundOnArrival}");
-
-            // Iniciar movimiento usando la secuencia cinemática
             npcManager.StartCinematicSequence(moveSequence);
 
-            Debug.Log($"[NPCQuestActionExecutor:{name}] ▶️ Secuencia de movimiento iniciada, esperando completación...");
-
-            // Esperar a que llegue (con timeout)
-            float timeout = action.maxMovementDuration + 2f;
+            // Esperar hasta que termine la caminata o timeout
             float elapsed = 0f;
+            float timeout = walkTime + 1f;
 
             while (!moveSequence.IsCompleted && elapsed < timeout)
             {
-                // Log cada segundo para monitorear progreso
-                if (Mathf.FloorToInt(elapsed) != Mathf.FloorToInt(elapsed + Time.deltaTime))
+                // Log cada 2 segundos
+                if (Mathf.FloorToInt(elapsed / 2f) != Mathf.FloorToInt((elapsed + Time.deltaTime) / 2f))
                 {
                     float remainingDistance = Vector3.Distance(transform.position, targetPosition);
-                    Debug.Log($"[NPCQuestActionExecutor:{name}] ⏱️ Movimiento en progreso: {elapsed:F1}s / {timeout:F1}s, Distancia restante: {remainingDistance:F2}m");
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ⏱️ Caminando: {elapsed:F1}s / {walkTime:F1}s, Distancia: {remainingDistance:F2}m");
                 }
 
                 yield return null;
                 elapsed += Time.deltaTime;
             }
 
-            if (elapsed >= timeout)
+            float finalDistance = Vector3.Distance(transform.position, targetPosition);
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Fase 1 completada en {elapsed:F2}s, Distancia restante: {finalDistance:F2}m");
+
+            // FASE 2: Si no llegó Y hay transición configurada, hacer fade + teleport
+            if (finalDistance > 1f && useTransition)
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏰ Movimiento alcanzó timeout de {timeout}s");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🎭 Fase 2: Iniciando transición para completar el movimiento");
+
+                var transitionManager = EasyTransition.TransitionManager.Instance();
+                if (transitionManager != null)
+                {
+                    bool transitionCompleted = false;
+
+                    // Callback para teletransportar al NPC en el punto de corte
+                    void OnCutPoint()
+                    {
+                        transform.position = targetPosition;
+                        transform.rotation = targetAnchor.transform.rotation;
+                        
+                        if (action.turnAroundOnArrival)
+                        {
+                            transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                        }
+                        
+                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition} en punto de corte del fade");
+                        transitionManager.onTransitionCutPointReached -= OnCutPoint;
+                    }
+
+                    void OnEnd()
+                    {
+                        transitionCompleted = true;
+                        transitionManager.onTransitionEnd -= OnEnd;
+                    }
+
+                    transitionManager.onTransitionCutPointReached += OnCutPoint;
+                    transitionManager.onTransitionEnd += OnEnd;
+
+                    transitionManager.Transition(action.transitionSettings, action.transitionDelay);
+
+                    // Esperar a que termine la transición
+                    float transitionTimeout = action.transitionDelay + action.transitionSettings.transitionTime + action.transitionSettings.destroyTime + 2f;
+                    elapsed = 0f;
+
+                    while (!transitionCompleted && elapsed < transitionTimeout)
+                    {
+                        yield return null;
+                        elapsed += Time.deltaTime;
+                    }
+
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Transición completada en {elapsed:F2}s");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ TransitionManager no disponible, teletransporte directo");
+                    transform.position = targetPosition;
+                    transform.rotation = targetAnchor.transform.rotation;
+                    
+                    if (action.turnAroundOnArrival)
+                    {
+                        transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                    }
+                }
+            }
+            else if (finalDistance > 1f)
+            {
+                // Sin transición pero tampoco llegó, teletransporte directo
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ⚡ Sin transición, teletransporte directo al destino");
+                transform.position = targetPosition;
+                transform.rotation = targetAnchor.transform.rotation;
+                
+                if (action.turnAroundOnArrival)
+                {
+                    transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                }
             }
             else
             {
-                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Movimiento completado en {elapsed:F2}s, Posición final: {transform.position}");
+                // Llegó caminando
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC llegó caminando al destino");
+                
+                if (action.turnAroundOnArrival)
+                {
+                    transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                }
             }
-            
-            // 🎯 Persistir la nueva posición del NPC en runtimePreset
-            // Esto se guardará a JSON cuando el jugador guarde manualmente
+
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Move completado - NPC en '{action.targetAnchorName}' (pos: {transform.position})");
+
+            // Persistir la nueva posición del NPC
             if (npcManager != null && npcManager.persistLastPosition)
             {
                 npcManager.SaveCurrentPosition();
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición guardada en runtimePreset (persistirá al guardar manualmente)");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición guardada en runtimePreset");
             }
         }
 
         private IEnumerator ExecuteTeleportAction(QuestPostAction action)
         {
-            Vector3 targetPosition = GetTargetPosition(action);
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🌀 ExecuteTeleportAction iniciado");
 
-            if (targetPosition == Vector3.zero)
+            // Verificar que tenemos un anchor válido
+            if (string.IsNullOrEmpty(action.targetAnchorName))
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor] No se pudo obtener posición de destino para Teleport");
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ targetAnchorName está vacío - no se puede teletransportar");
                 yield break;
             }
 
-            if (debugMode)
-                Debug.Log($"[NPCQuestActionExecutor] Teletransportando a {targetPosition}");
+            // Buscar el anchor
+            var targetAnchor = SpawnAnchor.FindById(action.targetAnchorName);
+            if (targetAnchor == null)
+            {
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ SpawnAnchor '{action.targetAnchorName}' no encontrado");
+                yield break;
+            }
 
-            // Teletransporte instantáneo
-            transform.position = targetPosition;
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Anchor encontrado: '{action.targetAnchorName}' en {targetAnchor.transform.position}");
+
+            // 1. Teletransportar al PLAYER usando TeleportService
+            var player = GameObject.FindWithTag("Player");
+            if (player != null)
+            {
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🎮 Teletransportando PLAYER a anchor '{action.targetAnchorName}'");
+                
+                // Usar el sistema de teletransporte existente con TransitionSettings
+                var teleportService = TeleportService.Inst;
+                if (teleportService != null)
+                {
+                    // Si hay transitionSettings configurado, usarlo
+                    bool useTransitionForPlayer = action.useTransition && action.transitionSettings != null;
+                    
+                    teleportService.DoTeleportToAnchor(player, targetAnchor.transform, useTransitionForPlayer);
+                    
+                    // Esperar a que termine la transición
+                    if (useTransitionForPlayer && action.transitionSettings != null)
+                    {
+                        float totalTransitionTime = action.transitionDelay + action.transitionSettings.transitionTime + action.transitionSettings.destroyTime;
+                        Debug.Log($"[NPCQuestActionExecutor:{name}] ⏳ Esperando transición del player ({totalTransitionTime:F2}s)");
+                        yield return new WaitForSeconds(totalTransitionTime);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ TeleportService no disponible, usando teletransporte directo");
+                    player.transform.position = targetAnchor.transform.position;
+                    player.transform.rotation = targetAnchor.transform.rotation;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Player no encontrado, solo se teletransportará el NPC");
+            }
+
+            // 2. Teletransportar al NPC al mismo anchor
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 👤 Teletransportando NPC a anchor '{action.targetAnchorName}'");
+            
+            transform.position = targetAnchor.transform.position;
+            transform.rotation = targetAnchor.transform.rotation;
 
             if (action.turnAroundOnArrival)
             {
                 transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
             }
+
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Teletransporte completado - Player y NPC en anchor '{action.targetAnchorName}'");
             
-            // 🎯 Persistir la nueva posición del NPC en runtimePreset
-            // Esto se guardará a JSON cuando el jugador guarde manualmente
+            // Persistir la nueva posición del NPC
             if (npcManager != null && npcManager.persistLastPosition)
             {
                 npcManager.SaveCurrentPosition();
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición de teletransporte guardada en runtimePreset (persistirá al guardar manualmente)");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición de teletransporte guardada en runtimePreset");
             }
 
             yield return null;

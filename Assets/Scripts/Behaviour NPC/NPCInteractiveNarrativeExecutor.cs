@@ -102,6 +102,9 @@ namespace Game.NPC.Modules
             {
                 RestoreState();
             }
+            
+            // ✅ Aplicar la capa inicial configurada
+            ApplyInitialLayer();
 
             // Iniciar detección automática si está configurada y no ha sido usada
             if (_config.autoStartOnPlayerDetection && !_hasBeenUsed)
@@ -136,7 +139,7 @@ namespace Game.NPC.Modules
             }
 
             // ============================================
-            // 2. GESTIÓN DE ICONO PERSISTENTE
+            // 2. GESTIÓN DE ICONO PERSISTENTE Y INTERACTABLE
             // ============================================
             if (_config == null)
                 return;
@@ -151,6 +154,30 @@ namespace Game.NPC.Modules
             // Obtener la narrativa activa actual
             var activeNarrative = _config.GetActiveNarrative();
             
+            // **FIX CRÍTICO**: Controlar el estado del Interactable según la narrativa activa
+            var interactable = GetComponent<Interactable>();
+            if (interactable != null)
+            {
+                // Solo permitir interacción si hay narrativa activa disponible
+                if (activeNarrative != null)
+                {
+                    if (!interactable.enabled)
+                    {
+                        interactable.enabled = true;
+                        Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ Interactable HABILITADO (narrativa disponible)");
+                    }
+                }
+                else
+                {
+                    if (interactable.enabled)
+                    {
+                        interactable.enabled = false;
+                        Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ❌ Interactable DESHABILITADO (sin narrativa disponible)");
+                    }
+                }
+            }
+            
+            // Gestión del icono persistente
             if (activeNarrative != null && activeNarrative.showPersistentIcon)
             {
                 // Verificar si tiene prefab o sprite configurado
@@ -233,11 +260,21 @@ namespace Game.NPC.Modules
 
                 Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ▶️ INICIO Acción {i}/{chain.Length}: {entry.actionType}");
 
-                entry.onActionStarted?.Invoke();
+                // Enviar evento al grafo si está configurado para enviarse al inicio
+                if (entry.sendNarrativeEvent && entry.sendEventOnStart && !string.IsNullOrEmpty(entry.narrativeEventKey))
+                {
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 📢 Enviando evento al grafo (inicio): {entry.narrativeEventKey}");
+                    DefaultNarrativeSignals.Instance.RaiseCustom(entry.narrativeEventKey);
+                }
 
                 yield return ExecuteAction(entry);
 
-                entry.onActionCompleted?.Invoke();
+                // Enviar evento al grafo si está configurado para enviarse al completar
+                if (entry.sendNarrativeEvent && !entry.sendEventOnStart && !string.IsNullOrEmpty(entry.narrativeEventKey))
+                {
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 📢 Enviando evento al grafo (completado): {entry.narrativeEventKey}");
+                    DefaultNarrativeSignals.Instance.RaiseCustom(entry.narrativeEventKey);
+                }
 
                 Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ COMPLETADA Acción {i}: {entry.actionType}");
             }
@@ -309,11 +346,6 @@ namespace Game.NPC.Modules
 
                 case NarrativeActionType.Wait:
                     yield return new WaitForSeconds(entry.waitDuration);
-                    break;
-
-                case NarrativeActionType.Custom:
-                    entry.customAction?.Invoke();
-                    yield return null;
                     break;
             }
         }
@@ -437,12 +469,13 @@ namespace Game.NPC.Modules
         private IEnumerator ExecuteStandardMove(NarrativeChainEntry entry, Vector3 targetPosition)
         {
             // Crear secuencia de movimiento
+            // Nota: walkDisplayDuration = 999f hace que el NPC camine todo el trayecto sin fade+teleport
             var moveSequence = new States.MoveToPoscionSequence(
                 _npcManager,
                 targetPosition,
                 entry.maxMovementDuration,
                 entry.turnAroundOnArrival,
-                entry.walkDisplayDuration
+                999f // walkDisplayDuration - valor alto para caminar todo el trayecto
             );
 
             _npcManager.StartCinematicSequence(moveSequence);
@@ -625,6 +658,50 @@ namespace Game.NPC.Modules
             }
 
             Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ⚔️ Iniciando combate con config: {entry.combatConfig.name}");
+
+            // ✅ REPRODUCIR DIÁLOGO DE ALERTA ANTES DEL COMBATE
+            if (entry.combatConfig.dialogueOnAlert != null)
+            {
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 💬 Reproduciendo diálogo de alerta antes del combate");
+                
+                bool dialogueCompleted = false;
+                
+                var dm = DialogueManager.Instance;
+                if (dm != null)
+                {
+                    dm.StartDialogue(entry.combatConfig.dialogueOnAlert, transform, () => 
+                    {
+                        dialogueCompleted = true;
+                        Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ✅ Diálogo de alerta completado");
+                    });
+                    
+                    // Esperar a que el diálogo termine si está configurado
+                    if (entry.combatConfig.waitForAlertDialogue)
+                    {
+                        float timeout = 30f; // Máximo 30 segundos de espera
+                        float elapsed = 0f;
+                        
+                        while (!dialogueCompleted && elapsed < timeout)
+                        {
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                        
+                        if (elapsed >= timeout)
+                        {
+                            Debug.LogWarning($"[NPCInteractiveNarrativeExecutor:{name}] ⚠️ Timeout esperando diálogo de alerta");
+                        }
+                    }
+                    else
+                    {
+                        // Si no espera, dar un frame para que el diálogo se inicie
+                        yield return null;
+                    }
+                }
+            }
+
+            // ✅ Cambiar a la capa Enemy si está configurado
+            SwitchToEnemyLayer();
 
             // Asignar el combatConfig al NPC
             if (_npcManager.Configuration != null)
@@ -1146,6 +1223,71 @@ namespace Game.NPC.Modules
                     );
 #endif
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Aplica la capa inicial configurada al NPC
+        /// </summary>
+        private void ApplyInitialLayer()
+        {
+            if (_config == null)
+                return;
+
+            int layerToApply = -1;
+            string layerName = "";
+
+            switch (_config.initialLayer)
+            {
+                case LayerMode.Interactable:
+                    layerName = "Interactable";
+                    layerToApply = LayerMask.NameToLayer(layerName);
+                    break;
+
+                case LayerMode.Enemy:
+                    layerName = "Enemy";
+                    layerToApply = LayerMask.NameToLayer(layerName);
+                    break;
+
+                case LayerMode.Default:
+                    layerName = "Default";
+                    layerToApply = LayerMask.NameToLayer(layerName);
+                    break;
+
+                case LayerMode.Custom:
+                    // No cambiar la capa, usar la actual
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🎭 Usando capa actual (Custom): {LayerMask.LayerToName(gameObject.layer)}");
+                    return;
+            }
+
+            if (layerToApply != -1)
+            {
+                gameObject.layer = layerToApply;
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] 🎭 Capa inicial aplicada: {layerName}");
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCInteractiveNarrativeExecutor:{name}] ⚠️ No se pudo encontrar la capa '{layerName}'");
+            }
+        }
+
+        /// <summary>
+        /// Cambia el NPC a la capa Enemy (llamado cuando se inicia combate)
+        /// </summary>
+        private void SwitchToEnemyLayer()
+        {
+            if (_config == null || !_config.switchToEnemyLayerOnCombat)
+                return;
+
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+            if (enemyLayer != -1)
+            {
+                gameObject.layer = enemyLayer;
+                Debug.Log($"[NPCInteractiveNarrativeExecutor:{name}] ⚔️ Cambiado a capa Enemy para combate");
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCInteractiveNarrativeExecutor:{name}] ⚠️ No se pudo encontrar la capa 'Enemy'");
             }
         }
         

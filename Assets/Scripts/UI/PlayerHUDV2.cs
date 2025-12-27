@@ -302,6 +302,8 @@ namespace Sendero.UI
         #region Actualización de Maná
         
         private float _lastManaFillAmount = 1f;
+        private float _manaRegenStartTime = -1f;
+        private bool _isRegenerating = false;
         
         private void OnManaChanged(float manaPercent)
         {
@@ -328,24 +330,38 @@ namespace Sendero.UI
             bool isSpending = targetFillAmount < currentFillAmount;
             bool isRegenerating = targetFillAmount > currentFillAmount;
             
-            // Cancelar tweens previos
-            manaFillImage.DOKill();
-            
             if (isSpending)
             {
-                // GASTO: Animación rápida
+                // GASTO: Animación rápida y cancelar cualquier regeneración
+                manaFillImage.DOKill();
+                _isRegenerating = false;
+                
                 manaFillImage.DOFillAmount(targetFillAmount, 0.2f)
                     .SetEase(Ease.OutQuad);
             }
             else if (isRegenerating)
             {
-                // REGENERACIÓN: Animación suave y gradual
-                manaFillImage.DOFillAmount(targetFillAmount, 0.5f)
-                    .SetEase(Ease.InOutCubic);
+                // REGENERACIÓN: Actualización suave continua sin tweens
+                // Usar interpolación directa para movimiento fluido
+                if (!_isRegenerating)
+                {
+                    // Primera vez regenerando - cancelar tweens previos
+                    manaFillImage.DOKill();
+                    _isRegenerating = true;
+                    _manaRegenStartTime = Time.time;
+                }
+                
+                // Actualización directa con Lerp suave para regeneración continua
+                float lerpSpeed = 5f; // Velocidad de interpolación
+                manaFillImage.fillAmount = Mathf.Lerp(currentFillAmount, targetFillAmount, lerpSpeed * Time.deltaTime);
             }
             else
             {
-                // Sin cambio
+                // Sin cambio o ya completo
+                if (_isRegenerating && Mathf.Approximately(currentFillAmount, targetFillAmount))
+                {
+                    _isRegenerating = false;
+                }
                 manaFillImage.fillAmount = targetFillAmount;
             }
             
@@ -386,25 +402,49 @@ namespace Sendero.UI
             // Obtener el spell equipado en este slot
             MagicSpellSO equippedSpell = _magicCaster.GetSpellForSlot(slotType);
             
-            if (equippedSpell != null)
+            if (equippedSpell != null && equippedSpell.attackIcon != null)
             {
-                // Hay un hechizo equipado
+                // Hay un hechizo equipado - asignar su sprite
                 slotState.hasSpell = true;
+                slotState.equippedSprite = equippedSpell.attackIcon;
+                slotState.slotImage.sprite = equippedSpell.attackIcon;
                 slotState.slotImage.color = availableColor;
+                slotState.slotImage.enabled = true;
                 
-                // NOTA: El sprite del hechizo debe estar asignado manualmente en Unity
-                // o mediante otro sistema. Este HUD no cambia los sprites dinámicamente.
+                // NUEVO: Overlay siempre visible para slots con hechizo
+                if (slotState.cooldownOverlay != null)
+                {
+                    slotState.cooldownOverlay.gameObject.SetActive(true);
+                    slotState.cooldownOverlay.fillAmount = 1f; // Empezar lleno (disponible)
+                }
+                
+                Debug.Log($"[PlayerHUDV2] ✅ Slot {slotType} asignado con hechizo: {equippedSpell.name} (sprite: {equippedSpell.attackIcon.name})");
             }
             else
             {
                 // Slot vacío
+                slotState.hasSpell = false;
+                slotState.equippedSprite = null;
+                
                 if (emptySlotSprite != null)
                 {
                     slotState.slotImage.sprite = emptySlotSprite;
+                    slotState.slotImage.color = new Color(1f, 1f, 1f, 0.3f); // Semi-transparente
+                    slotState.slotImage.enabled = true;
                 }
-                slotState.equippedSprite = null;
-                slotState.hasSpell = false;
-                slotState.slotImage.color = new Color(1f, 1f, 1f, 0.3f); // Semi-transparente
+                else
+                {
+                    // Si no hay sprite vacío, ocultar la imagen
+                    slotState.slotImage.enabled = false;
+                }
+                
+                // IMPORTANTE: Ocultar overlay de cooldown para slots vacíos
+                if (slotState.cooldownOverlay != null)
+                {
+                    slotState.cooldownOverlay.gameObject.SetActive(false);
+                }
+                
+                Debug.Log($"[PlayerHUDV2] ⭕ Slot {slotType} vacío (sin hechizo equipado)");
             }
         }
         
@@ -421,49 +461,87 @@ namespace Sendero.UI
             if (_magicCaster == null) return;
             
             var slotState = _slotStates[slotType];
-            if (!slotState.hasSpell) return;
+            
+            // CRÍTICO: No procesar slots vacíos
+            if (!slotState.hasSpell)
+            {
+                // Asegurar que el overlay esté oculto cada frame
+                if (slotState.cooldownOverlay != null && slotState.cooldownOverlay.gameObject.activeSelf)
+                {
+                    slotState.cooldownOverlay.gameObject.SetActive(false);
+                    Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} desactivado (slot vacío)");
+                }
+                return;
+            }
             
             // Obtener spell y cooldown del MagicCaster
             MagicSpellSO spell = _magicCaster.GetSpellForSlot(slotType);
-            if (spell == null) return;
+            if (spell == null)
+            {
+                // Si no hay spell pero hasSpell es true, corregir el estado
+                slotState.hasSpell = false;
+                if (slotState.cooldownOverlay != null && slotState.cooldownOverlay.gameObject.activeSelf)
+                {
+                    slotState.cooldownOverlay.gameObject.SetActive(false);
+                    Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} desactivado (spell null)");
+                }
+                return;
+            }
             
             float cooldownRemaining = _magicCaster.GetCooldownTime(slotType);
             bool canCast = _magicCaster.CanCastSpell(slotType, spell, out string reason);
             
-            // Actualizar visual del slot (solo overlay radial, sin texto)
+            // El overlay SIEMPRE está visible para slots con hechizo
+            if (slotState.cooldownOverlay != null && !slotState.cooldownOverlay.gameObject.activeSelf)
+            {
+                slotState.cooldownOverlay.gameObject.SetActive(true);
+                Debug.Log($"[PlayerHUDV2] 👁️ Overlay {slotType} activado (tiene hechizo)");
+            }
+            
+            // Actualizar visual del slot
             if (cooldownRemaining > 0f)
             {
-                // En cooldown - mostrar overlay radial que se vacía
+                // EN COOLDOWN: El overlay se va RELLENANDO de 0 a 1
+                // fillAmount = tiempo_transcurrido / tiempo_total
+                // = (cooldown_total - tiempo_restante) / cooldown_total
+                // = 1 - (tiempo_restante / cooldown_total)
                 if (slotState.cooldownOverlay != null)
                 {
-                    slotState.cooldownOverlay.gameObject.SetActive(true);
-                    // El overlay debe empezar lleno (1.0) y vaciarse (0.0)
-                    // Invertimos el cálculo: fillAmount = tiempo_restante / tiempo_total
-                    float fillPercent = cooldownRemaining / spell.cooldown;
-                    slotState.cooldownOverlay.fillAmount = fillPercent;
+                    float progress = 1f - Mathf.Clamp01(cooldownRemaining / spell.cooldown);
+                    slotState.cooldownOverlay.fillAmount = progress;
                 }
                 
-                slotState.slotImage.color = cooldownColor;
+                // Cambiar color del slot durante cooldown
+                if (slotState.slotImage != null)
+                {
+                    slotState.slotImage.color = cooldownColor;
+                }
             }
             else if (!canCast && reason.Contains("mana"))
             {
-                // Sin maná - ocultar overlay
+                // Sin maná - overlay lleno pero color de sin maná
                 if (slotState.cooldownOverlay != null)
                 {
-                    slotState.cooldownOverlay.gameObject.SetActive(false);
+                    slotState.cooldownOverlay.fillAmount = 1f; // Lleno = disponible (pero sin maná)
                 }
                 
-                slotState.slotImage.color = noManaColor;
+                if (slotState.slotImage != null)
+                {
+                    slotState.slotImage.color = noManaColor;
+                }
             }
             else
             {
-                // Disponible - ocultar overlay
+                // Disponible - overlay lleno y color normal
                 if (slotState.cooldownOverlay != null)
                 {
-                    slotState.cooldownOverlay.gameObject.SetActive(false);
+                    slotState.cooldownOverlay.fillAmount = 1f; // Lleno = disponible
                 }
                 
-                slotState.slotImage.color = availableColor;
+                if (slotState.slotImage != null)
+                {
+                    slotState.slotImage.color = availableColor;
+                }
             }
         }
         

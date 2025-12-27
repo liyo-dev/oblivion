@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -23,16 +23,23 @@ namespace Game.NPC.Modules
         
         [Header("Ranges")]
         [Min(0f)]
-        [Tooltip("Rango de detección del jugador")]
+        [Tooltip("DETECTION RANGE: Radio de detección para iniciar combate (metros)")]
         public float detectionRange = 10f;
         
         [Min(0f)]
-        [Tooltip("Rango para ataques a distancia")]
-        public float combatRange = 8f;
+        [Tooltip("🔴 MIN ATTACK DISTANCE: Distancia mínima para atacar. Si el jugador está MÁS CERCA, el NPC RETROCEDE.\n• Magos: 4-5m\n• Melee: 1.5-2m\n⚠️ Mapea a 'minDistance' en logs")]
+        public float minAttackDistance = 2f;
         
         [Min(0f)]
-        [Tooltip("Rango para ataques cuerpo a cuerpo")]
-        public float meleeRange = 2f;
+        [Tooltip("🟢 MAX ATTACK DISTANCE: Distancia máxima para atacar. Si el jugador está MÁS LEJOS, el NPC SE ACERCA.\n• Magos: 8-12m\n• Melee: 3-5m\n⚠️ DEBE ser MAYOR que minAttackDistance\n⚠️ Mapea a 'maxDistance' en logs")]
+        public float maxAttackDistance = 8f;
+        
+        // ✅ DEPRECATED: Mantener para compatibilidad con assets antiguos
+        [System.Obsolete("Usar minAttackDistance en su lugar")]
+        public float meleeRange { get => minAttackDistance; set => minAttackDistance = value; }
+        
+        [System.Obsolete("Usar maxAttackDistance en su lugar")]
+        public float combatRange { get => maxAttackDistance; set => maxAttackDistance = value; }
         
         [Header("Behavior")]
         [Tooltip("¿El NPC es agresivo automáticamente o espera ser atacado?")]
@@ -185,9 +192,16 @@ namespace Game.NPC.Modules
                 return false;
             }
             
-            if (detectionRange < combatRange)
+            if (detectionRange < maxAttackDistance)
             {
-                errorMessage = "Detection range debe ser mayor o igual a combat range";
+                errorMessage = "Detection Range debe ser mayor o igual a Max Attack Distance";
+                return false;
+            }
+            
+            if (minAttackDistance >= maxAttackDistance)
+            {
+                errorMessage = "⚠️ CRÍTICO: Max Attack Distance debe ser MAYOR que Min Attack Distance, o el NPC NUNCA atacará. " +
+                              $"Actual: min={minAttackDistance}, max={maxAttackDistance}";
                 return false;
             }
             

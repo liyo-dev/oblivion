@@ -8,6 +8,33 @@ namespace Game.NPC.Modules
     /// Configuración de cadena narrativa interactiva para NPCs.
     /// Permite encadenar diálogos, movimientos, animaciones, quests, combat, etc.
     /// Solo usa modo condicional - para narrativa simple sin condiciones, añade una con condición 'None'.
+    /// 
+    /// COMPORTAMIENTO DE PERSISTENCIA:
+    /// - singleUse = true: La narrativa se ejecuta UNA VEZ por partida. Después de completarse, no se repetirá.
+    /// - persistState = true: El estado 'completado' se guarda en el preset cuando el jugador hace SAVE.
+    /// 
+    /// NUEVA PARTIDA vs CARGAR PARTIDA:
+    /// - Al crear una NUEVA PARTIDA: El preset es limpio, todas las narrativas están disponibles de nuevo.
+    /// - Al CARGAR una partida guardada: Se restaura el estado guardado (narrativas completadas siguen completadas).
+    /// 
+    /// GESTIÓN DE CAPAS (Layer Management):
+    /// - initialLayer: Define la capa del NPC al iniciar. Usa 'Interactable' si autoStartOnPlayerDetection está desactivado.
+    /// - switchToEnemyLayerOnCombat: Cambia automáticamente a la capa 'Enemy' al ejecutar una acción StartCombat.
+    /// - Después de ser derrotado en combate, el NPC vuelve automáticamente a la capa 'Interactable'.
+    /// 
+    /// FLUJO TÍPICO CON COMBATE:
+    /// 1. NPC en capa "Interactable" → Jugador puede interactuar
+    /// 2. Se ejecuta la narrativa (diálogos, animaciones, etc.)
+    /// 3. Al llegar a StartCombat → NPC cambia a capa "Enemy" automáticamente
+    /// 4. Combate ocurre normalmente
+    /// 5. Al ser derrotado → NPC vuelve a capa "Interactable" (diálogo post-derrota)
+    /// 
+    /// EJEMPLO:
+    /// 1. Nueva partida → Narrativa disponible
+    /// 2. Ejecutas la narrativa → Se marca como completada (si singleUse=true)
+    /// 3. Guardas la partida → El estado se guarda en el preset (si persistState=true)
+    /// 4. Cargas esa partida → La narrativa sigue completada
+    /// 5. NUEVA PARTIDA (diferente) → La narrativa vuelve a estar disponible ✅
     /// </summary>
     [CreateAssetMenu(fileName = "NPC_InteractiveNarrative_Config", menuName = "NPC/Módulos/Interactive Narrative Config", order = 5)]
     public class NPCInteractiveNarrativeConfig : NPCModuleConfigBase
@@ -17,13 +44,13 @@ namespace Game.NPC.Modules
         public ConditionalNarrative[] conditionalNarratives = System.Array.Empty<ConditionalNarrative>();
 
         [Header("Configuración")]
-        [Tooltip("¿Esta narrativa solo se puede ejecutar una vez?")]
+        [Tooltip("¿Esta narrativa solo se puede ejecutar una vez POR PARTIDA? Si es true, después de completarse no volverá a ejecutarse en esa partida. Al crear una NUEVA PARTIDA se resetea.")]
         public bool singleUse = true;
 
-        [Tooltip("¿Persistir el estado de uso entre sesiones?")]
+        [Tooltip("¿Guardar el estado en el preset de la partida? Si es true, el estado de 'completado' se guardará cuando el jugador haga SAVE. Al cargar esa partida guardada, se restaurará. NOTA: Al crear una nueva partida, el preset es limpio y todas las narrativas vuelven a estar disponibles.")]
         public bool persistState = true;
 
-        [Tooltip("ID único para persistencia (generado automáticamente si está vacío)")]
+        [Tooltip("ID único para persistencia (generado automáticamente). Usado para identificar esta narrativa en el sistema de guardado.")]
         public string persistenceId;
 
         [Header("Behavior")]
@@ -33,6 +60,13 @@ namespace Game.NPC.Modules
         [Min(0f)]
         [Tooltip("Duración de la rotación")]
         public float rotationDuration = 0.3f;
+        
+        [Header("Layer Management")]
+        [Tooltip("Capa inicial del NPC. Si autoStartOnPlayerDetection está desactivado, se recomienda 'Interactable' para poder interactuar con el NPC. Cambiará automáticamente a 'Enemy' al iniciar combate si hay una acción StartCombat.")]
+        public LayerMode initialLayer = LayerMode.Interactable;
+        
+        [Tooltip("¿Cambiar automáticamente a la capa 'Enemy' cuando se inicie un combate (acción StartCombat)?")]
+        public bool switchToEnemyLayerOnCombat = true;
 
         [Header("Auto-Inicio (Alerta)")]
         [Tooltip("¿El NPC detecta al jugador y comienza la narrativa automáticamente?")]
@@ -239,6 +273,17 @@ namespace Game.NPC.Modules
         Wander,            // Activa comportamiento Wander
         SwitchToAmbient,   // Cambia a un NPCAmbientConfig específico
         Disable            // Se desactiva el GameObject
+    }
+    
+    /// <summary>
+    /// Modo de capa para el NPC durante la narrativa interactiva
+    /// </summary>
+    public enum LayerMode
+    {
+        Interactable,      // Capa "Interactable" - permite interacción con el NPC
+        Enemy,             // Capa "Enemy" - necesaria para combate
+        Default,           // Capa "Default" - sin función específica
+        Custom             // Usar la capa actual del NPC sin cambiar
     }
 }
 

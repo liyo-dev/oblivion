@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.States;
 using Sendero.Core.Feedback;
@@ -79,9 +79,7 @@ namespace Game.NPC.Modules
         private bool _isProcessingDefeat;
         private bool _isInvulnerable;
         
-#pragma warning disable CS0414 // Reservado para sistema de stun futuro
         private bool _isStunned;
-#pragma warning restore CS0414
         
         // Sistema de interrupción de casting
         private bool _isCasting;
@@ -92,6 +90,11 @@ namespace Game.NPC.Modules
         /// Indica si el NPC ha sido derrotado y NO debe volver a entrar en combate
         /// </summary>
         public bool IsDefeatedAndInactive => _hasBeenDefeated;
+        
+        /// <summary>
+        /// Indica si el NPC está actualmente stunneado (recibiendo daño)
+        /// </summary>
+        public bool IsStunned => _isStunned;
         
         /// <summary>
         /// Marca que el NPC está casteando un hechizo (puede ser interrumpido por daño)
@@ -263,11 +266,25 @@ namespace Game.NPC.Modules
             // 5. Esperar duración del stun
             yield return new WaitForSeconds(damageStunDuration);
             
-            // 6. Reactivar movimiento
+            // 6. RESETEAR ANIMATOR ANTES de reactivar movimiento
+            if (_animator != null)
+            {
+                // Forzar transición a Idle de batalla
+                _animator.TransitionToIdle();
+                
+                // Asegurar que los parámetros de movimiento están en 0
+                _animator.ResetMovement();
+                
+                Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🔄 Animator reseteado a Idle después de stun");
+            }
+            
+            // 6.5. Reactivar movimiento DESPUÉS de resetear animator
             _isStunned = false;
             if (wasAgentActive && _navAgent != null && _navAgent.enabled)
             {
                 _navAgent.isStopped = false;
+                // Asegurarse de que el velocity esté limpio
+                _navAgent.velocity = Vector3.zero;
             }
             
             // 7. Mantener invulnerabilidad un poco más
@@ -432,7 +449,14 @@ namespace Game.NPC.Modules
                 }
             }
             
-            // 6. ESPERAR 2 SEGUNDOS para que se vea la animación de muerte
+            // ✅ 6. NOTIFICAR VICTORIA AL SISTEMA DE AUDIO (cambiar música)
+            if (_combatConfig != null && !string.IsNullOrEmpty(_combatConfig.battleMusicId))
+            {
+                Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🎵 Notificando victoria de batalla: {_combatConfig.battleMusicId}");
+                DefaultNarrativeSignals.Instance?.RaiseBattleWon(_combatConfig.battleMusicId);
+            }
+            
+            // 7. ESPERAR 2 SEGUNDOS para que se vea la animación de muerte
             // USAR WaitForSecondsRealtime para que NO se vea afectado por Time.timeScale
             Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⏳ Esperando 2 segundos (tiempo real) para que se complete la animación de muerte...");
             Debug.Log($"[NPCCombatLifecycleHandler:{name}] 📊 Time.timeScale actual: {Time.timeScale}");
@@ -447,7 +471,7 @@ namespace Game.NPC.Modules
                 Time.timeScale = 1f;
             }
             
-            // 7. Reproducir diálogo de derrota si existe
+            // 8. Reproducir diálogo de derrota si existe
             if (_combatConfig != null && _combatConfig.dialogueOnDefeat != null)
             {
                 var dm = DialogueManager.Instance;

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -134,20 +134,16 @@ namespace Game.NPC.Modules
         [Min(0f)]
         public float delayBeforeAction = 0f;
         
-        [Header("Screen Fade")]
-        [Tooltip("Hacer fade a negro antes de la acción")]
-        public bool fadeOutBeforeAction = false;
+        [Header("Transition Settings (Move/Teleport)")]
+        [Tooltip("TransitionSettings para el fade/transición (ej: Fade.asset del sistema EasyTransition)")]
+        public EasyTransition.TransitionSettings transitionSettings;
         
-        [Tooltip("Duración del fade a negro (segundos)")]
-        [Min(0.1f)]
-        public float fadeOutDuration = 0.5f;
+        [Tooltip("¿Usar transición para el movimiento/teleporte? (si false, será instantáneo)")]
+        public bool useTransition = true;
         
-        [Tooltip("Hacer fade desde negro después de la acción")]
-        public bool fadeInAfterAction = false;
-        
-        [Tooltip("Duración del fade desde negro (segundos)")]
-        [Min(0.1f)]
-        public float fadeInDuration = 0.5f;
+        [Tooltip("Delay antes de iniciar la transición (segundos)")]
+        [Min(0f)]
+        public float transitionDelay = 0f;
         
         [Header("Custom Action")]
         [Tooltip("Evento personalizado (si actionType = Custom)")]

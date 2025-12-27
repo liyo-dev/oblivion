@@ -3446,9 +3446,13 @@ MonoBehaviour:
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: GetHit01_NoWeapon
+  getHitState: TakeDamage
+  defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0

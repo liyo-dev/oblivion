@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 namespace Game.NPC.Common
@@ -135,8 +135,8 @@ namespace Game.NPC.Common
         public float maxIdleTime => ambientConfig != null ? ambientConfig.maxIdleTime : 3.0f;
         public bool enableWander => ambientConfig != null && ambientConfig.enableWander;
         public float detectionRadius => combatConfig != null ? combatConfig.detectionRange : 10f;
-        public float combatRange => combatConfig != null ? combatConfig.combatRange : 8f;
-        public float meleeRange => combatConfig != null ? combatConfig.meleeRange : 2f;
+        public float combatRange => combatConfig != null ? combatConfig.maxAttackDistance : 8f;
+        public float meleeRange => combatConfig != null ? combatConfig.minAttackDistance : 2f;
         public float attackCooldown => combatConfig != null ? combatConfig.attackCooldown : 1.5f;
     }
 }

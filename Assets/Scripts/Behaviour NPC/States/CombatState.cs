@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -63,8 +63,8 @@ namespace Game.NPC.States
                 var settings = new NPCCombatBrain.Settings
                 {
                     sightRadius = combatConfig.detectionRange,
-                    minDistance = combatConfig.meleeRange,
-                    maxDistance = combatConfig.combatRange,
+                    minDistance = combatConfig.minAttackDistance,
+                    maxDistance = combatConfig.maxAttackDistance,
                     repathInterval = 0.5f,
                     retreatDistance = 2f,
                     turnSpeed = 5f,
@@ -92,43 +92,43 @@ namespace Game.NPC.States
                     },
                     
                     // Configuración táctica
-                    aggressiveDistance = combatConfig.meleeRange * 1.5f,
+                    aggressiveDistance = combatConfig.minAttackDistance * 1.5f,
                     retreatHealthPercent = 0.3f,
-                    circleDistance = (combatConfig.meleeRange + combatConfig.combatRange) * 0.5f,
+                    circleDistance = (combatConfig.minAttackDistance + combatConfig.maxAttackDistance) * 0.5f,
                     circleSpeed = 30f,
                     
                     // Proyectiles y timing
                     spawnProjectileViaAnimationEvent = false,
                     fireDelaySeconds = 0.3f,
                     
-                    // Línea de visión
+                    // 🧙 DUELO DE MAGOS: Más pausado y deliberado
                     requireLineOfSight = true,
                     losMask = LayerMask.GetMask("Default"),
-                    windupMin = 0.05f,  // MUY rápido
-                    windupMax = 0.25f,  // Variabilidad mínima
-                    strafeFlipMin = 0.8f,  // Cambia dirección más rápido
-                    strafeFlipMax = 2f,
+                    windupMin = 0.3f,   // ← Más tiempo para apuntar (era 0.05f)
+                    windupMax = 0.8f,   // ← Variabilidad más alta (era 0.25f)
+                    strafeFlipMin = 3f, // ← Cambios de dirección MÁS lentos (era 0.8f)
+                    strafeFlipMax = 6f, // ← Más tiempo en misma dirección (era 2f)
                     dodgeDistance = 2f,
-                    dodgeCooldown = 3f,
+                    dodgeCooldown = 5f, // ← Menos frecuente (era 3f)
                     
-                    // Micro-pausas MUCHO más variadas y aleatorias
-                    microPauseDurationMin = 0.1f,  // Pausas muy cortas
-                    microPauseDurationMax = 0.6f,  // A veces más largas
-                    microPauseIntervalMin = 0.5f,  // Pausas MUY frecuentes
-                    microPauseIntervalMax = 2f,    // Máxima variabilidad
+                    // 🧙 Micro-pausas MÁS LARGAS y MENOS frecuentes (más humano)
+                    microPauseDurationMin = 0.3f,  // ← Pausas más largas (era 0.1f)
+                    microPauseDurationMax = 1.2f,  // ← Hasta 1.2s de pausa (era 0.6f)
+                    microPauseIntervalMin = 2f,    // ← Pausas menos frecuentes (era 0.5f)
+                    microPauseIntervalMax = 5f,    // ← Más variabilidad (era 2f)
                     
-                    // Burst EXTREMADAMENTE variable (1-4 ataques)
-                    burstRepositionDistance = 2.5f,
-                    burstRepositionCooldown = 1.5f,  // Reposiciona MUY frecuentemente
-                    burstAttacksMin = 1,  // A veces solo 1 ataque
-                    burstAttacksMax = 4,  // A veces hasta 4 ataques
+                    // 🧙 Burst MENOS frecuente (duelo más posicional)
+                    burstRepositionDistance = 3f,   // ← Movimientos más largos
+                    burstRepositionCooldown = 4f,   // ← Mucho menos frecuente (era 1.5f)
+                    burstAttacksMin = 2,            // ← Mínimo 2 ataques antes de moverse (era 1)
+                    burstAttacksMax = 4,            // ← Máximo 4 ataques
                     
-                    // Ventanas de quieto MUY cortas y frecuentes
-                    holdDurationMin = 0.2f,
-                    holdDurationMax = 0.8f,
-                    holdIntervalMin = 1f,
-                    holdIntervalMax = 3f,
-                    attackHoldSeconds = 0.05f,  // MUY corto - casi no se queda quieto después de atacar
+                    // 🧙 Ventanas de quieto MÁS LARGAS (postura de duelo)
+                    holdDurationMin = 0.5f,         // ← Más tiempo quieto (era 0.2f)
+                    holdDurationMax = 2f,           // ← Hasta 2 segundos quieto (era 0.8f)
+                    holdIntervalMin = 1.5f,         // ← Más frecuente (era 1f)
+                    holdIntervalMax = 4f,           // ← Variabilidad (era 3f)
+                    attackHoldSeconds = 0.4f,       // ← Mantener postura después de atacar (era 0.05f)
                     
                     // Dificultad
                     attackFrequencyMultiplier = 1f,

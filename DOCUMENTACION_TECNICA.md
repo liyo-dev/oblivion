@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -888,6 +888,99 @@ NPC Quest Giver:
             │   ├─ dlgInProgress: "¿Lo encontraste?"
             │   └─ dlgTurnIn: "¡Gracias!"
             └─ [1] Quest_DefeatBoss
+```
+
+---
+
+### 3.5.1 Sistema de Huida Táctica y Cobertura ⭐ NUEVO
+
+#### Resumen
+
+Los NPCs pueden **huir estratégicamente** cuando están en desventaja, buscando **cobertura detrás de objetos** (árboles, rocas, edificios) para protegerse del jugador.
+
+**Características:**
+- ✅ Detecta situaciones de desventaja (salud baja, cooldowns activos)
+- ✅ Busca cobertura automáticamente usando Raycast e IA
+- ✅ Evalúa múltiples posiciones para encontrar la óptima
+- ✅ Bloquea línea de visión con el jugador
+- ✅ Sistema de cooldown para equilibrio
+- ✅ Alternativa con escudo si no hay cobertura disponible
+
+#### Problema Resuelto
+
+**ANTES:** NPC con salud baja sigue atacando → Muere fácilmente
+
+**AHORA:** NPC con salud baja busca cobertura detrás de árbol → Se esconde 4s → Vuelve al combate
+
+#### Sistema de Decisión
+
+**Condiciones para activar huida:**
+1. Salud baja: `HP <= 30%` (configurable)
+2. Sin recursos: Todos los ataques en cooldown Y escudo en cooldown
+3. Estado defensivo: `CombatState.Defensive`
+
+**Prioridades:** Cobertura → Escudo → Fallback cobertura
+
+#### NPCTacticalRetreat.cs
+
+**Ubicación:** `Assets/Scripts/Behaviour NPC/NPCTacticalRetreat.cs`
+
+**Configuración:**
+```csharp
+[Header("Configuración de Cobertura")]
+public float coverSearchRadius = 15f;      // Radio de búsqueda
+public LayerMask coverLayerMask = -1;      // Capas de cobertura
+public float coverStayDuration = 4f;       // Tiempo en cobertura
+public bool showDebugGizmos = true;        // Gizmos en Scene view
+```
+
+**Propiedades:**
+- `bool IsRetreating` - Estado de huida
+- `bool IsBehindCover` - Si llegó a cobertura
+- `Vector3? CoverPosition` - Posición de cobertura
+- `Transform CoverObject` - Objeto de cobertura
+
+**Algoritmo:**
+1. Busca objetos cercanos con `Physics.OverlapSphere`
+2. Evalúa cada objeto con scoring (distancia, tamaño, dirección)
+3. Verifica que bloquee línea de visión
+4. Navega hacia la mejor posición
+
+#### Integración en NPCCombatBrain
+
+**Nuevos campos:**
+```csharp
+public bool useTacticalRetreat = false;      // Activar sistema
+public float retreatHealthThreshold = 0.3f;  // 30% salud
+public float retreatCooldown = 15f;          // Cooldown
+public bool preferShieldOverCover = false;   // Priorizar escudo
+```
+
+**Ejemplo de Configuración:**
+```
+NPCCombatConfig:
+  ├─ useTacticalRetreat: ☑
+  ├─ retreatHealthThreshold: 0.3 (30%)
+  ├─ retreatCooldown: 15s
+  ├─ coverSearchRadius: 15m
+  ├─ preferShieldOverCover: ☐
+  └─ coverStayDuration: 4s
+```
+
+#### Debugging
+
+**Gizmos:**
+- 🟢 Radio de búsqueda
+- 🔵 Objetos candidatos
+- 🟡 Cobertura seleccionada
+- 🔴 Línea de visión
+
+**Logs:**
+```log
+[NPCTacticalRetreat] 🔍 Buscando cobertura (radio: 15m)
+[NPCTacticalRetreat] ✅ Cobertura seleccionada: Tree_Oak_03
+[NPCCombatBrain] 🏃 Retirándose (HP: 25%)
+[NPCTacticalRetreat] 🛡️ Detrás de cobertura - Esperando 4.0s
 ```
 
 ---
@@ -1912,6 +2005,196 @@ Narrativas:
 Si la quest está activa:
   ├─ [0] ✅ Condición cumplida (Priority 0)
   └─ [1] ✅ Condición cumplida (Priority 10) ← Se ejecuta esta
+```
+
+#### Sistema de Persistencia de Narrativas ⭐ IMPORTANTE
+
+**¿Cómo funciona `singleUse` y `persistState`?**
+
+El sistema de persistencia de narrativas está diseñado para funcionar **por partida guardada**, no entre sesiones de Unity.
+
+##### Configuración
+
+```csharp
+[Header("Configuración")]
+public bool singleUse = true;      // ¿Se ejecuta solo una vez por partida?
+public bool persistState = true;   // ¿Guardar el estado en el preset?
+public string persistenceId;       // ID único generado automáticamente
+```
+
+##### Comportamiento Detallado
+
+**`singleUse = true`:**
+- La narrativa se ejecuta **UNA VEZ por partida**
+- Después de completarse, **no se puede repetir** en esa partida
+- Al crear una **NUEVA PARTIDA** → Se resetea y vuelve a estar disponible ✅
+
+**`persistState = true`:**
+- El estado de "completado" se guarda en `PlayerPresetSO`
+- Se guarda cuando el jugador hace **SAVE** (F5 o menú de guardado)
+- Al **CARGAR** esa partida guardada → Se restaura el estado
+- Al crear una **NUEVA PARTIDA** → El preset es limpio, las narrativas vuelven a estar disponibles ✅
+
+##### Flujo Completo Paso a Paso
+
+```
+1️⃣ NUEVA PARTIDA "Partida1"
+   ┌────────────────────────────────────────┐
+   │ PlayerPresetSO (limpio)                │
+   │ completedInteractiveNarratives = []    │
+   │                                        │
+   │ Todas las narrativas disponibles ✅    │
+   └────────────────────────────────────────┘
+
+2️⃣ Ejecutar narrativa "IntroVillage"
+   ┌────────────────────────────────────────┐
+   │ Narrativa se completa                  │
+   │ _hasBeenUsed = true (en memoria)       │
+   │                                        │
+   │ NO se puede volver a ejecutar ❌       │
+   └────────────────────────────────────────┘
+
+3️⃣ Guardar partida (SAVE - F5)
+   ┌────────────────────────────────────────┐
+   │ PlayerPresetSO actualizado:            │
+   │ completedInteractiveNarratives =       │
+   │   ["IntroVillage"]                     │
+   │                                        │
+   │ Estado persistido en archivo JSON ✅   │
+   └────────────────────────────────────────┘
+
+4️⃣ Cargar partida (LOAD "Partida1")
+   ┌────────────────────────────────────────┐
+   │ Se carga PlayerPresetSO guardado       │
+   │ RestoreState() lee:                    │
+   │   completedInteractiveNarratives =     │
+   │     ["IntroVillage"]                   │
+   │                                        │
+   │ _hasBeenUsed = true                    │
+   │ La narrativa sigue completada ✅       │
+   └────────────────────────────────────────┘
+
+5️⃣ CREAR NUEVA PARTIDA "Partida2"
+   ┌────────────────────────────────────────┐
+   │ Se crea PlayerPresetSO NUEVO           │
+   │ completedInteractiveNarratives = []    │
+   │                                        │
+   │ La narrativa vuelve a estar            │
+   │ disponible de nuevo ✅                 │
+   └────────────────────────────────────────┘
+```
+
+##### Dónde se Guarda
+
+```
+📂 PlayerPresetSO.cs
+  ├─ completedInteractiveNarratives: List<string>
+  │  └─ Contiene los persistenceId de narrativas completadas
+  │
+  └─ Se serializa en JSON cuando:
+     ├─ El jugador hace SAVE (F5)
+     ├─ Desde el menú de guardado
+     └─ Auto-save (si está configurado)
+
+📂 NPCInteractiveNarrativeExecutor.cs
+  ├─ _hasBeenUsed: bool (en memoria)
+  │  └─ Se marca en CompleteNarrative()
+  │
+  ├─ SaveState()
+  │  └─ preset.completedInteractiveNarratives.Add(persistenceId)
+  │
+  └─ RestoreState()
+     └─ _hasBeenUsed = preset.completedInteractiveNarratives.Contains(persistenceId)
+```
+
+##### Logs Esperados
+
+```log
+// Al iniciar con narrativa disponible
+[NPCInteractiveNarrativeExecutor:NPC_Eldran] ✅ Narrativa 'IntroVillage' disponible para ejecutar
+
+// Al completar narrativa
+[NPCInteractiveNarrativeExecutor:NPC_Eldran] ✅ Narrativa 'IntroVillage' completada
+[NPCInteractiveNarrativeExecutor:NPC_Eldran] 💾 Estado guardado: IntroVillage
+
+// Al cargar partida guardada
+[NPCInteractiveNarrativeExecutor:NPC_Eldran] 🔄 Narrativa 'IntroVillage' ya completada (del último guardado manual)
+
+// Al crear nueva partida
+[NPCInteractiveNarrativeExecutor:NPC_Eldran] ✅ Narrativa 'IntroVillage' disponible para ejecutar
+```
+
+##### Casos de Uso Comunes
+
+**1. Narrativa Única por Partida (Cinemática Intro)**
+```csharp
+singleUse = true;       // Solo se ve una vez
+persistState = true;    // Se guarda en la partida
+```
+
+**2. Narrativa Repetible (Comerciante)**
+```csharp
+singleUse = false;      // Siempre disponible
+persistState = false;   // No se guarda
+```
+
+**3. Entrega de Ítem Importante**
+```csharp
+// Narrativa 1: Antes de quest
+singleUse = false;      // Repetible (saludo)
+persistState = false;
+
+// Narrativa 2: Entregar ítem (quest activa)
+singleUse = true;       // Solo una vez
+persistState = true;    // Se guarda
+```
+
+##### Solución de Problemas
+
+**Problema:** "La narrativa no se resetea al crear nueva partida"
+
+**Posibles causas:**
+1. ❌ El `PlayerPresetSO` no se está creando limpio
+2. ❌ Se está compartiendo el mismo preset entre partidas
+3. ❌ `RestoreState()` se llama antes de limpiar el preset
+
+**Solución:** Verificar en `GameBootService`:
+```csharp
+// Al crear nueva partida, debe crear un nuevo PlayerPresetSO
+public void CreateNewGame(string presetName)
+{
+    var newPreset = ScriptableObject.CreateInstance<PlayerPresetSO>();
+    newPreset.completedInteractiveNarratives = new List<string>();  // Limpio ✅
+    // ...
+}
+```
+
+**Problema:** "La narrativa se repite en la misma partida"
+
+**Causa:** `singleUse = false` o `_hasBeenUsed` no se está marcando correctamente
+
+**Solución:** Verificar logs:
+```log
+[NPCInteractiveNarrativeExecutor] ⚠️ singleUse=false → La narrativa es repetible
+```
+
+##### Herramientas de Debug
+
+**NPCNarrativeStateManager** (Developer Menu)
+```
+📋 Limpiar Estado de Narrativas
+├─ Limpia PlayerPrefs (sistema antiguo)
+├─ Limpia completedInteractiveNarratives del preset actual
+└─ Útil para testing y debugging
+```
+
+**Uso desde código:**
+```csharp
+// Resetear narrativa específica
+NPCNarrativeStateManager.ClearNarrativeState("IntroVillage");
+
+// Limpiar todas las narrativas
+NPCNarrativeStateManager.ClearAllNarrativeStates();
 ```
 
 ---

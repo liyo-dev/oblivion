@@ -82,7 +82,13 @@ public class GameOverManager : MonoBehaviour
             gameOverUI.SetActive(false);
 
         if (rootGroup == null && gameOverUI != null)
-            rootGroup = gameOverUI.GetComponent<CanvasGroup>() ?? gameOverUI.AddComponent<CanvasGroup>();
+        {
+            rootGroup = gameOverUI.GetComponent<CanvasGroup>();
+            if (rootGroup == null)
+            {
+                Debug.LogWarning($"[GameOverManager] ⚠️ El GameObject '{gameOverUI.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el Inspector");
+            }
+        }
 
         // Estado inicial: no interactivo
         if (rootGroup != null)
@@ -236,10 +242,16 @@ public class GameOverManager : MonoBehaviour
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
 
-        if (pauseOnGameOver && resumeTime)
-            Time.timeScale = 1f;
+        if (rootGroup == null && gameOverUI != null)
+        {
+            rootGroup = gameOverUI.GetComponent<CanvasGroup>();
+            if (rootGroup == null)
+            {
+                Debug.LogWarning($"[GameOverManager] ⚠️ gameOverUI '{gameOverUI.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el Inspector");
+            }
+        }
 
-        // Desactivar interacción y remover listeners
+        // Estado inicial: no interactivo
         if (rootGroup != null)
         {
             rootGroup.blocksRaycasts = false;

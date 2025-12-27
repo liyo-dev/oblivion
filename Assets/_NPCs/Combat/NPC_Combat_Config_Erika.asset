@@ -17,9 +17,9 @@ MonoBehaviour:
   health: 100
   attackDamage: 10
   attackCooldown: 1.5
-  detectionRange: 3
-  combatRange: 2
-  meleeRange: 2
+  detectionRange: 10
+  minAttackDistance: 2
+  maxAttackDistance: 10
   isAggressive: 1
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
@@ -57,4 +57,4 @@ MonoBehaviour:
   minCoverDistance: 3
   maxCoverDistance: 15
   coverStayDuration: 4
-  preferShieldOverCover: 1
+  preferShieldOverCover: 0

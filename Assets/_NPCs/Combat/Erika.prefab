@@ -1653,6 +1653,7 @@ GameObject:
   - component: {fileID: 4776993247457690848}
   - component: {fileID: 7490619964796838480}
   - component: {fileID: 6743273565896207114}
+  - component: {fileID: 2866575645031991959}
   m_Layer: 8
   m_Name: Erika
   m_TagString: Untagged
@@ -1843,7 +1844,7 @@ MonoBehaviour:
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: GetHit01_NoWeapon
+  getHitState: TakeDamage
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
@@ -1914,6 +1915,30 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+--- !u!114 &2866575645031991959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7770552252693826820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700cd0237e2f4235aeb8c8fc6b886f84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCShieldController
+  shieldPrefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
+  shieldAnchor: {fileID: 0}
+  shieldOffset: {x: 0, y: 0, z: 0}
+  defendAnimation: Defend_NoWeapon
+  defendHitAnimation: DefendHit_NoWeapon
+  upperBodyLayer: 1
+  upperBodyTransitionDuration: 0.1
+  hitFeedbackDuration: 0.3
+  blockLayerNames:
+  - Projectile
+  minDefendDuration: 2
+  maxDefendDuration: 5
 --- !u!1 &7787806511522334384
 GameObject:
   m_ObjectHideFlags: 0

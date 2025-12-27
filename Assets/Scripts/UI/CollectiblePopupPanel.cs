@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -33,7 +33,10 @@ public class CollectiblePopupPanel : MonoBehaviour
     void Awake()
     {
         _cg = GetComponent<CanvasGroup>();
-        if (_cg == null) _cg = gameObject.AddComponent<CanvasGroup>();
+        if (_cg == null)
+        {
+            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el prefab");
+        }
     }
 
     public string ItemId => _itemId;
@@ -80,7 +83,9 @@ public class CollectiblePopupPanel : MonoBehaviour
         LayoutElement le = GetComponent<LayoutElement>();
         if (le == null)
         {
-            le = gameObject.AddComponent<LayoutElement>();
+            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente LayoutElement - debe agregarse manualmente en el prefab");
+            // Salir anticipadamente si no hay LayoutElement
+            return;
         }
 
         // Try to infer a reasonable preferred height from the rect; if not available use minPreferredHeight

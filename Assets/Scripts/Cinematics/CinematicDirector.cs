@@ -39,8 +39,7 @@ public class CinematicDirector : MonoBehaviour
         if (!hudCanvas) BuildHUD();
         if (!sfxSource)
         {
-            sfxSource = gameObject.AddComponent<AudioSource>();
-            sfxSource.playOnAwake = false;
+            Debug.LogWarning($"[CinematicDirector] ⚠️ sfxSource no está asignado - debe agregarse manualmente en el Inspector");
         }
     }
 

@@ -638,9 +638,13 @@ MonoBehaviour:
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: GetHit01_NoWeapon
+  getHitState: TakeDamage
+  defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
@@ -737,10 +741,10 @@ MonoBehaviour:
     stuckThreshold: 0.02
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
-  debugMode: 0
+  debugMode: 1
   startInIdleState: 1
-  forceKinematicRigidbody: 0
-  persistLastPosition: 0
+  forceKinematicRigidbody: 1
+  persistLastPosition: 1
 --- !u!1 &2012732618361199451
 GameObject:
   m_ObjectHideFlags: 0

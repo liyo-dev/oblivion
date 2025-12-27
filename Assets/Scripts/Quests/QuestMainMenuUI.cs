@@ -394,13 +394,17 @@ public class QuestMainMenuUI : MonoBehaviour
             for (int i = 0; i < activeContainer.childCount; i++)
             {
                 var child = activeContainer.GetChild(i);
-                var buttons = child.GetComponentsInChildren<Button>();
-                foreach (var btn in buttons)
+                var itemUI = child.GetComponent<QuestVisibilityItemUI>();
+                
+                if (itemUI != null)
                 {
-                    if (btn != null && btn.gameObject.activeInHierarchy && btn.interactable)
+                    // Obtener el botón correcto según el panel actual
+                    Button targetButton = _showingHidden ? itemUI.GetActivateButton() : itemUI.GetArchiveButton();
+                    
+                    if (targetButton != null && targetButton.gameObject.activeInHierarchy && targetButton.interactable)
                     {
-                        btn.Select();
-                        Debug.Log($"QuestMainMenuUI: EnsureSelection -> selected {btn.name}");
+                        targetButton.Select();
+                        Debug.Log($"QuestMainMenuUI: EnsureSelection -> selected {targetButton.name} from {child.name}");
                         return;
                     }
                 }

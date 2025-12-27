@@ -277,13 +277,21 @@ namespace Game.NPC
                 Mathf.Max(0.5f, _settings.holdIntervalMin),
                 Mathf.Max(Mathf.Max(0.5f, _settings.holdIntervalMin), _settings.holdIntervalMax));
 
-            // Configurar NavMeshAgent para movimiento suave
+            // Configurar NavMeshAgent para movimiento suave y RESPETAR OBSTÁCULOS
             if (_agent != null)
             {
                 _agent.acceleration = 8f; // Aceleración gradual
                 _agent.angularSpeed = 180f; // Rotación moderada (no instantánea)
                 _agent.autoBraking = true; // Frenado automático suave
                 _agent.stoppingDistance = 0.1f;
+                
+                // ✅ CONFIGURACIÓN PARA EVITAR SALIRSE DEL MUNDO
+                _agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+                _agent.avoidancePriority = 50; // Prioridad media (0-99, menor = más prioritario)
+                _agent.radius = Mathf.Max(0.5f, _agent.radius); // Radio mínimo para evitar colisiones
+                _agent.height = Mathf.Max(1.8f, _agent.height); // Altura mínima
+                
+                Debug.Log($"[NPCCombatBrain] ✅ NavMeshAgent configurado - Radius: {_agent.radius:F2}, Height: {_agent.height:F2}, Avoidance: {_agent.obstacleAvoidanceType}");
             }
             
             // Inicializar valores de suavizado
@@ -347,9 +355,29 @@ namespace Game.NPC
             float repathTimer = 0f;
 
             Debug.Log($"[NPCCombatBrain] ===== CombatLoop INICIADO ===== _ctx: {_ctx != null}, _player: {_player != null}, _agent: {_agent != null}, _animator: {_animator != null}");
+            
+            // ✅ DEBUG: Mostrar configuración inicial
+            Debug.Log($"[NPCCombatBrain] 🎮 CONFIGURACIÓN INICIAL:" +
+                $"\n  minDistance: {_settings.minDistance:F2}" +
+                $"\n  maxDistance: {_settings.maxDistance:F2}" +
+                $"\n  requireLineOfSight: {_settings.requireLineOfSight}" +
+                $"\n  Ataques configurados:" +
+                $"\n    LEFT: {(_settings.leftAttack.animationState ?? "NONE")} - cooldown: {_settings.leftAttack.cooldown:F2}s" +
+                $"\n    RIGHT: {(_settings.rightAttack.animationState ?? "NONE")} - cooldown: {_settings.rightAttack.cooldown:F2}s" +
+                $"\n    SPECIAL: {(_settings.specialAttack.animationState ?? "NONE")} - cooldown: {_settings.specialAttack.cooldown:F2}s" +
+                $"\n  Cooldowns iniciales - LEFT:{_leftAttackCooldown:F2} RIGHT:{_rightAttackCooldown:F2} SPECIAL:{_specialAttackCooldown:F2}");
 
             while (_ctx != null && _manager != null && _manager.isActiveAndEnabled && _player != null)
             {
+                // ✅ SKIP FRAME SI ESTÁ STUNNEADO (recibiendo daño)
+                var lifecycleHandler = _manager.GetComponent<Modules.NPCCombatLifecycleHandler>();
+                if (lifecycleHandler != null && lifecycleHandler.IsStunned)
+                {
+                    // Durante el stun, no ejecutar lógica de combate
+                    yield return null;
+                    continue;
+                }
+                
                 if (!_printedAnimatorValidation && _rawAnimator != null)
                 {
                     _printedAnimatorValidation = true;
@@ -385,6 +413,18 @@ namespace Game.NPC
                 }
 
                 float distanceToPlayer = Vector3.Distance(transform.position, _player.position);
+                
+                // ✅ VERIFICACIÓN PROACTIVA: Asegurar que el agente está en el NavMesh cada frame
+                if (_agent != null && !_agent.isOnNavMesh)
+                {
+                    Debug.LogWarning($"[NPCCombatBrain] ⚠️ {gameObject.name} detectado FUERA del NavMesh en {transform.position}");
+                    EnsureAgentOnNavMesh(_settings.sightRadius * 2f); // Buscar en un radio amplio
+                }
+                
+                // ✅ GARANTIZAR QUE SIEMPRE MIRE AL JUGADOR (cada frame)
+                // Esto evita que se quede de espaldas o de perfil
+                FacePlayer();
+                
                 // Nota: el giro se decide por rama. Al atacar/pausar miramos al jugador; al movernos miramos la dirección de avance.
                 
                 // Actualizar estado táctico basado en salud (si está disponible)
@@ -446,65 +486,148 @@ namespace Game.NPC
                 }
 
                 // =====================================================
-                // ESTRATEGIA SIMPLE: PARADO para atacar, MOVERSE para reposicionar
+                // 🧙 ESTRATEGIA DUELO DE MAGOS (ESTILO HARRY POTTER)
+                // =====================================================
+                // Filosofía: QUIETO y ESTRATÉGICO - Solo moverse con propósito
+                // - Prioridad absoluta: DISPARAR si tiene magia
+                // - Solo moverse si: demasiado cerca, sin magia, o busca cobertura
                 // =====================================================
                 
                 bool hasAttackReady = HasAttackAvailable();
                 bool clearLos = !_settings.requireLineOfSight || HasLineOfSight();
                 
-                // ✅ PRIORIDAD 1: Si puede atacar → PARADO y atacar
-                if (hasAttackReady && clearLos && _attackLockTimer <= 0f && !_isWindup && inAttackRange)
+                // ✅ DEBUG: Log de condiciones de ataque (reducir frecuencia)
+                if (Time.frameCount % 180 == 0) // Cada 3 segundos
                 {
-                    // PARADO - Atacar
+                    Debug.Log($"[NPCCombatBrain] 🔍 DIAGNÓSTICO:" +
+                        $"\n  hasAttackReady: {hasAttackReady}" +
+                        $"\n  clearLos: {clearLos}" +
+                        $"\n  inAttackRange: {inAttackRange}" +
+                        $"\n  distance: {distanceToPlayer:F2} (min:{_settings.minDistance:F2}, max:{_settings.maxDistance:F2})" +
+                        $"\n  Cooldowns - LEFT:{_leftAttackCooldown:F2} RIGHT:{_rightAttackCooldown:F2} SPECIAL:{_specialAttackCooldown:F2}");
+                }
+                
+                // 🎯 PRIORIDAD 1: Si está casteando/windup → PARADO mirando al jugador
+                if (_isWindup || _postAttackHoldTimer > 0f)
+                {
+                    StopAndIdle();
+                    FacePlayer();
+                    // No log para evitar spam
+                }
+                // 🎯 PRIORIDAD 2: Si puede atacar → PARADO y DISPARAR (comportamiento principal)
+                else if (hasAttackReady && clearLos && _attackLockTimer <= 0f && inAttackRange)
+                {
+                    // 🧙 MAGO: Quieto, apunta, dispara
                     StopAndIdle();
                     FacePlayer();
                     TryExecuteAttack();
-                    Debug.Log($"[NPCCombatBrain] ⚔️ PARADO - Atacando");
+                    // Log solo al atacar
+                    if (Time.frameCount % 30 == 0)
+                    {
+                        Debug.Log($"[NPCCombatBrain] ⚔️ DISPARANDO - Duelo de magos");
+                    }
                 }
-                // ✅ PRIORIDAD 2: Si está en windup o post-ataque → PARADO
-                else if (_isWindup || _postAttackHoldTimer > 0f)
+                // 🎯 PRIORIDAD 3: Jugador DEMASIADO CERCA → Retroceder urgente
+                else if (tooClose)
                 {
-                    // PARADO - Esperando
-                    StopAndIdle();
-                    FacePlayer();
-                    Debug.Log($"[NPCCombatBrain] ⏸️ PARADO - Esperando (windup={_isWindup}, postAttack={_postAttackHoldTimer:F2})");
-                }
-                // ✅ PRIORIDAD 3: Necesita reposicionarse → MOVERSE
-                else
-                {
-                    // MOVIMIENTO - Buscar nueva posición
-                    Vector3 targetPos;
+                    // 🧙 El jugador invade mi espacio → RETROCEDER
+                    Vector3 targetPos = ComputeRetreatPosition(distanceToPlayer);
                     
-                    if (tooClose)
-                    {
-                        // Retroceder
-                        targetPos = ComputeRetreatPosition(distanceToPlayer);
-                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Retrocediendo");
-                    }
-                    else if (tooFar)
-                    {
-                        // Acercarse
-                        targetPos = ComputeApproachPosition(distanceToPlayer);
-                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Acercándose");
-                    }
-                    else
-                    {
-                        // Circular
-                        targetPos = ComputeCirclePosition(distanceToPlayer);
-                        Debug.Log($"[NPCCombatBrain] 🏃 MOVIENDO - Circulando");
-                    }
-                    
-                    // Actualizar destino NavMesh
                     if (repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
                     {
                         NavMeshAgentUtility.SetDestination(_agent, targetPos, 0.5f);
-                        repathTimer = _settings.repathInterval;
+                        repathTimer = _settings.repathInterval * 0.5f; // Más frecuente al retroceder
                     }
                     
-                    // ACTIVAR LOCOMOCIÓN
                     float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent);
                     StartMoving(speed);
-                    FaceMovement();
+                    FacePlayer(); // Retroceder mirando al enemigo
+                    
+                    if (Time.frameCount % 30 == 0)
+                    {
+                        Debug.Log($"[NPCCombatBrain] 🏃 RETROCEDIENDO - Jugador muy cerca ({distanceToPlayer:F1}m)");
+                    }
+                }
+                // 🎯 PRIORIDAD 4: Sin magia disponible → Táctica defensiva
+                else if (!hasAttackReady && _attackLockTimer <= 0f)
+                {
+                    // 🧙 Sin magia → Buscar cobertura o usar escudo
+                    bool movedToSafety = false;
+                    bool usedShield = false;
+                    
+                    // ✅ Opción A: Intentar usar escudo si está disponible
+                    if (_settings.useShield && _shieldController != null && _shieldCooldownTimer <= 0f && !_isDefending)
+                    {
+                        StopAndIdle();
+                        FacePlayer();
+                        TryActivateShield();
+                        usedShield = true;
+                        
+                        if (Time.frameCount % 60 == 0)
+                        {
+                            Debug.Log($"[NPCCombatBrain] 🛡️ SIN MAGIA - Usando escudo para ganar tiempo");
+                        }
+                    }
+                    // Opción B: Buscar cobertura táctica si no usó escudo
+                    else if (!usedShield && _settings.useTacticalRetreat && _retreatCooldownTimer <= 0f)
+                    {
+                        if (!_settings.preferShieldOverCover)
+                        {
+                            movedToSafety = TryFindAndMoveToCover();
+                        }
+                        
+                        if (!movedToSafety)
+                        {
+                            // Sin cobertura → Mantenerse quieto en guardia
+                            StopAndIdle();
+                            FacePlayer();
+                        }
+                        
+                        if (Time.frameCount % 60 == 0)
+                        {
+                            Debug.Log($"[NPCCombatBrain] ⏳ SIN MAGIA - Esperando cooldowns (quieto/cobertura)");
+                        }
+                    }
+                    else
+                    {
+                        // 🧙 POSTURA DE DUELO: Quieto, en guardia, esperando cooldowns
+                        StopAndIdle();
+                        FacePlayer();
+                        
+                        if (Time.frameCount % 90 == 0)
+                        {
+                            Debug.Log($"[NPCCombatBrain] ⏸️ EN GUARDIA - Esperando cooldowns");
+                        }
+                    }
+                }
+                // 🎯 PRIORIDAD 5: Jugador muy lejos → Acercarse lentamente
+                else if (tooFar)
+                {
+                    // 🧙 Solo acercarse si está MUY lejos (fuera de rango de disparo)
+                    Vector3 targetPos = ComputeApproachPosition(distanceToPlayer);
+                    
+                    if (repathTimer <= 0f && EnsureAgentOnNavMesh(_settings.sightRadius))
+                    {
+                        NavMeshAgentUtility.SetDestination(_agent, targetPos, 0.5f);
+                        repathTimer = _settings.repathInterval * 2f; // Menos frecuente
+                    }
+                    
+                    float speed = NavMeshAgentUtility.ComputeSpeedFactor(_agent) * 0.7f; // Más lento
+                    StartMoving(speed);
+                    FacePlayer();
+                    
+                    if (Time.frameCount % 60 == 0)
+                    {
+                        Debug.Log($"[NPCCombatBrain] 🚶 ACERCÁNDOSE - Jugador muy lejos ({distanceToPlayer:F1}m)");
+                    }
+                }
+                // 🎯 DEFAULT: En rango pero esperando ataque → QUIETO en postura de duelo
+                else
+                {
+                    // 🧙 POSTURA DE DUELO CLÁSICA: Quieto, mirando, esperando oportunidad
+                    StopAndIdle();
+                    FacePlayer();
+                    // Sin log - comportamiento por defecto
                 }
 
                 // Invertir sentido circular de vez en cuando
@@ -585,8 +708,23 @@ namespace Game.NPC
             if (_player == null)
                 return transform.position;
 
+            // ✅ Retroceder más lejos del player
             Vector3 away = (transform.position - _player.position).normalized;
-            float retreat = Mathf.Max(_settings.retreatDistance, 2f);
+            
+            // ✅ Distancia de retroceso variable según cuán cerca está el player
+            float targetDistance = _settings.maxDistance; // Retroceder hasta la distancia máxima
+            float currentGap = currentDistance;
+            float neededDistance = targetDistance - currentGap;
+            
+            // ✅ Si está MUY cerca (< 70% minDistance), retroceder urgente
+            float urgentThreshold = _settings.minDistance * 0.7f;
+            if (currentDistance < urgentThreshold)
+            {
+                neededDistance = Mathf.Max(neededDistance, _settings.retreatDistance * 1.5f);
+                Debug.Log($"[NPCCombatBrain] 🚨 RETROCESO URGENTE - Player muy cerca ({currentDistance:F1}m < {urgentThreshold:F1}m)");
+            }
+            
+            float retreat = Mathf.Max(neededDistance, _settings.retreatDistance, 2f);
             return transform.position + away * retreat;
         }
 
@@ -816,17 +954,17 @@ namespace Game.NPC
                 float d = Vector3.Distance(transform.position, _player.position);
                 if (d < _settings.minDistance - 0.1f) { cancelled = true; break; }
                 
-                // Detenerse y mirar al jugador durante el wind-up
+                // ✅ SIEMPRE detenerse y mirar al jugador durante el wind-up
                 StopAndIdle();
                 FacePlayer();
                 
-                // ✅ VERIFICAR si está mirando al player (ángulo < 15°)
+                // ✅ VERIFICAR si está mirando al player (ángulo < 25° - más permisivo)
                 Vector3 dirToPlayer = (_player.position - transform.position).normalized;
                 dirToPlayer.y = 0f;
                 Vector3 forward = transform.forward;
                 forward.y = 0f;
                 float angle = Vector3.Angle(forward, dirToPlayer);
-                isFacingPlayer = angle < 15f;  // Debe estar casi de frente
+                isFacingPlayer = angle < 25f;  // Más permisivo (antes 15°)
                 
                 t += Time.deltaTime;
                 yield return null;
@@ -850,6 +988,10 @@ namespace Game.NPC
             }
             
             Debug.Log($"[NPCCombatBrain] ✅ ATACANDO - Mirando al player correctamente");
+            
+            // ✅ FORZAR orientación final antes de atacar
+            FacePlayer();
+            
             ExecuteAttack(slot);
             onExecuted?.Invoke();
             _isWindup = false;
@@ -1110,8 +1252,22 @@ namespace Game.NPC
             if (direction.sqrMagnitude < 0.0001f)
                 return;
 
-            // ✅ Rotación rápida durante windup/ataque
-            SmoothRotateTowards(direction, fast: _isWindup);
+            // ✅ SIEMPRE rotar hacia el jugador durante combate
+            // Rotación rápida durante windup/ataque para evitar disparos de perfil
+            // Rotación moderada el resto del tiempo para mantener contacto visual
+            
+            if (_isWindup || _postAttackHoldTimer > 0f)
+            {
+                // Rotación MÁS RÁPIDA durante cast (casi instantánea)
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 30f);
+            }
+            else
+            {
+                // ✅ Rotación RÁPIDA también fuera de cast para mantener contacto visual
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 15f);
+            }
         }
 
         void FaceMovement()
@@ -1156,19 +1312,32 @@ namespace Game.NPC
             if (_agent.isOnNavMesh)
                 return true;
 
+            // ⚠️ EL AGENTE SE HA SALIDO DEL NAVMESH
+            Debug.LogWarning($"[NPCCombatBrain] ⚠️ {gameObject.name} se salió del NavMesh! Intentando corregir...");
+
             // Try to find closest point on NavMesh
             if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, maxDistance, _agent.areaMask))
             {
                 _agent.Warp(hit.position);
+                Debug.Log($"[NPCCombatBrain] ✅ {gameObject.name} devuelto al NavMesh en {hit.position}");
                 return true;
             }
 
+            // Si no encuentra NavMesh cerca, buscar más lejos
+            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var farHit, maxDistance * 3f, _agent.areaMask))
+            {
+                _agent.Warp(farHit.position);
+                Debug.LogWarning($"[NPCCombatBrain] ⚠️ {gameObject.name} forzado al NavMesh MUY LEJOS en {farHit.position}");
+                return true;
+            }
+
+            Debug.LogError($"[NPCCombatBrain] ❌ {gameObject.name} NO SE PUEDE DEVOLVER AL NAVMESH!");
             return false;
         }
         
         /// <summary>
-        /// Detiene el agente y reproduce Battle Idle solo si estaba moviéndose
-        /// Evita spam de PlayBattleIdle()
+        /// Detiene el agente y reproduce Battle Idle
+        /// En combate, SIEMPRE debe usar Battle Idle, no el idle normal
         /// </summary>
         void StopAndIdle()
         {
@@ -1185,12 +1354,10 @@ namespace Game.NPC
                 }
             }
             
-            // Solo llamar PlayBattleIdle si acabamos de detenernos
-            if (_wasMovingLastFrame)
-            {
-                _animator?.PlayBattleIdle();
-                _wasMovingLastFrame = false;
-            }
+            // ✅ SIEMPRE reproducir Battle Idle cuando se detiene en combate
+            // (No solo si estaba en movimiento, porque también puede quedarse quieto esperando cooldowns)
+            _animator?.PlayBattleIdle();
+            _wasMovingLastFrame = false;
         }
         
         /// <summary>
@@ -1221,14 +1388,23 @@ namespace Game.NPC
         {
             // Verificar si puede usar escudo
             if (!_settings.useShield)
+            {
+                Debug.Log($"[NPCCombatBrain] ⚠️ useShield está desactivado en config");
                 return;
+            }
                 
             if (_shieldController == null)
+            {
+                Debug.LogWarning($"[NPCCombatBrain] ⚠️ No hay NPCShieldController en {gameObject.name}");
                 return;
+            }
             
             // Ya está defendiendo
             if (_isDefending || _shieldController.IsDefending)
+            {
+                Debug.Log($"[NPCCombatBrain] ⚠️ Ya está defendiendo con escudo");
                 return;
+            }
             
             // Escudo en cooldown
             if (_shieldCooldownTimer > 0f)
@@ -1237,19 +1413,20 @@ namespace Game.NPC
                 return;
             }
             
-            // Activar escudo
+            // ✅ ACTIVAR ESCUDO
             float duration = UnityEngine.Random.Range(
-                Mathf.Max(0.5f, _settings.shieldMinDuration),
-                Mathf.Max(Mathf.Max(0.5f, _settings.shieldMinDuration), _settings.shieldMaxDuration)
+                Mathf.Max(1f, _settings.shieldMinDuration),
+                Mathf.Max(Mathf.Max(1f, _settings.shieldMinDuration), _settings.shieldMaxDuration)
             );
             
+            // Llamar al controller para activar el escudo
             _shieldController.StartDefending(duration);
             _isDefending = true;
             
             // Aplicar cooldown
-            _shieldCooldownTimer = _settings.shieldCooldown;
+            _shieldCooldownTimer = Mathf.Max(2f, _settings.shieldCooldown);
             
-            Debug.Log($"[NPCCombatBrain] 🛡️ ESCUDO ACTIVADO - Duración: {duration:F1}s, Cooldown: {_shieldCooldownTimer:F1}s");
+            Debug.Log($"[NPCCombatBrain] 🛡️ ✅ ESCUDO ACTIVADO - Duración: {duration:F1}s, Cooldown: {_shieldCooldownTimer:F1}s");
             
             // Programar desactivación automática
             StartCoroutine(DeactivateShieldAfter(duration));

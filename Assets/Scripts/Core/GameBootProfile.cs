@@ -773,6 +773,13 @@ public class GameBootProfile : ScriptableObject
             Debug.Log("[GameBootProfile] Snapshots narrativos del preset limpiados para Nueva Partida");
         }
 
+        // ✅ NUEVO: Limpiar narrativas interactivas completadas para que se puedan volver a ejecutar
+        if (runtimePreset != null && runtimePreset.completedInteractiveNarratives != null)
+        {
+            runtimePreset.completedInteractiveNarratives.Clear();
+            Debug.Log("[GameBootProfile] ✅ Narrativas interactivas limpiadas para Nueva Partida");
+        }
+
         NarrativeAutoSetup.ResetForNewGame();
 
         Debug.Log("[GameBootProfile] Reset realizado para Nueva Partida (runtimePreset -> default)");
