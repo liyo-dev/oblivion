@@ -54,6 +54,12 @@ namespace Game.NPC
             public LayerMask coverLayerMask;    // Capa de objetos que sirven de cobertura (Arboles, Cajas)
             public float coverSearchRadius;     // Qué tan lejos busca cobertura
             public float dodgeDistance;         // Distancia de salto lateral
+            
+            [Header("Line of Sight & Searching")]
+            public LayerMask obstacleLayerMask; // Capas que bloquean la visión (Default, etc.)
+            public float searchDuration;        // Tiempo que busca al jugador antes de rendirse
+            public float searchMovementRadius;  // Radio de movimiento durante búsqueda
+            public bool returnToOriginAfterSearch; // Si vuelve al origen después de buscar
         }
         #endregion
 
@@ -69,11 +75,17 @@ namespace Game.NPC
         NPCShieldController _shieldController;
 
         // FSM State
-        public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE }
+        public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE, SEARCHING }
         [SerializeField, ReadOnly] private CombatState _currentState; // Visible debug
 
         // Cooldowns
         float _leftCd, _rightCd, _specialCd, _shieldCd, _globalCd;
+        
+        // Line of Sight & Searching
+        bool _hasLineOfSight;
+        float _lastSeenTime;
+        Vector3 _lastKnownPlayerPosition;
+        Vector3 _combatStartPosition; // Posición original para volver
         
         Coroutine _fsmRoutine;
         bool _isActive;
@@ -105,6 +117,12 @@ namespace Game.NPC
                  _ctx.Player = GameObject.FindWithTag("Player").transform;
             _player = _ctx.Player;
 
+            // Guardar posición inicial para poder volver
+            _combatStartPosition = transform.position;
+            _lastKnownPlayerPosition = _player.position;
+            _lastSeenTime = Time.time;
+            _hasLineOfSight = true;
+
             _animator.SetBattleMode(true);
             _isActive = true;
             
@@ -131,10 +149,28 @@ namespace Game.NPC
             if (_shieldCd > 0) _shieldCd -= Time.deltaTime; // Escudo no se ve afectado por multiplicador
             if (_globalCd > 0) _globalCd -= dt;
 
-            // Rotación suave hacia el jugador siempre (Strafing)
-            if (_player != null && _currentState != CombatState.REPOSITION) // Al huir no miramos al player
+            // ✅ Verificar Line of Sight cada frame
+            if (_player != null)
             {
-                FaceTarget(_player.position);
+                _hasLineOfSight = CheckLineOfSight();
+                
+                if (_hasLineOfSight)
+                {
+                    _lastSeenTime = Time.time;
+                    _lastKnownPlayerPosition = _player.position;
+                }
+            }
+
+            // ✅ Rotación gestionada por NPCSimpleAnimator
+            // En ATTACK/DEFENSE: mirar al player (o última posición conocida)
+            // En REPOSITION: mirar hacia donde se mueve (gestionado automáticamente por SyncWithNavMeshAgent)
+            // En EVALUATE: mirar al player
+            // En SEARCHING: animación maneja la rotación
+            if (_player != null && _currentState != CombatState.REPOSITION && _currentState != CombatState.SEARCHING && _agent.isStopped)
+            {
+                // Solo rotar hacia el player cuando está parado (no en movimiento)
+                Vector3 targetPos = _hasLineOfSight ? _player.position : _lastKnownPlayerPosition;
+                _animator.FaceTarget(targetPos);
             }
         }
 
@@ -163,6 +199,10 @@ namespace Game.NPC
                     case CombatState.DEFENSE:
                         yield return State_Defense();
                         break;
+                    
+                    case CombatState.SEARCHING:
+                        yield return State_Searching();
+                        break;
                 }
                 yield return null;
             }
@@ -171,30 +211,38 @@ namespace Game.NPC
         // 1. EVALUAR: El cerebro que decide qué hacer
         IEnumerator State_Evaluate()
         {
+            // ✅ A. PRIORIDAD MÁXIMA: Si no veo al jugador -> BUSCAR
+            if (!_hasLineOfSight)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Sin línea de visión al jugador - Iniciando búsqueda");
+                _currentState = CombatState.SEARCHING;
+                yield break;
+            }
+            
             float dist = Vector3.Distance(transform.position, _player.position);
 
-            // A. Si está demasiado cerca -> HUIR (Reposicionarse)
+            // B. Si está demasiado cerca -> HUIR (Reposicionarse)
             if (dist < settings.minSafeDistance)
             {
                 _currentState = CombatState.REPOSITION;
                 yield break;
             }
 
-            // B. Si tengo ataques disponibles y estoy en rango -> ATACAR
+            // C. Si tengo ataques disponibles y estoy en rango -> ATACAR
             if (HasAnyAttackReady() && dist <= settings.maxDistance && _globalCd <= 0)
             {
                 _currentState = CombatState.ATTACK;
                 yield break;
             }
 
-            // C. Si no tengo ataques (estoy en CD) -> DEFENDERSE
+            // D. Si no tengo ataques (estoy en CD) -> DEFENDERSE
             if (!HasAnyAttackReady())
             {
                 _currentState = CombatState.DEFENSE;
                 yield break;
             }
 
-            // D. Si estoy muy lejos -> Acercarse (Usamos Reposition para acercarnos también)
+            // E. Si estoy muy lejos -> Acercarse (Usamos Reposition para acercarnos también)
             if (dist > settings.maxDistance)
             {
                  MoveTo(_player.position, settings.walkSpeed);
@@ -216,8 +264,8 @@ namespace Game.NPC
                 Vector3 dirAway = (transform.position - _player.position).normalized;
                 targetPos = transform.position + dirAway * 5f; // Alejarse 5 metros
                 
-                // Asegurar que miramos hacia donde corremos si es una huida desesperada
-                FaceTarget(targetPos); 
+                // ✅ MoveTo iniciará el movimiento y NPCSimpleAnimator.SyncWithNavMeshAgent()
+                // rotará automáticamente hacia la dirección de movimiento (navAgent.velocity)
                 MoveTo(targetPos, settings.runSpeed);
                 
                 // Esperar hasta llegar o 2 segundos máx
@@ -246,8 +294,16 @@ namespace Game.NPC
         // 3. ATACAR: Seleccionar hechizo y disparar
         IEnumerator State_Attack()
         {
+            // ✅ Verificar que tengamos línea de visión antes de atacar
+            if (!_hasLineOfSight)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado - Sin línea de visión");
+                _currentState = CombatState.SEARCHING;
+                yield break;
+            }
+            
             StopMove(); // Quieto para disparar
-            FaceTarget(_player.position);
+            _animator.FaceTarget(_player.position);
 
             // Seleccionar ataque disponible (Prioridad: Special > Right > Left)
             AttackSlot chosenAttack = new AttackSlot();
@@ -270,6 +326,14 @@ namespace Game.NPC
             {
                 // Windup (preparación)
                 yield return new WaitForSeconds(UnityEngine.Random.Range(0.2f, 0.5f));
+                
+                // ✅ Verificar visión de nuevo antes de ejecutar el ataque
+                if (!_hasLineOfSight)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado durante windup - Perdida línea de visión");
+                    _currentState = CombatState.SEARCHING;
+                    yield break;
+                }
                 
                 // Ejecutar Animación
                 _rawAnimator.Play(chosenAttack.animationState, settings.upperBodyLayer);
@@ -454,16 +518,32 @@ namespace Game.NPC
             if (_agent.isOnNavMesh) _agent.isStopped = true;
             _animator.SetMovementSpeed(0, 0.1f);
         }
-
-        private void FaceTarget(Vector3 target)
+        
+        /// <summary>
+        /// Verifica si hay línea de visión directa al jugador (sin obstáculos).
+        /// Usa raycast para detectar objetos en la capa de obstáculos.
+        /// </summary>
+        private bool CheckLineOfSight()
         {
-            Vector3 dir = (target - transform.position).normalized;
-            dir.y = 0;
-            if (dir != Vector3.zero)
+            if (_player == null) return false;
+            
+            Vector3 origin = transform.position + Vector3.up * 1.5f; // Altura de los ojos
+            Vector3 targetPos = _player.position + Vector3.up * 1.0f; // Centro del jugador
+            Vector3 direction = targetPos - origin;
+            float distance = direction.magnitude;
+            
+            // Raycast para detectar obstáculos
+            if (Physics.Raycast(origin, direction.normalized, out RaycastHit hit, distance, settings.obstacleLayerMask))
             {
-                Quaternion lookRot = Quaternion.LookRotation(dir);
-                transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, Time.deltaTime * 10f);
+                // Hay un obstáculo bloqueando la visión
+                Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
+                return false;
             }
+            
+            // Línea de visión clara
+            Debug.DrawRay(origin, direction, Color.green);
+            return true;
         }
         
         /// <summary>
@@ -498,6 +578,129 @@ namespace Game.NPC
             return inFOV;
         }
         
+        // =================================================================================
+        // 🔍 ESTADO DE BÚSQUEDA
+        // =================================================================================
+        
+        /// <summary>
+        /// Estado SEARCHING: El NPC ha perdido de vista al jugador y lo busca activamente.
+        /// Reproduce animación de búsqueda y hace pequeños movimientos aleatorios.
+        /// Si pasa el tiempo configurado sin encontrarlo, vuelve al origen y sale de combate.
+        /// </summary>
+        IEnumerator State_Searching()
+        {
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 INICIANDO BÚSQUEDA - Última posición conocida: {_lastKnownPlayerPosition}");
+            
+            StopMove();
+            
+            // Reproducir animación de búsqueda
+            if (_animator != null)
+            {
+                _animator.PlaySearching();
+            }
+            
+            float searchStartTime = Time.time;
+            float nextMovementTime = Time.time + UnityEngine.Random.Range(2f, 4f);
+            
+            while (Time.time - searchStartTime < settings.searchDuration)
+            {
+                // Si recuperamos línea de visión, volver a EVALUATE
+                if (_hasLineOfSight)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Jugador encontrado - Retomando combate");
+                    StopMove();
+                    _currentState = CombatState.EVALUATE;
+                    yield break;
+                }
+                
+                // Hacer pequeños movimientos de búsqueda
+                if (Time.time >= nextMovementTime)
+                {
+                    // Moverse a un punto aleatorio cerca de la última posición conocida
+                    Vector3 searchPoint = _lastKnownPlayerPosition + 
+                                         new Vector3(
+                                             UnityEngine.Random.Range(-settings.searchMovementRadius, settings.searchMovementRadius),
+                                             0,
+                                             UnityEngine.Random.Range(-settings.searchMovementRadius, settings.searchMovementRadius)
+                                         );
+                    
+                    // Verificar que el punto esté en NavMesh
+                    if (NavMesh.SamplePosition(searchPoint, out NavMeshHit navHit, settings.searchMovementRadius, NavMesh.AllAreas))
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 👣 Movimiento de búsqueda hacia: {navHit.position}");
+                        MoveTo(navHit.position, settings.walkSpeed);
+                        
+                        // Esperar a llegar o timeout
+                        float moveTimeout = 3f;
+                        float moveTimer = 0f;
+                        while (_agent.remainingDistance > 1f && moveTimer < moveTimeout)
+                        {
+                            // Si encontramos al jugador durante el movimiento, salir
+                            if (_hasLineOfSight)
+                            {
+                                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Jugador encontrado durante movimiento");
+                                StopMove();
+                                _currentState = CombatState.EVALUATE;
+                                yield break;
+                            }
+                            
+                            moveTimer += Time.deltaTime;
+                            yield return null;
+                        }
+                        
+                        StopMove();
+                        
+                        // Reproducir animación de búsqueda de nuevo
+                        if (_animator != null)
+                        {
+                            _animator.PlaySearching();
+                        }
+                    }
+                    
+                    nextMovementTime = Time.time + UnityEngine.Random.Range(2f, 4f);
+                }
+                
+                yield return null;
+            }
+            
+            // Tiempo de búsqueda agotado
+            Debug.Log($"[CombatBrain:{gameObject.name}] ⏱️ Tiempo de búsqueda agotado sin encontrar al jugador");
+            
+            if (settings.returnToOriginAfterSearch)
+            {
+                // Volver a la posición inicial
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🏠 Volviendo al origen: {_combatStartPosition}");
+                MoveTo(_combatStartPosition, settings.walkSpeed);
+                
+                // Esperar a llegar
+                while (_agent.remainingDistance > 1.5f)
+                {
+                    // Si encontramos al jugador mientras volvemos, retomar combate
+                    if (_hasLineOfSight)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Jugador encontrado mientras volvía al origen");
+                        StopMove();
+                        _currentState = CombatState.EVALUATE;
+                        yield break;
+                    }
+                    
+                    yield return null;
+                }
+                
+                StopMove();
+            }
+            
+            // Salir de combate
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Saliendo de modo combate - Jugador no encontrado");
+            StopCombat();
+            
+            // Notificar al manager que salimos de combate
+            if (_manager != null && _manager.Context != null)
+            {
+                _manager.Context.IsInCombat = false;
+            }
+        }
+        
         // Debug Visual
         private void OnDrawGizmosSelected()
         {
@@ -505,6 +708,13 @@ namespace Game.NPC
             Gizmos.DrawWireSphere(transform.position, settings.minSafeDistance);
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, settings.maxDistance);
+            
+            // Visualizar radio de búsqueda
+            if (_currentState == CombatState.SEARCHING)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(_lastKnownPlayerPosition, settings.searchMovementRadius);
+            }
         }
     }
 }

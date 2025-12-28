@@ -30,11 +30,20 @@ public class Damageable : MonoBehaviour, IDamageable
 
     public void TakeDamage(float amount)
     {
-        if (!IsAlive) return;
+        if (!IsAlive)
+        {
+            Debug.Log($"[Damageable:{name}] ⚠️ Ignorando daño - ya está muerto (Current: {Current})");
+            return;
+        }
         if (amount <= 0f) return;
 
-        if (Time.time < _invulnerableUntil) return;
+        if (Time.time < _invulnerableUntil)
+        {
+            Debug.Log($"[Damageable:{name}] 🛡️ Ignorando daño - invulnerable hasta {_invulnerableUntil - Time.time:F2}s");
+            return;
+        }
 
+        float oldHealth = Current;
         Current = Mathf.Max(0f, Current - amount);
         if (debugLogs) Debug.Log($"[Damageable:{name}] -{amount:0.##} -> {Current:0.##}/{Max}");
 
@@ -46,6 +55,7 @@ public class Damageable : MonoBehaviour, IDamageable
         if (Current <= 0f)
         {
             Current = 0f;
+            Debug.Log($"[Damageable:{name}] 💀 VIDA AGOTADA - Llamando a Die() (vida anterior: {oldHealth:F1})");
             Die();
         }
     }
@@ -84,8 +94,10 @@ public class Damageable : MonoBehaviour, IDamageable
 
     void Die()
     {
-        if (debugLogs) Debug.Log($"[Damageable:{name}] MUERTO");
+        Debug.Log($"[Damageable:{name}] 💀💀💀 Die() llamado - Invocando OnDied (suscriptores: {OnDied?.GetInvocationList().Length ?? 0})");
         OnDied?.Invoke();
+        
+        Debug.Log($"[Damageable:{name}] OnDied invocado - destroyOnDeath: {destroyOnDeath}");
 
         if (deathVFX)
         {

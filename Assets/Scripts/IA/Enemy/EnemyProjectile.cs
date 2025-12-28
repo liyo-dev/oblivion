@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Proyectil disparado por el boss demonio
@@ -112,6 +112,12 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (hasHit) return; // Evitar múltiples hits
         
+        // Ignorar al propio demonio y sus triggers primero
+        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
+        {
+            return;
+        }
+        
         // ✅ PRIORIDAD 1: Detectar colisión con proyectiles del jugador (layer "Projectile")
         if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
         {
@@ -122,21 +128,25 @@ public class EnemyProjectile : MonoBehaviour
             return; // El handler se encarga de destruir ambos proyectiles
         }
         
-        // Si impacta contra el escudo del jugador (marcado explícitamente), se destruye y no aplica daño al player
-        if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
+        // ✅ PRIORIDAD 2: Detectar colisión con layer Default (entorno/obstáculos)
+        if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
         {
             hasHit = true;
+            Debug.Log($"[EnemyProjectile] 💥 Impacto contra objeto Default: {other.gameObject.name} (Layer: Default)");
             DestroyProjectile();
             return;
         }
         
-        // Ignorar al propio demonio y sus triggers
-        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
+        // ✅ PRIORIDAD 3: Si impacta contra el escudo del jugador
+        if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
         {
+            hasHit = true;
+            Debug.Log($"[EnemyProjectile] 🛡️ Bloqueado por escudo del jugador");
+            DestroyProjectile();
             return;
         }
 
-        // Aplicar daño si es el jugador (buscar en el objeto o en su padre)
+        // ✅ PRIORIDAD 4: Aplicar daño si es el jugador (buscar en el objeto o en su padre)
         Transform checkTransform = other.transform;
         for (int i = 0; i < 3; i++) // Revisar hasta 3 niveles de jerarquía
         {
@@ -160,15 +170,16 @@ public class EnemyProjectile : MonoBehaviour
         {
             hasHit = true;
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[DemonProjectile] Daño aplicado: {damage} (encontrado por componente)");
+            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (encontrado por componente)");
             DestroyProjectile();
             return;
         }
 
-        // Si colisionó con algo sólido que no es el jugador, destruir
+        // ✅ ÚLTIMO: Si colisionó con algo sólido que no es el jugador, destruir
         if (!other.isTrigger)
         {
             hasHit = true;
+            Debug.Log($"[EnemyProjectile] 💥 Impacto contra collider sólido: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
             DestroyProjectile();
         }
     }

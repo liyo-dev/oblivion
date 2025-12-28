@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
@@ -102,7 +102,13 @@ namespace Game.NPC.States
                 else
                 {
                     // Mientras habla, solo mira al jugador (sin caminar)
-                    RotateTowards(context, context.Player.position, 10f);
+                    // ✅ Usar NPCSimpleAnimator.FaceDirection en lugar de rotar el transform directamente
+                    Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+                    directionToPlayer.y = 0;
+                    if (directionToPlayer.sqrMagnitude > 0.01f && context.Animator != null)
+                    {
+                        context.Animator.FaceDirection(directionToPlayer);
+                    }
                     return;
                 }
             }
@@ -116,8 +122,14 @@ namespace Game.NPC.States
             }
             else
             {
-                // Si no camina, solo rota
-                RotateTowards(context, context.Player.position, 5f);
+                // Si no camina, solo rota hacia el jugador
+                // ✅ Usar NPCSimpleAnimator.FaceDirection en lugar de rotar el transform directamente
+                Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+                directionToPlayer.y = 0;
+                if (directionToPlayer.sqrMagnitude > 0.01f && context.Animator != null)
+                {
+                    context.Animator.FaceDirection(directionToPlayer);
+                }
             }
         }
 
@@ -193,18 +205,6 @@ namespace Game.NPC.States
             }
         }
 
-        private void RotateTowards(NPCStateContext context, Vector3 target, float speed)
-        {
-            // ⚠️ DEPRECATED: Este método ya no se usa
-            // Usar NPCSimpleAnimator.FaceDirection() en su lugar
-            Vector3 dir = (target - context.Transform.position).normalized;
-            dir.y = 0;
-            if (dir != Vector3.zero)
-            {
-                Quaternion rot = Quaternion.LookRotation(dir);
-                context.Transform.rotation = Quaternion.Slerp(context.Transform.rotation, rot, Time.deltaTime * speed);
-            }
-        }
 
         private void ShowAlertIcon(NPCStateContext context)
         {

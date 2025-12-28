@@ -88,10 +88,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Tooltip("Animación de disparo especial (ambas manos)")]
     [SerializeField] private string spellCastSpecialState = "MagicSpecial";
     
-    [Header("NavMesh Agent Sync")]
-    [Tooltip("Sincronizar automáticamente con NavMeshAgent")]
-    public bool syncWithNavAgent = true;
-    
+    [Header("Root Motion")]
     [Tooltip("Usar Root Motion durante animaciones especiales")]
     [SerializeField] private bool useRootMotionForSpecialAnims = false;
     
@@ -250,8 +247,9 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Update actual speed based on position
         UpdateActualSpeed();
         
-        // Sync with NavMeshAgent if enabled
-        if (syncWithNavAgent && navAgent != null && navAgent.enabled)
+        // ✅ Sincronizar automáticamente con NavMeshAgent si existe y está activo
+        // No necesita configuración manual - es siempre automático
+        if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
         {
             SyncWithNavMeshAgent();
         }
@@ -519,6 +517,16 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Callback
         onComplete?.Invoke();
         
+        // ✅ NO hacer transición a Idle si el NPC está muerto
+        // Esto previene que se cancele la animación de muerte
+        if (_currentState == AnimationState.Dead)
+        {
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] OneShot completado pero NPC está muerto - NO transicionar a Idle");
+            _oneShotCoroutine = null;
+            yield break; // ✅ Usar yield break en lugar de return en coroutines
+        }
+        
         // Return to idle if not interacting (let the callback handle battle state)
         if (!_isInteracting && !_isInBattle)
         {
@@ -740,9 +748,6 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             _currentState = AnimationState.Dead;
             
-            // ✅ Desactivar sincronización con NavMeshAgent inmediatamente
-            syncWithNavAgent = false;
-            
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de muerte: {dieState}");
             
             // Usar Play directamente para reproducir la animación de muerte inmediatamente
@@ -799,9 +804,6 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             // Cambiar a estado normal (no muerto)
             _currentState = AnimationState.Idle;
-            
-            // Reactivar sincronización con NavMeshAgent
-            syncWithNavAgent = true;
             
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de mareo: {dizzyState}");
             

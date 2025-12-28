@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -92,7 +92,10 @@ namespace Game.NPC.Modules
 
         private void OnDamaged(float amount)
         {
-            if (IsDefeatedAndInactive || _isProcessingDefeat || _isInvulnerable) return;
+            if (_isInvulnerable || _isProcessingDefeat) return;
+
+            // 🔍 DEBUG: Log de vida actual
+            Debug.Log($"[Lifecycle] ⚔️ {name} recibió {amount} de daño - Vida: {_damageable.Current}/{_damageable.Max} - IsAlive: {_damageable.IsAlive}");
 
             // Interrupción de Casting
             if (_isCasting)
@@ -111,33 +114,61 @@ namespace Game.NPC.Modules
             IsStunned = true;
             _isInvulnerable = true;
 
+            // ✅ Si este golpe es LETAL, aplicar slow-mo AHORA (durante la animación de Hit)
+            bool isLethalHit = !_damageable.IsAlive;
+            
+            if (isLethalHit && enableDeathEffects)
+            {
+                Debug.Log($"[Lifecycle] 💀 GOLPE LETAL detectado - Aplicando slow motion durante animación de Hit");
+                FeedbackService.CameraShake(cameraShakeIntensity * 2f, 0.5f);
+                Time.timeScale = deathSlowMoScale;
+            }
+
             // 1. Feedback Visual/Sonoro
             if (playDamageAnimation && _animator) _animator.PlayGetHit();
-            if (enableCameraShake) FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
-            if (enableHitStop) FeedbackService.HitStop(hitStopTimeScale, hitStopDuration);
+            if (!isLethalHit && enableCameraShake) FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
+            if (!isLethalHit && enableHitStop) FeedbackService.HitStop(hitStopTimeScale, hitStopDuration);
 
             // 2. Detener movimiento físico
             bool wasMoving = _agent != null && _agent.enabled && !_agent.isStopped;
             if (_agent && _agent.enabled) _agent.isStopped = true;
 
-            // 3. Esperar Stun
-            yield return new WaitForSeconds(damageStunDuration);
-
-            // 4. Recuperación
-            if (_animator)
+            // 3. Esperar Stun (usar WaitForSecondsRealtime si está en slow-mo)
+            if (isLethalHit && enableDeathEffects)
             {
-                _animator.ResetMovement();
-                _animator.TransitionToIdle(); // Forzar vuelta a idle de combate
+                // Durante slow-mo, esperar un poco para ver la animación de Hit
+                yield return new WaitForSecondsRealtime(deathSlowMoDuration);
+                // Restaurar time scale
+                Time.timeScale = 1f;
+                Debug.Log($"[Lifecycle] ⏱️ Slow motion terminado - Time scale restaurado");
+            }
+            else
+            {
+                yield return new WaitForSeconds(damageStunDuration);
             }
 
-            if (_agent && _agent.enabled && wasMoving) 
-                _agent.isStopped = false;
+            // 4. Recuperación (solo si el NPC NO ha muerto)
+            if (_damageable.IsAlive)
+            {
+                if (_animator)
+                {
+                    _animator.ResetMovement();
+                    _animator.TransitionToIdle(); // Forzar vuelta a idle de combate
+                }
+
+                if (_agent && _agent.enabled && wasMoving) 
+                    _agent.isStopped = false;
+            }
+            // Si el NPC murió, NO hacer transición a Idle - DeathRoutine se encargará
 
             IsStunned = false;
 
-            // Invulnerabilidad residual (frames de gracia)
-            float graceTime = Mathf.Max(0, invulnerabilityDuration - damageStunDuration);
-            if (graceTime > 0) yield return new WaitForSeconds(graceTime);
+            // Invulnerabilidad residual (frames de gracia) - solo si NO murió
+            if (_damageable.IsAlive)
+            {
+                float graceTime = Mathf.Max(0, invulnerabilityDuration - damageStunDuration);
+                if (graceTime > 0) yield return new WaitForSeconds(graceTime);
+            }
             
             _isInvulnerable = false;
         }
@@ -148,7 +179,14 @@ namespace Game.NPC.Modules
 
         private void OnDied()
         {
-            if (_isProcessingDefeat) return;
+            Debug.Log($"[Lifecycle] 💀💀💀 OnDied() LLAMADO para {name} - _isProcessingDefeat: {_isProcessingDefeat}");
+            
+            if (_isProcessingDefeat)
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ OnDied() ya en proceso, ignorando duplicado");
+                return;
+            }
+            
             _isProcessingDefeat = true;
             IsDefeatedAndInactive = true;
 
@@ -179,34 +217,36 @@ namespace Game.NPC.Modules
                 transform.rotation = Quaternion.LookRotation(dir);
             }
 
-            // 4. MOMENTO CINEMÁTICO (Slow Motion + Shake)
-            if (enableDeathEffects)
+            // ✅ 4. Pequeña pausa para que termine la animación de Hit
+            // El slow-mo ya se aplicó en DamageSequence durante la animación de Hit
+            yield return new WaitForSeconds(0.1f);
+
+            // ✅ 5. INICIAR ANIMACIÓN DE MUERTE INMEDIATAMENTE
+            PostDeathBehavior behavior = _config != null ? _config.postDeathBehavior : PostDeathBehavior.GetUpDizzy;
+            
+            if (behavior == PostDeathBehavior.GetUpDizzy && _animator)
             {
-                FeedbackService.CameraShake(cameraShakeIntensity * 2f, 0.5f);
-                
-                Time.timeScale = deathSlowMoScale;
-                yield return new WaitForSecondsRealtime(deathSlowMoDuration);
-                Time.timeScale = 1f; // Restaurar
+                // Iniciar animación de muerte YA
+                _animator.PlayDeath();
+                Debug.Log($"[Lifecycle] 💀 Animación de muerte iniciada - transición directa desde Hit");
             }
 
-            // 5. CELEBRACIÓN DEL JUGADOR
+            // ✅ 6. CELEBRACIÓN DEL JUGADOR (mientras el NPC cae)
             if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
             {
                 DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
-                // Esperar a que el jugador termine de celebrar
+                // Esperar a que el jugador termine de celebrar (mientras el NPC cae)
                 yield return new WaitForSecondsRealtime(3.0f);
             }
 
-            // 6. POST-MUERTE (Desaparecer o Mareado)
-            PostDeathBehavior behavior = _config != null ? _config.postDeathBehavior : PostDeathBehavior.GetUpDizzy;
-
+            // ✅ 7. POST-MUERTE (Desaparecer o continuar con Dizzy)
             if (behavior == PostDeathBehavior.Disappear)
             {
                 yield return HandleDisappear();
             }
             else
             {
-                // HandleGetUpDizzy ahora maneja completamente la animación de muerte -> dizzy
+                // HandleGetUpDizzy ahora solo espera el dizzy y muestra el diálogo
                 yield return HandleGetUpDizzy();
             }
 
@@ -232,16 +272,10 @@ namespace Game.NPC.Modules
 
         private IEnumerator HandleGetUpDizzy()
         {
-            Debug.Log($"[Lifecycle] 😵 Iniciando secuencia GetUpDizzy para {name}");
+            Debug.Log($"[Lifecycle] 😵 Esperando transición a animación dizzy para {name}");
             
-            // 1. Reproducir animación de muerte (que transicionará automáticamente a dizzy gracias al exit time)
-            if (_animator)
-            {
-                _animator.PlayDeath();
-                Debug.Log($"[Lifecycle] 💀 Animación de muerte iniciada - transicionará automáticamente a dizzy");
-            }
-            
-            // 2. Esperar a que esté en la animación de mareo (dizzy)
+            // 1. La animación de muerte ya se inició en DeathRoutine()
+            // Solo esperamos a que esté en la animación de mareo (dizzy)
             float timeout = 10f; // Timeout de seguridad
             float elapsed = 0f;
             
@@ -262,7 +296,7 @@ namespace Game.NPC.Modules
                 Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando animación dizzy - continuando de todas formas");
             }
             
-            // 3. Mostrar diálogo de mareo (cuando ya está en la animación dizzy)
+            // 2. Mostrar diálogo de mareo (cuando ya está en la animación dizzy)
             DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
             if (dialogue != null)
             {
@@ -278,7 +312,7 @@ namespace Game.NPC.Modules
                 Debug.Log($"[Lifecycle] 💬 Diálogo de mareo completado");
             }
             
-            // 4. Configurar para interacción futura (Hablar con el NPC derrotado)
+            // 3. Configurar para interacción futura (Hablar con el NPC derrotado)
             SetupPostCombatInteraction();
             
             Debug.Log($"[Lifecycle] ✅ Secuencia GetUpDizzy completada para {name}");
