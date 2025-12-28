@@ -12579,7 +12579,7 @@ MonoBehaviour:
   upperIdleState: UpperIdle
   rules:
   - mode: 3
-    blockedAbilities: 
+    blockedAbilities: 0100000009000000
     disableComponents: []
     disableInputActions: []
     forceUpperIdle: 1
@@ -12813,12 +12813,15 @@ MonoBehaviour:
   playerRigidbody: {fileID: 6059246465518525408}
   battleIdleStateName: Idle_Battle_NoWeapon
   normalIdleStateName: Idle_Normal_NoWeapon
+  victoryStateName: Dance_NoWeapon
   enemyDetectionRadius: 15
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
   exitBattleDelay: 3
   idleSpeedThreshold: 0.1
+  victoryAnimationDuration: 3
+  victorySfxKey: Player_Victory
   debugMode: 0
 --- !u!1 &4956991213707944661
 GameObject:

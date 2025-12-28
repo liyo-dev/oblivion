@@ -1,22 +1,30 @@
-﻿﻿﻿﻿using UnityEngine;
+﻿﻿using UnityEngine;
+using Game.NPC.Common;
+using Game.NPC.Modules;
 
 namespace Game.NPC.States
 {
     /// <summary>
-    /// Estado de Wander - El NPC camina aleatoriamente dentro de un radio
+    /// Estado de Wander - El NPC camina aleatoriamente dentro de un radio.
+    /// Incluye detección de jugador con Raycast (Línea de visión).
     /// </summary>
     public class WanderState : NPCStateBase
     {
+        public override string StateName => "Wander";
+
         private Vector3 _targetPosition;
         private float _stuckTimer;
         private Vector3 _lastPosition;
         private bool _hasSetDestination;
+        
+        // Detección
         private float _playerDetectionTimer;
-        private const float PlayerDetectionInterval = 0.3f;
+        private const float PLAYER_DETECTION_INTERVAL = 0.2f;
         
-        public override string StateName => "Wander";
-        
-        public override void OnEnter(Common.NPCStateContext context)
+        // Cache para optimización
+        private Collider[] _collidersBuffer = new Collider[1]; 
+
+        public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
             
@@ -24,19 +32,32 @@ namespace Game.NPC.States
             _stuckTimer = 0f;
             _lastPosition = context.Transform.position;
             
-            // Intentar encontrar un punto aleatorio
+            // 1. Configurar velocidad de paseo (Walk Speed)
+            // Si hay configuración ambiental, usar su velocidad, si no, reducir la velocidad base
+            float wanderSpeed = 2.0f; // Valor por defecto seguro
+            if (context.Config != null && context.Config.ambientConfig != null)
+            {
+                wanderSpeed = context.Config.ambientConfig.walkSpeed;
+            }
+            else if (context.Agent != null)
+            {
+                wanderSpeed = context.Agent.speed * 0.5f; // 50% de la velocidad máxima si no hay config
+            }
+            
+            if (context.Agent != null) context.Agent.speed = wanderSpeed;
+
+            // 2. Buscar punto
             if (!TryFindWanderPoint(context, out _targetPosition))
             {
-                context.LogWarning($"[{StateName}] No se pudo encontrar punto de wander, volviendo a Idle");
-                // Si no se puede encontrar punto, volver a idle inmediatamente
+                // Si falla (ej: NavMesh no bakeado o área inaccesible), volver a idle
+                context.LogWarning($"[{StateName}] No se encontró punto válido. Volviendo a Idle.");
                 context.Brain.ChangeState(new IdleState());
                 return;
             }
             
-            // Establecer destino
+            // 3. Moverse
             if (!SetDestination(context, _targetPosition))
             {
-                context.LogWarning($"[{StateName}] No se pudo establecer destino, volviendo a Idle");
                 context.Brain.ChangeState(new IdleState());
                 return;
             }
@@ -44,167 +65,172 @@ namespace Game.NPC.States
             _hasSetDestination = true;
         }
         
-        public override void OnUpdate(Common.NPCStateContext context)
+        public override void OnUpdate(NPCStateContext context)
         {
             base.OnUpdate(context);
             
-            if (!_hasSetDestination)
-                return;
+            if (!_hasSetDestination) return;
             
-            // Actualizar animación de movimiento
+            // Actualizar animación (blend tree de locomoción)
             UpdateMovementAnimation(context);
             
-            // Verificar si se ha atascado
+            // Verificar si se atascó contra una pared
             CheckIfStuck(context);
             
-            // Detección periódica del jugador para combate
+            // Detección de jugador (Sensor visual)
             _playerDetectionTimer += Time.deltaTime;
-            if (_playerDetectionTimer >= PlayerDetectionInterval)
+            if (_playerDetectionTimer >= PLAYER_DETECTION_INTERVAL)
             {
                 _playerDetectionTimer = 0f;
                 CheckPlayerDetection(context);
             }
         }
         
-        public override Common.INPCState CheckTransitions(Common.NPCStateContext context)
+        public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // Prioridad: Cinemática
-            if (context.IsInCinematic)
-            {
-                return new CinematicState();
-            }
+            // 1. Prioridades Altas (Cinemática / Combate Forzado / Muerte)
+            if (context.IsInCinematic) return new CinematicState();
+            if (context.IsInCombat) return new CombatState();
+            if (context.WasDefeatedInCombat) return new DeadState();
             
-            // Prioridad: Combate
-            if (context.IsInCombat)
-            {
-                return new CombatState();
-            }
+            // 2. Interacción
+            if (context.IsInteracting) return new IdleState();
             
-            // Si está interactuando, volver a idle
-            if (context.IsInteracting)
-            {
-                return new IdleState();
-            }
+            // 3. Fallos de Navegación
+            if (!_hasSetDestination) return null; // Ya se manejó en OnEnter
             
-            // Si no se estableció destino (falló en OnEnter), ya habremos cambiado de estado
-            if (!_hasSetDestination)
-            {
-                return null;
-            }
-            
-            // Si el camino está bloqueado, volver a idle
             if (IsPathBlocked(context))
             {
-                context.Log($"[{StateName}] Camino bloqueado, volviendo a Idle");
+                context.Log($"[{StateName}] Camino bloqueado/inválido.");
                 return new IdleState();
             }
             
-            // Si se ha atascado, volver a idle
             if (HasStalled(context))
             {
-                context.Log($"[{StateName}] NPC atascado, volviendo a Idle");
+                context.Log($"[{StateName}] NPC atascado físicamente.");
                 return new IdleState();
             }
             
-            // Si ha llegado al destino, volver a idle
+            // 4. Éxito
             if (HasReachedDestination(context))
             {
-                context.Log($"[{StateName}] Destino alcanzado, volviendo a Idle");
-                context.HasReachedDestination = true;
+                // Al llegar, activamos el flag para que el IdleState sepa que acabamos de llegar
+                // y decida cuánto tiempo esperar antes de volver a Wander.
+                context.HasReachedDestination = true; 
                 return new IdleState();
             }
             
-            return null; // Continuar caminando
+            return null;
         }
         
-        private bool TryFindWanderPoint(Common.NPCStateContext context, out Vector3 point)
+        // =================================================================================
+        // 🧩 LÓGICA INTERNA
+        // =================================================================================
+
+        private bool TryFindWanderPoint(NPCStateContext context, out Vector3 point)
         {
             point = Vector3.zero;
             
-            // Asegurar que el agent está en NavMesh
-            float radius = context.Config != null ? context.Config.navMeshSampleRadius : 2f;
-            if (!Common.NavMeshAgentUtility.EnsureAgentOnNavMesh(context.Agent, context.Transform.position, radius))
+            // Asegurar que estamos en NavMesh antes de buscar
+            float sampleRadius = context.Config?.navMeshSampleRadius ?? 2f;
+            if (!NavMeshAgentUtility.EnsureAgentOnNavMesh(context.Agent, context.Transform.position, sampleRadius))
             {
                 return false;
             }
             
-            // Buscar punto aleatorio
-            float wanderRadius = context.Config != null ? context.Config.wanderRadius : 6f;
-            return Common.NavMeshAgentUtility.TryGetRandomPoint(context.Transform.position, wanderRadius, out point);
+            // Obtener radio de patrulla
+            float radius = context.Config?.wanderRadius ?? 8f;
+            
+            // Si tiene un punto de anclaje (Anchor), patrullar alrededor de él, no de la posición actual
+            // Esto evita que el NPC se vaya alejando infinitamente del spawn.
+            Vector3 origin = context.Transform.position;
+            // TODO: Si añades un SpawnAnchor al Context en el futuro, úsalo aquí:
+            // if (context.SpawnPoint != Vector3.zero) origin = context.SpawnPoint;
+
+            return NavMeshAgentUtility.TryGetRandomPoint(origin, radius, out point);
         }
         
-        private void CheckIfStuck(Common.NPCStateContext context)
+        private void CheckIfStuck(NPCStateContext context)
         {
-            var currentPos = context.Transform.position;
-            float sqrDistance = (currentPos - _lastPosition).sqrMagnitude;
+            // Comprobación simple de movimiento
+            float distSqr = (context.Transform.position - _lastPosition).sqrMagnitude;
+            float threshold = context.Config?.stuckThreshold ?? 0.05f;
             
-            float threshold = context.Config != null ? context.Config.stuckThreshold : 0.02f;
-            threshold *= threshold; // sqrMagnitude
-            
-            if (sqrDistance <= threshold)
+            // Si se movió menos del umbral en este frame...
+            if (distSqr < (threshold * threshold))
             {
                 _stuckTimer += Time.deltaTime;
             }
             else
             {
                 _stuckTimer = 0f;
-                _lastPosition = currentPos;
+                _lastPosition = context.Transform.position;
             }
         }
         
-        private bool HasStalled(Common.NPCStateContext context)
+        private bool HasStalled(NPCStateContext context)
         {
-            float interval = context.Config != null ? context.Config.stuckCheckInterval : 1.5f;
-            return _stuckTimer > interval;
+            float maxTime = context.Config?.stuckCheckInterval ?? 2.0f;
+            return _stuckTimer > maxTime;
         }
         
         /// <summary>
-        /// Detecta al jugador y transite a AlertState si es agresivo
+        /// Sistema de Sentidos: Vista (Distancia + Ángulo + Raycast)
         /// </summary>
-        private void CheckPlayerDetection(Common.NPCStateContext context)
+        private void CheckPlayerDetection(NPCStateContext context)
         {
-            // No detectar si el NPC ya fue derrotado
-            if (context.WasDefeatedInCombat)
-                return;
+            // Pre-requisitos rápidos
+            if (context.WasDefeatedInCombat || context.Player == null) return;
             
-            // Solo detectar si tiene configuración de combate agresiva
-            if (context.Config == null || context.Config.combatConfig == null)
-                return;
+            var combatConfig = context.Config?.combatConfig;
+            if (combatConfig == null || !combatConfig.isAggressive) return;
+
+            // 1. Chequeo de Distancia (Optimizado con sqrMagnitude)
+            Vector3 toPlayer = context.Player.position - context.Transform.position;
+            float distSqr = toPlayer.sqrMagnitude;
+            float detectionRange = combatConfig.detectionRange;
             
-            var combatConfig = context.Config.combatConfig;
-            if (!combatConfig.isAggressive)
-                return;
+            if (distSqr > detectionRange * detectionRange) return;
+
+            // 2. Chequeo de Campo de Visión (FOV)
+            // Asumimos que los ojos están un poco arriba del pivote
+            Vector3 eyePos = context.Transform.position + Vector3.up * 1.6f;
+            Vector3 playerTargetPos = context.Player.position + Vector3.up * 1.0f; // Pecho del jugador
+            Vector3 dirToTarget = (playerTargetPos - eyePos).normalized;
+
+            float angle = Vector3.Angle(context.Transform.forward, dirToTarget);
+            float fov = combatConfig.fieldOfView > 0 ? combatConfig.fieldOfView : 160f; // 160 grados por defecto
+
+            if (angle > fov * 0.5f) return;
+
+            // 3. Chequeo de Línea de Visión (Raycast) - ¡CRÍTICO PARA PAREDES!
+            // Usamos una máscara que incluya Default, Obstacles y Player
+            int layerMask = ~0; // Todo
+            // O mejor, definimos una máscara específica si la tienes en config
+            if (context.Config.combatConfig.coverLayerMask != 0) 
+                layerMask = context.Config.combatConfig.coverLayerMask | (1 << context.Player.gameObject.layer);
+
+            if (Physics.Raycast(eyePos, dirToTarget, out RaycastHit hit, detectionRange, layerMask))
+            {
+                // Si golpeamos algo que NO es el jugador, hay una pared
+                if (hit.transform != context.Player && !hit.transform.IsChildOf(context.Player))
+                {
+                    return; // Bloqueado por pared
+                }
+            }
+
+            // --- JUGADOR DETECTADO ---
+            context.Log($"[WanderState] 👁️ Jugador detectado visualmente. Iniciando Alerta.");
             
-            // ...existing code...
-            // Verificar si el jugador está en rango de detección
-            if (context.Player == null)
-                return;
-            
-            float distanceToPlayer = Vector3.Distance(context.Transform.position, context.Player.position);
-            if (distanceToPlayer > combatConfig.detectionRange)
-                return;
-            
-            // Verificar si está en el campo de visión
-            Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
-            float angleToPlayer = Vector3.Angle(context.Transform.forward, directionToPlayer);
-            
-            // Campo de visión amplio (180° por defecto)
-            const float detectionAngle = 180f;
-            if (angleToPlayer > detectionAngle / 2f)
-                return;
-            
-            // Jugador detectado - activar alerta
-            context.Log($"[WanderState] Jugador detectado a {distanceToPlayer:F1}m, activando alerta");
-            
-            // Transitar manualmente a AlertState
+            // Crear estado de alerta configurado
             var alertState = new AlertState(
-                combatConfig.alertIconDuration,
-                walkTowardsPlayer: true,
-                stopDistance: combatConfig.minAttackDistance + 1f
+                duration: combatConfig.alertIconDuration,
+                walk: true,
+                stopDist: combatConfig.minAttackDistance + 1f
             );
             
-            context.Brain?.ChangeState(alertState);
+            // Forzar cambio de estado inmediato
+            context.Brain.ChangeState(alertState);
         }
     }
 }
-

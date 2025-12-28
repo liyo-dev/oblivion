@@ -1,133 +1,141 @@
-﻿﻿﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
+using Game.NPC.Common;
+using Game.NPC.Modules;
 
 namespace Game.NPC.States
 {
     /// <summary>
-    /// Estado Idle - El NPC está quieto esperando.
-    /// Detecta al jugador para iniciar combate si es agresivo.
+    /// Estado Idle - El NPC está quieto.
+    /// Incluye detección visual realista (Raycast) para iniciar combate si es agresivo.
     /// </summary>
     public class IdleState : NPCStateBase
     {
+        public override string StateName => "Idle";
+
         private float _idleTimer;
         private float _idleDuration;
+        
+        // Detección
         private float _playerDetectionTimer;
-        private const float PlayerDetectionInterval = 0.3f;
-        
-        public override string StateName => "Idle";
-        
-        public override void OnEnter(Common.NPCStateContext context)
+        private const float PLAYER_DETECTION_INTERVAL = 0.2f; // 5 veces por segundo es suficiente
+
+        public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
             StopMovement(context);
             
-            // Si el NPC fue derrotado, asegurar que use animaciones normales (no de batalla)
+            // Seguridad: Si viene de combate/muerte, limpiar flags
             if (context.WasDefeatedInCombat && context.Animator != null)
             {
                 context.Animator.SetBattleMode(false);
-                context.Log($"[IdleState] NPC derrotado - Desactivando modo batalla, animación normal");
             }
             
+            // Configurar tiempo de espera aleatorio
             if (context.Config != null)
             {
                 _idleDuration = Random.Range(context.Config.minIdleTime, context.Config.maxIdleTime);
             }
             else
             {
-                _idleDuration = 2f;
+                _idleDuration = 2f; // Fallback
             }
             
             _idleTimer = 0f;
             _playerDetectionTimer = 0f;
         }
         
-        public override void OnUpdate(Common.NPCStateContext context)
+        public override void OnUpdate(NPCStateContext context)
         {
             base.OnUpdate(context);
-            _idleTimer += Time.deltaTime;
-            _playerDetectionTimer += Time.deltaTime;
             
-            // Detección periódica del jugador para combate
-            if (_playerDetectionTimer >= PlayerDetectionInterval)
+            _idleTimer += Time.deltaTime;
+            
+            // Detección visual periódica
+            _playerDetectionTimer += Time.deltaTime;
+            if (_playerDetectionTimer >= PLAYER_DETECTION_INTERVAL)
             {
                 _playerDetectionTimer = 0f;
                 CheckPlayerDetection(context);
             }
         }
         
-        public override Common.INPCState CheckTransitions(Common.NPCStateContext context)
+        public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // Prioridad máxima: Cinemática
-            if (context.IsInCinematic)
-            {
-                return new CinematicState();
-            }
+            // 1. Prioridad Máxima
+            if (context.IsInCinematic) return new CinematicState();
+            if (context.WasDefeatedInCombat) return new DeadState(); // Cambio directo a muerte si procede
             
-            // Si se activó combate externamente
-            if (context.IsInCombat)
-            {
-                return new CombatState();
-            }
+            // 2. Combate externo (ej: golpeado por detrás)
+            if (context.IsInCombat) return new CombatState();
             
-            // No cambiar de estado mientras interactúa
-            if (context.IsInteracting)
-            {
-                return null;
-            }
+            // 3. Interacción
+            if (context.IsInteracting) return null; // Quedarse en Idle mientras habla
             
-            // Wander después de idle
-            if (context.Config != null && context.Config.enableWander && _idleTimer >= _idleDuration)
+            // 4. Lógica de Patrulla (Wander)
+            if (context.Config != null && context.Config.enableWander)
             {
-                return new WanderState();
+                if (_idleTimer >= _idleDuration)
+                {
+                    // Si acabamos de llegar a un destino (via MoveToPosition o Wander),
+                    // ya hemos esperado suficiente.
+                    return new WanderState();
+                }
             }
             
             return null;
         }
         
         /// <summary>
-        /// Detecta al jugador y transite a AlertState si es agresivo
+        /// Sistema de Detección Visual (Igual que WanderState)
         /// </summary>
-        private void CheckPlayerDetection(Common.NPCStateContext context)
+        private void CheckPlayerDetection(NPCStateContext context)
         {
-            // ✅ NO DETECTAR SI EL NPC YA FUE DERROTADO - ESTO PREVIENE EL BUCLE INFINITO
-            if (context.WasDefeatedInCombat)
+            // 0. Filtros básicos
+            if (context.WasDefeatedInCombat) return;
+            if (context.Player == null) return;
+            
+            var combatConfig = context.Config?.combatConfig;
+            if (combatConfig == null || !combatConfig.isAggressive) return;
+            
+            // 1. Distancia (sqrMagnitude es más rápido)
+            Vector3 toPlayer = context.Player.position - context.Transform.position;
+            float distSqr = toPlayer.sqrMagnitude;
+            float detectionRange = combatConfig.detectionRange;
+            
+            if (distSqr > detectionRange * detectionRange) return;
+            
+            // 2. Campo de Visión (FOV)
+            // Asumimos ojos a 1.6m de altura
+            Vector3 eyePos = context.Transform.position + Vector3.up * 1.6f;
+            Vector3 playerTarget = context.Player.position + Vector3.up * 1.0f;
+            Vector3 dirToTarget = (playerTarget - eyePos).normalized;
+            
+            float angle = Vector3.Angle(context.Transform.forward, dirToTarget);
+            float fov = combatConfig.fieldOfView > 0 ? combatConfig.fieldOfView : 160f;
+            
+            if (angle > fov * 0.5f) return;
+            
+            // 3. Línea de Visión (Raycast) - Evita ver a través de paredes
+            int layerMask = ~0; // Todo
+            if (combatConfig.coverLayerMask != 0) 
+                layerMask = combatConfig.coverLayerMask | (1 << context.Player.gameObject.layer);
+
+            if (Physics.Raycast(eyePos, dirToTarget, out RaycastHit hit, detectionRange, layerMask))
             {
-                // Silencioso: No loguear cada frame, solo la primera vez
-                return;
+                // Si chocamos con algo que NO es el jugador, estamos bloqueados
+                if (hit.transform != context.Player && !hit.transform.IsChildOf(context.Player))
+                {
+                    return; 
+                }
             }
             
-            // Solo detectar si tiene configuración de combate agresiva
-            if (context.Config == null || context.Config.combatConfig == null)
-                return;
+            // --- JUGADOR DETECTADO ---
+            context.Log($"[IdleState] 👁️ Jugador visto. ¡Alerta!");
             
-            var combatConfig = context.Config.combatConfig;
-            if (!combatConfig.isAggressive)
-                return;
-            
-            // Verificar si el jugador está en rango de detección
-            if (context.Player == null)
-                return;
-            
-            float distanceToPlayer = Vector3.Distance(context.Transform.position, context.Player.position);
-            if (distanceToPlayer > combatConfig.detectionRange)
-                return;
-            
-            // Verificar si está en el campo de visión (opcional, podría ser 360°)
-            Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
-            float angleToPlayer = Vector3.Angle(context.Transform.forward, directionToPlayer);
-            
-            // Campo de visión amplio (180° por defecto)
-            const float detectionAngle = 180f;
-            if (angleToPlayer > detectionAngle / 2f)
-                return;
-            
-            // Jugador detectado - activar alerta
-            context.Log($"[IdleState] Jugador detectado a {distanceToPlayer:F1}m, activando alerta");
-            
-            // Transitar manualmente a AlertState
             var alertState = new AlertState(
-                combatConfig.alertIconDuration,
-                walkTowardsPlayer: true,
-                stopDistance: combatConfig.minAttackDistance + 1f
+                duration: combatConfig.alertIconDuration,
+                walk: true,
+                stopDist: combatConfig.minAttackDistance + 1f
             );
             
             context.Brain?.ChangeState(alertState);

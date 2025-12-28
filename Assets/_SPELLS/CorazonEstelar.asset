@@ -26,7 +26,7 @@ MonoBehaviour:
   maxRange: 40
   lifeTime: 2
   damage: 50
-  aoeRadius: 30
+  aoeRadius: 0
   knockbackForce: 25
   destroyOnHit: 1
   forwardOffset: 0.35
@@ -39,5 +39,6 @@ MonoBehaviour:
   spawnVFX: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 8680598818964007281, guid: dcd90c4976197424b9958a7c54b6bb8c, type: 3}
+  castSFXKey: 
   slotType: 1
   attackIcon: {fileID: 21300000, guid: 7bb9669c2b0c9ef4c86aced248b8b3d7, type: 3}

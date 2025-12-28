@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 
 /// <summary>
 /// Proyectil disparado por el boss demonio
@@ -10,6 +10,7 @@ public class EnemyProjectile : MonoBehaviour
     [Header("Configuración")]
     [SerializeField] private float speed = 15f;
     [SerializeField] private float lifetime = 5f;
+    [SerializeField] private float baseDamage = 10f; // Daño base configurado en el prefab
     [SerializeField] private GameObject hitEffectPrefab;
     [SerializeField] private bool usePhysicsMovement = true; // Usar Rigidbody para movimiento suave
     
@@ -51,13 +52,14 @@ public class EnemyProjectile : MonoBehaviour
         }
     }
 
-    public void Initialize(Vector3 dir, float dmg)
+    public void Initialize(Vector3 dir, float dmg = -1f)
     {
         direction = dir.normalized;
-        damage = dmg;
+        // Si no se pasa daño, usar el baseDamage del prefab
+        damage = dmg > 0f ? dmg : baseDamage;
         initialized = true;
         
-        Debug.Log($"[DemonProjectile] Inicializado con {dmg} de daño");
+        Debug.Log($"[DemonProjectile] Inicializado con {damage} de daño");
         
         // Si usa física, aplicar velocidad inicial
         if (usePhysicsMovement && rb)
@@ -67,6 +69,14 @@ public class EnemyProjectile : MonoBehaviour
         
         // Destruir después del tiempo de vida
         Destroy(gameObject, lifetime);
+    }
+    
+    /// <summary>
+    /// Obtiene el daño configurado del proyectil (baseDamage del prefab)
+    /// </summary>
+    public float GetDamage()
+    {
+        return baseDamage;
     }
 
     // Permite registrar VFX asociados al proyectil para que se destruyan cuando este desaparezca

@@ -17,13 +17,13 @@ namespace Game.Player
         
         [Header("Configuración")]
         [Tooltip("Nombre del estado Battle Idle en el Animator del player")]
-        [SerializeField] private string battleIdleStateName = "Idle_Battle";
+        [SerializeField] private string battleIdleStateName = "Idle_Battle_NoWeapon";
         
         [Tooltip("Nombre del estado Normal Idle en el Animator del player")]
-        [SerializeField] private string normalIdleStateName = "Idle";
+        [SerializeField] private string normalIdleStateName = "Idle_Normal_NoWeapon";
         
         [Tooltip("Nombre del estado de Victoria en el Animator del player")]
-        [SerializeField] private string victoryStateName = "Victory";
+        [SerializeField] private string victoryStateName = "Dance_NoWeapon";
         
         [Tooltip("Radio de detección de enemigos para activar Battle Mode")]
         [SerializeField] private float enemyDetectionRadius = 15f;
@@ -41,15 +41,8 @@ namespace Game.Player
         [SerializeField] private float victoryAnimationDuration = 3f;
         
         [Header("Audio")]
-        [Tooltip("AudioSource para reproducir música de victoria (debe estar configurado en el Inspector)")]
-        [SerializeField] private AudioSource victoryAudioSource;
-        
-        [Tooltip("Clip de audio de música de victoria (opcional)")]
-        [SerializeField] private AudioClip victoryMusicClip;
-        
-        [Tooltip("Volumen de la música de victoria")]
-        [Range(0f, 1f)]
-        [SerializeField] private float victoryMusicVolume = 0.7f;
+        [Tooltip("Clave del evento de audio para victoria (configurado en AudioGraphProfile)")]
+        [SerializeField] private string victorySfxKey = "Player_Victory";
         
         [Header("Debug")]
         [SerializeField] private bool debugMode;
@@ -57,6 +50,8 @@ namespace Game.Player
         private bool _isInBattleMode;
         private bool _isPlayingVictory;
         private float _timeSinceLastEnemyDetected;
+        private float _timeSinceStoppedMoving; // Tiempo desde que el jugador dejó de moverse
+        private bool _wasMovingLastFrame; // Para detectar cambio de movimiento a idle
         private int _battleIdleHash;
         private int _normalIdleHash;
         private int _victoryHash;
@@ -80,6 +75,10 @@ namespace Game.Player
             _battleIdleHash = Animator.StringToHash(battleIdleStateName);
             _normalIdleHash = Animator.StringToHash(normalIdleStateName);
             _victoryHash = Animator.StringToHash(victoryStateName);
+            
+            // Inicializar variables de estado
+            _wasMovingLastFrame = false;
+            _timeSinceStoppedMoving = 0f;
         }
         
         void OnEnable()
@@ -124,6 +123,9 @@ namespace Game.Player
             // Detectar si el player se está moviendo
             bool isMoving = !IsPlayerIdle();
             
+            if (debugMode && isMoving)
+                Debug.Log($"[PlayerBattleMode] 🏃 Jugador moviéndose - velocidad: {(playerRigidbody != null ? playerRigidbody.linearVelocity.magnitude : 0f)}");
+            
             // Detectar enemigos cercanos
             bool enemiesNearby = DetectEnemiesNearby();
             
@@ -137,13 +139,37 @@ namespace Game.Player
                     EnterBattleMode();
                 }
                 
-                // ✅ Si está quieto Y en Battle Mode, asegurar Battle Idle
-                // ✅ Si se mueve, NO hacer nada - Invector maneja la locomoción
-                if (!isMoving)
+                // Detectar transición de movimiento a idle
+                if (isMoving)
                 {
-                    EnsureBattleIdle();
+                    _timeSinceStoppedMoving = 0f;
+                    _wasMovingLastFrame = true;
                 }
-                // Si se mueve, no hacer nada - dejar que Invector maneje las animaciones
+                else
+                {
+                    // El jugador está quieto
+                    if (_wasMovingLastFrame)
+                    {
+                        // Acaba de dejar de moverse
+                        _timeSinceStoppedMoving = 0f;
+                        _wasMovingLastFrame = false;
+                        
+                        if (debugMode)
+                            Debug.Log($"[PlayerBattleMode] ⏸️ Jugador detuvo movimiento");
+                    }
+                    else
+                    {
+                        // Sigue quieto
+                        _timeSinceStoppedMoving += Time.deltaTime;
+                    }
+                    
+                    // Solo forzar Battle Idle después de un pequeño delay (0.3s)
+                    // Esto permite que Invector complete las transiciones de desaceleración
+                    if (_timeSinceStoppedMoving >= 0.3f)
+                    {
+                        EnsureBattleIdle();
+                    }
+                }
             }
             else
             {
@@ -216,6 +242,7 @@ namespace Game.Player
         
         /// <summary>
         /// Asegura que el player esté en Battle Idle (sin spam)
+        /// Solo hace la transición si está en Idle normal, NO desde animaciones de locomoción
         /// </summary>
         void EnsureBattleIdle()
         {
@@ -227,17 +254,28 @@ namespace Game.Player
             // Solo cambiar si NO está ya en Battle Idle
             if (currentState.shortNameHash != _battleIdleHash)
             {
-                // Verificar si el estado existe antes de intentar cambiar
-                if (animator.HasState(0, _battleIdleHash))
+                // ✅ CLAVE: Solo hacer transición si está en Idle normal
+                // Esto evita interrumpir animaciones de locomoción que Invector está reproduciendo
+                if (currentState.shortNameHash == _normalIdleHash)
                 {
-                    animator.CrossFadeInFixedTime(_battleIdleHash, 0.2f, 0);
-                    
-                    if (debugMode)
-                        Debug.Log($"[PlayerBattleMode] ✅ Cambiado a Battle Idle");
+                    // Verificar si el estado existe antes de intentar cambiar
+                    if (animator.HasState(0, _battleIdleHash))
+                    {
+                        animator.CrossFadeInFixedTime(_battleIdleHash, 0.2f, 0);
+                        
+                        if (debugMode)
+                            Debug.Log($"[PlayerBattleMode] ✅ Cambiado a Battle Idle desde Idle normal");
+                    }
+                    else if (debugMode)
+                    {
+                        Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{battleIdleStateName}' no encontrado en Animator");
+                    }
                 }
                 else if (debugMode)
                 {
-                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{battleIdleStateName}' no encontrado en Animator");
+                    // No está en Idle normal, esperar
+                    string currentStateName = currentState.IsName(normalIdleStateName) ? normalIdleStateName : "Otro";
+                    Debug.Log($"[PlayerBattleMode] ⏳ Esperando a Idle normal (actual: {currentStateName})");
                 }
             }
         }
@@ -271,22 +309,13 @@ namespace Game.Player
                 Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{victoryStateName}' no encontrado en Animator");
             }
             
-            // Reproducir música de victoria si está configurada
-            if (victoryMusicClip != null)
+            // Reproducir SFX de victoria usando el sistema de audio centralizado
+            if (!string.IsNullOrEmpty(victorySfxKey) && AudioService.Instance != null)
             {
-                if (victoryAudioSource != null)
-                {
-                    victoryAudioSource.clip = victoryMusicClip;
-                    victoryAudioSource.volume = victoryMusicVolume;
-                    victoryAudioSource.Play();
-                    
-                    if (debugMode)
-                        Debug.Log($"[PlayerBattleMode] 🎵 Reproduciendo música de victoria");
-                }
-                else
-                {
-                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ victoryAudioSource no está asignado en el Inspector - no se reproducirá música de victoria");
-                }
+                AudioService.Instance.PlaySFX(victorySfxKey, volume: 1f);
+                
+                if (debugMode)
+                    Debug.Log($"[PlayerBattleMode] 🎵 Reproduciendo SFX de victoria: {victorySfxKey}");
             }
             
             // Esperar duración de la animación

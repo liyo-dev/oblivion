@@ -71,6 +71,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     [SerializeField] private string getHitState = "TakeDamage";
     [SerializeField] private string defendHitState = "DefendHit_NoWeapon"; // Animación cuando el escudo bloquea un ataque
     [SerializeField] private string dieState = "Die02_NoWeapon";
+    [SerializeField] private string dizzyState = "Dizzy_NoWeapon"; // Animación de mareo después de levantarse
     [SerializeField] private string victoryState = "Dance_NoWeapon"; // Usar Dance como victoria si no hay Victory
     
     [Header("Spell Cast Animations (UpperBody Layer)")]
@@ -128,7 +129,20 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Smooth rotation
     private Quaternion _targetRotation;
     private float _rotationVelocity;
+    
+    // ✅ Anti-spam para animaciones de idle
+    private float _lastBattleIdleTime = -999f;
+    private const float BattleIdleCooldown = 0.5f; // Mínimo 0.5s entre llamadas (antes 0.3s)
     private bool _disableAutoRotation; // Flag para desactivar rotación automática (usado durante diálogos)
+    
+    #endregion
+    
+    #region Public Properties
+    
+    /// <summary>
+    /// Indica si el NPC está en modo batalla
+    /// </summary>
+    public bool IsInBattle => _isInBattle;
     
     #endregion
     
@@ -174,6 +188,21 @@ public class NPCSimpleAnimator : MonoBehaviour
             CacheAnimationClips();
         }
         
+        // ✅ FIX CRÍTICO: Configurar NavMeshAgent para control de rotación correcto
+        if (navAgent != null)
+        {
+            // Desactivar rotación automática del NavMeshAgent
+            navAgent.updateRotation = false;
+            
+            // Asegurar que angularSpeed sea lo suficientemente alto
+            if (navAgent.angularSpeed < 120f)
+            {
+                if (debugMode)
+                    Debug.LogWarning($"[NPCAnimator] NavMeshAgent.angularSpeed muy bajo ({navAgent.angularSpeed}), aumentando a 360°/s");
+                navAgent.angularSpeed = 360f;
+            }
+        }
+        
         _lastPosition = transform.position;
         _targetRotation = transform.rotation;
         
@@ -198,6 +227,10 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (animator == null)
             return;
         
+        // ✅ No procesar nada si el NPC está muerto
+        if (_currentState == AnimationState.Dead)
+            return;
+        
         // Update actual speed based on position
         UpdateActualSpeed();
         
@@ -210,6 +243,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     void LateUpdate()
     {
+        // ✅ No procesar rotación si el NPC está muerto
+        if (_currentState == AnimationState.Dead)
+            return;
+            
         // Apply smooth rotation in LateUpdate for best results
         ApplySmoothRotation();
     }
@@ -229,6 +266,10 @@ public class NPCSimpleAnimator : MonoBehaviour
             return;
         }
         
+        // ✅ No procesar movimiento si el NPC está muerto
+        if (_currentState == AnimationState.Dead)
+            return;
+        
         _currentMovementSpeed = Mathf.Clamp01(normalizedSpeed);
         
         // Use configured damp time if not specified
@@ -237,8 +278,15 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Set animator parameter
         animator.SetFloat(InputMagnitudeHash, _currentMovementSpeed, damp, Time.deltaTime);
         
+        // ✅ FIX CRÍTICO: SIEMPRE asegurar que animator.speed sea 1.0 cuando está quieto
+        // Esto previene el temblor en Battle Idle cuando _currentMovementSpeed es muy bajo
+        if (_currentMovementSpeed <= movementThreshold)
+        {
+            // ✅ IMPERATIVO: Velocidad normal cuando está quieto (evita temblor)
+            animator.speed = 1f;
+        }
         // Adjust animation speed to match movement speed (reduces foot sliding)
-        if (_currentMovementSpeed > movementThreshold)
+        else if (_currentMovementSpeed > movementThreshold)
         {
             animator.speed = Mathf.Lerp(1f, locomotionSpeedMultiplier, _currentMovementSpeed);
             
@@ -255,10 +303,6 @@ public class NPCSimpleAnimator : MonoBehaviour
                 TransitionToLocomotion();
             }
         }
-        else
-        {
-            animator.speed = 1f;
-        }
     }
     
     /// <summary>
@@ -266,6 +310,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// </summary>
     public void ResetMovement()
     {
+        // ✅ No hacer nada si el NPC está muerto
+        if (_currentState == AnimationState.Dead)
+            return;
+        
         // ✅ Forzar a 0 INMEDIATAMENTE sin dampening para evitar bugs de "andando en el sitio"
         _currentMovementSpeed = 0f;
         if (animator != null)
@@ -294,6 +342,14 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// </summary>
     public void SetBattleMode(bool enable)
     {
+        // ✅ No hacer nada si el NPC está muerto
+        if (_currentState == AnimationState.Dead)
+        {
+            if (debugMode)
+                Debug.Log($"[NPCAnimator] SetBattleMode({enable}) ignorado - NPC está muerto");
+            return;
+        }
+        
         _isInBattle = enable;
         
         if (animator == null)
@@ -332,12 +388,23 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (_isInBattle && !string.IsNullOrEmpty(idleBattleState))
         {
+            // ✅ CRÍTICO: Cooldown para evitar spam de CrossFade
+            // Si se llama demasiado frecuentemente, se reinicia la animación constantemente
+            // causando temblor en el modelo y el Enemy Marker
+            float timeSinceLastCall = Time.time - _lastBattleIdleTime;
+            if (timeSinceLastCall < BattleIdleCooldown)
+            {
+                // Llamada demasiado frecuente, ignorar
+                return;
+            }
+            
             // ✅ Solo crossfade si NO está ya en este estado (evita spam)
             int targetHash = Animator.StringToHash(idleBattleState);
             AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
             
             if (currentState.shortNameHash != targetHash)
             {
+                _lastBattleIdleTime = Time.time;
                 CrossFadeToState(idleBattleState, 0.2f);
             }
         }
@@ -633,12 +700,17 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             _currentState = AnimationState.Dead;
             
+            // ✅ Desactivar sincronización con NavMeshAgent inmediatamente
+            syncWithNavAgent = false;
+            
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de muerte: {dieState}");
             
             // Usar Play directamente para reproducir la animación de muerte inmediatamente
             // CrossFade puede causar que la animación no se vea si el NPC muere muy rápido
             if (animator != null)
             {
+                // Resetear el parámetro InputMagnitude a 0 para evitar movimiento residual
+                animator.SetFloat(InputMagnitudeHash, 0f);
                 animator.Play(dieState, 0); // Layer 0, reproducción inmediata
                 Debug.Log($"[NPCAnimator:{gameObject.name}] ✅ animator.Play('{dieState}', 0) ejecutado");
             }
@@ -647,6 +719,7 @@ public class NPCSimpleAnimator : MonoBehaviour
             if (navAgent != null && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = true;
+                navAgent.velocity = Vector3.zero;
                 navAgent.updateRotation = false;
                 navAgent.updatePosition = false;
                 Debug.Log($"[NPCAnimator:{gameObject.name}] NavMeshAgent detenido");
@@ -671,6 +744,40 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!string.IsNullOrEmpty(victoryState))
         {
             PlayOneShot(victoryState);
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce animación de mareo después de levantarse (post-derrota)
+    /// El NPC se levanta aturdido y permanece en estado de mareo
+    /// </summary>
+    public void PlayDizzy()
+    {
+        Debug.Log($"[NPCAnimator:{gameObject.name}] 😵 PlayDizzy() llamado - dizzyState: '{dizzyState}'");
+        
+        if (!string.IsNullOrEmpty(dizzyState))
+        {
+            // Cambiar a estado normal (no muerto)
+            _currentState = AnimationState.Idle;
+            
+            // Reactivar sincronización con NavMeshAgent
+            syncWithNavAgent = true;
+            
+            Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de mareo: {dizzyState}");
+            
+            if (animator != null)
+            {
+                // Reproducir la animación de mareo
+                animator.Play(dizzyState, 0);
+                animator.speed = 1f; // Asegurar velocidad normal
+                Debug.Log($"[NPCAnimator:{gameObject.name}] ✅ animator.Play('{dizzyState}', 0) ejecutado");
+            }
+            
+            Debug.Log($"[NPCAnimator:{gameObject.name}] ✅ Animación de mareo iniciada");
+        }
+        else
+        {
+            Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ dizzyState está vacío - no se puede reproducir animación de mareo");
         }
     }
     
@@ -932,6 +1039,21 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (agentSpeed > movementThreshold && navAgent.velocity.sqrMagnitude > 0.01f)
         {
             Vector3 direction = navAgent.velocity.normalized;
+            
+            // ✅ DEBUG: Log rotación
+            if (debugMode && Time.frameCount % 30 == 0) // Cada 30 frames
+            {
+                Vector3 forward = transform.forward;
+                float angleDiff = Vector3.Angle(forward, direction);
+                Debug.Log($"[NPCAnimator] ROTACIÓN DEBUG:\n" +
+                         $"  Transform.forward: {forward}\n" +
+                         $"  NavAgent.velocity: {navAgent.velocity}\n" +
+                         $"  Direction: {direction}\n" +
+                         $"  Angle diff: {angleDiff:F1}°\n" +
+                         $"  updateRotation: {navAgent.updateRotation}\n" +
+                         $"  _disableAutoRotation: {_disableAutoRotation}");
+            }
+            
             FaceDirection(direction);
         }
     }
@@ -947,6 +1069,16 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         if (angle < minRotationAngle)
             return;
+        
+        // ✅ DEBUG: Log aplicación de rotación
+        if (debugMode && Time.frameCount % 60 == 0) // Cada 60 frames
+        {
+            Debug.Log($"[NPCAnimator] APLICANDO ROTACIÓN:\n" +
+                     $"  Current: {transform.rotation.eulerAngles}\n" +
+                     $"  Target: {_targetRotation.eulerAngles}\n" +
+                     $"  Angle diff: {angle:F1}°\n" +
+                     $"  Speed: {rotationSpeed}°/s");
+        }
         
         // Apply smooth rotation
         float maxDegreesDelta = rotationSpeed * Time.deltaTime;
@@ -968,6 +1100,12 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         _currentState = AnimationState.Idle;
         
+        // ✅ FIX: Desactivar root motion en Idle también
+        if (animator != null)
+        {
+            animator.applyRootMotion = false;
+        }
+        
         // Elegir el idle correcto según el modo (batalla o normal)
         string targetIdle = _isInBattle ? idleBattleState : idleNormalState;
         CrossFadeToState(targetIdle, 0.2f);
@@ -982,6 +1120,13 @@ public class NPCSimpleAnimator : MonoBehaviour
         else
         {
             _currentState = AnimationState.Walking;
+        }
+        
+        // ✅ FIX CRÍTICO: Desactivar root motion durante locomotion
+        // para que el NPCSimpleAnimator controle la rotación, no la animación
+        if (animator != null)
+        {
+            animator.applyRootMotion = false;
         }
         
         if (string.IsNullOrEmpty(locomotionState))

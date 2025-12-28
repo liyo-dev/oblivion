@@ -1,331 +1,247 @@
-﻿﻿﻿﻿﻿﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
 {
     /// <summary>
-    /// Estado de Alerta - El NPC detectó al jugador y se prepara para el combate.
-    /// Muestra icono de alerta y camina hacia el jugador.
+    /// Estado de Alerta: Detecta al jugador, reproduce animaciones de aviso (Sense/Challenge) y transiciona a Combate.
     /// </summary>
     public class AlertState : NPCStateBase
     {
         public override string StateName => "Alert";
+
+        // Configuración
+        private readonly float _alertDuration;
+        private readonly bool _walkTowardsPlayer;
+        private readonly float _stopDistance;
         
-        private NPCAlertIconController _alertIconController;
-        private float _alertTimer;
-        private float _alertDuration;
-        private bool _walkTowardsPlayer;
-        private float _stopDistance;
+        // Estado Interno
+        private NPCAlertIconController _iconController;
+        private float _timer;
         private bool _waitingForDialogue;
-        private float _senseSomethingTimer;
-        private bool _senseSomethingPlayed;
-        private bool _challengePlayed;
+        private bool _hasPlayedChallenge;
         
-        public AlertState(float alertDuration = 2f, bool walkTowardsPlayer = true, float stopDistance = 3f)
+        // Timers de Animación
+        private float _senseTimer;
+        private const float SENSE_DURATION = 1.2f;
+
+        public AlertState(float duration = 2f, bool walk = true, float stopDist = 3f)
         {
-            _alertDuration = alertDuration;
-            _walkTowardsPlayer = walkTowardsPlayer;
-            _stopDistance = stopDistance;
+            _alertDuration = duration;
+            _walkTowardsPlayer = walk;
+            _stopDistance = stopDist;
         }
-        
+
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
-            
-            // ✅ VERIFICAR SI EL NPC YA FUE DERROTADO - NO permitir alerta
+
             if (context.WasDefeatedInCombat)
             {
-                context.Log("[AlertState] ⛔ NPC ya fue derrotado - NO puede entrar en alerta");
+                context.Log("[AlertState] ⛔ NPC derrotado. Cancelando alerta.");
                 return;
             }
-            
-            context.Log("[AlertState] Jugador detectado - iniciando alerta");
-            
-            // Reproducir música de alerta
+
+            context.Log("[AlertState] ⚠️ INICIANDO ALERTA");
+
+            // 1. Audio & Icono
             TriggerAlertMusic(context);
-            
-            // Obtener o crear AlertIconController
-            _alertIconController = context.Transform.GetComponent<NPCAlertIconController>();
-            if (_alertIconController == null)
-            {
-                _alertIconController = context.Transform.gameObject.AddComponent<NPCAlertIconController>();
-                context.Log("[AlertState] NPCAlertIconController creado");
-            }
-            
-            // Mostrar icono de alerta
             ShowAlertIcon(context);
-            
-            // Detener movimiento inicial ANTES de girar y animar
+
+            // 2. Detenerse y Girar
             StopMovement(context);
-            
-            // Girar hacia el jugador INMEDIATAMENTE (rotación instantánea al entrar)
             if (context.Player != null)
             {
-                Vector3 directionToPlayer = context.Player.position - context.Transform.position;
-                directionToPlayer.y = 0f;
-                
-                if (directionToPlayer.sqrMagnitude > 0.001f)
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                    context.Transform.rotation = targetRotation;
-                    context.Log("[AlertState] NPC girado hacia el jugador instantáneamente");
-                }
+                Vector3 dir = (context.Player.position - context.Transform.position).normalized;
+                dir.y = 0;
+                if (dir != Vector3.zero) 
+                    context.Transform.rotation = Quaternion.LookRotation(dir);
             }
-            
-            // ✅ SECUENCIA DE ANIMACIONES: SenseSomething → Challenge → Idle_Battle
+
+            // 3. Secuencia de Animación Inicial: "Sense Something"
             if (context.Animator != null)
             {
-                // 1. Primero reproducir SenseSomething (animación corta de darse cuenta)
                 context.Animator.PlaySenseSomething();
-                context.Log("[AlertState] Reproduciendo SenseSomething - NPC se da cuenta del jugador");
-                
-                // Inicializar timers para la secuencia
-                _senseSomethingTimer = 1.2f; // Duración de SenseSomething
-                _senseSomethingPlayed = true;
-                _challengePlayed = false;
+                _senseTimer = SENSE_DURATION;
+                // Aún NO activamos BattleMode para dejar que la animación de alerta se reproduzca limpia
             }
-            
-            // Iniciar diálogo de alerta si existe (DESPUÉS de girar y animar)
+
+            // 4. Iniciar Diálogo (si existe)
             StartAlertDialogue(context);
-            
-            _alertTimer = 0f;
         }
-        
+
         public override void OnUpdate(NPCStateContext context)
         {
-            base.OnUpdate(context);
-            
-            if (context.Player == null)
+            if (context.Player == null) return;
+
+            // A. Gestionar Secuencia de Animación
+            if (_senseTimer > 0)
             {
-                context.LogWarning("[AlertState] Jugador perdido durante alerta");
-                return;
-            }
-            
-            // ✅ Manejar secuencia de animaciones SenseSomething → Challenge
-            if (_senseSomethingPlayed && !_challengePlayed)
-            {
-                _senseSomethingTimer -= Time.deltaTime;
-                
-                // Cuando termine SenseSomething, reproducir Challenge
-                if (_senseSomethingTimer <= 0f)
+                _senseTimer -= Time.deltaTime;
+                if (_senseTimer <= 0 && !_hasPlayedChallenge)
                 {
+                    // Al terminar Sense, reproducir Challenge y activar modo batalla
                     if (context.Animator != null)
                     {
                         context.Animator.PlayChallengingForBattle();
-                        context.Log("[AlertState] Secuencia: SenseSomething completado → Challenge → Idle_Battle");
+                        context.Animator.SetBattleMode(true); // AHORA sí entramos en pose de combate
                     }
-                    _challengePlayed = true;
+                    _hasPlayedChallenge = true;
                 }
             }
-            
-            // SIEMPRE mirar al jugador durante la alerta (especialmente durante el diálogo)
-            LookAtPlayer(context);
-            
-            // Si estamos esperando al diálogo, verificar si ha terminado
+
+            // B. Esperar Diálogo
             if (_waitingForDialogue)
             {
-                var dm = DialogueManager.Instance;
-                if (dm != null && !dm.IsOpen)
+                // Si el diálogo se cerró, liberamos
+                if (DialogueManager.Instance != null && !DialogueManager.Instance.IsOpen)
                 {
                     _waitingForDialogue = false;
-                    context.Log("[AlertState] Diálogo de alerta completado");
+                    context.Log("[AlertState] Diálogo finalizado.");
                 }
                 else
                 {
-                    // Mientras el diálogo está abierto, solo mirar al jugador
-                    LookAtPlayer(context);
+                    // Mientras habla, solo mira al jugador (sin caminar)
+                    RotateTowards(context, context.Player.position, 10f);
                     return;
                 }
             }
-            
-            // Incrementar temporizador
-            _alertTimer += Time.deltaTime;
-            
-            // Mirar hacia el jugador
-            LookAtPlayer(context);
-            
-            // Caminar hacia el jugador si está configurado
+
+            // C. Lógica de Alerta Activa
+            _timer += Time.deltaTime;
+
             if (_walkTowardsPlayer)
             {
-                MoveTowardsPlayer(context);
+                MoveAndRotate(context);
+            }
+            else
+            {
+                // Si no camina, solo rota
+                RotateTowards(context, context.Player.position, 5f);
             }
         }
-        
+
         public override void OnExit(NPCStateContext context)
         {
-            base.OnExit(context);
-            
-            // Ocultar icono de alerta
-            if (_alertIconController != null)
-            {
-                _alertIconController.HideAlertIcon();
-            }
-            
-            context.Log("[AlertState] Saliendo de estado de alerta");
+            if (_iconController) _iconController.HideAlertIcon();
+            context.Log("[AlertState] Fin de alerta.");
         }
-        
+
         public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // Prioridad máxima: Cinemática
-            if (context.IsInCinematic)
+            if (context.IsInCinematic) return new CinematicState();
+            if (context.WasDefeatedInCombat) return new DeadState();
+
+            // Si el jugador se esfuma
+            if (context.Player == null) return new IdleState();
+
+            // Bloqueo por diálogo
+            if (_waitingForDialogue) return null;
+
+            // Tiempo cumplido -> COMBATE
+            if (_timer >= _alertDuration)
             {
-                return new CinematicState();
-            }
-            
-            // Si el jugador desaparece, volver a idle
-            if (context.Player == null)
-            {
-                context.Log("[AlertState] Jugador perdido, volviendo a Idle");
-                return new IdleState();
-            }
-            
-            // Si aún estamos esperando el diálogo, no transicionar
-            if (_waitingForDialogue)
-            {
-                return null;
-            }
-            
-            // Si se completó la alerta, transicionar a combate
-            if (_alertTimer >= _alertDuration)
-            {
-                context.Log("[AlertState] Alerta completada, iniciando combate");
                 context.IsInCombat = true;
                 return new CombatState();
             }
-            
-            return null; // Continuar en alerta
+
+            return null;
         }
-        
-        private void StartAlertDialogue(NPCStateContext context)
+
+        // =================================================================================
+        // 🛠️ HELPERS
+        // =================================================================================
+
+        private void MoveAndRotate(NPCStateContext context)
         {
-            if (context.Config == null || context.Config.combatConfig == null)
-                return;
-            
-            var combatConfig = context.Config.combatConfig;
-            
-            // Si hay diálogo de alerta configurado
-            if (combatConfig.dialogueOnAlert != null)
+            float dist = Vector3.Distance(context.Transform.position, context.Player.position);
+
+            if (dist > _stopDistance)
             {
-                var dm = DialogueManager.Instance;
-                if (dm != null)
+                // Caminar hacia el jugador
+                if (context.Agent.isOnNavMesh)
                 {
-                    context.Log("[AlertState] Iniciando diálogo de batalla (preparando jugador)");
+                    context.Agent.isStopped = false;
+                    context.Agent.SetDestination(context.Player.position);
                     
-                    // Iniciar el diálogo DE BATALLA (prepara al jugador automáticamente)
-                    dm.StartBattleDialogue(combatConfig.dialogueOnAlert, context.Transform, () =>
-                    {
-                        context.Log("[AlertState] Diálogo de alerta finalizado");
-                        _waitingForDialogue = false;
-                        
-                        // Restaurar animación normal del jugador
-                        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
-                        {
-                            var playerAnimator = playerGo.GetComponent<Animator>();
-                            if (playerAnimator != null)
-                            {
-                                // Volver a Idle normal (puede ser Idle o Free Locomotion según el sistema)
-                                playerAnimator.CrossFade("Idle", 0.2f, 0);
-                                context.Log("[AlertState] Jugador vuelve a animación Idle normal tras diálogo");
-                            }
-                        }
-                    });
-                    
-                    // Si está configurado para esperar, activar flag
-                    if (combatConfig.waitForAlertDialogue)
-                    {
-                        _waitingForDialogue = true;
-                        context.Log("[AlertState] Esperando a que termine el diálogo antes de continuar");
-                    }
+                    // ✅ FIX: Desactivar updateRotation del NavMeshAgent
+                    // Dejar que NPCSimpleAnimator.SyncWithNavMeshAgent() maneje la rotación
+                    // para evitar conflictos entre sistemas
+                    context.Agent.updateRotation = false;
+
+                    // Sync Animación - NPCSimpleAnimator se encargará de rotar correctamente
+                    if (context.Animator != null)
+                        context.Animator.SetMovementSpeed(context.Agent.velocity.magnitude / context.Agent.speed);
+                }
+            }
+            else
+            {
+                // Llegamos -> Parar y mirar hacia el jugador
+                context.Agent.isStopped = true;
+                context.Agent.updateRotation = false;
+                context.Animator.SetMovementSpeed(0);
+                
+                // ✅ FIX: Usar NPCSimpleAnimator.FaceDirection en lugar de rotar directamente
+                // Esto evita conflictos con ApplySmoothRotation en LateUpdate
+                Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+                directionToPlayer.y = 0;
+                
+                if (directionToPlayer.sqrMagnitude > 0.01f && context.Animator != null)
+                {
+                    context.Animator.FaceDirection(directionToPlayer);
                 }
             }
         }
-        
+
+        private void RotateTowards(NPCStateContext context, Vector3 target, float speed)
+        {
+            // ⚠️ DEPRECATED: Este método ya no se usa
+            // Usar NPCSimpleAnimator.FaceDirection() en su lugar
+            Vector3 dir = (target - context.Transform.position).normalized;
+            dir.y = 0;
+            if (dir != Vector3.zero)
+            {
+                Quaternion rot = Quaternion.LookRotation(dir);
+                context.Transform.rotation = Quaternion.Slerp(context.Transform.rotation, rot, Time.deltaTime * speed);
+            }
+        }
+
         private void ShowAlertIcon(NPCStateContext context)
         {
-            if (_alertIconController == null || context.Config == null)
-                return;
-            
-            // Intentar mostrar desde combatConfig
-            if (context.Config.combatConfig != null)
-            {
-                var combatConfig = context.Config.combatConfig;
-                
-                if (combatConfig.alertIconPrefab != null)
-                {
-                    _alertIconController.ShowAlertIcon(combatConfig.alertIconPrefab, _alertDuration);
-                    context.Log("[AlertState] Mostrando icono de alerta (prefab)");
-                    return;
-                }
-            }
-            
-            context.LogWarning("[AlertState] No hay icono de alerta configurado (debe ser un prefab)");
+            _iconController = context.Transform.GetComponent<NPCAlertIconController>();
+            if (!_iconController) _iconController = context.Transform.gameObject.AddComponent<NPCAlertIconController>();
+
+            var prefab = context.Config?.combatConfig?.alertIconPrefab;
+            if (prefab) _iconController.ShowAlertIcon(prefab, _alertDuration);
         }
-        
-        private void LookAtPlayer(NPCStateContext context)
-        {
-            if (context.Player == null) return;
-            
-            Vector3 directionToPlayer = context.Player.position - context.Transform.position;
-            directionToPlayer.y = 0f;
-            
-            if (directionToPlayer.sqrMagnitude > 0.001f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                
-                // Rotación más rápida durante diálogo para que sea más responsive
-                float rotationSpeed = _waitingForDialogue ? 10f : 5f;
-                
-                context.Transform.rotation = Quaternion.Slerp(
-                    context.Transform.rotation,
-                    targetRotation,
-                    Time.deltaTime * rotationSpeed
-                );
-            }
-        }
-        
-        private void MoveTowardsPlayer(NPCStateContext context)
-        {
-            if (context.Player == null || context.Agent == null) return;
-            
-            float distanceToPlayer = Vector3.Distance(context.Transform.position, context.Player.position);
-            
-            // Si ya está lo suficientemente cerca, detenerse
-            if (distanceToPlayer <= _stopDistance)
-            {
-                StopMovement(context);
-                return;
-            }
-            
-            // Moverse hacia el jugador
-            if (context.Agent.isOnNavMesh)
-            {
-                context.Agent.isStopped = false;
-                context.Agent.SetDestination(context.Player.position);
-                
-                // Actualizar animación de movimiento
-                if (context.Animator != null)
-                {
-                    float speedFactor = context.Agent.velocity.magnitude / context.Agent.speed;
-                    context.Animator.SetMovementSpeed(speedFactor);
-                }
-            }
-        }
-        
+
         private void TriggerAlertMusic(NPCStateContext context)
         {
-            if (context.Config == null || context.Config.combatConfig == null)
-                return;
-            
-            var combatConfig = context.Config.combatConfig;
-            
-            // Enviar evento de alerta al sistema de audio
-            if (!string.IsNullOrWhiteSpace(combatConfig.alertMusicEvent))
+            string eventId = context.Config?.combatConfig?.alertMusicEvent;
+            if (!string.IsNullOrEmpty(eventId))
             {
-                DefaultNarrativeSignals.Instance?.RaiseCustom(combatConfig.alertMusicEvent);
-                AudioService.Instance?.BeginAlertById(combatConfig.alertMusicEvent);
-                context.Log($"[AlertState] Música de alerta activada: {combatConfig.alertMusicEvent}");
+                AudioService.Instance?.BeginAlertById(eventId);
+            }
+        }
+
+        private void StartAlertDialogue(NPCStateContext context)
+        {
+            var config = context.Config?.combatConfig;
+            if (config != null && config.dialogueOnAlert != null)
+            {
+                if (config.waitForAlertDialogue) _waitingForDialogue = true;
+
+                DialogueManager.Instance?.StartBattleDialogue(config.dialogueOnAlert, context.Transform, () => 
+                {
+                    _waitingForDialogue = false;
+                    // Restaurar jugador a Idle tras la charla
+                    if (PlayerService.TryGetPlayer(out GameObject p))
+                    {
+                        var anim = p.GetComponent<Animator>();
+                        if (anim) anim.CrossFade("Idle", 0.2f);
+                    }
+                });
             }
         }
     }
 }
-

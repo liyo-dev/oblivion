@@ -1,21 +1,22 @@
-﻿using System;
+﻿﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
 using Game.NPC.States;
-using Game.NPC.Modules;
+using Game.NPC.Modules; // Necesario para CombatLifecycleHandler
 
 namespace Game.NPC
 {
     /// <summary>
     /// Gestor de comportamiento de NPC basado en FSM (Finite State Machine).
-    /// Versión 2 - Arquitectura modular y profesional.
+    /// Versión 2.1 - Integración completa con Sistema de Combate y Persistencia.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(NPCSimpleAnimator))]
     [DisallowMultipleComponent]
     public class NPCBehaviourManagerV2 : MonoBehaviour
     {
+        #region ⚙️ Configuration
         [Header("FSM Configuration")]
         [SerializeField] private NPCConfiguration configuration = new NPCConfiguration();
         [SerializeField] private bool debugMode = false;
@@ -30,247 +31,190 @@ namespace Game.NPC
         [Tooltip("Si está activado, el sistema de guardado recordará la última posición del NPC")]
         [SerializeField] public bool persistLastPosition = false;
         
-        /// <summary>
-        /// Última posición guardada del NPC. Usado por el sistema de guardado.
-        /// Se actualiza automáticamente cuando el NPC se mueve.
-        /// </summary>
+        // Runtime Data
         [NonSerialized] public Vector3 lastPosition;
-        
-        // Core components
+        #endregion
+
+        #region 🔌 Core Components
         private NavMeshAgent _agent;
         private NPCSimpleAnimator _animator;
         private Animator _unityAnimator;
         private Rigidbody _rigidbody;
-        
-        // FSM components
         private NPCBrain _brain;
         private NPCStateContext _context;
         
-        // Player references
+        // Player References
         private Transform _player;
         private Transform _playerCamera;
-        
-        // Public API
+        #endregion
+
+        #region 📢 Public API
         public NPCBrain Brain => _brain;
         public NPCStateContext Context => _context;
         public NPCConfiguration Configuration => configuration;
         public bool IsInCinematic => _context != null && _context.IsInCinematic;
         
-        // Component accessors
+        // Accessors
         public NavMeshAgent Agent => _agent;
         public Animator Animator => _unityAnimator;
+        public NPCSimpleAnimator SimpleAnimator => _animator;
         public Transform Player => _player;
-        
+        #endregion
+
         void Awake()
         {
-            Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚡⚡⚡ AWAKE DEL MANAGER ⚡⚡⚡ - Frame: {Time.frameCount}");
-            
-            // Validar configuración
+            // 1. Validación de Configuración
             if (!configuration.Validate(out string errors))
             {
-                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Configuración inválida:\n{errors}\n\n" +
-                    "💡 AYUDA:\n" +
-                    "- Si tienes 'InteractiveNarrative' activado → Asigna 'Interactive Narrative Config'\n" +
-                    "- Si tienes 'Narrative' activado → Asigna 'Narrative Config' (sistema de grafo, deprecado)\n" +
-                    "- Si tienes 'Combat' activado → Asigna 'Combat Config'\n" +
-                    "- Si tienes 'Quest' activado → Asigna 'Quest Config'\n" +
-                    "- Si tienes 'Ambient' activado → Asigna 'Ambient Config'\n\n" +
-                    "⚠️ IMPORTANTE: Para cadenas narrativas (diálogo → mover → etc.) usa 'InteractiveNarrative', NO 'Narrative'");
+                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ ERROR DE CONFIG:\n{errors}");
             }
             
-            // Get components
+            // 2. Obtener Componentes Core
             _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponent<NPCSimpleAnimator>();
             _unityAnimator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody>();
             
-            // Setup physics
+            // ✅ FIX: Configurar NavMeshAgent para que NO controle la rotación
+            // NPCSimpleAnimator se encarga de la rotación para evitar conflictos
+            if (_agent != null)
+            {
+                _agent.updateRotation = false;
+            }
+            
+            // 3. Configurar Físicas
             if (forceKinematicRigidbody && _rigidbody != null)
             {
                 _rigidbody.isKinematic = true;
-                _rigidbody.constraints = configuration.rigidbodyConstraints;
-                _rigidbody.linearVelocity = Vector3.zero;
+                _rigidbody.linearVelocity = Vector3.zero; // Unity 6 (antes velocity)
                 _rigidbody.angularVelocity = Vector3.zero;
             }
             
-            // Create FSM context
-            _context = new NPCStateContext(_brain, transform, _agent, _animator, _unityAnimator, _rigidbody)
+            // 4. Crear Contexto FSM
+            _context = new NPCStateContext(null, transform, _agent, _animator, _unityAnimator, _rigidbody)
             {
                 Config = configuration,
                 DebugMode = debugMode
             };
             
-            // Create brain
+            // 5. Crear Brain
             _brain = new NPCBrain(_context);
-            _context.Brain = _brain; // Set circular reference after creation
+            _context.Brain = _brain; // Cerrar referencia circular
             
-            // Auto-añadir componentes según módulos configurados
+            // 6. INYECCIÓN DE DEPENDENCIAS AUTOMÁTICA
             EnsureRequiredComponents();
             
-            // Registrar en NPCRegistry si tiene configuración narrativa
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
-            {
-                NPCRegistry.Instance.RegisterNPC(
-                    configuration.narrativeConfig.narrativeID,
-                    configuration.narrativeConfig.narrativeTag,
-                    this
-                );
-            }
+            // 7. Registro Narrativo
+            RegisterNarrativeIdentity();
             
-            // Subscribe to player events
+            // 8. Eventos Globales
             PlayerService.OnPlayerRegistered += OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered += OnPlayerUnregistered;
-            
             ResolvePlayerReferences();
-            
-            if (debugMode)
-                Debug.Log($"[NPCBehaviourV2:{name}] Initialized");
         }
         
         void Start()
         {
-            // Set initial state
+            // Aplicar persistencia si existe
+            if (persistLastPosition && lastPosition != Vector3.zero)
+            {
+                ApplyLastPositionIfNeeded();
+            }
+
             if (startInIdleState)
             {
                 _brain.ChangeState(new States.IdleState());
             }
         }
         
-        void OnEnable()
-        {
-            // Resume FSM if it was active
-            if (_brain != null && _brain.CurrentState == null && startInIdleState)
-            {
-                _brain.ChangeState(new States.IdleState());
-            }
-        }
-        
-        void OnDisable()
-        {
-            // Stop movement
-            if (_animator != null)
-                _animator.ResetMovement();
-                
-            if (_agent != null)
-                NavMeshAgentUtility.HardStop(_agent);
-        }
-        
         void Update()
         {
-            // Update FSM
             _brain?.Update();
             
-            // Update last position for save system
-            if (persistLastPosition)
+            // Actualizar posición para guardado (solo si es necesario para evitar overhead)
+            if (persistLastPosition && Time.frameCount % 60 == 0) // Optimización: cada 60 frames
             {
                 lastPosition = transform.position;
             }
         }
-        
+
         void OnDestroy()
         {
-            // Des-registrar del NPCRegistry
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
-            {
-                NPCRegistry.Instance.UnregisterNPC(
-                    configuration.narrativeConfig.narrativeID,
-                    configuration.narrativeConfig.narrativeTag
-                );
-            }
-            
+            UnregisterNarrativeIdentity();
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered -= OnPlayerUnregistered;
         }
+
+        // =================================================================================
+        // 🧩 AUTO-COMPONENT MANAGEMENT (MEJORADO)
+        // =================================================================================
         
-        #region Player References
-        
-        private void OnPlayerRegistered(GameObject player)
+        private void EnsureRequiredComponents()
         {
-            ResolvePlayerReferences();
-        }
-        
-        private void OnPlayerUnregistered()
-        {
-            if (_context != null)
-            {
-                _context.Player = null;
-                _context.PlayerCamera = null;
-            }
-            _player = null;
-            _playerCamera = null;
-        }
-        
-        private void ResolvePlayerReferences()
-        {
-            if (!ServiceLocator.TryGet(out PlayerService ps))
-                return;
+            if (debugMode) Debug.Log($"[NPCManager] 🔧 Verificando módulos...");
             
-            var player = PlayerService.Player;
-            if (player != null)
+            // 1. QUEST MODULE
+            if (configuration.HasBehaviour(NPCBehaviourType.Quest) && configuration.questConfig != null)
             {
-                _player = player.transform;
-                
-                // Buscar cámara del player
-                _playerCamera = Camera.main?.transform;
-                
-                if (_context != null)
+                if (!GetComponent<NPCQuestActionExecutor>()) 
+                    gameObject.AddComponent<NPCQuestActionExecutor>();
+            }
+            
+            // 2. INTERACTIVE NARRATIVE
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
+            {
+                if (!GetComponent<NPCInteractiveNarrativeExecutor>()) 
+                    gameObject.AddComponent<NPCInteractiveNarrativeExecutor>();
+            }
+
+            // 3. COMBAT MODULE - 🔥 MEJORA CRÍTICA 🔥
+            // Inicializamos los componentes "físicos" (Salud, Targetable) AHORA.
+            // La "IA" (CombatBrain) se añade luego en CombatState.
+            if (configuration.HasBehaviour(NPCBehaviourType.Combat) && configuration.combatConfig != null)
+            {
+                // A. Damageable (Vida) - Para que pueda morir por emboscada
+                if (!GetComponent<Damageable>())
                 {
-                    _context.Player = _player;
-                    _context.PlayerCamera = _playerCamera;
+                    var dmg = gameObject.AddComponent<Damageable>();
+                    dmg.SetMaxAndCurrent(configuration.combatConfig.health, configuration.combatConfig.health);
+                    if (debugMode) Debug.Log($"[NPCManager] 🛡️ Damageable añadido (Pre-Combate)");
+                }
+
+                // B. CombatLifecycleHandler (Gestión de muerte/stun)
+                if (!GetComponent<NPCCombatLifecycleHandler>())
+                {
+                    var handler = gameObject.AddComponent<NPCCombatLifecycleHandler>();
+                    // handler.Initialize(); // Método no existe, se inicializa automáticamente en Awake
+                    if (debugMode) Debug.Log($"[NPCManager] ☠️ LifecycleHandler añadido (Pre-Combate)");
+                }
+
+                // C. Targetable (Para que el jugador pueda apuntarle antes de pelear)
+                if (!GetComponent<Targetable>())
+                {
+                    gameObject.AddComponent<Targetable>();
+                    if (debugMode) Debug.Log($"[NPCManager] 🎯 Targetable añadido (Pre-Combate)");
+                }
+                
+                // D. NPCHealthBarSpawner (Barra de vida)
+                if (!GetComponent<NPCHealthBarSpawner>())
+                {
+                    var spawner = gameObject.AddComponent<NPCHealthBarSpawner>();
+                    if (configuration.combatConfig.healthBarPrefab != null)
+                        spawner.SetHealthBarPrefab(configuration.combatConfig.healthBarPrefab);
                 }
             }
         }
-        
-        #endregion
-        
-        #region Public API for Narrative/Cinematic
-        
-        /// <summary>
-        /// Inicia una secuencia cinemática
-        /// </summary>
-        public void StartCinematicSequence(States.CinematicSequence sequence)
-        {
-            if (sequence == null)
-            {
-                Debug.LogError($"[NPCBehaviourV2:{name}] Sequence is null");
-                return;
-            }
-            
-            var cinematicState = new States.CinematicState();
-            cinematicState.StartSequence(sequence);
-            _brain.ForceState(cinematicState);
-            
-            if (debugMode)
-                Debug.Log($"[NPCBehaviourV2:{name}] Cinematic sequence started");
-        }
-        
-        /// <summary>
-        /// Sale del estado cinemático y vuelve a Idle
-        /// </summary>
-        public void ExitCinematic()
-        {
-            if (_brain.CurrentState is States.CinematicState)
-            {
-                _brain.ChangeState(new States.IdleState());
-                
-                if (debugMode)
-                    Debug.Log($"[NPCBehaviourV2:{name}] Exited cinematic");
-            }
-        }
-        
-        /// <summary>
-        /// Fuerza un cambio a estado Idle
-        /// </summary>
-        public void ForceIdle()
-        {
-            _brain.ForceState(new States.IdleState());
-        }
-        
-        /// <summary>
-        /// Activa el modo combate
-        /// </summary>
+
+        // =================================================================================
+        // 🎮 STATE CONTROL API
+        // =================================================================================
+
         public void EnterCombat()
         {
+            // Evitar entrar en combate si ya estamos muertos
+            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+
             _context.IsInCombat = true;
             if (!(_brain.CurrentState is States.CombatState))
             {
@@ -278,310 +222,133 @@ namespace Game.NPC
             }
         }
         
-        /// <summary>
-        /// Desactiva el modo combate
-        /// </summary>
         public void ExitCombat()
         {
             _context.IsInCombat = false;
-            // El estado de combate detectará el flag y hará transición automáticamente
+            // El CombatState detectará el flag en su Update y saldrá solo
         }
-        
-        /// <summary>
-        /// Aplica la última posición guardada al NPC (para sistema de guardado)
-        /// </summary>
-        public void ApplyLastPositionIfNeeded()
+
+        public void ForceIdle()
         {
-            if (!persistLastPosition || lastPosition == Vector3.zero)
-                return;
-                
-            if (_agent != null && _agent.isOnNavMesh)
-            {
-                _agent.Warp(lastPosition);
-                Debug.Log($"[NPCBehaviourV2:{name}] Posición restaurada: {lastPosition}");
-            }
-            else
-            {
-                transform.position = lastPosition;
-                Debug.Log($"[NPCBehaviourV2:{name}] Posición restaurada (sin NavMesh): {lastPosition}");
-            }
+            _brain.ForceState(new States.IdleState());
         }
-        
-        /// <summary>
-        /// Guarda la posición actual del NPC para persistencia.
-        /// SOLO debe llamarse cuando el jugador guarda manualmente en un punto de guardado.
-        /// Llamado por el SaveSystem.
-        /// </summary>
-        public void SaveCurrentPosition()
+
+        // =================================================================================
+        // 🎬 CINEMATICS & MOVEMENT API
+        // =================================================================================
+
+        public void MoveToPosition(Vector3 targetPosition, float walkDuration = 2f, float maxDuration = 15f, bool turn = false, Action onComplete = null)
         {
-            if (!persistLastPosition)
-                return;
-            
-            lastPosition = transform.position;
-            
-            if (debugMode)
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] 💾 Posición guardada: {lastPosition}");
-            }
-        }
-        
-        /// <summary>
-        /// Mueve el NPC a una posición específica con fade y teletransporte
-        /// </summary>
-        /// <param name="targetPosition">Posición destino</param>
-        /// <param name="walkDisplayDuration">Segundos que se muestra caminando antes del fade (por defecto 2s)</param>
-        /// <param name="maxDuration">Duración máxima total (timeout)</param>
-        /// <param name="turnAroundOnArrival">Girar 180° al llegar</param>
-        /// <param name="onComplete">Callback al completar</param>
-        public void MoveToPosition(Vector3 targetPosition, float walkDisplayDuration = 2f, float maxDuration = 15f, bool turnAroundOnArrival = false, Action onComplete = null)
-        {
-            var sequence = new States.MoveToPoscionSequence(this, targetPosition, maxDuration, turnAroundOnArrival, walkDisplayDuration);
-            
-            // Si se proporciona callback, monitorearlo
-            if (onComplete != null)
-            {
-                StartCoroutine(WaitForSequenceComplete(sequence, onComplete));
-            }
-            
+            var sequence = new States.MoveToPositionSequence(this, targetPosition, maxDuration, turn, walkDuration);
+            if (onComplete != null) StartCoroutine(WaitForSequence(sequence, onComplete));
             StartCinematicSequence(sequence);
         }
-        
-        private System.Collections.IEnumerator WaitForSequenceComplete(States.CinematicSequence sequence, Action onComplete)
+
+        public void StartCinematicSequence(States.CinematicSequence sequence)
         {
-            while (!sequence.IsCompleted)
-            {
-                yield return null;
-            }
+            if (sequence == null) return;
+            var state = new States.CinematicState();
+            state.StartSequence(sequence);
+            _brain.ForceState(state);
+        }
+
+        private System.Collections.IEnumerator WaitForSequence(States.CinematicSequence seq, Action callback)
+        {
+            while (!seq.IsCompleted) yield return null;
+            callback?.Invoke();
+        }
+
+        // =================================================================================
+        // 💾 PERSISTENCE & UTILS
+        // =================================================================================
+
+        public void ApplyLastPositionIfNeeded()
+        {
+            if (!persistLastPosition || lastPosition == Vector3.zero) return;
             
-            onComplete?.Invoke();
+            if (_agent != null && _agent.isOnNavMesh) _agent.Warp(lastPosition);
+            else transform.position = lastPosition;
+            
+            if(debugMode) Debug.Log($"[NPCManager] 📍 Posición restaurada: {lastPosition}");
         }
         
-        #endregion
-        
-        #region Interaction System
-        
-        /// <summary>
-        /// Maneja la interacción con el jugador (llamado desde Interactable).
-        /// Delega al NPCBrain/módulos para que manejen la interacción según el tipo de NPC.
-        /// </summary>
         public void HandleInteraction(GameObject interactor)
         {
-            if (_brain != null)
+            // No interactuar si estamos muertos o en combate
+            if (_context.IsInCombat) return;
+            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
+            // Si está derrotado, el LifecycleHandler gestiona la interacción especial (diálogo post-derrota)
+            // pero si está vivo y bien, el Brain gestiona la interacción normal.
+            if (lifecycle != null && lifecycle.IsDefeatedAndInactive)
             {
-                _brain.HandleInteraction(interactor);
+                // TODO: Implementar HandlePostDefeatInteraction en NPCCombatLifecycleHandler
+                // Por ahora, delegar al Brain para que maneje la interacción normalmente
+                // lifecycle.HandlePostDefeatInteraction(interactor);
+                _brain?.HandleInteraction(interactor);
+                return;
             }
-            else
+
+            _brain?.HandleInteraction(interactor);
+        }
+
+        private void RegisterNarrativeIdentity()
+        {
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
             {
-                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Brain es NULL, no se puede manejar la interacción");
+                NPCRegistry.Instance.RegisterNPC(
+                    configuration.narrativeConfig.narrativeID, 
+                    configuration.narrativeConfig.narrativeTag, 
+                    this
+                );
             }
         }
         
+        private void UnregisterNarrativeIdentity()
+        {
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
+            {
+                NPCRegistry.Instance.UnregisterNPC(
+                    configuration.narrativeConfig.narrativeID, 
+                    configuration.narrativeConfig.narrativeTag
+                );
+            }
+        }
+
+        #region Player References
+        private void OnPlayerRegistered(GameObject player) => ResolvePlayerReferences();
+        private void OnPlayerUnregistered() { 
+            _player = null; _playerCamera = null; 
+            if(_context != null) { _context.Player = null; _context.PlayerCamera = null; }
+        }
+        private void ResolvePlayerReferences() {
+            if (ServiceLocator.TryGet(out PlayerService ps) && PlayerService.Player != null) {
+                _player = PlayerService.Player.transform;
+                _playerCamera = Camera.main?.transform;
+                if (_context != null) { _context.Player = _player; _context.PlayerCamera = _playerCamera; }
+            }
+        }
         #endregion
-        
-        #region Auto-Component Management
-        
-        /// <summary>
-        /// Añade automáticamente los componentes necesarios según los módulos configurados.
-        /// Sistema inteligente que gestiona todos los módulos sin necesidad de añadir componentes manualmente.
-        /// </summary>
-        private void EnsureRequiredComponents()
-        {
-            if (debugMode)
-                Debug.Log($"[NPCBehaviourV2:{name}] 🔧 Verificando componentes necesarios según configuración...");
-            
-            // ============================================
-            // 1. QUEST MODULE → NPCQuestActionExecutor
-            // ============================================
-            bool hasQuestBehaviour = configuration.HasBehaviour(NPCBehaviourType.Quest);
-            bool hasQuestConfig = configuration.questConfig != null;
-            
-            if (hasQuestBehaviour && hasQuestConfig)
-            {
-                if (GetComponent<NPCQuestActionExecutor>() == null)
-                {
-                    gameObject.AddComponent<NPCQuestActionExecutor>();
-                    Debug.Log($"[NPCBehaviourV2:{name}] ✅ NPCQuestActionExecutor añadido automáticamente");
-                }
-                else if (debugMode)
-                {
-                    Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ NPCQuestActionExecutor ya existe");
-                }
-            }
-            else if (debugMode && hasQuestBehaviour && !hasQuestConfig)
-            {
-                Debug.LogWarning($"[NPCBehaviourV2:{name}] ⚠️ Quest activado pero questConfig es NULL. Asigna un Quest Config SO.");
-            }
-            
-            // ============================================
-            // 2. INTERACTIVE NARRATIVE MODULE → NPCInteractiveNarrativeExecutor
-            // ============================================
-            bool hasInteractiveNarrativeBehaviour = configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative);
-            bool hasInteractiveNarrativeConfig = configuration.interactiveNarrativeConfig != null;
-            
-            if (debugMode)
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] Interactive Narrative: HasBehaviour={hasInteractiveNarrativeBehaviour}, HasConfig={hasInteractiveNarrativeConfig}");
-            }
-            
-            if (hasInteractiveNarrativeBehaviour && hasInteractiveNarrativeConfig)
-            {
-                var existingExecutor = GetComponent<NPCInteractiveNarrativeExecutor>();
-                bool needsReplacement = false;
-                
-                if (existingExecutor != null)
-                {
-                    // Verificar si es una versión vieja
-                    int currentVersion = existingExecutor.ComponentVersion;
-                    
-                    if (currentVersion < NPCInteractiveNarrativeExecutor.COMPONENT_VERSION)
-                    {
-                        Debug.LogWarning($"[NPCBehaviourV2:{name}] 🔄 Versión obsoleta detectada (v{currentVersion}), actualizando a v{NPCInteractiveNarrativeExecutor.COMPONENT_VERSION}...");
-                        DestroyImmediate(existingExecutor);
-                        needsReplacement = true;
-                    }
-                }
-                
-                if (existingExecutor == null || needsReplacement)
-                {
-                    try
-                    {
-                        gameObject.AddComponent<NPCInteractiveNarrativeExecutor>();
-                        
-                        if (debugMode)
-                        {
-                            Debug.Log($"[NPCBehaviourV2:{name}] ✅ NPCInteractiveNarrativeExecutor v{NPCInteractiveNarrativeExecutor.COMPONENT_VERSION} añadido");
-                        }
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogError($"[NPCBehaviourV2:{name}] ❌ Error al añadir componente: {ex.Message}");
-                    }
-                }
-                else if (debugMode)
-                {
-                    Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ NPCInteractiveNarrativeExecutor v{existingExecutor.ComponentVersion} ya existe");
-                }
-            }
-            else if (hasInteractiveNarrativeBehaviour && !hasInteractiveNarrativeConfig)
-            {
-                Debug.LogError($"[NPCBehaviourV2:{name}] ❌ InteractiveNarrative activado pero interactiveNarrativeConfig es NULL. Asigna un Interactive Narrative Config SO.");
-            }
-            
-            // ============================================
-            // 3. AMBIENT MODULE (No requiere componente adicional)
-            // ============================================
-            // El módulo Ambient se gestiona directamente en WanderState/IdleState
-            // No requiere componente adicional
-            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Ambient))
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Ambient activado - Gestionado por WanderState/IdleState (no requiere componente)");
-            }
-            
-            // ============================================
-            // 4. COMBAT MODULE (No requiere componente adicional)
-            // ============================================
-            // El módulo Combat se gestiona directamente en CombatState + NPCCombatBrain
-            // NPCCombatBrain se añade automáticamente por CombatState cuando es necesario
-            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.Combat))
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Combat activado - Gestionado por CombatState + NPCCombatBrain (auto-añadido en combate)");
-            }
-            
-            // ============================================
-            // 5. NARRATIVE MODULE (Sistema de grafo - deprecado)
-            // ============================================
-            // Este módulo usa el sistema de grafo narrativo (NarrativeGraph)
-            // No requiere componente adicional, se comunica vía NPCRegistry
-            if (debugMode && configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative))
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] ℹ️ Narrative (grafo) activado - Registrado en NPCRegistry (no requiere componente)");
-            }
-            
-            // ============================================
-            // RESUMEN
-            // ============================================
-            if (debugMode)
-            {
-                Debug.Log($"[NPCBehaviourV2:{name}] ✅ Verificación de componentes completada");
-            }
-        }
-        
-        #endregion
-        
-        #region Persistent Icon API
-        
-        /// <summary>
-        /// Muestra el icono persistente del NPC
-        /// </summary>
-        public void ShowPersistentIcon()
-        {
-            var iconController = GetComponent<Common.NPCPersistentIconController>();
-            iconController?.ShowIcon();
-        }
-        
-        /// <summary>
-        /// Oculta el icono persistente del NPC
-        /// </summary>
-        public void HidePersistentIcon()
-        {
-            var iconController = GetComponent<Common.NPCPersistentIconController>();
-            iconController?.HideIcon();
-        }
-        
-        /// <summary>
-        /// Cambia el prefab del icono persistente
-        /// </summary>
-        public void SetPersistentIconPrefab(GameObject newPrefab)
-        {
-            var iconController = GetComponent<Common.NPCPersistentIconController>();
-            iconController?.SetIconPrefab(newPrefab);
-        }
-        
-        /// <summary>
-        /// Establece la visibilidad del icono persistente
-        /// </summary>
-        public void SetPersistentIconVisible(bool visible)
-        {
-            var iconController = GetComponent<Common.NPCPersistentIconController>();
-            iconController?.SetVisible(visible);
-        }
-        
-        #endregion
-        
-        #region Gizmos
-        
+
 #if UNITY_EDITOR
         void OnDrawGizmosSelected()
         {
-            if (!Application.isPlaying || _context == null)
-                return;
+            if (!Application.isPlaying || _context == null) return;
             
-            // Dibujar destino actual
-            if (_context.TargetDestination != Vector3.zero)
-            {
+            // Visualizar Destino
+            if (_context.TargetDestination != Vector3.zero) {
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawWireSphere(_context.TargetDestination, 0.5f);
                 Gizmos.DrawLine(transform.position, _context.TargetDestination);
             }
-            
-            // Dibujar estado actual
-            if (_brain != null && _brain.CurrentState != null)
-            {
-                UnityEditor.Handles.Label(
-                    transform.position + Vector3.up * 2f,
-                    $"State: {_brain.CurrentState.StateName}",
-                    new GUIStyle()
-                    {
-                        normal = new GUIStyleState() { textColor = Color.white },
-                        fontSize = 12,
-                        fontStyle = FontStyle.Bold
-                    }
-                );
+
+            // Visualizar rango de combate si existe
+            if (configuration.combatConfig != null) {
+                Gizmos.color = new Color(1, 0, 0, 0.3f);
+                Gizmos.DrawWireSphere(transform.position, configuration.combatConfig.minAttackDistance);
+                Gizmos.color = new Color(1, 0, 0, 0.5f);
+                Gizmos.DrawWireSphere(transform.position, configuration.combatConfig.maxAttackDistance);
             }
         }
 #endif
-        
-        #endregion
     }
 }
-

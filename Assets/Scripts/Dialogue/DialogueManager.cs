@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using Core;
 using DG.Tweening;
+using Sendero.Core.Feedback;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -39,21 +40,21 @@ public class DialogueManager : MonoBehaviour
 
     [Header("Cámara de Diálogo")]
     [Tooltip("Si está activo, la cámara se posicionará para enfocar la conversación con NPCs")]
-    [SerializeField] private bool useDialogueCamera = false;
+    [SerializeField] private bool useDialogueCamera;
 
     [Header("UI Hints")]
     [SerializeField] private GameObject submitHint;
 
     // Estado
-    private DialogueAsset current;
-    private int index = -1;
-    private Action onEnd;
-    public bool IsOpen => current != null;
+    private DialogueAsset _current;
+    private int _index = -1;
+    private Action _onEnd;
+    public bool IsOpen => _current != null;
 
     // Expose a few internal state values to allow external callers
     // to react to line progress (e.g. open shop when last line finishes).
-    public int CurrentIndex => index;
-    public int CurrentLineCount => current != null && current.lines != null ? current.lines.Length : 0;
+    public int CurrentIndex => _index;
+    public int CurrentLineCount => _current != null && _current.lines != null ? _current.lines.Length : 0;
     public bool IsTyping => _isTyping;
 
     [Header("Choices (optional)")]
@@ -66,8 +67,8 @@ public class DialogueManager : MonoBehaviour
 
     float _nextDpadTime;
 
-    System.Action _onYes;
-    System.Action _onNo;
+    Action _onYes;
+    Action _onNo;
 
     // Typewriter estado
     Coroutine _typeRoutine;
@@ -75,21 +76,21 @@ public class DialogueManager : MonoBehaviour
     string _currentText = string.Empty;
 
     // NPC para cámara de diálogo
-    private Transform currentNPC = null;
+    private Transform _currentNpc;
     
     // Corrutina para mantener al NPC mirando al jugador
-    private Coroutine _keepLookingRoutine = null;
+    private Coroutine _keepLookingRoutine;
     
     // Guardar la última rotación del NPC para mantenerla después del diálogo
     private Quaternion _npcFinalRotation;
     
     // Protección contra input inmediato al abrir diálogo
     private float _dialogueOpenedAt = -999f;
-    private const float INPUT_GRACE_PERIOD = 0.3f;
+    private const float InputGracePeriod = 0.3f;
     
     // Protección contra avance doble al completar línea
     private float _lastLineCompletedAt = -999f;
-    private const float LINE_COMPLETE_COOLDOWN = 0.2f;
+    private const float LineCompleteCooldown = 0.2f;
 
     void Awake()
     {
@@ -155,14 +156,14 @@ public class DialogueManager : MonoBehaviour
         if (input.Phase != InputActionPhase.Performed) return;
 
         // PROTECCIÓN: Ignorar inputs durante el período de gracia después de abrir el diálogo
-        if (Time.unscaledTime - _dialogueOpenedAt < INPUT_GRACE_PERIOD)
+        if (Time.unscaledTime - _dialogueOpenedAt < InputGracePeriod)
         {
             Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante período de gracia inicial ({Time.unscaledTime - _dialogueOpenedAt:F3}s desde apertura)");
             return;
         }
         
         // PROTECCIÓN: Ignorar inputs durante el cooldown después de completar una línea
-        if (Time.unscaledTime - _lastLineCompletedAt < LINE_COMPLETE_COOLDOWN)
+        if (Time.unscaledTime - _lastLineCompletedAt < LineCompleteCooldown)
         {
             Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante cooldown de línea completada ({Time.unscaledTime - _lastLineCompletedAt:F3}s desde completado)");
             return;
@@ -228,9 +229,9 @@ public class DialogueManager : MonoBehaviour
     {
         if (asset == null || asset.lines == null || asset.lines.Length == 0) return;
 
-        current = asset;
-        onEnd = onFinished;
-        index = -1;
+        _current = asset;
+        _onEnd = onFinished;
+        _index = -1;
 
         // Marcar el momento en que se abre el diálogo para ignorar inputs inmediatos
         _dialogueOpenedAt = Time.unscaledTime;
@@ -260,14 +261,14 @@ public class DialogueManager : MonoBehaviour
         ActivateDialogueMode(true);
 
         // Activar cámara de diálogo si hay un NPC asignado
-        if (useDialogueCamera && currentNPC != null && DialogueCameraController.Instance != null)
+        if (useDialogueCamera && _currentNpc != null && DialogueCameraController.Instance != null)
         {
-            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo para NPC: {currentNPC.name}");
-            DialogueCameraController.Instance.StartDialogueCamera(currentNPC);
+            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo para NPC: {_currentNpc.name}");
+            DialogueCameraController.Instance.StartDialogueCamera(_currentNpc);
         }
         else
         {
-            Debug.Log($"[DialogueManager] ⚠️ Cámara de diálogo NO activada - useDialogueCamera={useDialogueCamera}, currentNPC={currentNPC?.name ?? "NULL"}, DialogueCameraController={DialogueCameraController.Instance != null}");
+            Debug.Log($"[DialogueManager] ⚠️ Cámara de diálogo NO activada - useDialogueCamera={useDialogueCamera}, currentNPC={_currentNpc?.name ?? "NULL"}, DialogueCameraController={DialogueCameraController.Instance != null}");
         }
 
         Next(); // pinta primera línea
@@ -278,10 +279,10 @@ public class DialogueManager : MonoBehaviour
     /// </summary>
     public void StartDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
     {
-        currentNPC = npc;
+        _currentNpc = npc;
         
         // ✅ INICIAR CORRUTINA para mantener al NPC mirando al jugador
-        if (currentNPC != null)
+        if (_currentNpc != null)
         {
             // Detener cualquier corrutina previa
             if (_keepLookingRoutine != null)
@@ -292,21 +293,21 @@ public class DialogueManager : MonoBehaviour
             // Rotar INSTANTÁNEAMENTE hacia el jugador (sin interpolación)
             if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
             {
-                Vector3 directionToPlayer = playerGo.transform.position - currentNPC.position;
+                Vector3 directionToPlayer = playerGo.transform.position - _currentNpc.position;
                 directionToPlayer.y = 0f;
                 
                 if (directionToPlayer.sqrMagnitude > 0.001f)
                 {
                     Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
                     // CRÍTICO: Rotación 100% instantánea, sin interpolación
-                    currentNPC.rotation = targetRotation;
+                    _currentNpc.rotation = targetRotation;
                     _npcFinalRotation = targetRotation;
-                    Debug.Log($"[DialogueManager] 👁️ NPC '{currentNPC.name}' girado INSTANTÁNEAMENTE hacia el jugador (ángulo: {currentNPC.rotation.eulerAngles.y:F1}°)");
+                    Debug.Log($"[DialogueManager] 👁️ NPC '{_currentNpc.name}' girado INSTANTÁNEAMENTE hacia el jugador (ángulo: {_currentNpc.rotation.eulerAngles.y:F1}°)");
                 }
             }
             
             // Iniciar la corrutina de seguimiento continuo
-            _keepLookingRoutine = StartCoroutine(KeepNPCLookingAtPlayer());
+            _keepLookingRoutine = StartCoroutine(KeepNpcLookingAtPlayer());
         }
         
         StartDialogue(asset, onFinished);
@@ -317,12 +318,12 @@ public class DialogueManager : MonoBehaviour
     /// </summary>
     public void StartBattleDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
     {
-        currentNPC = npc;
+        _currentNpc = npc;
         
         // Preparar al jugador para el diálogo de batalla
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null && npc != null)
         {
-            PreparPlayerForBattleDialogue(playerGo, npc);
+            PreparePlayerForBattleDialogue(playerGo, npc);
         }
         
         StartDialogue(asset, onFinished);
@@ -331,18 +332,20 @@ public class DialogueManager : MonoBehaviour
     /// <summary>
     /// Prepara al jugador para un diálogo previo a batalla: lo gira hacia el NPC y activa stance de batalla
     /// </summary>
+    /// <param name="player">El GameObject del jugador</param>
+    /// <param name="npc">El Transform del NPC</param>
     /// <param name="applySlowmo">Si es true, aplica slowmo (solo para pre-batalla, no para derrota)</param>
-    private void PreparPlayerForBattleDialogue(GameObject player, Transform npc, bool applySlowmo = true)
+    private void PreparePlayerForBattleDialogue(GameObject player, Transform npc, bool applySlowmo = true)
     {
         Debug.Log($"[DialogueManager] ⚔️ Preparando jugador para diálogo de batalla con '{npc.name}'");
         
         // 1. Girar al jugador hacia el NPC
-        Vector3 directionToNPC = npc.position - player.transform.position;
-        directionToNPC.y = 0f; // Mantener rotación en el plano horizontal
+        Vector3 directionToNpc = npc.position - player.transform.position;
+        directionToNpc.y = 0f; // Mantener rotación en el plano horizontal
         
-        if (directionToNPC.sqrMagnitude > 0.001f)
+        if (directionToNpc.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(directionToNPC);
+            Quaternion targetRotation = Quaternion.LookRotation(directionToNpc);
             player.transform.rotation = targetRotation;
             Debug.Log($"[DialogueManager] 👁️ Jugador girado hacia NPC '{npc.name}'");
         }
@@ -363,13 +366,13 @@ public class DialogueManager : MonoBehaviour
         
         // 3. EFECTOS CINEMATOGRÁFICOS DE CÁMARA
         // Camera shake para impacto inicial
-        Sendero.Core.Feedback.FeedbackService.CameraShake(0.4f, 0.3f);
+        FeedbackService.CameraShake(0.4f, 0.3f);
         Debug.Log($"[DialogueManager] 📹 Camera shake aplicado");
         
         // Slowmo breve SOLO si es diálogo de pre-batalla (no de derrota)
         if (applySlowmo)
         {
-            Sendero.Core.Feedback.FeedbackService.HitStop(0.5f, 0.3f);
+            FeedbackService.HitStop(0.5f, 0.3f);
             Debug.Log($"[DialogueManager] ⏱️ Slowmo breve aplicado para dramatismo (pre-batalla)");
         }
         else
@@ -378,7 +381,7 @@ public class DialogueManager : MonoBehaviour
         }
         
         // Screen flash rojo sutil para tensión
-        Sendero.Core.Feedback.FeedbackService.ScreenFlash(new UnityEngine.Color(1f, 0f, 0f, 0.1f), 0.2f);
+        FeedbackService.ScreenFlash(new Color(1f, 0f, 0f, 0.1f), 0.2f);
         Debug.Log($"[DialogueManager] 🔴 Flash rojo sutil aplicado");
     }
 
@@ -404,9 +407,9 @@ public class DialogueManager : MonoBehaviour
 
         HideChoices();
 
-        current = null;
-        onEnd?.Invoke();
-        onEnd = null;
+        _current = null;
+        _onEnd?.Invoke();
+        _onEnd = null;
 
         // Ocultar UI
         if (pauseGameWhileOpen) Time.timeScale = 1f;
@@ -432,9 +435,9 @@ public class DialogueManager : MonoBehaviour
         }
 
         // Reactivar la rotación automática del NPCSimpleAnimator
-        if (currentNPC != null)
+        if (_currentNpc != null)
         {
-            var npcAnimator = currentNPC.GetComponent<NPCSimpleAnimator>();
+            var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
             if (npcAnimator != null)
             {
                 // NO reactivar inmediatamente - esperar a que termine MaintainNPCRotationAfterDialogue
@@ -444,12 +447,12 @@ public class DialogueManager : MonoBehaviour
 
         // NUEVO: Mantener la rotación final del NPC brevemente después del diálogo
         // para evitar que el Animator la resetee al volver a Idle
-        if (currentNPC != null)
+        if (_currentNpc != null)
         {
-            StartCoroutine(MaintainNPCRotationAfterDialogue(currentNPC, _npcFinalRotation));
+            StartCoroutine(MaintainNpcRotationAfterDialogue(_currentNpc, _npcFinalRotation));
         }
 
-        currentNPC = null;
+        _currentNpc = null;
 
         // NUEVO: Desactivar modo DialogueActive en PlayerActionManager
         ActivateDialogueMode(false);
@@ -515,7 +518,7 @@ public class DialogueManager : MonoBehaviour
         cb?.Invoke();
     }
 
-    public void ShowWithChoices(string message, string yesText, string noText, System.Action onYes, System.Action onNo)
+    public void ShowWithChoices(string message, string yesText, string noText, Action onYes, Action onNo)
     {
         // Asegurar que el panel principal esté visible/interactable
         if (group != null)
@@ -633,8 +636,8 @@ public class DialogueManager : MonoBehaviour
 
     private void Next()
     {
-        index++;
-        if (current == null || current.lines == null || index >= current.lines.Length)
+        _index++;
+        if (_current == null || _current.lines == null || _index >= _current.lines.Length)
         {
             Close();
             return;
@@ -642,9 +645,9 @@ public class DialogueManager : MonoBehaviour
         
         // Resetear el período de gracia para cada nueva línea
         _dialogueOpenedAt = Time.unscaledTime;
-        Debug.Log($"[DialogueManager] 🕐 Nueva línea {index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
+        Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
 
-        var line = current.lines[index];
+        var line = _current.lines[_index];
 
         // --- NOMBRE DEL HABLANTE (localización con fallback al ID) ---
         string speakerNameToShow = string.Empty;
@@ -845,38 +848,38 @@ public class DialogueManager : MonoBehaviour
     /// <summary>
     /// Mantiene al NPC mirando al jugador durante todo el diálogo
     /// </summary>
-    private System.Collections.IEnumerator KeepNPCLookingAtPlayer()
+    private System.Collections.IEnumerator KeepNpcLookingAtPlayer()
     {
-        if (currentNPC == null)
+        if (_currentNpc == null)
         {
-            Debug.LogWarning("[DialogueManager] KeepNPCLookingAtPlayer - currentNPC es NULL");
+            Debug.LogWarning("[DialogueManager] KeepNpcLookingAtPlayer - currentNPC es NULL");
             yield break;
         }
         
         if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
         {
-            Debug.LogWarning("[DialogueManager] KeepNPCLookingAtPlayer - No se encontró el jugador");
+            Debug.LogWarning("[DialogueManager] KeepNpcLookingAtPlayer - No se encontró el jugador");
             yield break;
         }
         
-        Debug.Log($"[DialogueManager] 👁️ Iniciando seguimiento de rotación del NPC '{currentNPC.name}' hacia el jugador");
+        Debug.Log($"[DialogueManager] 👁️ Iniciando seguimiento de rotación del NPC '{_currentNpc.name}' hacia el jugador");
         
         // Desactivar la rotación automática del NPCSimpleAnimator para evitar conflictos
-        var npcAnimator = currentNPC.GetComponent<NPCSimpleAnimator>();
+        var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
         if (npcAnimator != null)
         {
             npcAnimator.DisableAutoRotation();
-            Debug.Log($"[DialogueManager] 🔒 Rotación automática de NPCSimpleAnimator desactivada para '{currentNPC.name}'");
+            Debug.Log($"[DialogueManager] 🔒 Rotación automática de NPCSimpleAnimator desactivada para '{_currentNpc.name}'");
         }
         
         // NO esperar frames - empezar inmediatamente
         // yield return null; // ELIMINADO - comenzar de inmediato
         
         // Mantener rotación mientras el diálogo esté abierto
-        while (IsOpen && currentNPC != null)
+        while (IsOpen && _currentNpc != null)
         {
             // Calcular dirección hacia el jugador
-            Vector3 directionToPlayer = playerGo.transform.position - currentNPC.position;
+            Vector3 directionToPlayer = playerGo.transform.position - _currentNpc.position;
             directionToPlayer.y = 0f; // Solo rotación horizontal
             
             if (directionToPlayer.sqrMagnitude > 0.001f)
@@ -886,46 +889,43 @@ public class DialogueManager : MonoBehaviour
                 // Rotar hacia el jugador con velocidad muy alta
                 // 720°/s = rotación completa (360°) en medio segundo
                 float rotationSpeed = 720f; // DUPLICADO: de 360 a 720 grados por segundo
-                currentNPC.rotation = Quaternion.RotateTowards(
-                    currentNPC.rotation, 
+                _currentNpc.rotation = Quaternion.RotateTowards(
+                    _currentNpc.rotation, 
                     targetRotation, 
                     rotationSpeed * Time.unscaledDeltaTime
                 );
                 
                 // Guardar continuamente la rotación final
-                _npcFinalRotation = currentNPC.rotation;
+                _npcFinalRotation = _currentNpc.rotation;
             }
             
             yield return null;
         }
         
         // Al salir del bucle, forzar la última rotación una vez más
-        if (currentNPC != null)
+        if (_currentNpc != null)
         {
-            currentNPC.rotation = _npcFinalRotation;
-            Debug.Log($"[DialogueManager] 🔚 Diálogo cerrado - NPC '{currentNPC.name}' mantiene rotación final: {_npcFinalRotation.eulerAngles.y:F1}°");
+            _currentNpc.rotation = _npcFinalRotation;
+            Debug.Log($"[DialogueManager] 🔚 Diálogo cerrado - NPC '{_currentNpc.name}' mantiene rotación final: {_npcFinalRotation.eulerAngles.y:F1}°");
         }
     }
 
     /// <summary>
-    /// Mantiene la rotación del NPC después de cerrar el diálogo para evitar que el Animator la resetee
+    /// Libera la rotación del NPC después de cerrar el diálogo
+    /// ✅ FIX: No mantener rotación forzada - liberar inmediatamente para evitar caminar de lado
     /// </summary>
-    private System.Collections.IEnumerator MaintainNPCRotationAfterDialogue(Transform npc, Quaternion finalRotation)
+    private System.Collections.IEnumerator MaintainNpcRotationAfterDialogue(Transform npc, Quaternion finalRotation)
     {
         if (npc == null) yield break;
         
-        Debug.Log($"[DialogueManager] 🔒 Manteniendo rotación del NPC '{npc.name}' por 2 segundos después del diálogo");
+        // ✅ FIX CRÍTICO: NO mantener rotación forzada
+        // Si forzamos la rotación mientras el NPC se mueve, camina de lado
+        // Solución: Liberar inmediatamente para que NPCSimpleAnimator tome control
         
-        float duration = 2f; // Mantener rotación por 2 segundos
-        float elapsed = 0f;
+        Debug.Log($"[DialogueManager] 🔓 Liberando rotación del NPC '{npc.name}' inmediatamente");
         
-        while (elapsed < duration && npc != null)
-        {
-            // Forzar la rotación final continuamente durante estos 2 segundos
-            npc.rotation = finalRotation;
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
+        // Esperar 1 frame para asegurar que el diálogo se cerró completamente
+        yield return null;
         
         if (npc != null)
         {
@@ -934,10 +934,18 @@ public class DialogueManager : MonoBehaviour
             if (npcAnimator != null)
             {
                 npcAnimator.EnableAutoRotation();
-                Debug.Log($"[DialogueManager] 🔓 Rotación automática de NPCSimpleAnimator reactivada para '{npc.name}'");
+                Debug.Log($"[DialogueManager] ✅ Rotación automática de NPCSimpleAnimator reactivada para '{npc.name}'");
             }
             
-            Debug.Log($"[DialogueManager] ✅ NPC '{npc.name}' liberado - rotación final establecida permanentemente");
+            // Asegurar que NavMeshAgent no interfiera con la rotación
+            var navAgent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (navAgent != null)
+            {
+                navAgent.updateRotation = false;
+                Debug.Log($"[DialogueManager] ✅ NavMeshAgent.updateRotation DESACTIVADO para '{npc.name}'");
+            }
+            
+            Debug.Log($"[DialogueManager] ✅ NPC '{npc.name}' liberado - rotación controlada por NPCSimpleAnimator");
         }
     }
 }

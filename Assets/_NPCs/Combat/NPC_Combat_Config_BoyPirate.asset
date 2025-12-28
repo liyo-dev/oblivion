@@ -15,8 +15,6 @@ MonoBehaviour:
   moduleName: 
   description: 
   health: 100
-  attackDamage: 10
-  attackCooldown: 1.5
   detectionRange: 10
   minAttackDistance: 2
   maxAttackDistance: 10
@@ -27,9 +25,13 @@ MonoBehaviour:
   alertIconDuration: 2
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
   dialogueOnAlert: {fileID: 11400000, guid: 40ad844cb33491f43a9c99e4e09d95cb, type: 2}
-  dialogueOnDefeat: {fileID: 11400000, guid: a127d255143b43a4c93c55eeea0684f6, type: 2}
+  dialogueOnDefeat: {fileID: 0}
   dialogueAfterDefeat: {fileID: 11400000, guid: c1edb2972b0c93d44ab8f40806103ebc, type: 2}
   waitForAlertDialogue: 1
+  postDeathBehavior: 1
+  dialogueOnDizzy: {fileID: 11400000, guid: a127d255143b43a4c93c55eeea0684f6, type: 2}
+  disappearVFXPrefab: {fileID: 0}
+  disappearDuration: 2
   alertMusicEvent: Npc_Battle_Alert
   battleMusicId: Npc_Battle
   endMusicEvent: Npc_Battle_Victory
@@ -47,7 +49,7 @@ MonoBehaviour:
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
-  useTacticalRetreat: 0
+  useTacticalRetreat: 1
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
   coverSearchRadius: 15

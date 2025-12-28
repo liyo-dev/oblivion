@@ -1,533 +1,316 @@
-﻿﻿﻿using UnityEngine;
-using Game.NPC.Common;
-using Game.NPC.States;
+﻿using System.Collections;
+using UnityEngine;
+using UnityEngine.AI;
 using Sendero.Core.Feedback;
 
 namespace Game.NPC.Modules
 {
     /// <summary>
-    /// Componente que maneja el ciclo de vida del combate del NPC:
-    /// - Suscripción a eventos de Damageable
-    /// - Reproducción de diálogos al ser derrotado
-    /// - Cambio de estado post-derrota
+    /// Maneja el ciclo de vida del combate: Daño, Stun, Muerte, SlowMotion y lógica Post-Batalla.
+    /// Última actualización: 28/12/2024 - Agregado HandlePostDefeatInteraction
     /// </summary>
     [RequireComponent(typeof(Damageable))]
+    [RequireComponent(typeof(NPCBehaviourManagerV2))]
     public class NPCCombatLifecycleHandler : MonoBehaviour
     {
-        [Header("Feedbacks de Daño")]
-        [SerializeField, Tooltip("Reproducir animación de daño al recibir golpes")]
-        private bool playDamageAnimation = true;
+        #region ⚙️ Configuration
+        [Header("💥 Damage Feedback")]
+        [SerializeField] private bool playDamageAnimation = true;
+        [SerializeField, Range(0f, 2f)] private float damageStunDuration = 0.8f; // Reducido un poco para mayor dinamismo
+        [SerializeField, Range(0f, 2f)] private float invulnerabilityDuration = 0.5f;
         
-        [SerializeField, Tooltip("Tiempo de pausa al recibir daño (el NPC se detiene)")]
-        [Range(0f, 2f)]
-        private float damageStunDuration = 1f;
-        
-        [SerializeField, Tooltip("Tiempo de invulnerabilidad después de recibir daño")]
-        [Range(0f, 2f)]
-        private float invulnerabilityDuration = 0.5f;
-        
-        [SerializeField, Tooltip("Shake de cámara al recibir daño")]
-        private bool enableCameraShake = true;
-        
-        [SerializeField, Range(0f, 1f), Tooltip("Intensidad del shake de cámara")]
-        private float cameraShakeIntensity = 0.2f;
-        
-        [SerializeField, Range(0f, 0.5f), Tooltip("Duración del shake de cámara")]
-        private float cameraShakeDuration = 0.15f;
-        
-        [SerializeField, Tooltip("Activar hitstop (slowmotion) al recibir daño")]
-        private bool enableHitStop = true;
-        
-        [SerializeField, Range(0f, 1f), Tooltip("TimeScale durante hitstop (0 = pausa total)")]
-        private float hitStopTimeScale = 0.3f;
-        
-        [SerializeField, Range(0f, 0.5f), Tooltip("Duración del hitstop")]
-        private float hitStopDuration = 0.1f;
-        
-        [Header("Feedbacks de Muerte (Golpe Letal)")]
-        [SerializeField, Tooltip("Activar efectos especiales al morir")]
-        private bool enableDeathEffects = true;
-        
-        [SerializeField, Range(0f, 2f), Tooltip("Intensidad del shake en golpe letal")]
-        private float deathShakeIntensity = 1.2f;
-        
-        [SerializeField, Range(0f, 1f), Tooltip("Duración del shake en golpe letal")]
-        private float deathShakeDuration = 0.5f;
-        
-        [SerializeField, Range(0f, 1f), Tooltip("TimeScale durante slowmo de muerte")]
-        private float deathSlowMotionScale = 0.1f;
-        
-        [SerializeField, Range(0f, 2f), Tooltip("Duración del slowmo en golpe letal")]
-        private float deathSlowMotionDuration = 0.8f;
-        
-        [Header("VFX de Muerte")]
-        [SerializeField, Tooltip("Prefab del VFX que se reproduce al morir")]
-        private GameObject deathVFXPrefab;
-        
-        [SerializeField, Tooltip("Offset del VFX respecto al NPC")]
-        private Vector3 deathVFXOffset = Vector3.up;
-        
-        [SerializeField, Range(0f, 10f), Tooltip("Tiempo de vida del VFX")]
-        private float deathVFXLifetime = 3f;
-        
-        private NPCBehaviourManagerV2 _npcManager;
+        [Header("🎥 Camera & Time")]
+        [SerializeField] private bool enableCameraShake = true;
+        [SerializeField] private float cameraShakeIntensity = 0.2f;
+        [SerializeField] private float cameraShakeDuration = 0.15f;
+        [SerializeField] private bool enableHitStop = true;
+        [SerializeField, Range(0f, 1f)] private float hitStopTimeScale = 0.1f; // Más lento para mayor impacto
+        [SerializeField] private float hitStopDuration = 0.15f;
+
+        [Header("💀 Death Sequence")]
+        [SerializeField] private bool enableDeathEffects = true;
+        [SerializeField] private float deathSlowMoScale = 0.2f;
+        [SerializeField] private float deathSlowMoDuration = 1.0f;
+        [SerializeField] private GameObject deathVFXPrefab;
+        [SerializeField] private Vector3 deathVFXOffset = Vector3.up;
+        #endregion
+
+        #region 🔌 Dependencies
+        private NPCBehaviourManagerV2 _manager;
         private Damageable _damageable;
         private NPCSimpleAnimator _animator;
-        private NPCCombatConfig _combatConfig;
-        private UnityEngine.AI.NavMeshAgent _navAgent;
-        private bool _hasBeenDefeated;
+        private NavMeshAgent _agent;
+        private NPCCombatBrain _brain;
+        private NPCCombatConfig _config;
+        #endregion
+
+        #region 📊 State
+        public bool IsDefeatedAndInactive { get; private set; }
+        public bool IsStunned { get; private set; }
+        
         private bool _isProcessingDefeat;
         private bool _isInvulnerable;
-        
-        private bool _isStunned;
-        
-        // Sistema de interrupción de casting
-        private bool _isCasting;
-        private string _currentCastAnimation;
-        private int _currentCastLayer;
-        
-        /// <summary>
-        /// Indica si el NPC ha sido derrotado y NO debe volver a entrar en combate
-        /// </summary>
-        public bool IsDefeatedAndInactive => _hasBeenDefeated;
-        
-        /// <summary>
-        /// Indica si el NPC está actualmente stunneado (recibiendo daño)
-        /// </summary>
-        public bool IsStunned => _isStunned;
-        
-        /// <summary>
-        /// Marca que el NPC está casteando un hechizo (puede ser interrumpido por daño)
-        /// </summary>
-        public void StartCasting(string animationName, int layer)
-        {
-            _isCasting = true;
-            _currentCastAnimation = animationName;
-            _currentCastLayer = layer;
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🎭 Casting iniciado: {animationName} (layer {layer})");
-        }
-        
-        /// <summary>
-        /// Marca que el casting terminó normalmente
-        /// </summary>
-        public void EndCasting()
-        {
-            if (_isCasting)
-            {
-                Debug.Log($"[NPCCombatLifecycleHandler:{name}] ✅ Casting completado: {_currentCastAnimation}");
-            }
-            _isCasting = false;
-            _currentCastAnimation = null;
-        }
-        
-        /// <summary>
-        /// Interrumpe el casting actual y reproduce la animación de TakeDamage
-        /// </summary>
-        private void InterruptCasting()
-        {
-            if (!_isCasting) return;
-            
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⚠️ CASTING INTERRUMPIDO por daño: {_currentCastAnimation}");
-            
-            // Reproducir animación de TakeDamage para interrumpir visualmente el casting
-            if (_animator != null)
-            {
-                _animator.PlayGetHit();
-            }
-            
-            // Limpiar estado de casting
-            _isCasting = false;
-            _currentCastAnimation = null;
-            
-            // Detener cualquier coroutine de MonitorSpellCastEnd activo
-            var combatBrain = GetComponent<NPCCombatBrain>();
-            if (combatBrain != null)
-            {
-                combatBrain.StopAllCoroutines(); // Esto detendrá MonitorSpellCastEnd
-            }
-        }
-        
+        private bool _isCasting; // Para interrumpir hechizos
+        #endregion
+
         private void Awake()
         {
-            Initialize();
-        }
-        
-        /// <summary>
-        /// Inicializa las referencias. Puede llamarse manualmente si el componente se añade en runtime.
-        /// </summary>
-        public void Initialize()
-        {
-            if (_npcManager != null && _damageable != null)
-                return; // Ya inicializado
-            
-            _npcManager = GetComponent<NPCBehaviourManagerV2>();
+            _manager = GetComponent<NPCBehaviourManagerV2>();
             _damageable = GetComponent<Damageable>();
             _animator = GetComponent<NPCSimpleAnimator>();
-            _navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⚙️ Inicializando - NPCManager: {_npcManager != null}, Damageable: {_damageable != null}, Animator: {_animator != null}, NavAgent: {_navAgent != null}");
-            
-            if (_npcManager == null || _damageable == null)
-            {
-                enabled = false;
-                return;
-            }
+            _agent = GetComponent<NavMeshAgent>();
+            _brain = GetComponent<NPCCombatBrain>();
         }
-        
+
         private void Start()
         {
-            // Obtener configuración de combate
-            if (_npcManager.Configuration != null)
-            {
-                _combatConfig = _npcManager.Configuration.combatConfig;
-            }
-            
-            // ✅ SUSCRIBIRSE A EVENTOS DE DAÑO Y MUERTE
-            _damageable.OnDamaged += HandleNPCDamaged;
-            _damageable.OnDied += HandleNPCDeath;
-            
-            // Configurar Damageable para que no se destruya automáticamente
-            _damageable.SetDestroyOnDeath(false);
+            if (_manager.Configuration != null) 
+                _config = _manager.Configuration.combatConfig;
+
+            _damageable.OnDamaged += OnDamaged;
+            _damageable.OnDied += OnDied;
+            _damageable.SetDestroyOnDeath(false); // Importante: controlamos la muerte manualmente
         }
-        
+
         private void OnDestroy()
         {
             if (_damageable != null)
             {
-                _damageable.OnDamaged -= HandleNPCDamaged;
-                _damageable.OnDied -= HandleNPCDeath;
+                _damageable.OnDamaged -= OnDamaged;
+                _damageable.OnDied -= OnDied;
             }
-            
-            // ✅ SALVAGUARDA FINAL: Si este componente se destruye mientras hay slowmo activo,
-            // restaurar el timeScale a 1 para evitar que el juego quede lento permanentemente
-            if (_isProcessingDefeat && Time.timeScale != 1f)
-            {
-                Debug.LogWarning($"[NPCCombatLifecycleHandler:{name}] ⚠️ Componente destruido durante slowmo - Restaurando Time.timeScale a 1");
-                Time.timeScale = 1f;
-            }
+            // Salvaguarda final por si se destruye durante slow-mo
+            if (Time.timeScale < 0.99f || Time.timeScale > 1.01f) Time.timeScale = 1f;
         }
-        
-        /// <summary>
-        /// Maneja el feedback cuando el NPC recibe daño
-        /// </summary>
-        private void HandleNPCDamaged(float damageAmount)
+
+        // =================================================================================
+        // ⚔️ DAMAGE HANDLING
+        // =================================================================================
+
+        public void StartCasting(string animName, int layer) { _isCasting = true; }
+        public void EndCasting() { _isCasting = false; }
+
+        private void OnDamaged(float amount)
         {
-            // No procesar daño si ya está derrotado o es invulnerable
-            if (_hasBeenDefeated || _isProcessingDefeat || _isInvulnerable)
-                return;
-            
-            // ✅ INTERRUMPIR CASTING SI ESTÁ ACTIVO
+            if (IsDefeatedAndInactive || _isProcessingDefeat || _isInvulnerable) return;
+
+            // Interrupción de Casting
             if (_isCasting)
             {
-                InterruptCasting();
-                return; // No hacer el stun normal, la interrupción ya reproduce TakeDamage
+                Debug.Log($"[Lifecycle] ⚡ Interrumpiendo hechizo por daño!");
+                _isCasting = false;
+                if (_brain != null) _brain.StopAllCoroutines(); // Detener lógica del brain
+                // No hacemos return aquí, dejamos que el stun normal ocurra
             }
-            
-            // Iniciar coroutine de daño
-            StartCoroutine(DamageStunSequence());
+
+            StartCoroutine(DamageSequence());
         }
-        
-        /// <summary>
-        /// Secuencia de stun al recibir daño
-        /// </summary>
-        private System.Collections.IEnumerator DamageStunSequence()
+
+        private IEnumerator DamageSequence()
         {
-            // Activar invulnerabilidad
+            IsStunned = true;
             _isInvulnerable = true;
-            _isStunned = true;
-            
-            // 1. Reproducir animación de daño
-            if (playDamageAnimation && _animator != null)
-            {
-                _animator.PlayGetHit();
-            }
-            
-            // 2. Detener el NavMeshAgent (pausa/stun)
-            bool wasAgentActive = false;
-            if (_navAgent != null && _navAgent.enabled && _navAgent.isOnNavMesh)
-            {
-                wasAgentActive = true;
-                _navAgent.isStopped = true;
-                _navAgent.velocity = Vector3.zero;
-            }
-            
-            // 3. Camera shake
-            if (enableCameraShake)
-            {
-                FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
-            }
-            
-            // 4. Hitstop (slowmotion breve)
-            if (enableHitStop)
-            {
-                FeedbackService.HitStop(hitStopTimeScale, hitStopDuration);
-            }
-            
-            // 5. Esperar duración del stun
+
+            // 1. Feedback Visual/Sonoro
+            if (playDamageAnimation && _animator) _animator.PlayGetHit();
+            if (enableCameraShake) FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
+            if (enableHitStop) FeedbackService.HitStop(hitStopTimeScale, hitStopDuration);
+
+            // 2. Detener movimiento físico
+            bool wasMoving = _agent != null && _agent.enabled && !_agent.isStopped;
+            if (_agent && _agent.enabled) _agent.isStopped = true;
+
+            // 3. Esperar Stun
             yield return new WaitForSeconds(damageStunDuration);
-            
-            // 6. RESETEAR ANIMATOR ANTES de reactivar movimiento
-            if (_animator != null)
+
+            // 4. Recuperación
+            if (_animator)
             {
-                // Forzar transición a Idle de batalla
-                _animator.TransitionToIdle();
-                
-                // Asegurar que los parámetros de movimiento están en 0
                 _animator.ResetMovement();
-                
-                Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🔄 Animator reseteado a Idle después de stun");
+                _animator.TransitionToIdle(); // Forzar vuelta a idle de combate
             }
+
+            if (_agent && _agent.enabled && wasMoving) 
+                _agent.isStopped = false;
+
+            IsStunned = false;
+
+            // Invulnerabilidad residual (frames de gracia)
+            float graceTime = Mathf.Max(0, invulnerabilityDuration - damageStunDuration);
+            if (graceTime > 0) yield return new WaitForSeconds(graceTime);
             
-            // 6.5. Reactivar movimiento DESPUÉS de resetear animator
-            _isStunned = false;
-            if (wasAgentActive && _navAgent != null && _navAgent.enabled)
-            {
-                _navAgent.isStopped = false;
-                // Asegurarse de que el velocity esté limpio
-                _navAgent.velocity = Vector3.zero;
-            }
-            
-            // 7. Mantener invulnerabilidad un poco más
-            float remainingInvulnerability = Mathf.Max(0f, invulnerabilityDuration - damageStunDuration);
-            if (remainingInvulnerability > 0f)
-            {
-                yield return new WaitForSeconds(remainingInvulnerability);
-            }
-            
-            // 8. Desactivar invulnerabilidad
             _isInvulnerable = false;
         }
-        
-        /// <summary>
-        /// Maneja la interacción post-derrota
-        /// </summary>
-        public bool HandlePostDefeatInteraction(GameObject interactor)
+
+        // =================================================================================
+        // 💀 DEATH SEQUENCE
+        // =================================================================================
+
+        private void OnDied()
         {
-            if (!_hasBeenDefeated)
-                return false;
-            
-            // Si hay diálogo después de la derrota, reproducirlo
-            if (_combatConfig != null && _combatConfig.dialogueAfterDefeat != null)
-            {
-                var dm = DialogueManager.Instance;
-                if (dm != null)
-                {
-                    dm.StartDialogue(_combatConfig.dialogueAfterDefeat, transform, null);
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-        
-        private void HandleNPCDeath()
-        {
-            if (_isProcessingDefeat)
-                return;
-            
+            if (_isProcessingDefeat) return;
             _isProcessingDefeat = true;
-            _hasBeenDefeated = true;
-            
-            // Iniciar secuencia de muerte
-            StartCoroutine(DeathSequence());
+            IsDefeatedAndInactive = true;
+
+            StartCoroutine(DeathRoutine());
         }
-        
-        /// <summary>
-        /// Secuencia de muerte con efectos de golpe letal
-        /// </summary>
-        private System.Collections.IEnumerator DeathSequence()
+
+        private IEnumerator DeathRoutine()
         {
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 💀 DeathSequence iniciada");
-            
-            // ✅ SALVAGUARDA: Guardar el timeScale original antes de cualquier cosa
-            float savedTimeScale = Time.timeScale;
-            
-            // 1. Reproducir animación de muerte inmediatamente
-            if (_animator != null)
+            Debug.Log($"[Lifecycle] 💀 Iniciando secuencia de muerte: {name}");
+
+            // 1. DETENER TODO INMEDIATAMENTE
+            if (_brain) _brain.StopCombat();
+            if (_agent && _agent.enabled) { _agent.isStopped = true; _agent.velocity = Vector3.zero; }
+            if (_manager.Context != null)
             {
-                Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🎬 Llamando a _animator.PlayDeath()");
-                _animator.PlayDeath();
+                _manager.Context.IsInCombat = false;
+                _manager.Context.WasDefeatedInCombat = true;
+            }
+
+            // 2. Animación y VFX
+            if (_animator) _animator.PlayDeath();
+            if (deathVFXPrefab) Instantiate(deathVFXPrefab, transform.position + deathVFXOffset, Quaternion.identity);
+
+            // 3. Rotar hacia el jugador (Último aliento)
+            if (PlayerService.TryGetPlayer(out GameObject player))
+            {
+                Vector3 dir = (player.transform.position - transform.position).normalized;
+                dir.y = 0;
+                transform.rotation = Quaternion.LookRotation(dir);
+            }
+
+            // 4. MOMENTO CINEMÁTICO (Slow Motion + Shake)
+            if (enableDeathEffects)
+            {
+                FeedbackService.CameraShake(cameraShakeIntensity * 2f, 0.5f);
+                
+                Time.timeScale = deathSlowMoScale;
+                yield return new WaitForSecondsRealtime(deathSlowMoDuration); // Usar Realtime para ignorar el slowmo
+                Time.timeScale = 1f; // Restaurar
+            }
+
+            // 5. Esperar fin de animación del NPC (3s)
+            yield return new WaitForSecondsRealtime(2.5f);
+
+            // 6. CELEBRACIÓN DEL JUGADOR
+            if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
+            {
+                DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
+                // Esperar a que el jugador termine de celebrar
+                yield return new WaitForSecondsRealtime(3.0f);
+            }
+
+            // 7. POST-MUERTE (Desaparecer o Mareado)
+            PostDeathBehavior behavior = _config != null ? _config.postDeathBehavior : PostDeathBehavior.GetUpDizzy;
+
+            if (behavior == PostDeathBehavior.Disappear)
+            {
+                yield return HandleDisappear();
             }
             else
             {
-                Debug.LogError($"[NPCCombatLifecycleHandler:{name}] ❌ _animator es NULL - no se puede reproducir animación de muerte");
+                yield return HandleGetUpDizzy();
             }
-            
-            // 2. Spawn VFX de muerte
-            if (deathVFXPrefab != null)
-            {
-                Vector3 vfxPosition = transform.position + deathVFXOffset;
-                FeedbackService.PlayVFX(deathVFXPrefab, vfxPosition, Quaternion.identity, deathVFXLifetime);
-            }
-            
-            // 3. EFECTOS DE GOLPE LETAL - Slowmo + Shake intenso
-            bool slowmoWasApplied = false;
-            if (enableDeathEffects)
-            {
-                try
-                {
-                    // Activar slowmotion
-                    Time.timeScale = deathSlowMotionScale;
-                    slowmoWasApplied = true;
-                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⏱️ Slowmo activado - Time.timeScale: {Time.timeScale}");
-                    
-                    // Camera shake intenso sincronizado con slowmo
-                    FeedbackService.CameraShake(deathShakeIntensity, deathShakeDuration);
-                    
-                    // Esperar duración del slowmo (usando unscaledDeltaTime)
-                    float elapsed = 0f;
-                    while (elapsed < deathSlowMotionDuration)
-                    {
-                        elapsed += Time.unscaledDeltaTime;
-                        yield return null;
-                    }
-                }
-                finally
-                {
-                    // ✅ GARANTIZADO: Restaurar timeScale SIEMPRE, incluso si hay excepción
-                    if (slowmoWasApplied)
-                    {
-                        Time.timeScale = savedTimeScale;
-                        Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⏱️ Slowmo restaurado - Time.timeScale: {Time.timeScale}");
-                    }
-                }
-            }
-            
-            // ✅ VERIFICACIÓN EXTRA #1: Asegurar que Time.timeScale está en 1 ANTES de continuar
-            if (Time.timeScale != 1f)
-            {
-                Debug.LogWarning($"[NPCCombatLifecycleHandler:{name}] ⚠️ Time.timeScale todavía no es 1 (actual: {Time.timeScale}), forzando restauración");
-                Time.timeScale = 1f;
-            }
-            
-            // Esperar un frame extra para asegurar que el cambio de timeScale se aplique
-            yield return null;
-            
-            // ✅ VERIFICACIÓN EXTRA #2: Doble check después del yield
-            if (Time.timeScale != 1f)
-            {
-                Debug.LogError($"[NPCCombatLifecycleHandler:{name}] ❌ CRÍTICO: Time.timeScale AÚN no es 1 después del yield (actual: {Time.timeScale}), forzando OTRA VEZ");
-                Time.timeScale = 1f;
-            }
-            
-            // 4. Marcar como derrotado y detener todo movimiento INMEDIATAMENTE
-            if (_npcManager != null && _npcManager.Context != null)
-            {
-                _npcManager.Context.IsInCombat = false;
-                _npcManager.Context.WasDefeatedInCombat = true;
-                
-                // ✅ DETENER EL COMBAT BRAIN INMEDIATAMENTE para que no siga moviéndose
-                var combatBrain = _npcManager.GetComponent<NPCCombatBrain>();
-                if (combatBrain != null)
-                {
-                    combatBrain.StopCombat();
-                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🛑 Combat brain detenido inmediatamente");
-                }
-                
-                // ✅ DETENER EL NAVMESH AGENT INMEDIATAMENTE
-                if (_navAgent != null && _navAgent.enabled && _navAgent.isOnNavMesh)
-                {
-                    _navAgent.isStopped = true;
-                    _navAgent.velocity = Vector3.zero;
-                    _navAgent.updateRotation = false;
-                    _navAgent.updatePosition = false;
-                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🛑 NavMeshAgent detenido y bloqueado");
-                }
-            }
-            
-            // 5. ROTAR HACIA EL JUGADOR INMEDIATAMENTE (antes del delay)
-            if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
-            {
-                Vector3 directionToPlayer = playerGo.transform.position - transform.position;
-                directionToPlayer.y = 0f; // Mantener rotación en el plano horizontal
-                
-                if (directionToPlayer.sqrMagnitude > 0.001f)
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                    transform.rotation = targetRotation;
-                    Debug.Log($"[NPCCombatLifecycleHandler:{name}] 👁️ NPC girado hacia el jugador ANTES del delay");
-                }
-            }
-            
-            // ✅ 6. NOTIFICAR VICTORIA AL SISTEMA DE AUDIO (cambiar música)
-            if (_combatConfig != null && !string.IsNullOrEmpty(_combatConfig.battleMusicId))
-            {
-                Debug.Log($"[NPCCombatLifecycleHandler:{name}] 🎵 Notificando victoria de batalla: {_combatConfig.battleMusicId}");
-                DefaultNarrativeSignals.Instance?.RaiseBattleWon(_combatConfig.battleMusicId);
-            }
-            
-            // 7. ESPERAR 2 SEGUNDOS para que se vea la animación de muerte
-            // USAR WaitForSecondsRealtime para que NO se vea afectado por Time.timeScale
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ⏳ Esperando 2 segundos (tiempo real) para que se complete la animación de muerte...");
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 📊 Time.timeScale actual: {Time.timeScale}");
-            yield return new WaitForSecondsRealtime(2f);
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] ✅ Animación de muerte completada, procediendo con el diálogo");
-            Debug.Log($"[NPCCombatLifecycleHandler:{name}] 📊 Time.timeScale después del delay: {Time.timeScale}");
-            
-            // ✅ VERIFICACIÓN FINAL: Asegurar una última vez que Time.timeScale está en 1 antes del diálogo
-            if (Time.timeScale != 1f)
-            {
-                Debug.LogError($"[NPCCombatLifecycleHandler:{name}] ❌ CRÍTICO: Time.timeScale TODAVÍA no es 1 antes del diálogo (actual: {Time.timeScale}), forzando");
-                Time.timeScale = 1f;
-            }
-            
-            // 8. Reproducir diálogo de derrota si existe
-            if (_combatConfig != null && _combatConfig.dialogueOnDefeat != null)
-            {
-                var dm = DialogueManager.Instance;
-                if (dm != null)
-                {
-                    // ✅ El NPC ya está mirando al jugador (rotado antes del delay)
-                    // ✅ Usar StartDialogue normal (NO StartBattleDialogue) para evitar efectos de pre-batalla
-                    dm.StartDialogue(_combatConfig.dialogueOnDefeat, transform, OnDefeatDialogueComplete);
-                    yield break;
-                }
-            }
-            
-            // Si no hay diálogo, completar inmediatamente
-            OnDefeatDialogueComplete();
+
+            _isProcessingDefeat = false;
         }
-        
-        private void OnDefeatDialogueComplete()
+
+        // --- Rutinas de Finalización ---
+
+        private IEnumerator HandleDisappear()
         {
-            // Cambiar el GameObject a la layer "Interactable"
-            int interactableLayer = LayerMask.NameToLayer("Interactable");
-            if (interactableLayer != -1)
+            // Diálogo final antes de irse
+            if (_config?.dialogueOnDefeat != null)
             {
-                gameObject.layer = interactableLayer;
+                yield return RunDialogueRoutine(_config.dialogueOnDefeat);
             }
-            
-            // Asegurar que el collider esté activo y configurado como trigger
-            var capsuleCollider = GetComponent<CapsuleCollider>();
-            if (capsuleCollider != null)
+
+            // VFX Desaparición
+            if (_config?.disappearVFXPrefab)
+                Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+
+            gameObject.SetActive(false);
+        }
+
+        private IEnumerator HandleGetUpDizzy()
+        {
+            // Animación Mareado
+            if (_animator) _animator.PlayDizzy();
+            yield return new WaitForSeconds(0.5f);
+
+            // Diálogo de "Auch, me ganaste"
+            DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
+            if (dialogue != null)
             {
-                capsuleCollider.enabled = true;
-                capsuleCollider.isTrigger = true;
+                bool finished = false;
+                DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
+                while (!finished) yield return null;
             }
-            
-            // Asegurar que existe el componente Interactable
+
+            // Configurar para interacción futura (Hablar con el NPC derrotado)
+            SetupPostCombatInteraction();
+        }
+
+        private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)
+        {
+            bool finished = false;
+            DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
+            while (!finished) yield return null;
+        }
+
+        // =================================================================================
+        // 🛠️ HELPER: Configurar NPC como interactuable tras combate
+        // =================================================================================
+        
+        private void SetupPostCombatInteraction()
+        {
+            // 1. Cambiar Layer
+            int layer = LayerMask.NameToLayer("Interactable");
+            if (layer != -1) gameObject.layer = layer;
+
+            // 2. Activar Trigger
+            var col = GetComponent<CapsuleCollider>();
+            if (col) { col.enabled = true; col.isTrigger = true; }
+
+            // 3. Configurar Componente Interactable
             var interactable = GetComponent<Interactable>();
-            if (interactable == null)
-            {
-                interactable = gameObject.AddComponent<Interactable>();
-            }
+            if (!interactable) interactable = gameObject.AddComponent<Interactable>();
             
-            // Habilitar el componente
             interactable.enabled = true;
             
-            // Configurar el diálogo de "after defeat" si existe
-            if (_combatConfig != null && _combatConfig.dialogueAfterDefeat != null)
+            // Asignar diálogo "Post-Derrota" (ej: "¿Qué quieres ahora?")
+            if (_config?.dialogueAfterDefeat != null)
             {
-                interactable.SetDialogue(_combatConfig.dialogueAfterDefeat);
+                interactable.SetDialogue(_config.dialogueAfterDefeat);
                 interactable.SetMode(InteractableMode.OpenDialogue);
             }
             
-            // El NPC ya está en DeadState desde DeathSequence(), no necesitamos cambiar estado aquí
-            
-            _isProcessingDefeat = false;
+            Debug.Log($"[Lifecycle] ✅ NPC {name} configurado como interactuable post-combate.");
         }
         
-        public bool HasBeenDefeated => _hasBeenDefeated;
+        // =================================================================================
+        // 🎭 POST-DEFEAT INTERACTION HANDLING
+        // =================================================================================
+        
+        /// <summary>
+        /// Maneja la interacción con el NPC después de haber sido derrotado.
+        /// Retorna true si la interacción fue procesada.
+        /// </summary>
+        public bool HandlePostDefeatInteraction(GameObject interactor)
+        {
+            if (!IsDefeatedAndInactive)
+                return false;
+            
+            // Si tiene diálogo post-derrota configurado, el sistema de Interactable lo manejará
+            // Este método existe principalmente para validación y lógica adicional
+            
+            Debug.Log($"[Lifecycle] 💬 Jugador interactúa con NPC derrotado: {name}");
+            
+            // El Interactable component ya maneja el diálogo automáticamente
+            // Solo retornamos true para indicar que la interacción es válida
+            return true;
+        }
     }
 }
 

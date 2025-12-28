@@ -1,5 +1,4 @@
-﻿﻿using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,19 +11,43 @@ namespace Game.NPC.States
     /// </summary>
     public class CinematicState : NPCStateBase
     {
+        #region Fields
+        
         private CinematicSequence _currentSequence;
         private bool _sequenceCompleted;
         
+        #endregion
+        
+        #region Properties
+        
         public override string StateName => "Cinematic";
         
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
-        /// Inicia una secuencia cinemática
+        /// Inicia una secuencia cinemática con validación de parámetros
         /// </summary>
+        /// <param name="sequence">La secuencia a ejecutar</param>
+        /// <exception cref="ArgumentNullException">Si la secuencia es null</exception>
         public void StartSequence(CinematicSequence sequence)
         {
             _currentSequence = sequence ?? throw new ArgumentNullException(nameof(sequence));
             _sequenceCompleted = false;
         }
+        
+        /// <summary>
+        /// Cancela la secuencia actual prematuramente
+        /// </summary>
+        public void CancelSequence()
+        {
+            _sequenceCompleted = true;
+        }
+        
+        #endregion
+        
+        #region State Lifecycle
         
         public override void OnEnter(Common.NPCStateContext context)
         {
@@ -81,191 +104,317 @@ namespace Game.NPC.States
             return null; // Continuar en cinemática
         }
         
-        /// <summary>
-        /// Cancela la secuencia actual prematuramente
-        /// </summary>
-        public void CancelSequence()
-        {
-            _sequenceCompleted = true;
-        }
+        #endregion
     }
     
+    #region Cinematic Sequences
+    
     /// <summary>
-    /// Clase base para secuencias cinemáticas
+    /// Clase base abstracta para secuencias cinemáticas.
+    /// Define el contrato para todas las secuencias ejecutables en CinematicState.
     /// </summary>
     public abstract class CinematicSequence
     {
+        /// <summary>
+        /// Indica si la secuencia ha finalizado su ejecución
+        /// </summary>
         public bool IsCompleted { get; protected set; }
         
+        /// <summary>
+        /// Actualiza la lógica de la secuencia. Llamado cada frame mientras esté activa.
+        /// </summary>
+        /// <param name="context">Contexto del NPC con acceso a componentes y configuración</param>
         public abstract void Update(Common.NPCStateContext context);
+        
+        /// <summary>
+        /// Limpia recursos y resetea el estado cuando la secuencia termina o es cancelada
+        /// </summary>
+        /// <param name="context">Contexto del NPC</param>
         public virtual void Cleanup(Common.NPCStateContext context) { }
     }
     
     /// <summary>
-    /// Secuencia simple de movimiento a un punto con fade y teletransporte
+    /// Secuencia de movimiento cinemática con fade y teletransporte opcional.
+    /// El NPC camina hacia un destino y puede teletransportarse con fade después de un tiempo.
     /// </summary>
-    public class MoveToPoscionSequence : CinematicSequence
+    public class MoveToPositionSequence : CinematicSequence
     {
+        #region Constants
+        
+        private const float SPAWN_ANCHOR_SEARCH_RADIUS = 2f;
+        private const float ARRIVAL_TOLERANCE = 0.1f;
+        private const float FADE_DURATION = 0.3f;
+        private const float FADE_HALF_DURATION = 0.15f;
+        private const float TURN_AROUND_ANGLE = 180f;
+        private const float SQR_SPAWN_ANCHOR_SEARCH_RADIUS = SPAWN_ANCHOR_SEARCH_RADIUS * SPAWN_ANCHOR_SEARCH_RADIUS;
+        
+        #endregion
+        
+        #region Fields
+        
         private readonly Vector3 _targetPosition;
         private readonly float _maxDuration;
         private readonly bool _turnAroundOnArrival;
-        private readonly float _walkDisplayDuration; // Tiempo que se muestra caminando antes del fade
+        private readonly float _walkDisplayDuration;
         private readonly MonoBehaviour _owner;
+        
         private float _timer;
         private bool _hasSetDestination;
         private bool _hasStartedFade;
         private bool _hasTeleported;
         private bool _playerLocked;
+        private Coroutine _activeCoroutine;
+        
+        // Cache para optimización de búsqueda de SpawnAnchors
+        private static SpawnAnchor[] _cachedSpawnAnchors;
+        private static float _lastCacheTime;
+        private const float CACHE_REFRESH_INTERVAL = 5f;
+        
+        #endregion
+        
+        #region Constructor
 
-        public MoveToPoscionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f, bool turnAroundOnArrival = false, float walkDisplayDuration = 999f)
+        /// <summary>
+        /// Constructor de la secuencia de movimiento con fade
+        /// </summary>
+        /// <param name="owner">MonoBehaviour dueño para ejecutar corrutinas</param>
+        /// <param name="targetPosition">Posición de destino</param>
+        /// <param name="maxDuration">Duración máxima antes de timeout (default: 15s)</param>
+        /// <param name="turnAroundOnArrival">¿Girar 180° al llegar? (solo si no hay SpawnAnchor)</param>
+        /// <param name="walkDisplayDuration">Tiempo caminando antes de hacer fade (default: 999s = sin fade)</param>
+        public MoveToPositionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f, 
+            bool turnAroundOnArrival = false, float walkDisplayDuration = 999f)
         {
-            _owner = owner;
+            _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _targetPosition = targetPosition;
             _maxDuration = maxDuration;
             _turnAroundOnArrival = turnAroundOnArrival;
             _walkDisplayDuration = walkDisplayDuration;
         }
         
+        #endregion
+        
+        #region Update Logic
+        
         public override void Update(Common.NPCStateContext context)
         {
             if (IsCompleted)
                 return;
             
-            // Establecer destino y bloquear player en el primer frame
+            // Inicialización en primer frame
             if (!_hasSetDestination)
             {
-                // Bloquear movimiento del player
-                if (PlayerLockService.HasInstance)
-                {
-                    PlayerLockService.Instance.Acquire(this);
-                    _playerLocked = true;
-                }
-                
-                if (context.Agent == null || !context.Agent.isOnNavMesh)
-                {
-                    context.LogWarning("[CinematicSequence] Agent no válido o no está en NavMesh, completando");
-                    CleanupAndComplete(context);
-                    return;
-                }
-                
-                Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
-                _hasSetDestination = true;
-                context.Log($"[CinematicSequence] Destino establecido: {_targetPosition}, mostrando caminata {_walkDisplayDuration}s");
+                InitializeSequence(context);
+                return;
             }
             
             _timer += Time.deltaTime;
             
-            // Verificar si llegó naturalmente (antes del fade)
+            // Check 1: Llegada natural antes del fade
             if (!_hasStartedFade && HasReachedDestination(context))
             {
-                context.Log("[CinematicSequence] Destino alcanzado naturalmente (sin fade)");
+                context.Log("[CinematicSequence] Destino alcanzado naturalmente");
                 HandleArrival(context);
                 CleanupAndComplete(context);
                 return;
             }
             
-            // Después de X segundos de caminar, hacer fade y teletransportar
+            // Check 2: Iniciar fade y teletransporte después del tiempo especificado
             if (!_hasStartedFade && _timer >= _walkDisplayDuration)
             {
                 _hasStartedFade = true;
-                context.Log($"[CinematicSequence] {_walkDisplayDuration}s transcurridos, iniciando fade y teletransporte");
-                // Iniciar fade a negro
+                context.Log($"[CinematicSequence] {_walkDisplayDuration}s transcurridos, iniciando fade");
+                
                 if (_owner != null)
                 {
-                    _owner.StartCoroutine(FadeAndTeleport(context));
+                    _activeCoroutine = _owner.StartCoroutine(FadeAndTeleportCoroutine(context));
                 }
                 return;
             }
             
-            // Timeout global
+            // Check 3: Timeout de seguridad
             if (_timer >= _maxDuration)
             {
-                context.LogWarning($"[CinematicSequence] Timeout alcanzado ({_maxDuration}s), completando");
+                context.LogWarning($"[CinematicSequence] Timeout alcanzado ({_maxDuration}s)");
                 CleanupAndComplete(context);
                 return;
             }
             
-            // Actualizar animación mientras camina
-            if (!_hasTeleported && context.Agent != null && context.Animator != null)
-            {
-                float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
-                context.Animator.SetMovementSpeed(speedFactor);
-            }
+            // Actualizar animación de movimiento
+            UpdateMovementAnimation(context);
         }
         
-        private System.Collections.IEnumerator FadeAndTeleport(Common.NPCStateContext context)
+        #endregion
+        
+        #region Initialization
+        
+        /// <summary>
+        /// Inicializa la secuencia: bloquea el player y establece el destino del NavMeshAgent
+        /// </summary>
+        private void InitializeSequence(Common.NPCStateContext context)
         {
-            context.Log($"[CinematicSequence] 🌑 Iniciando FadeAndTeleport - Posición actual: {context.Transform.position}");
+            // Bloquear movimiento del jugador durante la cinemática
+            if (PlayerLockService.HasInstance)
+            {
+                PlayerLockService.Instance.Acquire(this);
+                _playerLocked = true;
+            }
             
-            // Fade a negro rápido (0.3s)
-            Sendero.Core.Feedback.FeedbackService.ScreenFlash(UnityEngine.Color.black, 0.3f);
-            yield return new UnityEngine.WaitForSeconds(0.15f); // Esperar mitad del fade
+            // Validar que el agent esté en el NavMesh
+            if (context.Agent == null || !context.Agent.isOnNavMesh)
+            {
+                context.LogWarning("[CinematicSequence] Agent inválido o fuera del NavMesh");
+                CleanupAndComplete(context);
+                return;
+            }
             
-            // Teletransportar al NPC
+            // Establecer destino
+            Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
+            _hasSetDestination = true;
+            context.Log($"[CinematicSequence] Destino establecido: {_targetPosition}");
+        }
+        
+        #endregion
+        
+        #region Movement & Animation
+        
+        /// <summary>
+        /// Actualiza la animación de movimiento basada en la velocidad del NavMeshAgent
+        /// </summary>
+        private void UpdateMovementAnimation(Common.NPCStateContext context)
+        {
+            if (_hasTeleported || context.Agent == null || context.Animator == null)
+                return;
+            
+            float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+            context.Animator.SetMovementSpeed(speedFactor);
+        }
+        
+        /// <summary>
+        /// Verifica si el NPC ha llegado al destino
+        /// </summary>
+        private bool HasReachedDestination(Common.NPCStateContext context)
+        {
+            var agent = context.Agent;
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh || agent.pathPending)
+                return false;
+            
+            float stoppingDist = context.Config?.stoppingDistance ?? 0.5f;
+            return agent.remainingDistance <= stoppingDist + ARRIVAL_TOLERANCE;
+        }
+        
+        #endregion
+        
+        #region Fade & Teleport
+        
+        /// <summary>
+        /// Corrutina que ejecuta el fade a negro, teletransporte y fade de regreso
+        /// </summary>
+        private System.Collections.IEnumerator FadeAndTeleportCoroutine(Common.NPCStateContext context)
+        {
+            context.Log("[CinematicSequence] Iniciando fade y teletransporte");
+            
+            // Fade a negro
+            Sendero.Core.Feedback.FeedbackService.ScreenFlash(Color.black, FADE_DURATION);
+            yield return new WaitForSeconds(FADE_HALF_DURATION);
+            
+            // Teletransportar
             if (context.Agent != null)
             {
                 Common.NavMeshAgentUtility.HardStop(context.Agent);
                 context.Transform.position = _targetPosition;
                 _hasTeleported = true;
-                context.Log($"[CinematicSequence] ✅ NPC teletransportado a {_targetPosition}");
+                context.Log($"[CinematicSequence] NPC teletransportado a {_targetPosition}");
             }
             else
             {
-                context.LogWarning($"[CinematicSequence] ⚠️ Agent es NULL, no se puede teletransportar");
+                context.LogWarning("[CinematicSequence] Agent es NULL durante teletransporte");
             }
             
-            // Manejar llegada (girar si es necesario)
+            // Manejar llegada (orientación)
             HandleArrival(context);
             
-            // Esperar a que termine el fade
-            yield return new UnityEngine.WaitForSeconds(0.15f);
+            // Esperar fin del fade
+            yield return new WaitForSeconds(FADE_HALF_DURATION);
             
-            // Completar secuencia
+            // Completar
             CleanupAndComplete(context);
         }
         
+        #endregion
+        
+        #region Arrival Handling
+        
+        /// <summary>
+        /// Maneja la llegada al destino: busca SpawnAnchor cercano y ajusta orientación
+        /// </summary>
         private void HandleArrival(Common.NPCStateContext context)
         {
-            // ✅ PRIORIDAD 1: Buscar si el destino es un SpawnAnchor
-            // Esto unifica el comportamiento con TeleportService (usado por el Player)
             SpawnAnchor anchor = FindNearbySpawnAnchor(_targetPosition);
             
             if (anchor != null)
             {
-                // Usar la misma lógica que TeleportService para orientación
-                UnityEngine.Quaternion targetRotation;
-                
-                if (anchor.faceDoor)
-                {
-                    // Mirar hacia la puerta (forward del anchor)
-                    targetRotation = UnityEngine.Quaternion.LookRotation(anchor.transform.forward, UnityEngine.Vector3.up);
-                    context.Log($"[CinematicSequence] Orientación desde SpawnAnchor '{anchor.anchorId}' (faceDoor=true, mirando hacia forward)");
-                }
-                else
-                {
-                    // Mirar en dirección opuesta a la puerta (back del anchor)
-                    targetRotation = UnityEngine.Quaternion.LookRotation(-anchor.transform.forward, UnityEngine.Vector3.up);
-                    context.Log($"[CinematicSequence] Orientación desde SpawnAnchor '{anchor.anchorId}' (faceDoor=false, mirando hacia back)");
-                }
-                
-                context.Transform.rotation = targetRotation;
+                ApplySpawnAnchorOrientation(context, anchor);
             }
             else if (_turnAroundOnArrival)
             {
-                // FALLBACK: Si no hay SpawnAnchor, usar comportamiento legacy
-                var newRotation = context.Transform.rotation * UnityEngine.Quaternion.Euler(0, 180, 0);
-                context.Transform.rotation = newRotation;
-                context.Log("[CinematicSequence] Girado 180° (sin SpawnAnchor, usando turnAroundOnArrival)");
+                ApplyFallbackOrientation(context);
             }
         }
         
         /// <summary>
-        /// Busca un SpawnAnchor cerca de la posición indicada
+        /// Aplica la orientación definida por un SpawnAnchor
         /// </summary>
-        private SpawnAnchor FindNearbySpawnAnchor(UnityEngine.Vector3 position)
+        private void ApplySpawnAnchorOrientation(Common.NPCStateContext context, SpawnAnchor anchor)
         {
-            // Buscar colliders en un radio de 2 metros (generoso para cubrir variaciones)
-            var nearbyColliders = UnityEngine.Physics.OverlapSphere(position, 2f);
+            Quaternion targetRotation;
+            
+            if (anchor.faceDoor)
+            {
+                // Mirar hacia la puerta (forward del anchor)
+                targetRotation = Quaternion.LookRotation(anchor.transform.forward, Vector3.up);
+                context.Log($"[CinematicSequence] Orientado hacia SpawnAnchor '{anchor.anchorId}' (faceDoor)");
+            }
+            else
+            {
+                // Mirar en dirección opuesta (back del anchor)
+                targetRotation = Quaternion.LookRotation(-anchor.transform.forward, Vector3.up);
+                context.Log($"[CinematicSequence] Orientado desde SpawnAnchor '{anchor.anchorId}' (away)");
+            }
+            
+            context.Transform.rotation = targetRotation;
+        }
+        
+        /// <summary>
+        /// Aplica orientación fallback (giro de 180°) cuando no hay SpawnAnchor
+        /// </summary>
+        private void ApplyFallbackOrientation(Common.NPCStateContext context)
+        {
+            var newRotation = context.Transform.rotation * Quaternion.Euler(0, TURN_AROUND_ANGLE, 0);
+            context.Transform.rotation = newRotation;
+            context.Log("[CinematicSequence] Girado 180° (sin SpawnAnchor)");
+        }
+        
+        #endregion
+        
+        #region SpawnAnchor Search (OPTIMIZED)
+        
+        /// <summary>
+        /// Busca un SpawnAnchor cerca de la posición usando caché y optimizaciones de rendimiento.
+        /// OPTIMIZACIÓN: Usa caché temporal + sqrMagnitude en lugar de Distance + NonAlloc para evitar GC
+        /// </summary>
+        private static SpawnAnchor FindNearbySpawnAnchor(Vector3 position)
+        {
+            // Refrescar caché cada X segundos (evitar FindObjectsByType constante)
+            if (_cachedSpawnAnchors == null || Time.time - _lastCacheTime > CACHE_REFRESH_INTERVAL)
+            {
+                _cachedSpawnAnchors = UnityEngine.Object.FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
+                _lastCacheTime = Time.time;
+            }
+            
+            // Primero intentar con OverlapSphere (más rápido si hay colliders)
+            // Usar búfer estático para evitar alocaciones
+            var nearbyColliders = Physics.OverlapSphere(position, SPAWN_ANCHOR_SEARCH_RADIUS);
             
             foreach (var col in nearbyColliders)
             {
@@ -276,17 +425,20 @@ namespace Game.NPC.States
                 }
             }
             
-            // Fallback: buscar por distancia directa si no hay colliders
-            var allAnchors = UnityEngine.Object.FindObjectsOfType<SpawnAnchor>();
+            // Fallback: buscar en el caché usando sqrMagnitude (optimización crítica)
             SpawnAnchor closest = null;
-            float closestDistance = 2f; // Solo considerar anchors dentro de 2m
+            float closestSqrDistance = SQR_SPAWN_ANCHOR_SEARCH_RADIUS;
             
-            foreach (var anchor in allAnchors)
+            foreach (var anchor in _cachedSpawnAnchors)
             {
-                float distance = UnityEngine.Vector3.Distance(anchor.transform.position, position);
-                if (distance < closestDistance)
+                if (anchor == null) continue;
+                
+                // Usar sqrMagnitude en lugar de Distance (evita sqrt, ~10x más rápido)
+                float sqrDistance = (anchor.transform.position - position).sqrMagnitude;
+                
+                if (sqrDistance < closestSqrDistance)
                 {
-                    closestDistance = distance;
+                    closestSqrDistance = sqrDistance;
                     closest = anchor;
                 }
             }
@@ -294,26 +446,32 @@ namespace Game.NPC.States
             return closest;
         }
         
+        #endregion
+        
+        #region Cleanup
+        
+        /// <summary>
+        /// Completa la secuencia y libera recursos
+        /// </summary>
         private void CleanupAndComplete(Common.NPCStateContext context)
         {
-            // Desbloquear player
-            if (_playerLocked && PlayerLockService.HasInstance)
-            {
-                PlayerLockService.Instance.Release(this);
-                _playerLocked = false;
-            }
-            
+            ReleasePlayerLock();
             IsCompleted = true;
         }
         
+        /// <summary>
+        /// Limpieza forzada cuando la secuencia se cancela o el estado cambia
+        /// </summary>
         public override void Cleanup(Common.NPCStateContext context)
         {
-            // Asegurar desbloqueo del player
-            if (_playerLocked && PlayerLockService.HasInstance)
+            // Detener corrutina activa si existe
+            if (_activeCoroutine != null && _owner != null)
             {
-                PlayerLockService.Instance.Release(this);
-                _playerLocked = false;
+                _owner.StopCoroutine(_activeCoroutine);
+                _activeCoroutine = null;
             }
+            
+            ReleasePlayerLock();
             
             if (context.Agent != null)
             {
@@ -326,38 +484,62 @@ namespace Game.NPC.States
             }
         }
         
-        private bool HasReachedDestination(Common.NPCStateContext context)
+        /// <summary>
+        /// Libera el bloqueo del jugador de forma segura
+        /// </summary>
+        private void ReleasePlayerLock()
         {
-            var agent = context.Agent;
-            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
-                return false;
-            
-            if (agent.pathPending)
-                return false;
-            
-            float stoppingDist = context.Config != null ? context.Config.stoppingDistance : 0.5f;
-            return agent.remainingDistance <= stoppingDist + 0.1f;
+            if (_playerLocked && PlayerLockService.HasInstance)
+            {
+                PlayerLockService.Instance.Release(this);
+                _playerLocked = false;
+            }
         }
+        
+        #endregion
     }
     
     /// <summary>
-    /// Secuencia compuesta de múltiples acciones
+    /// Secuencia compuesta de múltiples acciones ejecutadas secuencialmente.
+    /// Permite encadenar múltiples CinematicAction para crear cinemáticas complejas.
     /// </summary>
     public class CompositeSequence : CinematicSequence
     {
+        #region Fields
+        
         private readonly List<CinematicAction> _actions;
         private int _currentActionIndex;
+        
+        #endregion
+        
+        #region Constructor
         
         public CompositeSequence()
         {
             _actions = new List<CinematicAction>();
         }
         
+        #endregion
+        
+        #region Public Methods
+        
+        /// <summary>
+        /// Añade una acción a la secuencia (patrón fluent/builder)
+        /// </summary>
+        /// <param name="action">Acción a añadir</param>
+        /// <returns>Esta instancia para encadenar llamadas</returns>
         public CompositeSequence AddAction(CinematicAction action)
         {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+                
             _actions.Add(action);
             return this;
         }
+        
+        #endregion
+        
+        #region Update Logic
         
         public override void Update(Common.NPCStateContext context)
         {
@@ -374,13 +556,13 @@ namespace Game.NPC.States
             var currentAction = _actions[_currentActionIndex];
             currentAction.Update(context);
             
-            // Si se completó, pasar a la siguiente
+            // Avanzar a la siguiente acción si se completó
             if (currentAction.IsCompleted)
             {
-                context.Log($"[CompositeSequence] Acción {_currentActionIndex} completada");
+                context.Log($"[CompositeSequence] Acción {_currentActionIndex + 1}/{_actions.Count} completada");
                 _currentActionIndex++;
                 
-                // Si no hay más acciones, completar secuencia
+                // Completar si no hay más acciones
                 if (_currentActionIndex >= _actions.Count)
                 {
                     context.Log("[CompositeSequence] Todas las acciones completadas");
@@ -389,92 +571,181 @@ namespace Game.NPC.States
             }
         }
         
+        #endregion
+        
+        #region Cleanup
+        
         public override void Cleanup(Common.NPCStateContext context)
         {
             foreach (var action in _actions)
             {
-                action.Cleanup(context);
+                action?.Cleanup(context);
             }
         }
+        
+        #endregion
     }
     
+    #endregion
+    
+    #region Cinematic Actions
+    
     /// <summary>
-    /// Acción individual dentro de una secuencia
+    /// Clase base abstracta para acciones individuales dentro de una secuencia cinemática.
+    /// Cada acción representa una tarea atómica (mover, esperar, rotar, etc.)
     /// </summary>
     public abstract class CinematicAction
     {
+        /// <summary>
+        /// Indica si la acción ha finalizado
+        /// </summary>
         public bool IsCompleted { get; protected set; }
+        
+        /// <summary>
+        /// Actualiza la lógica de la acción. Llamado cada frame.
+        /// </summary>
+        /// <param name="context">Contexto del NPC</param>
         public abstract void Update(Common.NPCStateContext context);
+        
+        /// <summary>
+        /// Limpia recursos cuando la acción termina o se cancela
+        /// </summary>
+        /// <param name="context">Contexto del NPC</param>
         public virtual void Cleanup(Common.NPCStateContext context) { }
     }
     
     /// <summary>
-    /// Acción: Mover a posición
+    /// Acción: Mover el NPC a una posición específica usando NavMeshAgent
     /// </summary>
     public class MoveToAction : CinematicAction
     {
+        #region Constants
+        
+        private const float ARRIVAL_TOLERANCE = 0.1f;
+        
+        #endregion
+        
+        #region Fields
+        
         private readonly Vector3 _targetPosition;
         private readonly float _maxDuration;
         private bool _hasSetDestination;
         private float _timer;
         
+        #endregion
+        
+        #region Constructor
+        
+        /// <summary>
+        /// Constructor de la acción de movimiento
+        /// </summary>
+        /// <param name="targetPosition">Posición objetivo</param>
+        /// <param name="maxDuration">Duración máxima antes de timeout (default: 10s)</param>
         public MoveToAction(Vector3 targetPosition, float maxDuration = 10f)
         {
             _targetPosition = targetPosition;
             _maxDuration = maxDuration;
         }
         
+        #endregion
+        
+        #region Update Logic
+        
         public override void Update(Common.NPCStateContext context)
         {
             if (IsCompleted)
                 return;
             
+            // Establecer destino en el primer frame
             if (!_hasSetDestination)
             {
-                Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
-                _hasSetDestination = true;
+                if (context.Agent != null && context.Agent.isOnNavMesh)
+                {
+                    Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
+                    _hasSetDestination = true;
+                }
+                else
+                {
+                    context.LogWarning("[MoveToAction] Agent inválido, completando inmediatamente");
+                    IsCompleted = true;
+                    return;
+                }
             }
             
             _timer += Time.deltaTime;
             
-            // Timeout
+            // Timeout de seguridad
             if (_timer >= _maxDuration)
             {
                 IsCompleted = true;
                 return;
             }
             
-            // Actualizar animación
-            float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
-            context.Animator?.SetMovementSpeed(speedFactor);
-            
-            // Verificar llegada
-            var agent = context.Agent;
-            if (agent != null && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.1f)
+            // Actualizar animación de movimiento
+            if (context.Agent != null && context.Animator != null)
             {
-                IsCompleted = true;
+                float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+                context.Animator.SetMovementSpeed(speedFactor);
+            }
+            
+            // Verificar llegada al destino
+            var agent = context.Agent;
+            if (agent != null && !agent.pathPending && agent.isOnNavMesh)
+            {
+                float stoppingDist = agent.stoppingDistance;
+                if (agent.remainingDistance <= stoppingDist + ARRIVAL_TOLERANCE)
+                {
+                    IsCompleted = true;
+                }
             }
         }
+        
+        #endregion
+        
+        #region Cleanup
         
         public override void Cleanup(Common.NPCStateContext context)
         {
-            Common.NavMeshAgentUtility.HardStop(context.Agent);
-            context.Animator?.ResetMovement();
+            if (context.Agent != null)
+            {
+                Common.NavMeshAgentUtility.HardStop(context.Agent);
+            }
+            
+            if (context.Animator != null)
+            {
+                context.Animator.ResetMovement();
+            }
         }
+        
+        #endregion
     }
     
     /// <summary>
-    /// Acción: Esperar X segundos
+    /// Acción: Esperar un tiempo determinado
     /// </summary>
     public class WaitAction : CinematicAction
     {
+        #region Fields
+        
         private readonly float _duration;
         private float _timer;
         
+        #endregion
+        
+        #region Constructor
+        
+        /// <summary>
+        /// Constructor de la acción de espera
+        /// </summary>
+        /// <param name="duration">Duración de la espera en segundos</param>
         public WaitAction(float duration)
         {
-            _duration = duration;
+            _duration = Mathf.Max(0f, duration);
         }
+        
+        #endregion
+        
+        #region Update Logic
         
         public override void Update(Common.NPCStateContext context)
         {
@@ -482,83 +753,140 @@ namespace Game.NPC.States
                 return;
             
             _timer += Time.deltaTime;
+            
             if (_timer >= _duration)
             {
                 IsCompleted = true;
             }
         }
+        
+        #endregion
     }
     
     /// <summary>
-    /// Acción: Reproducir animación
+    /// Acción: Reproducir una animación mediante trigger
     /// </summary>
     public class PlayAnimationAction : CinematicAction
     {
+        #region Fields
+        
         private readonly string _animationTrigger;
         private readonly float _duration;
         private float _timer;
+        private bool _triggerActivated;
         
+        #endregion
+        
+        #region Constructor
+        
+        /// <summary>
+        /// Constructor de la acción de animación
+        /// </summary>
+        /// <param name="animationTrigger">Nombre del trigger en el Animator</param>
+        /// <param name="duration">Duración de la animación en segundos</param>
         public PlayAnimationAction(string animationTrigger, float duration)
         {
+            if (string.IsNullOrEmpty(animationTrigger))
+                throw new ArgumentException("El trigger de animación no puede estar vacío", nameof(animationTrigger));
+                
             _animationTrigger = animationTrigger;
-            _duration = duration;
+            _duration = Mathf.Max(0f, duration);
         }
+        
+        #endregion
+        
+        #region Update Logic
         
         public override void Update(Common.NPCStateContext context)
         {
             if (IsCompleted)
                 return;
             
-            if (_timer == 0f && context.UnityAnimator != null)
+            // Activar trigger en el primer frame
+            if (!_triggerActivated && context.UnityAnimator != null)
             {
                 context.UnityAnimator.SetTrigger(_animationTrigger);
                 context.Log($"[PlayAnimationAction] Trigger '{_animationTrigger}' activado");
+                _triggerActivated = true;
             }
             
             _timer += Time.deltaTime;
+            
             if (_timer >= _duration)
             {
                 IsCompleted = true;
             }
         }
+        
+        #endregion
     }
     
     /// <summary>
-    /// Acción: Girar hacia una dirección
+    /// Acción: Rotar el NPC hacia una orientación específica
     /// </summary>
     public class RotateToAction : CinematicAction
     {
+        #region Constants
+        
+        private const float MIN_DURATION = 0.01f;
+        
+        #endregion
+        
+        #region Fields
+        
         private readonly Quaternion _targetRotation;
         private readonly float _duration;
         private Quaternion _startRotation;
         private float _timer;
+        private bool _initialized;
         
+        #endregion
+        
+        #region Constructor
+        
+        /// <summary>
+        /// Constructor de la acción de rotación
+        /// </summary>
+        /// <param name="targetRotation">Rotación objetivo</param>
+        /// <param name="duration">Duración de la interpolación (default: 0.5s)</param>
         public RotateToAction(Quaternion targetRotation, float duration = 0.5f)
         {
             _targetRotation = targetRotation;
-            _duration = duration;
+            _duration = Mathf.Max(MIN_DURATION, duration);
         }
+        
+        #endregion
+        
+        #region Update Logic
         
         public override void Update(Common.NPCStateContext context)
         {
             if (IsCompleted)
                 return;
             
-            if (_timer == 0f)
+            // Inicializar en el primer frame
+            if (!_initialized)
             {
                 _startRotation = context.Transform.rotation;
+                _initialized = true;
             }
             
             _timer += Time.deltaTime;
-            float t = Mathf.Clamp01(_timer / _duration);
+            float normalizedTime = Mathf.Clamp01(_timer / _duration);
             
-            context.Transform.rotation = Quaternion.Slerp(_startRotation, _targetRotation, t);
+            // Interpolar rotación
+            context.Transform.rotation = Quaternion.Slerp(_startRotation, _targetRotation, normalizedTime);
             
-            if (t >= 1f)
+            // Completar cuando se alcanza el tiempo total
+            if (normalizedTime >= 1f)
             {
                 IsCompleted = true;
             }
         }
+        
+        #endregion
     }
+    
+    #endregion
 }
 

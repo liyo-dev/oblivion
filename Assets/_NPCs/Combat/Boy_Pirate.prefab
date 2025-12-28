@@ -8498,7 +8498,6 @@ GameObject:
   - component: {fileID: 4090434116678142870}
   - component: {fileID: 6453314053097790552}
   - component: {fileID: 5132545520415850134}
-  - component: {fileID: 4224281489654518915}
   - component: {fileID: 2487325561647847331}
   - component: {fileID: 9096993529721017303}
   m_Layer: 7
@@ -8693,6 +8692,7 @@ MonoBehaviour:
   getHitState: TakeDamage
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
   victoryState: Victory_NoWeapon
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
@@ -8719,18 +8719,6 @@ MonoBehaviour:
   deathVFXLifetime: 3
   invulnerabilitySeconds: 0
   debugLogs: 0
---- !u!114 &4224281489654518915
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7766501778076261952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df2e7c78bc8a4f3aa40de3d6bc3dd8dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCCombatBrain
 --- !u!114 &2487325561647847331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8777,7 +8765,7 @@ MonoBehaviour:
     rigidbodyConstraints: 112
   debugMode: 1
   startInIdleState: 1
-  forceKinematicRigidbody: 0
+  forceKinematicRigidbody: 1
   persistLastPosition: 0
 --- !u!1 &7777589608161427968
 GameObject:

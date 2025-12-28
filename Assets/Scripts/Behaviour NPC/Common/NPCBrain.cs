@@ -1,44 +1,65 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
-using Game.NPC.Modules;
+using Game.NPC.Modules; // Para acceder a los Executors
 
 namespace Game.NPC.Common
 {
+    /// <summary>
+    /// El "Cerebro" de la FSM. Gestiona las transiciones de estado y delega la interacción.
+    /// No contiene lógica de juego, solo lógica de flujo.
+    /// </summary>
     public class NPCBrain
     {
+        // Eventos
+        public event Action<INPCState, INPCState> OnStateChanged;
+
+        // Estado interno
         private INPCState _currentState;
         private INPCState _previousState;
         private readonly NPCStateContext _context;
+
+        // Propiedades públicas
         public INPCState CurrentState => _currentState;
         public INPCState PreviousState => _previousState;
         public NPCStateContext Context => _context;
-        public event Action<INPCState, INPCState> OnStateChanged;
+
         public NPCBrain(NPCStateContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
+
+        // =================================================================================
+        // 🔄 STATE MANAGEMENT
+        // =================================================================================
+
         public void ChangeState(INPCState newState)
         {
             if (newState == null)
             {
-                _context.LogError("Intento de cambiar a un estado null");
+                _context.LogError("[NPCBrain] Intento de cambiar a estado NULL. Cancelado.");
                 return;
             }
+
+            // 1. Salir del estado anterior
             if (_currentState != null)
             {
-                _context.Log($"Saliendo del estado: {_currentState.StateName}");
+                // _context.Log($"[FSM] Salida: {_currentState.StateName}");
                 try
                 {
                     _currentState.OnExit(_context);
                 }
                 catch (Exception ex)
                 {
-                    _context.LogError($"Error al salir del estado {_currentState.StateName}: {ex.Message}");
+                    _context.LogError($"[NPCBrain] ❌ Error en OnExit ({_currentState.StateName}): {ex.Message}");
                 }
             }
+
+            // 2. Cambiar referencia
             _previousState = _currentState;
             _currentState = newState;
-            _context.Log($"Entrando al estado: {_currentState.StateName}");
+
+            // 3. Entrar al estado nuevo
+            // _context.Log($"[FSM] Entrada: {_currentState.StateName}");
             try
             {
                 _currentState.OnEnter(_context);
@@ -46,98 +67,118 @@ namespace Game.NPC.Common
             }
             catch (Exception ex)
             {
-                _context.LogError($"Error al entrar al estado {_currentState.StateName}: {ex.Message}");
+                _context.LogError($"[NPCBrain] ❌ Error en OnEnter ({_currentState.StateName}): {ex.Message}");
+                // Fallback de seguridad: Si falla el Enter, volver a Idle para no romper la IA
+                if (!(_currentState is Game.NPC.States.IdleState))
+                {
+                    ChangeState(new Game.NPC.States.IdleState());
+                }
             }
         }
+
         public void Update()
         {
-            if (_currentState == null)
-            {
-                _context.LogWarning("No hay estado activo en el brain");
-                return;
-            }
+            if (_currentState == null) return;
+
             try
             {
+                // 1. Ejecutar lógica del frame
                 _currentState.OnUpdate(_context);
+
+                // 2. Verificar si el estado quiere cambiar
                 var nextState = _currentState.CheckTransitions(_context);
-                if (nextState != null && nextState != _currentState)
+                
+                if (nextState != null && nextState.GetType() != _currentState.GetType())
                 {
                     ChangeState(nextState);
                 }
             }
             catch (Exception ex)
             {
-                _context.LogError($"Error en Update del estado {_currentState.StateName}: {ex.Message}");
+                _context.LogError($"[NPCBrain] ❌ Error Crítico en Update ({_currentState.StateName}): {ex.Message}");
             }
         }
+
         public void ForceState(INPCState newState)
         {
             ChangeState(newState);
         }
+
         public bool ReturnToPreviousState()
         {
-            if (_previousState == null)
-            {
-                _context.LogWarning("No hay estado previo al que volver");
-                return false;
-            }
+            if (_previousState == null) return false;
             ChangeState(_previousState);
             return true;
         }
-        
+
+        // =================================================================================
+        // 🤝 INTERACTION HANDLING
+        // =================================================================================
+
         /// <summary>
-        /// Maneja la interacción del jugador con el NPC.
-        /// Delega según el tipo de configuración disponible.
+        /// Centraliza la lógica de interacción. El Brain decide qué subsistema responde.
         /// </summary>
         public bool HandleInteraction(GameObject interactor)
         {
-            if (_context == null || _context.Config == null)
-            {
-                Debug.LogWarning($"[NPCBrain] No hay contexto o configuración disponible");
-                return false;
-            }
-            
+            if (_context?.Config == null) return false;
             var config = _context.Config;
-            
-            // Prioridad 0: Interacción post-derrota del sistema de combate
-            if (config.HasBehaviour(NPCBehaviourType.Combat) && config.combatConfig != null)
+
+            // PRIORIDAD 1: COMBATE (Post-Derrota)
+            // Si el NPC fue derrotado, tiene prioridad sobre cualquier quest o narrativa normal.
+            if (config.HasBehaviour(NPCBehaviourType.Combat))
             {
-                var lifecycleHandler = _context.Transform.GetComponent<NPCCombatLifecycleHandler>();
-                if (lifecycleHandler != null && lifecycleHandler.HasBeenDefeated)
+                var lifecycle = _context.Transform.GetComponent<NPCCombatLifecycleHandler>();
+                
+                // Si existe el componente y el NPC está derrotado
+                if (lifecycle != null && lifecycle.IsDefeatedAndInactive)
                 {
-                    // Si el NPC fue derrotado, solo reproducir el diálogo post-derrota
-                    if (lifecycleHandler.HandlePostDefeatInteraction(interactor))
+                    if (lifecycle.HandlePostDefeatInteraction(interactor))
                     {
-                        _context.Log("[NPCBrain] Interacción post-derrota manejada");
-                        return true;
+                        return true; // Interacción manejada por el sistema de muerte
                     }
                 }
             }
-            
-            // Prioridad 1: Interactive Narrative Config (cadena de acciones)
+
+            // PRIORIDAD 2: NARRATIVA INTERACTIVA (Sistema Principal)
+            // Este es el flujo normal para hablar con NPCs
             if (config.interactiveNarrativeConfig != null)
             {
                 var executor = _context.Transform.GetComponent<NPCInteractiveNarrativeExecutor>();
                 if (executor != null)
                 {
-                    _context.IsInteracting = true;
-                    return executor.TryExecuteNarrative();
-                }
-                else
-                {
-                    Debug.LogError($"[NPCBrain] InteractiveNarrativeConfig presente pero no hay NPCInteractiveNarrativeExecutor en GameObject");
+                    // Intentamos ejecutar. Si devuelve true, es que la narrativa arrancó.
+                    if (executor.TryExecuteNarrative())
+                    {
+                        // IMPORTANTE: No seteamos IsInteracting = true aquí manualmente.
+                        // El Executor iniciará una secuencia Cinemática que cambiará el estado del Brain a CinematicState.
+                        return true; 
+                    }
                 }
             }
-            
-            // Prioridad 2: Quest Config (sistema de quests)
+
+            // PRIORIDAD 3: QUESTS (Sistema Legacy o Simple)
             if (config.HasBehaviour(NPCBehaviourType.Quest) && config.questConfig != null)
             {
+                // Para el sistema de Quest simple, sí marcamos el flag para pausar el movimiento
                 _context.IsInteracting = true;
-                return config.questConfig.ProcessInteraction(interactor, _context);
+                bool questHandled = config.questConfig.ProcessInteraction(interactor, _context);
+                
+                if (!questHandled)
+                {
+                    _context.IsInteracting = false; // Revertir si falló
+                }
+                return questHandled;
             }
-            
-            Debug.LogWarning($"[NPCBrain] No hay configuración de InteractiveNarrative ni Quest");
+
             return false;
+        }
+        
+        /// <summary>
+        /// Método auxiliar para finalizar interacciones simples que no usan estados cinemáticos
+        /// </summary>
+        public void EndInteraction()
+        {
+            _context.IsInteracting = false;
         }
     }
 }
