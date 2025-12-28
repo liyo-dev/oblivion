@@ -8688,8 +8688,11 @@ MonoBehaviour:
   greetingState: Greeting01_NoWeapon
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: TakeDamage
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
   dizzyState: Dizzy_NoWeapon
@@ -8698,7 +8701,7 @@ MonoBehaviour:
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
   syncWithNavAgent: 1
-  useRootMotionForSpecialAnims: 0
+  useRootMotionForSpecialAnims: 1
   debugMode: 0
   drawGizmos: 1
 --- !u!114 &5132545520415850134

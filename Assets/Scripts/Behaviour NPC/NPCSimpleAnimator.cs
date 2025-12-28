@@ -67,12 +67,16 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Header("Combat Animations")]
     [SerializeField] private string challengingState = "Challenging_NoWeapon";
     [SerializeField] private string senseSomethingState = "SenseSomethingStart_NoWeapon";
+    [SerializeField] private string searchingState = "SenseSomethingSearching_NoWeapon"; // Animación cuando pierde de vista al jugador
     [SerializeField] private string defendState = "Idle_Battle_NoWeapon"; // Fallback a Battle Idle si no existe Defend
-    [SerializeField] private string getHitState = "TakeDamage";
+    
+    [Tooltip("Animaciones de daño (se alterna aleatoriamente entre ellas para variedad)")]
+    [SerializeField] private string[] getHitStates = new string[] { "TakeDamage", "TakeDamage_2" };
+    
     [SerializeField] private string defendHitState = "DefendHit_NoWeapon"; // Animación cuando el escudo bloquea un ataque
     [SerializeField] private string dieState = "Die02_NoWeapon";
     [SerializeField] private string dizzyState = "Dizzy_NoWeapon"; // Animación de mareo después de levantarse
-    [SerializeField] private string victoryState = "Dance_NoWeapon"; // Usar Dance como victoria si no hay Victory
+    [SerializeField] private string victoryState = "Victory_NoWeapon"; // Animación de victoria cuando el NPC gana
     
     [Header("Spell Cast Animations (UpperBody Layer)")]
     [Tooltip("Animación de disparo con mano izquierda")]
@@ -143,6 +147,18 @@ public class NPCSimpleAnimator : MonoBehaviour
     /// Indica si el NPC está en modo batalla
     /// </summary>
     public bool IsInBattle => _isInBattle;
+    
+    /// <summary>
+    /// Indica si el NPC está actualmente reproduciendo la animación de mareo (dizzy)
+    /// </summary>
+    public bool IsInDizzyAnimation()
+    {
+        if (animator == null || string.IsNullOrEmpty(dizzyState))
+            return false;
+        
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        return stateInfo.IsName(dizzyState);
+    }
     
     #endregion
     
@@ -657,6 +673,19 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
+    /// Reproduce animación de búsqueda (cuando pierde de vista al jugador).
+    /// Se usa típicamente cuando el NPC huye y luego se detiene sin ver al player.
+    /// </summary>
+    public void PlaySearching()
+    {
+        if (!string.IsNullOrEmpty(searchingState))
+        {
+            Debug.Log($"[NPCAnimator:{gameObject.name}] 🔍 PlaySearching() - Buscando al jugador");
+            PlayOneShot(searchingState);
+        }
+    }
+    
+    /// <summary>
     /// Reproduce animación de defensa
     /// </summary>
     public void PlayDefend()
@@ -668,13 +697,24 @@ public class NPCSimpleAnimator : MonoBehaviour
     }
     
     /// <summary>
-    /// Reproduce animación de recibir daño
+    /// Reproduce animación de recibir daño.
+    /// Si hay múltiples animaciones configuradas, selecciona una aleatoriamente para variedad.
     /// </summary>
     public void PlayGetHit()
     {
-        if (!string.IsNullOrEmpty(getHitState))
+        if (getHitStates == null || getHitStates.Length == 0)
         {
-            PlayOneShot(getHitState);
+            Debug.LogWarning($"[NPCAnimator:{gameObject.name}] ⚠️ No hay animaciones de daño configuradas");
+            return;
+        }
+        
+        // Seleccionar animación aleatoria del array
+        string selectedHitAnim = getHitStates[UnityEngine.Random.Range(0, getHitStates.Length)];
+        
+        if (!string.IsNullOrEmpty(selectedHitAnim))
+        {
+            Debug.Log($"[NPCAnimator:{gameObject.name}] 💥 PlayGetHit() - Animación seleccionada: '{selectedHitAnim}' ({getHitStates.Length} variantes disponibles)");
+            PlayOneShot(selectedHitAnim);
         }
     }
     

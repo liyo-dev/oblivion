@@ -227,10 +227,19 @@ namespace Game.NPC
                     timer += Time.deltaTime;
                     yield return null;
                 }
+                
+                // Al detenerse después de huir, verificar si perdimos de vista al jugador
+                StopMove();
+                if (!IsPlayerInFieldOfView())
+                {
+                    // Jugador no está en campo de visión - reproducir animación de búsqueda
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 NPC se detuvo después de huir - Jugador fuera de vista, reproduciendo animación de búsqueda");
+                    _animator.PlaySearching();
+                    yield return new WaitForSeconds(1.5f); // Tiempo de la animación de búsqueda
+                }
             }
             
             // Volver a evaluar al terminar movimiento
-            StopMove();
             _currentState = CombatState.EVALUATE;
         }
 
@@ -455,6 +464,38 @@ namespace Game.NPC
                 Quaternion lookRot = Quaternion.LookRotation(dir);
                 transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, Time.deltaTime * 10f);
             }
+        }
+        
+        /// <summary>
+        /// Verifica si el jugador está dentro del campo de visión del NPC.
+        /// Usa el fieldOfView configurado en NPCCombatConfig.
+        /// </summary>
+        private bool IsPlayerInFieldOfView()
+        {
+            if (_player == null) return false;
+            
+            // Obtener fieldOfView del config (usar valor por defecto si no está disponible)
+            float fov = 160f; // Valor por defecto
+            if (_manager != null && _manager.Configuration != null && _manager.Configuration.combatConfig != null)
+            {
+                fov = _manager.Configuration.combatConfig.fieldOfView;
+            }
+            
+            // Calcular dirección al jugador
+            Vector3 dirToPlayer = (_player.position - transform.position).normalized;
+            dirToPlayer.y = 0; // Ignorar diferencia de altura
+            
+            Vector3 forward = transform.forward;
+            forward.y = 0;
+            forward.Normalize();
+            
+            // Calcular ángulo entre la dirección del NPC y la dirección al jugador
+            float angle = Vector3.Angle(forward, dirToPlayer);
+            
+            // El jugador está en el campo de visión si el ángulo es menor que la mitad del FOV
+            bool inFOV = angle <= (fov / 2f);
+            
+            return inFOV;
         }
         
         // Debug Visual

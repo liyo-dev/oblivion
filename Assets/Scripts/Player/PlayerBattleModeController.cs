@@ -23,7 +23,7 @@ namespace Game.Player
         [SerializeField] private string normalIdleStateName = "Idle_Normal_NoWeapon";
         
         [Tooltip("Nombre del estado de Victoria en el Animator del player")]
-        [SerializeField] private string victoryStateName = "Dance_NoWeapon";
+        [SerializeField] private string victoryStateName = "Victory_NoWeapon";
         
         [Tooltip("Radio de detección de enemigos para activar Battle Mode")]
         [SerializeField] private float enemyDetectionRadius = 15f;

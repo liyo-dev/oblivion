@@ -27,7 +27,8 @@ public class PlayerHealthSystem : MonoBehaviour
     [SerializeField] private float healthRegenNotifyEpsilon = 0.01f;
     
     [Header("Animaciones")]
-    [SerializeField] private string damageAnimationName = "TakeDamage";
+    [Tooltip("Animaciones de daño (se alterna aleatoriamente entre ellas para variedad)")]
+    [SerializeField] private string[] damageAnimationNames = new string[] { "TakeDamage", "TakeDamage_2" };
     [SerializeField] private string deathAnimationName = "Die02_NoWeapon";
     [SerializeField] private string healAnimationName = "Heal";
     [SerializeField] private int upperBodyLayer = 1; // Layer para animaciones del torso superior
@@ -210,8 +211,13 @@ public class PlayerHealthSystem : MonoBehaviour
         // Activar invulnerabilidad
         StartInvulnerability();
         
-        // IMPORTANTE: Ejecutar animación INMEDIATAMENTE
-        TriggerAnimation(damageAnimationName);
+        // IMPORTANTE: Seleccionar y ejecutar animación de daño aleatoria INMEDIATAMENTE
+        string selectedDamageAnim = GetRandomDamageAnimation();
+        if (!string.IsNullOrEmpty(selectedDamageAnim))
+        {
+            Debug.Log($"[PlayerHealthSystem] 💥 Reproduciendo animación de daño: '{selectedDamageAnim}' ({damageAnimationNames?.Length ?? 0} variantes disponibles)");
+            TriggerAnimation(selectedDamageAnim);
+        }
         
         // Efectos visuales y sonoros
         PlayDamageEffects();
@@ -645,6 +651,23 @@ public class PlayerHealthSystem : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Selecciona una animación de daño aleatoria del array configurado.
+    /// Esto proporciona variedad visual y evita repetición.
+    /// </summary>
+    private string GetRandomDamageAnimation()
+    {
+        if (damageAnimationNames == null || damageAnimationNames.Length == 0)
+        {
+            Debug.LogWarning("[PlayerHealthSystem] ⚠️ No hay animaciones de daño configuradas en el array damageAnimationNames");
+            return null;
+        }
+        
+        // Seleccionar aleatoriamente
+        int randomIndex = UnityEngine.Random.Range(0, damageAnimationNames.Length);
+        return damageAnimationNames[randomIndex];
+    }
+    
     private void TriggerAnimation(string animationName)
     {
         if (_animator == null || string.IsNullOrEmpty(animationName))
@@ -768,12 +791,21 @@ public class PlayerHealthSystem : MonoBehaviour
         // Probar las mismas variantes que EnsureResolved para cada layer
         string[] suffixes = new string[] { "", "_NoWeapon", "-NoWeapon" };
         var candidateList = new List<string>();
-        foreach (var s in suffixes)
+        
+        // Agregar todas las variantes de animaciones de daño
+        if (damageAnimationNames != null && damageAnimationNames.Length > 0)
         {
-            candidateList.Add(damageAnimationName + s);
-            candidateList.Add($"Base Layer.{damageAnimationName}{s}");
-            candidateList.Add($"Base Layer.Locomotion.{damageAnimationName}{s}");
+            foreach (var damageAnim in damageAnimationNames)
+            {
+                foreach (var s in suffixes)
+                {
+                    candidateList.Add(damageAnim + s);
+                    candidateList.Add($"Base Layer.{damageAnim}{s}");
+                    candidateList.Add($"Base Layer.Locomotion.{damageAnim}{s}");
+                }
+            }
         }
+        
         string[] candidates = candidateList.ToArray();
 
         for (int layer = 0; layer < _animator.layerCount; layer++)

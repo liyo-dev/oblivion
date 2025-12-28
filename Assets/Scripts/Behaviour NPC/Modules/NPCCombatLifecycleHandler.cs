@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -168,8 +168,7 @@ namespace Game.NPC.Modules
                 _manager.Context.WasDefeatedInCombat = true;
             }
 
-            // 2. Animación y VFX
-            if (_animator) _animator.PlayDeath();
+            // 2. VFX inicial
             if (deathVFXPrefab) Instantiate(deathVFXPrefab, transform.position + deathVFXOffset, Quaternion.identity);
 
             // 3. Rotar hacia el jugador (Último aliento)
@@ -186,14 +185,11 @@ namespace Game.NPC.Modules
                 FeedbackService.CameraShake(cameraShakeIntensity * 2f, 0.5f);
                 
                 Time.timeScale = deathSlowMoScale;
-                yield return new WaitForSecondsRealtime(deathSlowMoDuration); // Usar Realtime para ignorar el slowmo
+                yield return new WaitForSecondsRealtime(deathSlowMoDuration);
                 Time.timeScale = 1f; // Restaurar
             }
 
-            // 5. Esperar fin de animación del NPC (3s)
-            yield return new WaitForSecondsRealtime(2.5f);
-
-            // 6. CELEBRACIÓN DEL JUGADOR
+            // 5. CELEBRACIÓN DEL JUGADOR
             if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
             {
                 DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
@@ -201,7 +197,7 @@ namespace Game.NPC.Modules
                 yield return new WaitForSecondsRealtime(3.0f);
             }
 
-            // 7. POST-MUERTE (Desaparecer o Mareado)
+            // 6. POST-MUERTE (Desaparecer o Mareado)
             PostDeathBehavior behavior = _config != null ? _config.postDeathBehavior : PostDeathBehavior.GetUpDizzy;
 
             if (behavior == PostDeathBehavior.Disappear)
@@ -210,6 +206,7 @@ namespace Game.NPC.Modules
             }
             else
             {
+                // HandleGetUpDizzy ahora maneja completamente la animación de muerte -> dizzy
                 yield return HandleGetUpDizzy();
             }
 
@@ -235,21 +232,56 @@ namespace Game.NPC.Modules
 
         private IEnumerator HandleGetUpDizzy()
         {
-            // Animación Mareado
-            if (_animator) _animator.PlayDizzy();
-            yield return new WaitForSeconds(0.5f);
-
-            // Diálogo de "Auch, me ganaste"
+            Debug.Log($"[Lifecycle] 😵 Iniciando secuencia GetUpDizzy para {name}");
+            
+            // 1. Reproducir animación de muerte (que transicionará automáticamente a dizzy gracias al exit time)
+            if (_animator)
+            {
+                _animator.PlayDeath();
+                Debug.Log($"[Lifecycle] 💀 Animación de muerte iniciada - transicionará automáticamente a dizzy");
+            }
+            
+            // 2. Esperar a que esté en la animación de mareo (dizzy)
+            float timeout = 10f; // Timeout de seguridad
+            float elapsed = 0f;
+            
+            while (elapsed < timeout)
+            {
+                if (_animator != null && _animator.IsInDizzyAnimation())
+                {
+                    Debug.Log($"[Lifecycle] ✅ NPC ahora está en animación dizzy - mostrando diálogo");
+                    break;
+                }
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            if (elapsed >= timeout)
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando animación dizzy - continuando de todas formas");
+            }
+            
+            // 3. Mostrar diálogo de mareo (cuando ya está en la animación dizzy)
             DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
             if (dialogue != null)
             {
                 bool finished = false;
                 DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
-                while (!finished) yield return null;
+                
+                // Esperar a que termine el diálogo
+                while (!finished) 
+                {
+                    yield return null;
+                }
+                
+                Debug.Log($"[Lifecycle] 💬 Diálogo de mareo completado");
             }
-
-            // Configurar para interacción futura (Hablar con el NPC derrotado)
+            
+            // 4. Configurar para interacción futura (Hablar con el NPC derrotado)
             SetupPostCombatInteraction();
+            
+            Debug.Log($"[Lifecycle] ✅ Secuencia GetUpDizzy completada para {name}");
         }
 
         private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)
