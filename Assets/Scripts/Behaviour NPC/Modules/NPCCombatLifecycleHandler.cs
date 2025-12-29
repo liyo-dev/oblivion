@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -61,6 +61,18 @@ namespace Game.NPC.Modules
             _animator = GetComponent<NPCSimpleAnimator>();
             _agent = GetComponent<NavMeshAgent>();
             _brain = GetComponent<NPCCombatBrain>();
+            
+            // ✅ CRÍTICO: Configurar destroyOnDeath=false INMEDIATAMENTE en Awake
+            // Esto se aplica tanto si el componente ya existía como si se acaba de añadir
+            if (_damageable != null)
+            {
+                _damageable.SetDestroyOnDeath(false);
+                Debug.Log($"[Lifecycle] ✅ destroyOnDeath establecido a FALSE en Awake para {name} (actual valor: {_damageable.GetComponent<Damageable>() != null})");
+            }
+            else
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ Damageable no encontrado en Awake para {name} - esperando que se añada después");
+            }
         }
 
         private void Start()
@@ -68,9 +80,31 @@ namespace Game.NPC.Modules
             if (_manager.Configuration != null) 
                 _config = _manager.Configuration.combatConfig;
 
+            // ✅ Verificación de respaldo: Si Damageable no estaba en Awake, obtenerlo ahora
+            if (_damageable == null)
+            {
+                _damageable = GetComponent<Damageable>();
+                if (_damageable != null)
+                {
+                    Debug.LogWarning($"[Lifecycle] ⚠️ Damageable se añadió después de Awake - configurando destroyOnDeath=false ahora");
+                    _damageable.SetDestroyOnDeath(false);
+                }
+                else
+                {
+                    Debug.LogError($"[Lifecycle] ❌ Damageable SIGUE siendo null en Start() para {name}");
+                    return;
+                }
+            }
+            
+            // Verificación final: Asegurar que destroyOnDeath esté en false
+            _damageable.SetDestroyOnDeath(false);
+            Debug.Log($"[Lifecycle] 🔒 Verificación final en Start: destroyOnDeath=false para {name}");
+
+            // Suscribirse a eventos
             _damageable.OnDamaged += OnDamaged;
             _damageable.OnDied += OnDied;
-            _damageable.SetDestroyOnDeath(false); // Importante: controlamos la muerte manualmente
+            
+            Debug.Log($"[Lifecycle] ✅ Suscrito a eventos OnDamaged y OnDied para {name}");
         }
 
         private void OnDestroy()

@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -21,6 +21,10 @@ public class CollectiblePopupPanel : MonoBehaviour
 
     [Header("Layout")]
     [SerializeField] private float minPreferredHeight = 32f;
+    
+    [Header("Safety")]
+    [Tooltip("Timeout máximo de seguridad para destruir el popup si algo falla (segundos)")]
+    [SerializeField] private float maxLifetime = 10f;
 
     private CanvasGroup _cg;
 
@@ -29,13 +33,15 @@ public class CollectiblePopupPanel : MonoBehaviour
     private int _currentAmount;
     private float _displayDuration;
     private float _expiryTime;
+    private float _creationTime;
 
     void Awake()
     {
         _cg = GetComponent<CanvasGroup>();
         if (_cg == null)
         {
-            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el prefab");
+            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente CanvasGroup - añadiéndolo automáticamente");
+            _cg = gameObject.AddComponent<CanvasGroup>();
         }
     }
 
@@ -48,6 +54,7 @@ public class CollectiblePopupPanel : MonoBehaviour
         _itemId = item != null ? (item.itemId ?? item.displayName) : "__null__";
         _currentAmount = amount;
         _displayDuration = displayDuration;
+        _creationTime = Time.realtimeSinceStartup;
 
         // Ensure visible on top of siblings
         var rt = transform as RectTransform;
@@ -83,9 +90,8 @@ public class CollectiblePopupPanel : MonoBehaviour
         LayoutElement le = GetComponent<LayoutElement>();
         if (le == null)
         {
-            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente LayoutElement - debe agregarse manualmente en el prefab");
-            // Salir anticipadamente si no hay LayoutElement
-            return;
+            Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ El GameObject '{gameObject.name}' no tiene componente LayoutElement - añadiéndolo automáticamente");
+            le = gameObject.AddComponent<LayoutElement>();
         }
 
         // Try to infer a reasonable preferred height from the rect; if not available use minPreferredHeight
@@ -110,13 +116,27 @@ public class CollectiblePopupPanel : MonoBehaviour
             Debug.Log("[CollectiblePopupPanel] GameObject not activeInHierarchy - activating");
             gameObject.SetActive(true);
         }
+        
+        // Asegurar que el componente esté habilitado para ejecutar coroutines
+        if (!enabled)
+        {
+            Debug.LogWarning($"[CollectiblePopupPanel] Componente deshabilitado en {gameObject.name} - habilitándolo");
+            enabled = true;
+        }
 
         if (_cg != null) _cg.alpha = 0f;
 
         // set expiry
         _expiryTime = Time.realtimeSinceStartup + _displayDuration;
 
+        Debug.Log($"[CollectiblePopupPanel] Init() completado para {_itemId}, llamando a StartCoroutine(PlayLifecycle) - expiry: {_expiryTime}");
         StartCoroutine(PlayLifecycle());
+        Debug.Log($"[CollectiblePopupPanel] StartCoroutine(PlayLifecycle) llamado para {_itemId}");
+    }
+    
+    void OnDestroy()
+    {
+        Debug.Log($"[CollectiblePopupPanel] OnDestroy() llamado para {_itemId}");
     }
 
     /// <summary>
@@ -135,6 +155,8 @@ public class CollectiblePopupPanel : MonoBehaviour
 
     private IEnumerator PlayLifecycle()
     {
+        Debug.Log($"[CollectiblePopupPanel] PlayLifecycle START for {_itemId}");
+        
         // Wait a frame so layout groups can place this element correctly
         yield return null;
         Canvas.ForceUpdateCanvases();
@@ -165,11 +187,33 @@ public class CollectiblePopupPanel : MonoBehaviour
             yield return null;
         }
 
+        Debug.Log($"[CollectiblePopupPanel] Fade in complete for {_itemId}, waiting until expiry ({_expiryTime})");
+        
         // Wait visible until expiry time (which may be extended by AddAmount calls)
+        float startWaitTime = Time.realtimeSinceStartup;
+        float logTimer = 0f;
         while (Time.realtimeSinceStartup < _expiryTime)
         {
+            // ✅ SAFETY: Timeout máximo para evitar que se queden permanentemente
+            float lifetime = Time.realtimeSinceStartup - _creationTime;
+            if (lifetime >= maxLifetime)
+            {
+                Debug.LogWarning($"[CollectiblePopupPanel] ⚠️ {_itemId} alcanzó el timeout máximo de {maxLifetime}s, forzando destrucción");
+                break;
+            }
+            
+            logTimer += Time.unscaledDeltaTime;
+            if (logTimer >= 1f) // Log cada segundo
+            {
+                float remaining = _expiryTime - Time.realtimeSinceStartup;
+                Debug.Log($"[CollectiblePopupPanel] {_itemId} still waiting, {remaining:F1}s remaining until expiry (lifetime: {lifetime:F1}s)");
+                logTimer = 0f;
+            }
             yield return null;
         }
+
+        float totalWaitTime = Time.realtimeSinceStartup - startWaitTime;
+        Debug.Log($"[CollectiblePopupPanel] Expiry reached for {_itemId} after {totalWaitTime:F2}s, starting fade out");
 
         // fade out
         t = 0f;
@@ -182,6 +226,17 @@ public class CollectiblePopupPanel : MonoBehaviour
             yield return null;
         }
 
-        Destroy(gameObject);
+        Debug.Log($"[CollectiblePopupPanel] Fade out complete for {_itemId}, destroying GameObject");
+        
+        // Asegurar que el GameObject existe antes de destruirlo
+        if (gameObject != null)
+        {
+            Destroy(gameObject);
+            Debug.Log($"[CollectiblePopupPanel] GameObject destroyed for {_itemId}");
+        }
+        else
+        {
+            Debug.LogWarning($"[CollectiblePopupPanel] GameObject was already null for {_itemId}");
+        }
     }
 }

@@ -118,6 +118,34 @@ public class Interactable : MonoBehaviour
             return;
         }
         
+        // ✅ PRIORIDAD: Si hay un NPCInteractiveNarrativeExecutor con narrativas condicionales,
+        // delegar a él en lugar de ejecutar el diálogo por defecto
+        var narrativeExecutor = GetComponent<Game.NPC.Modules.NPCInteractiveNarrativeExecutor>();
+        if (narrativeExecutor != null)
+        {
+            var config = narrativeExecutor.GetConfiguration();
+            if (config != null && config.HasAvailableNarrative())
+            {
+                Debug.Log($"[Interactable:{name}] 🎭 Delegando a NPCInteractiveNarrativeExecutor (tiene narrativas condicionales disponibles)");
+                bool success = narrativeExecutor.TryExecuteNarrative();
+                if (success)
+                {
+                    Debug.Log($"[Interactable:{name}] ✅ Narrativa condicional ejecutada exitosamente");
+                    return; // ✅ Salir - no ejecutar el diálogo por defecto
+                }
+                else
+                {
+                    Debug.LogWarning($"[Interactable:{name}] ⚠️ TryExecuteNarrative() falló, usando diálogo por defecto");
+                }
+            }
+            else
+            {
+                Debug.Log($"[Interactable:{name}] ℹ️ NPCInteractiveNarrativeExecutor existe pero no hay narrativas disponibles, usando diálogo por defecto");
+            }
+        }
+        
+        // Si no hay NPCInteractiveNarrativeExecutor o no tiene narrativas disponibles,
+        // ejecutar el comportamiento por defecto del Interactable
         switch (mode)
         {
             case InteractableMode.OpenDialogue:

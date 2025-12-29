@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -350,6 +350,20 @@ namespace Game.NPC.States
         /// </summary>
         private void HandleArrival(Common.NPCStateContext context)
         {
+            // ✅ CRÍTICO: Detener el NavMeshAgent ANTES de aplicar orientación
+            // Esto evita que SyncWithNavMeshAgent sobrescriba la rotación en el siguiente frame
+            if (context.Agent != null)
+            {
+                Common.NavMeshAgentUtility.HardStop(context.Agent);
+                context.Log("[CinematicSequence] ✅ NavMeshAgent detenido completamente");
+            }
+            
+            // Resetear animación de movimiento a 0
+            if (context.Animator != null)
+            {
+                context.Animator.ResetMovement();
+            }
+            
             SpawnAnchor anchor = FindNearbySpawnAnchor(_targetPosition);
             
             if (anchor != null)
@@ -368,21 +382,63 @@ namespace Game.NPC.States
         private void ApplySpawnAnchorOrientation(Common.NPCStateContext context, SpawnAnchor anchor)
         {
             Quaternion targetRotation;
+            Vector3 direction;
             
+            // NOTA: La lógica está invertida porque el forward del SpawnAnchor en la escena
+            // apunta en dirección opuesta a la puerta (debido a cómo está configurado el transform)
             if (anchor.faceDoor)
             {
-                // Mirar hacia la puerta (forward del anchor)
-                targetRotation = Quaternion.LookRotation(anchor.transform.forward, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado hacia SpawnAnchor '{anchor.anchorId}' (faceDoor)");
+                // Mirar hacia la puerta (USAR forward, invertido)
+                direction = anchor.transform.forward;
+                targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                context.Log($"[CinematicSequence] Orientado HACIA la puerta (faceDoor=true)");
             }
             else
             {
-                // Mirar en dirección opuesta (back del anchor)
-                targetRotation = Quaternion.LookRotation(-anchor.transform.forward, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado desde SpawnAnchor '{anchor.anchorId}' (away)");
+                // Mirar de espaldas a la puerta (USAR -forward, invertido)
+                direction = -anchor.transform.forward;
+                targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                context.Log($"[CinematicSequence] Orientado DE ESPALDAS a la puerta (faceDoor=false)");
             }
             
+            context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': faceDoor={anchor.faceDoor}");
+            context.Log($"[CinematicSequence] Anchor forward: {anchor.transform.forward}");
+            context.Log($"[CinematicSequence] Direction applied: {direction}");
+            context.Log($"[CinematicSequence] Target rotation (euler): {targetRotation.eulerAngles}");
+            context.Log($"[CinematicSequence] NPC position: {context.Transform.position}");
+            
+            // ✅ Aplicar rotación directamente
             context.Transform.rotation = targetRotation;
+            
+            // ✅ Sincronizar rotación objetivo del NPCSimpleAnimator
+            // Desactivar temporalmente la rotación automática para evitar que LateUpdate la sobrescriba
+            if (context.Animator != null)
+            {
+                context.Animator.DisableAutoRotation();
+                
+                Vector3 forward = targetRotation * Vector3.forward;
+                context.Animator.FaceDirection(forward);
+                
+                // Reactivar rotación automática después de 1 frame
+                if (_owner != null)
+                {
+                    _owner.StartCoroutine(ReenableAutoRotationNextFrame(context.Animator));
+                }
+                
+                context.Log($"[CinematicSequence] ✅ Rotación objetivo del animator sincronizada");
+            }
+        }
+        
+        /// <summary>
+        /// Reactiva la rotación automática del animator después de 1 frame
+        /// </summary>
+        private System.Collections.IEnumerator ReenableAutoRotationNextFrame(NPCSimpleAnimator animator)
+        {
+            yield return null; // Esperar 1 frame
+            if (animator != null)
+            {
+                animator.EnableAutoRotation();
+            }
         }
         
         /// <summary>
@@ -393,6 +449,13 @@ namespace Game.NPC.States
             var newRotation = context.Transform.rotation * Quaternion.Euler(0, TURN_AROUND_ANGLE, 0);
             context.Transform.rotation = newRotation;
             context.Log("[CinematicSequence] Girado 180° (sin SpawnAnchor)");
+            
+            // ✅ FIX: Sincronizar con NPCSimpleAnimator
+            if (context.Animator != null)
+            {
+                Vector3 forward = newRotation * Vector3.forward;
+                context.Animator.FaceDirection(forward);
+            }
         }
         
         #endregion

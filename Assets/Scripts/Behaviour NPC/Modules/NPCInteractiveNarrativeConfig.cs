@@ -227,7 +227,10 @@ namespace Game.NPC.Modules
         public ConditionalNarrative GetActiveNarrative()
         {
             if (conditionalNarratives == null)
+            {
+                Debug.Log($"[NPCInteractiveNarrativeConfig] ℹ️ conditionalNarratives es null");
                 return null;
+            }
             
             // Ordenar por prioridad (mayor a menor) y evaluar
             var sortedNarratives = conditionalNarratives
@@ -235,14 +238,21 @@ namespace Game.NPC.Modules
                 .OrderByDescending(n => n.priority)
                 .ToArray();
             
+            Debug.Log($"[NPCInteractiveNarrativeConfig] 🔍 Evaluando {sortedNarratives.Length} narrativas condicionales (ordenadas por prioridad)");
+            
             foreach (var narrative in sortedNarratives)
             {
-                if (narrative.CanExecute())
+                bool canExecute = narrative.CanExecute();
+                Debug.Log($"[NPCInteractiveNarrativeConfig]   - Narrativa (prioridad {narrative.priority}): {(canExecute ? "✅ PUEDE ejecutarse" : "❌ NO puede ejecutarse")}");
+                
+                if (canExecute)
                 {
+                    Debug.Log($"[NPCInteractiveNarrativeConfig] ✅ Narrativa seleccionada con prioridad {narrative.priority}");
                     return narrative;
                 }
             }
             
+            Debug.Log($"[NPCInteractiveNarrativeConfig] ⚠️ Ninguna narrativa condicional cumple sus condiciones");
             return null;
         }
         

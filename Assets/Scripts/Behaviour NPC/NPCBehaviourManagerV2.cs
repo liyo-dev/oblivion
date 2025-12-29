@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿﻿﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -177,15 +177,23 @@ namespace Game.NPC
                 {
                     var dmg = gameObject.AddComponent<Damageable>();
                     dmg.SetMaxAndCurrent(configuration.combatConfig.health, configuration.combatConfig.health);
-                    if (debugMode) Debug.Log($"[NPCManager] 🛡️ Damageable añadido (Pre-Combate)");
+                    
+                    // ✅ CRÍTICO: Establecer destroyOnDeath=false INMEDIATAMENTE
+                    // El LifecycleHandler controlará la muerte manualmente
+                    dmg.SetDestroyOnDeath(false);
+                    
+                    if (debugMode) Debug.Log($"[NPCManager] 🛡️ Damageable añadido (Pre-Combate) - destroyOnDeath=false");
                 }
 
                 // B. CombatLifecycleHandler (Gestión de muerte/stun)
                 if (!GetComponent<NPCCombatLifecycleHandler>())
                 {
-                    var handler = gameObject.AddComponent<NPCCombatLifecycleHandler>();
-                    // handler.Initialize(); // Método no existe, se inicializa automáticamente en Awake
-                    if (debugMode) Debug.Log($"[NPCManager] ☠️ LifecycleHandler añadido (Pre-Combate)");
+                    gameObject.AddComponent<NPCCombatLifecycleHandler>();
+                    if (debugMode) Debug.Log($"[NPCManager] ☠️ NPCCombatLifecycleHandler añadido (Pre-Combate) para {name}");
+                }
+                else
+                {
+                    if (debugMode) Debug.Log($"[NPCManager] ℹ️ NPCCombatLifecycleHandler ya existe en {name}");
                 }
 
                 // C. Targetable (Para que el jugador pueda apuntarle antes de pelear)

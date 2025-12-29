@@ -14,34 +14,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
   moduleName: 
   description: 
-  narrativeMode: 1
-  narrativeChain:
-  - actionType: 5
-    dialogue: {fileID: 0}
-    targetAnchorName: 
-    targetTransform: {fileID: 0}
-    maxMovementDuration: 0
-    walkDisplayDuration: 0
-    turnAroundOnArrival: 0
-    waitForPlayer: 0
-    maxPlayerDistance: 0
-    resumePlayerDistance: 0
-    animationTrigger: 
-    animationClip: {fileID: 0}
-    animationDuration: 0
-    questToStart: {fileID: 0}
-    combatTarget: {fileID: 0}
-    waitDuration: 0
-    customAction:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionStarted:
-      m_PersistentCalls:
-        m_Calls: []
-    onActionCompleted:
-      m_PersistentCalls:
-        m_Calls: []
   conditionalNarratives:
+  - condition:
+      conditionType: 1
+      targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 89ab7413babca644a893b177ed0d96ce, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+    persistentIconSprite: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    singleUse: 0
+    priority: 0
+    description: 
+    debugMode: 0
   - condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
@@ -52,7 +65,6 @@ MonoBehaviour:
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 0
-      walkDisplayDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
       maxPlayerDistance: 0
@@ -61,19 +73,22 @@ MonoBehaviour:
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
       waitDuration: 0
-      customAction:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionStarted:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionCompleted:
-        m_PersistentCalls:
-          m_Calls: []
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
     showPersistentIcon: 1
     persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+    persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 1
     narrativeEventKey: ADD_CLOAK
     singleUse: 1
@@ -85,9 +100,11 @@ MonoBehaviour:
   persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
   autoStartOnPlayerDetection: 0
   detectionRange: 10
-  alertIcon: {fileID: 21300000, guid: 7193393970ac6314784af948391ee381, type: 3}
+  alertIconPrefab: {fileID: 0}
   alertIconDuration: 1
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2

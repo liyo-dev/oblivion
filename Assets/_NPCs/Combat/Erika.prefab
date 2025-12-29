@@ -1650,7 +1650,6 @@ GameObject:
   - component: {fileID: 4754465149019796885}
   - component: {fileID: 7310009456760416518}
   - component: {fileID: -6525812222826922307}
-  - component: {fileID: 4776993247457690848}
   - component: {fileID: 7490619964796838480}
   - component: {fileID: 6743273565896207114}
   - component: {fileID: 2866575645031991959}
@@ -1843,30 +1842,21 @@ MonoBehaviour:
   greetingState: Greeting01_NoWeapon
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: TakeDamage
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
   victoryState: Victory_NoWeapon
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
-  syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
   drawGizmos: 1
---- !u!114 &4776993247457690848
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7770552252693826820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df2e7c78bc8a4f3aa40de3d6bc3dd8dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCCombatBrain
 --- !u!114 &7490619964796838480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1911,7 +1901,7 @@ MonoBehaviour:
     stuckThreshold: 0.02
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
-  debugMode: 0
+  debugMode: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0

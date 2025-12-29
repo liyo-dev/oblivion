@@ -569,6 +569,10 @@
             "value": "[EN] Dale saludos a Eldran de mi parte."
         },
         {
+            "key": "DLG_VICTORIA_BEFORE",
+            "value": "[EN] Tengo la tienda cerrada. Vuelve más tarde."
+        },
+        {
             "key": "DLG_WOODS_GUARD",
             "value": "[EN] Solo los magos pueden pasar al bosque prohibido."
         }

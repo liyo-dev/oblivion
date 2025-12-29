@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -177,7 +177,12 @@ namespace Game.NPC.States
 
             // Damageable (Salud)
             var damageable = context.Transform.GetComponent<Damageable>();
-            if (damageable == null) damageable = context.Transform.gameObject.AddComponent<Damageable>();
+            if (damageable == null)
+            {
+                damageable = context.Transform.gameObject.AddComponent<Damageable>();
+                // ✅ CRÍTICO: Establecer destroyOnDeath=false para que LifecycleHandler controle la muerte
+                damageable.SetDestroyOnDeath(false);
+            }
             
             // UI Barra de Vida
             var healthBar = context.Transform.GetComponent<NPCHealthBarSpawner>();

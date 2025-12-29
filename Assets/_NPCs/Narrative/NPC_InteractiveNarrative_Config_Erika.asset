@@ -75,8 +75,8 @@ MonoBehaviour:
       questToStart: {fileID: 0}
       combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
       combatTarget: {fileID: 0}
-      sendEventOnDefeat: 0
-      defeatEventKey: 
+      sendEventOnDefeat: 1
+      defeatEventKey: ERIKA_BATTLE_WON
       sendDefeatEventBeforeDeath: 0
       waitDuration: 0
       showAlertIcon: 0

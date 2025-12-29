@@ -119,10 +119,7 @@ namespace Game.Player
             
             // Detectar si el player se está moviendo
             bool isMoving = !IsPlayerIdle();
-            
-            if (debugMode && isMoving)
-                Debug.Log($"[PlayerBattleMode] 🏃 Jugador moviéndose - velocidad: {(playerRigidbody != null ? playerRigidbody.linearVelocity.magnitude : 0f)}");
-            
+
             // Detectar enemigos cercanos
             bool enemiesNearby = DetectEnemiesNearby();
             

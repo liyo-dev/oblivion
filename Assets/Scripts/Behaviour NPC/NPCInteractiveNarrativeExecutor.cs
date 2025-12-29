@@ -283,8 +283,61 @@ namespace Game.NPC.Modules
             agent.isStopped = true;
             _npcManager.SimpleAnimator?.ResetMovement();
             
-            if (entry.turnAroundOnArrival) 
-                transform.rotation *= Quaternion.Euler(0, 180, 0);
+            // ✅ FIX: Respetar SpawnAnchor en lugar de siempre girar 180°
+            if (entry.turnAroundOnArrival)
+            {
+                // Buscar SpawnAnchor cercano
+                SpawnAnchor nearbyAnchor = FindNearbySpawnAnchor(targetPos);
+                
+                if (nearbyAnchor != null)
+                {
+                    // Aplicar orientación del SpawnAnchor
+                    // NOTA: Lógica invertida porque el forward del SpawnAnchor apunta opuesto a la puerta
+                    Quaternion targetRotation;
+                    if (nearbyAnchor.faceDoor)
+                    {
+                        // Mirar hacia la puerta (usar forward, invertido)
+                        targetRotation = Quaternion.LookRotation(nearbyAnchor.transform.forward, Vector3.up);
+                    }
+                    else
+                    {
+                        // Mirar de espaldas a la puerta (usar -forward, invertido)
+                        targetRotation = Quaternion.LookRotation(-nearbyAnchor.transform.forward, Vector3.up);
+                    }
+                    transform.rotation = targetRotation;
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' orientado según SpawnAnchor '{nearbyAnchor.anchorId}'");
+                }
+                else
+                {
+                    // Fallback: girar 180° si no hay SpawnAnchor
+                    transform.rotation *= Quaternion.Euler(0, 180, 0);
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' girado 180° (sin SpawnAnchor cercano)");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Busca un SpawnAnchor cerca de una posición
+        /// </summary>
+        private SpawnAnchor FindNearbySpawnAnchor(Vector3 position)
+        {
+            const float searchRadius = 2f;
+            var allAnchors = FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
+            
+            SpawnAnchor closest = null;
+            float closestDistance = searchRadius;
+            
+            foreach (var anchor in allAnchors)
+            {
+                float distance = Vector3.Distance(anchor.transform.position, position);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closest = anchor;
+                }
+            }
+            
+            return closest;
         }
 
         private IEnumerator ExecuteAnimation(NarrativeChainEntry entry)
@@ -318,26 +371,42 @@ namespace Game.NPC.Modules
         {
             if (entry.combatConfig == null) yield break;
 
-            // 1. Diálogo de Alerta Pre-Combate
-            if (entry.combatConfig.dialogueOnAlert != null && DialogueManager.Instance != null)
-            {
-                bool done = false;
-                DialogueManager.Instance.StartDialogue(entry.combatConfig.dialogueOnAlert, transform, () => done = true);
-                
-                if (entry.combatConfig.waitForAlertDialogue)
-                    while (!done) yield return null;
-            }
-
-            // 2. Preparar Capas y Config
+            // ✅ FIX: Solo preparar la configuración de combate
+            // NO iniciar el combate directamente para evitar:
+            // 1. Música duplicada (aquí + AlertState)
+            // 2. Salto extraño (Idle → Combat → Idle → Alert → Combat)
+            // 
+            // El flujo natural será: Idle → Alert (con diálogo y música) → Combat
+            
+            Debug.Log($"[NarrativeExecutor] ⚙️ Preparando configuración de combate para {gameObject.name}");
+            
+            // 1. Preparar Capas y Config
             SwitchToEnemyLayer();
             _npcManager.Configuration.combatConfig = entry.combatConfig;
             
-            // 3. INICIAR COMBATE VIA MANAGER (Activa la FSM)
-            // Esto asegura que se añadan los componentes Damageable/Lifecycle si faltan
-            // y que el Brain cambie al estado correcto.
-            _npcManager.EnterCombat();
+            // 2. Asegurar que los componentes de combate existan (sin iniciar combate)
+            // Esto prepara al NPC para combate pero NO lo inicia
+            if (!GetComponent<Damageable>())
+            {
+                var dmg = gameObject.AddComponent<Damageable>();
+                dmg.SetMaxAndCurrent(entry.combatConfig.health, entry.combatConfig.health);
+                dmg.SetDestroyOnDeath(false);
+                Debug.Log($"[NarrativeExecutor] 🛡️ Damageable añadido preventivamente");
+            }
             
-            Debug.Log($"[NarrativeExecutor] ⚔️ Combate iniciado via FSM");
+            if (!GetComponent<NPCCombatLifecycleHandler>())
+            {
+                gameObject.AddComponent<NPCCombatLifecycleHandler>();
+                Debug.Log($"[NarrativeExecutor] ☠️ NPCCombatLifecycleHandler añadido preventivamente para {gameObject.name}");
+            }
+            else
+            {
+                Debug.Log($"[NarrativeExecutor] ℹ️ NPCCombatLifecycleHandler ya existe en {gameObject.name}");
+            }
+            
+            // 3. El NPC detectará al jugador naturalmente y entrará en AlertState
+            // que manejará el diálogo, la música, y la transición a combate
+            Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
         }
 
         private IEnumerator HandlePostNarrativeState()
