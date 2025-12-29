@@ -171,6 +171,9 @@ public class MagicProjectileSpawner : MonoBehaviour
             var fx = Instantiate(spell.spawnVFX, spawnPos, spawnRt);
             if (spell.useScaleOverride)
                 fx.transform.localScale = spell.scaleOverride;
+            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            float destroyTime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f; // 3s por defecto
+            Destroy(fx, destroyTime);
         }
 
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
@@ -221,7 +224,8 @@ public class MagicProjectileSpawner : MonoBehaviour
                 initialSpeed   = spell.initialSpeed,
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
-                despawnVFX     = spell.despawnVFX
+                despawnVFX     = spell.despawnVFX,
+                vfxLifetime    = spell.vfxLifetime
             };
             mp.Configure(cfg, instigator);
             mp.SetKinematic(true);
@@ -293,6 +297,9 @@ public class MagicProjectileSpawner : MonoBehaviour
             {
                 fx.transform.localScale = spell.scaleOverride;
             }
+            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            float destroyTime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f; // 3s por defecto
+            Destroy(fx, destroyTime);
         }
 
         GameObject go = Instantiate(spell.prefab, spawnPos, spawnRt);
@@ -318,7 +325,8 @@ public class MagicProjectileSpawner : MonoBehaviour
                 initialSpeed   = spell.initialSpeed,
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
-                despawnVFX     = spell.despawnVFX
+                despawnVFX     = spell.despawnVFX,
+                vfxLifetime    = spell.vfxLifetime
             };
             mp.Configure(cfg, instigatorOverride ? instigatorOverride : gameObject);
         }

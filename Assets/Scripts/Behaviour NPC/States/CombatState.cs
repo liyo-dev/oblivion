@@ -87,7 +87,14 @@ namespace Game.NPC.States
                     shieldCooldown = cc.shieldCooldown,
                     coverLayerMask = cc.coverLayerMask,
                     coverSearchRadius = cc.coverSearchRadius,
-                    dodgeDistance = 3f
+                    dodgeDistance = 3f,
+                    
+                    // 🔍 Búsqueda del Jugador
+                    activelySearchForPlayer = cc.activelySearchForPlayer,
+                    searchDuration = cc.searchDuration,
+                    passiveSearchDuration = cc.passiveSearchDuration,
+                    searchMovementRadius = cc.searchMovementRadius,
+                    returnToOriginAfterSearch = cc.returnToOriginAfterSearch
                 };
 
                 // ¡ARRANCAR LA FSM DE COMBATE!

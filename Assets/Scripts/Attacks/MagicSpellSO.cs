@@ -52,6 +52,8 @@ public class MagicSpellSO : ScriptableObject
     public GameObject spawnVFX;
     public GameObject impactVFX;
     public GameObject despawnVFX;
+    [Tooltip("Tiempo en segundos antes de destruir los VFX automáticamente. Si es 0, no se destruirán (para VFX con ParticleSystem que se autodestruyen).")]
+    [Min(0f)] public float vfxLifetime = 3f;
     
     [Header("Audio")]
     [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al lanzar el hechizo (ej: 'Spell_Fire', 'Spell_Ice')")]

@@ -206,6 +206,25 @@ namespace Game.NPC.Modules
         [Tooltip("Si true, prioriza usar escudo sobre buscar cobertura")]
         public bool preferShieldOverCover = false;
         
+        [Header("🔍 Sistema de Búsqueda del Jugador")]
+        [Tooltip("Si TRUE, el NPC se mueve activamente buscando al jugador (5 intentos de movimiento)\nSi FALSE, se queda quieto durante 'passiveSearchDuration' segundos antes de abandonar")]
+        public bool activelySearchForPlayer = true;
+        
+        [Min(0f)]
+        [Tooltip("⏱️ BÚSQUEDA ACTIVA: Duración máxima de búsqueda en segundos (si activelySearchForPlayer = TRUE)\n• Recomendado: 15-20s para búsqueda persistente\n• El NPC hará hasta 5 intentos de movimiento dentro de este tiempo")]
+        public float searchDuration = 15f;
+        
+        [Min(0f)]
+        [Tooltip("⏱️ BÚSQUEDA PASIVA: Tiempo que espera quieto antes de abandonar (si activelySearchForPlayer = FALSE)\n• Recomendado: 5-10s para espera breve\n• El NPC solo mostrará ❓ sin moverse")]
+        public float passiveSearchDuration = 8f;
+        
+        [Min(2f)]
+        [Tooltip("📍 Radio de movimiento durante búsqueda activa en metros\n• El NPC se moverá aleatoriamente dentro de este radio\n• Recomendado: 5-8m para búsqueda natural")]
+        public float searchMovementRadius = 6f;
+        
+        [Tooltip("Si TRUE, el NPC vuelve a su posición inicial después de agotar la búsqueda\nSi FALSE, se queda donde está y simplemente abandona el combate")]
+        public bool returnToOriginAfterSearch = false;
+        
         public override bool ValidateConfig(out string errorMessage)
         {
             errorMessage = "";

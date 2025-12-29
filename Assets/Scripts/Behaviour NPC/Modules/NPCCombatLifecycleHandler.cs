@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -96,6 +96,12 @@ namespace Game.NPC.Modules
 
             // 🔍 DEBUG: Log de vida actual
             Debug.Log($"[Lifecycle] ⚔️ {name} recibió {amount} de daño - Vida: {_damageable.Current}/{_damageable.Max} - IsAlive: {_damageable.IsAlive}");
+
+            // ✅ Notificar al CombatBrain (para detectar ataques por la espalda durante búsqueda)
+            if (_brain != null && _manager != null && _manager.Context != null && _manager.Context.Player != null)
+            {
+                _brain.OnTakeDamage(_manager.Context.Player.position);
+            }
 
             // Interrupción de Casting
             if (_isCasting)

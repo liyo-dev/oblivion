@@ -26,6 +26,7 @@ public class MagicProjectile : MonoBehaviour
         // VFX (opcionales)
         public GameObject impactVFX;     // al impactar
         public GameObject despawnVFX;    // al morir sin impacto (TTL/rango)
+        public float vfxLifetime;        // tiempo antes de destruir VFX (0 = no destruir)
     }
 
     // ==== Estado ===============================================================
@@ -236,7 +237,13 @@ public class MagicProjectile : MonoBehaviour
         }
 
         // VFX de impacto (siempre se muestra aunque no haga daño)
-        if (_cfg.impactVFX) Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
+        if (_cfg.impactVFX)
+        {
+            var fx = Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
+            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
+            Destroy(fx, destroyTime);
+        }
 
         // Destruir proyectil al colisionar con cualquier cosa válida
         if (_cfg.destroyOnHit) End(true);
@@ -279,7 +286,12 @@ public class MagicProjectile : MonoBehaviour
 
         // Si muere sin impactar (TTL o rango), dispara VFX de despawn
         if (!byImpact && _cfg.despawnVFX)
-            Instantiate(_cfg.despawnVFX, transform.position, Quaternion.identity);
+        {
+            var fx = Instantiate(_cfg.despawnVFX, transform.position, Quaternion.identity);
+            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
+            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
+            Destroy(fx, destroyTime);
+        }
 
         // Si usas pooling, reemplaza por Despawn
         Destroy(gameObject);

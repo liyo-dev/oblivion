@@ -93,6 +93,11 @@ namespace Game.NPC
         Vector3 _lastKnownPlayerPosition;
         Vector3 _combatStartPosition; // Posición original para volver
         
+        // 🔥 Memoria de combate reciente para evitar interrogación innecesaria
+        private const float RECENT_COMBAT_THRESHOLD = 5f; // Si estuvo en combate hace menos de 5s, NO mostrar interrogación
+        private float _lastCombatTime; // Timestamp del último momento en combate activo
+        private bool _wasInRecentCombat => (Time.time - _lastCombatTime) < RECENT_COMBAT_THRESHOLD;
+        
         Coroutine _fsmRoutine;
         bool _isActive;
         #endregion
@@ -160,6 +165,43 @@ namespace Game.NPC
             _agent.isStopped = true;
             _animator.SetBattleMode(false);
         }
+        
+        /// <summary>
+        /// Llamado cuando el NPC recibe daño. Si está buscando, activa alerta inmediata.
+        /// </summary>
+        public void OnTakeDamage(Vector3 damageSourcePosition)
+        {
+            if (!_isActive) return;
+            
+            // Si está en modo SEARCHING (buscando al jugador) y recibe daño
+            if (_currentState == CombatState.SEARCHING)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡ATACADO POR LA ESPALDA! - Alertando inmediatamente");
+                
+                // Actualizar última posición conocida
+                _lastKnownPlayerPosition = damageSourcePosition;
+                _lastSeenTime = Time.time;
+                
+                // Girar hacia la fuente del daño
+                Vector3 directionToDamage = (damageSourcePosition - transform.position).normalized;
+                directionToDamage.y = 0;
+                if (directionToDamage.sqrMagnitude > 0.01f)
+                {
+                    transform.rotation = Quaternion.LookRotation(directionToDamage);
+                }
+                
+                // Mostrar icono de alerta inmediatamente
+                if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                {
+                    _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                }
+                
+                // Salir del estado de búsqueda y evaluar situación
+                StopAllCoroutines();
+                _currentState = CombatState.EVALUATE;
+                _fsmRoutine = StartCoroutine(FSM_Loop());
+            }
+        }
 
         private void Update()
         {
@@ -181,6 +223,7 @@ namespace Game.NPC
                 if (_hasLineOfSight)
                 {
                     _lastSeenTime = Time.time;
+                    _lastCombatTime = Time.time; // 🔥 Actualizar tiempo de combate activo
                     _lastKnownPlayerPosition = _player.position;
                 }
             }
@@ -252,17 +295,17 @@ namespace Game.NPC
                 yield break;
             }
 
-            // C. Si tengo ataques disponibles y estoy en rango -> ATACAR
-            if (HasAnyAttackReady() && dist <= settings.maxDistance && _globalCd <= 0)
+            // C. Si debería considerar defenderse (estrategia táctica) -> DEFENDERSE
+            if (ShouldConsiderDefense())
             {
-                _currentState = CombatState.ATTACK;
+                _currentState = CombatState.DEFENSE;
                 yield break;
             }
 
-            // D. Si no tengo ataques (estoy en CD) -> DEFENDERSE
-            if (!HasAnyAttackReady())
+            // D. Si tengo ataques disponibles y estoy en rango -> ATACAR
+            if (HasAnyAttackReady() && dist <= settings.maxDistance && _globalCd <= 0)
             {
-                _currentState = CombatState.DEFENSE;
+                _currentState = CombatState.ATTACK;
                 yield break;
             }
 
@@ -318,6 +361,12 @@ namespace Game.NPC
                 StopMove();
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Llegó a posición de cobertura - Reproduciendo animación de búsqueda");
                 
+                // ✅ Mostrar icono de interrogación
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
                 if (_animator != null)
                 {
                     _animator.PlaySearching();
@@ -325,9 +374,17 @@ namespace Game.NPC
                 
                 // Esperar tiempo de la animación de búsqueda
                 yield return new WaitForSeconds(1.5f);
+                
+                // ✅ VERIFICAR SI PERDIÓ DE VISTA AL JUGADOR
+                if (!_hasLineOfSight)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras llegar a cobertura - ENTRANDO EN BÚSQUEDA");
+                    _currentState = CombatState.SEARCHING;
+                    yield break;
+                }
             }
             
-            // Volver a evaluar al terminar movimiento
+            // Volver a evaluar al terminar movimiento (si aún lo ve)
             _currentState = CombatState.EVALUATE;
         }
 
@@ -444,26 +501,68 @@ namespace Game.NPC
                 // A. Intentar usar ESCUDO si está disponible
                 if (settings.useShield && _shieldController != null && _shieldCd <= 0)
                 {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando ESCUDO defensivo por {settings.shieldDuration:F1}s");
+                    
                     _shieldController.StartDefending(settings.shieldDuration);
                     _shieldCd = settings.shieldCooldown + settings.shieldDuration;
-                    yield return new WaitForSeconds(settings.shieldDuration); // Esperar protegido
+                    
+                    // 🔥 NUEVO: Mientras se defiende, puede moverse lentamente
+                    // Esto permite estrategias como "defender y flanquear" o "retroceder con escudo"
+                    float defendTime = settings.shieldDuration;
+                    float elapsed = 0f;
+                    
+                    while (elapsed < defendTime)
+                    {
+                        // Si el jugador está muy cerca, retroceder lentamente con escudo
+                        if (_player != null)
+                        {
+                            float dist = Vector3.Distance(transform.position, _player.position);
+                            if (dist < settings.minSafeDistance * 0.7f)
+                            {
+                                Vector3 retreatDir = (transform.position - _player.position).normalized;
+                                Vector3 retreatPos = transform.position + retreatDir * 2f;
+                                MoveTo(retreatPos, settings.walkSpeed * 0.5f); // Retroceso lento
+                                
+                                Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Retrocediendo con escudo activo");
+                            }
+                        }
+                        
+                        elapsed += Time.deltaTime;
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Escudo completado - volviendo a evaluar");
                 }
-                // B. Si no hay escudo, buscar COBERTURA
+                // B. Si no hay escudo disponible, buscar COBERTURA
                 else
                 {
+                    if (_shieldCd > 0)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Escudo en cooldown ({_shieldCd:F1}s) - buscando cobertura");
+                    }
+                    
                     Vector3 coverPos;
                     if (TryGetCoverPosition(out coverPos))
                     {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🌳 Corriendo hacia cobertura para recargar");
                         MoveTo(coverPos, settings.runSpeed);
-                        // Esperar a llegar
-                        while (_agent.remainingDistance > 0.5f) yield return null;
+                        
+                        // Esperar a llegar o timeout
+                        float timeout = 3f;
+                        while (_agent.remainingDistance > 0.5f && timeout > 0 && _agent.pathStatus == NavMeshPathStatus.PathComplete)
+                        {
+                            timeout -= Time.deltaTime;
+                            yield return null;
+                        }
                         
                         // Esperar tras la cobertura recuperando cooldowns
-                        yield return new WaitForSeconds(1.5f);
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Esperando tras cobertura, recargando cooldowns...");
+                        yield return new WaitForSeconds(2.0f);
                     }
                     else
                     {
                         // Si no hay cobertura, esquiva simple
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🤸 No hay cobertura - esquiva táctica");
                         yield return DoDodge();
                     }
                 }
@@ -471,6 +570,8 @@ namespace Game.NPC
             else
             {
                 // === LÓGICA TORPE/BAJA DIFICULTAD ===
+                Debug.Log($"[CombatBrain:{gameObject.name}] 😵 Defensa torpe (baja dificultad)");
+                
                 // Solo espera un poco o hace una esquiva tonta
                 if (UnityEngine.Random.value > 0.5f)
                     yield return DoDodge();
@@ -554,6 +655,56 @@ namespace Game.NPC
             }
         }
 
+        /// <summary>
+        /// Evalúa si el NPC debería defenderse basado en su estado táctico
+        /// </summary>
+        private bool ShouldConsiderDefense()
+        {
+            // A. Contar cuántos ataques están disponibles
+            int attacksReady = 0;
+            if (_leftCd <= 0) attacksReady++;
+            if (_rightCd <= 0) attacksReady++;
+            if (_specialCd <= 0) attacksReady++;
+            
+            bool fewAttacksReady = attacksReady == 0; // 🔥 CAMBIO: Solo si NO tiene ataques disponibles
+            
+            // B. Si está en cooldown global (acaba de atacar) - MUY VULNERABLE
+            bool inGlobalCooldown = _globalCd > 0;
+            
+            // C. Si todos los ataques importantes están en cooldown (>70% del cooldown total)
+            bool mostAttacksOnCooldown = false;
+            if (settings.leftAttack.cooldown > 0 && settings.rightAttack.cooldown > 0)
+            {
+                float leftProgress = _leftCd / settings.leftAttack.cooldown;
+                float rightProgress = _rightCd / settings.rightAttack.cooldown;
+                mostAttacksOnCooldown = (leftProgress > 0.7f && rightProgress > 0.7f);
+            }
+            
+            // D. 🔥 NUEVO: Probabilidad basada en dificultad (más agresivo)
+            // Dificultad alta = usa escudo más frecuentemente como ESTRATEGIA
+            // Máximo 60% de chance si dificultad = 1.0 (antes era 40%)
+            float defensiveChance = settings.difficultyLevel * 0.6f;
+            bool randomDefensive = UnityEngine.Random.value < defensiveChance;
+            
+            // E. 🔥 NUEVO: Si el escudo está disponible, aumentar probabilidad
+            bool shieldReady = settings.useShield && _shieldController != null && _shieldCd <= 0;
+            if (shieldReady)
+            {
+                // Bonus +30% si el escudo está listo
+                randomDefensive = UnityEngine.Random.value < (defensiveChance + 0.3f);
+            }
+            
+            // Decidir si debe defenderse
+            bool shouldDefend = fewAttacksReady || inGlobalCooldown || mostAttacksOnCooldown || randomDefensive;
+            
+            if (shouldDefend)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Considerando DEFENSA - Ataques:{attacksReady}, GlobalCD:{inGlobalCooldown}, MostOnCD:{mostAttacksOnCooldown}, Random:{randomDefensive}, ShieldReady:{shieldReady}");
+            }
+            
+            return shouldDefend;
+        }
+
         private bool HasAnyAttackReady()
         {
             return _leftCd <= 0 || _rightCd <= 0 || _specialCd <= 0;
@@ -589,17 +740,25 @@ namespace Game.NPC
             Vector3 direction = targetPos - origin;
             float distance = direction.magnitude;
             
-            // Raycast para detectar obstáculos
-            if (Physics.Raycast(origin, direction.normalized, out RaycastHit hit, distance, settings.obstacleLayerMask))
+            // ✅ Raycast para detectar obstáculos (usa QueryTriggerInteraction.Ignore para no detectar triggers)
+            if (Physics.Raycast(origin, direction.normalized, out RaycastHit hit, distance, ~0, QueryTriggerInteraction.Ignore))
             {
-                // Hay un obstáculo bloqueando la visión
+                // Verificar si el objeto golpeado ES el jugador
+                if (hit.collider.CompareTag("Player"))
+                {
+                    // Línea de visión clara - golpeó directamente al jugador
+                    Debug.DrawRay(origin, direction, Color.green);
+                    return true;
+                }
+                
+                // ✅ Golpeó otra cosa ANTES que al jugador - visión bloqueada
                 Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Tag: {hit.collider.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
                 return false;
             }
             
-            // Línea de visión clara
-            Debug.DrawRay(origin, direction, Color.green);
+            // No golpeó nada - línea de visión clara (caso raro)
+            Debug.DrawRay(origin, direction, Color.yellow);
             return true;
         }
         
@@ -641,8 +800,7 @@ namespace Game.NPC
         
         /// <summary>
         /// Estado SEARCHING: El NPC ha perdido de vista al jugador y lo busca activamente.
-        /// Reproduce animación de búsqueda y muestra icono de interrogación.
-        /// Comportamiento configurable: búsqueda activa con movimientos O pasiva esperando.
+        /// Muestra icono de interrogación y animación en CADA parada.
         /// </summary>
         IEnumerator State_Searching()
         {
@@ -650,31 +808,47 @@ namespace Game.NPC
             
             StopMove();
             
-            // ✅ Mostrar icono de interrogación sobre la cabeza
-            if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-            {
-                _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-            }
+            // 🔥 CORRECCIÓN: Solo mostrar interrogación si NO estábamos en combate reciente
+            // Si el NPC simplemente se giró y perdió visión momentáneamente, NO mostrar interrogación
+            bool showQuestionMark = !_wasInRecentCombat;
             
-            // Reproducir animación de búsqueda
-            if (_animator != null)
+            if (showQuestionMark)
             {
-                _animator.PlaySearching();
+                // ✅ Mostrar icono de interrogación INICIAL
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
+                // ✅ Reproducir animación de búsqueda INICIAL
+                if (_animator != null)
+                {
+                    _animator.PlaySearching();
+                }
+                
+                // ⏳ ESPERAR A QUE LA ANIMACIÓN DE BÚSQUEDA SE VEA (duración aprox de la animación)
+                yield return new WaitForSeconds(1.5f);
             }
+            else
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Combate reciente detectado ({Time.time - _lastSeenTime:F1}s) - Búsqueda sin interrogación");
+            };
             
             float searchStartTime = Time.time;
-            float nextMovementTime = Time.time + UnityEngine.Random.Range(2f, 4f);
             float searchTimeout = settings.activelySearchForPlayer ? settings.searchDuration : settings.passiveSearchDuration;
             
             Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Modo: {(settings.activelySearchForPlayer ? "BÚSQUEDA ACTIVA" : "BÚSQUEDA PASIVA")} - Duración: {searchTimeout}s");
             
+            int searchAttempts = 0;
+            const int maxSearchAttempts = 5; // Número de veces que buscará en diferentes lugares
+            
             // ✅ BUCLE DE BÚSQUEDA
-            while (Time.time - searchStartTime < searchTimeout)
+            while (Time.time - searchStartTime < searchTimeout && searchAttempts < maxSearchAttempts)
             {
-                // Si recuperamos línea de visión, volver a EVALUATE
+                // Verificar si encontramos al jugador
                 if (_hasLineOfSight)
                 {
-                    Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado! - Mostrando icono de admiración");
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡JUGADOR ENCONTRADO! - Mostrando alerta");
                     
                     // ✅ Ocultar interrogación y mostrar admiración
                     if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
@@ -682,7 +856,7 @@ namespace Game.NPC
                         _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                     }
                     
-                    // Esperar un momento para que se vea el feedback
+                    // Esperar para que se vea el feedback
                     yield return new WaitForSeconds(1.0f);
                     
                     StopMove();
@@ -690,32 +864,35 @@ namespace Game.NPC
                     yield break;
                 }
                 
-                // ✅ BÚSQUEDA ACTIVA: Hacer movimientos
-                if (settings.activelySearchForPlayer && Time.time >= nextMovementTime)
+                // ✅ BÚSQUEDA ACTIVA: Moverse a diferentes puntos
+                if (settings.activelySearchForPlayer)
                 {
-                    // Moverse a un punto aleatorio cerca de la última posición conocida
+                    searchAttempts++;
+                    
+                    // Calcular punto de búsqueda (más cerca en las primeras búsquedas)
+                    float searchRadius = settings.searchMovementRadius * (0.5f + searchAttempts * 0.3f);
                     Vector3 searchPoint = _lastKnownPlayerPosition + 
                                          new Vector3(
-                                             UnityEngine.Random.Range(-settings.searchMovementRadius, settings.searchMovementRadius),
+                                             UnityEngine.Random.Range(-searchRadius, searchRadius),
                                              0,
-                                             UnityEngine.Random.Range(-settings.searchMovementRadius, settings.searchMovementRadius)
+                                             UnityEngine.Random.Range(-searchRadius, searchRadius)
                                          );
                     
                     // Verificar que el punto esté en NavMesh
-                    if (NavMesh.SamplePosition(searchPoint, out NavMeshHit navHit, settings.searchMovementRadius, NavMesh.AllAreas))
+                    if (NavMesh.SamplePosition(searchPoint, out NavMeshHit navHit, searchRadius, NavMesh.AllAreas))
                     {
-                        Debug.Log($"[CombatBrain:{gameObject.name}] 👣 Movimiento de búsqueda hacia: {navHit.position}");
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 👣 Movimiento de búsqueda #{searchAttempts} hacia: {navHit.position}");
                         MoveTo(navHit.position, settings.walkSpeed);
                         
-                        // Esperar a llegar o timeout
-                        float moveTimeout = 3f;
+                        // ✅ DURANTE EL MOVIMIENTO: Verificar constantemente
+                        float moveTimeout = 5f;
                         float moveTimer = 0f;
-                        while (_agent.remainingDistance > 1f && moveTimer < moveTimeout)
+                        while (_agent.pathPending || (_agent.remainingDistance > 1f && moveTimer < moveTimeout))
                         {
-                            // Si encontramos al jugador durante el movimiento, salir
+                            // Si encontramos al jugador durante el movimiento
                             if (_hasLineOfSight)
                             {
-                                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Jugador encontrado durante movimiento");
+                                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado durante movimiento!");
                                 
                                 // Mostrar admiración
                                 if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
@@ -736,21 +913,59 @@ namespace Game.NPC
                         
                         StopMove();
                         
-                        // Reproducir animación de búsqueda de nuevo
-                        if (_animator != null)
+                        // ✅ AL DETENERSE: Mostrar interrogación de nuevo y animación
+                        // 🔥 CORRECCIÓN: Solo si NO es combate reciente
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ❓ Parada de búsqueda #{searchAttempts} - No encontrado");
+                        
+                        if (showQuestionMark)
                         {
-                            _animator.PlaySearching();
+                            if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                            {
+                                _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                            }
+                            
+                            // Reproducir animación de búsqueda
+                            if (_animator != null)
+                            {
+                                _animator.PlaySearching();
+                            }
+                            
+                            // Pausa para la animación y el icono (tiempo realista de "mirar alrededor")
+                            yield return new WaitForSeconds(2.0f);
+                        }
+                        else
+                        {
+                            // En combate reciente: búsqueda más rápida sin animaciones largas
+                            yield return new WaitForSeconds(0.5f);
+                        }
+                        
+                        // Verificar de nuevo si lo encontró mientras miraba alrededor
+                        if (_hasLineOfSight)
+                        {
+                            Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado mientras miraba alrededor!");
+                            
+                            if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                            {
+                                _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                            }
+                            
+                            yield return new WaitForSeconds(1.0f);
+                            
+                            StopMove();
+                            _currentState = CombatState.EVALUATE;
+                            yield break;
                         }
                     }
-                    
-                    nextMovementTime = Time.time + UnityEngine.Random.Range(2f, 4f);
                 }
-                
-                yield return null;
+                else
+                {
+                    // BÚSQUEDA PASIVA: Solo espera y observa
+                    yield return new WaitForSeconds(1.0f);
+                }
             }
             
-            // ✅ TIEMPO DE BÚSQUEDA AGOTADO
-            Debug.Log($"[CombatBrain:{gameObject.name}] ⏱️ Tiempo de búsqueda agotado sin encontrar al jugador");
+            // ✅ BÚSQUEDA AGOTADA - No encontró al jugador después de todos los intentos
+            Debug.Log($"[CombatBrain:{gameObject.name}] 😞 Búsqueda agotada - {searchAttempts} intentos completados sin éxito");
             
             // Ocultar icono de interrogación
             if (_alertIconController != null)
@@ -758,19 +973,20 @@ namespace Game.NPC
                 _alertIconController.HideAlertIcon();
             }
             
+            // ✅ DECISIÓN POST-BÚSQUEDA: ¿Volver al origen o abandonar?
             if (settings.returnToOriginAfterSearch)
             {
-                // Volver a la posición inicial
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🏠 Volviendo al origen: {_combatStartPosition}");
+                // OPCIÓN A: Volver a la posición inicial
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🏠 Volviendo al origen tras búsqueda fallida: {_combatStartPosition}");
                 MoveTo(_combatStartPosition, settings.walkSpeed);
                 
-                // Esperar a llegar
-                while (_agent.remainingDistance > 1.5f)
+                // Esperar a llegar al origen
+                while (_agent.pathPending || _agent.remainingDistance > 1.5f)
                 {
-                    // Si encontramos al jugador mientras volvemos, retomar combate
+                    // Si encuentra al jugador durante el regreso, retomar combate inmediatamente
                     if (_hasLineOfSight)
                     {
-                        Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Jugador encontrado mientras volvía al origen");
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado en el camino de regreso!");
                         
                         if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                         {
@@ -788,10 +1004,16 @@ namespace Game.NPC
                 }
                 
                 StopMove();
+                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Regresó al origen - Saliendo del modo combate");
+            }
+            else
+            {
+                // OPCIÓN B: Abandonar directamente sin volver
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 No vuelve al origen (returnToOriginAfterSearch = false) - Abandonando combate");
             }
             
-            // Salir de combate
-            Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Saliendo de modo combate - Jugador no encontrado");
+            // ✅ ABANDONAR MODO COMBATE
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🏳️ Abandonando modo combate - Jugador no encontrado tras búsqueda exhaustiva");
             StopCombat();
             
             // Notificar al manager que salimos de combate

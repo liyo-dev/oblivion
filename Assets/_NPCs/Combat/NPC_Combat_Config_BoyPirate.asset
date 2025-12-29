@@ -15,10 +15,10 @@ MonoBehaviour:
   moduleName: 
   description: 
   health: 100
-  detectionRange: 10
+  detectionRange: 5
   fieldOfView: 160
-  minAttackDistance: 2
-  maxAttackDistance: 10
+  minAttackDistance: 3
+  maxAttackDistance: 4
   isAggressive: 1
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
@@ -55,7 +55,7 @@ MonoBehaviour:
   useTacticalRetreat: 1
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
-  coverSearchRadius: 15
+  coverSearchRadius: 20
   coverLayerMask:
     serializedVersion: 2
     m_Bits: 1
@@ -63,3 +63,8 @@ MonoBehaviour:
   maxCoverDistance: 15
   coverStayDuration: 4
   preferShieldOverCover: 1
+  activelySearchForPlayer: 1
+  searchDuration: 15
+  passiveSearchDuration: 8
+  searchMovementRadius: 6
+  returnToOriginAfterSearch: 1
