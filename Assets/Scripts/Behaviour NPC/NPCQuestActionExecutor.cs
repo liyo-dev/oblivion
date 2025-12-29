@@ -436,19 +436,22 @@ namespace Game.NPC
                             agent.velocity = Vector3.zero;
                         }
                         
-                        // ✅ FIX: Forzar salida del estado cinemático para evitar que siga procesando
+                        // ✅ FIX: Forzar salida del estado cinemático PRIMERO
                         if (npcManager != null)
                         {
                             npcManager.ForceIdle();
                         }
                         
+                        // ✅ Aplicar posición y rotación DESPUÉS de ForceIdle
                         transform.position = targetPosition;
-                        transform.rotation = targetRotation;
                         
+                        // Calcular la rotación final
+                        Quaternion finalRotation = targetRotation;
                         if (action.turnAroundOnArrival)
                         {
-                            transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                            finalRotation = Quaternion.Euler(0f, targetRotation.eulerAngles.y + 180f, 0f);
                         }
+                        transform.rotation = finalRotation;
                         
                         // ✅ FIX: Re-colocar NavMeshAgent en la nueva posición
                         if (agent != null)
@@ -456,7 +459,20 @@ namespace Game.NPC
                             agent.Warp(targetPosition);
                         }
                         
-                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition} en punto de corte del fade");
+                        // ✅ FIX CRÍTICO: Sincronizar el _targetRotation del NPCSimpleAnimator
+                        // para que no gire hacia una dirección antigua cuando se reactive la auto-rotación
+                        var npcAnimator = GetComponent<NPCSimpleAnimator>();
+                        if (npcAnimator != null)
+                        {
+                            // Desactivar temporalmente y reactivar para forzar sincronización
+                            // EnableAutoRotation() sincroniza _targetRotation con transform.rotation actual
+                            npcAnimator.DisableAutoRotation();
+                            npcAnimator.EnableAutoRotation();
+                            
+                            Debug.Log($"[NPCQuestActionExecutor:{name}] 🔄 Animator sincronizado con rotación: {transform.rotation.eulerAngles}");
+                        }
+                        
+                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition}, rotación: {finalRotation.eulerAngles}");
                         transitionManager.onTransitionCutPointReached -= OnCutPoint;
                     }
 
