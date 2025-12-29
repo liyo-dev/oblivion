@@ -282,6 +282,8 @@ public class MainMenuController : MonoBehaviour
 
     public void OnClickNewGame()
     {
+        Debug.Log("[MainMenu] ========== NUEVA PARTIDA SOLICITADA ==========");
+        
         if (_isLoading || !_inputArmed)
         {
             if (!_inputArmed)
@@ -306,7 +308,9 @@ public class MainMenuController : MonoBehaviour
             
             if (GameBootService.IsAvailable)
             {
+                Debug.Log("[MainMenu] Llamando a GameBootService.NewGameReset()...");
                 GameBootService.NewGameReset();
+                Debug.Log("[MainMenu] GameBootService.NewGameReset() completado");
             }
             else
             {
@@ -319,6 +323,7 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
+        Debug.Log("[MainMenu] Cargando escena de Nueva Partida...");
         LoadNewGameScene();
     }
 

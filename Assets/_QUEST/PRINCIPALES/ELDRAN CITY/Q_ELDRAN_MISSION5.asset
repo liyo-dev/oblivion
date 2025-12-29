@@ -19,11 +19,11 @@ MonoBehaviour:
   description: 
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION5_DESC_01
-    description: 
-    conditionId: 
+    description: Capa de Mago
+    conditionId: QUEST_ELDRAN_MISSION5_STEP_00
   - descriptionId: QUEST_ELDRAN_MISSION5_DESC_02
-    description: 
-    conditionId: 
+    description: "Poci\xF3n de vida"
+    conditionId: QUEST_ELDRAN_MISSION5_STEP_01
   - descriptionId: QUEST_ELDRAN_MISSION5_DESC_03
-    description: 
-    conditionId: 
+    description: Vencer a Erika
+    conditionId: QUEST_ELDRAN_MISSION5_STEP_02

@@ -291,21 +291,23 @@ namespace Game.NPC.Modules
                 
                 if (nearbyAnchor != null)
                 {
-                    // Aplicar orientación del SpawnAnchor
-                    // NOTA: Lógica invertida porque el forward del SpawnAnchor apunta opuesto a la puerta
+                    // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
+                    // hacia donde quieres que mire el personaje POR DEFECTO
                     Quaternion targetRotation;
                     if (nearbyAnchor.faceDoor)
                     {
-                        // Mirar hacia la puerta (usar forward, invertido)
-                        targetRotation = Quaternion.LookRotation(nearbyAnchor.transform.forward, Vector3.up);
+                        // faceDoor = true → Invertir la dirección (mirar al lado contrario)
+                        // Usamos -forward para dar la vuelta 180°
+                        targetRotation = Quaternion.LookRotation(-nearbyAnchor.transform.forward, Vector3.up);
                     }
                     else
                     {
-                        // Mirar de espaldas a la puerta (usar -forward, invertido)
-                        targetRotation = Quaternion.LookRotation(-nearbyAnchor.transform.forward, Vector3.up);
+                        // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
+                        // El NPC mira en la dirección del eje Z del anchor
+                        targetRotation = Quaternion.LookRotation(nearbyAnchor.transform.forward, Vector3.up);
                     }
                     transform.rotation = targetRotation;
-                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' orientado según SpawnAnchor '{nearbyAnchor.anchorId}'");
+                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' orientado según SpawnAnchor '{nearbyAnchor.anchorId}' (faceDoor={nearbyAnchor.faceDoor})");
                 }
                 else
                 {

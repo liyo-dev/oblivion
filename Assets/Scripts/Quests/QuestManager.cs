@@ -119,6 +119,10 @@ public class QuestManager : MonoBehaviour
         if (rq.State == QuestState.Inactive)
         {
             rq.State = QuestState.Active;
+            
+            // Verificar si el jugador ya tiene items requeridos en el inventario
+            CheckExistingItemsForQuest(rq);
+            
             OnQuestStarted?.Invoke(questId);
             OnQuestsChanged?.Invoke();
         }
@@ -155,6 +159,52 @@ public class QuestManager : MonoBehaviour
         }
 
         OnQuestsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Completa un step específico de una quest usando su Condition ID.
+    /// Este es el método recomendado para usar desde nodos narrativos.
+    /// </summary>
+    public void CompleteQuestStepByConditionId(string questId, string stepConditionId)
+    {
+        if (string.IsNullOrEmpty(questId) || string.IsNullOrEmpty(stepConditionId))
+        {
+            Debug.LogWarning($"[QuestManager] CompleteQuestStepByConditionId - questId o stepConditionId vacío");
+            return;
+        }
+
+        if (!_runtime.TryGetValue(questId, out var rq))
+        {
+            Debug.LogWarning($"[QuestManager] CompleteQuestStepByConditionId - Quest '{questId}' no existe en runtime");
+            return;
+        }
+
+        if (rq.Steps == null || rq.Steps.Length == 0)
+        {
+            Debug.LogWarning($"[QuestManager] CompleteQuestStepByConditionId - Quest '{questId}' no tiene steps");
+            return;
+        }
+
+        // Buscar el step por su conditionId
+        int stepIndex = -1;
+        for (int i = 0; i < rq.Steps.Length; i++)
+        {
+            if (rq.Steps[i].conditionId == stepConditionId)
+            {
+                stepIndex = i;
+                break;
+            }
+        }
+
+        if (stepIndex < 0)
+        {
+            Debug.LogWarning($"[QuestManager] CompleteQuestStepByConditionId - No se encontró step con conditionId '{stepConditionId}' en quest '{questId}'");
+            return;
+        }
+
+        // Usar el método existente para completar el step
+        Debug.Log($"[QuestManager] ✅ Completando step '{stepConditionId}' (índice {stepIndex}) en quest '{questId}'");
+        MarkStepDone(questId, stepIndex);
     }
 
     public bool IsStepCompleted(string questId, int stepIndex)
@@ -432,6 +482,191 @@ public class QuestManager : MonoBehaviour
         }
     }
     #endregion
+
+    /// <summary>
+    /// Verifica si el jugador ya tiene items requeridos por la quest en su inventario
+    /// y marca automáticamente los pasos correspondientes como completados.
+    /// </summary>
+    private void CheckExistingItemsForQuest(RuntimeQuest rq)
+    {
+        if (rq == null || rq.Steps == null || rq.Steps.Length == 0)
+            return;
+        
+        Debug.Log($"[QuestManager] 🔍 CheckExistingItemsForQuest para quest '{rq.Id}'");
+        
+        // Obtener el inventario del jugador usando PlayerService
+        if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
+        {
+            Debug.LogWarning($"[QuestManager] ❌ No se pudo obtener Inventory");
+            return;
+        }
+        
+        Debug.Log($"[QuestManager] ✅ Inventory encontrado");
+        
+        // Buscar el QuestChainEntry correspondiente en los NPCs registrados
+        var questEntry = FindQuestChainEntry(rq.Id);
+        
+        if (questEntry == null)
+        {
+            Debug.Log($"[QuestManager] ⚠️ No se encontró QuestChainEntry para '{rq.Id}'");
+            return;
+        }
+        
+        if (questEntry.requiredItems == null || questEntry.requiredItems.Length == 0)
+        {
+            Debug.Log($"[QuestManager] ℹ️ Quest '{rq.Id}' no tiene items requeridos");
+            return;
+        }
+        
+        Debug.Log($"[QuestManager] 📦 Quest tiene {questEntry.requiredItems.Length} items requeridos");
+        
+        // Verificar cada item requerido
+        int stepsCompleted = 0;
+        foreach (var itemReq in questEntry.requiredItems)
+        {
+            if (itemReq.item == null)
+                continue;
+            
+            Debug.Log($"[QuestManager] Verificando item '{itemReq.item.itemId}' (cantidad requerida: {itemReq.amount})");
+            Debug.Log($"[QuestManager]   stepConditionId: '{itemReq.stepConditionId}'");
+            Debug.Log($"[QuestManager]   stepIndex: {itemReq.stepIndex}");
+            
+            // Verificar si el jugador tiene suficientes items en el inventario
+            int count = inventory.Count(itemReq.item.itemId);
+            
+            Debug.Log($"[QuestManager] Jugador tiene {count} de '{itemReq.item.itemId}'");
+            
+            if (count < itemReq.amount)
+            {
+                Debug.Log($"[QuestManager] ❌ Insuficiente (necesita {itemReq.amount})");
+                continue;
+            }
+            
+            Debug.Log($"[QuestManager] ✅ Suficiente! Buscando step asociado...");
+            
+            // Buscar el step correspondiente: primero por stepConditionId, luego por stepIndex
+            int stepIdx = -1;
+            
+            if (!string.IsNullOrEmpty(itemReq.stepConditionId))
+            {
+                Debug.Log($"[QuestManager] Buscando step por conditionId: '{itemReq.stepConditionId}'");
+                
+                // Buscar por conditionId (arquitectura correcta)
+                for (int i = 0; i < rq.Steps.Length; i++)
+                {
+                    Debug.Log($"[QuestManager]   Step[{i}].conditionId = '{rq.Steps[i].conditionId}'");
+                    
+                    if (rq.Steps[i].conditionId == itemReq.stepConditionId)
+                    {
+                        stepIdx = i;
+                        Debug.Log($"[QuestManager] ✅ Match encontrado en step {i}");
+                        break;
+                    }
+                }
+                
+                if (stepIdx < 0)
+                    Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step con conditionId '{itemReq.stepConditionId}'");
+            }
+            else if (itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
+            {
+                // Fallback: usar stepIndex directo
+                stepIdx = itemReq.stepIndex;
+                Debug.Log($"[QuestManager] Usando stepIndex directo: {stepIdx}");
+            }
+            else
+            {
+                Debug.LogWarning($"[QuestManager] ⚠️ Item no tiene stepConditionId ni stepIndex válido");
+            }
+            
+            // Marcar el paso como completado si se encontró y no estaba completado
+            if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
+            {
+                rq.Steps[stepIdx].completed = true;
+                stepsCompleted++;
+                Debug.Log($"[QuestManager] ✅ Step {stepIdx} marcado como completado");
+            }
+            else if (stepIdx >= 0)
+            {
+                Debug.Log($"[QuestManager] ℹ️ Step {stepIdx} ya estaba completado");
+            }
+        }
+        
+        Debug.Log($"[QuestManager] 📊 Total steps completados: {stepsCompleted}");
+        
+        // Notificar cambios y verificar completado total
+        if (stepsCompleted > 0)
+        {
+            OnQuestsChanged?.Invoke();
+            
+            if (AllStepsCompleted(rq))
+            {
+                Debug.Log($"[QuestManager] 🎉 Todos los steps completados! Auto-completando quest.");
+                rq.State = QuestState.Completed;
+                OnQuestCompleted?.Invoke(rq.Id);
+                ArchiveCompletedQuest(rq.Id);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Busca el QuestChainEntry correspondiente a un questId en TODOS los NPCs de la escena.
+    /// </summary>
+    private Game.NPC.Modules.QuestChainEntry FindQuestChainEntry(string questId)
+    {
+        Debug.Log($"[QuestManager] 🔍 FindQuestChainEntry para '{questId}'");
+        
+        // Buscar en TODOS los NPCBehaviourManagerV2 de la escena (arquitectura correcta)
+        var allNpcManagers = FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
+        
+        if (allNpcManagers == null || allNpcManagers.Length == 0)
+        {
+            Debug.LogWarning($"[QuestManager] ❌ No se encontraron NPCBehaviourManagerV2 en la escena");
+            return null;
+        }
+        
+        Debug.Log($"[QuestManager] Encontrados {allNpcManagers.Length} NPCs en la escena");
+        
+        foreach (var npcManager in allNpcManagers)
+        {
+            if (npcManager == null || npcManager.Configuration == null)
+                continue;
+            
+            Debug.Log($"[QuestManager] Revisando NPC '{npcManager.name}'");
+            
+            if (npcManager.Configuration.questConfig == null)
+            {
+                Debug.Log($"[QuestManager]   ℹ️ NPC '{npcManager.name}' no tiene questConfig");
+                continue;
+            }
+            
+            var questConfig = npcManager.Configuration.questConfig;
+            if (questConfig.questChain == null || questConfig.questChain.Length == 0)
+            {
+                Debug.Log($"[QuestManager]   ℹ️ NPC '{npcManager.name}' - questChain vacío");
+                continue;
+            }
+            
+            Debug.Log($"[QuestManager]   NPC '{npcManager.name}' tiene {questConfig.questChain.Length} quests");
+            
+            foreach (var entry in questConfig.questChain)
+            {
+                if (entry.questData == null)
+                    continue;
+                
+                Debug.Log($"[QuestManager]     - Quest: '{entry.questData.questId}'");
+                
+                if (entry.questData.questId == questId)
+                {
+                    Debug.Log($"[QuestManager] ✅ Quest '{questId}' encontrada en NPC '{npcManager.name}'!");
+                    Debug.Log($"[QuestManager]     RequiredItems: {(entry.requiredItems?.Length ?? 0)}");
+                    return entry;
+                }
+            }
+        }
+        
+        Debug.LogWarning($"[QuestManager] ❌ Quest '{questId}' NO encontrada en ningún NPC");
+        return null;
+    }
 
     /// <summary>
     /// Elimina todas las misiones activas y su progreso. Útil para nueva partida.

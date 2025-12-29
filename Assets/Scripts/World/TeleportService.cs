@@ -118,20 +118,22 @@ public class TeleportService : MonoBehaviour
         var pos = anchor.position;
         var rot = anchor.rotation;
         
-        // Si el SpawnAnchor define faceDoor, ajustar rotación
+        // Aplicar orientación según faceDoor
         if (sa != null)
         {
-            // NOTA: La lógica está invertida porque el forward del SpawnAnchor en la escena
-            // apunta en dirección opuesta a la puerta
+            // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
+            // hacia donde quieres que mire el jugador POR DEFECTO
             if (sa.faceDoor)
             {
-                // Mirar hacia la puerta (usar forward, invertido)
-                rot = Quaternion.LookRotation(anchor.forward, Vector3.up);
+                // faceDoor = true → Invertir la dirección (mirar al lado contrario)
+                // Usamos -forward para dar la vuelta 180°
+                rot = Quaternion.LookRotation(-anchor.forward, Vector3.up);
             }
             else
             {
-                // Mirar de espaldas a la puerta (usar -forward, invertido)
-                rot = Quaternion.LookRotation(-anchor.forward, Vector3.up);
+                // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
+                // El jugador mira en la dirección del eje Z del anchor
+                rot = Quaternion.LookRotation(anchor.forward, Vector3.up);
             }
         }
 

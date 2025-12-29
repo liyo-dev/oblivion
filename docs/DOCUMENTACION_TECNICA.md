@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -34,6 +34,7 @@
 5. [Sistema de Input](#5-sistema-de-input)
 6. [Sistema de UI](#6-sistema-de-ui)
 7. [Sistema de Localización](#7-sistema-de-localización)
+   - 7.5 [Sistema de SpawnAnchor y Orientación](#75-sistema-de-spawnanchor-y-orientación)
 8. [Sistema de Guardado](#8-sistema-de-guardado)
 9. [Sistema de Cinemáticas](#9-sistema-de-cinematicas)
 10. [Solución de Problemas Comunes](#10-solución-de-problemas-comunes)
@@ -3081,6 +3082,272 @@ Delivered Message: "¡Caja entregada!"
 💡 **Chain Quests:** Añade varias quests en SimpleQuestNPC
 💡 **Debugging:** Activa "Show Debug Info" en QuestManager
 
+---
+
+## 7.5 Sistema de SpawnAnchor y Orientación
+
+### 7.5.1 Filosofía del Sistema
+
+> **"Coloca el anchor con el eje Z (flecha azul en Unity) apuntando donde quieres que mire el personaje. `faceDoor` solo invierte si lo marcas."**
+
+El sistema de `SpawnAnchor` define **puntos de aparición y orientación** para jugadores y NPCs en cinemáticas y teletransporte.
+
+---
+
+### 7.5.2 Componente SpawnAnchor
+
+**Ubicación:** `Assets/Scripts/World/SpawnAnchor.cs`
+
+```csharp
+public class SpawnAnchor : MonoBehaviour
+{
+    [Tooltip("ID único del anchor (ej: 'House_FrontDoor', 'Town_Plaza')")]
+    public string anchorId;
+    
+    [Tooltip("Por defecto (false): El personaje mira en la dirección del eje Z del anchor (forward azul).\n" +
+             "Si está marcado (true): El personaje mira en dirección OPUESTA al eje Z del anchor (-forward), es decir, da la vuelta 180°.\n\n" +
+             "CONVENCIÓN DE DISEÑO:\n" +
+             "- Coloca el anchor con el eje Z apuntando donde quieres que mire el jugador.\n" +
+             "- Marca faceDoor=true solo si quieres invertir esa dirección.")]
+    public bool faceDoor = false;
+}
+```
+
+---
+
+### 7.5.3 Convención de Diseño en Unity
+
+#### Regla de Oro
+
+| Configuración | Colocación del Anchor | Comportamiento |
+|--------------|----------------------|----------------|
+| **`faceDoor = false`** (por defecto) | Coloca la **flecha azul (eje Z)** apuntando donde quieres que mire el personaje | El personaje mira en dirección del **`forward`** del anchor |
+| **`faceDoor = true`** | Coloca la **flecha azul** apuntando donde quieres que mire el personaje | El personaje mira en dirección **`-forward`** del anchor (180° invertido) |
+
+#### Ejemplo Práctico: Puerta de Casa
+
+**Escenario:** Tienes una casa con una puerta. Quieres dos puntos de spawn:
+- Uno para **entrar** (mirar hacia adentro)
+- Otro para **salir** (mirar hacia afuera)
+
+**Configuración:**
+
+```
+1. Crea SpawnAnchor "House_FrontDoor_Inside"
+   └─ Coloca la flecha azul apuntando HACIA EL INTERIOR de la casa
+   └─ faceDoor = false
+   └─ RESULTADO: Jugador mira HACIA ADENTRO ✅
+
+2. Crea SpawnAnchor "House_FrontDoor_Outside"
+   └─ Coloca la flecha azul apuntando HACIA AFUERA de la casa
+   └─ faceDoor = false
+   └─ RESULTADO: Jugador mira HACIA AFUERA ✅
+```
+
+**Alternativa con faceDoor=true:**
+
+```
+1. Crea un solo SpawnAnchor "House_FrontDoor"
+   └─ Coloca la flecha azul apuntando HACIA EL INTERIOR
+   └─ faceDoor = false → Jugador entra mirando hacia adentro
+   └─ faceDoor = true → Jugador sale mirando hacia afuera (180° invertido)
+```
+
+---
+
+### 7.5.4 Uso en el Código
+
+#### TeleportService
+
+Cuando teletransportas al jugador a un anchor:
+
+```csharp
+// Teletransporte simple
+TeleportService.TeleportToAnchor(player, "House_FrontDoor");
+
+// El sistema automáticamente:
+// 1. Busca el SpawnAnchor con ID "House_FrontDoor"
+// 2. Coloca al jugador en la posición del anchor
+// 3. Aplica la orientación según faceDoor:
+//    - faceDoor = false → rot = Quaternion.LookRotation(anchor.forward)
+//    - faceDoor = true  → rot = Quaternion.LookRotation(-anchor.forward)
+```
+
+**Implementación interna:**
+
+```csharp
+// TeleportService.cs (líneas 118-138)
+if (sa != null)
+{
+    // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
+    // hacia donde quieres que mire el jugador POR DEFECTO
+    if (sa.faceDoor)
+    {
+        // faceDoor = true → Invertir la dirección (mirar al lado contrario)
+        // Usamos -forward para dar la vuelta 180°
+        rot = Quaternion.LookRotation(-anchor.forward, Vector3.up);
+    }
+    else
+    {
+        // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
+        // El jugador mira en la dirección del eje Z del anchor
+        rot = Quaternion.LookRotation(anchor.forward, Vector3.up);
+    }
+}
+```
+
+#### CinematicState (NPCs en Cinemáticas)
+
+Los NPCs también usan la misma lógica cuando se mueven a un anchor en cinemáticas:
+
+```csharp
+// CinematicState.cs - MoveToPositionSequence
+// Al llegar al destino, busca un SpawnAnchor cercano
+SpawnAnchor anchor = FindNearbySpawnAnchor(targetPosition);
+
+if (anchor != null)
+{
+    // Aplica la misma lógica de faceDoor
+    if (anchor.faceDoor)
+    {
+        direction = -anchor.transform.forward; // Invertir
+    }
+    else
+    {
+        direction = anchor.transform.forward; // Directo
+    }
+    
+    context.Transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+}
+```
+
+---
+
+### 7.5.5 Casos de Uso Comunes
+
+#### 1. Puertas y Salidas
+
+```
+📦 House_FrontDoor (SpawnAnchor)
+├─ anchorId: "House_FrontDoor"
+├─ faceDoor: false
+└─ Transform Forward (Z): Apuntando HACIA EL INTERIOR
+
+💡 Uso: TeleportService.TeleportToAnchor(player, "House_FrontDoor")
+✅ Resultado: Jugador aparece mirando hacia adentro (entrando)
+```
+
+#### 2. Puntos de Diálogo (NPCs)
+
+```
+📦 Elder_DialogueSpot (SpawnAnchor)
+├─ anchorId: "Elder_DialogueSpot"
+├─ faceDoor: false
+└─ Transform Forward (Z): Apuntando HACIA EL ELDER
+
+🎬 Cinemática:
+   - NPC camina al anchor
+   - Al llegar, mira hacia donde apunta la flecha (hacia Elder)
+   - Inicia diálogo mirándose de frente
+```
+
+#### 3. Puntos de Spawn Iniciales
+
+```
+📦 Village_Entry (SpawnAnchor)
+├─ anchorId: "Village_Entry"
+├─ faceDoor: false
+└─ Transform Forward (Z): Apuntando HACIA LA PLAZA DEL PUEBLO
+
+🎮 Nueva Partida:
+   - Player spawns en "Village_Entry"
+   - Mira hacia la plaza (orientación natural)
+   - Jugador ve el objetivo inmediatamente
+```
+
+---
+
+### 7.5.6 Debugging y Visualización
+
+#### Gizmos en Scene View
+
+Puedes añadir gizmos visuales para ver la orientación del anchor en la escena:
+
+```csharp
+// SpawnAnchor.cs - Añadir método
+private void OnDrawGizmos()
+{
+    // Dibujar flecha indicando dirección de mirada
+    Gizmos.color = faceDoor ? Color.red : Color.green;
+    Vector3 direction = faceDoor ? -transform.forward : transform.forward;
+    Gizmos.DrawRay(transform.position, direction * 2f);
+    
+    // Dibujar esfera en el punto de spawn
+    Gizmos.color = Color.yellow;
+    Gizmos.DrawWireSphere(transform.position, 0.5f);
+}
+```
+
+**Interpretación:**
+- **Flecha Verde:** `faceDoor = false` → Mira en dirección del forward
+- **Flecha Roja:** `faceDoor = true` → Mira en dirección opuesta (-forward)
+- **Esfera Amarilla:** Punto exacto de spawn
+
+---
+
+### 7.5.7 Archivos Relacionados
+
+| Archivo | Función |
+|---------|---------|
+| **SpawnAnchor.cs** | Componente que define el punto de spawn y orientación |
+| **TeleportService.cs** | Teletransporta al jugador aplicando orientación del anchor |
+| **CinematicState.cs** | Mueve NPCs a anchors en cinemáticas con orientación |
+| **NPCInteractiveNarrativeExecutor.cs** | Orienta NPCs según anchor cercano al cargar narrativa |
+| **SpawnManager.cs** | Gestiona registro y búsqueda de anchors en escena |
+
+---
+
+### 7.5.8 Mejores Prácticas
+
+✅ **DO:**
+- Coloca el anchor con la flecha azul apuntando donde **intuyes** que debe mirar el personaje
+- Usa nombres descriptivos: `House_FrontDoor_Inside`, `Elder_TalkSpot`, `BossArena_Center`
+- Deja `faceDoor = false` por defecto (más intuitivo)
+- Usa `faceDoor = true` solo cuando necesites invertir explícitamente
+
+❌ **DON'T:**
+- NO coloques el anchor rotado aleatoriamente esperando que `faceDoor` lo arregle
+- NO uses `faceDoor` para rotaciones no relacionadas con inversión de 180°
+- NO confíes en rotaciones del Transform sin mirar la flecha azul en la escena
+
+---
+
+### 7.5.9 Troubleshooting
+
+#### Problema: "El jugador aparece mirando hacia el lado contrario"
+
+**Causa:** La flecha azul del anchor apunta en dirección opuesta a la deseada.
+
+**Solución:**
+1. Selecciona el SpawnAnchor en la escena
+2. Mira la **flecha azul (eje Z)** en el Gizmo
+3. Rota el anchor hasta que la flecha apunte donde quieres que mire el jugador
+4. Deja `faceDoor = false`
+
+#### Problema: "Necesito que mire al revés de lo que tengo configurado"
+
+**Solución rápida:** Marca `faceDoor = true` → Invierte 180°
+
+**Solución limpia:** Rota el anchor 180° en el eje Y y deja `faceDoor = false`
+
+#### Problema: "El NPC no se orienta correctamente en la cinemática"
+
+**Causa:** No hay SpawnAnchor cerca del punto de destino.
+
+**Solución:**
+1. Crea un SpawnAnchor en el punto de destino de la cinemática
+2. Orienta la flecha azul según donde debe mirar el NPC
+3. El sistema lo detectará automáticamente (radio de búsqueda: 2 unidades)
 
 ---
 

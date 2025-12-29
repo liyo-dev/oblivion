@@ -24,15 +24,12 @@ MonoBehaviour:
   - rid: 4128268764951085534
   - rid: 5623891259268006347
   - rid: 5623891431555334813
-  - rid: 5623891431555334913
   - rid: 5623891431555335063
-  - rid: 5623891444353466377
   - rid: 5623891444353466616
   - rid: 857239824104947715
   - rid: 857239824104947716
   - rid: 857239824104947819
   - rid: 857239824104947820
-  - rid: 857239908502995421
   - rid: 857240175331508836
   - rid: 857240207539569643
   - rid: 857240207539569644
@@ -95,26 +92,14 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
-        position: {x: 2131, y: 681}
+        position: {x: 2140, y: 681}
         outputs: []
         questId: ELDRAN_MISSION5
-        steps: 00000000
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION5_STEP_02
+        steps: 
         completeQuest: 0
         logWarnings: 1
-    - rid: 857239908502995421
-      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: CUANDO COMPLETAMOS TODOS LOS PASOS DE LA MISION 5
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 1ddb1872-8a05-4cd6-be42-00d94a266d0a
-        position: {x: 2812, y: 797}
-        outputs:
-        - d3b9a67c-d1e3-4672-a3be-46c6fed8e06b
-        questId: ELDRAN_MISSION5
-        debugLogs: 0
     - rid: 857240175331508836
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
@@ -128,6 +113,7 @@ MonoBehaviour:
         outputs:
         - bc692d5b-b0ca-4095-85fc-2380f374f9d3
         questId: ELDRAN_MISSION3
+        stepConditionIds: []
         steps: 
         completeQuest: 1
         logWarnings: 0
@@ -144,7 +130,6 @@ MonoBehaviour:
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
-        - eea578d0-b7c5-4ca9-92f0-0816b720155f
         questId: ELDRAN_MISSION4
         debugLogs: 0
     - rid: 857240207539569644
@@ -304,23 +289,6 @@ MonoBehaviour:
         outputs:
         - 56879a1a-c46a-4bab-a132-eab0b6cbaead
         eventKey: ADD_CLOAK
-    - rid: 5623891431555334913
-      type: {class: WaitForItemAddedNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: VICTORIA NOS DA UNA CAPA DE MAGO
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: eea578d0-b7c5-4ca9-92f0-0816b720155f
-        position: {x: 648, y: 1055}
-        outputs:
-        - 1771837a-5269-4791-81da-c842d6ebac44
-        - acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        itemToWaitFor: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
-        minimumAmount: 1
-        completeIfAlreadyOwned: 1
-        debugLogs: 0
     - rid: 5623891431555335063
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
@@ -330,26 +298,13 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a2f041b9-7d2d-4ebd-9d01-767f08b00e21
-        position: {x: 1540, y: 441}
+        position: {x: 1636, y: 290}
         outputs:
         - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
         questId: ELDRAN_MISSION5
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION5_STEP_00
         steps: 00000000
-        completeQuest: 0
-        logWarnings: 0
-    - rid: 5623891444353466377
-      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: SE COMPLETA EL PASO 2
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: acdb775f-f475-47a8-8a8c-732de6cbd1fb
-        position: {x: 1131, y: 1109}
-        outputs: []
-        questId: ELDRAN_MISSION5
-        steps: 01000000
         completeQuest: 0
         logWarnings: 0
     - rid: 5623891444353466616

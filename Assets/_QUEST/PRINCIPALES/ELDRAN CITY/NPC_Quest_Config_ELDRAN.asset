@@ -22,10 +22,7 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
+    requiredItems: []
     dlgBefore: {fileID: 11400000, guid: b24b280a71cc4204a9ea99d7665d8b1d, type: 2}
     dlgInProgress: {fileID: 0}
     dlgTurnIn: {fileID: 11400000, guid: bb063e1aaebef4842be88c93c3db8609, type: 2}
@@ -66,10 +63,7 @@ MonoBehaviour:
     itemTag: Pickable
     ignoreFovForItem: 1
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
+    requiredItems: []
     dlgBefore: {fileID: 11400000, guid: 74b615978e6874d49b627e67dbba67ce, type: 2}
     dlgInProgress: {fileID: 11400000, guid: 39ef7fd3a6e9f8641acf2cced0f26532, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: ccf34efc36cfcf24caa59ea5fe1817a5, type: 2}
@@ -110,10 +104,7 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
+    requiredItems: []
     dlgBefore: {fileID: 0}
     dlgInProgress: {fileID: 0}
     dlgTurnIn: {fileID: 0}
@@ -154,10 +145,7 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
+    requiredItems: []
     dlgBefore: {fileID: 0}
     dlgInProgress: {fileID: 0}
     dlgTurnIn: {fileID: 0}
@@ -177,7 +165,7 @@ MonoBehaviour:
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
-      targetAnchorName: House_FrontDoor
+      targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
       walkDisplayDuration: 3
@@ -198,10 +186,12 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
+    requiredItems:
+    - item: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
+      amount: 1
+      stepConditionId: QUEST_ELDRAN_MISSION5_STEP_01
+      stepIndex: -1
+      consumeOnComplete: 1
     dlgBefore: {fileID: 11400000, guid: b754cfa357b199d44a1c01b3ee6a09d9, type: 2}
     dlgInProgress: {fileID: 11400000, guid: e279a82b0093ace4494eb4c0b4548bdb, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: a12d8fc59edcd454abec59b19b5b2a02, type: 2}
@@ -221,7 +211,7 @@ MonoBehaviour:
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
-      targetAnchorName: House_FrontDoor
+      targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
       walkDisplayDuration: 3
@@ -242,13 +232,10 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requireItemInInventory: 0
-    requiredItem: {fileID: 0}
-    requiredAmount: 0
-    consumeItemOnComplete: 0
-    dlgBefore: {fileID: 11400000, guid: b754cfa357b199d44a1c01b3ee6a09d9, type: 2}
-    dlgInProgress: {fileID: 11400000, guid: e279a82b0093ace4494eb4c0b4548bdb, type: 2}
-    dlgTurnIn: {fileID: 11400000, guid: a12d8fc59edcd454abec59b19b5b2a02, type: 2}
+    requiredItems: []
+    dlgBefore: {fileID: 11400000, guid: 293470d7c449ca044b1ff07897c92f6a, type: 2}
+    dlgInProgress: {fileID: 11400000, guid: 3d48893bd41908f45befbd4fcc6eaf07, type: 2}
+    dlgTurnIn: {fileID: 0}
     dlgCompleted: {fileID: 0}
     onQuestCompleted:
       m_PersistentCalls:

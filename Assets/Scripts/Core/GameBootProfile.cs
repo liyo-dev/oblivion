@@ -191,6 +191,7 @@ public class GameBootProfile : ScriptableObject
         p.abilities.jump = data.canJump;
         p.abilities.climb = data.canClimb;
         p.abilities.fly = data.canFly;
+        p.abilities.magic = data.canMagic;
     }
 
     /// <summary>Preset activo: siempre runtimePreset (creado desde bootPreset, save o default)</summary>
@@ -248,6 +249,7 @@ public class GameBootProfile : ScriptableObject
             data.canJump = activePreset.abilities.jump;
             data.canClimb = activePreset.abilities.climb;
             data.canFly = activePreset.abilities.fly;
+            data.canMagic = activePreset.abilities.magic;
         }
 
         // === NUEVO: incluir posiciones de NPCs ===
@@ -456,7 +458,8 @@ public class GameBootProfile : ScriptableObject
             p.abilities.jump = actionManager.AllowJump;
             p.abilities.climb = actionManager.AllowClimb;
             p.abilities.fly = actionManager.AllowFly;
-            syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb},F:{actionManager.AllowFly})");
+            p.abilities.magic = actionManager.AllowMagic;
+            syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb},F:{actionManager.AllowFly},M:{actionManager.AllowMagic})");
          }
 
         // Nota: Los dem�s datos (level, abilities, spells, flags) se mantienen del preset actual
@@ -714,22 +717,27 @@ public class GameBootProfile : ScriptableObject
     /// </summary>
     public void NewGameReset(SaveSystem saveSystem = null)
     {
+        Debug.Log("[GameBootProfile] ===== NUEVA PARTIDA - RESETEANDO TODO =====");
+        
         if (saveSystem) saveSystem.Delete();
 
         if (defaultPlayerPreset)
         {
+            Debug.Log($"[GameBootProfile] Copiando desde defaultPlayerPreset: {defaultPlayerPreset.name}");
             EnsureRuntimePresetFromTemplate(defaultPlayerPreset);
-            GameBootProfileDebugger.Log("NewGameReset", $"?? Nueva partida desde defaultPlayerPreset: {defaultPlayerPreset.name}", LogType.Log);
+            GameBootProfileDebugger.Log("NewGameReset", $"✅ Nueva partida desde defaultPlayerPreset: {defaultPlayerPreset.name}", LogType.Log);
         }
         else
         {
+            Debug.LogWarning("[GameBootProfile] No hay defaultPlayerPreset - Creando preset vacío");
             EnsureRuntimePreset();
             ResetPresetToEmpty(runtimePreset);
-            GameBootProfileDebugger.Log("NewGameReset", "?? Nueva partida con preset vac�o (sin defaultPlayerPreset)", LogType.Warning);
+            GameBootProfileDebugger.Log("NewGameReset", "⚠️ Nueva partida con preset vacío (sin defaultPlayerPreset)", LogType.Warning);
         }
 
         // Garantizar que la magia arranca bloqueada en partidas nuevas, incluso si el preset
         // por defecto tuviera valores residuales (por testing o saves previos).
+        Debug.Log("[GameBootProfile] Bloqueando magia para nueva partida");
         LockMagicForNewGame(runtimePreset);
 
         // La apariencia ya se copi� del defaultPlayerPreset en EnsureRuntimePresetFromTemplate

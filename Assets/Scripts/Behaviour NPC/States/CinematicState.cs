@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -384,21 +384,23 @@ namespace Game.NPC.States
             Quaternion targetRotation;
             Vector3 direction;
             
-            // NOTA: La lógica está invertida porque el forward del SpawnAnchor en la escena
-            // apunta en dirección opuesta a la puerta (debido a cómo está configurado el transform)
+            // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
+            // hacia donde quieres que mire el personaje POR DEFECTO
             if (anchor.faceDoor)
             {
-                // Mirar hacia la puerta (USAR forward, invertido)
-                direction = anchor.transform.forward;
+                // faceDoor = true → Invertir la dirección (mirar al lado contrario)
+                // Usamos -forward para dar la vuelta 180°
+                direction = -anchor.transform.forward;
                 targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado HACIA la puerta (faceDoor=true)");
+                context.Log($"[CinematicSequence] Orientado en dirección INVERTIDA (faceDoor=true, usando -forward)");
             }
             else
             {
-                // Mirar de espaldas a la puerta (USAR -forward, invertido)
-                direction = -anchor.transform.forward;
+                // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
+                // El NPC mira en la dirección del eje Z del anchor
+                direction = anchor.transform.forward;
                 targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado DE ESPALDAS a la puerta (faceDoor=false)");
+                context.Log($"[CinematicSequence] Orientado en dirección del anchor (faceDoor=false, usando forward)");
             }
             
             context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': faceDoor={anchor.faceDoor}");

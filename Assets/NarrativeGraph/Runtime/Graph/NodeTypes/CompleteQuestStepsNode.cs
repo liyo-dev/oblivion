@@ -5,16 +5,24 @@ using UnityEngine;
 /// <summary>
 /// Marca uno o varios pasos de una quest como completados y, opcionalmente, cierra la quest.
 /// Útil cuando un NPC otorga una recompensa que también debe avanzar la misión.
+/// Ahora soporta completar steps por Condition ID (recomendado) o por índice.
 /// </summary>
 [Serializable]
 public sealed class CompleteQuestStepsNode : NarrativeNode
 {
+    [Header("Quest")]
     [Tooltip("ID de la quest que se actualizará.")]
     public string questId;
 
-    [Tooltip("Lista de índices de pasos que se marcarán como completados al entrar en el nodo.")]
+    [Header("Completar Steps por Condition ID (Recomendado)")]
+    [Tooltip("Lista de Step Condition IDs que se marcarán como completados. Ej: 'QUEST_ELDRAN_MISSION5_STEP_00'")]
+    public List<string> stepConditionIds = new();
+
+    [Header("Completar Steps por Índice (Legacy)")]
+    [Tooltip("Lista de índices de pasos que se marcarán como completados. Solo se usa si stepConditionIds está vacío.")]
     public List<int> steps = new();
 
+    [Header("Opciones")]
     [Tooltip("Cuando está activo, completará toda la quest tras procesar los pasos.")]
     public bool completeQuest;
 
@@ -33,7 +41,39 @@ public sealed class CompleteQuestStepsNode : NarrativeNode
 
         bool anyAction = false;
         bool warnedNoSteps = false;
-        if (steps != null && steps.Count > 0)
+
+        // Prioridad 1: Completar por Condition ID (arquitectura correcta)
+        if (stepConditionIds != null && stepConditionIds.Count > 0)
+        {
+            var processed = new HashSet<string>();
+            foreach (var conditionId in stepConditionIds)
+            {
+                if (string.IsNullOrWhiteSpace(conditionId))
+                {
+                    if (logWarnings)
+                        Debug.LogWarning($"[CompleteQuestStepsNode] Step Condition ID vacío para quest '{questId}'.");
+                    continue;
+                }
+
+                if (!processed.Add(conditionId))
+                    continue; // evitar repetir llamadas para el mismo ID
+
+                // Usar el Singleton de QuestManager
+                if (QuestManager.Instance != null)
+                {
+                    QuestManager.Instance.CompleteQuestStepByConditionId(questId, conditionId);
+                    anyAction = true;
+                    Debug.Log($"[CompleteQuestStepsNode] ✅ Completando step con conditionId '{conditionId}' en quest '{questId}'");
+                }
+                else
+                {
+                    if (logWarnings)
+                        Debug.LogWarning($"[CompleteQuestStepsNode] QuestManager.Instance es null - No se puede completar step '{conditionId}'");
+                }
+            }
+        }
+        // Prioridad 2: Completar por índice (fallback legacy)
+        else if (steps != null && steps.Count > 0)
         {
             var processed = new HashSet<int>();
             foreach (var stepIndex in steps)
@@ -49,11 +89,12 @@ public sealed class CompleteQuestStepsNode : NarrativeNode
 
                 ctx.Signals?.CompleteQuestStep(questId, stepIndex);
                 anyAction = true;
+                Debug.Log($"[CompleteQuestStepsNode] ✅ Completando step índice {stepIndex} en quest '{questId}'");
             }
         }
         else if (!completeQuest && logWarnings)
         {
-            Debug.LogWarning($"[CompleteQuestStepsNode] No hay pasos configurados para quest '{questId}' y 'completeQuest' está desactivado.");
+            Debug.LogWarning($"[CompleteQuestStepsNode] No hay pasos configurados (ni por conditionId ni por índice) para quest '{questId}' y 'completeQuest' está desactivado.");
             warnedNoSteps = true;
         }
 
@@ -61,6 +102,7 @@ public sealed class CompleteQuestStepsNode : NarrativeNode
         {
             ctx.Signals?.CompleteQuest(questId);
             anyAction = true;
+            Debug.Log($"[CompleteQuestStepsNode] ✅ Completando quest '{questId}'");
         }
         else if (!anyAction && logWarnings && !warnedNoSteps)
         {

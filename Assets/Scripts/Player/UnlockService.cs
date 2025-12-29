@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// Utilidades para modificar el preset activo del jugador (runtimePreset) de forma segura/idempotente.
@@ -73,6 +73,12 @@ public static class UnlockService
                 break;
         }
 
+        // ✅ CRÍTICO: Aplicar cambios al jugador inmediatamente
+        if (changed)
+        {
+            ApplyPresetToPlayer();
+        }
+
         return changed;
     }
 
@@ -132,6 +138,9 @@ public static class UnlockService
         if (changed)
         {
             try { OnAbilityUnlockedKey?.Invoke(key); } catch { }
+            
+            // ✅ CRÍTICO: Aplicar cambios al jugador inmediatamente
+            ApplyPresetToPlayer();
         }
 
         return changed;
@@ -294,6 +303,18 @@ public static class UnlockService
         var preset = GetActivePreset();
         if (!preset || preset.flags == null) return false;
         return preset.flags.Contains(flag);
+    }
+
+    /// Aplica el preset activo al jugador en escena (si existe).
+    /// Esto actualiza ManaPool, hechizos, abilities, etc. inmediatamente.
+    private static void ApplyPresetToPlayer()
+    {
+        // Buscar PlayerPresetService en el jugador activo
+        if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: false, allowSceneLookup: true))
+        {
+            // Aplicar preset completo, incluyendo inventario y abilities
+            presetService.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -62,10 +62,24 @@ namespace Game.NPC.Modules
                     errorMessage = $"Quest {i} tiene autoDetectItemDelivery activado pero itemTag vacío";
                     return false;
                 }
-                if (entry.requireItemInInventory && entry.requiredItem == null)
+                
+                // Validar requiredItems (nuevo sistema)
+                if (entry.requiredItems != null && entry.requiredItems.Length > 0)
                 {
-                    errorMessage = $"Quest {i} requiere ítem pero requiredItem es null";
-                    return false;
+                    for (int j = 0; j < entry.requiredItems.Length; j++)
+                    {
+                        var itemReq = entry.requiredItems[j];
+                        if (itemReq.item == null)
+                        {
+                            errorMessage = $"Quest {i}, item requirement {j}: item es null";
+                            return false;
+                        }
+                        if (string.IsNullOrEmpty(itemReq.stepConditionId))
+                        {
+                            errorMessage = $"Quest {i}, item requirement {j}: stepConditionId vacío (ej: 'ITEM_Potion')";
+                            return false;
+                        }
+                    }
                 }
             }
             if (detectionRadius <= 0f)

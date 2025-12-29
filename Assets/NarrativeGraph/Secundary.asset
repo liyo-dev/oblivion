@@ -14,8 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NarrativeGraph
   startNodeGuid: 434108a8-8f50-407a-b807-74d22ff2a5ac
   nodes:
-  - rid: 5623891252771815603
-  - rid: 5623891252771815604
   - rid: 5623891252771815605
   - rid: 5623891252771815606
   - rid: 5623891259268006325
@@ -23,12 +21,8 @@ MonoBehaviour:
   - rid: 5623891481250759596
   - rid: 5623891500440224033
   - rid: 5623891500440224034
-  - rid: 5623891510977626690
-  - rid: 5623891510977626760
   - rid: 5623891572275806459
   - rid: 5623891572275806460
-  - rid: 5623891572275806493
-  - rid: 5623891572275806494
   - rid: 857239905023820122
   - rid: 857239913217393070
   - rid: 857239913217393071
@@ -77,32 +71,6 @@ MonoBehaviour:
         clip: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
         fadeSeconds: 0.5
         loop: 1
-    - rid: 5623891252771815603
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Misi\xF3n Aprender a Nadar"
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: b637fe58-dba2-46e0-a474-9ce5cea8914e
-        position: {x: 262, y: -214}
-        outputs:
-        - 56ee457b-d855-4e76-a2f1-01a3499c3c2a
-        eventKey: "START_Q_NI\xD1OPEZ"
-    - rid: 5623891252771815604
-      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Mision Ni\xF1o Pez"
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 56ee457b-d855-4e76-a2f1-01a3499c3c2a
-        position: {x: 742, y: -214}
-        outputs:
-        - fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
-        questId: "Q_NI\xD1OPEZ"
     - rid: 5623891252771815605
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -140,14 +108,14 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 434108a8-8f50-407a-b807-74d22ff2a5ac
-        position: {x: -141, y: -119}
+        position: {x: -160, y: -103}
         outputs:
-        - b637fe58-dba2-46e0-a474-9ce5cea8914e
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
-        - 7e4a897f-d8ef-44aa-9eac-568b749bdc50
-        - 6b59ebae-3573-42a0-87fb-a451c65f40d8
         - 00916d88-029c-464d-9308-c5ddc05f2870
         - 8c033cc3-3046-49f4-96bd-373c132e7e61
+        - 00079bce-e03b-4fa9-bf56-051f0f3b427c
+        - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
+        - fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
     - rid: 5623891481250759595
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -157,7 +125,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
-        position: {x: 925, y: 270}
+        position: {x: 262, y: 100}
         outputs:
         - f01dc9e7-de62-484e-8166-01c99735cb97
         questId: Q_RUDOLFO
@@ -171,7 +139,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f01dc9e7-de62-484e-8166-01c99735cb97
-        position: {x: 1369, y: 270}
+        position: {x: 706, y: 100}
         outputs: []
         abilityKeysToUnlock: 01000000
         abilitiesToUnlock: 
@@ -189,7 +157,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
-        position: {x: 1188, y: -214}
+        position: {x: 399, y: -259}
         outputs:
         - 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
         questId: "Q_NI\xD1OPEZ"
@@ -203,7 +171,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
-        position: {x: 1627, y: -214}
+        position: {x: 838, y: -259}
         outputs: []
         abilityKeysToUnlock: 00000000
         abilitiesToUnlock: 
@@ -212,32 +180,6 @@ MonoBehaviour:
         oneShotFlag: 
         applyPresetAfterUnlock: 1
         saveAfterUnlock: 1
-    - rid: 5623891510977626690
-      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Comienzo de la misi\xF3n de SALTO"
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 937c9ea3-582a-45e2-915c-633bd0d307bc
-        position: {x: 528, y: 270}
-        outputs:
-        - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
-        questId: Q_RUDOLFO
-    - rid: 5623891510977626760
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: MISION PARA CONSEGUIR EL SALTO
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 7e4a897f-d8ef-44aa-9eac-568b749bdc50
-        position: {x: 88, y: 270}
-        outputs:
-        - 937c9ea3-582a-45e2-915c-633bd0d307bc
-        eventKey: START_QUEST_RUDOLFO
     - rid: 5623891572275806459
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
@@ -247,7 +189,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 00079bce-e03b-4fa9-bf56-051f0f3b427c
-        position: {x: 218, y: 495}
+        position: {x: -252, y: 495}
         outputs:
         - b3cc61c7-023e-47cc-865a-06c7e4c93ab5
         questId: ROBERTO_MISION1
@@ -261,35 +203,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b3cc61c7-023e-47cc-865a-06c7e4c93ab5
-        position: {x: 687, y: 495}
+        position: {x: 226, y: 495}
         outputs: []
         item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
         amount: 5
         logWarnings: 0
         onlyOnce: 1
-    - rid: 5623891572275806493
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: Esperamos para hablar con Roberto
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 6b59ebae-3573-42a0-87fb-a451c65f40d8
-        position: {x: -478, y: 250}
-        outputs:
-        - 4194f596-6816-443e-a04c-52b4499877a1
-        eventKey: START_ROBERTO_MISION
-    - rid: 5623891572275806494
-      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Empieza la misi\xF3n de Roberto"
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 4194f596-6816-443e-a04c-52b4499877a1
-        position: {x: -229, y: 495}
-        outputs:
-        - 00079bce-e03b-4fa9-bf56-051f0f3b427c
-        questId: ROBERTO_MISION1

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -34,17 +34,8 @@ namespace Game.NPC.Modules
         public float overrideDetectionRadius = 0f;
 
         [Header("Verificación de Inventario")]
-        [Tooltip("Si está activado, verifica que el jugador tenga cierto ítem en el inventario para completar la quest.")]
-        public bool requireItemInInventory = false;
-        
-        [Tooltip("El ítem requerido en el inventario.")]
-        public ItemData requiredItem;
-        
-        [Tooltip("Cantidad del ítem requerida.")]
-        [Min(1)] public int requiredAmount = 1;
-        
-        [Tooltip("Si está activado, consume el ítem del inventario al completar la quest.")]
-        public bool consumeItemOnComplete = true;
+        [Tooltip("Lista de items requeridos en el inventario. Cada item se asocia a un step de la quest.")]
+        public ItemRequirement[] requiredItems = System.Array.Empty<ItemRequirement>();
 
         [Header("Diálogos")]
         [Tooltip("Diálogo antes de aceptar la quest.")]
@@ -148,6 +139,28 @@ namespace Game.NPC.Modules
         [Header("Custom Action")]
         [Tooltip("Evento personalizado (si actionType = Custom)")]
         public UnityEvent customAction;
+    }
+    
+    /// <summary>
+    /// Requisito de item para una quest
+    /// </summary>
+    [Serializable]
+    public class ItemRequirement
+    {
+        [Tooltip("El item requerido")]
+        public ItemData item;
+        
+        [Tooltip("Cantidad requerida")]
+        [Min(1)] public int amount = 1;
+        
+        [Tooltip("ID de la condición del step de la quest (ej: ITEM_Potion)")]
+        public string stepConditionId = "";
+        
+        [Tooltip("Índice del step de la quest que corresponde a este item (-1 = auto-detectar por conditionId)")]
+        public int stepIndex = -1;
+        
+        [Tooltip("Si está activado, consume el ítem del inventario al completar la quest")]
+        public bool consumeOnComplete = true;
     }
 }
 
