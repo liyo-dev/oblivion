@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Collections;
+﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -382,12 +382,14 @@ namespace Game.NPC
             Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 Fase 1: Caminata visible durante {walkTime}s, useTransition={useTransition}");
 
             // Crear secuencia de movimiento para la caminata visible
+            // ✅ Pasar el SpawnAnchor para que aplique la orientación correcta al llegar
             var moveSequence = new MoveToPositionSequence(
                 npcManager,
                 targetPosition,
                 walkTime, // Duración de caminata visible
-                false, // No girar todavía
-                walkTime // Camina durante este tiempo
+                action.turnAroundOnArrival, // Girar solo si no hay anchor
+                walkTime, // Camina durante este tiempo
+                targetAnchor // ✅ Pasar el anchor de destino
             );
 
             npcManager.StartCinematicSequence(moveSequence);
@@ -425,12 +427,33 @@ namespace Game.NPC
                     // Callback para teletransportar al NPC en el punto de corte
                     void OnCutPoint()
                     {
+                        // ✅ FIX: Detener NavMeshAgent ANTES de teleportar para evitar movimiento residual
+                        var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+                        if (agent != null && agent.isOnNavMesh)
+                        {
+                            agent.isStopped = true;
+                            agent.ResetPath();
+                            agent.velocity = Vector3.zero;
+                        }
+                        
+                        // ✅ FIX: Forzar salida del estado cinemático para evitar que siga procesando
+                        if (npcManager != null)
+                        {
+                            npcManager.ForceIdle();
+                        }
+                        
                         transform.position = targetPosition;
                         transform.rotation = targetRotation;
                         
                         if (action.turnAroundOnArrival)
                         {
                             transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+                        }
+                        
+                        // ✅ FIX: Re-colocar NavMeshAgent en la nueva posición
+                        if (agent != null)
+                        {
+                            agent.Warp(targetPosition);
                         }
                         
                         Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition} en punto de corte del fade");

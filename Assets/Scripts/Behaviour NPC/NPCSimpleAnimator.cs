@@ -967,6 +967,10 @@ public class NPCSimpleAnimator : MonoBehaviour
     public void EnableAutoRotation()
     {
         _disableAutoRotation = false;
+        
+        // ✅ FIX: Sincronizar _targetRotation con la rotación actual del transform
+        // Esto evita que al reactivar, el NPC gire hacia una dirección antigua
+        _targetRotation = transform.rotation;
     }
     
     /// <summary>
@@ -1076,6 +1080,10 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         // Apply to animation
         SetMovementSpeed(normalizedSpeed);
+        
+        // ✅ FIX: No actualizar rotación si está deshabilitada (ej: durante/después de cinemáticas)
+        if (_disableAutoRotation)
+            return;
         
         // Update rotation based on velocity
         if (agentSpeed > movementThreshold && navAgent.velocity.sqrMagnitude > 0.01f)

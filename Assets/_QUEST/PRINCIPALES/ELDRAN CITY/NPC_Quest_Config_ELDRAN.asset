@@ -128,7 +128,7 @@ MonoBehaviour:
       targetTransform: {fileID: 0}
       maxMovementDuration: 3
       walkDisplayDuration: 3
-      turnAroundOnArrival: 1
+      turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0

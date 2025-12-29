@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -412,7 +412,15 @@ namespace Game.NPC.States
             context.Log($"[CinematicSequence] Anchor forward: {anchor.transform.forward}");
             context.Log($"[CinematicSequence] Direction applied: {direction}");
             context.Log($"[CinematicSequence] Target rotation (euler): {targetRotation.eulerAngles}");
-            context.Log($"[CinematicSequence] NPC position: {context.Transform.position}");
+            
+            // ✅ NUEVO: Aplicar POSICIÓN exacta del anchor (el NavMesh puede no permitir llegar exactamente)
+            Vector3 targetPosition = anchor.transform.position;
+            float distanceBefore = Vector3.Distance(context.Transform.position, targetPosition);
+            context.Log($"[CinematicSequence] NPC position antes: {context.Transform.position} (distancia al anchor: {distanceBefore:F2}m)");
+            
+            // Colocar al NPC exactamente en la posición del anchor
+            context.Transform.position = targetPosition;
+            context.Log($"[CinematicSequence] NPC position después: {context.Transform.position}");
             
             // ✅ Aplicar rotación directamente
             context.Transform.rotation = targetRotation;
