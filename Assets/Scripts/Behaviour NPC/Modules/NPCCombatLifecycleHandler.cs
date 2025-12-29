@@ -1,7 +1,8 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
+using Game.Player;
 
 namespace Game.NPC.Modules
 {
@@ -238,16 +239,33 @@ namespace Game.NPC.Modules
             }
 
             // ✅ 6. CELEBRACIÓN DEL JUGADOR (mientras el NPC cae)
+            // Llamar directamente al player para que ejecute la victoria
+            if (PlayerService.TryGetPlayer(out GameObject playerGo))
+            {
+                var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
+                if (playerVictory != null)
+                {
+                    Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player");
+                    playerVictory.PlayVictory();
+                    
+                    // Esperar a que termine la animación de victoria (3s) + margen
+                    yield return new WaitForSecondsRealtime(4.0f);
+                    Debug.Log($"[Lifecycle] ✅ Animación de victoria completada - continuando con secuencia");
+                }
+                else
+                {
+                    Debug.LogWarning($"[Lifecycle] ⚠️ PlayerBattleModeController no encontrado en el player");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ No se pudo obtener el player con PlayerService");
+            }
+            
+            // También disparar evento narrativo si está configurado (para audio, etc.)
             if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
             {
                 DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
-                Debug.Log($"[Lifecycle] 🎉 BattleWon lanzado - Esperando a que jugador complete animación de victoria");
-                
-                // ✅ IMPORTANTE: Esperar SUFICIENTE tiempo para que:
-                // 1. La animación de victoria del jugador se reproduzca completa (3s)
-                // 2. El jugador vuelva a idle normal
-                // 3. DESPUÉS iniciar el diálogo (que bloquea al jugador)
-                yield return new WaitForSecondsRealtime(4.0f); // Aumentado de 3.0 a 4.0 para dar margen
             }
 
             // ✅ 7. POST-MUERTE (Desaparecer o continuar con Dizzy)

@@ -52,6 +52,7 @@ namespace Core
     private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
     private static int _uiNavigationScopeCount;
     private static float _ignoreCancelUntil = 0f; // Tiempo hasta el cual ignorar el botón Cancel/B
+    private static float _ignoreJumpUntil = 0f; // Tiempo hasta el cual ignorar el botón Jump/A (después de interactuar)
     
     /// <summary>
     /// Si está activado, reproduce SFX de UI automáticamente en navegación, submit, cancel, etc.
@@ -243,6 +244,15 @@ namespace Core
     public static void IgnoreCancelButton(float duration)
     {
         _ignoreCancelUntil = Time.unscaledTime + duration;
+    }
+    
+    /// <summary>
+    /// Ignora el botón Jump/A durante el tiempo especificado.
+    /// Útil para evitar que el botón que activó una interacción se procese como salto.
+    /// </summary>
+    public static void IgnoreJumpButton(float duration)
+    {
+        _ignoreJumpUntil = Time.unscaledTime + duration;
     }
 
     public static void PlayUISound(string soundKey)
@@ -811,13 +821,18 @@ namespace Core
 
     /// <summary>
     /// Lee si el botón de jump fue presionado este frame.
-    /// Respeta supresión de gameplay.
+    /// Respeta supresión de gameplay y cooldown de interacción.
     /// </summary>
     public static bool JumpPressed
     {
         get
         {
             if (IsGameplaySuppressed())
+                return false;
+            
+            // IMPORTANTE: Ignorar Jump si estamos en el período de cooldown de interacción
+            // Esto evita que el botón A usado para interactuar se procese como salto
+            if (Time.unscaledTime < _ignoreJumpUntil)
                 return false;
 
             if (Controls != null && Controls.GamePlay.Jump.triggered)

@@ -77,6 +77,16 @@ namespace Game.NPC.Modules
         
         [Tooltip("Target opcional del combate (si no se especifica, usa al jugador)")]
         public Transform combatTarget;
+        
+        [Header("Combat - Evento al Derrotar")]
+        [Tooltip("¿Enviar evento al grafo narrativo cuando el NPC sea derrotado en combate?")]
+        public bool sendEventOnDefeat = false;
+        
+        [Tooltip("Clave del evento a enviar cuando el NPC es derrotado (ej: 'Boss_Defeated', 'Enemy_Killed')")]
+        public string defeatEventKey = "";
+        
+        [Tooltip("¿Enviar el evento ANTES de la animación de muerte? (por defecto se envía después de la secuencia de muerte)")]
+        public bool sendDefeatEventBeforeDeath = false;
 
         [Header("Wait")]
         [Tooltip("Tiempo de espera en segundos (si actionType = Wait)")]

@@ -16,16 +16,15 @@ MonoBehaviour:
   description: 
   conditionalNarratives:
   - condition:
-      conditionType: 2
-      targetQuest: {fileID: 11400000, guid: f1a6c08b80e835a41a5afeb745dcf01e, type: 2}
+      conditionType: 1
+      targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
       debugMode: 0
     narrativeChain:
-    - actionType: 4
-      dialogue: {fileID: 0}
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 18bf5dec2b5f0e445abc457ad428753c, type: 2}
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 0
-      walkDisplayDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
       maxPlayerDistance: 0
@@ -36,22 +35,63 @@ MonoBehaviour:
       questToStart: {fileID: 0}
       combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
       combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
       waitDuration: 0
-      customAction:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionStarted:
-        m_PersistentCalls:
-          m_Calls: []
-      onActionCompleted:
-        m_PersistentCalls:
-          m_Calls: []
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
     persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 1
     narrativeEventKey: ERIKA_FIGHT
-    singleUse: 1
+    singleUse: 0
+    priority: 0
+    description: 
+    debugMode: 0
+  - condition:
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 4
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    persistentIconSprite: {fileID: 0}
+    sendNarrativeEvent: 1
+    narrativeEventKey: ERIKA_FIGHT
+    singleUse: 0
     priority: 0
     description: 
     debugMode: 0
@@ -60,6 +100,8 @@ MonoBehaviour:
   persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
   autoStartOnPlayerDetection: 0
   detectionRange: 10
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}

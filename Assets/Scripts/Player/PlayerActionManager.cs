@@ -471,7 +471,12 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     public void SetInteractCooldown()
     {
         _interactCooldownUntil = Time.unscaledTime + INTERACT_COOLDOWN_DURATION;
-        if (debugLogs) Debug.Log($"[PlayerActionManager] Interact cooldown activado por {INTERACT_COOLDOWN_DURATION}s");
+        
+        // IMPORTANTE: También ignorar el botón de salto en GamepadInputReader
+        // para evitar que el botón A se procese como salto después de interactuar
+        Core.GamepadInputReader.IgnoreJumpButton(INTERACT_COOLDOWN_DURATION);
+        
+        if (debugLogs) Debug.Log($"[PlayerActionManager] Interact cooldown activado por {INTERACT_COOLDOWN_DURATION}s (Jump también ignorado)");
     }
     
     public bool CanSwim() => _allowSwim;

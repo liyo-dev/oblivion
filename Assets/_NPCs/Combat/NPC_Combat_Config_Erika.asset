@@ -15,24 +15,32 @@ MonoBehaviour:
   moduleName: 
   description: 
   health: 100
-  attackDamage: 10
-  attackCooldown: 1.5
   detectionRange: 10
+  fieldOfView: 160
   minAttackDistance: 2
   maxAttackDistance: 10
   isAggressive: 1
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   alertIconDuration: 2
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
   dialogueOnAlert: {fileID: 11400000, guid: 854490eab3bc56f469b497cce202cb64, type: 2}
-  dialogueOnDefeat: {fileID: 11400000, guid: 78f49fabca9477c43a5adeedf66786ab, type: 2}
+  dialogueOnDefeat: {fileID: 0}
   dialogueAfterDefeat: {fileID: 11400000, guid: bbce2255e6c942c41b8a5151012a8e08, type: 2}
   waitForAlertDialogue: 1
+  postDeathBehavior: 1
+  dialogueOnDizzy: {fileID: 11400000, guid: 78f49fabca9477c43a5adeedf66786ab, type: 2}
+  disappearVFXPrefab: {fileID: 0}
+  disappearDuration: 2
   alertMusicEvent: Npc_Battle_Alert
   battleMusicId: Npc_Battle
   endMusicEvent: Npc_Battle_Victory
+  sendEventOnDefeat: 0
+  defeatEventKey: 
+  sendDefeatEventBeforeDeath: 0
   spell1Prefab: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
   spell2Prefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
   spell3Prefab: {fileID: 7541299261854152833, guid: 71b502122a0cfe640969b5a2538bcdc1, type: 3}
@@ -58,3 +66,8 @@ MonoBehaviour:
   maxCoverDistance: 15
   coverStayDuration: 4
   preferShieldOverCover: 0
+  activelySearchForPlayer: 1
+  searchDuration: 15
+  passiveSearchDuration: 8
+  searchMovementRadius: 6
+  returnToOriginAfterSearch: 1

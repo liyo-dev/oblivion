@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -116,6 +116,16 @@ namespace Game.NPC.Modules
         
         [Tooltip("Evento custom opcional para restaurar/ajustar la música cuando acaba la batalla.")]
         public string endMusicEvent = "Npc_Battle_Victory";
+        
+        [Header("Eventos al Grafo Narrativo")]
+        [Tooltip("¿Enviar evento al grafo narrativo cuando el NPC sea derrotado?")]
+        public bool sendEventOnDefeat = false;
+        
+        [Tooltip("Clave del evento a enviar cuando el NPC es derrotado (ej: 'Boss_Defeated', 'Enemy_Killed')\nEste evento se puede usar para completar misiones, desbloquear áreas, etc.")]
+        public string defeatEventKey = "";
+        
+        [Tooltip("¿Enviar el evento ANTES de la animación de muerte? (por defecto se envía después de la secuencia completa)")]
+        public bool sendDefeatEventBeforeDeath = false;
         
         [Header("Spells / Attacks (3 Slots)")]
         [Tooltip("Hechizo/ataque básico (slot 1) - Similar a Pokemon, cada NPC puede tener hasta 3 hechizos")]

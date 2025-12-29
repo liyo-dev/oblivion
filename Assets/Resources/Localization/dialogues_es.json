@@ -357,6 +357,10 @@
             "value": "Así se hace."
         },
         {
+            "key": "DLG_GUERRERACHINA_BEFORE",
+            "value": "Bienvenido a la zona de entrenamiento. Solo lo hacemos con magos lo siento."
+        },
+        {
             "key": "DLG_GUERRERACHINA_DEFEAT",
             "value": "Sigue entrenando para ser un gran mago."
         },

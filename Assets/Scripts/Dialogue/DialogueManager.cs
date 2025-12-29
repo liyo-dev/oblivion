@@ -306,6 +306,14 @@ public class DialogueManager : MonoBehaviour
                 }
             }
             
+            // ✅ NUEVO: Reproducir animación de interacción del NPC
+            var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
+            if (npcAnimator != null)
+            {
+                npcAnimator.BeginInteraction();
+                Debug.Log($"[DialogueManager] 🎭 Animación de interacción iniciada para '{_currentNpc.name}'");
+            }
+            
             // Iniciar la corrutina de seguimiento continuo
             _keepLookingRoutine = StartCoroutine(KeepNpcLookingAtPlayer());
         }
@@ -442,6 +450,10 @@ public class DialogueManager : MonoBehaviour
             {
                 // NO reactivar inmediatamente - esperar a que termine MaintainNPCRotationAfterDialogue
                 Debug.Log($"[DialogueManager] ⏳ Rotación automática se reactivará después del período de mantenimiento");
+                
+                // ✅ NUEVO: Finalizar animación de interacción
+                npcAnimator.EndInteraction();
+                Debug.Log($"[DialogueManager] 🎭 Animación de interacción finalizada para '{_currentNpc.name}'");
             }
         }
 
@@ -459,6 +471,11 @@ public class DialogueManager : MonoBehaviour
 
         if (submitHint != null)
             submitHint.SetActive(false);
+        
+        // ✅ IMPORTANTE: Ignorar el botón de salto (A/Submit) después de cerrar el diálogo
+        // para evitar que el mismo botón que cerró el diálogo se procese como salto
+        GamepadInputReader.IgnoreJumpButton(0.3f);
+        Debug.Log($"[DialogueManager] 🚫 Ignorando botón de salto por 0.3s después de cerrar diálogo");
 
         // Seguridad extra: si por algún motivo quedó SavePrompt activo, liberarlo
         if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);

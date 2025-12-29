@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -331,7 +331,7 @@ namespace Game.NPC
 
         private IEnumerator ExecuteMoveAction(QuestPostAction action)
         {
-            if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado - SOLO MUEVE AL NPC");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado - Buscando anchor '{action.targetAnchorName}'");
 
             // Verificar que tenemos un anchor válido
             if (string.IsNullOrEmpty(action.targetAnchorName))
@@ -344,23 +344,33 @@ namespace Game.NPC
             var targetAnchor = SpawnAnchor.FindById(action.targetAnchorName);
             if (targetAnchor == null)
             {
-                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ SpawnAnchor '{action.targetAnchorName}' no encontrado");
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] ❌ SpawnAnchor '{action.targetAnchorName}' NO ENCONTRADO");
+                
+                // Listar todos los anchors disponibles para debugging
+                var allAnchors = Object.FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] 📋 Anchors disponibles: {allAnchors.Length}");
+                foreach (var anchor in allAnchors)
+                {
+                    Debug.LogWarning($"  - ID: '{anchor.anchorId}' en posición {anchor.transform.position}");
+                }
+                
                 yield break;
             }
 
             Vector3 targetPosition = targetAnchor.transform.position;
+            Quaternion targetRotation = targetAnchor.transform.rotation;
             float distance = Vector3.Distance(transform.position, targetPosition);
 
-            if (debugMode)
-            {
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Destino: '{action.targetAnchorName}' en {targetPosition}");
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC actual: {transform.position}, Distancia: {distance:F2}m");
-            }
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Anchor '{action.targetAnchorName}' ENCONTRADO");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Posición actual NPC: {transform.position}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Posición destino: {targetPosition}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Distancia: {distance:F2}m");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Rotación destino: {targetRotation.eulerAngles}");
 
             // Forzar salida de cinemática si el NPC está en ella
             if (npcManager.Context != null && npcManager.Context.IsInCinematic)
             {
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🎬 NPC está en cinemática, forzando a Idle");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🎬 NPC está en cinemática, forzando a Idle");
                 npcManager.ForceIdle();
                 yield return new WaitForSeconds(0.2f);
             }
@@ -369,7 +379,7 @@ namespace Game.NPC
             float walkTime = action.walkDisplayDuration;
             bool useTransition = action.useTransition && action.transitionSettings != null && walkTime < 999f;
 
-            if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 Fase 1: Caminata visible durante {walkTime}s, useTransition={useTransition}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 Fase 1: Caminata visible durante {walkTime}s, useTransition={useTransition}");
 
             // Crear secuencia de movimiento para la caminata visible
             var moveSequence = new MoveToPositionSequence(
@@ -389,7 +399,7 @@ namespace Game.NPC
             while (!moveSequence.IsCompleted && elapsed < timeout)
             {
                 // Log cada 2 segundos
-                if (debugMode && Mathf.FloorToInt(elapsed / 2f) != Mathf.FloorToInt((elapsed + Time.deltaTime) / 2f))
+                if (Mathf.FloorToInt(elapsed / 2f) != Mathf.FloorToInt((elapsed + Time.deltaTime) / 2f))
                 {
                     float remainingDistance = Vector3.Distance(transform.position, targetPosition);
                     Debug.Log($"[NPCQuestActionExecutor:{name}] ⏱️ Caminando: {elapsed:F1}s / {walkTime:F1}s, Distancia: {remainingDistance:F2}m");
@@ -400,12 +410,12 @@ namespace Game.NPC
             }
 
             float finalDistance = Vector3.Distance(transform.position, targetPosition);
-            if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Fase 1 completada en {elapsed:F2}s, Distancia restante: {finalDistance:F2}m");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Fase 1 completada en {elapsed:F2}s, Distancia restante: {finalDistance:F2}m");
 
             // FASE 2: Si no llegó Y hay transición configurada, hacer fade + teleport
             if (finalDistance > 1f && useTransition)
             {
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🎭 Fase 2: Iniciando transición para completar el movimiento");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 🎭 Fase 2: Iniciando transición para completar el movimiento");
 
                 var transitionManager = EasyTransition.TransitionManager.Instance();
                 if (transitionManager != null)
@@ -416,14 +426,14 @@ namespace Game.NPC
                     void OnCutPoint()
                     {
                         transform.position = targetPosition;
-                        transform.rotation = targetAnchor.transform.rotation;
+                        transform.rotation = targetRotation;
                         
                         if (action.turnAroundOnArrival)
                         {
                             transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
                         }
                         
-                        if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition} en punto de corte del fade");
+                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition} en punto de corte del fade");
                         transitionManager.onTransitionCutPointReached -= OnCutPoint;
                     }
 
@@ -448,13 +458,13 @@ namespace Game.NPC
                         elapsed += Time.deltaTime;
                     }
 
-                    if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Transición completada en {elapsed:F2}s");
+                    Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Transición completada en {elapsed:F2}s");
                 }
                 else
                 {
                     Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ TransitionManager no disponible, teletransporte directo");
                     transform.position = targetPosition;
-                    transform.rotation = targetAnchor.transform.rotation;
+                    transform.rotation = targetRotation;
                     
                     if (action.turnAroundOnArrival)
                     {
@@ -465,34 +475,43 @@ namespace Game.NPC
             else if (finalDistance > 1f)
             {
                 // Sin transición pero tampoco llegó, teletransporte directo
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ⚡ Sin transición, teletransporte directo al destino");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ⚡ Sin transición, teletransporte directo al destino");
                 transform.position = targetPosition;
-                transform.rotation = targetAnchor.transform.rotation;
+                transform.rotation = targetRotation;
                 
                 if (action.turnAroundOnArrival)
                 {
                     transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
                 }
+                
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC colocado en: {transform.position}, Rotación: {transform.rotation.eulerAngles}");
             }
             else
             {
                 // Llegó caminando
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC llegó caminando al destino");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC llegó caminando al destino");
+                
+                // Aplicar la rotación del anchor
+                transform.rotation = targetRotation;
                 
                 if (action.turnAroundOnArrival)
                 {
                     transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
                 }
+                
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC en: {transform.position}, Rotación: {transform.rotation.eulerAngles}");
             }
 
-            if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Move completado - NPC en '{action.targetAnchorName}' (pos: {transform.position})");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Move COMPLETADO");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Posición final NPC: {transform.position}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Rotación final NPC: {transform.rotation.eulerAngles}");
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Anchor destino era: '{action.targetAnchorName}' en {targetPosition}");
 
             // Persistir la nueva posición del NPC
             if (npcManager != null && npcManager.persistLastPosition)
             {
                 npcManager.lastPosition = transform.position; // Actualizar lastPosition
-                // npcManager.SaveCurrentPosition(); // Método no existe en V2, se usa lastPosition
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición guardada en runtimePreset");
+                Debug.Log($"[NPCQuestActionExecutor:{name}] 💾 Posición guardada: {npcManager.lastPosition}");
             }
         }
 

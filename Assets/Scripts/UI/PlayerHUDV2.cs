@@ -141,15 +141,23 @@ namespace Sendero.UI
             // Suscribirse a eventos
             SubscribeToEvents();
             
+            // ✅ IMPORTANTE: Suscribirse al evento OnPresetApplied para refrescar cuando se carga partida
+            PlayerPresetService.OnPresetApplied += OnPresetApplied;
+            
             // Actualización inicial
             RefreshHealthBar();
             RefreshManaBar();
             RefreshAllMagicSlots();
+            
+            Debug.Log("[PlayerHUDV2] ✅ Inicializado y suscrito a eventos de preset");
         }
         
         private void OnDestroy()
         {
             UnsubscribeFromEvents();
+            
+            // ✅ Desuscribirse del evento de preset
+            PlayerPresetService.OnPresetApplied -= OnPresetApplied;
             
             // Limpiar todos los tweens
             if (healthFillImage != null) healthFillImage.DOKill();
@@ -192,9 +200,31 @@ namespace Sendero.UI
         
         private void HideAllCooldownOverlays()
         {
-            if (leftCooldownOverlay != null) leftCooldownOverlay.gameObject.SetActive(false);
-            if (rightCooldownOverlay != null) rightCooldownOverlay.gameObject.SetActive(false);
-            if (specialCooldownOverlay != null) specialCooldownOverlay.gameObject.SetActive(false);
+            Debug.Log("[PlayerHUDV2] 🔒 Ocultando todos los overlays de cooldown en inicialización");
+            
+            if (leftCooldownOverlay != null)
+            {
+                leftCooldownOverlay.enabled = false; // Deshabilitar componente Image
+                leftCooldownOverlay.gameObject.SetActive(false);
+                leftCooldownOverlay.fillAmount = 0f;
+                Debug.Log($"[PlayerHUDV2] Left overlay oculto: active={leftCooldownOverlay.gameObject.activeSelf}, enabled={leftCooldownOverlay.enabled}, fill={leftCooldownOverlay.fillAmount}");
+            }
+            
+            if (rightCooldownOverlay != null)
+            {
+                rightCooldownOverlay.enabled = false; // Deshabilitar componente Image
+                rightCooldownOverlay.gameObject.SetActive(false);
+                rightCooldownOverlay.fillAmount = 0f;
+                Debug.Log($"[PlayerHUDV2] Right overlay oculto: active={rightCooldownOverlay.gameObject.activeSelf}, enabled={rightCooldownOverlay.enabled}, fill={rightCooldownOverlay.fillAmount}");
+            }
+            
+            if (specialCooldownOverlay != null)
+            {
+                specialCooldownOverlay.enabled = false; // Deshabilitar componente Image
+                specialCooldownOverlay.gameObject.SetActive(false);
+                specialCooldownOverlay.fillAmount = 0f;
+                Debug.Log($"[PlayerHUDV2] Special overlay oculto: active={specialCooldownOverlay.gameObject.activeSelf}, enabled={specialCooldownOverlay.enabled}, fill={specialCooldownOverlay.fillAmount}");
+            }
             
             if (leftCooldownText != null) leftCooldownText.gameObject.SetActive(false);
             if (rightCooldownText != null) rightCooldownText.gameObject.SetActive(false);
@@ -231,6 +261,24 @@ namespace Sendero.UI
             {
                 _manaPool.OnManaChanged.RemoveListener(OnManaChanged);
             }
+        }
+        
+        /// <summary>
+        /// Callback cuando se aplica el preset (al cargar partida o cambiar preset)
+        /// </summary>
+        private void OnPresetApplied()
+        {
+            Debug.Log("[PlayerHUDV2] 🔄 OnPresetApplied - Refrescando HUD completo tras cargar partida");
+            
+            // Refrescar todo el HUD porque el preset puede haber cambiado:
+            // - Vida máxima
+            // - Maná máximo
+            // - Hechizos equipados
+            RefreshHealthBar();
+            RefreshManaBar();
+            RefreshAllMagicSlots();
+            
+            Debug.Log("[PlayerHUDV2] ✅ HUD refrescado completamente tras aplicar preset");
         }
         
         #endregion
@@ -399,8 +447,17 @@ namespace Sendero.UI
             var slotState = _slotStates[slotType];
             if (slotState.slotImage == null) return;
             
+            Debug.Log($"[PlayerHUDV2] 🔍 RefreshMagicSlot({slotType}) - Iniciando refresh");
+            
+            // ✅ IMPORTANTE: LIMPIAR el estado del slot PRIMERO
+            // Esto evita que slots vacíos mantengan el estado de hechizos anteriores
+            slotState.hasSpell = false;
+            slotState.equippedSprite = null;
+            
             // Obtener el spell equipado en este slot
             MagicSpellSO equippedSpell = _magicCaster.GetSpellForSlot(slotType);
+            
+            Debug.Log($"[PlayerHUDV2] 🔍 Slot {slotType} - equippedSpell={(equippedSpell != null ? equippedSpell.name : "NULL")}");
             
             if (equippedSpell != null && equippedSpell.attackIcon != null)
             {
@@ -414,17 +471,17 @@ namespace Sendero.UI
                 // NUEVO: Overlay siempre visible para slots con hechizo
                 if (slotState.cooldownOverlay != null)
                 {
+                    slotState.cooldownOverlay.enabled = true; // Habilitar componente Image
                     slotState.cooldownOverlay.gameObject.SetActive(true);
                     slotState.cooldownOverlay.fillAmount = 1f; // Empezar lleno (disponible)
+                    Debug.Log($"[PlayerHUDV2] ✅ Slot {slotType} - Overlay ACTIVADO (tiene hechizo) - enabled={slotState.cooldownOverlay.enabled}, active={slotState.cooldownOverlay.gameObject.activeSelf}");
                 }
                 
                 Debug.Log($"[PlayerHUDV2] ✅ Slot {slotType} asignado con hechizo: {equippedSpell.name} (sprite: {equippedSpell.attackIcon.name})");
             }
             else
             {
-                // Slot vacío
-                slotState.hasSpell = false;
-                slotState.equippedSprite = null;
+                // Slot vacío - Ya limpiamos hasSpell y equippedSprite arriba
                 
                 if (emptySlotSprite != null)
                 {
@@ -438,13 +495,21 @@ namespace Sendero.UI
                     slotState.slotImage.enabled = false;
                 }
                 
-                // IMPORTANTE: Ocultar overlay de cooldown para slots vacíos
+                // ✅ CRÍTICO: Ocultar overlay de cooldown para slots vacíos
                 if (slotState.cooldownOverlay != null)
                 {
+                    bool wasActive = slotState.cooldownOverlay.gameObject.activeSelf;
+                    bool wasEnabled = slotState.cooldownOverlay.enabled;
+                    float oldFill = slotState.cooldownOverlay.fillAmount;
+                    
+                    slotState.cooldownOverlay.enabled = false; // Deshabilitar componente Image
                     slotState.cooldownOverlay.gameObject.SetActive(false);
+                    slotState.cooldownOverlay.fillAmount = 0f; // Resetear fillAmount también
+                    
+                    Debug.Log($"[PlayerHUDV2] ⭕ Slot {slotType} vacío - Overlay DESACTIVADO (wasActive={wasActive}, wasEnabled={wasEnabled}, oldFill={oldFill}, nowActive={slotState.cooldownOverlay.gameObject.activeSelf}, nowEnabled={slotState.cooldownOverlay.enabled})");
                 }
                 
-                Debug.Log($"[PlayerHUDV2] ⭕ Slot {slotType} vacío (sin hechizo equipado)");
+                Debug.Log($"[PlayerHUDV2] ⭕ Slot {slotType} vacío (sin hechizo equipado) - hasSpell={slotState.hasSpell}");
             }
         }
         
@@ -465,46 +530,55 @@ namespace Sendero.UI
             // CRÍTICO: No procesar slots vacíos
             if (!slotState.hasSpell)
             {
-                // Asegurar que el overlay esté oculto cada frame
-                if (slotState.cooldownOverlay != null && slotState.cooldownOverlay.gameObject.activeSelf)
+                // ✅ ASEGURAR que el overlay esté completamente oculto cada frame
+                if (slotState.cooldownOverlay != null)
                 {
-                    slotState.cooldownOverlay.gameObject.SetActive(false);
-                    Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} desactivado (slot vacío)");
+                    if (slotState.cooldownOverlay.gameObject.activeSelf || slotState.cooldownOverlay.enabled || slotState.cooldownOverlay.fillAmount > 0f)
+                    {
+                        slotState.cooldownOverlay.enabled = false;
+                        slotState.cooldownOverlay.gameObject.SetActive(false);
+                        slotState.cooldownOverlay.fillAmount = 0f;
+                        Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} FORZADO a desactivar (slot vacío) - fill={slotState.cooldownOverlay.fillAmount}");
+                    }
                 }
                 return;
             }
             
-            // Obtener spell y cooldown del MagicCaster
+            // ✅ DOBLE VERIFICACIÓN: Obtener spell del MagicCaster para confirmar
             MagicSpellSO spell = _magicCaster.GetSpellForSlot(slotType);
             if (spell == null)
             {
-                // Si no hay spell pero hasSpell es true, corregir el estado
+                // Si no hay spell pero hasSpell es true, corregir el estado INMEDIATAMENTE
                 slotState.hasSpell = false;
-                if (slotState.cooldownOverlay != null && slotState.cooldownOverlay.gameObject.activeSelf)
+                if (slotState.cooldownOverlay != null)
                 {
+                    slotState.cooldownOverlay.enabled = false;
                     slotState.cooldownOverlay.gameObject.SetActive(false);
-                    Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} desactivado (spell null)");
+                    slotState.cooldownOverlay.fillAmount = 0f;
+                    Debug.Log($"[PlayerHUDV2] 🔒 Overlay {slotType} desactivado (spell null, corregido hasSpell)");
                 }
                 return;
             }
             
+            // ✅ SOLO SI LLEGAMOS AQUÍ, el slot tiene un hechizo REAL
             float cooldownRemaining = _magicCaster.GetCooldownTime(slotType);
             bool canCast = _magicCaster.CanCastSpell(slotType, spell, out string reason);
             
-            // El overlay SIEMPRE está visible para slots con hechizo
-            if (slotState.cooldownOverlay != null && !slotState.cooldownOverlay.gameObject.activeSelf)
+            // El overlay debe estar visible para slots con hechizo
+            if (slotState.cooldownOverlay != null)
             {
-                slotState.cooldownOverlay.gameObject.SetActive(true);
-                Debug.Log($"[PlayerHUDV2] 👁️ Overlay {slotType} activado (tiene hechizo)");
+                if (!slotState.cooldownOverlay.gameObject.activeSelf)
+                {
+                    slotState.cooldownOverlay.enabled = true;
+                    slotState.cooldownOverlay.gameObject.SetActive(true);
+                    Debug.Log($"[PlayerHUDV2] 👁️ Overlay {slotType} activado (tiene hechizo)");
+                }
             }
             
             // Actualizar visual del slot
             if (cooldownRemaining > 0f)
             {
                 // EN COOLDOWN: El overlay se va RELLENANDO de 0 a 1
-                // fillAmount = tiempo_transcurrido / tiempo_total
-                // = (cooldown_total - tiempo_restante) / cooldown_total
-                // = 1 - (tiempo_restante / cooldown_total)
                 if (slotState.cooldownOverlay != null)
                 {
                     float progress = 1f - Mathf.Clamp01(cooldownRemaining / spell.cooldown);

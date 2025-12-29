@@ -217,6 +217,15 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     public void RaiseBattleWon(object arena)
     {
         var key = arena ?? "__NULL__";
+        
+        // ✅ NUEVO: Disparar PRIMERO a suscriptores globales (clave especial)
+        if (_battleSubscribers.TryGetValue("__GLOBAL__", out var globalAction) && globalAction != null)
+        {
+            Debug.Log($"[Signals] BattleWon GLOBAL disparado para arena: {key}");
+            try { globalAction.Invoke(); } catch (Exception e) { Debug.LogException(e); }
+        }
+        
+        // Luego disparar a suscriptores específicos de esta arena
         if (_battleSubscribers.TryGetValue(key, out var a) && a != null)
         {
             Debug.Log($"[Signals] BattleWon: {key}");
@@ -225,7 +234,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         else
         {
             _battlePending.Add(key);
-            Debug.Log($"[Signals] BattleWon: {key} (sin oyentes → pendiente)");
+            Debug.Log($"[Signals] BattleWon: {key} (sin oyentes específicos → pendiente)");
         }
     }
 }

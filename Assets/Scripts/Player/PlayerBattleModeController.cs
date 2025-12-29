@@ -42,7 +42,7 @@ namespace Game.Player
         
         [Header("Audio")]
         [Tooltip("Clave del evento de audio para victoria (configurado en AudioGraphProfile)")]
-        [SerializeField] private string victorySfxKey = "Player_Victory";
+        [SerializeField] private string victorySfxKey = "Npc_Battle_Victory";
         
         [Header("Debug")]
         [SerializeField] private bool debugMode;
@@ -83,29 +83,22 @@ namespace Game.Player
         
         void OnEnable()
         {
-            // Suscribirse al evento de victoria de batalla
-            if (DefaultNarrativeSignals.Instance != null)
-            {
-                DefaultNarrativeSignals.Instance.OnBattleWon("*", OnBattleVictory);
-            }
+            // Ya no nos suscribimos a eventos narrativos
+            // El NPCCombatLifecycleHandler llamará directamente a PlayVictory()
         }
         
         void OnDisable()
         {
-            // Desuscribirse del evento
-            if (DefaultNarrativeSignals.Instance != null)
-            {
-                DefaultNarrativeSignals.Instance.OffBattleWon("*", OnBattleVictory);
-            }
+            // Nada que limpiar
         }
         
         /// <summary>
-        /// Callback cuando se gana una batalla
+        /// Método público para que el NPC llame cuando el player gana
         /// </summary>
-        void OnBattleVictory()
+        public void PlayVictory()
         {
             if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🎯 OnBattleVictory() LLAMADO - _isInBattleMode: {_isInBattleMode}, _isPlayingVictory: {_isPlayingVictory}");
+                Debug.Log($"[PlayerBattleMode] 🎯 PlayVictory() LLAMADO - _isPlayingVictory: {_isPlayingVictory}");
             
             if (_isPlayingVictory)
             {
@@ -114,9 +107,6 @@ namespace Game.Player
                 return;
             }
             
-            // ✅ CAMBIO: Reproducir victoria SIEMPRE que se llame el evento
-            // No depender de _isInBattleMode porque el NPC sale de combate al morir
-            // y el player puede dejar de detectar enemigos antes de recibir el evento
             StartCoroutine(PlayVictorySequence());
         }
         
@@ -149,6 +139,17 @@ namespace Game.Player
                 // Detectar transición de movimiento a idle
                 if (isMoving)
                 {
+                    // ✅ IMPORTANTE: Cuando el player se mueve, asegurar que salga de Battle Idle
+                    // y permita que Invector controle las animaciones de locomoción
+                    if (_wasMovingLastFrame == false)
+                    {
+                        // Acaba de EMPEZAR a moverse - liberar el Animator
+                        ReleaseFromBattleIdle();
+                        
+                        if (debugMode)
+                            Debug.Log($"[PlayerBattleMode] 🏃 Jugador empezó a moverse - liberando Animator para locomoción");
+                    }
+                    
                     _timeSinceStoppedMoving = 0f;
                     _wasMovingLastFrame = true;
                 }
@@ -268,7 +269,9 @@ namespace Game.Player
                     // Verificar si el estado existe antes de intentar cambiar
                     if (animator.HasState(0, _battleIdleHash))
                     {
-                        animator.CrossFadeInFixedTime(_battleIdleHash, 0.2f, 0);
+                        // ✅ IMPORTANTE: Usar CrossFade con tiempo corto para permitir override rápido
+                        // Si el player empieza a moverse, Invector podrá interrumpir esta transición
+                        animator.CrossFade(_battleIdleHash, 0.15f, 0);
                         
                         if (debugMode)
                             Debug.Log($"[PlayerBattleMode] ✅ Cambiado a Battle Idle desde Idle normal");
@@ -281,9 +284,31 @@ namespace Game.Player
                 else if (debugMode)
                 {
                     // No está en Idle normal, esperar
-                    string currentStateName = currentState.IsName(normalIdleStateName) ? normalIdleStateName : "Otro";
+                    string currentStateName = "Locomoción u Otro";
                     Debug.Log($"[PlayerBattleMode] ⏳ Esperando a Idle normal (actual: {currentStateName})");
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Libera el Animator de Battle Idle para permitir que Invector controle la locomoción
+        /// </summary>
+        void ReleaseFromBattleIdle()
+        {
+            if (!_isInBattleMode) return;
+            
+            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Si estamos en Battle Idle, NO hacer nada especial
+            // Invector automáticamente hará la transición a Walk/Run basándose en InputMagnitude
+            // Solo necesitamos NO forzar más el Battle Idle mientras se mueve
+            
+            // Opcional: Puedes forzar una transición a un estado base de locomoción si Invector no responde
+            // animator.CrossFade("Locomotion", 0.1f, 0);
+            
+            if (debugMode && currentState.shortNameHash == _battleIdleHash)
+            {
+                Debug.Log($"[PlayerBattleMode] 🔓 Liberando de Battle Idle - Invector tomará control");
             }
         }
         
