@@ -33,6 +33,8 @@ MonoBehaviour:
   - rid: 857240175331508836
   - rid: 857240207539569643
   - rid: 857240207539569644
+  - rid: 857240411820786340
+  - rid: 857240411820786341
   applicableSceneNames:
   - MainWorld
   references:
@@ -60,7 +62,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f5443754-fa40-4852-8b3d-c33d22d23958
-        position: {x: 1131, y: 681}
+        position: {x: 1039, y: 844}
         outputs:
         - c9ca7493-60c5-44db-ae66-9b0e232343e3
         abilityKeysToUnlock: 
@@ -79,7 +81,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c9ca7493-60c5-44db-ae66-9b0e232343e3
-        position: {x: 1612, y: 681}
+        position: {x: 1540, y: 844}
         outputs:
         - e1be0c12-dbf5-4e8f-9eca-ba9561f56010
         eventKey: ERIKA_BATTLE_WON
@@ -92,7 +94,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: e1be0c12-dbf5-4e8f-9eca-ba9561f56010
-        position: {x: 2140, y: 681}
+        position: {x: 2004, y: 844}
         outputs: []
         questId: ELDRAN_MISSION5
         stepConditionIds:
@@ -130,6 +132,7 @@ MonoBehaviour:
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
+        - 2caf285b-fdb8-4361-8176-192475b9c678
         questId: ELDRAN_MISSION4
         debugLogs: 0
     - rid: 857240207539569644
@@ -145,6 +148,32 @@ MonoBehaviour:
         outputs:
         - 10559b15-8995-40fa-bb17-eb2f5dd42b6d
         questId: ELDRAN_MISSION4
+    - rid: 857240411820786340
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SE COMPLETA LA MISION 5
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2caf285b-fdb8-4361-8176-192475b9c678
+        position: {x: 343, y: 1158}
+        outputs:
+        - 4010d494-e518-45bb-9852-29a412777758
+        questId: ELDRAN_MISSION5
+        debugLogs: 0
+    - rid: 857240411820786341
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'HAY QUE HABLAR CON ELDRAN '
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4010d494-e518-45bb-9852-29a412777758
+        position: {x: 946, y: 1399}
+        outputs: []
+        questId: ELDRAN_MISSION5_2
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

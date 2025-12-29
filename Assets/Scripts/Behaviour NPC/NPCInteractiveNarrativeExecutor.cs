@@ -214,10 +214,17 @@ namespace Game.NPC.Modules
             Vector3 targetPos = GetTargetPosition(entry);
             if (targetPos == Vector3.zero) yield break;
 
+            // ✅ Obtener el SpawnAnchor de destino si existe
+            SpawnAnchor targetAnchor = null;
+            if (!string.IsNullOrEmpty(entry.targetAnchorName))
+            {
+                targetAnchor = SpawnAnchor.FindById(entry.targetAnchorName);
+            }
+
             if (entry.waitForPlayer)
             {
                 // Lógica compleja de seguimiento (Player Follow)
-                yield return ExecuteMoveWithPlayerFollow(entry, targetPos);
+                yield return ExecuteMoveWithPlayerFollow(entry, targetPos, targetAnchor);
             }
             else
             {
@@ -227,7 +234,8 @@ namespace Game.NPC.Modules
                     targetPos, 
                     entry.maxMovementDuration, 
                     entry.turnAroundOnArrival, 
-                    999f // Walk duration infinita (sin teleport)
+                    999f, // Walk duration infinita (sin teleport)
+                    targetAnchor // ✅ Pasar el anchor de destino
                 );
                 
                 _npcManager.StartCinematicSequence(moveSeq);
@@ -236,7 +244,7 @@ namespace Game.NPC.Modules
             }
         }
 
-        private IEnumerator ExecuteMoveWithPlayerFollow(NarrativeChainEntry entry, Vector3 targetPos)
+        private IEnumerator ExecuteMoveWithPlayerFollow(NarrativeChainEntry entry, Vector3 targetPos, SpawnAnchor targetAnchor)
         {
             // Nota: Esta lógica se mantiene similar a la original porque es específica de tu juego
             // pero limpiamos las referencias.
@@ -283,38 +291,33 @@ namespace Game.NPC.Modules
             agent.isStopped = true;
             _npcManager.SimpleAnimator?.ResetMovement();
             
-            // ✅ FIX: Respetar SpawnAnchor en lugar de siempre girar 180°
-            if (entry.turnAroundOnArrival)
+            // ✅ MEJORA: Siempre aplicar orientación del SpawnAnchor si existe (independiente de turnAroundOnArrival)
+            // El flag turnAroundOnArrival solo controla el fallback de giro 180° cuando NO hay anchor
+            SpawnAnchor anchor = targetAnchor ?? FindNearbySpawnAnchor(targetPos);
+            
+            if (anchor != null)
             {
-                // Buscar SpawnAnchor cercano
-                SpawnAnchor nearbyAnchor = FindNearbySpawnAnchor(targetPos);
-                
-                if (nearbyAnchor != null)
+                // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
+                // hacia donde quieres que mire el personaje POR DEFECTO
+                Quaternion targetRotation;
+                if (anchor.faceDoor)
                 {
-                    // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
-                    // hacia donde quieres que mire el personaje POR DEFECTO
-                    Quaternion targetRotation;
-                    if (nearbyAnchor.faceDoor)
-                    {
-                        // faceDoor = true → Invertir la dirección (mirar al lado contrario)
-                        // Usamos -forward para dar la vuelta 180°
-                        targetRotation = Quaternion.LookRotation(-nearbyAnchor.transform.forward, Vector3.up);
-                    }
-                    else
-                    {
-                        // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
-                        // El NPC mira en la dirección del eje Z del anchor
-                        targetRotation = Quaternion.LookRotation(nearbyAnchor.transform.forward, Vector3.up);
-                    }
-                    transform.rotation = targetRotation;
-                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' orientado según SpawnAnchor '{nearbyAnchor.anchorId}' (faceDoor={nearbyAnchor.faceDoor})");
+                    // faceDoor = true → Invertir la dirección (mirar al lado contrario)
+                    targetRotation = Quaternion.LookRotation(-anchor.transform.forward, Vector3.up);
                 }
                 else
                 {
-                    // Fallback: girar 180° si no hay SpawnAnchor
-                    transform.rotation *= Quaternion.Euler(0, 180, 0);
-                    Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' girado 180° (sin SpawnAnchor cercano)");
+                    // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
+                    targetRotation = Quaternion.LookRotation(anchor.transform.forward, Vector3.up);
                 }
+                transform.rotation = targetRotation;
+                Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' orientado según SpawnAnchor '{anchor.anchorId}' (faceDoor={anchor.faceDoor})");
+            }
+            else if (entry.turnAroundOnArrival)
+            {
+                // Fallback: girar 180° si no hay SpawnAnchor Y está activada la opción
+                transform.rotation *= Quaternion.Euler(0, 180, 0);
+                Debug.Log($"[NPCInteractiveNarrativeExecutor] NPC '{gameObject.name}' girado 180° (sin SpawnAnchor cercano)");
             }
         }
         

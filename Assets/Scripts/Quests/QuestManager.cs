@@ -21,6 +21,10 @@ public class QuestManager : MonoBehaviour
     // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
     private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
 
+    // ✅ NUEVO: Referencia al inventario para detectar items añadidos
+    private Inventory _cachedInventory;
+    private bool _isSubscribedToInventory;
+
     // Eventos públicos para UI/lógica externa
     public event Action<string> OnQuestStarted;
     public event Action<string> OnQuestCompleted;
@@ -35,6 +39,30 @@ public class QuestManager : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+    
+    void Start()
+    {
+        // Intentar suscribirse al inventario
+        TrySubscribeToInventory();
+    }
+    
+    void OnEnable()
+    {
+        // Suscribirse cuando el player se registre
+        PlayerService.OnPlayerRegistered += OnPlayerRegistered;
+    }
+    
+    void OnDisable()
+    {
+        PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
+        UnsubscribeFromInventory();
+    }
+    
+    private void OnPlayerRegistered(GameObject player)
+    {
+        // Re-intentar suscripción cuando el player está disponible
+        TrySubscribeToInventory();
     }
     #endregion
 
@@ -679,4 +707,117 @@ public class QuestManager : MonoBehaviour
         _followed.Clear();
         OnQuestsChanged?.Invoke();
     }
+    
+    #region Inventory Item Detection
+    
+    /// <summary>
+    /// Intenta suscribirse al evento OnItemAdded del inventario del jugador.
+    /// Se llama automáticamente cuando el jugador está disponible.
+    /// </summary>
+    private void TrySubscribeToInventory()
+    {
+        if (_isSubscribedToInventory) return;
+        
+        if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
+        {
+            // El inventario no está disponible todavía, se intentará más tarde
+            return;
+        }
+        
+        _cachedInventory = inventory;
+        _cachedInventory.OnItemAdded += OnInventoryItemAdded;
+        _isSubscribedToInventory = true;
+        Debug.Log("[QuestManager] ✅ Suscrito a Inventory.OnItemAdded para detectar items de quests");
+    }
+    
+    /// <summary>
+    /// Desuscribirse del inventario al deshabilitarse
+    /// </summary>
+    private void UnsubscribeFromInventory()
+    {
+        if (!_isSubscribedToInventory || _cachedInventory == null) return;
+        
+        _cachedInventory.OnItemAdded -= OnInventoryItemAdded;
+        _isSubscribedToInventory = false;
+        _cachedInventory = null;
+        Debug.Log("[QuestManager] Desuscrito de Inventory.OnItemAdded");
+    }
+    
+    /// <summary>
+    /// Callback cuando se añade un item al inventario.
+    /// Verifica si alguna quest activa requiere ese item.
+    /// </summary>
+    private void OnInventoryItemAdded(ItemData item, int addedAmount, int newTotal)
+    {
+        if (item == null) return;
+        
+        // Solo procesar si hay quests activas
+        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
+        if (activeQuests.Count == 0) return;
+        
+        Debug.Log($"[QuestManager] 📦 Item '{item.itemId}' añadido al inventario (cantidad: {addedAmount}, total: {newTotal})");
+        Debug.Log($"[QuestManager] Verificando {activeQuests.Count} quests activas...");
+        
+        foreach (var rq in activeQuests)
+        {
+            CheckItemForQuest(rq, item, newTotal);
+        }
+    }
+    
+    /// <summary>
+    /// Verifica si un item específico cumple algún requisito de una quest.
+    /// </summary>
+    private void CheckItemForQuest(RuntimeQuest rq, ItemData item, int currentCount)
+    {
+        // Buscar el QuestChainEntry para obtener los requiredItems
+        var questEntry = FindQuestChainEntry(rq.Id);
+        if (questEntry == null || questEntry.requiredItems == null || questEntry.requiredItems.Length == 0)
+            return;
+        
+        foreach (var itemReq in questEntry.requiredItems)
+        {
+            if (itemReq.item == null) continue;
+            if (itemReq.item.itemId != item.itemId) continue;
+            
+            // Este item es requerido por esta quest
+            Debug.Log($"[QuestManager] 🎯 Item '{item.itemId}' es requerido por quest '{rq.Id}'");
+            
+            // Verificar si tenemos suficientes
+            if (currentCount < itemReq.amount)
+            {
+                Debug.Log($"[QuestManager] ⏳ Aún faltan items ({currentCount}/{itemReq.amount})");
+                continue;
+            }
+            
+            Debug.Log($"[QuestManager] ✅ Requisito cumplido ({currentCount}/{itemReq.amount})");
+            
+            // Buscar el step correspondiente
+            int stepIdx = -1;
+            
+            if (!string.IsNullOrEmpty(itemReq.stepConditionId))
+            {
+                for (int i = 0; i < rq.Steps.Length; i++)
+                {
+                    if (rq.Steps[i].conditionId == itemReq.stepConditionId)
+                    {
+                        stepIdx = i;
+                        break;
+                    }
+                }
+            }
+            else if (itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
+            {
+                stepIdx = itemReq.stepIndex;
+            }
+            
+            // Completar el paso si se encontró y no estaba completado
+            if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
+            {
+                Debug.Log($"[QuestManager] 🎉 Completando step {stepIdx} de quest '{rq.Id}' por item '{item.itemId}'");
+                MarkStepDone(rq.Id, stepIdx);
+            }
+        }
+    }
+    
+    #endregion
 }

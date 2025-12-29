@@ -330,6 +330,9 @@ public class PlayerPresetService : MonoBehaviour
         }
         if (_manaPool != null)
         {
+            // Log del estado actual del preset ANTES de cualquier modificación
+            Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Preset inicial: maxMP={preset.maxMP}, currentMP={preset.currentMP}, abilities.magic={preset.abilities?.magic}");
+            
             // Si el preset NO tiene la ability de magia, no queremos mostrar una barra de maná llena.
             if (preset.abilities != null && !preset.abilities.magic)
             {
@@ -342,6 +345,8 @@ public class PlayerPresetService : MonoBehaviour
             // de los hechizos asignados o desbloqueados para evitar que el jugador tenga 0 MP y no pueda lanzar.
             float maxMP = Mathf.Max(0f, preset.maxMP);
             float currentMP = Mathf.Clamp(preset.currentMP, 0f, maxMP > 0f ? maxMP : float.MaxValue);
+            
+            Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Valores calculados: maxMP={maxMP}, currentMP={currentMP}");
 
             if (maxMP <= 0f)
             {
@@ -396,6 +401,7 @@ public class PlayerPresetService : MonoBehaviour
              }
 
              _manaPool.Init(maxMP, currentMP);
+             Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - ManaPool.Init({maxMP}, {currentMP}) llamado. ManaPool ahora: {_manaPool.Max}/{_manaPool.Current}");
          }
          else
          {

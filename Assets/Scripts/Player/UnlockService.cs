@@ -50,22 +50,18 @@ public static class UnlockService
                     changed = true;
                 }
 
-                // Asegurar que exista una reserva mínima de maná para que la barra se regenere.
+                // Asegurar que exista una reserva mínima de maná y RELLENAR AL 100%
                 const float minMagicMaxMp = 50f;
                 float desiredMax = Mathf.Max(preset.maxMP, minMagicMaxMp);
-                if (!Mathf.Approximately(preset.maxMP, desiredMax))
+                // Al desbloquear magia, SIEMPRE rellenar al máximo
+                float desiredCurrent = desiredMax;
+                
+                if (!Mathf.Approximately(preset.maxMP, desiredMax) || !Mathf.Approximately(preset.currentMP, desiredCurrent))
                 {
                     preset.maxMP = desiredMax;
-                    changed = true;
-                }
-
-                // Al desbloquear magia por primera vez, inicializar currentMP al máximo
-                // Si currentMP es 0 (sin magia previa), llenarlo completamente
-                float desiredCurrent = preset.currentMP <= 0f ? preset.maxMP : Mathf.Clamp(preset.currentMP, 0f, preset.maxMP);
-                if (!Mathf.Approximately(preset.currentMP, desiredCurrent))
-                {
                     preset.currentMP = desiredCurrent;
                     changed = true;
+                    Debug.Log($"[UnlockService] MagicAttack desbloqueado: Maná seteado a {desiredCurrent}/{desiredMax} (100%)");
                 }
 
                 // Propagar por el sistema un unlock de la habilidad "Magic" (AbilityKey)
@@ -121,8 +117,21 @@ public static class UnlockService
                     preset.abilities.magic = true;
                     changed = true;
                 }
-                // Asegurar valores mínimos de maná para que la magia sea utilizable.
-                changed |= EnsureMana(minMax: 50f, minCurrent: 50f);
+                // Asegurar valores mínimos de maná y RELLENAR AL 100% al desbloquear magia
+                {
+                    const float minMagicMaxMp = 50f;
+                    float newMax = Mathf.Max(preset.maxMP, minMagicMaxMp);
+                    // Al desbloquear magia, SIEMPRE rellenar al máximo
+                    float newCurrent = newMax;
+                    
+                    if (!Mathf.Approximately(preset.maxMP, newMax) || !Mathf.Approximately(preset.currentMP, newCurrent))
+                    {
+                        preset.maxMP = newMax;
+                        preset.currentMP = newCurrent;
+                        changed = true;
+                        Debug.Log($"[UnlockService] Magic desbloqueada: Maná seteado a {newCurrent}/{newMax} (100%)");
+                    }
+                }
                 break;
             case AbilityKey.Fly:
                 if (!preset.abilities.fly)
@@ -281,6 +290,7 @@ public static class UnlockService
         float oldCur = preset.currentMP;
         preset.maxMP = Mathf.Max(preset.maxMP, minMax);
         preset.currentMP = Mathf.Clamp(Mathf.Max(preset.currentMP, minCurrent), 0f, preset.maxMP);
+        Debug.Log($"[UnlockService] EnsureMana(minMax={minMax}, minCurrent={minCurrent}) - Antes: {oldMax}/{oldCur} -> Después: {preset.maxMP}/{preset.currentMP}");
         return !Mathf.Approximately(oldMax, preset.maxMP) || !Mathf.Approximately(oldCur, preset.currentMP);
     }
 

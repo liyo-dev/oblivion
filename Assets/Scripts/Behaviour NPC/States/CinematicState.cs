@@ -157,6 +157,7 @@ namespace Game.NPC.States
         private readonly bool _turnAroundOnArrival;
         private readonly float _walkDisplayDuration;
         private readonly MonoBehaviour _owner;
+        private readonly SpawnAnchor _targetAnchor; // ✅ Anchor de destino explícito (opcional)
         
         private float _timer;
         private bool _hasSetDestination;
@@ -182,14 +183,16 @@ namespace Game.NPC.States
         /// <param name="maxDuration">Duración máxima antes de timeout (default: 15s)</param>
         /// <param name="turnAroundOnArrival">¿Girar 180° al llegar? (solo si no hay SpawnAnchor)</param>
         /// <param name="walkDisplayDuration">Tiempo caminando antes de hacer fade (default: 999s = sin fade)</param>
+        /// <param name="targetAnchor">SpawnAnchor de destino (opcional, si se conoce). Evita búsqueda.</param>
         public MoveToPositionSequence(MonoBehaviour owner, Vector3 targetPosition, float maxDuration = 15f, 
-            bool turnAroundOnArrival = false, float walkDisplayDuration = 999f)
+            bool turnAroundOnArrival = false, float walkDisplayDuration = 999f, SpawnAnchor targetAnchor = null)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _targetPosition = targetPosition;
             _maxDuration = maxDuration;
             _turnAroundOnArrival = turnAroundOnArrival;
             _walkDisplayDuration = walkDisplayDuration;
+            _targetAnchor = targetAnchor;
         }
         
         #endregion
@@ -364,10 +367,12 @@ namespace Game.NPC.States
                 context.Animator.ResetMovement();
             }
             
-            SpawnAnchor anchor = FindNearbySpawnAnchor(_targetPosition);
+            // ✅ MEJORA: Usar el anchor explícito si está disponible, si no buscar cercano
+            SpawnAnchor anchor = _targetAnchor ?? FindNearbySpawnAnchor(_targetPosition);
             
             if (anchor != null)
             {
+                context.Log($"[CinematicSequence] Usando SpawnAnchor '{anchor.anchorId}' para orientación");
                 ApplySpawnAnchorOrientation(context, anchor);
             }
             else if (_turnAroundOnArrival)

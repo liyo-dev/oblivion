@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -246,6 +246,13 @@ namespace Game.NPC.Modules
                 _manager.Context.IsInCombat = false;
                 _manager.Context.WasDefeatedInCombat = true;
             }
+            
+            // ✅ NUEVO: Enviar evento de derrota ANTES de la muerte si está configurado así
+            if (_config != null && _config.sendEventOnDefeat && _config.sendDefeatEventBeforeDeath && !string.IsNullOrEmpty(_config.defeatEventKey))
+            {
+                Debug.Log($"[Lifecycle] 📤 Enviando evento de derrota ANTES de muerte: '{_config.defeatEventKey}'");
+                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey);
+            }
 
             // 2. VFX inicial
             if (deathVFXPrefab) Instantiate(deathVFXPrefab, transform.position + deathVFXOffset, Quaternion.identity);
@@ -300,6 +307,13 @@ namespace Game.NPC.Modules
             if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
             {
                 DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
+            }
+            
+            // ✅ Enviar evento de derrota al grafo narrativo DESPUÉS de la muerte (solo si no se envió antes)
+            if (_config != null && _config.sendEventOnDefeat && !_config.sendDefeatEventBeforeDeath && !string.IsNullOrEmpty(_config.defeatEventKey))
+            {
+                Debug.Log($"[Lifecycle] 📤 Enviando evento de derrota al grafo narrativo: '{_config.defeatEventKey}'");
+                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey);
             }
 
             // ✅ 7. POST-MUERTE (Desaparecer o continuar con Dizzy)
