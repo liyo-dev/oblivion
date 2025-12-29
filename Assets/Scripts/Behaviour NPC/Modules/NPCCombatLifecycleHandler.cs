@@ -235,8 +235,13 @@ namespace Game.NPC.Modules
             if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
             {
                 DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
-                // Esperar a que el jugador termine de celebrar (mientras el NPC cae)
-                yield return new WaitForSecondsRealtime(3.0f);
+                Debug.Log($"[Lifecycle] 🎉 BattleWon lanzado - Esperando a que jugador complete animación de victoria");
+                
+                // ✅ IMPORTANTE: Esperar SUFICIENTE tiempo para que:
+                // 1. La animación de victoria del jugador se reproduzca completa (3s)
+                // 2. El jugador vuelva a idle normal
+                // 3. DESPUÉS iniciar el diálogo (que bloquea al jugador)
+                yield return new WaitForSecondsRealtime(4.0f); // Aumentado de 3.0 a 4.0 para dar margen
             }
 
             // ✅ 7. POST-MUERTE (Desaparecer o continuar con Dizzy)
@@ -300,6 +305,7 @@ namespace Game.NPC.Modules
             DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
             if (dialogue != null)
             {
+                Debug.Log($"[Lifecycle] 💬 Iniciando diálogo post-derrota (la victoria del jugador ya debería haber terminado)");
                 bool finished = false;
                 DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
                 

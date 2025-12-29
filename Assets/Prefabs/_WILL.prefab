@@ -12483,7 +12483,9 @@ MonoBehaviour:
   healthRegenPerSecond: 3
   healthRegenDelayAfterDamage: 2
   healthRegenNotifyEpsilon: 0.01
-  damageAnimationName: TakeDamage
+  damageAnimationNames:
+  - TakeDamage
+  - TakeDamage_2
   deathAnimationName: Die02_NoWeapon
   healAnimationName: Heal
   upperBodyLayer: 1
@@ -12813,7 +12815,7 @@ MonoBehaviour:
   playerRigidbody: {fileID: 6059246465518525408}
   battleIdleStateName: Idle_Battle_NoWeapon
   normalIdleStateName: Idle_Normal_NoWeapon
-  victoryStateName: Dance_NoWeapon
+  victoryStateName: Npc_Battle_Victory
   enemyDetectionRadius: 15
   enemyLayer:
     serializedVersion: 2

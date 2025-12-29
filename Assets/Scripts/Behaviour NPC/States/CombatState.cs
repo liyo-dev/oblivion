@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -91,7 +91,7 @@ namespace Game.NPC.States
                 };
 
                 // ¡ARRANCAR LA FSM DE COMBATE!
-                _combatBrain.BeginCombat(brainSettings);
+                _combatBrain.BeginCombat(brainSettings, cc);
                 context.Log("[CombatState] ✅ Brain activado con configuración exitosa.");
             }
             else

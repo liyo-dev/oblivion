@@ -104,13 +104,20 @@ namespace Game.Player
         /// </summary>
         void OnBattleVictory()
         {
-            if (_isPlayingVictory) return;
+            if (debugMode)
+                Debug.Log($"[PlayerBattleMode] 🎯 OnBattleVictory() LLAMADO - _isInBattleMode: {_isInBattleMode}, _isPlayingVictory: {_isPlayingVictory}");
             
-            // Solo reproducir victoria si el jugador está en batalla
-            if (_isInBattleMode)
+            if (_isPlayingVictory)
             {
-                StartCoroutine(PlayVictorySequence());
+                if (debugMode)
+                    Debug.Log($"[PlayerBattleMode] ⚠️ Victoria ya en reproducción - ignorando");
+                return;
             }
+            
+            // ✅ CAMBIO: Reproducir victoria SIEMPRE que se llame el evento
+            // No depender de _isInBattleMode porque el NPC sale de combate al morir
+            // y el player puede dejar de detectar enemigos antes de recibir el evento
+            StartCoroutine(PlayVictorySequence());
         }
         
         void Update()
@@ -287,56 +294,76 @@ namespace Game.Player
         {
             _isPlayingVictory = true;
             
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🎉 Iniciando animación de victoria");
+            Debug.Log($"[PlayerBattleMode] 🎉 ✅ INICIANDO ANIMACIÓN DE VICTORIA");
             
             // Deshabilitar control del jugador temporalmente usando campos públicos de Invector
             if (controller != null)
             {
                 controller.enabled = false; // Deshabilitar completamente el controlador
+                Debug.Log($"[PlayerBattleMode] 🎮 Controlador del jugador deshabilitado");
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ Controller es NULL - no se puede deshabilitar");
             }
             
             // Reproducir animación de victoria
-            if (animator.HasState(0, _victoryHash))
+            if (animator != null)
             {
-                animator.CrossFadeInFixedTime(_victoryHash, 0.2f, 0);
-                
-                if (debugMode)
-                    Debug.Log($"[PlayerBattleMode] 🎬 Reproduciendo animación de victoria");
+                if (animator.HasState(0, _victoryHash))
+                {
+                    animator.CrossFadeInFixedTime(_victoryHash, 0.2f, 0);
+                    Debug.Log($"[PlayerBattleMode] 🎬 ✅ Reproduciendo animación de victoria: {victoryStateName}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{victoryStateName}' NO encontrado en Animator");
+                }
             }
-            else if (debugMode)
+            else
             {
-                Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{victoryStateName}' no encontrado en Animator");
+                Debug.LogError($"[PlayerBattleMode] ❌ Animator es NULL");
             }
             
             // Reproducir SFX de victoria usando el sistema de audio centralizado
-            if (!string.IsNullOrEmpty(victorySfxKey) && AudioService.Instance != null)
+            if (!string.IsNullOrEmpty(victorySfxKey))
             {
-                AudioService.Instance.PlaySFX(victorySfxKey, volume: 1f);
-                
-                if (debugMode)
-                    Debug.Log($"[PlayerBattleMode] 🎵 Reproduciendo SFX de victoria: {victorySfxKey}");
+                if (AudioService.Instance != null)
+                {
+                    AudioService.Instance.PlaySFX(victorySfxKey, volume: 1f);
+                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo SFX de victoria: {victorySfxKey}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir SFX");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ victorySfxKey está vacío - no se reproduce audio");
             }
             
             // Esperar duración de la animación
+            Debug.Log($"[PlayerBattleMode] ⏱️ Esperando {victoryAnimationDuration}s (duración de animación de victoria)");
             yield return new WaitForSeconds(victoryAnimationDuration);
             
             // Re-habilitar control del jugador
             if (controller != null)
             {
                 controller.enabled = true; // Re-habilitar completamente el controlador
+                Debug.Log($"[PlayerBattleMode] 🎮 Controlador del jugador re-habilitado");
             }
             
             // Volver a idle normal
-            if (animator.HasState(0, _normalIdleHash))
+            if (animator != null && animator.HasState(0, _normalIdleHash))
             {
                 animator.CrossFadeInFixedTime(_normalIdleHash, 0.3f, 0);
+                Debug.Log($"[PlayerBattleMode] 🔄 Volviendo a Idle Normal: {normalIdleStateName}");
             }
             
             _isPlayingVictory = false;
             
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] ✅ Secuencia de victoria completada");
+            Debug.Log($"[PlayerBattleMode] ✅ Secuencia de victoria COMPLETADA");
         }
         
         /// <summary>

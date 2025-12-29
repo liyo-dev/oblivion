@@ -1,10 +1,11 @@
-﻿﻿﻿using System.Collections;
+﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 
 namespace Game.NPC.Common
 {
     /// <summary>
-    /// Controla el icono de alerta visual sobre la cabeza del NPC.
+    /// Controla los iconos visuales sobre la cabeza del NPC.
+    /// Los prefabs se configuran en NPCCombatConfig y se pasan como parámetros.
     /// Solo usa prefabs reutilizables - La forma más limpia y profesional.
     /// </summary>
     public class NPCAlertIconController : MonoBehaviour
@@ -49,6 +50,54 @@ namespace Game.NPC.Common
             
             float useDuration = duration > 0f ? duration : iconDuration;
             _iconRoutine = StartCoroutine(ShowIconRoutine(iconPrefab, useDuration));
+        }
+        
+        /// <summary>
+        /// Muestra el icono de alerta (❗) - Detectó al jugador
+        /// </summary>
+        public void ShowAlert(GameObject alertPrefab, float duration = -1f)
+        {
+            if (alertPrefab != null)
+            {
+                Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de alerta");
+                ShowAlertIcon(alertPrefab, duration);
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCAlertIcon:{name}] ⚠️ alertPrefab no proporcionado");
+            }
+        }
+        
+        /// <summary>
+        /// Muestra el icono de interrogación (❓) - Buscando al jugador
+        /// </summary>
+        public void ShowQuestion(GameObject questionPrefab, float duration = -1f)
+        {
+            if (questionPrefab != null)
+            {
+                Debug.Log($"[NPCAlertIcon:{name}] ❓ Mostrando icono de interrogación (buscando)");
+                ShowAlertIcon(questionPrefab, duration);
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCAlertIcon:{name}] ⚠️ questionPrefab no proporcionado");
+            }
+        }
+        
+        /// <summary>
+        /// Muestra el icono de admiración (❗) - ¡Encontró al jugador!
+        /// </summary>
+        public void ShowExclamation(GameObject exclamationPrefab, float duration = -1f)
+        {
+            if (exclamationPrefab != null)
+            {
+                Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de admiración (¡encontrado!)");
+                ShowAlertIcon(exclamationPrefab, duration);
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCAlertIcon:{name}] ⚠️ exclamationPrefab no proporcionado");
+            }
         }
         
         /// <summary>

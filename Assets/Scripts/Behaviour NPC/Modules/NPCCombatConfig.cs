@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -65,6 +65,12 @@ namespace Game.NPC.Modules
         [Header("Alert Visual")]
         [Tooltip("Prefab del icono de alerta (exclamación, etc.) que aparece al detectar al jugador")]
         public GameObject alertIconPrefab;
+        
+        [Tooltip("Prefab del icono de interrogación (❓) que aparece cuando el NPC está buscando al jugador")]
+        public GameObject questionIconPrefab;
+        
+        [Tooltip("Prefab del icono de admiración (❗) que aparece cuando el NPC encuentra al jugador")]
+        public GameObject exclamationIconPrefab;
         
         [Tooltip("Duración del icono de alerta en segundos")]
         [Min(0.1f)]

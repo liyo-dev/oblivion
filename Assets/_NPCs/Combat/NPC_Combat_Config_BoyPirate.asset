@@ -16,12 +16,15 @@ MonoBehaviour:
   description: 
   health: 100
   detectionRange: 10
+  fieldOfView: 160
   minAttackDistance: 2
   maxAttackDistance: 10
   isAggressive: 1
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   alertIconDuration: 2
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
   dialogueOnAlert: {fileID: 11400000, guid: 40ad844cb33491f43a9c99e4e09d95cb, type: 2}

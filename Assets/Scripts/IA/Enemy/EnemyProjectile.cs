@@ -23,32 +23,30 @@ public class EnemyProjectile : MonoBehaviour
 
     void Awake()
     {
-        // Configurar el collider automáticamente
+        // ✅ Configurar el collider para colisiones FÍSICAS (no trigger)
+        // Esto permite detectar obstáculos Default correctamente
         var col = GetComponent<SphereCollider>();
         if (col)
         {
-            col.isTrigger = true;
+            col.isTrigger = false; // ← Cambio CRÍTICO: Usar colisiones físicas
             col.radius = 0.5f;
         }
 
-        // Configurar el rigidbody para movimiento suave
+        // Configurar el rigidbody para movimiento suave CON colisiones físicas
         rb = GetComponent<Rigidbody>();
         if (rb)
         {
             rb.useGravity = false;
-            rb.interpolation = RigidbodyInterpolation.Interpolate; // IMPORTANTE para movimiento suave
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // Mejor detección
             
-            if (usePhysicsMovement)
-            {
-                rb.isKinematic = false;
-                rb.linearDamping = 0f; // Sin fricción
-                rb.angularDamping = 0f;
-            }
-            else
-            {
-                rb.isKinematic = true;
-            }
+            // ✅ SIEMPRE usar física no-kinematic para detectar colisiones
+            rb.isKinematic = false;
+            rb.linearDamping = 0f; // Sin fricción
+            rb.angularDamping = 0f;
+            
+            // ✅ Congelar rotación para que no gire al colisionar
+            rb.freezeRotation = true;
         }
     }
 
@@ -59,10 +57,10 @@ public class EnemyProjectile : MonoBehaviour
         damage = dmg > 0f ? dmg : baseDamage;
         initialized = true;
         
-        Debug.Log($"[DemonProjectile] Inicializado con {damage} de daño");
+        Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño");
         
-        // Si usa física, aplicar velocidad inicial
-        if (usePhysicsMovement && rb)
+        // ✅ Aplicar velocidad inicial usando física
+        if (rb)
         {
             rb.linearVelocity = direction * speed;
         }
@@ -93,51 +91,39 @@ public class EnemyProjectile : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Usar FixedUpdate para movimiento de física (más suave)
+        // ✅ Usar SOLO física para movimiento (detección de colisiones garantizada)
         if (!initialized || hasHit) return;
         
-        if (usePhysicsMovement && rb)
+        // Mantener la velocidad constante
+        if (rb)
         {
-            // Mantener la velocidad constante (sin gravedad ni fricción lo afectan)
             rb.linearVelocity = direction * speed;
-        }
-        else
-        {
-            // Movimiento manual en FixedUpdate (más suave que Update)
-            transform.position += direction * speed * Time.fixedDeltaTime;
         }
     }
 
-    void OnTriggerEnter(Collider other)
+    // ✅ OnCollisionEnter: Para colisiones FÍSICAS (obstáculos Default, jugador)
+    void OnCollisionEnter(Collision collision)
     {
-        if (hasHit) return; // Evitar múltiples hits
+        if (hasHit) return;
         
-        // Ignorar al propio demonio y sus triggers primero
+        Collider other = collision.collider;
+        
+        // Ignorar enemigos
         if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
         {
             return;
         }
         
-        // ✅ PRIORIDAD 1: Detectar colisión con proyectiles del jugador (layer "Projectile")
-        if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
-        {
-            hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador detectada!");
-            Vector3 collisionPoint = other.ClosestPoint(transform.position);
-            ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, collisionPoint);
-            return; // El handler se encarga de destruir ambos proyectiles
-        }
-        
-        // ✅ PRIORIDAD 2: Detectar colisión con layer Default (entorno/obstáculos)
+        // ✅ PRIORIDAD 1: Detectar colisión con layer Default (entorno/obstáculos)
         if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Impacto contra objeto Default: {other.gameObject.name} (Layer: Default)");
+            Debug.Log($"[EnemyProjectile] 💥 Impacto FÍSICO contra objeto Default: {other.gameObject.name}");
             DestroyProjectile();
             return;
         }
         
-        // ✅ PRIORIDAD 3: Si impacta contra el escudo del jugador
+        // ✅ PRIORIDAD 2: Si impacta contra el escudo del jugador
         if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
         {
             hasHit = true;
@@ -146,9 +132,9 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        // ✅ PRIORIDAD 4: Aplicar daño si es el jugador (buscar en el objeto o en su padre)
+        // ✅ PRIORIDAD 3: Aplicar daño si es el jugador
         Transform checkTransform = other.transform;
-        for (int i = 0; i < 3; i++) // Revisar hasta 3 niveles de jerarquía
+        for (int i = 0; i < 3; i++)
         {
             if (checkTransform.CompareTag("Player"))
             {
@@ -164,7 +150,6 @@ public class EnemyProjectile : MonoBehaviour
                 break;
         }
 
-        // Si no encontró el tag, intentar buscar el componente directamente
         var playerHealth = other.GetComponentInParent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
@@ -175,12 +160,31 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        // ✅ ÚLTIMO: Si colisionó con algo sólido que no es el jugador, destruir
-        if (!other.isTrigger)
+        // ✅ Cualquier otra colisión física
+        hasHit = true;
+        Debug.Log($"[EnemyProjectile] 💥 Impacto contra: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
+        DestroyProjectile();
+    }
+
+    // ✅ OnTriggerEnter: Solo para proyectiles del jugador (que usan triggers)
+    void OnTriggerEnter(Collider other)
+    {
+        if (hasHit) return;
+        
+        // Ignorar enemigos
+        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
+        {
+            return;
+        }
+        
+        // ✅ SOLO para colisión con proyectiles del jugador (layer "Projectile")
+        if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Impacto contra collider sólido: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
-            DestroyProjectile();
+            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador detectada!");
+            Vector3 collisionPoint = other.ClosestPoint(transform.position);
+            ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, collisionPoint);
+            return;
         }
     }
 
