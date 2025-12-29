@@ -66,6 +66,12 @@ namespace Game.NPC
             public bool activelySearchForPlayer; // ¿Busca activamente o se rinde?
             [Tooltip("Si está desactivado 'activelySearchForPlayer', cuánto tiempo espera antes de abandonar")]
             public float passiveSearchDuration; // Tiempo esperando antes de abandonar (si no busca activamente)
+            
+            [Header("Tactical Deception")]
+            [Tooltip("Probabilidad de fingir quedarse sin magia para atraer al player (0 = nunca, 1 = siempre). Basado en dificultad")]
+            [Range(0f, 1f)] public float deceptionChance; // Chance de usar estrategia de engaño
+            [Tooltip("Mínimo de ataques que debe conservar cuando finge (ej: 1 = guarda al menos 1 ataque)")]
+            [Range(1, 3)] public int minAttacksToKeepForAmbush; // Ataques que reserva para emboscada
         }
         #endregion
 
@@ -81,11 +87,20 @@ namespace Game.NPC
         NPCShieldController _shieldController;
         NPCAlertIconController _alertIconController; // Sistema de iconos visuales (usa prefabs)
         // FSM State
-        public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE, SEARCHING }
+        public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE, SEARCHING, HIDING_TO_RECHARGE }
         [SerializeField, ReadOnly] private CombatState _currentState; // Visible debug
 
         // Cooldowns
         float _leftCd, _rightCd, _specialCd, _shieldCd, _globalCd;
+        
+        // Control de transiciones de estado para evitar nerviosismo
+        private float _lastStateChangeTime;
+        private const float MIN_STATE_DURATION = 1.5f; // Mínimo 1.5s en cada estado antes de cambiar
+        private CombatState _previousState;
+        
+        // 🎭 ESTRATEGIA DE ENGAÑO
+        private bool _isUsingDeceptionStrategy; // ¿Está fingiendo quedarse sin magia?
+        private int _attacksReservedForAmbush; // Número de ataques que guarda para emboscada
         
         // Line of Sight & Searching
         bool _hasLineOfSight;
@@ -167,39 +182,75 @@ namespace Game.NPC
         }
         
         /// <summary>
-        /// Llamado cuando el NPC recibe daño. Si está buscando, activa alerta inmediata.
+        /// Llamado cuando el NPC recibe daño. Si está buscando o huyendo, activa alerta inmediata.
         /// </summary>
         public void OnTakeDamage(Vector3 damageSourcePosition)
         {
             if (!_isActive) return;
             
-            // Si está en modo SEARCHING (buscando al jugador) y recibe daño
-            if (_currentState == CombatState.SEARCHING)
+            // Actualizar última posición conocida del player
+            _lastKnownPlayerPosition = damageSourcePosition;
+            _lastSeenTime = Time.time;
+            
+            // Calcular si fue atacado por la espalda
+            Vector3 directionToDamage = (damageSourcePosition - transform.position).normalized;
+            directionToDamage.y = 0;
+            
+            Vector3 forward = transform.forward;
+            forward.y = 0;
+            float angle = Vector3.Angle(forward, directionToDamage);
+            bool attackedFromBehind = angle > 90f; // Más de 90 grados = espalda
+            
+            // Si está en estados vulnerables, reaccionar inmediatamente
+            if (_currentState == CombatState.SEARCHING || 
+                _currentState == CombatState.HIDING_TO_RECHARGE ||
+                _currentState == CombatState.REPOSITION)
             {
-                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡ATACADO POR LA ESPALDA! - Alertando inmediatamente");
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡ATACADO{(attackedFromBehind ? " POR LA ESPALDA" : "")}! Estado: {_currentState}");
                 
-                // Actualizar última posición conocida
-                _lastKnownPlayerPosition = damageSourcePosition;
-                _lastSeenTime = Time.time;
-                
-                // Girar hacia la fuente del daño
-                Vector3 directionToDamage = (damageSourcePosition - transform.position).normalized;
-                directionToDamage.y = 0;
+                // GIRAR hacia la fuente del daño
                 if (directionToDamage.sqrMagnitude > 0.01f)
                 {
                     transform.rotation = Quaternion.LookRotation(directionToDamage);
                 }
                 
-                // Mostrar icono de alerta inmediatamente
+                // Reproducir animación de alerta SenseSomethingStart_NoWeapon
+                if (_animator != null)
+                {
+                    _animator.PlaySenseSomething();
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
+                }
+                
+                // Mostrar icono de admiración
                 if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                 {
                     _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                 }
                 
-                // Salir del estado de búsqueda y evaluar situación
-                StopAllCoroutines();
-                _currentState = CombatState.EVALUATE;
-                _fsmRoutine = StartCoroutine(FSM_Loop());
+                // Decidir reacción según situación
+                int attacksAvailable = CountAttacksReady();
+                
+                if (attacksAvailable > 0)
+                {
+                    // Tiene ataques → Contraatacar
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Contratatacando inmediatamente");
+                    StopAllCoroutines();
+                    _currentState = CombatState.EVALUATE;
+                    _fsmRoutine = StartCoroutine(FSM_Loop());
+                }
+                else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
+                {
+                    // No tiene ataques pero tiene escudo → Defender
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando escudo defensivo");
+                    StopAllCoroutines();
+                    _currentState = CombatState.DEFENSE;
+                    _fsmRoutine = StartCoroutine(FSM_Loop());
+                }
+                else
+                {
+                    // No tiene ataques ni escudo → Seguir huyendo/buscando
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Continúa huyendo - sin recursos para contraatacar");
+                }
             }
         }
 
@@ -245,6 +296,35 @@ namespace Game.NPC
         // 🧠 MÁQUINA DE ESTADOS FINITOS (FSM)
         // =================================================================================
         
+        /// <summary>
+        /// Cambia de estado con control de tiempo mínimo para evitar nerviosismo
+        /// </summary>
+        private bool TryChangeState(CombatState newState)
+        {
+            // Permitir cambios inmediatos si es una situación crítica
+            bool isCritical = newState == CombatState.SEARCHING || 
+                             (_currentState == CombatState.SEARCHING && newState == CombatState.EVALUATE);
+            
+            if (!isCritical)
+            {
+                // Verificar que haya pasado el tiempo mínimo desde el último cambio
+                float timeSinceLastChange = Time.time - _lastStateChangeTime;
+                if (timeSinceLastChange < MIN_STATE_DURATION && _currentState != CombatState.EVALUATE)
+                {
+                    // No cambiar de estado todavía
+                    return false;
+                }
+            }
+            
+            // Cambiar estado
+            _previousState = _currentState;
+            _currentState = newState;
+            _lastStateChangeTime = Time.time;
+            
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🔄 Cambio de estado: {_previousState} → {newState}");
+            return true;
+        }
+        
         IEnumerator FSM_Loop()
         {
             while (_isActive && _player != null)
@@ -270,6 +350,10 @@ namespace Game.NPC
                     case CombatState.SEARCHING:
                         yield return State_Searching();
                         break;
+                    
+                    case CombatState.HIDING_TO_RECHARGE:
+                        yield return State_HidingToRecharge();
+                        break;
                 }
                 yield return null;
             }
@@ -278,52 +362,112 @@ namespace Game.NPC
         // 1. EVALUAR: El cerebro que decide qué hacer
         IEnumerator State_Evaluate()
         {
-            // ✅ A. PRIORIDAD MÁXIMA: Si no veo al jugador -> BUSCAR
+            // ========================================================================
+            // PREMISA: El objetivo es MATAR al player
+            // ESTRATEGIA: Atacar hasta gastar hechizos, PERO puede fingir quedarse
+            //             sin magia para atraer al player a una EMBOSCADA
+            // ========================================================================
+            
+            // ✅ A. PRIORIDAD MÁXIMA: Si no veo al jugador → BUSCAR
             if (!_hasLineOfSight)
             {
-                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Sin línea de visión al jugador - Iniciando búsqueda");
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Sin línea de visión - Iniciando búsqueda");
                 _currentState = CombatState.SEARCHING;
                 yield break;
             }
             
             float dist = Vector3.Distance(transform.position, _player.position);
 
-            // B. Si está demasiado cerca -> HUIR (Reposicionarse)
+            // ✅ B. Si está demasiado cerca (zona de peligro) → HUIR
             if (dist < settings.minSafeDistance)
             {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Player demasiado cerca ({dist:F1}m < {settings.minSafeDistance}m) - Reposicionando");
                 _currentState = CombatState.REPOSITION;
                 yield break;
             }
 
-            // C. Si debería considerar defenderse (estrategia táctica) -> DEFENDERSE
-            if (ShouldConsiderDefense())
+            // ✅ C. LÓGICA PRINCIPAL: ¿Tengo ataques disponibles?
+            int attacksReady = CountAttacksReady();
+            
+            // 🎭 DECISIÓN ESTRATÉGICA: ¿Debería fingir quedarse sin magia?
+            // Solo considera engaño si:
+            // 1. Tiene suficientes ataques para reservar algunos
+            // 2. La dificultad es lo suficientemente alta
+            // 3. No está ya usando estrategia de engaño
+            if (!_isUsingDeceptionStrategy && attacksReady > settings.minAttacksToKeepForAmbush)
             {
-                _currentState = CombatState.DEFENSE;
+                // Probabilidad basada en dificultad (NPCs más difíciles son más astutos)
+                float actualDeceptionChance = settings.deceptionChance * settings.difficultyLevel;
+                
+                if (UnityEngine.Random.value < actualDeceptionChance)
+                {
+                    // 🎭 ENGAÑO ACTIVADO: Fingir que se quedó sin magia
+                    _isUsingDeceptionStrategy = true;
+                    _attacksReservedForAmbush = Mathf.Min(attacksReady, settings.minAttacksToKeepForAmbush);
+                    
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ESTRATEGIA DE ENGAÑO ACTIVADA - Fingiendo quedarse sin magia (reservando {_attacksReservedForAmbush} ataques para emboscada)");
+                    
+                    // Ir a esconderse fingiendo necesitar recarga
+                    _currentState = CombatState.HIDING_TO_RECHARGE;
+                    yield break;
+                }
+            }
+            
+            // ✅ D. ESTRATEGIA OFENSIVA NORMAL
+            if (attacksReady > 0)
+            {
+                // ======== ESTRATEGIA OFENSIVA: ATACAR ========
+                // Tengo hechizos → Gastarlos atacando al player
+                
+                if (dist <= settings.maxDistance && _globalCd <= 0)
+                {
+                    // En rango y sin cooldown global → ATACAR
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ Atacando - {attacksReady} ataques disponibles{(_isUsingDeceptionStrategy ? " (EMBOSCADA EN CURSO)" : "")}");
+                    _currentState = CombatState.ATTACK;
+                    yield break;
+                }
+                else if (dist > settings.maxDistance)
+                {
+                    // Muy lejos → Acercarse primero
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Acercándose al player ({dist:F1}m > {settings.maxDistance}m)");
+                    MoveTo(_player.position, settings.walkSpeed);
+                    yield return new WaitForSeconds(0.5f);
+                }
+                else if (_globalCd > 0)
+                {
+                    // En cooldown global → Esperar un momento
+                    yield return new WaitForSeconds(0.3f);
+                }
+            }
+            else
+            {
+                // ======== SIN ATAQUES: NECESITO RECARGAR DE VERDAD ========
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Sin ataques disponibles - Necesito esconderme para recargar (REAL)");
+                _isUsingDeceptionStrategy = false; // Ya no está fingiendo
+                _attacksReservedForAmbush = 0;
+                _currentState = CombatState.HIDING_TO_RECHARGE;
                 yield break;
             }
 
-            // D. Si tengo ataques disponibles y estoy en rango -> ATACAR
-            if (HasAnyAttackReady() && dist <= settings.maxDistance && _globalCd <= 0)
-            {
-                _currentState = CombatState.ATTACK;
-                yield break;
-            }
-
-            // E. Si estoy muy lejos -> Acercarse (Usamos Reposition para acercarnos también)
-            if (dist > settings.maxDistance)
-            {
-                 MoveTo(_player.position, settings.walkSpeed);
-                 yield return new WaitForSeconds(0.5f); // Caminar un poco
-            }
-
-            yield return null; 
+            yield return null;
+        }
+        
+        /// <summary>
+        /// Cuenta cuántos ataques están listos para usar
+        /// </summary>
+        private int CountAttacksReady()
+        {
+            int count = 0;
+            if (_leftCd <= 0) count++;
+            if (_rightCd <= 0) count++;
+            if (_specialCd <= 0) count++;
+            return count;
         }
 
         // 2. REPOSICIONARSE: Moverse a un lugar seguro o acercarse
         IEnumerator State_Reposition()
         {
             float dist = Vector3.Distance(transform.position, _player.position);
-            Vector3 targetPos = transform.position;
 
             if (dist < settings.minSafeDistance)
             {
@@ -331,6 +475,7 @@ namespace Game.NPC
                 Vector3 coverPosition;
                 bool foundCover = FindCoverBehindObstacle(out coverPosition);
                 
+                Vector3 targetPos;
                 if (foundCover)
                 {
                     // Encontró cobertura detrás de un obstáculo
@@ -357,30 +502,35 @@ namespace Game.NPC
                     yield return null;
                 }
                 
-                // ✅ Al detenerse después de huir, SIEMPRE reproducir animación de búsqueda
+                // ✅ Al detenerse después de huir
                 StopMove();
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Llegó a posición de cobertura - Reproduciendo animación de búsqueda");
-                
-                // ✅ Mostrar icono de interrogación
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
-                
-                if (_animator != null)
-                {
-                    _animator.PlaySearching();
-                }
-                
-                // Esperar tiempo de la animación de búsqueda
-                yield return new WaitForSeconds(1.5f);
                 
                 // ✅ VERIFICAR SI PERDIÓ DE VISTA AL JUGADOR
                 if (!_hasLineOfSight)
                 {
+                    // 🎯 PERDIÓ VISIÓN REAL → Mostrar interrogación y animación
                     Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras llegar a cobertura - ENTRANDO EN BÚSQUEDA");
+                    
+                    // Mostrar icono de interrogación
+                    if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                    {
+                        _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                    }
+                    
+                    // Reproducir animación de búsqueda
+                    if (_animator != null)
+                    {
+                        _animator.PlaySearching();
+                    }
+                    
                     _currentState = CombatState.SEARCHING;
                     yield break;
+                }
+                else
+                {
+                    // 🎯 AÚN VE AL PLAYER → Sin interrogación, solo pausa breve
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 👀 Llegó a cobertura pero aún ve al player - Continúa combate");
+                    yield return new WaitForSeconds(0.5f);
                 }
             }
             
@@ -581,6 +731,383 @@ namespace Game.NPC
 
             _currentState = CombatState.EVALUATE;
         }
+        
+        // 5. ESCONDERSE PARA RECARGAR: El NPC busca un lugar seguro para recuperar sus hechizos
+        IEnumerator State_HidingToRecharge()
+        {
+            bool isAmbush = _isUsingDeceptionStrategy; // ¿Es una emboscada o recarga real?
+            
+            if (isAmbush)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ESCONDERSE PARA EMBOSCADA - Fingiendo recarga (tiene {_attacksReservedForAmbush} ataques guardados)");
+            }
+            else
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 ESCONDERSE PARA RECARGAR - Buscando cobertura (recarga real)");
+            }
+            
+            // A. Buscar posición de cobertura
+            Vector3 coverPosition;
+            bool foundCover = FindCoverBehindObstacle(out coverPosition);
+            
+            if (!foundCover)
+            {
+                // Si no encuentra cobertura, huir en dirección opuesta
+                Vector3 dirAway = (transform.position - _player.position).normalized;
+                coverPosition = transform.position + dirAway * 8f;
+                
+                // Intentar posición válida en NavMesh
+                if (!NavMesh.SamplePosition(coverPosition, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+                {
+                    // Si no hay NavMesh válido, quedarse donde está y defender
+                    Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ No se encontró cobertura ni posición de huida válida");
+                    _currentState = CombatState.DEFENSE;
+                    yield break;
+                }
+                coverPosition = navHit.position;
+            }
+            
+            // B. Moverse hacia la cobertura
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Corriendo hacia cobertura: {coverPosition}");
+            MoveTo(coverPosition, settings.runSpeed);
+            
+            float moveStartTime = Time.time;
+            float maxMoveTime = 5f;
+            bool arrivedAtCover = false;
+            
+            // C. Durante el movimiento hacia cobertura
+            while (!arrivedAtCover && (Time.time - moveStartTime) < maxMoveTime)
+            {
+                // Si es atacado durante la huida → GIRAR y usar escudo si está disponible
+                // Esto se maneja en OnTakeDamage(), pero aquí podemos verificar si usamos escudo preventivo
+                
+                // Si el player le ataca y puede defenderse, usar escudo
+                if (_player != null && IsPlayerAttacking())
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ ¡ATACADO DURANTE LA HUIDA!");
+                    
+                    // Usar escudo si está disponible
+                    if (settings.useShield && _shieldController != null && _shieldCd <= 0)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando escudo durante huida");
+                        _shieldController.StartDefending(settings.shieldDuration);
+                        _shieldCd = settings.shieldCooldown + settings.shieldDuration;
+                        
+                        // Continuar huyendo con el escudo activo
+                        yield return new WaitForSeconds(Mathf.Min(settings.shieldDuration, 2f));
+                    }
+                }
+                
+                // Verificar si llegó a la posición
+                if (_agent.remainingDistance <= 1.5f && !_agent.pathPending)
+                {
+                    arrivedAtCover = true;
+                }
+                
+                yield return null;
+            }
+            
+            StopMove();
+            
+            // D. Al llegar a cobertura - Decidir comportamiento según situación
+            bool wasBeingAttacked = !_hasLineOfSight || IsPlayerAttacking();
+            
+            if (isAmbush)
+            {
+                // 🎭 EMBOSCADA: Siempre mostrar interrogación para engañar
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Llegó a cobertura (EMBOSCADA) - Fingiendo búsqueda");
+                
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
+                if (_animator != null)
+                {
+                    _animator.PlaySearching();
+                }
+            }
+            else if (!_hasLineOfSight)
+            {
+                // 🔍 PERDIÓ VISIÓN REAL: Mostrar interrogación porque realmente no sabe dónde está el player
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❓ Llegó a cobertura sin visión del player - Búsqueda real");
+                
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
+                if (_animator != null)
+                {
+                    _animator.PlaySearching();
+                }
+            }
+            else
+            {
+                // 👁️ AÚN VE AL PLAYER o SABE QUE ESTÁ CERCA: NO mostrar interrogación
+                // Comportamiento: Mirar alrededor defensivamente sin bajar la guardia
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Llegó a cobertura pero sabe que player está cerca - Alerta defensiva");
+                
+                // NO mostrar interrogación
+                // NO reproducir animación de búsqueda completa
+                // En su lugar, mantenerse alerta
+                
+                // Pequeña pausa de "mirar alrededor"
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            // E. Esperar mientras se recargan los hechizos (o finge recargar si es emboscada)
+            if (isAmbush)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Fingiendo recarga... esperando que el player se acerque");
+            }
+            else
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Recargando hechizos...");
+            }
+            
+            float rechargeStartTime = Time.time;
+            float maxRechargeTime = Mathf.Max(settings.leftAttack.cooldown, settings.rightAttack.cooldown, settings.specialAttack.cooldown);
+            
+            // 🎭 LÓGICA DE EMBOSCADA: Monitorear distancia del player
+            float ambushTriggerDistance = settings.optimalDistance * 1.2f; // Activar emboscada cuando esté cerca
+            
+            // 🛡️ Comportamiento defensivo si sabe que player está cerca
+            bool playerKnownNearby = _hasLineOfSight || wasBeingAttacked;
+            float defensiveCheckTimer = 0f;
+            
+            // Esperar hasta que recargue o detecte oportunidad de emboscada
+            while ((Time.time - rechargeStartTime) < maxRechargeTime)
+            {
+                int currentAttacks = CountAttacksReady();
+                
+                // 🛡️ Si sabe que player está cerca, mirar alrededor periódicamente
+                if (playerKnownNearby && !isAmbush)
+                {
+                    defensiveCheckTimer += Time.deltaTime;
+                    
+                    // Cada 2 segundos, verificar alrededores
+                    if (defensiveCheckTimer >= 2f)
+                    {
+                        defensiveCheckTimer = 0f;
+                        
+                        // Verificar si ve al player ahora
+                        if (_hasLineOfSight)
+                        {
+                            Debug.Log($"[CombatBrain:{gameObject.name}] 👁️ ¡Player detectado cerca durante recarga! - Preparando respuesta");
+                            
+                            // Si tiene suficientes ataques, contraatacar
+                            if (currentAttacks >= 1)
+                            {
+                                Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Interrumpiendo recarga para contraatacar");
+                                
+                                // Mostrar alerta
+                                if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                                {
+                                    _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                                }
+                                
+                                if (_animator != null)
+                                {
+                                    _animator.PlaySenseSomething();
+                                }
+                                
+                                yield return new WaitForSeconds(0.5f);
+                                
+                                _currentState = CombatState.EVALUATE;
+                                yield break;
+                            }
+                            else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
+                            {
+                                // Sin ataques pero con escudo → Defender
+                                Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Player muy cerca - Activando escudo preventivo");
+                                _shieldController.StartDefending(settings.shieldDuration);
+                                _shieldCd = settings.shieldCooldown + settings.shieldDuration;
+                                yield return new WaitForSeconds(Mathf.Min(settings.shieldDuration, 1.5f));
+                            }
+                        }
+                    }
+                }
+                
+                // 🎭 Si es emboscada y el player se acerca → ¡SORPRESA!
+                if (isAmbush && _player != null)
+                {
+                    float distToPlayer = Vector3.Distance(transform.position, _player.position);
+                    
+                    // ¿El player está buscándome y se acerca?
+                    if (distToPlayer <= ambushTriggerDistance)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 ¡EMBOSCADA ACTIVADA! Player a {distToPlayer:F1}m - ¡ATAQUE SORPRESA!");
+                        
+                        // Mostrar admiración + alerta
+                        if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                        {
+                            _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                        }
+                        
+                        // Animación de alerta
+                        if (_animator != null)
+                        {
+                            _animator.PlaySenseSomething();
+                        }
+                        
+                        // Pequeña pausa dramática
+                        yield return new WaitForSeconds(0.5f);
+                        
+                        // Resetear estrategia de engaño
+                        _isUsingDeceptionStrategy = false;
+                        _attacksReservedForAmbush = 0;
+                        
+                        // ¡ATACAR POR LA ESPALDA!
+                        _currentState = CombatState.EVALUATE;
+                        yield break;
+                    }
+                }
+                
+                // Si es recarga real, verificar si recargó suficientes ataques
+                if (!isAmbush && currentAttacks >= 2)
+                {
+                    break; // Recarga completada
+                }
+                
+                // Si el player le ataca mientras recarga → Defender o contraatacar
+                if (_player != null && IsPlayerAttacking())
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚔️ ¡ATACADO MIENTRAS RECARGA!");
+                    
+                    // Si es emboscada, revelar la trampa inmediatamente
+                    if (isAmbush)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 ¡Emboscada descubierta! - Contratatacando");
+                        _isUsingDeceptionStrategy = false;
+                        _attacksReservedForAmbush = 0;
+                        _currentState = CombatState.EVALUATE;
+                        yield break;
+                    }
+                    
+                    // Decidir entre defender o contraatacar
+                    int attacksNow = CountAttacksReady();
+                    
+                    if (attacksNow > 0)
+                    {
+                        // Tiene al menos un ataque → Contraatacar
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Contratatacando con {attacksNow} ataques disponibles");
+                        _currentState = CombatState.EVALUATE;
+                        yield break;
+                    }
+                    else if (settings.useShield && _shieldController != null && _shieldCd <= 0)
+                    {
+                        // No tiene ataques pero tiene escudo → Defender
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Defendiendo con escudo");
+                        _shieldController.StartDefending(settings.shieldDuration);
+                        _shieldCd = settings.shieldCooldown + settings.shieldDuration;
+                        yield return new WaitForSeconds(settings.shieldDuration);
+                    }
+                }
+                
+                yield return new WaitForSeconds(0.3f);
+            }
+            
+            // F. Hechizos recargados o emboscada fallida - Momento de salir de cobertura
+            if (isAmbush)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Emboscada no activada (player no se acercó) - Cancelando estrategia");
+                _isUsingDeceptionStrategy = false;
+                _attacksReservedForAmbush = 0;
+            }
+            else
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Hechizos recargados ({CountAttacksReady()} disponibles) - Saliendo de cobertura");
+            }
+            
+            // 🎯 MOMENTO CRÍTICO: Verificar situación al salir de cobertura
+            Vector3 expectedPlayerPosition = _lastKnownPlayerPosition;
+            
+            // Verificar si tiene línea de visión AHORA
+            if (_hasLineOfSight)
+            {
+                // 👁️ VE AL PLAYER: Verificar si está donde se esperaba
+                float distanceFromExpected = Vector3.Distance(_player.position, expectedPlayerPosition);
+                
+                if (distanceFromExpected < 5f)
+                {
+                    // ✅ Player está DONDE SE ESPERABA (posición A)
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 👀 ¡Player visible en posición esperada! - Atacar directamente");
+                    
+                    // Mostrar admiración
+                    if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                    {
+                        _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                    }
+                    
+                    // Reproducir animación SenseSomethingStart_NoWeapon
+                    if (_animator != null)
+                    {
+                        _animator.PlaySenseSomething();
+                    }
+                    
+                    yield return new WaitForSeconds(0.8f);
+                    
+                    _currentState = CombatState.EVALUATE;
+                }
+                else
+                {
+                    // ⚠️ Player se MOVIÓ de donde estaba (posición diferente)
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡Player se movió! Era posición A, ahora está en B ({distanceFromExpected:F1}m lejos)");
+                    
+                    // Mostrar admiración (sorpresa)
+                    if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
+                    {
+                        _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                    }
+                    
+                    // Reproducir animación SenseSomethingStart_NoWeapon
+                    if (_animator != null)
+                    {
+                        _animator.PlaySenseSomething();
+                    }
+                    
+                    yield return new WaitForSeconds(0.8f);
+                    
+                    _currentState = CombatState.EVALUATE;
+                }
+            }
+            else
+            {
+                // 🎯 NO VE AL PLAYER - ¡AQUÍ SALE LA INTERROGACIÓN!
+                // Escenario: Salió del árbol, player NO está en posición A
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❓ ¡Player NO está donde se esperaba! - Mostrando interrogación y entrando en búsqueda");
+                
+                // 🎯 MOSTRAR INTERROGACIÓN (perdida real)
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
+                // Reproducir animación de búsqueda
+                if (_animator != null)
+                {
+                    _animator.PlaySearching();
+                }
+                
+                yield return new WaitForSeconds(1.0f);
+                
+                // Entrar en modo búsqueda activa
+                _currentState = CombatState.SEARCHING;
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si el player está atacando al NPC en este momento
+        /// (Se puede expandir con más lógica si es necesario)
+        /// </summary>
+        private bool IsPlayerAttacking()
+        {
+            // Por ahora, verificar si hay proyectiles del player cerca
+            // Esto es una aproximación - se puede mejorar con eventos
+            Collider[] nearbyProjectiles = Physics.OverlapSphere(transform.position, 10f, LayerMask.GetMask("PlayerProjectile"));
+            return nearbyProjectiles.Length > 0;
+        }
 
         // =================================================================================
         // 🔧 HELPER FUNCTIONS
@@ -653,56 +1180,6 @@ namespace Game.NPC
                          proj.Initialize((_player.position - spawnPos).normalized);
                 }
             }
-        }
-
-        /// <summary>
-        /// Evalúa si el NPC debería defenderse basado en su estado táctico
-        /// </summary>
-        private bool ShouldConsiderDefense()
-        {
-            // A. Contar cuántos ataques están disponibles
-            int attacksReady = 0;
-            if (_leftCd <= 0) attacksReady++;
-            if (_rightCd <= 0) attacksReady++;
-            if (_specialCd <= 0) attacksReady++;
-            
-            bool fewAttacksReady = attacksReady == 0; // 🔥 CAMBIO: Solo si NO tiene ataques disponibles
-            
-            // B. Si está en cooldown global (acaba de atacar) - MUY VULNERABLE
-            bool inGlobalCooldown = _globalCd > 0;
-            
-            // C. Si todos los ataques importantes están en cooldown (>70% del cooldown total)
-            bool mostAttacksOnCooldown = false;
-            if (settings.leftAttack.cooldown > 0 && settings.rightAttack.cooldown > 0)
-            {
-                float leftProgress = _leftCd / settings.leftAttack.cooldown;
-                float rightProgress = _rightCd / settings.rightAttack.cooldown;
-                mostAttacksOnCooldown = (leftProgress > 0.7f && rightProgress > 0.7f);
-            }
-            
-            // D. 🔥 NUEVO: Probabilidad basada en dificultad (más agresivo)
-            // Dificultad alta = usa escudo más frecuentemente como ESTRATEGIA
-            // Máximo 60% de chance si dificultad = 1.0 (antes era 40%)
-            float defensiveChance = settings.difficultyLevel * 0.6f;
-            bool randomDefensive = UnityEngine.Random.value < defensiveChance;
-            
-            // E. 🔥 NUEVO: Si el escudo está disponible, aumentar probabilidad
-            bool shieldReady = settings.useShield && _shieldController != null && _shieldCd <= 0;
-            if (shieldReady)
-            {
-                // Bonus +30% si el escudo está listo
-                randomDefensive = UnityEngine.Random.value < (defensiveChance + 0.3f);
-            }
-            
-            // Decidir si debe defenderse
-            bool shouldDefend = fewAttacksReady || inGlobalCooldown || mostAttacksOnCooldown || randomDefensive;
-            
-            if (shouldDefend)
-            {
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Considerando DEFENSA - Ataques:{attacksReady}, GlobalCD:{inGlobalCooldown}, MostOnCD:{mostAttacksOnCooldown}, Random:{randomDefensive}, ShieldReady:{shieldReady}");
-            }
-            
-            return shouldDefend;
         }
 
         private bool HasAnyAttackReady()
@@ -832,7 +1309,7 @@ namespace Game.NPC
             else
             {
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Combate reciente detectado ({Time.time - _lastSeenTime:F1}s) - Búsqueda sin interrogación");
-            };
+            }
             
             float searchStartTime = Time.time;
             float searchTimeout = settings.activelySearchForPlayer ? settings.searchDuration : settings.passiveSearchDuration;
@@ -854,6 +1331,13 @@ namespace Game.NPC
                     if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                     {
                         _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                    }
+                    
+                    // ✅ Reproducir animación SenseSomethingStart_NoWeapon
+                    if (_animator != null)
+                    {
+                        _animator.PlaySenseSomething();
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
                     }
                     
                     // Esperar para que se vea el feedback
@@ -898,6 +1382,13 @@ namespace Game.NPC
                                 if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                                 {
                                     _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                                }
+                                
+                                // Reproducir animación SenseSomethingStart_NoWeapon
+                                if (_animator != null)
+                                {
+                                    _animator.PlaySenseSomething();
+                                    Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
                                 }
                                 
                                 yield return new WaitForSeconds(1.0f);
@@ -949,6 +1440,13 @@ namespace Game.NPC
                                 _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                             }
                             
+                            // Reproducir animación SenseSomethingStart_NoWeapon
+                            if (_animator != null)
+                            {
+                                _animator.PlaySenseSomething();
+                                Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
+                            }
+                            
                             yield return new WaitForSeconds(1.0f);
                             
                             StopMove();
@@ -991,6 +1489,13 @@ namespace Game.NPC
                         if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                         {
                             _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
+                        }
+                        
+                        // Reproducir animación SenseSomethingStart_NoWeapon
+                        if (_animator != null)
+                        {
+                            _animator.PlaySenseSomething();
+                            Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
                         }
                         
                         yield return new WaitForSeconds(1.0f);
@@ -1080,14 +1585,14 @@ namespace Game.NPC
                 
                 // Verificar que el obstáculo esté entre el jugador y la posición de cobertura
                 Vector3 dirToPlayer = (_player.position - navHit.position).normalized;
-                if (Physics.Raycast(navHit.position + Vector3.up, dirToPlayer, out RaycastHit hit, 
+                if (Physics.Raycast(navHit.position + Vector3.up, dirToPlayer, 
                     Vector3.Distance(navHit.position, _player.position), defaultMask))
                 {
                     // Hay un obstáculo entre la posición de cobertura y el jugador - PERFECTO
                     
                     // Calcular puntuación: preferir obstáculos más cercanos al NPC
-                    float distanceToNPC = Vector3.Distance(transform.position, navHit.position);
-                    float score = 20f - distanceToNPC; // Mayor puntuación = más cerca
+                    float distanceToNpc = Vector3.Distance(transform.position, navHit.position);
+                    float score = 20f - distanceToNpc; // Mayor puntuación = más cerca
                     
                     if (score > bestScore)
                     {
@@ -1128,3 +1633,4 @@ namespace Game.NPC
         }
     }
 }
+
