@@ -136,6 +136,9 @@ public class NPCSimpleAnimator : MonoBehaviour
     private const float BattleIdleCooldown = 0.5f; // Mínimo 0.5s entre llamadas (antes 0.3s)
     private bool _disableAutoRotation; // Flag para desactivar rotación automática (usado durante diálogos)
     
+    // ✅ Corrutina para seguimiento de rotación durante diálogos
+    private Coroutine _dialogueLookAtCoroutine;
+    
     #endregion
     
     #region Public Properties
@@ -227,6 +230,24 @@ public class NPCSimpleAnimator : MonoBehaviour
         }
         
         ResolvePlayerReferences();
+        
+        // ✅ Suscribirse a eventos del DialogueManager
+        DialogueManager.OnDialogueStarted += OnDialogueStarted;
+        DialogueManager.OnDialogueClosed += OnDialogueClosed;
+    }
+    
+    void OnDestroy()
+    {
+        // ✅ Desuscribirse de eventos del DialogueManager
+        DialogueManager.OnDialogueStarted -= OnDialogueStarted;
+        DialogueManager.OnDialogueClosed -= OnDialogueClosed;
+        
+        // Detener corrutina si existe
+        if (_dialogueLookAtCoroutine != null)
+        {
+            StopCoroutine(_dialogueLookAtCoroutine);
+            _dialogueLookAtCoroutine = null;
+        }
     }
     
     void Start()
@@ -552,8 +573,9 @@ public class NPCSimpleAnimator : MonoBehaviour
         _isInteracting = true;
         _currentState = AnimationState.Interacting;
         
-        // Face player if available
-        if (_player != null)
+        // ✅ FIX: Solo girar hacia el jugador si la rotación automática NO está deshabilitada
+        // Si DialogueManager ya controló la rotación, no interferir
+        if (_player != null && !_disableAutoRotation)
         {
             FaceTarget(_player.position);
         }
@@ -971,6 +993,177 @@ public class NPCSimpleAnimator : MonoBehaviour
         // ✅ FIX: Sincronizar _targetRotation con la rotación actual del transform
         // Esto evita que al reactivar, el NPC gire hacia una dirección antigua
         _targetRotation = transform.rotation;
+    }
+    
+    #region Dialogue Events
+    
+    /// <summary>
+    /// Callback cuando se inicia un diálogo. Solo responde si este NPC es el involucrado.
+    /// </summary>
+    private void OnDialogueStarted(Transform npcInvolved)
+    {
+        // Solo procesar si este NPC es el que está en el diálogo
+        if (npcInvolved != transform)
+            return;
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator:{name}] 📢 OnDialogueStarted recibido");
+        
+        // Detener cualquier corrutina previa
+        if (_dialogueLookAtCoroutine != null)
+        {
+            StopCoroutine(_dialogueLookAtCoroutine);
+        }
+        
+        // Rotar instantáneamente hacia el jugador y desactivar rotación automática
+        FacePlayerInstantly();
+        
+        // Reproducir animación de interacción
+        BeginInteraction();
+        
+        // Iniciar la corrutina de seguimiento continuo
+        _dialogueLookAtCoroutine = StartCoroutine(KeepLookingAtPlayerDuringDialogue());
+    }
+    
+    /// <summary>
+    /// Callback cuando se cierra un diálogo. Solo responde si este NPC es el involucrado.
+    /// </summary>
+    private void OnDialogueClosed(Transform npcInvolved)
+    {
+        // Solo procesar si este NPC es el que estaba en el diálogo
+        if (npcInvolved != transform)
+            return;
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator:{name}] 📢 OnDialogueClosed recibido");
+        
+        // Detener la corrutina de seguimiento
+        if (_dialogueLookAtCoroutine != null)
+        {
+            StopCoroutine(_dialogueLookAtCoroutine);
+            _dialogueLookAtCoroutine = null;
+        }
+        
+        // Finalizar animación de interacción
+        EndInteraction();
+        
+        // Reactivar la rotación automática después de un frame
+        // para asegurar que el diálogo se cerró completamente
+        StartCoroutine(ReactivateAutoRotationDelayed());
+    }
+    
+    /// <summary>
+    /// Mantiene al NPC mirando al jugador durante todo el diálogo
+    /// </summary>
+    private IEnumerator KeepLookingAtPlayerDuringDialogue()
+    {
+        // Obtener referencia al DialogueManager para verificar si el diálogo está abierto
+        var dialogueManager = DialogueManager.Instance;
+        
+        if (_player == null)
+        {
+            if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+            {
+                _player = playerGo.transform;
+            }
+        }
+        
+        if (_player == null)
+        {
+            if (debugMode) Debug.LogWarning($"[NPCAnimator:{name}] KeepLookingAtPlayerDuringDialogue - No se encontró el jugador");
+            yield break;
+        }
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator:{name}] 👁️ Seguimiento de rotación iniciado durante diálogo");
+        
+        // Mantener rotación hacia el jugador mientras el diálogo esté abierto
+        while (dialogueManager != null && dialogueManager.IsOpen && _player != null)
+        {
+            // Calcular dirección hacia el jugador (solo horizontal)
+            Vector3 directionToPlayer = _player.position - transform.position;
+            directionToPlayer.y = 0f;
+            
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                
+                // Rotar suavemente hacia el jugador (por si se mueve)
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation, 
+                    targetRotation, 
+                    rotationSpeed * Time.unscaledDeltaTime
+                );
+                
+                // Sincronizar _targetRotation
+                _targetRotation = transform.rotation;
+            }
+            
+            yield return null;
+        }
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator:{name}] 🔚 Seguimiento de rotación durante diálogo finalizado");
+    }
+    
+    /// <summary>
+    /// Reactiva la rotación automática después de un frame
+    /// </summary>
+    private IEnumerator ReactivateAutoRotationDelayed()
+    {
+        // Esperar 1 frame para asegurar que el diálogo se cerró completamente
+        yield return null;
+        
+        EnableAutoRotation();
+        
+        if (debugMode)
+            Debug.Log($"[NPCAnimator:{name}] ✅ Rotación automática reactivada");
+    }
+    
+    #endregion
+    
+    /// <summary>
+    /// Gira instantáneamente hacia el jugador (para inicio de diálogos).
+    /// Desactiva la rotación automática para evitar conflictos.
+    /// </summary>
+    /// <returns>True si la rotación fue exitosa</returns>
+    public bool FacePlayerInstantly()
+    {
+        // Buscar el jugador si no tenemos referencia
+        if (_player == null)
+        {
+            if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+            {
+                _player = playerGo.transform;
+            }
+        }
+        
+        if (_player == null)
+        {
+            if (debugMode) Debug.LogWarning($"[NPCAnimator:{name}] FacePlayerInstantly: No se encontró jugador");
+            return false;
+        }
+        
+        // Desactivar rotación automática para evitar que interfiera
+        _disableAutoRotation = true;
+        
+        // Calcular dirección al jugador (solo horizontal)
+        Vector3 directionToPlayer = _player.position - transform.position;
+        directionToPlayer.y = 0f;
+        
+        if (directionToPlayer.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+            transform.rotation = targetRotation;
+            _targetRotation = targetRotation; // Sincronizar para evitar snapping posterior
+            
+            if (debugMode) 
+                Debug.Log($"[NPCAnimator:{name}] 👁️ Rotado INSTANTÁNEAMENTE hacia el jugador (ángulo: {targetRotation.eulerAngles.y:F1}°)");
+            
+            return true;
+        }
+        
+        return false;
     }
     
     /// <summary>

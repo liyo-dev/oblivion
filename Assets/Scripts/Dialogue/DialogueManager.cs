@@ -11,6 +11,20 @@ using Sendero.Core.Feedback;
 public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance { get; private set; }
+    
+    #region Events
+    /// <summary>
+    /// Evento disparado cuando se inicia un diálogo con un NPC.
+    /// El Transform es el NPC con el que se está hablando (puede ser null si no hay NPC).
+    /// </summary>
+    public static event Action<Transform> OnDialogueStarted;
+    
+    /// <summary>
+    /// Evento disparado cuando se cierra un diálogo.
+    /// El Transform es el NPC con el que se estaba hablando (puede ser null si no había NPC).
+    /// </summary>
+    public static event Action<Transform> OnDialogueClosed;
+    #endregion
 
     [Header("UI")]
     [SerializeField] private CanvasGroup group;
@@ -77,12 +91,6 @@ public class DialogueManager : MonoBehaviour
 
     // NPC para cámara de diálogo
     private Transform _currentNpc;
-    
-    // Corrutina para mantener al NPC mirando al jugador
-    private Coroutine _keepLookingRoutine;
-    
-    // Guardar la última rotación del NPC para mantenerla después del diálogo
-    private Quaternion _npcFinalRotation;
     
     // Protección contra input inmediato al abrir diálogo
     private float _dialogueOpenedAt = -999f;
@@ -281,44 +289,13 @@ public class DialogueManager : MonoBehaviour
     {
         _currentNpc = npc;
         
-        // ✅ INICIAR CORRUTINA para mantener al NPC mirando al jugador
-        if (_currentNpc != null)
-        {
-            // Detener cualquier corrutina previa
-            if (_keepLookingRoutine != null)
-            {
-                StopCoroutine(_keepLookingRoutine);
-            }
-            
-            // Rotar INSTANTÁNEAMENTE hacia el jugador (sin interpolación)
-            if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
-            {
-                Vector3 directionToPlayer = playerGo.transform.position - _currentNpc.position;
-                directionToPlayer.y = 0f;
-                
-                if (directionToPlayer.sqrMagnitude > 0.001f)
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                    // CRÍTICO: Rotación 100% instantánea, sin interpolación
-                    _currentNpc.rotation = targetRotation;
-                    _npcFinalRotation = targetRotation;
-                    Debug.Log($"[DialogueManager] 👁️ NPC '{_currentNpc.name}' girado INSTANTÁNEAMENTE hacia el jugador (ángulo: {_currentNpc.rotation.eulerAngles.y:F1}°)");
-                }
-            }
-            
-            // ✅ NUEVO: Reproducir animación de interacción del NPC
-            var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
-            if (npcAnimator != null)
-            {
-                npcAnimator.BeginInteraction();
-                Debug.Log($"[DialogueManager] 🎭 Animación de interacción iniciada para '{_currentNpc.name}'");
-            }
-            
-            // Iniciar la corrutina de seguimiento continuo
-            _keepLookingRoutine = StartCoroutine(KeepNpcLookingAtPlayer());
-        }
-        
+        // ✅ CRÍTICO: Iniciar el diálogo PRIMERO para que IsOpen sea true
         StartDialogue(asset, onFinished);
+        
+        // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
+        // NPCSimpleAnimator maneja su propia rotación y animaciones
+        OnDialogueStarted?.Invoke(_currentNpc);
+        Debug.Log($"[DialogueManager] 📢 OnDialogueStarted emitido para '{_currentNpc?.name ?? "NULL"}'");
     }
 
     /// <summary>
@@ -434,35 +411,10 @@ public class DialogueManager : MonoBehaviour
             DialogueCameraController.Instance.EndDialogueCamera();
         }
 
-        // ✅ DETENER CORRUTINA de seguimiento de rotación del NPC
-        if (_keepLookingRoutine != null)
-        {
-            StopCoroutine(_keepLookingRoutine);
-            _keepLookingRoutine = null;
-            Debug.Log($"[DialogueManager] 🛑 Corrutina de seguimiento del NPC detenida");
-        }
-
-        // Reactivar la rotación automática del NPCSimpleAnimator
-        if (_currentNpc != null)
-        {
-            var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
-            if (npcAnimator != null)
-            {
-                // NO reactivar inmediatamente - esperar a que termine MaintainNPCRotationAfterDialogue
-                Debug.Log($"[DialogueManager] ⏳ Rotación automática se reactivará después del período de mantenimiento");
-                
-                // ✅ NUEVO: Finalizar animación de interacción
-                npcAnimator.EndInteraction();
-                Debug.Log($"[DialogueManager] 🎭 Animación de interacción finalizada para '{_currentNpc.name}'");
-            }
-        }
-
-        // NUEVO: Mantener la rotación final del NPC brevemente después del diálogo
-        // para evitar que el Animator la resetee al volver a Idle
-        if (_currentNpc != null)
-        {
-            StartCoroutine(MaintainNpcRotationAfterDialogue(_currentNpc, _npcFinalRotation));
-        }
+        // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
+        // NPCSimpleAnimator maneja su propia rotación y animaciones
+        OnDialogueClosed?.Invoke(_currentNpc);
+        Debug.Log($"[DialogueManager] 📢 OnDialogueClosed emitido para '{_currentNpc?.name ?? "NULL"}'");
 
         _currentNpc = null;
 
@@ -859,110 +811,6 @@ public class DialogueManager : MonoBehaviour
         {
             actionManager.PopMode(ActionMode.Cinematic);
             Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
-        }
-    }
-    
-    /// <summary>
-    /// Mantiene al NPC mirando al jugador durante todo el diálogo
-    /// </summary>
-    private System.Collections.IEnumerator KeepNpcLookingAtPlayer()
-    {
-        if (_currentNpc == null)
-        {
-            Debug.LogWarning("[DialogueManager] KeepNpcLookingAtPlayer - currentNPC es NULL");
-            yield break;
-        }
-        
-        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
-        {
-            Debug.LogWarning("[DialogueManager] KeepNpcLookingAtPlayer - No se encontró el jugador");
-            yield break;
-        }
-        
-        Debug.Log($"[DialogueManager] 👁️ Iniciando seguimiento de rotación del NPC '{_currentNpc.name}' hacia el jugador");
-        
-        // Desactivar la rotación automática del NPCSimpleAnimator para evitar conflictos
-        var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
-        if (npcAnimator != null)
-        {
-            npcAnimator.DisableAutoRotation();
-            Debug.Log($"[DialogueManager] 🔒 Rotación automática de NPCSimpleAnimator desactivada para '{_currentNpc.name}'");
-        }
-        
-        // NO esperar frames - empezar inmediatamente
-        // yield return null; // ELIMINADO - comenzar de inmediato
-        
-        // Mantener rotación mientras el diálogo esté abierto
-        while (IsOpen && _currentNpc != null)
-        {
-            // Calcular dirección hacia el jugador
-            Vector3 directionToPlayer = playerGo.transform.position - _currentNpc.position;
-            directionToPlayer.y = 0f; // Solo rotación horizontal
-            
-            if (directionToPlayer.sqrMagnitude > 0.001f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                
-                // Rotar hacia el jugador con velocidad muy alta
-                // 720°/s = rotación completa (360°) en medio segundo
-                float rotationSpeed = 720f; // DUPLICADO: de 360 a 720 grados por segundo
-                _currentNpc.rotation = Quaternion.RotateTowards(
-                    _currentNpc.rotation, 
-                    targetRotation, 
-                    rotationSpeed * Time.unscaledDeltaTime
-                );
-                
-                // Guardar continuamente la rotación final
-                _npcFinalRotation = _currentNpc.rotation;
-            }
-            
-            yield return null;
-        }
-        
-        // Al salir del bucle, forzar la última rotación una vez más
-        if (_currentNpc != null)
-        {
-            _currentNpc.rotation = _npcFinalRotation;
-            Debug.Log($"[DialogueManager] 🔚 Diálogo cerrado - NPC '{_currentNpc.name}' mantiene rotación final: {_npcFinalRotation.eulerAngles.y:F1}°");
-        }
-    }
-
-    /// <summary>
-    /// Libera la rotación del NPC después de cerrar el diálogo
-    /// ✅ FIX: No mantener rotación forzada - liberar inmediatamente para evitar caminar de lado
-    /// </summary>
-    private System.Collections.IEnumerator MaintainNpcRotationAfterDialogue(Transform npc, Quaternion finalRotation)
-    {
-        if (npc == null) yield break;
-        
-        // ✅ FIX CRÍTICO: NO mantener rotación forzada
-        // Si forzamos la rotación mientras el NPC se mueve, camina de lado
-        // Solución: Liberar inmediatamente para que NPCSimpleAnimator tome control
-        
-        Debug.Log($"[DialogueManager] 🔓 Liberando rotación del NPC '{npc.name}' inmediatamente");
-        
-        // Esperar 1 frame para asegurar que el diálogo se cerró completamente
-        yield return null;
-        
-        if (npc != null)
-        {
-            // Reactivar la rotación automática del NPCSimpleAnimator
-            var npcAnimator = npc.GetComponent<NPCSimpleAnimator>();
-            if (npcAnimator != null)
-            {
-                npcAnimator.EnableAutoRotation();
-                Debug.Log($"[DialogueManager] ✅ Rotación automática de NPCSimpleAnimator reactivada para '{npc.name}'");
-            }
-            
-            // Asegurar que NavMeshAgent no interfiera con la rotación
-            var navAgent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (navAgent != null)
-            {
-                navAgent.updateRotation = false;
-                Debug.Log($"[DialogueManager] ✅ NavMeshAgent.updateRotation DESACTIVADO para '{npc.name}'");
-            }
-            
-            Debug.Log($"[DialogueManager] ✅ NPC '{npc.name}' liberado - rotación controlada por NPCSimpleAnimator");
         }
     }
 }

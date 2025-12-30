@@ -55,6 +55,9 @@ namespace Game.NPC.Modules
             _config = _npcManager.Configuration.interactiveNarrativeConfig;
             if (_config == null) return;
 
+            // Inicializar el controlador de iconos (si existe o lo creamos)
+            InitializeAlertIconController();
+
             // Restaurar estado guardado
             if (_config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
             {
@@ -68,6 +71,38 @@ namespace Game.NPC.Modules
             if (_config.autoStartOnPlayerDetection && !_hasBeenUsed)
             {
                 StartCoroutine(DetectPlayerRoutine());
+            }
+            
+            // Nota: El icono persistente se gestiona en Update() automáticamente
+            // cuando hay una narrativa disponible con showPersistentIcon = true
+        }
+        
+        /// <summary>
+        /// Inicializa el controlador de iconos de alerta
+        /// </summary>
+        private void InitializeAlertIconController()
+        {
+            _alertIconController = GetComponent<NPCAlertIconController>();
+            if (_alertIconController == null)
+            {
+                // Solo crear si hay narrativas que podrían usar iconos
+                bool needsIconController = false;
+                if (_config.conditionalNarratives != null)
+                {
+                    foreach (var narrative in _config.conditionalNarratives)
+                    {
+                        if (narrative != null && narrative.showPersistentIcon)
+                        {
+                            needsIconController = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (needsIconController || _config.alertIconPrefab != null)
+                {
+                    _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
+                }
             }
         }
 
@@ -91,20 +126,57 @@ namespace Game.NPC.Modules
                 var activeNarrative = _config.GetActiveNarrative();
                 if (activeNarrative != null && activeNarrative.showPersistentIcon)
                 {
-                    // TODO: Implementar ShowPersistentIcon en NPCBehaviourManagerV2
-                    // if (activeNarrative.persistentIconPrefab || activeNarrative.persistentIconSprite)
-                    //     _npcManager.ShowPersistentIcon();
+                    // Mostrar icono persistente si hay un prefab configurado
+                    ShowPersistentIconIfNeeded(activeNarrative);
                 }
                 else
                 {
-                    // TODO: Implementar HidePersistentIcon en NPCBehaviourManagerV2
-                    // _npcManager.HidePersistentIcon();
+                    // Ocultar icono si no hay narrativa activa o no requiere icono
+                    HidePersistentIconIfActive();
                 }
             }
             else
             {
-                // TODO: Implementar HidePersistentIcon en NPCBehaviourManagerV2
-                // _npcManager.HidePersistentIcon();
+                // Mientras se ejecuta una narrativa, ocultar el icono
+                HidePersistentIconIfActive();
+            }
+        }
+        
+        /// <summary>
+        /// Muestra el icono persistente si está configurado
+        /// </summary>
+        private void ShowPersistentIconIfNeeded(ConditionalNarrative narrative)
+        {
+            if (_alertIconController == null)
+            {
+                _alertIconController = GetComponent<NPCAlertIconController>();
+                if (_alertIconController == null)
+                {
+                    _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
+                }
+            }
+            
+            // Usar el prefab configurado en la narrativa, o el del config general
+            GameObject iconPrefab = narrative.persistentIconPrefab;
+            if (iconPrefab == null && _config != null)
+            {
+                iconPrefab = _config.alertIconPrefab;
+            }
+            
+            if (iconPrefab != null && !_alertIconController.HasPersistentIcon)
+            {
+                _alertIconController.ShowPersistentIcon(iconPrefab);
+            }
+        }
+        
+        /// <summary>
+        /// Oculta el icono persistente si está activo
+        /// </summary>
+        private void HidePersistentIconIfActive()
+        {
+            if (_alertIconController != null && _alertIconController.HasPersistentIcon)
+            {
+                _alertIconController.HideAlertIcon();
             }
         }
 
@@ -130,8 +202,9 @@ namespace Game.NPC.Modules
         {
             _isExecuting = true;
             _currentActionIndex = 0;
-            // TODO: Implementar HidePersistentIcon en NPCBehaviourManagerV2
-            // _npcManager.HidePersistentIcon();
+            
+            // Ocultar icono persistente al iniciar la narrativa
+            HidePersistentIconIfActive();
 
             // 1. Preparación (Rotar y Saludar)
             if (_config.rotateToPlayerOnInteract) yield return RotateToPlayer();
@@ -565,14 +638,37 @@ namespace Game.NPC.Modules
                 DefaultNarrativeSignals.Instance?.RaiseCustom(key);
         }
 
-        // --- PERSISTENCIA BÁSICA ---
+        // --- PERSISTENCIA MEJORADA ---
+        // Ahora guarda el estado de cada narrativa condicional individualmente
+        
         private void SaveState()
         {
             if (string.IsNullOrEmpty(_config.persistenceId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
-            if (preset != null && !preset.completedInteractiveNarratives.Contains(_config.persistenceId))
+            if (preset == null) return;
+            
+            // Guardar estado del config general
+            if (!preset.completedInteractiveNarratives.Contains(_config.persistenceId))
             {
                 preset.completedInteractiveNarratives.Add(_config.persistenceId);
+            }
+            
+            // Guardar estado de cada narrativa condicional ejecutada
+            if (_config.conditionalNarratives != null)
+            {
+                for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                {
+                    var narrative = _config.conditionalNarratives[i];
+                    if (narrative != null && narrative.HasBeenExecuted && narrative.singleUse)
+                    {
+                        string narrativeId = GetConditionalNarrativeId(i);
+                        if (!preset.completedInteractiveNarratives.Contains(narrativeId))
+                        {
+                            preset.completedInteractiveNarratives.Add(narrativeId);
+                            Debug.Log($"[NarrativeExecutor:{name}] 💾 Guardada narrativa condicional #{i}: {narrativeId}");
+                        }
+                    }
+                }
             }
         }
 
@@ -580,7 +676,36 @@ namespace Game.NPC.Modules
         {
             if (string.IsNullOrEmpty(_config.persistenceId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
-            if (preset != null) _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_config.persistenceId);
+            if (preset == null) return;
+            
+            // Restaurar estado del config general
+            _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_config.persistenceId);
+            
+            // Restaurar estado de cada narrativa condicional
+            if (_config.conditionalNarratives != null)
+            {
+                for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                {
+                    var narrative = _config.conditionalNarratives[i];
+                    if (narrative != null)
+                    {
+                        string narrativeId = GetConditionalNarrativeId(i);
+                        if (preset.completedInteractiveNarratives.Contains(narrativeId))
+                        {
+                            narrative.MarkAsExecuted();
+                            Debug.Log($"[NarrativeExecutor:{name}] 🔄 Restaurada narrativa condicional #{i} como ejecutada: {narrativeId}");
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Genera un ID único para una narrativa condicional específica
+        /// </summary>
+        private string GetConditionalNarrativeId(int index)
+        {
+            return $"{_config.persistenceId}_CN{index}";
         }
 
         public void ResetState()
@@ -588,7 +713,15 @@ namespace Game.NPC.Modules
             _hasBeenUsed = false;
             _hasDetectedPlayer = false;
             _isExecuting = false;
-            // Limpieza de datos en PlayerPrefs/Profile...
+            
+            // Resetear estado de todas las narrativas condicionales
+            if (_config?.conditionalNarratives != null)
+            {
+                foreach (var narrative in _config.conditionalNarratives)
+                {
+                    narrative?.ResetExecutionState();
+                }
+            }
         }
     }
 }

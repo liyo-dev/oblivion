@@ -197,7 +197,7 @@ public class Interactable : MonoBehaviour
             OnStarted?.Invoke();
             GameState.Push(GamePhase.Dialogue);
             
-            // ✅ El DialogueManager ahora maneja la rotación del NPC automáticamente
+            // ✅ NPCSimpleAnimator maneja la rotación del NPC (suscrito a eventos de DialogueManager)
             dm.StartDialogue(dialogue, transform, () =>
             {
                 Debug.Log($"[Interactable:{name}] 🔚 Diálogo terminado");
@@ -257,8 +257,7 @@ public class Interactable : MonoBehaviour
         // Bloquear otros menús mientras se muestran las opciones
         GameState.Push(GamePhase.SavePrompt);
         
-        // ✅ El DialogueManager maneja la rotación del NPC automáticamente
-        // (Aunque ShowWithChoices no usa el NPC transform, podríamos extenderlo en el futuro)
+        // NPCSimpleAnimator maneja la rotación del NPC (suscrito a eventos de DialogueManager)
         
         try
         {

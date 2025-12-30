@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 4586622852327376273}
   - component: {fileID: 4428771142472130875}
   - component: {fileID: 7907285365621740489}
-  - component: {fileID: -7394777686400306570}
   m_Layer: 9
   m_Name: Canvas Fight!
   m_TagString: Untagged
@@ -98,30 +97,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3a4d86f7cded664aa88409892248c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BillboardUI
---- !u!114 &-7394777686400306570
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6303534759802428624}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 805dcacee14a47748b2371b3663957bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.UI.NPCHealthBarUI
-  fillImage: {fileID: 2739954475301598616}
-  healthText: {fileID: 0}
-  offset: {x: 0, y: 2.5, z: 0}
-  hideWhenFull: 1
-  hideDelay: 3
-  lerpSpeed: 8
-  smoothTransition: 1
-  healthyColor: {r: 0, g: 1, b: 0, a: 1}
-  warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  criticalColor: {r: 1, g: 0, b: 0, a: 1}
-  warningThreshold: 0.5
-  criticalThreshold: 0.25
 --- !u!1 &6986364510449445082
 GameObject:
   m_ObjectHideFlags: 0

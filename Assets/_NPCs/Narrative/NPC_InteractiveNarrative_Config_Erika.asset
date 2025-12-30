@@ -86,12 +86,12 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    showPersistentIcon: 0
-    persistentIconPrefab: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 8ac55e1a38b030042a6ca26a95f2b64b, type: 3}
     persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 1
     narrativeEventKey: ERIKA_FIGHT
-    singleUse: 0
+    singleUse: 1
     priority: 0
     description: 
     debugMode: 0
@@ -104,7 +104,7 @@ MonoBehaviour:
   switchToEnemyLayerOnCombat: 1
   autoStartOnPlayerDetection: 0
   detectionRange: 10
-  alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  alertIconPrefab: {fileID: 0}
   alertIconDuration: 2
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 1

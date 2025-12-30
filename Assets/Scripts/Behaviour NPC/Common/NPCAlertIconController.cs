@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 namespace Game.NPC.Common
@@ -101,6 +101,35 @@ namespace Game.NPC.Common
         }
         
         /// <summary>
+        /// Muestra un icono persistente (sin duración) - se mantiene hasta llamar HideAlertIcon()
+        /// Útil para indicar que hay una narrativa/quest disponible
+        /// </summary>
+        public void ShowPersistentIcon(GameObject iconPrefab)
+        {
+            if (iconPrefab == null)
+            {
+                Debug.LogWarning($"[NPCAlertIconController:{name}] ⚠️ persistentIconPrefab es null");
+                return;
+            }
+            
+            // No mostrar si ya hay un icono activo del mismo prefab
+            if (_currentIconInstance != null && _currentIconInstance.name.Contains(iconPrefab.name))
+            {
+                return;
+            }
+            
+            HideAlertIcon(); // Limpiar icono anterior si existe
+            
+            _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
+            Debug.Log($"[NPCAlertIcon:{name}] 📍 Mostrando icono persistente");
+        }
+        
+        /// <summary>
+        /// Verifica si hay un icono persistente activo
+        /// </summary>
+        public bool HasPersistentIcon => _currentIconInstance != null;
+        
+        /// <summary>
         /// Oculta el icono de alerta actual
         /// </summary>
         public void HideAlertIcon()
@@ -153,6 +182,40 @@ namespace Game.NPC.Common
             
             // Limpiar al terminar
             HideAlertIcon();
+        }
+        
+        /// <summary>
+        /// Rutina para icono persistente (sin duración, se mantiene hasta HideAlertIcon)
+        /// </summary>
+        private IEnumerator ShowPersistentIconRoutine(GameObject iconPrefab)
+        {
+            // Instanciar el prefab
+            _currentIconInstance = Instantiate(iconPrefab, transform);
+            _currentIconInstance.name = iconPrefab.name + "_Persistent";
+            _currentIconInstance.transform.localPosition = iconOffset;
+            _currentIconInstance.transform.localRotation = Quaternion.identity;
+            _currentIconInstance.SetActive(true);
+            
+            Vector3 basePosition = _currentIconInstance.transform.localPosition;
+            
+            // Animar indefinidamente hasta que se oculte
+            while (_currentIconInstance != null)
+            {
+                // Aplicar bounce si está activado
+                if (animateBounce)
+                {
+                    float bounce = Mathf.Sin(Time.time * bounceSpeed) * bounceAmplitude;
+                    _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
+                }
+                
+                // Billboard hacia la cámara
+                if (_mainCamera != null && _currentIconInstance != null)
+                {
+                    _currentIconInstance.transform.rotation = _mainCamera.transform.rotation;
+                }
+                
+                yield return null;
+            }
         }
         
         private void OnDestroy()

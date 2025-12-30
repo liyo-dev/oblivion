@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -4199,13 +4199,287 @@ QuestManager.OnQuestStepCompleted
 
 // Dialogue
 DialogueManager.OnDialogueStarted
-DialogueManager.OnDialogueEnded
+DialogueManager.OnDialogueClosed
 
 // Input
 GamepadInputReader.OnSubmit
 GamepadInputReader.OnCancel
 GamepadInputReader.OnMenuOpen
 ```
+
+---
+
+## 12. Sistemas Auxiliares
+
+### 12.1 Arquitectura del Sistema de Inputs
+
+El sistema de inputs está **centralizado** para evitar código disperso y conflictos.
+
+#### Componentes Principales
+
+**PlayerInputManager (Cerebro Central):**
+- Mantiene la instancia única de `PlayerControls`
+- Gestiona el cambio entre modo **UI** y modo **Gameplay**
+- Usa un contador de referencias para soportar contextos anidados
+- Se registra en `ServiceLocator` para acceso global
+
+```csharp
+// Cambiar a modo UI
+PlayerInputManager.Instance.PushUIMode();
+
+// Restaurar modo Gameplay
+PlayerInputManager.Instance.PopUIMode();
+
+// Consultar modo actual
+bool isInUI = PlayerInputManager.Instance.IsInUIMode;
+```
+
+**GamepadInputReader (Lector de Eventos):**
+- Lee eventos de input del `PlayerControls`
+- Expone eventos estáticos para que otros scripts se suscriban
+- **NO gestiona el estado UI/Gameplay**
+
+```csharp
+void OnEnable()
+{
+    GamepadInputReader.OnInput += HandleInput;
+}
+
+void HandleInput(GamepadInputReader.InputEvent input)
+{
+    if (input.Type == GamepadInputReader.InputEventType.Submit)
+    {
+        // Hacer algo
+    }
+}
+```
+
+#### Reglas del Sistema de Input
+
+**✅ HACER:**
+- Usar `PlayerInputManager.PushUIMode()` al abrir cualquier menú/diálogo
+- Usar `PlayerInputManager.PopUIMode()` al cerrar
+- Suscribirse a `GamepadInputReader.OnInput` para leer eventos
+- Usar `MenuManager.TryOpen()` antes de abrir un menú
+
+**❌ NO HACER:**
+- NO llamar directamente a `_controls.UI.Enable()` o `_controls.GamePlay.Disable()`
+- NO crear instancias de `PlayerControls` manualmente
+- NO gestionar el estado UI/Gameplay en scripts individuales
+
+---
+
+### 12.2 Sistema de Narrativa - Mejoras de Persistencia
+
+#### Persistencia del Estado de Grafos
+
+Los grafos narrativos ahora guardan correctamente su progreso:
+
+- **WaitCustomEventNode**: Guarda si el evento ya fue recibido (`__event_{eventKey}_received`)
+- **StartQuestNode**: Guarda si la quest ya fue iniciada (`__quest_{questId}_started`)
+- Al recargar, estos nodos verifican el blackboard y avanzan automáticamente
+
+#### NarrativeGraphValidator
+
+Sistema de validación automática al registrar grafos:
+
+```csharp
+// Se ejecuta automáticamente al iniciar el juego
+var validation = NarrativeGraphValidator.ValidateGraph(graph);
+validation.LogResults("Mi Grafo");
+```
+
+**Detecta errores:**
+- Falta de StartNode
+- Nodos huérfanos sin conexiones
+- GUIDs duplicados
+- Configuraciones incorrectas
+
+#### NarrativeGraphDebugger (F3)
+
+Panel visual en pantalla para debugging:
+
+- Estado en tiempo real de todos los grafos
+- Información del blackboard
+- Historial de nodos visitados
+- Presionar **F3** para mostrar/ocultar
+
+**Configuración:**
+```csharp
+public bool showDebugPanel = true;
+public KeyCode toggleKey = KeyCode.F3;
+public bool trackHistory = true;
+public int maxHistoryEntries = 50;
+```
+
+#### Atributos de Nodos
+
+```csharp
+[SavePoint("Seguro guardar aquí")]
+public sealed class WaitCustomEventNode : NarrativeNode { }
+
+[UnsafeForSave("No guardar durante diálogo")]
+public sealed class DialogueNode : NarrativeNode { }
+```
+
+---
+
+### 12.3 GameBootProfile Debugger (F4)
+
+Sistema de debugging visual para el sistema de partidas.
+
+#### Características
+
+- **Panel Visual (F4)**: Estado completo del preset y sistemas vivos
+- **Historial**: Log cronológico de todas las operaciones de save/load
+- **Detección de Desincronización**: Comparación visual preset vs sistemas
+- **Botones de Testing**: Save/Load/Reset manual
+
+#### Qué Muestra el Panel
+
+```
+Estado Runtime:
+├── SpawnAnchor: "Bedroom"
+├── Health: 45/100
+├── Mana: 30/50
+├── QuestFlags: 8
+├── Abilities: S:True, J:True, C:False
+├── Inventory: 3 items
+└── Bosses derrotados: 1
+
+Sistemas Vivos:
+├── PlayerHealth: 100/100 ← ❌ Desincronizado!
+├── PlayerMana: 50/50
+└── Inventory: 3 items
+
+Historial:
+├── 14:35:22 ✅ Guardado exitoso (Manual)
+├── 14:35:18 🔄 Runtime actualizado
+└── 14:30:00 🆕 Nueva partida
+```
+
+#### Uso para Testing
+
+```
+1. F4 → Ver estado inicial
+2. Hacer cambios en juego
+3. "🔄 Update Runtime from State"
+4. "💾 Force Save"
+5. Cerrar y reiniciar
+6. "📂 Load Save"
+7. Comparar preset vs sistemas vivos
+```
+
+---
+
+### 12.4 Barra de Vida del Boss (BossHealthBar)
+
+Sistema de barra de vida para combates de boss.
+
+#### Configuración del Prefab
+
+```
+Canvas (World Space)
+└── BossHealthBar (Panel)
+    ├── Background (Image)
+    ├── HealthBarFill (Image - Filled, Horizontal)
+    ├── BossIcon (Image - opcional)
+    ├── BossNameText (TextMeshPro)
+    └── HealthText (TextMeshPro)
+```
+
+#### Componente BossHealthBar
+
+```csharp
+[Header("Referencias del Boss")]
+public Damageable bossDamageable;  // Auto-detecta si no asignado
+public string bossName = "Boss";
+
+[Header("UI - Barra de Vida")]
+public Image healthBarFill;        // Image Type = Filled
+public TextMeshProUGUI healthText; // "250/500"
+
+[Header("Colores")]
+public Color healthyColor = new Color(0.8f, 0.2f, 0.2f);
+public Color warningColor = Color.yellow;   // 50% vida
+public Color criticalColor = Color.red;     // 25% vida
+
+[Header("Comportamiento")]
+public bool autoShow = true;       // Mostrar al iniciar combate
+public bool autoHideOnDeath = true;
+public bool animateHealthChanges = true;
+```
+
+#### Características Automáticas
+
+- ✅ Se muestra al iniciar combate
+- ✅ Se actualiza en tiempo real
+- ✅ Cambia de color según salud
+- ✅ Se oculta cuando el boss muere
+- ✅ Busca al boss automáticamente si no asignado
+
+---
+
+## 13. Problemas Conocidos y Soluciones
+
+### 13.1 Verificación de Items en Inventario al Iniciar Quests
+
+**Problema:** Quest no detecta items que el jugador ya tiene.
+
+**Solución:** `QuestManager.CheckExistingItemsForQuest()` verifica items al iniciar.
+
+```csharp
+// Automático - verifica steps con conditionId "ITEM_*"
+foreach (var step in rq.Steps)
+{
+    if (step.conditionId.StartsWith("ITEM_"))
+    {
+        string itemId = step.conditionId.Substring(5);
+        if (inventory.Count(itemId) > 0)
+            step.completed = true;
+    }
+}
+```
+
+### 13.2 Convenciones de Código
+
+**❌ NUNCA usar:**
+```csharp
+var inventory = FindObjectOfType<Inventory>();  // PROHIBIDO
+```
+
+**✅ SIEMPRE usar:**
+```csharp
+if (PlayerService.TryGetComponent(out Inventory inventory))
+{
+    // Usar inventory aquí
+}
+
+// O para managers
+var dm = DialogueManager.Instance;
+var qm = QuestManager.Instance;
+```
+
+### 13.3 NPCs - Layer Enemy para Targeting
+
+**Problema:** Los hechizos del jugador no apuntan al NPC.
+
+**Solución:** El GameObject del NPC **DEBE** estar en la Layer `Enemy`.
+
+```
+NPC GameObject:
+├── Layer: Enemy ✅
+├── Targetable (script)
+└── NPCBehaviourManagerV2
+```
+
+### 13.4 Rotación de NPCs Durante Diálogos
+
+**Arquitectura:**
+- `DialogueManager` emite eventos: `OnDialogueStarted` y `OnDialogueClosed`
+- `NPCSimpleAnimator` se suscribe a estos eventos
+- El NPC controla su propia rotación internamente
+- El DialogueManager NO manipula NPCs directamente
 
 ---
 

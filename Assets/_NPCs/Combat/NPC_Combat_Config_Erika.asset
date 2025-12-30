@@ -38,8 +38,8 @@ MonoBehaviour:
   alertMusicEvent: Npc_Battle_Alert
   battleMusicId: Npc_Battle
   endMusicEvent: Npc_Battle_Victory
-  sendEventOnDefeat: 1
-  defeatEventKey: ERIKA_BATTLE_WON
+  sendEventOnDefeat: 0
+  defeatEventKey: 
   sendDefeatEventBeforeDeath: 0
   spell1Prefab: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
   spell2Prefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
