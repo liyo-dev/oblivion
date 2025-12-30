@@ -33,6 +33,24 @@ namespace Game.NPC.Modules
         public float rotationSpeed = 360f;
         
         [Header("Persistent Icon")]
+        [Tooltip("Prefab del icono persistente que se muestra cuando hay quests disponibles (ej: signo de exclamación amarillo)")]
+        public GameObject questIconPrefab;
+        
+        [Tooltip("Offset del icono respecto a la posición del NPC")]
+        public Vector3 questIconOffset = new Vector3(0, 2.5f, 0);
+        
+        [Tooltip("¿Mostrar icono cuando hay una quest disponible para iniciar?")]
+        public bool showIconWhenQuestAvailable = true;
+        
+        [Tooltip("¿Mostrar icono cuando hay una quest activa en progreso?")]
+        public bool showIconWhenQuestInProgress = true;
+        
+        [Tooltip("¿Mostrar icono cuando una quest está lista para entregar?")]
+        public bool showIconWhenQuestReadyToTurnIn = true;
+        
+        [Tooltip("Prefab alternativo para cuando la quest está lista para entregar (ej: signo de interrogación). Si es null, usa questIconPrefab.")]
+        public GameObject turnInIconPrefab;
+        
         [Tooltip("¿Ocultar el icono persistente automáticamente cuando todas las quests se completen?")]
         public bool hideIconWhenAllCompleted = true;
 
@@ -88,6 +106,126 @@ namespace Game.NPC.Modules
                 return false;
             }
             return true;
+        }
+        
+        /// <summary>
+        /// Estado del icono persistente de quest
+        /// </summary>
+        public enum QuestIconState
+        {
+            None,           // No mostrar icono
+            Available,      // Quest disponible para iniciar (!)
+            InProgress,     // Quest activa en progreso (!)
+            ReadyToTurnIn   // Quest lista para entregar (?)
+        }
+        
+        /// <summary>
+        /// Obtiene el estado actual del icono basado en las quests de este NPC
+        /// </summary>
+        public QuestIconState GetCurrentIconState()
+        {
+            var qm = QuestManager.Instance;
+            if (qm == null || questChain == null || questChain.Length == 0)
+                return QuestIconState.None;
+            
+            // Verificar si todas las quests están completadas
+            if (hideIconWhenAllCompleted && AreAllQuestsCompleted())
+                return QuestIconState.None;
+            
+            // Buscar quest activa
+            foreach (var entry in questChain)
+            {
+                if (entry?.questData == null) continue;
+                
+                var state = qm.GetState(entry.questData.questId);
+                
+                if (state == QuestState.Active)
+                {
+                    // Verificar si todos los pasos están completos (lista para entregar)
+                    if (qm.AreAllStepsCompleted(entry.questData.questId))
+                    {
+                        if (showIconWhenQuestReadyToTurnIn)
+                            return QuestIconState.ReadyToTurnIn;
+                    }
+                    else
+                    {
+                        if (showIconWhenQuestInProgress)
+                            return QuestIconState.InProgress;
+                    }
+                    return QuestIconState.None;
+                }
+            }
+            
+            // Si no hay quest activa, verificar si hay alguna disponible para iniciar
+            var first = GetFirstInactiveQuest();
+            if (first != null && showIconWhenQuestAvailable)
+                return QuestIconState.Available;
+            
+            return QuestIconState.None;
+        }
+        
+        /// <summary>
+        /// Obtiene el prefab del icono a mostrar según el estado actual
+        /// </summary>
+        public GameObject GetCurrentIconPrefab()
+        {
+            var state = GetCurrentIconState();
+            
+            switch (state)
+            {
+                case QuestIconState.ReadyToTurnIn:
+                    // Usar turnInIconPrefab si existe, sino el normal
+                    return turnInIconPrefab != null ? turnInIconPrefab : questIconPrefab;
+                    
+                case QuestIconState.Available:
+                case QuestIconState.InProgress:
+                    return questIconPrefab;
+                    
+                default:
+                    return null;
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si debe mostrarse el icono persistente
+        /// </summary>
+        public bool ShouldShowIcon()
+        {
+            return GetCurrentIconState() != QuestIconState.None && questIconPrefab != null;
+        }
+        
+        /// <summary>
+        /// Verifica si todas las quests de la cadena están completadas
+        /// </summary>
+        public bool AreAllQuestsCompleted()
+        {
+            var qm = QuestManager.Instance;
+            if (qm == null) return false;
+            
+            foreach (var entry in questChain)
+            {
+                if (entry?.questData == null) continue;
+                if (qm.GetState(entry.questData.questId) != QuestState.Completed)
+                    return false;
+            }
+            return true;
+        }
+        
+        /// <summary>
+        /// Obtiene la primera quest inactiva de la cadena (disponible para iniciar)
+        /// </summary>
+        private QuestChainEntry GetFirstInactiveQuest()
+        {
+            var qm = QuestManager.Instance;
+            if (qm == null) return null;
+            
+            foreach (var entry in questChain)
+            {
+                if (entry?.questData == null) continue;
+                if (qm.GetState(entry.questData.questId) == QuestState.Inactive)
+                    return entry;
+            }
+            return null;
         }
 
         /// <summary>

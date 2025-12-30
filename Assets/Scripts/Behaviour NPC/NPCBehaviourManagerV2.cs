@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -158,6 +158,13 @@ namespace Game.NPC
             {
                 if (!GetComponent<NPCQuestActionExecutor>()) 
                     gameObject.AddComponent<NPCQuestActionExecutor>();
+                
+                // Añadir gestor de iconos de quest
+                if (!GetComponent<NPCQuestIconManager>())
+                {
+                    gameObject.AddComponent<NPCQuestIconManager>();
+                    if (debugMode) Debug.Log($"[NPCManager] 🎯 NPCQuestIconManager añadido para {name}");
+                }
             }
             
             // 2. INTERACTIVE NARRATIVE

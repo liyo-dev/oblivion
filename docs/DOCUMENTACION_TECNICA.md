@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -871,11 +871,37 @@ public class NPCQuestConfig : NPCModuleConfigBase
         public UnityEvent onQuestCompleted;
     }
     
-    public QuestChainEntry[] chain;
+    public QuestChainEntry[] questChain;
     public bool enableItemDetection = true;
     public float detectionRadius = 3f;
+    
+    [Header("Persistent Icon")]  // ⭐ NUEVO (Dic 2025)
+    public GameObject questIconPrefab;           // Prefab del icono (!)
+    public Vector3 questIconOffset;              // Offset del icono
+    public bool showIconWhenQuestAvailable;      // Mostrar cuando hay quest disponible
+    public bool showIconWhenQuestInProgress;     // Mostrar cuando quest en progreso
+    public bool showIconWhenQuestReadyToTurnIn;  // Mostrar cuando lista para entregar
+    public GameObject turnInIconPrefab;          // Prefab alternativo (?) para entregar
+    public bool hideIconWhenAllCompleted;        // Ocultar cuando todo completo
 }
 ```
+
+#### Sistema de Iconos de Quest (NUEVO Dic 2025)
+
+Los NPCs con quests muestran automáticamente un icono sobre su cabeza:
+
+**Estados del Icono:**
+| Estado | Icono | Descripción |
+|--------|-------|-------------|
+| `Available` | `questIconPrefab` (!) | Quest disponible para iniciar |
+| `InProgress` | `questIconPrefab` (!) | Quest activa, pasos pendientes |
+| `ReadyToTurnIn` | `turnInIconPrefab` (?) | Quest lista para entregar |
+| `None` | - | Todas completadas o sin quests |
+
+**Componente NPCQuestIconManager:**
+- Se añade automáticamente cuando el NPC tiene `questConfig`
+- Se suscribe a eventos del QuestManager
+- Actualiza el icono automáticamente cuando cambian las quests
 
 **Uso:**
 ```
@@ -883,11 +909,13 @@ NPC Quest Giver:
 └─ behaviourType: [Quest + Ambient]
     ├─ ambientConfig: NPC_Ambient_StandStill
     └─ questConfig: NPC_Quest_MainStory
-        └─ chain:
+        ├─ questIconPrefab: Canvas_QuestIcon (!)
+        ├─ turnInIconPrefab: Canvas_TurnInIcon (?)
+        ├─ showIconWhenQuestAvailable: ✅
+        ├─ showIconWhenQuestInProgress: ✅
+        ├─ showIconWhenQuestReadyToTurnIn: ✅
+        └─ questChain:
             ├─ [0] Quest_FindCat
-            │   ├─ dlgBefore: "Mi gato se perdió..."
-            │   ├─ dlgInProgress: "¿Lo encontraste?"
-            │   └─ dlgTurnIn: "¡Gracias!"
             └─ [1] Quest_DefeatBoss
 ```
 
@@ -986,41 +1014,124 @@ NPCCombatConfig:
 
 ---
 
-### 3.6 Sistema de Narrativa Interactiva
+### 3.6 Sistema de Narrativa Interactiva (REFACTORIZADO Dic 2025)
+
+#### Arquitectura Simplificada
+
+El sistema de narrativa interactiva ha sido **refactorizado** para eliminar redundancias:
+
+- **Antes:** Configuración global + configuración por narrativa (redundante)
+- **Ahora:** Cada `ConditionalNarrative` controla su propio comportamiento
 
 #### NPCInteractiveNarrativeConfig (ScriptableObject)
 
-**Sistema de cadenas narrativas:** Encadena acciones secuenciales (diálogos, movimientos, animaciones, etc.)
+**Configuración compartida del módulo:**
 
 ```csharp
 [CreateAssetMenu(menuName = "NPC/Módulos/Interactive Narrative Config")]
 public class NPCInteractiveNarrativeConfig : NPCModuleConfigBase
 {
-    [Header("Narrative Chain")]
-    public NarrativeChainEntry[] narrativeChain;
+    [Header("Narrativas Condicionales")]
+    public ConditionalNarrative[] conditionalNarratives;  // Lista de narrativas
     
-    [Header("Configuración")]
-    public bool singleUse = true;           // Solo se ejecuta una vez
-    public bool persistState = true;        // Guardar estado
-    public string persistenceId;            // ID único (auto-generado)
+    [Header("Persistencia")]
+    public bool persistState = true;           // Guardar estado en save
+    public string persistenceId;               // Auto-generado: "NombreAsset_hash8"
     
-    [Header("Behavior")]
+    [Header("Comportamiento General")]
     public bool rotateToPlayerOnInteract = true;
     public float rotationDuration = 0.3f;
     
-    [Header("Auto-Inicio (Alerta)")]
-    public bool autoStartOnPlayerDetection = false;  // ⭐ NUEVO
-    public float detectionRange = 10f;
-    public Sprite alertIcon;                         // Icono de alerta
+    [Header("Layer Management")]
+    public LayerMode initialLayer = LayerMode.Interactable;
+    public bool switchToEnemyLayerOnCombat = true;
+    
+    [Header("Detección del Jugador")]
+    public float detectionRange = 10f;         // Rango compartido
+    public GameObject alertIconPrefab;         // Icono de alerta (!)
     public float alertIconDuration = 1f;
     public bool walkTowardsPlayerOnAlert = true;
     public float stopDistanceFromPlayer = 2f;
-    
-    [Header("Estado Post-Narrativa")]
-    public PostNarrativeState postNarrativeState;
-    public NPCAmbientConfig postNarrativeAmbientConfig;
 }
 ```
+
+#### ConditionalNarrative (Por Narrativa)
+
+**Cada narrativa controla su propio comportamiento:**
+
+```csharp
+[Serializable]
+public class ConditionalNarrative
+{
+    [Header("Identificación")]
+    public string description;                 // Nombre descriptivo
+    public int priority = 0;                   // Mayor = evalúa primero
+    
+    [Header("Condición")]
+    public NarrativeCondition condition;       // Cuándo se activa
+    
+    [Header("Narrativa")]
+    public NarrativeChainEntry[] narrativeChain;  // Acciones a ejecutar
+    
+    [Header("Comportamiento de Ejecución")]
+    public bool singleUse = true;              // ¿Una sola vez?
+    public bool autoStartOnDetection = false;  // ¿Auto-iniciar al detectar jugador?
+    
+    [Header("Estado Post-Narrativa")]
+    public PostNarrativeState postNarrativeState = PostNarrativeState.None;
+    public NPCAmbientConfig postNarrativeAmbientConfig;
+    
+    [Header("Icono Persistente")]
+    public bool showPersistentIcon = false;    // Mostrar icono sobre cabeza
+    public GameObject persistentIconPrefab;    // Prefab del icono
+    
+    [Header("Evento al Grafo Narrativo")]
+    public bool sendNarrativeEvent = false;
+    public string narrativeEventKey;
+}
+```
+
+#### PostNarrativeState
+
+```csharp
+public enum PostNarrativeState
+{
+    None,              // No hacer nada especial
+    Idle,              // Forzar estado Idle
+    Wander,            // Activar comportamiento Wander
+    SwitchToAmbient,   // Cambiar a NPCAmbientConfig específico
+    Disable            // Desactivar el GameObject
+}
+```
+
+#### Ejemplo: NPC con Intro + Diálogo Repetible
+
+```
+NPC Oliver:
+└─ NPCInteractiveNarrativeConfig
+    ├─ persistenceId: "oliver-narrative-xyz123"
+    └─ conditionalNarratives:
+        ├─ [0] Narrativa "Intro" (prioridad 10)
+        │   ├─ singleUse: ✅
+        │   ├─ autoStartOnDetection: ✅
+        │   ├─ postNarrativeState: None
+        │   ├─ showPersistentIcon: ❌
+        │   └─ narrativeChain: [Diálogo, Movimiento]
+        │
+        └─ [1] Narrativa "Diálogo Repetible" (prioridad 0)
+            ├─ singleUse: ❌
+            ├─ autoStartOnDetection: ❌
+            ├─ postNarrativeState: None
+            ├─ showPersistentIcon: ✅
+            └─ narrativeChain: [Diálogo]
+```
+
+**Flujo:**
+1. Nueva partida → Oliver detecta jugador → ejecuta "Intro" (autoStart)
+2. "Intro" se marca como ejecutada (singleUse)
+3. "Diálogo Repetible" se activa (muestra icono)
+4. Jugador interactúa → ejecuta "Diálogo Repetible"
+5. Al cargar partida → "Intro" ya ejecutada → solo "Diálogo Repetible" disponible
 
 #### Tipos de Acciones Narrativas
 
@@ -1028,58 +1139,13 @@ public class NPCInteractiveNarrativeConfig : NPCModuleConfigBase
 public enum NarrativeActionType
 {
     Dialogue,       // Mostrar diálogo
-    Move,          // Mover a punto (anchor o transform)
-    PlayAnimation, // Reproducir animación
-    StartQuest,    // Iniciar quest
-    StartCombat,   // Iniciar combate
-    Wait,          // Esperar X segundos
-    Custom         // UnityEvent personalizado
+    Move,           // Mover a punto (anchor o transform)
+    PlayAnimation,  // Reproducir animación
+    StartQuest,     // Iniciar quest
+    StartCombat,    // Iniciar combate
+    Wait            // Esperar X segundos
 }
-```
-
-#### NarrativeChainEntry
-
-```csharp
-[Serializable]
-public class NarrativeChainEntry
-{
-    public NarrativeActionType actionType;
-    
-    // Dialogue
-    public DialogueAsset dialogue;
-    
-    // Movement
-    public string targetAnchorName;           // SpawnAnchor por ID
-    public Transform targetTransform;         // O transform directo
-    public float maxMovementDuration = 15f;
-    public float walkDisplayDuration = 999f;
-    public bool turnAroundOnArrival = false;
-    public bool waitForPlayer = false;        // Espera si jugador se aleja
-    public float maxPlayerDistance = 10f;
-    public float resumePlayerDistance = 5f;
-    
-    // Animation
-    public string animationTrigger;
-    public AnimationClip animationClip;
-    public float animationDuration = 0f;
-    
-    // Quest
-    public QuestData questToStart;
-    
-    // Combat
-    public Transform combatTarget;
-    
-    // Wait
-    public float waitDuration = 1f;
-    
-    // Custom
-    public UnityEvent customAction;
-    
-    // Eventos
-    public UnityEvent onActionStarted;
-    public UnityEvent onActionCompleted;
-}
-```
+``````
 
 #### Ejemplo Completo: Tutorial Guide
 
@@ -1393,7 +1459,7 @@ NPCBehaviourManagerV2
 |--------|------|-----------|------------------|---------------|
 | **Ambient** | `Ambient` | NPCAmbientConfig | - | Idle/Wander básico |
 | **Combat** | `Combat` | NPCCombatConfig | Damageable, NPCCombatLifecycleHandler, NPCAlertIconController | Enemigos agresivos |
-| **Quest** | `Quest` | NPCQuestConfig | - | Quest givers |
+| **Quest** | `Quest` | NPCQuestConfig | NPCQuestActionExecutor, **NPCQuestIconManager** | Quest givers con iconos |
 | **Narrative** | `Narrative` | NPCNarrativeConfig | - | NPCs con grafo narrativo |
 | **Interactive Narrative** | `InteractiveNarrative` | NPCInteractiveNarrativeConfig | NPCInteractiveNarrativeExecutor, NPCAlertIconController | Secuencias guiadas |
 
@@ -1403,9 +1469,9 @@ NPCBehaviourManagerV2
 |-------------|-------|----------------|
 | **Villager** | `Ambient` | Vaga por el pueblo |
 | **Enemy** | `Ambient + Combat` | Patrulla y ataca |
-| **Quest Giver** | `Quest + Ambient` | Da misiones, puede moverse |
+| **Quest Giver** | `Quest + Ambient` | Da misiones con icono (!), puede moverse |
 | **Boss** | `Combat` | Solo combate, estático |
-| **Tutorial Guide** | `InteractiveNarrative` | Secuencia guiada |
+| **Tutorial Guide** | `InteractiveNarrative` | Secuencia guiada con auto-detección |
 | **Complex NPC** | `Quest + Combat + InteractiveNarrative` | Todo combinado |
 
 ---
@@ -4506,7 +4572,8 @@ NPC GameObject:
 
 - ✅ Sistema de NPCs: Refactorizado a FSM
 - ✅ Sistema de Combate: Mejorado y fluido
-- ✅ Sistema de Quests: Funcional con postActions
+- ✅ Sistema de Quests: Funcional con postActions e iconos
+- ✅ Sistema de Narrativa Interactiva: Refactorizado (por narrativa)
 - ✅ Sistema de Localización: ES/EN completo
 - ✅ Arquitectura de Escenas: START como núcleo
 - ✅ Cinemáticas: Sin desactivar GameObjects
@@ -4516,6 +4583,9 @@ NPC GameObject:
 **Sistemas Nuevos (Dic 2025):**
 - ✨ Sistema de fade para cinemáticas
 - ✨ NPCQuestActionExecutor con postActions
+- ✨ NPCQuestIconManager para iconos de quest
+- ✨ ConditionalNarrative con control individual
+- ✨ Auto-generación de persistenceId
 
 **Scripts legacy eliminados:**
 - ❌ `SimpleNPCWander` (migrado a WanderState)
@@ -4526,6 +4596,44 @@ NPC GameObject:
 ---
 
 ## 📝 Historial de Cambios Mayores
+
+### Diciembre 2025 (30 Dic) - Refactorización Sistema Narrativa + Iconos Quest
+
+**Sistema de Narrativa Interactiva (REFACTORIZADO):**
+- ✨ Eliminadas redundancias de configuración global vs por narrativa
+- ✨ Cada `ConditionalNarrative` ahora controla:
+  - `singleUse` - ¿Ejecutar una sola vez?
+  - `autoStartOnDetection` - ¿Auto-iniciar al detectar jugador?
+  - `postNarrativeState` - Estado post-narrativa individual
+- ✨ Nuevo enum `PostNarrativeState.None` para no ejecutar estado post
+- ✨ `persistenceId` se auto-genera basado en nombre del asset + hash único
+- ✨ Detección de IDs duplicados con `Debug.LogError` detallado
+
+**Sistema de Iconos de Quest (NUEVO):**
+- ✨ Nuevo componente `NPCQuestIconManager`
+- ✨ Se añade automáticamente a NPCs con `questConfig`
+- ✨ Configuración en `NPCQuestConfig`:
+  - `questIconPrefab` - Icono de quest disponible (!)
+  - `turnInIconPrefab` - Icono de entregar quest (?)
+  - `questIconOffset` - Posición del icono
+  - Flags para mostrar en cada estado
+- ✨ Actualización automática vía eventos del QuestManager
+
+**Sistema de Guardado/Carga:**
+- ✨ Limpieza explícita de `NPCInteractiveNarrativeRegistry` al cargar/nueva partida
+- ✨ Los executors restauran su estado correctamente desde el preset
+
+**Bug Fixes:**
+- ✅ Corregido: IDs de persistencia duplicados entre NPCs (Victoria/Erika/Oliver)
+- ✅ Corregido: Estado de narrativa de un NPC afectaba a otro
+- ✅ Corregido: PostNarrativeState se ejecutaba después de cada narrativa
+
+**Documentación:**
+- 📚 Consolidados todos los archivos MD en `docs/DOCUMENTACION_TECNICA.md`
+- 📚 Eliminados 11 archivos MD redundantes
+- 📚 README.md simplificado con referencia a documentación principal
+
+---
 
 ### Diciembre 2025 - Gran Refactorización y Mejoras
 

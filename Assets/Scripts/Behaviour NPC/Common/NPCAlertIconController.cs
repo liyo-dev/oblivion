@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 
 namespace Game.NPC.Common
@@ -82,6 +82,14 @@ namespace Game.NPC.Common
             {
                 Debug.LogWarning($"[NPCAlertIcon:{name}] ⚠️ questionPrefab no proporcionado");
             }
+        }
+        
+        /// <summary>
+        /// Establece el offset del icono respecto al NPC
+        /// </summary>
+        public void SetIconOffset(Vector3 offset)
+        {
+            iconOffset = offset;
         }
         
         /// <summary>
