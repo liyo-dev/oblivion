@@ -43,17 +43,14 @@ namespace Game.NPC.Modules
         [Tooltip("Lista de narrativas con condiciones. Se evalúan en orden de prioridad. Para narrativa simple sin condiciones, añade una con condición 'None'.")]
         public ConditionalNarrative[] conditionalNarratives = System.Array.Empty<ConditionalNarrative>();
 
-        [Header("Configuración")]
-        [Tooltip("¿Esta narrativa solo se puede ejecutar una vez POR PARTIDA? Si es true, después de completarse no volverá a ejecutarse en esa partida. Al crear una NUEVA PARTIDA se resetea.")]
-        public bool singleUse = true;
-
-        [Tooltip("¿Guardar el estado en el preset de la partida? Si es true, el estado de 'completado' se guardará cuando el jugador haga SAVE. Al cargar esa partida guardada, se restaurará. NOTA: Al crear una nueva partida, el preset es limpio y todas las narrativas vuelven a estar disponibles.")]
+        [Header("Persistencia")]
+        [Tooltip("¿Guardar el estado en el preset de la partida? Si es true, el estado de 'completado' se guardará cuando el jugador haga SAVE.")]
         public bool persistState = true;
 
-        [Tooltip("ID único para persistencia (generado automáticamente). Usado para identificar esta narrativa en el sistema de guardado.")]
+        [Tooltip("ID único para persistencia (generado automáticamente basado en el nombre del asset).")]
         public string persistenceId;
 
-        [Header("Behavior")]
+        [Header("Comportamiento General")]
         [Tooltip("¿El NPC gira hacia el jugador al interactuar?")]
         public bool rotateToPlayerOnInteract = true;
 
@@ -62,21 +59,18 @@ namespace Game.NPC.Modules
         public float rotationDuration = 0.3f;
         
         [Header("Layer Management")]
-        [Tooltip("Capa inicial del NPC. Si autoStartOnPlayerDetection está desactivado, se recomienda 'Interactable' para poder interactuar con el NPC. Cambiará automáticamente a 'Enemy' al iniciar combate si hay una acción StartCombat.")]
+        [Tooltip("Capa inicial del NPC. Cambiará automáticamente a 'Enemy' al iniciar combate si switchToEnemyLayerOnCombat está activo.")]
         public LayerMode initialLayer = LayerMode.Interactable;
         
         [Tooltip("¿Cambiar automáticamente a la capa 'Enemy' cuando se inicie un combate (acción StartCombat)?")]
         public bool switchToEnemyLayerOnCombat = true;
 
-        [Header("Auto-Inicio (Alerta)")]
-        [Tooltip("¿El NPC detecta al jugador y comienza la narrativa automáticamente?")]
-        public bool autoStartOnPlayerDetection;
-
-        [Tooltip("Rango de detección del jugador (solo si autoStartOnPlayerDetection = true)")]
+        [Header("Detección del Jugador")]
+        [Tooltip("Rango de detección del jugador para narrativas con autoStartOnDetection=true")]
         [Min(1f)]
         public float detectionRange = 10f;
 
-        [Tooltip("Prefab del icono que aparece sobre la cabeza al detectar al jugador (GameObject con Canvas configurado)")]
+        [Tooltip("Prefab del icono de alerta que aparece sobre la cabeza (!) al detectar al jugador")]
         public GameObject alertIconPrefab;
 
         [Tooltip("Duración del icono de alerta antes de comenzar la narrativa (segundos)")]
@@ -90,12 +84,6 @@ namespace Game.NPC.Modules
         [Min(0.5f)]
         public float stopDistanceFromPlayer = 2f;
 
-        [Header("Estado Post-Narrativa")]
-        [Tooltip("¿Qué hace el NPC después de completar toda la cadena?")]
-        public PostNarrativeState postNarrativeState = PostNarrativeState.Idle;
-
-        [Tooltip("Config ambient si postNarrativeState = SwitchToAmbient")]
-        public NPCAmbientConfig postNarrativeAmbientConfig;
 
         public override bool ValidateConfig(out string errorMessage)
         {
@@ -138,28 +126,22 @@ namespace Game.NPC.Modules
                     errorMessage = $"Conditional narrative {i} ('{condNarrative.description}'): sendNarrativeEvent activado pero narrativeEventKey vacío";
                     return false;
                 }
+                
+                // Validar postNarrativeState de cada narrativa
+                if (condNarrative.postNarrativeState == PostNarrativeState.SwitchToAmbient && condNarrative.postNarrativeAmbientConfig == null)
+                {
+                    errorMessage = $"Conditional narrative {i} ('{condNarrative.description}'): PostNarrativeState = SwitchToAmbient requiere postNarrativeAmbientConfig";
+                    return false;
+                }
             }
 
-            if (postNarrativeState == PostNarrativeState.SwitchToAmbient && postNarrativeAmbientConfig == null)
+            // Validar configuración de detección (rango compartido)
+            if (detectionRange <= 0f)
             {
-                errorMessage = "PostNarrativeState = SwitchToAmbient requiere postNarrativeAmbientConfig";
+                errorMessage = "detectionRange debe ser mayor a 0";
                 return false;
             }
 
-            // Validar configuración de auto-inicio
-            if (autoStartOnPlayerDetection)
-            {
-                if (detectionRange <= 0f)
-                {
-                    errorMessage = "Auto-inicio requiere detectionRange mayor a 0";
-                    return false;
-                }
-
-                if (alertIconPrefab == null)
-                {
-                    Debug.LogWarning("[NPCInteractiveNarrativeConfig] Auto-inicio configurado pero no hay alertIconPrefab asignado");
-                }
-            }
 
             return true;
         }
@@ -261,23 +243,60 @@ namespace Game.NPC.Modules
         
         private void OnValidate()
         {
-            // Auto-generar ID de persistencia si está vacío y se requiere persistencia
+            // Auto-generar ID de persistencia basado en el nombre del asset si está vacío
             if (persistState && string.IsNullOrEmpty(persistenceId))
             {
-                persistenceId = System.Guid.NewGuid().ToString();
+                // Usar el nombre del asset como base para el ID único
+                string baseName = name;
+                if (string.IsNullOrEmpty(baseName))
+                {
+                    baseName = "NPC_Narrative";
+                }
+                
+                // Generar un hash corto para garantizar unicidad
+                string shortHash = System.Guid.NewGuid().ToString().Substring(0, 8);
+                persistenceId = $"{baseName}_{shortHash}";
+                
+                #if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(this);
+                Debug.Log($"[NPCInteractiveNarrativeConfig] 🆔 Auto-generado persistenceId: '{persistenceId}' para asset '{name}'");
+                #endif
             }
+        }
+        
+        /// <summary>
+        /// Regenera el ID de persistencia basado en el nombre actual del asset.
+        /// Útil si el asset fue renombrado y quieres sincronizar el ID.
+        /// </summary>
+        public void RegenerateIdFromName()
+        {
+            string baseName = name;
+            if (string.IsNullOrEmpty(baseName))
+            {
+                baseName = "NPC_Narrative";
+            }
+            
+            string shortHash = System.Guid.NewGuid().ToString().Substring(0, 8);
+            persistenceId = $"{baseName}_{shortHash}";
+            
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+            Debug.Log($"[NPCInteractiveNarrativeConfig] 🔄 Regenerado persistenceId: '{persistenceId}' para asset '{name}'");
+            #endif
         }
     }
 
     /// <summary>
-    /// Estado del NPC después de completar la narrativa
+    /// Estado del NPC después de completar la narrativa.
+    /// Cada ConditionalNarrative puede especificar su propio estado post.
     /// </summary>
     public enum PostNarrativeState
     {
-        Idle,               // Se queda en Idle
-        Wander,            // Activa comportamiento Wander
-        SwitchToAmbient,   // Cambia a un NPCAmbientConfig específico
-        Disable            // Se desactiva el GameObject
+        None,              // No hacer nada especial, el NPC continúa como estaba
+        Idle,              // Forzar al NPC a estado Idle
+        Wander,            // Activar comportamiento Wander
+        SwitchToAmbient,   // Cambiar a un NPCAmbientConfig específico
+        Disable            // Desactivar el GameObject del NPC
     }
     
     /// <summary>

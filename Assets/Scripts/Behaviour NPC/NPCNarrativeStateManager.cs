@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Modules;
 
 namespace Game.NPC
@@ -147,7 +147,6 @@ namespace Game.NPC
                     if (config != null)
                     {
                         sb.AppendLine($"\n🎭 {executor.name}");
-                        sb.AppendLine($"   SingleUse: {config.singleUse}");
                         sb.AppendLine($"   Persist: {config.persistState}");
                         sb.AppendLine($"   ID: {config.persistenceId}");
                         sb.AppendLine($"   Narrativas: {config.conditionalNarratives?.Length ?? 0}");
@@ -159,7 +158,7 @@ namespace Game.NPC
                                 var narrative = config.conditionalNarratives[i];
                                 if (narrative != null)
                                 {
-                                    sb.AppendLine($"      {i}. {narrative.description} - Ejecutada: {narrative.HasBeenExecuted}");
+                                    sb.AppendLine($"      {i}. {narrative.description} - SingleUse: {narrative.singleUse}, Ejecutada: {narrative.HasBeenExecuted}");
                                 }
                             }
                         }

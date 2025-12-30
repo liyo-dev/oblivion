@@ -15,7 +15,9 @@ MonoBehaviour:
   moduleName: 
   description: 
   conditionalNarratives:
-  - condition:
+  - description: 
+    priority: 0
+    condition:
       conditionType: 0
       targetQuest: {fileID: 0}
       debugMode: 0
@@ -72,27 +74,65 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 1
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
-    persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 0
     narrativeEventKey: 
-    singleUse: 1
-    priority: 0
-    description: 
     debugMode: 0
-  singleUse: 1
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 0
+      targetQuest: {fileID: 0}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 1b2633a3db9ef2741ab756606c66a0b1, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 0
+    autoStartOnDetection: 0
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 15ece4df6152aa24db832899f6a46df3, type: 3}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
   persistState: 1
-  persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
+  persistenceId: oliver-narrative-b8a7c6d5-unique
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0
   switchToEnemyLayerOnCombat: 1
-  autoStartOnPlayerDetection: 1
   detectionRange: 10
   alertIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   alertIconDuration: 1
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 0.5
-  postNarrativeState: 0
-  postNarrativeAmbientConfig: {fileID: 0}

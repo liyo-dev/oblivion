@@ -1,31 +1,50 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
 {
     /// <summary>
-    /// Narrativa condicional: Define una cadena narrativa que se ejecuta solo si se cumple una condición
+    /// Narrativa condicional: Define una cadena narrativa que se ejecuta solo si se cumple una condición.
+    /// Cada narrativa tiene su propia configuración de ejecución (singleUse, autoStart, postState).
     /// </summary>
     [Serializable]
     public class ConditionalNarrative
     {
+        [Header("Identificación")]
+        [Tooltip("Nombre descriptivo para identificar esta narrativa en el inspector")]
+        public string description = "";
+        
+        [Tooltip("Prioridad de evaluación (mayor = se evalúa primero)")]
+        public int priority = 0;
+        
         [Header("Condición")]
         [Tooltip("Condición que debe cumplirse para ejecutar esta narrativa")]
         public NarrativeCondition condition = new NarrativeCondition();
         
         [Header("Narrativa")]
         [Tooltip("Cadena de acciones que se ejecutan si la condición se cumple")]
-        public NarrativeChainEntry[] narrativeChain = System.Array.Empty<NarrativeChainEntry>();
+        public NarrativeChainEntry[] narrativeChain = Array.Empty<NarrativeChainEntry>();
+        
+        [Header("Comportamiento de Ejecución")]
+        [Tooltip("¿Esta narrativa solo se puede ejecutar una vez? Si es true, después de completarse no volverá a ejecutarse.")]
+        public bool singleUse = true;
+        
+        [Tooltip("¿Iniciar automáticamente al detectar al jugador? Si es false, el jugador debe interactuar manualmente.")]
+        public bool autoStartOnDetection = false;
+        
+        [Header("Estado Post-Narrativa")]
+        [Tooltip("¿Qué hace el NPC después de completar ESTA narrativa? Solo aplica si es singleUse=true.")]
+        public PostNarrativeState postNarrativeState = PostNarrativeState.None;
+        
+        [Tooltip("Config ambient si postNarrativeState = SwitchToAmbient")]
+        public NPCAmbientConfig postNarrativeAmbientConfig;
         
         [Header("Icono Persistente")]
         [Tooltip("¿Mostrar icono persistente sobre la cabeza cuando esta narrativa esté disponible?")]
         public bool showPersistentIcon = false;
         
-        [Tooltip("Prefab del icono persistente (ej: GameObject con Canvas)")]
+        [Tooltip("Prefab del icono persistente (ej: GameObject con Canvas). Si es null, usa el del Config general.")]
         public GameObject persistentIconPrefab;
-        
-        [Tooltip("O usa un sprite simple (alternativa al prefab)")]
-        public Sprite persistentIconSprite;
         
         [Header("Evento al Grafo Narrativo")]
         [Tooltip("¿Enviar evento al grafo narrativo al completar esta narrativa?")]
@@ -34,17 +53,7 @@ namespace Game.NPC.Modules
         [Tooltip("Clave del evento que se enviará (ej: 'NPC_ItemEntregado')")]
         public string narrativeEventKey = "";
         
-        [Header("Configuración")]
-        [Tooltip("¿Esta narrativa solo se puede ejecutar una vez?")]
-        public bool singleUse = true;
-        
-        [Tooltip("Prioridad de evaluación (mayor = se evalúa primero)")]
-        public int priority = 0;
-        
         [Header("Debug")]
-        [Tooltip("Nombre descriptivo para identificar esta narrativa en el inspector")]
-        public string description = "";
-        
         [Tooltip("Mostrar logs de debug para esta narrativa")]
         public bool debugMode = false;
         

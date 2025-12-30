@@ -46,8 +46,8 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    showPersistentIcon: 1
-    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
     persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 0
     narrativeEventKey: 
@@ -97,7 +97,7 @@ MonoBehaviour:
     debugMode: 0
   singleUse: 1
   persistState: 1
-  persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
+  persistenceId: victoria-narrative-f5e4d3c2-unique
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

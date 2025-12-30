@@ -377,6 +377,10 @@ public class GameBootProfile : ScriptableObject
             // Snapshot narrativo eliminado; no se restaura
 
             NarrativeAutoSetup.ResetForLoadedProfile();
+            
+            // ✅ Limpiar el registro de NPCs narrativos para que se re-registren con el estado correcto
+            Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
+            Debug.Log("[GameBootProfile] 🔄 NPCInteractiveNarrativeRegistry limpiado para carga de partida");
 
             GameBootProfileDebugger.Log("LoadProfile", $"? Cargado exitoso - Anchor: {data.lastSpawnAnchorId}, HP: {data.currentHp:F0}", LogType.Log);
             return true;
@@ -787,6 +791,10 @@ public class GameBootProfile : ScriptableObject
             runtimePreset.completedInteractiveNarratives.Clear();
             Debug.Log("[GameBootProfile] ✅ Narrativas interactivas limpiadas para Nueva Partida");
         }
+        
+        // ✅ Limpiar el registro de NPCs narrativos para que se re-registren frescos
+        Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
+        Debug.Log("[GameBootProfile] 🔄 NPCInteractiveNarrativeRegistry limpiado para Nueva Partida");
 
         NarrativeAutoSetup.ResetForNewGame();
 

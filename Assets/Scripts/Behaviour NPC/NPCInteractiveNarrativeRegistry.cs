@@ -41,7 +41,11 @@ namespace Game.NPC.Modules
                 {
                     if (existing != null && existing != executor)
                     {
-                        Debug.LogWarning($"[NPCInteractiveNarrativeRegistry] ⚠️ Duplicado de persistenceId '{id}' - Reemplazando referencia.");
+                        Debug.LogError($"[NPCInteractiveNarrativeRegistry] ❌ ERROR CRÍTICO: persistenceId DUPLICADO '{id}'\n" +
+                                       $"  → NPC existente: '{existing.name}'\n" +
+                                       $"  → NPC nuevo: '{executor.name}'\n" +
+                                       $"  ⚠️ Esto causa que el guardado de estado de un NPC afecte al otro.\n" +
+                                       $"  🔧 SOLUCIÓN: Asigna un persistenceId ÚNICO a cada NPCInteractiveNarrativeConfig.");
                     }
                     // Si es el mismo executor, solo actualizamos (re-registro)
                 }
@@ -120,13 +124,45 @@ namespace Game.NPC.Modules
         }
 
         /// <summary>
-        /// Limpia el registro completamente
+        /// Limpia el registro completamente.
+        /// Se llama al cargar partida o iniciar nueva partida para que los NPCs
+        /// se re-registren con el estado correcto del preset cargado.
         /// </summary>
         public static void Clear()
         {
+            // Resetear el estado de ejecución de todos los executors antes de limpiar
+            // Esto es importante porque los NPCs que siguen en escena necesitan
+            // restaurar su estado desde el preset al re-registrarse
+            foreach (var executor in _all)
+            {
+                if (executor != null)
+                {
+                    executor.ResetState();
+                }
+            }
+            
             _byId.Clear();
             _all.Clear();
-            Debug.Log("[NPCInteractiveNarrativeRegistry] 🗑️ Registro limpiado");
+            Debug.Log("[NPCInteractiveNarrativeRegistry] 🗑️ Registro limpiado y estados reseteados");
+        }
+        
+        /// <summary>
+        /// Fuerza a todos los executors registrados a re-restaurar su estado desde el preset.
+        /// Útil después de cargar una partida cuando los NPCs ya están en escena.
+        /// </summary>
+        public static void ForceRestoreAllStates()
+        {
+            int restored = 0;
+            foreach (var executor in _all)
+            {
+                if (executor != null)
+                {
+                    executor.ResetState();
+                    // El executor restaurará su estado en el siguiente frame cuando detecte que debe hacerlo
+                    restored++;
+                }
+            }
+            Debug.Log($"[NPCInteractiveNarrativeRegistry] 🔄 Forzada restauración de estado en {restored} executor(es)");
         }
 
         /// <summary>

@@ -85,7 +85,7 @@ namespace Game.NPC.Tools
                     var config = executor.GetConfiguration();
                     if (config != null)
                     {
-                        Debug.Log($"   Config: SingleUse={config.singleUse}, Persist={config.persistState}");
+                        Debug.Log($"   Config: Persist={config.persistState}, Narratives={config.conditionalNarratives?.Length ?? 0}");
                     }
                     
                     #if UNITY_EDITOR
@@ -160,7 +160,7 @@ namespace Game.NPC.Tools
                         Debug.DrawRay(executor.transform.position, Vector3.up * 3f, Color.cyan);
                         
                         var config = executor.GetConfiguration();
-                        if (config != null && config.autoStartOnPlayerDetection)
+                        if (config != null)
                         {
                             // Dibujar el rango de detección
                             Debug.DrawRay(executor.transform.position, Vector3.forward * config.detectionRange, Color.yellow);

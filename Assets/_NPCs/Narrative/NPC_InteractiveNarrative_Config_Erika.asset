@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: NPC_InteractiveNarrative_Config_Erika
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
   moduleName: 
-  description: 
+  description: ERIKA_FIGHT - Evento que desbloquea Bola Prisma
   conditionalNarratives:
   - condition:
       conditionType: 1
@@ -33,7 +33,7 @@ MonoBehaviour:
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
-      combatConfig: {fileID: 11400000, guid: b54f3041f65a9eb44b9fd6d038dc206f, type: 2}
+      combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
       sendEventOnDefeat: 0
       defeatEventKey: 
@@ -49,8 +49,8 @@ MonoBehaviour:
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
     persistentIconSprite: {fileID: 0}
-    sendNarrativeEvent: 1
-    narrativeEventKey: ERIKA_FIGHT
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
     singleUse: 0
     priority: 0
     description: 
@@ -97,7 +97,7 @@ MonoBehaviour:
     debugMode: 0
   singleUse: 1
   persistState: 1
-  persistenceId: 3c046672-bbde-4005-85b8-d5f898958cd1
+  persistenceId: erika-narrative-a7b3c2d1-unique
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

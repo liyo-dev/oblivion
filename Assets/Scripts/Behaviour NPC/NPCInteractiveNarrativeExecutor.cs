@@ -67,11 +67,9 @@ namespace Game.NPC.Modules
             // Aplicar capa inicial (Interactable/Enemy)
             ApplyInitialLayer();
 
-            // Iniciar detección automática
-            if (_config.autoStartOnPlayerDetection && !_hasBeenUsed)
-            {
-                StartCoroutine(DetectPlayerRoutine());
-            }
+            // Iniciar detección automática SOLO si la narrativa activa lo requiere
+            // Ahora se verifica por narrativa, no globalmente
+            StartCoroutine(DetectPlayerRoutine());
             
             // Nota: El icono persistente se gestiona en Update() automáticamente
             // cuando hay una narrativa disponible con showPersistentIcon = true
@@ -239,8 +237,8 @@ namespace Game.NPC.Modules
 
             if (_config.persistState) SaveState();
 
-            // 4. Estado Post-Narrativa
-            yield return HandlePostNarrativeState();
+            // 4. Estado Post-Narrativa (usa el de la narrativa específica)
+            yield return HandlePostNarrativeState(narrativeData);
 
             _isExecuting = false;
         }
@@ -487,26 +485,36 @@ namespace Game.NPC.Modules
             Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
         }
 
-        private IEnumerator HandlePostNarrativeState()
+        private IEnumerator HandlePostNarrativeState(ConditionalNarrative narrativeData)
         {
-            // Decidir qué hacer al terminar la charla
-            switch (_config.postNarrativeState)
+            // Si la narrativa no tiene postNarrativeState o es None, no hacer nada
+            if (narrativeData == null || narrativeData.postNarrativeState == PostNarrativeState.None)
+            {
+                yield break;
+            }
+            
+            // Solo ejecutar postNarrativeState si la narrativa es singleUse
+            // Las narrativas repetibles no deberían cambiar el estado del NPC permanentemente
+            if (!narrativeData.singleUse)
+            {
+                Debug.Log($"[NarrativeExecutor:{name}] ⏸️ PostNarrativeState ignorado - narrativa '{narrativeData.description}' no es singleUse");
+                yield break;
+            }
+            
+            Debug.Log($"[NarrativeExecutor:{name}] ✅ Ejecutando PostNarrativeState: {narrativeData.postNarrativeState} para narrativa '{narrativeData.description}'");
+            
+            // Decidir qué hacer al terminar la narrativa
+            switch (narrativeData.postNarrativeState)
             {
                 case PostNarrativeState.Idle:
-                    // TODO: Implementar ExitCinematic en NPCBehaviourManagerV2
-                    // _npcManager.ExitCinematic();
                     _npcManager.ForceIdle();
                     break;
 
                 case PostNarrativeState.Wander:
                 case PostNarrativeState.SwitchToAmbient:
-                    if (_config.postNarrativeAmbientConfig != null)
-                        _npcManager.Configuration.ambientConfig = _config.postNarrativeAmbientConfig;
-                    
-                    // Activar comportamiento wander
-                    // TODO: Implementar ExitCinematic en NPCBehaviourManagerV2
-                    // _npcManager.ExitCinematic();
-                    // Aquí podrías forzar _npcManager.Brain.ChangeState(new WanderState());
+                    if (narrativeData.postNarrativeAmbientConfig != null)
+                        _npcManager.Configuration.ambientConfig = narrativeData.postNarrativeAmbientConfig;
+                    // TODO: Activar comportamiento wander
                     break;
 
                 case PostNarrativeState.Disable:
@@ -524,8 +532,25 @@ namespace Game.NPC.Modules
         {
             yield return new WaitForSeconds(1f); // Startup delay
 
-            while (!_hasDetectedPlayer && !_hasBeenUsed)
+            while (true)
             {
+                // Obtener la narrativa activa actual
+                var activeNarrative = _config?.GetActiveNarrative();
+                
+                // Si no hay narrativa activa o no tiene autoStartOnDetection, esperar
+                if (activeNarrative == null || !activeNarrative.autoStartOnDetection)
+                {
+                    yield return new WaitForSeconds(0.5f);
+                    continue;
+                }
+                
+                // Si ya se detectó o se usó, salir
+                if (_hasDetectedPlayer || _isExecuting)
+                {
+                    yield return new WaitForSeconds(0.5f);
+                    continue;
+                }
+                
                 if (PlayerService.TryGetPlayer(out var p, false)) _player = p.transform;
 
                 if (_player != null)
@@ -536,6 +561,10 @@ namespace Game.NPC.Modules
                         _hasDetectedPlayer = true;
                         yield return StartAlertSequence(); // Exclamación !
                         TryExecuteNarrative();
+                        
+                        // Después de ejecutar, resetear _hasDetectedPlayer para permitir
+                        // que futuras narrativas con autoStartOnDetection también funcionen
+                        _hasDetectedPlayer = false;
                     }
                 }
                 yield return new WaitForSeconds(0.2f);
@@ -708,7 +737,13 @@ namespace Game.NPC.Modules
             return $"{_config.persistenceId}_CN{index}";
         }
 
-        public void ResetState()
+        /// <summary>
+        /// Resetea el estado de ejecución y opcionalmente restaura desde el preset.
+        /// Se llama cuando se carga una partida o se inicia nueva partida para
+        /// sincronizar el estado con el preset actual.
+        /// </summary>
+        /// <param name="restoreFromPreset">Si es true, restaura el estado desde el preset después del reset</param>
+        public void ResetState(bool restoreFromPreset = true)
         {
             _hasBeenUsed = false;
             _hasDetectedPlayer = false;
@@ -721,6 +756,13 @@ namespace Game.NPC.Modules
                 {
                     narrative?.ResetExecutionState();
                 }
+            }
+            
+            // Restaurar estado desde el preset si está configurado
+            if (restoreFromPreset && _config != null && _config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
+            {
+                RestoreState();
+                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Estado reseteado y restaurado desde preset");
             }
         }
     }
