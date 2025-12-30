@@ -7,24 +7,29 @@ namespace Game.NPC
     /// <summary>
     /// Gestiona el icono persistente de quest sobre la cabeza del NPC.
     /// Se anade automaticamente cuando el NPC tiene un NPCQuestConfig configurado.
+    /// Oculta el icono durante dialogos o mientras el NPC ejecuta acciones.
     /// </summary>
     public class NPCQuestIconManager : MonoBehaviour
     {
         private NPCBehaviourManagerV2 _npcManager;
         private NPCQuestConfig _questConfig;
         private NPCAlertIconController _iconController;
+        private NPCInteractiveNarrativeExecutor _narrativeExecutor;
         
         private NPCQuestConfig.QuestIconState _lastIconState = NPCQuestConfig.QuestIconState.None;
         private GameObject _currentIconPrefab;
+        private bool _isInDialogue;
+        private bool _iconForcedHidden;
         
         private void Awake()
         {
             _npcManager = GetComponent<NPCBehaviourManagerV2>();
+            _narrativeExecutor = GetComponent<NPCInteractiveNarrativeExecutor>();
+            
             if (_npcManager == null)
             {
                 Debug.LogError($"[NPCQuestIconManager:{name}] Falta NPCBehaviourManagerV2");
                 enabled = false;
-                return;
             }
         }
         
@@ -50,13 +55,17 @@ namespace Game.NPC
                 _iconController = gameObject.AddComponent<NPCAlertIconController>();
             }
             
-            // Suscribirse a eventos del QuestManager para actualizar el icono
+            // Suscribirse a eventos del QuestManager
             if (QuestManager.Instance != null)
             {
                 QuestManager.Instance.OnQuestStarted += OnQuestChanged;
                 QuestManager.Instance.OnQuestCompleted += OnQuestChanged;
                 QuestManager.Instance.OnQuestsChanged += OnAnyQuestChanged;
             }
+            
+            // Suscribirse a eventos de diálogo
+            DialogueManager.OnDialogueStarted += OnDialogueStarted;
+            DialogueManager.OnDialogueClosed += OnDialogueClosed;
             
             // Verificar estado inicial
             UpdateIconState();
@@ -69,6 +78,49 @@ namespace Game.NPC
                 QuestManager.Instance.OnQuestStarted -= OnQuestChanged;
                 QuestManager.Instance.OnQuestCompleted -= OnQuestChanged;
                 QuestManager.Instance.OnQuestsChanged -= OnAnyQuestChanged;
+            }
+            
+            DialogueManager.OnDialogueStarted -= OnDialogueStarted;
+            DialogueManager.OnDialogueClosed -= OnDialogueClosed;
+        }
+        
+        private void Update()
+        {
+            // Verificar si el NPC está ejecutando una narrativa
+            bool isExecuting = _narrativeExecutor != null && _narrativeExecutor.IsExecuting;
+            
+            if (isExecuting || _isInDialogue)
+            {
+                // Forzar ocultar icono mientras ejecuta o está en diálogo
+                if (!_iconForcedHidden)
+                {
+                    _iconForcedHidden = true;
+                    HideIcon();
+                }
+            }
+            else if (_iconForcedHidden)
+            {
+                // Restaurar icono cuando termine
+                _iconForcedHidden = false;
+                UpdateIconState();
+            }
+        }
+        
+        private void OnDialogueStarted(Transform npcInvolved)
+        {
+            // Solo ocultar si el diálogo es con este NPC
+            if (npcInvolved == transform)
+            {
+                _isInDialogue = true;
+            }
+        }
+        
+        private void OnDialogueClosed(Transform npcInvolved)
+        {
+            // Solo restaurar si el diálogo era con este NPC
+            if (npcInvolved == transform)
+            {
+                _isInDialogue = false;
             }
         }
         

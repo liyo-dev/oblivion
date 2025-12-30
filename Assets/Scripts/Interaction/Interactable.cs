@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Game.NPC;
 using UnityEngine;
 using UnityEngine.Events;
+using DG.Tweening;
 
 [DisallowMultipleComponent]
 public class Interactable : MonoBehaviour
@@ -14,6 +15,7 @@ public class Interactable : MonoBehaviour
     [Header("Hint (icono botón)")]
     [SerializeField] private GameObject hint;
     [SerializeField] private bool hideHintAtStart = true;
+    [SerializeField] private float hintAnimDuration = 0.25f;
 
     [Header("Uso")]
     [SerializeField] private bool singleUse = false;
@@ -41,11 +43,22 @@ public class Interactable : MonoBehaviour
 
     bool used, enabledForUse;
     NPCBehaviourManagerV2 _npcManager;
+    bool _hintVisible;
+    Tweener _hintTween;
+    Vector3 _hintOriginalScale;
 
     void Awake()
     {
         enabledForUse = initiallyEnabled;
-        if (hint && hideHintAtStart) hint.SetActive(false);
+        if (hint)
+        {
+            _hintOriginalScale = hint.transform.localScale;
+            if (hideHintAtStart)
+            {
+                hint.transform.localScale = Vector3.zero;
+                hint.SetActive(false);
+            }
+        }
         _npcManager = GetComponent<NPCBehaviourManagerV2>();
     }
 
@@ -74,7 +87,40 @@ public class Interactable : MonoBehaviour
 
     public void SetHintVisible(bool visible)
     {
-        if (hint) hint.SetActive(visible && !used && enabledForUse);
+        if (hint == null) return;
+        
+        // Solo mostrar hint si puede interactuar
+        bool canShow = visible && !used && enabledForUse && CanInteract(null);
+        
+        // Si el estado no cambia, no hacer nada
+        if (canShow == _hintVisible) return;
+        
+        _hintVisible = canShow;
+        
+        // Matar cualquier tween anterior
+        _hintTween?.Kill();
+        
+        if (canShow)
+        {
+            // Mostrar con animación
+            hint.SetActive(true);
+            hint.transform.localScale = Vector3.zero;
+            _hintTween = hint.transform.DOScale(_hintOriginalScale, hintAnimDuration)
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true); // Usar tiempo no escalado por si está en pausa
+        }
+        else
+        {
+            // Ocultar con animación
+            _hintTween = hint.transform.DOScale(Vector3.zero, hintAnimDuration * 0.7f)
+                .SetEase(Ease.InBack)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    if (hint != null)
+                        hint.SetActive(false);
+                });
+        }
     }
 
     public bool CanInteract(GameObject _)
@@ -89,6 +135,11 @@ public class Interactable : MonoBehaviour
         if (!enabledForUse)
             return false;
         if (singleUse && used)
+            return false;
+        
+        // Bloquear interacción si el NPC está ejecutando una narrativa
+        var narrativeExecutor = GetComponent<Game.NPC.Modules.NPCInteractiveNarrativeExecutor>();
+        if (narrativeExecutor != null && narrativeExecutor.IsExecuting)
             return false;
         
         return true;

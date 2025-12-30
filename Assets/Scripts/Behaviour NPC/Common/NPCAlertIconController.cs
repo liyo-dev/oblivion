@@ -1,5 +1,6 @@
 ﻿﻿using System.Collections;
 using UnityEngine;
+using DG.Tweening;
 
 namespace Game.NPC.Common
 {
@@ -7,6 +8,7 @@ namespace Game.NPC.Common
     /// Controla los iconos visuales sobre la cabeza del NPC.
     /// Los prefabs se configuran en NPCCombatConfig y se pasan como parámetros.
     /// Solo usa prefabs reutilizables - La forma más limpia y profesional.
+    /// Incluye animaciones DOTween para aparición/desaparición.
     /// </summary>
     public class NPCAlertIconController : MonoBehaviour
     {
@@ -26,9 +28,18 @@ namespace Game.NPC.Common
         [Tooltip("Velocidad del bounce")]
         [SerializeField] private float bounceSpeed = 3f;
         
+        [Header("Animaciones DOTween")]
+        [Tooltip("Duración de la animación de aparición")]
+        [SerializeField] private float showAnimDuration = 0.3f;
+        
+        [Tooltip("Duración de la animación de desaparición")]
+        [SerializeField] private float hideAnimDuration = 0.2f;
+        
         private GameObject _currentIconInstance;
         private Coroutine _iconRoutine;
         private Camera _mainCamera;
+        private Tween _currentTween;
+        private bool _isHiding;
         
         private void Start()
         {
@@ -135,13 +146,50 @@ namespace Game.NPC.Common
         /// <summary>
         /// Verifica si hay un icono persistente activo
         /// </summary>
-        public bool HasPersistentIcon => _currentIconInstance != null;
+        public bool HasPersistentIcon => _currentIconInstance != null && !_isHiding;
         
         /// <summary>
-        /// Oculta el icono de alerta actual
+        /// Oculta el icono de alerta actual con animación
         /// </summary>
         public void HideAlertIcon()
         {
+            if (_iconRoutine != null)
+            {
+                StopCoroutine(_iconRoutine);
+                _iconRoutine = null;
+            }
+            
+            if (_currentIconInstance != null && !_isHiding)
+            {
+                _isHiding = true;
+                
+                // Matar cualquier tween anterior
+                _currentTween?.Kill();
+                
+                // Animar desaparición: escala + mover hacia abajo
+                var iconTransform = _currentIconInstance.transform;
+                Sequence hideSeq = DOTween.Sequence();
+                hideSeq.Append(iconTransform.DOScale(Vector3.zero, hideAnimDuration).SetEase(Ease.InBack));
+                hideSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y - 0.3f, hideAnimDuration).SetEase(Ease.InQuad));
+                hideSeq.OnComplete(() =>
+                {
+                    if (_currentIconInstance != null)
+                    {
+                        Destroy(_currentIconInstance);
+                        _currentIconInstance = null;
+                    }
+                    _isHiding = false;
+                });
+            }
+        }
+        
+        /// <summary>
+        /// Oculta el icono inmediatamente sin animación (para cleanup)
+        /// </summary>
+        public void HideAlertIconImmediate()
+        {
+            _currentTween?.Kill();
+            
             if (_iconRoutine != null)
             {
                 StopCoroutine(_iconRoutine);
@@ -153,21 +201,32 @@ namespace Game.NPC.Common
                 Destroy(_currentIconInstance);
                 _currentIconInstance = null;
             }
+            _isHiding = false;
         }
         
         private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration)
         {
             // Instanciar el prefab
             _currentIconInstance = Instantiate(iconPrefab, transform);
-            _currentIconInstance.transform.localPosition = iconOffset;
+            _currentIconInstance.transform.localPosition = iconOffset + new Vector3(0f, -0.5f, 0f);
             _currentIconInstance.transform.localRotation = Quaternion.identity;
+            _currentIconInstance.transform.localScale = Vector3.zero;
             _currentIconInstance.SetActive(true);
             
-            // Animar durante la duración
-            float elapsed = 0f;
-            Vector3 basePosition = _currentIconInstance.transform.localPosition;
+            // Animar aparición
+            var iconTransform = _currentIconInstance.transform;
+            Sequence showSeq = DOTween.Sequence();
+            showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y, showAnimDuration).SetEase(Ease.OutBack));
             
-            while (elapsed < duration)
+            yield return new WaitForSeconds(showAnimDuration);
+            
+            // Animar durante la duración restante
+            float elapsed = 0f;
+            float remainingDuration = duration - showAnimDuration;
+            Vector3 basePosition = iconOffset;
+            
+            while (elapsed < remainingDuration)
             {
                 if (_currentIconInstance == null) yield break;
                 
@@ -200,14 +259,25 @@ namespace Game.NPC.Common
             // Instanciar el prefab
             _currentIconInstance = Instantiate(iconPrefab, transform);
             _currentIconInstance.name = iconPrefab.name + "_Persistent";
-            _currentIconInstance.transform.localPosition = iconOffset;
+            _currentIconInstance.transform.localPosition = iconOffset + new Vector3(0f, -0.5f, 0f); // Empieza más abajo
             _currentIconInstance.transform.localRotation = Quaternion.identity;
+            _currentIconInstance.transform.localScale = Vector3.zero; // Empieza pequeño
             _currentIconInstance.SetActive(true);
             
-            Vector3 basePosition = _currentIconInstance.transform.localPosition;
+            // Animar aparición: escala + mover hacia arriba con bounce
+            var iconTransform = _currentIconInstance.transform;
+            Sequence showSeq = DOTween.Sequence();
+            showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y, showAnimDuration).SetEase(Ease.OutBack));
+            _currentTween = showSeq.SetAutoKill(false);
+            
+            // Esperar a que termine la animación de entrada
+            yield return new WaitForSeconds(showAnimDuration);
+            
+            Vector3 basePosition = iconOffset;
             
             // Animar indefinidamente hasta que se oculte
-            while (_currentIconInstance != null)
+            while (_currentIconInstance != null && !_isHiding)
             {
                 // Aplicar bounce si está activado
                 if (animateBounce)
@@ -228,7 +298,8 @@ namespace Game.NPC.Common
         
         private void OnDestroy()
         {
-            HideAlertIcon();
+            _currentTween?.Kill();
+            HideAlertIconImmediate();
         }
     }
 }

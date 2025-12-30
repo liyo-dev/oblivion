@@ -28,6 +28,14 @@ namespace Game.NPC.Modules
         private bool _hasDetectedPlayer;
         private int _currentActionIndex = -1;
         #endregion
+        
+        #region 📢 Public API
+        /// <summary>
+        /// Indica si el NPC está ejecutando una narrativa actualmente.
+        /// Mientras ejecuta, no debe permitirse interacción.
+        /// </summary>
+        public bool IsExecuting => _isExecuting;
+        #endregion
 
         private void Awake()
         {
@@ -108,13 +116,25 @@ namespace Game.NPC.Modules
         {
             if (_config == null) return;
 
-            // 1. Gestión de Interactable (Solo activo si hay narrativa disponible)
-            if (_interactable != null && !_isExecuting)
+            // 1. Gestión de Interactable
+            if (_interactable != null)
             {
-                bool hasNarrative = _config.GetActiveNarrative() != null;
-                if (_interactable.enabled != hasNarrative)
+                // Deshabilitar interacción mientras se ejecuta una narrativa
+                if (_isExecuting)
                 {
-                    _interactable.enabled = hasNarrative;
+                    if (_interactable.enabled)
+                    {
+                        _interactable.enabled = false;
+                    }
+                }
+                else
+                {
+                    // Solo habilitar si hay narrativa disponible
+                    bool hasNarrative = _config.GetActiveNarrative() != null;
+                    if (_interactable.enabled != hasNarrative)
+                    {
+                        _interactable.enabled = hasNarrative;
+                    }
                 }
             }
 
