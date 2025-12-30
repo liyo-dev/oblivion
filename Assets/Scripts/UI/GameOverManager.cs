@@ -62,8 +62,11 @@ public class GameOverManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log($"[GameOverManager] Awake - scene='{gameObject.scene.name}', buildIndex={gameObject.scene.buildIndex}");
+        
         if (Instance != null && Instance != this)
         {
+            Debug.Log($"[GameOverManager] Destruyendo duplicado - Instance ya existe: {Instance.name}");
             Destroy(gameObject);
             return;
         }
@@ -76,7 +79,10 @@ public class GameOverManager : MonoBehaviour
         if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
         {
             UnityEngine.Object.DontDestroyOnLoad(gameObject);
+            Debug.Log("[GameOverManager] Marcado como DontDestroyOnLoad");
         }
+
+        Debug.Log($"[GameOverManager] Referencias - gameOverUI={gameOverUI}, loadLastSaveButton={loadLastSaveButton}, backToMenuButton={backToMenuButton}");
 
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
@@ -98,6 +104,8 @@ public class GameOverManager : MonoBehaviour
         }
 
         SetButtonsInteractable(false);
+        
+        Debug.Log("[GameOverManager] Awake completado");
     }
 
     private void OnDestroy()
@@ -160,14 +168,29 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public void ShowGameOver()
     {
+        Debug.Log($"[GameOverManager] ShowGameOver() llamado - _isGameOverShown={_isGameOverShown}, _showCoroutine={(_showCoroutine != null)}");
+        
         if (_isGameOverShown || _showCoroutine != null) 
+        {
+            Debug.Log("[GameOverManager] ShowGameOver() IGNORADO - ya mostrado o coroutine activa");
             return;
+        }
+
+        Debug.Log($"[GameOverManager] gameOverUI={gameOverUI}, rootGroup={rootGroup}");
+        
+        if (gameOverUI == null)
+        {
+            Debug.LogError("[GameOverManager] ❌ gameOverUI es NULL - no se puede mostrar Game Over");
+            return;
+        }
 
         _showCoroutine = StartCoroutine(ShowGameOverRoutine());
     }
 
     private System.Collections.IEnumerator ShowGameOverRoutine()
     {
+        Debug.Log($"[GameOverManager] ShowGameOverRoutine() iniciada - delayBeforeShow={delayBeforeShow}s");
+        
         if (delayBeforeShow > 0f)
         {
             yield return new WaitForSecondsRealtime(delayBeforeShow);
@@ -176,11 +199,34 @@ public class GameOverManager : MonoBehaviour
         _showCoroutine = null;
         _isGameOverShown = true;
 
+        Debug.Log($"[GameOverManager] Activando gameOverUI (null check: {gameOverUI == null})");
+        
         if (gameOverUI != null)
+        {
             gameOverUI.SetActive(true);
+            Debug.Log($"[GameOverManager] gameOverUI.activeSelf = {gameOverUI.activeSelf}");
+        }
+        else
+        {
+            Debug.LogError("[GameOverManager] ❌ gameOverUI se volvió NULL durante la corrutina!");
+        }
+
+        // Reproducir SFX de Game Over
+        if (AudioService.Instance != null)
+        {
+            AudioService.Instance.PlaySFX("GameOverMenu");
+            Debug.Log("[GameOverManager] 🔊 SFX 'GameOverMenu' reproducido");
+        }
+        else
+        {
+            Debug.LogWarning("[GameOverManager] ⚠️ AudioService.Instance es NULL - no se puede reproducir SFX");
+        }
 
         if (pauseOnGameOver)
+        {
             Time.timeScale = 0f;
+            Debug.Log("[GameOverManager] Juego pausado (Time.timeScale = 0)");
+        }
 
         // Configurar botones según si hay save o no
         ConfigureButtons();
@@ -190,9 +236,14 @@ public class GameOverManager : MonoBehaviour
         {
             rootGroup.blocksRaycasts = true;
             rootGroup.interactable = true;
+            Debug.Log("[GameOverManager] CanvasGroup configurado - blocksRaycasts=true, interactable=true");
+        }
+        else
+        {
+            Debug.LogWarning("[GameOverManager] ⚠️ rootGroup es NULL - no se puede configurar interactividad");
         }
 
-        Debug.Log("[GameOverManager] Game Over mostrado");
+        Debug.Log("[GameOverManager] ✅ Game Over mostrado correctamente");
     }
 
     private void ConfigureButtons()
@@ -277,11 +328,14 @@ public class GameOverManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        Debug.Log($"[GameOverManager] HandleSceneLoaded - scene='{scene.name}', mode={mode}, _isGameOverShown={_isGameOverShown}");
         ForceResetState($"[GameOverManager] Scene '{scene.name}' loaded -> forzando estado cerrado");
     }
 
-    private void ForceResetState(string reason = null)
+    public void ForceResetState(string reason = null)
     {
+        Debug.Log($"[GameOverManager] ForceResetState - reason='{reason}', _isGameOverShown={_isGameOverShown}, gameOverUI={gameOverUI}");
+        
         if (_showCoroutine != null)
         {
             StopCoroutine(_showCoroutine);
@@ -554,14 +608,27 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     private static bool EnsureInstanceReady()
     {
+        Debug.Log($"[GameOverManager] EnsureInstanceReady() - Instance={Instance}");
+        
         if (!TryResolveInstance())
+        {
+            Debug.LogError("[GameOverManager] ❌ TryResolveInstance() falló - no hay instancia disponible");
             return false;
+        }
+
+        Debug.Log($"[GameOverManager] Instance encontrada: {Instance.name}, activeSelf={Instance.gameObject.activeSelf}, enabled={Instance.enabled}");
 
         if (!Instance.gameObject.activeSelf)
+        {
             Instance.gameObject.SetActive(true);
+            Debug.Log("[GameOverManager] GameObject activado");
+        }
 
         if (!Instance.enabled)
+        {
             Instance.enabled = true;
+            Debug.Log("[GameOverManager] Componente habilitado");
+        }
 
         return true;
     }
@@ -571,12 +638,15 @@ public class GameOverManager : MonoBehaviour
     /// </summary>
     public static void NotifyGameOver()
     {
+        Debug.Log("[GameOverManager] 💀 NotifyGameOver() llamado");
+        
         if (!EnsureInstanceReady())
         {
-            Debug.LogWarning("[GameOverManager] No se encontró ninguna instancia para mostrar Game Over.");
+            Debug.LogError("[GameOverManager] ❌ No se encontró ninguna instancia para mostrar Game Over.");
             return;
         }
 
+        Debug.Log($"[GameOverManager] Llamando a Instance.ShowGameOver() - gameOverUI={Instance.gameOverUI}");
         Instance.ShowGameOver();
     }
 }
