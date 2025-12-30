@@ -142,15 +142,49 @@ namespace Game.NPC.Modules
             if (!_isExecuting)
             {
                 var activeNarrative = _config.GetActiveNarrative();
-                if (activeNarrative != null && activeNarrative.showPersistentIcon)
+                if (activeNarrative != null)
                 {
-                    // Mostrar icono persistente si hay un prefab configurado
-                    ShowPersistentIconIfNeeded(activeNarrative);
+                    if (activeNarrative.showPersistentIcon)
+                    {
+                        // Mostrar icono persistente si hay un prefab configurado
+                        ShowPersistentIconIfNeeded(activeNarrative);
+                    }
+                    else
+                    {
+                        // Hay narrativa activa pero no tiene icono persistente configurado
+                        HidePersistentIconIfActive();
+                        
+                        // Log ocasional para debug
+                        if (Time.frameCount % 300 == 0)
+                        {
+                            Debug.Log($"[NarrativeExecutor:{name}] ℹ️ Narrativa activa '{activeNarrative.description}' NO tiene showPersistentIcon activado");
+                        }
+                    }
                 }
                 else
                 {
-                    // Ocultar icono si no hay narrativa activa o no requiere icono
+                    // No hay narrativa activa
                     HidePersistentIconIfActive();
+                    
+                    // Debug: ¿Por qué no hay narrativa activa?
+                    if (_config.conditionalNarratives != null && _config.conditionalNarratives.Length > 0)
+                    {
+                        // Solo loguear una vez cada 5 segundos para no spamear
+                        if (Time.frameCount % 300 == 0)
+                        {
+                            Debug.Log($"[NarrativeExecutor:{name}] ⚠️ No hay narrativa activa. Revisando {_config.conditionalNarratives.Length} condiciones:");
+                            for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                            {
+                                var n = _config.conditionalNarratives[i];
+                                if (n != null)
+                                {
+                                    bool canExec = n.CanExecute();
+                                    bool condMet = n.condition?.Evaluate() ?? false;
+                                    Debug.Log($"  [{i}] '{n.description}' - CanExecute:{canExec}, Condition:{condMet}, SingleUse:{n.singleUse}, Executed:{n.HasBeenExecuted}, ShowIcon:{n.showPersistentIcon}");
+                                }
+                            }
+                        }
+                    }
                 }
             }
             else
@@ -666,19 +700,41 @@ namespace Game.NPC.Modules
 
         private IEnumerator RotateToPlayer()
         {
-            if (PlayerService.TryGetPlayer(out var p, true))
+            if (!PlayerService.TryGetPlayer(out var p, true))
+                yield break;
+            
+            Vector3 dir = p.transform.position - transform.position;
+            dir.y = 0; // Ignorar altura
+            
+            // Si el jugador está muy cerca o justo encima, no rotar
+            if (dir.sqrMagnitude < 0.01f)
+                yield break;
+            
+            dir.Normalize();
+            Quaternion targetRotation = Quaternion.LookRotation(dir);
+            
+            // Calcular el ángulo entre la rotación actual y la objetivo
+            float angle = Quaternion.Angle(transform.rotation, targetRotation);
+            
+            // Si ya está mirando al jugador (ángulo menor a 5 grados), no rotar
+            if (angle < 5f)
+                yield break;
+            
+            // Rotar suavemente
+            float duration = _config.rotationDuration;
+            float elapsed = 0f;
+            Quaternion startRotation = transform.rotation;
+            
+            while (elapsed < duration)
             {
-                Vector3 dir = (p.transform.position - transform.position).normalized;
-                dir.y = 0;
-                Quaternion target = Quaternion.LookRotation(dir);
-                float t = 0;
-                while (t < 0.5f) // Rápido
-                {
-                    transform.rotation = Quaternion.Slerp(transform.rotation, target, t / 0.5f);
-                    t += Time.deltaTime;
-                    yield return null;
-                }
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, elapsed / duration); // Suavizado
+                transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
+                yield return null;
             }
+            
+            // Asegurar rotación final exacta
+            transform.rotation = targetRotation;
         }
 
         private void SendNarrativeEvent(string key)
@@ -739,6 +795,11 @@ namespace Game.NPC.Modules
                     if (narrative != null)
                     {
                         string narrativeId = GetConditionalNarrativeId(i);
+                        
+                        // IMPORTANTE: Primero resetear el estado, luego restaurar si está en la lista
+                        // Esto asegura que en nueva partida (lista vacía), las narrativas empiezan sin ejecutar
+                        narrative.ResetExecutionState();
+                        
                         if (preset.completedInteractiveNarratives.Contains(narrativeId))
                         {
                             narrative.MarkAsExecuted();

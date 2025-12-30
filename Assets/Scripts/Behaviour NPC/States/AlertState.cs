@@ -20,6 +20,7 @@ namespace Game.NPC.States
         private float _timer;
         private bool _waitingForDialogue;
         private bool _hasPlayedChallenge;
+        private bool _dialogueCompleted; // ⭐ NUEVO: Track si el diálogo terminó
         
         // Timers de Animación
         private float _senseTimer;
@@ -150,7 +151,15 @@ namespace Game.NPC.States
             // Bloqueo por diálogo
             if (_waitingForDialogue) return null;
 
-            // Tiempo cumplido -> COMBATE
+            // ⭐ MEJORA: Si el diálogo completó, transicionar inmediatamente a combate
+            // No esperar _alertDuration completo
+            if (_dialogueCompleted)
+            {
+                context.IsInCombat = true;
+                return new CombatState();
+            }
+
+            // Tiempo cumplido (solo si no había diálogo) -> COMBATE
             if (_timer >= _alertDuration)
             {
                 context.IsInCombat = true;
@@ -234,6 +243,7 @@ namespace Game.NPC.States
                 DialogueManager.Instance?.StartBattleDialogue(config.dialogueOnAlert, context.Transform, () => 
                 {
                     _waitingForDialogue = false;
+                    _dialogueCompleted = true; // ⭐ Marcar que el diálogo completó para transición inmediata
                     // Restaurar jugador a Idle tras la charla
                     if (PlayerService.TryGetPlayer(out GameObject p))
                     {

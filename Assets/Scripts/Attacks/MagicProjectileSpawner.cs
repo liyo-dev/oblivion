@@ -104,13 +104,19 @@ public class MagicProjectileSpawner : MonoBehaviour
 
     private IEnumerator Co_SpawnAfterDelay(MagicSpellSO spell, Transform origin)
     {
+        // ⭐ Reproducir SFX INMEDIATAMENTE al iniciar el cast (antes del delay de animación)
+        if (!string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
+        {
+            AudioService.Instance.PlaySFX(spell.castSFXKey);
+        }
+        
         float d = Mathf.Max(0f, spell.castDelaySeconds);
         if (d > 0f) yield return new WaitForSeconds(d);
 
         if (spell.chargeTime > 0f)
             yield return Co_SpawnWithCharge(spell, origin);
         else
-            SpawnNow(spell, origin);
+            SpawnNow(spell, origin, playSFX: false); // SFX ya se reprodujo arriba
     }
 
     public void SpawnLeft()    => Spawn(MagicSlot.Left);
@@ -132,14 +138,14 @@ public class MagicProjectileSpawner : MonoBehaviour
         StartCoroutine(Co_SpawnAfterDelay(spell, origin));
     }
 
-    public void SpawnNow(MagicSpellSO spell, Transform originOverride = null)
+    public void SpawnNow(MagicSpellSO spell, Transform originOverride = null, bool playSFX = true)
     {
         if (!spell || !spell.prefab) return;
 
         Transform origin = originOverride ? originOverride : transform;
         
-        // Reproducir sonido de lanzamiento
-        if (!string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
+        // Reproducir SFX solo si se solicita (para llamadas directas que no pasan por Co_SpawnAfterDelay)
+        if (playSFX && !string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
         {
             AudioService.Instance.PlaySFX(spell.castSFXKey);
         }
@@ -225,7 +231,8 @@ public class MagicProjectileSpawner : MonoBehaviour
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
                 despawnVFX     = spell.despawnVFX,
-                vfxLifetime    = spell.vfxLifetime
+                vfxLifetime    = spell.vfxLifetime,
+                impactSFXKey   = spell.impactSFXKey
             };
             mp.Configure(cfg, instigator);
             mp.SetKinematic(true);
@@ -326,7 +333,8 @@ public class MagicProjectileSpawner : MonoBehaviour
                 useGravity     = spell.useGravity,
                 impactVFX      = spell.impactVFX,
                 despawnVFX     = spell.despawnVFX,
-                vfxLifetime    = spell.vfxLifetime
+                vfxLifetime    = spell.vfxLifetime,
+                impactSFXKey   = spell.impactSFXKey
             };
             mp.Configure(cfg, instigatorOverride ? instigatorOverride : gameObject);
         }

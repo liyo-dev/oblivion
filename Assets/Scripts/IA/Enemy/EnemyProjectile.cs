@@ -14,6 +14,12 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private GameObject hitEffectPrefab;
     [SerializeField] private bool usePhysicsMovement = true; // Usar Rigidbody para movimiento suave
     
+    [Header("Audio")]
+    [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al spawnearse el proyectil")]
+    [SerializeField] private string spawnSFXKey;
+    [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al impactar/explotar")]
+    [SerializeField] private string impactSFXKey;
+    
     private Vector3 direction;
     private float damage;
     private bool initialized = false;
@@ -58,6 +64,12 @@ public class EnemyProjectile : MonoBehaviour
         initialized = true;
         
         Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño");
+        
+        // 🔊 Reproducir SFX de spawn
+        if (!string.IsNullOrEmpty(spawnSFXKey))
+        {
+            AudioService.Instance?.PlaySFX(spawnSFXKey, worldPosition: transform.position);
+        }
         
         // ✅ Aplicar velocidad inicial usando física
         if (rb)
@@ -236,6 +248,12 @@ public class EnemyProjectile : MonoBehaviour
         if (hitEffectPrefab)
         {
             Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
+        }
+        
+        // 🔊 Reproducir SFX de impacto/explosión
+        if (!string.IsNullOrEmpty(impactSFXKey))
+        {
+            AudioService.Instance?.PlaySFX(impactSFXKey, worldPosition: transform.position);
         }
 
         // Destruir el proyectil

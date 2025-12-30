@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 [DisallowMultipleComponent]
 public class PlayerTargeting : MonoBehaviour, ITargetProvider
@@ -42,6 +43,14 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private Vector3 markerOffset = new(0, 1.8f, 0);
     [SerializeField] private bool billboardToCamera = true;
     [SerializeField] private bool parentMarkerToTarget;
+    
+    [Header("Animación del Marker")]
+    [SerializeField] private float markerShowDuration = 0.25f;
+    [SerializeField] private float markerHideDuration = 0.15f;
+    
+    private Vector3 _markerOriginalScale;
+    private Tween _markerTween;
+    private bool _markerVisible;
 
     void Awake()
     {
@@ -51,12 +60,15 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             var go = Instantiate(markerPrefab);
             go.SetActive(false);
             _marker = go.transform;
+            _markerOriginalScale = _marker.localScale;
+            _marker.localScale = Vector3.zero; // Empezar pequeño para animación
         }
         if (!aimOrigin && _cam) aimOrigin = _cam.transform; // <- recomendable
     }
 
     void OnDestroy()
     {
+        _markerTween?.Kill();
         if (_marker) Destroy(_marker.gameObject);
     }
 
@@ -95,9 +107,14 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
              float dist = to.magnitude;
              if (dist < 0.01f) continue;
 
+            // Si el enemigo tiene un componente Targetable, verificar si está en combate activo
+            var cfg = h.transform.GetComponentInParent<Targetable>();
+            
+            // ⭐ NUEVO: Solo targetear enemigos que estén en combate activo
+            if (cfg != null && !cfg.isInActiveCombat) continue;
+            
             // Si el enemigo tiene un componente Targetable con un radio personalizado, úsalo
             float allowedRadius = radius;
-            var cfg = h.transform.GetComponentInParent<Targetable>();
             if (cfg != null && cfg.targetingRadius > 0f)
                 allowedRadius = cfg.targetingRadius;
              
@@ -145,12 +162,33 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
         if (!newT)
         {
-            if (_marker.gameObject.activeSelf) _marker.gameObject.SetActive(false);
+            // Ocultar marker con animación
+            if (_markerVisible)
+            {
+                _markerVisible = false;
+                _markerTween?.Kill();
+                _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration)
+                    .SetEase(Ease.InBack)
+                    .OnComplete(() =>
+                    {
+                        if (_marker != null)
+                            _marker.gameObject.SetActive(false);
+                    });
+            }
             _lastTargetCol = null;
         }
         else
         {
-            if (!_marker.gameObject.activeSelf) _marker.gameObject.SetActive(true);
+            // Mostrar marker con animación
+            if (!_markerVisible)
+            {
+                _markerVisible = true;
+                _marker.gameObject.SetActive(true);
+                _marker.localScale = Vector3.zero;
+                _markerTween?.Kill();
+                _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration)
+                    .SetEase(Ease.OutBack);
+            }
         }
     }
 
@@ -161,11 +199,12 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         var t = CurrentTarget;
         if (!t)
         {
-            if (_marker.gameObject.activeSelf) _marker.gameObject.SetActive(false);
+            // No desactivar aquí - OnTargetChanged maneja la animación
             return;
         }
 
-        if (!_marker.gameObject.activeSelf) _marker.gameObject.SetActive(true);
+        // No activar aquí si está en animación de ocultar
+        if (!_markerVisible) return;
 
         if (_lastTargetCol == null || _lastTargetCol.transform != t)
             _lastTargetCol = t.GetComponentInParent<Collider>();

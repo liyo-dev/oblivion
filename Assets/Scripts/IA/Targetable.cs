@@ -5,6 +5,9 @@ public class Targetable : MonoBehaviour
 {
     [Tooltip("Radio en el que este enemigo puede ser auto-apuntado (si 0 usa el radio global del PlayerTargeting).")]
     public float targetingRadius = 8f;
+    
+    [Tooltip("Si está activo, el marker de target se mostrará. Desactivar durante alertas pre-combate.")]
+    public bool isInActiveCombat = false;
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()

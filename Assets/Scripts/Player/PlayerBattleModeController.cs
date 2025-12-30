@@ -92,13 +92,19 @@ namespace Game.Player
             // Nada que limpiar
         }
         
+        // Guarda el battleId del último combate para reproducir la música correcta
+        private string _currentBattleId;
+        
         /// <summary>
         /// Método público para que el NPC llame cuando el player gana
         /// </summary>
-        public void PlayVictory()
+        /// <param name="battleId">ID del combate para restaurar la música después de la victoria</param>
+        public void PlayVictory(string battleId = null)
         {
+            _currentBattleId = battleId;
+            
             if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🎯 PlayVictory() LLAMADO - _isPlayingVictory: {_isPlayingVictory}");
+                Debug.Log($"[PlayerBattleMode] 🎯 PlayVictory() LLAMADO - _isPlayingVictory: {_isPlayingVictory}, battleId: {battleId}");
             
             if (_isPlayingVictory)
             {
@@ -347,17 +353,22 @@ namespace Game.Player
                 Debug.LogError($"[PlayerBattleMode] ❌ Animator es NULL");
             }
             
-            // Reproducir SFX de victoria usando el sistema de audio centralizado
+            // Reproducir música de victoria usando el sistema de audio centralizado
             if (!string.IsNullOrEmpty(victorySfxKey))
             {
                 if (AudioService.Instance != null)
                 {
-                    AudioService.Instance.PlaySFX(victorySfxKey, volume: 1f);
-                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo SFX de victoria: {victorySfxKey}");
+                    // Usar PlayVictoryForBattle para reproducir la música de victoria correctamente
+                    // El primer parámetro es el battleId actual (para restaurar música después)
+                    // El segundo es la clave de victoria
+                    // El tercer parámetro es el tiempo que se mantiene la música de victoria
+                    string battleId = !string.IsNullOrEmpty(_currentBattleId) ? _currentBattleId : "Npc_Battle_Erika";
+                    AudioService.Instance.PlayVictoryForBattle(battleId, victorySfxKey, victoryAnimationDuration + 1f);
+                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {battleId})");
                 }
                 else
                 {
-                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir SFX");
+                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir música");
                 }
             }
             else

@@ -58,6 +58,8 @@ public class MagicSpellSO : ScriptableObject
     [Header("Audio")]
     [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al lanzar el hechizo (ej: 'Spell_Fire', 'Spell_Ice')")]
     public string castSFXKey;
+    [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al impactar/explotar (ej: 'Spell_Fire_Explosion')")]
+    public string impactSFXKey;
 
     [Header("Reglas de slot")]
     public SpellSlotType slotType = SpellSlotType.Any;

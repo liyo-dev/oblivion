@@ -27,6 +27,9 @@ public class MagicProjectile : MonoBehaviour
         public GameObject impactVFX;     // al impactar
         public GameObject despawnVFX;    // al morir sin impacto (TTL/rango)
         public float vfxLifetime;        // tiempo antes de destruir VFX (0 = no destruir)
+        
+        // Audio
+        public string impactSFXKey;      // clave SFX al impactar
     }
 
     // ==== Estado ===============================================================
@@ -243,6 +246,12 @@ public class MagicProjectile : MonoBehaviour
             // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
             float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
             Destroy(fx, destroyTime);
+        }
+        
+        // 🔊 SFX de impacto
+        if (!string.IsNullOrEmpty(_cfg.impactSFXKey))
+        {
+            AudioService.Instance?.PlaySFX(_cfg.impactSFXKey, worldPosition: hitPoint);
         }
 
         // Destruir proyectil al colisionar con cualquier cosa válida

@@ -39,6 +39,8 @@ MonoBehaviour:
   spawnVFX: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
   impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   despawnVFX: {fileID: 8680598818964007281, guid: dcd90c4976197424b9958a7c54b6bb8c, type: 3}
-  castSFXKey: 
+  vfxLifetime: 3
+  castSFXKey: BolaPrisma
+  impactSFXKey: Impact1
   slotType: 0
   attackIcon: {fileID: 21300000, guid: 9f65a57ebd40b074ca258be9bc7ad7dc, type: 3}

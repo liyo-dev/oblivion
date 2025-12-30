@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -136,6 +136,13 @@ namespace Game.NPC.States
             {
                 _combatBrain.StopCombat();
             }
+            
+            // ⭐ Desactivar targeting para que el marker desaparezca
+            var targetable = context.Transform.GetComponent<Targetable>();
+            if (targetable != null)
+            {
+                targetable.isInActiveCombat = false;
+            }
 
             // Reactivar interacciones si el NPC sigue vivo (si está muerto, DeadState se encarga)
             if (!context.WasDefeatedInCombat)
@@ -174,6 +181,7 @@ namespace Game.NPC.States
             var targetable = context.Transform.GetComponent<Targetable>();
             if (targetable == null) targetable = context.Transform.gameObject.AddComponent<Targetable>();
             targetable.enabled = true;
+            targetable.isInActiveCombat = true; // ⭐ Activar para que el marker aparezca
 
             // Damageable (Salud)
             var damageable = context.Transform.GetComponent<Damageable>();

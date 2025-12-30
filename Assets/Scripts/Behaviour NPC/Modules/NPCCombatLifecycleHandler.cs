@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -286,8 +286,10 @@ namespace Game.NPC.Modules
                 var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
                 if (playerVictory != null)
                 {
-                    Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player");
-                    playerVictory.PlayVictory();
+                    // Pasar el battleMusicId para que reproduzca la música de victoria correcta
+                    string battleId = _config?.battleMusicId;
+                    Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
+                    playerVictory.PlayVictory(battleId);
                     
                     // Esperar a que termine la animación de victoria (3s) + margen
                     yield return new WaitForSecondsRealtime(4.0f);

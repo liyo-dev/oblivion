@@ -53,6 +53,16 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: ab5056e86d89a9b49af0adccd84af617, type: 3}
   - eventKey: GameOverMenu
     sfx: {fileID: 8300000, guid: 2f07c3b7706a64f489133201c2342886, type: 3}
+  - eventKey: BolaPrisma
+    sfx: {fileID: 8300000, guid: a2ae90e42daaf4723a539c25867d37fd, type: 3}
+  - eventKey: LlamaAstral
+    sfx: {fileID: 8300000, guid: 7743889c22ea9472a895ecd63b2bb221, type: 3}
+  - eventKey: CorazonEstelar
+    sfx: {fileID: 8300000, guid: 4253ea676060e49dd9488f73d692ea2a, type: 3}
+  - eventKey: Impact1
+    sfx: {fileID: 8300000, guid: 4e7a7e55b33e3e526a00fcc81ee4a7dc, type: 3}
+  - eventKey: PlasmaSphere
+    sfx: {fileID: 8300000, guid: 96a146f9cdecc2e718b1d0395e94cb48, type: 3}
   additiveCinematics:
   - sceneName: Cinematic_DemonAppears
     music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}

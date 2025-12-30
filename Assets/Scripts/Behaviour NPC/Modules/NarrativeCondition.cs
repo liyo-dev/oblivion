@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
@@ -39,33 +39,50 @@ namespace Game.NPC.Modules
         /// </summary>
         public bool Evaluate()
         {
+            bool result;
+            
             switch (conditionType)
             {
                 case NarrativeConditionType.None:
-                    return true; // Siempre se cumple
+                    result = true; // Siempre se cumple
+                    break;
                 
                 case NarrativeConditionType.QuestNotStarted:
-                    return EvaluateQuestNotStarted();
+                    result = EvaluateQuestNotStarted();
+                    break;
                 
                 case NarrativeConditionType.QuestStarted:
-                    return EvaluateQuestStarted();
+                    result = EvaluateQuestStarted();
+                    break;
                 
                 case NarrativeConditionType.QuestCompleted:
-                    return EvaluateQuestCompleted();
+                    result = EvaluateQuestCompleted();
+                    break;
                 
                 case NarrativeConditionType.QuestActive:
-                    return EvaluateQuestActive();
+                    result = EvaluateQuestActive();
+                    break;
                 
                 case NarrativeConditionType.Custom:
                     // Para custom, siempre retorna false por defecto
                     // El código que usa esto puede override el comportamiento
                     if (debugMode)
                         Debug.LogWarning("[NarrativeCondition] Custom condition not implemented, returning false");
-                    return false;
+                    result = false;
+                    break;
                 
                 default:
-                    return true;
+                    result = true;
+                    break;
             }
+            
+            if (debugMode)
+            {
+                string questName = targetQuest != null ? targetQuest.questId : "N/A";
+                Debug.Log($"[NarrativeCondition] Evaluate: Type={conditionType}, Quest={questName}, Result={result}");
+            }
+            
+            return result;
         }
         
         private bool EvaluateQuestNotStarted()
