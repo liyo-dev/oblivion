@@ -129,21 +129,27 @@ namespace Game.NPC.Modules
         /// se re-registren con el estado correcto del preset cargado.
         /// </summary>
         public static void Clear()
-        {
-            // Resetear el estado de ejecución de todos los executors antes de limpiar
-            // Esto es importante porque los NPCs que siguen en escena necesitan
-            // restaurar su estado desde el preset al re-registrarse
+        { // Resetear el estado de ejecución de todos los executors
+            // Esto es importante porque al cargar una partida anterior, el preset
+            // puede tener una lista diferente de completedInteractiveNarratives
+            int resetCount = 0;
             foreach (var executor in _all)
             {
                 if (executor != null)
                 {
                     executor.ResetState();
+                    resetCount++;
                 }
             }
             
-            _byId.Clear();
-            _all.Clear();
-            Debug.Log("[NPCInteractiveNarrativeRegistry] 🗑️ Registro limpiado y estados reseteados");
+            // NOTA: NO limpiamos _all ni _byId porque los executors siguen siendo válidos
+            // Solo necesitamos resetear su estado. Si limpiáramos las listas, los executors
+            // no se re-registrarían automáticamente (OnEnable ya pasó) y el registro quedaría vacío.
+            
+            // Limpiamos referencias null que pudieran existir
+            _all.RemoveAll(e => e == null);
+            
+            Debug.Log($"[NPCInteractiveNarrativeRegistry] 🔄 Estados reseteados en {resetCount} executor(es), registro mantiene {_all.Count} entradas");
         }
         
         /// <summary>

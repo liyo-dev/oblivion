@@ -19,6 +19,12 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private bool mustBeOnScreen = true;          // <- NUEVO
     [SerializeField, Range(0f, 0.2f)] private float screenEdgePadding = 0.03f;
 
+    [Header("Targeting Automático")]
+    [Tooltip("Si está activo, cualquier objeto en enemyMask será targeteable automáticamente sin necesidad del componente Targetable")]
+    [SerializeField] private bool autoTargetByLayer = true;
+    [Tooltip("Si autoTargetByLayer está activo, ¿requiere que el enemigo tenga Damageable y esté vivo?")]
+    [SerializeField] private bool requireDamageableAlive = true;
+
     [Header("Debug Gizmos")]
     [SerializeField] private bool drawRadius = true;
     [SerializeField] private bool drawFOV = true;
@@ -55,6 +61,10 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     void Awake()
     {
         _cam = Camera.main;
+        
+        // Debug: Verificar configuración del marker
+        Debug.Log($"[PlayerTargeting] Awake - enableMarker={enableMarker}, markerPrefab={markerPrefab}, enemyMask={enemyMask.value}");
+        
         if (enableMarker && markerPrefab)
         {
             var go = Instantiate(markerPrefab);
@@ -62,7 +72,13 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             _marker = go.transform;
             _markerOriginalScale = _marker.localScale;
             _marker.localScale = Vector3.zero; // Empezar pequeño para animación
+            Debug.Log($"[PlayerTargeting] ✅ Marker instanciado: {go.name}");
         }
+        else
+        {
+            Debug.LogWarning($"[PlayerTargeting] ⚠️ Marker NO instanciado - enableMarker={enableMarker}, markerPrefab={(markerPrefab != null ? markerPrefab.name : "NULL")}");
+        }
+        
         if (!aimOrigin && _cam) aimOrigin = _cam.transform; // <- recomendable
     }
 
@@ -101,6 +117,9 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
          {
              var h = _overlapBuffer[i];
              if (!h) continue;
+             
+             // Verificar que el collider y su gameObject estén activos
+             if (!h.enabled || !h.gameObject.activeInHierarchy) continue;
 
              Vector3 center = GetTargetCenter(h.transform);
              Vector3 to = center - origin;
@@ -110,13 +129,52 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             // Si el enemigo tiene un componente Targetable, verificar si está en combate activo
             var cfg = h.transform.GetComponentInParent<Targetable>();
             
-            // ⭐ NUEVO: Solo targetear enemigos que estén en combate activo
-            if (cfg != null && !cfg.isInActiveCombat) continue;
-            
-            // Si el enemigo tiene un componente Targetable con un radio personalizado, úsalo
+            // Determinar si este enemigo es válido para targeting
+            bool isValidTarget = false;
             float allowedRadius = radius;
-            if (cfg != null && cfg.targetingRadius > 0f)
-                allowedRadius = cfg.targetingRadius;
+            
+            // ✅ SIEMPRE verificar si el enemigo está vivo antes de targetearlo
+            if (requireDamageableAlive)
+            {
+                var damageable = h.transform.GetComponentInParent<Damageable>();
+                if (damageable == null || !damageable.IsAlive) continue;
+            }
+            
+            if (cfg != null && cfg.isInActiveCombat)
+            {
+                // Tiene Targetable con combate activo: usar su configuración
+                isValidTarget = true;
+                if (cfg.targetingRadius > 0f)
+                    allowedRadius = cfg.targetingRadius;
+            }
+            else if (cfg != null && !cfg.isInActiveCombat)
+            {
+                // Tiene Targetable pero NO está en combate activo
+                // Verificar si es un enemigo puro (sin sistema NPC narrativo) o un NPC en alerta
+                var npcManager = h.transform.GetComponentInParent<Game.NPC.NPCBehaviourManagerV2>();
+                
+                if (npcManager != null)
+                {
+                    // Es un NPC con sistema narrativo: NO targetear si no está en combate activo
+                    // (Esto incluye NPCs en diálogo de alerta pre-combate)
+                    continue;
+                }
+                else
+                {
+                    // Es un enemigo puro sin sistema NPC: targeteable siempre (ej: demonio, arañas)
+                    isValidTarget = true;
+                    if (cfg.targetingRadius > 0f)
+                        allowedRadius = cfg.targetingRadius;
+                }
+            }
+            else if (autoTargetByLayer && cfg == null)
+            {
+                // NO tiene Targetable, usar autoTargetByLayer
+                // (Esto es para enemigos simples como monstruos sin el sistema NPC)
+                isValidTarget = true;
+            }
+            
+            if (!isValidTarget) continue;
              
              // Si está fuera del radio permitido para ese enemigo, ignóralo
              if (dist > allowedRadius) continue;
@@ -155,6 +213,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
     void OnTargetChanged(Transform newT)
     {
+        Debug.Log($"[PlayerTargeting] 🎯 Target changed: {(newT != null ? newT.name : "NULL")}");
+        
         if (!_marker) return;
 
         if (parentMarkerToTarget)

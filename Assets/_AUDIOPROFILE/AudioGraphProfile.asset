@@ -38,7 +38,7 @@ MonoBehaviour:
   - eventKey: UI_Navigate
     sfx: {fileID: 8300000, guid: c83e31fc92bdc722b8d62fa8ebea0722, type: 3}
   - eventKey: UI_Submit
-    sfx: {fileID: 8300000, guid: 63abb224d3a104d0a9de133310638405, type: 3}
+    sfx: {fileID: 8300000, guid: 43ccdaf4e06a1324fa8c6defac11f3fe, type: 3}
   - eventKey: UI_Cancel
     sfx: {fileID: 8300000, guid: 67c7dcab9e8a0eb459186be18c72da79, type: 3}
   - eventKey: UI_MenuOpen

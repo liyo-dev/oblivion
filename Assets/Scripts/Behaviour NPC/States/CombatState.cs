@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -182,6 +182,14 @@ namespace Game.NPC.States
             if (targetable == null) targetable = context.Transform.gameObject.AddComponent<Targetable>();
             targetable.enabled = true;
             targetable.isInActiveCombat = true; // ⭐ Activar para que el marker aparezca
+            
+            // EnemyMarker (Para sistemas de puertas/gates que esperan muerte de enemigos)
+            var enemyMarker = context.Transform.GetComponent<EnemyMarker>();
+            if (enemyMarker == null)
+            {
+                enemyMarker = context.Transform.gameObject.AddComponent<EnemyMarker>();
+                context.Log("[CombatState] 🎯 EnemyMarker añadido al NPC");
+            }
 
             // Damageable (Salud)
             var damageable = context.Transform.GetComponent<Damageable>();

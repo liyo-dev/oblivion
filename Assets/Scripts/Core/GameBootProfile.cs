@@ -64,8 +64,8 @@ public class GameBootProfile : ScriptableObject
         dst.inventoryItems = new List<InventoryItemSave>(src.inventoryItems ?? new List<InventoryItemSave>());
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
         dst.consumedInteractableIds = new List<string>(src.consumedInteractableIds ?? new List<string>());
-
-        // === NUEVO: copiar secci�n de abilities (permisos f�sicos/acciones) ===
+        dst.completedInteractiveNarratives = new List<string>(src.completedInteractiveNarratives ?? new List<string>());
+        
         if (src.abilities != null)
         {
             dst.abilities = new PlayerAbilities();
@@ -136,6 +136,14 @@ public class GameBootProfile : ScriptableObject
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         p.consumedInteractableIds = data.consumedInteractables != null ? new List<string>(data.consumedInteractables) : new List<string>();
+        
+        // === CRÍTICO: Restaurar narrativas interactivas completadas desde el save ===
+        // Esto permite que al cargar una partida anterior, las narrativas de un solo uso
+        // que NO estaban completadas en ese save vuelvan a estar disponibles
+        p.completedInteractiveNarratives = data.completedInteractiveNarratives != null 
+            ? new List<string>(data.completedInteractiveNarratives) 
+            : new List<string>();
+        Debug.Log($"[GameBootProfile] 📜 Restauradas {p.completedInteractiveNarratives.Count} narrativas completadas desde save");
 
         // Restaurar NPCs persistidos directamente en el runtimePreset para que otros sistemas puedan aplicarlos
         if (p.npcPositions == null) p.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
@@ -237,6 +245,12 @@ public class GameBootProfile : ScriptableObject
             : new List<string>();
         data.inventory = SanitizeInventorySnapshot(activePreset.inventoryItems);
         data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
+        
+        // ✅ CRÍTICO: incluir narrativas interactivas completadas
+        data.completedInteractiveNarratives = activePreset.completedInteractiveNarratives != null 
+            ? new List<string>(activePreset.completedInteractiveNarratives) 
+            : new List<string>();
+        
         // Guardar slots actuales
         data.leftSpellId = activePreset.leftSpellId;
         data.rightSpellId = activePreset.rightSpellId;

@@ -42,7 +42,19 @@ namespace Game.NPC.Modules
             _npcManager = GetComponent<NPCBehaviourManagerV2>();
             _interactable = GetComponent<Interactable>();
             
-            if (_npcManager == null) Debug.LogError($"[NarrativeExecutor:{name}] ❌ Falta NPCBehaviourManagerV2");
+            if (_npcManager == null) 
+            {
+                Debug.LogError($"[NarrativeExecutor:{name}] ❌ Falta NPCBehaviourManagerV2");
+                return;
+            }
+            
+            // ✅ CRÍTICO: Inicializar _config en Awake para que esté disponible en OnEnable
+            // Esto es necesario porque OnEnable se ejecuta antes que Start, y el Registry
+            // necesita acceder a la configuración para registrar correctamente el persistenceId
+            if (_npcManager.Configuration != null)
+            {
+                _config = _npcManager.Configuration.interactiveNarrativeConfig;
+            }
         }
 
         private void OnEnable() => NPCInteractiveNarrativeRegistry.Register(this);
@@ -53,14 +65,23 @@ namespace Game.NPC.Modules
         /// </summary>
         public NPCInteractiveNarrativeConfig GetConfiguration()
         {
+            // Intentar obtener la config si aún no está inicializada
+            if (_config == null && _npcManager != null && _npcManager.Configuration != null)
+            {
+                _config = _npcManager.Configuration.interactiveNarrativeConfig;
+            }
             return _config;
         }
 
         private void Start()
         {
+            // _config ya se inicializó en Awake, pero verificamos por si acaso
+            if (_config == null && _npcManager != null && _npcManager.Configuration != null)
+            {
+                _config = _npcManager.Configuration.interactiveNarrativeConfig;
+            }
+            
             if (_npcManager == null || _npcManager.Configuration == null) return;
-
-            _config = _npcManager.Configuration.interactiveNarrativeConfig;
             if (_config == null) return;
 
             // Inicializar el controlador de iconos (si existe o lo creamos)
@@ -514,6 +535,16 @@ namespace Game.NPC.Modules
             SwitchToEnemyLayer();
             _npcManager.Configuration.combatConfig = entry.combatConfig;
             
+            // ✅ FIX CRÍTICO: Transferir configuración de eventos de derrota desde NarrativeChainEntry
+            // al NPCCombatConfig para que NPCCombatLifecycleHandler pueda enviar el evento
+            if (entry.sendEventOnDefeat && !string.IsNullOrEmpty(entry.defeatEventKey))
+            {
+                entry.combatConfig.sendEventOnDefeat = entry.sendEventOnDefeat;
+                entry.combatConfig.defeatEventKey = entry.defeatEventKey;
+                entry.combatConfig.sendDefeatEventBeforeDeath = entry.sendDefeatEventBeforeDeath;
+                Debug.Log($"[NarrativeExecutor] 📤 Configurado evento de derrota: '{entry.defeatEventKey}' (antes de muerte: {entry.sendDefeatEventBeforeDeath})");
+            }
+            
             // 2. Asegurar que los componentes de combate existan (sin iniciar combate)
             // Esto prepara al NPC para combate pero NO lo inicia
             if (!GetComponent<Damageable>())
@@ -748,14 +779,31 @@ namespace Game.NPC.Modules
         
         private void SaveState()
         {
-            if (string.IsNullOrEmpty(_config.persistenceId)) return;
+            if (string.IsNullOrEmpty(_config.persistenceId)) 
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ SaveState: persistenceId está vacío, no se puede guardar");
+                return;
+            }
+            
             var preset = GameBootService.Profile?.GetActivePresetResolved();
-            if (preset == null) return;
+            if (preset == null) 
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ SaveState: preset es null, no se puede guardar");
+                return;
+            }
+            
+            // Asegurar que la lista existe
+            if (preset.completedInteractiveNarratives == null)
+            {
+                preset.completedInteractiveNarratives = new System.Collections.Generic.List<string>();
+                Debug.Log($"[NarrativeExecutor:{name}] 📋 Creada nueva lista completedInteractiveNarratives");
+            }
             
             // Guardar estado del config general
             if (!preset.completedInteractiveNarratives.Contains(_config.persistenceId))
             {
                 preset.completedInteractiveNarratives.Add(_config.persistenceId);
+                Debug.Log($"[NarrativeExecutor:{name}] 💾 Guardado config general: {_config.persistenceId}");
             }
             
             // Guardar estado de cada narrativa condicional ejecutada
@@ -775,13 +823,22 @@ namespace Game.NPC.Modules
                     }
                 }
             }
+            
+            // Verificar el estado final
+            Debug.Log($"[NarrativeExecutor:{name}] 📊 SaveState finalizado - Total en preset: {preset.completedInteractiveNarratives.Count} narrativas");
         }
 
         private void RestoreState()
         {
             if (string.IsNullOrEmpty(_config.persistenceId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
-            if (preset == null) return;
+            if (preset == null)
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ RestoreState: preset es null");
+                return;
+            }
+            
+            Debug.Log($"[NarrativeExecutor:{name}] 🔄 RestoreState - completedInteractiveNarratives tiene {preset.completedInteractiveNarratives?.Count ?? 0} entradas");
             
             // Restaurar estado del config general
             _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_config.persistenceId);
@@ -800,7 +857,10 @@ namespace Game.NPC.Modules
                         // Esto asegura que en nueva partida (lista vacía), las narrativas empiezan sin ejecutar
                         narrative.ResetExecutionState();
                         
-                        if (preset.completedInteractiveNarratives.Contains(narrativeId))
+                        bool wasCompleted = preset.completedInteractiveNarratives.Contains(narrativeId);
+                        Debug.Log($"[NarrativeExecutor:{name}] Narrativa #{i} '{narrative.description}' - ID: {narrativeId}, EnLista: {wasCompleted}, SingleUse: {narrative.singleUse}");
+                        
+                        if (wasCompleted)
                         {
                             narrative.MarkAsExecuted();
                             Debug.Log($"[NarrativeExecutor:{name}] 🔄 Restaurada narrativa condicional #{i} como ejecutada: {narrativeId}");

@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -42,7 +42,10 @@ namespace Game.NPC.Modules
         private NPCSimpleAnimator _animator;
         private NavMeshAgent _agent;
         private NPCCombatBrain _brain;
-        private NPCCombatConfig _config;
+        
+        // ✅ CAMBIO: Obtener _config dinámicamente para asegurar que siempre tenga los valores actualizados
+        // Esto es necesario porque NPCInteractiveNarrativeExecutor puede actualizar combatConfig después de Start()
+        private NPCCombatConfig _config => _manager?.Configuration?.combatConfig;
         #endregion
 
         #region 📊 State
@@ -77,8 +80,8 @@ namespace Game.NPC.Modules
 
         private void Start()
         {
-            if (_manager.Configuration != null) 
-                _config = _manager.Configuration.combatConfig;
+            // ✅ _config ahora es una propiedad que obtiene el valor dinámicamente
+            // No necesita asignación aquí
 
             // ✅ Verificación de respaldo: Si Damageable no estaba en Awake, obtenerlo ahora
             if (_damageable == null)
@@ -237,6 +240,16 @@ namespace Game.NPC.Modules
         private IEnumerator DeathRoutine()
         {
             Debug.Log($"[Lifecycle] 💀 Iniciando secuencia de muerte: {name}");
+            
+            // ✅ DEBUG: Verificar configuración de eventos de derrota
+            Debug.Log($"[Lifecycle] 🔍 Config de derrota para {name}:");
+            Debug.Log($"    - _config es null: {_config == null}");
+            if (_config != null)
+            {
+                Debug.Log($"    - sendEventOnDefeat: {_config.sendEventOnDefeat}");
+                Debug.Log($"    - defeatEventKey: '{_config.defeatEventKey}'");
+                Debug.Log($"    - sendDefeatEventBeforeDeath: {_config.sendDefeatEventBeforeDeath}");
+            }
 
             // 1. DETENER TODO INMEDIATAMENTE
             if (_brain) _brain.StopCombat();

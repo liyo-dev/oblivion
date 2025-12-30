@@ -406,6 +406,7 @@ GameObject:
   - component: {fileID: 1175714022862013922}
   - component: {fileID: 4071095640247716209}
   - component: {fileID: 4204621156195107645}
+  - component: {fileID: 4423205742555801771}
   m_Layer: 7
   m_Name: Spider1
   m_TagString: Untagged
@@ -576,6 +577,20 @@ MonoBehaviour:
   hitStateName: 
   hitKnockback: 0
   hitKnockbackDamp: 8
+--- !u!114 &4423205742555801771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5572779666037620316}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e56e4d3ef79460980580a9918b788f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Targetable
+  targetingRadius: 8
+  isInActiveCombat: 0
 --- !u!1 &5572779666037620318
 GameObject:
   m_ObjectHideFlags: 0

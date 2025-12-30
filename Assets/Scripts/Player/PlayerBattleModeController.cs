@@ -354,26 +354,31 @@ namespace Game.Player
             }
             
             // Reproducir música de victoria usando el sistema de audio centralizado
-            if (!string.IsNullOrEmpty(victorySfxKey))
+            if (!string.IsNullOrEmpty(victorySfxKey) && AudioService.Instance != null)
             {
-                if (AudioService.Instance != null)
+                // Usar PlayVictoryForBattle para reproducir la música de victoria correctamente
+                // El primer parámetro es el battleId actual (para restaurar música después)
+                // El segundo es la clave de victoria
+                // El tercer parámetro es el tiempo que se mantiene la música de victoria
+                if (!string.IsNullOrEmpty(_currentBattleId))
                 {
-                    // Usar PlayVictoryForBattle para reproducir la música de victoria correctamente
-                    // El primer parámetro es el battleId actual (para restaurar música después)
-                    // El segundo es la clave de victoria
-                    // El tercer parámetro es el tiempo que se mantiene la música de victoria
-                    string battleId = !string.IsNullOrEmpty(_currentBattleId) ? _currentBattleId : "Npc_Battle_Erika";
-                    AudioService.Instance.PlayVictoryForBattle(battleId, victorySfxKey, victoryAnimationDuration + 1f);
-                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {battleId})");
+                    AudioService.Instance.PlayVictoryForBattle(_currentBattleId, victorySfxKey, victoryAnimationDuration + 2f);
+                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {_currentBattleId})");
                 }
                 else
                 {
-                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir música");
+                    // Sin battleId específico, solo reproducir el SFX de victoria sin restaurar música después
+                    AudioService.Instance.PlaySFX(victorySfxKey);
+                    Debug.Log($"[PlayerBattleMode] 🎵 Reproduciendo SFX de victoria: {victorySfxKey} (sin battleId)");
                 }
+            }
+            else if (string.IsNullOrEmpty(victorySfxKey))
+            {
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ victorySfxKey está vacío - no se reproduce audio");
             }
             else
             {
-                Debug.LogWarning($"[PlayerBattleMode] ⚠️ victorySfxKey está vacío - no se reproduce audio");
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ AudioService.Instance es NULL - no se puede reproducir música");
             }
             
             // Esperar duración de la animación

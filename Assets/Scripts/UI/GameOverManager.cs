@@ -1,46 +1,62 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using UnityEngine.InputSystem;
 using EasyTransition;
 using DG.Tweening;
-using Core;
+using Sendero.Core.Feedback;
 
 /// <summary>
-/// Gestiona la pantalla de Game Over simple con dos opciones:
-/// - Cargar última partida guardada (solo si existe)
-/// - Volver al menú principal
+/// Gestiona el Game Over con feedback visual cinematográfico:
+/// - Slow motion progresivo (via FeedbackService)
+/// - Zoom de cámara hacia el jugador
+/// - Música de Game Over
+/// - Transición automática al menú principal (sin UI de botones)
 /// </summary>
 public class GameOverManager : MonoBehaviour
 {
     public static GameOverManager Instance { get; private set; }
-
-    [Header("UI")]
-    [Tooltip("Referencia al objeto de UI que actúa como pantalla de Game Over.")]
-    [SerializeField] private GameObject gameOverUI;
-    [SerializeField] private Button loadLastSaveButton;
-    [SerializeField] private Button backToMenuButton;
-    [SerializeField] private CanvasGroup rootGroup;
 
     [Header("Escenas")]
     [SerializeField] private string mainMenuScene = "MainMenu";
 
     [Header("Transiciones")]
     [SerializeField] private TransitionManager transitionManager;
-    [SerializeField] private TransitionSettings reloadTransitionSettings;
     [SerializeField] private TransitionSettings mainMenuTransitionSettings;
-    [SerializeField] private float transitionStartDelay = 0f;
+    [SerializeField] private float transitionStartDelay;
 
-    [Header("Comportamiento")]
-    [Tooltip("Si está activado, al mostrar GameOver se pausará el juego.")]
-    [SerializeField] private bool pauseOnGameOver = true;
-    [Tooltip("Retraso en segundos antes de mostrar la UI.")]
-    [SerializeField] private float delayBeforeShow = 0.75f;
+    [Header("Slow Motion")]
+    [Tooltip("Escala de tiempo mínima durante el slow-mo")]
+    [SerializeField, Range(0.01f, 0.5f)] private float slowMotionScale = 0.15f;
+    [Tooltip("Duración para llegar al slow-mo máximo")]
+    [SerializeField] private float slowMotionRampDuration = 0.4f;
+    [Tooltip("Duración total del slow-mo antes de la transición")]
+    [SerializeField] private float slowMotionHoldDuration = 2.5f;
 
-    private bool _isGameOverShown = false;
-    private Coroutine _showCoroutine = null;
+    [Header("Camera Zoom")]
+    [Tooltip("¿Hacer zoom hacia el jugador?")]
+    [SerializeField] private bool enableCameraZoom = true;
+    [Tooltip("Factor de zoom (< 1 = acercar, > 1 = alejar). 0.85 = zoom sutil")]
+    [SerializeField, Range(0.5f, 1f)] private float zoomFactor = 0.85f;
+    [Tooltip("Duración del zoom")]
+    [SerializeField] private float zoomDuration = 2f;
 
-    public bool IsShown => _isGameOverShown;
+    [Header("Screen Flash")]
+    [Tooltip("¿Hacer flash rojo al morir?")]
+    [SerializeField] private bool enableDeathFlash = true;
+    [SerializeField] private Color deathFlashColor = new Color(0.6f, 0f, 0f, 0.5f);
+    [SerializeField] private float deathFlashDuration = 0.4f;
+
+    [Header("Audio")]
+    [Tooltip("Evento de audio para Game Over")]
+    [SerializeField] private string gameOverAudioEvent = "GameOverMenu";
+
+    private bool _isGameOverActive;
+    private Coroutine _gameOverCoroutine;
+    private Camera _mainCamera;
+    private float _originalFOV;
+    private Tween _zoomTween;
+
+    public bool IsShown => _isGameOverActive;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsurePersistentIfPlacedInStartScene()
     {
@@ -49,9 +65,9 @@ public class GameOverManager : MonoBehaviour
             if (ServiceLocator.TryGet(out GameOverManager existing) && existing != null)
             {
                 if (existing.transform.root != null)
-                    UnityEngine.Object.DontDestroyOnLoad(existing.transform.root.gameObject);
+                    DontDestroyOnLoad(existing.transform.root.gameObject);
                 else
-                    UnityEngine.Object.DontDestroyOnLoad(existing.gameObject);
+                    DontDestroyOnLoad(existing.gameObject);
             }
         }
         catch (System.Exception ex)
@@ -62,11 +78,11 @@ public class GameOverManager : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log($"[GameOverManager] Awake - scene='{gameObject.scene.name}', buildIndex={gameObject.scene.buildIndex}");
+        Debug.Log($"[GameOverManager] Awake - scene='{gameObject.scene.name}'");
         
         if (Instance != null && Instance != this)
         {
-            Debug.Log($"[GameOverManager] Destruyendo duplicado - Instance ya existe: {Instance.name}");
+            Debug.Log($"[GameOverManager] Destruyendo duplicado");
             Destroy(gameObject);
             return;
         }
@@ -78,42 +94,14 @@ public class GameOverManager : MonoBehaviour
         // Persistir si está en la escena inicial
         if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
         {
-            UnityEngine.Object.DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(gameObject);
             Debug.Log("[GameOverManager] Marcado como DontDestroyOnLoad");
         }
-
-        Debug.Log($"[GameOverManager] Referencias - gameOverUI={gameOverUI}, loadLastSaveButton={loadLastSaveButton}, backToMenuButton={backToMenuButton}");
-
-        if (gameOverUI != null)
-            gameOverUI.SetActive(false);
-
-        if (rootGroup == null && gameOverUI != null)
-        {
-            rootGroup = gameOverUI.GetComponent<CanvasGroup>();
-            if (rootGroup == null)
-            {
-                Debug.LogWarning($"[GameOverManager] ⚠️ El GameObject '{gameOverUI.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el Inspector");
-            }
-        }
-
-        // Estado inicial: no interactivo
-        if (rootGroup != null)
-        {
-            rootGroup.blocksRaycasts = false;
-            rootGroup.interactable = false;
-        }
-
-        SetButtonsInteractable(false);
-        
-        Debug.Log("[GameOverManager] Awake completado");
     }
 
     private void OnDestroy()
     {
-        // Detener y limpiar todas las animaciones activas de DOTween
-        DOTween.KillAll();
-        DOTween.Clear();
-
+        CleanupTweens();
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         if (Instance == this)
         {
@@ -122,343 +110,167 @@ public class GameOverManager : MonoBehaviour
         ServiceLocator.Unregister(this);
     }
 
-    void OnEnable()
+    private void CleanupTweens()
     {
-        GamepadInputReader.EnsureInputEventsSubscribed();
-        GamepadInputReader.OnInput += HandleGamepadInput;
-    }
-
-    void OnDisable()
-    {
-        GamepadInputReader.OnInput -= HandleGamepadInput;
-    }
-
-    private void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        if (!_isGameOverShown || gameOverUI == null || !gameOverUI.activeInHierarchy)
-            return;
-
-        if (input.Phase != InputActionPhase.Performed)
-            return;
-
-        // Cancel = volver al menú principal
-        if (input.Type == GamepadInputReader.InputEventType.Cancel)
-        {
-            OnBackToMainMenu();
-        }
-    }
-
-    private void SetButtonsInteractable(bool interactable)
-    {
-        if (loadLastSaveButton != null && gameOverUI != null && 
-            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            loadLastSaveButton.interactable = interactable;
-        }
-
-        if (backToMenuButton != null && gameOverUI != null && 
-            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            backToMenuButton.interactable = interactable;
-        }
-    }
-
-    /// <summary>
-    /// Muestra la pantalla de Game Over. Pausa el juego si está configurado.
-    /// </summary>
-    public void ShowGameOver()
-    {
-        Debug.Log($"[GameOverManager] ShowGameOver() llamado - _isGameOverShown={_isGameOverShown}, _showCoroutine={(_showCoroutine != null)}");
-        
-        if (_isGameOverShown || _showCoroutine != null) 
-        {
-            Debug.Log("[GameOverManager] ShowGameOver() IGNORADO - ya mostrado o coroutine activa");
-            return;
-        }
-
-        Debug.Log($"[GameOverManager] gameOverUI={gameOverUI}, rootGroup={rootGroup}");
-        
-        if (gameOverUI == null)
-        {
-            Debug.LogError("[GameOverManager] ❌ gameOverUI es NULL - no se puede mostrar Game Over");
-            return;
-        }
-
-        _showCoroutine = StartCoroutine(ShowGameOverRoutine());
-    }
-
-    private System.Collections.IEnumerator ShowGameOverRoutine()
-    {
-        Debug.Log($"[GameOverManager] ShowGameOverRoutine() iniciada - delayBeforeShow={delayBeforeShow}s");
-        
-        if (delayBeforeShow > 0f)
-        {
-            yield return new WaitForSecondsRealtime(delayBeforeShow);
-        }
-
-        _showCoroutine = null;
-        _isGameOverShown = true;
-
-        Debug.Log($"[GameOverManager] Activando gameOverUI (null check: {gameOverUI == null})");
-        
-        if (gameOverUI != null)
-        {
-            gameOverUI.SetActive(true);
-            Debug.Log($"[GameOverManager] gameOverUI.activeSelf = {gameOverUI.activeSelf}");
-        }
-        else
-        {
-            Debug.LogError("[GameOverManager] ❌ gameOverUI se volvió NULL durante la corrutina!");
-        }
-
-        // Reproducir SFX de Game Over
-        if (AudioService.Instance != null)
-        {
-            AudioService.Instance.PlaySFX("GameOverMenu");
-            Debug.Log("[GameOverManager] 🔊 SFX 'GameOverMenu' reproducido");
-        }
-        else
-        {
-            Debug.LogWarning("[GameOverManager] ⚠️ AudioService.Instance es NULL - no se puede reproducir SFX");
-        }
-
-        if (pauseOnGameOver)
-        {
-            Time.timeScale = 0f;
-            Debug.Log("[GameOverManager] Juego pausado (Time.timeScale = 0)");
-        }
-
-        // Configurar botones según si hay save o no
-        ConfigureButtons();
-
-        // Activar interacción
-        if (rootGroup != null)
-        {
-            rootGroup.blocksRaycasts = true;
-            rootGroup.interactable = true;
-            Debug.Log("[GameOverManager] CanvasGroup configurado - blocksRaycasts=true, interactable=true");
-        }
-        else
-        {
-            Debug.LogWarning("[GameOverManager] ⚠️ rootGroup es NULL - no se puede configurar interactividad");
-        }
-
-        Debug.Log("[GameOverManager] ✅ Game Over mostrado correctamente");
-    }
-
-    private void ConfigureButtons()
-    {
-        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
-        bool hasSave = saveSystem != null && saveSystem.HasSave();
-
-        // El botón de cargar solo está activo si hay save
-        if (loadLastSaveButton != null && gameOverUI != null && 
-            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            loadLastSaveButton.gameObject.SetActive(hasSave);
-            if (hasSave)
-            {
-                loadLastSaveButton.interactable = true;
-                loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
-                loadLastSaveButton.onClick.AddListener(OnLoadLastSave);
-            }
-        }
-
-        // El botón de volver al menú siempre está activo
-        if (backToMenuButton != null && gameOverUI != null && 
-            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            backToMenuButton.interactable = true;
-            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
-            backToMenuButton.onClick.AddListener(OnBackToMainMenu);
-        }
-    }
-
-    /// <summary>
-    /// Oculta la pantalla de Game Over y reanuda el juego.
-    /// </summary>
-    public void HideGameOver(bool resumeTime = true)
-    {
-        if (_showCoroutine != null)
-        {
-            StopCoroutine(_showCoroutine);
-            _showCoroutine = null;
-        }
-
-        if (!_isGameOverShown) 
-            return;
-
-        _isGameOverShown = false;
-
-        if (gameOverUI != null)
-            gameOverUI.SetActive(false);
-
-        if (rootGroup == null && gameOverUI != null)
-        {
-            rootGroup = gameOverUI.GetComponent<CanvasGroup>();
-            if (rootGroup == null)
-            {
-                Debug.LogWarning($"[GameOverManager] ⚠️ gameOverUI '{gameOverUI.name}' no tiene componente CanvasGroup - debe agregarse manualmente en el Inspector");
-            }
-        }
-
-        // Estado inicial: no interactivo
-        if (rootGroup != null)
-        {
-            rootGroup.blocksRaycasts = false;
-            rootGroup.interactable = false;
-        }
-
-        if (loadLastSaveButton != null && gameOverUI != null && 
-            loadLastSaveButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            loadLastSaveButton.onClick.RemoveListener(OnLoadLastSave);
-        }
-
-        if (backToMenuButton != null && gameOverUI != null && 
-            backToMenuButton.transform.IsChildOf(gameOverUI.transform))
-        {
-            backToMenuButton.onClick.RemoveListener(OnBackToMainMenu);
-        }
-
-        SetButtonsInteractable(false);
-
-        Debug.Log("[GameOverManager] Game Over ocultado");
+        _zoomTween?.Kill();
+        _zoomTween = null;
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"[GameOverManager] HandleSceneLoaded - scene='{scene.name}', mode={mode}, _isGameOverShown={_isGameOverShown}");
-        ForceResetState($"[GameOverManager] Scene '{scene.name}' loaded -> forzando estado cerrado");
+        Debug.Log($"[GameOverManager] Scene '{scene.name}' loaded -> reseteando estado");
+        ForceResetState();
     }
 
     public void ForceResetState(string reason = null)
     {
-        Debug.Log($"[GameOverManager] ForceResetState - reason='{reason}', _isGameOverShown={_isGameOverShown}, gameOverUI={gameOverUI}");
-        
-        if (_showCoroutine != null)
+        if (_gameOverCoroutine != null)
         {
-            StopCoroutine(_showCoroutine);
-            _showCoroutine = null;
+            StopCoroutine(_gameOverCoroutine);
+            _gameOverCoroutine = null;
         }
 
-        _isGameOverShown = false;
+        CleanupTweens();
+        _isGameOverActive = false;
+        Time.timeScale = 1f;
 
-        if (gameOverUI != null)
-            gameOverUI.SetActive(false);
-
-        if (rootGroup != null)
+        // Restaurar FOV si es necesario
+        if (_mainCamera != null && _originalFOV > 0)
         {
-            rootGroup.blocksRaycasts = false;
-            rootGroup.interactable = false;
+            _mainCamera.fieldOfView = _originalFOV;
         }
-
-        if (pauseOnGameOver)
-            Time.timeScale = 1f;
-
-        SetButtonsInteractable(false);
 
         if (!string.IsNullOrEmpty(reason))
             Debug.Log(reason);
     }
 
     /// <summary>
-    /// Reinicia la escena actual. Asegura que Time.timeScale se restablece.
+    /// Inicia la secuencia de Game Over cinematográfica
     /// </summary>
-    public void RestartLevel()
+    public void ShowGameOver()
     {
-        // Asegurar que el menú queda completamente oculto antes de recargar
-        HideGameOver(resumeTime: false);
-
-        // Antes de recargar la escena, asegurarnos de que el runtimePreset contiene los valores actuales de HP/MP
-        try
+        Debug.Log($"[GameOverManager] ShowGameOver() - _isGameOverActive={_isGameOverActive}");
+        
+        if (_isGameOverActive || _gameOverCoroutine != null) 
         {
-            var profile = GameBootService.Profile;
-            if (profile != null)
-            {
-                var preset = profile.GetActivePresetResolved();
-                if (preset != null)
-                {
-                    // Intentar obtener PlayerHealthSystem del jugador sin usar FindObject directamente
-                    ServiceLocator.TryGet(out PlayerHealthSystem phs);
-                    if (phs == null)
-                    {
-                        var playerGo = GameObject.FindWithTag("Player");
-                        if (playerGo != null)
-                            phs = playerGo.GetComponent<PlayerHealthSystem>();
-
-                        if (phs != null)
-                            ServiceLocator.Register(phs);
-                    }
-
-                    if (phs != null)
-                    {
-                        preset.currentHP = phs.CurrentHealth;
-                        preset.maxHP = phs.MaxHealth;
-                        Debug.Log($"[GameOverManager] Runtime preset HP actualizado: {preset.currentHP}/{preset.maxHP}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[GameOverManager] No se encontró PlayerHealthSystem para sincronizar HP antes de reiniciar");
-                    }
-
-                    // Manejar Maná: si el preset no tiene la ability de magia, respetar 0/0
-                    if (preset.abilities != null && !preset.abilities.magic)
-                    {
-                        preset.currentMP = 0f;
-                        preset.maxMP = 0f;
-                        Debug.Log("[GameOverManager] Preset indica que no tiene magia -> MP seteado a 0/0 antes de reiniciar");
-                    }
-                    else
-                    {
-                        // Obtener ManaPool del jugador
-                        ServiceLocator.TryGet(out ManaPool mana);
-                        if (mana == null)
-                        {
-                            var playerGo = GameObject.FindWithTag("Player");
-                            if (playerGo != null)
-                                mana = playerGo.GetComponentInChildren<ManaPool>() ?? playerGo.GetComponent<ManaPool>();
-
-                            if (mana != null)
-                                ServiceLocator.Register(mana);
-                        }
-
-                        if (mana != null)
-                        {
-                            preset.maxMP = mana.Max;
-                            preset.currentMP = mana.Current;
-                            Debug.Log($"[GameOverManager] Runtime preset MP actualizado: {preset.currentMP}/{preset.maxMP}");
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[GameOverManager] No se encontró ManaPool para sincronizar MP antes de reiniciar (dejando valores del preset)");
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("[GameOverManager] Profile disponible pero GetActivePresetResolved() devolvió null");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[GameOverManager] GameBootService.Profile no está disponible al reiniciar nivel");
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"[GameOverManager] Error sincronizando preset antes de reiniciar: {e}");
+            Debug.Log("[GameOverManager] ShowGameOver() IGNORADO - ya activo");
+            return;
         }
 
-        var active = SceneManager.GetActiveScene();
-        LoadSceneWithTransition(active.name, reloadTransitionSettings, mainMenuTransitionSettings, "Reiniciar nivel");
+        _gameOverCoroutine = StartCoroutine(GameOverSequence());
     }
 
-
-    private TransitionSettings ResolveTransitionSettings(TransitionSettings preferred, TransitionSettings fallback)
+    private System.Collections.IEnumerator GameOverSequence()
     {
-        if (preferred != null) return preferred;
-        return fallback;
+        _isGameOverActive = true;
+        Debug.Log("[GameOverManager] 💀 Iniciando secuencia de Game Over cinematográfica");
+
+        // 1. Flash rojo de muerte (via FeedbackService)
+        if (enableDeathFlash)
+        {
+            FeedbackService.ScreenFlash(deathFlashColor, deathFlashDuration);
+            Debug.Log("[GameOverManager] 🔴 Flash de muerte activado");
+        }
+
+        // 2. Reproducir música/SFX de Game Over
+        PlayGameOverAudio();
+
+        // 3. Configurar cámara para zoom
+        SetupCamera();
+
+        // 4. Iniciar slow-motion progresivo
+        StartSlowMotion();
+
+        // 5. Iniciar zoom de cámara (si está habilitado)
+        if (enableCameraZoom && _mainCamera != null)
+        {
+            StartCameraZoom();
+        }
+
+        // 6. Esperar la duración del efecto (usando tiempo real porque Time.timeScale está modificado)
+        float totalWaitTime = slowMotionRampDuration + slowMotionHoldDuration;
+        yield return new WaitForSecondsRealtime(totalWaitTime);
+
+        Debug.Log("[GameOverManager] ⏳ Secuencia cinematográfica completada, iniciando transición al menú");
+
+        // 7. Restaurar Time.timeScale antes de la transición
+        Time.timeScale = 1f;
+
+        // 8. Transición al menú principal
+        TransitionToMainMenu();
+
+        _gameOverCoroutine = null;
+    }
+
+    private void PlayGameOverAudio()
+    {
+        if (AudioService.Instance != null && !string.IsNullOrEmpty(gameOverAudioEvent))
+        {
+            AudioService.Instance.PlaySFX(gameOverAudioEvent);
+            Debug.Log($"[GameOverManager] 🔊 Audio '{gameOverAudioEvent}' reproducido");
+        }
+    }
+
+    private void SetupCamera()
+    {
+        _mainCamera = Camera.main;
+        
+        if (_mainCamera != null)
+        {
+            _originalFOV = _mainCamera.fieldOfView;
+            Debug.Log($"[GameOverManager] 📷 Cámara configurada - FOV original: {_originalFOV}");
+        }
+        else
+        {
+            Debug.LogWarning("[GameOverManager] ⚠️ No se encontró Camera.main");
+        }
+    }
+
+    private void StartSlowMotion()
+    {
+        Debug.Log($"[GameOverManager] 🐌 Iniciando slow-mo: {Time.timeScale} -> {slowMotionScale} en {slowMotionRampDuration}s");
+        
+        // Usar DOTween para animar el timeScale
+        DOTween.To(
+            () => Time.timeScale,
+            x => Time.timeScale = x,
+            slowMotionScale,
+            slowMotionRampDuration
+        ).SetEase(Ease.OutQuad).SetUpdate(true);
+    }
+
+    private void StartCameraZoom()
+    {
+        if (_mainCamera == null) return;
+
+        float targetFOV = _originalFOV * zoomFactor;
+        Debug.Log($"[GameOverManager] 🔍 Iniciando zoom FOV: {_originalFOV} -> {targetFOV} en {zoomDuration}s");
+
+        _zoomTween?.Kill();
+        _zoomTween = DOTween.To(
+            () => _mainCamera.fieldOfView,
+            x => _mainCamera.fieldOfView = x,
+            targetFOV,
+            zoomDuration
+        ).SetEase(Ease.OutSine).SetUpdate(true);
+    }
+
+    private void TransitionToMainMenu()
+    {
+        Debug.Log($"[GameOverManager] 🚪 Transición al menú principal: '{mainMenuScene}'");
+
+        MainMenuController.RequestInputDebounce();
+
+        var tm = ResolveTransitionManager();
+        if (tm != null && mainMenuTransitionSettings != null)
+        {
+            tm.Transition(mainMenuScene, mainMenuTransitionSettings, transitionStartDelay);
+        }
+        else
+        {
+            Debug.LogWarning("[GameOverManager] TransitionManager o settings no disponibles, carga directa");
+            SceneManager.LoadScene(mainMenuScene);
+        }
     }
 
     private TransitionManager ResolveTransitionManager()
@@ -487,152 +299,6 @@ public class GameOverManager : MonoBehaviour
         return transitionManager;
     }
 
-    private void ResetProfileForPresetReload()
-    {
-        if (!GameBootService.IsAvailable) return;
-        var profile = GameBootService.Profile;
-        if (profile == null) return;
-
-        if (profile.ShouldBootFromPreset() && profile.bootPreset != null)
-        {
-            profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-            Debug.Log("[GameOverManager] RuntimePreset restablecido desde bootPreset antes de recargar la escena actual");
-        }
-        else
-        {
-            GameBootService.NewGameReset();
-            Debug.LogWarning("[GameOverManager] No hay bootPreset activo; se realizó NewGameReset para limpiar el runtimePreset antes de recargar");
-        }
-    }
-
-    private void LoadSceneWithTransition(string targetScene, TransitionSettings preferredSettings, TransitionSettings fallbackSettings, string context)
-    {
-        var settings = ResolveTransitionSettings(preferredSettings, fallbackSettings);
-        var tm = ResolveTransitionManager();
-
-        if (tm != null && settings != null)
-        {
-            Debug.Log($"[GameOverManager] {context} usando TransitionManager -> '{targetScene}'");
-            tm.Transition(targetScene, settings, transitionStartDelay);
-            return;
-        }
-
-        if (tm == null)
-            Debug.LogWarning($"[GameOverManager] No se encontró TransitionManager para {context}. Carga directa de '{targetScene}'.");
-        else
-            Debug.LogWarning($"[GameOverManager] TransitionSettings no configurado ({context}). Carga directa de '{targetScene}'.");
-
-        SceneManager.LoadScene(targetScene);
-    }
-
-    /// <summary>
-    /// Llamado desde el botón "Cargar partida" en la UI. Reutiliza la lógica de MainMenuController.OnContinue().
-    /// </summary>
-    public void OnLoadLastSave()
-    {
-        if (!_isGameOverShown)
-        {
-            Debug.LogWarning("[GameOverManager] OnLoadLastSave ignorado porque el menú no está visible.");
-            return;
-        }
-
-        Debug.Log("[GameOverManager] OnLoadLastSave invoked -> recargar escena actual usando transición configurada");
-
-        // Cerrar el panel antes de iniciar la recarga para que los flags internos se reinicien
-        HideGameOver(resumeTime: false);
-
-        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
-        bool hasSave = saveSystem != null && saveSystem.HasSave();
-        bool forcePreset = GameBootService.IsPresetOverrideActive;
-        Debug.Log($"[GameOverManager] SaveSystem found={(saveSystem!=null)}, HasSave={hasSave}, ForcePreset={forcePreset}");
-
-        if (forcePreset)
-        {
-            Debug.Log("[GameOverManager] Modo preset/test activo -> se omite la carga de save al recargar la escena actual.");
-            ResetProfileForPresetReload();
-        }
-        else if (hasSave)
-        {
-            if (GameBootService.IsAvailable)
-                GameBootService.Profile?.LoadProfile(saveSystem);
-        }
-        else
-        {
-            Debug.LogWarning("[GameOverManager] No hay partida guardada; se recargará la escena actual igualmente.");
-            ResetProfileForPresetReload();
-        }
-
-        string sceneToReload = SceneManager.GetActiveScene().name;
-        LoadSceneWithTransition(sceneToReload, reloadTransitionSettings, mainMenuTransitionSettings, "Recargar escena actual");
-    }
-
-
-    /// <summary>
-    /// Llamado desde el botón "Volver al menú principal".
-    /// </summary>
-    public void OnBackToMainMenu()
-    {
-        if (!_isGameOverShown)
-        {
-            Debug.LogWarning("[GameOverManager] OnBackToMainMenu ignorado porque el menú no está visible.");
-            return;
-        }
-
-        Debug.Log($"[GameOverManager] OnBackToMainMenu invoked. mainMenuScene='{mainMenuScene}'");
-
-        // Evitar quedar marcados como mostrados cuando la escena cambie
-        HideGameOver(resumeTime: false);
-
-        MainMenuController.RequestInputDebounce();
-        LoadSceneWithTransition(mainMenuScene, mainMenuTransitionSettings, reloadTransitionSettings, "Volver al menú principal");
-    }
-
-
-    /// <summary>
-    /// Intenta localizar una instancia existente incluso si está inactiva (por ejemplo, si el panel está en un prefab desactivado).
-    /// </summary>
-    private static bool TryResolveInstance()
-    {
-        if (Instance != null) return true;
-        if (ServiceLocator.TryGet(out GameOverManager found) && found != null)
-        {
-            Instance = found;
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Asegura que la instancia está activa y habilitada antes de mostrar el menú.
-    /// </summary>
-    private static bool EnsureInstanceReady()
-    {
-        Debug.Log($"[GameOverManager] EnsureInstanceReady() - Instance={Instance}");
-        
-        if (!TryResolveInstance())
-        {
-            Debug.LogError("[GameOverManager] ❌ TryResolveInstance() falló - no hay instancia disponible");
-            return false;
-        }
-
-        Debug.Log($"[GameOverManager] Instance encontrada: {Instance.name}, activeSelf={Instance.gameObject.activeSelf}, enabled={Instance.enabled}");
-
-        if (!Instance.gameObject.activeSelf)
-        {
-            Instance.gameObject.SetActive(true);
-            Debug.Log("[GameOverManager] GameObject activado");
-        }
-
-        if (!Instance.enabled)
-        {
-            Instance.enabled = true;
-            Debug.Log("[GameOverManager] Componente habilitado");
-        }
-
-        return true;
-    }
-
     /// <summary>
     /// Modo helper para notificar Game Over desde otros scripts de forma segura.
     /// </summary>
@@ -640,13 +306,28 @@ public class GameOverManager : MonoBehaviour
     {
         Debug.Log("[GameOverManager] 💀 NotifyGameOver() llamado");
         
-        if (!EnsureInstanceReady())
+        if (Instance == null)
         {
-            Debug.LogError("[GameOverManager] ❌ No se encontró ninguna instancia para mostrar Game Over.");
-            return;
+            if (!ServiceLocator.TryGet(out GameOverManager found) || found == null)
+            {
+                Debug.LogError("[GameOverManager] ❌ No se encontró ninguna instancia para mostrar Game Over.");
+                return;
+            }
+            Instance = found;
         }
 
-        Debug.Log($"[GameOverManager] Llamando a Instance.ShowGameOver() - gameOverUI={Instance.gameOverUI}");
+        if (!Instance.gameObject.activeSelf)
+            Instance.gameObject.SetActive(true);
+
+        if (!Instance.enabled)
+            Instance.enabled = true;
+
         Instance.ShowGameOver();
+    }
+
+    // ================== LEGACY COMPATIBILITY ==================
+    public void HideGameOver(bool resumeTime = true) 
+    {
+        ForceResetState("HideGameOver llamado");
     }
 }

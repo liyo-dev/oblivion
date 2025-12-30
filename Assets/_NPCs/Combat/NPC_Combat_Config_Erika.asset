@@ -61,7 +61,7 @@ MonoBehaviour:
   coverSearchRadius: 15
   coverLayerMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 32768
   minCoverDistance: 3
   maxCoverDistance: 15
   coverStayDuration: 4

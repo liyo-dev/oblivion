@@ -599,10 +599,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         Debug.Log("[PlayerEquipmentMenu] Menú abierto completamente");
     }
 
-    void CloseMenu()
+    void CloseMenu(bool playSound = true)
     {
-        // Reproducir sonido de cierre de menú
-        GamepadInputReader.PlayUISound("UI_Cancel");
+        // Solo reproducir sonido si el menú realmente estaba abierto
+        if (playSound && _isOpen)
+        {
+            GamepadInputReader.PlayUISound("UI_Cancel");
+        }
         
         SetCanvasState(false);
         _spellView?.CancelSlotSelection(true);
@@ -636,10 +639,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OnQuitToMainMenu()
     {
-        // Cerrar el menú (esto ya limpia los GameStates correspondientes)
+        // Cerrar el menú SIN reproducir sonido (ya sonó UI_Cancel arriba)
         if (_isOpen)
         {
-            CloseMenu();
+            CloseMenu(playSound: false);
         }
         
         // Asegurar que el tiempo está a escala normal

@@ -10,6 +10,9 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(Button))]
 public class UIButtonAudio : MonoBehaviour, IPointerEnterHandler, ISelectHandler
 {
+    // Flag estático para silenciar temporalmente (útil para evitar sonido de selección inicial)
+    public static bool MuteAll { get; set; }
+    
     [Header("Sound Keys")]
     [SerializeField] private string clickSoundKey = "UI_Submit";
     [SerializeField] private string hoverSoundKey = "UI_Navigate";
@@ -21,6 +24,14 @@ public class UIButtonAudio : MonoBehaviour, IPointerEnterHandler, ISelectHandler
     [SerializeField] private float hoverVolume = 0.7f;
     
     private Button _button;
+    
+    /// <summary>
+    /// Permite forzar el valor de playHoverSound desde código
+    /// </summary>
+    public void SetPlayHoverSound(bool value)
+    {
+        playHoverSound = value;
+    }
     
     void Awake()
     {
@@ -55,17 +66,30 @@ public class UIButtonAudio : MonoBehaviour, IPointerEnterHandler, ISelectHandler
     // Detecta selección por gamepad/teclado
     public void OnSelect(BaseEventData eventData)
     {
+        Debug.Log($"[UIButtonAudio] OnSelect en {gameObject.name}, playHoverSound={playHoverSound}, MuteAll={MuteAll}");
         if (!playHoverSound) return;
-        // No verificar interactable - permitir sonido seleccionar incluso en botones inactivos
-        
         PlaySound(hoverSoundKey, hoverVolume);
     }
     
     private void PlaySound(string soundKey, float volume)
     {
-        if (string.IsNullOrEmpty(soundKey)) return;
-        if (AudioService.Instance == null) return;
+        if (MuteAll)
+        {
+            Debug.Log($"[UIButtonAudio] PlaySound BLOQUEADO por MuteAll - {soundKey}");
+            return;
+        }
+        if (string.IsNullOrEmpty(soundKey))
+        {
+            Debug.Log($"[UIButtonAudio] PlaySound - soundKey vacío");
+            return;
+        }
+        if (AudioService.Instance == null)
+        {
+            Debug.LogWarning($"[UIButtonAudio] AudioService.Instance es NULL");
+            return;
+        }
         
+        Debug.Log($"[UIButtonAudio] ✅ PlaySound: {soundKey}");
         AudioService.Instance.PlaySFX(soundKey, volume);
     }
 }

@@ -28,8 +28,8 @@ public class WorldPickup : MonoBehaviour
 
     [Header("Feedback")]
     [SerializeField] private GameObject vfxPrefab;
-    [SerializeField] private AudioClip pickupSfx;
-    [SerializeField, Range(0f, 1f)] private float sfxVolume = 1f;
+    [Tooltip("Clave del SFX en AudioGraphProfile (ej: 'Coin', 'Chest')")]
+    [SerializeField] private string pickupSfxKey;
     [SerializeField] private UnityEvent onCollected;
 
     private bool _collected;
@@ -152,11 +152,13 @@ public class WorldPickup : MonoBehaviour
 
         if (_collider) _collider.enabled = false;
 
-        if (pickupSfx)
+        // SFX usando AudioService
+        if (!string.IsNullOrEmpty(pickupSfxKey) && AudioService.Instance != null)
         {
-            AudioSource.PlayClipAtPoint(pickupSfx, transform.position, sfxVolume);
+            AudioService.Instance.PlaySFX(pickupSfxKey);
         }
 
+        // VFX
         if (vfxPrefab)
         {
             Instantiate(vfxPrefab, transform.position, Quaternion.identity);

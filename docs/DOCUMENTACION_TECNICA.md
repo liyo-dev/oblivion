@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -4090,6 +4090,203 @@ NPCBehaviourManager → NPCBehaviourManagerV2
 
 // En consola verás:
 [SimpleQuestNPC:Eldran] Quest ELDRAN_MISSION1 auto-completed on talk
+```
+
+---
+
+### Problema: "Evento de derrota no se envía al grafo narrativo desde cadena narrativa"
+
+**Contexto:** Cuando configuras un combate desde una `NarrativeChainEntry` con `sendEventOnDefeat = true` y `defeatEventKey`, el evento no se enviaba al derrotar al NPC.
+
+**Causa:** Los valores de evento (`sendEventOnDefeat`, `defeatEventKey`, `sendDefeatEventBeforeDeath`) configurados en `NarrativeChainEntry` no se transferían al `NPCCombatConfig` que es lo que `NPCCombatLifecycleHandler` usa para enviar eventos.
+
+**Solución (Fix aplicado en v1.1):**
+En `NPCInteractiveNarrativeExecutor.ExecuteStartCombat()` ahora se transfieren los valores del entry al config:
+
+```csharp
+// ✅ FIX CRÍTICO: Transferir configuración de eventos de derrota
+if (entry.sendEventOnDefeat && !string.IsNullOrEmpty(entry.defeatEventKey))
+{
+    entry.combatConfig.sendEventOnDefeat = entry.sendEventOnDefeat;
+    entry.combatConfig.defeatEventKey = entry.defeatEventKey;
+    entry.combatConfig.sendDefeatEventBeforeDeath = entry.sendDefeatEventBeforeDeath;
+}
+```
+
+**Configuración correcta en Inspector:**
+```
+NarrativeChainEntry (StartCombat)
+├─ Combat Config: → NPC_Combat_Config_Enemigo
+├─ Send Event On Defeat: ✅
+├─ Defeat Event Key: "BOSS_DEFEATED"
+└─ Send Defeat Event Before Death: ☐ (opcional)
+```
+
+**Verificación:**
+```
+// En consola debe aparecer al configurar el combate:
+[NarrativeExecutor] 📤 Configurado evento de derrota: 'BOSS_DEFEATED' (antes de muerte: False)
+
+// Y al derrotar al NPC:
+[Lifecycle] 📤 Enviando evento de derrota al grafo narrativo: 'BOSS_DEFEATED'
+```
+
+---
+
+### Problema: "Narrativas de un solo uso no se restauran al cargar partida anterior"
+
+**Contexto:** Cuando hablas con un NPC que tiene una narrativa condicional de un solo uso (singleUse=true), la narrativa se marca como ejecutada. Si luego cargas una partida **guardada antes** de esa interacción, la narrativa debería volver a estar disponible, pero permanecía como "ejecutada".
+
+**Causa:** La lista `completedInteractiveNarratives` que rastrea qué narrativas se han completado **no se guardaba en el save**. Por lo tanto, al cargar un save anterior, el preset seguía teniendo la lista actualizada de la sesión actual en memoria, no la del save.
+
+**Solución (Fix aplicado en v1.2):**
+
+1. **Añadido campo a PlayerSaveData:**
+```csharp
+public List<string> completedInteractiveNarratives = new();
+```
+
+2. **Guardado al crear save:**
+```csharp
+d.completedInteractiveNarratives = preset.completedInteractiveNarratives != null 
+    ? new List<string>(preset.completedInteractiveNarratives) 
+    : new List<string>();
+```
+
+3. **Restaurado al cargar save (en SetRuntimePresetFromSave):**
+```csharp
+p.completedInteractiveNarratives = data.completedInteractiveNarratives != null 
+    ? new List<string>(data.completedInteractiveNarratives) 
+    : new List<string>();
+```
+
+4. **Mejorado NPCInteractiveNarrativeRegistry.Clear():**
+   - Ya no limpia las listas de executors (que causaba que no se re-registraran)
+   - Solo resetea los estados llamando a `ResetState()` en cada executor
+   - Los executors restauran su estado desde el preset actualizado
+
+**Verificación:**
+```
+// Al cargar partida, en consola debe aparecer:
+[GameBootProfile] 📜 Restauradas X narrativas completadas desde save
+[NPCInteractiveNarrativeRegistry] 🔄 Estados reseteados en Y executor(es), registro mantiene Y entradas
+
+// Si la narrativa NO estaba completada en el save, el NPC mostrará el icono de nuevo
+```
+
+**Flujo correcto ahora:**
+1. Jugador habla con Victoria → narrativa se ejecuta y guarda
+2. Jugador NO guarda la partida
+3. Jugador carga partida anterior (donde NO había hablado con Victoria)
+4. `LoadProfile()` restaura `completedInteractiveNarratives` del save (sin la narrativa de Victoria)
+5. `Clear()` resetea todos los executors y restauran desde el preset
+6. Victoria muestra el icono de nuevo porque la narrativa NO está en `completedInteractiveNarratives`
+
+---
+
+### Problema: "Enemy marker no aparece en los enemigos"
+
+**Contexto:** El marker de targeting del jugador (`PlayerTargeting`) no aparecía sobre los NPCs enemigos durante el combate.
+
+**Solución implementada (v1.2):**
+
+El sistema ahora tiene **dos modos** de funcionamiento:
+
+#### 1. Auto-Target por Layer (Recomendado - Por defecto)
+Configuración en `PlayerTargeting`:
+```
+autoTargetByLayer: ✅ (activo por defecto)
+requireDamageableAlive: ✅
+```
+
+Con esta configuración, **cualquier objeto en el layer "Enemy"** que tenga un `Damageable` vivo será automáticamente targeteable. **No necesita componente `Targetable`**.
+
+#### 2. Target Explícito con Targetable
+Si un enemigo tiene el componente `Targetable`, se usa su configuración:
+- `isInActiveCombat` debe ser `true` para ser targeteable
+- `targetingRadius` permite personalizar el radio de detección
+
+**Prioridad:**
+1. Si tiene `Targetable` → usa su configuración (`isInActiveCombat` debe ser true)
+2. Si NO tiene `Targetable` pero está en `enemyMask` → usa `autoTargetByLayer`
+
+**Configuración en Inspector (PlayerTargeting):**
+```
+PlayerTargeting
+├─ [Búsqueda]
+│   ├─ radius: 8
+│   ├─ scanRadius: 12
+│   ├─ enemyMask: Enemy  ⭐ Importante
+│   └─ fovDegrees: 140
+│
+├─ [Targeting Automático]
+│   ├─ autoTargetByLayer: ✅   ⭐ NUEVO
+│   └─ requireDamageableAlive: ✅
+│
+└─ [Feedback de Target]
+    ├─ enableMarker: ✅
+    └─ markerPrefab: → EnemyMarkerPrefab
+```
+
+**Resultado:**
+- **Spider, Slime, etc.** (enemigos simples): Funcionan automáticamente por layer
+- **Demon, Bosses** (enemigos con AI especial): Usan `Targetable` para control fino
+- **NPCs en combate** (via CombatState): `isInActiveCombat` se activa automáticamente
+
+---
+
+### Problema: "Game Over con menú de botones"
+
+**Contexto:** El Game Over mostraba un menú con botones (Cargar/Menú). Se simplificó para ser solo feedback visual.
+
+**Nuevo comportamiento (v1.2):**
+El `GameOverManager` ahora hace:
+1. **Flash rojo de muerte** - Via `FeedbackService.ScreenFlash()` 🔴
+2. **Slow motion progresivo** - De 1.0 a 0.1 en ~0.5s
+3. **Zoom de cámara** - Reduce el FOV para acercar (via DOTween)
+4. **Música de Game Over** - Reproduce el evento de audio configurado
+5. **Transición automática** - Después de ~3s va al menú principal
+
+**Usa FeedbackService para:**
+- `ScreenFlash` - Flash rojo de muerte
+
+**Configuración en Inspector:**
+```
+GameOverManager
+├─ [Escenas]
+│   └─ mainMenuScene: "MainMenu"
+│
+├─ [Slow Motion]
+│   ├─ slowMotionScale: 0.1
+│   ├─ slowMotionRampDuration: 0.5
+│   └─ slowMotionHoldDuration: 2.5
+│
+├─ [Camera Zoom]
+│   ├─ enableCameraZoom: ✅
+│   ├─ zoomFactor: 0.6 (< 1 = acercar)
+│   └─ zoomDuration: 1.5
+│
+├─ [Screen Flash]
+│   ├─ enableDeathFlash: ✅
+│   ├─ deathFlashColor: (0.5, 0, 0, 0.4)
+│   └─ deathFlashDuration: 0.3
+│
+└─ [Audio]
+    └─ gameOverAudioEvent: "GameOverMenu"
+```
+
+**Flujo visual:**
+```
+Jugador muere
+   ↓
+Flash rojo (FeedbackService.ScreenFlash)
+Slow-mo comienza (1.0 → 0.1)
+Cámara hace zoom (FOV se reduce)
+Música de Game Over suena
+   ↓
+~3 segundos después
+   ↓
+Transición al menú principal
 ```
 
 ---

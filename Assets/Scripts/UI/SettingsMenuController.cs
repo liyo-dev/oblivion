@@ -274,8 +274,10 @@ public class SettingsMenuController : MonoBehaviour
 
     public void Close()
     {
-        // Reproducir sonido de cancelar al cerrar
-        if (AudioService.Instance != null)
+        // Solo reproducir sonido si el menú estaba visible
+        bool wasVisible = root && root.activeSelf;
+        
+        if (wasVisible && AudioService.Instance != null)
         {
             AudioService.Instance.PlaySFX("UI_Cancel", 1f);
         }

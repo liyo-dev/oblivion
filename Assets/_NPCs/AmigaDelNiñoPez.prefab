@@ -772,6 +772,7 @@ GameObject:
   - component: {fileID: 3382772238179912040}
   - component: {fileID: 3075970551656810954}
   - component: {fileID: -2116410745532214273}
+  - component: {fileID: 3523523777771145952}
   m_Layer: 8
   m_Name: "AmigaDelNi\xF1oPez"
   m_TagString: Untagged
@@ -884,6 +885,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8804728326838716846}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -960,18 +962,56 @@ MonoBehaviour:
   greetingState: Greeting01_NoWeapon
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: TakeDamage
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
   victoryState: Victory_NoWeapon
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
-  syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
   drawGizmos: 1
+--- !u!114 &3523523777771145952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3592848395794621156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 16
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &3697568768583669451
 GameObject:
   m_ObjectHideFlags: 0

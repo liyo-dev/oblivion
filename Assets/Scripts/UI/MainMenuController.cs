@@ -101,11 +101,13 @@ public class MainMenuController : MonoBehaviour
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");
         WireButton(settingsButton, OnClickSettings, "SETTINGS");
 
-        // Ensure UISelectVisual exists on main menu buttons so selection visuals (highlight/pulse) work.
+        // Ensure UISelectVisual exists on main menu buttons
         var menuButtons = GetComponentsInChildren<Button>(true);
         foreach (var b in menuButtons)
         {
             if (b == null) continue;
+            
+            // Visual feedback
             if (!b.GetComponent<UISelectVisual>())
             {
                 var v = b.gameObject.AddComponent<UISelectVisual>();
@@ -126,7 +128,17 @@ public class MainMenuController : MonoBehaviour
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();
         PlayIntro();
+        
+        // Asegurar que los botones tienen UIButtonAudio
+        EnsureButtonAudio();
+        
+        // Silenciar temporalmente los sonidos de UI para evitar el sonido de selección inicial
+        UIButtonAudio.MuteAll = true;
+        Debug.Log("[MainMenu] MuteAll = true");
         AutoSelectFirstIfNeeded();
+        // Rehabilitar sonidos después de un frame
+        StartCoroutine(EnableUISoundsNextFrame());
+        
         SelfTestButtons();
         // Armar interacción tras un breve retardo para ignorar el Submit inicial
         bool shouldDebounce = enableInputDebounce || _forceInputDebounce;
@@ -161,6 +173,9 @@ public class MainMenuController : MonoBehaviour
     void OnDisable()
     {
         GameState.Pop(GamePhase.MainMenu);
+        
+        // Asegurar que los sonidos de UI estén habilitados al salir
+        UIButtonAudio.MuteAll = false;
 
         _introSeq?.Kill(); _introSeq = null;
         if (_armRoutine != null)
@@ -195,6 +210,38 @@ public class MainMenuController : MonoBehaviour
         {
             var firstBtn = FindFirstActiveButton();
             if (firstBtn) firstBtn.Select();
+        }
+    }
+    
+    private System.Collections.IEnumerator EnableUISoundsNextFrame()
+    {
+        yield return null; // Esperar un frame
+        UIButtonAudio.MuteAll = false;
+        Debug.Log("[MainMenu] MuteAll = false (sonidos habilitados)");
+    }
+    
+    /// <summary>
+    /// Asegura que todos los botones del menú tengan UIButtonAudio para los sonidos de navegación
+    /// </summary>
+    private void EnsureButtonAudio()
+    {
+        var menuButtons = GetComponentsInChildren<Button>(true);
+        Debug.Log($"[MainMenu] EnsureButtonAudio: Encontrados {menuButtons.Length} botones");
+        
+        foreach (var b in menuButtons)
+        {
+            if (b == null) continue;
+            
+            // Audio feedback (navegación)
+            var audioComp = b.GetComponent<UIButtonAudio>();
+            if (audioComp == null)
+            {
+                audioComp = b.gameObject.AddComponent<UIButtonAudio>();
+                Debug.Log($"[MainMenu] ✅ UIButtonAudio AÑADIDO a {b.name}");
+            }
+            
+            // Forzar que el sonido de navegación esté habilitado
+            audioComp.SetPlayHoverSound(true);
         }
     }
 
@@ -244,6 +291,9 @@ public class MainMenuController : MonoBehaviour
             return;
         }
         _isLoading = true;
+        
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
 
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
@@ -291,6 +341,9 @@ public class MainMenuController : MonoBehaviour
             return;
         }
         _isLoading = true;
+        
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
 
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
@@ -329,6 +382,9 @@ public class MainMenuController : MonoBehaviour
 
     public void OnClickSettings()
     {
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
+        
         if (!settingsMenu)
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
