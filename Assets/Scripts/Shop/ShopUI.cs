@@ -45,7 +45,9 @@ public class ShopUI : MonoBehaviour
     [Tooltip("When the shop opens, ignore player input (submit/cancel/navigation) for this many seconds to avoid the 'close dialogue' button press from affecting the shop.")]
     [SerializeField, Min(0f)] private float openIgnoreInputDuration = 0.15f;
 
-    private const float MIN_OPEN_INPUT_BLOCK = 0.25f;
+    private const float MinOpenInputBlock = 0.25f;
+    private const float NavRepeatDelay = 0.18f;
+    private static readonly Color ActiveBuyButtonColor = new Color(0.05f, 0.75f, 0.2f, 1f);
 
     private List<ShopItemCard> _itemCards = new();
     private ShopController.ShopItemEntry _selectedEntry;
@@ -53,8 +55,7 @@ public class ShopUI : MonoBehaviour
     private bool _isOpen;
     private Inventory _playerInventory;
     private float _nextNavTime;
-    private float _ignoreInputUntil = 0f;
-    private const float NAV_REPEAT_DELAY = 0.18f;
+    private float _ignoreInputUntil;
     private Tween _buyButtonTween;
     private Vector3 _buyButtonBaseScale;
     private bool _buyButtonScaleCached;
@@ -62,9 +63,10 @@ public class ShopUI : MonoBehaviour
     private ColorBlock _buyButtonDefaultColors;
     private Tween _currencyTween;
 
-    // Variables de control de mensajes
-    private bool _skipMessageClearOnce = false;
-    private bool _messageLocked = false;
+    // Variables de control de mensajes y estado
+    private bool _skipMessageClearOnce;
+    private bool _messageLocked;
+    private bool _justFocusedBuyButton;
     
     enum ShopState
     {
@@ -88,6 +90,8 @@ public class ShopUI : MonoBehaviour
         {
             buyButton.onClick.RemoveAllListeners();
             buyButton.onClick.AddListener(HandleBuyButtonPressed);
+            // Deshabilitar el botón de compra por defecto
+            buyButton.interactable = false;
         }
 
         if (sellButton != null)
@@ -115,12 +119,6 @@ public class ShopUI : MonoBehaviour
             shopController.OnStockChanged -= RefreshUI;
 
         GamepadInputReader.OnInput -= HandleGamepadInput;
-    }
-
-    void Update()
-    {
-        // Mantener esta actualización para otras responsabilidades de UI (animaciones, etc.)
-        // pero la lectura de inputs se maneja vía eventos en HandleGamepadInput.
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -173,7 +171,7 @@ public class ShopUI : MonoBehaviour
         if (!CanNavigate()) return;
 
         NavigateItems(direction);
-        _nextNavTime = Time.unscaledTime + NAV_REPEAT_DELAY;
+        _nextNavTime = Time.unscaledTime + NavRepeatDelay;
     }
 
     private void HandleHorizontalNavigation(int direction)
@@ -185,15 +183,25 @@ public class ShopUI : MonoBehaviour
         else if (direction < 0 && _state == ShopState.BuyButtonFocused)
             ReturnToItemList();
 
-        _nextNavTime = Time.unscaledTime + NAV_REPEAT_DELAY;
+        _nextNavTime = Time.unscaledTime + NavRepeatDelay;
     }
 
     void HandleSubmitInput()
     {
+        // Si acabamos de enfocar el botón, ignorar este input
+        if (_justFocusedBuyButton)
+        {
+            return;
+        }
+
         switch (_state)
         {
             case ShopState.Browsing:
-                FocusBuyButton();
+                // Solo permitir enfocar el botón si hay un ítem seleccionado y tiene stock
+                if (_selectedEntry != null && _selectedEntry.HasStock)
+                {
+                    FocusBuyButton();
+                }
                 break;
             case ShopState.BuyButtonFocused:
                 AttemptPurchase();
@@ -257,6 +265,7 @@ public class ShopUI : MonoBehaviour
         }
         _isOpen = true;
         _state = ShopState.Browsing;
+        _justFocusedBuyButton = false;
         ResetBuyButtonFeedback();
 
         if (windowRoot != null)
@@ -279,7 +288,7 @@ public class ShopUI : MonoBehaviour
         ClearSelection();
 
         // Ignore input for a short moment so the button used to close dialogue doesn't propagate into the shop UI.
-        float ignoreDuration = Mathf.Max(openIgnoreInputDuration, MIN_OPEN_INPUT_BLOCK);
+        float ignoreDuration = Mathf.Max(openIgnoreInputDuration, MinOpenInputBlock);
         _ignoreInputUntil = Time.unscaledTime + ignoreDuration;
 
         GameState.Push(GamePhase.Shop);
@@ -436,14 +445,13 @@ public class ShopUI : MonoBehaviour
         if (index < 0 || index >= shopController.Stock.Count)
             return;
 
-        if (_skipMessageClearOnce)
-        {
-            _skipMessageClearOnce = false;
-        }
-        else
+        // Limpiar mensaje anterior a menos que se indique lo contrario
+        if (!_skipMessageClearOnce)
         {
             ClearMessage(force: true);
         }
+        _skipMessageClearOnce = false;
+
         _selectedIndex = index;
         _selectedEntry = shopController.Stock[index];
         
@@ -461,14 +469,6 @@ public class ShopUI : MonoBehaviour
 
         if (_state == ShopState.Browsing)
             FocusSelectedCard();
-    }
-
-    void SelectFirstItem()
-    {
-        if (shopController != null && shopController.Stock.Count > 0 && _itemCards.Count > 0)
-        {
-            SelectItem(0);
-        }
     }
 
     void FocusSelectedCard()
@@ -512,8 +512,9 @@ public class ShopUI : MonoBehaviour
                 detailStock.text = "Stock ilimitado";
         }
         
+        // El botón permanece deshabilitado hasta que se haga focus en él con Submit
         if (buyButton != null)
-            buyButton.interactable = _selectedEntry.HasStock;
+            buyButton.interactable = false;
         
         // Por ahora deshabilitamos venta (se puede implementar después)
         if (sellButton != null)
@@ -534,43 +535,13 @@ public class ShopUI : MonoBehaviour
                 card.SetSelected(false);
         }
 
+        // Deshabilitar el botón de compra cuando no hay selección
+        if (buyButton != null)
+            buyButton.interactable = false;
+
         ClearMessage();
     }
 
-    void OnBuyClicked()
-    {
-        if (_selectedIndex < 0 || shopController == null)
-            return;
-        
-        bool success = shopController.TryBuy(_selectedIndex, out string message);
-        
-        if (success)
-            ShowMessage(string.IsNullOrEmpty(message) ? "¡Comprado!" : message, successMessageColor, pulseCurrency: true);
-        else
-            ShowMessage(string.IsNullOrEmpty(message) ? "No se pudo comprar." : message, errorMessageColor);
-        
-        if (success)
-        {
-            _skipMessageClearOnce = true; // mantener el mensaje tras refrescar
-            RefreshUI();
-            _state = ShopState.Browsing;
-            if (_itemCards.Count == 0)
-            {
-                _selectedIndex = -1;
-            }
-            else
-            {
-                _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
-                FocusSelectedCard();
-            }
-        }
-        else
-        {
-            // Mantener foco en el botón de compra para reintentar o cancelar con B
-            _state = ShopState.BuyButtonFocused;
-            FocusBuyButton();
-        }
-    }
 
     void OnSellClicked()
     {
@@ -590,10 +561,20 @@ public class ShopUI : MonoBehaviour
 
     void HandleBuyButtonPressed()
     {
+        // Si acabamos de enfocar el botón, ignorar el onClick del botón
+        if (_justFocusedBuyButton)
+        {
+            return;
+        }
+
         if (_state == ShopState.Browsing)
         {
             _messageLocked = false;
-            FocusBuyButton();
+            // Solo permitir si hay ítem seleccionado y tiene stock
+            if (_selectedEntry != null && _selectedEntry.HasStock)
+            {
+                FocusBuyButton();
+            }
             return;
         }
 
@@ -606,15 +587,47 @@ public class ShopUI : MonoBehaviour
     void FocusBuyButton()
     {
         if (buyButton == null) return;
+        if (_selectedEntry == null || !_selectedEntry.HasStock) return;
+
         _state = ShopState.BuyButtonFocused;
+        
+        // Habilitar el botón de compra
+        buyButton.interactable = true;
+        
         buyButton.Select();
         PlayBuyButtonFeedback();
+        
+        // Reproducir sonido de selección/confirmación
+        GamepadInputReader.PlayUISound("UI_Select");
+        
+        // Prevenir que la misma pulsación de Submit compre el producto inmediatamente
+        _justFocusedBuyButton = true;
+        _ignoreInputUntil = Time.unscaledTime + 0.3f;
+        
+        // Resetear la bandera después de procesarse todos los eventos del frame actual
+        StartCoroutine(ResetBuyButtonFocusFlag());
+    }
+
+    private System.Collections.IEnumerator ResetBuyButtonFocusFlag()
+    {
+        // Esperar 2 frames completos para asegurar que todos los eventos se procesen
+        yield return null;
+        yield return null;
+        _justFocusedBuyButton = false;
     }
 
     void ReturnToItemList()
     {
         _state = ShopState.Browsing;
         ResetBuyButtonFeedback();
+        
+        // Deshabilitar el botón de compra al volver a la lista
+        if (buyButton != null)
+            buyButton.interactable = false;
+        
+        // Resetear bandera de focus
+        _justFocusedBuyButton = false;
+        
         FocusSelectedCard();
         _messageLocked = false;
     }
@@ -635,15 +648,27 @@ public class ShopUI : MonoBehaviour
             _buyButtonScaleCached = true;
         }
 
-        // Solo escalar el botón una vez y mantener color verde
-        buyButton.transform.localScale = _buyButtonBaseScale * buyButtonPulseScale;
+        // Matar animación previa si existe
+        _buyButtonTween?.Kill();
+
+        // Cambiar color a verde activo
         var colors = buyButton.colors;
-        var activeGreen = new Color(0.05f, 0.75f, 0.2f, 1f);
-        colors.normalColor = activeGreen;
-        colors.highlightedColor = activeGreen * 1.05f;
-        colors.selectedColor = activeGreen * 1.05f;
-        colors.pressedColor = activeGreen * 0.9f;
+        colors.normalColor = ActiveBuyButtonColor;
+        colors.highlightedColor = ActiveBuyButtonColor * 1.05f;
+        colors.selectedColor = ActiveBuyButtonColor * 1.05f;
+        colors.pressedColor = ActiveBuyButtonColor * 0.9f;
         buyButton.colors = colors;
+
+        // Animación de punch/rebote para dar feedback visual
+        buyButton.transform.localScale = _buyButtonBaseScale;
+        _buyButtonTween = buyButton.transform
+            .DOPunchScale(Vector3.one * (buyButtonPulseScale - 1f), buyButtonPulseDuration, vibrato: 6, elasticity: 0.5f)
+            .SetEase(buyButtonPulseEase)
+            .SetUpdate(true)
+            .OnComplete(() => {
+                if (buyButton != null)
+                    buyButton.transform.localScale = _buyButtonBaseScale * buyButtonPulseScale;
+            });
     }
 
     void ResetBuyButtonFeedback()
@@ -671,23 +696,29 @@ public class ShopUI : MonoBehaviour
 
         if (success)
         {
-            _state = ShopState.Browsing;
-            RefreshUI();
-            if (_itemCards.Count == 0)
-            {
-                _selectedIndex = -1;
-            }
-            else
-            {
-                _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
-                FocusSelectedCard();
-            }
+            HandleSuccessfulPurchase();
         }
         else
         {
             // Mantener foco en el botón de compra para que el jugador pueda reintentar o cancelar con B
             _state = ShopState.BuyButtonFocused;
             FocusBuyButton();
+        }
+    }
+
+    void HandleSuccessfulPurchase()
+    {
+        _state = ShopState.Browsing;
+        RefreshUI();
+        
+        if (_itemCards.Count == 0)
+        {
+            _selectedIndex = -1;
+        }
+        else
+        {
+            _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _itemCards.Count - 1);
+            FocusSelectedCard();
         }
     }
 
