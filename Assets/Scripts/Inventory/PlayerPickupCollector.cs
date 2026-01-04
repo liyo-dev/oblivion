@@ -10,6 +10,10 @@ public class PlayerPickupCollector : MonoBehaviour
     [SerializeField] private PlayerHealthSystem healthSystem;
     [SerializeField] private ManaPool manaPool;
     [SerializeField] private SpecialChargeMeter specialChargeMeter;
+    [SerializeField] private Animator animator;
+
+    [Header("Animation")]
+    [SerializeField] private string drinkPotionAnimationName = "DrinkPotion_NoWeapon";
 
     [Header("Settings")]
     [SerializeField] private bool logWarnings;
@@ -24,6 +28,7 @@ public class PlayerPickupCollector : MonoBehaviour
         if (!healthSystem) healthSystem = GetComponentInChildren<PlayerHealthSystem>(true);
         if (!manaPool) manaPool = GetComponentInChildren<ManaPool>(true);
         if (!specialChargeMeter) specialChargeMeter = GetComponentInChildren<SpecialChargeMeter>(true);
+        if (!animator) animator = GetComponentInChildren<Animator>(true);
 
         PlayerService.RegisterComponent(this);
     }
@@ -88,7 +93,13 @@ public class PlayerPickupCollector : MonoBehaviour
 
         float before = manaPool.Current;
         manaPool.Refill(amount);
-        return manaPool.Current > before + Mathf.Epsilon;
+        bool restored = manaPool.Current > before + Mathf.Epsilon;
+        
+        // Reproducir animación de beber poción si se restauró maná
+        if (restored)
+            PlayDrinkPotionAnimation();
+        
+        return restored;
     }
 
     private bool ApplyHealth(PickupEffect effect)
@@ -102,7 +113,13 @@ public class PlayerPickupCollector : MonoBehaviour
         float amount = effect.GetAmountOrFallback();
         if (amount <= 0f) return false;
 
-        return healthSystem.Heal(amount);
+        bool healed = healthSystem.Heal(amount);
+        
+        // Reproducir animación de beber poción si se curó
+        if (healed)
+            PlayDrinkPotionAnimation();
+        
+        return healed;
     }
 
     private bool ApplySpecialCharge(PickupEffect effect)
@@ -124,4 +141,28 @@ public class PlayerPickupCollector : MonoBehaviour
         if (!logWarnings) return;
         Debug.LogWarning($"[PlayerPickupCollector] Missing required component '{componentName}' on '{name}'.");
     }
+
+    private void PlayDrinkPotionAnimation()
+    {
+        if (animator == null)
+        {
+            if (logWarnings)
+                Debug.LogWarning("[PlayerPickupCollector] No se puede reproducir animación de poción: Animator no encontrado.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(drinkPotionAnimationName))
+        {
+            if (logWarnings)
+                Debug.LogWarning("[PlayerPickupCollector] No se puede reproducir animación de poción: nombre de animación vacío.");
+            return;
+        }
+
+        // Reproducir la animación usando CrossFade para una transición suave
+        animator.CrossFadeInFixedTime(drinkPotionAnimationName, 0.1f);
+        
+        Debug.Log($"[PlayerPickupCollector] Reproduciendo animación: {drinkPotionAnimationName}");
+    }
 }
+
+

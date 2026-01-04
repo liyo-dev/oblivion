@@ -15,7 +15,7 @@ MonoBehaviour:
   spawnAnchorId: Woods_SavePoint
   level: 1
   maxHP: 1000
-  currentHP: 1000
+  currentHP: 500
   maxMP: 100
   currentMP: 100
   unlockedAbilities: 01000000
@@ -47,3 +47,4 @@ MonoBehaviour:
   narrativeBlackboards: []
   npcPositions: []
   consumedInteractableIds: []
+  completedInteractiveNarratives: []

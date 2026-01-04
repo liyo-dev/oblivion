@@ -33,14 +33,7 @@ public static class InventoryUseUtility
 
         if (!inventory.HasItem(item))
         {
-            failureReason = "No tienes este item.";
-            return false;
-        }
-
-        if (item.useEffects == null || item.useEffects.Count == 0)
-        {
-            failureReason = "El item no tiene efectos configurados.";
-            return false;
+            failureReason = "No tienes este item."; return false;
         }
 
         bool anyChange = false;
@@ -51,6 +44,7 @@ public static class InventoryUseUtility
             var effect = item.useEffects[i];
             bool consumeEffect;
             bool changed = collector.TryCollect(effect, out consumeEffect);
+            
             if (consumeEffect) shouldConsume = true;
             if (changed) anyChange = true;
         }
