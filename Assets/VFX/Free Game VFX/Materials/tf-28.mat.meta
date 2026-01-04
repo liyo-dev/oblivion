@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 44c24b7c1f4b0a54a8144beba7eaf280
+timeCreated: 1537596631
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/tf-28.mat
+  uploadId: 820232

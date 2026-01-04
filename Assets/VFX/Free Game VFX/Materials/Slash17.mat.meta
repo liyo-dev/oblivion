@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: d37d5adc0021a464aa4a9350d8814a21
+timeCreated: 1465183755
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: fx_textures_slash_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Slash17.mat
+  uploadId: 820232

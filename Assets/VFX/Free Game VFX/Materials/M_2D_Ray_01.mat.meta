@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f617f2011c85a463b8d34b1f7904fcbf
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: fx_textures_aura_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/M_2D_Ray_01.mat
+  uploadId: 820232

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f631d2cee74d39443afee296280862a0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: fx_textures_ground_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/stone02_3.mat
+  uploadId: 820232

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: f98c7f0acd24324408d00e1b68eb92c2
+timeCreated: 1530790022
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Gradient_Beam_007.mat
+  uploadId: 820232

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 460addb3f248de24eb165c5e1513d342
+timeCreated: 1528879841
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/firerock 3.mat
+  uploadId: 820232

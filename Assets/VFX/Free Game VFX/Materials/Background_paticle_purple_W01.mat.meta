@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: be053ebbc45a4ea45bc5afd673b24663
+timeCreated: 1545465075
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_flare_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Background_paticle_purple_W01.mat
+  uploadId: 820232

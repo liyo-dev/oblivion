@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 31acf60b9fccfb046809ad7c6766f613
+timeCreated: 1529553870
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Aura_Flame_001.mat
+  uploadId: 820232

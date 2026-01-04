@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 424d8f6b8cf4d0e41b00dc116cd1ab1e
+timeCreated: 1532934692
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_ring_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Shock_05.mat
+  uploadId: 820232

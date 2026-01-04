@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
@@ -20,7 +20,7 @@ namespace Game.NPC.States
         private float _timer;
         private bool _waitingForDialogue;
         private bool _hasPlayedChallenge;
-        private bool _dialogueCompleted; // ⭐ NUEVO: Track si el diálogo terminó
+        private bool _dialogueCompleted; 
         
         // Timers de Animación
         private float _senseTimer;
@@ -244,12 +244,9 @@ namespace Game.NPC.States
                 {
                     _waitingForDialogue = false;
                     _dialogueCompleted = true; // ⭐ Marcar que el diálogo completó para transición inmediata
-                    // Restaurar jugador a Idle tras la charla
-                    if (PlayerService.TryGetPlayer(out GameObject p))
-                    {
-                        var anim = p.GetComponent<Animator>();
-                        if (anim) anim.CrossFade("Idle", 0.2f);
-                    }
+                    
+                    // ⭐ NO manipular animaciones del player - Invector maneja todo automáticamente
+                    // El player usará siempre su idle normal sin forzar poses de batalla
                 });
             }
         }

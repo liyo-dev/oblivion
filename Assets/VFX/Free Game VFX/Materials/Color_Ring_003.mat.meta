@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: ecdba2d51af4d2b4d8671eb3c3911d7f
+timeCreated: 1536486960
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_glow_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Color_Ring_003.mat
+  uploadId: 820232

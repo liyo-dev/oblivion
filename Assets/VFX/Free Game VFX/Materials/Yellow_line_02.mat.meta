@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 143393cf14b49c84495ce4b041979228
+timeCreated: 1557216327
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_line_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/Yellow_line_02.mat
+  uploadId: 820232

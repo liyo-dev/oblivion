@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8648327e59b7b4249b1d35f7672ecd4b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: fx_textures_glow_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/glow_ball2_grey_5.mat
+  uploadId: 820232

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: d2ef3d4f7d0eb5e4183e8e60c2b7dacf
+timeCreated: 1535537613
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/glow_green3tail_2.mat
+  uploadId: 820232

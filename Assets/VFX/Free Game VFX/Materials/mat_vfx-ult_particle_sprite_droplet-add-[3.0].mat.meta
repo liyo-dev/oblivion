@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 5f86ec6ff355e8549ae0062c45146588
+timeCreated: 1468540008
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: fx_textures_particle_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/mat_vfx-ult_particle_sprite_droplet-add-[3.0].mat
+  uploadId: 820232

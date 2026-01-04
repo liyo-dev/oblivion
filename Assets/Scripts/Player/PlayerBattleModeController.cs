@@ -56,6 +56,9 @@ namespace Game.Player
         private int _normalIdleHash;
         private int _victoryHash;
         
+        // ⭐ Flag para suprimir temporalmente Battle Idle (tras diálogo de combate)
+        private bool _suppressBattleIdle;
+        
         // Colliders buffer para OverlapSphereNonAlloc (evitar allocation)
         private readonly Collider[] _hitColliders = new Collider[20];
         
@@ -116,83 +119,39 @@ namespace Game.Player
             StartCoroutine(PlayVictorySequence());
         }
         
+        /// <summary>
+        /// Suprime temporalmente el Battle Idle para permitir que el jugador se mueva libremente
+        /// tras un diálogo de combate. Se desactiva automáticamente cuando el jugador empieza a moverse.
+        /// ⭐ DESACTIVADO - Ya no se usa Battle Idle
+        /// </summary>
+        public void SuppressBattleIdle()
+        {
+            // No hace nada - Battle Idle desactivado
+            if (debugMode)
+                Debug.Log($"[PlayerBattleMode] SuppressBattleIdle() llamado pero Battle Idle está desactivado");
+        }
+        
         void Update()
         {
+            // ⭐ SISTEMA DE BATTLE IDLE DESACTIVADO
+            // El player usará siempre su idle normal, sin forzar animaciones de batalla
+            // Solo se mantiene la detección de enemigos para tracking interno si se necesita en el futuro
+            
             if (animator == null) return;
             
             // ✅ No hacer nada si está reproduciendo victoria
             if (_isPlayingVictory) return;
             
-            // Detectar si el player se está moviendo
-            bool isMoving = !IsPlayerIdle();
-
-            // Detectar enemigos cercanos
-            bool enemiesNearby = DetectEnemiesNearby();
-            
-            if (enemiesNearby)
-            {
-                _timeSinceLastEnemyDetected = 0f;
-                
-                // Activar Battle Mode si no está activo
-                if (!_isInBattleMode)
-                {
-                    EnterBattleMode();
-                }
-                
-                // Detectar transición de movimiento a idle
-                if (isMoving)
-                {
-                    // ✅ IMPORTANTE: Cuando el player se mueve, asegurar que salga de Battle Idle
-                    // y permita que Invector controle las animaciones de locomoción
-                    if (_wasMovingLastFrame == false)
-                    {
-                        // Acaba de EMPEZAR a moverse - liberar el Animator
-                        ReleaseFromBattleIdle();
-                        
-                        if (debugMode)
-                            Debug.Log($"[PlayerBattleMode] 🏃 Jugador empezó a moverse - liberando Animator para locomoción");
-                    }
-                    
-                    _timeSinceStoppedMoving = 0f;
-                    _wasMovingLastFrame = true;
-                }
-                else
-                {
-                    // El jugador está quieto
-                    if (_wasMovingLastFrame)
-                    {
-                        // Acaba de dejar de moverse
-                        _timeSinceStoppedMoving = 0f;
-                        _wasMovingLastFrame = false;
-                        
-                        if (debugMode)
-                            Debug.Log($"[PlayerBattleMode] ⏸️ Jugador detuvo movimiento");
-                    }
-                    else
-                    {
-                        // Sigue quieto
-                        _timeSinceStoppedMoving += Time.deltaTime;
-                    }
-                    
-                    // Solo forzar Battle Idle después de un pequeño delay (0.3s)
-                    // Esto permite que Invector complete las transiciones de desaceleración
-                    if (_timeSinceStoppedMoving >= 0.3f)
-                    {
-                        EnsureBattleIdle();
-                    }
-                }
-            }
-            else
-            {
-                // Incrementar tiempo sin enemigos
-                _timeSinceLastEnemyDetected += Time.deltaTime;
-                
-                // Salir de Battle Mode después del delay
-                if (_isInBattleMode && _timeSinceLastEnemyDetected >= exitBattleDelay)
-                {
-                    ExitBattleMode();
-                }
-            }
+            // // Detectar enemigos cercanos (comentado - no se usa actualmente)
+            // bool enemiesNearby = DetectEnemiesNearby();
+            // if (enemiesNearby)
+            // {
+            //     _timeSinceLastEnemyDetected = 0f;
+            // }
+            // else
+            // {
+            //     _timeSinceLastEnemyDetected += Time.deltaTime;
+            // }
         }
         
         /// <summary>
@@ -258,6 +217,9 @@ namespace Game.Player
         void EnsureBattleIdle()
         {
             if (!_isInBattleMode) return;
+            
+            // ⭐ Respetar flag de supresión (tras diálogo de combate)
+            if (_suppressBattleIdle) return;
             
             // Verificar el estado actual del animator
             AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);

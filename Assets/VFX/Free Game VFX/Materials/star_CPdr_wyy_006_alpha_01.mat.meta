@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: e47aec7919a59bf459081d4c5a0c3938
+timeCreated: 1535540069
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_flare_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/star_CPdr_wyy_006_alpha_01.mat
+  uploadId: 820232

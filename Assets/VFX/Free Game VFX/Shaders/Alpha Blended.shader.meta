@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 2b02ff58d507c6a478f8b1a00964a56d
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Shaders/Alpha Blended.shader
+  uploadId: 820232

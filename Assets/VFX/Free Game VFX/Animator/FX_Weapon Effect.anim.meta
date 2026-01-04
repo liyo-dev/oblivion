@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 289719d165f28f941ad994d5dad7013c
+timeCreated: 1551344501
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Animator/FX_Weapon Effect.anim
+  uploadId: 820232

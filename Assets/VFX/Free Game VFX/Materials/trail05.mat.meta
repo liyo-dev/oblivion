@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 1e4ac2eaf996df74a91d77a926b54e00
+timeCreated: 1531121783
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: fx_textures_gradient_materials.unity3d
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 345212
+  packageName: Free Game VFX Collection
+  packageVersion: 1.0
+  assetPath: Assets/Free Game VFX/Materials/trail05.mat
+  uploadId: 820232
