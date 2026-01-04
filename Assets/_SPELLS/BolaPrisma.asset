@@ -30,6 +30,7 @@ MonoBehaviour:
   knockbackForce: 10
   destroyOnHit: 1
   forwardOffset: 0.35
+  positionOffset: {x: 0, y: 0, z: 0}
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
   flattenDirection: 1
   useScaleOverride: 0

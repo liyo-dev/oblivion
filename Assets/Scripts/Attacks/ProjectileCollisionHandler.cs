@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// Sistema que maneja las colisiones entre proyectiles del jugador y enemigos.
@@ -36,6 +37,16 @@ public static class ProjectileCollisionHandler
         [Header("Audio")]
         [Tooltip("Clave del SFX para la colisión de proyectiles")]
         public string collisionSFXKey = "ProjectileClash";
+        
+        [Header("Animaciones")]
+        [Tooltip("Nombre de la animación que se reproduce en el jugador al colisionar")]
+        public string playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon";
+        
+        [Tooltip("Nombre de la animación que se reproduce en el NPC al colisionar")]
+        public string npcCollisionAnimation = "RollBWD_Battle_RM_NoWeapon";
+        
+        [Tooltip("Habilitar reproducción de animaciones al colisionar")]
+        public bool enableCollisionAnimations = true;
     }
     
     private static CollisionConfig _config;
@@ -63,7 +74,10 @@ public static class ProjectileCollisionHandler
                 vfxLifetime = 2f,
                 cameraShakeIntensity = 0.5f,
                 cameraShakeDuration = 0.3f,
-                collisionSFXKey = "ProjectileClash"
+                collisionSFXKey = "ProjectileClash",
+                playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
+                npcCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
+                enableCollisionAnimations = true
             };
         }
         return _config;
@@ -93,10 +107,16 @@ public static class ProjectileCollisionHandler
         // 3. Camera shake para feedback
         ApplyCameraShake(config);
         
-        // 4. Aplicar knockback a jugador y NPC
+        // 4. Reproducir animaciones en jugador y NPC
+        if (config.enableCollisionAnimations)
+        {
+            PlayCollisionAnimations(playerProjectile, enemyProjectile, config);
+        }
+        
+        // 5. Aplicar knockback a jugador y NPC
         ApplyKnockbackToEntities(playerProjectile, enemyProjectile, collisionPoint, config);
         
-        // 5. Destruir ambos proyectiles
+        // 6. Destruir ambos proyectiles
         DestroyProjectiles(playerProjectile, enemyProjectile);
     }
     
@@ -139,6 +159,195 @@ public static class ProjectileCollisionHandler
             
             Debug.Log($"[ProjectileCollision] 📹 Camera shake aplicado: {config.cameraShakeIntensity}");
         }
+    }
+    
+    private static void PlayCollisionAnimations(
+        GameObject playerProjectile, 
+        GameObject enemyProjectile, 
+        CollisionConfig config)
+    {
+        Debug.Log($"[ProjectileCollision] 🎬 PlayCollisionAnimations INICIADO");
+        Debug.Log($"[ProjectileCollision]   - Player animation: '{config.playerCollisionAnimation}'");
+        Debug.Log($"[ProjectileCollision]   - NPC animation: '{config.npcCollisionAnimation}'");
+        Debug.Log($"[ProjectileCollision]   - NPCs en combate registrados: {ActiveCombatRegistry.Count}");
+        
+        // Reproducir animación en el jugador
+        if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        {
+            Debug.Log($"[ProjectileCollision] ✅ Player encontrado: '{playerGo.name}'");
+            PlayAnimationOnTarget(playerGo, config.playerCollisionAnimation, "Player");
+        }
+        else
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ Player NO encontrado");
+        }
+        
+        // Reproducir animación en el NPC (buscar NPC cercano al proyectil enemigo)
+        Debug.Log($"[ProjectileCollision] 🔍 Buscando NPC para el proyectil enemigo '{enemyProjectile?.name}'...");
+        var npc = FindNearbyNPC(enemyProjectile);
+        if (npc != null)
+        {
+            Debug.Log($"[ProjectileCollision] ✅ NPC encontrado para animación: '{npc.name}'");
+            PlayAnimationOnTarget(npc, config.npcCollisionAnimation, "NPC");
+        }
+        else
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ NO se encontró NPC para reproducir animación");
+        }
+    }
+    
+    /// <summary>
+    /// Reproduce una animación en un GameObject objetivo (Player o NPC)
+    /// </summary>
+    private static void PlayAnimationOnTarget(GameObject target, string animationName, string targetType)
+    {
+        Debug.Log($"[ProjectileCollision] 🎬 PlayAnimationOnTarget INICIADO para {targetType}");
+        Debug.Log($"[ProjectileCollision]   - Target: {(target != null ? $"'{target.name}'" : "NULL")}");
+        Debug.Log($"[ProjectileCollision]   - Animation: '{animationName}'");
+        
+        if (string.IsNullOrEmpty(animationName))
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ No hay animación configurada para {targetType}");
+            return;
+        }
+        
+        if (target == null)
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ Target {targetType} es null");
+            return;
+        }
+        
+        // Obtener el Animator del target
+        var animator = target.GetComponent<Animator>();
+        if (animator == null)
+        {
+            Debug.Log($"[ProjectileCollision] No hay Animator en root, buscando en hijos...");
+            animator = target.GetComponentInChildren<Animator>();
+        }
+        
+        if (animator == null)
+        {
+            Debug.LogError($"[ProjectileCollision] ❌ {targetType} '{target.name}' NO TIENE ANIMATOR en ninguna parte");
+            return;
+        }
+        
+        Debug.Log($"[ProjectileCollision] ✅ Animator encontrado en '{animator.gameObject.name}'");
+        Debug.Log($"[ProjectileCollision]   - Animator enabled: {animator.enabled}");
+        Debug.Log($"[ProjectileCollision]   - Animator isActiveAndEnabled: {animator.isActiveAndEnabled}");
+        
+        // Reproducir la animación usando PlayInFixedTime para forzar reproducción inmediata
+        animator.PlayInFixedTime(animationName, 0, 0f);
+        
+        Debug.Log($"[ProjectileCollision] 🎬✅ Animación '{animationName}' REPRODUCIDA en {targetType} '{target.name}'");
+        
+        // ✅ Aplicar desplazamiento físico hacia atrás (para compensar si no hay Root Motion)
+        ApplyKnockbackMovement(target, targetType);
+    }
+    
+    /// <summary>
+    /// Aplica un desplazamiento hacia atrás al objetivo (para que el roll se vea físicamente)
+    /// </summary>
+    private static void ApplyKnockbackMovement(GameObject target, string targetType)
+    {
+        const float knockbackDistance = 3f; // Metros hacia atrás
+        const float knockbackDuration = 0.5f; // Duración del desplazamiento
+        
+        // Dirección hacia atrás del objetivo
+        Vector3 backwardDirection = -target.transform.forward;
+        Vector3 targetPos = target.transform.position + (backwardDirection * knockbackDistance);
+        
+        // Intentar mover con NavMeshAgent si existe (NPCs)
+        var agent = target.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            Debug.Log($"[ProjectileCollision] 🏃 Aplicando desplazamiento a {targetType} con NavMeshAgent");
+            
+            // Validar posición en NavMesh
+            if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out var hit, knockbackDistance + 2f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                targetPos = hit.position;
+            }
+            
+            // Desactivar temporalmente el agente y moverlo con DOTween
+            agent.isStopped = true;
+            agent.updatePosition = false;
+            agent.updateRotation = false;
+            
+            target.transform.DOMove(targetPos, knockbackDuration)
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() =>
+                {
+                    if (agent != null && agent.isActiveAndEnabled)
+                    {
+                        agent.isStopped = false;
+                        agent.updatePosition = true;
+                        agent.updateRotation = true;
+                    }
+                });
+            
+            return;
+        }
+        
+        // Si no hay NavMeshAgent, intentar con CharacterController (Player)
+        var controller = target.GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            Debug.Log($"[ProjectileCollision] 🏃 Aplicando desplazamiento a {targetType} con CharacterController");
+            
+            // Mover el transform directamente (CharacterController se ajustará)
+            target.transform.DOMove(targetPos, knockbackDuration).SetEase(Ease.OutQuad);
+            return;
+        }
+        
+        // Si no hay NavMeshAgent ni CharacterController, intentar con Rigidbody
+        var rb = target.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            Debug.Log($"[ProjectileCollision] 🏃 Aplicando impulso a {targetType} con Rigidbody");
+            rb.AddForce(backwardDirection * knockbackDistance * 2f, ForceMode.Impulse);
+            return;
+        }
+        
+        // Último recurso: mover el transform directamente con DOTween
+        Debug.Log($"[ProjectileCollision] 🏃 Moviendo {targetType} directamente con Transform");
+        target.transform.DOMove(targetPos, knockbackDuration).SetEase(Ease.OutQuad);
+    }
+    
+    /// <summary>
+    /// Busca el NPC más cercano al proyectil enemigo usando el registro de combate activo
+    /// </summary>
+    private static GameObject FindNearbyNPC(GameObject enemyProjectile)
+    {
+        if (enemyProjectile == null)
+        {
+            Debug.LogWarning("[ProjectileCollision] ⚠️ Proyectil enemigo es null, no se puede buscar NPC");
+            return null;
+        }
+        
+        Debug.Log($"[ProjectileCollision] 🔍 FindNearbyNPC: Buscando NPC en combate cercano a '{enemyProjectile.name}'");
+        Debug.Log($"[ProjectileCollision]   - Posición proyectil: {enemyProjectile.transform.position}");
+        Debug.Log($"[ProjectileCollision]   - NPCs registrados en combate: {ActiveCombatRegistry.Count}");
+        
+        // ✅ Usar el registro de combate para encontrar NPCs activos
+        GameObject npc = ActiveCombatRegistry.GetClosestCombatNPC(
+            enemyProjectile.transform.position, 
+            maxDistance: 50f
+        );
+        
+        if (npc != null)
+        {
+            float dist = Vector3.Distance(npc.transform.position, enemyProjectile.transform.position);
+            Debug.Log($"[ProjectileCollision] ✅ NPC en combate encontrado: '{npc.name}' a {dist:F1}m");
+            Debug.Log($"[ProjectileCollision]   - Posición NPC: {npc.transform.position}");
+        }
+        else
+        {
+            Debug.LogWarning($"[ProjectileCollision] ⚠️ NO hay NPCs en combate cerca del proyectil");
+            Debug.LogWarning($"[ProjectileCollision]   - Verifica que el NPC haya llamado a EnterCombat()");
+            Debug.LogWarning($"[ProjectileCollision]   - Verifica que el NPC tenga NPCBehaviourManagerV2");
+        }
+        
+        return npc;
     }
     
     private static void ApplyKnockbackToEntities(

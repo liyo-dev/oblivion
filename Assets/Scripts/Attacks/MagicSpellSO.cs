@@ -38,6 +38,8 @@ public class MagicSpellSO : ScriptableObject
 
     [Header("Spawn / Dirección")]
     public float   forwardOffset = 0.35f;
+    [Tooltip("Offset de posición adicional en espacio local (X=derecha, Y=arriba, Z=adelante). Útil para ajustar la altura de spawn y evitar que se vea metido en el suelo.")]
+    public Vector3 positionOffset = Vector3.zero;
     public Vector3 visualRotationOffsetEuler = Vector3.zero;
     public bool    flattenDirection = true;
     [Tooltip("Si se marca, se forzará esta escala al instanciar el proyectil y el VFX de spawn. Si está desmarcado, se usará la escala del prefab.")]

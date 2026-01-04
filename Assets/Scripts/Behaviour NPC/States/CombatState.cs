@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -31,6 +31,13 @@ namespace Game.NPC.States
             
             context.Log("[CombatState] ⚔️ INICIANDO COMBATE");
             context.IsInCombat = true;
+            
+            // ✅ Registrar NPC en el registro de combate activo
+            if (context.Transform != null)
+            {
+                ActiveCombatRegistry.RegisterNPC(context.Transform.gameObject);
+                context.Log("[CombatState] ✅ NPC registrado en ActiveCombatRegistry");
+            }
             
             // 🎵 2. Audio
             TriggerBattleMusic(context);
@@ -130,6 +137,13 @@ namespace Game.NPC.States
         {
             base.OnExit(context);
             context.IsInCombat = false;
+            
+            // ✅ Desregistrar NPC del registro de combate activo
+            if (context.Transform != null)
+            {
+                ActiveCombatRegistry.UnregisterNPC(context.Transform.gameObject);
+                context.Log("[CombatState] ✅ NPC desregistrado de ActiveCombatRegistry");
+            }
 
             // Detener el cerebro de combate limpiamente
             if (_combatBrain != null)

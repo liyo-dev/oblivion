@@ -158,10 +158,36 @@ public class PlayerPickupCollector : MonoBehaviour
             return;
         }
 
-        // Reproducir la animación usando CrossFade para una transición suave
-        animator.CrossFadeInFixedTime(drinkPotionAnimationName, 0.1f);
+        // Usar corrutina para dar tiempo al Animator Controller de procesar cambios
+        StartCoroutine(PlayDrinkPotionAnimationCoroutine());
+    }
+
+    private System.Collections.IEnumerator PlayDrinkPotionAnimationCoroutine()
+    {
+        // Resetear TODOS los parámetros del animator a valores por defecto
+        foreach (var param in animator.parameters)
+        {
+            switch (param.type)
+            {
+                case AnimatorControllerParameterType.Float:
+                    animator.SetFloat(param.name, 0f);
+                    break;
+                case AnimatorControllerParameterType.Int:
+                    animator.SetInteger(param.name, 0);
+                    break;
+                case AnimatorControllerParameterType.Bool:
+                    animator.SetBool(param.name, false);
+                    break;
+            }
+        }
+
+        // Esperar 1 frame para que el Animator Controller procese los cambios
+        yield return null;
+
+        // Ahora reproducir la animación - el animator ya debería estar en idle limpio
+        animator.PlayInFixedTime(drinkPotionAnimationName, 0, 0f);
         
-        Debug.Log($"[PlayerPickupCollector] Reproduciendo animación: {drinkPotionAnimationName}");
+        Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName} (con delay de 1 frame)");
     }
 }
 

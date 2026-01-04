@@ -140,6 +140,9 @@ namespace Game.NPC
 
         void OnDestroy()
         {
+            // Limpiar registro de combate
+            ActiveCombatRegistry.UnregisterNPC(gameObject);
+            
             UnregisterNarrativeIdentity();
             PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerService.OnPlayerUnregistered -= OnPlayerUnregistered;
@@ -231,6 +234,10 @@ namespace Game.NPC
             if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
 
             _context.IsInCombat = true;
+            
+            // ✅ Registrar NPC en el registro de combate activo
+            ActiveCombatRegistry.RegisterNPC(gameObject);
+            
             if (!(_brain.CurrentState is States.CombatState))
             {
                 _brain.ChangeState(new States.CombatState());
@@ -240,6 +247,10 @@ namespace Game.NPC
         public void ExitCombat()
         {
             _context.IsInCombat = false;
+            
+            // ✅ Desregistrar NPC del registro de combate activo
+            ActiveCombatRegistry.UnregisterNPC(gameObject);
+            
             // El CombatState detectará el flag en su Update y saldrá solo
         }
 

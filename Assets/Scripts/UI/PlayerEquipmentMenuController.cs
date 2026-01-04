@@ -385,9 +385,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 Debug.Log($"[PlayerEquipmentMenu] Frame {Time.frameCount} - IsOpen: {_isOpen}, ActiveTab: {_activeTab}, SubmitPressed: {GamepadInputReader.SubmitPressed}");
             }
             
-            // Manejar inputs especÃ­ficos de cada tab
+            // Manejar inputs específicos de cada tab
             if (_activeTab == 0) // Inventario
             {
+
                 // Manejar Submit (A button)
                 if (GamepadInputReader.SubmitPressed)
                 {
@@ -395,7 +396,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     bool handled = _inventoryView?.TryHandleSubmit() ?? false;
                     Debug.Log($"[PlayerEquipmentMenu] Submit handled: {handled}");
                 }
-                
+
                 // Manejar Cancel (B button) - pero solo si el inventario no lo maneja primero
                 if (GamepadInputReader.CancelPressed)
                 {
@@ -1025,6 +1026,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (!_isOpen || _playerAnimator == null)
             return;
 
+        // Verificar si se está reproduciendo una animación específica (como beber poción)
+        var currentClipInfo = _playerAnimator.GetCurrentAnimatorClipInfo(0);
+        if (currentClipInfo.Length > 0)
+        {
+            var clipName = currentClipInfo[0].clip.name;
+            // NO forzar idle si se está reproduciendo una animación de uso de item
+            if (clipName.Contains("DrinkPotion") || clipName.Contains("UseItem") || clipName.Contains("Consume"))
+            {
+                return;
+            }
+        }
+
         // Forzar parámetros a 0 para mantener idle
         _playerAnimator.SetFloat("InputMagnitude", 0f);
         _playerAnimator.SetFloat("Speed", 0f);
@@ -1598,7 +1611,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             enum InventoryInteractionState { Browsing, UseButtonFocused }
             InventoryInteractionState _interactionState = InventoryInteractionState.Browsing;
             Vector3 _useButtonBaseScale;
-            ColorBlock _useButtonDefaultColors;
             bool _useButtonVisualCached;
 
         public InventoryView(InventoryBindings bindings)
@@ -1613,7 +1625,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             {
                 _ui.useButton.onClick.AddListener(UseSelectedItem);
                 _useButtonBaseScale = _ui.useButton.transform.localScale;
-                _useButtonDefaultColors = _ui.useButton.colors;
                 _useButtonVisualCached = true;
 
                 var nav = _ui.useButton.navigation;
@@ -1633,6 +1644,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton != null)
                 _ui.useButton.onClick.RemoveListener(UseSelectedItem);
         }
+
 
         public void SetVisible(bool value)
         {
@@ -1924,7 +1936,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         
         void ResetUseButtonAfterUse(bool restoreSelection)
         {
-            // PequeÃ±o delay para que se vean las animaciones antes de resetear
+            // Pequeño delay para que se vean las animaciones antes de resetear
             if (_ui.useButton != null)
             {
                 _ui.useButton.transform
@@ -1936,7 +1948,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                         if (_ui.useButton != null)
                         {
                             _ui.useButton.interactable = false;
-                            _ui.useButton.colors = _useButtonDefaultColors;
+                            // Restaurar color del Image
+                            var buttonImage = _ui.useButton.GetComponent<UnityEngine.UI.Image>();
+                            if (buttonImage != null)
+                            {
+                                buttonImage.color = Color.white;
+                            }
                             _ui.useButton.transform.localScale = _useButtonBaseScale;
                         }
                         
@@ -2073,17 +2090,23 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton == null) return;
             if (_selectedItem == null || !_selectedItem.usableFromInventory) return;
 
+            Debug.Log("[InventoryView] FocusUseButton - Cambiando estado a UseButtonFocused");
             _interactionState = InventoryInteractionState.UseButtonFocused;
 
-            // Habilitar el botÃ³n si no lo estÃ¡
+            // Habilitar el botón si no lo está
             if (!_ui.useButton.interactable)
+            {
+                Debug.Log("[InventoryView] Habilitando botón useButton");
                 _ui.useButton.interactable = true;
+            }
 
-            _ui.useButton.Select();
+            // Aplicar el feedback visual inmediatamente (sin esperar frames)
             PlayUseButtonFeedback();
             
-            // Reproducir sonido de selecciÃ³n/confirmaciÃ³n
+            // Reproducir sonido de selección/confirmación
             GamepadInputReader.PlayUISound("UI_Select");
+            
+            Debug.Log($"[InventoryView] FocusUseButton completado - Estado final: {_interactionState}");
         }
 
         void ExitUseButtonFocus(bool restoreSelection)
@@ -2104,48 +2127,35 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void PlayUseButtonFeedback()
         {
-            if (_ui.useButton == null || !_ui.useButton.interactable)
-                return;
+            if (_ui.useButton == null) return;
 
+            // Color amarillo/dorado
+            Color yellowColor = new Color(1f, 0.85f, 0.2f, 1f);
+            
+            // Obtener el Image del botón y cambiar su color directamente
+            var buttonImage = _ui.useButton.GetComponent<UnityEngine.UI.Image>();
+            if (buttonImage != null)
+            {
+                // ⭐ SOLUCIÓN SIMPLE: Cambiar el color del Image directamente
+                buttonImage.color = yellowColor;
+                Debug.Log("[InventoryView] Color amarillo aplicado directamente al Image");
+            }
+
+            // Animación de escala simple
             if (!_useButtonVisualCached)
             {
                 _useButtonBaseScale = _ui.useButton.transform.localScale;
-                _useButtonDefaultColors = _ui.useButton.colors;
                 _useButtonVisualCached = true;
             }
-
-            // Cambiar color a amarillo/dorado activo - MUY IMPORTANTE: hacer esto SIEMPRE
-            var accent = new Color(1f, 0.85f, 0.2f, 1f);
-            var colors = new ColorBlock
-            {
-                normalColor = accent,
-                highlightedColor = accent * 1.05f,
-                selectedColor = accent * 1.05f,
-                pressedColor = accent * 0.9f,
-                disabledColor = _useButtonDefaultColors.disabledColor,
-                colorMultiplier = 1f,
-                fadeDuration = 0.1f
-            };
-            _ui.useButton.colors = colors;
-
-            // Primero establecer la escala aumentada (110%)
-            var targetScale = _useButtonBaseScale * 1.1f;
             
-            // AnimaciÃ³n de punch/rebote desde la escala base a la escala aumentada
-            _ui.useButton.transform.localScale = _useButtonBaseScale;
+            var targetScale = _useButtonBaseScale * 1.1f;
             _ui.useButton.transform
                 .DOScale(targetScale, 0.2f)
                 .SetEase(Ease.OutBack)
-                .SetUpdate(true)
-                .OnComplete(() => {
-                    // Asegurarse de que el color y la escala persistan FORZANDO el color de nuevo
-                    if (_ui.useButton != null)
-                    {
-                        _ui.useButton.transform.localScale = targetScale;
-                        // FORZAR el color de nuevo despuÃ©s de la animaciÃ³n
-                        _ui.useButton.colors = colors;
-                    }
-                });
+                .SetUpdate(true);
+                
+            // Seleccionar el botón
+            _ui.useButton.Select();
         }
 
         void ResetUseButtonFeedback()
@@ -2153,8 +2163,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton == null || !_useButtonVisualCached)
                 return;
 
+            // Restaurar escala
             _ui.useButton.transform.localScale = _useButtonBaseScale;
-            _ui.useButton.colors = _useButtonDefaultColors;
+            
+            // Restaurar color del Image a blanco (el color por defecto)
+            var buttonImage = _ui.useButton.GetComponent<UnityEngine.UI.Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.color = Color.white; // Color por defecto
+            }
         }
 
         public bool TryHandleCancel()
@@ -2181,9 +2198,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (_lastSelectedRow != null && _selectedItem != null)
             {
-                // Primera pulsaciÃ³n: Enfocar botÃ³n de usar
-                Debug.Log("[InventoryView] Primera pulsaciÃ³n - Enfocando botÃ³n de usar");
+                // Primera pulsación: Enfocar botón de usar
+                Debug.Log("[InventoryView] Primera pulsación - Enfocando botón de usar");
                 HandleRowSubmit();
+                Debug.Log($"[InventoryView] Después de HandleRowSubmit - Estado: {_interactionState}");
                 return true;
             }
 

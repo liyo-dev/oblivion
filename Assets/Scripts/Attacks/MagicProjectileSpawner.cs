@@ -168,6 +168,25 @@ public class MagicProjectileSpawner : MonoBehaviour
         if (dir.sqrMagnitude < 0.001f) dir = baseForward;
 
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
+        
+        // Aplicar offset de posición adicional
+        // Y siempre es vertical (arriba/abajo en espacio mundial)
+        // X y Z respetan la rotación del caster (derecha/adelante en espacio local)
+        if (spell.positionOffset != Vector3.zero)
+        {
+            Transform casterTransform = origin ? origin : transform;
+            
+            // Y es siempre arriba/abajo (espacio mundial)
+            spawnPos.y += spell.positionOffset.y;
+            
+            // X (derecha) y Z (adelante) en espacio local del caster
+            if (spell.positionOffset.x != 0f || spell.positionOffset.z != 0f)
+            {
+                Vector3 localOffset = new Vector3(spell.positionOffset.x, 0f, spell.positionOffset.z);
+                spawnPos += casterTransform.TransformDirection(localOffset);
+            }
+        }
+        
         // Evitar que el proyectil nazca dentro de colliders del jugador (mano/cuerpo)
         // Usar posición de spawn original definida por el caster/spell
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
@@ -293,6 +312,25 @@ public class MagicProjectileSpawner : MonoBehaviour
         // Configurar colisiones - ignorar jugador y todos sus hijos
         GameObject instigator = instigatorOverride ? instigatorOverride : gameObject;
         Vector3 spawnPos = (origin ? origin.position : transform.position) + dir * spell.forwardOffset;
+        
+        // Aplicar offset de posición adicional
+        // Y siempre es vertical (arriba/abajo en espacio mundial)
+        // X y Z respetan la rotación del caster (derecha/adelante en espacio local)
+        if (spell.positionOffset != Vector3.zero)
+        {
+            Transform casterTransform = origin ? origin : transform;
+            
+            // Y es siempre arriba/abajo (espacio mundial)
+            spawnPos.y += spell.positionOffset.y;
+            
+            // X (derecha) y Z (adelante) en espacio local del caster
+            if (spell.positionOffset.x != 0f || spell.positionOffset.z != 0f)
+            {
+                Vector3 localOffset = new Vector3(spell.positionOffset.x, 0f, spell.positionOffset.z);
+                spawnPos += casterTransform.TransformDirection(localOffset);
+            }
+        }
+        
         // Evitar que el proyectil nazca dentro de colliders del jugador
         // Usar posición de spawn original definida por el caster/spell
         Quaternion spawnRt = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);

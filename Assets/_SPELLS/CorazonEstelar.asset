@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: "Coraz\xF3n Estelar"
   kind: 1
   element: 3
-  prefab: {fileID: 100002, guid: 0b6e1ebc5f3b9a641854a0be50cef7f0, type: 3}
+  prefab: {fileID: 4230533699123781479, guid: 86e6c7d81766295418601bcd9d9ae6b9, type: 3}
   castDelaySeconds: 0
   chargeTime: 0.5
-  chargeStartScale: 1
+  chargeStartScale: 0.093
   followOriginDuringCharge: 0
   initialSpeed: 10
   useGravity: 0
@@ -29,7 +29,8 @@ MonoBehaviour:
   aoeRadius: 0
   knockbackForce: 25
   destroyOnHit: 1
-  forwardOffset: 0.35
+  forwardOffset: 0.5
+  positionOffset: {x: 0, y: 0.65, z: 0}
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
   flattenDirection: 0
   useScaleOverride: 0
