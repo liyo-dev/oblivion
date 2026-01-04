@@ -40,6 +40,11 @@ public class UIButtonAudio : MonoBehaviour, IPointerEnterHandler, ISelectHandler
             _button.onClick.AddListener(OnButtonClick);
     }
     
+    void OnEnable()
+    {
+        Debug.Log($"[UIButtonAudio] OnEnable en {gameObject.name}, playHoverSound={playHoverSound}");
+    }
+    
     void OnDestroy()
     {
         if (_button != null)

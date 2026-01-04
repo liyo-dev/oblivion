@@ -128,7 +128,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
-        position: {x: 15, y: 733}
+        position: {x: 2.9999847, y: 595}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
@@ -157,7 +157,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 2caf285b-fdb8-4361-8176-192475b9c678
-        position: {x: 343, y: 1158}
+        position: {x: 3, y: 873.7002}
         outputs:
         - 4010d494-e518-45bb-9852-29a412777758
         questId: ELDRAN_MISSION5
@@ -171,7 +171,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4010d494-e518-45bb-9852-29a412777758
-        position: {x: 946, y: 1399}
+        position: {x: -6.4582596, y: 1097.9999}
         outputs: []
         questId: ELDRAN_MISSION5_2
     - rid: 4128268622357594630
