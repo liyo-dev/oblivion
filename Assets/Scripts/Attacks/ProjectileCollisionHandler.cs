@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using DG.Tweening;
 
 /// <summary>
@@ -42,9 +42,6 @@ public static class ProjectileCollisionHandler
         [Tooltip("Nombre de la animación que se reproduce en el jugador al colisionar")]
         public string playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon";
         
-        [Tooltip("Nombre de la animación que se reproduce en el NPC al colisionar")]
-        public string npcCollisionAnimation = "RollBWD_Battle_RM_NoWeapon";
-        
         [Tooltip("Habilitar reproducción de animaciones al colisionar")]
         public bool enableCollisionAnimations = true;
     }
@@ -76,7 +73,6 @@ public static class ProjectileCollisionHandler
                 cameraShakeDuration = 0.3f,
                 collisionSFXKey = "ProjectileClash",
                 playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
-                npcCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
                 enableCollisionAnimations = true
             };
         }
@@ -110,7 +106,7 @@ public static class ProjectileCollisionHandler
         // 4. Reproducir animaciones en jugador y NPC
         if (config.enableCollisionAnimations)
         {
-            PlayCollisionAnimations(playerProjectile, enemyProjectile, config);
+            PlayCollisionAnimations(config);
         }
         
         // 5. Aplicar knockback a jugador y NPC
@@ -161,17 +157,13 @@ public static class ProjectileCollisionHandler
         }
     }
     
-    private static void PlayCollisionAnimations(
-        GameObject playerProjectile, 
-        GameObject enemyProjectile, 
-        CollisionConfig config)
+    private static void PlayCollisionAnimations(CollisionConfig config)
     {
         Debug.Log($"[ProjectileCollision] 🎬 PlayCollisionAnimations INICIADO");
         Debug.Log($"[ProjectileCollision]   - Player animation: '{config.playerCollisionAnimation}'");
-        Debug.Log($"[ProjectileCollision]   - NPC animation: '{config.npcCollisionAnimation}'");
-        Debug.Log($"[ProjectileCollision]   - NPCs en combate registrados: {ActiveCombatRegistry.Count}");
         
-        // Reproducir animación en el jugador
+        // ⭐ Solo reproducir animación de roll en el JUGADOR
+        // El NPC NO hará animación de roll cuando los proyectiles colisionen
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             Debug.Log($"[ProjectileCollision] ✅ Player encontrado: '{playerGo.name}'");
@@ -180,19 +172,6 @@ public static class ProjectileCollisionHandler
         else
         {
             Debug.LogWarning($"[ProjectileCollision] ⚠️ Player NO encontrado");
-        }
-        
-        // Reproducir animación en el NPC (buscar NPC cercano al proyectil enemigo)
-        Debug.Log($"[ProjectileCollision] 🔍 Buscando NPC para el proyectil enemigo '{enemyProjectile?.name}'...");
-        var npc = FindNearbyNPC(enemyProjectile);
-        if (npc != null)
-        {
-            Debug.Log($"[ProjectileCollision] ✅ NPC encontrado para animación: '{npc.name}'");
-            PlayAnimationOnTarget(npc, config.npcCollisionAnimation, "NPC");
-        }
-        else
-        {
-            Debug.LogWarning($"[ProjectileCollision] ⚠️ NO se encontró NPC para reproducir animación");
         }
     }
     
@@ -315,7 +294,9 @@ public static class ProjectileCollisionHandler
     
     /// <summary>
     /// Busca el NPC más cercano al proyectil enemigo usando el registro de combate activo
+    /// ⭐ DEPRECATED - Ya no se usa porque el NPC no hace roll
     /// </summary>
+    [System.Obsolete("Ya no se usa - el NPC no hace animación de roll")]
     private static GameObject FindNearbyNPC(GameObject enemyProjectile)
     {
         if (enemyProjectile == null)

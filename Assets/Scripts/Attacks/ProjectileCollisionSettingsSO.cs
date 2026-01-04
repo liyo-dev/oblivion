@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 
 /// <summary>
 /// Configuración global para las colisiones entre proyectiles del jugador y enemigos.
@@ -51,9 +51,8 @@ public class ProjectileCollisionSettingsSO : ScriptableObject
             cameraShakeIntensity = cameraShakeIntensity,
             cameraShakeDuration = cameraShakeDuration,
             collisionSFXKey = collisionSFXKey,
-            // Animaciones con valores por defecto
+            // Animación solo para el player
             playerCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
-            npcCollisionAnimation = "RollBWD_Battle_RM_NoWeapon",
             enableCollisionAnimations = true
         };
     }

@@ -153,7 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20df411e278d434ebd9e1291c4489fa6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DemonProjectile
-  speed: 1
+  speed: 8
   lifetime: 5
   baseDamage: 10
   hitEffectPrefab: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
