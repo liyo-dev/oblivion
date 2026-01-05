@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -314,18 +314,48 @@ namespace Game.NPC.Modules
             switch (state)
             {
                 case QuestState.Active:
+                    // ✅ Verificar si el jugador tiene los items requeridos en inventario
+                    // Esto marca automáticamente los pasos correspondientes como completados
+                    CheckAndMarkInventoryRequirements(qm, entry, questId);
+                    
                     bool allDone = qm.AreAllStepsCompleted(questId);
+                    
+                    // ✅ NUEVO: Verificar si tiene todos los items requeridos del inventario
+                    bool hasAllRequiredItems = HasAllRequiredItems(entry);
 
                     switch (entry.completionMode)
                     {
                         case QuestCompletionMode.AutoCompleteOnTalk:
-                            CompleteAllSteps(qm, entry, questId, context);
+                            // ✅ MODIFICADO: AutoCompleteOnTalk ahora respeta requiredItems
+                            // Si hay items requeridos, DEBE tenerlos para completar
+                            if (entry.requiredItems != null && entry.requiredItems.Length > 0)
+                            {
+                                if (hasAllRequiredItems)
+                                {
+                                    // Tiene los items -> completar quest y consumirlos
+                                    ConsumeRequiredItems(entry);
+                                    CompleteAllSteps(qm, entry, questId, context);
+                                }
+                                else
+                                {
+                                    // No tiene los items -> mostrar diálogo in progress
+                                    Debug.Log($"[NPCQuestConfig] Quest '{questId}' - AutoCompleteOnTalk bloqueado: faltan items requeridos");
+                                    PlayDialogue(entry.dlgInProgress, context);
+                                }
+                            }
+                            else
+                            {
+                                // No hay items requeridos -> completar directamente (comportamiento original)
+                                CompleteAllSteps(qm, entry, questId, context);
+                            }
                             break;
 
                         case QuestCompletionMode.CompleteOnTalkIfStepsReady:
                         case QuestCompletionMode.Manual:
-                            if (allDone)
+                            if (allDone && hasAllRequiredItems)
                             {
+                                // ✅ Consumir los items requeridos al completar la quest
+                                ConsumeRequiredItems(entry);
                                 FinishQuest(qm, entry, questId, context);
                             }
                             else
@@ -339,6 +369,125 @@ namespace Game.NPC.Modules
                 case QuestState.Completed:
                     PlayDialogue(entry.dlgCompleted, context);
                     break;
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si el jugador tiene TODOS los items requeridos en el inventario.
+        /// </summary>
+        private bool HasAllRequiredItems(QuestChainEntry entry)
+        {
+            if (entry.requiredItems == null || entry.requiredItems.Length == 0)
+                return true; // Sin items requeridos = siempre true
+            
+            // Obtener el inventario del jugador
+            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
+            {
+                Debug.LogWarning($"[NPCQuestConfig] No se encontró Inventory del jugador para verificar items");
+                return false;
+            }
+            
+            foreach (var req in entry.requiredItems)
+            {
+                if (req?.item == null) continue;
+                
+                if (!inventory.HasItem(req.item, req.amount))
+                {
+                    Debug.Log($"[NPCQuestConfig] ❌ Falta item '{req.item.displayName}' (tiene {inventory.Count(req.item.itemId)}/{req.amount})");
+                    return false;
+                }
+            }
+            
+            Debug.Log($"[NPCQuestConfig] ✅ Todos los items requeridos están en el inventario");
+            return true;
+        }
+        
+        /// <summary>
+        /// Verifica si el jugador tiene los items requeridos en el inventario y marca los pasos correspondientes.
+        /// </summary>
+        private void CheckAndMarkInventoryRequirements(QuestManager qm, QuestChainEntry entry, string questId)
+        {
+            if (entry.requiredItems == null || entry.requiredItems.Length == 0)
+                return;
+            
+            // Obtener el inventario del jugador
+            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
+            {
+                Debug.LogWarning($"[NPCQuestConfig] No se encontró Inventory del jugador para verificar items requeridos");
+                return;
+            }
+            
+            foreach (var req in entry.requiredItems)
+            {
+                if (req?.item == null) continue;
+                
+                // Verificar si tiene suficiente cantidad del item
+                bool hasItem = inventory.HasItem(req.item, req.amount);
+                
+                Debug.Log($"[NPCQuestConfig] Verificando item '{req.item.displayName}' (x{req.amount}): {(hasItem ? "✅ TIENE" : "❌ NO TIENE")}");
+                
+                if (hasItem)
+                {
+                    // Determinar qué step marcar como completado
+                    int stepToMark = -1;
+                    
+                    if (req.stepIndex >= 0)
+                    {
+                        // Usar stepIndex directamente
+                        stepToMark = req.stepIndex;
+                    }
+                    else
+                    {
+                        // Buscar por conditionId
+                        string conditionId = req.GetStepConditionId();
+                        if (!string.IsNullOrEmpty(conditionId))
+                        {
+                            stepToMark = qm.FindStepIndexByConditionId(questId, conditionId);
+                        }
+                    }
+                    
+                    if (stepToMark >= 0)
+                    {
+                        // Verificar si el paso ya está completado
+                        var quest = qm.GetAll().FirstOrDefault(q => q.Id == questId);
+                        if (quest?.Steps != null && stepToMark < quest.Steps.Length && !quest.Steps[stepToMark].completed)
+                        {
+                            Debug.Log($"[NPCQuestConfig] ✅ Marcando step {stepToMark} de quest '{questId}' como completado (item '{req.item.displayName}' entregado)");
+                            qm.MarkStepDone(questId, stepToMark);
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[NPCQuestConfig] No se pudo determinar el step a marcar para item '{req.item.displayName}'");
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Consume los items requeridos del inventario del jugador.
+        /// Se llama cuando la quest se completa exitosamente.
+        /// </summary>
+        private void ConsumeRequiredItems(QuestChainEntry entry)
+        {
+            if (entry.requiredItems == null || entry.requiredItems.Length == 0)
+                return;
+            
+            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
+                return;
+            
+            foreach (var req in entry.requiredItems)
+            {
+                if (req?.item == null || !req.consumeOnComplete) continue;
+                
+                if (inventory.TryConsume(req.item, req.amount))
+                {
+                    Debug.Log($"[NPCQuestConfig] 🔥 Consumido item '{req.item.displayName}' x{req.amount} del inventario");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCQuestConfig] ⚠️ No se pudo consumir item '{req.item.displayName}' x{req.amount}");
+                }
             }
         }
 

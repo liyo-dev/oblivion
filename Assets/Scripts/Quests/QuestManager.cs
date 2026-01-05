@@ -320,6 +320,27 @@ public class QuestManager : MonoBehaviour
     public bool AreAllStepsCompleted(string questId)
         => _runtime.TryGetValue(questId, out var rq) && AllStepsCompleted(rq);
 
+    /// <summary>
+    /// Busca el índice de un step por su conditionId.
+    /// Retorna -1 si no se encuentra.
+    /// </summary>
+    public int FindStepIndexByConditionId(string questId, string conditionId)
+    {
+        if (string.IsNullOrEmpty(questId) || string.IsNullOrEmpty(conditionId))
+            return -1;
+        
+        if (!_runtime.TryGetValue(questId, out var rq) || rq.Steps == null)
+            return -1;
+        
+        for (int i = 0; i < rq.Steps.Length; i++)
+        {
+            if (string.Equals(rq.Steps[i].conditionId, conditionId, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+        
+        return -1;
+    }
+
     public void CompleteByCondition(string conditionId)
     {
         if (string.IsNullOrEmpty(conditionId)) return;
