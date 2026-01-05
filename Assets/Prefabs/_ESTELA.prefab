@@ -14668,6 +14668,8 @@ GameObject:
   - component: {fileID: 3189093260894016164}
   - component: {fileID: 8201383776815280965}
   - component: {fileID: 4044326825062619971}
+  - component: {fileID: 3392072196240201786}
+  - component: {fileID: 1187040435340309947}
   m_Layer: 8
   m_Name: _ESTELA
   m_TagString: Untagged
@@ -14797,15 +14799,18 @@ MonoBehaviour:
   greetingState: Greeting01_NoWeapon
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
   defendState: Idle_Battle_NoWeapon
-  getHitState: TakeDamage
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
   victoryState: Dance_NoWeapon
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
-  syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
   drawGizmos: 1
@@ -14824,6 +14829,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8889957847028528184}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -14848,6 +14854,63 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!195 &3392072196240201786
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &1187040435340309947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 192
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0

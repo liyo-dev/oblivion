@@ -1,4 +1,4 @@
-﻿// UnlockAbilitiesNode.cs
+﻿﻿// UnlockAbilitiesNode.cs
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -40,6 +40,50 @@ public sealed class UnlockAbilitiesNode : NarrativeNode
             }
         }
 
+        // SIEMPRE diferir la ejecución para asegurar que los callbacks de diálogo terminen
+        var runner = ctx.Runner;
+        if (runner != null)
+        {
+            Debug.Log($"[UnlockAbilitiesNode] Difiriendo ejecución para permitir que callbacks de diálogo terminen");
+            runner.StartCoroutine(ExecuteAfterDelay(ctx, onReadyToAdvance));
+        }
+        else
+        {
+            // Fallback si no hay runner
+            ExecuteUnlocks(ctx, onReadyToAdvance);
+        }
+    }
+
+    private System.Collections.IEnumerator ExecuteAfterDelay(NarrativeContext ctx, Action onReadyToAdvance)
+    {
+        // Esperar a que termine el frame actual (donde puede estar ejecutándose el callback del diálogo)
+        yield return null;
+        
+        // Esperar un frame adicional para que el sistema de input se estabilice
+        yield return null;
+        
+        Debug.Log($"[UnlockAbilitiesNode] Frames esperados, verificando estado del DialogueManager");
+        
+        // Verificar que realmente no hay diálogo activo
+        var dialogueManager = UnityEngine.Object.FindFirstObjectByType<DialogueManager>();
+        if (dialogueManager != null && dialogueManager.IsOpen)
+        {
+            Debug.LogWarning($"[UnlockAbilitiesNode] DialogueManager aún abierto después de esperar, esperando más...");
+            // Esperar hasta que el diálogo se cierre
+            while (dialogueManager != null && dialogueManager.IsOpen)
+            {
+                yield return null;
+            }
+            // Esperar un frame más después de que se cierre
+            yield return null;
+        }
+        
+        Debug.Log($"[UnlockAbilitiesNode] Ejecutando unlock ahora");
+        ExecuteUnlocks(ctx, onReadyToAdvance);
+    }
+
+    private void ExecuteUnlocks(NarrativeContext ctx, Action onReadyToAdvance)
+    {
         bool changed = false;
         
             try

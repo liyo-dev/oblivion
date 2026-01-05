@@ -161,10 +161,87 @@ public class QuestManager : MonoBehaviour
         if (!_runtime.TryGetValue(questId, out var rq)) return;
         if (rq.State == QuestState.Completed) return;
 
+        // ✅ Consumir items del inventario si están configurados para ser consumidos
+        ConsumeRequiredItems(questId);
+
         rq.State = QuestState.Completed;
         OnQuestCompleted?.Invoke(questId);
         ArchiveCompletedQuest(questId);
         OnQuestsChanged?.Invoke();
+    }
+    
+    /// <summary>
+    /// Consume los items requeridos de una quest del inventario del jugador.
+    /// Solo consume items donde consumeOnComplete = true.
+    /// </summary>
+    private void ConsumeRequiredItems(string questId)
+    {
+        Debug.Log($"[QuestManager.ConsumeRequiredItems] 🔍 Iniciando para quest '{questId}'");
+        
+        var questEntry = FindQuestChainEntry(questId);
+        if (questEntry == null)
+        {
+            Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ❌ No se encontró QuestChainEntry para quest '{questId}'");
+            return;
+        }
+        
+        if (questEntry.requiredItems == null || questEntry.requiredItems.Length == 0)
+        {
+            Debug.Log($"[QuestManager.ConsumeRequiredItems] ℹ️ Quest '{questId}' no tiene items requeridos");
+            return;
+        }
+
+        Debug.Log($"[QuestManager.ConsumeRequiredItems] Quest '{questId}' tiene {questEntry.requiredItems.Length} items requeridos");
+
+        // Obtener el inventario del jugador usando PlayerService (consistente con el resto del código)
+        if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
+        {
+            Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ❌ No se pudo obtener Inventory para consumir items de quest '{questId}'");
+            return;
+        }
+
+        Debug.Log($"[QuestManager.ConsumeRequiredItems] ✅ Inventario obtenido, procesando items...");
+
+        foreach (var itemReq in questEntry.requiredItems)
+        {
+            if (itemReq.item == null)
+            {
+                Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ⚠️ Item requerido es null en quest '{questId}'");
+                continue;
+            }
+
+            Debug.Log($"[QuestManager.ConsumeRequiredItems] Procesando item '{itemReq.item.itemId}' - consumeOnComplete={itemReq.consumeOnComplete}");
+            
+            if (!itemReq.consumeOnComplete)
+            {
+                Debug.Log($"[QuestManager.ConsumeRequiredItems] ⏭️ Item '{itemReq.item.itemId}' no está configurado para ser consumido (consumeOnComplete=false)");
+                continue;
+            }
+
+            // Verificar que el jugador tiene suficientes items antes de consumir
+            int currentCount = inventory.Count(itemReq.item.itemId);
+            Debug.Log($"[QuestManager.ConsumeRequiredItems] Cantidad en inventario de '{itemReq.item.itemId}': {currentCount}/{itemReq.amount}");
+            
+            if (currentCount < itemReq.amount)
+            {
+                Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ⚠️ El jugador no tiene suficientes '{itemReq.item.itemId}' para consumir ({currentCount}/{itemReq.amount})");
+                continue;
+            }
+
+            // Consumir los items usando TryConsume
+            Debug.Log($"[QuestManager.ConsumeRequiredItems] Intentando consumir {itemReq.amount}x '{itemReq.item.itemId}'...");
+            
+            if (inventory.TryConsume(itemReq.item, itemReq.amount, notifyChanges: true))
+            {
+                Debug.Log($"[QuestManager.ConsumeRequiredItems] ✅ Consumido {itemReq.amount}x '{itemReq.item.itemId}' del inventario al completar quest '{questId}'");
+            }
+            else
+            {
+                Debug.LogWarning($"[QuestManager.ConsumeRequiredItems] ❌ Falló al consumir {itemReq.amount}x '{itemReq.item.itemId}'");
+            }
+        }
+        
+        Debug.Log($"[QuestManager.ConsumeRequiredItems] ✅ Proceso completado para quest '{questId}'");
     }
 
     public void MarkStepDone(string questId, int stepIndex)
@@ -548,6 +625,16 @@ public class QuestManager : MonoBehaviour
         
         Debug.Log($"[QuestManager] 📦 Quest tiene {questEntry.requiredItems.Length} items requeridos");
         
+        // 🔍 LOG: Estado del inventario ANTES de verificar
+        foreach (var itemReq in questEntry.requiredItems)
+        {
+            if (itemReq.item != null)
+            {
+                int countBefore = inventory.Count(itemReq.item.itemId);
+                Debug.Log($"[QuestManager] 📊 ANTES - Inventario tiene {countBefore} de '{itemReq.item.itemId}'");
+            }
+        }
+        
         // Verificar cada item requerido
         int stepsCompleted = 0;
         foreach (var itemReq in questEntry.requiredItems)
@@ -555,9 +642,10 @@ public class QuestManager : MonoBehaviour
             if (itemReq.item == null)
                 continue;
             
+            string conditionId = itemReq.GetStepConditionId(); // ✅ Retorna null si stepIndex es válido
+            
             Debug.Log($"[QuestManager] Verificando item '{itemReq.item.itemId}' (cantidad requerida: {itemReq.amount})");
-            Debug.Log($"[QuestManager]   stepConditionId: '{itemReq.stepConditionId}'");
-            Debug.Log($"[QuestManager]   stepIndex: {itemReq.stepIndex}");
+            Debug.Log($"[QuestManager]   stepIndex: {itemReq.stepIndex}, conditionId: '{conditionId ?? "null (usar index)"}'");
             
             // Verificar si el jugador tiene suficientes items en el inventario
             int count = inventory.Count(itemReq.item.itemId);
@@ -572,19 +660,26 @@ public class QuestManager : MonoBehaviour
             
             Debug.Log($"[QuestManager] ✅ Suficiente! Buscando step asociado...");
             
-            // Buscar el step correspondiente: primero por stepConditionId, luego por stepIndex
+            // Buscar el step correspondiente
+            // PRIORIDAD: stepIndex (si conditionId es null) > conditionId > error
             int stepIdx = -1;
             
-            if (!string.IsNullOrEmpty(itemReq.stepConditionId))
+            if (conditionId == null && itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
             {
-                Debug.Log($"[QuestManager] Buscando step por conditionId: '{itemReq.stepConditionId}'");
+                // Prioridad 1: Usar stepIndex directamente (más simple para quests de un paso)
+                stepIdx = itemReq.stepIndex;
+                Debug.Log($"[QuestManager] ✅ Usando stepIndex directo: {stepIdx}");
+            }
+            else if (!string.IsNullOrEmpty(conditionId))
+            {
+                // Prioridad 2: Buscar por conditionId
+                Debug.Log($"[QuestManager] Buscando step por conditionId: '{conditionId}'");
                 
-                // Buscar por conditionId (arquitectura correcta)
                 for (int i = 0; i < rq.Steps.Length; i++)
                 {
                     Debug.Log($"[QuestManager]   Step[{i}].conditionId = '{rq.Steps[i].conditionId}'");
                     
-                    if (rq.Steps[i].conditionId == itemReq.stepConditionId)
+                    if (rq.Steps[i].conditionId == conditionId)
                     {
                         stepIdx = i;
                         Debug.Log($"[QuestManager] ✅ Match encontrado en step {i}");
@@ -593,17 +688,11 @@ public class QuestManager : MonoBehaviour
                 }
                 
                 if (stepIdx < 0)
-                    Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step con conditionId '{itemReq.stepConditionId}'");
-            }
-            else if (itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
-            {
-                // Fallback: usar stepIndex directo
-                stepIdx = itemReq.stepIndex;
-                Debug.Log($"[QuestManager] Usando stepIndex directo: {stepIdx}");
+                    Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step con conditionId '{conditionId}'");
             }
             else
             {
-                Debug.LogWarning($"[QuestManager] ⚠️ Item no tiene stepConditionId ni stepIndex válido");
+                Debug.LogWarning($"[QuestManager] ⚠️ Item no tiene stepIndex válido ni conditionId");
             }
             
             // Marcar el paso como completado si se encontró y no estaba completado
@@ -621,18 +710,32 @@ public class QuestManager : MonoBehaviour
         
         Debug.Log($"[QuestManager] 📊 Total steps completados: {stepsCompleted}");
         
-        // Notificar cambios y verificar completado total
+        // 🔍 LOG: Estado del inventario DESPUÉS de verificar
+        foreach (var itemReq in questEntry.requiredItems)
+        {
+            if (itemReq.item != null)
+            {
+                int countAfter = inventory.Count(itemReq.item.itemId);
+                Debug.Log($"[QuestManager] 📊 DESPUÉS - Inventario tiene {countAfter} de '{itemReq.item.itemId}'");
+            }
+        }
+        
+        // ✅ CORREGIDO: Solo notificar cambios, NO auto-completar la quest
+        // El jugador debe volver a hablar con el NPC para completarla
+        // Esto permite que el diálogo turn in se reproduzca correctamente
         if (stepsCompleted > 0)
         {
+            Debug.Log($"[QuestManager] ✅ Steps marcados como completados. Jugador debe volver a hablar con el NPC para completar la quest.");
             OnQuestsChanged?.Invoke();
             
-            if (AllStepsCompleted(rq))
-            {
-                Debug.Log($"[QuestManager] 🎉 Todos los steps completados! Auto-completando quest.");
-                rq.State = QuestState.Completed;
-                OnQuestCompleted?.Invoke(rq.Id);
-                ArchiveCompletedQuest(rq.Id);
-            }
+            // NO completar automáticamente - el NPC lo hará cuando el jugador vuelva a hablar
+            // if (AllStepsCompleted(rq))
+            // {
+            //     Debug.Log($"[QuestManager] 🎉 Todos los steps completados! Auto-completando quest.");
+            //     rq.State = QuestState.Completed;
+            //     OnQuestCompleted?.Invoke(rq.Id);
+            //     ArchiveCompletedQuest(rq.Id);
+            // }
         }
     }
     
@@ -792,22 +895,27 @@ public class QuestManager : MonoBehaviour
             Debug.Log($"[QuestManager] ✅ Requisito cumplido ({currentCount}/{itemReq.amount})");
             
             // Buscar el step correspondiente
+            // PRIORIDAD: stepIndex (si conditionId es null) > conditionId
             int stepIdx = -1;
+            string conditionId = itemReq.GetStepConditionId(); // ✅ Retorna null si stepIndex es válido
             
-            if (!string.IsNullOrEmpty(itemReq.stepConditionId))
+            if (conditionId == null && itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
             {
+                // Prioridad 1: Usar stepIndex directamente
+                stepIdx = itemReq.stepIndex;
+                Debug.Log($"[QuestManager] Usando stepIndex directo: {stepIdx}");
+            }
+            else if (!string.IsNullOrEmpty(conditionId))
+            {
+                // Prioridad 2: Buscar por conditionId
                 for (int i = 0; i < rq.Steps.Length; i++)
                 {
-                    if (rq.Steps[i].conditionId == itemReq.stepConditionId)
+                    if (rq.Steps[i].conditionId == conditionId)
                     {
                         stepIdx = i;
                         break;
                     }
                 }
-            }
-            else if (itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
-            {
-                stepIdx = itemReq.stepIndex;
             }
             
             // Completar el paso si se encontró y no estaba completado

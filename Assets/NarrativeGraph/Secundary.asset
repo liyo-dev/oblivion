@@ -23,7 +23,6 @@ MonoBehaviour:
   - rid: 5623891500440224034
   - rid: 5623891572275806459
   - rid: 5623891572275806460
-  - rid: 857239905023820122
   - rid: 857239913217393070
   - rid: 857239913217393071
   applicableSceneNames:
@@ -31,19 +30,6 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 857239905023820122
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 'MENUS TUTORIAL: CUANDO WILL SALE DE SU CASA'
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 00916d88-029c-464d-9308-c5ddc05f2870
-        position: {x: -736, y: -468}
-        outputs:
-        - 7a8b8424-a970-4c62-b79f-ced50da006f3
-        eventKey: WILL_EXITS
     - rid: 857239913217393070
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -97,7 +83,7 @@ MonoBehaviour:
         outputs: []
         item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
         amount: 1
-        logWarnings: 1
+        logWarnings: 0
         onlyOnce: 1
     - rid: 5623891259268006325
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
@@ -111,7 +97,6 @@ MonoBehaviour:
         position: {x: -160, y: -103}
         outputs:
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
-        - 00916d88-029c-464d-9308-c5ddc05f2870
         - 8c033cc3-3046-49f4-96bd-373c132e7e61
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
         - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
@@ -171,7 +156,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
-        position: {x: 838, y: -259}
+        position: {x: 1095, y: -259}
         outputs: []
         abilityKeysToUnlock: 00000000
         abilitiesToUnlock: 

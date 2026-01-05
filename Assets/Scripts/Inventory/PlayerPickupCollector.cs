@@ -45,6 +45,7 @@ public class PlayerPickupCollector : MonoBehaviour
             PickupEffectType.ManaRestore => ApplyMana(effect),
             PickupEffectType.HealthRestore => ApplyHealth(effect),
             PickupEffectType.SpecialCharge => ApplySpecialCharge(effect),
+            PickupEffectType.AddToInventory => ApplyAddToInventory(effect),
             _ => false
         };
 
@@ -136,6 +137,29 @@ public class PlayerPickupCollector : MonoBehaviour
         return specialChargeMeter.AddCharge(amount);
     }
 
+    private bool ApplyAddToInventory(PickupEffect effect)
+    {
+        if (!inventory)
+        {
+            LogMissingComponent(nameof(Inventory));
+            return false;
+        }
+
+        if (!effect.item)
+        {
+            if (logWarnings) Debug.LogWarning("[PlayerPickupCollector] AddToInventory pickup has no ItemData assigned.");
+            return false;
+        }
+
+        int quantity = effect.GetQuantityOrDefault();
+        if (quantity <= 0) return false;
+
+        // Añadir el item al inventario (para items de historia/quest como botas, llaves, etc.)
+        inventory.Add(effect.item, quantity);
+        Debug.Log($"[PlayerPickupCollector] ✅ Item añadido al inventario: {effect.item.displayName} x{quantity}");
+        return true;
+    }
+
     private void LogMissingComponent(string componentName)
     {
         if (!logWarnings) return;
@@ -190,5 +214,4 @@ public class PlayerPickupCollector : MonoBehaviour
         Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName} (con delay de 1 frame)");
     }
 }
-
 

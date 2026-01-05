@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -153,14 +153,35 @@ namespace Game.NPC.Modules
         [Tooltip("Cantidad requerida")]
         [Min(1)] public int amount = 1;
         
-        [Tooltip("ID de la condición del step de la quest (ej: ITEM_Potion)")]
+        [Tooltip("ID de la condición del step de la quest. OPCIONAL - Si se deja vacío y stepIndex >= 0, se usa el índice directamente. Se auto-genera solo si ambos están vacíos.")]
         public string stepConditionId = "";
         
-        [Tooltip("Índice del step de la quest que corresponde a este item (-1 = auto-detectar por conditionId)")]
+        [Tooltip("Índice del step de la quest que corresponde a este item. Si es >= 0, se usa directamente sin necesidad de Condition Id.")]
         public int stepIndex = -1;
         
         [Tooltip("Si está activado, consume el ítem del inventario al completar la quest")]
         public bool consumeOnComplete = true;
+        
+        /// <summary>
+        /// Obtiene el stepConditionId, auto-generándolo si está vacío Y stepIndex no es válido
+        /// PRIORIDAD: stepIndex > conditionId manual > auto-generado
+        /// </summary>
+        public string GetStepConditionId()
+        {
+            // Prioridad 1: Si stepIndex es válido, retornar null para indicar que se use el índice
+            if (stepIndex >= 0)
+                return null; // Indica al sistema que use stepIndex directamente
+            
+            // Prioridad 2: Usar el valor manual si existe
+            if (!string.IsNullOrEmpty(stepConditionId))
+                return stepConditionId;
+            
+            // Prioridad 3: Auto-generar basado en itemId (solo si stepIndex no es válido)
+            if (item != null && !string.IsNullOrEmpty(item.itemId))
+                return $"ITEM_{item.itemId}";
+            
+            return "";
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -92,11 +92,16 @@ namespace Game.NPC.Modules
                             errorMessage = $"Quest {i}, item requirement {j}: item es null";
                             return false;
                         }
-                        if (string.IsNullOrEmpty(itemReq.stepConditionId))
+                        
+                        // ✅ Verificar que el item tenga itemId configurado
+                        if (string.IsNullOrEmpty(itemReq.item.itemId))
                         {
-                            errorMessage = $"Quest {i}, item requirement {j}: stepConditionId vacío (ej: 'ITEM_Potion')";
+                            errorMessage = $"Quest {i}, item requirement {j}: el ItemData '{itemReq.item.name}' no tiene itemId configurado";
                             return false;
                         }
+                        
+                        // ✅ stepConditionId es opcional - se auto-genera en GetStepConditionId() si es necesario
+                        // No necesita validación aquí
                     }
                 }
             }
@@ -287,6 +292,9 @@ namespace Game.NPC.Modules
                             qm.AddQuest(first.questData);
                             qm.StartQuest(first.questData.questId);
                             first.onOfferDialogueFinished?.Invoke();
+                            
+                            // ✅ ELIMINADO: CheckAutoCompletedQuest
+                            // La quest ya no se auto-completa, el jugador debe volver a hablar con el NPC
                         });
                     }
                     else
@@ -352,15 +360,71 @@ namespace Game.NPC.Modules
 
         private void FinishQuest(QuestManager qm, QuestChainEntry entry, string questId, Common.NPCStateContext context)
         {
-            qm.CompleteQuest(questId);
-            entry.onQuestCompleted?.Invoke();
-            PlayDialogue(entry.dlgTurnIn, context);
+            // ✅ IMPORTANTE: Reproducir el diálogo turn in PRIMERO
+            // La quest se completa DESPUÉS del diálogo para que el grafo narrativo
+            // se ejecute en el momento correcto (después del feedback al jugador)
+            Debug.Log($"[NPCQuestConfig.FinishQuest] Iniciando diálogo de turn-in para quest '{questId}'");
             
-            // Buscar la siguiente quest en la cadena
-            TryStartNextQuestInChain(questId, context);
+            PlayDialogueWithCallback(entry.dlgTurnIn, context, () =>
+            {
+                // Callback ejecutado cuando termina el diálogo turn in
+                Debug.Log($"[NPCQuestConfig.FinishQuest] Diálogo de turn-in completado. Completando quest '{questId}'");
+                
+                // AHORA sí, completar la quest (dispara OnQuestCompleted → grafo narrativo)
+                qm.CompleteQuest(questId);
+                entry.onQuestCompleted?.Invoke();
+                
+                Debug.Log($"[NPCQuestConfig.FinishQuest] Quest completada. Intentando iniciar siguiente en la cadena");
+                
+                // Intentar iniciar la siguiente quest en la cadena
+                TryStartNextQuestInChain(questId, context);
+            });
         }
 
         private void TryStartNextQuestInChain(string completedQuestId, Common.NPCStateContext context)
+        {
+            Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Buscando siguiente quest después de '{completedQuestId}'");
+            
+            // Diferir la ejecución para dar tiempo a que el grafo narrativo termine
+            // y el sistema de input se estabilice antes de iniciar el siguiente diálogo
+            if (context?.Transform != null)
+            {
+                var npcManager = context.Transform.GetComponent<NPCBehaviourManagerV2>();
+                if (npcManager != null)
+                {
+                    npcManager.StartCoroutine(TryStartNextQuestInChainDelayed(completedQuestId, context));
+                }
+                else
+                {
+                    Debug.LogError("[NPCQuestConfig.TryStartNextQuestInChain] No se encontró NPCBehaviourManagerV2 en el NPC");
+                    // Ejecutar directamente como fallback
+                    TryStartNextQuestInChainImmediately(completedQuestId, context);
+                }
+            }
+            else
+            {
+                Debug.LogError("[NPCQuestConfig.TryStartNextQuestInChain] Context.Transform es null, no se puede diferir la ejecución");
+                // Ejecutar directamente como fallback
+                TryStartNextQuestInChainImmediately(completedQuestId, context);
+            }
+        }
+
+        private System.Collections.IEnumerator TryStartNextQuestInChainDelayed(string completedQuestId, Common.NPCStateContext context)
+        {
+            // Esperar varios frames para que el grafo narrativo termine completamente
+            // Aumentamos a 5 frames para asegurar que todos los callbacks terminen
+            yield return null;
+            yield return null;
+            yield return null;
+            yield return null;
+            yield return null;
+            
+            Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChainDelayed] Ejecutando búsqueda de siguiente quest después de 5 frames");
+            
+            TryStartNextQuestInChainImmediately(completedQuestId, context);
+        }
+
+        private void TryStartNextQuestInChainImmediately(string completedQuestId, Common.NPCStateContext context)
         {
             // Encontrar índice de la quest completada
             int completedIndex = -1;
@@ -374,32 +438,51 @@ namespace Game.NPC.Modules
             }
 
             if (completedIndex < 0 || completedIndex >= questChain.Length - 1)
+            {
+                Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] No hay siguiente quest (completedIndex={completedIndex}, total={questChain.Length})");
                 return; // No hay siguiente quest
+            }
 
             var nextEntry = questChain[completedIndex + 1];
-            if (nextEntry?.questData == null) return;
+            if (nextEntry?.questData == null)
+            {
+                Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Siguiente entrada no tiene questData");
+                return;
+            }
 
             var qm = QuestManager.Instance;
             if (qm == null) return;
 
             var nextState = qm.GetState(nextEntry.questData.questId);
-            if (nextState != QuestState.Inactive) return; // Ya está iniciada
+            if (nextState != QuestState.Inactive)
+            {
+                Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Quest '{nextEntry.questData.questId}' ya está iniciada (estado={nextState})");
+                return; // Ya está iniciada
+            }
+
+            Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Iniciando siguiente quest '{nextEntry.questData.questId}'");
 
             // Si tiene dlgBefore, reproducir diálogo y luego iniciar quest
             if (nextEntry.dlgBefore != null)
             {
+                Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Reproduciendo diálogo de oferta");
                 nextEntry.onOfferDialogueStarted?.Invoke();
                 PlayDialogueWithCallback(nextEntry.dlgBefore, context, () =>
                 {
                     // Callback ejecutado cuando termina el diálogo
+                    Debug.Log($"[NPCQuestConfig.TryStartNextQuestInChain] Diálogo de oferta completado. Añadiendo y arrancando quest");
                     qm.AddQuest(nextEntry.questData);
                     qm.StartQuest(nextEntry.questData.questId);
                     nextEntry.onOfferDialogueFinished?.Invoke();
+                    
+                    // ✅ ELIMINADO: CheckAutoCompletedQuest
+                    // La quest ya no se auto-completa
                 });
             }
             // Si NO tiene dlgBefore, NO iniciar automáticamente
             // (se iniciará desde otro lugar: grafo narrativo, etc.)
         }
+
 
         private void PlayDialogue(DialogueAsset dialogue, Common.NPCStateContext context)
         {

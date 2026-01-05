@@ -83,20 +83,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private bool dontDestroyOnLoad = true;
 
     [Header("Escena permitida")]
-    [Tooltip("Nombre de la escena donde se permite abrir el menú de equipo.")]
+    [Tooltip("Nombre de la escena donde se permite abrir el menÃº de equipo.")]
     [SerializeField] private string allowedSceneName = "MainWorld";
 
     [Header("Contenedores UI")]
     [SerializeField] private Canvas canvas;
     [SerializeField] private CanvasGroup canvasGroup;
-    [Tooltip("Objeto raíz del contenido del menú (se activa/desactiva al abrir/cerrar).")]
+    [Tooltip("Objeto raÃ­z del contenido del menÃº (se activa/desactiva al abrir/cerrar).")]
     [SerializeField] private GameObject windowRoot;
 
     [Header("Feedback")]
     [SerializeField, Tooltip("Tiempo que se mantiene visible el mensaje de feedback tras usar un objeto.")]
     private float feedbackDuration = 1.5f;
 
-    [Header("Pestañas")]
+    [Header("PestaÃ±as")]
     [SerializeField] private Button inventoryTabButton;
     [SerializeField] private Button spellsTabButton;
     [SerializeField] private Button equipmentTabButton;

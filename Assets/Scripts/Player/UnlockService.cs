@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// Utilidades para modificar el preset activo del jugador (runtimePreset) de forma segura/idempotente.
@@ -322,8 +322,9 @@ public static class UnlockService
         // Buscar PlayerPresetService en el jugador activo
         if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: false, allowSceneLookup: true))
         {
-            // Aplicar preset completo, incluyendo inventario y abilities
-            presetService.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
+            // ✅ CORREGIDO: NO incluir inventario al aplicar preset tras desbloquear abilities
+            // El inventario debe conservarse con los items que el jugador ha recogido
+            presetService.ApplyCurrentPreset(includeInventory: false, includeAbilities: true);
         }
     }
 }

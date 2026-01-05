@@ -10,16 +10,27 @@ public class QuestMainMenuUI : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private CanvasGroup panelGroup;
-    [SerializeField] private Transform contentRoot;
-    [SerializeField] private Transform visibleContentRoot;
-    [SerializeField] private Transform hiddenContentRoot;
     [SerializeField] private QuestVisibilityItemUI itemPrefab;
     [SerializeField] private TextMeshProUGUI headerText;
     [SerializeField] private TextMeshProUGUI visibleHeaderText;
     [SerializeField] private TextMeshProUGUI hiddenHeaderText;
-    [SerializeField] private ScrollRect visibleScrollRect;
-    [SerializeField] private ScrollRect hiddenScrollRect;
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
+    
+    [Header("Visible Tab (debe contener el ScrollRect con su Viewport y Content)")]
+    [Tooltip("GameObject raíz del tab de misiones visibles (debe tener un ScrollRect)")]
+    [SerializeField] private GameObject visibleTabRoot;
+    [Tooltip("ScrollRect de misiones visibles")]
+    [SerializeField] private ScrollRect visibleScrollRect;
+    [Tooltip("Content (hijo del Viewport del ScrollRect) donde se instancian las misiones visibles")]
+    [SerializeField] private Transform visibleContentRoot;
+    
+    [Header("Hidden Tab (debe contener el ScrollRect con su Viewport y Content)")]
+    [Tooltip("GameObject raíz del tab de misiones ocultas (debe tener un ScrollRect)")]
+    [SerializeField] private GameObject hiddenTabRoot;
+    [Tooltip("ScrollRect de misiones ocultas")]
+    [SerializeField] private ScrollRect hiddenScrollRect;
+    [Tooltip("Content (hijo del Viewport del ScrollRect) donde se instancian las misiones ocultas")]
+    [SerializeField] private Transform hiddenContentRoot;
     
     [Header("Input Icons")]
     [Tooltip("Icono de LB para mostrar en el header de misiones visibles")]
@@ -150,14 +161,15 @@ public class QuestMainMenuUI : MonoBehaviour
     {
         if (QuestManager.Instance == null) return;
 
-        var visibleRoot = visibleContentRoot != null ? visibleContentRoot : contentRoot;
-        var hiddenRoot = hiddenContentRoot;
+        if (visibleContentRoot == null || itemPrefab == null)
+        {
+            Debug.LogError("QuestMainMenuUI: visibleContentRoot o itemPrefab es null");
+            return;
+        }
 
-        if (visibleRoot == null || itemPrefab == null) return;
-
-        ClearContainer(visibleRoot);
-        if (hiddenRoot != null)
-            ClearContainer(hiddenRoot);
+        ClearContainer(visibleContentRoot);
+        if (hiddenContentRoot != null)
+            ClearContainer(hiddenContentRoot);
 
         var quests = QuestManager.Instance.GetAll()
             .OrderBy(q => q.Data.GetLocalizedName());
@@ -168,11 +180,11 @@ public class QuestMainMenuUI : MonoBehaviour
         foreach (var rq in quests)
         {
             var visibility = NormalizeVisibility(rq.Id, QuestManager.Instance.GetVisibility(rq.Id), persist: true);
-            var parent = visibility == QuestVisibility.Hidden && hiddenRoot != null ? hiddenRoot : visibleRoot;
+            var parent = visibility == QuestVisibility.Hidden && hiddenContentRoot != null ? hiddenContentRoot : visibleContentRoot;
             var item = Instantiate(itemPrefab, parent);
-            Debug.Log($"QuestMainMenuUI: Instantiated item for '{rq.Id}' into {(parent == hiddenRoot ? "hidden" : "visible")} parent");
+            Debug.Log($"QuestMainMenuUI: Instantiated item for '{rq.Id}' into {(parent == hiddenContentRoot ? "hidden" : "visible")} parent");
             item.Bind(rq, visibility, OnVisibilityChanged);
-            var scroll = parent == hiddenRoot ? hiddenScrollRect : visibleScrollRect;
+            var scroll = parent == hiddenContentRoot ? hiddenScrollRect : visibleScrollRect;
             item.ConfigureScrollRect(scroll);
 
             if (visibility == QuestVisibility.Hidden)
@@ -253,7 +265,7 @@ public class QuestMainMenuUI : MonoBehaviour
         // Intentar restaurar la selección en la misma posición
         if (itemRoot != null)
         {
-            var targetContainer = inHidden ? hiddenContentRoot : (visibleContentRoot != null ? visibleContentRoot : contentRoot);
+            var targetContainer = inHidden ? hiddenContentRoot : visibleContentRoot;
             TryRestoreSelection(targetContainer, indexInContainer, wasShowButton, wasHideButton);
         }
         else
@@ -322,55 +334,49 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void UpdateTabVisibility()
     {
-        bool hasHiddenSection = hiddenContentRoot != null;
+        bool hasHiddenSection = hiddenContentRoot != null && hiddenTabRoot != null;
         bool showingHidden = _showingHidden && hasHiddenSection;
 
         Debug.Log($"QuestMainMenuUI: UpdateTabVisibility showingHidden={showingHidden}");
 
+        // Actualizar headers
         if (visibleHeaderText)
             visibleHeaderText.gameObject.SetActive(!showingHidden);
 
         if (hiddenHeaderText)
             hiddenHeaderText.gameObject.SetActive(showingHidden);
 
-        if (visibleContentRoot)
-            visibleContentRoot.gameObject.SetActive(!showingHidden);
-
-        if (hiddenContentRoot)
-            hiddenContentRoot.gameObject.SetActive(showingHidden);
-
-        // Force UI/canvas/layout update so newly-activated content becomes visible immediately.
-        Canvas.ForceUpdateCanvases();
-
-        if (visibleContentRoot != null && visibleContentRoot.gameObject.activeInHierarchy)
+        // Activar/desactivar los tabs raíz completos (esto incluye el ScrollRect entero)
+        if (visibleTabRoot != null)
         {
-            var rt = visibleContentRoot as RectTransform;
-            if (rt != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+            visibleTabRoot.SetActive(!showingHidden);
+            Debug.Log($"QuestMainMenuUI: visibleTabRoot.SetActive({!showingHidden})");
         }
 
-        if (hiddenContentRoot != null && hiddenContentRoot.gameObject.activeInHierarchy)
+        if (hiddenTabRoot != null)
         {
-            var rt = hiddenContentRoot as RectTransform;
+            hiddenTabRoot.SetActive(showingHidden);
+            Debug.Log($"QuestMainMenuUI: hiddenTabRoot.SetActive({showingHidden})");
+        }
+
+        // Force update del canvas y layouts SOLO en el tab activo
+        Canvas.ForceUpdateCanvases();
+        
+        Transform activeContent = showingHidden ? hiddenContentRoot : visibleContentRoot;
+        if (activeContent != null && activeContent.gameObject.activeInHierarchy)
+        {
+            var rt = activeContent as RectTransform;
             if (rt != null)
+            {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+                Debug.Log($"QuestMainMenuUI: LayoutRebuilder forzado en {activeContent.name}");
+            }
         }
 
         // Actualizar visibilidad de los iconos de input (LB/RB)
         UpdateInputIcons(showingHidden);
 
         // Seleccionar el primer botón del contenido activo
-        Transform activeContainer = showingHidden ? hiddenContentRoot : visibleContentRoot;
-        if (activeContainer != null && activeContainer.childCount > 0)
-        {
-            var firstChild = activeContainer.GetChild(0);
-            var firstButton = firstChild.GetComponentInChildren<Button>();
-            if (firstButton != null && firstButton.interactable)
-            {
-                firstButton.Select();
-                return;
-            }
-        }
 
         EnsureSelection();
     }

@@ -200,18 +200,33 @@ public class QuestServiceAdapter : MonoBehaviour, IQuestService
         }
     }
 
-    // Disparo inmediato cuando QuestManager anuncia completada
+    // Disparo diferido cuando QuestManager anuncia completada
+    // Se ejecuta en el siguiente frame para evitar conflictos con diálogos activos
     void HandleQuestCompleted(string questId)
     {
         if (!_waitingCompleted.TryGetValue(questId, out var list) || list == null || list.Count == 0)
             return;
-        if (debugLogs) Debug.Log($"[QuestServiceAdapter] HandleQuestCompleted → {questId} (callbacks={list.Count})");
+        if (debugLogs) Debug.Log($"[QuestServiceAdapter] HandleQuestCompleted → {questId} (callbacks={list.Count}) - Diferiendo al siguiente frame");
+        
+        // Copiar callbacks y remover de la lista antes de diferir
         var callbacks = list.ToArray();
+        _waitingCompleted.Remove(questId);
+
+        // Ejecutar callbacks en el siguiente frame para evitar conflictos
+        StartCoroutine(InvokeCallbacksNextFrame(questId, callbacks));
+    }
+
+    private System.Collections.IEnumerator InvokeCallbacksNextFrame(string questId, Action[] callbacks)
+    {
+        // Esperar al siguiente frame
+        yield return null;
+        
+        if (debugLogs) Debug.Log($"[QuestServiceAdapter] Ejecutando callbacks diferidos para {questId}");
+        
         foreach (var cb in callbacks)
         {
             try { cb?.Invoke(); } catch (Exception e) { Debug.LogException(e); }
         }
-        _waitingCompleted.Remove(questId);
 
         if (_waitingCompleted.Count == 0)
             TryUnsubscribe();

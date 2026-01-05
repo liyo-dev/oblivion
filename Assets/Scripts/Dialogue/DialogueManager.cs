@@ -274,8 +274,10 @@ public class DialogueManager : MonoBehaviour
         // NUEVO: Activar modo DialogueActive en PlayerActionManager
         ActivateDialogueMode(true);
 
-        // Activar sistema cinematográfico si está habilitado
-        if (useCinematicCamera && _currentNpc != null && DialogueCinematicController.Instance != null)
+        // Activar sistema cinematográfico SOLO si es un NPC real (no objetos como cartas, save points, etc.)
+        bool isActualNPC = IsActualNPC(_currentNpc);
+        
+        if (useCinematicCamera && isActualNPC && DialogueCinematicController.Instance != null)
         {
             GameObject playerObj = PlayerService.Player;
             if (playerObj != null)
@@ -288,7 +290,7 @@ public class DialogueManager : MonoBehaviour
                 Debug.LogWarning("[DialogueManager] No se encontró el jugador para el sistema cinematográfico");
             }
         }
-        else if (useDialogueCameraLegacy && _currentNpc != null && DialogueCameraController.Instance != null)
+        else if (useDialogueCameraLegacy && isActualNPC && DialogueCameraController.Instance != null)
         {
             // Fallback al sistema antiguo si no está el nuevo
             Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo legacy para NPC: {_currentNpc.name}");
@@ -296,7 +298,14 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[DialogueManager] ⚠️ Sistema cinematográfico NO activado - useCinematic={useCinematicCamera}, NPC={_currentNpc?.name ?? "NULL"}, Controller Instance={DialogueCinematicController.Instance != null}");
+            if (_currentNpc != null && !isActualNPC)
+            {
+                Debug.Log($"[DialogueManager] 💬 Diálogo con objeto interactivo '{_currentNpc.name}' (no NPC) - cámaras cinematográficas desactivadas");
+            }
+            else
+            {
+                Debug.LogWarning($"[DialogueManager] ⚠️ Sistema cinematográfico NO activado - useCinematic={useCinematicCamera}, NPC={_currentNpc?.name ?? "NULL"}, esNPC={isActualNPC}, Controller Instance={DialogueCinematicController.Instance != null}");
+            }
         }
 
         Next(); // pinta primera línea
@@ -847,4 +856,19 @@ public class DialogueManager : MonoBehaviour
             Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
         }
     }
+
+    /// <summary>
+    /// Verifica si el Transform proporcionado es realmente un NPC (no un objeto interactivo como carta, save point, etc.)
+    /// NPCSimpleAnimator es el único componente que comparten TODOS los NPCs.
+    /// </summary>
+    private bool IsActualNPC(Transform npcTransform)
+    {
+        if (npcTransform == null) return false;
+        
+        // Verificar si tiene NPCSimpleAnimator (componente común a TODOS los NPCs)
+        // NPCSimpleAnimator está en el namespace global
+        var npcAnimator = npcTransform.GetComponent<NPCSimpleAnimator>();
+        return npcAnimator != null;
+    }
 }
+
