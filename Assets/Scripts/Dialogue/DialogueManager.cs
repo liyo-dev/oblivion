@@ -53,8 +53,14 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private bool resolveWithLocalizationManager = true;
 
     [Header("Cámara de Diálogo")]
-    [Tooltip("Si está activo, la cámara se posicionará para enfocar la conversación con NPCs")]
-    [SerializeField] private bool useDialogueCamera;
+    [Tooltip("Si está activo, usa el sistema cinematográfico avanzado con múltiples planos")]
+    [SerializeField] private bool useCinematicCamera = true;
+    
+    [Tooltip("Perfil cinematográfico para diálogos (define los planos y transiciones)")]
+    [SerializeField] private DialogueCinematicProfile cinematicProfile;
+    
+    [Tooltip("(Legacy) Sistema de cámara simple - se usa si cinematicProfile no está asignado")]
+    [SerializeField] private bool useDialogueCameraLegacy = false;
 
     [Header("UI Hints")]
     [SerializeField] private GameObject submitHint;
@@ -268,15 +274,29 @@ public class DialogueManager : MonoBehaviour
         // NUEVO: Activar modo DialogueActive en PlayerActionManager
         ActivateDialogueMode(true);
 
-        // Activar cámara de diálogo si hay un NPC asignado
-        if (useDialogueCamera && _currentNpc != null && DialogueCameraController.Instance != null)
+        // Activar sistema cinematográfico si está habilitado
+        if (useCinematicCamera && _currentNpc != null && DialogueCinematicController.Instance != null)
         {
-            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo para NPC: {_currentNpc.name}");
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                Debug.Log($"[DialogueManager] 🎬 Activando sistema cinematográfico para NPC: {_currentNpc.name}");
+                DialogueCinematicController.Instance.StartCinematic(playerObj.transform, _currentNpc, cinematicProfile);
+            }
+            else
+            {
+                Debug.LogWarning("[DialogueManager] No se encontró el jugador para el sistema cinematográfico");
+            }
+        }
+        else if (useDialogueCameraLegacy && _currentNpc != null && DialogueCameraController.Instance != null)
+        {
+            // Fallback al sistema antiguo si no está el nuevo
+            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo legacy para NPC: {_currentNpc.name}");
             DialogueCameraController.Instance.StartDialogueCamera(_currentNpc);
         }
         else
         {
-            Debug.Log($"[DialogueManager] ⚠️ Cámara de diálogo NO activada - useDialogueCamera={useDialogueCamera}, currentNPC={_currentNpc?.name ?? "NULL"}, DialogueCameraController={DialogueCameraController.Instance != null}");
+            Debug.LogWarning($"[DialogueManager] ⚠️ Sistema cinematográfico NO activado - useCinematic={useCinematicCamera}, NPC={_currentNpc?.name ?? "NULL"}, Controller Instance={DialogueCinematicController.Instance != null}");
         }
 
         Next(); // pinta primera línea
@@ -405,9 +425,14 @@ public class DialogueManager : MonoBehaviour
             group.interactable = false;
         }
 
-        // Desactivar cámara de diálogo
-        if (useDialogueCamera && DialogueCameraController.Instance != null)
+        // Desactivar sistema cinematográfico
+        if (useCinematicCamera && DialogueCinematicController.Instance != null)
         {
+            DialogueCinematicController.Instance.EndCinematic();
+        }
+        else if (useDialogueCameraLegacy && DialogueCameraController.Instance != null)
+        {
+            // Fallback al sistema antiguo
             DialogueCameraController.Instance.EndDialogueCamera();
         }
 
@@ -617,6 +642,15 @@ public class DialogueManager : MonoBehaviour
         Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
 
         var line = _current.lines[_index];
+        
+        // Notificar al sistema cinematográfico del cambio de línea
+        if (useCinematicCamera && DialogueCinematicController.Instance != null)
+        {
+            DialogueCinematicController.Instance.OnDialogueLineAdvanced(
+                _index, 
+                _current.lines.Length
+            );
+        }
 
         // --- NOMBRE DEL HABLANTE (localización con fallback al ID) ---
         string speakerNameToShow = string.Empty;

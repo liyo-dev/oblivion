@@ -347,23 +347,48 @@ namespace Game.Player
             Debug.Log($"[PlayerBattleMode] ⏱️ Esperando {victoryAnimationDuration}s (duración de animación de victoria)");
             yield return new WaitForSeconds(victoryAnimationDuration);
             
+            Debug.Log($"[PlayerBattleMode] 🔄 Terminando animación de victoria - restaurando control del jugador");
+            
+            // IMPORTANTE: Resetear el flag ANTES de re-habilitar el control
+            // Esto permite que el Update() vuelva a funcionar normalmente
+            _isPlayingVictory = false;
+            
+            // Volver a idle normal ANTES de re-habilitar el controlador
+            // Esto asegura que el animator esté en un estado válido
+            if (animator != null)
+            {
+                if (animator.HasState(0, _normalIdleHash))
+                {
+                    // Usar Play() en lugar de CrossFade para forzar la transición inmediata
+                    animator.Play(_normalIdleHash, 0, 0f);
+                    Debug.Log($"[PlayerBattleMode] 🔄 FORZANDO transición a Idle Normal: {normalIdleStateName}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{normalIdleStateName}' no encontrado en Animator");
+                }
+                
+                // Resetear cualquier parámetro del animator que pueda estar bloqueando transiciones
+                // (esto depende de tu setup, ajusta según sea necesario)
+                // animator.SetFloat("InputMagnitude", 0f);
+                // animator.SetBool("IsGrounded", true);
+            }
+            
             // Re-habilitar control del jugador
             if (controller != null)
             {
                 controller.enabled = true; // Re-habilitar completamente el controlador
-                Debug.Log($"[PlayerBattleMode] 🎮 Controlador del jugador re-habilitado");
+                Debug.Log($"[PlayerBattleMode] 🎮 Controlador del jugador RE-HABILITADO");
             }
-            
-            // Volver a idle normal
-            if (animator != null && animator.HasState(0, _normalIdleHash))
+            else
             {
-                animator.CrossFadeInFixedTime(_normalIdleHash, 0.3f, 0);
-                Debug.Log($"[PlayerBattleMode] 🔄 Volviendo a Idle Normal: {normalIdleStateName}");
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ Controller es NULL - no se pudo re-habilitar");
             }
             
-            _isPlayingVictory = false;
+            // Pequeña espera para asegurar que todo se estabilice
+            yield return null;
             
-            Debug.Log($"[PlayerBattleMode] ✅ Secuencia de victoria COMPLETADA");
+            Debug.Log($"[PlayerBattleMode] ✅ Secuencia de victoria COMPLETADA - jugador debe estar en idle normal");
         }
         
         /// <summary>

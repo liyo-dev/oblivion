@@ -14,4 +14,11 @@ public struct DialogueLine
 
     [Tooltip("Opcional")]
     public Sprite portrait;
+    
+    [Header("Cinematografía")]
+    [Tooltip("¿Quién habla en esta línea? (true = jugador, false = NPC)")]
+    public bool isPlayerSpeaking;
+    
+    [Tooltip("Forzar un plano específico para esta línea (deja en Wide para automático)")]
+    public CinematicSequence.ShotType forcedShotType;
 }
