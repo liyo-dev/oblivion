@@ -1496,10 +1496,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _equipmentView = new EquipmentView(equipmentUI);
                 anyViewConfigured = true;
                 Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento creada");
+                
+                // CRÍTICO: Refrescar la vista para suscribirla a eventos
+                _equipmentView.Refresh();
+                Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento refrescada y suscrita");
             }
             else if (!_warnedEquipment)
             {
-                Debug.LogWarning("[PlayerEquipmentMenuController] Vista de equipamiento no configurada: aÃ±ade filas con categorÃ­a y botones.");
+                Debug.LogWarning("[PlayerEquipmentMenuController] Vista de equipamiento no configurada: añade filas con categoría y botones.");
                 _warnedEquipment = true;
             }
         }
@@ -1840,7 +1844,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 _ui.itemName.text = _selectedItem.displayName;
 
             if (_ui.itemDescription != null)
-                _ui.itemDescription.text = string.IsNullOrEmpty(_selectedItem.useDescription) ? "Sin descripciÃ³n." : _selectedItem.useDescription;
+                _ui.itemDescription.text = string.IsNullOrEmpty(_selectedItem.useDescription) ? "Sin descripción." : _selectedItem.useDescription;
 
             if (_ui.itemCount != null)
             {
@@ -1851,7 +1855,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.useButton != null)
             {
                 _ui.useButton.gameObject.SetActive(true);
-                // El botÃ³n permanece deshabilitado hasta que se haga Submit en el item
+                // El botón permanece deshabilitado hasta que se haga Submit en el item
                 _ui.useButton.interactable = false;
             }
         }
@@ -3054,9 +3058,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         readonly Dictionary<PartCategory, EquipmentBindings.RowBinding> _rows = new();
         readonly List<EquipmentBindings.RowBinding> _orderedRows = new();
         bool _rowOrderDirty = true;
-        Component _builder;
-        Component _wardrobe;
-        Component _boundWardrobe;
+        ModularAutoBuilder _builder;
+        WardrobeInventory _wardrobe;
+        WardrobeInventory _boundWardrobe;
         PlayerPresetService _presetService;
 
         public EquipmentView(EquipmentBindings bindings)
@@ -3113,36 +3117,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             PlayerService.TryGetComponent(out _builder, includeInactive: true, allowSceneLookup: true);
             PlayerService.TryGetComponent(out _wardrobe, includeInactive: true, allowSceneLookup: true);
 
+            Debug.Log($"[EquipmentView.Refresh] Builder: {(_builder != null ? "Found" : "NULL")}, Wardrobe: {(_wardrobe != null ? "Found" : "NULL")}");
+
             if (_boundWardrobe != _wardrobe)
             {
                 if (_boundWardrobe != null)
                 {
-                    var prevType = _boundWardrobe.GetType();
-                    var prevEvent = prevType.GetEvent("OnWardrobeChanged");
-                    if (prevEvent != null)
-                    {
-                        try
-                        {
-                            var handler = System.Delegate.CreateDelegate(prevEvent.EventHandlerType, this, nameof(HandleWardrobeChanged));
-                            prevEvent.RemoveEventHandler(_boundWardrobe, handler);
-                        }
-                        catch { }
-                    }
+                    _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
+                    Debug.Log($"[EquipmentView.Refresh] Desuscrito de OnWardrobeChanged del wardrobe anterior");
                 }
 
                 if (_wardrobe != null)
                 {
-                    var wardrobeType = _wardrobe.GetType();
-                    var wardrobeEvent = wardrobeType.GetEvent("OnWardrobeChanged");
-                    if (wardrobeEvent != null)
-                    {
-                        try
-                        {
-                            var handler = System.Delegate.CreateDelegate(wardrobeEvent.EventHandlerType, this, nameof(HandleWardrobeChanged));
-                            wardrobeEvent.AddEventHandler(_wardrobe, handler);
-                        }
-                        catch { }
-                    }
+                    _wardrobe.OnWardrobeChanged += HandleWardrobeChanged;
+                    Debug.Log($"[EquipmentView.Refresh] ✅ Suscrito exitosamente a OnWardrobeChanged");
                 }
 
                 _boundWardrobe = _wardrobe;
@@ -3158,22 +3146,22 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 bool hasOptions = false;
                 if (_wardrobe != null)
                 {
-                    var method = _wardrobe.GetType().GetMethod("GetUnlockedOptions");
-                    if (method != null)
+                    var options = _wardrobe.GetUnlockedOptions(category);
+                    hasOptions = options != null && options.Count > 0;
+                    
+                    // Log para depuración de todas las categorías
+                    Debug.Log($"[EquipmentView.Refresh] Categoría {category} tiene {options?.Count ?? 0} opciones desbloqueadas");
+                    if (hasOptions)
                     {
-                        try
+                        foreach (var entry in options)
                         {
-                            var paramType = method.GetParameters()[0].ParameterType;
-                            var enumVal = System.Enum.Parse(paramType, category.ToString());
-                            var result = method.Invoke(_wardrobe, new object[] { enumVal });
-                            if (result != null)
-                            {
-                                var count = (int)result.GetType().GetProperty("Count").GetValue(result);
-                                hasOptions = count > 0;
-                            }
+                            Debug.Log($"  [{category}] Item: {entry.partName} ({entry.displayName})");
                         }
-                        catch { }
                     }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EquipmentView.Refresh] No hay wardrobe disponible para verificar categoría {category}");
                 }
 
                 bool allowClear = _wardrobe == null ? _builder != null : hasOptions;
@@ -3326,7 +3314,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             else
             {
-                InvokeBuilderNextPrev(category, step);
+                CycleBuilderPart(category, step);
                 changed = true;
             }
 
@@ -3337,7 +3325,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void Clear(PartCategory category)
         {
             if (_builder == null) return;
-            InvokeBuilderSetByName(category, null);
+            SetBuilderPart(category, null);
             Snapshot();
             UpdateLabels();
         }
@@ -3352,7 +3340,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UpdateLabels()
         {
             if (_builder == null) return;
-            var selection = _builder.GetType().GetMethod("GetSelection")?.Invoke(_builder, null) as Dictionary<PartCategory, string>;
+            var selection = _builder.GetSelection();
 
             foreach (var kvp in _rows)
             {
@@ -3377,63 +3365,46 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         bool TryCycleWithWardrobe(PartCategory category, int step)
         {
-            var method = _wardrobe?.GetType().GetMethod("GetUnlockedOptions");
-            if (method == null) return false;
+            if (_wardrobe == null) return false;
 
-            try
+            var options = _wardrobe.GetUnlockedOptions(category);
+            if (options == null || options.Count == 0) return false;
+
+            string current = GetSelectionFor(category);
+            int currentIndex = -1;
+
+            for (int i = 0; i < options.Count; i++)
             {
-                var paramType = method.GetParameters()[0].ParameterType;
-                var enumVal = System.Enum.Parse(paramType, category.ToString());
-                var result = method.Invoke(_wardrobe, new object[] { enumVal });
-                if (result == null) return false;
-
-                var listType = result.GetType();
-                var count = (int)listType.GetProperty("Count").GetValue(result);
-                if (count == 0) return false;
-
-                string current = GetSelectionFor(category);
-                int currentIndex = -1;
-
-                for (int i = 0; i < count; i++)
+                if (string.Equals(options[i].partName, current, StringComparison.OrdinalIgnoreCase))
                 {
-                    var item = listType.GetProperty("Item").GetValue(result, new object[] { i });
-                    var partName = (string)item.GetType().GetField("partName").GetValue(item);
-                    if (string.Equals(partName, current, StringComparison.OrdinalIgnoreCase))
-                    {
-                        currentIndex = i;
-                        break;
-                    }
+                    currentIndex = i;
+                    break;
                 }
-
-                if (currentIndex < 0)
-                    currentIndex = step > 0 ? 0 : count - 1;
-
-                int nextIndex = (currentIndex + step) % count;
-                if (nextIndex < 0) nextIndex += count;
-
-                var entry = listType.GetProperty("Item").GetValue(result, new object[] { nextIndex });
-                var nextPartName = (string)entry.GetType().GetField("partName").GetValue(entry);
-                if (string.IsNullOrEmpty(nextPartName)) return false;
-
-                InvokeBuilderSetByName(category, nextPartName);
-                return true;
             }
-            catch
-            {
-                return false;
-            }
+
+            if (currentIndex < 0)
+                currentIndex = step > 0 ? 0 : options.Count - 1;
+
+            int nextIndex = (currentIndex + step) % options.Count;
+            if (nextIndex < 0) nextIndex += options.Count;
+
+            var nextPartName = options[nextIndex].partName;
+            if (string.IsNullOrEmpty(nextPartName)) return false;
+
+            SetBuilderPart(category, nextPartName);
+            return true;
         }
 
         void ClearSelection(PartCategory category)
         {
             if (_builder == null) return;
-            InvokeBuilderSetByName(category, null);
+            SetBuilderPart(category, null);
         }
 
         string GetSelectionFor(PartCategory category)
         {
             if (_builder == null) return null;
-            var selection = _builder.GetType().GetMethod("GetSelection")?.Invoke(_builder, null) as Dictionary<PartCategory, string>;
+            var selection = _builder.GetSelection();
             if (selection != null && selection.TryGetValue(category, out var part))
                 return part;
             return null;
@@ -3442,32 +3413,55 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         string ResolveDisplayName(PartCategory category, string partName)
         {
             if (string.IsNullOrEmpty(partName)) return "Sin asignar";
-            if (_wardrobe != null)
+            if (_wardrobe != null && _wardrobe.TryGetEntry(category, partName, out var entry))
             {
-                var method = _wardrobe.GetType().GetMethod("TryGetEntry");
-                if (method != null)
-                {
-                    try
-                    {
-                        var paramType = method.GetParameters()[0].ParameterType;
-                        var enumVal = System.Enum.Parse(paramType, category.ToString());
-                        var parameters = new object[] { enumVal, partName, null };
-                        var success = (bool)method.Invoke(_wardrobe, parameters);
-                        if (success && parameters[2] != null)
-                        {
-                            var displayName = (string)parameters[2].GetType().GetField("displayName").GetValue(parameters[2]);
-                            return string.IsNullOrEmpty(displayName) ? partName : displayName;
-                        }
-                    }
-                    catch { }
-                }
+                return string.IsNullOrEmpty(entry.displayName) ? partName : entry.displayName;
             }
             return partName;
         }
 
         void HandleWardrobeChanged()
         {
+            Debug.Log("[EquipmentView] 📢 HandleWardrobeChanged - Evento recibido, refrescando opciones disponibles");
+            
+            // Log del wardrobe actual
+            if (_wardrobe != null)
+            {
+                Debug.Log($"[EquipmentView] Wardrobe encontrado: {_wardrobe.GetType().Name}");
+            }
+            else
+            {
+                Debug.LogWarning("[EquipmentView] ⚠️ Wardrobe es NULL en HandleWardrobeChanged!");
+            }
+            
+            Refresh();
+            // Forzar actualización de la UI
+            UpdateAllRowsUI();
+        }
+
+        void UpdateAllRowsUI()
+        {
+            Debug.Log("[EquipmentView] UpdateAllRowsUI - Actualizando todas las filas visualmente");
             UpdateLabels();
+            
+            // Forzar recálculo de interactividad de todos los botones
+            foreach (var kvp in _rows)
+            {
+                var row = kvp.Value;
+                var category = kvp.Key;
+                
+                bool hasOptions = false;
+                if (_wardrobe != null)
+                {
+                    var options = _wardrobe.GetUnlockedOptions(category);
+                    hasOptions = options != null && options.Count > 0;
+                    Debug.Log($"[EquipmentView.UpdateAllRowsUI] Categoría {category}: {options?.Count ?? 0} opciones, hasOptions={hasOptions}");
+                }
+                
+                bool allowClear = _wardrobe == null ? _builder != null : hasOptions;
+                Debug.Log($"[EquipmentView.UpdateAllRowsUI] Categoría {category}: Builder={(_builder != null)}, hasOptions={hasOptions}, allowClear={allowClear}");
+                SetInteractable(row, _builder != null || hasOptions, allowClear);
+            }
         }
 
         public void EnsureSelection()
@@ -3490,17 +3484,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_boundWardrobe != null)
             {
-                var prevType = _boundWardrobe.GetType();
-                var prevEvent = prevType.GetEvent("OnWardrobeChanged");
-                if (prevEvent != null)
-                {
-                    try
-                    {
-                        var handler = System.Delegate.CreateDelegate(prevEvent.EventHandlerType, this, nameof(HandleWardrobeChanged));
-                        prevEvent.RemoveEventHandler(_boundWardrobe, handler);
-                    }
-                    catch { }
-                }
+                _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
             }
         }
 
@@ -3524,75 +3508,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             };
         }
 
-        // Invoca Next/Prev en el builder usando reflexiÃ³n para evitar usar PartCat directamente
-        void InvokeBuilderNextPrev(PartCategory category, int step)
+        // Llama al método Next/Prev del builder directamente
+        void CycleBuilderPart(PartCategory category, int step)
         {
             if (_builder == null) return;
-            var type = _builder.GetType();
-            var nextMethod = type.GetMethod("Next", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                          ?? type.GetMethod("Next", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var prevMethod = type.GetMethod("Prev", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                          ?? type.GetMethod("Prev", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            var paramType = nextMethod?.GetParameters()[0].ParameterType ?? prevMethod?.GetParameters()[0].ParameterType;
-            if (paramType == null) return;
-
-            object enumVal;
-            try { enumVal = System.Enum.Parse(paramType, category.ToString()); }
-            catch { return; }
-
-            int dir = step >= 0 ? 1 : -1;
-            int times = Mathf.Max(1, Mathf.Abs(step));
-
-            if (dir > 0)
-            {
-                if (nextMethod == null) return;
-                var parms = nextMethod.GetParameters();
-                if (parms.Length >= 2)
-                {
-                    nextMethod.Invoke(_builder, new object[] { enumVal, step });
-                }
-                else
-                {
-                    for (int i = 0; i < times; i++)
-                        nextMethod.Invoke(_builder, new object[] { enumVal });
-                }
-            }
-            else
-            {
-                if (prevMethod != null)
-                {
-                    for (int i = 0; i < times; i++)
-                        prevMethod.Invoke(_builder, new object[] { enumVal });
-                }
-                else if (nextMethod != null)
-                {
-                    var parms = nextMethod.GetParameters();
-                    if (parms.Length >= 2)
-                        nextMethod.Invoke(_builder, new object[] { enumVal, step });
-                    else
-                    {
-                        for (int i = 0; i < times; i++)
-                            nextMethod.Invoke(_builder, new object[] { enumVal });
-                    }
-                }
-            }
+            _builder.Next(category, step);
         }
 
-        void InvokeBuilderSetByName(PartCategory category, string nameOrNull)
+        void SetBuilderPart(PartCategory category, string nameOrNull)
         {
             if (_builder == null) return;
-            var type = _builder.GetType();
-            var method = type.GetMethod("SetByName", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                      ?? type.GetMethod("SetByName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method == null) return;
-            var paramType = method.GetParameters()[0].ParameterType;
-            try
-            {
-                var enumVal = System.Enum.Parse(paramType, category.ToString());
-                method.Invoke(_builder, new object[] { enumVal, nameOrNull });
-            }
-            catch (System.Exception) { }
+            _builder.SetByName(category, nameOrNull);
         }
 
         List<EquipmentBindings.RowBinding> GetOrderedRows()

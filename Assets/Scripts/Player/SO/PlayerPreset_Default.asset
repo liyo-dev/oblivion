@@ -41,7 +41,8 @@ MonoBehaviour:
     partName: Eye01
   - category: 5
     partName: Mouth01
-  unlockedWardrobeIds: []
+  unlockedWardrobeIds:
+  - Body05
   inventoryItems: []
   defeatedBossIds: []
   narrativeBlackboards: []

@@ -17,20 +17,20 @@ public class QuestMainMenuUI : MonoBehaviour
     [SerializeField] private QuestLogListUI quickMenu; // Referencia al menú rápido
     
     [Header("Visible Tab (debe contener el ScrollRect con su Viewport y Content)")]
-    [Tooltip("GameObject raíz del tab de misiones visibles (debe tener un ScrollRect)")]
+    [Tooltip("GameObject raíz del tab de misiones visibles (debe tener ScrollView con ScrollRect)")]
     [SerializeField] private GameObject visibleTabRoot;
-    [Tooltip("ScrollRect de misiones visibles")]
+    [Tooltip("ScrollRect de misiones visibles (ScrollViewVisibles/Viewport/ScrollRect)")]
     [SerializeField] private ScrollRect visibleScrollRect;
-    [Tooltip("Content (hijo del Viewport del ScrollRect) donde se instancian las misiones visibles")]
-    [SerializeField] private Transform visibleContentRoot;
+    [Tooltip("Content (Content Visibles - RectTransform hijo del Viewport donde se instancian las misiones visibles)")]
+    [SerializeField] private RectTransform visibleContentRoot;
     
     [Header("Hidden Tab (debe contener el ScrollRect con su Viewport y Content)")]
-    [Tooltip("GameObject raíz del tab de misiones ocultas (debe tener un ScrollRect)")]
+    [Tooltip("GameObject raíz del tab de misiones ocultas (debe tener ScrollView con ScrollRect)")]
     [SerializeField] private GameObject hiddenTabRoot;
-    [Tooltip("ScrollRect de misiones ocultas")]
+    [Tooltip("ScrollRect de misiones ocultas (ScrollViewOcultas/Viewport/ScrollRect)")]
     [SerializeField] private ScrollRect hiddenScrollRect;
-    [Tooltip("Content (hijo del Viewport del ScrollRect) donde se instancian las misiones ocultas")]
-    [SerializeField] private Transform hiddenContentRoot;
+    [Tooltip("Content (Content Ocultas - RectTransform hijo del Viewport donde se instancian las misiones ocultas)")]
+    [SerializeField] private RectTransform hiddenContentRoot;
     
     [Header("Input Icons")]
     [Tooltip("Icono de LB para mostrar en el header de misiones visibles")]
@@ -64,6 +64,7 @@ public class QuestMainMenuUI : MonoBehaviour
         Bind();
         // Por defecto siempre mostrar misiones visibles/activas
         _showingHidden = false;
+        ValidateScrollRectSetup();
         Rebuild();
     }
 
@@ -362,22 +363,17 @@ public class QuestMainMenuUI : MonoBehaviour
         // Force update del canvas y layouts SOLO en el tab activo
         Canvas.ForceUpdateCanvases();
         
-        Transform activeContent = showingHidden ? hiddenContentRoot : visibleContentRoot;
+        RectTransform activeContent = showingHidden ? hiddenContentRoot : visibleContentRoot;
         if (activeContent != null && activeContent.gameObject.activeInHierarchy)
         {
-            var rt = activeContent as RectTransform;
-            if (rt != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
-                Debug.Log($"QuestMainMenuUI: LayoutRebuilder forzado en {activeContent.name}");
-            }
+            LayoutRebuilder.ForceRebuildLayoutImmediate(activeContent);
+            Debug.Log($"QuestMainMenuUI: LayoutRebuilder forzado en {activeContent.name} (height={activeContent.rect.height})");
         }
 
         // Actualizar visibilidad de los iconos de input (LB/RB)
         UpdateInputIcons(showingHidden);
 
         // Seleccionar el primer botón del contenido activo
-
         EnsureSelection();
     }
 
@@ -422,14 +418,24 @@ public class QuestMainMenuUI : MonoBehaviour
 
     void RefreshScrollViews()
     {
-        RefreshScrollView(visibleScrollRect, visibleContentRoot as RectTransform);
-        RefreshScrollView(hiddenScrollRect, hiddenContentRoot as RectTransform);
+        RefreshScrollView(visibleScrollRect, visibleContentRoot);
+        RefreshScrollView(hiddenScrollRect, hiddenContentRoot);
     }
 
     void RefreshScrollView(ScrollRect scrollRect, RectTransform content)
     {
         if (scrollRect == null || content == null)
+        {
+            Debug.LogWarning($"QuestMainMenuUI.RefreshScrollView: ScrollRect o Content es null (scrollRect={scrollRect != null}, content={content != null})");
             return;
+        }
+
+        // Verificar que content esté bajo el viewport correcto
+        if (scrollRect.viewport != null && !content.IsChildOf(scrollRect.viewport))
+        {
+            Debug.LogError($"QuestMainMenuUI.RefreshScrollView: Content '{content.name}' no es hijo del Viewport '{scrollRect.viewport.name}'");
+            return;
+        }
 
         // Force a layout pass so the ScrollRect receives the correct content height
         // before we reset the scroll position. This avoids situations where the
@@ -442,9 +448,24 @@ public class QuestMainMenuUI : MonoBehaviour
         if (viewport != null)
             LayoutRebuilder.ForceRebuildLayoutImmediate(viewport);
 
+        // Asegurar que el content está asignado al ScrollRect y configurado correctamente
         scrollRect.content = content;
-        content.anchoredPosition = Vector2.zero;
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        
+        // Log detallado para debugging
+        Debug.Log($"QuestMainMenuUI.RefreshScrollView: ScrollRect '{scrollRect.name}' - Content: '{content.name}', Height: {content.rect.height}, " +
+                  $"Viewport: {(scrollRect.viewport != null ? scrollRect.viewport.name : "null")}, " +
+                  $"Viewport Height: {(scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f)}, " +
+                  $"Child Count: {content.childCount}, " +
+                  $"GameObject Active: {scrollRect.gameObject.activeInHierarchy}, " +
+                  $"Enabled: {scrollRect.enabled}");
+
+        // Resetear scroll a la parte superior
         scrollRect.verticalNormalizedPosition = 1f;
+        
+        // Forzar update inmediato para que el scroll funcione correctamente
+        scrollRect.StopMovement();
     }
 
 
@@ -501,4 +522,43 @@ public class QuestMainMenuUI : MonoBehaviour
         _actionManager.PopMode(ActionMode.Inventory);
         _actionModeActive = false;
     }
+
+    /// <summary>
+    /// Valida y configura los ScrollRects para asegurar que funcionen correctamente
+    /// </summary>
+    void ValidateScrollRectSetup()
+    {
+        Debug.Log("[QuestMainMenuUI] Validando configuración de ScrollRects...");
+        
+        // Validar ScrollRect de misiones visibles
+        if (visibleScrollRect != null && visibleContentRoot != null)
+        {
+            visibleScrollRect.content = visibleContentRoot;
+            visibleScrollRect.horizontal = false;
+            visibleScrollRect.vertical = true;
+            visibleScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            visibleScrollRect.scrollSensitivity = 15f;
+            Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect visible configurado: content={visibleContentRoot.name}, viewport={visibleScrollRect.viewport?.name ?? "null"}");
+        }
+        else
+        {
+            Debug.LogWarning($"[QuestMainMenuUI] ⚠️ ScrollRect o Content visible es null: scrollRect={visibleScrollRect != null}, content={visibleContentRoot != null}");
+        }
+        
+        // Validar ScrollRect de misiones ocultas
+        if (hiddenScrollRect != null && hiddenContentRoot != null)
+        {
+            hiddenScrollRect.content = hiddenContentRoot;
+            hiddenScrollRect.horizontal = false;
+            hiddenScrollRect.vertical = true;
+            hiddenScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            hiddenScrollRect.scrollSensitivity = 15f;
+            Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect oculto configurado: content={hiddenContentRoot.name}, viewport={hiddenScrollRect.viewport?.name ?? "null"}");
+        }
+        else
+        {
+            Debug.LogWarning($"[QuestMainMenuUI] ⚠️ ScrollRect o Content oculto es null: scrollRect={hiddenScrollRect != null}, content={hiddenContentRoot != null}");
+        }
+    }
 }
+

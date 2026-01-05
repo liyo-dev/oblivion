@@ -17,18 +17,47 @@ public static class WardrobeService
             return false;
         }
 
+        Debug.Log($"[WardrobeService] Intentando desbloquear item: {item.WardrobeId} (Category: {item.Category}, PartName: {item.PartName})");
+
         if (PlayerService.TryGetComponent(out WardrobeInventory wardrobe, includeInactive: true, allowSceneLookup: true))
         {
-            bool changed = wardrobe.Unlock(item, persistToPreset: true);
-            if (changed)
+        Debug.Log($"[WardrobeService] WardrobeInventory encontrado, desbloqueando...");
+        bool changed = wardrobe.Unlock(item, persistToPreset: true);
+        if (changed)
+        {
+            Debug.Log($"[WardrobeService] ✅ Item '{item.WardrobeId}' desbloqueado correctamente");
+            Debug.Log($"[WardrobeService] 📢 Invocando OnWardrobeItemUnlocked para '{item.WardrobeId}'");
+            OnWardrobeItemUnlocked?.Invoke(item);
+            TryShowPopup(item);
+            
+            // Log del estado actual del wardrobe después del desbloqueo
+            var method = wardrobe.GetType().GetMethod("GetUnlockedOptions");
+            if (method != null)
             {
-                OnWardrobeItemUnlocked?.Invoke(item);
-                TryShowPopup(item);
+                try
+                {
+                    var paramType = method.GetParameters()[0].ParameterType;
+                    var categoryName = item.Category.ToString();
+                    var enumVal = System.Enum.Parse(paramType, categoryName);
+                    var result = method.Invoke(wardrobe, new object[] { enumVal });
+                    if (result != null)
+                    {
+                        var count = (int)result.GetType().GetProperty("Count").GetValue(result);
+                        Debug.Log($"[WardrobeService] Tras desbloquear, categoría {categoryName} tiene {count} items");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[WardrobeService] Error al verificar opciones desbloqueadas: {ex.Message}");
+                }
             }
-            else if (logWarnings)
-                Debug.LogWarning($"[WardrobeService] El item '{item.WardrobeId}' ya estaba desbloqueado.");
-            return changed;
         }
+        else if (logWarnings)
+            Debug.LogWarning($"[WardrobeService] El item '{item.WardrobeId}' ya estaba desbloqueado.");
+        return changed;
+        }
+
+        Debug.LogWarning("[WardrobeService] No se encontró WardrobeInventory en el player, guardando directamente al preset");
 
         var preset = UnlockService.GetActivePreset();
         if (!preset)
@@ -49,6 +78,7 @@ public static class WardrobeService
         }
 
         preset.unlockedWardrobeIds.Add(item.WardrobeId);
+        Debug.Log($"[WardrobeService] ✅ Item '{item.WardrobeId}' añadido al preset");
         OnWardrobeItemUnlocked?.Invoke(item);
         TryShowPopup(item);
         return true;

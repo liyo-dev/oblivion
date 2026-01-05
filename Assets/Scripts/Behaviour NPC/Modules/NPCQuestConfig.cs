@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
 namespace Game.NPC.Modules
@@ -389,10 +389,11 @@ namespace Game.NPC.Modules
             // y el sistema de input se estabilice antes de iniciar el siguiente diálogo
             if (context?.Transform != null)
             {
-                var npcManager = context.Transform.GetComponent<NPCBehaviourManagerV2>();
-                if (npcManager != null)
+                // Buscar un MonoBehaviour para ejecutar la coroutine
+                var behaviourManager = context.Transform.GetComponent<NPCBehaviourManagerV2>();
+                if (behaviourManager != null)
                 {
-                    npcManager.StartCoroutine(TryStartNextQuestInChainDelayed(completedQuestId, context));
+                    behaviourManager.StartCoroutine(TryStartNextQuestInChainDelayed(completedQuestId, context));
                 }
                 else
                 {
