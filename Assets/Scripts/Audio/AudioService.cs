@@ -12,7 +12,7 @@ public sealed class AudioService : MonoBehaviour
     public static AudioService Instance { get; private set; }
 
     [Header("Perfil de reglas")]
-    [SerializeField] private AudioGraphProfile profile;
+    [SerializeField] public AudioGraphProfile profile;
 
     [Header("Mixer (grupos opcionales)")]
     public AudioMixer mixer;
@@ -360,32 +360,50 @@ public sealed class AudioService : MonoBehaviour
 
     void OnBattleWonRestoreMusic(AudioGraphProfile.BattleRule r)
     {
-        // Preferir la música de la escena actual (base) cuando termina la batalla
-        var activeScene = SceneManager.GetActiveScene();
-        var activeSceneClip = FindSceneMusicClipByName(activeScene.name);
-
-        AudioClip targetClip = null;
+        _battleActive = false;
+        
+        // 1) PRIORIDAD: Si hay una FogZone activa, restaurar su música
+        var activeFogZone = FogZone.CurrentActiveZone;
+        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        {
+            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            if (zoneRule?.music != null)
+            {
+                Debug.Log($"[AudioService] Restaurando música de FogZone '{activeFogZone.MusicZoneId}' después de combate");
+                PlayMusic(zoneRule.music, r.fade);
+                _musicStack.Clear(); // Limpiar stack ya que restauramos la zona
+                return;
+            }
+        }
+        
+        // 2) Si no hay FogZone, usar la música del stack (lo que sonaba antes del combate)
         if (_musicStack.Count > 0)
         {
             var prev = _musicStack.Pop();
-            targetClip = prev.clip;
+            if (prev.clip != null)
+            {
+                Debug.Log($"[AudioService] Restaurando música del stack '{prev.clip.name}' después de combate");
+                PlayMusic(prev.clip, r.fade);
+                return;
+            }
         }
-
+        
+        // 3) Fallback: música de la escena actual
+        var activeScene = SceneManager.GetActiveScene();
+        var activeSceneClip = FindSceneMusicClipByName(activeScene.name);
+        
         if (activeSceneClip != null)
         {
-            targetClip = activeSceneClip;
+            PlayMusic(activeSceneClip, r.fade);
         }
         else if (_lastRequestedSceneClip != null)
         {
-            targetClip ??= _lastRequestedSceneClip;
+            PlayMusic(_lastRequestedSceneClip, r.fade);
         }
-
-        if (targetClip != null)
-            PlayMusic(targetClip, r.fade);
         else
+        {
             StopMusic(r.fade);
-
-        _battleActive = false;
+        }
     }
     
     // --- Helpers para lookup de batallas por id (exacto y fallback substring) ---
@@ -785,6 +803,45 @@ public sealed class AudioService : MonoBehaviour
     {
         var c = _musicATurn ? _musicB : _musicA;
         return c ? c.clip : null;
+    }
+    
+    /// <summary>
+    /// Propiedad pública para obtener el clip de música actual
+    /// </summary>
+    public AudioClip CurrentMusicClip => GetCurrentMusicClip();
+    
+    /// <summary>
+    /// Restaura la música de la escena actual (según las reglas del profile)
+    /// </summary>
+    public void RestoreSceneMusic(float fadeDuration = -1f)
+    {
+        if (fadeDuration < 0f) fadeDuration = defaultFade;
+        
+        // Intentar restaurar la última música de escena solicitada
+        if (_lastRequestedSceneClip != null)
+        {
+            PlayMusic(_lastRequestedSceneClip, fadeDuration);
+            return;
+        }
+        
+        // Si no hay, buscar en las reglas del profile para la escena actual
+        if (profile != null)
+        {
+            string currentScene = SceneManager.GetActiveScene().name;
+            foreach (var rule in profile.sceneMusic)
+            {
+                if (!string.IsNullOrEmpty(rule.sceneName) && currentScene.Contains(rule.sceneName))
+                {
+                    if (rule.music != null)
+                    {
+                        PlayMusic(rule.music, fadeDuration);
+                        return;
+                    }
+                }
+            }
+        }
+        
+        Debug.Log("[AudioService] No se encontró música para restaurar en la escena actual");
     }
 
     // ===========================================================

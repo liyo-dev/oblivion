@@ -25,6 +25,11 @@ MonoBehaviour:
   - battleId: Npc_Battle_Victory
     music: {fileID: 8300000, guid: 5470781b602096348900f3a6c00ac749, type: 3}
     fade: 0
+  ambientZones:
+  - zoneId: Woods
+    music: {fileID: 8300000, guid: 15968ef8400ac3a48b0a18f1a182400d, type: 3}
+    fade: 1
+    loop: 1
   sceneMusic:
   - sceneName: Prologo
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}

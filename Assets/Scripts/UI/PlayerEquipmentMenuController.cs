@@ -3306,6 +3306,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (_builder == null) return;
 
+            // Resetear highlights de otros botones para evitar que queden múltiples amarillos
+            ResetOtherHighlights();
+
             bool changed = false;
 
             if (_wardrobe != null)
@@ -3327,9 +3330,152 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void Clear(PartCategory category)
         {
             if (_builder == null) return;
+            
+            // Guardar referencia al botón previous/next de esta fila ANTES de hacer cambios
+            Button fallbackButton = null;
+            if (_rows.TryGetValue(category, out var row) && row != null)
+            {
+                if (row.previousButton != null && row.previousButton.IsInteractable())
+                    fallbackButton = row.previousButton;
+                else if (row.nextButton != null && row.nextButton.IsInteractable())
+                    fallbackButton = row.nextButton;
+            }
+            
+            // Resetear highlights de otros botones
+            ResetOtherHighlights();
+            
             SetBuilderPart(category, null);
             Snapshot();
             UpdateLabels();
+            
+            // Actualizar interactividad de los botones después de Clear
+            UpdateRowInteractivity(category);
+            
+            // Forzar selección al botón previous/next de la misma fila
+            if (fallbackButton != null && fallbackButton.IsInteractable())
+            {
+                Debug.Log($"[EquipmentView.Clear] Moviendo selección a {fallbackButton.name}");
+                EventSystem.current?.SetSelectedGameObject(null);
+                EventSystem.current?.SetSelectedGameObject(fallbackButton.gameObject);
+                
+                // Forzar el highlight visual
+                var highlight = fallbackButton.GetComponent<ButtonHighlight>();
+                if (highlight != null)
+                {
+                    highlight.OnSelect(null);
+                }
+            }
+            else
+            {
+                // Buscar cualquier botón válido
+                EnsureValidSelection(category);
+            }
+        }
+        
+        /// <summary>
+        /// Actualiza la interactividad de una fila específica después de un cambio
+        /// </summary>
+        void UpdateRowInteractivity(PartCategory category)
+        {
+            if (!_rows.TryGetValue(category, out var row) || row == null) return;
+            
+            bool hasOptions = false;
+            if (_wardrobe != null)
+            {
+                var options = _wardrobe.GetUnlockedOptions(category);
+                hasOptions = options != null && options.Count > 0;
+            }
+            
+            bool allowClear = _wardrobe == null ? _builder != null : hasOptions;
+            
+            // Verificar si hay algo seleccionado actualmente en esta categoría
+            string currentSelection = GetSelectionFor(category);
+            bool hasSomethingEquipped = !string.IsNullOrEmpty(currentSelection);
+            
+            // Solo permitir Clear si hay algo equipado
+            allowClear = allowClear && hasSomethingEquipped;
+            
+            SetInteractable(row, _builder != null || hasOptions, allowClear);
+        }
+        
+        /// <summary>
+        /// Asegura que la selección actual sea un botón válido/interactuable
+        /// </summary>
+        void EnsureValidSelection(PartCategory category)
+        {
+            var currentSelected = EventSystem.current?.currentSelectedGameObject;
+            if (currentSelected == null) return;
+            
+            // Verificar si el botón actual sigue siendo interactuable
+            var currentButton = currentSelected.GetComponent<Button>();
+            if (currentButton != null && currentButton.IsInteractable())
+                return; // Todo bien, el botón actual es válido
+            
+            // El botón actual no es interactuable, buscar uno válido en la misma fila
+            if (_rows.TryGetValue(category, out var row) && row != null)
+            {
+                // Intentar seleccionar previous o next primero (para poder seguir ciclando)
+                Button newSelection = null;
+                if (row.previousButton != null && row.previousButton.IsInteractable())
+                    newSelection = row.previousButton;
+                else if (row.nextButton != null && row.nextButton.IsInteractable())
+                    newSelection = row.nextButton;
+                
+                if (newSelection != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(newSelection.gameObject);
+                    return;
+                }
+            }
+            
+            // Si no hay botón válido en la fila actual, buscar en otras filas
+            foreach (var kvp in _rows)
+            {
+                var r = kvp.Value;
+                if (r == null) continue;
+                
+                if (r.previousButton != null && r.previousButton.IsInteractable())
+                {
+                    EventSystem.current.SetSelectedGameObject(r.previousButton.gameObject);
+                    return;
+                }
+                if (r.nextButton != null && r.nextButton.IsInteractable())
+                {
+                    EventSystem.current.SetSelectedGameObject(r.nextButton.gameObject);
+                    return;
+                }
+                if (r.clearButton != null && r.clearButton.IsInteractable())
+                {
+                    EventSystem.current.SetSelectedGameObject(r.clearButton.gameObject);
+                    return;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Resetea el highlight de todos los botones excepto el actualmente seleccionado
+        /// </summary>
+        void ResetOtherHighlights()
+        {
+            var currentSelected = EventSystem.current?.currentSelectedGameObject;
+            foreach (var row in _rows.Values)
+            {
+                ResetButtonIfNotSelected(row?.previousButton, currentSelected);
+                ResetButtonIfNotSelected(row?.nextButton, currentSelected);
+                ResetButtonIfNotSelected(row?.clearButton, currentSelected);
+            }
+        }
+        
+        void ResetButtonIfNotSelected(Button button, GameObject currentSelected)
+        {
+            if (button == null) return;
+            if (button.gameObject == currentSelected) return; // No resetear el seleccionado
+            
+            var highlight = button.GetComponent<ButtonHighlight>();
+            if (highlight != null)
+            {
+                highlight.ResetColor();
+            }
         }
 
         void Snapshot()
@@ -3554,11 +3700,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return t != null ? -t.position.y : float.MinValue;
         }
 
-        class ButtonHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler
+        class ButtonHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerClickHandler, ISubmitHandler
         {
             public Graphic target;
             public Color highlightColor = Color.white;
             Color _baseColor;
+            bool _baseColorCaptured;
 
             void Awake()
             {
@@ -3566,24 +3713,54 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     target = GetComponent<Graphic>();
                 if (target == null)
                     target = GetComponentInChildren<Graphic>();
-                if (target != null)
-                    _baseColor = target.color;
             }
 
             public void Configure(Color color)
             {
                 highlightColor = color;
-                if (target != null)
+                // Capturar color base solo si no está seleccionado actualmente
+                if (target != null && !_baseColorCaptured)
+                {
                     _baseColor = target.color;
+                    _baseColorCaptured = true;
+                }
             }
 
-            public void OnSelect(BaseEventData eventData) => Set(true);
-            public void OnDeselect(BaseEventData eventData) => Set(false);
-
-            void Set(bool selected)
+            public void OnSelect(BaseEventData eventData)
             {
                 if (target != null)
-                    target.color = selected ? highlightColor : _baseColor;
+                    target.color = highlightColor;
+            }
+            
+            public void OnDeselect(BaseEventData eventData)
+            {
+                if (target != null)
+                    target.color = _baseColor;
+            }
+
+            // Cuando se hace click con mouse, resetear el color después
+            public void OnPointerClick(PointerEventData eventData)
+            {
+                // El click ya ejecutó la acción, resetear el highlight
+                StartCoroutine(ResetAfterFrame());
+            }
+            
+            // Cuando se pulsa Submit (gamepad/teclado), resetear el color después
+            public void OnSubmit(BaseEventData eventData)
+            {
+                // El submit ya ejecutó la acción, resetear el highlight
+                StartCoroutine(ResetAfterFrame());
+            }
+            
+            System.Collections.IEnumerator ResetAfterFrame()
+            {
+                yield return null; // Esperar un frame
+                // Solo resetear si este objeto ya no está seleccionado
+                if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != gameObject)
+                {
+                    if (target != null)
+                        target.color = _baseColor;
+                }
             }
 
             public void ResetColor()

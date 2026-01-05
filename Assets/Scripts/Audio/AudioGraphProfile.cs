@@ -17,8 +17,22 @@ public class AudioGraphProfile : ScriptableObject
         public AudioClip music;
         [Min(0f)] public float fade = 0.5f;
     }
+    
+    [Serializable]
+    public class AmbientZoneRule
+    {
+        [Tooltip("ID de la zona (debe coincidir con el zoneId del FogZone)")]
+        public string zoneId;
+        [Tooltip("Música a reproducir en esta zona")]
+        public AudioClip music;
+        [Tooltip("Tiempo de fade para la transición")]
+        [Min(0f)] public float fade = 1.5f;
+        [Tooltip("Si está activo, la música hace loop")]
+        public bool loop = true;
+    }
 
     public List<BattleRule> battles = new();
+    public List<AmbientZoneRule> ambientZones = new();
     
     [Serializable]
     public class AdditiveCinematicRule
@@ -39,4 +53,23 @@ public class AudioGraphProfile : ScriptableObject
     public List<SceneMusic> sceneMusic = new();
     public List<EventSfx>   eventSfx   = new();
     public List<AdditiveCinematicRule> additiveCinematics = new();
+    
+    /// <summary>
+    /// Busca la regla de música para una zona de ambiente específica
+    /// </summary>
+    public AmbientZoneRule GetAmbientZoneRule(string zoneId)
+    {
+        if (string.IsNullOrEmpty(zoneId)) return null;
+        
+        foreach (var rule in ambientZones)
+        {
+            if (string.IsNullOrEmpty(rule.zoneId)) continue;
+            if (zoneId.Contains(rule.zoneId, StringComparison.OrdinalIgnoreCase) ||
+                rule.zoneId.Contains(zoneId, StringComparison.OrdinalIgnoreCase))
+            {
+                return rule;
+            }
+        }
+        return null;
+    }
 }

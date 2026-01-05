@@ -146,7 +146,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_02",
-            "value": "¿Sabes qué? Pensaba que no lo conseguirñias. Ahí va el secreto:"
+            "value": "¿Sabes qué? Pensaba que no lo conseguirías. Ahí va el secreto:"
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
@@ -266,7 +266,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_02",
-            "value": "Pulsa el botón del DPad abajo y desplazate con RB hasta Equipo."
+            "value": "Pulsa el botón START y desplazate con RB hasta Equipo."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_03",
@@ -282,7 +282,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_06",
-            "value": "Sal del Reino hacia el bosque y encuentra el portal que te llevará al bosque prohibido."
+            "value": "Sal del Reino y ve hacia el bosque prohibido."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_07",
