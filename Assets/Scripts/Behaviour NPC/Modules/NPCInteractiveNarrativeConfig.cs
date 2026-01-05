@@ -76,6 +76,10 @@ namespace Game.NPC.Modules
         [Tooltip("Duración del icono de alerta antes de comenzar la narrativa (segundos)")]
         [Min(0.1f)]
         public float alertIconDuration = 1f;
+        
+        [Tooltip("Altura del icono de alerta sobre el NPC (Y offset). Ajustar según el tamaño del NPC.\n• NPCs pequeños: 1.5-2.0\n• NPCs normales: 2.5\n• NPCs grandes: 3.0-4.0")]
+        [Range(0.5f, 5f)]
+        public float alertIconHeight = 2.5f;
 
         [Tooltip("¿El NPC camina hacia el jugador durante la alerta?")]
         public bool walkTowardsPlayerOnAlert = true;

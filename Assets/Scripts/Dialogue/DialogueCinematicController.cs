@@ -592,23 +592,38 @@ public class DialogueCinematicController : MonoBehaviour
 
             Vector3 camPos;
             
-            // Distancia mínima de la cámara para evitar quedar demasiado cerca
-            float effectiveDistance = Mathf.Max(shot.distance, 1.5f);
+            // ✅ AJUSTE: Aumentar distancia mínima para alejar todos los planos
+            float effectiveDistance = Mathf.Max(shot.distance * 1.5f, 2.0f); // Multiplicador 1.5x y mínimo de 2m
 
             switch (shot.shotType)
             {
                 case DialogueShotType.Wide:
-                    // Vista general entre ambos personajes - cámara al lado
-                    Vector3 midPoint = (currentPlayer.position + currentNPC.position) / 2f;
-                    Vector3 sideDir = Vector3.Cross(Vector3.up, fromOther).normalized;
-                    // Usar distancia mayor para wide shot
-                    float wideDistance = Mathf.Max(shot.distance, 3f);
-                    camPos = midPoint + sideDir * wideDistance;
-                    camPos.y = midPoint.y + shot.height;
+                    // Vista general entre ambos personajes - cámara más centrada y alejada
+                    {
+                        Vector3 midPoint = (currentPlayer.position + currentNPC.position) / 2f;
+                        
+                        // ✅ CORREGIDO: Calcular dirección desde el punto medio hacia "atrás" de la conversación
+                        // Usar la dirección promedio de ambos personajes mirando entre sí
+                        Vector3 playerToNPC = (currentNPC.position - currentPlayer.position).normalized;
+                        playerToNPC.y = 0;
+                        
+                        // Usar la perpendicular NEGATIVA para que la cámara vaya hacia la izquierda
+                        // y retroceder también para captar a ambos personajes
+                        Vector3 sideDir = Vector3.Cross(Vector3.up, playerToNPC).normalized;
+                        Vector3 backDir = -playerToNPC; // Dirección hacia atrás desde el punto medio
+                        
+                        // ✅ Combinar movimiento lateral (más hacia la izquierda) y hacia atrás
+                        float wideDistance = Mathf.Max(shot.distance * 1.8f, 4.5f); // Más alejado: mínimo 4.5m
+                        float lateralAmount = wideDistance * 0.4f; // 40% lateral hacia la izquierda
+                        float backAmount = wideDistance * 0.6f; // 60% hacia atrás
+                        
+                        camPos = midPoint + (-sideDir * lateralAmount) + (backDir * backAmount);
+                        camPos.y = midPoint.y + shot.height;
+                    }
                     break;
 
                 case DialogueShotType.OverShoulderPlayer:
-                    // Cámara detrás del Player mirando hacia el NPC
+                    // Cámara detrás del Player mirando hacia el NPC - más alejada
                     {
                         Vector3 playerToNPC = (currentNPC.position - currentPlayer.position).normalized;
                         playerToNPC.y = 0;
@@ -616,15 +631,15 @@ public class DialogueCinematicController : MonoBehaviour
                         playerToNPC.Normalize();
                         
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, playerToNPC).normalized * (shot.lateralOffset != 0 ? shot.lateralOffset : 0.5f);
-                        // Retroceder más de la posición del player
-                        float behindDistance = Mathf.Max(0.8f, actualDistance * 0.3f);
+                        // ✅ AJUSTE: Retroceder más de la posición del player
+                        float behindDistance = Mathf.Max(1.2f, actualDistance * 0.4f); // Aumentado de 0.8f y 0.3f
                         camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset;
                         camPos.y = currentPlayer.position.y + shot.height;
                     }
                     break;
 
                 case DialogueShotType.OverShoulderNPC:
-                    // Cámara detrás del NPC mirando hacia el Player
+                    // Cámara detrás del NPC mirando hacia el Player - más alejada
                     {
                         Vector3 npcToPlayer = (currentPlayer.position - currentNPC.position).normalized;
                         npcToPlayer.y = 0;
@@ -632,15 +647,15 @@ public class DialogueCinematicController : MonoBehaviour
                         npcToPlayer.Normalize();
                         
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, npcToPlayer).normalized * (shot.lateralOffset != 0 ? shot.lateralOffset : 0.5f);
-                        // Retroceder más de la posición del NPC
-                        float behindDistance = Mathf.Max(0.8f, actualDistance * 0.3f);
+                        // ✅ AJUSTE: Retroceder más de la posición del NPC
+                        float behindDistance = Mathf.Max(1.2f, actualDistance * 0.4f); // Aumentado de 0.8f y 0.3f
                         camPos = currentNPC.position - npcToPlayer * behindDistance + shoulderOffset;
                         camPos.y = currentNPC.position.y + shot.height;
                     }
                     break;
 
                 case DialogueShotType.Profile:
-                    // Vista lateral - perpendicular a la línea entre personajes
+                    // Vista lateral - perpendicular a la línea entre personajes - más alejada
                     Vector3 perpendicular = Vector3.Cross(Vector3.up, fromOther).normalized;
                     camPos = basePos + perpendicular * effectiveDistance;
                     camPos.y = basePos.y + shot.height;
@@ -648,7 +663,7 @@ public class DialogueCinematicController : MonoBehaviour
 
                 case DialogueShotType.MediumNPC:
                 case DialogueShotType.CloseUpNPC:
-                    // Cámara FRENTE al NPC (viniendo desde la dirección del Player)
+                    // Cámara FRENTE al NPC - más alejada
                     {
                         Vector3 playerToNPC = (currentNPC.position - currentPlayer.position).normalized;
                         playerToNPC.y = 0;
@@ -656,8 +671,7 @@ public class DialogueCinematicController : MonoBehaviour
                         playerToNPC.Normalize();
                         
                         Vector3 lateral = Vector3.Cross(Vector3.up, playerToNPC).normalized * shot.lateralOffset;
-                        // La cámara se coloca "más allá" del Player, mirando hacia el NPC
-                        // Usamos una posición fija delante del NPC, no relativa a la distancia entre ellos
+                        // ✅ AJUSTE: Usar effectiveDistance que ahora es mayor
                         camPos = currentNPC.position - playerToNPC * effectiveDistance + lateral;
                         camPos.y = currentNPC.position.y + shot.height;
                     }

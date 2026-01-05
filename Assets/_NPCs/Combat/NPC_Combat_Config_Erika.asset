@@ -26,6 +26,7 @@ MonoBehaviour:
   questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   alertIconDuration: 2
+  alertIconHeight: 1.5
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
   dialogueOnAlert: {fileID: 11400000, guid: 854490eab3bc56f469b497cce202cb64, type: 2}
   dialogueOnDefeat: {fileID: 0}

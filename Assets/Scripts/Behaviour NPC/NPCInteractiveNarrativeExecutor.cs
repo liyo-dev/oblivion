@@ -668,6 +668,18 @@ namespace Game.NPC.Modules
                 if (!_alertIconController) 
                     _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
                 
+                // Configurar la altura del icono
+                float iconHeight = _config.alertIconHeight;
+                if (iconHeight <= 0 && _npcManager.Configuration.combatConfig != null)
+                {
+                    iconHeight = _npcManager.Configuration.combatConfig.alertIconHeight;
+                }
+                
+                if (iconHeight > 0)
+                {
+                    _alertIconController.SetIconOffset(new Vector3(0f, iconHeight, 0f));
+                }
+                
                 _alertIconController.ShowAlertIcon(iconPrefab, _config.alertIconDuration);
             }
 
