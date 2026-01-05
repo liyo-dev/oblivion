@@ -36,7 +36,7 @@ public class PortalTrigger : MonoBehaviour
     {
         if (_pendingUse)
         {
-            var player = GameObject.FindWithTag("Player");
+            var player = PlayerService.Player;
             if (player != null)
             {
                 ProcessPortal(player);

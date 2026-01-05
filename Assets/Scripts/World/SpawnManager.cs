@@ -78,7 +78,7 @@ public class SpawnManager : MonoBehaviour
     public static void TeleportTo(string anchorId, bool? useTransition = null)
     {
         if (string.IsNullOrEmpty(anchorId)) return;
-        var player = GameObject.FindWithTag("Player");
+        var player = PlayerService.Player;
         if (!player) { Debug.LogWarning("[SpawnManager] No se encontró player para teletransporte"); return; }
         TeleportService.TeleportToAnchor(player, anchorId, useTransition);
     }
@@ -87,7 +87,7 @@ public class SpawnManager : MonoBehaviour
     public static void TeleportToCurrent(bool? useTransition = null)
     {
         if (string.IsNullOrEmpty(CurrentAnchorId)) return;
-        var player = GameObject.FindWithTag("Player");
+        var player = PlayerService.Player;
         if (!player) { Debug.LogWarning("[SpawnManager] No se encontró player para teletransporte"); return; }
         TeleportService.TeleportToAnchor(player, CurrentAnchorId, useTransition);
     }

@@ -62,13 +62,17 @@ public class DialogueCinematicController : MonoBehaviour
             gameObject.SetActive(true);
         }
         
-        if (Instance != null)
+        // Singleton pattern con DontDestroyOnLoad
+        if (Instance != null && Instance != this)
         {
             Debug.LogWarning($"[DialogueCinematicController] Ya existe una instancia, destruyendo {gameObject.name}");
             Destroy(gameObject);
             return;
         }
+        
         Instance = this;
+        DontDestroyOnLoad(gameObject);
+        Debug.Log($"[DialogueCinematicController] ✅ Instancia marcada como DontDestroyOnLoad");
 
         // Crear rig para las cámaras de diálogo
         GameObject rigObj = new GameObject("DialogueCinematicRig");
@@ -168,8 +172,8 @@ public class DialogueCinematicController : MonoBehaviour
         // Inicializar el pool de cámaras
         InitializeCameraPool();
 
-        // Buscar la cámara principal de Cinemachine
-        mainGameplayCamera = FindFirstObjectByType<CinemachineCamera>();
+        // Buscar la cámara principal de Cinemachine usando ServiceLocator
+        mainGameplayCamera = ServiceLocator.Get<CinemachineCamera>(logIfMissing: false);
         
         if (mainGameplayCamera != null)
         {
@@ -185,6 +189,16 @@ public class DialogueCinematicController : MonoBehaviour
         DisableAllDialogueCameras();
         
         Debug.Log("[DialogueCinematicController] ✅ Start completado - Sistema listo");
+    }
+
+    void OnDestroy()
+    {
+        // Limpiar la instancia del Singleton si es esta instancia
+        if (Instance == this)
+        {
+            Instance = null;
+            Debug.Log("[DialogueCinematicController] Instancia del Singleton limpiada");
+        }
     }
 
     void LateUpdate()
@@ -229,6 +243,9 @@ public class DialogueCinematicController : MonoBehaviour
 
         if (showDebugInfo)
             Debug.Log($"[DialogueCinematicController] Iniciando cinematográfica con {npc.name}");
+
+        // PASO 0: Ocultar el HUD con fade suave
+        HideHUD();
 
         // PASO 1: Capturar referencia a la cámara principal de Unity ANTES de cualquier cambio
         // CRÍTICO: Debe hacerse antes de cambiar tags o activar otras cámaras
@@ -331,6 +348,9 @@ public class DialogueCinematicController : MonoBehaviour
         
         // Restaurar visibilidad del player
         ShowPlayer();
+        
+        // Mostrar el HUD con fade suave
+        ShowHUD();
 
         isInCinematicMode = false;
         currentPlayer = null;
@@ -790,6 +810,34 @@ public class DialogueCinematicController : MonoBehaviour
         
         if (showDebugInfo)
             Debug.Log("[DialogueCinematicController] Todas las cámaras de diálogo desactivadas");
+    }
+    
+    /// <summary>
+    /// Oculta el HUD del jugador con un fade suave
+    /// </summary>
+    private void HideHUD()
+    {
+        var hud = Sendero.UI.PlayerHUDV2.Instance;
+        if (hud != null)
+        {
+            hud.HideHUD();
+            if (showDebugInfo)
+                Debug.Log("[DialogueCinematicController] 🎬 HUD ocultado con fade");
+        }
+    }
+    
+    /// <summary>
+    /// Muestra el HUD del jugador con un fade suave
+    /// </summary>
+    private void ShowHUD()
+    {
+        var hud = Sendero.UI.PlayerHUDV2.Instance;
+        if (hud != null)
+        {
+            hud.ShowHUD();
+            if (showDebugInfo)
+                Debug.Log("[DialogueCinematicController] 🎬 HUD mostrado con fade");
+        }
     }
 
     void OnDrawGizmos()

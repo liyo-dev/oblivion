@@ -277,7 +277,7 @@ public class DialogueManager : MonoBehaviour
         // Activar sistema cinematográfico si está habilitado
         if (useCinematicCamera && _currentNpc != null && DialogueCinematicController.Instance != null)
         {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            GameObject playerObj = PlayerService.Player;
             if (playerObj != null)
             {
                 Debug.Log($"[DialogueManager] 🎬 Activando sistema cinematográfico para NPC: {_currentNpc.name}");

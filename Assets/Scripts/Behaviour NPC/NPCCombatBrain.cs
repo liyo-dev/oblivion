@@ -152,7 +152,7 @@ namespace Game.NPC
             
             // Buscar player si no existe
             if (_ctx.Player == null) 
-                 _ctx.Player = GameObject.FindWithTag("Player").transform;
+                 _ctx.Player = PlayerService.PlayerTransform;
             _player = _ctx.Player;
 
             // Guardar posición inicial para poder volver

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerDamageScreenEffects : MonoBehaviour
@@ -16,11 +16,13 @@ public class PlayerDamageScreenEffects : MonoBehaviour
 
     private void FindPlayerHealthSystem()
     {
-        var player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        // Intentar obtener del PlayerService primero
+        if (!PlayerService.TryGetComponent<PlayerHealthSystem>(out _playerHealthSystem))
         {
-            _playerHealthSystem = player.GetComponent<PlayerHealthSystem>();
+            // Fallback: usar ServiceLocator
+            _playerHealthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);
         }
+        
         if (_playerHealthSystem == null)
         {
             _playerHealthSystem = ServiceLocator.Get<PlayerHealthSystem>(false);

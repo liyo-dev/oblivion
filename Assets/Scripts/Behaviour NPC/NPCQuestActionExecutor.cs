@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System.Collections;
+﻿﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -576,7 +576,7 @@ namespace Game.NPC
             if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 Anchor encontrado: '{action.targetAnchorName}' en {targetAnchor.transform.position}");
 
             // 1. Teletransportar al PLAYER usando TeleportService
-            var player = GameObject.FindWithTag("Player");
+            var player = PlayerService.Player;
             if (player != null)
             {
                 if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🎮 Teletransportando PLAYER a anchor '{action.targetAnchorName}'");

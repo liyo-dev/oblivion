@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Collections;
 
 /// <summary>
@@ -76,8 +76,8 @@ public class DialogueCameraController : MonoBehaviour
     {
         if (!enableDialogueCamera || npcTransform == null || isInDialogueMode) return;
 
-        // Buscar el player
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        // Buscar el player usando PlayerService
+        GameObject playerObj = PlayerService.Player;
         if (playerObj == null)
         {
             if (showDebugLogs)

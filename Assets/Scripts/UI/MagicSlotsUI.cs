@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -198,7 +198,7 @@ public class MagicSlotsUI : MonoBehaviour
     private void FindPlayerComponents()
     {
         // Buscar componentes en el player
-        var player = GameObject.FindGameObjectWithTag("Player");
+        var player = PlayerService.Player;
         if (player)
         {
             _magicCaster = player.GetComponent<MagicCaster>() ?? player.GetComponentInParent<MagicCaster>();

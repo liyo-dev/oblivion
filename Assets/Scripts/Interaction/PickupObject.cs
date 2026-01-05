@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 [RequireComponent(typeof(Interactable))]
 [RequireComponent(typeof(Rigidbody))]
@@ -30,8 +30,14 @@ public class PickupObject : MonoBehaviour
     // ¡OJO! Este método puede recibir un hijo golpeado por el raycast o el propio Player
     private void OnPickup(GameObject whoCalled)
     {
-        var carry = whoCalled?.GetComponentInParent<PlayerCarrySystem>() 
-                     ?? FindFirstObjectByType<PlayerCarrySystem>();
+        // Intentar obtener del objeto que llamó, sino usar PlayerService
+        var carry = whoCalled?.GetComponentInParent<PlayerCarrySystem>();
+        
+        if (carry == null)
+        {
+            // Fallback: buscar en el jugador usando PlayerService
+            PlayerService.TryGetComponent<PlayerCarrySystem>(out carry);
+        }
 
         if (carry == null)
         {

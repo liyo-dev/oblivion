@@ -16,6 +16,9 @@ namespace Sendero.UI
     /// </summary>
     public class PlayerHUDV2 : MonoBehaviour
     {
+        // Singleton instance
+        public static PlayerHUDV2 Instance { get; private set; }
+        
         [Header("Referencias de Vida")]
         [Tooltip("Imagen fill para la barra de vida")]
         [SerializeField] private Image healthFillImage;
@@ -67,10 +70,19 @@ namespace Sendero.UI
         [Tooltip("Sprite cuando el slot está vacío")]
         [SerializeField] private Sprite emptySlotSprite;
         
+        [Header("Configuración de Fade")]
+        [Tooltip("Duración del fade in/out en segundos")]
+        [SerializeField] private float fadeDuration = 0.5f;
+        
         // Referencias a sistemas del juego
         private PlayerHealthSystem _healthSystem;
         private ManaPool _manaPool;
         private MagicCaster _magicCaster;
+        
+        // Control de visibilidad
+        private CanvasGroup _canvasGroup;
+        private Tween _currentFadeTween;
+        private bool _isVisible = true;
         
         // Estado actual de los slots
         private Dictionary<MagicSlot, SlotState> _slotStates = new Dictionary<MagicSlot, SlotState>();
@@ -86,6 +98,26 @@ namespace Sendero.UI
         
         private void Awake()
         {
+            // Configurar Singleton
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[PlayerHUDV2] Ya existe una instancia. Destruyendo duplicado.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            
+            // Obtener o añadir CanvasGroup para el fade
+            _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+            
+            // Asegurar que empieza visible
+            _canvasGroup.alpha = 1f;
+            _isVisible = true;
+            
             // Inicializar diccionario de slots
             _slotStates[MagicSlot.Left] = new SlotState
             {
@@ -157,6 +189,12 @@ namespace Sendero.UI
         
         private void OnDestroy()
         {
+            // Limpiar Singleton
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+            
             UnsubscribeFromEvents();
             
             // ✅ Desuscribirse del evento de preset
@@ -165,6 +203,7 @@ namespace Sendero.UI
             // Limpiar todos los tweens
             if (healthFillImage != null) healthFillImage.DOKill();
             if (manaFillImage != null) manaFillImage.DOKill();
+            _currentFadeTween?.Kill();
         }
         
         #region Validación y Setup
@@ -658,6 +697,58 @@ namespace Sendero.UI
         {
             gameObject.SetActive(visible);
         }
+        
+        /// <summary>
+        /// Oculta el HUD con un fade suave usando DOTween
+        /// </summary>
+        public void HideHUD(float duration = -1f)
+        {
+            if (!_isVisible) return; // Ya está oculto
+            
+            _isVisible = false;
+            float useDuration = duration > 0 ? duration : fadeDuration;
+            
+            // Matar tween anterior si existe
+            _currentFadeTween?.Kill();
+            
+            // Fade out suave
+            _currentFadeTween = _canvasGroup.DOFade(0f, useDuration)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true) // Ignora timeScale
+                .OnComplete(() =>
+                {
+                    _canvasGroup.interactable = false;
+                    _canvasGroup.blocksRaycasts = false;
+                });
+        }
+        
+        /// <summary>
+        /// Muestra el HUD con un fade suave usando DOTween
+        /// </summary>
+        public void ShowHUD(float duration = -1f)
+        {
+            if (_isVisible) return; // Ya está visible
+            
+            _isVisible = true;
+            float useDuration = duration > 0 ? duration : fadeDuration;
+            
+            // Matar tween anterior si existe
+            _currentFadeTween?.Kill();
+            
+            // Restaurar interactividad antes del fade in
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
+            
+            // Fade in suave
+            _currentFadeTween = _canvasGroup.DOFade(1f, useDuration)
+                .SetEase(Ease.InQuad)
+                .SetUpdate(true); // Ignora timeScale
+        }
+        
+        /// <summary>
+        /// Verifica si el HUD está visible
+        /// </summary>
+        public bool IsVisible => _isVisible;
         
         #endregion
         
