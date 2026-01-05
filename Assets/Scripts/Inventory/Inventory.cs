@@ -256,6 +256,7 @@ public class Inventory : MonoBehaviour
             // intentar reemplazarla con la versión real del registro o la lista conocida.
             if (IsPlaceholder(existing))
             {
+                Debug.Log($"[Inventory] Definición existente para '{itemId}' es un placeholder, intentando actualizar...");
                 var upgraded = TryResolveFromSources(itemId);
                 if (upgraded != null)
                 {
@@ -273,6 +274,8 @@ public class Inventory : MonoBehaviour
             return resolved;
 
         // Fallback: crear un ItemData temporal en runtime para no quedar sin referencia
+        Debug.LogWarning($"[Inventory] ⚠️ Creando placeholder temporal para item '{itemId}'. El item no se encontró en knownItems, ItemRegistry ni Resources.");
+        Debug.LogWarning($"[Inventory] 💡 Para solucionar: Añade el ItemData al ItemRegistry (Resources/ItemRegistry) o a la lista knownItems del componente Inventory.");
         var runtimeItem = ScriptableObject.CreateInstance<ItemData>();
         runtimeItem.itemId = itemId;
         runtimeItem.displayName = itemId;
@@ -291,6 +294,7 @@ public class Inventory : MonoBehaviour
                 if (!item) continue;
                 if (item.itemId == itemId)
                 {
+                    Debug.Log($"[Inventory] Item '{itemId}' resuelto desde knownItems");
                     RegisterDefinition(item);
                     return item;
                 }
@@ -304,11 +308,35 @@ public class Inventory : MonoBehaviour
             var resolved = registry.Get(itemId);
             if (resolved != null)
             {
+                Debug.Log($"[Inventory] Item '{itemId}' resuelto desde ItemRegistry");
                 RegisterDefinition(resolved);
                 return resolved;
             }
         }
 
+        // Fallback: intentar cargar directamente desde Resources por nombre del asset
+        // Esto es útil para items que no están en el registro pero sí existen como assets
+        var directLoad = Resources.Load<ItemData>($"Items/{itemId}");
+        if (directLoad != null)
+        {
+            Debug.Log($"[Inventory] Item '{itemId}' resuelto directamente desde Resources/Items/");
+            RegisterDefinition(directLoad);
+            return directLoad;
+        }
+        
+        // Intentar buscar en todas las carpetas de Resources
+        var allItems = Resources.LoadAll<ItemData>("");
+        foreach (var item in allItems)
+        {
+            if (item != null && item.itemId == itemId)
+            {
+                Debug.Log($"[Inventory] Item '{itemId}' encontrado mediante búsqueda exhaustiva en Resources");
+                RegisterDefinition(item);
+                return item;
+            }
+        }
+
+        Debug.LogWarning($"[Inventory] ⚠️ No se pudo resolver el item '{itemId}' desde ninguna fuente. Verifica que el itemId coincida con el asset o que esté en el ItemRegistry.");
         return null;
     }
 

@@ -35,15 +35,46 @@ public class ItemRegistrySO : ScriptableObject
     public ItemData Get(string itemId)
     {
         if (string.IsNullOrEmpty(itemId)) return null;
-        if (_map.Count == 0) Rebuild();
-        _map.TryGetValue(itemId, out var item);
-        return item;
+        
+        // Siempre reconstruir si el mapa está vacío pero tenemos items
+        if (_map.Count == 0 && items != null && items.Count > 0)
+        {
+            Debug.Log($"[ItemRegistrySO] Mapa vacío con {items.Count} items, reconstruyendo...");
+            Rebuild();
+        }
+        
+        if (_map.TryGetValue(itemId, out var item))
+            return item;
+            
+        // Si no se encontró, intentar búsqueda case-insensitive como fallback
+        foreach (var kvp in _map)
+        {
+            if (string.Equals(kvp.Key, itemId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.LogWarning($"[ItemRegistrySO] Item '{itemId}' encontrado con case diferente: '{kvp.Key}'. Considera corregir el itemId.");
+                return kvp.Value;
+            }
+        }
+        
+        return null;
     }
 
     public static ItemRegistrySO LoadDefault()
     {
         if (_cachedInstance == null)
+        {
             _cachedInstance = Resources.Load<ItemRegistrySO>("ItemRegistry");
+            if (_cachedInstance != null)
+            {
+                // Forzar rebuild al cargar para asegurar que el mapa está actualizado
+                _cachedInstance.Rebuild();
+                Debug.Log($"[ItemRegistrySO] Cargado desde Resources con {_cachedInstance.items?.Count ?? 0} items");
+            }
+            else
+            {
+                Debug.LogWarning("[ItemRegistrySO] No se encontró ItemRegistry en Resources/ItemRegistry. Los items no se resolverán correctamente al cargar partidas.");
+            }
+        }
         return _cachedInstance;
     }
 }

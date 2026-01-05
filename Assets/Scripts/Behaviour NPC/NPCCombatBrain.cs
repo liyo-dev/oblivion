@@ -549,6 +549,14 @@ namespace Game.NPC
                 yield break;
             }
             
+            // ✅ NUEVO: Verificar que tenemos línea de fuego clara (sin obstáculos en el camino)
+            if (!HasClearLineOfFire())
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Ataque cancelado - Obstáculo bloqueando línea de fuego, reposicionando...");
+                _currentState = CombatState.REPOSITION;
+                yield break;
+            }
+            
             StopMove(); // Quieto para disparar
             _animator.FaceTarget(_player.position);
 
@@ -582,6 +590,14 @@ namespace Game.NPC
                     yield break;
                 }
                 
+                // ✅ NUEVO: Verificar línea de fuego de nuevo antes de disparar
+                if (!HasClearLineOfFire())
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Ataque cancelado durante windup - Obstáculo apareció en línea de fuego");
+                    _currentState = CombatState.REPOSITION;
+                    yield break;
+                }
+                
                 // Ejecutar Animación
                 _rawAnimator.Play(chosenAttack.animationState, settings.upperBodyLayer);
                 
@@ -595,6 +611,14 @@ namespace Game.NPC
                     {
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Disparo cancelado - Jugador se escondió durante animación");
                         _currentState = CombatState.SEARCHING;
+                        yield break;
+                    }
+                    
+                    // ✅ NUEVO: Verificación final de línea de fuego
+                    if (!HasClearLineOfFire())
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Disparo cancelado - Obstáculo en línea de fuego");
+                        _currentState = CombatState.REPOSITION;
                         yield break;
                     }
                     
@@ -1116,26 +1140,71 @@ namespace Game.NPC
         private bool TryGetCoverPosition(out Vector3 position)
         {
             position = Vector3.zero;
-            // Buscar objetos en el radio
+            
+            // Usar el mismo método mejorado de búsqueda de cobertura
+            if (FindCoverBehindObstacle(out position))
+            {
+                return true;
+            }
+            
+            // Fallback: buscar en el radio configurado con coverLayerMask
             Collider[] hits = Physics.OverlapSphere(transform.position, settings.coverSearchRadius, settings.coverLayerMask);
             
-            float bestDist = float.MaxValue;
+            if (hits.Length == 0)
+            {
+                return false;
+            }
+            
+            float bestScore = float.MinValue;
             bool found = false;
+            int defaultLayer = LayerMask.NameToLayer("Default");
+            LayerMask defaultMask = 1 << defaultLayer;
 
             foreach (var hit in hits)
             {
+                if (hit.isTrigger) continue;
+                
                 // Calcular punto opuesto al player detrás del objeto
                 Vector3 dirFromPlayer = (hit.transform.position - _player.position).normalized;
-                Vector3 coverSpot = hit.transform.position + (dirFromPlayer * 2.5f); // 2.5m detrás del objeto
-
-                // Verificar si es accesible en NavMesh
-                NavMeshHit navHit;
-                if (NavMesh.SamplePosition(coverSpot, out navHit, 2.0f, NavMesh.AllAreas))
+                dirFromPlayer.y = 0;
+                
+                // Probar varias distancias
+                for (float dist = 1.5f; dist <= 4f; dist += 0.5f)
                 {
-                    float d = Vector3.Distance(transform.position, navHit.position);
-                    if (d < bestDist)
+                    Vector3 coverSpot = hit.transform.position + (dirFromPlayer * dist);
+
+                    // Verificar si es accesible en NavMesh
+                    if (!NavMesh.SamplePosition(coverSpot, out NavMeshHit navHit, 2.0f, NavMesh.AllAreas))
                     {
-                        bestDist = d;
+                        continue;
+                    }
+                    
+                    // Verificar espacio libre
+                    if (!HasClearSpace(navHit.position, 0.5f, 2f, defaultMask))
+                    {
+                        continue;
+                    }
+                    
+                    // Verificar camino accesible
+                    NavMeshPath path = new NavMeshPath();
+                    if (!_agent.CalculatePath(navHit.position, path) || path.status != NavMeshPathStatus.PathComplete)
+                    {
+                        continue;
+                    }
+                    
+                    // Calcular puntuación
+                    float d = Vector3.Distance(transform.position, navHit.position);
+                    float score = 20f - d;
+                    
+                    // Bonus si puede disparar desde ahí
+                    if (CanFireFromPosition(navHit.position, hit, defaultMask))
+                    {
+                        score += 10f;
+                    }
+                    
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
                         position = navHit.position;
                         found = true;
                     }
@@ -1236,6 +1305,71 @@ namespace Game.NPC
             
             // No golpeó nada - línea de visión clara (caso raro)
             Debug.DrawRay(origin, direction, Color.yellow);
+            return true;
+        }
+        
+        /// <summary>
+        /// Verifica si hay una línea de fuego clara para disparar un proyectil.
+        /// Similar a CheckLineOfSight pero más estricto: verifica desde la posición de disparo
+        /// y con un margen de seguridad para evitar que el proyectil impacte con obstáculos cercanos.
+        /// </summary>
+        private bool HasClearLineOfFire()
+        {
+            if (_player == null) return false;
+            
+            // Posición de origen del proyectil (frente al NPC)
+            Vector3 spawnPos = transform.position + Vector3.up * 1.5f + transform.forward * 0.5f;
+            Vector3 targetPos = _player.position + Vector3.up * 1.0f;
+            Vector3 direction = (targetPos - spawnPos).normalized;
+            float distance = Vector3.Distance(spawnPos, targetPos);
+            
+            // Layer mask para obstáculos (Default layer)
+            int defaultLayer = LayerMask.NameToLayer("Default");
+            LayerMask obstacleMask = 1 << defaultLayer;
+            
+            // Verificar si hay obstáculos en el camino del proyectil
+            if (Physics.Raycast(spawnPos, direction, out RaycastHit hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+            {
+                // Hay un obstáculo entre el NPC y el jugador
+                float distToObstacle = hit.distance;
+                
+                // Si el obstáculo está muy cerca (menos de 2 metros), definitivamente no disparar
+                if (distToObstacle < 2f)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Línea de fuego bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m - MUY CERCA");
+                    Debug.DrawLine(spawnPos, hit.point, Color.red, 0.5f);
+                    return false;
+                }
+                
+                // Si el obstáculo está a media distancia, también es peligroso
+                if (distToObstacle < distance * 0.5f)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Línea de fuego parcialmente bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m");
+                    Debug.DrawLine(spawnPos, hit.point, Color.yellow, 0.5f);
+                    return false;
+                }
+            }
+            
+            // Verificación adicional: raycast esférico para detectar obstáculos cercanos al camino del proyectil
+            float projectileRadius = 0.3f; // Radio aproximado del proyectil
+            if (Physics.SphereCast(spawnPos, projectileRadius, direction, out RaycastHit sphereHit, distance * 0.9f, obstacleMask, QueryTriggerInteraction.Ignore))
+            {
+                // Verificar si no es el jugador
+                if (!sphereHit.collider.CompareTag("Player"))
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Proyectil podría rozar con {sphereHit.collider.gameObject.name}");
+                    
+                    // Si está muy cerca, no disparar
+                    if (sphereHit.distance < 1.5f)
+                    {
+                        Debug.DrawLine(spawnPos, sphereHit.point, Color.magenta, 0.5f);
+                        return false;
+                    }
+                }
+            }
+            
+            // Línea de fuego clara
+            Debug.DrawLine(spawnPos, targetPos, Color.green, 0.5f);
             return true;
         }
         
@@ -1535,6 +1669,7 @@ namespace Game.NPC
         /// <summary>
         /// Busca objetos en el layer Default (obstáculos) para esconderse detrás de ellos.
         /// Retorna true si encontró una posición de cobertura válida.
+        /// MEJORADO: Verifica que haya espacio real, que no atraviese obstáculos, y que pueda disparar.
         /// </summary>
         private bool FindCoverBehindObstacle(out Vector3 coverPosition)
         {
@@ -1563,45 +1698,108 @@ namespace Game.NPC
             Vector3 bestPosition = transform.position;
             bool foundValidCover = false;
             
+            // Tamaño del NPC para verificaciones de espacio
+            float npcRadius = 0.5f; // Radio aproximado del NPC
+            float npcHeight = 2f;   // Altura del NPC
+            float minClearanceFromObstacle = 1.5f; // Distancia mínima detrás del obstáculo
+            float maxClearanceFromObstacle = 4f;   // Distancia máxima detrás del obstáculo
+            
             foreach (var obstacle in nearbyObstacles)
             {
                 // Ignorar triggers
                 if (obstacle.isTrigger) continue;
                 
-                // Obtener el punto más cercano del obstáculo al NPC
-                Vector3 obstaclePoint = obstacle.ClosestPoint(transform.position);
-                
-                // Calcular dirección del jugador al obstáculo
-                Vector3 dirPlayerToObstacle = (obstaclePoint - _player.position).normalized;
-                
-                // Posición de cobertura: detrás del obstáculo, alejándose del jugador
-                Vector3 potentialCoverPos = obstaclePoint + dirPlayerToObstacle * 2f;
-                
-                // Verificar que esté en NavMesh
-                if (!NavMesh.SamplePosition(potentialCoverPos, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
+                // Ignorar obstáculos muy grandes (probablemente son terreno o estructuras completas)
+                Bounds bounds = obstacle.bounds;
+                if (bounds.size.x > 15f || bounds.size.z > 15f)
                 {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⏭️ Ignorando {obstacle.gameObject.name} - demasiado grande ({bounds.size})");
                     continue;
                 }
                 
-                // Verificar que el obstáculo esté entre el jugador y la posición de cobertura
-                Vector3 dirToPlayer = (_player.position - navHit.position).normalized;
-                if (Physics.Raycast(navHit.position + Vector3.up, dirToPlayer, 
-                    Vector3.Distance(navHit.position, _player.position), defaultMask))
+                // Obtener el centro del obstáculo
+                Vector3 obstacleCenter = bounds.center;
+                
+                // Calcular dirección del jugador al obstáculo
+                Vector3 dirPlayerToObstacle = (obstacleCenter - _player.position).normalized;
+                dirPlayerToObstacle.y = 0; // Mantener en el plano horizontal
+                
+                // Probar varias distancias detrás del obstáculo
+                for (float distance = minClearanceFromObstacle; distance <= maxClearanceFromObstacle; distance += 0.5f)
                 {
-                    // Hay un obstáculo entre la posición de cobertura y el jugador - PERFECTO
+                    // Posición de cobertura: detrás del obstáculo, alejándose del jugador
+                    Vector3 potentialCoverPos = obstacleCenter + dirPlayerToObstacle * distance;
                     
-                    // Calcular puntuación: preferir obstáculos más cercanos al NPC
-                    float distanceToNpc = Vector3.Distance(transform.position, navHit.position);
+                    // 1. Verificar que esté en NavMesh
+                    if (!NavMesh.SamplePosition(potentialCoverPos, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
+                    {
+                        continue;
+                    }
+                    
+                    Vector3 coverPos = navHit.position;
+                    
+                    // 2. CRÍTICO: Verificar que hay espacio libre en la posición de cobertura
+                    // Esto evita que el NPC se meta dentro de casas/estructuras
+                    if (!HasClearSpace(coverPos, npcRadius, npcHeight, defaultMask))
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Posición {coverPos} no tiene espacio libre - rechazada");
+                        continue;
+                    }
+                    
+                    // 3. Verificar que el camino desde la posición actual hasta la cobertura es válido
+                    NavMeshPath path = new NavMeshPath();
+                    if (!_agent.CalculatePath(coverPos, path) || path.status != NavMeshPathStatus.PathComplete)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Camino a {coverPos} no es accesible - rechazada");
+                        continue;
+                    }
+                    
+                    // 4. Verificar que el obstáculo realmente bloquea la visión del jugador
+                    Vector3 dirToPlayer = (_player.position - coverPos).normalized;
+                    float distToPlayer = Vector3.Distance(coverPos, _player.position);
+                    
+                    // Raycast desde la posición de cobertura hacia el jugador
+                    Vector3 rayOrigin = coverPos + Vector3.up * 1f; // A altura de torso
+                    if (!Physics.Raycast(rayOrigin, dirToPlayer, distToPlayer * 0.8f, defaultMask))
+                    {
+                        // NO hay obstáculo entre la cobertura y el jugador - no es una buena cobertura
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {coverPos} no tiene cobertura real contra el jugador");
+                        continue;
+                    }
+                    
+                    // 5. NUEVO: Verificar que hay al menos un ángulo desde donde PUEDE disparar
+                    // (Para evitar que se quede atrapado sin poder atacar)
+                    bool canFireFromCover = CanFireFromPosition(coverPos, obstacle, defaultMask);
+                    
+                    // 6. Calcular puntuación
+                    float distanceToNpc = Vector3.Distance(transform.position, coverPos);
                     float score = 20f - distanceToNpc; // Mayor puntuación = más cerca
+                    
+                    // Bonus si puede disparar desde la cobertura
+                    if (canFireFromCover)
+                    {
+                        score += 10f;
+                    }
+                    
+                    // Bonus por estar a una distancia óptima del jugador
+                    float distFromPlayer = Vector3.Distance(coverPos, _player.position);
+                    if (distFromPlayer >= settings.minSafeDistance && distFromPlayer <= settings.maxDistance)
+                    {
+                        score += 5f;
+                    }
                     
                     if (score > bestScore)
                     {
                         bestScore = score;
-                        bestPosition = navHit.position;
+                        bestPosition = coverPos;
                         foundValidCover = true;
                         
-                        Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Cobertura válida encontrada: {obstacle.gameObject.name} (score: {score:F1})");
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Cobertura válida: {obstacle.gameObject.name} pos:{coverPos} (score: {score:F1}, canFire:{canFireFromCover})");
                     }
+                    
+                    // Si encontramos una buena posición a esta distancia, no probar más lejos
+                    if (foundValidCover && canFireFromCover)
+                        break;
                 }
             }
             
@@ -1613,6 +1811,114 @@ namespace Game.NPC
             }
             
             Debug.Log($"[CombatBrain:{gameObject.name}] ❌ No se encontró cobertura válida detrás de obstáculos");
+            return false;
+        }
+        
+        /// <summary>
+        /// Verifica si hay espacio libre suficiente para que el NPC esté en una posición.
+        /// Esto evita que se meta dentro de estructuras cerradas.
+        /// </summary>
+        private bool HasClearSpace(Vector3 position, float radius, float height, LayerMask obstacleMask)
+        {
+            // Verificar con un overlap de cápsula si hay espacio libre
+            Vector3 bottom = position + Vector3.up * radius;
+            Vector3 top = position + Vector3.up * (height - radius);
+            
+            // Si hay colisión, no hay espacio libre
+            Collider[] colliders = Physics.OverlapCapsule(bottom, top, radius * 0.9f, obstacleMask);
+            
+            if (colliders.Length > 0)
+            {
+                // Hay algo en el camino - verificar si es algo que debería bloquear
+                foreach (var col in colliders)
+                {
+                    // Ignorar triggers
+                    if (col.isTrigger) continue;
+                    
+                    // Si hay un collider sólido, no hay espacio
+                    return false;
+                }
+            }
+            
+            // Verificación adicional: raycast hacia arriba para detectar techos
+            if (Physics.Raycast(position + Vector3.up * 0.1f, Vector3.up, height + 1f, obstacleMask))
+            {
+                // Hay un techo encima - probablemente es interior de una estructura
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {position} tiene techo - probablemente interior");
+                return false;
+            }
+            
+            // Verificación adicional: varios raycasts horizontales para detectar paredes cercanas
+            int wallsDetected = 0;
+            float checkRadius = 2f;
+            Vector3[] directions = { Vector3.forward, Vector3.back, Vector3.left, Vector3.right, 
+                                     (Vector3.forward + Vector3.right).normalized,
+                                     (Vector3.forward + Vector3.left).normalized,
+                                     (Vector3.back + Vector3.right).normalized,
+                                     (Vector3.back + Vector3.left).normalized };
+            
+            foreach (var dir in directions)
+            {
+                if (Physics.Raycast(position + Vector3.up, dir, checkRadius, obstacleMask))
+                {
+                    wallsDetected++;
+                }
+            }
+            
+            // Si hay paredes en más de 5 de 8 direcciones, probablemente está encerrado
+            if (wallsDetected >= 5)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Posición {position} rodeada por {wallsDetected}/8 paredes - espacio cerrado");
+                return false;
+            }
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Verifica si el NPC puede disparar al jugador desde una posición de cobertura.
+        /// Busca ángulos laterales desde donde tenga línea de tiro clara.
+        /// </summary>
+        private bool CanFireFromPosition(Vector3 coverPosition, Collider coverObstacle, LayerMask obstacleMask)
+        {
+            // Verificar si moviéndose ligeramente a los lados puede tener línea de tiro
+            Vector3 dirToPlayer = (_player.position - coverPosition).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, dirToPlayer).normalized;
+            
+            float[] offsets = { -2f, -1f, 1f, 2f }; // Probar posiciones a los lados
+            
+            foreach (float offset in offsets)
+            {
+                Vector3 peekPosition = coverPosition + right * offset;
+                
+                // Verificar que la posición de "asomarse" está en NavMesh
+                if (!NavMesh.SamplePosition(peekPosition, out NavMeshHit navHit, 1f, NavMesh.AllAreas))
+                    continue;
+                
+                Vector3 firePosition = navHit.position + Vector3.up * 1.5f; // Altura de disparo
+                Vector3 targetPosition = _player.position + Vector3.up * 1f; // Centro del jugador
+                
+                Vector3 fireDir = (targetPosition - firePosition).normalized;
+                float fireDist = Vector3.Distance(firePosition, targetPosition);
+                
+                // Verificar si hay línea de tiro clara (excluyendo el obstáculo de cobertura)
+                RaycastHit hit;
+                if (Physics.Raycast(firePosition, fireDir, out hit, fireDist, obstacleMask))
+                {
+                    // Hay algo en el camino - verificar si es el mismo obstáculo de cobertura
+                    if (hit.collider == coverObstacle)
+                    {
+                        // El proyectil impactaría con el obstáculo de cobertura - no válido
+                        continue;
+                    }
+                }
+                else
+                {
+                    // Línea de tiro clara desde esta posición
+                    return true;
+                }
+            }
+            
             return false;
         }
         

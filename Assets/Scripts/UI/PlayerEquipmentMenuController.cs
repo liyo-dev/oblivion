@@ -177,9 +177,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     float _toggleCooldownUntil;
     InputActionMapScope _inputScope;
     
-    // Para mantener animaciones del player en el menÃº
+    // Para mantener animaciones del player en el menú
     Animator _playerAnimator;
     AnimatorUpdateMode _storedAnimatorUpdateMode;
+
+    // Hashes cacheados para parámetros del Animator (evitar búsquedas por string)
+    static readonly int AnimHash_InputMagnitude = Animator.StringToHash("InputMagnitude");
+    static readonly int AnimHash_Speed = Animator.StringToHash("Speed");
+    static readonly int AnimHash_VerticalVelocity = Animator.StringToHash("VerticalVelocity");
 
     readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
@@ -943,13 +948,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // Forzar al Animator a ir a idle (detener animaciones de movimiento)
         if (_playerAnimator != null)
         {
-            // Resetear parÃ¡metros comunes de movimiento a 0 para forzar idle
-            if (_playerAnimator.parameters.Any(p => p.name == "InputMagnitude"))
-                _playerAnimator.SetFloat("InputMagnitude", 0f);
-            if (_playerAnimator.parameters.Any(p => p.name == "Speed"))
-                _playerAnimator.SetFloat("Speed", 0f);
-            if (_playerAnimator.parameters.Any(p => p.name == "VerticalVelocity"))
-                _playerAnimator.SetFloat("VerticalVelocity", 0f);
+            // Resetear parámetros comunes de movimiento a 0 para forzar idle (usando hashes cacheados)
+            _playerAnimator.SetFloat(AnimHash_InputMagnitude, 0f);
+            _playerAnimator.SetFloat(AnimHash_Speed, 0f);
+            _playerAnimator.SetFloat(AnimHash_VerticalVelocity, 0f);
             
             Debug.Log("[PlayerEquipmentMenuController] Animator forzado a idle");
         }
@@ -1038,10 +1040,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
         }
 
-        // Forzar parámetros a 0 para mantener idle
-        _playerAnimator.SetFloat("InputMagnitude", 0f);
-        _playerAnimator.SetFloat("Speed", 0f);
-        _playerAnimator.SetFloat("VerticalVelocity", 0f);
+        // Forzar parámetros a 0 para mantener idle (usando hashes cacheados)
+        _playerAnimator.SetFloat(AnimHash_InputMagnitude, 0f);
+        _playerAnimator.SetFloat(AnimHash_Speed, 0f);
+        _playerAnimator.SetFloat(AnimHash_VerticalVelocity, 0f);
 
         // Asegurar que el AnimatorUpdateMode esté en UnscaledTime
         if (_playerAnimator.updateMode != AnimatorUpdateMode.UnscaledTime)

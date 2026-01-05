@@ -17,12 +17,17 @@ MonoBehaviour:
   questChain:
   - questData: {fileID: 11400000, guid: 4c559fe0081150c48931b642667f068f, type: 2}
     completionMode: 0
-    autoDetectItemDelivery: 1
+    autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
-    itemTag: Pickable
+    itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requiredItems: []
+    requiredItems:
+    - item: {fileID: 11400000, guid: 662682865ec7dfa46998b328a28305a6, type: 2}
+      amount: 1
+      stepConditionId: 
+      stepIndex: 0
+      consumeOnComplete: 1
     dlgBefore: {fileID: 11400000, guid: a29094689e4273944abff20c0ba4bb69, type: 2}
     dlgInProgress: {fileID: 11400000, guid: 2f908d5f778e1ca4daab3e6357991437, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: 501dcf340a694a040b39a0286b63a1d8, type: 2}
@@ -56,7 +61,7 @@ MonoBehaviour:
       customAction:
         m_PersistentCalls:
           m_Calls: []
-  enableItemDetection: 1
+  enableItemDetection: 0
   detectionRadius: 3
   detectionAngle: 90
   detectionLayer:
