@@ -8577,7 +8577,8 @@ GameObject:
   - component: {fileID: 2430395509322048278}
   - component: {fileID: 6712660655615380157}
   - component: {fileID: 6990857463423798327}
-  - component: {fileID: 8808394237928913403}
+  - component: {fileID: 2687847307543322386}
+  - component: {fileID: 1495092821517079582}
   m_Layer: 8
   m_Name: Mago #2
   m_TagString: Untagged
@@ -8712,32 +8713,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 4979155756804446372}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  battleIdleState: Idle_Battle_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
   upperBodyIdleState: UpperIdle
-  greetState: Greeting01_NoWeapon
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  rotationSmoothness: 0.15
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
+  defendState: Idle_Battle_NoWeapon
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
+  defendHitState: DefendHit_NoWeapon
+  dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
+  victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
-  verboseLogs: 0
-  forceOneShotsOnBaseLayer: 0
-  movementParamScale: 1.25
-  locomotionAnimSpeed: 1.25
-  minBlendWhileMoving: 0.7
 --- !u!114 &6712660655615380157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8753,6 +8760,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 3542875088925200438}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -8799,7 +8807,7 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &8808394237928913403
+--- !u!114 &2687847307543322386
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8808,9 +8816,46 @@ MonoBehaviour:
   m_GameObject: {fileID: 2924676094345795985}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df2e7c78bc8a4f3aa40de3d6bc3dd8dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 7e56e4d3ef79460980580a9918b788f8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCCombatBrain
+  m_EditorClassIdentifier: Assembly-CSharp::Targetable
+  targetingRadius: 10
+  isInActiveCombat: 0
+--- !u!114 &1495092821517079582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2924676094345795985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 2
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 11400000, guid: 76a4c419fa9b7c0449e00e0c834dbfbf, type: 2}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &2952773313216640132
 GameObject:
   m_ObjectHideFlags: 0
@@ -23126,7 +23171,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8944508395509264793, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
       propertyPath: m_FillAmount
-      value: 1
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 8944508395509264793, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
       propertyPath: m_FillOrigin

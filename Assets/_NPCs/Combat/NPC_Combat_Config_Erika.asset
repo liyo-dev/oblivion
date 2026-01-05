@@ -51,12 +51,12 @@ MonoBehaviour:
   spell1Chance: 0.5
   spell2Chance: 0.3
   spell3Chance: 0.2
-  useShield: 1
-  shieldPrefab: {fileID: 1610925318041843781, guid: acbb24fba0daebe45b806e648b1cf24e, type: 3}
+  useShield: 0
+  shieldPrefab: {fileID: 0}
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
-  useTacticalRetreat: 0
+  useTacticalRetreat: 1
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
   coverSearchRadius: 15

@@ -29,6 +29,10 @@
             "value": "Leonardo"
         },
         {
+            "key": "CHAR_MAGO",
+            "value": "Mago"
+        },
+        {
             "key": "CHAR_MANUEL",
             "value": "Manuel"
         },
@@ -387,6 +391,22 @@
         {
             "key": "DLG_LETTER_INTRO_02",
             "value": "Te espero en la entrada del reino."
+        },
+        {
+            "key": "DLG_MAGO#1_ALERT",
+            "value": "No deberías estar aquí."
+        },
+        {
+            "key": "DLG_MAGO#1_DEFEATED",
+            "value": "¡Auch! Eso ha dolido."
+        },
+        {
+            "key": "DLG_MAGO#2_ALERT",
+            "value": "¡Alto ahí! Aqui se cobra peaje muchacho."
+        },
+        {
+            "key": "DLG_MAGO#2_DEFEATED",
+            "value": "Seguiré entrenando para estar a tu altura."
         },
         {
             "key": "DLG_MANUEL_01",

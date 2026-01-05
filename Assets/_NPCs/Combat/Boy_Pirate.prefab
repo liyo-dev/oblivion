@@ -8497,7 +8497,6 @@ GameObject:
   - component: {fileID: 1423133109878111967}
   - component: {fileID: 4090434116678142870}
   - component: {fileID: 6453314053097790552}
-  - component: {fileID: 5132545520415850134}
   - component: {fileID: 2487325561647847331}
   - component: {fileID: 9096993529721017303}
   m_Layer: 7
@@ -8634,6 +8633,7 @@ MonoBehaviour:
   mode: 2
   hint: {fileID: 9213196286221750080}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -8700,28 +8700,9 @@ MonoBehaviour:
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
-  syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 1
   debugMode: 0
   drawGizmos: 1
---- !u!114 &5132545520415850134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7766501778076261952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
-  destroyOnDeath: 0
-  deathVFX: {fileID: 0}
-  deathVFXLifetime: 3
-  invulnerabilitySeconds: 0
-  debugLogs: 0
 --- !u!114 &2487325561647847331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8734,7 +8715,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e56e4d3ef79460980580a9918b788f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
-  targetingRadius: 8
+  targetingRadius: 15
+  isInActiveCombat: 0
 --- !u!114 &9096993529721017303
 MonoBehaviour:
   m_ObjectHideFlags: 0
