@@ -42,6 +42,9 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     Camera _cam;
     // buffer reutilizable para evitar allocations en OverlapSphereNonAlloc
     private Collider[] _overlapBuffer = new Collider[64];
+    
+    // Referencia al Damageable del target actual para detectar muerte inmediata
+    private Damageable _currentTargetDamageable;
 
     [Header("Feedback de Target (Opcional)")]
     [SerializeField] private bool enableMarker = true;
@@ -86,6 +89,35 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         _markerTween?.Kill();
         if (_marker) Destroy(_marker.gameObject);
+        
+        // Desuscribirse del Damageable del target actual
+        if (_currentTargetDamageable != null)
+        {
+            _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
+            _currentTargetDamageable = null;
+        }
+    }
+    
+    /// <summary>
+    /// Callback cuando el target actual muere - limpia el marker inmediatamente
+    /// </summary>
+    private void OnCurrentTargetDied()
+    {
+        Debug.Log($"[PlayerTargeting] 💀 Target muerto, limpiando marker inmediatamente");
+        
+        // Desuscribirse
+        if (_currentTargetDamageable != null)
+        {
+            _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
+            _currentTargetDamageable = null;
+        }
+        
+        // Limpiar target y marker
+        CurrentTarget = null;
+        OnTargetChanged(null);
+        
+        // Forzar un scan inmediato para buscar nuevo target
+        _nextScan = 0f;
     }
 
     void Update()
@@ -214,6 +246,23 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     void OnTargetChanged(Transform newT)
     {
         Debug.Log($"[PlayerTargeting] 🎯 Target changed: {(newT != null ? newT.name : "NULL")}");
+        
+        // Desuscribirse del Damageable anterior
+        if (_currentTargetDamageable != null)
+        {
+            _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
+            _currentTargetDamageable = null;
+        }
+        
+        // Suscribirse al nuevo Damageable para detectar muerte inmediata
+        if (newT != null)
+        {
+            _currentTargetDamageable = newT.GetComponentInParent<Damageable>();
+            if (_currentTargetDamageable != null)
+            {
+                _currentTargetDamageable.OnDied += OnCurrentTargetDied;
+            }
+        }
         
         if (!_marker) return;
 

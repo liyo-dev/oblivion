@@ -61,10 +61,16 @@ namespace Game.NPC.Common
                 _iconInstance.transform.localPosition = _baseLocalPosition + new Vector3(0f, bounce, 0f);
             }
             
-            // Billboard hacia la cámara
+            // Billboard hacia la cámara (solo rotación horizontal, sin copiar el pitch/roll)
             if (billboardToCamera && _mainCamera != null)
             {
-                _iconInstance.transform.rotation = _mainCamera.transform.rotation;
+                Vector3 lookDir = _mainCamera.transform.position - _iconInstance.transform.position;
+                lookDir.y = 0; // Ignorar diferencia vertical para evitar inclinación
+                
+                if (lookDir.sqrMagnitude > 0.001f)
+                {
+                    _iconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
             }
         }
         

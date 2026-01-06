@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 
@@ -307,11 +307,18 @@ namespace Game.NPC.Common
                     _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
                 }
                 
-                // Billboard hacia la cámara activa
+                // Billboard hacia la cámara activa (solo rotación horizontal, sin copiar el pitch/roll de la cámara)
                 var cam = GetCurrentCamera();
                 if (cam != null)
                 {
-                    _currentIconInstance.transform.rotation = cam.transform.rotation;
+                    // Calcular dirección hacia la cámara pero solo en el plano horizontal
+                    Vector3 lookDir = cam.transform.position - _currentIconInstance.transform.position;
+                    lookDir.y = 0; // Ignorar diferencia vertical para evitar inclinación
+                    
+                    if (lookDir.sqrMagnitude > 0.001f)
+                    {
+                        _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                    }
                 }
                 
                 elapsed += Time.deltaTime;
@@ -357,11 +364,18 @@ namespace Game.NPC.Common
                     _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
                 }
                 
-                // Billboard hacia la cámara activa
+                // Billboard hacia la cámara activa (solo rotación horizontal, sin copiar el pitch/roll de la cámara)
                 var cam = GetCurrentCamera();
                 if (cam != null && _currentIconInstance != null)
                 {
-                    _currentIconInstance.transform.rotation = cam.transform.rotation;
+                    // Calcular dirección hacia la cámara pero solo en el plano horizontal
+                    Vector3 lookDir = cam.transform.position - _currentIconInstance.transform.position;
+                    lookDir.y = 0; // Ignorar diferencia vertical para evitar inclinación
+                    
+                    if (lookDir.sqrMagnitude > 0.001f)
+                    {
+                        _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                    }
                 }
                 
                 yield return null;
