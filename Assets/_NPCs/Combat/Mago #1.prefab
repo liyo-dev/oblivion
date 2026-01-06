@@ -3748,7 +3748,7 @@ GameObject:
   - component: {fileID: 1571068136761087}
   - component: {fileID: 4208165024470380241}
   - component: {fileID: 6105877552975183288}
-  m_Layer: 8
+  m_Layer: 7
   m_Name: Mago #1
   m_TagString: Untagged
   m_Icon: {fileID: 0}

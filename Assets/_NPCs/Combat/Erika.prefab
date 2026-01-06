@@ -1652,7 +1652,7 @@ GameObject:
   - component: {fileID: -6525812222826922307}
   - component: {fileID: 7490619964796838480}
   - component: {fileID: 6743273565896207114}
-  m_Layer: 8
+  m_Layer: 7
   m_Name: Erika
   m_TagString: Untagged
   m_Icon: {fileID: 0}

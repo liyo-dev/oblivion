@@ -409,6 +409,14 @@
             "value": "Seguiré entrenando para estar a tu altura."
         },
         {
+            "key": "DLG_MAGO#3_ALERT",
+            "value": "Demuestrame tu poder."
+        },
+        {
+            "key": "DLG_MAGO#3_DEFEATED",
+            "value": "Pues si que eres fuerte."
+        },
+        {
             "key": "DLG_MANUEL_01",
             "value": "Lo que ves entre esas columnas es un punto de guardado. Acércate y podrás guardar la partida."
         },

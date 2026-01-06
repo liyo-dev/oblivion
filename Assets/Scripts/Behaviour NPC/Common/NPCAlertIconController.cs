@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 
@@ -40,10 +40,80 @@ namespace Game.NPC.Common
         private Camera _mainCamera;
         private Tween _currentTween;
         private bool _isHiding;
+        private bool _hiddenDuringDialogue; // Si se ocultó por diálogo
+        private Vector3 _savedIconScale;    // Escala guardada antes de ocultar
         
         private void Start()
         {
+            UpdateCameraReference();
+        }
+        
+        private void OnEnable()
+        {
+            // Suscribirse a eventos de diálogo para ocultar iconos durante conversaciones
+            DialogueManager.OnDialogueStarted += OnDialogueStarted;
+            DialogueManager.OnDialogueClosed += OnDialogueClosed;
+        }
+        
+        private void OnDisable()
+        {
+            DialogueManager.OnDialogueStarted -= OnDialogueStarted;
+            DialogueManager.OnDialogueClosed -= OnDialogueClosed;
+        }
+        
+        /// <summary>
+        /// Cuando inicia un diálogo, ocultar el icono temporalmente
+        /// </summary>
+        private void OnDialogueStarted(Transform npcInvolved)
+        {
+            if (_currentIconInstance != null && !_isHiding && !_hiddenDuringDialogue)
+            {
+                _hiddenDuringDialogue = true;
+                _savedIconScale = _currentIconInstance.transform.localScale;
+                
+                // Ocultar con animación rápida
+                _currentTween?.Kill();
+                _currentIconInstance.transform.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack);
+            }
+        }
+        
+        /// <summary>
+        /// Cuando termina un diálogo, restaurar el icono si estaba visible
+        /// </summary>
+        private void OnDialogueClosed(Transform npcInvolved)
+        {
+            if (_hiddenDuringDialogue && _currentIconInstance != null)
+            {
+                _hiddenDuringDialogue = false;
+                
+                // Restaurar con animación
+                _currentTween?.Kill();
+                _currentIconInstance.transform.DOScale(_savedIconScale, 0.2f).SetEase(Ease.OutBack);
+            }
+        }
+        
+        /// <summary>
+        /// Actualiza la referencia de cámara para usar la cámara activa actual
+        /// </summary>
+        private void UpdateCameraReference()
+        {
+            // Prioridad: Camera.main (que suele ser la cámara activa)
+            // Esto funciona correctamente con Cinemachine porque Camera.main
+            // sigue siendo el brain aunque la cámara virtual cambie
             _mainCamera = Camera.main;
+        }
+        
+        /// <summary>
+        /// Obtiene la cámara actual para el billboard (actualiza si es necesario)
+        /// </summary>
+        private Camera GetCurrentCamera()
+        {
+            // Si no hay cámara o la anterior ya no es válida, actualizar
+            if (_mainCamera == null || !_mainCamera.isActiveAndEnabled)
+            {
+                UpdateCameraReference();
+            }
+            return _mainCamera;
         }
         
         /// <summary>
@@ -237,10 +307,11 @@ namespace Game.NPC.Common
                     _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
                 }
                 
-                // Billboard hacia la cámara
-                if (_mainCamera != null)
+                // Billboard hacia la cámara activa
+                var cam = GetCurrentCamera();
+                if (cam != null)
                 {
-                    _currentIconInstance.transform.rotation = _mainCamera.transform.rotation;
+                    _currentIconInstance.transform.rotation = cam.transform.rotation;
                 }
                 
                 elapsed += Time.deltaTime;
@@ -286,10 +357,11 @@ namespace Game.NPC.Common
                     _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
                 }
                 
-                // Billboard hacia la cámara
-                if (_mainCamera != null && _currentIconInstance != null)
+                // Billboard hacia la cámara activa
+                var cam = GetCurrentCamera();
+                if (cam != null && _currentIconInstance != null)
                 {
-                    _currentIconInstance.transform.rotation = _mainCamera.transform.rotation;
+                    _currentIconInstance.transform.rotation = cam.transform.rotation;
                 }
                 
                 yield return null;

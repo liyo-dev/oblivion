@@ -48,16 +48,13 @@ public class WorldBootstrap : MonoBehaviour
         _saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
         // 1) Modo PRESET (test): SIEMPRE tiene prioridad sobre saves
-        // Si el checkbox de testeo está marcado, ignoramos cualquier save existente
         if (bootProfile.ShouldBootFromPreset())
         {
-            // Reforzar que el runtimePreset sea el bootPreset (por si se modificó)
             bootProfile.EnsureRuntimePresetFromTemplate(bootProfile.bootPreset);
             
             var anchor = bootProfile.GetStartAnchorOrDefault();
             SpawnManager.SetCurrentAnchor(anchor);
 
-            // IMPORTANTE: Resetear quests para que usen SOLO los flags del preset de testeo
             var qm = QuestManager.Instance;
             if (qm != null)
             {
@@ -65,54 +62,56 @@ public class WorldBootstrap : MonoBehaviour
                 if (preset != null)
                 {
                     qm.RestoreFromProfileFlags(preset.flags);
-                    Debug.Log($"[WorldBootstrap] Quest restauradas desde preset de testeo (flags count: {preset.flags?.Count ?? 0})");
                 }
             }
 
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
-
-            Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing) - Se ignora cualquier save existente");
+            Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
             return;
         }
 
-        // 2) Flujo normal: intentar cargar partida; si no, usar anchor del preset activo
+        // 2) Flujo normal: si hay save → cargarlo; si no → usar defaultPreset
         string anchorId = bootProfile.GetStartAnchorOrDefault();
 
         if (_saveSystem != null && _saveSystem.Load(out var data))
         {
+            // HAY SAVE → usar anchor del save
             if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
                 anchorId = data.lastSpawnAnchorId;
 
-            // Actualizar runtimePreset con los datos del save
             bootProfile.SetRuntimePresetFromSave(data);
-
-            // Reubicar NPCs desde el SO si hay entradas persistidas
             TryApplyNpcPositionsFromPreset(bootProfile);
 
-            // Aplicar el preset recién cargado al jugador (incluye inventario y apariencia)
-            // para evitar que queden valores por defecto hasta el próximo cambio de escena.
             if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
-            {
                 presetService.ApplyCurrentPreset(includeInventory: true);
-            }
             else
             {
-                // Fallback: obtener desde el ServiceLocator
                 var svc = ServiceLocator.Get<PlayerPresetService>(false);
-                if (svc != null)
-                    svc.ApplyCurrentPreset(includeInventory: true);
+                if (svc != null) svc.ApplyCurrentPreset(includeInventory: true);
             }
 
-            Debug.Log("[WorldBootstrap] Save cargado correctamente");
+            Debug.Log($"[WorldBootstrap] Save cargado → Anchor: '{anchorId}'");
         }
         else
         {
-            Debug.Log("[WorldBootstrap] Sin save disponible, usando configuración por defecto");
-            // Nueva partida efectiva: asegurar estado limpio de quests
-            var qm = QuestManager.Instance; if (qm != null) qm.ResetAllQuests();
+            // NO HAY SAVE → usar anchor del defaultPreset (ya en runtimePreset)
+            Debug.Log($"[WorldBootstrap] Sin save → Anchor del preset: '{anchorId}'");
+            
+            var qm = QuestManager.Instance;
+            if (qm != null) qm.ResetAllQuests();
+            
+            if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
+                presetService.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
+            else
+            {
+                var svc = ServiceLocator.Get<PlayerPresetService>(false);
+                if (svc != null) svc.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
+            }
+            
+            TryApplyNpcPositionsFromPreset(bootProfile);
         }
 
-        // 3) Colocar jugador (esperar a que esté disponible y activo)
+        // 3) Colocar jugador
         SpawnManager.SetCurrentAnchor(anchorId);
         StartCoroutine(WaitForPlayerAndTeleport(anchorId));
     }
@@ -160,11 +159,10 @@ public class WorldBootstrap : MonoBehaviour
         int maxAttempts = 100;
         int attempts = 0;
 
-        // Buscar al jugador (incluso si está desactivado)
+        // Buscar al jugador usando PlayerService
         while (player == null && attempts < maxAttempts)
         {
-            // Intentar obtener el objeto Player desde el ServiceLocator
-            player = ServiceLocator.Get<GameObject>(false);
+            player = PlayerService.Player;
             if (player == null)
             {
                 yield return new WaitForSeconds(0.05f);
@@ -174,9 +172,11 @@ public class WorldBootstrap : MonoBehaviour
 
         if (player == null)
         {
-            Debug.LogError("[WorldBootstrap] No se encontró el jugador con tag 'Player'.");
+            Debug.LogError("[WorldBootstrap] No se encontró el jugador via PlayerService.");
             yield break;
         }
+
+        Debug.Log($"[WorldBootstrap] 🎮 Jugador encontrado: {player.name}, teletransportando a '{anchorId}'");
 
         // Esperar a que el jugador esté activo
         attempts = 0;
@@ -189,10 +189,12 @@ public class WorldBootstrap : MonoBehaviour
         // Teleportar al jugador
         if (player.activeInHierarchy)
         {
+            Debug.Log($"[WorldBootstrap] ✅ Ejecutando TeleportTo('{anchorId}')");
             SpawnManager.TeleportTo(anchorId, false);
         }
         else
         {
+            Debug.LogWarning($"[WorldBootstrap] ⚠️ Jugador no activo, programando teleport diferido a '{anchorId}'");
             SpawnManager.SetCurrentAnchor(anchorId);
             StartCoroutine(TeleportWhenActive(player, anchorId));
         }

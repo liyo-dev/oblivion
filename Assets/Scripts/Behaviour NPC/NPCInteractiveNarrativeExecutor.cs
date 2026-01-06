@@ -27,6 +27,17 @@ namespace Game.NPC.Modules
         private bool _hasBeenUsed;
         private bool _hasDetectedPlayer;
         private int _currentActionIndex = -1;
+        
+        // Cache para optimización
+        private ConditionalNarrative _cachedActiveNarrative;
+        private int _lastNarrativeCheckFrame = -1;
+        private const int NARRATIVE_CHECK_INTERVAL = 10; // Revisar narrativa cada N frames
+        
+        // Cache de WaitForSeconds para evitar GC
+        private static readonly WaitForSeconds _waitHalfSecond = new WaitForSeconds(0.5f);
+        private static readonly WaitForSeconds _waitPointTwo = new WaitForSeconds(0.2f);
+        private static readonly WaitForSeconds _waitPointOne = new WaitForSeconds(0.1f);
+        private static readonly WaitForSeconds _waitOneSecond = new WaitForSeconds(1f);
         #endregion
         
         #region 📢 Public API
@@ -36,6 +47,31 @@ namespace Game.NPC.Modules
         /// </summary>
         public bool IsExecuting => _isExecuting;
         #endregion
+        
+        /// <summary>
+        /// Obtiene la narrativa activa con cache para evitar evaluaciones frecuentes
+        /// </summary>
+        private ConditionalNarrative GetCachedActiveNarrative(bool forceRefresh = false)
+        {
+            int currentFrame = Time.frameCount;
+            if (!forceRefresh && currentFrame - _lastNarrativeCheckFrame < NARRATIVE_CHECK_INTERVAL)
+            {
+                return _cachedActiveNarrative;
+            }
+            
+            _lastNarrativeCheckFrame = currentFrame;
+            _cachedActiveNarrative = _config?.GetActiveNarrative();
+            return _cachedActiveNarrative;
+        }
+        
+        /// <summary>
+        /// Invalida el cache de narrativa activa (llamar después de ejecutar una narrativa)
+        /// </summary>
+        private void InvalidateNarrativeCache()
+        {
+            _lastNarrativeCheckFrame = -1;
+            _cachedActiveNarrative = null;
+        }
 
         private void Awake()
         {
@@ -150,8 +186,8 @@ namespace Game.NPC.Modules
                 }
                 else
                 {
-                    // Solo habilitar si hay narrativa disponible
-                    bool hasNarrative = _config.GetActiveNarrative() != null;
+                    // Solo habilitar si hay narrativa disponible (usando cache)
+                    bool hasNarrative = GetCachedActiveNarrative() != null;
                     if (_interactable.enabled != hasNarrative)
                     {
                         _interactable.enabled = hasNarrative;
@@ -162,7 +198,7 @@ namespace Game.NPC.Modules
             // 2. Gestión de Icono Persistente (Exclamación sobre la cabeza)
             if (!_isExecuting)
             {
-                var activeNarrative = _config.GetActiveNarrative();
+                var activeNarrative = GetCachedActiveNarrative();
                 if (activeNarrative != null)
                 {
                     if (activeNarrative.showPersistentIcon)
@@ -174,38 +210,12 @@ namespace Game.NPC.Modules
                     {
                         // Hay narrativa activa pero no tiene icono persistente configurado
                         HidePersistentIconIfActive();
-                        
-                        // Log ocasional para debug
-                        if (Time.frameCount % 300 == 0)
-                        {
-                            Debug.Log($"[NarrativeExecutor:{name}] ℹ️ Narrativa activa '{activeNarrative.description}' NO tiene showPersistentIcon activado");
-                        }
                     }
                 }
                 else
                 {
                     // No hay narrativa activa
                     HidePersistentIconIfActive();
-                    
-                    // Debug: ¿Por qué no hay narrativa activa?
-                    if (_config.conditionalNarratives != null && _config.conditionalNarratives.Length > 0)
-                    {
-                        // Solo loguear una vez cada 5 segundos para no spamear
-                        if (Time.frameCount % 300 == 0)
-                        {
-                            Debug.Log($"[NarrativeExecutor:{name}] ⚠️ No hay narrativa activa. Revisando {_config.conditionalNarratives.Length} condiciones:");
-                            for (int i = 0; i < _config.conditionalNarratives.Length; i++)
-                            {
-                                var n = _config.conditionalNarratives[i];
-                                if (n != null)
-                                {
-                                    bool canExec = n.CanExecute();
-                                    bool condMet = n.condition?.Evaluate() ?? false;
-                                    Debug.Log($"  [{i}] '{n.description}' - CanExecute:{canExec}, Condition:{condMet}, SingleUse:{n.singleUse}, Executed:{n.HasBeenExecuted}, ShowIcon:{n.showPersistentIcon}");
-                                }
-                            }
-                        }
-                    }
                 }
             }
             else
@@ -345,14 +355,13 @@ namespace Game.NPC.Modules
             DialogueManager.Instance.StartDialogue(entry.dialogue, transform, () => completed = true);
 
             // Esperamos a que el sistema de diálogo reporte finalización
-            // (Eliminamos logs excesivos y lógica compleja de polling)
             while (!completed)
             {
                 yield return null;
             }
             
             // Breve pausa para limpieza de UI
-            yield return new WaitForSeconds(0.1f);
+            yield return _waitPointOne;
         }
 
         private IEnumerator ExecuteMove(NarrativeChainEntry entry)
@@ -468,22 +477,27 @@ namespace Game.NPC.Modules
         }
         
         /// <summary>
-        /// Busca un SpawnAnchor cerca de una posición
+        /// Busca un SpawnAnchor cerca de una posición usando el AnchorRegistry (O(n) sobre anchors registrados)
         /// </summary>
         private SpawnAnchor FindNearbySpawnAnchor(Vector3 position)
         {
             const float searchRadius = 2f;
-            var allAnchors = FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
+            float searchRadiusSqr = searchRadius * searchRadius;
             
             SpawnAnchor closest = null;
-            float closestDistance = searchRadius;
+            float closestDistanceSqr = searchRadiusSqr;
             
-            foreach (var anchor in allAnchors)
+            // Usar el registro en lugar de FindObjectsByType (mucho más eficiente)
+            foreach (var kvp in AnchorRegistry.All)
             {
-                float distance = Vector3.Distance(anchor.transform.position, position);
-                if (distance < closestDistance)
+                var anchor = kvp.Value;
+                if (anchor == null) continue;
+                
+                // Usar sqrMagnitude para evitar sqrt costoso
+                float distanceSqr = (anchor.transform.position - position).sqrMagnitude;
+                if (distanceSqr < closestDistanceSqr)
                 {
-                    closestDistance = distance;
+                    closestDistanceSqr = distanceSqr;
                     closest = anchor;
                 }
             }
@@ -603,7 +617,7 @@ namespace Game.NPC.Modules
                     break;
 
                 case PostNarrativeState.Disable:
-                    yield return new WaitForSeconds(0.5f);
+                    yield return _waitHalfSecond;
                     gameObject.SetActive(false);
                     break;
             }
@@ -615,24 +629,24 @@ namespace Game.NPC.Modules
 
         private IEnumerator DetectPlayerRoutine()
         {
-            yield return new WaitForSeconds(1f); // Startup delay
+            yield return _waitOneSecond; // Startup delay
 
             while (true)
             {
-                // Obtener la narrativa activa actual
+                // Obtener la narrativa activa actual (forzar refresh para detección)
                 var activeNarrative = _config?.GetActiveNarrative();
                 
                 // Si no hay narrativa activa o no tiene autoStartOnDetection, esperar
                 if (activeNarrative == null || !activeNarrative.autoStartOnDetection)
                 {
-                    yield return new WaitForSeconds(0.5f);
+                    yield return _waitHalfSecond;
                     continue;
                 }
                 
                 // Si ya se detectó o se usó, salir
                 if (_hasDetectedPlayer || _isExecuting)
                 {
-                    yield return new WaitForSeconds(0.5f);
+                    yield return _waitHalfSecond;
                     continue;
                 }
                 
@@ -652,7 +666,7 @@ namespace Game.NPC.Modules
                         _hasDetectedPlayer = false;
                     }
                 }
-                yield return new WaitForSeconds(0.2f);
+                yield return _waitPointTwo;
             }
         }
 

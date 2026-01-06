@@ -19,7 +19,7 @@ MonoBehaviour:
   fieldOfView: 160
   minAttackDistance: 2
   maxAttackDistance: 12
-  isAggressive: 0
+  isAggressive: 1
   canChaseOutOfBounds: 0
   maxChaseDistance: 20
   alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}

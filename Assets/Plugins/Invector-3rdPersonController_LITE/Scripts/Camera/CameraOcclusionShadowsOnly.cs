@@ -33,6 +33,7 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     private readonly Dictionary<Renderer, Entry> _active = new();
     private readonly List<Renderer> _toRestore = new(32);
     private Transform _cam;
+    private bool _shaderMissing; // Flag para evitar spam de errores
 
     void Awake() { _cam = transform; }
 
@@ -43,13 +44,36 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         Vector3 dir = (to - from);
         float dist = dir.magnitude;
         if (dist < 0.0001f) return;
-        dir /= dist;
 
+        // Intentar obtener el shader si no está asignado
         if (!occlusionShader)
+        {
+            // Buscar el shader custom
             occlusionShader = Shader.Find("Custom/CameraOcclusionPaint");
+            
+            // Fallback a shader estándar URP si el custom no está disponible
+            if (!occlusionShader)
+                occlusionShader = Shader.Find("Universal Render Pipeline/Lit");
+            
+            // Fallback a shader Standard (Built-in)
+            if (!occlusionShader)
+                occlusionShader = Shader.Find("Standard");
+            
+            // Si aún no hay shader, desactivar el sistema
+            if (!occlusionShader)
+            {
+                if (!_shaderMissing)
+                {
+                    Debug.LogWarning("[CameraOcclusionShadowsOnly] No se encontró shader de oclusión. Sistema desactivado.");
+                    _shaderMissing = true;
+                }
+                return;
+            }
+        }
 
         if (debugRays) Debug.DrawLine(from, to, Color.magenta, 0f, false);
 
+        dir /= dist; // Normalizar dirección
         var hits = Physics.SphereCastAll(from, checkRadius, dir, dist, obstructionMask, QueryTriggerInteraction.Ignore);
 
         for (int i = 0; i < hits.Length; i++)

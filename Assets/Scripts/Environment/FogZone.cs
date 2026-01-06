@@ -106,7 +106,7 @@ public class FogZone : MonoBehaviour
         _defaultFogEnd = RenderSettings.fogEndDistance;
         _defaultFogMode = RenderSettings.fogMode;
         _defaultsCaptured = true;
-        
+
         Debug.Log($"[FogZone] Valores por defecto capturados - Enabled:{_defaultFogEnabled}, Density:{_defaultFogDensity}, Color:{_defaultFogColor}");
     }
     
@@ -127,6 +127,14 @@ public class FogZone : MonoBehaviour
         
         _currentActiveZone = this;
         TransitionToZoneFog();
+        
+        // Diferir cambio de música al siguiente frame para evitar micro-freeze
+        StartCoroutine(DeferredMusicTransition());
+    }
+    
+    private System.Collections.IEnumerator DeferredMusicTransition()
+    {
+        yield return null; // Esperar un frame
         TransitionToZoneMusic();
     }
     

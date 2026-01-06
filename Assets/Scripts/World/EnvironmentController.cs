@@ -25,6 +25,12 @@ public class EnvironmentController : MonoBehaviour
     bool _needReapply;        // si true, re-aplicamos en Update
     AnchorEnvironment _currentInterior; // último env de interior aplicado (para re-aplicar)
 
+    // Gestión de zonas visibles
+    GameObject[] _hiddenZones;       // zonas que ocultamos al entrar
+    GameObject _hiddenExterior;      // mundo exterior ocultado
+    float _savedFarClipPlane;        // far clip original de la cámara
+    bool _farClipModified;
+
     void Awake()
     {
         if (Instance && Instance != this) { Destroy(gameObject); return; }
@@ -138,6 +144,56 @@ public class EnvironmentController : MonoBehaviour
             RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
         }
 
+        // === GESTIÓN DE ZONAS VISIBLES ===
+        if (env)
+        {
+            // Activar la zona de este interior
+            if (env.zoneRoot && !env.zoneRoot.activeSelf)
+            {
+                env.zoneRoot.SetActive(true);
+            }
+            
+            // Ocultar zonas especificadas manualmente
+            if (env.zonesToHideOnEnter != null && env.zonesToHideOnEnter.Length > 0)
+            {
+                _hiddenZones = env.zonesToHideOnEnter;
+                foreach (var zone in _hiddenZones)
+                {
+                    if (zone && zone.activeSelf)
+                    {
+                        zone.SetActive(false);
+                    }
+                }
+            }
+            
+            // Ocultar mundo exterior automáticamente
+            if (env.hideExteriorWorld && !string.IsNullOrEmpty(env.exteriorWorldRootName))
+            {
+                _hiddenExterior = GameObject.Find(env.exteriorWorldRootName);
+                if (_hiddenExterior == null)
+                {
+                    // Buscar por tag si no se encuentra por nombre
+                    var tagged = GameObject.FindWithTag(env.exteriorWorldRootName);
+                    if (tagged) _hiddenExterior = tagged;
+                }
+                if (_hiddenExterior && _hiddenExterior.activeSelf)
+                {
+                    _hiddenExterior.SetActive(false);
+                }
+            }
+            
+            // Ajustar far clip plane de la cámara
+            if (env.adjustCameraClipping && cam)
+            {
+                if (!_farClipModified)
+                {
+                    _savedFarClipPlane = cam.farClipPlane;
+                    _farClipModified = true;
+                }
+                cam.farClipPlane = env.interiorFarClipPlane;
+            }
+        }
+
         // luces: apaga direccionales que no estén dentro del interior
         var dirLight = ServiceLocator.Get<Light>(false);
         if (dirLight && dirLight.type == LightType.Directional)
@@ -182,6 +238,34 @@ public class EnvironmentController : MonoBehaviour
                 var csb = cam ? cam.GetComponent<Skybox>() : null;
                 if (csb) csb.material = null;
             }
+        }
+
+        // === RESTAURAR ZONAS OCULTAS ===
+        // Restaurar zonas que ocultamos al entrar en un interior
+        if (_hiddenZones != null)
+        {
+            foreach (var zone in _hiddenZones)
+            {
+                if (zone && !zone.activeSelf)
+                {
+                    zone.SetActive(true);
+                }
+            }
+            _hiddenZones = null;
+        }
+        
+        // Restaurar mundo exterior
+        if (_hiddenExterior && !_hiddenExterior.activeSelf)
+        {
+            _hiddenExterior.SetActive(true);
+            _hiddenExterior = null;
+        }
+        
+        // Restaurar far clip plane de la cámara
+        if (_farClipModified && cam)
+        {
+            cam.farClipPlane = _savedFarClipPlane;
+            _farClipModified = false;
         }
 
         var dirLight2 = ServiceLocator.Get<Light>(false);
