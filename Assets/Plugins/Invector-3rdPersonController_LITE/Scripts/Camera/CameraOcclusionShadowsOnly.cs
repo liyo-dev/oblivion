@@ -48,8 +48,12 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         // Intentar obtener el shader si no está asignado
         if (!occlusionShader)
         {
-            // Buscar el shader custom
-            occlusionShader = Shader.Find("Custom/CameraOcclusionPaint");
+            // Primero intentar cargar desde Resources (más confiable en builds)
+            occlusionShader = Resources.Load<Shader>("Shaders/CameraOcclusionPaint");
+            
+            // Fallback: buscar el shader por nombre
+            if (!occlusionShader)
+                occlusionShader = Shader.Find("Custom/CameraOcclusionPaint");
             
             // Fallback a shader estándar URP si el custom no está disponible
             if (!occlusionShader)
@@ -69,6 +73,8 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
                 }
                 return;
             }
+            
+            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado: {occlusionShader.name}");
         }
 
         if (debugRays) Debug.DrawLine(from, to, Color.magenta, 0f, false);
