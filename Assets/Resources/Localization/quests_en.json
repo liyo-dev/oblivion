@@ -66,18 +66,14 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_DESC",
-            "value": "[EN] Busca el portal que te conduce al Bosque Prohibido."
+            "value": "[EN]Regresa con Estela a ver a Eldran."
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_DESC_01",
-            "value": "[EN] Busca el portal que te conduce al Bosque Prohibido."
-        },
-        {
-            "key": "QUEST_ELDRAN_MISSION6_DESC_02",
             "value": "[EN] Busca a Estela en el bosque prohibido."
         },
         {
-            "key": "QUEST_ELDRAN_MISSION6_DESC_03",
+            "key": "QUEST_ELDRAN_MISSION6_DESC_02",
             "value": "[EN] Regresa con Estela a ver a Eldran."
         },
         {

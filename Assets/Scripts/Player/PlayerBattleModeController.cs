@@ -24,6 +24,9 @@ namespace Game.Player
         [Tooltip("Nombre del estado Battle Idle en la capa UpperBody")]
         [SerializeField] private string battleIdleStateName = "Idle_Battle_NoWeapon";
         
+        [Tooltip("Path completo del estado Battle Idle (ej: UpperBody.Idle_Battle_NoWeapon). Dejar vacío para usar solo el nombre.")]
+        [SerializeField] private string battleIdleFullPath = "UpperBody.Idle_Battle_NoWeapon";
+        
         [Tooltip("Nombre del estado de Victoria en el Animator del player")]
         [SerializeField] private string victoryStateName = "Victory_NoWeapon";
         
@@ -93,6 +96,12 @@ namespace Game.Player
         void OnEnable()
         {
             // El NPCCombatLifecycleHandler llamará directamente a PlayVictory()
+            
+            // Suscribirse al evento de fin de animación de magia para restaurar battle idle
+            if (controller != null)
+            {
+                controller.OnMagicCastAnimationEnded += OnMagicAnimationEnded;
+            }
         }
         
         void OnDisable()
@@ -101,6 +110,51 @@ namespace Game.Player
             if (animator != null && animator.layerCount > upperBodyLayerIndex)
             {
                 animator.SetLayerWeight(upperBodyLayerIndex, 0f);
+            }
+            
+            // Desuscribirse del evento
+            if (controller != null)
+            {
+                controller.OnMagicCastAnimationEnded -= OnMagicAnimationEnded;
+            }
+        }
+        
+        /// <summary>
+        /// Callback cuando termina una animación de magia.
+        /// Si estamos en modo batalla, restauramos el battle idle.
+        /// </summary>
+        private void OnMagicAnimationEnded()
+        {
+            if (_isInBattleMode && !_isPlayingVictory)
+            {
+                RestoreBattleIdle();
+            }
+        }
+        
+        /// <summary>
+        /// Restaura el battle idle en la capa UpperBody
+        /// </summary>
+        private void RestoreBattleIdle()
+        {
+            if (animator == null || animator.layerCount <= upperBodyLayerIndex) return;
+            
+            // IMPORTANTE: Sincronizar _currentLayerWeight con el valor real del animator
+            // ya que vThirdPersonController puede haber modificado el peso directamente
+            _currentLayerWeight = animator.GetLayerWeight(upperBodyLayerIndex);
+            
+            // Establecer el objetivo para que la transición suave funcione
+            _targetLayerWeight = 1f;
+            
+            if (animator.HasState(upperBodyLayerIndex, _battleIdleHash))
+            {
+                // Usar el full path si está definido, sino el nombre simple
+                string statePath = !string.IsNullOrEmpty(battleIdleFullPath) ? battleIdleFullPath : battleIdleStateName;
+                
+                // Forzar la animación de battle idle
+                animator.CrossFadeInFixedTime(statePath, 0.2f, upperBodyLayerIndex);
+                
+                if (debugMode)
+                    Debug.Log($"[PlayerBattleMode] 🗡️ Battle Idle RESTAURADO después de animación de magia (weight actual: {_currentLayerWeight:F2} → 1.0)");
             }
         }
         
@@ -256,7 +310,9 @@ namespace Game.Player
                 // Verificar si el estado existe en la capa
                 if (animator.HasState(upperBodyLayerIndex, _battleIdleHash))
                 {
-                    animator.CrossFadeInFixedTime(_battleIdleHash, 0.2f, upperBodyLayerIndex);
+                    // Usar el full path si está definido, sino el nombre simple
+                    string statePath = !string.IsNullOrEmpty(battleIdleFullPath) ? battleIdleFullPath : battleIdleStateName;
+                    animator.CrossFadeInFixedTime(statePath, 0.2f, upperBodyLayerIndex);
                 }
             }
             
@@ -339,17 +395,10 @@ namespace Game.Player
                 // El primer parámetro es el battleId actual (para restaurar música después)
                 // El segundo es la clave de victoria
                 // El tercer parámetro es el tiempo que se mantiene la música de victoria
-                if (!string.IsNullOrEmpty(_currentBattleId))
-                {
-                    AudioService.Instance.PlayVictoryForBattle(_currentBattleId, victorySfxKey, victoryAnimationDuration + 2f);
-                    Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {_currentBattleId})");
-                }
-                else
-                {
-                    // Sin battleId específico, solo reproducir el SFX de victoria sin restaurar música después
-                    AudioService.Instance.PlaySFX(victorySfxKey);
-                    Debug.Log($"[PlayerBattleMode] 🎵 Reproduciendo SFX de victoria: {victorySfxKey} (sin battleId)");
-                }
+                // NOTA: PlayVictoryForBattle ahora funciona incluso si battleId está vacío,
+                // usando fallbacks para restaurar la música correcta
+                AudioService.Instance.PlayVictoryForBattle(_currentBattleId ?? "", victorySfxKey, victoryAnimationDuration + 2f);
+                Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {_currentBattleId ?? "null"})");
             }
             else if (string.IsNullOrEmpty(victorySfxKey))
             {

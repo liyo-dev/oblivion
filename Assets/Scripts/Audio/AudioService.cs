@@ -486,25 +486,93 @@ public sealed class AudioService : MonoBehaviour
     // Inicia música de victoria y tras un tiempo restaura a la escena actual
     public void PlayVictoryForBattle(string battleId, string victoryId, float holdSeconds = 2f)
     {
+        Debug.Log($"[AudioService] PlayVictoryForBattle - battleId: '{battleId}', victoryId: '{victoryId}', holdSeconds: {holdSeconds}");
+        
         var battleRule = FindBattleRuleForId(battleId);
         var victoryRule = FindBattleRuleForId(victoryId);
+        
         if (victoryRule != null && victoryRule.music != null)
         {
             PlayMusic(victoryRule.music, victoryRule.fade);
+            Debug.Log($"[AudioService] Reproduciendo música de victoria: '{victoryRule.music.name}'");
         }
         else
         {
             Debug.LogWarning($"[AudioService] PlayVictoryForBattle: no hay música de victoria para id='{victoryId}'.");
         }
-        if (battleRule != null)
-            StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
+        
+        // SIEMPRE iniciar la coroutine de restauración, incluso si battleRule es null
+        // ForceRestoreMusicAfterBattle tiene fallbacks para encontrar la música correcta
+        StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
     }
 
     IEnumerator RestoreAfterVictoryDelay(AudioGraphProfile.BattleRule battleRule, float holdSeconds)
     {
         if (holdSeconds > 0f)
             yield return new WaitForSecondsRealtime(holdSeconds);
-        OnBattleWonRestoreMusic(battleRule);
+        
+        // Forzar restauración después de victoria - no verificar _battleActive
+        // porque la música de victoria ya se reprodujo y necesitamos restaurar
+        ForceRestoreMusicAfterBattle(battleRule);
+    }
+    
+    /// <summary>
+    /// Restaura la música después de una batalla, ignorando el estado _battleActive.
+    /// Útil para restaurar después de la música de victoria.
+    /// </summary>
+    void ForceRestoreMusicAfterBattle(AudioGraphProfile.BattleRule r)
+    {
+        Debug.Log($"[AudioService] ForceRestoreMusicAfterBattle - restaurando música después de victoria");
+        
+        // Asegurar que _battleActive está en false
+        _battleActive = false;
+        
+        // 1) PRIORIDAD: Si hay una FogZone activa, restaurar su música
+        var activeFogZone = FogZone.CurrentActiveZone;
+        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        {
+            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            if (zoneRule?.music != null)
+            {
+                Debug.Log($"[AudioService] Restaurando música de FogZone '{activeFogZone.MusicZoneId}' después de victoria");
+                PlayMusic(zoneRule.music, r?.fade ?? defaultFade);
+                _musicStack.Clear();
+                return;
+            }
+        }
+        
+        // 2) Si no hay FogZone, usar la música del stack (lo que sonaba antes del combate)
+        if (_musicStack.Count > 0)
+        {
+            var prev = _musicStack.Pop();
+            if (prev.clip != null)
+            {
+                Debug.Log($"[AudioService] Restaurando música del stack '{prev.clip.name}' después de victoria");
+                PlayMusic(prev.clip, r?.fade ?? defaultFade);
+                return;
+            }
+        }
+        
+        // 3) Fallback: música de la escena actual
+        var activeScene = SceneManager.GetActiveScene();
+        var activeSceneClip = FindSceneMusicClipByName(activeScene.name);
+        float fade = r?.fade ?? defaultFade;
+        
+        if (activeSceneClip != null)
+        {
+            Debug.Log($"[AudioService] Restaurando música de escena '{activeScene.name}' después de victoria");
+            PlayMusic(activeSceneClip, fade);
+        }
+        else if (_lastRequestedSceneClip != null)
+        {
+            Debug.Log($"[AudioService] Restaurando última música solicitada después de victoria");
+            PlayMusic(_lastRequestedSceneClip, fade);
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] No se encontró música para restaurar después de victoria");
+            StopMusic(fade);
+        }
     }
 
 

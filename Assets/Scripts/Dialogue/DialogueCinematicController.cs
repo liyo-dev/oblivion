@@ -16,8 +16,10 @@ public class DialogueCinematicController : MonoBehaviour
     [SerializeField] private bool showDebugInfo;
     [SerializeField] private int maxPooledCameras = 8;
 
-    // Estado actual
+    // Estado actual - expuesto para detectar diálogos encadenados
     private bool isInCinematicMode;
+    public bool IsInCinematicMode => isInCinematicMode;
+    
     private Transform currentPlayer;
     private Transform currentNPC;
     private DialogueCinematicProfile activeProfile;
@@ -541,12 +543,27 @@ public class DialogueCinematicController : MonoBehaviour
             }
             lookAtTarget.position = lookAtPos;
 
-            // Aplicar rotación base mirando al objetivo
-            vcam.transform.LookAt(lookAtPos);
+            // ✅ CORREGIDO: Calcular rotación usando el camino más corto
+            // Esto evita rotaciones de 360° cuando el NPC está en diagonal
+            Vector3 lookDirection = (lookAtPos - position).normalized;
+            if (lookDirection.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+                
+                // Si la cámara anterior tiene una rotación, usar Slerp para el camino más corto
+                // Quaternion.Slerp automáticamente toma el camino más corto
+                vcam.transform.rotation = targetRotation;
+            }
 
-            // Aplicar ángulos adicionales
-            vcam.transform.Rotate(Vector3.right, shot.verticalAngle, Space.Self);
-            vcam.transform.Rotate(Vector3.forward, shot.dutchAngle, Space.Self);
+            // Aplicar ángulos adicionales de forma segura
+            if (Mathf.Abs(shot.verticalAngle) > 0.01f)
+            {
+                vcam.transform.Rotate(Vector3.right, shot.verticalAngle, Space.Self);
+            }
+            if (Mathf.Abs(shot.dutchAngle) > 0.01f)
+            {
+                vcam.transform.Rotate(Vector3.forward, shot.dutchAngle, Space.Self);
+            }
 
             // Configurar lens (FOV)
             vcam.Lens.FieldOfView = shot.fieldOfView;

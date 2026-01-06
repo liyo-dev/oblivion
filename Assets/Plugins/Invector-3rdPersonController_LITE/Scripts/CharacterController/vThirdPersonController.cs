@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 
 namespace Invector.vCharacterController
@@ -51,6 +51,12 @@ namespace Invector.vCharacterController
         /// 0 = Left, 1 = Right, 2 = Special
         /// </summary>
         public System.Action<int> OnMagicSlotCast;
+        
+        /// <summary>
+        /// Evento disparado cuando termina la animación de magia en la capa superior.
+        /// Útil para que otros sistemas (como PlayerBattleModeController) restauren estados.
+        /// </summary>
+        public System.Action OnMagicCastAnimationEnded;
 
         // ---- Runtime ----
         private int nextPhysicalIndex = 0;
@@ -323,6 +329,9 @@ namespace Invector.vCharacterController
 
             if (animator != null) animator.SetLayerWeight(layer, 0f);
             magicCo = null;
+            
+            // Notificar que la animación de magia terminó
+            OnMagicCastAnimationEnded?.Invoke();
         }
 
         // ========================= Lifecycle =========================
