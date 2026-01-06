@@ -360,6 +360,13 @@ public sealed class AudioService : MonoBehaviour
 
     void OnBattleWonRestoreMusic(AudioGraphProfile.BattleRule r)
     {
+        // Evitar restaurar si ya no estamos en batalla (doble llamada)
+        if (!_battleActive)
+        {
+            Debug.Log($"[AudioService] OnBattleWonRestoreMusic ignorado - batalla ya terminada");
+            return;
+        }
+        
         _battleActive = false;
         
         // 1) PRIORIDAD: Si hay una FogZone activa, restaurar su música

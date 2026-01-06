@@ -5,8 +5,10 @@ using Invector.vCharacterController;
 namespace Game.Player
 {
     /// <summary>
-    /// Gestiona el estado de batalla del jugador (animaciones idle)
-    /// Detecta cuando hay NPCs enemigos cerca y activa Battle Idle
+    /// Gestiona el estado de batalla del jugador.
+    /// Detecta cuando hay NPCs enemigos cerca y activa la pose de batalla en la parte superior del cuerpo.
+    /// Usa Layer 1 (UpperBody) con Avatar Mask para que los brazos estén en pose de combate
+    /// mientras las piernas siguen la locomoción normal.
     /// </summary>
     public class PlayerBattleModeController : MonoBehaviour
     {
@@ -15,16 +17,17 @@ namespace Game.Player
         [SerializeField] private vThirdPersonController controller;
         [SerializeField] private Rigidbody playerRigidbody;
         
-        [Header("Configuración")]
-        [Tooltip("Nombre del estado Battle Idle en el Animator del player")]
-        [SerializeField] private string battleIdleStateName = "Idle_Battle_NoWeapon";
+        [Header("Configuración de Capas del Animator")]
+        [Tooltip("Índice de la capa UpperBody en el Animator (normalmente 1)")]
+        [SerializeField] private int upperBodyLayerIndex = 1;
         
-        [Tooltip("Nombre del estado Normal Idle en el Animator del player")]
-        [SerializeField] private string normalIdleStateName = "Idle_Normal_NoWeapon";
+        [Tooltip("Nombre del estado Battle Idle en la capa UpperBody")]
+        [SerializeField] private string battleIdleStateName = "Idle_Battle_NoWeapon";
         
         [Tooltip("Nombre del estado de Victoria en el Animator del player")]
         [SerializeField] private string victoryStateName = "Victory_NoWeapon";
         
+        [Header("Detección de Combate")]
         [Tooltip("Radio de detección de enemigos para activar Battle Mode")]
         [SerializeField] private float enemyDetectionRadius = 15f;
         
@@ -34,8 +37,9 @@ namespace Game.Player
         [Tooltip("Tiempo sin enemigos cerca para desactivar Battle Mode")]
         [SerializeField] private float exitBattleDelay = 3f;
         
-        [Tooltip("Umbral de velocidad para considerar al player quieto")]
-        [SerializeField] private float idleSpeedThreshold = 0.1f;
+        [Header("Transiciones")]
+        [Tooltip("Duración del fade para activar/desactivar la capa UpperBody")]
+        [SerializeField] private float layerFadeDuration = 0.3f;
         
         [Tooltip("Duración de la animación de victoria en segundos")]
         [SerializeField] private float victoryAnimationDuration = 3f;
@@ -50,14 +54,12 @@ namespace Game.Player
         private bool _isInBattleMode;
         private bool _isPlayingVictory;
         private float _timeSinceLastEnemyDetected;
-        private float _timeSinceStoppedMoving; // Tiempo desde que el jugador dejó de moverse
-        private bool _wasMovingLastFrame; // Para detectar cambio de movimiento a idle
         private int _battleIdleHash;
-        private int _normalIdleHash;
         private int _victoryHash;
         
-        // ⭐ Flag para suprimir temporalmente Battle Idle (tras diálogo de combate)
-        private bool _suppressBattleIdle;
+        // Estado de la capa
+        private float _currentLayerWeight;
+        private float _targetLayerWeight;
         
         // Colliders buffer para OverlapSphereNonAlloc (evitar allocation)
         private readonly Collider[] _hitColliders = new Collider[20];
@@ -76,23 +78,30 @@ namespace Game.Player
             
             // Cachear hashes de estados
             _battleIdleHash = Animator.StringToHash(battleIdleStateName);
-            _normalIdleHash = Animator.StringToHash(normalIdleStateName);
             _victoryHash = Animator.StringToHash(victoryStateName);
             
-            // Inicializar variables de estado
-            _wasMovingLastFrame = false;
-            _timeSinceStoppedMoving = 0f;
+            // Asegurar que la capa empieza desactivada
+            if (animator != null && animator.layerCount > upperBodyLayerIndex)
+            {
+                animator.SetLayerWeight(upperBodyLayerIndex, 0f);
+            }
+            
+            _currentLayerWeight = 0f;
+            _targetLayerWeight = 0f;
         }
         
         void OnEnable()
         {
-            // Ya no nos suscribimos a eventos narrativos
             // El NPCCombatLifecycleHandler llamará directamente a PlayVictory()
         }
         
         void OnDisable()
         {
-            // Nada que limpiar
+            // Desactivar la capa al deshabilitarse
+            if (animator != null && animator.layerCount > upperBodyLayerIndex)
+            {
+                animator.SetLayerWeight(upperBodyLayerIndex, 0f);
+            }
         }
         
         // Guarda el battleId del último combate para reproducir la música correcta
@@ -120,162 +129,170 @@ namespace Game.Player
         }
         
         /// <summary>
-        /// Suprime temporalmente el Battle Idle para permitir que el jugador se mueva libremente
-        /// tras un diálogo de combate. Se desactiva automáticamente cuando el jugador empieza a moverse.
-        /// ⭐ DESACTIVADO - Ya no se usa Battle Idle
+        /// Suprime temporalmente el Battle Mode (tras diálogos de combate, etc.)
         /// </summary>
-        public void SuppressBattleIdle()
+        public void SuppressBattleMode(float duration = 2f)
         {
-            // No hace nada - Battle Idle desactivado
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] SuppressBattleIdle() llamado pero Battle Idle está desactivado");
+            StartCoroutine(SuppressBattleModeRoutine(duration));
+        }
+        
+        private IEnumerator SuppressBattleModeRoutine(float duration)
+        {
+            _targetLayerWeight = 0f;
+            yield return new WaitForSeconds(duration);
         }
         
         void Update()
         {
-            // ⭐ SISTEMA DE BATTLE IDLE DESACTIVADO
-            // El player usará siempre su idle normal, sin forzar animaciones de batalla
-            // Solo se mantiene la detección de enemigos para tracking interno si se necesita en el futuro
-            
             if (animator == null) return;
             
-            // ✅ No hacer nada si está reproduciendo victoria
+            // No hacer nada si está reproduciendo victoria
             if (_isPlayingVictory) return;
             
-            // // Detectar enemigos cercanos (comentado - no se usa actualmente)
-            // bool enemiesNearby = DetectEnemiesNearby();
-            // if (enemiesNearby)
-            // {
-            //     _timeSinceLastEnemyDetected = 0f;
-            // }
-            // else
-            // {
-            //     _timeSinceLastEnemyDetected += Time.deltaTime;
-            // }
+            // Detectar enemigos cercanos
+            bool enemiesNearby = DetectEnemiesNearby();
+            
+            if (enemiesNearby)
+            {
+                _timeSinceLastEnemyDetected = 0f;
+                
+                if (!_isInBattleMode)
+                {
+                    EnterBattleMode();
+                }
+            }
+            else
+            {
+                _timeSinceLastEnemyDetected += Time.deltaTime;
+                
+                // Salir del modo batalla después del delay
+                if (_isInBattleMode && _timeSinceLastEnemyDetected >= exitBattleDelay)
+                {
+                    ExitBattleMode();
+                }
+            }
+            
+            // Actualizar peso de la capa con transición suave
+            UpdateLayerWeight();
         }
         
         /// <summary>
-        /// Detecta si hay enemigos cerca
+        /// Actualiza el peso de la capa UpperBody con transición suave
+        /// </summary>
+        void UpdateLayerWeight()
+        {
+            if (animator == null || animator.layerCount <= upperBodyLayerIndex) return;
+            
+            // Interpolar hacia el peso objetivo
+            if (!Mathf.Approximately(_currentLayerWeight, _targetLayerWeight))
+            {
+                float speed = 1f / Mathf.Max(0.01f, layerFadeDuration);
+                _currentLayerWeight = Mathf.MoveTowards(_currentLayerWeight, _targetLayerWeight, speed * Time.deltaTime);
+                animator.SetLayerWeight(upperBodyLayerIndex, _currentLayerWeight);
+                
+                if (debugMode && Mathf.Approximately(_currentLayerWeight, _targetLayerWeight))
+                {
+                    Debug.Log($"[PlayerBattleMode] Capa UpperBody peso = {_currentLayerWeight:F2}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Detecta si hay enemigos cerca (NPCs en CombatState o enemigos puros)
         /// </summary>
         bool DetectEnemiesNearby()
         {
-            // Usar NonAlloc para evitar allocations
             int hitCount = Physics.OverlapSphereNonAlloc(transform.position, enemyDetectionRadius, _hitColliders, enemyLayer);
             
             for (int i = 0; i < hitCount; i++)
             {
                 var hitCollider = _hitColliders[i];
+                if (hitCollider == null) continue;
                 
                 // Verificar si es un NPC enemigo en combate
-                var npcManager = hitCollider.GetComponent<NPC.NPCBehaviourManagerV2>();
+                var npcManager = hitCollider.GetComponentInParent<NPC.NPCBehaviourManagerV2>();
                 if (npcManager != null)
                 {
-                    // ✅ Acceder al Brain a través de la propiedad pública
                     var brain = npcManager.Brain;
                     if (brain != null && brain.CurrentState != null)
                     {
                         string stateName = brain.CurrentState.GetType().Name;
                         if (stateName == "CombatState")
                         {
-                            if (debugMode)
-                                Debug.Log($"[PlayerBattleMode] Enemigo detectado: {npcManager.name}");
                             return true;
                         }
                     }
                 }
+                
+                // También detectar enemigos puros (sin NPCBehaviourManagerV2) que tengan Damageable
+                var damageable = hitCollider.GetComponentInParent<Damageable>();
+                if (damageable != null && damageable.IsAlive)
+                {
+                    // Si tiene Targetable y está en combate activo
+                    var targetable = hitCollider.GetComponentInParent<Targetable>();
+                    if (targetable != null && targetable.isInActiveCombat)
+                    {
+                        return true;
+                    }
+                }
             }
             
             return false;
         }
         
         /// <summary>
-        /// Verifica si el player está quieto (idle)
+        /// Entra en modo batalla - Activa la capa UpperBody con pose de combate
         /// </summary>
-        bool IsPlayerIdle()
+        void EnterBattleMode()
         {
-            // Usar velocity del Rigidbody
-            if (playerRigidbody != null)
+            if (_isInBattleMode) return;
+            
+            _isInBattleMode = true;
+            _targetLayerWeight = 1f;
+            
+            // Asegurar que la animación de batalla esté reproduciéndose en la capa
+            if (animator != null && animator.layerCount > upperBodyLayerIndex)
             {
-                // Unity 2023+ usa linearVelocity en lugar de velocity
-                Vector3 velocity = playerRigidbody.linearVelocity;
-                velocity.y = 0f; // Ignorar velocidad vertical
-                float sqrSpeed = velocity.sqrMagnitude;
-                return sqrSpeed < (idleSpeedThreshold * idleSpeedThreshold);
+                // Verificar si el estado existe en la capa
+                if (animator.HasState(upperBodyLayerIndex, _battleIdleHash))
+                {
+                    animator.CrossFadeInFixedTime(_battleIdleHash, 0.2f, upperBodyLayerIndex);
+                }
             }
             
-            // Si no hay Rigidbody, asumir que está quieto si no hay controller
             if (debugMode)
-                Debug.LogWarning("[PlayerBattleMode] ⚠️ No se encontró Rigidbody - no se puede detectar si está quieto");
-            
-            return false;
+                Debug.Log($"[PlayerBattleMode] 🗡️ ENTRANDO en Battle Mode - UpperBody Layer activándose");
         }
         
         /// <summary>
-        /// Asegura que el player esté en Battle Idle (sin spam)
-        /// Solo hace la transición si está en Idle normal, NO desde animaciones de locomoción
+        /// Sale del modo batalla - Desactiva la capa UpperBody
         /// </summary>
-        void EnsureBattleIdle()
+        void ExitBattleMode()
         {
             if (!_isInBattleMode) return;
             
-            // ⭐ Respetar flag de supresión (tras diálogo de combate)
-            if (_suppressBattleIdle) return;
+            _isInBattleMode = false;
+            _targetLayerWeight = 0f;
             
-            // Verificar el estado actual del animator
-            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
-            
-            // Solo cambiar si NO está ya en Battle Idle
-            if (currentState.shortNameHash != _battleIdleHash)
-            {
-                // ✅ CLAVE: Solo hacer transición si está en Idle normal
-                // Esto evita interrumpir animaciones de locomoción que Invector está reproduciendo
-                if (currentState.shortNameHash == _normalIdleHash)
-                {
-                    // Verificar si el estado existe antes de intentar cambiar
-                    if (animator.HasState(0, _battleIdleHash))
-                    {
-                        // ✅ IMPORTANTE: Usar CrossFade con tiempo corto para permitir override rápido
-                        // Si el player empieza a moverse, Invector podrá interrumpir esta transición
-                        animator.CrossFade(_battleIdleHash, 0.15f, 0);
-                        
-                        if (debugMode)
-                            Debug.Log($"[PlayerBattleMode] ✅ Cambiado a Battle Idle desde Idle normal");
-                    }
-                    else if (debugMode)
-                    {
-                        Debug.LogWarning($"[PlayerBattleMode] ⚠️ Estado '{battleIdleStateName}' no encontrado en Animator");
-                    }
-                }
-                else if (debugMode)
-                {
-                    // No está en Idle normal, esperar
-                    string currentStateName = "Locomoción u Otro";
-                    Debug.Log($"[PlayerBattleMode] ⏳ Esperando a Idle normal (actual: {currentStateName})");
-                }
-            }
+            if (debugMode)
+                Debug.Log($"[PlayerBattleMode] 🏡 SALIENDO de Battle Mode - UpperBody Layer desactivándose");
         }
         
         /// <summary>
-        /// Libera el Animator de Battle Idle para permitir que Invector controle la locomoción
+        /// Fuerza la entrada/salida del modo batalla (para uso externo)
         /// </summary>
-        void ReleaseFromBattleIdle()
+        public void SetBattleMode(bool active)
         {
-            if (!_isInBattleMode) return;
-            
-            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
-            
-            // Si estamos en Battle Idle, NO hacer nada especial
-            // Invector automáticamente hará la transición a Walk/Run basándose en InputMagnitude
-            // Solo necesitamos NO forzar más el Battle Idle mientras se mueve
-            
-            // Opcional: Puedes forzar una transición a un estado base de locomoción si Invector no responde
-            // animator.CrossFade("Locomotion", 0.1f, 0);
-            
-            if (debugMode && currentState.shortNameHash == _battleIdleHash)
-            {
-                Debug.Log($"[PlayerBattleMode] 🔓 Liberando de Battle Idle - Invector tomará control");
-            }
+            if (active)
+                EnterBattleMode();
+            else
+                ExitBattleMode();
         }
+        
+        /// <summary>
+        /// Verifica si está en modo batalla
+        /// </summary>
+        public bool IsInBattleMode => _isInBattleMode;
         
         /// <summary>
         /// Secuencia de victoria con animación y música
@@ -368,42 +385,6 @@ namespace Game.Player
             }
             
             Debug.Log($"[PlayerBattleMode] ✅ Secuencia de victoria COMPLETADA - Animator transicionará automáticamente a locomotion");
-        }
-        
-        /// <summary>
-        /// Entra en modo batalla
-        /// </summary>
-        void EnterBattleMode()
-        {
-            _isInBattleMode = true;
-            
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🗡️ ENTRANDO en Battle Mode");
-        }
-        
-        /// <summary>
-        /// Sale del modo batalla
-        /// </summary>
-        void ExitBattleMode()
-        {
-            _isInBattleMode = false;
-            
-            // Volver a idle normal si está quieto
-            if (IsPlayerIdle())
-            {
-                AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
-                
-                if (currentState.shortNameHash != _normalIdleHash)
-                {
-                    if (animator.HasState(0, _normalIdleHash))
-                    {
-                        animator.CrossFadeInFixedTime(_normalIdleHash, 0.3f, 0);
-                    }
-                }
-            }
-            
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🏡 SALIENDO de Battle Mode");
         }
         
         // Debug Gizmos
