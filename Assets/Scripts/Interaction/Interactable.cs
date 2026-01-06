@@ -418,16 +418,23 @@ public class Interactable : MonoBehaviour
 
     string GetPersistentId()
     {
+        // Si hay un override explícito, usarlo directamente
         if (!string.IsNullOrEmpty(persistentIdOverride))
             return persistentIdOverride;
 
+        // Construir ID único basado en escena + nombre + posición
         var sceneName = includeSceneInPersistentId && gameObject.scene.IsValid()
             ? gameObject.scene.name
             : string.Empty;
 
-        return string.IsNullOrEmpty(sceneName)
-            ? gameObject.name
-            : $"{sceneName}:{gameObject.name}";
+        // Incluir posición para garantizar unicidad entre objetos con el mismo nombre
+        var pos = transform.position;
+        var posKey = $"{pos.x:F1}_{pos.y:F1}_{pos.z:F1}";
+
+        if (string.IsNullOrEmpty(sceneName))
+            return $"{gameObject.name}_{posKey}";
+        else
+            return $"{sceneName}:{gameObject.name}_{posKey}";
     }
 
     void MarkConsumedInPreset()

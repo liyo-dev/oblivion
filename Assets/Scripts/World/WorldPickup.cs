@@ -13,8 +13,8 @@ public class WorldPickup : MonoBehaviour
     [Header("Persistencia")]
     [Tooltip("Si es true, al recogerlo se guardará su estado y no volverá a aparecer tras cargar partida.")]
     [SerializeField] private bool persistState = true;
-    [Tooltip("ID único para este pickup. Debe ser estable entre sesiones/escenas.")]
-    [SerializeField] private string pickupId;
+    [Tooltip("Override manual del ID. Si está vacío, se genera automáticamente usando escena+nombre+posición.")]
+    [SerializeField] private string pickupIdOverride;
 
     [Header("Consumption")]
     [SerializeField] private bool destroyOnCollect = true;
@@ -193,11 +193,7 @@ public class WorldPickup : MonoBehaviour
         {
             _collider.isTrigger = true;
         }
-
-        if (!Application.isPlaying && string.IsNullOrEmpty(pickupId))
-        {
-            pickupId = Guid.NewGuid().ToString("N");
-        }
+        // Ya no generamos GUID automáticamente - usamos posición para unicidad
     }
 #endif
 
@@ -206,6 +202,9 @@ public class WorldPickup : MonoBehaviour
     void CheckPersistedState()
     {
         if (!persistState) return;
+
+        // Limpiar flags GUID antiguos (formato: PICKUP_ seguido de 32 caracteres hex)
+        CleanupLegacyGuidFlags();
 
         if (IsFlagSet())
         {
@@ -231,14 +230,36 @@ public class WorldPickup : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Limpia flags con formato GUID antiguo (PICKUP_[32 hex chars]) que marcaban todos los pickups iguales
+    /// </summary>
+    static bool _legacyFlagsCleaned = false;
+    void CleanupLegacyGuidFlags()
+    {
+        if (_legacyFlagsCleaned) return;
+        _legacyFlagsCleaned = true;
+
+        var profile = GameBootService.Profile;
+        var preset = profile != null ? profile.GetActivePresetResolved() : null;
+        if (preset == null || preset.flags == null) return;
+
+        int removed = preset.flags.RemoveAll(flag =>
+        {
+            // Detectar formato GUID: PICKUP_ + exactamente 32 caracteres hexadecimales
+            if (!flag.StartsWith("PICKUP_")) return false;
+            var id = flag.Substring(7); // Quitar "PICKUP_"
+            return id.Length == 32 && System.Text.RegularExpressions.Regex.IsMatch(id, "^[a-fA-F0-9]+$");
+        });
+
+        if (removed > 0)
+        {
+            Debug.Log($"[WorldPickup] 🧹 Limpiados {removed} flags GUID antiguos del preset");
+        }
+    }
+
     void PersistCollectedFlag()
     {
         if (!persistState) return;
-        if (string.IsNullOrEmpty(pickupId))
-        {
-            Debug.LogWarning($"[WorldPickup] persistState=true pero pickupId vacío en {name}. El estado no se guardará.");
-            return;
-        }
 
         var profile = GameBootService.Profile;
         if (profile == null) return;
@@ -254,14 +275,29 @@ public class WorldPickup : MonoBehaviour
 
     bool IsFlagSet()
     {
-        if (!persistState || string.IsNullOrEmpty(pickupId)) return false;
+        if (!persistState) return false;
 
         var profile = GameBootService.Profile;
         var preset = profile != null ? profile.GetActivePresetResolved() : null;
         if (preset == null || preset.flags == null) return false;
 
+        // Solo verificar el flag generado por posición (nuevo sistema)
+        // Ignorar cualquier flag antiguo con GUID
         return preset.flags.Contains(GetFlag());
     }
 
-    string GetFlag() => $"PICKUP_{pickupId}";
+    string GetFlag()
+    {
+        // Si hay un override explícito, usarlo directamente (para casos especiales)
+        if (!string.IsNullOrEmpty(pickupIdOverride))
+            return $"PICKUP_{pickupIdOverride}";
+        
+        // SIEMPRE generar ID único basado en escena + nombre + posición
+        // Esto garantiza que cada pickup tenga un ID único automáticamente
+        // y que no se use ningún GUID antiguo del prefab
+        var sceneName = gameObject.scene.IsValid() ? gameObject.scene.name : "Unknown";
+        var pos = transform.position;
+        var posKey = $"{pos.x:F1}_{pos.y:F1}_{pos.z:F1}";
+        return $"PICKUP_{sceneName}_{gameObject.name}_{posKey}";
+    }
 }
