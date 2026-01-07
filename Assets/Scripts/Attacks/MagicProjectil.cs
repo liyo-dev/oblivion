@@ -1,6 +1,9 @@
 using UnityEngine;
 
-[DisallowMultipleComponent]
+/// <summary>
+/// Proyectil mágico que se lanza desde MagicProjectileSpawner.
+/// Maneja movimiento, colisiones, daño y efectos visuales/sonoros.
+/// </summary>[DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
 public class MagicProjectile : MonoBehaviour
 {
@@ -30,6 +33,9 @@ public class MagicProjectile : MonoBehaviour
         
         // Audio
         public string impactSFXKey;      // clave SFX al impactar
+        
+        // Elemento de magia (para interacciones con puzzle)
+        public MagicElement element;     // Fire, Ice, etc.
     }
 
     // ==== Estado ===============================================================
@@ -213,6 +219,31 @@ public class MagicProjectile : MonoBehaviour
             Debug.Log($"[MagicProjectile] 💥 Colisión con proyectil enemigo detectada!");
             ProjectileCollisionHandler.HandleCollision(gameObject, other.gameObject, hitPoint);
             return; // El handler se encarga de destruir ambos proyectiles
+        }
+
+        // ✅ PRIORIDAD 2: Detectar interacción con puzzle (enredaderas, etc.)
+        var burnable = other.GetComponent<BurnableVine>();
+        if (burnable != null)
+        {
+            burnable.OnHitByMagic(_cfg.element, hitPoint);
+            
+            // VFX de impacto
+            if (_cfg.impactVFX)
+            {
+                var fx = Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
+                float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f;
+                Destroy(fx, destroyTime);
+            }
+            
+            // SFX de impacto
+            if (!string.IsNullOrEmpty(_cfg.impactSFXKey))
+            {
+                AudioService.Instance?.PlaySFX(_cfg.impactSFXKey, worldPosition: hitPoint);
+            }
+            
+            // Destruir proyectil tras quemar
+            if (_cfg.destroyOnHit) End(true);
+            return;
         }
 
         // Verificar si colisionamos con esta capa (para destruir el proyectil)

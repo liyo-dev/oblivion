@@ -372,7 +372,8 @@ public class MagicProjectileSpawner : MonoBehaviour
                 impactVFX      = spell.impactVFX,
                 despawnVFX     = spell.despawnVFX,
                 vfxLifetime    = spell.vfxLifetime,
-                impactSFXKey   = spell.impactSFXKey
+                impactSFXKey   = spell.impactSFXKey,
+                element        = spell.element
             };
             mp.Configure(cfg, instigatorOverride ? instigatorOverride : gameObject);
         }
