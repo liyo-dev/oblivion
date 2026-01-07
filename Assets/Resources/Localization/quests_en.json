@@ -2,15 +2,15 @@
     "texts": [
         {
             "key": "ELDRAN_MISSION2_NAME",
-            "value": "[EN] A por la caja de frutas\t"
+            "value": "Get the Fruit Crate"
         },
         {
             "key": "Q_NIÑOPEZ",
-            "value": "[EN] Antes de entrar al agua necesitas ayudar al niño pez."
+            "value": "Before entering the water you need to help the fish boy."
         },
         {
             "key": "Q_ROBERTO",
-            "value": "[EN] El mareo de Roberto."
+            "value": "Roberto's Dizziness."
         },
         {
             "key": "QUEST_ELDRAN_MISSION1_DESC",
@@ -18,7 +18,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION1_NAME",
-            "value": "[EN] De buena mañana"
+            "value": "Early Morning"
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
@@ -26,59 +26,59 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_NAME",
-            "value": "[EW] A por la caja de frutas"
+            "value": "Get the Fruit Crate"
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_DESC",
-            "value": "[EN] Derrota al demonio."
+            "value": "Defeat the demon."
         },
         {
             "key": "QUEST_ELDRAN_MISSION3_NAME",
-            "value": "[EN] El despertar de una Estrella"
+            "value": "The Awakening of a Star"
         },
         {
             "key": "QUEST_ELDRAN_MISSION4_DESC",
-            "value": "[EN] Ve a hablar con Eldran cuando estés preparado."
+            "value": "Go talk to Eldran when you're ready."
         },
         {
             "key": "QUEST_ELDRAN_MISSION4_NAME",
-            "value": "[EN] Vuelve con Eldran"
+            "value": "Return to Eldran"
         },
         {
             "key": "QUEST_ELDRAN_MISSION5_DESC",
-            "value": "[EN] Sigue las instrucciones de Eldran."
+            "value": "Follow Eldran's instructions."
         },
         {
             "key": "QUEST_ELDRAN_MISSION5_DESC_01",
-            "value": "[EN] Busca a Victoria y pídele una capa de mago."
+            "value": "Find Victoria and ask her for a wizard's cloak."
         },
         {
             "key": "QUEST_ELDRAN_MISSION5_DESC_02",
-            "value": "[EN] Compra una poción de vida."
+            "value": "Buy a <sprite name=\"lifePotion\">."
         },
         {
             "key": "QUEST_ELDRAN_MISSION5_DESC_03",
-            "value": "[EN] Entrena con Erika, la puedes encontrar cerca del castillo."
+            "value": "Train with Erika, you can find her near the castle."
         },
         {
             "key": "QUEST_ELDRAN_MISSION5_NAME",
-            "value": "[EN] La preparación del Mago"
+            "value": "The Wizard's Preparation"
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_DESC",
-            "value": "[EN]Regresa con Estela a ver a Eldran."
+            "value": "Return with Estela to see Eldran."
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_DESC_01",
-            "value": "[EN] Busca a Estela en el bosque prohibido."
+            "value": "Find Estela in the forbidden forest."
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_DESC_02",
-            "value": "[EN] Regresa con Estela a ver a Eldran."
+            "value": "Return with Estela to see Eldran."
         },
         {
             "key": "QUEST_ELDRAN_MISSION6_NAME",
-            "value": "[EN] Hacia el Bosque Prohibido"
+            "value": "Toward the Forbidden Forest"
         },
         {
             "key": "QUEST_MISSION1_STEP1",
@@ -86,19 +86,19 @@
         },
         {
             "key": "QUEST_NIÑOPEZ_CARACOLA_DESC",
-            "value": "[EN] Busca la caracola del niño pez."
+            "value": "Find the fish boy's conch."
         },
         {
             "key": "QUEST_NIÑOPEZ_DESC",
-            "value": "[EN] Consigue algas para el niño pez."
+            "value": "Get <sprite name=\"algas\"> for the fish boy."
         },
         {
             "key": "QUEST_ROBERTO_MISSION1_DESC",
-            "value": "[EN] Consigue una poción de vida para Roberto."
+            "value": "Get a <sprite name=\"lifePotion\"> for Roberto."
         },
         {
             "key": "QUEST_RUDOLFO_DESC",
-            "value": "[EN] Busca las botas de Rudolfo cerca del agua."
+            "value": "Find Rudolfo's <sprite name=\"boots\"> near the water."
         },
         {
             "key": "QUEST_STATE_ACTIVE",

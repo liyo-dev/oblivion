@@ -22,7 +22,12 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requiredItems: []
+    requiredItems:
+    - item: {fileID: 11400000, guid: cd7bbd4a76acaf04da947d03b56a071a, type: 2}
+      amount: 1
+      stepConditionId: 
+      stepIndex: 0
+      consumeOnComplete: 1
     dlgBefore: {fileID: 11400000, guid: 609dba3ed6c65cd419426a928bcabebc, type: 2}
     dlgInProgress: {fileID: 11400000, guid: 9d918d2744a90d846885875933551c02, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: 7c00c038583553e408f119b20825c282, type: 2}

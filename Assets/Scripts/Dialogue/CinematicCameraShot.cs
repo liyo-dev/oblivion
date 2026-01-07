@@ -50,36 +50,90 @@ public class CinematicCameraShot
     [Tooltip("Tipo de plano cinematográfico")]
     public DialogueShotType shotType = DialogueShotType.Wide;
     
-    [Header("Posición Relativa")]
-    [Tooltip("Distancia desde el objetivo")]
-    public float distance = 3f;
-    
-    [Tooltip("Altura relativa respecto al objetivo")]
-    public float height = 1.6f;
-    
-    [Tooltip("Offset lateral (positivo = derecha, negativo = izquierda)")]
-    public float lateralOffset = 0f;
-    
-    [Header("Rotación")]
-    [Tooltip("Ángulo vertical de la cámara (pitch)")]
-    [Range(-45f, 45f)]
-    public float verticalAngle = 0f;
-    
-    [Tooltip("Offset del punto de mira (look-at target offset)")]
-    public Vector3 lookAtOffset = Vector3.up * 1.5f;
-    
-    [Header("Composición")]
-    [Tooltip("Field of View para este plano")]
-    [Range(20f, 90f)]
-    public float fieldOfView = 50f;
-    
-    [Tooltip("Dutch angle (rotación en Z para efecto dramático)")]
-    [Range(-20f, 20f)]
-    public float dutchAngle = 0f;
-    
-    [Header("Duración")]
     [Tooltip("Duración mínima de este plano en segundos (0 = hasta siguiente línea)")]
     [Min(0f)]
     public float minimumDuration = 0f;
+    
+    // Valores predefinidos según el tipo de plano (no visibles en Inspector)
+    public float Distance => GetPredefinedDistance();
+    public float Height => GetPredefinedHeight();
+    public float LateralOffset => GetPredefinedLateralOffset();
+    public float VerticalAngle => GetPredefinedVerticalAngle();
+    public Vector3 LookAtOffset => GetPredefinedLookAtOffset();
+    public float FieldOfView => GetPredefinedFOV();
+    public float DutchAngle => 0f; // Siempre 0 por defecto
+    
+    private float GetPredefinedDistance()
+    {
+        return shotType switch
+        {
+            DialogueShotType.Wide => 4f,
+            DialogueShotType.MediumNPC => 2.5f,
+            DialogueShotType.CloseUpNPC => 1.2f,
+            DialogueShotType.OverShoulderPlayer => 2f,
+            DialogueShotType.OverShoulderNPC => 2f,
+            DialogueShotType.Profile => 3f,
+            _ => 3f
+        };
+    }
+    
+    private float GetPredefinedHeight()
+    {
+        return shotType switch
+        {
+            DialogueShotType.Wide => 1.6f,
+            DialogueShotType.MediumNPC => 1.5f,
+            DialogueShotType.CloseUpNPC => 1.6f,
+            DialogueShotType.OverShoulderPlayer => 1.5f,
+            DialogueShotType.OverShoulderNPC => 1.5f,
+            DialogueShotType.Profile => 1.6f,
+            _ => 1.6f
+        };
+    }
+    
+    private float GetPredefinedLateralOffset()
+    {
+        return shotType switch
+        {
+            DialogueShotType.OverShoulderPlayer => 0.5f,
+            DialogueShotType.OverShoulderNPC => -0.5f,
+            DialogueShotType.Profile => 2f,
+            _ => 0f
+        };
+    }
+    
+    private float GetPredefinedVerticalAngle()
+    {
+        return shotType switch
+        {
+            DialogueShotType.CloseUpNPC => -5f,
+            DialogueShotType.Wide => 5f,
+            _ => 0f
+        };
+    }
+    
+    private Vector3 GetPredefinedLookAtOffset()
+    {
+        return shotType switch
+        {
+            DialogueShotType.CloseUpNPC => Vector3.up * 1.6f,
+            DialogueShotType.Wide => Vector3.up * 1.2f,
+            _ => Vector3.up * 1.5f
+        };
+    }
+    
+    private float GetPredefinedFOV()
+    {
+        return shotType switch
+        {
+            DialogueShotType.Wide => 55f,
+            DialogueShotType.MediumNPC => 45f,
+            DialogueShotType.CloseUpNPC => 40f,
+            DialogueShotType.OverShoulderPlayer => 50f,
+            DialogueShotType.OverShoulderNPC => 50f,
+            DialogueShotType.Profile => 50f,
+            _ => 50f
+        };
+    }
 }
 

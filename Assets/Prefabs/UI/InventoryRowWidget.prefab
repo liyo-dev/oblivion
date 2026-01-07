@@ -138,8 +138,6 @@ MonoBehaviour:
   button: {fileID: 1885911616279057158}
   label: {fileID: 7839857643587250768}
   iconImage: {fileID: 4867745132507412376}
-  selectionColor: {r: 1, g: 0.82, b: 0.16, a: 1}
-  highlightGraphic: {fileID: 0}
 --- !u!1 &5442509483231980021
 GameObject:
   m_ObjectHideFlags: 0

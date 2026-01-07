@@ -459,13 +459,8 @@ public class DialogueCinematicController : MonoBehaviour
                 return;
             }
 
-            // Determinar si es momento de cortar
-            bool shouldCut = false;
-
-            if (activeProfile.enableAutomaticCuts)
-            {
-                shouldCut = lineIndex >= nextCutAtLine;
-            }
+            // Determinar si es momento de cortar (siempre activo ahora)
+            bool shouldCut = lineIndex >= nextCutAtLine;
 
             if (shouldCut)
             {
@@ -523,7 +518,7 @@ public class DialogueCinematicController : MonoBehaviour
         {
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
-            Vector3 lookAtPos = target.position + shot.lookAtOffset;
+            Vector3 lookAtPos = target.position + shot.LookAtOffset;
 
             // Aplicar posición
             vcam.transform.position = position;
@@ -556,17 +551,17 @@ public class DialogueCinematicController : MonoBehaviour
             }
 
             // Aplicar ángulos adicionales de forma segura
-            if (Mathf.Abs(shot.verticalAngle) > 0.01f)
+            if (Mathf.Abs(shot.VerticalAngle) > 0.01f)
             {
-                vcam.transform.Rotate(Vector3.right, shot.verticalAngle, Space.Self);
+                vcam.transform.Rotate(Vector3.right, shot.VerticalAngle, Space.Self);
             }
-            if (Mathf.Abs(shot.dutchAngle) > 0.01f)
+            if (Mathf.Abs(shot.DutchAngle) > 0.01f)
             {
-                vcam.transform.Rotate(Vector3.forward, shot.dutchAngle, Space.Self);
+                vcam.transform.Rotate(Vector3.forward, shot.DutchAngle, Space.Self);
             }
 
             // Configurar lens (FOV)
-            vcam.Lens.FieldOfView = shot.fieldOfView;
+            vcam.Lens.FieldOfView = shot.FieldOfView;
 
             // Configurar blend time en el brain de diálogo
             if (dialogueBrain != null)
@@ -630,7 +625,7 @@ public class DialogueCinematicController : MonoBehaviour
             Vector3 camPos;
             
             // ✅ AJUSTE: Aumentar distancia mínima para alejar todos los planos
-            float effectiveDistance = Mathf.Max(shot.distance * 1.5f, 2.0f); // Multiplicador 1.5x y mínimo de 2m
+            float effectiveDistance = Mathf.Max(shot.Distance * 1.5f, 2.0f); // Multiplicador 1.5x y mínimo de 2m
 
             switch (shot.shotType)
             {
@@ -650,12 +645,12 @@ public class DialogueCinematicController : MonoBehaviour
                         Vector3 backDir = -playerToNPC; // Dirección hacia atrás desde el punto medio
                         
                         // ✅ Combinar movimiento lateral (más hacia la izquierda) y hacia atrás
-                        float wideDistance = Mathf.Max(shot.distance * 1.8f, 4.5f); // Más alejado: mínimo 4.5m
+                        float wideDistance = Mathf.Max(shot.Distance * 1.8f, 4.5f); // Más alejado: mínimo 4.5m
                         float lateralAmount = wideDistance * 0.4f; // 40% lateral hacia la izquierda
                         float backAmount = wideDistance * 0.6f; // 60% hacia atrás
                         
                         camPos = midPoint + (-sideDir * lateralAmount) + (backDir * backAmount);
-                        camPos.y = midPoint.y + shot.height;
+                        camPos.y = midPoint.y + shot.Height;
                     }
                     break;
 
@@ -669,7 +664,7 @@ public class DialogueCinematicController : MonoBehaviour
                         
                         // ✅ MEJORADO: Offset lateral más pronunciado para evitar bloquear la vista con la cabeza
                         // Usar lateralOffset del shot o un valor por defecto mejorado
-                        float lateralOffsetAmount = shot.lateralOffset != 0 ? shot.lateralOffset : 0.9f; // Aumentado de 0.5f a 0.9f
+                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 0.9f; // Aumentado de 0.5f a 0.9f
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, playerToNPC).normalized * lateralOffsetAmount;
                         
                         // ✅ MEJORADO: Retroceder MÁS de la posición del player para mejor encuadre
@@ -681,7 +676,7 @@ public class DialogueCinematicController : MonoBehaviour
                         
                         // ✅ MEJORADO: Altura más elevada para mejor vista sobre el hombro
                         // Añadir 0.3m adicionales a la altura configurada para ver mejor por encima
-                        camPos.y = currentPlayer.position.y + shot.height + 0.3f;
+                        camPos.y = currentPlayer.position.y + shot.Height + 0.3f;
                     }
                     break;
 
@@ -694,7 +689,7 @@ public class DialogueCinematicController : MonoBehaviour
                         npcToPlayer.Normalize();
                         
                         // ✅ MEJORADO: Offset lateral más pronunciado
-                        float lateralOffsetAmount = shot.lateralOffset != 0 ? shot.lateralOffset : 0.9f; // Aumentado de 0.5f a 0.9f
+                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 0.9f; // Aumentado de 0.5f a 0.9f
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, npcToPlayer).normalized * lateralOffsetAmount;
                         
                         // ✅ MEJORADO: Retroceder MÁS de la posición del NPC
@@ -703,7 +698,7 @@ public class DialogueCinematicController : MonoBehaviour
                         camPos = currentNPC.position - npcToPlayer * behindDistance + shoulderOffset;
                         
                         // ✅ MEJORADO: Altura más elevada
-                        camPos.y = currentNPC.position.y + shot.height + 0.3f;
+                        camPos.y = currentNPC.position.y + shot.Height + 0.3f;
                     }
                     break;
 
@@ -711,7 +706,7 @@ public class DialogueCinematicController : MonoBehaviour
                     // Vista lateral - perpendicular a la línea entre personajes - más alejada
                     Vector3 perpendicular = Vector3.Cross(Vector3.up, fromOther).normalized;
                     camPos = basePos + perpendicular * effectiveDistance;
-                    camPos.y = basePos.y + shot.height;
+                    camPos.y = basePos.y + shot.Height;
                     break;
 
                 case DialogueShotType.MediumNPC:
@@ -725,19 +720,19 @@ public class DialogueCinematicController : MonoBehaviour
                         npcToPlayer.Normalize();
                         
                         // Offset lateral para variedad visual
-                        Vector3 lateral = Vector3.Cross(Vector3.up, npcToPlayer).normalized * shot.lateralOffset;
+                        Vector3 lateral = Vector3.Cross(Vector3.up, npcToPlayer).normalized * shot.LateralOffset;
                         
                         // ✅ CORREGIDO: Posicionar cámara en dirección del Player (frente al NPC)
                         // Esto coloca la cámara entre el Player y el NPC, mirando hacia el NPC
                         camPos = currentNPC.position + npcToPlayer * effectiveDistance + lateral;
-                        camPos.y = currentNPC.position.y + shot.height;
+                        camPos.y = currentNPC.position.y + shot.Height;
                     }
                     break;
 
                 default:
                     // Fallback: frente al target
                     camPos = basePos + fromOther * effectiveDistance;
-                    camPos.y = basePos.y + shot.height;
+                    camPos.y = basePos.y + shot.Height;
                     break;
             }
 
@@ -790,9 +785,12 @@ public class DialogueCinematicController : MonoBehaviour
     /// </summary>
     private int CalculateNextCutLine()
     {
-        int baseLines = activeProfile.linesBetweenCuts;
-        int variation = Random.Range(-activeProfile.cutTimingVariation, activeProfile.cutTimingVariation + 1);
-        int nextCut = currentLineIndex + baseLines + variation;
+        // Valores predefinidos (mismos que en DialogueCinematicProfile)
+        const int baseLines = 2;  // Cambiar cada 2 líneas
+        const int variation = 1;  // Variación de +/- 1 línea
+        
+        int randomVariation = Random.Range(-variation, variation + 1);
+        int nextCut = currentLineIndex + baseLines + randomVariation;
         return Mathf.Max(currentLineIndex + 1, nextCut);
     }
 

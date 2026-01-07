@@ -8800,6 +8800,7 @@ GameObject:
   - component: {fileID: 8489721875542008483}
   - component: {fileID: 1219957402610385003}
   - component: {fileID: 7378160220606803366}
+  - component: {fileID: 7048766209318931401}
   m_Layer: 0
   m_Name: vThirdPersonCamera
   m_TagString: MainCamera
@@ -8965,6 +8966,31 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3685603612852488389}
   m_Enabled: 1
+--- !u!114 &7048766209318931401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3685603612852488389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d08c88476cd96c4e970c7afda5404fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::CameraOcclusionShadowsOnly
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  checkRadius: 0.15
+  releaseDelay: 0.2
+  occlusionShader: {fileID: 4800000, guid: 8864b4fe390c41d68fac8146222da0fa, type: 3}
+  revealAmount: 0.9
+  minimumAlpha: 0.15
+  fadeInSpeed: 6
+  fadeOutSpeed: 3
+  noiseScale: 5
+  edgeWidth: 0.2
+  debugRays: 0
 --- !u!1 &3700031740071713348
 GameObject:
   m_ObjectHideFlags: 0
@@ -12412,6 +12438,8 @@ MonoBehaviour:
   updatesPerSecond: 10
   mustBeOnScreen: 1
   screenEdgePadding: 0.03
+  autoTargetByLayer: 1
+  requireDamageableAlive: 1
   drawRadius: 1
   drawFOV: 1
   drawTargetLine: 1
@@ -12424,6 +12452,8 @@ MonoBehaviour:
   markerOffset: {x: 0, y: 0, z: 0}
   billboardToCamera: 1
   parentMarkerToTarget: 0
+  markerShowDuration: 0.25
+  markerHideDuration: 0.15
 --- !u!114 &5411191197508503009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12683,6 +12713,8 @@ MonoBehaviour:
   healthSystem: {fileID: 6570775665125871610}
   manaPool: {fileID: 1297097001791454143}
   specialChargeMeter: {fileID: 0}
+  animator: {fileID: 0}
+  drinkPotionAnimationName: DrinkPotion_NoWeapon
   logWarnings: 0
   onEffectApplied:
     m_PersistentCalls:
@@ -12813,15 +12845,16 @@ MonoBehaviour:
   animator: {fileID: 6005525575959977289}
   controller: {fileID: 8092544119751004760}
   playerRigidbody: {fileID: 6059246465518525408}
+  upperBodyLayerIndex: 1
   battleIdleStateName: Idle_Battle_NoWeapon
-  normalIdleStateName: Idle_Normal_NoWeapon
+  battleIdleFullPath: UpperBody.Idle_Battle_NoWeapon
   victoryStateName: Victory_NoWeapon
   enemyDetectionRadius: 15
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
   exitBattleDelay: 3
-  idleSpeedThreshold: 0.1
+  layerFadeDuration: 0.3
   victoryAnimationDuration: 3
   victorySfxKey: Npc_Battle_Victory
   debugMode: 1

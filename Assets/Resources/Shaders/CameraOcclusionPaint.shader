@@ -14,12 +14,16 @@ Shader "Custom/CameraOcclusionPaint"
         {
             "RenderType" = "Transparent"
             "Queue" = "Transparent"
-            "RenderPipeline" = "UniversalRenderPipeline"
+            "RenderPipeline" = "UniversalPipeline"
+            "IgnoreProjector" = "True"
         }
         LOD 100
 
         Pass
         {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+            
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
             Cull Back
@@ -27,7 +31,9 @@ Shader "Custom/CameraOcclusionPaint"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 3.5
+            #pragma target 2.0
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -35,6 +41,7 @@ Shader "Custom/CameraOcclusionPaint"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -42,6 +49,7 @@ Shader "Custom/CameraOcclusionPaint"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -77,6 +85,9 @@ Shader "Custom/CameraOcclusionPaint"
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
+                UNITY_SETUP_INSTANCE_ID(IN);
+                UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
+                
                 OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.positionCS = TransformWorldToHClip(OUT.positionWS);
                 OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
@@ -85,6 +96,8 @@ Shader "Custom/CameraOcclusionPaint"
 
             half4 frag(Varyings IN) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(IN);
+                
                 half4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;
 
                 float n = Noise(IN.positionWS.xz * _NoiseScale + _Time.y);
@@ -95,4 +108,7 @@ Shader "Custom/CameraOcclusionPaint"
             ENDHLSL
         }
     }
+    
+    // Fallback para garantizar que algo se renderice si el shader principal falla
+    Fallback "Universal Render Pipeline/Unlit"
 }

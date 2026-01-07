@@ -32,10 +32,80 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
 
     private readonly Dictionary<Renderer, Entry> _active = new();
     private readonly List<Renderer> _toRestore = new(32);
-    private Transform _cam;
     private bool _shaderMissing; // Flag para evitar spam de errores
-
-    void Awake() { _cam = transform; }
+    private static bool _loggedShaderLoadAttempt; // Solo loguear una vez
+    
+    /// <summary>
+    /// Carga el shader de oclusión usando múltiples estrategias de fallback.
+    /// En builds, algunos métodos de carga pueden fallar, por lo que probamos varios.
+    /// </summary>
+    private Shader LoadOcclusionShader()
+    {
+        Shader shader;
+        
+        // Log de diagnóstico (solo una vez)
+        if (!_loggedShaderLoadAttempt)
+        {
+            _loggedShaderLoadAttempt = true;
+            Debug.Log("[CameraOcclusionShadowsOnly] Intentando cargar shader de oclusión...");
+        }
+        
+        // 1. Si ya está asignado en el inspector, usarlo
+        if (occlusionShader != null)
+        {
+            Debug.Log($"[CameraOcclusionShadowsOnly] Usando shader asignado en inspector: {occlusionShader.name}");
+            return occlusionShader;
+        }
+        
+        // 2. Cargar directamente desde Resources (más confiable en builds)
+        shader = Resources.Load<Shader>("Shaders/CameraOcclusionPaint");
+        if (shader != null)
+        {
+            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado desde Resources: {shader.name}");
+            return shader;
+        }
+        
+        // 3. NUEVO: Cargar desde el material de respaldo (garantiza inclusión en build)
+        var backupMaterial = Resources.Load<Material>("Shaders/CameraOcclusionPaint_Backup");
+        if (backupMaterial != null && backupMaterial.shader != null)
+        {
+            shader = backupMaterial.shader;
+            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado desde material de respaldo: {shader.name}");
+            return shader;
+        }
+        
+        // 4. Usar Shader.Find (funciona si el shader está en Always Included Shaders)
+        shader = Shader.Find("Custom/CameraOcclusionPaint");
+        if (shader != null)
+        {
+            Debug.Log($"[CameraOcclusionShadowsOnly] Shader encontrado con Shader.Find: {shader.name}");
+            return shader;
+        }
+        
+        // 5. Fallback: shader URP Unlit con transparencia (similar pero más simple)
+        shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader != null)
+        {
+            Debug.LogWarning($"[CameraOcclusionShadowsOnly] Usando fallback URP/Unlit - efecto visual será diferente");
+            return shader;
+        }
+        
+        // 6. Último fallback: shader Standard
+        shader = Shader.Find("Standard");
+        if (shader != null)
+        {
+            Debug.LogWarning($"[CameraOcclusionShadowsOnly] Usando fallback Standard - efecto visual será diferente");
+            return shader;
+        }
+        
+        // No se encontró ningún shader
+        Debug.LogError("[CameraOcclusionShadowsOnly] No se pudo cargar ningún shader. Soluciones:\n" +
+                       "1. Ir a Edit > Project Settings > Graphics\n" +
+                       "2. En 'Always Included Shaders', agregar 'Custom/CameraOcclusionPaint'\n" +
+                       "3. O asignar el shader directamente en el componente CameraOcclusionShadowsOnly");
+        
+        return null;
+    }
 
     /// <summary>Llama cada frame con los puntos cámara→objetivo.</summary>
     public void Process(Vector3 from, Vector3 to)
@@ -48,33 +118,29 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         // Intentar obtener el shader si no está asignado
         if (!occlusionShader)
         {
-            // Primero intentar cargar desde Resources (más confiable en builds)
-            occlusionShader = Resources.Load<Shader>("Shaders/CameraOcclusionPaint");
-            
-            // Fallback: buscar el shader por nombre
-            if (!occlusionShader)
-                occlusionShader = Shader.Find("Custom/CameraOcclusionPaint");
-            
-            // Fallback a shader estándar URP si el custom no está disponible
-            if (!occlusionShader)
-                occlusionShader = Shader.Find("Universal Render Pipeline/Lit");
-            
-            // Fallback a shader Standard (Built-in)
-            if (!occlusionShader)
-                occlusionShader = Shader.Find("Standard");
+            occlusionShader = LoadOcclusionShader();
             
             // Si aún no hay shader, desactivar el sistema
             if (!occlusionShader)
             {
                 if (!_shaderMissing)
                 {
-                    Debug.LogWarning("[CameraOcclusionShadowsOnly] No se encontró shader de oclusión. Sistema desactivado.");
+                    Debug.LogWarning("[CameraOcclusionShadowsOnly] No se encontró shader de oclusión. Sistema desactivado. Ver: Project Settings > Graphics > Always Included Shaders");
                     _shaderMissing = true;
                 }
                 return;
             }
             
-            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado: {occlusionShader.name}");
+            // Verificar que el shader está soportado
+            if (!occlusionShader.isSupported)
+            {
+                Debug.LogError($"[CameraOcclusionShadowsOnly] Shader '{occlusionShader.name}' no está soportado en esta plataforma");
+                _shaderMissing = true;
+                occlusionShader = null;
+                return;
+            }
+            
+            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado exitosamente: {occlusionShader.name}");
         }
 
         if (debugRays) Debug.DrawLine(from, to, Color.magenta, 0f, false);

@@ -4913,7 +4913,6 @@ GameObject:
   m_Component:
   - component: {fileID: 351475098002909949}
   - component: {fileID: 7574726924791480366}
-  - component: {fileID: 6530649358369260736}
   m_Layer: 0
   m_Name: VFX_Realistic_Rain_Lit
   m_TagString: Untagged
@@ -4953,31 +4952,6 @@ MonoBehaviour:
   intensity: 400
   windDirection: {x: 0, y: 0, z: 0}
   windStrength: 1
---- !u!114 &6530649358369260736
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3292688598545588766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de9d27f31a4b4051bb07f81943e9a212, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealisticRain.VFXCollisionFixer
-  enableCollision: 1
-  collisionType: 1
-  collisionMode: 0
-  collisionQuality: 0
-  collidesWith:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  bounce: 0
-  lifetimeLoss: 1
-  radiusScale: 1
-  maxCollisionShapeSize: 100
-  sendCollisionMessages: 0
-  showDebugInfo: 0
 --- !u!1 &7470540576857010968
 GameObject:
   m_ObjectHideFlags: 0

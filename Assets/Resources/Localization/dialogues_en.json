@@ -102,7 +102,7 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "[EN] A veces se camufla con algas."
+            "value": "Sometimes it camouflages with <sprite name=\"algas\">."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
@@ -130,19 +130,19 @@
         },
         {
             "key": "DLG_ANTIPATICO_05",
-            "value": "[EN] Mira hacemos una cosa: si encuentras mis botas te las puedes quedar."
+            "value": "Look, let's make a deal: if you find my <sprite name=\"boots\"> you can keep them."
         },
         {
             "key": "DLG_ANTIPATICO_06",
-            "value": "[EN] Estuve nadando y olvidé ponermelas."
+            "value": "I was swimming and forgot to put them on."
         },
         {
             "key": "DLG_ANTIPATICO_07",
-            "value": "[EN] Ven a verme si las encuentras y te contaré un secreto."
+            "value": "Come see me if you find them and I'll tell you a secret."
         },
         {
             "key": "DLG_ANTIPATICO_IN_PROGRESS",
-            "value": "[EN] Busca las botas cerca del mar. Estuve nadando por ahí."
+            "value": "Look for the <sprite name=\"boots\"> near the sea. I was swimming around there."
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_01",
@@ -242,19 +242,19 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_09",
-            "value": "[EN] Luego compra en cualquier tienda una poción de vida."
+            "value": "Then buy a <sprite name=\"lifePotion\"> at any shop."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
-            "value": "[EN] Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
+            "value": "Finally, talk to Erika and ask her to train you. You need training before going out to face the world."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
-            "value": "[EN] Te recuerdo que la capa puedes conseguirla preguntando a Victoria en la tienda de ropa."
+            "value": "I remind you that you can get the cloak by asking Victoria at the clothing shop."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_02",
-            "value": "[EN] La poción en cualquier tienda del reino la puedes encontrar."
+            "value": "You can find the <sprite name=\"lifePotion\"> at any shop in the kingdom."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
@@ -342,11 +342,11 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "[EN] Podrás usar PROTECCIÓN si presionas los triggers del mando derecho e izquierdo a la vez."
+            "value": "[EN] Podrás usar PROTECCIÓN si presionas <sprite name=\"interactable_lt\"> y <sprite name=\"interactable_rt\"> a la vez."
         },
         {
             "key": "DLG_GUERRERACHINA_06",
-            "value": "[EN] Voy a darte un hechizo nuevo: BOLA PRISMA. Usa el botón B y atacame con él."
+            "value": "[EN] Voy a darte un hechizo nuevo: BOLA PRISMA. Usa <sprite name=\"interactable_b\"> y atacame con él."
         },
         {
             "key": "DLG_GUERRERACHINA_07",
@@ -374,15 +374,15 @@
         },
         {
             "key": "DLG_LEONARDO_02",
-            "value": "[EN] Para abrir el menú de Pausa hazlo con el botón START."
+            "value": "[EN] Para abrir el menú de Pausa hazlo con <sprite name=\"start\">."
         },
         {
             "key": "DLG_LEONARDO_03",
-            "value": "[EN] Para abrir el menú de misiones pulsa dos veces la flecha hacia arriba del DPAD."
+            "value": "[EN] Para abrir el menú de misiones pulsa dos veces <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_LEONARDO_04",
-            "value": "[EN] Para abrir el panel de inventario pulsa la flecha hacia abajo del DPAD."
+            "value": "[EN] Para abrir el panel de inventario pulsa <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_LETTER_INTRO_01",
@@ -430,31 +430,31 @@
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "[EN] Pero no puedo meterme en el agua sin mis algas de camuflaje,"
+            "value": "But I can't get in the water without my camouflage <sprite name=\"algas\">,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
-            "value": "[EN] Seguro que mi amiga me las ha quitado."
+            "value": "I'm sure my friend took them."
         },
         {
             "key": "DLG_NIÑOPEZ_05",
-            "value": "[EN] Si la encuentras te diré como puedes ayudarme a buscar mi caracola."
+            "value": "If you find her, I'll tell you how you can help me look for my conch."
         },
         {
             "key": "DLG_NIÑOPEZ_ALGAS_PROGRRESS",
-            "value": "[EN] Seguro que alguien del Reino tiene algas..."
+            "value": "I'm sure someone in the Kingdom has <sprite name=\"algas\">..."
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_01",
-            "value": "[EN] Busca mi caracola porfa."
+            "value": "Please look for my conch."
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN",
-            "value": "[EN] Gracias, eres mi héroe."
+            "value": "Thank you, you're my hero."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
-            "value": "[EN] Oh Muchas gracias, ahora que tengo mis algas puedo entrar al mar."
+            "value": "Oh thank you so much, now that I have my <sprite name=\"algas\"> I can go into the sea."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_02",
@@ -478,11 +478,11 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_03",
-            "value": "[EN] Cuando quieras abrir el MENÚ PRINCIPAL pulsa START"
+            "value": "[EN] Cuando quieras abrir el MENÚ PRINCIPAL pulsa <sprite name=\"start\">"
         },
         {
             "key": "DLG_OLIVER_MENUS_04",
-            "value": "[EN] Ahí podrás pausar el juego, volver al menú o ajustar configuraciones."
+            "value": "[EN] Ahí podrás pausar el juego, volver al menú..."
         },
         {
             "key": "DLG_OLIVER_MENUS_05",
@@ -490,11 +490,11 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar el botón del DPad arriba."
+            "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_OLIVER_MENUS_07",
-            "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo el botón del DPad arriba."
+            "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_OLIVER_MENUS_08",
@@ -518,31 +518,31 @@
         },
         {
             "key": "DLG_ROBERTO_01",
-            "value": "[EN] Ay que mareo tengo..."
+            "value": "Oh, I feel so dizzy..."
         },
         {
             "key": "DLG_ROBERTO_02",
-            "value": "[EN] Si me traes una poción te puedo dar algo que te va a gustar..."
+            "value": "If you bring me a <sprite name=\"lifePotion\"> I can give you something you'll like..."
         },
         {
             "key": "DLG_ROBERTO_03",
-            "value": "[EN] Ojalá puedas conseguir una poción para mi mareo."
+            "value": "I hope you can get a <sprite name=\"lifePotion\"> for my dizziness."
         },
         {
             "key": "DLG_ROBERTO_04",
-            "value": "[EN] Oh Muchas gracias, ya me encuentro mucho mejor."
+            "value": "Oh thank you so much, I feel much better now."
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_01",
-            "value": "[EN] ¿Vienes a molestar?"
+            "value": "Are you here to bother me?"
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_02",
-            "value": "[EN] No pienso darte nada más..."
+            "value": "I'm not giving you anything else..."
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_03",
-            "value": "[EN] Espero que te quedaran bien mis botas. Chao."
+            "value": "I hope my <sprite name=\"boots\"> fit you well. Bye."
         },
         {
             "key": "DLG_SARA_01",
@@ -550,11 +550,11 @@
         },
         {
             "key": "DLG_TENDERA_01",
-            "value": "[EN] Tengo la tienda cerrada de momento."
+            "value": "The shop is closed for now."
         },
         {
             "key": "DLG_TENDERA_02",
-            "value": "[EN] Pero toma un poco de algas que me sobra un montón."
+            "value": "But take some <sprite name=\"algas\">, I have plenty to spare."
         },
         {
             "key": "DLG_VERONICA_01",

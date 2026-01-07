@@ -123,7 +123,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private GameObject abilitiesRoot;
     [SerializeField] private AbilityEntryReferences abilityEntries = new();
 
-    [Header("SelecciÃ³n inicial")]
+    [Header("Selección inicial")]
     [SerializeField] private GameObject initialSelectionOverride;
 
     [Header("Inventario")]
@@ -142,23 +142,23 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
-    [Header("CÃ¡mara de equipamiento")]
+    [Header("Cámara de equipamiento")]
     [SerializeField] private float equipmentCameraDistance = 3f;
     [SerializeField] private float equipmentCameraHeight = 1.7f;
     [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
     [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
     [SerializeField] private float previewOrbitSpeed = 120f;
-    [SerializeField, Tooltip("Transform de referencia para centrar la cÃ¡mara (busca 'PortraitAnchor' automÃ¡ticamente si es null)")]
+    [SerializeField, Tooltip("Transform de referencia para centrar la cámara (busca 'PortraitAnchor' automáticamente si es null)")]
     private Transform portraitAnchor;
     [SerializeField, Tooltip("Componente que gestiona el cambio temporal de layers para aislar al player del mundo")]
     private PortraitLayerSwapSRP portraitLayerSwap;
     [Header("Equipamiento - Visibilidad del jugador")]
     [SerializeField] private bool bringPlayerInFrontOfUi = true;
     [SerializeField] private int playerPreviewSortingOrder = 5000;
-    [SerializeField, Min(0f), Tooltip("Tiempo mÃ­nimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
+    [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
     private float closeInputGracePeriod = 0.3f;
     
-    // Referencia a la cÃ¡mara de retrato, encontrada automÃ¡ticamente en el player
+    // Referencia a la cámara de retrato, encontrada automáticamente en el player
     Camera _equipmentPreviewCamera;
     
     bool _equipmentCameraActive;
@@ -166,8 +166,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     Quaternion _storedPlayerRotation;
     Vector3 _previewBaseForward = Vector3.forward;
     float _previewPlayerYaw;
-    Vector3 _fixedAnchorPosition; // PosiciÃ³n fija del anchor para que no se mueva cuando el player rota
-    Vector3 _fixedCameraPosition; // PosiciÃ³n fija de la cÃ¡mara
+    Vector3 _fixedAnchorPosition; // Posición fija del anchor para que no se mueva cuando el player rota
+    Vector3 _fixedCameraPosition; // Posición fija de la cámara
     bool _wasInOrbitMode; // Rastrear si estuvimos en modo orbit en el frame anterior
     PlayerActionManager _actionManager;
     bool _actionModeActive;
@@ -219,8 +219,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         }
     
         
-        // Si no hay instancia, no hacer nada - el menÃº debe estar configurado manualmente en la escena
-        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontrÃ³ instancia. El menÃº debe estar configurado manualmente en la escena.");
+        // Si no hay instancia, no hacer nada - el menú debe estar configurado manualmente en la escena
+        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontrÃ³ instancia. El menú debe estar configurado manualmente en la escena.");
     }
 
     void Awake()
@@ -266,7 +266,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (canvas == null)
         {
             Debug.LogError($"[PlayerEquipmentMenuController] âš ï¸ No se encontrÃ³ Canvas en '{gameObject.name}'");
-            Debug.LogError("   El menÃº de equipamiento NO funcionarÃ¡ correctamente.");
+            Debug.LogError("   El menú de equipamiento NO funcionarÃ¡ correctamente.");
             Debug.LogError("   AsegÃºrate de que el PlayerEquipmentMenuController estÃ© en un GameObject con Canvas configurado.");
             // No desactivar el componente para que se pueda configurar despuÃ©s
             enabled = false;
@@ -287,8 +287,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // EnsureViews retorna false si no hay vistas configuradas
         if (!EnsureViews())
         {
-            Debug.LogError("[PlayerEquipmentMenuController] âš ï¸ No se pudo inicializar ninguna vista del menÃº");
-            Debug.LogError("   El menÃº no podrÃ¡ abrirse hasta que se configuren las vistas en el Inspector.");
+            Debug.LogError("[PlayerEquipmentMenuController] âš ï¸ No se pudo inicializar ninguna vista del menú");
+            Debug.LogError("   El menú no podrÃ¡ abrirse hasta que se configuren las vistas en el Inspector.");
             // No desactivar el componente para que se pueda configurar despuÃ©s
         }
         
@@ -332,13 +332,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
-        // Detectar botÃ³n Start para abrir/cerrar el menÃº usando GamepadInputReader
+        // Detectar botÃ³n Start para abrir/cerrar el menú usando GamepadInputReader
         if (GamepadInputReader.StartPressed)
         {
             _toggleRequested = true;
         }
 
-        // Si el menÃº ya estÃ¡ abierto, evita leer el input de apertura para que el D-Pad
+        // Si el menú ya estÃ¡ abierto, evita leer el input de apertura para que el D-Pad
         // no interfiera con la navegaciÃ³n UI (el toggle se maneja al cerrarse).
         if (!_isOpen)
         {
@@ -348,7 +348,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             // Detectar botones del gamepad usando GamepadInputReader
             
-            // BotÃ³n B (Cancel) o Start para cerrar el menÃº
+            // BotÃ³n B (Cancel) o Start para cerrar el menú
             if (GamepadInputReader.CancelPressed || GamepadInputReader.StartPressed)
             {
                 _cancelRequested = true;
@@ -407,7 +407,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 {
                     bool handled = _inventoryView?.TryHandleCancel() ?? false;
                     if (handled)
-                        _cancelRequested = false; // Evitar que cierre el menÃº
+                        _cancelRequested = false; // Evitar que cierre el menú
                 }
             }
             else if (_activeTab == 1) // Hechizos
@@ -418,7 +418,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     }
 
     // MÃ©todos auxiliares simplificados - usan GamepadInputReader centralizado
-    // Estos leen del Action Map UI para navegaciÃ³n de menÃºs
+    // Estos leen del Action Map UI para navegaciÃ³n de menús
     bool IsLeftShoulderPressed()
     {
         return GamepadInputReader.LeftShoulderPressedUI;
@@ -491,7 +491,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void HandleCloseInput()
     {
-        // Evitar cerrar inmediatamente si todavÃ­a estamos procesando el input que abriÃ³ el menÃº.
+        // Evitar cerrar inmediatamente si todavÃ­a estamos procesando el input que abriÃ³ el menú.
         if (Time.unscaledTime - _openedAt < closeInputGracePeriod)
             return;
 
@@ -546,7 +546,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OpenMenu()
     {
-        // Reproducir sonido de apertura de menÃº
+        // Reproducir sonido de apertura de menú
         GamepadInputReader.PlayUISound("UI_Submit");
         
         Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
@@ -592,7 +592,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         
         if (!EnsureViews())
         {
-            Debug.LogError("[PlayerEquipmentMenu] EnsureViews() retornÃ³ false - cerrando menÃº");
+            Debug.LogError("[PlayerEquipmentMenu] EnsureViews() retornÃ³ false - cerrando menú");
             MenuManager.Close(MenuKind.Equipment);
             return;
         }
@@ -617,7 +617,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             _storedAnimatorUpdateMode = _playerAnimator.updateMode;
             _playerAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
-            Debug.Log("[PlayerEquipmentMenu] Animator cambiado a UnscaledTime para mantener animaciones en el menÃº");
+            Debug.Log("[PlayerEquipmentMenu] Animator cambiado a UnscaledTime para mantener animaciones en el menú");
         }
 
         Debug.Log("[PlayerEquipmentMenu] Configurando canvas y pestaÃ±as...");
@@ -646,7 +646,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         SelectInitial();
         
         Debug.Log("[PlayerEquipmentMenu] Activando cÃ¡mara de equipamiento...");
-        // Activar la cÃ¡mara de equipamiento siempre que el menÃº estÃ© abierto
+        // Activar la cÃ¡mara de equipamiento siempre que el menú estÃ© abierto
         SetEquipmentCameraActive(true);
 
         // Marcar el instante de apertura para filtrar cierres accidentales en el mismo frame.
@@ -658,7 +658,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void CloseMenu(bool playSound = true)
     {
-        // Solo reproducir sonido si el menÃº realmente estaba abierto
+        // Solo reproducir sonido si el menú realmente estaba abierto
         if (playSound && _isOpen)
         {
             GamepadInputReader.PlayUISound("UI_Cancel");
@@ -708,7 +708,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OnQuitToMainMenu()
     {
-        // Cerrar el menÃº SIN reproducir sonido (ya sonÃ³ UI_Cancel arriba)
+        // Cerrar el menú SIN reproducir sonido (ya sonÃ³ UI_Cancel arriba)
         if (_isOpen)
         {
             CloseMenu(playSound: false);
@@ -775,7 +775,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_isOpen && previousTab != _activeTab)
             SelectInitial();
         
-        // Mantener la cÃ¡mara activa en todas las pestaÃ±as mientras el menÃº estÃ© abierto
+        // Mantener la cÃ¡mara activa en todas las pestaÃ±as mientras el menú estÃ© abierto
         SetEquipmentCameraActive(_isOpen);
     }
 
@@ -927,11 +927,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontrÃ³ 'PortraitAnchor' como hijo del player. Se usarÃ¡ el transform raÃ­z.");
+                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontrÃ³ 'PortraitAnchor' como hijo del player. Se usarÃ¡ el transform raíz.");
             }
         }
         
-        // Buscar el Animator del player para poder mantener sus animaciones activas en el menÃº
+        // Buscar el Animator del player para poder mantener sus animaciones activas en el menú
         if (_playerAnimator == null)
         {
             _playerAnimator = _playerPreviewTarget.GetComponentInChildren<Animator>();
@@ -941,7 +941,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontrÃ³ Animator en el player. Las animaciones no funcionarÃ¡n en el menÃº.");
+                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontrÃ³ Animator en el player. Las animaciones no funcionarÃ¡n en el menú.");
             }
         }
         
@@ -1074,7 +1074,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             cameras = player.transform.parent.GetComponentsInChildren<Camera>(true);
         }
         
-        // Si aÃºn no se encuentra, buscar en la raÃ­z de la escena
+        // Si aÃºn no se encuentra, buscar en la raíz de la escena
         if (cameras.Length == 0)
         {
             Debug.Log("[PlayerEquipmentMenuController] No se encontraron cÃ¡maras en hermanos, buscando en toda la escena...");
@@ -1590,6 +1590,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public Text feedbackText;
         public Button useButton;
         
+        [Header("Scroll (opcional - se busca automáticamente si no se asigna)")]
+        [Tooltip("ScrollRect del inventario. Si no se asigna, se busca automáticamente desde rowsParent.")]
+        public ScrollRect scrollRect;
+        
         [Header("Feedback visual")]
         public Color slotSelectionColor = new Color(1f, 0.82f, 0.16f, 1f); // Amarillo para resaltado
 
@@ -1624,8 +1628,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _ui = bindings;
             _ui.root?.SetActive(false);
 
-            if (_ui.rowsParent != null)
+            // Intentar usar el ScrollRect asignado manualmente, o buscarlo automáticamente
+            if (_ui.scrollRect != null)
+            {
+                _scrollRect = _ui.scrollRect;
+                Debug.Log($"[InventoryView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
+            }
+            else if (_ui.rowsParent != null)
+            {
                 _scrollRect = _ui.rowsParent.GetComponentInParent<ScrollRect>();
+                if (_scrollRect != null)
+                    Debug.Log($"[InventoryView] ✅ ScrollRect encontrado automáticamente: {_scrollRect.name}");
+                else
+                    Debug.LogWarning($"[InventoryView] ⚠️ ScrollRect NO encontrado. Asigna manualmente el ScrollRect en el Inspector (Inventory UI → Scroll Rect) o verifica que '{_ui.rowsParent.name}' esté bajo un GameObject con ScrollRect.");
+            }
 
             if (_ui.useButton != null)
             {
@@ -1723,7 +1739,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 widget.Configure(entry.item);
                 widget.RefreshLabel(_inventory);
 
-                // Garantizar auto-scroll al seleccionar: aÃ±adir/configurar ScrollOnSelectRelay
+                // Garantizar auto-scroll al seleccionar: añadir/configurar ScrollOnSelectRelay
                 var rect = widget.GetComponent<RectTransform>();
                 if (rect != null && _scrollRect != null)
                 {
@@ -1732,6 +1748,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                         relay = widget.gameObject.AddComponent<ScrollOnSelectRelay>();
                     relay.scrollRect = _scrollRect;
                     relay.target = rect;
+                    Debug.Log($"[InventoryView] ScrollOnSelectRelay configurado para item '{entry.item?.displayName ?? "null"}'");
+                }
+                else if (_scrollRect == null)
+                {
+                    Debug.LogWarning($"[InventoryView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
                 }
 
                 var capturedWidget = widget;
@@ -2022,7 +2043,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_rows.Count == 0) return false;
 
             // Solo restaurar el foco si ya habÃ­a una selecciÃ³n previa
-            // No forzar selecciÃ³n automÃ¡tica al abrir el menÃº
+            // No forzar selecciÃ³n automÃ¡tica al abrir el menú
             if (_lastSelectedRow != null)
             {
                 _lastSelectedRow.Focus();
@@ -2238,6 +2259,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         public SpellRowWidget rowPrefab;
         public Text detailsText;
         
+        [Header("Scroll (opcional - se busca automáticamente si no se asigna)")]
+        [Tooltip("ScrollRect de hechizos. Si no se asigna, se busca automáticamente desde rowsParent.")]
+        public ScrollRect scrollRect;
+        
         [Header("Feedback visual")]
         public Color slotSelectionColor = new Color(1f, 0.82f, 0.16f, 1f);
 
@@ -2303,8 +2328,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             ConfigureSlotButton(_ui.leftSlotButton, MagicSlot.Left);
             ConfigureSlotButton(_ui.rightSlotButton, MagicSlot.Right);
             ConfigureSlotButton(_ui.specialSlotButton, MagicSlot.Special);
-            if (_ui.rowsParent != null)
+            
+            // Intentar usar el ScrollRect asignado manualmente, o buscarlo automáticamente
+            if (_ui.scrollRect != null)
+            {
+                _scrollRect = _ui.scrollRect;
+                Debug.Log($"[SpellView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
+            }
+            else if (_ui.rowsParent != null)
+            {
                 _scrollRect = _ui.rowsParent.GetComponentInParent<ScrollRect>();
+                if (_scrollRect != null)
+                    Debug.Log($"[SpellView] ✅ ScrollRect encontrado automáticamente: {_scrollRect.name}");
+                else
+                    Debug.LogWarning($"[SpellView] ⚠️ ScrollRect NO encontrado. Asigna manualmente el ScrollRect en el Inspector (Spell UI → Scroll Rect) o verifica que '{_ui.rowsParent.name}' esté bajo un GameObject con ScrollRect.");
+            }
         }
 
         public GameObject DefaultSelection
@@ -2498,6 +2536,22 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             var rowEntry = new RowEntry { spellId = spellId, widget = widget };
             widget.RegisterClickHandler(() => HandleRowClicked(rowEntry));
             widget.RegisterSelectedHandler(() => HandleRowSelected(rowEntry, true));
+
+            // Configurar auto-scroll al seleccionar este hechizo
+            var rect = widget.GetComponent<RectTransform>();
+            if (rect != null && _scrollRect != null)
+            {
+                var relay = widget.GetComponent<ScrollOnSelectRelay>();
+                if (relay == null)
+                    relay = widget.gameObject.AddComponent<ScrollOnSelectRelay>();
+                relay.scrollRect = _scrollRect;
+                relay.target = rect;
+                Debug.Log($"[SpellView] ScrollOnSelectRelay configurado para hechizo '{ResolveName(spellId)}'");
+            }
+            else if (_scrollRect == null)
+            {
+                Debug.LogWarning($"[SpellView] ⚠️ No se puede añadir ScrollOnSelectRelay: ScrollRect es null");
+            }
 
             _rows.Add(rowEntry);
         }

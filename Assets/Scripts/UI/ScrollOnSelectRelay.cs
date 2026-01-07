@@ -8,7 +8,7 @@ public class ScrollOnSelectRelay : MonoBehaviour, ISelectHandler, IPointerEnterH
     public RectTransform target;
     [SerializeField, Min(0f)] private float padding = 6f;
 
-    // Evento cuando este objeto pasa a estar seleccionado (teclado/mand mando)
+    // Evento cuando este objeto pasa a estar seleccionado (teclado/mando)
     public void OnSelect(BaseEventData eventData)
     {
         ScrollIntoView();

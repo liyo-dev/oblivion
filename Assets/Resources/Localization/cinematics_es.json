@@ -54,7 +54,7 @@
         },
         {
             "id": "EVT_08",
-            "text": "Eldran grita: '¡Will! Usa tu magia, presiona X y derrota al demonio.'"
+            "text": "Eldran grita: '¡Will! Usa tu magia, presiona <sprite name=\"interactable_x\"> y derrota al demonio.'"
         }
     ]
 }

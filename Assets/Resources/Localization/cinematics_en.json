@@ -26,27 +26,27 @@
         },
         {
             "id": "EVT_01",
-            "text": "[EN] Will llega con la caja de frutas."
+            "text": "Will arrives with the fruit box."
         },
         {
             "id": "EVT_02",
-            "text": "[EN] De pronto presiente algo."
+            "text": "Suddenly he senses something."
         },
         {
             "id": "EVT_03",
-            "text": "[EN] Una bola de fuego se dirige hacia ellos."
+            "text": "A fireball is heading towards them."
         },
         {
             "id": "EVT_04",
-            "text": "[EN] Will cierra los ojos y desata sin saberlo una poderosa magia."
+            "text": "Will closes his eyes and unknowingly unleashes powerful magic."
         },
         {
             "id": "EVT_05",
-            "text": "[EN] Y una bola de fuego sale de sus manos, desviando el proyectil por completo."
+            "text": "And a fireball shoots from his hands, completely deflecting the projectile."
         },
         {
             "id": "EVT_06",
-            "text": "[EN] Will está confundido con lo que acaba de pasar cuando de pronto..."
+            "text": "Will is confused about what just happened when suddenly..."
         },
         {
             "id": "EVT_07",
@@ -54,7 +54,7 @@
         },
         {
             "id": "EVT_08",
-            "text": "Eldran shouts: \"Will! Use your magic, press X and defeat the demon.\""
+            "text": "Eldran shouts: 'Will! Use your magic, press <sprite name=\"interactable_x\"> and defeat the demon!'"
         }
     ]
 }

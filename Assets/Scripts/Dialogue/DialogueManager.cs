@@ -696,7 +696,8 @@ public class DialogueManager : MonoBehaviour
         if (bodyText)
         {
             StopTypewriter();
-            bodyText.text = _currentText;
+            // Procesar el texto para añadir espacios alrededor de sprites
+            bodyText.text = ProcessSpritesWithSpacing(_currentText);
             if (useTypewriter)
             {
                 Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
@@ -710,6 +711,24 @@ public class DialogueManager : MonoBehaviour
                 bodyText.maxVisibleCharacters = int.MaxValue;
             }
         }
+    }
+
+    /// <summary>
+    /// Añade espacios alrededor de sprites para evitar que pisen el texto
+    /// </summary>
+    private string ProcessSpritesWithSpacing(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        
+        // Reemplazar <sprite name="..."> con espacios alrededor (4 espacios antes y después)
+        // Patrón: busca <sprite...> y añade espacios antes y después
+        string processed = System.Text.RegularExpressions.Regex.Replace(
+            text,
+            @"<sprite\s+name=""[^""]+""[^>]*>",
+            match => $"    {match.Value}    "
+        );
+        
+        return processed;
     }
 
     private System.Collections.IEnumerator TypeRoutine()

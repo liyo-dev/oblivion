@@ -102,7 +102,7 @@
         },
         {
             "key": "DLG_AMIGAPEZ_03",
-            "value": "A veces se camufla con algas."
+            "value": "A veces se camufla con <sprite name=\"algas\">."
         },
         {
             "key": "DLG_AMIGAPEZ_04",
@@ -130,7 +130,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_05",
-            "value": "Mira hacemos una cosa: si encuentras mis botas te las puedes quedar."
+            "value": "Mira hacemos una cosa: si encuentras mis <sprite name=\"boots\"> te las puedes quedar."
         },
         {
             "key": "DLG_ANTIPATICO_06",
@@ -142,7 +142,7 @@
         },
         {
             "key": "DLG_ANTIPATICO_IN_PROGRESS",
-            "value": "Busca las botas cerca del mar. Estuve nadando por ahí."
+            "value": "Busca las <sprite name=\"boots\"> cerca del mar. Estuve nadando por ahí."
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_01",
@@ -242,11 +242,11 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_09",
-            "value": "Luego compra en cualquier tienda una poción de vida."
+            "value": "Luego compra en cualquier tienda una <sprite name=\"lifePotion\">."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_10",
-            "value": "Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarte al mundo."
+            "value": "Por último habla con Erika y dile que te entrene. Necesistas entrenamiento antes de salir a  enfrentarse al mundo."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_01",
@@ -254,7 +254,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_02",
-            "value": "La poción en cualquier tienda del reino la puedes encontrar."
+            "value": "La <sprite name=\"lifePotion\"> en cualquier tienda del reino la puedes encontrar."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
@@ -342,11 +342,11 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "Podrás usar PROTECCIÓN si presionas los triggers del mando derecho e izquierdo a la vez."
+            "value": "Podrás usar PROTECCIÓN si presionas <sprite name=\"interactable_lt\"> y <sprite name=\"interactable_rt\"> a la vez."
         },
         {
             "key": "DLG_GUERRERACHINA_06",
-            "value": "Voy a darte un hechizo nuevo: BOLA PRISMA. Usa el botón B y atacame con él."
+            "value": "Voy a darte un hechizo nuevo: BOLA PRISMA. Usa <sprite name=\"interactable_b\"> y atacame con él."
         },
         {
             "key": "DLG_GUERRERACHINA_07",
@@ -374,15 +374,15 @@
         },
         {
             "key": "DLG_LEONARDO_02",
-            "value": "Para abrir el menú de Pausa hazlo con el botón START."
+            "value": "Para abrir el menú de Pausa hazlo con <sprite name=\"start\">."
         },
         {
             "key": "DLG_LEONARDO_03",
-            "value": "Para abrir el menú de misiones pulsa dos veces la flecha hacia arriba del DPAD."
+            "value": "Para abrir el menú de misiones pulsa dos veces <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_LEONARDO_04",
-            "value": "Para abrir el panel de inventario pulsa la flecha hacia abajo del DPAD."
+            "value": "Para abrir el panel de inventario pulsa <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_LETTER_INTRO_01",
@@ -430,7 +430,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_03",
-            "value": "Pero no puedo meterme en el agua sin mis algas de camuflaje,"
+            "value": "Pero no puedo meterme en el agua sin mis <sprite name=\"algas\"> de camuflaje,"
         },
         {
             "key": "DLG_NIÑOPEZ_04",
@@ -442,7 +442,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_ALGAS_PROGRRESS",
-            "value": "Seguro que alguien del Reino tiene algas..."
+            "value": "Seguro que alguien del Reino tiene <sprite name=\"algas\">..."
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_01",
@@ -454,7 +454,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
-            "value": "Oh Muchas gracias, ahora que tengo mis algas puedo entrar al mar."
+            "value": "Oh Muchas gracias, ahora que tengo mis <sprite name=\"algas\"> puedo entrar al mar."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_02",
@@ -478,7 +478,7 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_03",
-            "value": "Cuando quieras abrir el MENÚ PRINCIPAL pulsa START"
+            "value": "Cuando quieras abrir el MENÚ PRINCIPAL pulsa <sprite name=\"start\">"
         },
         {
             "key": "DLG_OLIVER_MENUS_04",
@@ -490,11 +490,11 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "Por último cuando quieras ver las misiones que tienes pendiente puedes usar el botón del DPad arriba."
+            "value": "Por último cuando quieras ver las misiones que tienes pendiente puedes usar <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_OLIVER_MENUS_07",
-            "value": "Con el menú de misiones abierto podrás editarlas si pulsas de nuevo el botón del DPad arriba."
+            "value": "Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_OLIVER_MENUS_08",
@@ -522,11 +522,11 @@
         },
         {
             "key": "DLG_ROBERTO_02",
-            "value": "Si me traes una poción te puedo dar algo que te va a gustar..."
+            "value": "Si me traes una <sprite name=\"lifePotion\"> te puedo dar algo que te va a gustar..."
         },
         {
             "key": "DLG_ROBERTO_03",
-            "value": "Ojalá puedas conseguir una poción para mi mareo."
+            "value": "Ojalá puedas conseguir una <sprite name=\"lifePotion\"> para mi mareo."
         },
         {
             "key": "DLG_ROBERTO_04",
@@ -542,7 +542,7 @@
         },
         {
             "key": "DLG_RUDOLFO_COMPLETE_03",
-            "value": "Espero que te quedaran bien mis botas. Chao."
+            "value": "Espero que te quedaran bien mis <sprite name=\"boots\">. Chao."
         },
         {
             "key": "DLG_SARA_01",
@@ -554,7 +554,7 @@
         },
         {
             "key": "DLG_TENDERA_02",
-            "value": "Pero toma un poco de algas que me sobra un montón."
+            "value": "Pero toma un poco de <sprite name=\"algas\"> que me sobra un montón."
         },
         {
             "key": "DLG_VERONICA_01",

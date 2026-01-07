@@ -368,6 +368,11 @@ namespace Game.NPC
             //             sin magia para atraer al player a una EMBOSCADA
             // ========================================================================
             
+            // 🧠 PAUSA DE PENSAMIENTO: Pequeña pausa para parecer que "piensa"
+            // Esto evita que el NPC parezca un robot que reacciona instantáneamente
+            float thinkTime = UnityEngine.Random.Range(0.2f, 0.5f) * (1.1f - settings.difficultyLevel);
+            yield return new WaitForSeconds(thinkTime);
+            
             // ✅ A. PRIORIDAD MÁXIMA: Si no veo al jugador → BUSCAR
             if (!_hasLineOfSight)
             {
@@ -382,6 +387,15 @@ namespace Game.NPC
             if (dist < settings.minSafeDistance)
             {
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Player demasiado cerca ({dist:F1}m < {settings.minSafeDistance}m) - Reposicionando");
+                _currentState = CombatState.REPOSITION;
+                yield break;
+            }
+            
+            // ✅ B2. NUEVO: Verificar si hay línea de fuego ANTES de decidir atacar
+            // Si no hay línea de fuego clara, moverse a mejor posición
+            if (!HasClearLineOfFire())
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Sin línea de fuego clara - Buscando mejor posición");
                 _currentState = CombatState.REPOSITION;
                 yield break;
             }
@@ -464,78 +478,231 @@ namespace Game.NPC
             return count;
         }
 
-        // 2. REPOSICIONARSE: Moverse a un lugar seguro o acercarse
+        // 2. REPOSICIONARSE: Moverse a un lugar seguro o mejor posición de ataque
         IEnumerator State_Reposition()
         {
             float dist = Vector3.Distance(transform.position, _player.position);
+            
+            // Determinar qué tipo de reposicionamiento necesitamos
+            bool needToRetreat = dist < settings.minSafeDistance;
+            bool needBetterFiringPosition = !HasClearLineOfFire();
 
-            if (dist < settings.minSafeDistance)
+            if (needToRetreat)
             {
-                // ✅ NUEVO: Buscar cobertura detrás de objetos Default
-                Vector3 coverPosition;
-                bool foundCover = FindCoverBehindObstacle(out coverPosition);
+                // ✅ HUIR: Player demasiado cerca
+                Vector3 targetPos = FindRetreatPosition();
                 
-                Vector3 targetPos;
-                if (foundCover)
+                if (targetPos != transform.position)
                 {
-                    // Encontró cobertura detrás de un obstáculo
-                    targetPos = coverPosition;
-                    Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Huyendo hacia cobertura detrás de obstáculo: {targetPos}");
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Huyendo a posición segura: {targetPos}");
+                    MoveTo(targetPos, settings.runSpeed);
+                    
+                    // Esperar hasta llegar o 3 segundos máx
+                    float timer = 0;
+                    while (_agent.remainingDistance > 1.5f && timer < 3f)
+                    {
+                        timer += Time.deltaTime;
+                        
+                        // Si durante la huida recuperamos visión y línea de fuego, considerar parar
+                        if (_hasLineOfSight && HasClearLineOfFire() && 
+                            Vector3.Distance(transform.position, _player.position) >= settings.minSafeDistance)
+                        {
+                            Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Posición segura alcanzada durante huida");
+                            break;
+                        }
+                        
+                        yield return null;
+                    }
+                    
+                    StopMove();
+                }
+            }
+            else if (needBetterFiringPosition)
+            {
+                // ✅ BUSCAR MEJOR POSICIÓN DE TIRO: Hay obstáculo bloqueando
+                Vector3 betterPos = FindBetterFiringPosition();
+                
+                if (betterPos != transform.position)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Moviéndose a mejor posición de tiro: {betterPos}");
+                    MoveTo(betterPos, settings.walkSpeed);
+                    
+                    float timer = 0;
+                    while (_agent.remainingDistance > 0.5f && timer < 4f)
+                    {
+                        timer += Time.deltaTime;
+                        
+                        // Si durante el movimiento obtenemos línea de fuego, parar
+                        if (HasClearLineOfFire())
+                        {
+                            Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Línea de fuego obtenida durante movimiento");
+                            break;
+                        }
+                        
+                        yield return null;
+                    }
+                    
+                    StopMove();
                 }
                 else
                 {
-                    // No encontró cobertura, huir en dirección opuesta como antes
-                    Vector3 dirAway = (transform.position - _player.position).normalized;
-                    targetPos = transform.position + dirAway * 5f;
-                    Debug.Log($"[CombatBrain:{gameObject.name}] 🏃 Huyendo sin cobertura - dirección opuesta al jugador");
-                }
-                
-                // ✅ MoveTo iniciará el movimiento y NPCSimpleAnimator.SyncWithNavMeshAgent()
-                // rotará automáticamente hacia la dirección de movimiento (navAgent.velocity)
-                MoveTo(targetPos, settings.runSpeed);
-                
-                // Esperar hasta llegar o 3 segundos máx
-                float timer = 0;
-                while (_agent.remainingDistance > 1.5f && timer < 3f)
-                {
-                    timer += Time.deltaTime;
-                    yield return null;
-                }
-                
-                // ✅ Al detenerse después de huir
-                StopMove();
-                
-                // ✅ VERIFICAR SI PERDIÓ DE VISTA AL JUGADOR
-                if (!_hasLineOfSight)
-                {
-                    // 🎯 PERDIÓ VISIÓN REAL → Mostrar interrogación y animación
-                    Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras llegar a cobertura - ENTRANDO EN BÚSQUEDA");
-                    
-                    // Mostrar icono de interrogación
-                    if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                    {
-                        _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                    }
-                    
-                    // Reproducir animación de búsqueda
-                    if (_animator != null)
-                    {
-                        _animator.PlaySearching();
-                    }
-                    
-                    _currentState = CombatState.SEARCHING;
-                    yield break;
-                }
-                else
-                {
-                    // 🎯 AÚN VE AL PLAYER → Sin interrogación, solo pausa breve
-                    Debug.Log($"[CombatBrain:{gameObject.name}] 👀 Llegó a cobertura pero aún ve al player - Continúa combate");
+                    // No encontró mejor posición - esperar un momento
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ No se encontró mejor posición de tiro - esperando");
                     yield return new WaitForSeconds(0.5f);
                 }
             }
             
-            // Volver a evaluar al terminar movimiento (si aún lo ve)
+            // ✅ Al terminar, verificar estado
+            if (!_hasLineOfSight)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras reposicionarse - BUSCANDO");
+                
+                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
+                {
+                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
+                }
+                
+                if (_animator != null)
+                {
+                    _animator.PlaySearching();
+                }
+                
+                _currentState = CombatState.SEARCHING;
+                yield break;
+            }
+            
+            // Volver a evaluar
             _currentState = CombatState.EVALUATE;
+        }
+        
+        /// <summary>
+        /// Encuentra una posición de retroceso segura, preferiblemente detrás de cobertura
+        /// </summary>
+        private Vector3 FindRetreatPosition()
+        {
+            // Intentar encontrar cobertura primero
+            if (FindCoverBehindObstacle(out Vector3 coverPos))
+            {
+                return coverPos;
+            }
+            
+            // Si no hay cobertura, huir en dirección opuesta al jugador
+            Vector3 dirAway = (transform.position - _player.position).normalized;
+            Vector3 targetPos = transform.position + dirAway * 5f;
+            
+            // Verificar que la posición está en NavMesh
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
+            {
+                // Verificar que hay un camino válido
+                NavMeshPath path = new NavMeshPath();
+                if (_agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                {
+                    return navHit.position;
+                }
+            }
+            
+            // Fallback: intentar posiciones laterales
+            Vector3 right = Vector3.Cross(Vector3.up, dirAway).normalized;
+            Vector3[] alternatives = {
+                transform.position + (dirAway + right).normalized * 4f,
+                transform.position + (dirAway - right).normalized * 4f,
+                transform.position + right * 3f,
+                transform.position - right * 3f
+            };
+            
+            foreach (var altPos in alternatives)
+            {
+                if (NavMesh.SamplePosition(altPos, out navHit, 2f, NavMesh.AllAreas))
+                {
+                    NavMeshPath path = new NavMeshPath();
+                    if (_agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                    {
+                        return navHit.position;
+                    }
+                }
+            }
+            
+            // No encontró ninguna posición válida
+            return transform.position;
+        }
+        
+        /// <summary>
+        /// Encuentra una posición desde donde tenga línea de fuego clara al jugador
+        /// </summary>
+        private Vector3 FindBetterFiringPosition()
+        {
+            Vector3 dirToPlayer = (_player.position - transform.position).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, dirToPlayer).normalized;
+            
+            // Probar posiciones laterales y diagonales
+            float[] distances = { 2f, 3f, 4f, 5f };
+            Vector3[] directions = {
+                right,
+                -right,
+                (dirToPlayer + right).normalized,
+                (dirToPlayer - right).normalized,
+                (-dirToPlayer + right * 0.5f).normalized,
+                (-dirToPlayer - right * 0.5f).normalized
+            };
+            
+            float bestScore = float.MinValue;
+            Vector3 bestPosition = transform.position;
+            
+            foreach (float dist in distances)
+            {
+                foreach (var dir in directions)
+                {
+                    Vector3 testPos = transform.position + dir * dist;
+                    
+                    // Verificar NavMesh
+                    if (!NavMesh.SamplePosition(testPos, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
+                        continue;
+                    
+                    Vector3 candidatePos = navHit.position;
+                    
+                    // Verificar camino válido
+                    NavMeshPath path = new NavMeshPath();
+                    if (!_agent.CalculatePath(candidatePos, path) || path.status != NavMeshPathStatus.PathComplete)
+                        continue;
+                    
+                    // Simular línea de fuego desde esa posición
+                    Vector3 fireOrigin = candidatePos + Vector3.up * 1.5f + (candidatePos - transform.position).normalized * 0.3f;
+                    Vector3 fireTarget = _player.position + Vector3.up * 1f;
+                    Vector3 fireDir = (fireTarget - fireOrigin).normalized;
+                    float fireDist = Vector3.Distance(fireOrigin, fireTarget);
+                    
+                    int defaultLayer = LayerMask.NameToLayer("Default");
+                    LayerMask obstacleMask = 1 << defaultLayer;
+                    
+                    // Verificar si tiene línea de fuego desde ahí
+                    bool hasClearShot = !Physics.Raycast(fireOrigin, fireDir, fireDist * 0.9f, obstacleMask, QueryTriggerInteraction.Ignore);
+                    
+                    if (!hasClearShot)
+                        continue;
+                    
+                    // Calcular puntuación
+                    float distToPlayer = Vector3.Distance(candidatePos, _player.position);
+                    float score = 10f;
+                    
+                    // Preferir distancia óptima
+                    if (distToPlayer >= settings.minSafeDistance && distToPlayer <= settings.maxDistance)
+                    {
+                        score += 5f;
+                    }
+                    
+                    // Preferir posiciones más cercanas a la actual (menos movimiento)
+                    float distFromCurrent = Vector3.Distance(candidatePos, transform.position);
+                    score -= distFromCurrent * 0.5f;
+                    
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestPosition = candidatePos;
+                    }
+                }
+            }
+            
+            return bestPosition;
         }
 
         // 3. ATACAR: Seleccionar hechizo y disparar
@@ -1258,13 +1425,50 @@ namespace Game.NPC
 
         private void MoveTo(Vector3 pos, float speed)
         {
-            if (_agent.isOnNavMesh)
+            if (!_agent.isOnNavMesh)
             {
-                _agent.isStopped = false;
-                _agent.speed = speed;
-                _agent.SetDestination(pos);
-                _animator.SetMovementSpeed(speed, 0.1f);
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Agent no está en NavMesh - no puede moverse");
+                return;
             }
+            
+            // Verificar que el destino está en NavMesh
+            if (!NavMesh.SamplePosition(pos, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
+            {
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Destino {pos} no está en NavMesh");
+                return;
+            }
+            
+            // Verificar que hay un camino válido
+            NavMeshPath path = new NavMeshPath();
+            if (!_agent.CalculatePath(navHit.position, path))
+            {
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ No se puede calcular camino a {navHit.position}");
+                return;
+            }
+            
+            if (path.status != NavMeshPathStatus.PathComplete)
+            {
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Camino incompleto a {navHit.position} - status: {path.status}");
+                
+                // Si el camino es parcial, intentar ir al punto más cercano alcanzable
+                if (path.status == NavMeshPathStatus.PathPartial && path.corners.Length > 1)
+                {
+                    Vector3 lastReachablePoint = path.corners[path.corners.Length - 1];
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 📍 Usando punto parcial más cercano: {lastReachablePoint}");
+                    
+                    _agent.isStopped = false;
+                    _agent.speed = speed;
+                    _agent.SetDestination(lastReachablePoint);
+                    _animator.SetMovementSpeed(speed, 0.1f);
+                    return;
+                }
+                return;
+            }
+            
+            _agent.isStopped = false;
+            _agent.speed = speed;
+            _agent.SetDestination(navHit.position);
+            _animator.SetMovementSpeed(speed, 0.1f);
         }
 
         private void StopMove()
