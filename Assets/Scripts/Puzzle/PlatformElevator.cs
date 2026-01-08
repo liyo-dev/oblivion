@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using Sendero.Core.Feedback;
 
 /// <summary>
 /// Componente para plataformas que pueden elevarse o hundirse.
@@ -37,6 +38,9 @@ public class PlatformElevator : MonoBehaviour
     [Tooltip("Transform donde se instancia el VFX (si es null, usa la posición de la plataforma)")]
     [SerializeField] private Transform vfxSpawnPoint;
     
+    [Tooltip("Duración del VFX antes de destruirse automáticamente")]
+    [SerializeField] private float vfxLifetime = 3f;
+    
     [Header("Estado")]
     [SerializeField] private bool isRaised;
     
@@ -44,54 +48,82 @@ public class PlatformElevator : MonoBehaviour
     private Vector3 _raisedPosition;
     private bool _isMoving;
     private Coroutine _moveCoroutine;
+    private GameObject _currentVFX; // VFX activo actual
 
     private void Start()
     {
-        // Guardar posición original
+        // Guardar posición original ACTUAL (donde está ahora)
         _originalPosition = transform.position;
         _raisedPosition = _originalPosition + Vector3.up * raiseHeight;
         
-        // Si comienza elevada, ajustar posición inicial
+        // Sincronizar el flag isRaised con la posición real
+        // Si está marcado en Inspector pero no está en posición elevada, teletransportar
         if (isRaised)
         {
+            Debug.Log($"[PlatformElevator] {name} está marcado como 'Is Raised', teletransportando a posición elevada");
             transform.position = _raisedPosition;
+            _originalPosition = _raisedPosition - Vector3.up * raiseHeight; // Recalcular posición original
         }
+        
+        Debug.Log($"[PlatformElevator] {name} - Inicializado. Original: {_originalPosition}, Raised: {_raisedPosition}, Current: {transform.position}, IsRaised: {isRaised}");
     }
 
     /// <summary>
     /// Eleva la plataforma
     /// </summary>
-    public void Raise()
+    /// <param name="isReversion">Si es true, es una reversión (sin VFX, solo shake)</param>
+    public void Raise(bool isReversion = false)
     {
+        // Si ya está en movimiento hacia arriba, no hacer nada
         if (_isMoving && isRaised) return;
+        
+        // Si ya está en la posición elevada (tolerancia de 0.1), no mover
+        if (Vector3.Distance(transform.position, _raisedPosition) < 0.1f)
+        {
+            isRaised = true;
+            Debug.Log($"[PlatformElevator] {name} ya está en posición elevada");
+            return;
+        }
         
         if (_moveCoroutine != null)
         {
             StopCoroutine(_moveCoroutine);
         }
         
-        _moveCoroutine = StartCoroutine(MovePlatform(_raisedPosition, true));
+        Debug.Log($"[PlatformElevator] {name} - Elevando a {_raisedPosition} (desde {transform.position})");
+        _moveCoroutine = StartCoroutine(MovePlatform(_raisedPosition, true, isReversion));
     }
 
     /// <summary>
     /// Hunde la plataforma (vuelve a su posición original)
     /// </summary>
-    public void Lower()
+    /// <param name="isReversion">Si es true, es una reversión (sin VFX, solo shake)</param>
+    public void Lower(bool isReversion = false)
     {
+        // Si ya está en movimiento hacia abajo, no hacer nada
         if (_isMoving && !isRaised) return;
+        
+        // Si ya está en la posición baja (tolerancia de 0.1), no mover
+        if (Vector3.Distance(transform.position, _originalPosition) < 0.1f)
+        {
+            isRaised = false;
+            Debug.Log($"[PlatformElevator] {name} ya está en posición original");
+            return;
+        }
         
         if (_moveCoroutine != null)
         {
             StopCoroutine(_moveCoroutine);
         }
         
-        _moveCoroutine = StartCoroutine(MovePlatform(_originalPosition, false));
+        Debug.Log($"[PlatformElevator] {name} - Bajando a {_originalPosition} (desde {transform.position})");
+        _moveCoroutine = StartCoroutine(MovePlatform(_originalPosition, false, isReversion));
     }
 
     /// <summary>
     /// Corrutina que mueve la plataforma suavemente
     /// </summary>
-    private IEnumerator MovePlatform(Vector3 targetPosition, bool raising)
+    private IEnumerator MovePlatform(Vector3 targetPosition, bool raising, bool isReversion = false)
     {
         // Delay antes de moverse
         if (delayBeforeMoving > 0f)
@@ -105,8 +137,8 @@ public class PlatformElevator : MonoBehaviour
         float duration = distance / moveSpeed;
         float elapsed = 0f;
         
-        // Feedback al comenzar
-        PlayMovementStartFeedback();
+        // Feedback al comenzar (sin VFX si es reversión)
+        PlayMovementStartFeedback(isReversion);
         
         // Mover la plataforma
         while (elapsed < duration)
@@ -126,10 +158,10 @@ public class PlatformElevator : MonoBehaviour
         _isMoving = false;
         
         // Feedback al terminar
-        PlayMovementStopFeedback();
+        PlayMovementStopFeedback(isReversion);
         
         // Activar plataformas encadenadas
-        ActivateChainedPlatforms(raising);
+        ActivateChainedPlatforms(raising, isReversion);
         
         // Callback
         OnMovementComplete(raising);
@@ -138,7 +170,7 @@ public class PlatformElevator : MonoBehaviour
     /// <summary>
     /// Activa las plataformas encadenadas
     /// </summary>
-    private void ActivateChainedPlatforms(bool raising)
+    private void ActivateChainedPlatforms(bool raising, bool isReversion = false)
     {
         if (chainedPlatforms == null || chainedPlatforms.Length == 0) return;
         
@@ -148,11 +180,11 @@ public class PlatformElevator : MonoBehaviour
             {
                 if (raising)
                 {
-                    platform.Raise();
+                    platform.Raise(isReversion);
                 }
                 else
                 {
-                    platform.Lower();
+                    platform.Lower(isReversion);
                 }
             }
         }
@@ -161,31 +193,51 @@ public class PlatformElevator : MonoBehaviour
     /// <summary>
     /// Reproduce feedback al comenzar a moverse
     /// </summary>
-    private void PlayMovementStartFeedback()
+    private void PlayMovementStartFeedback(bool isReversion = false)
     {
-        // SFX
+        // SFX (siempre, reversión o no)
         if (!string.IsNullOrEmpty(movementStartSfxKey))
         {
             AudioService.Instance?.PlaySFX(movementStartSfxKey, worldPosition: transform.position);
         }
         
-        // VFX
-        if (movementVFX != null)
+        // Camera shake - SOLO en reversión (al bajar después de quitar objeto)
+        // Al subir, el shake ya se hace en el PressurePlate.Activate()
+        if (isReversion)
         {
+            FeedbackService.CameraShake(0.2f, 0.3f);
+        }
+        
+        // VFX - Solo si NO es reversión
+        if (!isReversion && movementVFX != null)
+        {
+            // Destruir VFX anterior si existe
+            if (_currentVFX != null)
+            {
+                Destroy(_currentVFX);
+            }
+            
             Vector3 spawnPos = vfxSpawnPoint != null ? vfxSpawnPoint.position : transform.position;
-            Instantiate(movementVFX, spawnPos, Quaternion.identity, transform);
+            _currentVFX = Instantiate(movementVFX, spawnPos, Quaternion.identity, transform);
         }
     }
 
     /// <summary>
     /// Reproduce feedback al terminar de moverse
     /// </summary>
-    private void PlayMovementStopFeedback()
+    private void PlayMovementStopFeedback(bool isReversion = false)
     {
         // SFX
         if (!string.IsNullOrEmpty(movementStopSfxKey))
         {
             AudioService.Instance?.PlaySFX(movementStopSfxKey, worldPosition: transform.position);
+        }
+        
+        // Destruir VFX cuando termina el movimiento (si había VFX)
+        if (_currentVFX != null)
+        {
+            Destroy(_currentVFX, 0.5f); // Pequeño delay para que termine la animación
+            _currentVFX = null;
         }
     }
 

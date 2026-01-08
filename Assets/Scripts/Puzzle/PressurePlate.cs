@@ -19,6 +19,28 @@ public class PressurePlate : MonoBehaviour
     [Tooltip("Masa mínima necesaria para activar el interruptor (para filtrar objetos muy ligeros)")]
     [SerializeField] private float minimumMass = 0.1f;
     
+    [Tooltip("Si es true, congela el objeto que activa la placa para que no se mueva ni se caiga")]
+    [SerializeField] private bool freezeObjectOnPlate = true;
+    
+    [Tooltip("Si es true, hace al objeto hijo de la placa para que se mueva con ella")]
+    [SerializeField] private bool parentObjectToPlate = false;
+    
+    [Header("Detección del Jugador")]
+    [Tooltip("Si es true, detecta cuando el jugador entra y da feedback (sin activar)")]
+    [SerializeField] private bool detectPlayer = true;
+    
+    [Tooltip("Si es true, el jugador puede activar el interruptor (además del feedback). Si es false, solo da feedback.")]
+    [SerializeField] private bool playerCanActivate = true;
+    
+    [Tooltip("Tag del jugador para detectarlo")]
+    [SerializeField] private string playerTag = "Player";
+    
+    [Tooltip("SFX al detectar jugador sin objeto correcto")]
+    [SerializeField] private string playerStepSfxKey = "PressurePlate_PlayerStep";
+    
+    [Tooltip("Cuánto se hunde la placa cuando el jugador la pisa (menos que con objeto)")]
+    [SerializeField] private float playerSinkAmount = 0.05f;
+    
     [Header("Feedback Visual")]
     [Tooltip("Cuánto se hunde la placa cuando se activa (en unidades locales Y)")]
     [SerializeField] private float sinkAmount = 0.2f;
@@ -73,7 +95,17 @@ public class PressurePlate : MonoBehaviour
     private Vector3 _originalPlatePosition;
     private Vector3 _targetPlatePosition;
     private HashSet<Rigidbody> _objectsOnPlate = new HashSet<Rigidbody>();
+    private Dictionary<Rigidbody, RigidbodyState> _originalRigidbodyStates = new Dictionary<Rigidbody, RigidbodyState>();
     private bool _isAnimating;
+    private bool _playerOnPlate;
+    
+    // Estructura para guardar el estado original del Rigidbody
+    private struct RigidbodyState
+    {
+        public bool isKinematic;
+        public RigidbodyConstraints constraints;
+        public Transform originalParent;
+    } // Rastrea si el jugador está en la placa
 
     // Propiedad pública para consultar estado (compatibilidad con PressurePuzzleController)
     public bool IsActivated => isActivated;
@@ -119,7 +151,36 @@ public class PressurePlate : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (lockWhenActivated && isActivated) return;
+        Debug.Log($"[PressurePlate] 🔍 OnTriggerEnter: {other.name} (Tag: {other.tag})");
+        
+        if (lockWhenActivated && isActivated)
+        {
+            Debug.Log($"[PressurePlate] ⚠️ Ya está bloqueado y activado");
+            return;
+        }
+        
+        // Detectar jugador
+        if (detectPlayer && other.CompareTag(playerTag))
+        {
+            Debug.Log($"[PressurePlate] 👤 JUGADOR detectado! playerCanActivate={playerCanActivate}, isActivated={isActivated}");
+            
+            OnPlayerEnter();
+            
+            // Si el jugador puede activar, continuar con la activación
+            if (playerCanActivate && !isActivated)
+            {
+                Debug.Log($"[PressurePlate] ✅ ACTIVANDO por jugador...");
+                Activate();
+            }
+            else
+            {
+                Debug.Log($"[PressurePlate] ❌ NO activa: playerCanActivate={playerCanActivate}, isActivated={isActivated}");
+            }
+            
+            return;
+        }
+        
+        Debug.Log($"[PressurePlate] 🔍 No es jugador, verificando Rigidbody...");
         
         // Verificar si el objeto tiene Rigidbody
         var rb = other.attachedRigidbody;
@@ -135,8 +196,42 @@ public class PressurePlate : MonoBehaviour
         // Verificar masa mínima
         if (rb.mass < minimumMass) return;
         
+        // Verificar si ya está en la lista (evitar duplicados)
+        if (_objectsOnPlate.Contains(rb))
+        {
+            Debug.Log($"[PressurePlate] ⚠️ Objeto {rb.name} ya está en la placa, ignorando");
+            return;
+        }
+        
         // Añadir a la lista de objetos en la placa
         _objectsOnPlate.Add(rb);
+        
+        // Guardar estado original del Rigidbody
+        if (!_originalRigidbodyStates.ContainsKey(rb))
+        {
+            _originalRigidbodyStates[rb] = new RigidbodyState
+            {
+                isKinematic = rb.isKinematic,
+                constraints = rb.constraints,
+                originalParent = rb.transform.parent
+            };
+        }
+        
+        // Congelar el objeto en la placa
+        if (freezeObjectOnPlate)
+        {
+            rb.isKinematic = true; // Desactiva física para que no se mueva
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        
+        // Hacer hijo de la placa (opcional)
+        if (parentObjectToPlate && plateVisual != null)
+        {
+            rb.transform.SetParent(plateVisual);
+        }
+        
+        Debug.Log($"[PressurePlate] 📦 Objeto añadido: {rb.name} (Total: {_objectsOnPlate.Count})");
         
         // Activar el interruptor si no estaba activado
         if (!isActivated)
@@ -149,16 +244,54 @@ public class PressurePlate : MonoBehaviour
     {
         if (lockWhenActivated && isActivated) return;
         
+        // Detectar cuando el jugador sale
+        if (detectPlayer && other.CompareTag(playerTag))
+        {
+            OnPlayerExit();
+            
+            // Si el jugador puede activar y lo activó, desactivar al salir (solo si no hay objetos)
+            if (playerCanActivate && isActivated && _objectsOnPlate.Count == 0)
+            {
+                Deactivate();
+            }
+            
+            return;
+        }
+        
         var rb = other.attachedRigidbody;
         if (rb == null) return;
+        
+        // Solo procesar si el objeto estaba en nuestra lista
+        if (!_objectsOnPlate.Contains(rb)) return;
         
         // Remover de la lista
         _objectsOnPlate.Remove(rb);
         
-        // Desactivar el interruptor si no hay más objetos
+        Debug.Log($"[PressurePlate] 📦 Objeto removido: {rb.name} (Restantes: {_objectsOnPlate.Count})");
+        
+        // Restaurar estado original del Rigidbody
+        if (_originalRigidbodyStates.TryGetValue(rb, out RigidbodyState originalState))
+        {
+            rb.isKinematic = originalState.isKinematic;
+            rb.constraints = originalState.constraints;
+            
+            // Restaurar padre original
+            if (parentObjectToPlate)
+            {
+                rb.transform.SetParent(originalState.originalParent);
+            }
+            
+            _originalRigidbodyStates.Remove(rb);
+        }
+        
+        // Desactivar el interruptor si no hay más objetos y el jugador no está (o no puede activar)
         if (_objectsOnPlate.Count == 0 && isActivated)
         {
-            Deactivate();
+            // Solo desactivar si el jugador no está O si el jugador no puede activar
+            if (!_playerOnPlate || !playerCanActivate)
+            {
+                Deactivate();
+            }
         }
     }
 
@@ -167,6 +300,13 @@ public class PressurePlate : MonoBehaviour
     /// </summary>
     private void Activate()
     {
+        // Si ya está activado, no hacer nada
+        if (isActivated)
+        {
+            Debug.Log($"[PressurePlate] ⚠️ {name} Ya está activado, ignorando");
+            return;
+        }
+        
         isActivated = true;
         
         Debug.Log($"[PressurePlate] 🔴 {name} ACTIVADO");
@@ -274,26 +414,26 @@ public class PressurePlate : MonoBehaviour
     /// </summary>
     private void RevertPlatforms()
     {
-        // Revertir plataformas que se elevaron
+        // Revertir plataformas que se elevaron (sin VFX, solo shake)
         if (platformsToRaise != null)
         {
             foreach (var platform in platformsToRaise)
             {
                 if (platform != null)
                 {
-                    platform.Lower();
+                    platform.Lower(isReversion: true); // Sin VFX
                 }
             }
         }
         
-        // Revertir plataformas que se hundieron
+        // Revertir plataformas que se hundieron (sin VFX, solo shake)
         if (platformsToLower != null)
         {
             foreach (var platform in platformsToLower)
             {
                 if (platform != null)
                 {
-                    platform.Raise();
+                    platform.Raise(isReversion: true); // Sin VFX
                 }
             }
         }
@@ -395,6 +535,65 @@ public class PressurePlate : MonoBehaviour
         {
             Deactivate();
         }
+    }
+
+    /// <summary>
+    /// Llamado cuando el jugador entra en la placa (sin activar)
+    /// </summary>
+    private void OnPlayerEnter()
+    {
+        if (_playerOnPlate) return; // Ya está encima
+        
+        _playerOnPlate = true;
+        
+        Debug.Log($"[PressurePlate] 👤 {name} - Jugador detectado {(playerCanActivate ? "(puede activar)" : "(necesita objeto)")}");
+        
+        // Feedback visual - la placa se hunde
+        if (plateVisual != null && !isActivated)
+        {
+            // Si el jugador puede activar, hundir completamente. Si no, solo un poco.
+            float sinkAmountToUse = playerCanActivate ? sinkAmount : playerSinkAmount;
+            _targetPlatePosition = _originalPlatePosition + Vector3.down * sinkAmountToUse;
+            _isAnimating = true;
+        }
+        
+        // Feedback de audio
+        if (!string.IsNullOrEmpty(playerStepSfxKey))
+        {
+            AudioService.Instance?.PlaySFX(playerStepSfxKey, worldPosition: transform.position);
+        }
+        
+        // Callback para comportamiento personalizado
+        OnPlayerSteppedOn();
+    }
+
+    /// <summary>
+    /// Llamado cuando el jugador sale de la placa
+    /// </summary>
+    private void OnPlayerExit()
+    {
+        if (!_playerOnPlate) return; // No estaba encima
+        
+        _playerOnPlate = false;
+        
+        Debug.Log($"[PressurePlate] 👤 {name} - Jugador salió");
+        
+        // Volver la placa a su posición original (solo si no está activada)
+        if (plateVisual != null && !isActivated)
+        {
+            _targetPlatePosition = _originalPlatePosition;
+            _isAnimating = true;
+        }
+    }
+
+    /// <summary>
+    /// Callback que se llama cuando el jugador pisa la placa.
+    /// Sobrescribe en una clase hija para comportamiento personalizado (ej: mostrar hint UI).
+    /// </summary>
+    protected virtual void OnPlayerSteppedOn()
+    {
+        // Opcional: mostrar hint al jugador
+        // HintSystem.ShowHint("Busca un objeto pesado para activar esta placa");
     }
 
     #if UNITY_EDITOR
