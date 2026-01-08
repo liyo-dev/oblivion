@@ -222,7 +222,7 @@ public class MagicProjectile : MonoBehaviour
         }
 
         // ✅ PRIORIDAD 2: Detectar interacción con puzzle (enredaderas, etc.)
-        var burnable = other.GetComponent<BurnableVine>();
+        var burnable = other.GetComponent<Burnable>();
         if (burnable != null)
         {
             burnable.OnHitByMagic(_cfg.element, hitPoint);

@@ -27,10 +27,10 @@ public class PressureRoomBuilder : MonoBehaviour
     public LayerMask groundMask = ~0;
 
     [Header("Placas - parámetros por defecto")]
-    public LayerMask activatorLayers;         // Player / Default
-    public bool requireMass = false;
-    public float minMass = 10f;
-    public float pressedOffsetY = -0.05f;
+    public bool onlyPickupObjects = true;        // Nueva API
+    public float minimumMass = 0.1f;             // Nueva API
+    public float sinkAmount = 0.2f;              // Nueva API
+    public float animationSpeed = 5f;            // Nueva API
 
     [Header("Empujables (opcional)")]
     public bool spawnPushables = false;
@@ -133,14 +133,14 @@ public class PressureRoomBuilder : MonoBehaviour
             var plate = Instantiate(platePrefab, p, Quaternion.identity, platesContainer);
             spawned.Add(plate);
 
-            // Asegurar PressurePlate
+            // Asegurar PressurePlate (nueva API)
             var pp = plate.GetComponent<PressurePlate>();
             if (!pp) pp = plate.AddComponent<PressurePlate>();
-            pp.activatorLayers = activatorLayers;
-            pp.requireMass = requireMass;
-            pp.minMass = minMass;
-            pp.pressedOffsetY = pressedOffsetY;
-
+            
+            // Configurar propiedades de la nueva API (via reflexión o propiedades públicas)
+            // Nota: La nueva PressurePlate usa campos SerializeField privados
+            // Se configurarán desde el prefab o manualmente en el inspector
+            
             // Collider trigger por si acaso
             var col = plate.GetComponent<Collider>();
             if (!col) col = plate.AddComponent<BoxCollider>();

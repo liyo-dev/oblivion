@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿# 📘 El Sendero de las Estrellas - Documentación Técnica
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
@@ -39,6 +39,21 @@
 9. [Sistema de Cinemáticas](#9-sistema-de-cinematicas)
 10. [Solución de Problemas Comunes](#10-solución-de-problemas-comunes)
 11. [Mejores Prácticas](#11-mejores-prácticas)
+   - 11.12 [Sistemas Auxiliares](#1112-sistemas-auxiliares)
+   - 11.13 [Problemas Conocidos y Soluciones](#1113-problemas-conocidos-y-soluciones-legacy)
+12. [Sistema de Puzzles](#12-sistema-de-puzzles)
+   - 12.1 [Burnable - Objetos Quemables](#121-burnable---objetos-quemables)
+   - 12.2 [PressurePlate - Interruptor de Presión](#122-pressureplate---interruptor-de-presión)
+13. [Sistema de Iconos en Diálogos](#13-sistema-de-iconos-en-diálogos)
+   - 13.1 [Configuración de Sprites en TextMeshPro](#131-configuración-de-sprites-en-textmeshpro)
+   - 13.2 [Troubleshooting](#132-troubleshooting)
+14. [Sistema de Iluminación (Bake Nocturno)](#14-sistema-de-iluminación-bake-nocturno)
+   - 14.1 [Configuración Optimizada de Lightmaps](#141-configuración-optimizada-de-lightmaps)
+15. [Troubleshooting Adicional](#15-troubleshooting-adicional)
+   - 15.1 [Errores del AI Toolkit (IGNORAR)](#151-errores-del-ai-toolkit-ignorar)
+   - 15.2 [Problemas con PressurePlate](#152-problemas-con-pressureplate)
+   - 15.3 [Problemas con Burnable](#153-problemas-con-burnable)
+   - 15.4 [Problemas con Iconos en Diálogos](#154-problemas-con-iconos-en-diálogos)
 
 ---
 
@@ -4472,9 +4487,9 @@ GamepadInputReader.OnMenuOpen
 
 ---
 
-## 12. Sistemas Auxiliares
+### 11.12 Sistemas Auxiliares
 
-### 12.1 Arquitectura del Sistema de Inputs
+#### 11.12.1 Arquitectura del Sistema de Inputs
 
 El sistema de inputs está **centralizado** para evitar código disperso y conflictos.
 
@@ -4683,9 +4698,9 @@ public bool animateHealthChanges = true;
 
 ---
 
-## 13. Problemas Conocidos y Soluciones
+### 11.13 Problemas Conocidos y Soluciones
 
-### 13.1 Verificación de Items en Inventario al Iniciar Quests
+#### 11.13.1 Verificación de Items en Inventario al Iniciar Quests
 
 **Problema:** Quest no detecta items que el jugador ya tiene.
 
@@ -4868,6 +4883,499 @@ NPC GameObject:
 - Sistema de timing robusto con contador de contextos bloqueantes
 - Logs detallados para debugging de flujo de acciones
 - Código más mantenible y escalable
+
+---
+
+## 12. Sistema de Puzzles
+
+### 12.1 Burnable - Objetos Quemables
+
+**Script:** `Assets/Scripts/Puzzle/Burnable.cs`
+
+Componente para objetos que pueden ser destruidos con elementos mágicos (fuego, hielo, etc.).
+
+#### Características
+
+- ✅ Detecta proyectiles mágicos por elemento
+- ✅ Destruye hijos con mesh (útil para enredaderas)
+- ✅ Feedback: VFX, SFX, animación
+- ✅ Sistema de cadena (opcional para bombas)
+
+#### Configuración
+
+```csharp
+[Header("Configuración")]
+public MagicElement[] acceptedElements = { MagicElement.Fire };
+public bool destroyOnlyChildrenWithMesh = true; // Para enredaderas
+public bool destroyImmediately = false;
+public float destroyDelay = 2f;
+
+[Header("Objetos en Cadena (opcional)")]
+public Burnable[] objectsToBurn;
+public float chainBurnDelay = 0.3f;
+
+[Header("Efectos")]
+public GameObject burnVFX;
+public float vfxLifetime = 3f;
+public string burnSfxKey = "Object_Burn";
+```
+
+#### Método Principal
+
+```csharp
+public void OnHitByMagic(MagicElement element, Vector3 hitPoint)
+{
+    // Verifica si el elemento es aceptado
+    // Reproduce VFX y SFX
+    // Reproduce animación si existe
+    // Desactiva collider
+    // Destruye hijos con mesh O destruye objeto completo
+    // Activa cadena de objetos (opcional)
+}
+```
+
+#### Ejemplo de Uso: Enredadera
+
+```
+Jerarquía:
+VineBlocker (GameObject padre)
+├─ Collider (para detectar impactos)
+├─ Burnable (script)
+│  └─ destroyOnlyChildrenWithMesh: ✅
+└─ Hijos:
+   ├─ Vine_Mesh_01 ✅ (se destruye)
+   ├─ Vine_Mesh_02 ✅ (se destruye)
+   └─ Vine_Mesh_03 ✅ (se destruye)
+
+Resultado:
+- Al impactar con fuego → Destruye meshes
+- Collider se desactiva → Jugador puede pasar
+- GameObject padre permanece
+```
+
+---
+
+### 12.2 PressurePlate - Interruptor de Presión
+
+**Scripts:** `Assets/Scripts/Puzzle/PressurePlate.cs` + `PlatformElevator.cs`
+
+Sistema completo de interruptores que se activan al colocar objetos encima.
+
+#### Características de PressurePlate
+
+- ✅ Detección de objetos con `PickupObject` y `Rigidbody`
+- 🔽 Animación de hundimiento de la placa
+- 📹 Feedback de cámara (shake) y sonido usando `FeedbackService`
+- ⬆️ Elevar plataformas
+- ⬇️ Hundir plataformas
+- 🔥 Desactivar GameObjects con VFX
+- ✨ Instanciar recompensas o enemigos
+
+#### Configuración de PressurePlate
+
+```csharp
+[Header("Configuración del Interruptor")]
+public bool onlyPickupObjects = true;
+public bool lockWhenActivated = false;
+public float minimumMass = 0.1f;
+
+[Header("Feedback Visual")]
+public float sinkAmount = 0.2f;
+public float animationSpeed = 5f;
+public Transform plateVisual;
+
+[Header("Feedback de Cámara y Audio")]
+public float cameraShakeIntensity = 0.3f;
+public float cameraShakeDuration = 0.2f;
+public string activateSfxKey = "PressurePlate_Activate";
+public string deactivateSfxKey = "PressurePlate_Deactivate";
+
+[Header("Acciones")]
+public PlatformElevator[] platformsToRaise;
+public PlatformElevator[] platformsToLower;
+public GameObject[] objectsToDeactivate;
+public GameObject deactivateVFX;
+public GameObject[] prefabsToSpawn;
+public Transform[] spawnPoints;
+```
+
+#### Métodos Principales
+
+```csharp
+private void Activate()
+{
+    // Hunde la placa visualmente
+    // FeedbackService.CameraShake()
+    // AudioService.PlaySFX()
+    // Ejecuta todas las acciones configuradas
+}
+
+private void Deactivate()
+{
+    // Revierte el estado (si no está bloqueado)
+}
+
+public void ForceActivate() // API pública
+public void ForceDeactivate() // API pública
+```
+
+#### PlatformElevator
+
+Componente para plataformas móviles:
+
+```csharp
+[Header("Configuración de Movimiento")]
+public float raiseHeight = 3f;
+public float moveSpeed = 2f;
+public AnimationCurve movementCurve;
+
+[Header("Encadenamiento")]
+public float delayBeforeMoving = 0f;
+public PlatformElevator[] chainedPlatforms;
+
+[Header("Feedback")]
+public string movementStartSfxKey = "Platform_Move_Start";
+public string movementStopSfxKey = "Platform_Move_Stop";
+public GameObject movementVFX;
+public Transform vfxSpawnPoint;
+```
+
+#### Métodos de PlatformElevator
+
+```csharp
+public void Raise() // Eleva la plataforma
+public void Lower() // Hunde la plataforma
+public void TeleportToRaised() // Sin animación
+public void TeleportToLowered() // Sin animación
+public void SetRaiseHeight(float height) // Cambiar en runtime
+
+// Propiedades públicas
+public bool IsMoving { get; }
+public bool IsRaised { get; }
+```
+
+#### Flujo de Trabajo
+
+```
+1. Crear PressurePlate:
+   ├─ GameObject con Collider (trigger)
+   ├─ Script PressurePlate
+   └─ Hijo con mesh visual (plateVisual)
+
+2. Crear Plataformas:
+   ├─ GameObject con PlatformElevator
+   └─ Configurar raiseHeight y moveSpeed
+
+3. Conectar:
+   ├─ Arrastra plataformas a platformsToRaise/Lower
+   ├─ Configura feedback (shake, SFX)
+   └─ Opcionalmente: objectsToDeactivate, prefabsToSpawn
+
+4. Probar:
+   ├─ Coloca objeto con PickupObject + Rigidbody
+   └─ El interruptor se activa automáticamente
+```
+
+#### Gizmos en el Editor
+
+Ambos scripts dibujan Gizmos para visualizar conexiones:
+
+**PressurePlate:**
+- 🟡/🟢 Área de detección (color según estado)
+- 🟢 Líneas verdes → plataformas que suben
+- 🔴 Líneas rojas → plataformas que bajan
+- 🟣 Líneas magenta → objetos a desactivar
+- 🔵 Líneas cyan → spawn points
+
+**PlatformElevator:**
+- 🟡 Cubo amarillo = posición inicial
+- 🟢 Cubo verde = posición elevada
+- 🔵 Flecha = dirección y distancia
+- 🟣 Líneas = plataformas encadenadas
+
+#### Ejemplo Completo
+
+```
+Setup de Puzzle "Puente sobre Lava":
+
+1. PressurePlate_RockButton
+   ├─ onlyPickupObjects: ✅
+   ├─ lockWhenActivated: ✅ (permanente)
+   ├─ platformsToRaise: [Bridge_Platform]
+   ├─ objectsToDeactivate: [MagicWall]
+   └─ deactivateVFX: VFX_Explosion
+
+2. Bridge_Platform (PlatformElevator)
+   ├─ raiseHeight: 5
+   ├─ moveSpeed: 2
+   └─ chainedPlatforms: [Platform_Step2, Platform_Step3]
+
+3. Rock_Pickup
+   ├─ PickupObject (script)
+   ├─ Rigidbody (mass: 10)
+   └─ Interactable (para coger)
+
+Resultado:
+- Jugador coge roca
+- Suelta roca en interruptor
+- 🔽 Placa se hunde + camera shake
+- ⬆️ Puente sube en cascada (3 plataformas)
+- 🔥 Muro mágico desaparece con VFX
+- ✅ Jugador cruza el puente
+```
+
+---
+
+## 13. Sistema de Iconos en Diálogos
+
+### 13.1 Configuración de Sprites en TextMeshPro
+
+Para usar iconos (botones, items, etc.) en los textos de diálogo.
+
+#### Paso 1: Crear Sprite Asset
+
+1. **Window → TextMeshPro → Sprite Importer**
+2. **Source:** Arrastra todos tus sprites de iconos
+3. **Sprite Data Source:** Selecciona `Sprite Asset`
+4. **Asignar nombres descriptivos:**
+   - Botones: `ButtonA`, `ButtonB`, `ButtonX`, `ButtonY`
+   - D-Pad: `DpadUp`, `DpadDown`, `DpadLeft`, `DpadRight`
+   - Sticks: `LeftStick`, `RightStick`
+   - Items: `Heart`, `Star`, `Coin`, `Key`, `Sword`, `Shield`
+   - UI: `Potion`, `Chest`, `Lock`
+
+5. **Save Sprite Asset** en:
+   ```
+   Assets/TextMesh Pro/Resources/Sprite Assets/DialogueIcons.asset
+   ```
+
+#### Paso 2: Configurar en DialogueManager
+
+**Herramienta:** `Tools → Dialogue → Setup Icons`
+
+La herramienta configura automáticamente:
+- Asigna el Sprite Asset al DialogueManager
+- Configura el componente TextMeshProUGUI del diálogo
+- Valida la configuración
+
+#### Paso 3: Usar en Diálogos
+
+**Sintaxis:**
+```
+<sprite name="NombreDelSprite">
+```
+
+**Ejemplos:**
+```
+Texto del diálogo:
+Pulsa <sprite name="ButtonA"> para saltar
+Usa <sprite name="LeftStick"> para moverte
+Abre el inventario con <sprite name="DpadDown">
+Tu vida <sprite name="Heart"> está baja (30/100)
+Has conseguido <sprite name="Coin"> x5
+```
+
+**Opciones avanzadas:**
+```
+Cambiar tamaño: <sprite name="ButtonA" size=150%>
+Cambiar color: <sprite name="Heart" color=#FF0000>
+Usar índice: <sprite=0>
+```
+
+### 13.2 Troubleshooting
+
+**Problema:** No se ve el icono (cuadrado vacío)
+- Verifica que el nombre coincide exactamente (case-sensitive)
+- Reconfigura con `Tools → Dialogue → Setup Icons`
+- Comprueba que el Sprite Asset está en la ruta correcta
+
+**Problema:** Icono muy pequeño
+- Usa `<sprite name="ButtonA" size=150%>`
+
+**Problema:** Añadir más iconos después
+1. `Window → TextMeshPro → Sprite Importer`
+2. `Load Sprite Asset` (cargar el existente)
+3. Añadir nuevos sprites
+4. `Update Sprite Asset`
+
+---
+
+## 14. Sistema de Iluminación (Bake Nocturno)
+
+### 14.1 Configuración Optimizada de Lightmaps
+
+**Archivo:** `Assets/MainWorldLightSettings.lighting`
+
+Para generar lightmaps de calidad optimizada en 2-4 horas.
+
+#### Valores Configurados
+
+```
+Configuración Actual (Optimizada):
+├─ Lightmap Max Size: 2048
+├─ Direct Samples: 64 (suficiente precisión)
+├─ Indirect Samples: 512 (buena calidad GI)
+├─ Environment Samples: 256 (suficiente skylight)
+├─ Bake Resolution: 25 (balance detalle/tiempo)
+├─ Bounces: 2 (balance perfecto)
+├─ Light Probe Multiplier: 4
+├─ Compression: Normal (compresión razonable)
+├─ Filtering Mode: Auto (automático optimizado)
+├─ Denoiser: OpenImageDenoise (balance calidad/tiempo)
+├─ AO: ON (Ambient Occlusion activo)
+└─ Gauss Radius Indirect: 2 (suavizado optimizado)
+```
+
+#### Cómo Iniciar el Bake
+
+1. Abre **MainWorld.unity**
+2. **Window → Rendering → Lighting**
+3. Verifica que **Lighting Settings** esté en "MainWorldLightSettings"
+4. Click en **"Generate Lighting"** (abajo a la derecha)
+5. Unity comenzará el bake automáticamente
+
+**Opción alternativa:** Activa **Auto Generate** para baking automático
+
+#### Tiempo Estimado
+
+- **Escena pequeña:** 30 min - 1 hora
+- **MainWorld (grande):** 2-4 horas ⭐ (perfecto para noche)
+- **Muy compleja:** 4-6 horas
+
+#### Configuración del PC (Checklist Pre-Bake)
+
+Antes de iniciar el bake nocturno:
+
+- [ ] ✅ Guarda todo (Ctrl+S)
+- [ ] ✅ Cierra otras aplicaciones pesadas
+- [ ] ✅ Desactiva ahorro de energía:
+  - Panel de Control → Energía → Alto rendimiento
+  - Suspender: Nunca
+  - Apagar pantalla: Nunca
+- [ ] ✅ Pausa actualizaciones de Windows (7 días)
+- [ ] ✅ Conecta el PC a corriente (no batería)
+- [ ] ✅ Opcional: Cierra Discord, Chrome, etc.
+
+#### Monitoreo del Progreso
+
+**En Unity:**
+- Barra de progreso abajo a la derecha
+- Indica "Baking..." con porcentaje
+- Puedes minimizar Unity - seguirá trabajando
+
+**Cancelar:**
+- Barra de progreso tiene botón de cancelación
+
+#### Calidad Resultante
+
+Con esta configuración optimizada obtendrás:
+
+✓ Sombras suaves y detalladas  
+✓ Global Illumination realista  
+✓ Ambient Occlusion preciso  
+✓ Sin artifacts ni noise (gracias al denoiser)  
+✓ Rebotes de luz naturales (2 bounces)  
+✓ Light probes de calidad  
+✓ Compresión razonable (ahorra espacio)  
+
+**Perfecto para:** Builds de producción, trailers, demos
+
+#### Después del Bake
+
+Al terminar (mañana):
+1. Unity habrá terminado (desaparece barra de progreso)
+2. Verás los nuevos lightmaps aplicados en la escena
+3. **Guarda la escena** (Ctrl+S)
+4. **Guarda el proyecto** (Ctrl+Shift+S)
+5. Los lightmaps estarán en: `Assets/Scenes/Main World/MainWorld/`
+6. Commit a Git si quieres guardar el resultado
+
+---
+
+## 15. Troubleshooting Adicional
+
+### 15.1 Errores del AI Toolkit (IGNORAR)
+
+Los errores que aparecen como:
+```
+ArgumentException: Requested value 'Textures' was not found
+Error converting value "Textures" to type 'SuperProxyClientV1Namespace.CategoryEnumV1'
+```
+
+Son del **Unity AI Toolkit** (paquete de Unity) y son **completamente inofensivos**:
+
+- ❌ NO afectan al juego
+- ❌ NO causan crashes
+- ❌ NO afectan MainWorld ni ninguna escena
+- ❌ Solo ensucian la consola
+
+**Soluciones:**
+
+**Opción 1: Ignorarlos (Recomendado)**
+- Simplemente ignóralos, no hacen nada malo
+
+**Opción 2: Filtrar la consola**
+- Click en el menú de hamburguesa (≡) en la consola
+- Usa la barra de búsqueda para filtrar
+
+**Opción 3: Desactivar AI Toolkit**
+- Si no usas las funciones de IA de Unity:
+  1. **Window → Package Manager**
+  2. Busca: **AI Toolkit**
+  3. Click en **Remove**
+
+### 15.2 Problemas con PressurePlate
+
+**Interruptor no detecta objetos:**
+- ✅ Verifica que el Collider sea **Trigger**
+- ✅ El objeto debe tener **Rigidbody**
+- ✅ Si `onlyPickupObjects = true`, debe tener componente `PickupObject`
+- ✅ Verifica que la masa sea mayor que `minimumMass`
+
+**La placa no se hunde visualmente:**
+- ✅ Arrastra el mesh hijo a `plateVisual`
+- ✅ Verifica que `sinkAmount > 0`
+- ✅ Verifica que `animationSpeed > 0`
+
+**Las plataformas no se mueven:**
+- ✅ Verifica que `raiseHeight > 0`
+- ✅ Verifica que `moveSpeed > 0`
+- ✅ Asegúrate de arrastrar las plataformas correctas al array
+
+**Camera shake no funciona:**
+- ✅ Verifica que `FeedbackService` esté inicializado en Start.unity
+- ✅ Verifica que haya una Main Camera en la escena
+- ✅ Ajusta `cameraShakeIntensity` y `cameraShakeDuration`
+
+### 15.3 Problemas con Burnable
+
+**No se destruyen los meshes:**
+- ✅ Verifica que los hijos tengan `MeshRenderer` o `MeshFilter`
+- ✅ `destroyOnlyChildrenWithMesh` debe estar en `true`
+- ✅ El collider del padre debe detectar el impacto
+
+**No detecta proyectiles mágicos:**
+- ✅ El proyectil debe llamar a `OnHitByMagic(element, hitPoint)`
+- ✅ Verifica que el `MagicElement` esté en `acceptedElements[]`
+
+### 15.4 Problemas con Iconos en Diálogos
+
+**Iconos no aparecen (cuadrado vacío):**
+1. Verifica que el nombre coincide exactamente (case-sensitive)
+2. `Tools → Dialogue → Setup Icons` y reconfigura
+3. Comprueba que el Sprite Asset está en la ruta correcta:
+   ```
+   Assets/TextMesh Pro/Resources/Sprite Assets/DialogueIcons.asset
+   ```
+
+**Icono está muy pequeño:**
+- Usa `<sprite name="ButtonA" size=150%>`
+
+**Quiero añadir más iconos después:**
+1. `Window → TextMeshPro → Sprite Importer`
+2. `Load Sprite Asset` (cargar el existente)
+3. Añade los nuevos sprites
+4. `Update Sprite Asset`
 
 ---
 
