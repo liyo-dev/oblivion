@@ -70,6 +70,13 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
             return false;
         }
 
+        // Los hechizos de Levitación se manejan por PlayerLevitationController, no aquí
+        if (spell.kind == MagicKind.Levitation)
+        {
+            if (showDebugLogs) Debug.Log($"[MagicCaster] Hechizo {spell.displayName} es de tipo Levitación, ignorando (manejado por PlayerLevitationController)");
+            return false;
+        }
+
         // Consumir maná
         if (!manaPool.TrySpend(spell.manaCost))
         {
@@ -215,6 +222,20 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
             MagicSlot.Special => _specialSpell,
             _ => null
         };
+    }
+
+    /// Verifica si el slot tiene un hechizo de tipo Levitación (implementación de IMagicCaster)
+    public bool IsLevitationSpell(int slotIndex)
+    {
+        var slot = slotIndex switch
+        {
+            0 => MagicSlot.Left,
+            1 => MagicSlot.Right,
+            2 => MagicSlot.Special,
+            _ => MagicSlot.Left
+        };
+        var spell = GetSpellForSlot(slot);
+        return spell != null && spell.kind == MagicKind.Levitation;
     }
 
     /// Resetea todos los cooldowns (útil para debug o power-ups)

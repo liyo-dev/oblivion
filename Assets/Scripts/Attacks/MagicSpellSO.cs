@@ -50,6 +50,48 @@ public class MagicSpellSO : ScriptableObject
     public float manaCost = 5f;
     public float cooldown = 0.25f;
 
+    [Header("Levitación (solo para MagicKind.Levitation)")]
+    [Tooltip("Rango máximo para detectar y afectar NPCs con levitación.")]
+    [Min(0f)] public float levitationRange = 10f;
+    [Tooltip("Ángulo de detección en grados (cono frontal del jugador).")]
+    [Range(1f, 180f)] public float levitationAngle = 45f;
+    [Tooltip("Fuerza de atracción hacia el jugador durante la fase de carga (mantener botón).")]
+    [Min(0f)] public float levitationPullForce = 5f;
+    [Tooltip("Fuerza de repulsión al soltar el botón.")]
+    [Min(0f)] public float levitationPushForce = 15f;
+    [Tooltip("Distancia delante del jugador donde se posiciona el NPC levitado.")]
+    [Min(1f)] public float levitationHoldDistance = 3f;
+    [Tooltip("Altura a la que se eleva el NPC durante la levitación.")]
+    [Min(0f)] public float levitationHeight = 2f;
+    [Tooltip("Velocidad de elevación del NPC.")]
+    [Min(0f)] public float levitationLiftSpeed = 3f;
+    [Tooltip("Layers que pueden ser afectados por levitación.")]
+    public LayerMask levitationTargetLayers = ~0;
+    [Tooltip("Tiempo en segundos antes de empezar a drenar maná mientras se mantiene la levitación.")]
+    [Min(0f)] public float levitationDrainDelay = 1f;
+    [Tooltip("Maná drenado por segundo mientras se mantiene la levitación (después del delay).")]
+    [Min(0f)] public float levitationManaDrainPerSecond = 5f;
+    
+    [Header("Levitación - VFX")]
+    [Tooltip("VFX que aparece en el jugador mientras mantiene la levitación.")]
+    public GameObject levitationHoldVFX;
+    [Tooltip("VFX que aparece al soltar/lanzar el NPC.")]
+    public GameObject levitationReleaseVFX;
+    [Tooltip("VFX para mostrar el área de detección (círculos de purpurina).")]
+    public GameObject levitationRangeIndicatorVFX;
+    [Tooltip("Cantidad de círculos de VFX para el indicador de rango.")]
+    [Range(1, 10)] public int rangeIndicatorCount = 3;
+    
+    [Header("Levitación - Feedback")]
+    [Tooltip("Intensidad del camera shake al capturar un NPC.")]
+    [Min(0f)] public float levitationCaptureShakeIntensity = 0.3f;
+    [Tooltip("Duración del camera shake al capturar.")]
+    [Min(0f)] public float levitationCaptureShakeDuration = 0.2f;
+    [Tooltip("Intensidad del camera shake al soltar/lanzar un NPC.")]
+    [Min(0f)] public float levitationReleaseShakeIntensity = 0.5f;
+    [Tooltip("Duración del camera shake al soltar.")]
+    [Min(0f)] public float levitationReleaseShakeDuration = 0.3f;
+
     [Header("VFX (centralizado)")]
     public GameObject spawnVFX;
     public GameObject impactVFX;

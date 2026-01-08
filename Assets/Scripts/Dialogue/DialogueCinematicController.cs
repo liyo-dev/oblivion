@@ -564,9 +564,27 @@ public class DialogueCinematicController : MonoBehaviour
             vcam.Lens.FieldOfView = shot.FieldOfView;
 
             // Configurar blend time en el brain de diálogo
+            // IMPORTANTE: Detectar si el cambio de ángulo es muy grande (>90°) para usar corte
             if (dialogueBrain != null)
             {
-                dialogueBrain.DefaultBlend.Time = activeProfile.blendDuration;
+                float angleChange = 0f;
+                if (currentVirtualCamera != null && currentVirtualCamera != vcam)
+                {
+                    // Calcular diferencia angular entre la cámara anterior y la nueva
+                    angleChange = Quaternion.Angle(currentVirtualCamera.transform.rotation, vcam.transform.rotation);
+                }
+                
+                // Si el cambio de ángulo es mayor a 90°, usar corte instantáneo para evitar giro feo
+                if (angleChange > 90f)
+                {
+                    dialogueBrain.DefaultBlend.Time = 0f; // Corte instantáneo
+                    if (showDebugInfo)
+                        Debug.Log($"[DialogueCinematicController] Cambio de ángulo grande ({angleChange:F1}°) - usando corte instantáneo");
+                }
+                else
+                {
+                    dialogueBrain.DefaultBlend.Time = activeProfile.blendDuration;
+                }
             }
             
             // Asegurar que las cámaras virtuales estén en el canal correcto

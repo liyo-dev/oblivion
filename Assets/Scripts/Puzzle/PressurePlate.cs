@@ -99,6 +99,13 @@ public class PressurePlate : MonoBehaviour
     private bool _isAnimating;
     private bool _playerOnPlate;
     
+    // Cooldown para evitar spam de camera shake y activaciones
+    private float _lastCameraShakeTime = -999f;
+    private float _lastActivationTime = -999f;
+    private const float CAMERA_SHAKE_COOLDOWN = 0.5f;
+    private const float DEACTIVATION_DELAY = 0.15f; // Reducido de 0.3f a 0.15f para respuesta más rápida
+    private Coroutine _deactivationCoroutine;
+    
     // Estructura para guardar el estado original del Rigidbody
     private struct RigidbodyState
     {
@@ -145,6 +152,61 @@ public class PressurePlate : MonoBehaviour
             {
                 plateVisual.localPosition = _targetPlatePosition;
                 _isAnimating = false;
+            }
+        }
+        
+        // Verificación periódica: remover objetos que ya no están en el trigger
+        // Esto ayuda cuando objetos congelados son movidos con levitación
+        if (_objectsOnPlate.Count > 0)
+        {
+            // Crear lista temporal para evitar modificar durante iteración
+            var toRemove = new System.Collections.Generic.List<Rigidbody>();
+            
+            foreach (var rb in _objectsOnPlate)
+            {
+                // Si el objeto es null o está muy lejos de la placa, marcarlo para remover
+                if (rb == null)
+                {
+                    toRemove.Add(rb);
+                }
+                else
+                {
+                    // Verificar distancia al trigger
+                    float distanceToPlate = Vector3.Distance(rb.position, transform.position);
+                    var col = GetComponent<Collider>();
+                    float maxDistance = col != null ? col.bounds.extents.magnitude * 2f : 2f;
+                    
+                    if (distanceToPlate > maxDistance)
+                    {
+                        Debug.Log($"[PressurePlate] ⚠️ Objeto {rb.name} está lejos de la placa (distancia: {distanceToPlate:F2}m) - removiendo");
+                        toRemove.Add(rb);
+                    }
+                }
+            }
+            
+            // Remover objetos marcados
+            foreach (var rb in toRemove)
+            {
+                if (_objectsOnPlate.Remove(rb))
+                {
+                    Debug.Log($"[PressurePlate] 🧹 Limpieza: Objeto removido de la lista (Total: {_objectsOnPlate.Count})");
+                    
+                    // Restaurar estado si estaba guardado
+                    if (_originalRigidbodyStates.ContainsKey(rb))
+                    {
+                        _originalRigidbodyStates.Remove(rb);
+                    }
+                }
+            }
+            
+            // Si ya no quedan objetos y está activado, desactivar
+            if (_objectsOnPlate.Count == 0 && isActivated && !lockWhenActivated)
+            {
+                if (!_playerOnPlate || !playerCanActivate)
+                {
+                    Debug.Log($"[PressurePlate] 🔄 Desactivando por limpieza automática");
+                    Deactivate();
+                }
             }
         }
     }
@@ -221,7 +283,7 @@ public class PressurePlate : MonoBehaviour
         if (freezeObjectOnPlate)
         {
             rb.isKinematic = true; // Desactiva física para que no se mueva
-            rb.velocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
         
@@ -242,15 +304,14 @@ public class PressurePlate : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (lockWhenActivated && isActivated) return;
-        
         // Detectar cuando el jugador sale
         if (detectPlayer && other.CompareTag(playerTag))
         {
             OnPlayerExit();
             
             // Si el jugador puede activar y lo activó, desactivar al salir (solo si no hay objetos)
-            if (playerCanActivate && isActivated && _objectsOnPlate.Count == 0)
+            // PERO no desactivar si está bloqueado
+            if (playerCanActivate && isActivated && _objectsOnPlate.Count == 0 && !lockWhenActivated)
             {
                 Deactivate();
             }
@@ -272,8 +333,15 @@ public class PressurePlate : MonoBehaviour
         // Restaurar estado original del Rigidbody
         if (_originalRigidbodyStates.TryGetValue(rb, out RigidbodyState originalState))
         {
+            // Restaurar propiedades físicas
             rb.isKinematic = originalState.isKinematic;
             rb.constraints = originalState.constraints;
+            
+            // Asegurarse de que el objeto puede moverse de nuevo si no era kinematic
+            if (!originalState.isKinematic)
+            {
+                rb.WakeUp(); // Despertar el Rigidbody por si estaba dormido
+            }
             
             // Restaurar padre original
             if (parentObjectToPlate)
@@ -282,16 +350,28 @@ public class PressurePlate : MonoBehaviour
             }
             
             _originalRigidbodyStates.Remove(rb);
+            
+            Debug.Log($"[PressurePlate] ✅ Estado restaurado para {rb.name}: isKinematic={rb.isKinematic}");
         }
         
         // Desactivar el interruptor si no hay más objetos y el jugador no está (o no puede activar)
-        if (_objectsOnPlate.Count == 0 && isActivated)
+        // IMPORTANTE: Solo si NO está bloqueado con lockWhenActivated
+        if (_objectsOnPlate.Count == 0 && isActivated && !lockWhenActivated)
         {
             // Solo desactivar si el jugador no está O si el jugador no puede activar
             if (!_playerOnPlate || !playerCanActivate)
             {
+                Debug.Log($"[PressurePlate] 🔄 {name} Intentando desactivar - Objetos: {_objectsOnPlate.Count}, Player: {_playerOnPlate}, CanActivate: {playerCanActivate}, Locked: {lockWhenActivated}");
                 Deactivate();
             }
+            else
+            {
+                Debug.Log($"[PressurePlate] ⚠️ {name} No se desactiva porque el jugador está en la placa y puede activarla");
+            }
+        }
+        else if (_objectsOnPlate.Count == 0 && lockWhenActivated)
+        {
+            Debug.Log($"[PressurePlate] 🔒 {name} No se desactiva porque lockWhenActivated está activo");
         }
     }
 
@@ -307,7 +387,15 @@ public class PressurePlate : MonoBehaviour
             return;
         }
         
+        // Cancelar cualquier desactivación pendiente
+        if (_deactivationCoroutine != null)
+        {
+            StopCoroutine(_deactivationCoroutine);
+            _deactivationCoroutine = null;
+        }
+        
         isActivated = true;
+        _lastActivationTime = Time.time;
         
         Debug.Log($"[PressurePlate] 🔴 {name} ACTIVADO");
         
@@ -318,10 +406,14 @@ public class PressurePlate : MonoBehaviour
             _isAnimating = true;
         }
         
-        // Feedback de cámara
+        // Feedback de cámara (con cooldown para evitar spam)
         if (cameraShakeIntensity > 0f && cameraShakeDuration > 0f)
         {
-            FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
+            if (Time.time - _lastCameraShakeTime >= CAMERA_SHAKE_COOLDOWN)
+            {
+                FeedbackService.CameraShake(cameraShakeIntensity, cameraShakeDuration);
+                _lastCameraShakeTime = Time.time;
+            }
         }
         
         // Feedback de audio
@@ -349,8 +441,43 @@ public class PressurePlate : MonoBehaviour
     private void Deactivate()
     {
         if (lockWhenActivated) return;
+        if (!isActivated) return;
+        
+        // Usar delay para evitar desactivaciones por rebote
+        if (_deactivationCoroutine != null)
+        {
+            StopCoroutine(_deactivationCoroutine);
+        }
+        _deactivationCoroutine = StartCoroutine(Co_DelayedDeactivation());
+    }
+    
+    /// <summary>
+    /// Corrutina que espera un pequeño delay antes de desactivar para evitar rebotes
+    /// </summary>
+    private System.Collections.IEnumerator Co_DelayedDeactivation()
+    {
+        Debug.Log($"[PressurePlate] ⏳ {name} Iniciando desactivación retardada (delay: {DEACTIVATION_DELAY}s)");
+        
+        yield return new WaitForSeconds(DEACTIVATION_DELAY);
+        
+        // Verificar de nuevo si todavía debemos desactivar (por si algo entró durante el delay)
+        if (_objectsOnPlate.Count > 0 || (_playerOnPlate && playerCanActivate))
+        {
+            Debug.Log($"[PressurePlate] ⚠️ {name} Desactivación cancelada - Objetos en placa: {_objectsOnPlate.Count}, Player: {_playerOnPlate}");
+            _deactivationCoroutine = null;
+            yield break;
+        }
+        
+        // Verificación adicional: lockWhenActivated por si acaso
+        if (lockWhenActivated)
+        {
+            Debug.Log($"[PressurePlate] ⚠️ {name} Desactivación cancelada - lockWhenActivated está activo");
+            _deactivationCoroutine = null;
+            yield break;
+        }
         
         isActivated = false;
+        _deactivationCoroutine = null;
         
         Debug.Log($"[PressurePlate] ⚪ {name} DESACTIVADO");
         

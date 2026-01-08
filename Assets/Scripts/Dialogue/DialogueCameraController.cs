@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 using System.Collections;
 
 /// <summary>
@@ -15,14 +15,17 @@ public class DialogueCameraController : MonoBehaviour
     [Tooltip("Si está activo, mueve la cámara para mostrar al player de perfil")]
     [SerializeField] private bool enableDialogueCamera = true;
     
-    [Tooltip("Distancia lateral de la cámara respecto al player")]
-    [SerializeField] private float sideDistance = 2.5f;
+    [Tooltip("Distancia lateral de la cámara respecto al punto medio entre player y NPC")]
+    [SerializeField] private float sideDistance = 1.8f;
     
     [Tooltip("Distancia hacia atrás desde la posición lateral")]
-    [SerializeField] private float backDistance = 1.5f;
+    [SerializeField] private float backDistance = 0.8f;
     
-    [Tooltip("Altura adicional de la cámara")]
-    [SerializeField] private float heightOffset = 0.3f;
+    [Tooltip("Altura de la cámara respecto al suelo")]
+    [SerializeField] private float cameraHeight = 0.8f;
+    
+    [Tooltip("Altura del punto al que mira la cámara (altura de las caras)")]
+    [SerializeField] private float lookAtHeight = 0.7f;
     
     [Tooltip("Velocidad de transición de la cámara")]
     [SerializeField] private float transitionSpeed = 2f;
@@ -182,17 +185,19 @@ public class DialogueCameraController : MonoBehaviour
         // Perpendicular a la derecha para posicionar la cámara lateral
         Vector3 rightDirection = Vector3.Cross(Vector3.up, directionToNPC).normalized;
 
-        // Posición de la cámara: a un lado del player, un poco atrás y elevada
-        Vector3 sidePosition = player.position + rightDirection * sideDistance;
+        // Punto medio entre player y NPC (en el suelo)
+        Vector3 midPoint = (player.position + currentNPC.position) / 2f;
+        
+        // Posición de la cámara: a un lado del punto medio, un poco atrás
+        Vector3 sidePosition = midPoint + rightDirection * sideDistance;
         Vector3 backOffset = -directionToNPC * backDistance;
-        Vector3 heightPosition = Vector3.up * (player.position.y + heightOffset + 1.5f);
 
         targetCameraPosition = sidePosition + backOffset;
-        targetCameraPosition.y = heightPosition.y;
+        targetCameraPosition.y = player.position.y + cameraHeight; // Altura fija desde el suelo
 
-        // La cámara mira hacia el punto medio entre el player y el NPC
-        Vector3 lookAtPoint = (player.position + currentNPC.position) / 2f;
-        lookAtPoint.y += 1.5f; // A la altura de las caras
+        // La cámara mira hacia el punto medio entre el player y el NPC, a la altura de las caras
+        Vector3 lookAtPoint = midPoint;
+        lookAtPoint.y = player.position.y + lookAtHeight;
 
         targetCameraRotation = Quaternion.LookRotation(lookAtPoint - targetCameraPosition);
 

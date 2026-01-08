@@ -22,7 +22,5 @@ MonoBehaviour:
     minimumDuration: 0
   - shotType: 3
     minimumDuration: 0
-  - shotType: 4
-    minimumDuration: 0
   blendDuration: 0.8
   chainedDialogueDelay: 1

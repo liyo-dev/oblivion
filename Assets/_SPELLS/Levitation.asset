@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
+  m_Name: Levitation
+  m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
+  spellId: 4
+  displayName: Levitation
+  kind: 2
+  element: 4
+  prefab: {fileID: 0}
+  castDelaySeconds: 0.15
+  chargeTime: 0
+  chargeStartScale: 0.1
+  followOriginDuringCharge: 0
+  initialSpeed: 18
+  useGravity: 0
+  maxRange: 40
+  lifeTime: 8
+  damage: 10
+  aoeRadius: 0
+  knockbackForce: 0
+  destroyOnHit: 1
+  forwardOffset: 0.35
+  positionOffset: {x: 0, y: 0, z: 0}
+  visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
+  flattenDirection: 1
+  useScaleOverride: 0
+  scaleOverride: {x: 1, y: 1, z: 1}
+  manaCost: 5
+  cooldown: 0.25
+  levitationRange: 5
+  levitationAngle: 45
+  levitationPullForce: 5
+  levitationPushForce: 50
+  levitationHoldDistance: 3
+  levitationHeight: 2
+  levitationLiftSpeed: 3
+  levitationTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  levitationDrainDelay: 1
+  levitationManaDrainPerSecond: 5
+  levitationHoldVFX: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
+  levitationReleaseVFX: {fileID: 8680598818964007281, guid: dcd90c4976197424b9958a7c54b6bb8c, type: 3}
+  levitationRangeIndicatorVFX: {fileID: 100002, guid: 28e29d76acf694c4a98b013d47c6bfc1, type: 3}
+  rangeIndicatorCount: 1
+  levitationCaptureShakeIntensity: 0.3
+  levitationCaptureShakeDuration: 0.2
+  levitationReleaseShakeIntensity: 0.5
+  levitationReleaseShakeDuration: 0.3
+  spawnVFX: {fileID: 0}
+  impactVFX: {fileID: 0}
+  despawnVFX: {fileID: 0}
+  vfxLifetime: 3
+  castSFXKey: 
+  impactSFXKey: 
+  slotType: 0
+  attackIcon: {fileID: 21300000, guid: 1704c7cdd1802f0448577afeeb7f2a03, type: 3}

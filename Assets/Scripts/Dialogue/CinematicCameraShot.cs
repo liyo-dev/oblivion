@@ -81,13 +81,13 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.Wide => 1.6f,
-            DialogueShotType.MediumNPC => 1.5f,
-            DialogueShotType.CloseUpNPC => 1.6f,
-            DialogueShotType.OverShoulderPlayer => 1.5f,
-            DialogueShotType.OverShoulderNPC => 1.5f,
-            DialogueShotType.Profile => 1.6f,
-            _ => 1.6f
+            DialogueShotType.Wide => 1.8f,           // Aumentado de 1.6f
+            DialogueShotType.MediumNPC => 0.7f,      // Ajustado a 0.7f según solicitud
+            DialogueShotType.CloseUpNPC => 1.75f,    // Aumentado de 1.6f
+            DialogueShotType.OverShoulderPlayer => 1.7f, // Aumentado de 1.5f
+            DialogueShotType.OverShoulderNPC => 1.7f,    // Aumentado de 1.5f
+            DialogueShotType.Profile => 1.8f,       // Aumentado de 1.6f
+            _ => 1.7f
         };
     }
     
@@ -116,9 +116,10 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.CloseUpNPC => Vector3.up * 1.6f,
-            DialogueShotType.Wide => Vector3.up * 1.2f,
-            _ => Vector3.up * 1.5f
+            DialogueShotType.CloseUpNPC => Vector3.up * 1.7f,  // Aumentado de 1.6f - mirar a la cara
+            DialogueShotType.Wide => Vector3.up * 1.4f,       // Aumentado de 1.2f
+            DialogueShotType.MediumNPC => Vector3.up * 1.65f, // Añadido - mirar a la cara
+            _ => Vector3.up * 1.6f                            // Aumentado de 1.5f
         };
     }
     

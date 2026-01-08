@@ -45,7 +45,8 @@ public enum SpellId
     None,
     Fireball,
     Plasmaball,
-    LightSpecial
+    LightSpecial,
+    Levitation
 }
 
 /// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>
@@ -60,7 +61,8 @@ public enum MagicSlot
 public enum MagicKind
 {
     Projectile,
-    Special
+    Special,
+    Levitation
 }
 
 /// <summary>Elementos mágicos disponibles.</summary>
@@ -69,7 +71,8 @@ public enum MagicElement
     Fire,
     Ice,
     Storm,
-    Light
+    Light,
+    Mind
 }
 
 /// <summary>Tipos de ranuras para asignar hechizos.</summary>

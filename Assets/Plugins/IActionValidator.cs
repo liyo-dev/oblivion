@@ -1,4 +1,4 @@
-﻿/// <summary>
+﻿﻿/// <summary>
 /// Interfaz para validar acciones del jugador sin depender de enums específicos.
 /// Usada para comunicación entre diferentes assemblies/namespaces.
 /// </summary>
@@ -24,4 +24,12 @@ public interface IMagicCaster
     /// <param name="slotIndex">0=Left, 1=Right, 2=Special</param>
     /// <returns>true si el casting fue exitoso</returns>
     bool TryCastSpell(int slotIndex);
+    
+    /// <summary>
+    /// Verifica si el slot especificado tiene un hechizo de tipo Levitación.
+    /// Los hechizos de levitación se manejan de forma especial (mantener/soltar botón).
+    /// </summary>
+    /// <param name="slotIndex">0=Left, 1=Right, 2=Special</param>
+    /// <returns>true si el hechizo es de tipo Levitación</returns>
+    bool IsLevitationSpell(int slotIndex);
 }

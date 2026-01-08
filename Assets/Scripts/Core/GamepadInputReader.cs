@@ -792,6 +792,122 @@ namespace Core
     /// </summary>
     public static bool AttackMagicSpecialPressed => YButtonPressed;
 
+    /// <summary>
+    /// Botón X (West/Square) - Mantenido presionado (para levitación izquierda).
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicLeftHeld
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonWest.isPressed)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var x = GetJoystickButton(js, "buttonWest", "square", "button0");
+                if (x != null && x.isPressed)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Botón X (West/Square) - Soltado este frame (para levitación izquierda).
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicLeftReleased
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonWest.wasReleasedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var x = GetJoystickButton(js, "buttonWest", "square", "button0");
+                if (x != null && x.wasReleasedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Botón B (East/Circle) - Mantenido presionado (para levitación derecha).
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicRightHeld
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonEast.isPressed)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var b = GetJoystickButton(js, "buttonEast", "circle", "button1");
+                if (b != null && b.isPressed)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Botón B (East/Circle) - Soltado este frame (para levitación derecha).
+    /// Respeta supresión de gameplay.
+    /// </summary>
+    public static bool AttackMagicRightReleased
+    {
+        get
+        {
+            if (IsGameplaySuppressed())
+                return false;
+
+#if ENABLE_INPUT_SYSTEM
+            var gp = GetGamepad();
+            if (gp != null && gp.buttonEast.wasReleasedThisFrame)
+                return true;
+
+            var js = GetJoystick();
+            if (js != null)
+            {
+                var b = GetJoystickButton(js, "buttonEast", "circle", "button1");
+                if (b != null && b.wasReleasedThisFrame)
+                    return true;
+            }
+#endif
+
+            return false;
+        }
+    }
+
     public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
     

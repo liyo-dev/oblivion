@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using UnityEngine;
 
 namespace Invector.vCharacterController
@@ -246,6 +246,13 @@ namespace Invector.vCharacterController
             // Verificar permiso del ActionValidator
             if (_actionValidator != null && !_actionValidator.CanCastMagic()) return;
             if (!CanAttack()) return;
+
+            // Si es un hechizo de levitación, no procesarlo aquí (lo maneja PlayerLevitationController)
+            if (_magicCasterInterface != null && _magicCasterInterface.IsLevitationSpell(slotId))
+            {
+                if (debugLogs) Debug.Log($"[vThirdPersonController] Slot {slotId} es Levitación, ignorando (manejado por PlayerLevitationController)");
+                return;
+            }
 
             // TEMPORAL: Buscar MagicCaster por nombre de componente
             bool canCast = false;

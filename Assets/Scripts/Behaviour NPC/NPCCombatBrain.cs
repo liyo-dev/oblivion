@@ -177,7 +177,7 @@ namespace Game.NPC
         {
             _isActive = false;
             if (_fsmRoutine != null) StopCoroutine(_fsmRoutine);
-            _agent.isStopped = true;
+            if (_agent.enabled && _agent.isOnNavMesh) _agent.isStopped = true;
             _animator.SetBattleMode(false);
         }
         
@@ -284,7 +284,7 @@ namespace Game.NPC
             // En REPOSITION: mirar hacia donde se mueve (gestionado automáticamente por SyncWithNavMeshAgent)
             // En EVALUATE: mirar al player
             // En SEARCHING: animación maneja la rotación
-            if (_player != null && _currentState != CombatState.REPOSITION && _currentState != CombatState.SEARCHING && _agent.isStopped)
+            if (_player != null && _currentState != CombatState.REPOSITION && _currentState != CombatState.SEARCHING && _agent.enabled && _agent.isOnNavMesh && _agent.isStopped)
             {
                 // Solo rotar hacia el player cuando está parado (no en movimiento)
                 Vector3 targetPos = _hasLineOfSight ? _player.position : _lastKnownPlayerPosition;
@@ -499,7 +499,7 @@ namespace Game.NPC
                     
                     // Esperar hasta llegar o 3 segundos máx
                     float timer = 0;
-                    while (_agent.remainingDistance > 1.5f && timer < 3f)
+                    while (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance > 1.5f && timer < 3f)
                     {
                         timer += Time.deltaTime;
                         
@@ -528,7 +528,7 @@ namespace Game.NPC
                     MoveTo(betterPos, settings.walkSpeed);
                     
                     float timer = 0;
-                    while (_agent.remainingDistance > 0.5f && timer < 4f)
+                    while (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance > 0.5f && timer < 4f)
                     {
                         timer += Time.deltaTime;
                         
@@ -580,6 +580,12 @@ namespace Game.NPC
         /// </summary>
         private Vector3 FindRetreatPosition()
         {
+            // Verificar que el agente está activo
+            if (!_agent.enabled || !_agent.isOnNavMesh)
+            {
+                return transform.position;
+            }
+            
             // Intentar encontrar cobertura primero
             if (FindCoverBehindObstacle(out Vector3 coverPos))
             {
@@ -595,7 +601,7 @@ namespace Game.NPC
             {
                 // Verificar que hay un camino válido
                 NavMeshPath path = new NavMeshPath();
-                if (_agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
                 {
                     return navHit.position;
                 }
@@ -615,7 +621,7 @@ namespace Game.NPC
                 if (NavMesh.SamplePosition(altPos, out navHit, 2f, NavMesh.AllAreas))
                 {
                     NavMeshPath path = new NavMeshPath();
-                    if (_agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                    if (_agent.enabled && _agent.isOnNavMesh && _agent.CalculatePath(navHit.position, path) && path.status == NavMeshPathStatus.PathComplete)
                     {
                         return navHit.position;
                     }
@@ -662,7 +668,7 @@ namespace Game.NPC
                     
                     // Verificar camino válido
                     NavMeshPath path = new NavMeshPath();
-                    if (!_agent.CalculatePath(candidatePos, path) || path.status != NavMeshPathStatus.PathComplete)
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(candidatePos, path) || path.status != NavMeshPathStatus.PathComplete)
                         continue;
                     
                     // Simular línea de fuego desde esa posición
@@ -708,6 +714,15 @@ namespace Game.NPC
         // 3. ATACAR: Seleccionar hechizo y disparar
         IEnumerator State_Attack()
         {
+            // ✅ Verificar si está siendo levitado - no puede atacar
+            var levitationTarget = GetComponent<LevitationTarget>();
+            if (levitationTarget != null && levitationTarget.IsBeingLevitated)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado - NPC está siendo levitado");
+                yield return new WaitForSeconds(0.5f);
+                yield break;
+            }
+            
             // ✅ Verificar que tengamos línea de visión antes de atacar
             if (!_hasLineOfSight)
             {
@@ -890,7 +905,7 @@ namespace Game.NPC
                         
                         // Esperar a llegar o timeout
                         float timeout = 3f;
-                        while (_agent.remainingDistance > 0.5f && timeout > 0 && _agent.pathStatus == NavMeshPathStatus.PathComplete)
+                        while (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance > 0.5f && timeout > 0 && _agent.pathStatus == NavMeshPathStatus.PathComplete)
                         {
                             timeout -= Time.deltaTime;
                             yield return null;
@@ -990,7 +1005,7 @@ namespace Game.NPC
                 }
                 
                 // Verificar si llegó a la posición
-                if (_agent.remainingDistance <= 1.5f && !_agent.pathPending)
+                if (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance <= 1.5f && !_agent.pathPending)
                 {
                     arrivedAtCover = true;
                 }
@@ -1354,7 +1369,7 @@ namespace Game.NPC
                     
                     // Verificar camino accesible
                     NavMeshPath path = new NavMeshPath();
-                    if (!_agent.CalculatePath(navHit.position, path) || path.status != NavMeshPathStatus.PathComplete)
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(navHit.position, path) || path.status != NavMeshPathStatus.PathComplete)
                     {
                         continue;
                     }
@@ -1425,9 +1440,9 @@ namespace Game.NPC
 
         private void MoveTo(Vector3 pos, float speed)
         {
-            if (!_agent.isOnNavMesh)
+            if (!_agent.enabled || !_agent.isOnNavMesh)
             {
-                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Agent no está en NavMesh - no puede moverse");
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Agent no está activo o en NavMesh - no puede moverse");
                 return;
             }
             
@@ -1456,18 +1471,24 @@ namespace Game.NPC
                     Vector3 lastReachablePoint = path.corners[path.corners.Length - 1];
                     Debug.Log($"[CombatBrain:{gameObject.name}] 📍 Usando punto parcial más cercano: {lastReachablePoint}");
                     
-                    _agent.isStopped = false;
-                    _agent.speed = speed;
-                    _agent.SetDestination(lastReachablePoint);
+                    if (_agent.enabled && _agent.isOnNavMesh)
+                    {
+                        _agent.isStopped = false;
+                        _agent.speed = speed;
+                        _agent.SetDestination(lastReachablePoint);
+                    }
                     _animator.SetMovementSpeed(speed, 0.1f);
                     return;
                 }
                 return;
             }
             
-            _agent.isStopped = false;
-            _agent.speed = speed;
-            _agent.SetDestination(navHit.position);
+            if (_agent.enabled && _agent.isOnNavMesh)
+            {
+                _agent.isStopped = false;
+                _agent.speed = speed;
+                _agent.SetDestination(navHit.position);
+            }
             _animator.SetMovementSpeed(speed, 0.1f);
         }
 
@@ -1678,11 +1699,30 @@ namespace Game.NPC
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
                     }
                     
-                    // Esperar para que se vea el feedback
-                    yield return new WaitForSeconds(1.0f);
+                    // Esperar breve para que se vea el feedback
+                    yield return new WaitForSeconds(0.5f);
                     
                     StopMove();
-                    _currentState = CombatState.EVALUATE;
+                    
+                    // ✅ DECISIÓN INMEDIATA: Si tiene ataques, atacar directamente sin pasar por EVALUATE
+                    int attacksAvailable = CountAttacksReady();
+                    float distToPlayer = Vector3.Distance(transform.position, _player.position);
+                    
+                    if (attacksAvailable > 0 && distToPlayer <= settings.maxDistance && HasClearLineOfFire())
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO! - {attacksAvailable} ataques listos, distancia: {distToPlayer:F1}m");
+                        _currentState = CombatState.ATTACK;
+                    }
+                    else if (attacksAvailable > 0 && distToPlayer > settings.maxDistance)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Jugador muy lejos ({distToPlayer:F1}m) - Acercándose para atacar");
+                        _currentState = CombatState.EVALUATE; // EVALUATE se encargará de acercarse
+                    }
+                    else
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 Evaluando situación - Ataques: {attacksAvailable}, Dist: {distToPlayer:F1}m");
+                        _currentState = CombatState.EVALUATE;
+                    }
                     yield break;
                 }
                 
@@ -1709,7 +1749,7 @@ namespace Game.NPC
                         // ✅ DURANTE EL MOVIMIENTO: Verificar constantemente
                         float moveTimeout = 5f;
                         float moveTimer = 0f;
-                        while (_agent.pathPending || (_agent.remainingDistance > 1f && moveTimer < moveTimeout))
+                        while (_agent.enabled && _agent.isOnNavMesh && (_agent.pathPending || (_agent.remainingDistance > 1f && moveTimer < moveTimeout)))
                         {
                             // Si encontramos al jugador durante el movimiento
                             if (_hasLineOfSight)
@@ -1729,10 +1769,23 @@ namespace Game.NPC
                                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
                                 }
                                 
-                                yield return new WaitForSeconds(1.0f);
+                                yield return new WaitForSeconds(0.5f);
                                 
                                 StopMove();
-                                _currentState = CombatState.EVALUATE;
+                                
+                                // ✅ ATAQUE INMEDIATO si es posible
+                                int attacks = CountAttacksReady();
+                                float dist = Vector3.Distance(transform.position, _player.position);
+                                
+                                if (attacks > 0 && dist <= settings.maxDistance && HasClearLineOfFire())
+                                {
+                                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO desde búsqueda!");
+                                    _currentState = CombatState.ATTACK;
+                                }
+                                else
+                                {
+                                    _currentState = CombatState.EVALUATE;
+                                }
                                 yield break;
                             }
                             
@@ -1785,10 +1838,23 @@ namespace Game.NPC
                                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
                             }
                             
-                            yield return new WaitForSeconds(1.0f);
+                            yield return new WaitForSeconds(0.5f);
                             
                             StopMove();
-                            _currentState = CombatState.EVALUATE;
+                            
+                            // ✅ ATAQUE INMEDIATO si es posible
+                            int attacksReady = CountAttacksReady();
+                            float distPlayer = Vector3.Distance(transform.position, _player.position);
+                            
+                            if (attacksReady > 0 && distPlayer <= settings.maxDistance && HasClearLineOfFire())
+                            {
+                                Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO desde búsqueda!");
+                                _currentState = CombatState.ATTACK;
+                            }
+                            else
+                            {
+                                _currentState = CombatState.EVALUATE;
+                            }
                             yield break;
                         }
                     }
@@ -1817,7 +1883,7 @@ namespace Game.NPC
                 MoveTo(_combatStartPosition, settings.walkSpeed);
                 
                 // Esperar a llegar al origen
-                while (_agent.pathPending || _agent.remainingDistance > 1.5f)
+                while (_agent.enabled && _agent.isOnNavMesh && (_agent.pathPending || _agent.remainingDistance > 1.5f))
                 {
                     // Si encuentra al jugador durante el regreso, retomar combate inmediatamente
                     if (_hasLineOfSight)
@@ -1836,10 +1902,23 @@ namespace Game.NPC
                             Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo SenseSomethingStart_NoWeapon");
                         }
                         
-                        yield return new WaitForSeconds(1.0f);
+                        yield return new WaitForSeconds(0.5f);
                         
                         StopMove();
-                        _currentState = CombatState.EVALUATE;
+                        
+                        // ✅ ATAQUE INMEDIATO si es posible
+                        int attacksNow = CountAttacksReady();
+                        float distNow = Vector3.Distance(transform.position, _player.position);
+                        
+                        if (attacksNow > 0 && distNow <= settings.maxDistance && HasClearLineOfFire())
+                        {
+                            Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ ¡ATAQUE INMEDIATO al detectar jugador!");
+                            _currentState = CombatState.ATTACK;
+                        }
+                        else
+                        {
+                            _currentState = CombatState.EVALUATE;
+                        }
                         yield break;
                     }
                     
@@ -1878,6 +1957,12 @@ namespace Game.NPC
         private bool FindCoverBehindObstacle(out Vector3 coverPosition)
         {
             coverPosition = transform.position;
+            
+            // Verificar que el agente está activo antes de buscar cobertura
+            if (!_agent.enabled || !_agent.isOnNavMesh)
+            {
+                return false;
+            }
             
             // Buscar todos los colliders en un radio (layer Default)
             int defaultLayer = LayerMask.NameToLayer("Default");
@@ -1952,7 +2037,7 @@ namespace Game.NPC
                     
                     // 3. Verificar que el camino desde la posición actual hasta la cobertura es válido
                     NavMeshPath path = new NavMeshPath();
-                    if (!_agent.CalculatePath(coverPos, path) || path.status != NavMeshPathStatus.PathComplete)
+                    if (!_agent.enabled || !_agent.isOnNavMesh || !_agent.CalculatePath(coverPos, path) || path.status != NavMeshPathStatus.PathComplete)
                     {
                         Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Camino a {coverPos} no es accesible - rechazada");
                         continue;
