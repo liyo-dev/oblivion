@@ -42,6 +42,12 @@ namespace Game.NPC.Modules
         [Header("Narrativas Condicionales")]
         [Tooltip("Lista de narrativas con condiciones. Se evalúan en orden de prioridad. Para narrativa simple sin condiciones, añade una con condición 'None'.")]
         public ConditionalNarrative[] conditionalNarratives = System.Array.Empty<ConditionalNarrative>();
+        
+        // Cache para optimización: array pre-ordenado y pre-filtrado
+        [System.NonSerialized]
+        private ConditionalNarrative[] _sortedNarrativesCache;
+        [System.NonSerialized]
+        private bool _isCacheValid;
 
         [Header("Persistencia")]
         [Tooltip("¿Guardar el estado en el preset de la partida? Si es true, el estado de 'completado' se guardará cuando el jugador haga SAVE.")]
@@ -87,6 +93,10 @@ namespace Game.NPC.Modules
         [Tooltip("Distancia mínima para detenerse al acercarse al jugador")]
         [Min(0.5f)]
         public float stopDistanceFromPlayer = 2f;
+        
+        [Header("Debug")]
+        [Tooltip("⚠️ Solo para DEBUG. Habilitar logs detallados de evaluación de narrativas. DESACTIVAR en producción por rendimiento.")]
+        public bool enableDetailedLogs;
 
 
         public override bool ValidateConfig(out string errorMessage)
@@ -213,33 +223,72 @@ namespace Game.NPC.Modules
         /// </summary>
         public ConditionalNarrative GetActiveNarrative()
         {
-            if (conditionalNarratives == null)
+            if (conditionalNarratives == null || conditionalNarratives.Length == 0)
             {
-                Debug.Log($"[NPCInteractiveNarrativeConfig] ℹ️ conditionalNarratives es null");
+                if (enableDetailedLogs)
+                    Debug.Log($"[NPCInteractiveNarrativeConfig] ℹ️ conditionalNarratives está vacío");
                 return null;
             }
             
-            // Ordenar por prioridad (mayor a menor) y evaluar
-            var sortedNarratives = conditionalNarratives
-                .Where(n => n != null)
-                .OrderByDescending(n => n.priority)
-                .ToArray();
-            
-            Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] 🔍 Evaluando {sortedNarratives.Length} narrativas condicionales");
-            
-            foreach (var narrative in sortedNarratives)
+            // Usar caché pre-ordenado para evitar LINQ en runtime
+            if (!_isCacheValid)
             {
-                bool canExecute = narrative.CanExecute();
-                
-                if (canExecute)
+                RebuildNarrativeCache();
+            }
+            
+            if (enableDetailedLogs)
+                Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] 🔍 Evaluando {_sortedNarrativesCache.Length} narrativas condicionales");
+            
+            // Iterar el array ya ordenado (sin LINQ, sin allocaciones)
+            for (int i = 0; i < _sortedNarrativesCache.Length; i++)
+            {
+                var narrative = _sortedNarrativesCache[i];
+                if (narrative.CanExecute())
                 {
-                    Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ✅ Narrativa seleccionada: '{narrative.description}' (priority={narrative.priority})");
+                    if (enableDetailedLogs)
+                        Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ✅ Narrativa seleccionada: '{narrative.description}' (priority={narrative.priority})");
                     return narrative;
                 }
             }
             
-            Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ❌ No hay narrativas disponibles para ejecutar");
+            if (enableDetailedLogs)
+                Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ❌ No hay narrativas disponibles para ejecutar");
             return null;
+        }
+        
+        /// <summary>
+        /// Reconstruye el caché de narrativas ordenadas (llamar cuando cambian las narrativas)
+        /// </summary>
+        private void RebuildNarrativeCache()
+        {
+            if (conditionalNarratives == null || conditionalNarratives.Length == 0)
+            {
+                _sortedNarrativesCache = System.Array.Empty<ConditionalNarrative>();
+            }
+            else
+            {
+                // Filtrar nulls y ordenar por prioridad (mayor a menor)
+                _sortedNarrativesCache = conditionalNarratives
+                    .Where(n => n != null)
+                    .OrderByDescending(n => n.priority)
+                    .ToArray();
+            }
+            
+            _isCacheValid = true;
+        }
+        
+        /// <summary>
+        /// Invalida el caché (llamar si las narrativas cambian en runtime)
+        /// </summary>
+        public void InvalidateCache()
+        {
+            _isCacheValid = false;
+        }
+        
+        private void OnEnable()
+        {
+            // Construir caché al cargar el ScriptableObject
+            _isCacheValid = false;
         }
         
         /// <summary>
@@ -252,6 +301,9 @@ namespace Game.NPC.Modules
         
         private void OnValidate()
         {
+            // Invalidar caché cuando se modifica en el Inspector
+            _isCacheValid = false;
+            
             // Auto-generar ID de persistencia basado en el nombre del asset si está vacío
             if (persistState && string.IsNullOrEmpty(persistenceId))
             {

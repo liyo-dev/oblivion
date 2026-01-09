@@ -696,8 +696,7 @@ public class DialogueManager : MonoBehaviour
         if (bodyText)
         {
             StopTypewriter();
-            // Procesar el texto para añadir espacios alrededor de sprites
-            bodyText.text = ProcessSpritesWithSpacing(_currentText);
+            bodyText.text = _currentText;
             if (useTypewriter)
             {
                 Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
@@ -713,48 +712,6 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Añade espacios alrededor de los sprites para separarlos del texto
-    /// </summary>
-    private string ProcessSpritesWithSpacing(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return text;
-        
-        // Usar MatchEvaluator con acceso al texto completo para verificar contexto
-        var regex = new System.Text.RegularExpressions.Regex(@"<sprite\s+name=""[^""]+""[^>]*>");
-        
-        string result = text;
-        int offset = 0; // Offset para ajustar índices después de añadir espacios
-        
-        foreach (System.Text.RegularExpressions.Match match in regex.Matches(text))
-        {
-            int adjustedIndex = match.Index + offset;
-            string sprite = match.Value;
-            string replacement = sprite;
-            
-            // Verificar si necesita espacio ANTES (a la izquierda)
-            bool needsLeftSpace = adjustedIndex == 0 || result[adjustedIndex - 1] != ' ';
-            if (needsLeftSpace)
-            {
-                replacement = " " + replacement;
-                offset++;
-            }
-            
-            // Verificar si necesita espacio DESPUÉS (a la derecha)
-            int afterSpriteIndex = adjustedIndex + sprite.Length;
-            bool needsRightSpace = afterSpriteIndex >= result.Length || result[afterSpriteIndex] != ' ';
-            if (needsRightSpace)
-            {
-                replacement = replacement + " ";
-                offset++;
-            }
-            
-            // Reemplazar en el resultado
-            result = result.Remove(adjustedIndex, sprite.Length).Insert(adjustedIndex, replacement);
-        }
-        
-        return result;
-    }
 
     private System.Collections.IEnumerator TypeRoutine()
     {

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
@@ -34,19 +34,39 @@ namespace Game.NPC.Modules
         [Tooltip("Mostrar logs cuando se evalúa esta condición")]
         public bool debugMode = false;
         
+        // Cache para QuestManager
+        private static QuestManager _cachedQuestManager;
+        private static int _questManagerCacheFrame = -1;
+        
+        /// <summary>
+        /// Obtiene QuestManager con caché por frame
+        /// </summary>
+        private static QuestManager GetQuestManager()
+        {
+            int currentFrame = Time.frameCount;
+            if (_questManagerCacheFrame != currentFrame)
+            {
+                _cachedQuestManager = QuestManager.Instance;
+                _questManagerCacheFrame = currentFrame;
+            }
+            return _cachedQuestManager;
+        }
+        
         /// <summary>
         /// Evalúa si la condición se cumple
         /// </summary>
         public bool Evaluate()
         {
+            // Early exit para el caso más común (sin condición)
+            if (conditionType == NarrativeConditionType.None)
+            {
+                return true;
+            }
+            
             bool result;
             
             switch (conditionType)
             {
-                case NarrativeConditionType.None:
-                    result = true; // Siempre se cumple
-                    break;
-                
                 case NarrativeConditionType.QuestNotStarted:
                     result = EvaluateQuestNotStarted();
                     break;
@@ -94,7 +114,7 @@ namespace Game.NPC.Modules
                 return false;
             }
             
-            var questManager = QuestManager.Instance;
+            var questManager = GetQuestManager();
             if (questManager == null)
             {
                 if (debugMode)
@@ -120,7 +140,7 @@ namespace Game.NPC.Modules
                 return false;
             }
             
-            var questManager = QuestManager.Instance;
+            var questManager = GetQuestManager();
             if (questManager == null)
             {
                 if (debugMode)
@@ -146,7 +166,7 @@ namespace Game.NPC.Modules
                 return false;
             }
             
-            var questManager = QuestManager.Instance;
+            var questManager = GetQuestManager();
             if (questManager == null)
             {
                 if (debugMode)
@@ -172,7 +192,7 @@ namespace Game.NPC.Modules
                 return false;
             }
             
-            var questManager = QuestManager.Instance;
+            var questManager = GetQuestManager();
             if (questManager == null)
             {
                 if (debugMode)

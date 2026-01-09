@@ -633,8 +633,8 @@ namespace Game.NPC.Modules
 
             while (true)
             {
-                // Obtener la narrativa activa actual (forzar refresh para detección)
-                var activeNarrative = _config?.GetActiveNarrative();
+                // Obtener la narrativa activa usando caché para evitar evaluaciones frecuentes
+                var activeNarrative = GetCachedActiveNarrative(false);
                 
                 // Si no hay narrativa activa o no tiene autoStartOnDetection, esperar
                 if (activeNarrative == null || !activeNarrative.autoStartOnDetection)
