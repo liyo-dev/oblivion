@@ -28,6 +28,10 @@ namespace Game.NPC.Modules
         private bool _hasDetectedPlayer;
         private int _currentActionIndex = -1;
         
+        // Cooldown para evitar interacciones inmediatas después de ejecutar una narrativa
+        private float _lastExecutionEndTime = -999f;
+        private const float POST_EXECUTION_COOLDOWN = 0.5f; // 0.5 segundos de cooldown
+        
         // Cache para optimización
         private ConditionalNarrative _cachedActiveNarrative;
         private int _lastNarrativeCheckFrame = -1;
@@ -45,7 +49,7 @@ namespace Game.NPC.Modules
         /// Indica si el NPC está ejecutando una narrativa actualmente.
         /// Mientras ejecuta, no debe permitirse interacción.
         /// </summary>
-        public bool IsExecuting => _isExecuting;
+        public bool IsExecuting => _isExecuting || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN);
         #endregion
         
         /// <summary>
@@ -321,11 +325,19 @@ namespace Game.NPC.Modules
             }
 
             if (_config.persistState) SaveState();
+            
+            // Invalidar el caché de narrativa activa para que Update detecte el cambio
+            InvalidateNarrativeCache();
 
             // 4. Estado Post-Narrativa (usa el de la narrativa específica)
             yield return HandlePostNarrativeState(narrativeData);
 
             _isExecuting = false;
+            
+            // ✅ Establecer el tiempo de finalización para activar el cooldown
+            // Esto evita que el jugador pueda interactuar inmediatamente después
+            _lastExecutionEndTime = Time.time;
+            Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
         }
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)

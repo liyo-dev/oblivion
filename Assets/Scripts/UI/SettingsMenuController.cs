@@ -97,11 +97,14 @@ public class SettingsMenuController : MonoBehaviour
         // Ensure select visuals exist on selectable controls so navigation shows DOTween highlight/pulse
         if (autoAddSelectVisuals && root != null)
         {
-            var selects = root.GetComponentsInChildren<Selectable>(true);
+            // OPTIMIZACIÓN: Cachear y evitar GetComponent repetido
+            var selects = GetComponentsInChildren<Selectable>(true);
             foreach (var s in selects)
             {
                 if (s == null) continue;
                 var go = s.gameObject;
+                
+                // UISelectVisual
                 if (!go.GetComponent<UISelectVisual>())
                 {
                     var v = go.AddComponent<UISelectVisual>();
@@ -113,16 +116,14 @@ public class SettingsMenuController : MonoBehaviour
                     v.enableShadowPunch = true;
                 }
                 
-                // Add UIButtonAudio to buttons for click and hover sounds
-                var btn = s as Button;
-                if (btn != null && !go.GetComponent<UIButtonAudio>())
+                // UIButtonAudio - solo para botones
+                if (s is Button && !go.GetComponent<UIButtonAudio>())
                 {
                     go.AddComponent<UIButtonAudio>();
                 }
                 
-                // Add UISliderAudio to sliders for select sounds
-                var slider = s as Slider;
-                if (slider != null && !go.GetComponent<UISliderAudio>())
+                // UISliderAudio - solo para sliders
+                if (s is Slider && !go.GetComponent<UISliderAudio>())
                 {
                     go.AddComponent<UISliderAudio>();
                 }

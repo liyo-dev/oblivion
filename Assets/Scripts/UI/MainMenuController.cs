@@ -134,12 +134,12 @@ public class MainMenuController : MonoBehaviour
         
         // Silenciar temporalmente los sonidos de UI para evitar el sonido de selección inicial
         UIButtonAudio.MuteAll = true;
-        Debug.Log("[MainMenu] MuteAll = true");
         AutoSelectFirstIfNeeded();
         // Rehabilitar sonidos después de un frame
         StartCoroutine(EnableUISoundsNextFrame());
         
-        SelfTestButtons();
+        // SelfTestButtons eliminado - solo útil en debug profundo
+        
         // Armar interacción tras un breve retardo para ignorar el Submit inicial
         bool shouldDebounce = enableInputDebounce || _forceInputDebounce;
         _inputArmed = !shouldDebounce;
@@ -217,17 +217,23 @@ public class MainMenuController : MonoBehaviour
     {
         yield return null; // Esperar un frame
         UIButtonAudio.MuteAll = false;
-        Debug.Log("[MainMenu] MuteAll = false (sonidos habilitados)");
+        // Log eliminado - operación normal
     }
     
     /// <summary>
     /// Asegura que todos los botones del menú tengan UIButtonAudio para los sonidos de navegación
+    /// OPTIMIZACIÓN: Solo se ejecuta una vez, cachea el resultado
     /// </summary>
+    private bool _audioComponentsEnsured = false;
+    
     private void EnsureButtonAudio()
     {
-        var menuButtons = GetComponentsInChildren<Button>(true);
-        Debug.Log($"[MainMenu] EnsureButtonAudio: Encontrados {menuButtons.Length} botones");
+        // Optimización: solo ejecutar una vez
+        if (_audioComponentsEnsured) return;
         
+        var menuButtons = GetComponentsInChildren<Button>(true);
+        
+        int addedCount = 0;
         foreach (var b in menuButtons)
         {
             if (b == null) continue;
@@ -237,12 +243,22 @@ public class MainMenuController : MonoBehaviour
             if (audioComp == null)
             {
                 audioComp = b.gameObject.AddComponent<UIButtonAudio>();
-                Debug.Log($"[MainMenu] ✅ UIButtonAudio AÑADIDO a {b.name}");
+                addedCount++;
             }
             
             // Forzar que el sonido de navegación esté habilitado
             audioComp.SetPlayHoverSound(true);
         }
+        
+        _audioComponentsEnsured = true;
+        
+        // Solo log si se añadieron componentes (útil para debug)
+        #if UNITY_EDITOR
+        if (addedCount > 0)
+        {
+            Debug.Log($"[MainMenu] ✅ UIButtonAudio añadido a {addedCount} botones");
+        }
+        #endif
     }
 
     // ===== Intro (CanvasGroup en cada item) =================================
@@ -572,23 +588,8 @@ public class MainMenuController : MonoBehaviour
         return null;
     }
 
-    void SelfTestButtons()
-    {
-        // Pequeño chequeo de ambiente para raycasts/interactables.
-        if (newGameButton)
-        {
-            bool active = newGameButton.gameObject.activeInHierarchy;
-            bool interact = newGameButton.interactable;
-            bool raycastOk = true;
-
-            foreach (var cg in newGameButton.GetComponentsInParent<CanvasGroup>(true))
-            {
-                if (!cg.blocksRaycasts) { raycastOk = false; break; }
-            }
-
-            Debug.Log($"[MainMenu][SelfTest] NewGame active={active}, interactable={interact}, blocksRaycasts={raycastOk}");
-        }
-    }
+    // SelfTestButtons eliminado - solo útil para debug profundo
+    // Si necesitas debuggear botones, reactiva temporalmente este método
 
     void CaptureArmSnapshot()
     {

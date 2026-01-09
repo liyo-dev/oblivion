@@ -646,7 +646,7 @@ public class GameBootProfile : ScriptableObject
     /// <summary>
     /// Aplica las posiciones de NPC guardadas en el preset a los NPCs presentes en la escena actual.
     /// </summary>
-    void ApplyNpcPositionsToScene(PlayerPresetSO preset)
+    public void ApplyNpcPositionsToScene(PlayerPresetSO preset)
     {
         if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0)
             return;

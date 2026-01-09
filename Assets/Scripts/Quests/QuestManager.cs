@@ -24,6 +24,10 @@ public class QuestManager : MonoBehaviour
     // ✅ NUEVO: Referencia al inventario para detectar items añadidos
     private Inventory _cachedInventory;
     private bool _isSubscribedToInventory;
+    
+    // ✅ NUEVO: Referencia al wardrobe para detectar items de wardrobe añadidos
+    private WardrobeInventory _cachedWardrobe;
+    private bool _isSubscribedToWardrobe;
 
     // Eventos públicos para UI/lógica externa
     public event Action<string> OnQuestStarted;
@@ -43,8 +47,9 @@ public class QuestManager : MonoBehaviour
     
     void Start()
     {
-        // Intentar suscribirse al inventario
+        // Intentar suscribirse al inventario y wardrobe
         TrySubscribeToInventory();
+        TrySubscribeToWardrobe();
     }
     
     void OnEnable()
@@ -57,12 +62,14 @@ public class QuestManager : MonoBehaviour
     {
         PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
         UnsubscribeFromInventory();
+        UnsubscribeFromWardrobe();
     }
     
     private void OnPlayerRegistered(GameObject player)
     {
         // Re-intentar suscripción cuando el player está disponible
         TrySubscribeToInventory();
+        TrySubscribeToWardrobe();
     }
     #endregion
 
@@ -610,7 +617,7 @@ public class QuestManager : MonoBehaviour
     #endregion
 
     /// <summary>
-    /// Verifica si el jugador ya tiene items requeridos por la quest en su inventario
+    /// Verifica si el jugador ya tiene items requeridos por la quest en su inventario y wardrobe
     /// y marca automáticamente los pasos correspondientes como completados.
     /// </summary>
     private void CheckExistingItemsForQuest(RuntimeQuest rq)
@@ -620,57 +627,68 @@ public class QuestManager : MonoBehaviour
         
         Debug.Log($"[QuestManager] 🔍 CheckExistingItemsForQuest para quest '{rq.Id}'");
         
-        // Obtener el inventario del jugador usando PlayerService
-        if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
+        int totalStepsCompleted = 0;
+        
+        // === Verificar items del inventario normal ===
+        if (PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
         {
-            Debug.LogWarning($"[QuestManager] ❌ No se pudo obtener Inventory");
-            return;
-        }
-        
-        Debug.Log($"[QuestManager] ✅ Inventory encontrado");
-        
-        // Buscar el QuestChainEntry correspondiente en los NPCs registrados
-        var questEntry = FindQuestChainEntry(rq.Id);
-        
-        if (questEntry == null)
-        {
-            Debug.Log($"[QuestManager] ⚠️ No se encontró QuestChainEntry para '{rq.Id}'");
-            return;
-        }
-        
-        if (questEntry.requiredItems == null || questEntry.requiredItems.Length == 0)
-        {
-            Debug.Log($"[QuestManager] ℹ️ Quest '{rq.Id}' no tiene items requeridos");
-            return;
-        }
-        
-        Debug.Log($"[QuestManager] 📦 Quest tiene {questEntry.requiredItems.Length} items requeridos");
-        
-        // 🔍 LOG: Estado del inventario ANTES de verificar
-        foreach (var itemReq in questEntry.requiredItems)
-        {
-            if (itemReq.item != null)
+            Debug.Log($"[QuestManager] ✅ Inventory encontrado");
+            
+            var questEntry = FindQuestChainEntry(rq.Id);
+            if (questEntry != null && questEntry.requiredItems != null && questEntry.requiredItems.Length > 0)
             {
-                int countBefore = inventory.Count(itemReq.item.itemId);
-                Debug.Log($"[QuestManager] 📊 ANTES - Inventario tiene {countBefore} de '{itemReq.item.itemId}'");
+                Debug.Log($"[QuestManager] 📦 Quest tiene {questEntry.requiredItems.Length} items de inventario requeridos");
+                totalStepsCompleted += CheckInventoryItemsForQuest(rq, inventory, questEntry.requiredItems);
             }
         }
+        else
+        {
+            Debug.LogWarning($"[QuestManager] ❌ No se pudo obtener Inventory");
+        }
         
-        // Verificar cada item requerido
+        // === Verificar items del wardrobe ===
+        if (PlayerService.TryGetComponent(out WardrobeInventory wardrobe, includeInactive: true, allowSceneLookup: true))
+        {
+            Debug.Log($"[QuestManager] ✅ WardrobeInventory encontrado");
+            
+            var questEntry = FindQuestChainEntry(rq.Id);
+            if (questEntry != null && questEntry.requiredWardrobeItems != null && questEntry.requiredWardrobeItems.Length > 0)
+            {
+                Debug.Log($"[QuestManager] 👗 Quest tiene {questEntry.requiredWardrobeItems.Length} items de wardrobe requeridos");
+                totalStepsCompleted += CheckWardrobeItemsForQuest(rq, wardrobe, questEntry.requiredWardrobeItems);
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[QuestManager] ⚠️ No se pudo obtener WardrobeInventory");
+        }
+        
+        // Notificar cambios si se completó algún step
+        if (totalStepsCompleted > 0)
+        {
+            Debug.Log($"[QuestManager] ✅ {totalStepsCompleted} steps marcados como completados. Jugador debe volver a hablar con el NPC para completar la quest.");
+            OnQuestsChanged?.Invoke();
+        }
+    }
+    
+    /// <summary>
+    /// Verifica items del inventario para una quest
+    /// </summary>
+    private int CheckInventoryItemsForQuest(RuntimeQuest rq, Inventory inventory, Game.NPC.Modules.ItemRequirement[] requiredItems)
+    {
         int stepsCompleted = 0;
-        foreach (var itemReq in questEntry.requiredItems)
+        
+        foreach (var itemReq in requiredItems)
         {
             if (itemReq.item == null)
                 continue;
             
-            string conditionId = itemReq.GetStepConditionId(); // ✅ Retorna null si stepIndex es válido
+            string conditionId = itemReq.GetStepConditionId();
             
             Debug.Log($"[QuestManager] Verificando item '{itemReq.item.itemId}' (cantidad requerida: {itemReq.amount})");
             Debug.Log($"[QuestManager]   stepIndex: {itemReq.stepIndex}, conditionId: '{conditionId ?? "null (usar index)"}'");
             
-            // Verificar si el jugador tiene suficientes items en el inventario
             int count = inventory.Count(itemReq.item.itemId);
-            
             Debug.Log($"[QuestManager] Jugador tiene {count} de '{itemReq.item.itemId}'");
             
             if (count < itemReq.amount)
@@ -681,83 +699,95 @@ public class QuestManager : MonoBehaviour
             
             Debug.Log($"[QuestManager] ✅ Suficiente! Buscando step asociado...");
             
-            // Buscar el step correspondiente
-            // PRIORIDAD: stepIndex (si conditionId es null) > conditionId > error
-            int stepIdx = -1;
+            int stepIdx = FindStepIndex(rq, conditionId, itemReq.stepIndex);
             
-            if (conditionId == null && itemReq.stepIndex >= 0 && itemReq.stepIndex < rq.Steps.Length)
-            {
-                // Prioridad 1: Usar stepIndex directamente (más simple para quests de un paso)
-                stepIdx = itemReq.stepIndex;
-                Debug.Log($"[QuestManager] ✅ Usando stepIndex directo: {stepIdx}");
-            }
-            else if (!string.IsNullOrEmpty(conditionId))
-            {
-                // Prioridad 2: Buscar por conditionId
-                Debug.Log($"[QuestManager] Buscando step por conditionId: '{conditionId}'");
-                
-                for (int i = 0; i < rq.Steps.Length; i++)
-                {
-                    Debug.Log($"[QuestManager]   Step[{i}].conditionId = '{rq.Steps[i].conditionId}'");
-                    
-                    if (rq.Steps[i].conditionId == conditionId)
-                    {
-                        stepIdx = i;
-                        Debug.Log($"[QuestManager] ✅ Match encontrado en step {i}");
-                        break;
-                    }
-                }
-                
-                if (stepIdx < 0)
-                    Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step con conditionId '{conditionId}'");
-            }
-            else
-            {
-                Debug.LogWarning($"[QuestManager] ⚠️ Item no tiene stepIndex válido ni conditionId");
-            }
-            
-            // Marcar el paso como completado si se encontró y no estaba completado
             if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
             {
                 rq.Steps[stepIdx].completed = true;
                 stepsCompleted++;
-                Debug.Log($"[QuestManager] ✅ Step {stepIdx} marcado como completado");
-            }
-            else if (stepIdx >= 0)
-            {
-                Debug.Log($"[QuestManager] ℹ️ Step {stepIdx} ya estaba completado");
+                Debug.Log($"[QuestManager] ✅ Step {stepIdx} marcado como completado por item de inventario");
             }
         }
         
-        Debug.Log($"[QuestManager] 📊 Total steps completados: {stepsCompleted}");
+        return stepsCompleted;
+    }
+    
+    /// <summary>
+    /// Verifica items del wardrobe para una quest
+    /// </summary>
+    private int CheckWardrobeItemsForQuest(RuntimeQuest rq, WardrobeInventory wardrobe, Game.NPC.Modules.WardrobeItemRequirement[] requiredWardrobeItems)
+    {
+        int stepsCompleted = 0;
         
-        // 🔍 LOG: Estado del inventario DESPUÉS de verificar
-        foreach (var itemReq in questEntry.requiredItems)
+        foreach (var wardrobeReq in requiredWardrobeItems)
         {
-            if (itemReq.item != null)
-            {
-                int countAfter = inventory.Count(itemReq.item.itemId);
-                Debug.Log($"[QuestManager] 📊 DESPUÉS - Inventario tiene {countAfter} de '{itemReq.item.itemId}'");
-            }
-        }
-        
-        // ✅ CORREGIDO: Solo notificar cambios, NO auto-completar la quest
-        // El jugador debe volver a hablar con el NPC para completarla
-        // Esto permite que el diálogo turn in se reproduzca correctamente
-        if (stepsCompleted > 0)
-        {
-            Debug.Log($"[QuestManager] ✅ Steps marcados como completados. Jugador debe volver a hablar con el NPC para completar la quest.");
-            OnQuestsChanged?.Invoke();
+            if (wardrobeReq.item == null)
+                continue;
             
-            // NO completar automáticamente - el NPC lo hará cuando el jugador vuelva a hablar
-            // if (AllStepsCompleted(rq))
-            // {
-            //     Debug.Log($"[QuestManager] 🎉 Todos los steps completados! Auto-completando quest.");
-            //     rq.State = QuestState.Completed;
-            //     OnQuestCompleted?.Invoke(rq.Id);
-            //     ArchiveCompletedQuest(rq.Id);
-            // }
+            string conditionId = wardrobeReq.GetStepConditionId();
+            
+            Debug.Log($"[QuestManager] Verificando item de wardrobe '{wardrobeReq.item.WardrobeId}'");
+            Debug.Log($"[QuestManager]   Category: {wardrobeReq.item.Category}, PartName: {wardrobeReq.item.PartName}");
+            Debug.Log($"[QuestManager]   stepIndex: {wardrobeReq.stepIndex}, conditionId: '{conditionId ?? "null (usar index)"}'");
+            
+            bool hasItem = wardrobe.TryGetEntry(wardrobeReq.item.Category, wardrobeReq.item.PartName, out _);
+            
+            if (!hasItem)
+            {
+                Debug.Log($"[QuestManager] ❌ Jugador no tiene '{wardrobeReq.item.WardrobeId}' desbloqueado");
+                continue;
+            }
+            
+            Debug.Log($"[QuestManager] ✅ Jugador tiene item desbloqueado! Buscando step asociado...");
+            
+            int stepIdx = FindStepIndex(rq, conditionId, wardrobeReq.stepIndex);
+            
+            if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
+            {
+                rq.Steps[stepIdx].completed = true;
+                stepsCompleted++;
+                Debug.Log($"[QuestManager] ✅ Step {stepIdx} marcado como completado por item de wardrobe");
+            }
         }
+        
+        return stepsCompleted;
+    }
+    
+    /// <summary>
+    /// Busca el índice de un step basándose en conditionId o stepIndex
+    /// PRIORIDAD: stepIndex > conditionId
+    /// </summary>
+    private int FindStepIndex(RuntimeQuest rq, string conditionId, int stepIndex)
+    {
+        // Prioridad 1: Usar stepIndex directamente si es válido
+        if (stepIndex >= 0 && stepIndex < rq.Steps.Length && conditionId == null)
+        {
+            Debug.Log($"[QuestManager] ✅ Usando stepIndex directo: {stepIndex}");
+            return stepIndex;
+        }
+        
+        // Prioridad 2: Buscar por conditionId
+        if (!string.IsNullOrEmpty(conditionId))
+        {
+            Debug.Log($"[QuestManager] Buscando step por conditionId: '{conditionId}'");
+            
+            for (int i = 0; i < rq.Steps.Length; i++)
+            {
+                if (rq.Steps[i].conditionId == conditionId)
+                {
+                    Debug.Log($"[QuestManager] ✅ Match encontrado en step {i}");
+                    return i;
+                }
+            }
+            
+            Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step con conditionId '{conditionId}'");
+        }
+        else
+        {
+            Debug.LogWarning($"[QuestManager] ⚠️ Item no tiene stepIndex válido ni conditionId");
+        }
+        
+        return -1;
     }
     
     /// <summary>
@@ -944,6 +974,136 @@ public class QuestManager : MonoBehaviour
             {
                 Debug.Log($"[QuestManager] 🎉 Completando step {stepIdx} de quest '{rq.Id}' por item '{item.itemId}'");
                 MarkStepDone(rq.Id, stepIdx);
+            }
+        }
+    }
+    
+    #endregion
+    
+    #region Wardrobe Item Detection
+    
+    /// <summary>
+    /// Intenta suscribirse al evento OnWardrobeChanged del wardrobe del jugador.
+    /// Se llama automáticamente cuando el jugador está disponible.
+    /// </summary>
+    private void TrySubscribeToWardrobe()
+    {
+        if (_isSubscribedToWardrobe) return;
+        
+        if (!PlayerService.TryGetComponent(out WardrobeInventory wardrobe, includeInactive: true, allowSceneLookup: true))
+        {
+            // El wardrobe no está disponible todavía, se intentará más tarde
+            return;
+        }
+        
+        _cachedWardrobe = wardrobe;
+        _cachedWardrobe.OnWardrobeChanged += OnWardrobeChanged;
+        _isSubscribedToWardrobe = true;
+        Debug.Log("[QuestManager] ✅ Suscrito a WardrobeInventory.OnWardrobeChanged para detectar items de wardrobe de quests");
+    }
+    
+    /// <summary>
+    /// Desuscribirse del wardrobe al deshabilitarse
+    /// </summary>
+    private void UnsubscribeFromWardrobe()
+    {
+        if (!_isSubscribedToWardrobe || _cachedWardrobe == null) return;
+        
+        _cachedWardrobe.OnWardrobeChanged -= OnWardrobeChanged;
+        _isSubscribedToWardrobe = false;
+        _cachedWardrobe = null;
+        Debug.Log("[QuestManager] Desuscrito de WardrobeInventory.OnWardrobeChanged");
+    }
+    
+    /// <summary>
+    /// Callback cuando cambia el wardrobe del jugador.
+    /// Verifica si alguna quest activa requiere items del wardrobe.
+    /// </summary>
+    private void OnWardrobeChanged()
+    {
+        // Solo procesar si hay quests activas
+        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
+        if (activeQuests.Count == 0) return;
+        
+        Debug.Log($"[QuestManager] 👗 Wardrobe cambió - Verificando {activeQuests.Count} quests activas...");
+        
+        // Verificar cada quest activa para ver si alguna requiere items del wardrobe
+        foreach (var rq in activeQuests)
+        {
+            CheckWardrobeForQuest(rq);
+        }
+    }
+    
+    /// <summary>
+    /// Verifica si el wardrobe del jugador cumple algún requisito de una quest.
+    /// </summary>
+    private void CheckWardrobeForQuest(RuntimeQuest rq)
+    {
+        if (_cachedWardrobe == null) return;
+        
+        // Buscar el QuestChainEntry para obtener los requiredItems
+        var questEntry = FindQuestChainEntry(rq.Id);
+        if (questEntry == null || questEntry.requiredWardrobeItems == null || questEntry.requiredWardrobeItems.Length == 0)
+            return;
+        
+        Debug.Log($"[QuestManager] 🔍 Quest '{rq.Id}' requiere {questEntry.requiredWardrobeItems.Length} items de wardrobe");
+        
+        foreach (var wardrobeReq in questEntry.requiredWardrobeItems)
+        {
+            if (wardrobeReq.item == null) continue;
+            
+            Debug.Log($"[QuestManager] 🎯 Verificando item de wardrobe '{wardrobeReq.item.WardrobeId}' (Category: {wardrobeReq.item.Category}, PartName: {wardrobeReq.item.PartName})");
+            
+            // Verificar si el jugador tiene este item desbloqueado
+            bool hasItem = _cachedWardrobe.TryGetEntry(wardrobeReq.item.Category, wardrobeReq.item.PartName, out _);
+            
+            if (!hasItem)
+            {
+                Debug.Log($"[QuestManager] ❌ Jugador no tiene '{wardrobeReq.item.WardrobeId}' desbloqueado");
+                continue;
+            }
+            
+            Debug.Log($"[QuestManager] ✅ Jugador tiene '{wardrobeReq.item.WardrobeId}' desbloqueado");
+            
+            // Buscar el step correspondiente
+            // PRIORIDAD: stepIndex (si conditionId es null) > conditionId
+            int stepIdx = -1;
+            string conditionId = wardrobeReq.GetStepConditionId(); // ✅ Retorna null si stepIndex es válido
+            
+            if (conditionId == null && wardrobeReq.stepIndex >= 0 && wardrobeReq.stepIndex < rq.Steps.Length)
+            {
+                // Prioridad 1: Usar stepIndex directamente
+                stepIdx = wardrobeReq.stepIndex;
+                Debug.Log($"[QuestManager] Usando stepIndex directo: {stepIdx}");
+            }
+            else if (!string.IsNullOrEmpty(conditionId))
+            {
+                // Prioridad 2: Buscar por conditionId
+                Debug.Log($"[QuestManager] Buscando step con conditionId: '{conditionId}'");
+                for (int i = 0; i < rq.Steps.Length; i++)
+                {
+                    if (rq.Steps[i].conditionId == conditionId)
+                    {
+                        stepIdx = i;
+                        Debug.Log($"[QuestManager] ✅ Step encontrado en índice {i}");
+                        break;
+                    }
+                }
+            }
+            
+            // Completar el paso si se encontró y no estaba completado
+            if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
+            {
+                Debug.Log($"[QuestManager] 🎉 Completando step {stepIdx} de quest '{rq.Id}' por item de wardrobe '{wardrobeReq.item.WardrobeId}'");
+                MarkStepDone(rq.Id, stepIdx);
+            }
+            else if (stepIdx < 0)
+            {
+                Debug.LogWarning($"[QuestManager] ⚠️ No se encontró step válido para item de wardrobe '{wardrobeReq.item.WardrobeId}'");
+            }
+            else
+            {
+                Debug.Log($"[QuestManager] ℹ️ Step {stepIdx} ya estaba completado");
             }
         }
     }

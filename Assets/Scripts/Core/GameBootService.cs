@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -100,11 +100,18 @@ public class GameBootService : MonoBehaviour
 
         bool initialized = false;
 
-        // 1) MODO TESTING: El preset de testeo tiene PRIORIDAD ABSOLUTA - ignora saves completamente
+        // 1) MODO TESTING: El preset de testeo actúa COMO SI FUERA una partida cargada
+        // Aplica TODOS los sistemas (quests, NPCs, blackboards, etc.) como LoadProfile()
         if (profile.ShouldBootFromPreset())
         {
             profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-            // Debug.Log("[GameBootService] Inicializado desde bootPreset (testing) - SAVE IGNORADO");
+            
+            // ✅ CRÍTICO: Aplicar el preset de testeo usando la misma lógica que LoadProfile
+            // Esto asegura que TODOS los sistemas se inicialicen correctamente
+            ApplyPresetAsLoadedGame(profile);
+            
+            // Solo log en modo testing (útil para debug)
+            Debug.Log("[GameBootService] ✅ Inicializado desde bootPreset (testing mode) - Aplicados todos los sistemas como si fuera una partida cargada");
             initialized = true;
         }
         // 2) Intentar cargar partida si existe (SOLO si NO hay preset de testeo)
@@ -112,7 +119,7 @@ public class GameBootService : MonoBehaviour
         {
             if (profile.LoadProfile(saveSystem))
             {
-                Debug.Log("[GameBootService] Inicializado desde SAVE");
+                // Log eliminado - carga normal no necesita log
                 initialized = true;
             }
         }
@@ -123,7 +130,7 @@ public class GameBootService : MonoBehaviour
             if (profile.defaultPlayerPreset)
             {
                 profile.EnsureRuntimePresetFromTemplate(profile.defaultPlayerPreset);
-                Debug.Log("[GameBootService] Inicializado desde defaultPlayerPreset");
+                // Log eliminado - inicialización normal no necesita log
             }
             else
             {
@@ -140,11 +147,75 @@ public class GameBootService : MonoBehaviour
         }
         
         // === reconstruir estados del QuestManager desde flags del perfil ===
-        var qm = QuestManager.Instance;
-        if (qm != null && p != null)
+        // NOTA: Esto ya se hace en ApplyPresetAsLoadedGame() para modo testing,
+        // pero lo dejamos aquí para el caso de defaultPlayerPreset
+        if (!profile.ShouldBootFromPreset())
         {
-            qm.RestoreFromProfileFlags(p.flags);
+            var qm = QuestManager.Instance;
+            if (qm != null && p != null)
+            {
+                qm.RestoreFromProfileFlags(p.flags);
+            }
         }
+    }
+    
+    /// <summary>
+    /// Aplica un preset como si fuera una partida cargada, inicializando TODOS los sistemas.
+    /// Esto incluye: quests, NPCs, blackboards, bosses, spawn anchor, etc.
+    /// </summary>
+    private void ApplyPresetAsLoadedGame(GameBootProfile profile)
+    {
+        var preset = profile.GetActivePresetResolved();
+        if (preset == null) return;
+        
+        Debug.Log($"[GameBootService] 🎮 Aplicando preset de testeo como partida cargada...");
+        
+        // 1. Restaurar anchor de spawn
+        if (!string.IsNullOrEmpty(preset.spawnAnchorId))
+        {
+            SpawnManager.SetCurrentAnchor(preset.spawnAnchorId);
+            Debug.Log($"[GameBootService]   ✅ Spawn anchor: {preset.spawnAnchorId}");
+        }
+        
+        // 2. Restaurar progreso de bosses
+        if (BossProgressTracker.TryGetInstance(out var tracker))
+        {
+            tracker.LoadFromSnapshot(preset.defeatedBossIds);
+            Debug.Log($"[GameBootService]   ✅ Bosses derrotados: {preset.defeatedBossIds?.Count ?? 0}");
+        }
+        
+        // 3. Restaurar estado de quests desde flags
+        var questManager = QuestManager.Instance;
+        if (questManager != null)
+        {
+            questManager.RestoreFromProfileFlags(preset.flags);
+            Debug.Log($"[GameBootService]   ✅ Quests restauradas desde {preset.flags?.Count ?? 0} flags");
+        }
+        
+        // 4. Aplicar posiciones de NPCs
+        profile.ApplyNpcPositionsToScene(preset);
+        Debug.Log($"[GameBootService]   ✅ Posiciones de NPCs: {preset.npcPositions?.Count ?? 0}");
+        
+        // 5. Resetear sistema de narrativas para el perfil cargado
+        NarrativeAutoSetup.ResetForLoadedProfile();
+        
+        // 6. Limpiar registro de narrativas interactivas para que se re-registren
+        Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
+        Debug.Log($"[GameBootService]   ✅ NPCInteractiveNarrativeRegistry limpiado");
+        
+        // 7. Restaurar blackboards narrativos si existen
+        if (preset.narrativeBlackboards != null && preset.narrativeBlackboards.Count > 0)
+        {
+            var hub = NarrativeGraphHub.Instance;
+            if (hub != null)
+            {
+                // TODO: Implementar restauración de blackboards desde preset
+                // hub.RestoreBlackboards(preset.narrativeBlackboards);
+                Debug.Log($"[GameBootService]   ⚠️ Blackboards narrativos en preset: {preset.narrativeBlackboards.Count} (restauración pendiente)");
+            }
+        }
+        
+        Debug.Log($"[GameBootService] 🎮 Preset de testeo aplicado como partida cargada - Sistema completo inicializado");
     }
     
     /// <summary>

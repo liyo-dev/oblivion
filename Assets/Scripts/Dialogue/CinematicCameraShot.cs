@@ -81,13 +81,13 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.Wide => 1.0f,           // Vista general - altura media (antes: 1.5f)
-            DialogueShotType.MediumNPC => 0.95f,     // Medium shot - altura de cara/ojos (antes: 1.35f)
-            DialogueShotType.CloseUpNPC => 1.05f,    // Close-up - ligeramente más alto (antes: 1.45f)
-            DialogueShotType.OverShoulderPlayer => 1.0f,  // Altura de hombros (antes: 1.4f)
-            DialogueShotType.OverShoulderNPC => 1.0f,     // Altura de hombros (antes: 1.4f)
-            DialogueShotType.Profile => 1.0f,        // Altura de cara para perfil (antes: 1.4f)
-            _ => 0.95f                                // Por defecto (antes: 1.35f)
+            DialogueShotType.Wide => 1.0f,           // Vista general - altura media
+            DialogueShotType.MediumNPC => 0.95f,     // Medium shot - altura de cara/ojos
+            DialogueShotType.CloseUpNPC => 1.05f,    // Close-up - ligeramente más alto
+            DialogueShotType.OverShoulderPlayer => 1.4f,  // Altura ajustada para vista óptima sobre el hombro
+            DialogueShotType.OverShoulderNPC => 1.0f,     // Altura de hombros
+            DialogueShotType.Profile => 1.0f,        // Altura de cara para perfil
+            _ => 0.95f                                // Por defecto
         };
     }
     

@@ -24,7 +24,6 @@ MonoBehaviour:
   - rid: 4128268764951085534
   - rid: 5623891259268006347
   - rid: 5623891431555334813
-  - rid: 5623891431555335063
   - rid: 5623891444353466616
   - rid: 857239824104947715
   - rid: 857239824104947716
@@ -128,7 +127,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
-        position: {x: 2.9999847, y: 595}
+        position: {x: 3, y: 595}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
@@ -157,7 +156,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 2caf285b-fdb8-4361-8176-192475b9c678
-        position: {x: 3, y: 873.7002}
+        position: {x: 3, y: 874}
         outputs:
         - 4010d494-e518-45bb-9852-29a412777758
         questId: ELDRAN_MISSION5
@@ -171,7 +170,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4010d494-e518-45bb-9852-29a412777758
-        position: {x: -6.4582596, y: 1097.9999}
+        position: {x: -6, y: 1098}
         outputs: []
         questId: ELDRAN_MISSION5_2
     - rid: 4128268622357594630
@@ -318,24 +317,6 @@ MonoBehaviour:
         outputs:
         - 56879a1a-c46a-4bab-a132-eab0b6cbaead
         eventKey: ADD_CLOAK
-    - rid: 5623891431555335063
-      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: SE COMPLETA EL PASO 1
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: a2f041b9-7d2d-4ebd-9d01-767f08b00e21
-        position: {x: 1636, y: 290}
-        outputs:
-        - fe467d0d-ec2b-40a3-bee0-ac728d838d3e
-        questId: ELDRAN_MISSION5
-        stepConditionIds:
-        - QUEST_ELDRAN_MISSION5_STEP_00
-        steps: 00000000
-        completeQuest: 0
-        logWarnings: 0
     - rid: 5623891444353466616
       type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
       data:
@@ -346,7 +327,6 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 56879a1a-c46a-4bab-a132-eab0b6cbaead
         position: {x: 1052, y: 441}
-        outputs:
-        - a2f041b9-7d2d-4ebd-9d01-767f08b00e21
+        outputs: []
         wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
         logWarnings: 1

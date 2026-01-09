@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -36,6 +36,9 @@ namespace Game.NPC.Modules
         [Header("Verificación de Inventario")]
         [Tooltip("Lista de items requeridos en el inventario. Cada item se asocia a un step de la quest.")]
         public ItemRequirement[] requiredItems = System.Array.Empty<ItemRequirement>();
+        
+        [Tooltip("Lista de items de wardrobe requeridos. Cada item se asocia a un step de la quest.")]
+        public WardrobeItemRequirement[] requiredWardrobeItems = System.Array.Empty<WardrobeItemRequirement>();
 
         [Header("Diálogos")]
         [Tooltip("Diálogo antes de aceptar la quest.")]
@@ -183,5 +186,44 @@ namespace Game.NPC.Modules
             return "";
         }
     }
+    
+    /// <summary>
+    /// Requisito de item del wardrobe para una quest
+    /// </summary>
+    [Serializable]
+    public class WardrobeItemRequirement
+    {
+        [Tooltip("El item de wardrobe requerido")]
+        public WardrobeItemSO item;
+        
+        [Tooltip("ID de la condición del step de la quest. OPCIONAL - Si se deja vacío y stepIndex >= 0, se usa el índice directamente. Se auto-genera solo si ambos están vacíos.")]
+        public string stepConditionId = "";
+        
+        [Tooltip("Índice del step de la quest que corresponde a este item. Si es >= 0, se usa directamente sin necesidad de Condition Id.")]
+        public int stepIndex = -1;
+        
+        /// <summary>
+        /// Obtiene el stepConditionId, auto-generándolo si está vacío Y stepIndex no es válido
+        /// PRIORIDAD: stepIndex > conditionId manual > auto-generado
+        /// </summary>
+        public string GetStepConditionId()
+        {
+            // Prioridad 1: Si stepIndex es válido, retornar null para indicar que se use el índice
+            if (stepIndex >= 0)
+                return null; // Indica al sistema que use stepIndex directamente
+            
+            // Prioridad 2: Usar el valor manual si existe
+            if (!string.IsNullOrEmpty(stepConditionId))
+                return stepConditionId;
+            
+            // Prioridad 3: Auto-generar basado en WardrobeId (solo si stepIndex no es válido)
+            if (item != null && !string.IsNullOrEmpty(item.WardrobeId))
+                return $"WARDROBE_{item.WardrobeId}";
+            
+            return "";
+        }
+    }
 }
+
+
 

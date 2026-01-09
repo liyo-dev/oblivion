@@ -64,7 +64,7 @@ MonoBehaviour:
     narrativeEventKey: 
     debugMode: 0
   - description: 
-    priority: 0
+    priority: 1
     condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
@@ -123,3 +123,4 @@ MonoBehaviour:
   alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
+  enableDetailedLogs: 0

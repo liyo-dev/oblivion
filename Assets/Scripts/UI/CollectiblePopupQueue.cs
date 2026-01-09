@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿﻿﻿using UnityEngine;
 
 // Necesario para feedback de desbloqueo de vestuario
 using System; // solo para Serializable wrappers si se requieren en el futuro
@@ -51,7 +51,7 @@ public class CollectiblePopupQueue : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log("[CollectiblePopupQueue] Awake: trying to bind to player inventory...");
+        // Log eliminado - binding normal no necesita log
         PlayerPresetService.OnPresetApplying += HandlePresetApplying;
         PlayerPresetService.OnPresetApplied += HandlePresetApplied;
         _popupsEnabled = false;
