@@ -81,13 +81,13 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.Wide => 1.8f,           // Aumentado de 1.6f
-            DialogueShotType.MediumNPC => 0.7f,      // Ajustado a 0.7f según solicitud
-            DialogueShotType.CloseUpNPC => 1.75f,    // Aumentado de 1.6f
-            DialogueShotType.OverShoulderPlayer => 1.7f, // Aumentado de 1.5f
-            DialogueShotType.OverShoulderNPC => 1.7f,    // Aumentado de 1.5f
-            DialogueShotType.Profile => 1.8f,       // Aumentado de 1.6f
-            _ => 1.7f
+            DialogueShotType.Wide => 1.5f,           // Vista general - altura media
+            DialogueShotType.MediumNPC => 1.35f,     // Medium shot - altura de cara/ojos (balance perfecto)
+            DialogueShotType.CloseUpNPC => 1.45f,    // Close-up - ligeramente más alto para ver bien la cara
+            DialogueShotType.OverShoulderPlayer => 1.4f,  // Altura de hombros
+            DialogueShotType.OverShoulderNPC => 1.4f,     // Altura de hombros
+            DialogueShotType.Profile => 1.4f,        // Altura de cara para perfil
+            _ => 1.35f                                // Por defecto, altura de cara
         };
     }
     
@@ -116,10 +116,10 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.CloseUpNPC => Vector3.up * 1.7f,  // Aumentado de 1.6f - mirar a la cara
-            DialogueShotType.Wide => Vector3.up * 1.4f,       // Aumentado de 1.2f
-            DialogueShotType.MediumNPC => Vector3.up * 1.65f, // Añadido - mirar a la cara
-            _ => Vector3.up * 1.6f                            // Aumentado de 1.5f
+            DialogueShotType.CloseUpNPC => Vector3.up * 1.20f,  // Cara completa (antes: 1.25f, -0.05m)
+            DialogueShotType.Wide => Vector3.up * 1.15f,        // Altura media (antes: 1.2f)
+            DialogueShotType.MediumNPC => Vector3.up * 1.10f,   // Centro de cara (antes: 1.15f, -0.05m)
+            _ => Vector3.up * 1.10f                             // Por defecto (antes: 1.15f, -0.05m)
         };
     }
     

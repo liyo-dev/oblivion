@@ -53,7 +53,7 @@ public class GameBootService : MonoBehaviour
         // Suscribirse a eventos de carga de escena para reforzar el preset de testeo
         SceneManager.sceneLoaded += OnSceneLoaded;
         
-        Debug.Log($"[GameBootService] GameBootProfile '{bootProfile.name}' cacheado y servicio persistente.");
+        // Debug.Log($"[GameBootService] GameBootProfile '{bootProfile.name}' cacheado y servicio persistente.");
 
         // Preparar el runtimePreset según reglas: preset de test -> save -> default
         PrepareActivePreset();
@@ -86,7 +86,7 @@ public class GameBootService : MonoBehaviour
                 }
             }
             
-            Debug.Log($"[GameBootService] Escena '{scene.name}' cargada → Reforzando bootPreset completo (modo testing - save ignorado)");
+            // Debug.Log($"[GameBootService] Escena '{scene.name}' cargada → Reforzando bootPreset completo (modo testing - save ignorado)");
         }
     }
 
@@ -104,7 +104,7 @@ public class GameBootService : MonoBehaviour
         if (profile.ShouldBootFromPreset())
         {
             profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-            Debug.Log("[GameBootService] Inicializado desde bootPreset (testing) - SAVE IGNORADO");
+            // Debug.Log("[GameBootService] Inicializado desde bootPreset (testing) - SAVE IGNORADO");
             initialized = true;
         }
         // 2) Intentar cargar partida si existe (SOLO si NO hay preset de testeo)
@@ -136,7 +136,7 @@ public class GameBootService : MonoBehaviour
         var p = profile.GetActivePresetResolved();
         if (p)
         {
-            Debug.Log($"[GameBootService] RuntimePreset listo → Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}, Slots: L:{p.leftSpellId} R:{p.rightSpellId} S:{p.specialSpellId}");
+            // Debug.Log($"[GameBootService] RuntimePreset listo → Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}, Slots: L:{p.leftSpellId} R:{p.rightSpellId} S:{p.specialSpellId}");
         }
         
         // === reconstruir estados del QuestManager desde flags del perfil ===

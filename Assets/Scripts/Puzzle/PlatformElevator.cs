@@ -65,7 +65,7 @@ public class PlatformElevator : MonoBehaviour
             _originalPosition = _raisedPosition - Vector3.up * raiseHeight; // Recalcular posición original
         }
         
-        Debug.Log($"[PlatformElevator] {name} - Inicializado. Original: {_originalPosition}, Raised: {_raisedPosition}, Current: {transform.position}, IsRaised: {isRaised}");
+        // Debug.Log($"[PlatformElevator] {name} - Inicializado. Original: {_originalPosition}, Raised: {_raisedPosition}, Current: {transform.position}, IsRaised: {isRaised}");
     }
 
     /// <summary>

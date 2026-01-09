@@ -140,7 +140,7 @@ namespace Game.NPC.Common
         {
             if (alertPrefab != null)
             {
-                Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de alerta");
+                // Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de alerta");
                 ShowAlertIcon(alertPrefab, duration);
             }
             else
@@ -156,7 +156,7 @@ namespace Game.NPC.Common
         {
             if (questionPrefab != null)
             {
-                Debug.Log($"[NPCAlertIcon:{name}] ❓ Mostrando icono de interrogación (buscando)");
+                // Debug.Log($"[NPCAlertIcon:{name}] ❓ Mostrando icono de interrogación (buscando)");
                 ShowAlertIcon(questionPrefab, duration);
             }
             else
@@ -180,7 +180,7 @@ namespace Game.NPC.Common
         {
             if (exclamationPrefab != null)
             {
-                Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de admiración (¡encontrado!)");
+                // Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de admiración (¡encontrado!)");
                 ShowAlertIcon(exclamationPrefab, duration);
             }
             else
@@ -210,7 +210,7 @@ namespace Game.NPC.Common
             HideAlertIcon(); // Limpiar icono anterior si existe
             
             _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
-            Debug.Log($"[NPCAlertIcon:{name}] 📍 Mostrando icono persistente");
+            // Debug.Log($"[NPCAlertIcon:{name}] 📍 Mostrando icono persistente");
         }
         
         /// <summary>

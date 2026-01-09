@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Collections;
+﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 
 namespace Invector.vCharacterController
@@ -382,7 +382,7 @@ namespace Invector.vCharacterController
             }
 
             // Log diagnóstico para ayudar a verificar en consola si el controller encontró el caster
-            Debug.Log($"[vThirdPersonController] MagicCaster detected -> interface={( _magicCasterInterface != null ? "yes" : "no" )}, mb={( _magicCasterMB != null ? _magicCasterMB.GetType().Name : "no" )}");
+            //Debug.Log($"[vThirdPersonController] MagicCaster detected -> interface={( _magicCasterInterface != null ? "yes" : "no" )}, mb={( _magicCasterMB != null ? _magicCasterMB.GetType().Name : "no" )}");
         }
 
         public virtual bool CanAttack() => isGrounded && !isJumping && !stopMove;

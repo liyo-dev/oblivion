@@ -24,7 +24,7 @@ public class ShopVendor : MonoBehaviour
         {
             // Suscribirse a OnFinished: se dispara cuando el diálogo termina
             _interactable.OnFinished.AddListener(OnDialogueFinished);
-            Debug.Log($"[ShopVendor] Subscribed to Interactable.OnFinished on {_interactable.gameObject.name}");
+            // Debug.Log($"[ShopVendor] Subscribed to Interactable.OnFinished on {_interactable.gameObject.name}");
         }
         else
         {

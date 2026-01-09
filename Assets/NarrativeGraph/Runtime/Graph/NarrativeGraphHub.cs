@@ -66,7 +66,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             if (!_runnersByLabel.ContainsKey(slot.label ?? string.Empty))
                 _runnersByLabel.Add(slot.label ?? string.Empty, runner);
 
-            Debug.Log($"[NarrativeGraphHub] Grafo '{slot.label}' registrado.");
+            // Debug.Log($"[NarrativeGraphHub] Grafo '{slot.label}' registrado.");
         }
 
         if (signals == null)
@@ -117,7 +117,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
 
             if (!GraphAppliesToScene(slot.graph, sceneName))
             {
-                Debug.Log($"[NarrativeGraphHub] Validación de '{label}' omitida: escena '{sceneName}' fuera del alcance configurado.");
+                // Debug.Log($"[NarrativeGraphHub] Validación de '{label}' omitida: escena '{sceneName}' fuera del alcance configurado.");
                 continue;
             }
 
@@ -154,7 +154,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             if (runner.Blackboard != null)
             {
                 runner.Blackboard.Clear();
-                Debug.Log($"[NarrativeGraphHub] Blackboard limpiado: {runner.name}");
+                // Debug.Log($"[NarrativeGraphHub] Blackboard limpiado: {runner.name}");
             }
         }
     }
@@ -172,7 +172,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
         }
         
         runner.StartFromStartNode();
-        Debug.Log($"[NarrativeGraphHub] Grafo '{label}' iniciado.");
+        // Debug.Log($"[NarrativeGraphHub] Grafo '{label}' iniciado.");
     }
     
     /// <summary>
@@ -193,7 +193,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
     {
         var snapshots = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         
-        Debug.Log($"[NarrativeGraphHub] CaptureBlackboards - revisando {_runnersByLabel.Count} runners registrados");
+        // Debug.Log($"[NarrativeGraphHub] CaptureBlackboards - revisando {_runnersByLabel.Count} runners registrados");
         
         foreach (var kvp in _runnersByLabel)
         {
@@ -202,7 +202,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
             
             if (runner == null || runner.Blackboard == null)
             {
-                Debug.LogWarning($"[NarrativeGraphHub] Runner '{label}' o su Blackboard es null - saltando");
+                // Debug.LogWarning($"[NarrativeGraphHub] Runner '{label}' o su Blackboard es null - saltando");
                 continue;
             }
             
@@ -218,7 +218,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                     currentNodeName = $"{node.GetType().Name}";
             }
 
-            Debug.Log($"[NarrativeGraphHub] Runner '{label}' - blackboard tiene {(blackboardData != null ? blackboardData.Count : 0)} entradas | Nodo actual: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
+            // Debug.Log($"[NarrativeGraphHub] Runner '{label}' - blackboard tiene {(blackboardData != null ? blackboardData.Count : 0)} entradas | Nodo actual: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
             
             // Solo guardar si hay datos en el blackboard
             if (blackboardData != null && blackboardData.Count > 0)
@@ -229,11 +229,11 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                     blackboardData = blackboardData
                 });
                 
-                Debug.Log($"[NarrativeGraphHub] ✅ Snapshot añadido para '{label}' (nodo: {currentNodeName})");
+                // Debug.Log($"[NarrativeGraphHub] ✅ Snapshot añadido para '{label}' (nodo: {currentNodeName})");
             }
         }
         
-        Debug.Log($"[NarrativeGraphHub] Capturados {snapshots.Count} blackboards con estado");
+        // Debug.Log($"[NarrativeGraphHub] Capturados {snapshots.Count} blackboards con estado");
         return snapshots;
     }
     
@@ -244,11 +244,11 @@ public sealed class NarrativeGraphHub : MonoBehaviour
     {
         if (snapshots == null || snapshots.Count == 0)
         {
-            Debug.Log("[NarrativeGraphHub] No hay blackboards guardados para restaurar");
+            // Debug.Log("[NarrativeGraphHub] No hay blackboards guardados para restaurar");
             return;
         }
         
-        Debug.Log($"[NarrativeGraphHub] RestoreBlackboards llamado con {snapshots.Count} snapshot(s)");
+        // Debug.Log($"[NarrativeGraphHub] RestoreBlackboards llamado con {snapshots.Count} snapshot(s)");
         
         int restored = 0;
         foreach (var snapshot in snapshots)
@@ -259,7 +259,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                 continue;
             }
             
-            Debug.Log($"[NarrativeGraphHub] Intentando restaurar '{snapshot.graphLabel}' con {(snapshot.blackboardData != null ? snapshot.blackboardData.Count : 0)} entradas");
+            // Debug.Log($"[NarrativeGraphHub] Intentando restaurar '{snapshot.graphLabel}' con {(snapshot.blackboardData != null ? snapshot.blackboardData.Count : 0)} entradas");
             
             var runner = GetRunner(snapshot.graphLabel);
             if (runner == null)
@@ -287,10 +287,10 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                     currentNodeName = $"{node.GetType().Name}";
             }
 
-            Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
+            // Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
         }
 
-        Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
+        // Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
     }
 
     static string ShortGuid(string guid)

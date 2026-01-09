@@ -96,20 +96,20 @@ public class PlayerLevitationController : MonoBehaviour
         
         if (showDebugLogs)
         {
-            Debug.Log($"[PlayerLevitationController] Inicializado:");
-            Debug.Log($"  - MagicCaster: {(magicCaster ? "OK" : "MISSING")}");
-            Debug.Log($"  - ManaPool: {(manaPool ? "OK" : "MISSING")}");
-            Debug.Log($"  - Animator: {(animator ? "OK" : "MISSING")}");
-            Debug.Log($"  - Left Spell: {(leftSpell ? leftSpell.displayName : "None")} (Levitation: {hasLevitationLeft})");
-            Debug.Log($"  - Right Spell: {(rightSpell ? rightSpell.displayName : "None")} (Levitation: {hasLevitationRight})");
-            Debug.Log($"  - Reflexión InputReader: {(_gamepadReaderType != null ? "OK" : "FAILED")}");
-            Debug.Log($"  - LeftHeldProp: {(_leftHeldProp != null ? "OK" : "MISSING")}");
-            Debug.Log($"  - RightHeldProp: {(_rightHeldProp != null ? "OK" : "MISSING")}");
+            //Debug.Log($"[PlayerLevitationController] Inicializado:");
+            //Debug.Log($"  - MagicCaster: {(magicCaster ? "OK" : "MISSING")}");
+            //Debug.Log($"  - ManaPool: {(manaPool ? "OK" : "MISSING")}");
+            //Debug.Log($"  - Animator: {(animator ? "OK" : "MISSING")}");
+            //Debug.Log($"  - Left Spell: {(leftSpell ? leftSpell.displayName : "None")} (Levitation: {hasLevitationLeft})");
+            //Debug.Log($"  - Right Spell: {(rightSpell ? rightSpell.displayName : "None")} (Levitation: {hasLevitationRight})");
+            //Debug.Log($"  - Reflexión InputReader: {(_gamepadReaderType != null ? "OK" : "FAILED")}");
+            //Debug.Log($"  - LeftHeldProp: {(_leftHeldProp != null ? "OK" : "MISSING")}");
+            //Debug.Log($"  - RightHeldProp: {(_rightHeldProp != null ? "OK" : "MISSING")}");
         }
         
         // Contar LevitationTargets en la escena
         var targets = FindObjectsByType<LevitationTarget>(FindObjectsSortMode.None);
-        if (showDebugLogs) Debug.Log($"[PlayerLevitationController] LevitationTargets en escena: {targets.Length}");
+        //if (showDebugLogs) Debug.Log($"[PlayerLevitationController] LevitationTargets en escena: {targets.Length}");
     }
     
     void InitializeReflection()

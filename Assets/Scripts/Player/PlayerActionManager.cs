@@ -80,8 +80,8 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             _allowMagic = true;
         }
 
-        if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Fly={_allowFly} Magic={_allowMagic}");
-        else Debug.Log($"[PlayerActionManager] Abilities applied: Fly={_allowFly}");
+        //if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Fly={_allowFly} Magic={_allowMagic}");
+        //else Debug.Log($"[PlayerActionManager] Abilities applied: Fly={_allowFly}");
     }
 
     // Opcional: getters públicos si otros sistemas necesitan consultarlos

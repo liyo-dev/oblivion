@@ -158,7 +158,7 @@ public class PlayerHealthSystem : MonoBehaviour
             _isDead = _currentHp <= 0;
             _lastNotifiedHealth = _currentHp;
             
-            Debug.Log($"[PlayerHealthSystem] Inicializado con vida: {_currentHp:0.1f}/{_maxHp:0.1f} ({HealthPercentage:P1}) - Estado: {(_isDead ? "MUERTO" : "VIVO")}");
+            // Debug.Log($"[PlayerHealthSystem] Inicializado con vida: {_currentHp:0.1f}/{_maxHp:0.1f} ({HealthPercentage:P1}) - Estado: {(_isDead ? "MUERTO" : "VIVO")}");
         }
         else
         {

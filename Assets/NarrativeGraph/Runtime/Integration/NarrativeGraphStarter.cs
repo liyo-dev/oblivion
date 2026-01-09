@@ -70,15 +70,15 @@ public class NarrativeGraphStarter : MonoBehaviour
     {
         if (requireActiveScene && SceneManager.GetActiveScene() != gameObject.scene)
         {
-            if (logDebug)
-                Debug.Log($"[NarrativeGraphStarter] Escena '{gameObject.scene.name}' no es la activa. Inicio de grafos omitido.");
+            // if (logDebug)
+            //     Debug.Log($"[NarrativeGraphStarter] Escena '{gameObject.scene.name}' no es la activa. Inicio de grafos omitido.");
             return;
         }
 
         if (graphLabels == null || graphLabels.Length == 0)
         {
-            if (logDebug)
-                Debug.LogWarning("[NarrativeGraphStarter] No hay grafos configurados para iniciar.");
+            // if (logDebug)
+            //     Debug.LogWarning("[NarrativeGraphStarter] No hay grafos configurados para iniciar.");
             return;
         }
 
@@ -92,15 +92,15 @@ public class NarrativeGraphStarter : MonoBehaviour
         // Restaurar blackboards guardados si existen (desde el preset)
         RestoreBlackboardsFromPreset(hub);
 
-        if (logDebug)
-            Debug.Log($"[NarrativeGraphStarter] Iniciando {graphLabels.Length} grafo(s) en escena '{gameObject.scene.name}'");
+        // if (logDebug)
+        //     Debug.Log($"[NarrativeGraphStarter] Iniciando {graphLabels.Length} grafo(s) en escena '{gameObject.scene.name}'");
 
         foreach (var label in graphLabels)
         {
             if (string.IsNullOrEmpty(label))
             {
-                if (logDebug)
-                    Debug.LogWarning("[NarrativeGraphStarter] Etiqueta vacía en la lista, saltando...");
+                // if (logDebug)
+                //     Debug.LogWarning("[NarrativeGraphStarter] Etiqueta vacía en la lista, saltando...");
                 continue;
             }
 
@@ -117,43 +117,43 @@ public class NarrativeGraphStarter : MonoBehaviour
     {
         if (!GameBootService.IsAvailable)
         {
-            if (logDebug)
-                Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
+            // if (logDebug)
+            //     Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
             return;
         }
 
         var profile = GameBootService.Profile;
         if (profile == null)
         {
-            if (logDebug)
-                Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
+            // if (logDebug)
+            //     Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
             return;
         }
 
         var preset = profile.GetActivePresetResolved();
         if (preset == null)
         {
-            if (logDebug)
-                Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
+            // if (logDebug)
+            //     Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
             return;
         }
 
         if (preset.narrativeBlackboards == null)
         {
-            if (logDebug)
-                Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
+            // if (logDebug)
+            //     Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
             return;
         }
 
         if (preset.narrativeBlackboards.Count == 0)
         {
-            if (logDebug)
-                Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
+            // if (logDebug)
+            //     Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
             return;
         }
 
-        if (logDebug)
-            Debug.Log($"[NarrativeGraphStarter] Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
+        // if (logDebug)
+        //     Debug.Log($"[NarrativeGraphStarter] Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
 
         hub.RestoreBlackboards(preset.narrativeBlackboards);
     }

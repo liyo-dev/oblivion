@@ -64,7 +64,7 @@ namespace Game.NPC
             {
                 _damageable.OnDamaged += OnFirstDamage;
                 _isSubscribed = true;
-                Debug.Log($"[NPCHealthBarSpawner] Suscrito a OnDamaged de {name}");
+                // Debug.Log($"[NPCHealthBarSpawner] Suscrito a OnDamaged de {name}");
             }
         }
         

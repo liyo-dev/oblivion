@@ -1,5 +1,5 @@
 using UnityEngine;
-using Game.NPC; // NPCBehaviourManagerV2
+using Game.NPC; 
 
 public class WorldBootstrap : MonoBehaviour
 {
@@ -66,7 +66,7 @@ public class WorldBootstrap : MonoBehaviour
             }
 
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
-            Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
+            // Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
             return;
         }
 
@@ -90,12 +90,12 @@ public class WorldBootstrap : MonoBehaviour
                 if (svc != null) svc.ApplyCurrentPreset(includeInventory: true);
             }
 
-            Debug.Log($"[WorldBootstrap] Save cargado → Anchor: '{anchorId}'");
+            // Debug.Log($"[WorldBootstrap] Save cargado → Anchor: '{anchorId}'");
         }
         else
         {
             // NO HAY SAVE → usar anchor del defaultPreset (ya en runtimePreset)
-            Debug.Log($"[WorldBootstrap] Sin save → Anchor del preset: '{anchorId}'");
+            // Debug.Log($"[WorldBootstrap] Sin save → Anchor del preset: '{anchorId}'");
             
             var qm = QuestManager.Instance;
             if (qm != null) qm.ResetAllQuests();
@@ -176,7 +176,7 @@ public class WorldBootstrap : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"[WorldBootstrap] 🎮 Jugador encontrado: {player.name}, teletransportando a '{anchorId}'");
+        // Debug.Log($"[WorldBootstrap] 🎮 Jugador encontrado: {player.name}, teletransportando a '{anchorId}'");
 
         // Esperar a que el jugador esté activo
         attempts = 0;
@@ -189,7 +189,7 @@ public class WorldBootstrap : MonoBehaviour
         // Teleportar al jugador
         if (player.activeInHierarchy)
         {
-            Debug.Log($"[WorldBootstrap] ✅ Ejecutando TeleportTo('{anchorId}')");
+            // Debug.Log($"[WorldBootstrap] ✅ Ejecutando TeleportTo('{anchorId}')");
             SpawnManager.TeleportTo(anchorId, false);
         }
         else

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -109,7 +109,7 @@ public class RoomExitBlocker : MonoBehaviour
         bool shouldBlock = !RequirementSatisfied();
         _isBlocked = shouldBlock;
         ApplyColliderState();
-        if (debugLogs) Debug.Log($"[RoomExitBlocker] Estado → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
+        //if (debugLogs) Debug.Log($"[RoomExitBlocker] Estado → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
     }
 
     private void ApplyColliderState()

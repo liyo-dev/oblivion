@@ -182,7 +182,7 @@ namespace Game.NPC
             _iconController.SetIconOffset(_questConfig.questIconOffset);
             _iconController.ShowPersistentIcon(prefab);
             
-            Debug.Log($"[NPCQuestIconManager:{name}] Mostrando icono de quest");
+            //Debug.Log($"[NPCQuestIconManager:{name}] Mostrando icono de quest");
         }
         
         private void HideIcon()

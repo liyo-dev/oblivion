@@ -184,7 +184,7 @@ namespace Sendero.UI
             RefreshManaBar();
             RefreshAllMagicSlots();
             
-            Debug.Log($"[PlayerHUDV2] ✅ Start completado - Mana: {_manaPool?.Current ?? 0}/{_manaPool?.Max ?? 0}, HP: {_healthSystem?.CurrentHealth ?? 0}");
+            // Debug.Log($"[PlayerHUDV2] ✅ Start completado - Mana: {_manaPool?.Current ?? 0}/{_manaPool?.Max ?? 0}, HP: {_healthSystem?.CurrentHealth ?? 0}");
         }
         
         private void OnDestroy()
@@ -273,13 +273,13 @@ namespace Sendero.UI
             if (_healthSystem != null)
             {
                 _healthSystem.OnHealthChanged.AddListener(OnHealthChanged);
-                Debug.Log("[PlayerHUDV2] ✅ Suscrito a OnHealthChanged");
+                // Debug.Log("[PlayerHUDV2] ✅ Suscrito a OnHealthChanged");
             }
             
             if (_manaPool != null)
             {
                 _manaPool.OnManaChanged.AddListener(OnManaChanged);
-                Debug.Log($"[PlayerHUDV2] ✅ Suscrito a OnManaChanged de ManaPool en '{_manaPool.gameObject.name}'");
+                // Debug.Log($"[PlayerHUDV2] ✅ Suscrito a OnManaChanged de ManaPool en '{_manaPool.gameObject.name}'");
             }
             else
             {
@@ -349,7 +349,7 @@ namespace Sendero.UI
             RefreshManaBar();
             RefreshAllMagicSlots();
             
-            Debug.Log($"[PlayerHUDV2] ✅ HUD refrescado completamente tras aplicar preset (Mana: {_manaPool.Current}/{_manaPool.Max})");
+            // Debug.Log($"[PlayerHUDV2] ✅ HUD refrescado completamente tras aplicar preset (Mana: {_manaPool.Current}/{_manaPool.Max})");
         }
         
         #endregion
@@ -765,7 +765,7 @@ namespace Sendero.UI
             }
             
             ForceRefresh();
-            Debug.Log("[PlayerHUDV2] ✅ HUD actualizado manualmente");
+            // Debug.Log("[PlayerHUDV2] ✅ HUD actualizado manualmente");
         }
         
         [ContextMenu("Validate Setup")]

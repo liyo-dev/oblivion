@@ -1,8 +1,9 @@
-﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
 using Game.Player;
+using Game.NPC;
 
 namespace Game.NPC.Modules
 {
@@ -55,6 +56,7 @@ namespace Game.NPC.Modules
         private bool _isProcessingDefeat;
         private bool _isInvulnerable;
         private bool _isCasting; // Para interrumpir hechizos
+        private bool _shouldCancelDizzySequence; // Para interrumpir dizzy cuando inicia movimiento narrativo
         #endregion
 
         private void Awake()
@@ -70,7 +72,7 @@ namespace Game.NPC.Modules
             if (_damageable != null)
             {
                 _damageable.SetDestroyOnDeath(false);
-                Debug.Log($"[Lifecycle] ✅ destroyOnDeath establecido a FALSE en Awake para {name} (actual valor: {_damageable.GetComponent<Damageable>() != null})");
+                // Debug.Log($"[Lifecycle] ✅ destroyOnDeath establecido a FALSE en Awake para {name} (actual valor: {_damageable.GetComponent<Damageable>() != null})");
             }
             else
             {
@@ -101,13 +103,13 @@ namespace Game.NPC.Modules
             
             // Verificación final: Asegurar que destroyOnDeath esté en false
             _damageable.SetDestroyOnDeath(false);
-            Debug.Log($"[Lifecycle] 🔒 Verificación final en Start: destroyOnDeath=false para {name}");
+            // Debug.Log($"[Lifecycle] 🔒 Verificación final en Start: destroyOnDeath=false para {name}");
 
             // Suscribirse a eventos
             _damageable.OnDamaged += OnDamaged;
             _damageable.OnDied += OnDied;
             
-            Debug.Log($"[Lifecycle] ✅ Suscrito a eventos OnDamaged y OnDied para {name}");
+            // Debug.Log($"[Lifecycle] ✅ Suscrito a eventos OnDamaged y OnDied para {name}");
         }
 
         private void OnDestroy()
@@ -233,6 +235,13 @@ namespace Game.NPC.Modules
             
             _isProcessingDefeat = true;
             IsDefeatedAndInactive = true;
+            
+            // ✅ Notificar al equipo si pertenece a uno
+            var teamMember = GetComponent<Game.NPC.NPCTeamMember>();
+            if (teamMember != null)
+            {
+                teamMember.NotifyDefeated();
+            }
 
             StartCoroutine(DeathRoutine());
         }
@@ -292,36 +301,43 @@ namespace Game.NPC.Modules
                 Debug.Log($"[Lifecycle] 💀 Animación de muerte iniciada - transición directa desde Hit");
             }
 
-            // ✅ 6. CELEBRACIÓN DEL JUGADOR (mientras el NPC cae)
-            // Llamar directamente al player para que ejecute la victoria
-            if (PlayerService.TryGetPlayer(out GameObject playerGo))
+            // ✅ VERIFICAR SI PERTENECE A UN EQUIPO
+            var teamMember = GetComponent<NPCTeamMember>();
+            bool isInTeam = teamMember != null && teamMember.HasTeam;
+            bool isLastTeamMember = isInTeam && teamMember.Team.IsTeamDefeated;
+            
+            // ✅ 6. CELEBRACIÓN DEL JUGADOR
+            // Solo celebrar si: NO es equipo, O es el último miembro del equipo
+            bool shouldCelebrate = !isInTeam || isLastTeamMember;
+            
+            if (shouldCelebrate)
             {
-                var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
-                if (playerVictory != null)
+                if (PlayerService.TryGetPlayer(out GameObject playerGo))
                 {
-                    // Pasar el battleMusicId para que reproduzca la música de victoria correcta
-                    string battleId = _config?.battleMusicId;
-                    Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
-                    playerVictory.PlayVictory(battleId);
-                    
-                    // Esperar a que termine la animación de victoria (3s) + margen
-                    yield return new WaitForSecondsRealtime(4.0f);
-                    Debug.Log($"[Lifecycle] ✅ Animación de victoria completada - continuando con secuencia");
+                    var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
+                    if (playerVictory != null)
+                    {
+                        string battleId = _config?.battleMusicId;
+                        Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
+                        playerVictory.PlayVictory(battleId);
+                        
+                        // Esperar a que termine la animación de victoria
+                        yield return new WaitForSecondsRealtime(4.0f);
+                        Debug.Log($"[Lifecycle] ✅ Animación de victoria completada");
+                    }
                 }
-                else
+                
+                // Disparar evento narrativo si está configurado
+                if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
                 {
-                    Debug.LogWarning($"[Lifecycle] ⚠️ PlayerBattleModeController no encontrado en el player");
+                    DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
                 }
             }
             else
             {
-                Debug.LogWarning($"[Lifecycle] ⚠️ No se pudo obtener el player con PlayerService");
-            }
-            
-            // También disparar evento narrativo si está configurado (para audio, etc.)
-            if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
-            {
-                DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
+                Debug.Log($"[Lifecycle] 👥 {name} derrotado pero quedan miembros del equipo - sin celebración aún");
+                // Pequeña pausa para la animación de muerte
+                yield return new WaitForSeconds(1f);
             }
             
             // ✅ Enviar evento de derrota al grafo narrativo DESPUÉS de la muerte (solo si no se envió antes)
@@ -362,6 +378,12 @@ namespace Game.NPC.Modules
             gameObject.SetActive(false);
         }
 
+        public void CancelDizzySequence()
+        {
+            _shouldCancelDizzySequence = true;
+            Debug.Log($"[Lifecycle] 🛑 Secuencia dizzy cancelada para {name} - movimiento narrativo iniciado");
+        }
+
         private IEnumerator HandleGetUpDizzy()
         {
             Debug.Log($"[Lifecycle] 😵 Esperando transición a animación dizzy para {name}");
@@ -375,7 +397,7 @@ namespace Game.NPC.Modules
             {
                 if (_animator != null && _animator.IsInDizzyAnimation())
                 {
-                    Debug.Log($"[Lifecycle] ✅ NPC ahora está en animación dizzy - mostrando diálogo");
+                    Debug.Log($"[Lifecycle] ✅ NPC ahora está en animación dizzy");
                     break;
                 }
                 
@@ -388,17 +410,77 @@ namespace Game.NPC.Modules
                 Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando animación dizzy - continuando de todas formas");
             }
             
-            // 2. Mostrar diálogo de mareo (cuando ya está en la animación dizzy)
+            // ✅ Verificar si pertenece a un equipo
+            var teamMember = GetComponent<NPCTeamMember>();
+            bool isInTeam = teamMember != null && teamMember.HasTeam;
+            
+            if (isInTeam)
+            {
+                var team = teamMember.Team;
+                
+                Debug.Log($"[Lifecycle] 👥 {name} es parte de un equipo - IsLeader: {teamMember.IsLeader}, Derrotados: {team.DefeatedCount}/{team.TeamSize}");
+                
+                // Esperar a que todo el equipo sea derrotado
+                if (!team.IsTeamDefeated)
+                {
+                    Debug.Log($"[Lifecycle] 👥 {name} esperando a que caiga todo el equipo...");
+                    
+                    while (!team.IsTeamDefeated)
+                    {
+                        // ✅ Verificar si se canceló la secuencia
+                        if (_shouldCancelDizzySequence)
+                        {
+                            Debug.Log($"[Lifecycle] 🛑 Espera de equipo interrumpida para {name}");
+                            yield break;
+                        }
+                        
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[Lifecycle] 👥 ¡Todo el equipo derrotado!");
+                }
+                
+                // IMPORTANTE: Solo el líder muestra el diálogo, sin importar quién cayó primero
+                if (!teamMember.IsLeader)
+                {
+                    Debug.Log($"[Lifecycle] ✅ {name} (NO es líder) - configurando post-combate sin diálogo");
+                    SetupPostCombatInteraction();
+                    yield break;
+                }
+                
+                Debug.Log($"[Lifecycle] 👑 {name} ES EL LÍDER - mostrará el diálogo del equipo");
+            }
+            
+            // 2. Mostrar diálogo de mareo (solo si no es equipo, o si es el líder del equipo)
             DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
             if (dialogue != null)
             {
-                Debug.Log($"[Lifecycle] 💬 Iniciando diálogo post-derrota (la victoria del jugador ya debería haber terminado)");
+                // ✅ Verificar antes de mostrar diálogo
+                if (_shouldCancelDizzySequence)
+                {
+                    Debug.Log($"[Lifecycle] 🛑 Diálogo omitido para {name} - movimiento iniciado");
+                    yield break;
+                }
+                
+                Debug.Log($"[Lifecycle] 💬 Iniciando diálogo post-derrota para {name}");
                 bool finished = false;
                 DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
                 
                 // Esperar a que termine el diálogo
                 while (!finished) 
                 {
+                    // ✅ Verificar durante el diálogo también
+                    if (_shouldCancelDizzySequence)
+                    {
+                        Debug.Log($"[Lifecycle] 🛑 Diálogo interrumpido para {name}");
+                        // Cerrar el diálogo si está abierto
+                        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                        {
+                            DialogueManager.Instance.Close();
+                        }
+                        yield break;
+                    }
+                    
                     yield return null;
                 }
                 
@@ -469,6 +551,71 @@ namespace Game.NPC.Modules
             // El Interactable component ya maneja el diálogo automáticamente
             // Solo retornamos true para indicar que la interacción es válida
             return true;
+        }
+        
+        // =================================================================================
+        // 🔄 RESURRECTION (Para sistema de equipos)
+        // =================================================================================
+        
+        /// <summary>
+        /// Resucita al NPC, restaurando su vida y estado.
+        /// Usado por el sistema de equipos de combate (NPCCombatTeam).
+        /// </summary>
+        public void Resurrect()
+        {
+            if (!IsDefeatedAndInactive)
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ {name} no está derrotado, no se puede resucitar");
+                return;
+            }
+            
+            Debug.Log($"[Lifecycle] 🔄 Resucitando {name}...");
+            
+            // 1. Restaurar vida
+            if (_damageable != null)
+            {
+                _damageable.Heal(_damageable.Max); // Curar al máximo
+            }
+            
+            // 2. Restaurar estado
+            IsDefeatedAndInactive = false;
+            _isProcessingDefeat = false;
+            IsStunned = false;
+            _isInvulnerable = false;
+            
+            // 3. Reactivar NavMeshAgent
+            if (_agent != null)
+            {
+                _agent.enabled = true;
+                if (_agent.isOnNavMesh)
+                {
+                    _agent.isStopped = false;
+                }
+            }
+            
+            // 4. Reproducir animación de levantarse (usar Victory como "levantarse feliz")
+            if (_animator != null)
+            {
+                _animator.PlayVictory(); // Usamos Victory como animación de levantarse
+            }
+            
+            // 5. Restaurar layer y collider
+            int defaultLayer = LayerMask.NameToLayer("Default");
+            if (defaultLayer != -1) gameObject.layer = defaultLayer;
+            
+            var col = GetComponent<CapsuleCollider>();
+            if (col != null)
+            {
+                col.isTrigger = false;
+            }
+            
+            // 6. Notificar al manager
+            if (_manager != null && _manager.Context != null)
+            {
+                _manager.Context.WasDefeatedInCombat = false;
+            }
+            
+            Debug.Log($"[Lifecycle] ✅ {name} resucitado exitosamente");
         }
     }
 }

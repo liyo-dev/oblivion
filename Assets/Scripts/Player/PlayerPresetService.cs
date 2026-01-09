@@ -90,7 +90,7 @@ public class PlayerPresetService : MonoBehaviour
 
         // Log diagnóstico: comprobar qué componentes hemos encontrado para evitar configuraciones en el objeto equivocado
         EnsureAppearanceBuilderReference();
-        Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}, appearanceBuilder={( _appearanceBuilder != null ? _appearanceBuilder.GetType().Name : "null" )}, inventory={( _inventory != null ? _inventory.GetType().Name : "null" )}");
+        // Debug.Log($"[PlayerPresetService] Componentes encontrados -> spawner={( _spawner != null ? _spawner.GetType().Name : "null" )}, magicCaster={( _magicCaster != null ? _magicCaster.GetType().Name : "null" )}, manaPool={( _manaPool != null ? _manaPool.GetType().Name : "null" )}, actionManager={( _actionManager != null ? _actionManager.GetType().Name : "null" )}, appearanceBuilder={( _appearanceBuilder != null ? _appearanceBuilder.GetType().Name : "null" )}, inventory={( _inventory != null ? _inventory.GetType().Name : "null" )}");
 
         var preset = profile.GetActivePresetResolved();
         if (!preset) 
@@ -105,7 +105,7 @@ public class PlayerPresetService : MonoBehaviour
         // Log inicial de diagnóstico
         var spellsCount = spellLibrary.Spells != null ? spellLibrary.Spells.Count : -1;
         int unlockedCount = preset.unlockedSpells != null ? preset.unlockedSpells.Count : 0;
-        Debug.Log($"[PlayerPresetService] SpellLibrary spells: {spellsCount} | Unlocked: {unlockedCount} | Slots IDs → L:{preset.leftSpellId} R:{preset.rightSpellId} S:{preset.specialSpellId}");
+        // Debug.Log($"[PlayerPresetService] SpellLibrary spells: {spellsCount} | Unlocked: {unlockedCount} | Slots IDs → L:{preset.leftSpellId} R:{preset.rightSpellId} S:{preset.specialSpellId}");
 
         // USAR EL ANCHOR DEL PRESET SO
         if (!string.IsNullOrEmpty(preset.spawnAnchorId))
@@ -135,10 +135,10 @@ public class PlayerPresetService : MonoBehaviour
                 Debug.LogWarning("[PlayerPresetService] preset.abilities es NULL — creando con valores por defecto");
                 preset.abilities = new PlayerAbilities { swim = false, jump = false, climb = false, magic = false, fly = false };
             }
-            Debug.Log($"[PlayerPresetService] Aplicando abilities del preset: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
+            // Debug.Log($"[PlayerPresetService] Aplicando abilities del preset: Swim={preset.abilities.swim} Jump={preset.abilities.jump} Climb={preset.abilities.climb} Fly={preset.abilities.fly} Magic={preset.abilities.magic}");
             _actionManager.ApplyAbilities(preset.abilities);
-            Debug.Log("[PlayerPresetService] Abilities del preset aplicadas al PlayerActionManager");
-            Debug.Log($"[PlayerPresetService] PlayerActionManager.AllowMagic = {_actionManager.AllowMagic}");
+            // Debug.Log("[PlayerPresetService] Abilities del preset aplicadas al PlayerActionManager");
+            // Debug.Log($"[PlayerPresetService] PlayerActionManager.AllowMagic = {_actionManager.AllowMagic}");
         }
         else if (_actionManager == null)
         {
@@ -214,6 +214,7 @@ public class PlayerPresetService : MonoBehaviour
         {
             selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;
         }
+
 
         // Desactivar todas las categorías antes de aplicar la selección del preset
         _appearanceBuilder.DeactivateAllCategories();
@@ -301,12 +302,12 @@ public class PlayerPresetService : MonoBehaviour
             if (items != null && items.Count > 0)
             {
                 _inventory.LoadSnapshot(items, clearExisting: true, notifyChanges: false);
-                Debug.Log($"[PlayerPresetService] Inventario cargado desde preset ({items.Count} tipos de ítems)");
+                //Debug.Log($"[PlayerPresetService] Inventario cargado desde preset ({items.Count} tipos de ítems)");
             }
             else
             {
                 _inventory.LoadSnapshot(null, clearExisting: true, notifyChanges: false);
-                Debug.Log("[PlayerPresetService] Inventario inicializado vacío (preset sin items)");
+                //Debug.Log("[PlayerPresetService] Inventario inicializado vacío (preset sin items)");
             }
         }
         else
@@ -326,18 +327,18 @@ public class PlayerPresetService : MonoBehaviour
         }
         if (_manaPool != null)
         {
-            Debug.Log($"[PlayerPresetService] Using ManaPool on GameObject: {_manaPool.gameObject.name}");
+            //Debug.Log($"[PlayerPresetService] Using ManaPool on GameObject: {_manaPool.gameObject.name}");
         }
         if (_manaPool != null)
         {
             // Log del estado actual del preset ANTES de cualquier modificación
-            Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Preset inicial: maxMP={preset.maxMP}, currentMP={preset.currentMP}, abilities.magic={preset.abilities?.magic}");
+            //Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Preset inicial: maxMP={preset.maxMP}, currentMP={preset.currentMP}, abilities.magic={preset.abilities?.magic}");
             
             // Si el preset NO tiene la ability de magia, no queremos mostrar una barra de maná llena.
             if (preset.abilities != null && !preset.abilities.magic)
             {
                 _manaPool.Init(0f, 0f);
-                Debug.Log("[PlayerPresetService] Preset indica que no tiene magia -> maxMP y currentMP seteados a 0");
+                //Debug.Log("[PlayerPresetService] Preset indica que no tiene magia -> maxMP y currentMP seteados a 0");
                 return;
             }
 
@@ -346,7 +347,7 @@ public class PlayerPresetService : MonoBehaviour
             float maxMP = Mathf.Max(0f, preset.maxMP);
             float currentMP = Mathf.Clamp(preset.currentMP, 0f, maxMP > 0f ? maxMP : float.MaxValue);
             
-            Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Valores calculados: maxMP={maxMP}, currentMP={currentMP}");
+            //Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - Valores calculados: maxMP={maxMP}, currentMP={currentMP}");
 
             if (maxMP <= 0f)
             {
@@ -375,7 +376,7 @@ public class PlayerPresetService : MonoBehaviour
                     // Dar suficiente maná para lanzar al menos 1-2 veces el hechizo más caro
                     maxMP = Mathf.Max(20f, highestCost * 2f);
                     currentMP = Mathf.Max(currentMP, maxMP);
-                    Debug.Log($"[PlayerPresetService] Preset maxMP was 0 — inferred maxMP={maxMP} from highest spell cost {highestCost}");
+                    //Debug.Log($"[PlayerPresetService] Preset maxMP was 0 — inferred maxMP={maxMP} from highest spell cost {highestCost}");
                 }
                 else
                 {
@@ -388,20 +389,20 @@ public class PlayerPresetService : MonoBehaviour
                     {
                         maxMP = 0f;
                         currentMP = 0f;
-                        Debug.Log("[PlayerPresetService] Preset explicitly sets 0/0 and no spells found -> respecting 0/0");
+                        //Debug.Log("[PlayerPresetService] Preset explicitly sets 0/0 and no spells found -> respecting 0/0");
                     }
                     else
                     {
                         // Fallback: si el preset pide algo de currentMP pero no definió max, usar el valor histórico por compatibilidad
                         maxMP = 50f;
                         if (currentMP <= 0f) currentMP = Mathf.Clamp(preset.currentMP, 0f, maxMP);
-                        Debug.Log("[PlayerPresetService] Preset maxMP was 0 and no spells found; using default maxMP=50 to satisfy preset currentMP");
+                        //Debug.Log("[PlayerPresetService] Preset maxMP was 0 and no spells found; using default maxMP=50 to satisfy preset currentMP");
                     }
                  }
              }
 
              _manaPool.Init(maxMP, currentMP);
-             Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - ManaPool.Init({maxMP}, {currentMP}) llamado. ManaPool ahora: {_manaPool.Max}/{_manaPool.Current}");
+             //Debug.Log($"[PlayerPresetService] ApplyManaFromPreset - ManaPool.Init({maxMP}, {currentMP}) llamado. ManaPool ahora: {_manaPool.Max}/{_manaPool.Current}");
          }
          else
          {
@@ -472,14 +473,14 @@ public class PlayerPresetService : MonoBehaviour
         if (_magicCaster)
         {
             _magicCaster.SetSpells(left, right, special);
-            Debug.Log($"[PlayerPresetService] MagicCaster configurado con hechizos del preset");
+            //Debug.Log($"[PlayerPresetService] MagicCaster configurado con hechizos del preset");
         }
         else
         {
             Debug.LogWarning("[PlayerPresetService] No se encontró MagicCaster en el GameObject");
         }
 
-        Debug.Log($"[PlayerPresetService] Hechizos configurados - L:{left?.name} R:{right?.name} S:{special?.name}");
+        //Debug.Log($"[PlayerPresetService] Hechizos configurados - L:{left?.name} R:{right?.name} S:{special?.name}");
     }
 
     // === NUEVO: API pública para re-aplicar el preset activo en runtime (incluye mana) ===

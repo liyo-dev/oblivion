@@ -66,7 +66,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         _cam = Camera.main;
         
         // Debug: Verificar configuración del marker
-        Debug.Log($"[PlayerTargeting] Awake - enableMarker={enableMarker}, markerPrefab={markerPrefab}, enemyMask={enemyMask.value}");
+        // Debug.Log($"[PlayerTargeting] Awake - enableMarker={enableMarker}, markerPrefab={markerPrefab}, enemyMask={enemyMask.value}");
         
         if (enableMarker && markerPrefab)
         {
@@ -75,7 +75,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             _marker = go.transform;
             _markerOriginalScale = _marker.localScale;
             _marker.localScale = Vector3.zero; // Empezar pequeño para animación
-            Debug.Log($"[PlayerTargeting] ✅ Marker instanciado: {go.name}");
+            // Debug.Log($"[PlayerTargeting] ✅ Marker instanciado: {go.name}");
         }
         else
         {

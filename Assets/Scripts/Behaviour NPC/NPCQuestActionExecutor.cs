@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System.Collections;
+﻿﻿﻿﻿﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -71,7 +71,7 @@ namespace Game.NPC
 
             questManager.OnQuestCompleted += HandleQuestCompleted;
 
-            if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Suscrito a QuestManager.OnQuestCompleted");
+            //if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Suscrito a QuestManager.OnQuestCompleted");
         }
 
         /// <summary>

@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb82a06aa064e73a10b4db55d05973c, type: 3}
+  m_Name: NPC_Combat_Config_Lety
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCCombatConfig
+  moduleName: 
+  description: 
+  health: 100
+  detectionRange: 10
+  fieldOfView: 160
+  minAttackDistance: 2
+  maxAttackDistance: 8
+  isAggressive: 1
+  canChaseOutOfBounds: 0
+  maxChaseDistance: 20
+  alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+  questionIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  exclamationIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+  alertIconDuration: 2
+  alertIconHeight: 2.5
+  healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
+  dialogueOnAlert: {fileID: 11400000, guid: 700d531819f7be649a1401510b181f8c, type: 2}
+  dialogueOnDefeat: {fileID: 0}
+  dialogueAfterDefeat: {fileID: 0}
+  waitForAlertDialogue: 1
+  postDeathBehavior: 1
+  dialogueOnDizzy: {fileID: 11400000, guid: 24a33d8d18f10494fb2e7eeb6488f4d2, type: 2}
+  disappearVFXPrefab: {fileID: 0}
+  disappearDuration: 2
+  alertMusicEvent: Npc_Battle_Alert
+  battleMusicId: Npc_Battle
+  endMusicEvent: Npc_Battle_Victory
+  sendEventOnDefeat: 0
+  defeatEventKey: 
+  sendDefeatEventBeforeDeath: 0
+  spell1Prefab: {fileID: 1957592409648599577, guid: 3ce62e84dab46f54a9c51523f8057ac0, type: 3}
+  spell2Prefab: {fileID: 6916111140770829, guid: e299c82e955f8cf4997f7573f2fd8672, type: 3}
+  spell3Prefab: {fileID: 7541299261854152833, guid: 71b502122a0cfe640969b5a2538bcdc1, type: 3}
+  spell1Cooldown: 1.5
+  spell2Cooldown: 2.5
+  spell3Cooldown: 5
+  spell1Chance: 0.5
+  spell2Chance: 0.3
+  spell3Chance: 0.2
+  useShield: 0
+  shieldPrefab: {fileID: 0}
+  shieldMinDuration: 2
+  shieldMaxDuration: 5
+  shieldCooldown: 10
+  useTacticalRetreat: 0
+  retreatHealthThreshold: 0.3
+  retreatCooldown: 15
+  coverSearchRadius: 15
+  coverLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  minCoverDistance: 3
+  maxCoverDistance: 15
+  coverStayDuration: 4
+  preferShieldOverCover: 0
+  activelySearchForPlayer: 1
+  searchDuration: 15
+  passiveSearchDuration: 8
+  searchMovementRadius: 6
+  returnToOriginAfterSearch: 0

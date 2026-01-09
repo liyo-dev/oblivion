@@ -129,7 +129,7 @@ public class DialogueManager : MonoBehaviour
             letterSoundFrequency = 1;
         }
         
-        Debug.Log($"[DialogueManager] ✅ Configuración validada - Typewriter: {useTypewriter}, Velocidad: {charsPerSecond} chars/s, Audio: {useLetterSound}, Frecuencia: {letterSoundFrequency}");
+        // Debug.Log($"[DialogueManager] ✅ Configuración validada - Typewriter: {useTypewriter}, Velocidad: {charsPerSecond} chars/s, Audio: {useLetterSound}, Frecuencia: {letterSoundFrequency}");
 
         if (group != null)
         {

@@ -151,7 +151,7 @@ public static class MenuManager
             s_open[kind] = false;
         else
             s_open[kind] = false;
-        Debug.Log($"[MenuManager] Closed {kind}");
+        // Debug.Log($"[MenuManager] Closed {kind}");
         if (wasOpen)
             MenuClosed?.Invoke(kind);
     }

@@ -61,7 +61,7 @@ public class TeleportService : MonoBehaviour
         _inst = this;
         ServiceLocator.Register(this);
         //DontDestroyOnLoad(gameObject);
-        Debug.Log($"[TeleportService] Awake in '{name}' | TransitionSettings: {(teleportTransition ? teleportTransition.name : "<null>")}");
+        //Debug.Log($"[TeleportService] Awake in '{name}' | TransitionSettings: {(teleportTransition ? teleportTransition.name : "<null>")}");
     }
 
     private void OnDestroy()

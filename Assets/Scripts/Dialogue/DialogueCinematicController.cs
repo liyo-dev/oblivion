@@ -14,7 +14,7 @@ public class DialogueCinematicController : MonoBehaviour
     [Header("Configuración")]
     [SerializeField] private DialogueCinematicProfile defaultProfile;
     [SerializeField] private bool showDebugInfo;
-    [SerializeField] private int maxPooledCameras = 8;
+    [SerializeField] private int maxPooledCameras = 4;  // Reducido de 8 a 4 - suficiente para alternar entre shots
 
     // Estado actual - expuesto para detectar diálogos encadenados
     private bool isInCinematicMode;
@@ -55,7 +55,7 @@ public class DialogueCinematicController : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log($"[DialogueCinematicController] ⚡ Awake iniciado en GameObject: {gameObject.name}");
+        // Debug.Log($"[DialogueCinematicController] ⚡ Awake iniciado en GameObject: {gameObject.name}");
         
         // CRÍTICO: El GameObject DEBE estar activo para funcionar
         if (!gameObject.activeSelf)
@@ -74,7 +74,7 @@ public class DialogueCinematicController : MonoBehaviour
         
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Debug.Log($"[DialogueCinematicController] ✅ Instancia marcada como DontDestroyOnLoad");
+        // Debug.Log($"[DialogueCinematicController] ✅ Instancia marcada como DontDestroyOnLoad");
 
         // Crear rig para las cámaras de diálogo
         GameObject rigObj = new GameObject("DialogueCinematicRig");
@@ -84,7 +84,7 @@ public class DialogueCinematicController : MonoBehaviour
         // Crear cámara dedicada para diálogos (separada de Camera.main)
         CreateDialogueCamera();
         
-        Debug.Log($"[DialogueCinematicController] Sistema inicializado - DialogueCamera: {(dialogueCameraObject != null ? "OK" : "NULL")}");
+        // Debug.Log($"[DialogueCinematicController] Sistema inicializado - DialogueCamera: {(dialogueCameraObject != null ? "OK" : "NULL")}");
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ public class DialogueCinematicController : MonoBehaviour
                 dialogueCameraData.renderShadows = mainCameraData.renderShadows;
                 dialogueCameraData.requiresDepthTexture = mainCameraData.requiresDepthTexture;
                 dialogueCameraData.requiresColorTexture = mainCameraData.requiresColorTexture;
-                Debug.Log($"[DialogueCinematicController] URP Camera Data configurada - RenderType: Base, PostProcessing: {dialogueCameraData.renderPostProcessing}");
+                // Debug.Log($"[DialogueCinematicController] URP Camera Data configurada - RenderType: Base, PostProcessing: {dialogueCameraData.renderPostProcessing}");
             }
         }
         else
@@ -166,7 +166,7 @@ public class DialogueCinematicController : MonoBehaviour
         dialogueBrain.DefaultBlend.Time = 0.8f;
         dialogueBrain.ChannelMask = (OutputChannels)1; // Canal 1 para cámaras de diálogo
         
-        Debug.Log($"[DialogueCinematicController] ✅ Cámara de diálogo creada - GameObject: {dialogueCameraObject.activeSelf}, Camera.enabled: {dialogueCamera.enabled}, Depth: {dialogueCamera.depth}, CullingMask incluye UI: {((dialogueCamera.cullingMask & (1 << LayerMask.NameToLayer("UI"))) != 0)}");
+        // Debug.Log($"[DialogueCinematicController] ✅ Cámara de diálogo creada - GameObject: {dialogueCameraObject.activeSelf}, Camera.enabled: {dialogueCamera.enabled}, Depth: {dialogueCamera.depth}, CullingMask incluye UI: {((dialogueCamera.cullingMask & (1 << LayerMask.NameToLayer("UI"))) != 0)}");
     }
 
     void Start()
@@ -180,7 +180,7 @@ public class DialogueCinematicController : MonoBehaviour
         if (mainGameplayCamera != null)
         {
             originalGameplayCameraPriority = mainGameplayCamera.Priority.Value;
-            Debug.Log($"[DialogueCinematicController] Cámara de gameplay encontrada: {mainGameplayCamera.name} (Priority original: {originalGameplayCameraPriority})");
+            // Debug.Log($"[DialogueCinematicController] Cámara de gameplay encontrada: {mainGameplayCamera.name} (Priority original: {originalGameplayCameraPriority})");
         }
         else
         {
@@ -190,16 +190,39 @@ public class DialogueCinematicController : MonoBehaviour
         // Desactivar todas las cámaras del pool inicialmente
         DisableAllDialogueCameras();
         
-        Debug.Log("[DialogueCinematicController] ✅ Start completado - Sistema listo");
+        // Debug.Log("[DialogueCinematicController] ✅ Start completado - Sistema listo");
     }
 
     void OnDestroy()
     {
+        // ✅ LIMPIEZA: Destruir todas las cámaras del pool y sus objetos temporales
+        if (cameraPool != null)
+        {
+            foreach (var vcam in cameraPool)
+            {
+                if (vcam != null)
+                {
+                    // Destruir objetos LookAt temporales
+                    if (vcam.Target.LookAtTarget != null && vcam.Target.LookAtTarget.parent == vcam.transform)
+                    {
+                        Destroy(vcam.Target.LookAtTarget.gameObject);
+                    }
+                    
+                    // Destruir la cámara virtual
+                    if (vcam.gameObject != null)
+                    {
+                        Destroy(vcam.gameObject);
+                    }
+                }
+            }
+            cameraPool.Clear();
+        }
+        
         // Limpiar la instancia del Singleton si es esta instancia
         if (Instance == this)
         {
             Instance = null;
-            Debug.Log("[DialogueCinematicController] Instancia del Singleton limpiada");
+            // Debug.Log("[DialogueCinematicController] Instancia del Singleton limpiada");
         }
     }
 
@@ -259,7 +282,7 @@ public class DialogueCinematicController : MonoBehaviour
         {
             mainUnityCameraWasEnabled = mainUnityCamera.enabled;
             mainUnityCamera.enabled = false;
-            Debug.Log($"[DialogueCinematicController] Cámara principal de Unity ({mainUnityCamera.name}) DESACTIVADA temporalmente para evitar conflictos URP");
+            // Debug.Log($"[DialogueCinematicController] Cámara principal de Unity ({mainUnityCamera.name}) DESACTIVADA temporalmente para evitar conflictos URP");
         }
 
         // PASO 3: Desactivar la cámara virtual de gameplay de Cinemachine
@@ -284,8 +307,8 @@ public class DialogueCinematicController : MonoBehaviour
             // Activar rendering forzado
             forceRenderingActive = true;
 
-            Debug.Log($"[DialogueCinematicController] Componente Camera activado (era: {wasEnabled}, ahora: {dialogueCamera.enabled}, isActiveAndEnabled: {dialogueCamera.isActiveAndEnabled})");
-            Debug.Log($"[DialogueCinematicController] Camera details - Depth: {dialogueCamera.depth}, ClearFlags: {dialogueCamera.clearFlags}, CullingMask: {dialogueCamera.cullingMask}, TargetTexture: {(dialogueCamera.targetTexture == null ? "NULL (pantalla)" : dialogueCamera.targetTexture.name)}, Tag: {dialogueCameraObject.tag}");
+            // Debug.Log($"[DialogueCinematicController] Componente Camera activado (era: {wasEnabled}, ahora: {dialogueCamera.enabled}, isActiveAndEnabled: {dialogueCamera.isActiveAndEnabled})");
+            // Debug.Log($"[DialogueCinematicController] Camera details - Depth: {dialogueCamera.depth}, ClearFlags: {dialogueCamera.clearFlags}, CullingMask: {dialogueCamera.cullingMask}, TargetTexture: {(dialogueCamera.targetTexture == null ? "NULL (pantalla)" : dialogueCamera.targetTexture.name)}, Tag: {dialogueCameraObject.tag}");
         }
         else
         {
@@ -324,7 +347,7 @@ public class DialogueCinematicController : MonoBehaviour
             // Desactivar rendering forzado
             forceRenderingActive = false;
             
-            Debug.Log($"[DialogueCinematicController] Componente Camera desactivado (era: {wasEnabled}, ahora: {dialogueCamera.enabled})");
+            // Debug.Log($"[DialogueCinematicController] Componente Camera desactivado (era: {wasEnabled}, ahora: {dialogueCamera.enabled})");
         }
 
         // Reactivar la cámara de gameplay de Cinemachine (si existe)
@@ -344,7 +367,7 @@ public class DialogueCinematicController : MonoBehaviour
         if (mainUnityCamera != null && mainUnityCameraWasEnabled)
         {
             mainUnityCamera.enabled = true;
-            Debug.Log($"[DialogueCinematicController] Cámara principal de Unity REACTIVADA");
+            // Debug.Log($"[DialogueCinematicController] Cámara principal de Unity REACTIVADA");
         }
         mainUnityCamera = null;
         

@@ -15,9 +15,9 @@ MonoBehaviour:
   spawnAnchorId: Woods_SavePoint
   level: 1
   maxHP: 1000
-  currentHP: 500
-  maxMP: 100
-  currentMP: 100
+  currentHP: 1000
+  maxMP: 500
+  currentMP: 500
   unlockedAbilities: 01000000
   unlockedSpells: 03000000010000000200000004000000
   leftSpellId: 1

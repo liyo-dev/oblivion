@@ -149,6 +149,11 @@ public class NPCSimpleAnimator : MonoBehaviour
     public bool IsInBattle => _isInBattle;
     
     /// <summary>
+    /// Indica si el NPC está en modo batalla (layer de Battle activo)
+    /// </summary>
+    public bool IsInBattleMode => _isInBattle;
+    
+    /// <summary>
     /// Indica si el NPC está actualmente reproduciendo la animación de mareo (dizzy)
     /// </summary>
     public bool IsInDizzyAnimation()
@@ -1399,7 +1404,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Check if state exists in specified layer
         if (animator.HasState(layer, stateHash))
         {
-            Debug.Log($"[NPCAnimator] ✅ CrossFade a estado '{stateName}' en layer {layer}, tiempo: {transitionTime}s");
+            // Debug.Log($"[NPCAnimator] ✅ CrossFade a estado '{stateName}' en layer {layer}, tiempo: {transitionTime}s");
             animator.CrossFadeInFixedTime(stateHash, transitionTime, layer, 0f);
         }
         else

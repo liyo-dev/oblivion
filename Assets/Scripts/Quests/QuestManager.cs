@@ -851,7 +851,7 @@ public class QuestManager : MonoBehaviour
         _cachedInventory = inventory;
         _cachedInventory.OnItemAdded += OnInventoryItemAdded;
         _isSubscribedToInventory = true;
-        Debug.Log("[QuestManager] ✅ Suscrito a Inventory.OnItemAdded para detectar items de quests");
+        // Debug.Log("[QuestManager] ✅ Suscrito a Inventory.OnItemAdded para detectar items de quests");
     }
     
     /// <summary>

@@ -1262,10 +1262,13 @@ namespace Game.NPC
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡Player se movió! Era posición A, ahora está en B ({distanceFromExpected:F1}m lejos)");
                     
                     // Mostrar admiración (sorpresa)
+                    // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
+                    /*
                     if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                     {
                         _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                     }
+                    */
                     
                     // Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
@@ -1826,10 +1829,13 @@ namespace Game.NPC
                         {
                             Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado mientras miraba alrededor!");
                             
+                            // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
+                            /*
                             if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                             {
                                 _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                             }
+                            */
                             
                             // Reproducir animación SenseSomethingStart_NoWeapon
                             if (_animator != null)
@@ -1890,10 +1896,13 @@ namespace Game.NPC
                     {
                         Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado en el camino de regreso!");
                         
+                        // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
+                        /*
                         if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
                         {
                             _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                         }
+                        */
                         
                         // Reproducir animación SenseSomethingStart_NoWeapon
                         if (_animator != null)

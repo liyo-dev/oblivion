@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EasyTransition;
 
 namespace Game.NPC.Modules
 {
@@ -36,6 +37,26 @@ namespace Game.NPC.Modules
         
         [Tooltip("O usa un Transform directo")]
         public Transform targetTransform;
+        
+        [Tooltip("Mover a un punto aleatorio en lugar de un destino fijo")]
+        public bool moveToRandomPoint = false;
+        
+        [Tooltip("Radio mínimo para el punto aleatorio")]
+        [Min(1f)]
+        public float randomMoveMinRadius = 5f;
+        
+        [Tooltip("Radio máximo para el punto aleatorio")]
+        [Min(2f)]
+        public float randomMoveMaxRadius = 15f;
+        
+        [Tooltip("Desaparecer (desactivar GameObject) al llegar al destino")]
+        public bool disappearOnArrival = false;
+        
+        [Tooltip("Configuración de transición al desaparecer (VFX, fade, etc.)")]
+        public TransitionSettings disappearTransition;
+        
+        [Tooltip("Si es líder de equipo, mover también a los compañeros a puntos aleatorios")]
+        public bool moveTeamMembers = true;
         
         [Tooltip("Tiempo máximo permitido para que el NPC complete el movimiento (en segundos)")]
         [Min(1f)]

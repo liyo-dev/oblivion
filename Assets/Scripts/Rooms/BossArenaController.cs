@@ -168,7 +168,7 @@ public class BossArenaController : MonoBehaviour
                     Debug.LogWarning($"[BossArenaController] OnEnable: BattleId '{key}' ya registrado por otro BossArenaController. Sobrescribiendo registro.");
                 }
                 s_arenaRegistry[key] = this;
-                Debug.Log($"[BossArenaController] OnEnable: Registrada arena con BattleId='{key}' (scene='{gameObject.scene.name}', active={gameObject.activeInHierarchy}).");
+                //Debug.Log($"[BossArenaController] OnEnable: Registrada arena con BattleId='{key}' (scene='{gameObject.scene.name}', active={gameObject.activeInHierarchy}).");
             }
         }
 

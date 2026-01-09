@@ -78,7 +78,7 @@ public class GameOverManager : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log($"[GameOverManager] Awake - scene='{gameObject.scene.name}'");
+        // Debug.Log($"[GameOverManager] Awake - scene='{gameObject.scene.name}'");
         
         if (Instance != null && Instance != this)
         {
@@ -118,7 +118,7 @@ public class GameOverManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"[GameOverManager] Scene '{scene.name}' loaded -> reseteando estado");
+        // Debug.Log($"[GameOverManager] Scene '{scene.name}' loaded -> reseteando estado");
         ForceResetState();
     }
 

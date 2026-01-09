@@ -438,7 +438,7 @@ public class LocalizationTableEditor : EditorWindow
             });
         }
         
-        Debug.Log($"[LocalizationTableEditor] Loaded {entries.Count} entries from {spanishFiles.Count} file pairs");
+        // Debug.Log($"[LocalizationTableEditor] Loaded {entries.Count} entries from {spanishFiles.Count} file pairs");
         Repaint();
     }
 

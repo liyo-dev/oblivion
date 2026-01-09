@@ -28,7 +28,7 @@ namespace Game.NPC.Modules
             if (!_all.Contains(executor))
             {
                 _all.Add(executor);
-                Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado en lista general: {executor.name}");
+                // Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado en lista general: {executor.name}");
             }
 
             // Registrar por ID si tiene uno configurado
@@ -51,11 +51,11 @@ namespace Game.NPC.Modules
                 }
                 
                 _byId[id] = executor;
-                Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado por ID '{id}': {executor.name}");
+                // Debug.Log($"[NPCInteractiveNarrativeRegistry] ✅ Registrado por ID '{id}': {executor.name}");
             }
             else
             {
-                Debug.Log($"[NPCInteractiveNarrativeRegistry] ℹ️ Registrado sin ID persistente: {executor.name} (config={config != null}, persistState={config?.persistState}, id={config?.persistenceId})");
+                // Debug.Log($"[NPCInteractiveNarrativeRegistry] ℹ️ Registrado sin ID persistente: {executor.name} (config={config != null}, persistState={config?.persistState}, id={config?.persistenceId})");
             }
         }
 

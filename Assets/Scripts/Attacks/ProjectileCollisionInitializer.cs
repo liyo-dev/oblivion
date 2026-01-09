@@ -77,12 +77,12 @@ public class ProjectileCollisionService : MonoBehaviour
         {
             var config = settings.ToConfig();
             ProjectileCollisionHandler.Initialize(config);
-            Debug.Log("[ProjectileCollisionService] ✅ Sistema de colisión de proyectiles inicializado con settings");
+            // Debug.Log("[ProjectileCollisionService] ✅ Sistema de colisión de proyectiles inicializado con settings");
             
             // Log de configuración para debugging
             if (settings.collisionVFX != null)
             {
-                Debug.Log($"[ProjectileCollisionService] VFX configurado: {settings.collisionVFX.name}");
+                // Debug.Log($"[ProjectileCollisionService] VFX configurado: {settings.collisionVFX.name}");
             }
             else
             {

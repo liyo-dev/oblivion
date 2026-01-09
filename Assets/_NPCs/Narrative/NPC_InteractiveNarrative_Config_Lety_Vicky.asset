@@ -1,0 +1,109 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
+  m_Name: NPC_InteractiveNarrative_Config_Lety_Vicky
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
+  moduleName: 
+  description: 
+  conditionalNarratives:
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 0
+      targetQuest: {fileID: 0}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 4
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 11400000, guid: 91555e401bb636b408b41e91dd8efdd5, type: 2}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 1
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 1
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 1
+      disappearTransition: {fileID: 11400000, guid: d641980330b54c243a644222c797e582, type: 2}
+      moveTeamMembers: 1
+      maxMovementDuration: 2
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 11400000, guid: 91555e401bb636b408b41e91dd8efdd5, type: 2}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 1
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 8ac55e1a38b030042a6ca26a95f2b64b, type: 3}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
+  persistState: 1
+  persistenceId: NPC_InteractiveNarrative_Config_Lety_Vicky_7dcb9cf0
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  detectionRange: 10
+  alertIconPrefab: {fileID: 0}
+  alertIconDuration: 1
+  alertIconHeight: 2.5
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2

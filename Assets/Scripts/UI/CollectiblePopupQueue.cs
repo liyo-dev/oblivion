@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 // Necesario para feedback de desbloqueo de vestuario
 using System; // solo para Serializable wrappers si se requieren en el futuro
@@ -105,11 +105,11 @@ public class CollectiblePopupQueue : MonoBehaviour
             _inventory = inv;
             _inventory.OnItemAdded += OnItemAdded;
             // Do not subscribe to OnInventoryChanged to avoid duplicate spawns (OnItemAdded is the authoritative event)
-            Debug.Log($"[CollectiblePopupQueue] Bound to Inventory on '{inv.gameObject.name}'");
+            //Debug.Log($"[CollectiblePopupQueue] Bound to Inventory on '{inv.gameObject.name}'");
         }
         else
         {
-            Debug.Log("[CollectiblePopupQueue] Inventory not found via PlayerService");
+            //Debug.Log("[CollectiblePopupQueue] Inventory not found via PlayerService");
         }
     }
 

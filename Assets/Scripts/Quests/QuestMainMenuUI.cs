@@ -205,7 +205,7 @@ public class QuestMainMenuUI : MonoBehaviour
         if (hiddenHeaderText)
             hiddenHeaderText.text = $"Misiones ocultas ({hiddenCount})"; //TODO este texto debe ir multificado
 
-        Debug.Log($"QuestMainMenuUI: Rebuild complete. Visible={visibleCount}, Hidden={hiddenCount}");
+        // Debug.Log($"QuestMainMenuUI: Rebuild complete. Visible={visibleCount}, Hidden={hiddenCount}");
         RefreshScrollViews();
         UpdateTabVisibility();
     }
@@ -338,7 +338,7 @@ public class QuestMainMenuUI : MonoBehaviour
         bool hasHiddenSection = hiddenContentRoot != null && hiddenTabRoot != null;
         bool showingHidden = _showingHidden && hasHiddenSection;
 
-        Debug.Log($"QuestMainMenuUI: UpdateTabVisibility showingHidden={showingHidden}");
+        // Debug.Log($"QuestMainMenuUI: UpdateTabVisibility showingHidden={showingHidden}");
 
         // Actualizar headers
         if (visibleHeaderText)
@@ -351,13 +351,13 @@ public class QuestMainMenuUI : MonoBehaviour
         if (visibleTabRoot != null)
         {
             visibleTabRoot.SetActive(!showingHidden);
-            Debug.Log($"QuestMainMenuUI: visibleTabRoot.SetActive({!showingHidden})");
+            // Debug.Log($"QuestMainMenuUI: visibleTabRoot.SetActive({!showingHidden})");
         }
 
         if (hiddenTabRoot != null)
         {
             hiddenTabRoot.SetActive(showingHidden);
-            Debug.Log($"QuestMainMenuUI: hiddenTabRoot.SetActive({showingHidden})");
+            // Debug.Log($"QuestMainMenuUI: hiddenTabRoot.SetActive({showingHidden})");
         }
 
         // Force update del canvas y layouts SOLO en el tab activo
@@ -367,7 +367,7 @@ public class QuestMainMenuUI : MonoBehaviour
         if (activeContent != null && activeContent.gameObject.activeInHierarchy)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(activeContent);
-            Debug.Log($"QuestMainMenuUI: LayoutRebuilder forzado en {activeContent.name} (height={activeContent.rect.height})");
+            // Debug.Log($"QuestMainMenuUI: LayoutRebuilder forzado en {activeContent.name} (height={activeContent.rect.height})");
         }
 
         // Actualizar visibilidad de los iconos de input (LB/RB)
@@ -406,14 +406,14 @@ public class QuestMainMenuUI : MonoBehaviour
                     if (targetButton != null && targetButton.gameObject.activeInHierarchy && targetButton.interactable)
                     {
                         targetButton.Select();
-                        Debug.Log($"QuestMainMenuUI: EnsureSelection -> selected {targetButton.name} from {child.name}");
+                        // Debug.Log($"QuestMainMenuUI: EnsureSelection -> selected {targetButton.name} from {child.name}");
                         return;
                     }
                 }
             }
         }
 
-        Debug.Log($"QuestMainMenuUI: EnsureSelection -> no hay botones disponibles para seleccionar");
+        // Debug.Log($"QuestMainMenuUI: EnsureSelection -> no hay botones disponibles para seleccionar");
     }
 
     void RefreshScrollViews()
@@ -454,12 +454,12 @@ public class QuestMainMenuUI : MonoBehaviour
         scrollRect.vertical = true;
         
         // Log detallado para debugging
-        Debug.Log($"QuestMainMenuUI.RefreshScrollView: ScrollRect '{scrollRect.name}' - Content: '{content.name}', Height: {content.rect.height}, " +
-                  $"Viewport: {(scrollRect.viewport != null ? scrollRect.viewport.name : "null")}, " +
-                  $"Viewport Height: {(scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f)}, " +
-                  $"Child Count: {content.childCount}, " +
-                  $"GameObject Active: {scrollRect.gameObject.activeInHierarchy}, " +
-                  $"Enabled: {scrollRect.enabled}");
+        // Debug.Log($"QuestMainMenuUI.RefreshScrollView: ScrollRect '{scrollRect.name}' - Content: '{content.name}', Height: {content.rect.height}, " +
+        //           $"Viewport: {(scrollRect.viewport != null ? scrollRect.viewport.name : "null")}, " +
+        //           $"Viewport Height: {(scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f)}, " +
+        //           $"Child Count: {content.childCount}, " +
+        //           $"GameObject Active: {scrollRect.gameObject.activeInHierarchy}, " +
+        //           $"Enabled: {scrollRect.enabled}");
 
         // Resetear scroll a la parte superior
         scrollRect.verticalNormalizedPosition = 1f;
@@ -528,7 +528,7 @@ public class QuestMainMenuUI : MonoBehaviour
     /// </summary>
     void ValidateScrollRectSetup()
     {
-        Debug.Log("[QuestMainMenuUI] Validando configuración de ScrollRects...");
+        // Debug.Log("[QuestMainMenuUI] Validando configuración de ScrollRects...");
         
         // Validar ScrollRect de misiones visibles
         if (visibleScrollRect != null && visibleContentRoot != null)
@@ -538,7 +538,7 @@ public class QuestMainMenuUI : MonoBehaviour
             visibleScrollRect.vertical = true;
             visibleScrollRect.movementType = ScrollRect.MovementType.Clamped;
             visibleScrollRect.scrollSensitivity = 15f;
-            Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect visible configurado: content={visibleContentRoot.name}, viewport={visibleScrollRect.viewport?.name ?? "null"}");
+            // Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect visible configurado: content={visibleContentRoot.name}, viewport={visibleScrollRect.viewport?.name ?? "null"}");
         }
         else
         {
@@ -553,7 +553,7 @@ public class QuestMainMenuUI : MonoBehaviour
             hiddenScrollRect.vertical = true;
             hiddenScrollRect.movementType = ScrollRect.MovementType.Clamped;
             hiddenScrollRect.scrollSensitivity = 15f;
-            Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect oculto configurado: content={hiddenContentRoot.name}, viewport={hiddenScrollRect.viewport?.name ?? "null"}");
+            // Debug.Log($"[QuestMainMenuUI] ✅ ScrollRect oculto configurado: content={hiddenContentRoot.name}, viewport={hiddenScrollRect.viewport?.name ?? "null"}");
         }
         else
         {

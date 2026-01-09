@@ -1,4 +1,3 @@
-// Assets/Scripts/Audio/AudioService.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -134,7 +133,7 @@ public sealed class AudioService : MonoBehaviour
         WireBattleStarts();
         WireBattleWins();
         _signalsWired = true;
-        Debug.Log("[AudioService] Señales conectadas (SFX, BattleStarts, BattleWins).");
+        // Debug.Log("[AudioService] Señales conectadas (SFX, BattleStarts, BattleWins).");
     }
 
     IEnumerator EnsureSignalsRoutine()

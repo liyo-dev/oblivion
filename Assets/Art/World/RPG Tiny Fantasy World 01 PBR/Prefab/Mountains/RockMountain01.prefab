@@ -100,7 +100,6 @@ GameObject:
   - component: {fileID: 7456685920448981494}
   - component: {fileID: 6052470794441847099}
   - component: {fileID: 4888423630149549885}
-  - component: {fileID: 7063281553045999577}
   m_Layer: 10
   m_Name: RockMountain01
   m_TagString: Untagged
@@ -170,52 +169,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -179393741545503174, guid: 8bb478f40c8084d4ba2f27d530cf08e4, type: 3}
---- !u!114 &7063281553045999577
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7795916750846227276}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ad29a66b4b74a819f2ca37a87f22c26, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlatformElevator
-  raiseHeight: 3
-  moveSpeed: 1
-  movementCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  delayBeforeMoving: 0
-  chainedPlatforms: []
-  movementStartSfxKey: Platform_Move_Start
-  movementStopSfxKey: Platform_Move_Stop
-  movementVFX: {fileID: 100000, guid: 6d766c2cbb18c894d9fbab9a03f1ba37, type: 3}
-  vfxSpawnPoint: {fileID: 7456685920448981494}
-  vfxLifetime: 3
-  isRaised: 0
 --- !u!1 &8958465909069585797
 GameObject:
   m_ObjectHideFlags: 0
@@ -227,6 +180,7 @@ GameObject:
   - component: {fileID: 8011254114556085050}
   - component: {fileID: 8342497326245086994}
   - component: {fileID: 8501634267412778657}
+  - component: {fileID: 3530967450377230554}
   m_Layer: 10
   m_Name: LOD0
   m_TagString: Untagged
@@ -305,3 +259,49 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3530967450377230554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8958465909069585797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ad29a66b4b74a819f2ca37a87f22c26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlatformElevator
+  raiseHeight: 3
+  moveSpeed: 1
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  delayBeforeMoving: 0
+  chainedPlatforms: []
+  movementStartSfxKey: Platform_Move_Start
+  movementStopSfxKey: Platform_Move_Stop
+  movementVFX: {fileID: 100000, guid: 6d766c2cbb18c894d9fbab9a03f1ba37, type: 3}
+  vfxSpawnPoint: {fileID: 7456685920448981494}
+  vfxLifetime: 3
+  isRaised: 0

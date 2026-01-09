@@ -35,7 +35,7 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[NarrativeRunner] Iniciando desde nodo: {node.GetType().Name}");
+        // Debug.Log($"[NarrativeRunner] Iniciando desde nodo: {node.GetType().Name}");
         GoTo(node);
     }
 
@@ -54,7 +54,7 @@ public class NarrativeRunner : MonoBehaviour
             var savedNode = graph.FindNode(savedNodeGuid);
             if (savedNode != null)
             {
-                Debug.Log($"[NarrativeRunner] Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
+                // Debug.Log($"[NarrativeRunner] Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
                 GoTo(savedNode);
                 return;
             }
@@ -77,7 +77,7 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[NarrativeRunner] Iniciando desde StartNode: {start.GetType().Name}");
+        // Debug.Log($"[NarrativeRunner] Iniciando desde StartNode: {start.GetType().Name}");
         GoTo(start);
     }
 
@@ -108,7 +108,7 @@ public class NarrativeRunner : MonoBehaviour
 
     public void GoTo(NarrativeNode node)
     {
-        Debug.Log($"[Runner] GoTo → {node?.GetType().Name}");
+        // Debug.Log($"[Runner] GoTo → {node?.GetType().Name}");
         
         _current?.Exit(_ctx);
         _current = node;

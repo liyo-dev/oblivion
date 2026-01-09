@@ -107,7 +107,7 @@ public class FogZone : MonoBehaviour
         _defaultFogMode = RenderSettings.fogMode;
         _defaultsCaptured = true;
 
-        Debug.Log($"[FogZone] Valores por defecto capturados - Enabled:{_defaultFogEnabled}, Density:{_defaultFogDensity}, Color:{_defaultFogColor}");
+        //Debug.Log($"[FogZone] Valores por defecto capturados - Enabled:{_defaultFogEnabled}, Density:{_defaultFogDensity}, Color:{_defaultFogColor}");
     }
     
     private void OnTriggerEnter(Collider other)

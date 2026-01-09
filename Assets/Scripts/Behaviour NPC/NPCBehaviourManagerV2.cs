@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -199,11 +199,11 @@ namespace Game.NPC
                 if (!GetComponent<NPCCombatLifecycleHandler>())
                 {
                     gameObject.AddComponent<NPCCombatLifecycleHandler>();
-                    if (debugMode) Debug.Log($"[NPCManager] ☠️ NPCCombatLifecycleHandler añadido (Pre-Combate) para {name}");
+                    //if (debugMode) Debug.Log($"[NPCManager] ☠️ NPCCombatLifecycleHandler añadido (Pre-Combate) para {name}");
                 }
                 else
                 {
-                    if (debugMode) Debug.Log($"[NPCManager] ℹ️ NPCCombatLifecycleHandler ya existe en {name}");
+                    //if (debugMode) Debug.Log($"[NPCManager] ℹ️ NPCCombatLifecycleHandler ya existe en {name}");
                 }
 
                 // C. Targetable (Para que el jugador pueda apuntarle antes de pelear)
@@ -242,6 +242,24 @@ namespace Game.NPC
             {
                 _brain.ChangeState(new States.CombatState());
             }
+            
+            // ✅ NUEVO: Si es líder de un equipo, hacer que los compañeros también entren en combate
+            var combatTeam = GetComponent<NPCCombatTeam>();
+            if (combatTeam != null)
+            {
+                // Obtener el jugador como objetivo
+                Transform target = _context.Player;
+                if (target == null && PlayerService.TryGetPlayer(out var player))
+                {
+                    target = player.transform;
+                }
+                
+                if (target != null)
+                {
+                    // ForceTeamCombat hará que todos los miembros entren en combate
+                    combatTeam.ForceTeamCombat(target);
+                }
+            }
         }
         
         public void ExitCombat()
@@ -252,6 +270,31 @@ namespace Game.NPC
             ActiveCombatRegistry.UnregisterNPC(gameObject);
             
             // El CombatState detectará el flag en su Update y saldrá solo
+        }
+        
+        /// <summary>
+        /// Fuerza al NPC a entrar en combate inmediatamente contra un objetivo específico.
+        /// Usado por el sistema de equipos de combate (NPCCombatTeam).
+        /// </summary>
+        public void ForceEnterCombat(Transform target)
+        {
+            // Evitar entrar en combate si ya estamos muertos
+            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+            
+            // Asignar el objetivo
+            _context.Player = target;
+            _context.IsInCombat = true;
+            
+            // Registrar en el registro de combate activo
+            ActiveCombatRegistry.RegisterNPC(gameObject);
+            
+            // Forzar cambio a estado de combate
+            if (!(_brain.CurrentState is States.CombatState))
+            {
+                if (debugMode) Debug.Log($"[NPCManager] ⚔️ {name} forzado a entrar en combate contra {target.name}");
+                _brain.ForceState(new States.CombatState());
+            }
         }
 
         public void ForceIdle()

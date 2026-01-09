@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.States;
-using Sendero.Core.Feedback; // Para eventos narrativos
+using EasyTransition;
 
 namespace Game.NPC.Modules
 {
@@ -269,14 +269,35 @@ namespace Game.NPC.Modules
 
         public bool TryExecuteNarrative()
         {
-            if (_isExecuting || _config == null) return false;
+            Debug.Log($"[NarrativeExecutor] 🔍 {name} - TryExecuteNarrative llamado");
+            
+            if (_isExecuting)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {name} - Ya está ejecutando una narrativa (_isExecuting=true)");
+                return false;
+            }
+            
+            if (_config == null)
+            {
+                Debug.LogError($"[NarrativeExecutor] ❌ {name} - _config es NULL");
+                return false;
+            }
 
             var activeNarrative = _config.GetActiveNarrative();
-            if (activeNarrative == null) return false;
+            if (activeNarrative == null)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {name} - No hay narrativa activa");
+                return false;
+            }
 
             var chain = activeNarrative.narrativeChain;
-            if (chain == null || chain.Length == 0) return false;
+            if (chain == null || chain.Length == 0)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {gameObject.name} - La narrativa '{activeNarrative.description}' no tiene cadena o está vacía");
+                return false;
+            }
 
+            Debug.Log($"[NarrativeExecutor] ✅ {gameObject.name} - Iniciando ejecución de narrativa '{activeNarrative.description}' con {chain.Length} acciones");
             StartCoroutine(ExecuteNarrativeChain(chain, activeNarrative));
             return true;
         }
@@ -321,11 +342,19 @@ namespace Game.NPC.Modules
             }
 
             if (_config.persistState) SaveState();
+            
+            // ✅ CRÍTICO: Invalidar caché de narrativa ANTES de ejecutar el PostNarrativeState
+            // Esto asegura que GetActiveNarrative() retornará null o la siguiente narrativa
+            // disponible en lugar de la narrativa recién completada
+            InvalidateNarrativeCache();
 
             // 4. Estado Post-Narrativa (usa el de la narrativa específica)
             yield return HandlePostNarrativeState(narrativeData);
 
             _isExecuting = false;
+            
+            // ✅ Resetear flag de detección para permitir futuras narrativas con autoStartOnDetection
+            _hasDetectedPlayer = false;
         }
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)
@@ -366,36 +395,565 @@ namespace Game.NPC.Modules
 
         private IEnumerator ExecuteMove(NarrativeChainEntry entry)
         {
-            Vector3 targetPos = GetTargetPosition(entry);
-            if (targetPos == Vector3.zero) yield break;
-
-            // ✅ Obtener el SpawnAnchor de destino si existe
-            SpawnAnchor targetAnchor = null;
-            if (!string.IsNullOrEmpty(entry.targetAnchorName))
+            Debug.Log($"[NarrativeExecutor] 🚶 ExecuteMove iniciado para {name}");
+            
+            Vector3 targetPos;
+            
+            // ✅ Movimiento a punto aleatorio
+            if (entry.moveToRandomPoint)
             {
-                targetAnchor = SpawnAnchor.FindById(entry.targetAnchorName);
-            }
-
-            if (entry.waitForPlayer)
-            {
-                // Lógica compleja de seguimiento (Player Follow)
-                yield return ExecuteMoveWithPlayerFollow(entry, targetPos, targetAnchor);
+                targetPos = GetRandomMovePosition(entry.randomMoveMinRadius, entry.randomMoveMaxRadius);
+                Debug.Log($"[NarrativeExecutor] 🎲 Moviendo {name} a punto aleatorio: {targetPos}");
+                
+                // Si es líder de equipo y moveTeamMembers está activo, mover también a los compañeros
+                var combatTeam = GetComponent<NPCCombatTeam>();
+                if (combatTeam != null && entry.moveTeamMembers)
+                {
+                    Debug.Log($"[NarrativeExecutor] 👥 Moviendo también a {combatTeam.TeamSize - 1} miembros del equipo");
+                    MoveTeamMembersToRandomPoints(combatTeam, entry);
+                }
+                
+                // Para movimiento aleatorio, usar NavMeshAgent directamente
+                yield return MoveToPositionDirect(targetPos, entry.maxMovementDuration);
             }
             else
             {
-                // Movimiento Estándar usando el sistema cinemático del Manager
-                var moveSeq = new MoveToPositionSequence(
-                    _npcManager, 
-                    targetPos, 
-                    entry.maxMovementDuration, 
-                    entry.turnAroundOnArrival, 
-                    999f, // Walk duration infinita (sin teleport)
-                    targetAnchor // ✅ Pasar el anchor de destino
-                );
+                targetPos = GetTargetPosition(entry);
+                if (targetPos == Vector3.zero)
+                {
+                    Debug.LogWarning($"[NarrativeExecutor] ⚠️ targetPos es Vector3.zero - abortando movimiento");
+                    yield break;
+                }
+
+                // ...existing code...
+            }
+            
+            // ✅ Desaparecer al llegar con transición
+            if (entry.disappearOnArrival)
+            {
+                Debug.Log($"[NarrativeExecutor] 👻 Iniciando desaparición para {name}");
+                yield return DisappearWithTransition(entry.disappearTransition);
+            }
+            else
+            {
+                Debug.Log($"[NarrativeExecutor] ✅ ExecuteMove completado para {name} (sin desaparecer)");
+            }
+        }
+        
+        /// <summary>
+        /// Mueve al NPC directamente usando NavMeshAgent (sin secuencia cinemática)
+        /// </summary>
+        private IEnumerator MoveToPositionDirect(Vector3 targetPos, float maxDuration)
+        {
+            var agent = _npcManager.Agent;
+            
+            Debug.Log($"[NarrativeExecutor] 🔍 MoveToPositionDirect - Agent: {(agent != null ? "OK" : "NULL")}, " +
+                     $"Enabled: {(agent != null ? agent.enabled : false)}, " +
+                     $"OnNavMesh: {(agent != null && agent.enabled ? agent.isOnNavMesh : false)}");
+            
+            if (agent == null)
+            {
+                Debug.LogError($"[NarrativeExecutor] ❌ NavMeshAgent es NULL para {name}");
+                yield break;
+            }
+            
+            // ✅ Verificar si hay NPCCombatBrain activo que pueda interferir
+            var combatBrain = GetComponent<NPCCombatBrain>();
+            bool hadActiveBrain = false;
+            if (combatBrain != null && combatBrain.enabled)
+            {
+                combatBrain.enabled = false;
+                hadActiveBrain = true;
+                Debug.Log($"[NarrativeExecutor] 🔧 Desactivando NPCCombatBrain temporalmente para {name}");
+            }
+            
+            // ✅ Reactivar el agent si está deshabilitado (puede pasar después de combate)
+            if (!agent.enabled)
+            {
+                Debug.Log($"[NarrativeExecutor] 🔧 Reactivando NavMeshAgent para {name}");
+                agent.enabled = true;
+                yield return new WaitForSeconds(0.1f); // Pequeña espera para que se inicialice
+            }
+            
+            if (!agent.isOnNavMesh)
+            {
+                Debug.LogError($"[NarrativeExecutor] ❌ {name} no está en NavMesh - posición: {transform.position}");
                 
-                _npcManager.StartCinematicSequence(moveSeq);
+                // Reactivar brain si fue desactivado antes de abortar
+                if (hadActiveBrain && combatBrain != null)
+                {
+                    combatBrain.enabled = true;
+                }
+                yield break;
+            }
+            
+            // ✅ CRÍTICO: Asegurar que el agent mueva y rote el transform (después del combate)
+            agent.updatePosition = true;
+            agent.updateRotation = true;
+            
+            // ✅ Verificar que hay un camino válido antes de moverse
+            UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+            if (!agent.CalculatePath(targetPos, path))
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {name} no puede calcular camino a {targetPos}");
                 
-                while (!moveSeq.IsCompleted) yield return null;
+                // Reactivar brain si fue desactivado antes de abortar
+                if (hadActiveBrain && combatBrain != null)
+                {
+                    combatBrain.enabled = true;
+                }
+                yield break;
+            }
+            
+            if (path.status != UnityEngine.AI.NavMeshPathStatus.PathComplete)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {name} camino incompleto a {targetPos} - status: {path.status}");
+                
+                // Si el camino es parcial, intentar ir al punto más cercano alcanzable
+                if (path.status == UnityEngine.AI.NavMeshPathStatus.PathPartial && path.corners.Length > 1)
+                {
+                    Vector3 lastReachablePoint = path.corners[path.corners.Length - 1];
+                    Debug.Log($"[NarrativeExecutor] 📍 {name} usando punto parcial más cercano: {lastReachablePoint}");
+                    targetPos = lastReachablePoint;
+                }
+                else
+                {
+                    Debug.LogError($"[NarrativeExecutor] ❌ {name} no hay camino válido - abortando movimiento");
+                    
+                    // Reactivar brain si fue desactivado antes de abortar
+                    if (hadActiveBrain && combatBrain != null)
+                    {
+                        combatBrain.enabled = true;
+                    }
+                    yield break;
+                }
+            }
+            
+            // Configurar y comenzar movimiento
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
+            
+            Debug.Log($"[NarrativeExecutor] 🚶 {name} configurado para moverse a {targetPos}, distancia: {Vector3.Distance(transform.position, targetPos):F1}m");
+            
+            // ✅ CRÍTICO: Cancelar secuencia dizzy ANTES de resetear el animator
+            var lifecycle = _npcManager.GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycle != null)
+            {
+                lifecycle.CancelDizzySequence();
+                Debug.Log($"[NarrativeExecutor] 🛑 Secuencia dizzy cancelada para {name}");
+            }
+            
+            // ✅ CRÍTICO: Resetear el animator para salir del estado dizzy/muerte antes de mover
+            if (_npcManager.SimpleAnimator != null)
+            {
+                // Primero desactivar battle mode para volver al layer base
+                _npcManager.SimpleAnimator.SetBattleMode(false);
+                
+                // Forzar transición a Idle para salir de dizzy
+                _npcManager.SimpleAnimator.TransitionToIdle();
+                
+                // Resetear velocidad de movimiento
+                _npcManager.SimpleAnimator.ResetMovement();
+                
+                Debug.Log($"[NarrativeExecutor] 🔄 Animator reseteado para {name} - BattleMode OFF, Idle forzado");
+                
+                // ✅ IMPORTANTE: Esperar un frame para que el Animator procese las transiciones
+                yield return null;
+            }
+            
+            // Activar animación de caminar
+            if (_npcManager.SimpleAnimator != null)
+            {
+                float movementSpeed = agent.velocity.magnitude;
+                _npcManager.SimpleAnimator.SetMovementSpeed(movementSpeed, 0.1f);
+                Debug.Log($"[NarrativeExecutor] 🏃 Activando animación de caminar para {name} - Speed: {movementSpeed:F2}, AgentSpeed: {agent.speed:F2}, Velocity: {agent.velocity.magnitude:F2}");
+            }
+            
+            float timer = 0f;
+            bool hasReachedDestination = false;
+            
+            while (timer < maxDuration)
+            {
+                // Verificar si llegó
+                if (!agent.pathPending && agent.remainingDistance < 1f)
+                {
+                    Debug.Log($"[NarrativeExecutor] ✅ {name} llegó al destino (remainingDistance: {agent.remainingDistance:F2}m)");
+                    hasReachedDestination = true;
+                    break;
+                }
+                
+                // Actualizar animación según velocidad real
+                if (_npcManager.SimpleAnimator != null && agent.velocity.magnitude > 0.1f)
+                {
+                    _npcManager.SimpleAnimator.SetMovementSpeed(agent.velocity.magnitude / Mathf.Max(agent.speed, 1f), 0.1f);
+                }
+                
+                // Debug cada segundo
+                if (Mathf.FloorToInt(timer) != Mathf.FloorToInt(timer + Time.deltaTime))
+                {
+                    Debug.Log($"[NarrativeExecutor] 🚶 {name} moviéndose... Distancia restante: {agent.remainingDistance:F1}m, Velocidad: {agent.velocity.magnitude:F1}");
+                }
+                
+                timer += Time.deltaTime;
+                yield return null;
+            }
+            
+            if (!hasReachedDestination)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⏱️ {name} timeout de movimiento (no llegó en {maxDuration}s)");
+            }
+            
+            // Detener
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+            }
+            _npcManager.SimpleAnimator?.SetMovementSpeed(0, 0.1f);
+            
+            // ✅ Reactivar combat brain si fue desactivado
+            if (hadActiveBrain && combatBrain != null)
+            {
+                combatBrain.enabled = true;
+                Debug.Log($"[NarrativeExecutor] 🔧 Reactivando NPCCombatBrain para {name}");
+            }
+            
+            //Debug.Log($"[NarrativeExecutor] ✅ MoveToPositionDirect completado para {name}");
+        }
+        
+        /// <summary>
+        /// Desaparece el NPC con una transición visual opcional
+        /// </summary>
+        private IEnumerator DisappearWithTransition(TransitionSettings transition)
+        {
+            Debug.Log($"[NarrativeExecutor] 👻 {name} desapareciendo...");
+            
+            if (transition != null)
+            {
+                // Usar el sistema de transiciones
+                var transitionManager = TransitionManager.Instance();
+                if (transitionManager != null)
+                {
+                    // Iniciar transición visual
+                    transitionManager.Transition(transition, 0f);
+                    
+                    // Esperar la mitad del tiempo de transición antes de desactivar
+                    float totalTime = transition.transitionTime + transition.destroyTime;
+                    yield return new WaitForSeconds(totalTime / 2f);
+                }
+                else
+                {
+                    Debug.LogWarning($"[NarrativeExecutor] ⚠️ TransitionManager no encontrado");
+                    yield return new WaitForSeconds(0.5f);
+                }
+            }
+            else
+            {
+                // Sin transición, pequeña pausa
+                yield return new WaitForSeconds(0.3f);
+            }
+            
+            // Desactivar el GameObject
+            gameObject.SetActive(false);
+            Debug.Log($"[NarrativeExecutor] ✅ {name} desactivado");
+        }
+        
+        /// <summary>
+        /// Obtiene una posición aleatoria válida en el NavMesh, ALEJÁNDOSE del player
+        /// </summary>
+        private Vector3 GetRandomMovePosition(float minRadius, float maxRadius)
+        {
+            // Obtener dirección OPUESTA al player para huir
+            Vector3 fleeDirection = transform.forward; // Default: hacia adelante
+            
+            if (PlayerService.TryGetPlayer(out var player))
+            {
+                Vector3 toPlayer = player.transform.position - transform.position;
+                toPlayer.y = 0;
+                if (toPlayer.sqrMagnitude > 0.1f)
+                {
+                    // Dirección OPUESTA al player
+                    fleeDirection = -toPlayer.normalized;
+                }
+            }
+            
+            // Intentar encontrar un punto válido varias veces
+            for (int i = 0; i < 10; i++)
+            {
+                // Añadir variación aleatoria a la dirección de huida (±45 grados)
+                float randomAngle = Random.Range(-45f, 45f);
+                Vector3 randomizedDir = Quaternion.Euler(0, randomAngle, 0) * fleeDirection;
+                
+                float randomDist = Random.Range(minRadius, maxRadius);
+                Vector3 randomPoint = transform.position + randomizedDir * randomDist;
+                
+                // Verificar que está en NavMesh
+                if (UnityEngine.AI.NavMesh.SamplePosition(randomPoint, out UnityEngine.AI.NavMeshHit hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    // Verificar que hay un camino válido
+                    var agent = _npcManager.Agent;
+                    if (agent != null && agent.enabled && agent.isOnNavMesh)
+                    {
+                        UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+                        if (agent.CalculatePath(hit.position, path) && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete)
+                        {
+                            return hit.position;
+                        }
+                    }
+                    else
+                    {
+                        return hit.position;
+                    }
+                }
+            }
+            
+            // Fallback: huir en la dirección opuesta al player
+            Debug.LogWarning($"[NarrativeExecutor] ⚠️ No se encontró punto aleatorio válido para {name}, usando dirección de huida");
+            return transform.position + fleeDirection * minRadius;
+        }
+        
+        /// <summary>
+        /// Mueve a todos los miembros del equipo a puntos aleatorios
+        /// </summary>
+        private void MoveTeamMembersToRandomPoints(NPCCombatTeam team, NarrativeChainEntry entry)
+        {
+            foreach (var member in team.AllMembers)
+            {
+                // Saltar al líder (ya se está moviendo con la lógica principal)
+                if (member == _npcManager) continue;
+                if (member == null || !member.gameObject.activeInHierarchy) continue;
+                
+                // Obtener posición aleatoria para este miembro
+                Vector3 memberTargetPos = GetRandomMovePositionForMember(member.transform, entry.randomMoveMinRadius, entry.randomMoveMaxRadius);
+                
+                Debug.Log($"[NarrativeExecutor] 🎲 Moviendo miembro de equipo {member.name} a punto aleatorio: {memberTargetPos}");
+                
+                // Iniciar movimiento del miembro
+                StartCoroutine(MoveTeamMemberAndDisappear(member, memberTargetPos, entry));
+            }
+        }
+        
+        /// <summary>
+        /// Obtiene posición aleatoria para un miembro específico del equipo, ALEJÁNDOSE del player
+        /// </summary>
+        private Vector3 GetRandomMovePositionForMember(Transform memberTransform, float minRadius, float maxRadius)
+        {
+            // Obtener dirección OPUESTA al player para huir
+            Vector3 fleeDirection = memberTransform.forward; // Default: hacia adelante
+            
+            if (PlayerService.TryGetPlayer(out var player))
+            {
+                Vector3 toPlayer = player.transform.position - memberTransform.position;
+                toPlayer.y = 0;
+                if (toPlayer.sqrMagnitude > 0.1f)
+                {
+                    // Dirección OPUESTA al player
+                    fleeDirection = -toPlayer.normalized;
+                }
+            }
+            
+            for (int i = 0; i < 10; i++)
+            {
+                // Añadir variación aleatoria a la dirección de huida (±45 grados)
+                float randomAngle = Random.Range(-45f, 45f);
+                Vector3 randomizedDir = Quaternion.Euler(0, randomAngle, 0) * fleeDirection;
+                
+                float randomDist = Random.Range(minRadius, maxRadius);
+                Vector3 randomPoint = memberTransform.position + randomizedDir * randomDist;
+                
+                if (UnityEngine.AI.NavMesh.SamplePosition(randomPoint, out UnityEngine.AI.NavMeshHit hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    return hit.position;
+                }
+            }
+            
+            // Fallback: huir en la dirección opuesta al player
+            return memberTransform.position + fleeDirection * minRadius;
+        }
+        
+        /// <summary>
+        /// Corrutina para mover un miembro del equipo y hacerlo desaparecer
+        /// </summary>
+        private IEnumerator MoveTeamMemberAndDisappear(NPCBehaviourManagerV2 member, Vector3 targetPos, NarrativeChainEntry entry)
+        {
+            var agent = member.Agent;
+            if (agent == null) 
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ Agent NULL para {member.name}");
+                yield break;
+            }
+            
+            // ✅ Verificar si hay NPCCombatBrain activo que pueda interferir
+            var combatBrain = member.GetComponent<NPCCombatBrain>();
+            bool hadActiveBrain = false;
+            if (combatBrain != null && combatBrain.enabled)
+            {
+                combatBrain.enabled = false;
+                hadActiveBrain = true;
+                Debug.Log($"[NarrativeExecutor] 🔧 Desactivando NPCCombatBrain temporalmente para {member.name}");
+            }
+            
+            // ✅ Reactivar agent si está deshabilitado
+            if (!agent.enabled)
+            {
+                Debug.Log($"[NarrativeExecutor] 🔧 Reactivando agent para {member.name}");
+                agent.enabled = true;
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            if (!agent.isOnNavMesh)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {member.name} no está en NavMesh");
+                yield break;
+            }
+            
+            Debug.Log($"[NarrativeExecutor] 🚶 Miembro {member.name} moviéndose de {member.transform.position} a {targetPos}");
+            
+            // ✅ Verificar que hay un camino válido antes de moverse
+            UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+            if (!agent.CalculatePath(targetPos, path))
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {member.name} no puede calcular camino a {targetPos}");
+                
+                // Reactivar brain si fue desactivado antes de abortar
+                if (hadActiveBrain && combatBrain != null)
+                {
+                    combatBrain.enabled = true;
+                }
+                yield break;
+            }
+            
+            if (path.status != UnityEngine.AI.NavMeshPathStatus.PathComplete)
+            {
+                Debug.LogWarning($"[NarrativeExecutor] ⚠️ {member.name} camino incompleto - status: {path.status}");
+                
+                // Si el camino es parcial, intentar ir al punto más cercano alcanzable
+                if (path.status == UnityEngine.AI.NavMeshPathStatus.PathPartial && path.corners.Length > 1)
+                {
+                    Vector3 lastReachablePoint = path.corners[path.corners.Length - 1];
+                    Debug.Log($"[NarrativeExecutor] 📍 {member.name} usando punto parcial más cercano: {lastReachablePoint}");
+                    targetPos = lastReachablePoint;
+                }
+                else
+                {
+                    Debug.LogError($"[NarrativeExecutor] ❌ {member.name} no hay camino válido - abortando");
+                    
+                    // Reactivar brain si fue desactivado antes de abortar
+                    if (hadActiveBrain && combatBrain != null)
+                    {
+                        combatBrain.enabled = true;
+                    }
+                    yield break;
+                }
+            }
+            
+            // ✅ Asegurar que el agent mueva y rote el transform
+            agent.updatePosition = true;
+            agent.updateRotation = true;
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
+            
+            // Obtener el animador
+            var animator = member.SimpleAnimator;
+            
+            Debug.Log($"[NarrativeExecutor] 🎬 Animator para {member.name}: {(animator != null ? "OK" : "NULL")}");
+            
+            // ✅ CRÍTICO: Cancelar secuencia dizzy ANTES de resetear el animator
+            var lifecycle = member.GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycle != null)
+            {
+                lifecycle.CancelDizzySequence();
+                Debug.Log($"[NarrativeExecutor] 🛑 Secuencia dizzy cancelada para {member.name}");
+            }
+            
+            // ✅ CRÍTICO: Resetear el animator para salir del estado dizzy/muerte
+            if (animator != null)
+            {
+                // Primero desactivar battle mode para volver al layer base
+                animator.SetBattleMode(false);
+                
+                // Forzar transición a Idle para salir de dizzy
+                animator.TransitionToIdle();
+                
+                // Resetear velocidad de movimiento
+                animator.ResetMovement();
+                
+                Debug.Log($"[NarrativeExecutor] 🔄 Animator reseteado para {member.name} - BattleMode OFF, Idle forzado");
+            }
+            
+            // Esperar a que llegue o timeout
+            float timer = 0;
+            float lastLogTime = 0;
+            while (timer < entry.maxMovementDuration)
+            {
+                if (!agent.pathPending && agent.remainingDistance < 1f)
+                {
+                    Debug.Log($"[NarrativeExecutor] ✅ Miembro {member.name} llegó al destino");
+                    break;
+                }
+                
+                // ✅ Actualizar animación según velocidad real cada frame
+                if (animator != null)
+                {
+                    float currentSpeed = agent.velocity.magnitude;
+                    if (currentSpeed > 0.1f)
+                    {
+                        float normalizedSpeed = currentSpeed / Mathf.Max(agent.speed, 1f);
+                        animator.SetMovementSpeed(normalizedSpeed, 0.1f);
+                        
+                        // Log cada segundo
+                        if (timer - lastLogTime >= 1f)
+                        {
+                            Debug.Log($"[NarrativeExecutor] 🚶 {member.name} - Speed: {currentSpeed:F2}, Normalized: {normalizedSpeed:F2}, Dist: {agent.remainingDistance:F1}m, BattleMode: {animator.IsInBattleMode}");
+                            lastLogTime = timer;
+                        }
+                    }
+                    else
+                    {
+                        animator.SetMovementSpeed(0f, 0.1f);
+                    }
+                }
+                else if (timer - lastLogTime >= 1f)
+                {
+                    Debug.LogWarning($"[NarrativeExecutor] ⚠️ {member.name} sin animator - velocidad: {agent.velocity.magnitude:F2}");
+                    lastLogTime = timer;
+                }
+                
+                timer += Time.deltaTime;
+                yield return null;
+            }
+            
+            // Detener movimiento
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+            }
+            animator?.SetMovementSpeed(0, 0.1f);
+            
+            // ✅ Reactivar combat brain si fue desactivado
+            if (hadActiveBrain && combatBrain != null)
+            {
+                combatBrain.enabled = true;
+                Debug.Log($"[NarrativeExecutor] 🔧 Reactivando NPCCombatBrain para {member.name}");
+            }
+            
+            // Desaparecer si está configurado
+            if (entry.disappearOnArrival)
+            {
+                Debug.Log($"[NarrativeExecutor] 👻 Miembro de equipo {member.name} desapareciendo...");
+                
+                if (entry.disappearTransition != null)
+                {
+                    // Esperar la mitad del tiempo de transición (el líder maneja la transición global)
+                    float totalTime = entry.disappearTransition.transitionTime + entry.disappearTransition.destroyTime;
+                    yield return new WaitForSeconds(totalTime / 2f);
+                }
+                else
+                {
+                    yield return new WaitForSeconds(0.3f);
+                }
+                
+                member.gameObject.SetActive(false);
+                Debug.Log($"[NarrativeExecutor] ✅ Miembro {member.name} desactivado");
             }
         }
 
@@ -407,8 +965,12 @@ namespace Game.NPC.Modules
             var player = PlayerService.Player;
             if (!agent || !player) yield break;
 
-            agent.SetDestination(targetPos);
+            // ✅ Asegurar que el agent mueva y rote el transform
+            agent.updatePosition = true;
+            agent.updateRotation = true;
             agent.isStopped = false;
+            agent.SetDestination(targetPos);
+            
             bool waiting = false;
             float timer = 0;
 
@@ -536,52 +1098,170 @@ namespace Game.NPC.Modules
         {
             if (entry.combatConfig == null) yield break;
 
-            // ✅ FIX: Solo preparar la configuración de combate
-            // NO iniciar el combate directamente para evitar:
-            // 1. Música duplicada (aquí + AlertState)
-            // 2. Salto extraño (Idle → Combat → Idle → Alert → Combat)
-            // 
-            // El flujo natural será: Idle → Alert (con diálogo y música) → Combat
-            
-            Debug.Log($"[NarrativeExecutor] ⚙️ Preparando configuración de combate para {gameObject.name}");
+            Debug.Log($"[NarrativeExecutor] ⚙️ Preparando combate para {gameObject.name}");
             
             // 1. Preparar Capas y Config
             SwitchToEnemyLayer();
             _npcManager.Configuration.combatConfig = entry.combatConfig;
             
-            // ✅ FIX CRÍTICO: Transferir configuración de eventos de derrota desde NarrativeChainEntry
-            // al NPCCombatConfig para que NPCCombatLifecycleHandler pueda enviar el evento
+            // ✅ Transferir configuración de eventos de derrota
             if (entry.sendEventOnDefeat && !string.IsNullOrEmpty(entry.defeatEventKey))
             {
                 entry.combatConfig.sendEventOnDefeat = entry.sendEventOnDefeat;
                 entry.combatConfig.defeatEventKey = entry.defeatEventKey;
                 entry.combatConfig.sendDefeatEventBeforeDeath = entry.sendDefeatEventBeforeDeath;
-                Debug.Log($"[NarrativeExecutor] 📤 Configurado evento de derrota: '{entry.defeatEventKey}' (antes de muerte: {entry.sendDefeatEventBeforeDeath})");
+                Debug.Log($"[NarrativeExecutor] 📤 Configurado evento de derrota: '{entry.defeatEventKey}'");
             }
             
-            // 2. Asegurar que los componentes de combate existan (sin iniciar combate)
-            // Esto prepara al NPC para combate pero NO lo inicia
+            // 2. Asegurar que los componentes de combate existan
             if (!GetComponent<Damageable>())
             {
                 var dmg = gameObject.AddComponent<Damageable>();
                 dmg.SetMaxAndCurrent(entry.combatConfig.health, entry.combatConfig.health);
                 dmg.SetDestroyOnDeath(false);
-                Debug.Log($"[NarrativeExecutor] 🛡️ Damageable añadido preventivamente");
+                Debug.Log($"[NarrativeExecutor] 🛡️ Damageable añadido");
             }
             
-            if (!GetComponent<NPCCombatLifecycleHandler>())
+            NPCCombatLifecycleHandler lifecycleHandler = GetComponent<NPCCombatLifecycleHandler>();
+            if (lifecycleHandler == null)
             {
-                gameObject.AddComponent<NPCCombatLifecycleHandler>();
-                Debug.Log($"[NarrativeExecutor] ☠️ NPCCombatLifecycleHandler añadido preventivamente para {gameObject.name}");
+                lifecycleHandler = gameObject.AddComponent<NPCCombatLifecycleHandler>();
+                Debug.Log($"[NarrativeExecutor] ☠️ NPCCombatLifecycleHandler añadido para {gameObject.name}");
+            }
+            
+            // 3. Verificar si hay un equipo de combate
+            var combatTeam = GetComponent<NPCCombatTeam>();
+            bool hasTeam = combatTeam != null && combatTeam.TeamSize > 1;
+            
+            // 4. Esperar a que termine cualquier diálogo activo antes de iniciar combate
+            while (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+            {
+                yield return null;
+            }
+            
+            // 5. AHORA sí iniciar el combate (después del diálogo)
+            Debug.Log($"[NarrativeExecutor] ⚔️ Iniciando combate para {gameObject.name}");
+            _npcManager.EnterCombat();
+            
+            // Pequeña espera para que el combate se inicialice
+            yield return new WaitForSeconds(0.5f);
+            
+            // 6. Esperar a que el combate termine
+            if (hasTeam)
+            {
+                // ✅ EQUIPO: Esperar a que TODO el equipo sea derrotado
+                Debug.Log($"[NarrativeExecutor] 👥 Esperando a que todo el equipo sea derrotado ({combatTeam.TeamSize} miembros)...");
+                
+                while (!combatTeam.IsTeamDefeated)
+                {
+                    // También verificar si el combate terminó por otra razón
+                    if (_npcManager.Context != null && !_npcManager.Context.IsInCombat && !combatTeam.IsTeamInCombat)
+                    {
+                        Debug.Log($"[NarrativeExecutor] ⚠️ Combate de equipo terminó sin derrota total");
+                        break;
+                    }
+                    yield return null;
+                }
+                
+                Debug.Log($"[NarrativeExecutor] 💀 ¡Todo el equipo ha sido derrotado!");
+                
+                // ✅ Esperar a que el diálogo de dizzy se abra (máximo 5 segundos)
+                Debug.Log($"[NarrativeExecutor] 💬 Esperando a que se abra el diálogo de dizzy...");
+                
+                float waitForDialogueTimeout = 5f;
+                float waitTimer = 0f;
+                
+                // Esperar hasta que el diálogo se abra o timeout
+                while (waitTimer < waitForDialogueTimeout)
+                {
+                    if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                    {
+                        Debug.Log($"[NarrativeExecutor] 💬 Diálogo de dizzy abierto");
+                        break;
+                    }
+                    waitTimer += Time.deltaTime;
+                    yield return null;
+                }
+                
+                // Si el diálogo está abierto, esperar a que el usuario lo cierre
+                if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                {
+                    Debug.Log($"[NarrativeExecutor] 💬 Esperando a que el usuario cierre el diálogo...");
+                    
+                    while (DialogueManager.Instance.IsOpen)
+                    {
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[NarrativeExecutor] ✅ Diálogo de dizzy cerrado por el usuario");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NarrativeExecutor] ⚠️ El diálogo de dizzy no se abrió (timeout o no configurado)");
+                }
             }
             else
             {
-                Debug.Log($"[NarrativeExecutor] ℹ️ NPCCombatLifecycleHandler ya existe en {gameObject.name}");
+                // NPC INDIVIDUAL: Esperar a que este NPC sea derrotado
+                while (true)
+                {
+                    if (lifecycleHandler != null && lifecycleHandler.IsDefeatedAndInactive)
+                    {
+                        Debug.Log($"[NarrativeExecutor] 💀 NPC derrotado - combate terminado");
+                        break;
+                    }
+                    
+                    if (_npcManager.Context != null && !_npcManager.Context.IsInCombat && !_npcManager.Context.WasDefeatedInCombat)
+                    {
+                        Debug.Log($"[NarrativeExecutor] ⚠️ Combate terminó sin derrota");
+                        break;
+                    }
+                    
+                    if (_npcManager.Context != null && _npcManager.Context.WasDefeatedInCombat)
+                    {
+                        Debug.Log($"[NarrativeExecutor] ✅ Secuencia de derrota completada");
+                        break;
+                    }
+                    
+                    yield return null;
+                }
+                
+                // ✅ Esperar a que el diálogo de dizzy se abra (máximo 5 segundos)
+                Debug.Log($"[NarrativeExecutor] 💬 Esperando a que se abra el diálogo de dizzy...");
+                
+                float waitForDialogueTimeout = 5f;
+                float waitTimer = 0f;
+                
+                while (waitTimer < waitForDialogueTimeout)
+                {
+                    if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                    {
+                        Debug.Log($"[NarrativeExecutor] 💬 Diálogo de dizzy abierto");
+                        break;
+                    }
+                    waitTimer += Time.deltaTime;
+                    yield return null;
+                }
+                
+                // Si el diálogo está abierto, esperar a que el usuario lo cierre
+                if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                {
+                    Debug.Log($"[NarrativeExecutor] 💬 Esperando a que el usuario cierre el diálogo...");
+                    
+                    while (DialogueManager.Instance.IsOpen)
+                    {
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[NarrativeExecutor] ✅ Diálogo de dizzy cerrado por el usuario");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NarrativeExecutor] ⚠️ El diálogo de dizzy no se abrió (timeout o no configurado)");
+                }
             }
             
-            // 3. El NPC detectará al jugador naturalmente y entrará en AlertState
-            // que manejará el diálogo, la música, y la transición a combate
-            Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
+            Debug.Log($"[NarrativeExecutor] ✅ ExecuteStartCombat completado - continuando con siguiente acción");
         }
 
         private IEnumerator HandlePostNarrativeState(ConditionalNarrative narrativeData)
@@ -633,6 +1313,16 @@ namespace Game.NPC.Modules
 
             while (true)
             {
+                // ✅ NUEVO: Si pertenece a un equipo y NO es líder, no detectar
+                // El líder del equipo manejará la detección y notificará a los compañeros
+                var teamMember = GetComponent<NPCTeamMember>();
+                if (teamMember != null && teamMember.HasTeam && !teamMember.IsLeader)
+                {
+                    // Este NPC es parte de un equipo pero no es líder - NO detectar
+                    yield return _waitHalfSecond;
+                    continue;
+                }
+                
                 // Obtener la narrativa activa actual (forzar refresh para detección)
                 var activeNarrative = _config?.GetActiveNarrative();
                 
@@ -657,13 +1347,41 @@ namespace Game.NPC.Modules
                     float dist = Vector3.Distance(transform.position, _player.position);
                     if (dist <= _config.detectionRange)
                     {
-                        _hasDetectedPlayer = true;
-                        yield return StartAlertSequence(); // Exclamación !
-                        TryExecuteNarrative();
+                        // ✅ NUEVO: Si es líder de equipo, reagrupar primero
+                        var combatTeam = GetComponent<NPCCombatTeam>();
+                        if (combatTeam != null)
+                        {
+                            // Notificar al equipo - esto reagrupará a los compañeros
+                            combatTeam.OnPlayerDetected(_player);
+                            
+                            // Esperar a que el equipo se reagrupe antes de mostrar alerta
+                            while (combatTeam.IsRegrouping)
+                            {
+                                yield return null;
+                            }
+                        }
                         
-                        // Después de ejecutar, resetear _hasDetectedPlayer para permitir
-                        // que futuras narrativas con autoStartOnDetection también funcionen
-                        _hasDetectedPlayer = false;
+                        _hasDetectedPlayer = true;
+                        
+                        Debug.Log($"[NarrativeExecutor] 🎯 {name} - Equipo reagrupado, iniciando secuencia de alerta...");
+                        yield return StartAlertSequence(); // Exclamación !
+                        
+                        Debug.Log($"[NarrativeExecutor] 🎭 {name} - Alerta completada, intentando ejecutar narrativa...");
+                        Debug.Log($"[NarrativeExecutor] 📋 {name} - Estado: _isExecuting={_isExecuting}, _config={((_config != null) ? "OK" : "NULL")}");
+                        
+                        // ✅ Esperar a que TryExecuteNarrative inicie la ejecución
+                        bool narrativeStarted = TryExecuteNarrative();
+                        
+                        Debug.Log($"[NarrativeExecutor] {(narrativeStarted ? "✅" : "❌")} {name} - Narrativa {(narrativeStarted ? "INICIADA" : "NO INICIADA")}");
+                        
+                        // Solo resetear si la narrativa NO se ejecutó (por ejemplo, si ya estaba ejecutándose)
+                        // Si se ejecutó, _isExecuting será true y el loop esperará automáticamente
+                        if (!narrativeStarted)
+                        {
+                            _hasDetectedPlayer = false;
+                            Debug.LogWarning($"[NarrativeExecutor] ⚠️ {name} - Reseteando _hasDetectedPlayer porque la narrativa no se inició");
+                        }
+                        // Si se ejecutó, _hasDetectedPlayer permanece en true hasta que termine la ejecución completa
                     }
                 }
                 yield return _waitPointTwo;
@@ -864,7 +1582,7 @@ namespace Game.NPC.Modules
                 return;
             }
             
-            Debug.Log($"[NarrativeExecutor:{name}] 🔄 RestoreState - completedInteractiveNarratives tiene {preset.completedInteractiveNarratives?.Count ?? 0} entradas");
+            // Debug.Log($"[NarrativeExecutor:{name}] 🔄 RestoreState - completedInteractiveNarratives tiene {preset.completedInteractiveNarratives?.Count ?? 0} entradas");
             
             // Restaurar estado del config general
             _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_config.persistenceId);
@@ -884,12 +1602,12 @@ namespace Game.NPC.Modules
                         narrative.ResetExecutionState();
                         
                         bool wasCompleted = preset.completedInteractiveNarratives.Contains(narrativeId);
-                        Debug.Log($"[NarrativeExecutor:{name}] Narrativa #{i} '{narrative.description}' - ID: {narrativeId}, EnLista: {wasCompleted}, SingleUse: {narrative.singleUse}");
+                        // Debug.Log($"[NarrativeExecutor:{name}] Narrativa #{i} '{narrative.description}' - ID: {narrativeId}, EnLista: {wasCompleted}, SingleUse: {narrative.singleUse}");
                         
                         if (wasCompleted)
                         {
                             narrative.MarkAsExecuted();
-                            Debug.Log($"[NarrativeExecutor:{name}] 🔄 Restaurada narrativa condicional #{i} como ejecutada: {narrativeId}");
+                            // Debug.Log($"[NarrativeExecutor:{name}] 🔄 Restaurada narrativa condicional #{i} como ejecutada: {narrativeId}");
                         }
                     }
                 }

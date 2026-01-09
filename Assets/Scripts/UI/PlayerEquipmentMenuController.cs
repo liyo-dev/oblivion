@@ -208,24 +208,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Buscando instancia existente...");
+        // Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Buscando instancia existente...");
         
         // Intentar obtener desde ServiceLocator primero
         if (ServiceLocator.TryGet<PlayerEquipmentMenuController>(out var existing) && existing != null)
         {
-            Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Encontrada instancia existente en ServiceLocator");
+            // Debug.Log("[PlayerEquipmentMenuController] Bootstrap: Encontrada instancia existente en ServiceLocator");
             _instance = existing;
             return;
         }
     
         
         // Si no hay instancia, no hacer nada - el menú debe estar configurado manualmente en la escena
-        Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontrÃ³ instancia. El menú debe estar configurado manualmente en la escena.");
+        // Debug.Log("[PlayerEquipmentMenuController] Bootstrap: No se encontrÃ³ instancia. El menú debe estar configurado manualmente en la escena.");
     }
 
     void Awake()
     {
-        Debug.Log($"[PlayerEquipmentMenuController] Awake en GameObject '{gameObject.name}'");
+        // Debug.Log($"[PlayerEquipmentMenuController] Awake en GameObject '{gameObject.name}'");
         
         if (_instance != null && _instance != this)
         {
@@ -240,7 +240,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (dontDestroyOnLoad && transform.parent == null)
         {
             DontDestroyOnLoad(gameObject);
-            Debug.Log($"[PlayerEquipmentMenuController] DontDestroyOnLoad aplicado a '{gameObject.name}'");
+            // Debug.Log($"[PlayerEquipmentMenuController] DontDestroyOnLoad aplicado a '{gameObject.name}'");
         }
 
         // Buscar componentes UI necesarios
@@ -296,7 +296,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // Unregister from MenuManager
         MenuManager.Close(MenuKind.Equipment);
         
-        Debug.Log($"[PlayerEquipmentMenuController] Awake completado. Vistas configuradas: {(_inventoryView != null || _spellView != null || _equipmentView != null)}");
+        // Debug.Log($"[PlayerEquipmentMenuController] Awake completado. Vistas configuradas: {(_inventoryView != null || _spellView != null || _equipmentView != null)}");
     }
 
     void OnDisable()
@@ -1070,25 +1070,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // Si no se encuentran en los hijos, buscar en hermanos (mismo padre)
         if (cameras.Length == 0 && player.transform.parent != null)
         {
-            Debug.Log("[PlayerEquipmentMenuController] No se encontraron cÃ¡maras en hijos del player, buscando en hermanos...");
+            // Debug.Log("[PlayerEquipmentMenuController] No se encontraron cÃ¡maras en hijos del player, buscando en hermanos...");
             cameras = player.transform.parent.GetComponentsInChildren<Camera>(true);
         }
         
         // Si aÃºn no se encuentra, buscar en la raíz de la escena
         if (cameras.Length == 0)
         {
-            Debug.Log("[PlayerEquipmentMenuController] No se encontraron cÃ¡maras en hermanos, buscando en toda la escena...");
+            // Debug.Log("[PlayerEquipmentMenuController] No se encontraron cÃ¡maras en hermanos, buscando en toda la escena...");
             cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         }
         
-        Debug.Log($"[PlayerEquipmentMenuController] Total de cÃ¡maras encontradas: {cameras.Length}");
+        // Debug.Log($"[PlayerEquipmentMenuController] Total de cÃ¡maras encontradas: {cameras.Length}");
         
         // 1. Intentar por tag "PortraitCamera"
         foreach (var cam in cameras)
         {
             if (cam.CompareTag("PortraitCamera"))
             {
-                Debug.Log($"[PlayerEquipmentMenuController] CÃ¡mara de retrato encontrada por tag: {cam.name}");
+                // Debug.Log($"[PlayerEquipmentMenuController] CÃ¡mara de retrato encontrada por tag: {cam.name}");
                 return cam;
             }
         }
@@ -1098,7 +1098,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             if (cam.name.Contains("Portrait", StringComparison.OrdinalIgnoreCase))
             {
-                Debug.Log($"[PlayerEquipmentMenuController] CÃ¡mara de retrato encontrada por nombre: {cam.name}");
+                // Debug.Log($"[PlayerEquipmentMenuController] CÃ¡mara de retrato encontrada por nombre: {cam.name}");
                 return cam;
             }
         }
@@ -1436,19 +1436,19 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         bool anyViewConfigured = false;
         
-        Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() - Verificando vistas...");
-        Debug.Log($"  - _inventoryView: {(_inventoryView != null ? "EXISTS" : "NULL")}");
-        Debug.Log($"  - _spellView: {(_spellView != null ? "EXISTS" : "NULL")}");
-        Debug.Log($"  - _equipmentView: {(_equipmentView != null ? "EXISTS" : "NULL")}");
+        // Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() - Verificando vistas...");
+        // Debug.Log($"  - _inventoryView: {(_inventoryView != null ? "EXISTS" : "NULL")}");
+        // Debug.Log($"  - _spellView: {(_spellView != null ? "EXISTS" : "NULL")}");
+        // Debug.Log($"  - _equipmentView: {(_equipmentView != null ? "EXISTS" : "NULL")}");
 
         if (_inventoryView == null)
         {
-            Debug.Log($"[PlayerEquipmentMenuController] Verificando inventoryUI.IsConfigured...");
+            // Debug.Log($"[PlayerEquipmentMenuController] Verificando inventoryUI.IsConfigured...");
             if (inventoryUI.IsConfigured)
             {
                 _inventoryView = new InventoryView(inventoryUI);
                 anyViewConfigured = true;
-                Debug.Log("[PlayerEquipmentMenuController] Vista de inventario creada");
+                // Debug.Log("[PlayerEquipmentMenuController] Vista de inventario creada");
             }
             else if (!_warnedInventory)
             {
@@ -1466,17 +1466,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
-            Debug.Log("[PlayerEquipmentMenuController] Vista de inventario ya existe");
+            // Debug.Log("[PlayerEquipmentMenuController] Vista de inventario ya existe");
         }
 
         if (_spellView == null)
         {
-            Debug.Log($"[PlayerEquipmentMenuController] Verificando spellUI.IsConfigured...");
+            // Debug.Log($"[PlayerEquipmentMenuController] Verificando spellUI.IsConfigured...");
             if (spellUI.IsConfigured)
             {
                 _spellView = new SpellView(spellUI);
                 anyViewConfigured = true;
-                Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos creada");
+                // Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos creada");
             }
             else if (!_warnedSpells)
             {
@@ -1487,21 +1487,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
-            Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos ya existe");
+            // Debug.Log("[PlayerEquipmentMenuController] Vista de hechizos ya existe");
         }
 
         if (_equipmentView == null)
         {
-            Debug.Log($"[PlayerEquipmentMenuController] Verificando equipmentUI.IsConfigured...");
+            // Debug.Log($"[PlayerEquipmentMenuController] Verificando equipmentUI.IsConfigured...");
             if (equipmentUI.IsConfigured)
             {
                 _equipmentView = new EquipmentView(equipmentUI);
                 anyViewConfigured = true;
-                Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento creada");
+                // Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento creada");
                 
                 // CRÍTICO: Refrescar la vista para suscribirla a eventos
                 _equipmentView.Refresh();
-                Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento refrescada y suscrita");
+                // Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento refrescada y suscrita");
             }
             else if (!_warnedEquipment)
             {
@@ -1512,10 +1512,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         else
         {
             anyViewConfigured = true;
-            Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento ya existe");
+            // Debug.Log("[PlayerEquipmentMenuController] Vista de equipamiento ya existe");
         }
 
-        Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() retornando: {anyViewConfigured}");
+        // Debug.Log($"[PlayerEquipmentMenuController] EnsureViews() retornando: {anyViewConfigured}");
         
         if (!anyViewConfigured)
         {
@@ -1632,7 +1632,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.scrollRect != null)
             {
                 _scrollRect = _ui.scrollRect;
-                Debug.Log($"[InventoryView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
+                // Debug.Log($"[InventoryView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
             }
             else if (_ui.rowsParent != null)
             {
@@ -2333,7 +2333,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.scrollRect != null)
             {
                 _scrollRect = _ui.scrollRect;
-                Debug.Log($"[SpellView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
+                // Debug.Log($"[SpellView] ✅ ScrollRect asignado manualmente: {_scrollRect.name}");
             }
             else if (_ui.rowsParent != null)
             {
@@ -3173,20 +3173,20 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             PlayerService.TryGetComponent(out _builder, includeInactive: true, allowSceneLookup: true);
             PlayerService.TryGetComponent(out _wardrobe, includeInactive: true, allowSceneLookup: true);
 
-            Debug.Log($"[EquipmentView.Refresh] Builder: {(_builder != null ? "Found" : "NULL")}, Wardrobe: {(_wardrobe != null ? "Found" : "NULL")}");
+            // Debug.Log($"[EquipmentView.Refresh] Builder: {(_builder != null ? "Found" : "NULL")}, Wardrobe: {(_wardrobe != null ? "Found" : "NULL")}");
 
             if (_boundWardrobe != _wardrobe)
             {
                 if (_boundWardrobe != null)
                 {
                     _boundWardrobe.OnWardrobeChanged -= HandleWardrobeChanged;
-                    Debug.Log($"[EquipmentView.Refresh] Desuscrito de OnWardrobeChanged del wardrobe anterior");
+                    // Debug.Log($"[EquipmentView.Refresh] Desuscrito de OnWardrobeChanged del wardrobe anterior");
                 }
 
                 if (_wardrobe != null)
                 {
                     _wardrobe.OnWardrobeChanged += HandleWardrobeChanged;
-                    Debug.Log($"[EquipmentView.Refresh] ✅ Suscrito exitosamente a OnWardrobeChanged");
+                    // Debug.Log($"[EquipmentView.Refresh] ✅ Suscrito exitosamente a OnWardrobeChanged");
                 }
 
                 _boundWardrobe = _wardrobe;
@@ -3206,18 +3206,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     hasOptions = options != null && options.Count > 0;
                     
                     // Log para depuración de todas las categorías
-                    Debug.Log($"[EquipmentView.Refresh] Categoría {category} tiene {options?.Count ?? 0} opciones desbloqueadas");
-                    if (hasOptions)
-                    {
-                        foreach (var entry in options)
-                        {
-                            Debug.Log($"  [{category}] Item: {entry.partName} ({entry.displayName})");
-                        }
-                    }
+                    // Debug.Log($"[EquipmentView.Refresh] Categoría {category} tiene {options?.Count ?? 0} opciones desbloqueadas");
+                    // if (hasOptions)
+                    // {
+                    //     foreach (var entry in options)
+                    //     {
+                    //         Debug.Log($"  [{category}] Item: {entry.partName} ({entry.displayName})");
+                    //     }
+                    // }
                 }
                 else
                 {
-                    Debug.LogWarning($"[EquipmentView.Refresh] No hay wardrobe disponible para verificar categoría {category}");
+                    // Debug.LogWarning($"[EquipmentView.Refresh] No hay wardrobe disponible para verificar categoría {category}");
                 }
 
                 bool allowClear = _wardrobe == null ? _builder != null : hasOptions;

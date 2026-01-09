@@ -172,9 +172,10 @@ namespace Game.NPC.Modules
                     break;
 
                 case NarrativeActionType.Move:
-                    if (string.IsNullOrEmpty(entry.targetAnchorName) && entry.targetTransform == null)
+                    // Si moveToRandomPoint está activo, no necesita destino fijo
+                    if (!entry.moveToRandomPoint && string.IsNullOrEmpty(entry.targetAnchorName) && entry.targetTransform == null)
                     {
-                        errorMessage = $"Entry {index} tipo Move requiere targetAnchorName o targetTransform";
+                        errorMessage = $"Entry {index} tipo Move requiere targetAnchorName, targetTransform, o marcar 'moveToRandomPoint'";
                         return false;
                     }
                     break;
@@ -224,16 +225,20 @@ namespace Game.NPC.Modules
                 .OrderByDescending(n => n.priority)
                 .ToArray();
             
+            Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] 🔍 Evaluando {sortedNarratives.Length} narrativas condicionales");
+            
             foreach (var narrative in sortedNarratives)
             {
                 bool canExecute = narrative.CanExecute();
                 
                 if (canExecute)
                 {
+                    Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ✅ Narrativa seleccionada: '{narrative.description}' (priority={narrative.priority})");
                     return narrative;
                 }
             }
             
+            Debug.Log($"[NPCInteractiveNarrativeConfig:{name}] ❌ No hay narrativas disponibles para ejecutar");
             return null;
         }
         

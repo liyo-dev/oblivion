@@ -92,7 +92,7 @@ public class QuestObjectDisabler : MonoBehaviour
         for (int i = 0; i < attempts && !_consumed; i++)
         {
             yield return new WaitForSeconds(interval);
-            if (debugLogs) Debug.Log($"[QuestObjectDisabler] DelayedReadyChecks intento {i+1}/{attempts} para '{questId}'.");
+            //if (debugLogs) Debug.Log($"[QuestObjectDisabler] DelayedReadyChecks intento {i+1}/{attempts} para '{questId}'.");
             Check();
         }
         _delayedCheckRoutine = null;
