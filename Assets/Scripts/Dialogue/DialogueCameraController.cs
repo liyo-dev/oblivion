@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 /// <summary>
@@ -22,10 +22,10 @@ public class DialogueCameraController : MonoBehaviour
     [SerializeField] private float backDistance = 0.8f;
     
     [Tooltip("Altura de la cámara respecto al suelo")]
-    [SerializeField] private float cameraHeight = 0.8f;
+    [SerializeField] private float cameraHeight = 0.4f;
     
     [Tooltip("Altura del punto al que mira la cámara (altura de las caras)")]
-    [SerializeField] private float lookAtHeight = 0.7f;
+    [SerializeField] private float lookAtHeight = 0.5f;
     
     [Tooltip("Velocidad de transición de la cámara")]
     [SerializeField] private float transitionSpeed = 2f;

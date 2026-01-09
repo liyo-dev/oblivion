@@ -712,8 +712,12 @@ public class DialogueCinematicController : MonoBehaviour
                         // Mínimo 1.8m, o 50% de la distancia entre personajes
                         float behindDistance = Mathf.Max(1.8f, actualDistance * 0.5f); // Aumentado de 1.2f y 0.4f
                         
-                        // Posición base: atrás del player + offset lateral
-                        camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset;
+                        // ✅ NUEVO: Añadir un pequeño avance hacia el NPC para centrar mejor el encuadre
+                        // Esto mueve la cámara ligeramente hacia adelante para que el NPC esté más centrado
+                        float forwardOffset = 0.4f; // 40cm hacia el NPC para mejor encuadre
+                        
+                        // Posición base: atrás del player + offset lateral + ligero avance hacia NPC
+                        camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset + playerToNPC * forwardOffset;
                         
                         // ✅ MEJORADO: Altura más elevada para mejor vista sobre el hombro
                         // Añadir 0.3m adicionales a la altura configurada para ver mejor por encima

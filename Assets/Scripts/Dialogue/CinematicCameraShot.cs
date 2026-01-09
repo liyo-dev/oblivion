@@ -81,13 +81,13 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.Wide => 1.5f,           // Vista general - altura media
-            DialogueShotType.MediumNPC => 1.35f,     // Medium shot - altura de cara/ojos (balance perfecto)
-            DialogueShotType.CloseUpNPC => 1.45f,    // Close-up - ligeramente más alto para ver bien la cara
-            DialogueShotType.OverShoulderPlayer => 1.4f,  // Altura de hombros
-            DialogueShotType.OverShoulderNPC => 1.4f,     // Altura de hombros
-            DialogueShotType.Profile => 1.4f,        // Altura de cara para perfil
-            _ => 1.35f                                // Por defecto, altura de cara
+            DialogueShotType.Wide => 1.0f,           // Vista general - altura media (antes: 1.5f)
+            DialogueShotType.MediumNPC => 0.95f,     // Medium shot - altura de cara/ojos (antes: 1.35f)
+            DialogueShotType.CloseUpNPC => 1.05f,    // Close-up - ligeramente más alto (antes: 1.45f)
+            DialogueShotType.OverShoulderPlayer => 1.0f,  // Altura de hombros (antes: 1.4f)
+            DialogueShotType.OverShoulderNPC => 1.0f,     // Altura de hombros (antes: 1.4f)
+            DialogueShotType.Profile => 1.0f,        // Altura de cara para perfil (antes: 1.4f)
+            _ => 0.95f                                // Por defecto (antes: 1.35f)
         };
     }
     
@@ -108,6 +108,8 @@ public class CinematicCameraShot
         {
             DialogueShotType.CloseUpNPC => -5f,
             DialogueShotType.Wide => 5f,
+            DialogueShotType.OverShoulderPlayer => -8f,  // Añadido: ángulo hacia abajo para ver mejor al NPC
+            DialogueShotType.OverShoulderNPC => -8f,     // Añadido: ángulo hacia abajo para ver mejor al Player
             _ => 0f
         };
     }
@@ -116,10 +118,10 @@ public class CinematicCameraShot
     {
         return shotType switch
         {
-            DialogueShotType.CloseUpNPC => Vector3.up * 1.20f,  // Cara completa (antes: 1.25f, -0.05m)
-            DialogueShotType.Wide => Vector3.up * 1.15f,        // Altura media (antes: 1.2f)
-            DialogueShotType.MediumNPC => Vector3.up * 1.10f,   // Centro de cara (antes: 1.15f, -0.05m)
-            _ => Vector3.up * 1.10f                             // Por defecto (antes: 1.15f, -0.05m)
+            DialogueShotType.CloseUpNPC => Vector3.up * 0.80f,  // Cara completa (antes: 1.20f, -0.4m)
+            DialogueShotType.Wide => Vector3.up * 0.75f,        // Altura media (antes: 1.15f, -0.4m)
+            DialogueShotType.MediumNPC => Vector3.up * 0.70f,   // Centro de cara (antes: 1.10f, -0.4m)
+            _ => Vector3.up * 0.70f                             // Por defecto (antes: 1.10f, -0.4m)
         };
     }
     

@@ -506,11 +506,11 @@
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar <sprite name=\"interactable_dpad\">."
+            "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar <sprite name=\"interactable_dpad\"> ARRIBA."
         },
         {
             "key": "DLG_OLIVER_MENUS_07",
-            "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad\">."
+            "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad\"> ARRIBA."
         },
         {
             "key": "DLG_OLIVER_MENUS_08",

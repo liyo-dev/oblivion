@@ -26,6 +26,12 @@ MonoBehaviour:
       dialogue: {fileID: 11400000, guid: 7c65ee26279935f4088d248d716cb1ce, type: 2}
       targetAnchorName: 
       targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
@@ -52,8 +58,14 @@ MonoBehaviour:
       dialogue: {fileID: 0}
       targetAnchorName: House_FrontDoor_Tutorial
       targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
       maxMovementDuration: 3
-      turnAroundOnArrival: 0
+      turnAroundOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -94,6 +106,12 @@ MonoBehaviour:
       dialogue: {fileID: 11400000, guid: 1b2633a3db9ef2741ab756606c66a0b1, type: 2}
       targetAnchorName: 
       targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
@@ -134,5 +152,6 @@ MonoBehaviour:
   detectionRange: 10
   alertIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   alertIconDuration: 1
+  alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 0.5

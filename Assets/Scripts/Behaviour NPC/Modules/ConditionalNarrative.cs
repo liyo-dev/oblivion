@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
@@ -69,11 +69,16 @@ namespace Game.NPC.Modules
             // Si ya se ejecutó y es single use, no se puede ejecutar de nuevo
             if (singleUse && _hasBeenExecuted)
             {
+                if (debugMode)
+                    Debug.Log($"[ConditionalNarrative:{description}] ❌ NO puede ejecutarse - ya fue ejecutada (singleUse=true, _hasBeenExecuted=true)");
                 return false;
             }
             
             // Evaluar la condición
             bool conditionMet = condition.Evaluate();
+            
+            if (debugMode)
+                Debug.Log($"[ConditionalNarrative:{description}] Evaluación - singleUse:{singleUse}, executed:{_hasBeenExecuted}, conditionMet:{conditionMet} → CanExecute:{conditionMet}");
             
             return conditionMet;
         }

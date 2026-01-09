@@ -15,7 +15,9 @@ MonoBehaviour:
   moduleName: 
   description: 
   conditionalNarratives:
-  - condition:
+  - description: 
+    priority: 0
+    condition:
       conditionType: 1
       targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
       debugMode: 0
@@ -24,6 +26,12 @@ MonoBehaviour:
       dialogue: {fileID: 11400000, guid: 89ab7413babca644a893b177ed0d96ce, type: 2}
       targetAnchorName: 
       targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
@@ -46,16 +54,18 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
+    singleUse: 0
+    autoStartOnDetection: 0
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
-    persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 0
     narrativeEventKey: 
-    singleUse: 0
-    priority: 0
-    description: 
     debugMode: 0
-  - condition:
+  - description: 
+    priority: 0
+    condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
       debugMode: 0
@@ -64,6 +74,12 @@ MonoBehaviour:
       dialogue: {fileID: 11400000, guid: 64a8cd4efa5486741a850640bd8a854f, type: 2}
       targetAnchorName: 
       targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
       waitForPlayer: 0
@@ -86,27 +102,24 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    postNarrativeState: 1
+    postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
     persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
-    persistentIconSprite: {fileID: 0}
     sendNarrativeEvent: 1
     narrativeEventKey: ADD_CLOAK
-    singleUse: 1
-    priority: 0
-    description: 
     debugMode: 0
-  singleUse: 1
   persistState: 1
   persistenceId: victoria-narrative-f5e4d3c2-unique
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0
   switchToEnemyLayerOnCombat: 1
-  autoStartOnPlayerDetection: 0
   detectionRange: 10
   alertIconPrefab: {fileID: 0}
   alertIconDuration: 1
+  alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
-  postNarrativeState: 0
-  postNarrativeAmbientConfig: {fileID: 0}
