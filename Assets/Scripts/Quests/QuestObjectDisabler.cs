@@ -9,10 +9,10 @@ public class QuestObjectDisabler : MonoBehaviour
     [SerializeField] private string questId = string.Empty;
     [SerializeField] private GameObject target;
     [SerializeField] private bool destroyObject = true;
-    [SerializeField] private bool debugLogs = false;
+    [SerializeField] private bool debugLogs;
 
     private bool _consumed;
-    private Coroutine _delayedCheckRoutine;
+    private bool _hasCheckedAfterDelay;
 
     void OnEnable()
     {
@@ -22,11 +22,16 @@ public class QuestObjectDisabler : MonoBehaviour
             qm.OnQuestsChanged += Check;
             if (debugLogs) Debug.Log($"[QuestObjectDisabler] Suscrito a OnQuestsChanged. questId='{questId}'");
         }
+        
+        // Verificación inicial inmediata
         Check();
-
-        // Re-evaluación tardía para casos donde las quests se restauran después
-        if (_delayedCheckRoutine == null)
-            _delayedCheckRoutine = StartCoroutine(DelayedReadyChecks());
+        
+        // Solo UNA verificación diferida para casos donde QuestManager se inicializa después
+        // Esto cubre el caso de restauración de save sin hacer polling innecesario
+        if (!_consumed && !_hasCheckedAfterDelay)
+        {
+            StartCoroutine(SingleDelayedCheck());
+        }
     }
 
     void OnDisable()
@@ -36,12 +41,6 @@ public class QuestObjectDisabler : MonoBehaviour
         {
             qm.OnQuestsChanged -= Check;
             if (debugLogs) Debug.Log($"[QuestObjectDisabler] Desuscrito de OnQuestsChanged. questId='{questId}'");
-        }
-
-        if (_delayedCheckRoutine != null)
-        {
-            StopCoroutine(_delayedCheckRoutine);
-            _delayedCheckRoutine = null;
         }
     }
 
@@ -84,17 +83,20 @@ public class QuestObjectDisabler : MonoBehaviour
         Check();
     }
 
-    System.Collections.IEnumerator DelayedReadyChecks()
+    /// <summary>
+    /// Una sola verificación diferida para cubrir el caso donde QuestManager se inicializa después del objeto.
+    /// Mucho más eficiente que hacer 10 verificaciones.
+    /// </summary>
+    private System.Collections.IEnumerator SingleDelayedCheck()
     {
-        // Intenta varias veces en los primeros segundos para cubrir restauraciones tardías
-        const int attempts = 10;
-        const float interval = 0.25f;
-        for (int i = 0; i < attempts && !_consumed; i++)
+        // Esperar 1 frame para que QuestManager se inicialice si aún no lo está
+        yield return null;
+        
+        // Verificar una sola vez
+        if (!_consumed)
         {
-            yield return new WaitForSeconds(interval);
-            //if (debugLogs) Debug.Log($"[QuestObjectDisabler] DelayedReadyChecks intento {i+1}/{attempts} para '{questId}'.");
             Check();
+            _hasCheckedAfterDelay = true;
         }
-        _delayedCheckRoutine = null;
     }
 }

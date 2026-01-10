@@ -1,5 +1,4 @@
 using UnityEngine;
-using Game.NPC; 
 
 public class WorldBootstrap : MonoBehaviour
 {
@@ -65,6 +64,11 @@ public class WorldBootstrap : MonoBehaviour
                 }
             }
 
+            // IMPORTANTE: NO aplicar posiciones de NPCs aquí cuando viene de modo preset
+            // GameBootService.ApplyPresetAsLoadedGame() ya las aplicó correctamente
+            // Si las aplicamos de nuevo aquí, causamos conflictos (doble aplicación)
+            // Debug.Log("[WorldBootstrap] Modo PRESET - Posiciones de NPCs ya aplicadas por GameBootService");
+
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
             // Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
             return;
@@ -80,7 +84,14 @@ public class WorldBootstrap : MonoBehaviour
                 anchorId = data.lastSpawnAnchorId;
 
             bootProfile.SetRuntimePresetFromSave(data);
-            TryApplyNpcPositionsFromPreset(bootProfile);
+            
+            // Aplicar posiciones de NPCs usando el método robusto de GameBootProfile
+            // Esto asegura consistencia con el modo testing
+            var preset = bootProfile.GetActivePresetResolved();
+            if (preset != null)
+            {
+                bootProfile.ApplyNpcPositionsToScene(preset);
+            }
 
             if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
                 presetService.ApplyCurrentPreset(includeInventory: true);
@@ -108,7 +119,12 @@ public class WorldBootstrap : MonoBehaviour
                 if (svc != null) svc.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
             }
             
-            TryApplyNpcPositionsFromPreset(bootProfile);
+            // Aplicar posiciones de NPCs usando el método robusto de GameBootProfile
+            var preset = bootProfile.GetActivePresetResolved();
+            if (preset != null)
+            {
+                bootProfile.ApplyNpcPositionsToScene(preset);
+            }
         }
 
         // 3) Colocar jugador
@@ -116,42 +132,6 @@ public class WorldBootstrap : MonoBehaviour
         StartCoroutine(WaitForPlayerAndTeleport(anchorId));
     }
 
-    void TryApplyNpcPositionsFromPreset(GameBootProfile bootProfile)
-    {
-        if (bootProfile == null) return;
-        var preset = bootProfile.GetActivePresetResolved();
-        if (preset == null || preset.npcPositions == null || preset.npcPositions.Count == 0) return;
-
-        for (int i = 0; i < preset.npcPositions.Count; i++)
-        {
-            var entry = preset.npcPositions[i];
-            if (string.IsNullOrWhiteSpace(entry.npcId)) continue;
-
-            GameObject go = null;
-            try { go = GameObject.Find(entry.npcId); } catch { }
-            if (go == null) continue;
-
-            var mgr = go.GetComponent<NPCBehaviourManagerV2>();
-            if (mgr == null) continue;
-            
-            // Aplicar estado activo/inactivo solo si se guardó explícitamente
-            if (entry.hasActiveState && !entry.isActive)
-            {
-                go.SetActive(false);
-                Debug.Log($"[WorldBootstrap] NPC '{entry.npcId}' desactivado según preset");
-                continue; // No aplicar posición si está desactivado
-            }
-            
-            // Solo aplicar posición si el NPC tiene persistencia habilitada
-            if (!mgr.persistLastPosition) continue;
-
-            mgr.lastPosition = entry.position;
-            if (mgr.isActiveAndEnabled)
-            {
-                mgr.ApplyLastPositionIfNeeded();
-            }
-        }
-    }
 
     private System.Collections.IEnumerator WaitForPlayerAndTeleport(string anchorId)
     {

@@ -21,6 +21,10 @@ public class PlayerPickupCollector : MonoBehaviour
     [Header("Events")]
     [SerializeField] private UnityEvent<PickupEffectType> onEffectApplied;
     [SerializeField] private UnityEvent onAnyPickup;
+    
+    // Control de animación de poción
+    private Coroutine _drinkPotionCoroutine;
+    private bool _isPlayingDrinkAnimation;
 
     void Awake()
     {
@@ -182,12 +186,29 @@ public class PlayerPickupCollector : MonoBehaviour
             return;
         }
 
+        // Si ya hay una animación en curso, cancelarla antes de iniciar la nueva
+        if (_drinkPotionCoroutine != null)
+        {
+            StopCoroutine(_drinkPotionCoroutine);
+            _drinkPotionCoroutine = null;
+            Debug.Log("[PlayerPickupCollector] Animación anterior de poción cancelada para iniciar nueva");
+        }
+
+        // Si ya está reproduciéndose, no iniciar otra
+        if (_isPlayingDrinkAnimation)
+        {
+            Debug.Log("[PlayerPickupCollector] Animación de poción ya en curso - ignorando nueva solicitud");
+            return;
+        }
+
         // Usar corrutina para dar tiempo al Animator Controller de procesar cambios
-        StartCoroutine(PlayDrinkPotionAnimationCoroutine());
+        _drinkPotionCoroutine = StartCoroutine(PlayDrinkPotionAnimationCoroutine());
     }
 
     private System.Collections.IEnumerator PlayDrinkPotionAnimationCoroutine()
     {
+        _isPlayingDrinkAnimation = true;
+        
         // Resetear TODOS los parámetros del animator a valores por defecto
         foreach (var param in animator.parameters)
         {
@@ -211,7 +232,25 @@ public class PlayerPickupCollector : MonoBehaviour
         // Ahora reproducir la animación - el animator ya debería estar en idle limpio
         animator.PlayInFixedTime(drinkPotionAnimationName, 0, 0f);
         
-        Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName} (con delay de 1 frame)");
+        Debug.Log($"[PlayerPickupCollector] Animación reproducida: {drinkPotionAnimationName}");
+        
+        // Obtener la duración del clip de animación para esperar hasta que termine
+        AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(0);
+        float animationDuration = 1f; // Duración por defecto
+        
+        if (clipInfo != null && clipInfo.Length > 0)
+        {
+            animationDuration = clipInfo[0].clip.length;
+        }
+        
+        // Esperar a que la animación termine
+        yield return new WaitForSeconds(animationDuration);
+        
+        // Limpiar referencias
+        _isPlayingDrinkAnimation = false;
+        _drinkPotionCoroutine = null;
+        
+        Debug.Log($"[PlayerPickupCollector] Animación de poción completada - flag limpiado");
     }
 }
 

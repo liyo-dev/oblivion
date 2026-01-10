@@ -97,10 +97,39 @@ namespace Game.NPC.Common
         /// </summary>
         private void UpdateCameraReference()
         {
-            // Prioridad: Camera.main (que suele ser la cámara activa)
-            // Esto funciona correctamente con Cinemachine porque Camera.main
-            // sigue siendo el brain aunque la cámara virtual cambie
-            _mainCamera = Camera.main;
+            // Buscar la cámara activa y habilitada
+            // Prioridad 1: Camera.main si está habilitada
+            Camera mainCam = Camera.main;
+            if (mainCam != null && mainCam.isActiveAndEnabled)
+            {
+                _mainCamera = mainCam;
+                return;
+            }
+            
+            // Prioridad 2: Buscar cualquier cámara habilitada con mayor depth
+            // (útil cuando hay múltiples cámaras, como durante diálogos)
+            Camera[] allCameras = Camera.allCameras;
+            Camera bestCamera = null;
+            float highestDepth = float.MinValue;
+            
+            foreach (Camera cam in allCameras)
+            {
+                if (cam != null && cam.isActiveAndEnabled && cam.depth > highestDepth)
+                {
+                    highestDepth = cam.depth;
+                    bestCamera = cam;
+                }
+            }
+            
+            if (bestCamera != null)
+            {
+                _mainCamera = bestCamera;
+                return;
+            }
+            
+            // Fallback: usar Camera.main aunque esté desactivada
+            // (mejor que null)
+            _mainCamera = mainCam;
         }
         
         /// <summary>
@@ -207,6 +236,10 @@ namespace Game.NPC.Common
                 return;
             }
             
+            // IMPORTANTE: Actualizar referencia de cámara antes de mostrar el icono
+            // Esto es crucial para NPCs que se activan dinámicamente después de condiciones narrativas
+            UpdateCameraReference();
+            
             HideAlertIcon(); // Limpiar icono anterior si existe
             
             _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
@@ -236,11 +269,13 @@ namespace Game.NPC.Common
                 // Matar cualquier tween anterior
                 _currentTween?.Kill();
                 
-                // Animar desaparición: escala + mover hacia abajo
+                // Animar desaparición: escala + mover hacia abajo (en WORLD SPACE)
                 var iconTransform = _currentIconInstance.transform;
+                float targetY = iconTransform.position.y - 0.3f;
+                
                 Sequence hideSeq = DOTween.Sequence();
                 hideSeq.Append(iconTransform.DOScale(Vector3.zero, hideAnimDuration).SetEase(Ease.InBack));
-                hideSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y - 0.3f, hideAnimDuration).SetEase(Ease.InQuad));
+                hideSeq.Join(iconTransform.DOMoveY(targetY, hideAnimDuration).SetEase(Ease.InQuad));
                 hideSeq.OnComplete(() =>
                 {
                     if (_currentIconInstance != null)
@@ -276,36 +311,58 @@ namespace Game.NPC.Common
         
         private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration)
         {
-            // Instanciar el prefab
-            _currentIconInstance = Instantiate(iconPrefab, transform);
-            _currentIconInstance.transform.localPosition = iconOffset + new Vector3(0f, -0.5f, 0f);
-            _currentIconInstance.transform.localRotation = Quaternion.identity;
+            // CRÍTICO: Instanciar en WORLD SPACE, NO como hijo del NPC
+            _currentIconInstance = Instantiate(iconPrefab);
+            
+            // Calcular posición inicial en WORLD SPACE
+            Vector3 worldStartPos = transform.position + iconOffset + new Vector3(0f, -0.5f, 0f);
+            _currentIconInstance.transform.position = worldStartPos;
+            _currentIconInstance.transform.rotation = Quaternion.identity;
             _currentIconInstance.transform.localScale = Vector3.zero;
             _currentIconInstance.SetActive(true);
             
-            // Animar aparición
+            // IMPORTANTE: Aplicar rotación de billboard ANTES de animar para evitar distorsión
+            var initialCam = GetCurrentCamera();
+            if (initialCam != null)
+            {
+                Vector3 lookDir = initialCam.transform.position - _currentIconInstance.transform.position;
+                lookDir.y = 0; // Ignorar diferencia vertical
+                if (lookDir.sqrMagnitude > 0.001f)
+                {
+                    _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+            }
+            
+            // Animar aparición (en WORLD SPACE)
             var iconTransform = _currentIconInstance.transform;
+            Vector3 targetWorldPos = transform.position + iconOffset;
+            
             Sequence showSeq = DOTween.Sequence();
             showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
-            showSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOMoveY(targetWorldPos.y, showAnimDuration).SetEase(Ease.OutBack));
             
             yield return new WaitForSeconds(showAnimDuration);
             
             // Animar durante la duración restante
             float elapsed = 0f;
             float remainingDuration = duration - showAnimDuration;
-            Vector3 basePosition = iconOffset;
             
             while (elapsed < remainingDuration)
             {
                 if (_currentIconInstance == null) yield break;
                 
+                // Actualizar posición siguiendo al NPC en WORLD SPACE
+                Vector3 npcPosition = transform.position;
+                Vector3 targetPos = npcPosition + iconOffset;
+                
                 // Aplicar bounce si está activado
                 if (animateBounce)
                 {
                     float bounce = Mathf.Sin(Time.time * bounceSpeed) * bounceAmplitude;
-                    _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
+                    targetPos.y += bounce;
                 }
+                
+                _currentIconInstance.transform.position = targetPos;
                 
                 // Billboard hacia la cámara activa (solo rotación horizontal, sin copiar el pitch/roll de la cámara)
                 var cam = GetCurrentCamera();
@@ -334,43 +391,61 @@ namespace Game.NPC.Common
         /// </summary>
         private IEnumerator ShowPersistentIconRoutine(GameObject iconPrefab)
         {
-            // Instanciar el prefab
-            _currentIconInstance = Instantiate(iconPrefab, transform);
+            // CRÍTICO: Instanciar en WORLD SPACE, NO como hijo del NPC
+            _currentIconInstance = Instantiate(iconPrefab);
             _currentIconInstance.name = iconPrefab.name + "_Persistent";
-            _currentIconInstance.transform.localPosition = iconOffset + new Vector3(0f, -0.5f, 0f); // Empieza más abajo
-            _currentIconInstance.transform.localRotation = Quaternion.identity;
-            _currentIconInstance.transform.localScale = Vector3.zero; // Empieza pequeño
+            
+            // Calcular posición inicial en WORLD SPACE
+            Vector3 worldStartPos = transform.position + iconOffset + new Vector3(0f, -0.5f, 0f);
+            _currentIconInstance.transform.position = worldStartPos;
+            _currentIconInstance.transform.rotation = Quaternion.identity;
+            _currentIconInstance.transform.localScale = Vector3.zero;
             _currentIconInstance.SetActive(true);
             
-            // Animar aparición: escala + mover hacia arriba con bounce
+            // Aplicar rotación de billboard ANTES de animar
+            UpdateCameraReference();
+            var initialCam = GetCurrentCamera();
+            if (initialCam != null)
+            {
+                Vector3 lookDir = initialCam.transform.position - _currentIconInstance.transform.position;
+                lookDir.y = 0;
+                if (lookDir.sqrMagnitude > 0.001f)
+                {
+                    _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+            }
+            
+            // Animar aparición (en WORLD SPACE)
             var iconTransform = _currentIconInstance.transform;
+            Vector3 targetWorldPos = transform.position + iconOffset;
+            
             Sequence showSeq = DOTween.Sequence();
             showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
-            showSeq.Join(iconTransform.DOLocalMoveY(iconOffset.y, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOMoveY(targetWorldPos.y, showAnimDuration).SetEase(Ease.OutBack));
             _currentTween = showSeq.SetAutoKill(false);
             
-            // Esperar a que termine la animación de entrada
             yield return new WaitForSeconds(showAnimDuration);
             
-            Vector3 basePosition = iconOffset;
-            
-            // Animar indefinidamente hasta que se oculte
+            // Loop de actualización
             while (_currentIconInstance != null && !_isHiding)
             {
-                // Aplicar bounce si está activado
+                // Actualizar posición siguiendo al NPC en WORLD SPACE
+                Vector3 targetPos = transform.position + iconOffset;
+                
                 if (animateBounce)
                 {
                     float bounce = Mathf.Sin(Time.time * bounceSpeed) * bounceAmplitude;
-                    _currentIconInstance.transform.localPosition = basePosition + new Vector3(0f, bounce, 0f);
+                    targetPos.y += bounce;
                 }
                 
-                // Billboard hacia la cámara activa (solo rotación horizontal, sin copiar el pitch/roll de la cámara)
+                _currentIconInstance.transform.position = targetPos;
+                
+                // Billboard hacia cámara
                 var cam = GetCurrentCamera();
                 if (cam != null && _currentIconInstance != null)
                 {
-                    // Calcular dirección hacia la cámara pero solo en el plano horizontal
                     Vector3 lookDir = cam.transform.position - _currentIconInstance.transform.position;
-                    lookDir.y = 0; // Ignorar diferencia vertical para evitar inclinación
+                    lookDir.y = 0;
                     
                     if (lookDir.sqrMagnitude > 0.001f)
                     {

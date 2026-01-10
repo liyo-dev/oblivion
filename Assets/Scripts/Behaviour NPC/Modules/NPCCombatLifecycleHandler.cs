@@ -322,16 +322,15 @@ namespace Game.NPC.Modules
                         playerVictory.PlayVictory(battleId);
                         
                         // Esperar a que termine la animación de victoria
-                        yield return new WaitForSecondsRealtime(4.0f);
+                        yield return new WaitForSecondsRealtime(4.5f);
                         Debug.Log($"[Lifecycle] ✅ Animación de victoria completada");
                     }
                 }
                 
-                // Disparar evento narrativo si está configurado
-                if (_config != null && !string.IsNullOrEmpty(_config.battleMusicId))
-                {
-                    DefaultNarrativeSignals.Instance?.RaiseBattleWon(_config.battleMusicId);
-                }
+                // NOTA: NO llamar a RaiseBattleWon aquí porque PlayVictoryForBattle ya maneja
+                // la restauración de música correctamente. Llamar a RaiseBattleWon causaba
+                // una doble restauración que corrompía el stack de música.
+                // El evento RaiseBattleWon solo se usa para BossArenaController que no usa PlayVictoryForBattle.
             }
             else
             {
@@ -619,4 +618,3 @@ namespace Game.NPC.Modules
         }
     }
 }
-

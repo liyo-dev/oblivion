@@ -48,7 +48,6 @@ public class DialogueCinematicController : MonoBehaviour
     
     // Control de rendering forzado
     private bool forceRenderingActive;
-    private string originalDialogueCameraTag;
     
     // Referencia a la cámara principal de gameplay de Unity (no la virtual de Cinemachine)
     private Camera mainUnityCamera;
@@ -337,9 +336,10 @@ public class DialogueCinematicController : MonoBehaviour
             bool wasEnabled = dialogueCamera.enabled;
             dialogueCamera.enabled = true;
             
-            // Asignar tag MainCamera
-            originalDialogueCameraTag = dialogueCameraObject.tag;
-            dialogueCameraObject.tag = "MainCamera";
+            // NO asignar tag MainCamera - esto causa problemas con UI/iconos que dependen de Camera.main
+            // La cámara de diálogo ya tiene depth más alto, eso es suficiente para renderizar encima
+            // originalDialogueCameraTag = dialogueCameraObject.tag;
+            // dialogueCameraObject.tag = "MainCamera";
             
             // Activar rendering forzado
             forceRenderingActive = true;
@@ -415,11 +415,7 @@ public class DialogueCinematicController : MonoBehaviour
             bool wasEnabled = dialogueCamera.enabled;
             dialogueCamera.enabled = false;
             
-            // Restaurar tag original
-            if (!string.IsNullOrEmpty(originalDialogueCameraTag))
-            {
-                dialogueCameraObject.tag = originalDialogueCameraTag;
-            }
+            // Ya no cambiamos el tag MainCamera, así que no hay nada que restaurar
             
             // Desactivar rendering forzado
             forceRenderingActive = false;
