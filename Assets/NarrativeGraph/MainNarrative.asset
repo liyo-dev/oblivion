@@ -34,6 +34,7 @@ MonoBehaviour:
   - rid: 857240207539569644
   - rid: 857240411820786340
   - rid: 857240411820786341
+  - rid: 7908052880146039718
   applicableSceneNames:
   - MainWorld
   references:
@@ -327,6 +328,24 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 56879a1a-c46a-4bab-a132-eab0b6cbaead
         position: {x: 1052, y: 441}
-        outputs: []
+        outputs:
+        - 254c563a-5c0e-4f68-8b1b-f16c35246e89
         wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
+        logWarnings: 1
+    - rid: 7908052880146039718
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
+        position: {x: 1650, y: 393}
+        outputs: []
+        questId: ELDRAN_MISSION5
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION5_STEP_00
+        steps: 
+        completeQuest: 0
         logWarnings: 1

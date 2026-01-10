@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -85,9 +85,14 @@ namespace Game.NPC
             // 3. Configurar Físicas
             if (forceKinematicRigidbody && _rigidbody != null)
             {
+                // IMPORTANTE: Resetear velocidades ANTES de hacer el rigidbody kinematic
+                // Unity no permite modificar velocidades de rigidbodies kinematic
+                if (!_rigidbody.isKinematic)
+                {
+                    _rigidbody.linearVelocity = Vector3.zero;
+                    _rigidbody.angularVelocity = Vector3.zero;
+                }
                 _rigidbody.isKinematic = true;
-                _rigidbody.linearVelocity = Vector3.zero; // Unity 6 (antes velocity)
-                _rigidbody.angularVelocity = Vector3.zero;
             }
             
             // 4. Crear Contexto FSM

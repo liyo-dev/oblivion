@@ -20,6 +20,11 @@ public class DialogueCinematicController : MonoBehaviour
     private bool isInCinematicMode;
     public bool IsInCinematicMode => isInCinematicMode;
     
+    // Sistema de delay para encadenamiento de diálogos
+    private Coroutine pendingEndCinematicCoroutine;
+    private bool isPendingEnd;
+    [SerializeField] private float chainDialogueGracePeriod = 0.2f; // Tiempo para detectar encadenamiento
+    
     private Transform currentPlayer;
     private Transform currentNPC;
     private DialogueCinematicProfile activeProfile;
@@ -247,6 +252,38 @@ public class DialogueCinematicController : MonoBehaviour
         /// </summary>
         public void StartCinematic(Transform player, Transform npc, DialogueCinematicProfile profile = null)
         {
+            // Si hay un apagado pendiente, cancelarlo (diálogo encadenado)
+            if (isPendingEnd && pendingEndCinematicCoroutine != null)
+            {
+                if (showDebugInfo)
+                    Debug.Log("[DialogueCinematicController] Diálogo encadenado detectado - cancelando apagado pendiente");
+                
+                StopCoroutine(pendingEndCinematicCoroutine);
+                pendingEndCinematicCoroutine = null;
+                isPendingEnd = false;
+                
+                // Si ya estábamos en modo cinematográfico con el mismo NPC, solo actualizar
+                if (isInCinematicMode && currentNPC == npc && currentPlayer == player)
+                {
+                    if (showDebugInfo)
+                        Debug.Log("[DialogueCinematicController] Reutilizando cinematográfica activa para diálogo encadenado");
+                    
+                    // Resetear índice de línea para el nuevo diálogo
+                    currentLineIndex = 0;
+                    nextCutAtLine = CalculateNextCutLine();
+                    
+                    // Aplicar shot inicial del nuevo diálogo
+                    var newProfile = profile ?? defaultProfile;
+                    if (newProfile != null)
+                    {
+                        activeProfile = newProfile;
+                        ApplyShotWithContext(activeProfile.openingShot, isOpening: true);
+                    }
+                    
+                    return;
+                }
+            }
+            
             if (isInCinematicMode)
             {
                 Debug.LogWarning("[DialogueCinematicController] Ya está en modo cinematográfico");
@@ -320,14 +357,54 @@ public class DialogueCinematicController : MonoBehaviour
     }
 
         /// <summary>
-        /// Finaliza el modo cinematográfico
+        /// Finaliza el modo cinematográfico con delay para permitir encadenamiento
         /// </summary>
         public void EndCinematic()
         {
             if (!isInCinematicMode) return;
 
+            // Iniciar el proceso de apagado con delay para detectar encadenamiento
+            if (pendingEndCinematicCoroutine != null)
+            {
+                StopCoroutine(pendingEndCinematicCoroutine);
+            }
+            
+            pendingEndCinematicCoroutine = StartCoroutine(EndCinematicDelayed());
+        }
+        
+        /// <summary>
+        /// Corrutina que espera un momento antes de apagar realmente la cinematográfica
+        /// Permite detectar si viene otro diálogo encadenado
+        /// </summary>
+        private System.Collections.IEnumerator EndCinematicDelayed()
+        {
+            isPendingEnd = true;
+            
             if (showDebugInfo)
-                Debug.Log("[DialogueCinematicController] Finalizando cinematográfica");
+                Debug.Log($"[DialogueCinematicController] Iniciando apagado con delay de {chainDialogueGracePeriod}s");
+            
+            // Esperar el período de gracia
+            yield return new WaitForSeconds(chainDialogueGracePeriod);
+            
+            // Si llegamos aquí, no hubo encadenamiento - apagar realmente
+            isPendingEnd = false;
+            pendingEndCinematicCoroutine = null;
+            
+            if (showDebugInfo)
+                Debug.Log("[DialogueCinematicController] Finalizando cinematográfica (sin encadenamiento detectado)");
+
+            EndCinematicImmediate();
+        }
+        
+        /// <summary>
+        /// Apaga inmediatamente el modo cinematográfico (sin delay)
+        /// </summary>
+        private void EndCinematicImmediate()
+        {
+            if (!isInCinematicMode) return;
+
+            if (showDebugInfo)
+                Debug.Log("[DialogueCinematicController] Apagando cinematográfica inmediatamente");
 
         // Desactivar todas las cámaras virtuales del pool
         DisableAllDialogueCameras();
@@ -542,6 +619,15 @@ public class DialogueCinematicController : MonoBehaviour
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
             Vector3 lookAtPos = target.position + shot.LookAtOffset;
+            
+            // ✅ AJUSTE ESPECIAL: Para planos OverShoulder, mirar más hacia el pecho/torso
+            // Esto evita que la cabeza del personaje en primer plano tape al otro personaje
+            if (shot.shotType == DialogueShotType.OverShoulderPlayer || 
+                shot.shotType == DialogueShotType.OverShoulderNPC)
+            {
+                // Bajar el punto de mira 0.3m para apuntar más al torso que a la cabeza
+                lookAtPos.y -= 0.3f;
+            }
 
             // Aplicar posición
             vcam.transform.position = position;
@@ -703,23 +789,23 @@ public class DialogueCinematicController : MonoBehaviour
                         if (playerToNPC.sqrMagnitude < 0.01f) playerToNPC = currentPlayer.forward;
                         playerToNPC.Normalize();
                         
-                        // ✅ CONFIGURACIÓN PERSONALIZADA: Ajustada para mejor encuadre sobre el hombro
-                        // Offset lateral más pronunciado para ver por encima del hombro derecho
-                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 0.9f;
+                        // ✅ CONFIGURACIÓN MEJORADA: Offset lateral más pronunciado para evitar tapar al NPC
+                        // Aumentado de 0.9f a 1.1f para posicionar la cámara más hacia el lado
+                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.1f;
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, playerToNPC).normalized * lateralOffsetAmount;
                         
-                        // Retroceder más del player para capturar mejor el contexto
-                        // Distancia aumentada para tener mejor vista del NPC
-                        float behindDistance = Mathf.Max(2.2f, actualDistance * 0.6f);
+                        // Retroceder más del player para mejor perspectiva
+                        float behindDistance = Mathf.Max(2.4f, actualDistance * 0.65f);
                         
                         // Avance ligero hacia el NPC para centrar mejor el encuadre
-                        float forwardOffset = 0.5f;
+                        float forwardOffset = 0.6f;
                         
                         // Posición base: atrás del player + offset lateral + ligero avance hacia NPC
                         camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset + playerToNPC * forwardOffset;
                         
-                        // Altura ajustada para vista óptima sobre el hombro (2.4m relativo al suelo)
-                        camPos.y = currentPlayer.position.y + shot.Height + 0.4f;
+                        // ✅ ALTURA AUMENTADA: Subir la cámara para ver por encima de la cabeza del player
+                        // Aumentado de +0.4f a +0.7f respecto a shot.Height
+                        camPos.y = currentPlayer.position.y + shot.Height + 0.7f;
                     }
                     break;
 

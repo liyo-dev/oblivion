@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import re
 
 file_path = r'C:\Users\luarb\dev\unity\El Sendero de las Estrellas\Assets\Scripts\UI\PlayerEquipmentMenuController.cs'
 
@@ -8,7 +7,7 @@ file_path = r'C:\Users\luarb\dev\unity\El Sendero de las Estrellas\Assets\Script
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
-# Reemplazos de caracteres individuales primero
+# Reemplazos de caracteres mal codificados
 char_replacements = [
     ('Ã³', 'ó'),
     ('Ã±', 'ñ'),
@@ -16,15 +15,6 @@ char_replacements = [
     ('Ã©', 'é'),
     ('Ã­', 'í'),
     ('Ãº', 'ú'),
-    ('Ã', 'Á'),
-    ('Ã‰', 'É'),
-    ('Ã', 'Í'),
-    ('Ã"', 'Ó'),
-    ('Ãš', 'Ú'),
-    ('Ã'', 'Ñ'),
-    ('âš ï¸', '⚠️'),
-    ('â­', '⭐'),
-    ('â', '✅'),
     ('encontrÃ³', 'encontró'),
     ('SÃ­', 'Sí'),
     ('automÃ¡ticamente', 'automáticamente'),
@@ -45,15 +35,13 @@ char_replacements = [
     ('abriÃ³', 'abrió'),
 ]
 
-# Aplicar reemplazos múltiples veces para asegurar que se capturen todos
-for _ in range(3):
-    for old, new in char_replacements:
-        content = content.replace(old, new)
+# Aplicar reemplazos
+for old, new in char_replacements:
+    content = content.replace(old, new)
 
 # Escribir el archivo corregido
 with open(file_path, 'w', encoding='utf-8') as f:
     f.write(content)
 
 print('Archivo corregido exitosamente')
-
 

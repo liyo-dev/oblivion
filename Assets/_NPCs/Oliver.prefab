@@ -514,7 +514,7 @@ GameObject:
   m_Name: Oliver
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
+  m_NavMeshLayer: 1
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3783845604206677512
@@ -667,11 +667,12 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 4098265883291002882}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
-  dialogue: {fileID: 11400000, guid: 1b2633a3db9ef2741ab756606c66a0b1, type: 2}
+  dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
   confirmFollowUp: {fileID: 0}
@@ -744,7 +745,7 @@ MonoBehaviour:
     stuckThreshold: 0.02
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
-  debugMode: 1
+  debugMode: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 1

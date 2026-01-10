@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
-  m_Name: PlayerPreset_Test_20260109_203551
+  m_Name: PlayerPreset_Test_20260110_101146
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
   spawnAnchorId: House_FrontDoor
   level: 1
   maxHP: 100
-  currentHP: 55
+  currentHP: 25
   maxMP: 50
   currentMP: 50
   unlockedAbilities: 01000000
@@ -24,16 +24,20 @@ MonoBehaviour:
   rightSpellId: 0
   specialSpellId: 0
   flags:
-  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,7_22,3
+  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,6_22,3
   - CINEMATIC_SEEN:Cinematic_DemonAppears
   - CINEMATIC_SEEN:Cinematic_VillainPlans
+  - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
   - QUEST_COMPLETED:ELDRAN_MISSION1
   - QUEST_ARCHIVED:ELDRAN_MISSION1
   - QUEST_COMPLETED:ELDRAN_MISSION2
   - QUEST_ARCHIVED:ELDRAN_MISSION2
   - QUEST_COMPLETED:ELDRAN_MISSION3
   - QUEST_ARCHIVED:ELDRAN_MISSION3
-  - QUEST_ACTIVE:ELDRAN_MISSION4
+  - QUEST_COMPLETED:ELDRAN_MISSION4
+  - QUEST_ARCHIVED:ELDRAN_MISSION4
+  - QUEST_ACTIVE:ELDRAN_MISSION5
+  - QUEST_STEP_DONE:ELDRAN_MISSION5:0
   abilities:
     swim: 0
     jump: 0
@@ -53,8 +57,11 @@ MonoBehaviour:
     partName: Mouth01
   unlockedWardrobeIds:
   - Body05
+  - Cloak02
   inventoryItems:
   - itemId: coin
+    count: 16
+  - itemId: pocionHP
     count: 1
   defeatedBossIds:
   - Demon_1
@@ -63,7 +70,7 @@ MonoBehaviour:
     blackboardData:
     - key: __currentNodeGuid
       type: 
-      value: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
+      value: 
     - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
       type: 
       value: 1
@@ -74,6 +81,9 @@ MonoBehaviour:
       type: 
       value: 1
     - key: __quest_bc692d5b-b0ca-4095-85fc-2380f374f9d3_ELDRAN_MISSION4_started
+      type: 
+      value: 1
+    - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
       type: 
       value: 1
   - graphLabel: Misiones Secundarias
@@ -95,3 +105,5 @@ MonoBehaviour:
   completedInteractiveNarratives:
   - oliver-narrative-b8a7c6d5-unique
   - oliver-narrative-b8a7c6d5-unique_CN0
+  - victoria-narrative-f5e4d3c2-unique
+  - victoria-narrative-f5e4d3c2-unique_CN1

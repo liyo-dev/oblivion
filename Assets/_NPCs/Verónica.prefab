@@ -1244,12 +1244,13 @@ GameObject:
   - component: {fileID: 9131262901232982737}
   - component: {fileID: 7761732784798172037}
   - component: {fileID: 8913947872041930380}
+  - component: {fileID: 6022347474766525597}
   m_Layer: 8
   m_Name: "Ver\xF3nica"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1413059853635751111
 Transform:
@@ -1378,6 +1379,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 8027282707432135817}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -1432,18 +1434,56 @@ MonoBehaviour:
   greetingState: Greeting01_NoWeapon
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
   defendState: Defend_NoWeapon
-  getHitState: TakeDamage
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
   defendHitState: DefendHit_NoWeapon
   dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
   victoryState: Victory_NoWeapon
   spellCastLeftState: MagicLeft
   spellCastRightState: MagicRight
   spellCastSpecialState: MagicSpecial
-  syncWithNavAgent: 1
   useRootMotionForSpecialAnims: 0
   debugMode: 0
   drawGizmos: 1
+--- !u!114 &6022347474766525597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6079598791180535481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 0
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &6301873455769756455
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import re
 
 file_path = r'C:\Users\luarb\dev\unity\El Sendero de las Estrellas\Assets\Scripts\UI\PlayerEquipmentMenuController.cs'
 
@@ -8,29 +7,17 @@ file_path = r'C:\Users\luarb\dev\unity\El Sendero de las Estrellas\Assets\Script
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
-# Reemplazos de caracteres individuales primero
-char_replacements = [
-    ('Ã³', 'ó'),
-    ('Ã±', 'ñ'),
-    ('Ã¡', 'á'),
-    ('Ã©', 'é'),
-    ('Ã­', 'í'),
-    ('Ãº', 'ú'),
-    ('Ã', 'Á'),
-    ('Ã‰', 'É'),
-    ('Ã', 'Í'),
-    ('Ã"', 'Ó'),
-    ('Ãš', 'Ú'),
-    ('Ã'', 'Ñ'),
-    ('âš ï¸', '⚠️'),
-    ('â­', '⭐'),
-    ('â', '✅'),
+# Encontrar todas las variaciones de caracteres mal codificados
+import re
+
+# Reemplazos completos de palabras primero
+word_replacements = [
     ('encontrÃ³', 'encontró'),
-    ('SÃ­', 'Sí'),
+    ('cÃ¡mara', 'cámara'),
+    ('AsegÃºrate', 'Asegúrate'),
     ('automÃ¡ticamente', 'automáticamente'),
     ('mÃ­nimo', 'mínimo'),
     ('funcionarÃ¡', 'funcionará'),
-    ('AsegÃºrate', 'Asegúrate'),
     ('estÃ©', 'esté'),
     ('despuÃ©s', 'después'),
     ('podrÃ¡', 'podrá'),
@@ -43,17 +30,34 @@ char_replacements = [
     ('menÃºs', 'menús'),
     ('todavÃ­a', 'todavía'),
     ('abriÃ³', 'abrió'),
+    ('SÃ­', 'Sí'),
 ]
 
-# Aplicar reemplazos múltiples veces para asegurar que se capturen todos
-for _ in range(3):
-    for old, new in char_replacements:
+# Caracteres individuales
+char_replacements = [
+    ('Ã³', 'ó'),
+    ('Ã±', 'ñ'),
+    ('Ã¡', 'á'),
+    ('Ã©', 'é'),
+    ('Ã­', 'í'),
+    ('Ãº', 'ú'),
+]
+
+# Aplicar reemplazos de palabras primero
+for old, new in word_replacements:
+    if old in content:
+        print(f'Reemplazando "{old}" -> "{new}"')
+        content = content.replace(old, new)
+
+# Luego caracteres individuales
+for old, new in char_replacements:
+    if old in content:
+        print(f'Reemplazando "{old}" -> "{new}"')
         content = content.replace(old, new)
 
 # Escribir el archivo corregido
 with open(file_path, 'w', encoding='utf-8') as f:
     f.write(content)
 
-print('Archivo corregido exitosamente')
-
+print('\nArchivo corregido exitosamente')
 

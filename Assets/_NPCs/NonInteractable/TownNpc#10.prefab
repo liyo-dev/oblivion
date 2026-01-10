@@ -591,12 +591,13 @@ GameObject:
   - component: {fileID: 5011344314124857797}
   - component: {fileID: 8173908825958503350}
   - component: {fileID: 56820124047185113}
+  - component: {fileID: 8157145805560483413}
   m_Layer: 0
   m_Name: TownNpc#10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &5825065316691601105
 Transform:
@@ -701,32 +702,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCSimpleAnimator
   animator: {fileID: 5618865476850058947}
+  navAgent: {fileID: 0}
   locomotionState: Free Locomotion
-  battleIdleState: Idle_Battle_NoWeapon
+  idleNormalState: Idle_Normal_NoWeapon
+  idleBattleState: Idle_Battle_NoWeapon
   upperBodyLayer: 1
   upperBodyIdleState: UpperIdle
-  greetState: Greeting01_NoWeapon
+  movementThreshold: 0.1
+  locomotionSpeedMultiplier: 1
+  locomotionBlendTime: 0.1
+  inputMagnitudeDampTime: 0.1
+  rotationSpeed: 360
+  rotationSmoothness: 0.15
+  minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
-  greetOnSight: 1
-  greetRadius: 3
-  fovDegrees: 110
-  requirePlayerLookingAtMe: 1
-  playerLookDotThreshold: 0.6
-  greetCooldown: 4
-  occluders:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  rotateToPlayerOnInteract: 1
-  rotateSpeed: 10
-  playerOverride: {fileID: 0}
-  lookFrom: {fileID: 0}
-  ambientInhibitor: {fileID: 0}
+  greetingState: Greeting01_NoWeapon
+  challengingState: Challenging_NoWeapon
+  senseSomethingState: SenseSomethingStart_NoWeapon
+  searchingState: SenseSomethingSearching_NoWeapon
+  defendState: Idle_Battle_NoWeapon
+  getHitStates:
+  - TakeDamage
+  - TakeDamage_2
+  defendHitState: DefendHit_NoWeapon
+  dieState: Die02_NoWeapon
+  dizzyState: Dizzy_NoWeapon
+  victoryState: Victory_NoWeapon
+  spellCastLeftState: MagicLeft
+  spellCastRightState: MagicRight
+  spellCastSpecialState: MagicSpecial
+  useRootMotionForSpecialAnims: 0
+  debugMode: 0
   drawGizmos: 1
-  verboseLogs: 0
-  forceOneShotsOnBaseLayer: 0
-  movementParamScale: 1.25
-  locomotionAnimSpeed: 1.25
-  minBlendWhileMoving: 0.7
 --- !u!114 &8173908825958503350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -742,6 +749,7 @@ MonoBehaviour:
   mode: 0
   hint: {fileID: 488548297553309394}
   hideHintAtStart: 1
+  hintAnimDuration: 0.25
   singleUse: 0
   initiallyEnabled: 1
   persistentIdOverride: 
@@ -788,6 +796,41 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &8157145805560483413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1745983615537989187}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+  configuration:
+    behaviourType: 0
+    ambientConfig: {fileID: 0}
+    combatConfig: {fileID: 0}
+    questConfig: {fileID: 0}
+    narrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 0}
+    walkSpeed: 1.5
+    runSpeed: 4
+    rotationSpeed: 180
+    stoppingDistance: 0.5
+    acceleration: 8
+    minAnimSpeed: 0.25
+    resetAnimationOnStateExit: 1
+    navMeshSampleRadius: 2
+    stuckCheckInterval: 1.5
+    stuckThreshold: 0.02
+    useKinematicRigidbody: 1
+    rigidbodyConstraints: 112
+  debugMode: 0
+  startInIdleState: 1
+  forceKinematicRigidbody: 1
+  persistLastPosition: 0
 --- !u!1 &1815402444060926920
 GameObject:
   m_ObjectHideFlags: 0

@@ -89,9 +89,12 @@ namespace Game.NPC
             // Verificar si el NPC está ejecutando una narrativa
             bool isExecuting = _narrativeExecutor != null && _narrativeExecutor.IsExecuting;
             
-            if (isExecuting || _isInDialogue)
+            // Verificar si el NPC está en combate
+            bool isInCombat = _npcManager != null && _npcManager.Context != null && _npcManager.Context.IsInCombat;
+            
+            if (isExecuting || _isInDialogue || isInCombat)
             {
-                // Forzar ocultar icono mientras ejecuta o está en diálogo
+                // Forzar ocultar icono mientras ejecuta, está en diálogo o combate
                 if (!_iconForcedHidden)
                 {
                     _iconForcedHidden = true;

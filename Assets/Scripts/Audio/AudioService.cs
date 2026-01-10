@@ -54,6 +54,11 @@ public sealed class AudioService : MonoBehaviour
     float _duckTarget = 1f;
     Coroutine _duckRoutine;
     bool _battleActive = false;
+    
+    // Control de restauración de música después de victoria
+    bool _pendingMusicRestoreAfterDialogue = false;
+    AudioGraphProfile.BattleRule _pendingBattleRule = null;
+    Coroutine _pendingRestoreCoroutine = null;
 
     // Recuerdo qué clip pidió la última escena base (no aditiva)
     AudioClip _lastRequestedSceneClip;
@@ -103,6 +108,8 @@ public sealed class AudioService : MonoBehaviour
     {
         SceneManager.sceneLoaded   -= OnSceneLoaded;
         SceneManager.sceneUnloaded -= OnSceneUnloaded;
+        
+        DialogueManager.OnDialogueClosed -= OnDialogueClosedHandler;
 
         if (_signals != null)
         {
@@ -502,7 +509,15 @@ public sealed class AudioService : MonoBehaviour
         
         // SIEMPRE iniciar la coroutine de restauración, incluso si battleRule es null
         // ForceRestoreMusicAfterBattle tiene fallbacks para encontrar la música correcta
-        StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
+        
+        // Cancelar restauración pendiente anterior si existe
+        if (_pendingRestoreCoroutine != null)
+        {
+            StopCoroutine(_pendingRestoreCoroutine);
+            _pendingRestoreCoroutine = null;
+        }
+        
+        _pendingRestoreCoroutine = StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
     }
 
     IEnumerator RestoreAfterVictoryDelay(AudioGraphProfile.BattleRule battleRule, float holdSeconds)
@@ -510,8 +525,25 @@ public sealed class AudioService : MonoBehaviour
         if (holdSeconds > 0f)
             yield return new WaitForSecondsRealtime(holdSeconds);
         
-        // Forzar restauración después de victoria - no verificar _battleActive
-        // porque la música de victoria ya se reprodujo y necesitamos restaurar
+        // Verificar si hay un diálogo activo
+        bool dialogueIsOpen = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
+        
+        if (dialogueIsOpen)
+        {
+            Debug.Log($"[AudioService] Diálogo activo detectado - marcando restauración de música como pendiente hasta que cierre");
+            
+            // Marcar que hay restauración pendiente
+            _pendingMusicRestoreAfterDialogue = true;
+            _pendingBattleRule = battleRule;
+            _pendingRestoreCoroutine = null;
+            
+            // No restaurar aún - esperaremos a que se cierre el diálogo
+            yield break;
+        }
+        
+        // Si no hay diálogo, restaurar inmediatamente
+        Debug.Log($"[AudioService] No hay diálogo activo - restaurando música inmediatamente");
+        _pendingRestoreCoroutine = null;
         ForceRestoreMusicAfterBattle(battleRule);
     }
     
@@ -572,6 +604,22 @@ public sealed class AudioService : MonoBehaviour
             Debug.LogWarning($"[AudioService] No se encontró música para restaurar después de victoria");
             StopMusic(fade);
         }
+    }
+    
+    /// <summary>
+    /// Handler que se ejecuta cuando se cierra un diálogo.
+    /// Si hay una restauración de música pendiente después de victoria, la ejecuta ahora.
+    /// </summary>
+    private void OnDialogueClosedHandler(Transform npc)
+    {
+        if (!_pendingMusicRestoreAfterDialogue)
+            return;
+        
+        Debug.Log($"[AudioService] Diálogo cerrado - restaurando música pendiente después de victoria");
+        
+        _pendingMusicRestoreAfterDialogue = false;
+        ForceRestoreMusicAfterBattle(_pendingBattleRule);
+        _pendingBattleRule = null;
     }
 
 
