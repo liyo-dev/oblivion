@@ -67,6 +67,8 @@ MonoBehaviour:
   inventoryItems:
   - itemId: coin
     count: 17
+  - itemId: pocionHP
+    count: 20
   defeatedBossIds:
   - Demon_1
   narrativeBlackboards:

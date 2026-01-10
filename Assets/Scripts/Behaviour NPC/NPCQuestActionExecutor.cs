@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -254,7 +254,8 @@ namespace Game.NPC
                 var dialogueManager = DialogueManager.Instance;
                 if (dialogueManager != null)
                 {
-                    dialogueManager.StartDialogue(action.dialogueBeforeAction);
+                    // ✅ FIX: Pasar el transform del NPC para activar la cámara cinematográfica
+                    dialogueManager.StartDialogue(action.dialogueBeforeAction, transform);
 
                     while (dialogueManager.IsOpen)
                     {
@@ -668,7 +669,8 @@ namespace Game.NPC
             var dialogueManager = DialogueManager.Instance;
             if (dialogueManager != null)
             {
-                dialogueManager.StartDialogue(action.dialogueToPlay);
+                // ✅ FIX: Pasar el transform del NPC para activar la cámara cinematográfica
+                dialogueManager.StartDialogue(action.dialogueToPlay, transform);
 
                 while (dialogueManager.IsOpen)
                 {
