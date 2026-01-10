@@ -30,7 +30,6 @@ public class PlayerHealthSystem : MonoBehaviour
     [Tooltip("Animaciones de daño (se alterna aleatoriamente entre ellas para variedad)")]
     [SerializeField] private string[] damageAnimationNames = new string[] { "TakeDamage", "TakeDamage_2" };
     [SerializeField] private string deathAnimationName = "Die02_NoWeapon";
-    [SerializeField] private string healAnimationName = "Heal";
     [SerializeField] private int upperBodyLayer = 1; // Layer para animaciones del torso superior
     
     [Header("Efectos Visuales")]
@@ -276,7 +275,6 @@ public class PlayerHealthSystem : MonoBehaviour
         if (_currentHp > 0)
         {
             PlayHealEffects();
-            TriggerAnimation(healAnimationName);
         }
         
         // Notificar eventos

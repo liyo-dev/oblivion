@@ -322,7 +322,7 @@ namespace Game.NPC.Modules
                         playerVictory.PlayVictory(battleId);
                         
                         // Esperar a que termine la animación de victoria
-                        yield return new WaitForSecondsRealtime(4.5f);
+                        yield return new WaitForSecondsRealtime(4f);
                         Debug.Log($"[Lifecycle] ✅ Animación de victoria completada");
                     }
                 }

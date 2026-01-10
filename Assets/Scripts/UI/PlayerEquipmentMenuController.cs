@@ -200,6 +200,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     bool _isOpen;
     int _activeTab;
     float _savedTimeScale = 1f;
+    
+    // Flag para controlar animaciones de uso de items
+    bool _isUsingItem;
 
     Coroutine _clearFeedbackRoutine;
 
@@ -909,7 +912,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _previewPlayerYaw = 0f;
             
             // Restaurar la rotación del player para que mire hacia la cámara (180Â°)
-            if (_playerPreviewTarget != null)
+            // MODIFICADO: Solo si no se está usando un item para evitar conflictos con la animación
+            if (_playerPreviewTarget != null && !_isUsingItem)
             {
                 _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f, 0f);
             }
@@ -1084,6 +1088,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     {
         if (!_isOpen || _playerAnimator == null)
             return;
+            
+        // NUEVO: Si se está usando un item, no forzar idle
+        if (_isUsingItem) return;
 
         // Verificar si se está reproduciendo una animación específica (como beber poción)
         var currentClipInfo = _playerAnimator.GetCurrentAnimatorClipInfo(0);
@@ -1107,6 +1114,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             _playerAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
         }
+    }
+    
+    // NUEVO: Método público para establecer el flag
+    public void SetUsingItem(bool value, float duration = 0f)
+    {
+        _isUsingItem = value;
+        if (value && duration > 0f)
+        {
+            // Usar string para StopCoroutine por seguridad si la corrutina no estaba corriendo
+            StopCoroutine("ResetUsingItemFlag"); 
+            StartCoroutine(ResetUsingItemFlag(duration));
+        }
+    }
+
+    System.Collections.IEnumerator ResetUsingItemFlag(float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        _isUsingItem = false;
     }
 
     /// <summary>
@@ -1967,6 +1992,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void UseSelectedItem()
         {
             if (_inventory == null || _selectedItem == null) return;
+            
+            // NUEVO: Activar flag INMEDIATAMENTE
+            if (Instance != null)
+            {
+                Instance.SetUsingItem(true, 2.5f); // Aumentado un poco por seguridad
+            }
             
             // Cambiar estado pero NO resetear visualmente todavía
             _interactionState = InventoryInteractionState.Browsing;
