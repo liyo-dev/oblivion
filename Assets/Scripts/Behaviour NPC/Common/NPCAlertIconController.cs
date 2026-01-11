@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 
@@ -12,45 +12,65 @@ namespace Game.NPC.Common
     /// </summary>
     public class NPCAlertIconController : MonoBehaviour
     {
-        [Header("Configuración por Defecto")]
-        [Tooltip("Offset vertical sobre el NPC donde aparece el icono")]
-        [SerializeField] private Vector3 iconOffset = new Vector3(0f, 2.5f, 0f);
+        [Header("Configuración de Posición")]
+        [Tooltip("Offset adicional sobre la cabeza del NPC")]
+        [SerializeField] private Vector3 iconOffset = new Vector3(0f, 0.3f, 0f);
         
+        [Tooltip("Altura de fallback si no se encuentra la cabeza (desde transform.position)")]
+        [SerializeField] private float fallbackHeight = 2.2f;
+        
+        [Tooltip("Nombres de huesos a buscar para la cabeza (en orden de prioridad)")]
+        [SerializeField] private string[] headBoneNames = { "Head", "head", "Bip001 Head", "mixamorig:Head", "Cabeza" };
+        
+        [Header("Configuración de Duración")]
         [Tooltip("Duración del icono en segundos (si no se especifica)")]
         [SerializeField] private float iconDuration = 2f;
         
+        [Header("Animación de Bounce")]
         [Tooltip("Si está activo, el icono hace bounce animado")]
         [SerializeField] private bool animateBounce = true;
         
         [Tooltip("Amplitud del bounce")]
-        [SerializeField] private float bounceAmplitude = 0.2f;
+        [SerializeField] private float bounceAmplitude = 0.15f;
         
         [Tooltip("Velocidad del bounce")]
-        [SerializeField] private float bounceSpeed = 3f;
+        [SerializeField] private float bounceSpeed = 4f;
         
         [Header("Animaciones DOTween")]
         [Tooltip("Duración de la animación de aparición")]
-        [SerializeField] private float showAnimDuration = 0.3f;
+        [SerializeField] private float showAnimDuration = 0.25f;
         
         [Tooltip("Duración de la animación de desaparición")]
-        [SerializeField] private float hideAnimDuration = 0.2f;
+        [SerializeField] private float hideAnimDuration = 0.15f;
         
+        [Tooltip("Escala del icono")]
+        [SerializeField] private float iconScale = 1f;
+        
+        [Header("Debug")]
+        [SerializeField] private bool showDebugLogs = false;
+        
+        // Referencias
         private GameObject _currentIconInstance;
         private Coroutine _iconRoutine;
         private Camera _mainCamera;
         private Tween _currentTween;
+        private Transform _headBone;
+        private bool _headBoneSearched;
+        
+        // Estado
         private bool _isHiding;
-        private bool _hiddenDuringDialogue; // Si se ocultó por diálogo
-        private Vector3 _savedIconScale;    // Escala guardada antes de ocultar
+        private bool _isShowing;
+        private bool _hiddenDuringDialogue;
+        private Vector3 _targetScale;
         
         private void Start()
         {
             UpdateCameraReference();
+            FindHeadBone();
         }
         
         private void OnEnable()
         {
-            // Suscribirse a eventos de diálogo para ocultar iconos durante conversaciones
             DialogueManager.OnDialogueStarted += OnDialogueStarted;
             DialogueManager.OnDialogueClosed += OnDialogueClosed;
         }
@@ -62,6 +82,86 @@ namespace Game.NPC.Common
         }
         
         /// <summary>
+        /// Busca el hueso de la cabeza del NPC para posicionar el icono correctamente
+        /// </summary>
+        private void FindHeadBone()
+        {
+            if (_headBoneSearched) return;
+            _headBoneSearched = true;
+            
+            // Buscar Animator primero
+            var animator = GetComponentInChildren<Animator>();
+            if (animator != null && animator.isHuman)
+            {
+                _headBone = animator.GetBoneTransform(HumanBodyBones.Head);
+                if (_headBone != null)
+                {
+                    if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] ✅ Cabeza encontrada via Animator: {_headBone.name}");
+                    return;
+                }
+            }
+            
+            // Buscar por nombre de hueso
+            foreach (string boneName in headBoneNames)
+            {
+                _headBone = FindChildRecursive(transform, boneName);
+                if (_headBone != null)
+                {
+                    if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] ✅ Cabeza encontrada por nombre: {_headBone.name}");
+                    return;
+                }
+            }
+            
+            if (showDebugLogs) Debug.LogWarning($"[NPCAlertIcon:{name}] ⚠️ No se encontró hueso de cabeza, usando fallback height={fallbackHeight}");
+        }
+        
+        private Transform FindChildRecursive(Transform parent, string name)
+        {
+            foreach (Transform child in parent)
+            {
+                if (child.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    return child;
+                    
+                var found = FindChildRecursive(child, name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Calcula la posición donde debe aparecer el icono.
+        /// Usa fallbackHeight como la altura desde los pies del NPC, más iconOffset adicional.
+        /// Si se encuentra la cabeza y está cerca de fallbackHeight, usa la cabeza como referencia.
+        /// </summary>
+        private Vector3 GetIconWorldPosition()
+        {
+            // Posición base: pies del NPC
+            Vector3 feetPosition = transform.position;
+            
+            // La altura configurada (alertIconHeight) se usa directamente
+            Vector3 targetPos = feetPosition + Vector3.up * fallbackHeight;
+            
+            // Si encontramos la cabeza, verificar si está cerca de la altura configurada
+            // y usarla para un posicionamiento más preciso
+            if (_headBone != null)
+            {
+                float headHeight = _headBone.position.y - feetPosition.y;
+                
+                // Si la cabeza está por debajo de la altura configurada,
+                // usar la cabeza + un pequeño offset para mantener el icono visible
+                if (headHeight > 0 && headHeight < fallbackHeight)
+                {
+                    // Usar la posición de la cabeza + la diferencia hasta fallbackHeight
+                    float extraHeight = fallbackHeight - headHeight;
+                    targetPos = _headBone.position + Vector3.up * Mathf.Max(extraHeight, 0.2f);
+                }
+            }
+            
+            // Agregar offset adicional (X, Z principalmente, Y es pequeño ~0.2)
+            return targetPos + iconOffset;
+        }
+        
+        /// <summary>
         /// Cuando inicia un diálogo, ocultar el icono temporalmente
         /// </summary>
         private void OnDialogueStarted(Transform npcInvolved)
@@ -69,11 +169,16 @@ namespace Game.NPC.Common
             if (_currentIconInstance != null && !_isHiding && !_hiddenDuringDialogue)
             {
                 _hiddenDuringDialogue = true;
-                _savedIconScale = _currentIconInstance.transform.localScale;
                 
-                // Ocultar con animación rápida
+                // Matar cualquier tween en progreso
                 _currentTween?.Kill();
-                _currentIconInstance.transform.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack);
+                
+                // Ocultar con animación rápida pero NO destruir
+                _currentIconInstance.transform.DOScale(Vector3.zero, 0.1f)
+                    .SetEase(Ease.InBack)
+                    .SetId(this);
+                    
+                if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔇 Ocultando icono durante diálogo");
             }
         }
         
@@ -82,13 +187,17 @@ namespace Game.NPC.Common
         /// </summary>
         private void OnDialogueClosed(Transform npcInvolved)
         {
-            if (_hiddenDuringDialogue && _currentIconInstance != null)
+            if (_hiddenDuringDialogue && _currentIconInstance != null && !_isHiding)
             {
                 _hiddenDuringDialogue = false;
                 
-                // Restaurar con animación
-                _currentTween?.Kill();
-                _currentIconInstance.transform.DOScale(_savedIconScale, 0.2f).SetEase(Ease.OutBack);
+                // Restaurar escala con animación
+                DOTween.Kill(this);
+                _currentIconInstance.transform.DOScale(_targetScale, 0.2f)
+                    .SetEase(Ease.OutBack)
+                    .SetId(this);
+                    
+                if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔊 Restaurando icono tras diálogo");
             }
         }
         
@@ -97,7 +206,6 @@ namespace Game.NPC.Common
         /// </summary>
         private void UpdateCameraReference()
         {
-            // Buscar la cámara activa y habilitada
             // Prioridad 1: Camera.main si está habilitada
             Camera mainCam = Camera.main;
             if (mainCam != null && mainCam.isActiveAndEnabled)
@@ -107,7 +215,6 @@ namespace Game.NPC.Common
             }
             
             // Prioridad 2: Buscar cualquier cámara habilitada con mayor depth
-            // (útil cuando hay múltiples cámaras, como durante diálogos)
             Camera[] allCameras = Camera.allCameras;
             Camera bestCamera = null;
             float highestDepth = float.MinValue;
@@ -127,17 +234,11 @@ namespace Game.NPC.Common
                 return;
             }
             
-            // Fallback: usar Camera.main aunque esté desactivada
-            // (mejor que null)
             _mainCamera = mainCam;
         }
         
-        /// <summary>
-        /// Obtiene la cámara actual para el billboard (actualiza si es necesario)
-        /// </summary>
         private Camera GetCurrentCamera()
         {
-            // Si no hay cámara o la anterior ya no es válida, actualizar
             if (_mainCamera == null || !_mainCamera.isActiveAndEnabled)
             {
                 UpdateCameraReference();
@@ -156,11 +257,17 @@ namespace Game.NPC.Common
                 return;
             }
             
-            // Limpiar icono anterior inmediatamente para evitar conflictos
+            // Asegurarse de encontrar la cabeza
+            if (!_headBoneSearched) FindHeadBone();
+            
+            // Limpiar icono anterior inmediatamente
             HideAlertIconImmediate();
             
             float useDuration = duration > 0f ? duration : iconDuration;
+            _targetScale = Vector3.one * iconScale;
             _iconRoutine = StartCoroutine(ShowIconRoutine(iconPrefab, useDuration));
+            
+            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔔 Mostrando icono por {useDuration}s");
         }
         
         /// <summary>
@@ -194,11 +301,39 @@ namespace Game.NPC.Common
         }
         
         /// <summary>
-        /// Establece el offset del icono respecto al NPC
+        /// Establece la altura del icono sobre el NPC.
+        /// El valor representa la altura TOTAL desde los pies del NPC donde debe aparecer el icono.
+        /// Si se encuentra la cabeza del NPC, se usa como referencia y se ajusta el offset.
+        /// Si no se encuentra, se usa directamente como altura desde transform.position.
         /// </summary>
         public void SetIconOffset(Vector3 offset)
         {
-            iconOffset = offset;
+            // Guardar la altura deseada como fallbackHeight (altura desde los pies)
+            if (offset.y > 0)
+            {
+                fallbackHeight = offset.y;
+            }
+            
+            // El iconOffset será un pequeño offset adicional sobre el punto de anclaje
+            // (ya sea la cabeza encontrada o el fallbackHeight)
+            iconOffset = new Vector3(offset.x, 0.2f, offset.z);
+            
+            if (showDebugLogs) 
+                Debug.Log($"[NPCAlertIcon:{name}] SetIconOffset: altura deseada={offset.y}, fallbackHeight={fallbackHeight}");
+        }
+        
+        /// <summary>
+        /// Establece directamente la altura del icono (valor Y desde los pies del NPC)
+        /// </summary>
+        public void SetIconHeight(float height)
+        {
+            if (height > 0)
+            {
+                fallbackHeight = height;
+            }
+            
+            if (showDebugLogs)
+                Debug.Log($"[NPCAlertIcon:{name}] SetIconHeight: {height}");
         }
         
         /// <summary>
@@ -234,12 +369,16 @@ namespace Game.NPC.Common
                 return;
             }
             
-            // IMPORTANTE: Actualizar referencia de cámara antes de mostrar el icono
+            // Asegurarse de encontrar la cabeza
+            if (!_headBoneSearched) FindHeadBone();
+            
             UpdateCameraReference();
+            HideAlertIconImmediate();
             
-            HideAlertIconImmediate(); // Limpiar icono anterior inmediatamente
-            
+            _targetScale = Vector3.one * iconScale;
             _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
+            
+            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 📌 Mostrando icono persistente");
         }
         
         /// <summary>
@@ -258,38 +397,51 @@ namespace Game.NPC.Common
                 _iconRoutine = null;
             }
             
-            // Si ya se está ocultando, no hacer nada (dejar que termine)
-            if (_isHiding) return;
+            // Si ya se está ocultando o no hay icono, salir
+            if (_isHiding || _currentIconInstance == null) return;
 
-            if (_currentIconInstance != null)
+            _isHiding = true;
+            _hiddenDuringDialogue = false;
+            
+            // Matar todos los tweens de este objeto
+            DOTween.Kill(this);
+            
+            // Capturar referencia para el closure
+            GameObject instanceToHide = _currentIconInstance;
+            var iconTransform = instanceToHide.transform;
+            
+            // Asegurar que tiene escala válida antes de animar
+            if (iconTransform.localScale.sqrMagnitude < 0.01f)
             {
-                _isHiding = true;
-                _currentTween?.Kill();
-                
-                // Capturar la instancia para el closure (evitar problemas si _currentIconInstance cambia)
-                GameObject instanceToHide = _currentIconInstance;
-                var iconTransform = instanceToHide.transform;
-                float targetY = iconTransform.position.y - 0.3f;
-                
-                Sequence hideSeq = DOTween.Sequence();
-                hideSeq.Append(iconTransform.DOScale(Vector3.zero, hideAnimDuration).SetEase(Ease.InBack));
-                hideSeq.Join(iconTransform.DOMoveY(targetY, hideAnimDuration).SetEase(Ease.InQuad));
-                hideSeq.OnComplete(() =>
-                {
-                    if (instanceToHide != null)
-                    {
-                        Destroy(instanceToHide);
-                    }
-                    
-                    // Solo resetear flags si seguimos apuntando a la misma instancia
-                    if (_currentIconInstance == instanceToHide)
-                    {
-                        _currentIconInstance = null;
-                        _isHiding = false;
-                    }
-                });
-                _currentTween = hideSeq;
+                // Si la escala ya es casi cero, destruir directamente
+                Destroy(instanceToHide);
+                _currentIconInstance = null;
+                _isHiding = false;
+                return;
             }
+            
+            Vector3 targetPos = iconTransform.position + Vector3.down * 0.2f;
+            
+            Sequence hideSeq = DOTween.Sequence();
+            hideSeq.Append(iconTransform.DOScale(Vector3.zero, hideAnimDuration).SetEase(Ease.InBack));
+            hideSeq.Join(iconTransform.DOMove(targetPos, hideAnimDuration).SetEase(Ease.InQuad));
+            hideSeq.OnComplete(() =>
+            {
+                if (instanceToHide != null)
+                {
+                    Destroy(instanceToHide);
+                }
+                
+                if (_currentIconInstance == instanceToHide)
+                {
+                    _currentIconInstance = null;
+                    _isHiding = false;
+                }
+            });
+            hideSeq.SetId(this);
+            _currentTween = hideSeq;
+            
+            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔕 Ocultando icono con animación");
         }
         
         /// <summary>
@@ -297,6 +449,7 @@ namespace Game.NPC.Common
         /// </summary>
         public void HideAlertIconImmediate()
         {
+            DOTween.Kill(this);
             _currentTween?.Kill();
             
             if (_iconRoutine != null)
@@ -310,85 +463,101 @@ namespace Game.NPC.Common
                 Destroy(_currentIconInstance);
                 _currentIconInstance = null;
             }
+            
             _isHiding = false;
+            _isShowing = false;
+            _hiddenDuringDialogue = false;
+            
+            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] ⚡ Icono eliminado inmediatamente");
         }
         
         private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration)
         {
-            // CRÍTICO: Instanciar en WORLD SPACE, NO como hijo del NPC
-            _currentIconInstance = Instantiate(iconPrefab);
+            _isShowing = true;
             
-            // Calcular posición inicial en WORLD SPACE
-            Vector3 worldStartPos = transform.position + iconOffset + new Vector3(0f, -0.5f, 0f);
-            _currentIconInstance.transform.position = worldStartPos;
+            // Instanciar en WORLD SPACE
+            _currentIconInstance = Instantiate(iconPrefab);
+            _currentIconInstance.name = $"{iconPrefab.name}_{name}_Alert";
+            
+            // Calcular posición inicial (ligeramente debajo de la posición final para el pop-up)
+            Vector3 targetPos = GetIconWorldPosition();
+            Vector3 startPos = targetPos + Vector3.down * 0.3f;
+            
+            _currentIconInstance.transform.position = startPos;
             _currentIconInstance.transform.rotation = Quaternion.identity;
             _currentIconInstance.transform.localScale = Vector3.zero;
             _currentIconInstance.SetActive(true);
             
-            // IMPORTANTE: Aplicar rotación de billboard ANTES de animar para evitar distorsión
-            var initialCam = GetCurrentCamera();
-            if (initialCam != null)
-            {
-                Vector3 lookDir = initialCam.transform.position - _currentIconInstance.transform.position;
-                lookDir.y = 0; // Ignorar diferencia vertical
-                if (lookDir.sqrMagnitude > 0.001f)
-                {
-                    _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
-                }
-            }
+            // Aplicar billboard inicial
+            ApplyBillboard(_currentIconInstance.transform);
             
-            // Animar aparición (en WORLD SPACE)
+            // Animar aparición
             var iconTransform = _currentIconInstance.transform;
-            Vector3 targetWorldPos = transform.position + iconOffset;
+            
+            DOTween.Kill(this); // Matar tweens anteriores de este objeto
             
             Sequence showSeq = DOTween.Sequence();
-            showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
-            showSeq.Join(iconTransform.DOMoveY(targetWorldPos.y, showAnimDuration).SetEase(Ease.OutBack));
-            _currentTween = showSeq; // Guardar referencia para poder matar el tween
+            showSeq.Append(iconTransform.DOScale(_targetScale, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOMove(targetPos, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.SetId(this);
+            _currentTween = showSeq;
             
             yield return new WaitForSeconds(showAnimDuration);
             
-            // Animar durante la duración restante
+            _isShowing = false;
+            
+            // Loop de actualización durante la duración
             float elapsed = 0f;
             float remainingDuration = duration - showAnimDuration;
+            float baseTime = Time.time;
             
             while (elapsed < remainingDuration)
             {
-                if (_currentIconInstance == null) yield break;
+                if (_currentIconInstance == null || _isHiding) yield break;
                 
-                // Actualizar posición siguiendo al NPC en WORLD SPACE
-                Vector3 npcPosition = transform.position;
-                Vector3 targetPos = npcPosition + iconOffset;
-                
-                // Aplicar bounce si está activado
-                if (animateBounce)
+                // No actualizar si está oculto por diálogo
+                if (!_hiddenDuringDialogue)
                 {
-                    float bounce = Mathf.Sin(Time.time * bounceSpeed) * bounceAmplitude;
-                    targetPos.y += bounce;
-                }
-                
-                _currentIconInstance.transform.position = targetPos;
-                
-                // Billboard hacia la cámara activa (solo rotación horizontal, sin copiar el pitch/roll de la cámara)
-                var cam = GetCurrentCamera();
-                if (cam != null)
-                {
-                    // Calcular dirección hacia la cámara pero solo en el plano horizontal
-                    Vector3 lookDir = cam.transform.position - _currentIconInstance.transform.position;
-                    lookDir.y = 0; // Ignorar diferencia vertical para evitar inclinación
+                    // Actualizar posición siguiendo la cabeza del NPC
+                    Vector3 newTargetPos = GetIconWorldPosition();
                     
-                    if (lookDir.sqrMagnitude > 0.001f)
+                    // Aplicar bounce si está activado
+                    if (animateBounce)
                     {
-                        _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                        float bounce = Mathf.Sin((Time.time - baseTime) * bounceSpeed) * bounceAmplitude;
+                        newTargetPos.y += bounce;
                     }
+                    
+                    _currentIconInstance.transform.position = newTargetPos;
+                    
+                    // Mantener billboard hacia cámara
+                    ApplyBillboard(_currentIconInstance.transform);
                 }
                 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            // Limpiar al terminar
+            // Terminar con animación de ocultado
             HideAlertIcon();
+        }
+        
+        /// <summary>
+        /// Aplica efecto billboard para que el icono mire a la cámara
+        /// </summary>
+        private void ApplyBillboard(Transform iconTransform)
+        {
+            var cam = GetCurrentCamera();
+            if (cam != null && iconTransform != null)
+            {
+                Vector3 lookDir = cam.transform.position - iconTransform.position;
+                lookDir.y = 0; // Solo rotar en Y para mantener vertical
+                
+                if (lookDir.sqrMagnitude > 0.001f)
+                {
+                    iconTransform.rotation = Quaternion.LookRotation(lookDir);
+                }
+            }
         }
         
         /// <summary>
@@ -396,66 +565,55 @@ namespace Game.NPC.Common
         /// </summary>
         private IEnumerator ShowPersistentIconRoutine(GameObject iconPrefab)
         {
-            // CRÍTICO: Instanciar en WORLD SPACE, NO como hijo del NPC
-            _currentIconInstance = Instantiate(iconPrefab);
-            _currentIconInstance.name = iconPrefab.name + "_Persistent";
+            _isShowing = true;
             
-            // Calcular posición inicial en WORLD SPACE
-            Vector3 worldStartPos = transform.position + iconOffset + new Vector3(0f, -0.5f, 0f);
-            _currentIconInstance.transform.position = worldStartPos;
+            // Instanciar en WORLD SPACE
+            _currentIconInstance = Instantiate(iconPrefab);
+            _currentIconInstance.name = $"{iconPrefab.name}_{name}_Persistent";
+            
+            // Calcular posición inicial
+            Vector3 targetPos = GetIconWorldPosition();
+            Vector3 startPos = targetPos + Vector3.down * 0.3f;
+            
+            _currentIconInstance.transform.position = startPos;
             _currentIconInstance.transform.rotation = Quaternion.identity;
             _currentIconInstance.transform.localScale = Vector3.zero;
             _currentIconInstance.SetActive(true);
             
-            // Aplicar rotación de billboard ANTES de animar
-            UpdateCameraReference();
-            var initialCam = GetCurrentCamera();
-            if (initialCam != null)
-            {
-                Vector3 lookDir = initialCam.transform.position - _currentIconInstance.transform.position;
-                lookDir.y = 0;
-                if (lookDir.sqrMagnitude > 0.001f)
-                {
-                    _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
-                }
-            }
+            // Aplicar billboard inicial
+            ApplyBillboard(_currentIconInstance.transform);
             
-            // Animar aparición (en WORLD SPACE)
+            // Animar aparición
             var iconTransform = _currentIconInstance.transform;
-            Vector3 targetWorldPos = transform.position + iconOffset;
+            
+            DOTween.Kill(this);
             
             Sequence showSeq = DOTween.Sequence();
-            showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
-            showSeq.Join(iconTransform.DOMoveY(targetWorldPos.y, showAnimDuration).SetEase(Ease.OutBack));
-            _currentTween = showSeq.SetAutoKill(false);
+            showSeq.Append(iconTransform.DOScale(_targetScale, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.Join(iconTransform.DOMove(targetPos, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.SetId(this);
+            _currentTween = showSeq;
             
             yield return new WaitForSeconds(showAnimDuration);
             
-            // Loop de actualización
+            _isShowing = false;
+            float baseTime = Time.time;
+            
+            // Loop de actualización infinito (hasta que se llame HideAlertIcon)
             while (_currentIconInstance != null && !_isHiding)
             {
-                // Actualizar posición siguiendo al NPC en WORLD SPACE
-                Vector3 targetPos = transform.position + iconOffset;
-                
-                if (animateBounce)
+                if (!_hiddenDuringDialogue)
                 {
-                    float bounce = Mathf.Sin(Time.time * bounceSpeed) * bounceAmplitude;
-                    targetPos.y += bounce;
-                }
-                
-                _currentIconInstance.transform.position = targetPos;
-                
-                // Billboard hacia cámara
-                var cam = GetCurrentCamera();
-                if (cam != null && _currentIconInstance != null)
-                {
-                    Vector3 lookDir = cam.transform.position - _currentIconInstance.transform.position;
-                    lookDir.y = 0;
+                    Vector3 newTargetPos = GetIconWorldPosition();
                     
-                    if (lookDir.sqrMagnitude > 0.001f)
+                    if (animateBounce)
                     {
-                        _currentIconInstance.transform.rotation = Quaternion.LookRotation(lookDir);
+                        float bounce = Mathf.Sin((Time.time - baseTime) * bounceSpeed) * bounceAmplitude;
+                        newTargetPos.y += bounce;
                     }
+                    
+                    _currentIconInstance.transform.position = newTargetPos;
+                    ApplyBillboard(_currentIconInstance.transform);
                 }
                 
                 yield return null;
@@ -464,8 +622,14 @@ namespace Game.NPC.Common
         
         private void OnDestroy()
         {
+            DOTween.Kill(this);
             _currentTween?.Kill();
             HideAlertIconImmediate();
         }
+        
+        /// <summary>
+        /// Propiedad para verificar si hay un icono visible
+        /// </summary>
+        public bool HasActiveIcon => _currentIconInstance != null && !_isHiding;
     }
 }

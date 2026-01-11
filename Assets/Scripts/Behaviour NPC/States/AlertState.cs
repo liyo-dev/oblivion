@@ -249,15 +249,22 @@ namespace Game.NPC.States
             _iconController = context.Transform.GetComponent<NPCAlertIconController>();
             if (!_iconController) _iconController = context.Transform.gameObject.AddComponent<NPCAlertIconController>();
 
+            // ✅ FIX: No mostrar icono si ya hay uno activo (por ejemplo, mostrado por NPCCombatTeam)
+            if (_iconController.HasActiveIcon)
+            {
+                context.Log("[AlertState] Icono ya activo, no duplicando");
+                return;
+            }
+
             var config = context.Config?.combatConfig;
             if (config != null)
             {
                 var prefab = config.alertIconPrefab;
                 
-                // Configurar la altura del icono usando el valor del config
+                // Configurar la altura del icono (desde los pies del NPC)
                 if (config.alertIconHeight > 0)
                 {
-                    _iconController.SetIconOffset(new Vector3(0f, config.alertIconHeight, 0f));
+                    _iconController.SetIconHeight(config.alertIconHeight);
                 }
                 
                 if (prefab)

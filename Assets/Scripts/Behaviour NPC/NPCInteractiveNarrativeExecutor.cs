@@ -694,19 +694,27 @@ namespace Game.NPC.Modules
                 if (!_alertIconController) 
                     _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
                 
-                // Configurar la altura del icono
-                float iconHeight = _config.alertIconHeight;
-                if (iconHeight <= 0 && _npcManager.Configuration.combatConfig != null)
+                // ✅ FIX: No duplicar icono si ya hay uno activo
+                if (_alertIconController.HasActiveIcon)
                 {
-                    iconHeight = _npcManager.Configuration.combatConfig.alertIconHeight;
+                    Debug.Log($"[NarrativeExecutor:{name}] Icono ya activo, no duplicando");
                 }
-                
-                if (iconHeight > 0)
+                else
                 {
-                    _alertIconController.SetIconOffset(new Vector3(0f, iconHeight, 0f));
+                    // Configurar la altura del icono (desde los pies del NPC)
+                    float iconHeight = _config.alertIconHeight;
+                    if (iconHeight <= 0 && _npcManager.Configuration.combatConfig != null)
+                    {
+                        iconHeight = _npcManager.Configuration.combatConfig.alertIconHeight;
+                    }
+                    
+                    if (iconHeight > 0)
+                    {
+                        _alertIconController.SetIconHeight(iconHeight);
+                    }
+                    
+                    _alertIconController.ShowAlertIcon(iconPrefab, _config.alertIconDuration);
                 }
-                
-                _alertIconController.ShowAlertIcon(iconPrefab, _config.alertIconDuration);
             }
 
             // Caminar hacia jugador

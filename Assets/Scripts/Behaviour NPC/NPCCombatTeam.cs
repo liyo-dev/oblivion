@@ -194,10 +194,10 @@ namespace Game.NPC
                 var iconController = member.GetComponent<NPCAlertIconController>();
                 if (iconController == null) iconController = member.gameObject.AddComponent<NPCAlertIconController>();
                 
-                // Configurar offset
+                // Configurar altura del icono (desde los pies del NPC)
                 if (config.alertIconHeight > 0)
                 {
-                    iconController.SetIconOffset(new Vector3(0f, config.alertIconHeight, 0f));
+                    iconController.SetIconHeight(config.alertIconHeight);
                 }
                 
                 iconController.ShowAlertIcon(config.alertIconPrefab, config.alertIconDuration);
