@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Modules;
+using Game.NPC.Common;
 
 namespace Game.NPC
 {
@@ -50,14 +51,19 @@ namespace Game.NPC
     private NPCBehaviourManagerV2 _leaderManager;
     private bool _isTeamInCombat;
     private bool _isRegrouping;
+    private bool _alertIconsShown; // ✅ FIX: Flag para evitar mostrar iconos múltiples veces
     private int _defeatedCount;
     private List<NPCBehaviourManagerV2> _allMembers = new List<NPCBehaviourManagerV2>(); // Líder + compañeros
+    private Transform _currentTarget; // ✅ FIX: Referencia al jugador para calcular formación
     
     // Evento para notificar cuando todo el equipo ha sido derrotado
     public System.Action OnTeamDefeated;
     
     // Evento para notificar cuando el equipo inicia combate
     public System.Action OnTeamCombatStarted;
+    
+    // Estado de diálogo post-derrota
+    public bool IsPostDefeatDialogueFinished { get; private set; }
     
     #endregion
     
@@ -154,14 +160,85 @@ namespace Game.NPC
     /// </summary>
     public void OnPlayerDetected(Transform player)
     {
-        if (_isTeamInCombat || _isRegrouping) return;
+        // ✅ FIX: Usar _alertIconsShown como guard adicional para evitar bucles
+        // _isRegrouping se pone false muy rápido, necesitamos un flag persistente
+        if (_isTeamInCombat || _isRegrouping || _alertIconsShown) return;
         
         if (showDebugLogs)
         {
             Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Iniciando reagrupación del equipo...");
         }
         
+        // ✅ Mostrar iconos de alerta en TODOS los miembros
+        ShowTeamAlertIcons();
+        
         StartCoroutine(Co_RegroupAndStartCombat(player));
+    }
+    
+    /// <summary>
+    /// Muestra el icono de alerta en todos los miembros del equipo.
+    /// </summary>
+    public void ShowTeamAlertIcons()
+    {
+        // ✅ FIX: Evitar mostrar iconos múltiples veces
+        if (_alertIconsShown) return;
+        _alertIconsShown = true;
+        
+        foreach (var member in _allMembers)
+        {
+            if (member == null || !member.gameObject.activeInHierarchy) continue;
+            
+            var config = member.Configuration?.combatConfig;
+            if (config != null && config.alertIconPrefab != null)
+            {
+                var iconController = member.GetComponent<NPCAlertIconController>();
+                if (iconController == null) iconController = member.gameObject.AddComponent<NPCAlertIconController>();
+                
+                // Configurar offset
+                if (config.alertIconHeight > 0)
+                {
+                    iconController.SetIconOffset(new Vector3(0f, config.alertIconHeight, 0f));
+                }
+                
+                iconController.ShowAlertIcon(config.alertIconPrefab, config.alertIconDuration);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Notifica que el diálogo post-derrota ha terminado.
+    /// Llamado por el líder desde NPCCombatLifecycleHandler.
+    /// </summary>
+    public void NotifyPostDefeatDialogueFinished()
+    {
+        IsPostDefeatDialogueFinished = true;
+        if (showDebugLogs)
+        {
+            Debug.Log($"[NPCCombatTeam] {name}: Diálogo post-derrota finalizado. Notificando al equipo.");
+        }
+    }
+    
+    /// <summary>
+    /// Resetea el estado del equipo (útil para resurrección).
+    /// </summary>
+    public void ResetTeamState()
+    {
+        IsPostDefeatDialogueFinished = false;
+        _defeatedCount = 0;
+        _isTeamInCombat = false;
+        _isRegrouping = false;
+        _alertIconsShown = false; // ✅ FIX: Resetear flag de iconos
+        
+        // ✅ FIX: Resetear el flag de notificación en todos los miembros
+        foreach (var member in _allMembers)
+        {
+            if (member == null) continue;
+            var teamMember = member.GetComponent<NPCTeamMember>();
+            if (teamMember != null)
+            {
+                teamMember.ResetNotificationFlag();
+            }
+        }
     }
     
     /// <summary>
@@ -210,6 +287,7 @@ namespace Game.NPC
         
         _isTeamInCombat = true;
         _defeatedCount = 0;
+        IsPostDefeatDialogueFinished = false; // Resetear flag
         
         foreach (var member in _allMembers)
         {
@@ -224,18 +302,62 @@ namespace Game.NPC
     }
     
     /// <summary>
-    /// Obtiene las posiciones de formación alrededor del líder.
+    /// Obtiene las posiciones de formación frente al jugador.
+    /// Los NPCs se colocan en semicírculo frente al jugador para la escena de confrontación.
     /// </summary>
     public Vector3 GetFormationPosition(int memberIndex)
     {
-        if (memberIndex <= 0 || _allMembers.Count <= 1) return transform.position;
+        if (memberIndex < 0 || _allMembers.Count <= 0) return transform.position;
+        if (_currentTarget == null) return transform.position;
         
-        // Distribuir en círculo alrededor del líder
-        float angle = (360f / (_allMembers.Count - 1)) * (memberIndex - 1);
-        angle += 180f; // Empezar detrás del líder
+        // ✅ FIX: Calcular posición relativa al JUGADOR, no al líder
+        // Esto asegura que todos los NPCs se agrupen frente al jugador para el diálogo
         
-        Vector3 offset = Quaternion.Euler(0, angle, 0) * Vector3.forward * formationRadius;
-        return transform.position + offset;
+        Vector3 playerPos = _currentTarget.position;
+        Vector3 dirFromPlayer = (transform.position - playerPos).normalized;
+        dirFromPlayer.y = 0;
+        
+        // Si no hay dirección válida, usar forward del jugador
+        if (dirFromPlayer.sqrMagnitude < 0.01f)
+        {
+            dirFromPlayer = _currentTarget.forward;
+        }
+        
+        // Posición base: frente al jugador a distancia de formación
+        float baseDistance = formationRadius + 2f; // Distancia base del jugador
+        Vector3 formationCenter = playerPos + dirFromPlayer * baseDistance;
+        
+        // Si solo hay un miembro (el líder), ponerlo en el centro
+        if (_allMembers.Count == 1 || memberIndex == 0)
+        {
+            return formationCenter;
+        }
+        
+        // Distribuir en arco frente al jugador
+        // El líder (index 0) va al centro, los demás a los lados
+        float totalMembers = _allMembers.Count;
+        float spreadAngle = 60f; // Ángulo total del arco (grados)
+        
+        // Calcular ángulo para este miembro
+        // Index 0 = centro, index 1 = izquierda, index 2 = derecha, etc.
+        float angleOffset;
+        if (memberIndex == 0)
+        {
+            angleOffset = 0f;
+        }
+        else
+        {
+            // Alternar izquierda/derecha
+            int sideIndex = (memberIndex + 1) / 2;
+            bool isLeft = (memberIndex % 2) == 1;
+            angleOffset = sideIndex * (spreadAngle / (totalMembers - 1)) * (isLeft ? -1f : 1f);
+        }
+        
+        // Rotar la dirección por el ángulo calculado
+        Vector3 memberDir = Quaternion.Euler(0, angleOffset, 0) * dirFromPlayer;
+        Vector3 memberPos = playerPos + memberDir * baseDistance;
+        
+        return memberPos;
     }
     
     #endregion
@@ -248,31 +370,18 @@ namespace Game.NPC
     private IEnumerator Co_RegroupAndStartCombat(Transform player)
     {
         _isRegrouping = true;
+        _currentTarget = player; // ✅ FIX: Guardar referencia para GetFormationPosition
         
         if (showDebugLogs)
         {
             Debug.Log($"[NPCCombatTeam] {name}: Reagrupando equipo...");
         }
         
-        // Detener al líder y hacer que mire al jugador
-        var leaderAgent = _leaderManager.GetComponent<UnityEngine.AI.NavMeshAgent>();
-        if (leaderAgent != null && leaderAgent.enabled && leaderAgent.isOnNavMesh)
-        {
-            leaderAgent.isStopped = true;
-        }
-        
-        // Hacer que el líder mire al jugador
-        Vector3 lookDir = (player.position - transform.position);
-        lookDir.y = 0;
-        if (lookDir.sqrMagnitude > 0.01f)
-        {
-            transform.rotation = Quaternion.LookRotation(lookDir);
-        }
-        
-        // Ordenar a los compañeros que se acerquen
+        // ✅ FIX: Mover TODOS los miembros (incluyendo el líder) a posiciones de formación
+        // Esto asegura que todos estén cerca del jugador para el diálogo cinematográfico
         List<Coroutine> moveCoroutines = new List<Coroutine>();
         
-        for (int i = 1; i < _allMembers.Count; i++)
+        for (int i = 0; i < _allMembers.Count; i++)
         {
             var member = _allMembers[i];
             if (member == null || !member.gameObject.activeInHierarchy) continue;
@@ -291,7 +400,8 @@ namespace Game.NPC
             {
                 allArrived = true;
                 
-                for (int i = 1; i < _allMembers.Count; i++)
+                // ✅ FIX: Verificar TODOS los miembros (desde index 0)
+                for (int i = 0; i < _allMembers.Count; i++)
                 {
                     var member = _allMembers[i];
                     if (member == null || !member.gameObject.activeInHierarchy) continue;
@@ -366,7 +476,11 @@ namespace Game.NPC
         // ✅ CRÍTICO: Asegurar que el agent mueva y rote el transform
         // Esto puede estar deshabilitado si el NPC tiene NPCCombatBrain previamente inicializado
         agent.updatePosition = true;
-        agent.updateRotation = true;
+        
+        // ✅ FIX: Desactivar updateRotation para evitar conflicto con NPCSimpleAnimator
+        // NPCSimpleAnimator se encargará de rotar el NPC hacia la dirección de movimiento
+        agent.updateRotation = false;
+
         agent.isStopped = false;
         
         // ✅ Verificar si hay un NPCCombatBrain activo que pueda interferir
@@ -454,6 +568,8 @@ namespace Game.NPC
             Debug.Log($"[NPCCombatTeam] {name}: Resucitando equipo...");
         }
         
+        ResetTeamState();
+        
         foreach (var member in _allMembers)
         {
             if (member == null) continue;
@@ -467,9 +583,6 @@ namespace Game.NPC
             
             yield return new WaitForSeconds(resurrectDelay);
         }
-        
-        _defeatedCount = 0;
-        _isTeamInCombat = false;
         
         if (showDebugLogs)
         {
@@ -530,4 +643,3 @@ namespace Game.NPC
     #endregion
 }
 }
-

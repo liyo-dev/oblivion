@@ -217,6 +217,10 @@
             "value": "Pausa"
         },
         {
+            "key": "UI_PRESENTA",
+            "value": "Presenta"
+        },
+        {
             "key": "UI_REANUDAR",
             "value": "Reanudar"
         },

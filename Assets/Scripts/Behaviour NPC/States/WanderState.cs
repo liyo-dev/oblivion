@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 
@@ -182,6 +182,14 @@ namespace Game.NPC.States
             // Pre-requisitos rápidos
             if (context.WasDefeatedInCombat || context.Player == null) return;
             
+            // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
+            // Esto evita el bucle infinito de detección
+            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+            if (teamMember != null && teamMember.HasNotifiedTeam)
+            {
+                return; // Ya se notificó al equipo, el NPCCombatTeam se encarga
+            }
+            
             var combatConfig = context.Config?.combatConfig;
             if (combatConfig == null || !combatConfig.isAggressive) return;
 
@@ -222,15 +230,29 @@ namespace Game.NPC.States
             // --- JUGADOR DETECTADO ---
             context.Log($"[WanderState] 👁️ Jugador detectado visualmente. Iniciando Alerta.");
             
-            // Crear estado de alerta configurado
-            var alertState = new AlertState(
+            // ✅ TEAM SUPPORT: Notificar al equipo (reutilizamos teamMember del inicio)
+            if (teamMember != null && teamMember.TryNotifyTeamOfPlayer(context.Player))
+            {
+                // ✅ FIX: Todos los miembros entran en AlertState, pero los no-líderes saltan el diálogo
+                var alertState = new AlertState(
+                    duration: combatConfig.alertIconDuration,
+                    walk: true,
+                    stopDist: combatConfig.minAttackDistance + 1f,
+                    skipDialogue: !teamMember.IsLeader // Los no-líderes NO inician diálogo
+                );
+                context.Brain?.ChangeState(alertState);
+                return;
+            }
+            
+            // Crear estado de alerta configurado (NPC sin equipo)
+            var alertStateDefault = new AlertState(
                 duration: combatConfig.alertIconDuration,
                 walk: true,
                 stopDist: combatConfig.minAttackDistance + 1f
             );
             
             // Forzar cambio de estado inmediato
-            context.Brain.ChangeState(alertState);
+            context.Brain.ChangeState(alertStateDefault);
         }
     }
 }

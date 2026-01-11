@@ -2,7 +2,11 @@
     "subtitles": [
         {
             "id": "PRLG_01",
-            "text": "Hace eones, un mago desafió a los dioses al recorrer el Sendero de las Estrellas, donde cada portal prometía poder y un deseo al final del camino."
+            "text": "Hace eones, un mago consiguió recorrer el Sendero de las Estrellas."
+        },
+        {
+            "id": "PRLG_01_2",
+            "text": "Portales que esconden una serie de pruebas y un deseo al final del camino."
         },
         {
             "id": "PRLG_02",

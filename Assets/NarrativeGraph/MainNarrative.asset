@@ -269,7 +269,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 1183, y: 88}
+        position: {x: 1308, y: -9}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1

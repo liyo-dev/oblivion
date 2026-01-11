@@ -13,6 +13,21 @@ namespace Game.NPC.Modules
         [Tooltip("El NPC se levanta mareado y muestra un diálogo")]
         GetUpDizzy
     }
+
+    /// <summary>
+    /// Acción a ejecutar después de la derrota (y diálogo opcional)
+    /// </summary>
+    public enum PostDefeatAction
+    {
+        [Tooltip("Quedarse en estado dizzy/idle")]
+        None,
+        
+        [Tooltip("Huir del jugador y desaparecer")]
+        FleeAndDisappear,
+        
+        [Tooltip("Volver a patrullar/idle")]
+        ReturnToIdle
+    }
     
     /// <summary>
     /// Configuración de combate para NPCs
@@ -101,6 +116,9 @@ namespace Game.NPC.Modules
         [Tooltip("¿Qué sucede cuando el NPC muere?\n• DESAPARECER: El NPC desaparece con VFX después de la animación de muerte\n• MAREARSE: El NPC se levanta mareado y muestra un diálogo")]
         public PostDeathBehavior postDeathBehavior = PostDeathBehavior.Disappear;
         
+        [Tooltip("Acción a ejecutar después de la derrota (y diálogo opcional)")]
+        public PostDefeatAction postDefeatAction = PostDefeatAction.None;
+
         [Tooltip("Diálogo que se muestra cuando el NPC se levanta mareado (solo si postDeathBehavior = Marearse)")]
         public DialogueAsset dialogueOnDizzy;
         
@@ -393,4 +411,3 @@ namespace Game.NPC.Modules
         #endregion
     }
 }
-

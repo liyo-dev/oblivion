@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 
 namespace Game.NPC.States
@@ -14,6 +14,7 @@ namespace Game.NPC.States
         private readonly float _alertDuration;
         private readonly bool _walkTowardsPlayer;
         private readonly float _stopDistance;
+        private readonly bool _skipDialogue; // ✅ FIX: Para miembros no-líderes de equipos
         
         // Estado Interno
         private NPCAlertIconController _iconController;
@@ -26,11 +27,12 @@ namespace Game.NPC.States
         private float _senseTimer;
         private const float SENSE_DURATION = 1.2f;
 
-        public AlertState(float duration = 2f, bool walk = true, float stopDist = 3f)
+        public AlertState(float duration = 2f, bool walk = true, float stopDist = 3f, bool skipDialogue = false)
         {
             _alertDuration = duration;
             _walkTowardsPlayer = walk;
             _stopDistance = stopDist;
+            _skipDialogue = skipDialogue;
         }
 
         public override void OnEnter(NPCStateContext context)
@@ -90,6 +92,21 @@ namespace Game.NPC.States
                     _hasPlayedChallenge = true;
                 }
             }
+            
+            // ✅ FIX: Si el NPC pertenece a un equipo que está reagrupándose,
+            // dejar que NPCCombatTeam maneje el movimiento
+            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+            if (teamMember != null && teamMember.Team != null && teamMember.Team.IsRegrouping)
+            {
+                // Solo mirar al jugador, el movimiento lo maneja NPCCombatTeam
+                Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+                directionToPlayer.y = 0;
+                if (directionToPlayer.sqrMagnitude > 0.01f && context.Animator != null)
+                {
+                    context.Animator.FaceDirection(directionToPlayer);
+                }
+                return;
+            }
 
             // B. Esperar Diálogo
             if (_waitingForDialogue)
@@ -147,6 +164,18 @@ namespace Game.NPC.States
 
             // Si el jugador se esfuma
             if (context.Player == null) return new IdleState();
+            
+            // ✅ FIX: Si es miembro no-líder, solo transicionar cuando context.IsInCombat sea true
+            // Esto ocurre cuando ForceTeamCombat lo establece
+            if (_skipDialogue)
+            {
+                if (context.IsInCombat)
+                {
+                    return new CombatState();
+                }
+                // Mantener el miembro mirando al jugador mientras espera
+                return null;
+            }
 
             // Bloqueo por diálogo
             if (_waitingForDialogue) return null;
@@ -249,6 +278,13 @@ namespace Game.NPC.States
 
         private void StartAlertDialogue(NPCStateContext context)
         {
+            // ✅ FIX: Si skipDialogue está activo (miembros no-líderes), no iniciar diálogo
+            if (_skipDialogue)
+            {
+                context.Log("[AlertState] ⏭️ Saltando diálogo (miembro de equipo no-líder)");
+                return;
+            }
+            
             var config = context.Config?.combatConfig;
             if (config != null && config.dialogueOnAlert != null)
             {

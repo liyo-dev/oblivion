@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 
@@ -94,6 +94,14 @@ namespace Game.NPC.States
             if (context.WasDefeatedInCombat) return;
             if (context.Player == null) return;
             
+            // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
+            // Esto evita el bucle infinito de detección
+            var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+            if (teamMember != null && teamMember.HasNotifiedTeam)
+            {
+                return; // Ya se notificó al equipo, el NPCCombatTeam se encarga
+            }
+            
             var combatConfig = context.Config?.combatConfig;
             if (combatConfig == null || !combatConfig.isAggressive) return;
             
@@ -132,13 +140,27 @@ namespace Game.NPC.States
             // --- JUGADOR DETECTADO ---
             context.Log($"[IdleState] 👁️ Jugador visto. ¡Alerta!");
             
-            var alertState = new AlertState(
+            // ✅ TEAM SUPPORT: Notificar al equipo (reutilizamos teamMember del inicio)
+            if (teamMember != null && teamMember.TryNotifyTeamOfPlayer(context.Player))
+            {
+                // Crear AlertState para este miembro
+                var alertState = new AlertState(
+                    duration: combatConfig.alertIconDuration,
+                    walk: true,
+                    stopDist: combatConfig.minAttackDistance + 1f,
+                    skipDialogue: !teamMember.IsLeader // ✅ FIX: Los no-líderes NO inician diálogo
+                );
+                context.Brain?.ChangeState(alertState);
+                return;
+            }
+            
+            var alertStateDefault = new AlertState(
                 duration: combatConfig.alertIconDuration,
                 walk: true,
                 stopDist: combatConfig.minAttackDistance + 1f
             );
             
-            context.Brain?.ChangeState(alertState);
+            context.Brain?.ChangeState(alertStateDefault);
         }
     }
 }

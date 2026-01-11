@@ -12,6 +12,7 @@ namespace Game.NPC
         private NPCCombatTeam _team;
         private bool _isLeader;
         private NPCBehaviourManagerV2 _manager;
+        private bool _hasNotifiedTeam; // Flag para evitar notificaciones repetidas
     
     /// <summary>
     /// El equipo al que pertenece este NPC.
@@ -27,6 +28,11 @@ namespace Game.NPC
     /// Indica si este NPC pertenece a un equipo.
     /// </summary>
     public bool HasTeam => _team != null;
+    
+    /// <summary>
+    /// Indica si este NPC ya notificó al equipo de la presencia del jugador.
+    /// </summary>
+    public bool HasNotifiedTeam => _hasNotifiedTeam;
     
     void Awake()
     {
@@ -53,9 +59,22 @@ namespace Game.NPC
     {
         if (_team == null) return false;
         
+        // ✅ FIX: Evitar notificaciones repetidas que causan bucle infinito
+        if (_hasNotifiedTeam) return true; // Retornamos true para indicar que ya se manejó
+        
+        _hasNotifiedTeam = true;
+        
         // Notificar al equipo
         _team.OnPlayerDetected(player);
         return true;
+    }
+    
+    /// <summary>
+    /// Resetea el flag de notificación (útil para respawn o reinicio).
+    /// </summary>
+    public void ResetNotificationFlag()
+    {
+        _hasNotifiedTeam = false;
     }
     
     /// <summary>

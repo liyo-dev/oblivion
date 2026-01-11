@@ -31,7 +31,7 @@ MonoBehaviour:
     fade: 1
     loop: 1
   sceneMusic:
-  - sceneName: Prologo
+  - sceneName: PrologoCinematica
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}

@@ -442,54 +442,148 @@ namespace Game.NPC.Modules
                 // IMPORTANTE: Solo el líder muestra el diálogo, sin importar quién cayó primero
                 if (!teamMember.IsLeader)
                 {
-                    Debug.Log($"[Lifecycle] ✅ {name} (NO es líder) - configurando post-combate sin diálogo");
-                    SetupPostCombatInteraction();
-                    yield break;
+                    Debug.Log($"[Lifecycle] 👥 {name} (NO es líder) - esperando a que el líder termine el diálogo...");
+                    
+                    // Esperar a que el líder termine el diálogo
+                    while (!team.IsPostDefeatDialogueFinished)
+                    {
+                        if (_shouldCancelDizzySequence) yield break;
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[Lifecycle] ✅ Líder terminó diálogo - {name} procede a post-acción");
                 }
-                
-                Debug.Log($"[Lifecycle] 👑 {name} ES EL LÍDER - mostrará el diálogo del equipo");
+                else
+                {
+                    Debug.Log($"[Lifecycle] 👑 {name} ES EL LÍDER - mostrará el diálogo del equipo");
+                }
             }
             
             // 2. Mostrar diálogo de mareo (solo si no es equipo, o si es el líder del equipo)
-            DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
-            if (dialogue != null)
+            // Si es miembro de equipo (no líder), saltamos este paso porque ya esperamos arriba
+            bool shouldShowDialogue = !isInTeam || (isInTeam && teamMember.IsLeader);
+            
+            if (shouldShowDialogue)
             {
-                // ✅ Verificar antes de mostrar diálogo
-                if (_shouldCancelDizzySequence)
+                DialogueAsset dialogue = _config?.dialogueOnDizzy ?? _config?.dialogueOnDefeat;
+                if (dialogue != null)
                 {
-                    Debug.Log($"[Lifecycle] 🛑 Diálogo omitido para {name} - movimiento iniciado");
-                    yield break;
-                }
-                
-                Debug.Log($"[Lifecycle] 💬 Iniciando diálogo post-derrota para {name}");
-                bool finished = false;
-                DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
-                
-                // Esperar a que termine el diálogo
-                while (!finished) 
-                {
-                    // ✅ Verificar durante el diálogo también
+                    // ✅ Verificar antes de mostrar diálogo
                     if (_shouldCancelDizzySequence)
                     {
-                        Debug.Log($"[Lifecycle] 🛑 Diálogo interrumpido para {name}");
-                        // Cerrar el diálogo si está abierto
-                        if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
-                        {
-                            DialogueManager.Instance.Close();
-                        }
+                        Debug.Log($"[Lifecycle] 🛑 Diálogo omitido para {name} - movimiento iniciado");
                         yield break;
                     }
                     
-                    yield return null;
+                    Debug.Log($"[Lifecycle] 💬 Iniciando diálogo post-derrota para {name}");
+                    bool finished = false;
+                    DialogueManager.Instance.StartDialogue(dialogue, transform, () => finished = true);
+                    
+                    // Esperar a que termine el diálogo
+                    while (!finished) 
+                    {
+                        // ✅ Verificar durante el diálogo también
+                        if (_shouldCancelDizzySequence)
+                        {
+                            Debug.Log($"[Lifecycle] 🛑 Diálogo interrumpido para {name}");
+                            // Cerrar el diálogo si está abierto
+                            if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen)
+                            {
+                                DialogueManager.Instance.Close();
+                            }
+                            yield break;
+                        }
+                        
+                        yield return null;
+                    }
+                    
+                    Debug.Log($"[Lifecycle] 💬 Diálogo de mareo completado");
+                    
+                    // ✅ Si es líder de equipo, notificar que terminó el diálogo
+                    if (isInTeam && teamMember.IsLeader)
+                    {
+                        teamMember.Team.NotifyPostDefeatDialogueFinished();
+                    }
                 }
-                
-                Debug.Log($"[Lifecycle] 💬 Diálogo de mareo completado");
+                else
+                {
+                    // Si no hay diálogo pero es líder, notificar inmediatamente
+                    if (isInTeam && teamMember.IsLeader)
+                    {
+                        teamMember.Team.NotifyPostDefeatDialogueFinished();
+                    }
+                }
             }
             
-            // 3. Configurar para interacción futura (Hablar con el NPC derrotado)
-            SetupPostCombatInteraction();
+            // 3. Ejecutar acción post-derrota (si está configurada)
+            if (_config != null && _config.postDefeatAction != PostDefeatAction.None)
+            {
+                yield return HandlePostDefeatAction(_config.postDefeatAction);
+            }
+            else
+            {
+                // 4. Configurar para interacción futura (Hablar con el NPC derrotado)
+                SetupPostCombatInteraction();
+            }
             
             Debug.Log($"[Lifecycle] ✅ Secuencia GetUpDizzy completada para {name}");
+        }
+
+        private IEnumerator HandlePostDefeatAction(PostDefeatAction action)
+        {
+            Debug.Log($"[Lifecycle] 🎬 Ejecutando acción post-derrota: {action}");
+            
+            switch (action)
+            {
+                case PostDefeatAction.FleeAndDisappear:
+                    // Huir del jugador
+                    if (PlayerService.TryGetPlayer(out GameObject player))
+                    {
+                        Vector3 fleeDir = (transform.position - player.transform.position).normalized;
+                        Vector3 fleePos = transform.position + fleeDir * 10f;
+                        
+                        // Usar NavMesh para encontrar punto válido
+                        if (NavMesh.SamplePosition(fleePos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                        {
+                            fleePos = hit.position;
+                        }
+                        
+                        // Activar movimiento
+                        if (_agent != null)
+                        {
+                            _agent.enabled = true;
+                            _agent.isStopped = false;
+                            _agent.SetDestination(fleePos);
+                            
+                            // Animar
+                            if (_animator != null)
+                            {
+                                _animator.SetMovementSpeed(1f);
+                            }
+                            
+                            // Esperar un poco mientras huye
+                            yield return new WaitForSeconds(2f);
+                        }
+                    }
+                    
+                    // Desaparecer con VFX
+                    if (_config?.disappearVFXPrefab)
+                        Instantiate(_config.disappearVFXPrefab, transform.position + Vector3.up, Quaternion.identity);
+                        
+                    gameObject.SetActive(false);
+                    break;
+                    
+                case PostDefeatAction.ReturnToIdle:
+                    // Volver a estado idle/interactuable
+                    SetupPostCombatInteraction();
+                    
+                    // Si tiene animator, volver a idle
+                    if (_animator != null)
+                    {
+                        _animator.TransitionToIdle();
+                    }
+                    break;
+            }
         }
 
         private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)

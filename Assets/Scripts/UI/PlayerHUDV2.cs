@@ -107,6 +107,9 @@ namespace Sendero.UI
             }
             Instance = this;
             
+            // Registrar en ServiceLocator
+            ServiceLocator.Register(this);
+            
             // Obtener o añadir CanvasGroup para el fade
             _canvasGroup = GetComponent<CanvasGroup>();
             if (_canvasGroup == null)
@@ -193,6 +196,7 @@ namespace Sendero.UI
             if (Instance == this)
             {
                 Instance = null;
+                ServiceLocator.Unregister(this);
             }
             
             UnsubscribeFromEvents();
@@ -711,14 +715,21 @@ namespace Sendero.UI
             // Matar tween anterior si existe
             _currentFadeTween?.Kill();
             
+            // Si _canvasGroup es null, intentar obtenerlo
+            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return; // Si sigue siendo null, salir
+            
             // Fade out suave
             _currentFadeTween = _canvasGroup.DOFade(0f, useDuration)
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true) // Ignora timeScale
                 .OnComplete(() =>
                 {
-                    _canvasGroup.interactable = false;
-                    _canvasGroup.blocksRaycasts = false;
+                    if (_canvasGroup != null)
+                    {
+                        _canvasGroup.interactable = false;
+                        _canvasGroup.blocksRaycasts = false;
+                    }
                 });
         }
         
@@ -734,6 +745,10 @@ namespace Sendero.UI
             
             // Matar tween anterior si existe
             _currentFadeTween?.Kill();
+            
+            // Si _canvasGroup es null, intentar obtenerlo
+            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return; // Si sigue siendo null, salir
             
             // Restaurar interactividad antes del fade in
             _canvasGroup.interactable = true;
@@ -794,4 +809,3 @@ namespace Sendero.UI
         #endregion
     }
 }
-

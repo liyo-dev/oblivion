@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
@@ -37,6 +37,14 @@ namespace Game.NPC.States
             {
                 ActiveCombatRegistry.RegisterNPC(context.Transform.gameObject);
                 context.Log("[CombatState] ✅ NPC registrado en ActiveCombatRegistry");
+                
+                // ✅ FIX: Si soy líder de un equipo, forzar a todos los miembros a entrar en combate
+                var teamMember = context.Transform.GetComponent<NPCTeamMember>();
+                if (teamMember != null && teamMember.IsLeader && teamMember.Team != null)
+                {
+                    context.Log("[CombatState] 👥 Soy líder - forzando equipo a combate");
+                    teamMember.Team.ForceTeamCombat(context.Player);
+                }
             }
             
             // 🎵 2. Audio

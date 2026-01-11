@@ -156,7 +156,8 @@ namespace Game.NPC.Common
                 return;
             }
             
-            HideAlertIcon(); // Limpiar icono anterior si existe
+            // Limpiar icono anterior inmediatamente para evitar conflictos
+            HideAlertIconImmediate();
             
             float useDuration = duration > 0f ? duration : iconDuration;
             _iconRoutine = StartCoroutine(ShowIconRoutine(iconPrefab, useDuration));
@@ -169,7 +170,6 @@ namespace Game.NPC.Common
         {
             if (alertPrefab != null)
             {
-                // Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de alerta");
                 ShowAlertIcon(alertPrefab, duration);
             }
             else
@@ -185,7 +185,6 @@ namespace Game.NPC.Common
         {
             if (questionPrefab != null)
             {
-                // Debug.Log($"[NPCAlertIcon:{name}] ❓ Mostrando icono de interrogación (buscando)");
                 ShowAlertIcon(questionPrefab, duration);
             }
             else
@@ -209,7 +208,6 @@ namespace Game.NPC.Common
         {
             if (exclamationPrefab != null)
             {
-                // Debug.Log($"[NPCAlertIcon:{name}] ❗ Mostrando icono de admiración (¡encontrado!)");
                 ShowAlertIcon(exclamationPrefab, duration);
             }
             else
@@ -237,13 +235,11 @@ namespace Game.NPC.Common
             }
             
             // IMPORTANTE: Actualizar referencia de cámara antes de mostrar el icono
-            // Esto es crucial para NPCs que se activan dinámicamente después de condiciones narrativas
             UpdateCameraReference();
             
-            HideAlertIcon(); // Limpiar icono anterior si existe
+            HideAlertIconImmediate(); // Limpiar icono anterior inmediatamente
             
             _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
-            // Debug.Log($"[NPCAlertIcon:{name}] 📍 Mostrando icono persistente");
         }
         
         /// <summary>
@@ -262,15 +258,17 @@ namespace Game.NPC.Common
                 _iconRoutine = null;
             }
             
-            if (_currentIconInstance != null && !_isHiding)
+            // Si ya se está ocultando, no hacer nada (dejar que termine)
+            if (_isHiding) return;
+
+            if (_currentIconInstance != null)
             {
                 _isHiding = true;
-                
-                // Matar cualquier tween anterior
                 _currentTween?.Kill();
                 
-                // Animar desaparición: escala + mover hacia abajo (en WORLD SPACE)
-                var iconTransform = _currentIconInstance.transform;
+                // Capturar la instancia para el closure (evitar problemas si _currentIconInstance cambia)
+                GameObject instanceToHide = _currentIconInstance;
+                var iconTransform = instanceToHide.transform;
                 float targetY = iconTransform.position.y - 0.3f;
                 
                 Sequence hideSeq = DOTween.Sequence();
@@ -278,13 +276,19 @@ namespace Game.NPC.Common
                 hideSeq.Join(iconTransform.DOMoveY(targetY, hideAnimDuration).SetEase(Ease.InQuad));
                 hideSeq.OnComplete(() =>
                 {
-                    if (_currentIconInstance != null)
+                    if (instanceToHide != null)
                     {
-                        Destroy(_currentIconInstance);
-                        _currentIconInstance = null;
+                        Destroy(instanceToHide);
                     }
-                    _isHiding = false;
+                    
+                    // Solo resetear flags si seguimos apuntando a la misma instancia
+                    if (_currentIconInstance == instanceToHide)
+                    {
+                        _currentIconInstance = null;
+                        _isHiding = false;
+                    }
                 });
+                _currentTween = hideSeq;
             }
         }
         
@@ -340,6 +344,7 @@ namespace Game.NPC.Common
             Sequence showSeq = DOTween.Sequence();
             showSeq.Append(iconTransform.DOScale(Vector3.one, showAnimDuration).SetEase(Ease.OutBack));
             showSeq.Join(iconTransform.DOMoveY(targetWorldPos.y, showAnimDuration).SetEase(Ease.OutBack));
+            _currentTween = showSeq; // Guardar referencia para poder matar el tween
             
             yield return new WaitForSeconds(showAnimDuration);
             
@@ -464,4 +469,3 @@ namespace Game.NPC.Common
         }
     }
 }
-
