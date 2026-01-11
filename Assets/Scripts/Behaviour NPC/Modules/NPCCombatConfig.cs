@@ -1,4 +1,4 @@
-﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -26,7 +26,10 @@ namespace Game.NPC.Modules
         FleeAndDisappear,
         
         [Tooltip("Volver a patrullar/idle")]
-        ReturnToIdle
+        ReturnToIdle,
+        
+        [Tooltip("Moverse a un punto específico (anchor) después de la derrota")]
+        MoveToAnchor
     }
     
     /// <summary>
@@ -118,6 +121,19 @@ namespace Game.NPC.Modules
         
         [Tooltip("Acción a ejecutar después de la derrota (y diálogo opcional)")]
         public PostDefeatAction postDefeatAction = PostDefeatAction.None;
+        
+        [Header("Movimiento Post-Derrota (si postDefeatAction = MoveToAnchor)")]
+        [Tooltip("Nombre del anchor de destino para el movimiento post-derrota")]
+        public string postDefeatMoveAnchor;
+        
+        [Tooltip("¿Desaparecer al llegar al destino?")]
+        public bool disappearOnArrival = false;
+        
+        [Tooltip("VFX a reproducir al desaparecer (opcional)")]
+        public GameObject disappearOnArrivalVFX;
+        
+        [Tooltip("Si es líder de equipo, ¿mover también a los compañeros?")]
+        public bool moveTeamMembersOnDefeat = true;
 
         [Tooltip("Diálogo que se muestra cuando el NPC se levanta mareado (solo si postDeathBehavior = Marearse)")]
         public DialogueAsset dialogueOnDizzy;

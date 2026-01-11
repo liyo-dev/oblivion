@@ -99,6 +99,11 @@ namespace Game.NPC
     /// </summary>
     public IReadOnlyList<NPCBehaviourManagerV2> AllMembers => _allMembers;
     
+    /// <summary>
+    /// El líder del equipo (el NPC que tiene este componente).
+    /// </summary>
+    public NPCBehaviourManagerV2 Leader => _leaderManager;
+    
     #endregion
     
     #region Unity Lifecycle

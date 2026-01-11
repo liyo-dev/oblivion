@@ -67,6 +67,11 @@ namespace Game.Player
         // Colliders buffer para OverlapSphereNonAlloc (evitar allocation)
         private readonly Collider[] _hitColliders = new Collider[20];
         
+        /// <summary>
+        /// Indica si actualmente se está reproduciendo la secuencia de victoria
+        /// </summary>
+        public bool IsPlayingVictory => _isPlayingVictory;
+        
         void Awake()
         {
             // Auto-encontrar referencias

@@ -67,6 +67,9 @@ public class vThirdPersonCamera : MonoBehaviour
     private float cullingMinDist = 0.1f;
 
     private CameraOcclusionShadowsOnly _occlusionFader;
+    
+    // Flag estático para que sistemas externos (como cinemáticas en otros assemblies) puedan bloquear la cámara
+    public static bool lockCameraForCinematic = false;
 
     #endregion
 
@@ -108,6 +111,10 @@ public class vThirdPersonCamera : MonoBehaviour
     void FixedUpdate()
     {
         if (target == null || targetLookAt == null) return;
+        
+        // --- PROTECCIÓN CINEMÁTICA ---
+        if (lockCameraForCinematic) return;
+        
         CameraMovement();
     }
 
@@ -134,6 +141,9 @@ public class vThirdPersonCamera : MonoBehaviour
 
     public void RotateCamera(float x, float y)
     {
+        // --- PROTECCIÓN CINEMÁTICA ---
+        if (lockCameraForCinematic) return;
+
         mouseX += x * xMouseSensitivity;
         mouseY -= y * yMouseSensitivity;
 
@@ -235,4 +245,3 @@ public class vThirdPersonCamera : MonoBehaviour
         return hitAny && hitInfo.collider;
     }
 }
-    

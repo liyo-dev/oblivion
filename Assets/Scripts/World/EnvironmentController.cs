@@ -14,6 +14,8 @@ public class EnvironmentController : MonoBehaviour
 
     // snapshot del “exterior” (para restaurar al salir)
     Material _savedRenderSettingsSkybox;
+    public Material SavedExteriorSkybox => _savedRenderSettingsSkybox; // Exponer para cinemáticas
+
     Material _savedCameraSkyboxMat;
     CameraClearFlags _savedClearFlags = CameraClearFlags.Skybox;
     bool _savedHadCamSkybox;
@@ -30,6 +32,27 @@ public class EnvironmentController : MonoBehaviour
     GameObject _hiddenExterior;      // mundo exterior ocultado
     float _savedFarClipPlane;        // far clip original de la cámara
     bool _farClipModified;
+
+    // === CONTROL CINEMÁTICO ===
+    // Permite que las cinemáticas tomen control temporal del entorno sin conflictos
+    private bool _cinematicOverrideActive;
+    private EnvironmentMode _preCinematicMode;
+    private AnchorEnvironment _preCinematicInterior;
+    
+    /// <summary>
+    /// Indica si actualmente hay un override cinemático activo
+    /// </summary>
+    public bool IsCinematicOverrideActive => _cinematicOverrideActive;
+    
+    /// <summary>
+    /// El modo de entorno actual (Interior/Exterior)
+    /// </summary>
+    public EnvironmentMode CurrentMode => _mode;
+    
+    /// <summary>
+    /// El interior actual (si estamos en modo Interior)
+    /// </summary>
+    public AnchorEnvironment CurrentInterior => _currentInterior;
 
     void Awake()
     {
@@ -88,6 +111,143 @@ public class EnvironmentController : MonoBehaviour
         _needReapply = (_mode != EnvironmentMode.Unknown);
     }
 
+    // === API PARA CINEMÁTICAS ===
+    // Estos métodos permiten que las cinemáticas controlen temporalmente el entorno
+    // sin interferir con el sistema normal de anchors
+    
+    /// <summary>
+    /// Inicia el override cinemático. Guarda el estado actual del entorno para restaurarlo después.
+    /// Llamar al inicio de una cinemática que necesita controlar el skybox.
+    /// </summary>
+    public void BeginCinematicOverride()
+    {
+        if (_cinematicOverrideActive)
+        {
+            Debug.LogWarning("[EnvironmentController] BeginCinematicOverride llamado pero ya hay un override activo.");
+            return;
+        }
+        
+        _cinematicOverrideActive = true;
+        _preCinematicMode = _mode;
+        _preCinematicInterior = _currentInterior;
+        
+        Debug.Log($"[EnvironmentController] 🎬 Cinematic Override INICIADO - Modo guardado: {_preCinematicMode}");
+    }
+    
+    /// <summary>
+    /// Finaliza el override cinemático y restaura el estado del entorno según donde está el jugador.
+    /// Llamar al finalizar la cinemática.
+    /// </summary>
+    public void EndCinematicOverride()
+    {
+        if (!_cinematicOverrideActive)
+        {
+            Debug.LogWarning("[EnvironmentController] EndCinematicOverride llamado pero no hay override activo.");
+            return;
+        }
+        
+        _cinematicOverrideActive = false;
+        
+        Debug.Log($"[EnvironmentController] 🎬 Cinematic Override FINALIZADO - Restaurando modo: {_preCinematicMode}");
+        
+        // Restaurar el estado del entorno según el modo pre-cinemático
+        var cam = ResolveCamera();
+        if (_preCinematicMode == EnvironmentMode.Interior && _preCinematicInterior != null)
+        {
+            // Forzar re-aplicación del interior
+            _mode = EnvironmentMode.Interior;
+            _currentInterior = _preCinematicInterior;
+            ApplyInteriorTo(cam, _preCinematicInterior);
+        }
+        else if (_preCinematicMode == EnvironmentMode.Exterior)
+        {
+            // Forzar re-aplicación del exterior
+            _mode = EnvironmentMode.Exterior;
+            _currentInterior = null;
+            ApplyExteriorTo(cam);
+        }
+        
+        _preCinematicInterior = null;
+    }
+    
+    /// <summary>
+    /// Aplica configuración de EXTERIOR para una cinemática (skybox visible).
+    /// Solo funciona si hay un override cinemático activo.
+    /// </summary>
+    public void ApplyExteriorForCinematic(Camera cam = null)
+    {
+        if (!_cinematicOverrideActive)
+        {
+            Debug.LogWarning("[EnvironmentController] ApplyExteriorForCinematic requiere BeginCinematicOverride primero.");
+            return;
+        }
+        
+        cam = cam != null ? cam : ResolveCamera();
+        if (cam == null) return;
+        
+        // Aplicar skybox/exterior sin cambiar el _mode interno
+        cam.clearFlags = CameraClearFlags.Skybox;
+        
+        if (exteriorSkyboxOverride != null)
+        {
+            RenderSettings.skybox = exteriorSkyboxOverride;
+        }
+        else if (_hasSnapshot && _savedRenderSettingsSkybox != null)
+        {
+            RenderSettings.skybox = _savedRenderSettingsSkybox;
+        }
+        
+        // Asegurar que el componente Skybox de la cámara use el material correcto
+        var camSkybox = cam.GetComponent<Skybox>();
+        if (camSkybox != null && RenderSettings.skybox != null)
+        {
+            camSkybox.material = RenderSettings.skybox;
+        }
+        
+        DynamicGI.UpdateEnvironment();
+    }
+    
+    /// <summary>
+    /// Aplica configuración de INTERIOR para una cinemática (solid color o skybox de interior).
+    /// Solo funciona si hay un override cinemático activo.
+    /// Usa la configuración del interior actual del jugador si env es null.
+    /// </summary>
+    public void ApplyInteriorForCinematic(Camera cam = null, AnchorEnvironment env = null)
+    {
+        if (!_cinematicOverrideActive)
+        {
+            Debug.LogWarning("[EnvironmentController] ApplyInteriorForCinematic requiere BeginCinematicOverride primero.");
+            return;
+        }
+        
+        cam = cam != null ? cam : ResolveCamera();
+        if (cam == null) return;
+        
+        // Usar el interior pre-cinemático si no se especifica uno
+        env = env != null ? env : _preCinematicInterior;
+        
+        if (env == null)
+        {
+            // Si no hay interior configurado, simplemente usar solid color negro
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            RenderSettings.skybox = null;
+        }
+        else if (env.useSolidColorBackground)
+        {
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = env.interiorBgColor;
+            RenderSettings.skybox = null;
+        }
+        else
+        {
+            cam.clearFlags = CameraClearFlags.Skybox;
+            RenderSettings.skybox = env.interiorSkyboxOverride;
+        }
+        
+        DynamicGI.UpdateEnvironment();
+    }
+
     // === implementación ===
     void Reapply(Camera cam)
     {
@@ -132,19 +292,57 @@ public class EnvironmentController : MonoBehaviour
             return;
         }
 
-        if (env && env.useSolidColorBackground)
+        // --- PROTECCIÓN CINEMÁTICA ---
+        // Si estamos en modo cinemático (DialogueCinematicController o SimpleCinematicDirector),
+        // NO modificar la cámara principal, ya que los sistemas de cinemática tienen su propia gestión.
+        // Esto evita conflictos de ClearFlags y Skybox.
+        bool isCinematicActive = false;
+        
+        // Verificar DialogueCinematicController
+        if (DialogueCinematicController.Instance != null && DialogueCinematicController.Instance.IsInCinematicMode)
         {
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = env.interiorBgColor;
-            RenderSettings.skybox = null;
+            isCinematicActive = true;
+        }
+        
+        // Verificar SimpleCinematicDirector
+        if (Game.Cinematics.SimpleCinematicDirector.IsAnyCinematicPlaying)
+        {
+            isCinematicActive = true;
+        }
+        
+        if (isCinematicActive)
+        {
+            // Si hay cinemática, solo aplicamos lógica de luces y objetos, pero NO tocamos la cámara
+            // Debug.Log("[EnvironmentController] Cinemática activa - Saltando configuración de cámara para evitar conflictos.");
         }
         else
         {
-            cam.clearFlags = CameraClearFlags.Skybox;
-            RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
+            // Lógica normal de cámara
+            if (env && env.useSolidColorBackground)
+            {
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = env.interiorBgColor;
+                RenderSettings.skybox = null;
+            }
+            else
+            {
+                cam.clearFlags = CameraClearFlags.Skybox;
+                RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
+            }
+            
+            // Ajustar far clip plane de la cámara
+            if (env && env.adjustCameraClipping)
+            {
+                if (!_farClipModified)
+                {
+                    _savedFarClipPlane = cam.farClipPlane;
+                    _farClipModified = true;
+                }
+                cam.farClipPlane = env.interiorFarClipPlane;
+            }
         }
 
-        // === GESTIÓN DE ZONAS VISIBLES ===
+        // === GESTIÓN DE ZONAS VISIBLES (Siempre aplicar, incluso en cinemáticas) ===
         if (env)
         {
             // Activar la zona de este interior
@@ -181,17 +379,6 @@ public class EnvironmentController : MonoBehaviour
                     _hiddenExterior.SetActive(false);
                 }
             }
-            
-            // Ajustar far clip plane de la cámara
-            if (env.adjustCameraClipping && cam)
-            {
-                if (!_farClipModified)
-                {
-                    _savedFarClipPlane = cam.farClipPlane;
-                    _farClipModified = true;
-                }
-                cam.farClipPlane = env.interiorFarClipPlane;
-            }
         }
 
         // luces: apaga direccionales que no estén dentro del interior
@@ -217,26 +404,49 @@ public class EnvironmentController : MonoBehaviour
 
     void ApplyExteriorTo(Camera cam)
     {
-        if (cam) cam.clearFlags = _hasSnapshot ? _savedClearFlags : CameraClearFlags.Skybox;
-
-        if (exteriorSkyboxOverride)
+        // --- PROTECCIÓN CINEMÁTICA ---
+        bool isCinematicActive = false;
+        if (DialogueCinematicController.Instance != null && DialogueCinematicController.Instance.IsInCinematicMode)
         {
-            RenderSettings.skybox = exteriorSkyboxOverride;
-            var csb = EnsureCameraSkybox(cam);
-            if (csb) csb.material = exteriorSkyboxOverride;
+            isCinematicActive = true;
         }
-        else if (_hasSnapshot)
+        
+        // Verificar SimpleCinematicDirector
+        if (Game.Cinematics.SimpleCinematicDirector.IsAnyCinematicPlaying)
         {
-            if (_savedHadCamSkybox)
+            isCinematicActive = true;
+        }
+
+        if (!isCinematicActive)
+        {
+            if (cam) cam.clearFlags = _hasSnapshot ? _savedClearFlags : CameraClearFlags.Skybox;
+
+            if (exteriorSkyboxOverride)
             {
+                RenderSettings.skybox = exteriorSkyboxOverride;
                 var csb = EnsureCameraSkybox(cam);
-                if (csb) csb.material = _savedCameraSkyboxMat;
+                if (csb) csb.material = exteriorSkyboxOverride;
             }
-            else
+            else if (_hasSnapshot)
             {
-                RenderSettings.skybox = _savedRenderSettingsSkybox;
-                var csb = cam ? cam.GetComponent<Skybox>() : null;
-                if (csb) csb.material = null;
+                if (_savedHadCamSkybox)
+                {
+                    var csb = EnsureCameraSkybox(cam);
+                    if (csb) csb.material = _savedCameraSkyboxMat;
+                }
+                else
+                {
+                    RenderSettings.skybox = _savedRenderSettingsSkybox;
+                    var csb = cam ? cam.GetComponent<Skybox>() : null;
+                    if (csb) csb.material = null;
+                }
+            }
+            
+            // Restaurar far clip plane de la cámara
+            if (_farClipModified && cam)
+            {
+                cam.farClipPlane = _savedFarClipPlane;
+                _farClipModified = false;
             }
         }
 
@@ -259,13 +469,6 @@ public class EnvironmentController : MonoBehaviour
         {
             _hiddenExterior.SetActive(true);
             _hiddenExterior = null;
-        }
-        
-        // Restaurar far clip plane de la cámara
-        if (_farClipModified && cam)
-        {
-            cam.farClipPlane = _savedFarClipPlane;
-            _farClipModified = false;
         }
 
         var dirLight2 = ServiceLocator.Get<Light>(false);

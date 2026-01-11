@@ -274,7 +274,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_02",
-            "value": "Pulsa el botón START y desplazate con RB hasta Equipo."
+            "value": "Pulsa el botón <sprite name=\"start\"> y desplazate con <sprite name=\"<sprite name=\"lifePotion\">\"> hasta Equipo."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_03",
@@ -290,19 +290,19 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_06",
-            "value": "Sal del Reino y ve hacia el bosque prohibido."
+            "value": "Sal del Reino y ve hacia el bosque prohibido y busca a Estela."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_07",
-            "value": "Te mucho cuidado y usa las técnica que te ha enseñado Erika."
+            "value": "No se mucho de ella pero en el Reino es famosa por ser la más poderosa de la región."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_08",
-            "value": "Una vez estés en el bosque busca a Estela y regresad."
+            "value": "Yo no duraría ni un minuto en el bosque pero tu con tu magia puedes lograrlo."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_09",
-            "value": "Will aqui es donde empieza tu aventura."
+            "value": "Ten mucho cuidado ahí dentro y equipate bien antes de salir."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_PROGRESS_01",

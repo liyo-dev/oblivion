@@ -321,9 +321,28 @@ namespace Game.NPC.Modules
                         Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
                         playerVictory.PlayVictory(battleId);
                         
-                        // Esperar a que termine la animación de victoria
-                        yield return new WaitForSecondsRealtime(4f);
-                        Debug.Log($"[Lifecycle] ✅ Animación de victoria completada");
+                        // ✅ Esperar a que termine la secuencia de victoria del jugador
+                        // (incluye animación + música de victoria)
+                        float victoryTimeout = 15f; // Timeout de seguridad
+                        float elapsed = 0f;
+                        
+                        // Esperar a que comience la victoria (puede tomar un frame)
+                        yield return null;
+                        
+                        // Esperar mientras el jugador está reproduciendo la victoria
+                        while (playerVictory.IsPlayingVictory && elapsed < victoryTimeout)
+                        {
+                            elapsed += Time.unscaledDeltaTime;
+                            yield return null;
+                        }
+                        
+                        // ✅ Esperar tiempo adicional para la música de victoria
+                        // La música de victoria típicamente dura más que la animación
+                        float additionalMusicWait = 2f;
+                        Debug.Log($"[Lifecycle] 🎵 Esperando {additionalMusicWait}s adicionales para la música de victoria");
+                        yield return new WaitForSecondsRealtime(additionalMusicWait);
+                        
+                        Debug.Log($"[Lifecycle] ✅ Celebración de victoria completada (animación + música)");
                     }
                 }
                 
@@ -516,12 +535,31 @@ namespace Game.NPC.Modules
             }
             
             // 3. Ejecutar acción post-derrota (si está configurada)
-            if (_config != null && _config.postDefeatAction != PostDefeatAction.None)
+            Debug.Log($"[Lifecycle] 🔍 Verificando postDefeatAction para {name}: config={(_config != null ? "OK" : "NULL")}, action={_config?.postDefeatAction}");
+            
+            // ✅ Si es miembro de equipo (no líder) y el líder tiene moveTeamMembersOnDefeat activo,
+            // NO ejecutar postDefeatAction individual porque el líder nos moverá
+            bool skipPostDefeatBecauseLeaderWillMove = false;
+            if (isInTeam && !teamMember.IsLeader)
             {
+                var leaderConfig = teamMember.Team.Leader?.Configuration?.combatConfig;
+                if (leaderConfig != null && 
+                    leaderConfig.postDefeatAction == PostDefeatAction.MoveToAnchor && 
+                    leaderConfig.moveTeamMembersOnDefeat)
+                {
+                    skipPostDefeatBecauseLeaderWillMove = true;
+                    Debug.Log($"[Lifecycle] ℹ️ {name} omitirá postDefeatAction individual - el líder moverá al equipo");
+                }
+            }
+            
+            if (!skipPostDefeatBecauseLeaderWillMove && _config != null && _config.postDefeatAction != PostDefeatAction.None)
+            {
+                Debug.Log($"[Lifecycle] 🎬 {name} ejecutará acción post-derrota: {_config.postDefeatAction}");
                 yield return HandlePostDefeatAction(_config.postDefeatAction);
             }
             else
             {
+                Debug.Log($"[Lifecycle] ℹ️ {name} no tiene postDefeatAction configurada - configurando como interactuable");
                 // 4. Configurar para interacción futura (Hablar con el NPC derrotado)
                 SetupPostCombatInteraction();
             }
@@ -583,7 +621,171 @@ namespace Game.NPC.Modules
                         _animator.TransitionToIdle();
                     }
                     break;
+                    
+                case PostDefeatAction.MoveToAnchor:
+                    yield return HandleMoveToAnchor();
+                    break;
             }
+        }
+        
+        /// <summary>
+        /// Maneja el movimiento del NPC (y su equipo si es líder) a un anchor después de la derrota
+        /// </summary>
+        private IEnumerator HandleMoveToAnchor()
+        {
+            if (string.IsNullOrEmpty(_config?.postDefeatMoveAnchor))
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ {name} tiene MoveToAnchor pero no hay anchor configurado");
+                SetupPostCombatInteraction();
+                yield break;
+            }
+            
+            // Buscar el anchor de destino
+            var anchor = GameObject.Find(_config.postDefeatMoveAnchor);
+            if (anchor == null)
+            {
+                Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró el anchor '{_config.postDefeatMoveAnchor}' para {name}");
+                SetupPostCombatInteraction();
+                yield break;
+            }
+            
+            Vector3 targetPos = anchor.transform.position;
+            Debug.Log($"[Lifecycle] 🚶 {name} moviéndose a anchor '{_config.postDefeatMoveAnchor}'");
+            
+            // Cancelar la secuencia dizzy para que no interfiera
+            _shouldCancelDizzySequence = true;
+            
+            // Transicionar a animación de caminar
+            if (_animator != null)
+            {
+                _animator.TransitionToIdle();
+                yield return new WaitForSeconds(0.3f);
+                _animator.SetMovementSpeed(0.5f); // Caminar lento (derrotado)
+            }
+            
+            // Activar NavMeshAgent y mover
+            if (_agent != null)
+            {
+                _agent.enabled = true;
+                _agent.isStopped = false;
+                _agent.speed = _agent.speed * 0.5f; // Más lento de lo normal
+                _agent.SetDestination(targetPos);
+                
+                // Esperar a que llegue
+                float timeout = 30f;
+                float elapsed = 0f;
+                
+                while (elapsed < timeout)
+                {
+                    if (_agent == null || !_agent.isOnNavMesh) break;
+                    
+                    // Actualizar animación de movimiento
+                    if (_animator != null)
+                    {
+                        float speed = _agent.velocity.magnitude / _agent.speed;
+                        _animator.SetMovementSpeed(speed * 0.5f);
+                    }
+                    
+                    // Verificar si llegó
+                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
+                    {
+                        Debug.Log($"[Lifecycle] ✅ {name} llegó a su destino");
+                        break;
+                    }
+                    
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+                
+                // Detener movimiento
+                _agent.isStopped = true;
+                if (_animator != null)
+                {
+                    _animator.SetMovementSpeed(0f);
+                    _animator.TransitionToIdle();
+                }
+            }
+            
+            // ¿Desaparecer al llegar?
+            if (_config.disappearOnArrival)
+            {
+                if (_config.disappearOnArrivalVFX != null)
+                {
+                    Instantiate(_config.disappearOnArrivalVFX, transform.position + Vector3.up, Quaternion.identity);
+                }
+                
+                yield return new WaitForSeconds(0.5f);
+                gameObject.SetActive(false);
+                Debug.Log($"[Lifecycle] 👋 {name} desapareció al llegar a destino");
+            }
+            else
+            {
+                // Configurar como interactuable
+                SetupPostCombatInteraction();
+            }
+            
+            // Si es líder de equipo y debe mover a los compañeros
+            var teamMember = GetComponent<NPCTeamMember>();
+            if (teamMember != null && teamMember.IsLeader && _config.moveTeamMembersOnDefeat)
+            {
+                yield return MoveTeamMembersToRandomPoints();
+            }
+        }
+        
+        /// <summary>
+        /// Mueve a los miembros del equipo a puntos aleatorios cerca del destino del líder
+        /// </summary>
+        private IEnumerator MoveTeamMembersToRandomPoints()
+        {
+            var teamMember = GetComponent<NPCTeamMember>();
+            if (teamMember == null || teamMember.Team == null) yield break;
+            
+            var team = teamMember.Team;
+            var members = team.AllMembers;
+            
+            foreach (var member in members)
+            {
+                if (member == null || member.gameObject == gameObject) continue;
+                if (!member.gameObject.activeInHierarchy) continue;
+                
+                var memberHandler = member.GetComponent<NPCCombatLifecycleHandler>();
+                if (memberHandler != null)
+                {
+                    memberHandler.CancelDizzySequence();
+                }
+                
+                // Mover a punto aleatorio cerca del líder
+                Vector3 randomOffset = UnityEngine.Random.insideUnitSphere * 5f;
+                randomOffset.y = 0;
+                Vector3 targetPos = transform.position + randomOffset;
+                
+                if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                {
+                    targetPos = hit.position;
+                }
+                
+                var memberAgent = member.Agent;
+                var memberAnimator = member.GetComponent<NPCSimpleAnimator>();
+                
+                if (memberAgent != null && memberAgent.isOnNavMesh)
+                {
+                    memberAgent.enabled = true;
+                    memberAgent.isStopped = false;
+                    memberAgent.speed = memberAgent.speed * 0.5f;
+                    memberAgent.SetDestination(targetPos);
+                    
+                    if (memberAnimator != null)
+                    {
+                        memberAnimator.TransitionToIdle();
+                        memberAnimator.SetMovementSpeed(0.5f);
+                    }
+                    
+                    Debug.Log($"[Lifecycle] 🚶 Miembro de equipo {member.name} moviéndose a punto aleatorio");
+                }
+            }
+            
+            // Pequeña espera para que empiecen a moverse
+            yield return new WaitForSeconds(0.5f);
         }
 
         private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)

@@ -233,7 +233,10 @@ public class TeleportService : MonoBehaviour
         }
     }
 
-    private void ApplyEnvironmentForAnchor(Transform anchor)
+    /// <summary>
+    /// Aplica el entorno (interior/exterior) basado en el anchor de destino.
+    /// </summary>
+    public void ApplyEnvironmentForAnchor(Transform anchor)
     {
         var ec = EnvironmentController.Instance;
         if (!ec) return;

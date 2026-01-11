@@ -49,7 +49,7 @@ namespace Game.Cinematics
         public bool animateRotation = false;
         public Vector3 targetRotation = new Vector3(0, 360, 0);
         public float rotationDuration = 1f;
-        public Ease rotationEase = Ease.InOutQuad;
+        public Ease rotationEase = Ease.Linear; // Changed from InOutQuad
         public RotateMode rotationMode = RotateMode.LocalAxisAdd;
         [Tooltip("0 = Sin loop, -1 = Infinito, >0 = Cantidad de loops")]
         public int rotationLoops = 0;
@@ -99,6 +99,12 @@ namespace Game.Cinematics
         [Tooltip("Si es true, la cámara se mueve instantáneamente al inicio. Si es false, se mueve durante la duración del paso.")]
         public bool instantPosition = true;
 
+        [Header("   Entorno (Interior/Exterior)")]
+        [Tooltip("Si true, fuerza el renderizado de Skybox para este paso (Exterior).")]
+        public bool isExteriorStep = false;
+        [Tooltip("Si true, intenta aplicar la configuración del AnchorEnvironment actual del jugador (Interior).")]
+        public bool isInteriorStep = false;
+
         [Header("2. Efectos de Tiempo")]
         public bool slowMotion = false;
         [Range(0.1f, 1f)] public float timeScale = 0.5f;
@@ -117,30 +123,9 @@ namespace Game.Cinematics
         [Tooltip("Si es true, NO detiene la animación al terminar este paso, permitiendo que continúe en el siguiente.")]
         public bool keepAnimOnNextStep = false;
 
-        [Header("5. Instanciar Objetos (Nuevo Sistema)")]
+        [Header("5. Instanciar Objetos")]
         [Tooltip("Lista de objetos a instanciar, cada uno con su propia configuración.")]
         public List<CinematicSpawnerEntry> objectsToSpawn = new List<CinematicSpawnerEntry>();
-
-        [Header("   (Legacy - No usar en nuevos pasos)")]
-        public List<GameObject> prefabsToSpawn; // Legacy
-        public GameObject prefabToSpawn; // Legacy
-        public Transform spawnPoint; // Legacy
-        public InstantiationMode spawnMode; // Legacy
-        public float destroyDelay = 2f; // Legacy
-        public float shrinkDuration = 1f; // Legacy
-        public Transform exitTarget; // Legacy
-        public float exitDuration = 1f; // Legacy
-        public bool animateRotation; // Legacy
-        public Vector3 targetRotation; // Legacy
-        public float rotationDuration; // Legacy
-        public Ease rotationEase; // Legacy
-        public RotateMode rotationMode; // Legacy
-        public int rotationLoops; // Legacy
-        public LoopType rotationLoopType; // Legacy
-        public bool animateScale; // Legacy
-        public Vector3 targetScale; // Legacy
-        public float scaleDuration; // Legacy
-        public Ease scaleEase; // Legacy
 
         [Header("6. Audio (Opcional)")]
         public AudioClip audioClip;
@@ -175,10 +160,18 @@ namespace Game.Cinematics
         public bool playOnStart = false;
         public bool hideHUD = true;
         public bool lockPlayer = true;
-        [Tooltip("Si Cinemachine falla, marca esto para mover la Main Camera directamente.")]
-        public bool forceDirectCameraControl = false;
+        [Tooltip("Si true, se usa la Main Camera directamente sin Cinemachine.")]
+        public bool forceDirectCameraControl = true;
         [Tooltip("Fuerza el ClearFlags de la cámara principal a Skybox durante la cinemática.")]
         public bool forceSkybox = true;
+        [Tooltip("Cámara opcional con CinemachineBrain para usar en lugar de la Main Camera (si esta no tiene Brain).")]
+        public Camera customBrainCamera;
+        
+        [Header("Persistencia (Single Use)")]
+        [Tooltip("Si true, esta cinemática solo se reproducirá una vez por partida.")]
+        public bool singleUse = false;
+        [Tooltip("ID único para persistencia. Si se deja vacío, se usará el nombre del GameObject.")]
+        public string cinematicId;
         
         [Header("Secuencia")]
         public List<CinematicStep> steps = new List<CinematicStep>();
@@ -196,6 +189,15 @@ namespace Game.Cinematics
         private Vector3 _originalCamPos;
         private Quaternion _originalCamRot;
         private CameraClearFlags _originalClearFlags;
+        
+        // Referencias de cámara de gameplay
+        private Camera _mainUnityCamera;
+        private bool _mainUnityCameraWasEnabled;
+        private CinemachineCamera _mainGameplayCamera;
+        private int _originalGameplayCameraPriority;
+        
+        // Estado global para que otros scripts (como vThirdPersonCamera) sepan si hay cinemática
+        public static bool IsAnyCinematicPlaying { get; private set; }
 
         private void Start()
         {
@@ -206,19 +208,102 @@ namespace Game.Cinematics
         {
             CleanupGraphs(true); // Forzar limpieza total al destruir
             Time.timeScale = 1f; 
+            if (IsAnyCinematicPlaying) IsAnyCinematicPlaying = false;
+            
+            // Asegurar que liberamos la cámara
+            if (vThirdPersonCamera.lockCameraForCinematic)
+                vThirdPersonCamera.lockCameraForCinematic = false;
+            
+            // Liberar el override cinemático si estaba activo (evita que el entorno quede en estado incorrecto)
+            if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
+            {
+                EnvironmentController.Instance.EndCinematicOverride();
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el ID efectivo para persistencia
+        /// </summary>
+        private string GetPersistenceId()
+        {
+            if (!string.IsNullOrEmpty(cinematicId)) return cinematicId;
+            return $"Cinematic_{gameObject.name}";
+        }
+
+        /// <summary>
+        /// Verifica si esta cinemática ya ha sido vista (si es singleUse)
+        /// </summary>
+        public bool HasBeenSeen()
+        {
+            if (!singleUse) return false;
+            
+            string id = GetPersistenceId();
+            string flag = $"CINEMATIC_SEEN:{id}";
+            
+            // Verificar en GameBootProfile (runtime preset)
+            if (GameBootService.Profile != null && GameBootService.Profile.GetActivePresetResolved() != null)
+            {
+                var flags = GameBootService.Profile.GetActivePresetResolved().flags;
+                return flags != null && flags.Contains(flag);
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// Marca la cinemática como vista en el sistema de persistencia
+        /// </summary>
+        private void MarkAsSeen()
+        {
+            if (!singleUse) return;
+            
+            string id = GetPersistenceId();
+            string flag = $"CINEMATIC_SEEN:{id}";
+            
+            if (GameBootService.Profile != null)
+            {
+                var preset = GameBootService.Profile.GetActivePresetResolved();
+                if (preset != null)
+                {
+                    if (preset.flags == null) preset.flags = new List<string>();
+                    if (!preset.flags.Contains(flag))
+                    {
+                        preset.flags.Add(flag);
+                        Debug.Log($"[Cinematic] Marcada como vista: {id}");
+                    }
+                }
+            }
         }
 
         public void Play()
         {
+            // Verificar si ya se vio y es de un solo uso
+            if (singleUse && HasBeenSeen())
+            {
+                Debug.Log($"[Cinematic] Omitiendo cinemática '{GetPersistenceId()}' porque ya fue vista.");
+                return;
+            }
+            
             StartCoroutine(PlayRoutine());
         }
 
         private IEnumerator PlayRoutine()
         {
             Debug.Log($"[Cinematic] Iniciando secuencia con {steps.Count} pasos.");
+            IsAnyCinematicPlaying = true;
+            
+            // Bloquear vThirdPersonCamera
+            vThirdPersonCamera.lockCameraForCinematic = true;
 
             // --- INICIO ---
             onCinematicStart?.Invoke();
+            
+            // === CONTROL DE ENTORNO CINEMÁTICO ===
+            // Notificar al EnvironmentController que tomamos control del entorno
+            if (EnvironmentController.Instance != null)
+            {
+                EnvironmentController.Instance.BeginCinematicOverride();
+            }
             
             // Ocultar HUD usando ServiceLocator
             if (hideHUD)
@@ -235,32 +320,64 @@ namespace Game.Cinematics
                 }
             }
             
-            // Guardar estado original de cámara
-            if (Camera.main != null)
+            // --- GESTIÓN DE CÁMARAS ---
+            
+            // 1. Capturar referencia a la cámara principal de Unity
+            _mainUnityCamera = Camera.main;
+            
+            if (_mainUnityCamera != null)
             {
-                _originalCamPos = Camera.main.transform.position;
-                _originalCamRot = Camera.main.transform.rotation;
-                _originalClearFlags = Camera.main.clearFlags;
-                _brain = Camera.main.GetComponent<CinemachineBrain>();
+                // Guardar estado original
+                _originalCamPos = _mainUnityCamera.transform.position;
+                _originalCamRot = _mainUnityCamera.transform.rotation;
+                _originalClearFlags = _mainUnityCamera.clearFlags;
                 
-                if (forceSkybox)
+                // Si NO usamos control directo, intentamos usar Cinemachine
+                if (!forceDirectCameraControl)
                 {
-                    Camera.main.clearFlags = CameraClearFlags.Skybox;
+                    // Intentar obtener Brain de la Main Camera
+                    _brain = _mainUnityCamera.GetComponent<CinemachineBrain>();
+                    
+                    // Si no tiene Brain y tenemos una customBrainCamera, usar esa
+                    if (_brain == null && customBrainCamera != null)
+                    {
+                        Debug.Log("[Cinematic] Usando Custom Brain Camera.");
+                        _brain = customBrainCamera.GetComponent<CinemachineBrain>();
+                        customBrainCamera.gameObject.SetActive(true);
+                        
+                        // Desactivar Main Camera para evitar conflictos de rendering si usamos custom
+                        _mainUnityCameraWasEnabled = _mainUnityCamera.enabled;
+                        _mainUnityCamera.enabled = false;
+                    }
+                    
+                    if (_brain == null)
+                    {
+                        Debug.LogWarning("[Cinematic] ⚠️ NO SE ENCONTRÓ CINEMACHINE BRAIN. Se forzará control directo de la cámara.");
+                        forceDirectCameraControl = true;
+                    }
                 }
                 
-                if (_brain == null && !forceDirectCameraControl)
-                {
-                    Debug.LogError("[Cinematic] ❌ NO SE ENCONTRÓ CINEMACHINE BRAIN en la Main Camera. Las cámaras virtuales no funcionarán.");
-                }
-                
+                // Si usamos control directo, desactivar Brain si existe para evitar conflictos
                 if (forceDirectCameraControl && _brain != null)
                 {
-                    _brain.enabled = false; // Desactivar brain para control manual
+                    _brain.enabled = false;
                 }
             }
             else
             {
                 Debug.LogError("[Cinematic] ❌ NO HAY MAIN CAMERA en la escena.");
+            }
+            
+            // 3. Desactivar la cámara virtual de gameplay de Cinemachine (si existe y usamos Cinemachine)
+            if (!forceDirectCameraControl)
+            {
+                _mainGameplayCamera = ServiceLocator.Get<CinemachineCamera>(logIfMissing: false);
+                if (_mainGameplayCamera != null)
+                {
+                    _originalGameplayCameraPriority = _mainGameplayCamera.Priority.Value;
+                    Debug.Log($"[Cinematic] Desactivando cámara de gameplay Cinemachine (Priority: {_originalGameplayCameraPriority} -> 0)");
+                    _mainGameplayCamera.Priority.Value = 0;
+                }
             }
 
             // --- EJECUCIÓN DE PASOS ---
@@ -295,7 +412,6 @@ namespace Game.Cinematics
                 step.onStepStart?.Invoke();
 
                 // 2. Transición (Legacy check - si no es startWithBlackout pero tiene settings, lo lanzaba antes)
-                // Mantenemos compatibilidad: si NO es startWithBlackout ni endWithBlackout pero hay settings, lo lanzamos al inicio
                 if (!step.startWithBlackout && !step.endWithBlackout && step.transitionSettings != null && TransitionManager.Instance())
                 {
                     TransitionManager.Instance().Transition(step.transitionSettings, 0);
@@ -310,21 +426,50 @@ namespace Game.Cinematics
                 {
                     Time.timeScale = 1f;
                 }
+                
+                // 3.5 GESTIÓN DE ENTORNO (Interior/Exterior)
+                // Usar los métodos específicos del EnvironmentController para cinemáticas
+                Camera activeRenderCam = customBrainCamera != null && customBrainCamera.gameObject.activeSelf ? customBrainCamera : _mainUnityCamera;
+                
+                if (activeRenderCam != null && EnvironmentController.Instance != null)
+                {
+                    if (step.isExteriorStep)
+                    {
+                        // Usar el método específico para cinemáticas que aplica skybox/exterior
+                        EnvironmentController.Instance.ApplyExteriorForCinematic(activeRenderCam);
+                        Debug.Log("[Cinematic] Aplicando entorno EXTERIOR para este paso");
+                    }
+                    else if (step.isInteriorStep)
+                    {
+                        // Usar el método específico para cinemáticas que aplica config de interior
+                        EnvironmentController.Instance.ApplyInteriorForCinematic(activeRenderCam);
+                        Debug.Log("[Cinematic] Aplicando entorno INTERIOR para este paso");
+                    }
+                }
 
                 // 4. CÁMARA & DOLLY
                 CinemachineCamera activeCam = null;
 
-                // Determinar qué cámara usar
-                if (step.manualCamera != null)
+                // Determinar qué cámara usar (si usamos Cinemachine)
+                if (!forceDirectCameraControl && step.manualCamera != null)
                 {
                     activeCam = step.manualCamera;
-                    if (!forceDirectCameraControl) ActivateCamera(activeCam, step.blendTime);
+                    ActivateCamera(activeCam, step.blendTime);
                 }
 
                 // Aplicar Movimiento de Cámara (Dolly o Offset)
                 Transform targetTransform = null;
-                if (forceDirectCameraControl) targetTransform = Camera.main.transform;
-                else if (activeCam != null) targetTransform = activeCam.transform;
+                
+                // Si es control directo, movemos la Main Camera (o la que esté activa)
+                if (forceDirectCameraControl) 
+                {
+                    targetTransform = _mainUnityCamera != null ? _mainUnityCamera.transform : null;
+                }
+                // Si es Cinemachine, movemos la Virtual Camera activa
+                else if (activeCam != null) 
+                {
+                    targetTransform = activeCam.transform;
+                }
 
                 if (targetTransform != null)
                 {
@@ -383,10 +528,12 @@ namespace Game.Cinematics
                             }
                         }
                     }
-                    // D. Fallback (Solo mover a posición de la cámara manual si existe)
-                    else if (forceDirectCameraControl && activeCam != null)
+                    // D. Fallback (Solo mover a posición de la cámara manual si existe y estamos en direct control)
+                    // Si estamos en direct control pero tenemos una referencia a una cámara manual (que no usamos como vcam),
+                    // podemos usar su transform como target.
+                    else if (forceDirectCameraControl && step.manualCamera != null)
                     {
-                        MoveMainCameraDirectly(activeCam.transform.position, activeCam.transform.rotation, step.blendTime);
+                        MoveMainCameraDirectly(step.manualCamera.transform.position, step.manualCamera.transform.rotation, step.blendTime);
                     }
 
                     // E. LookAt Target (Nuevo)
@@ -419,12 +566,16 @@ namespace Game.Cinematics
                         // Animación Rotación
                         if (spawner.animateRotation)
                         {
+                            // Revert to DORotate for standard spinning behavior
                             var t = instance.transform.DORotate(spawner.targetRotation, spawner.rotationDuration, spawner.rotationMode)
                                 .SetEase(spawner.rotationEase)
-                                .SetUpdate(true);
+                                .SetUpdate(true)
+                                .SetLink(instance); // Asegurar que el tween muere con el objeto
                             
                             if (spawner.rotationLoops != 0)
                                 t.SetLoops(spawner.rotationLoops, spawner.rotationLoopType);
+                            
+                            Debug.Log($"[Cinematic] Animating rotation for {instance.name}: {spawner.targetRotation} over {spawner.rotationDuration}s");
                         }
 
                         // Animación Escala
@@ -432,7 +583,8 @@ namespace Game.Cinematics
                         {
                             instance.transform.DOScale(spawner.targetScale, spawner.scaleDuration)
                                 .SetEase(spawner.scaleEase)
-                                .SetUpdate(true);
+                                .SetUpdate(true)
+                                .SetLink(instance);
                         }
 
                         // Ciclo de Vida
@@ -448,48 +600,6 @@ namespace Game.Cinematics
                             case InstantiationMode.MoveAndDestroy:
                                 if (spawner.exitTarget != null)
                                     instance.transform.DOMove(spawner.exitTarget.position, spawner.exitDuration)
-                                        .SetEase(Ease.InQuad).SetUpdate(true).OnComplete(() => Destroy(instance));
-                                break;
-                        }
-                    }
-                }
-                // 5b. Instanciar (SISTEMA LEGACY - Mantenido por compatibilidad)
-                else if ((step.prefabsToSpawn != null && step.prefabsToSpawn.Count > 0) || step.prefabToSpawn != null)
-                {
-                    List<GameObject> legacyList = new List<GameObject>();
-                    if (step.prefabsToSpawn != null) legacyList.AddRange(step.prefabsToSpawn);
-                    if (step.prefabToSpawn != null && !legacyList.Contains(step.prefabToSpawn)) legacyList.Add(step.prefabToSpawn);
-
-                    Vector3 pos = step.spawnPoint ? step.spawnPoint.position : Vector3.zero;
-                    Quaternion rot = step.spawnPoint ? step.spawnPoint.rotation : Quaternion.identity;
-
-                    foreach (var prefab in legacyList)
-                    {
-                        if (prefab == null) continue;
-                        GameObject instance = Instantiate(prefab, pos, rot);
-                        
-                        if (step.animateRotation)
-                        {
-                            var t = instance.transform.DORotate(step.targetRotation, step.rotationDuration, step.rotationMode)
-                                .SetEase(step.rotationEase).SetUpdate(true);
-                            if (step.rotationLoops != 0) t.SetLoops(step.rotationLoops, step.rotationLoopType);
-                        }
-                        if (step.animateScale)
-                        {
-                            instance.transform.DOScale(step.targetScale, step.scaleDuration)
-                                .SetEase(step.scaleEase).SetUpdate(true);
-                        }
-
-                        switch (step.spawnMode)
-                        {
-                            case InstantiationMode.DestroyTimer: Destroy(instance, step.destroyDelay); break;
-                            case InstantiationMode.ShrinkAndDestroy:
-                                instance.transform.DOScale(Vector3.zero, step.shrinkDuration)
-                                    .SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => Destroy(instance));
-                                break;
-                            case InstantiationMode.MoveAndDestroy:
-                                if (step.exitTarget != null)
-                                    instance.transform.DOMove(step.exitTarget.position, step.exitDuration)
                                         .SetEase(Ease.InQuad).SetUpdate(true).OnComplete(() => Destroy(instance));
                                 break;
                         }
@@ -615,6 +725,10 @@ namespace Game.Cinematics
             // --- FINALIZACIÓN ---
             CleanupGraphs(true); // Limpiar todo al acabar la cinemática
             Time.timeScale = 1f; // Restaurar tiempo
+            IsAnyCinematicPlaying = false;
+            
+            // Liberar vThirdPersonCamera
+            vThirdPersonCamera.lockCameraForCinematic = false;
 
             // Mostrar HUD usando ServiceLocator
             if (hideHUD)
@@ -645,11 +759,46 @@ namespace Game.Cinematics
                 }
             }
             
-            // Restaurar ClearFlags
-            if (Camera.main != null)
+            // Restaurar ClearFlags y Cámaras
+            if (customBrainCamera != null)
             {
-                Camera.main.clearFlags = _originalClearFlags;
+                if (forceSkybox) customBrainCamera.clearFlags = _originalClearFlags;
+                customBrainCamera.gameObject.SetActive(false);
+                
+                // Reactivar Main Camera Brain si lo desactivamos
+                if (_mainUnityCamera != null)
+                {
+                    var mainBrain = _mainUnityCamera.GetComponent<CinemachineBrain>();
+                    if (mainBrain != null) mainBrain.enabled = true;
+                    
+                    // Restaurar estado de Main Camera si fue desactivada
+                    if (_mainUnityCameraWasEnabled)
+                    {
+                        _mainUnityCamera.enabled = true;
+                    }
+                }
             }
+            else if (_mainUnityCamera != null)
+            {
+                if (forceSkybox) _mainUnityCamera.clearFlags = _originalClearFlags;
+            }
+            
+            // Reactivar la cámara de gameplay de Cinemachine (si existe)
+            if (_mainGameplayCamera != null)
+            {
+                Debug.Log($"[Cinematic] Restaurando cámara de gameplay Cinemachine (Priority: {_originalGameplayCameraPriority})");
+                _mainGameplayCamera.Priority.Value = _originalGameplayCameraPriority;
+            }
+            
+            // === RESTAURAR ENTORNO CINEMÁTICO ===
+            // Finalizar el override cinemático y restaurar el estado del entorno según donde está el jugador
+            if (EnvironmentController.Instance != null)
+            {
+                EnvironmentController.Instance.EndCinematicOverride();
+            }
+            
+            // Marcar como vista si es singleUse
+            if (singleUse) MarkAsSeen();
             
             onCinematicEnd?.Invoke();
             Debug.Log("[Cinematic] Secuencia finalizada.");
