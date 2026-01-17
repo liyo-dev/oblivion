@@ -146,27 +146,29 @@ public class EnvironmentController : MonoBehaviour
             return;
         }
         
-        _cinematicOverrideActive = false;
-        
+        // IMPORTANTE: Desactivar el flag DESPUÉS de aplicar, para que la protección cinemática no bloquee
         Debug.Log($"[EnvironmentController] 🎬 Cinematic Override FINALIZADO - Restaurando modo: {_preCinematicMode}");
         
         // Restaurar el estado del entorno según el modo pre-cinemático
+        // Usamos métodos de aplicación FORZADA que ignoran la protección cinemática
         var cam = ResolveCamera();
         if (_preCinematicMode == EnvironmentMode.Interior && _preCinematicInterior != null)
         {
-            // Forzar re-aplicación del interior
+            // Forzar re-aplicación del interior con TODOS los parámetros incluyendo clipping
             _mode = EnvironmentMode.Interior;
             _currentInterior = _preCinematicInterior;
-            ApplyInteriorTo(cam, _preCinematicInterior);
+            ForceApplyInteriorTo(cam, _preCinematicInterior);
         }
         else if (_preCinematicMode == EnvironmentMode.Exterior)
         {
             // Forzar re-aplicación del exterior
             _mode = EnvironmentMode.Exterior;
             _currentInterior = null;
-            ApplyExteriorTo(cam);
+            ForceApplyExteriorTo(cam);
         }
         
+        // Ahora sí desactivamos el flag
+        _cinematicOverrideActive = false;
         _preCinematicInterior = null;
     }
     
@@ -253,6 +255,168 @@ public class EnvironmentController : MonoBehaviour
     {
         if (_mode == EnvironmentMode.Interior) ApplyInteriorTo(cam, _currentInterior, reapply:true);
         else if (_mode == EnvironmentMode.Exterior) ApplyExteriorTo(cam);
+    }
+    
+    /// <summary>
+    /// Aplica configuración de interior FORZADAMENTE, ignorando la protección cinemática.
+    /// Usado internamente por EndCinematicOverride para restaurar el estado correcto.
+    /// </summary>
+    void ForceApplyInteriorTo(Camera cam, AnchorEnvironment env)
+    {
+        if (!cam)
+        {
+            RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
+            _needReapply = true;
+            return;
+        }
+
+        Debug.Log($"[EnvironmentController] 🔧 ForceApplyInteriorTo - Aplicando configuración completa de interior");
+
+        // Aplicar configuración de cámara (clearFlags, backgroundColor, skybox)
+        if (env && env.useSolidColorBackground)
+        {
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = env.interiorBgColor;
+            RenderSettings.skybox = null;
+            Debug.Log($"[EnvironmentController] - SolidColor: {env.interiorBgColor}");
+        }
+        else
+        {
+            cam.clearFlags = CameraClearFlags.Skybox;
+            RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
+            Debug.Log($"[EnvironmentController] - Skybox: {(env?.interiorSkyboxOverride != null ? env.interiorSkyboxOverride.name : "null")}");
+        }
+        
+        // IMPORTANTE: Aplicar ajuste de clipping de cámara
+        if (env && env.adjustCameraClipping)
+        {
+            if (!_farClipModified)
+            {
+                _savedFarClipPlane = cam.farClipPlane;
+                _farClipModified = true;
+            }
+            cam.farClipPlane = env.interiorFarClipPlane;
+            Debug.Log($"[EnvironmentController] - FarClipPlane ajustado a: {env.interiorFarClipPlane}");
+        }
+
+        // Aplicar gestión de zonas visibles
+        if (env)
+        {
+            if (env.zoneRoot && !env.zoneRoot.activeSelf)
+            {
+                env.zoneRoot.SetActive(true);
+            }
+            
+            if (env.zonesToHideOnEnter != null && env.zonesToHideOnEnter.Length > 0)
+            {
+                _hiddenZones = env.zonesToHideOnEnter;
+                foreach (var zone in _hiddenZones)
+                {
+                    if (zone && zone.activeSelf)
+                    {
+                        zone.SetActive(false);
+                    }
+                }
+            }
+            
+            if (env.hideExteriorWorld && !string.IsNullOrEmpty(env.exteriorWorldRootName))
+            {
+                _hiddenExterior = GameObject.Find(env.exteriorWorldRootName);
+                if (_hiddenExterior == null)
+                {
+                    var tagged = GameObject.FindWithTag(env.exteriorWorldRootName);
+                    if (tagged) _hiddenExterior = tagged;
+                }
+                if (_hiddenExterior && _hiddenExterior.activeSelf)
+                {
+                    _hiddenExterior.SetActive(false);
+                }
+            }
+        }
+
+        // Gestión de luces
+        var dirLight = ServiceLocator.Get<Light>(false);
+        if (dirLight && dirLight.type == LightType.Directional)
+        {
+            bool inside = env && IsChildOf(dirLight.transform, env.transform);
+            dirLight.gameObject.SetActive(inside);
+        }
+
+        if (env)
+        {
+            SetActive(env.lightsDisableOnEnter, false);
+            SetActive(env.lightsEnableOnEnter, true);
+            foreach (var l in env.GetComponentsInChildren<Light>(true))
+                if (l) l.gameObject.SetActive(true);
+        }
+
+        _appliedCam = cam;
+        DynamicGI.UpdateEnvironment();
+    }
+    
+    /// <summary>
+    /// Aplica configuración de exterior FORZADAMENTE, ignorando la protección cinemática.
+    /// Usado internamente por EndCinematicOverride para restaurar el estado correcto.
+    /// </summary>
+    void ForceApplyExteriorTo(Camera cam)
+    {
+        Debug.Log("[EnvironmentController] 🔧 ForceApplyExteriorTo - Aplicando configuración completa de exterior");
+        
+        if (cam) cam.clearFlags = _hasSnapshot ? _savedClearFlags : CameraClearFlags.Skybox;
+
+        if (exteriorSkyboxOverride)
+        {
+            RenderSettings.skybox = exteriorSkyboxOverride;
+            var csb = EnsureCameraSkybox(cam);
+            if (csb) csb.material = exteriorSkyboxOverride;
+        }
+        else if (_hasSnapshot)
+        {
+            if (_savedHadCamSkybox)
+            {
+                var csb = EnsureCameraSkybox(cam);
+                if (csb) csb.material = _savedCameraSkyboxMat;
+            }
+            else
+            {
+                RenderSettings.skybox = _savedRenderSettingsSkybox;
+                var csb = cam ? cam.GetComponent<Skybox>() : null;
+                if (csb) csb.material = null;
+            }
+        }
+        
+        // Restaurar far clip plane de la cámara
+        if (_farClipModified && cam)
+        {
+            cam.farClipPlane = _savedFarClipPlane;
+            _farClipModified = false;
+            Debug.Log($"[EnvironmentController] - FarClipPlane restaurado a: {_savedFarClipPlane}");
+        }
+
+        // Restaurar zonas ocultas
+        if (_hiddenZones != null)
+        {
+            foreach (var zone in _hiddenZones)
+            {
+                if (zone && !zone.activeSelf)
+                {
+                    zone.SetActive(true);
+                }
+            }
+            _hiddenZones = null;
+        }
+        
+        if (_hiddenExterior && !_hiddenExterior.activeSelf)
+        {
+            _hiddenExterior.SetActive(true);
+            _hiddenExterior = null;
+        }
+
+        var dirLight2 = ServiceLocator.Get<Light>(false);
+        if (dirLight2 && dirLight2.type == LightType.Directional) dirLight2.gameObject.SetActive(true);
+
+        _appliedCam = cam;
+        DynamicGI.UpdateEnvironment();
     }
 
     void CaptureExteriorSnapshot()
