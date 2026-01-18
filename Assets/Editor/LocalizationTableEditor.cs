@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
@@ -468,7 +468,17 @@ public class LocalizationTableEditor : EditorWindow
             key.StartsWith("System_") || key.StartsWith("SAVEPOINT_") || key.StartsWith("INTERACT_"))
             return LocalizationCategory.UI;
         
-        if (key.StartsWith("CIN_") || key.StartsWith("CUTSCENE_") || key.StartsWith("INTRO_") || key.StartsWith("CIV_"))
+        // Cinemáticas: varios prefijos según tipo
+        // CH1_, CH2_, etc. = Capítulos (narración)
+        // CIV_ = Cinematic Villain (escenas del villano)
+        // EVT_ = Eventos/escenas de acción
+        // CIN_, CUTSCENE_, INTRO_ = Prefijos legacy
+        if (key.StartsWith("CH") && key.Length > 2 && char.IsDigit(key[2]) || // CH1_, CH2_, etc.
+            key.StartsWith("CIV_") || 
+            key.StartsWith("EVT_") || 
+            key.StartsWith("CIN_") || 
+            key.StartsWith("CUTSCENE_") || 
+            key.StartsWith("INTRO_"))
             return LocalizationCategory.Cinematics;
         
         if (key.StartsWith("PROLOGUE_"))

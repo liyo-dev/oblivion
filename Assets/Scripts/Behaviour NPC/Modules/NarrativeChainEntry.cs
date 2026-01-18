@@ -14,7 +14,10 @@ namespace Game.NPC.Modules
         PlayAnimation,     // Reproducir animación
         StartQuest,        // Iniciar quest
         StartCombat,       // Iniciar combate
-        Wait               // Esperar X segundos
+        Wait,              // Esperar X segundos
+        ShowSpeechBubble,  // Mostrar bocadillo de texto/pensamiento
+        JoinParty,         // Unirse al equipo del jugador
+        LeaveParty         // Abandonar el equipo del jugador
     }
 
     /// <summary>
@@ -30,6 +33,24 @@ namespace Game.NPC.Modules
         [Header("Dialogue")]
         [Tooltip("Diálogo a reproducir (si actionType = Dialogue)")]
         public DialogueAsset dialogue;
+
+        [Header("Speech Bubble")]
+        [Tooltip("Texto a mostrar en el bocadillo (si actionType = ShowSpeechBubble)")]
+        [TextArea(2, 5)]
+        public string speechBubbleText;
+
+        [Tooltip("¿Es un bocadillo de pensamiento? (cambia el estilo visual si está configurado)")]
+        public bool isThoughtBubble;
+
+        [Tooltip("Duración del bocadillo en segundos")]
+        [Min(0.5f)]
+        public float speechBubbleDuration = 3f;
+
+        [Tooltip("Prefab específico para este bocadillo (opcional, si null usa el default del config)")]
+        public GameObject speechBubblePrefabOverride;
+
+        [Tooltip("¿Esperar a que termine la duración del bocadillo antes de continuar con la siguiente acción?")]
+        public bool waitForBubble = true;
 
         [Header("Movement")]
         [Tooltip("Nombre del anchor de destino (si actionType = Move)")]

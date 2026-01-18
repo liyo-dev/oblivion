@@ -25,6 +25,10 @@ public class PlayerSaveData
     // Permite persistir qué narrativas de un solo uso ya se han ejecutado
     public List<string> completedInteractiveNarratives = new();
     
+    // === NUEVO: miembros del equipo (party) ===
+    // IDs narrativos de los NPCs que están en el equipo del jugador
+    public List<string> partyMemberIds = new();
+    
     [Serializable]
     public struct NarrativeBlackboardSnapshot
     {
@@ -116,6 +120,18 @@ public class PlayerSaveData
         }
         
         d.narrativeBlackboards = preset.narrativeBlackboards != null ? new List<NarrativeBlackboardSnapshot>(preset.narrativeBlackboards) : new List<NarrativeBlackboardSnapshot>();
+        
+        // Party members - obtener directamente del PlayerParty si existe
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            d.partyMemberIds = Game.NPC.PlayerParty.Instance.GetMemberIdsForSave();
+            Debug.Log($"[PlayerSaveData] 💾 Party guardado: {d.partyMemberIds.Count} miembros");
+        }
+        else
+        {
+            d.partyMemberIds = preset.partyMemberIds != null ? new List<string>(preset.partyMemberIds) : new List<string>();
+        }
+        
         // NPCs
         if (preset.npcPositions != null && preset.npcPositions.Count > 0)
         {

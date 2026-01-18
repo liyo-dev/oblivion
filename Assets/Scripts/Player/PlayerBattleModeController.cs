@@ -172,18 +172,15 @@ namespace Game.Player
         /// <param name="battleId">ID del combate para restaurar la música después de la victoria</param>
         public void PlayVictory(string battleId = null)
         {
-            _currentBattleId = battleId;
-            
-            if (debugMode)
-                Debug.Log($"[PlayerBattleMode] 🎯 PlayVictory() LLAMADO - _isPlayingVictory: {_isPlayingVictory}, battleId: {battleId}");
+            Debug.Log($"[PlayerBattleMode] 🎯 PlayVictory() LLAMADO - _isPlayingVictory: {_isPlayingVictory}, battleId: {battleId ?? "null"}");
             
             if (_isPlayingVictory)
             {
-                if (debugMode)
-                    Debug.Log($"[PlayerBattleMode] ⚠️ Victoria ya en reproducción - ignorando");
+                Debug.LogWarning($"[PlayerBattleMode] ⚠️ Victoria ya en reproducción - ignorando llamada duplicada (battleId: {battleId ?? "null"})");
                 return;
             }
             
+            _currentBattleId = battleId;
             StartCoroutine(PlayVictorySequence());
         }
         
@@ -397,13 +394,10 @@ namespace Game.Player
             if (!string.IsNullOrEmpty(victorySfxKey) && AudioService.Instance != null)
             {
                 // Usar PlayVictoryForBattle para reproducir la música de victoria correctamente
-                // El primer parámetro es el battleId actual (para restaurar música después)
-                // El segundo es la clave de victoria
-                // El tercer parámetro es el tiempo que se mantiene la música de victoria
-                // NOTA: PlayVictoryForBattle ahora funciona incluso si battleId está vacío,
-                // usando fallbacks para restaurar la música correcta
-                AudioService.Instance.PlayVictoryForBattle(_currentBattleId ?? "", victorySfxKey, victoryAnimationDuration + 2f);
-                Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {_currentBattleId ?? "null"})");
+                // IMPORTANTE: holdSeconds = 0 significa que NO se restaura automáticamente
+                // El NPCCombatLifecycleHandler se encargará de restaurar la música después del diálogo post-derrota
+                AudioService.Instance.PlayVictoryForBattle(_currentBattleId ?? "", victorySfxKey, holdSeconds: 0f);
+                Debug.Log($"[PlayerBattleMode] 🎵 ✅ Reproduciendo música de victoria: {victorySfxKey} (battleId: {_currentBattleId ?? "null"}) - Restauración manual por lifecycle handler");
             }
             else if (string.IsNullOrEmpty(victorySfxKey))
             {

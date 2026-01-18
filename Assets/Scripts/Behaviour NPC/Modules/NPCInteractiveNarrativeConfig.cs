@@ -93,6 +93,17 @@ namespace Game.NPC.Modules
         [Tooltip("Distancia mínima para detenerse al acercarse al jugador")]
         [Min(0.5f)]
         public float stopDistanceFromPlayer = 2f;
+
+        [Header("Speech Bubbles (Bocadillos)")]
+        [Tooltip("Prefab por defecto para bocadillos de diálogo (tipo cómic)")]
+        public GameObject defaultSpeechBubblePrefab;
+
+        [Tooltip("Prefab por defecto para bocadillos de pensamiento (tipo cómic)")]
+        public GameObject defaultThoughtBubblePrefab;
+
+        [Tooltip("Altura del bocadillo sobre el NPC (Y offset)")]
+        [Range(0.5f, 5f)]
+        public float speechBubbleHeight = 2.8f;
         
         [Header("Debug")]
         [Tooltip("⚠️ Solo para DEBUG. Habilitar logs detallados de evaluación de narrativas. DESACTIVAR en producción por rendimiento.")]
@@ -210,6 +221,14 @@ namespace Game.NPC.Modules
                     if (entry.combatConfig == null)
                     {
                         errorMessage = $"Entry {index} tipo StartCombat requiere combatConfig (NPCCombatConfig)";
+                        return false;
+                    }
+                    break;
+
+                case NarrativeActionType.ShowSpeechBubble:
+                    if (string.IsNullOrEmpty(entry.speechBubbleText))
+                    {
+                        errorMessage = $"Entry {index} tipo ShowSpeechBubble requiere speechBubbleText";
                         return false;
                     }
                     break;
@@ -371,4 +390,3 @@ namespace Game.NPC.Modules
         Custom             // Usar la capa actual del NPC sin cambiar
     }
 }
-

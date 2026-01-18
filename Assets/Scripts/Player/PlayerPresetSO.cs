@@ -66,4 +66,8 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Narrativas interactivas completadas")]
     [Tooltip("IDs de persistencia de narrativas interactivas de NPCs que ya se han ejecutado.")]
     public List<string> completedInteractiveNarratives = new();
+
+    [Header("Equipo (Party)")]
+    [Tooltip("IDs narrativos de los NPCs que están en el equipo del jugador.")]
+    public List<string> partyMemberIds = new();
 }

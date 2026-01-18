@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -321,8 +321,7 @@ namespace Game.NPC.Modules
                         Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
                         playerVictory.PlayVictory(battleId);
                         
-                        // ✅ Esperar a que termine la secuencia de victoria del jugador
-                        // (incluye animación + música de victoria)
+                        // ✅ Esperar a que termine la animación de victoria del jugador
                         float victoryTimeout = 15f; // Timeout de seguridad
                         float elapsed = 0f;
                         
@@ -336,19 +335,12 @@ namespace Game.NPC.Modules
                             yield return null;
                         }
                         
-                        // ✅ Esperar tiempo adicional para la música de victoria
-                        // La música de victoria típicamente dura más que la animación
-                        float additionalMusicWait = 2f;
-                        Debug.Log($"[Lifecycle] 🎵 Esperando {additionalMusicWait}s adicionales para la música de victoria");
-                        yield return new WaitForSecondsRealtime(additionalMusicWait);
-                        
-                        Debug.Log($"[Lifecycle] ✅ Celebración de victoria completada (animación + música)");
+                        Debug.Log($"[Lifecycle] ✅ Animación de victoria completada - la música se restaurará después del diálogo");
                     }
                 }
                 
-                // NOTA: NO llamar a RaiseBattleWon aquí porque PlayVictoryForBattle ya maneja
-                // la restauración de música correctamente. Llamar a RaiseBattleWon causaba
-                // una doble restauración que corrompía el stack de música.
+                // NOTA: La restauración de música ahora se maneja manualmente después del diálogo post-derrota
+                // en HandleGetUpDizzy(), permitiendo que la música de victoria suene durante todo el diálogo.
                 // El evento RaiseBattleWon solo se usa para BossArenaController que no usa PlayVictoryForBattle.
             }
             else
@@ -406,6 +398,13 @@ namespace Game.NPC.Modules
         {
             Debug.Log($"[Lifecycle] 😵 Esperando transición a animación dizzy para {name}");
             
+            // ✅ Calcular si estamos en equipo y si somos el último miembro
+            var teamMember = GetComponent<NPCTeamMember>();
+            bool isInTeam = teamMember != null && teamMember.Team != null;
+            bool isLastTeamMember = isInTeam && teamMember.Team.IsTeamDefeated;
+            
+            Debug.Log($"[Lifecycle] 🔍 DEBUG HandleGetUpDizzy INICIO: isInTeam={isInTeam}, isLastTeamMember={isLastTeamMember}, battleMusicId='{_config?.battleMusicId}'");
+            
             // 1. La animación de muerte ya se inició en DeathRoutine()
             // Solo esperamos a que esté en la animación de mareo (dizzy)
             float timeout = 10f; // Timeout de seguridad
@@ -428,10 +427,7 @@ namespace Game.NPC.Modules
                 Debug.LogWarning($"[Lifecycle] ⚠️ Timeout esperando animación dizzy - continuando de todas formas");
             }
             
-            // ✅ Verificar si pertenece a un equipo
-            var teamMember = GetComponent<NPCTeamMember>();
-            bool isInTeam = teamMember != null && teamMember.HasTeam;
-            
+            // ✅ Ya tenemos teamMember e isInTeam declarados al inicio del método
             if (isInTeam)
             {
                 var team = teamMember.Team;
@@ -518,6 +514,28 @@ namespace Game.NPC.Modules
                     
                     Debug.Log($"[Lifecycle] 💬 Diálogo de mareo completado");
                     
+                    // ✅ Restaurar música de batalla DESPUÉS del diálogo
+                    // Solo si es el último enemigo derrotado (líder o sin equipo)
+                    Debug.Log($"[Lifecycle] 🔍 DEBUG Restauración música: isInTeam={isInTeam}, IsLeader={teamMember?.IsLeader}, isLastTeamMember={isLastTeamMember}");
+                    Debug.Log($"[Lifecycle] 🔍 DEBUG Config: battleMusicId='{_config?.battleMusicId}', AudioService={AudioService.Instance != null}");
+                    
+                    if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
+                    {
+                        if (!string.IsNullOrEmpty(_config?.battleMusicId) && AudioService.Instance != null)
+                        {
+                            Debug.Log($"[Lifecycle] 🎵 Restaurando música de batalla después del diálogo: {_config.battleMusicId}");
+                            AudioService.Instance.EndBattleById(_config.battleMusicId);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[Lifecycle] ⚠️ No se puede restaurar música - battleMusicId es '{_config?.battleMusicId}', AudioService existe: {AudioService.Instance != null}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"[Lifecycle] ℹ️ No se restaura música aún - esperando a que líder maneje la restauración");
+                    }
+                    
                     // ✅ Si es líder de equipo, notificar que terminó el diálogo
                     if (isInTeam && teamMember.IsLeader)
                     {
@@ -530,6 +548,16 @@ namespace Game.NPC.Modules
                     if (isInTeam && teamMember.IsLeader)
                     {
                         teamMember.Team.NotifyPostDefeatDialogueFinished();
+                    }
+                    
+                    // ✅ Restaurar música si no hay diálogo
+                    if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
+                    {
+                        if (!string.IsNullOrEmpty(_config?.battleMusicId) && AudioService.Instance != null)
+                        {
+                            Debug.Log($"[Lifecycle] 🎵 Restaurando música de batalla (sin diálogo): {_config.battleMusicId}");
+                            AudioService.Instance.EndBattleById(_config.battleMusicId);
+                        }
                     }
                 }
             }

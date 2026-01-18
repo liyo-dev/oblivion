@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -10,6 +11,16 @@ public static class ActiveCombatRegistry
     private static readonly HashSet<GameObject> _npcsInCombat = new HashSet<GameObject>();
     
     /// <summary>
+    /// Se dispara cuando un NPC entra en combate (útil para que los compañeros reaccionen)
+    /// </summary>
+    public static event Action<GameObject> OnNPCEnteredCombat;
+    
+    /// <summary>
+    /// Se dispara cuando un NPC sale del combate
+    /// </summary>
+    public static event Action<GameObject> OnNPCExitedCombat;
+    
+    /// <summary>
     /// Registra un NPC como "en combate"
     /// </summary>
     public static void RegisterNPC(GameObject npc)
@@ -19,6 +30,7 @@ public static class ActiveCombatRegistry
         if (_npcsInCombat.Add(npc))
         {
             Debug.Log($"[ActiveCombatRegistry] ⚔️ NPC '{npc.name}' registrado en combate");
+            OnNPCEnteredCombat?.Invoke(npc);
         }
     }
     
@@ -32,6 +44,7 @@ public static class ActiveCombatRegistry
         if (_npcsInCombat.Remove(npc))
         {
             Debug.Log($"[ActiveCombatRegistry] 🏳️ NPC '{npc.name}' removido del combate");
+            OnNPCExitedCombat?.Invoke(npc);
         }
     }
     

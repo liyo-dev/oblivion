@@ -17,6 +17,10 @@
             "value": "Eldran"
         },
         {
+            "key": "CHAR_ESTELA",
+            "value": "Estela"
+        },
+        {
             "key": "CHAR_GUARD",
             "value": "Guard"
         },
@@ -311,6 +315,14 @@
         {
             "key": "DLG_ELDRAN_MISSION6_PROGRESS_02",
             "value": "[EN] Venid a verme cuanto antes."
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_01",
+            "value": "[EN] ¡Wau! Parece una misión ultra secreta y super peligrosa."
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_02",
+            "value": "[EN] ¡Me apunto!"
         },
         {
             "key": "DLG_GUARD_01",

@@ -59,6 +59,18 @@ namespace Game.NPC
         public Animator Animator => _unityAnimator;
         public NPCSimpleAnimator SimpleAnimator => _animator;
         public Transform Player => _player;
+        
+        /// <summary>
+        /// Indica si este NPC es un aliado del jugador (miembro del party).
+        /// </summary>
+        public bool IsAlly
+        {
+            get
+            {
+                var partyMember = GetComponent<NPCPartyMember>();
+                return partyMember != null && partyMember.IsInParty;
+            }
+        }
         #endregion
 
         void Awake()
@@ -226,6 +238,18 @@ namespace Game.NPC
                         spawner.SetHealthBarPrefab(configuration.combatConfig.healthBarPrefab);
                 }
             }
+            
+            // 4. COMPANION MODULE (Party System)
+            // Permite que el NPC se una al equipo del jugador
+            if (configuration.HasBehaviour(NPCBehaviourType.Companion) && configuration.partyConfig != null)
+            {
+                if (!GetComponent<NPCPartyMember>())
+                {
+                    var partyMember = gameObject.AddComponent<NPCPartyMember>();
+                    partyMember.SetConfig(configuration.partyConfig);
+                    if (debugMode) Debug.Log($"[NPCManager] 🤝 NPCPartyMember añadido para {name}");
+                }
+            }
         }
 
         // =================================================================================
@@ -240,7 +264,24 @@ namespace Game.NPC
 
             _context.IsInCombat = true;
             
-            // ✅ Registrar NPC en el registro de combate activo
+            // ✅ Verificar si es un aliado (miembro del party)
+            var partyMember = GetComponent<NPCPartyMember>();
+            bool isAlly = partyMember != null && partyMember.IsInParty;
+            
+            if (isAlly)
+            {
+                // 🤝 ALIADO: Usar AllyCombatState (ataca enemigos, no al jugador)
+                // NO registrar en ActiveCombatRegistry (eso es para enemigos)
+                if (!(_brain.CurrentState is States.AllyCombatState))
+                {
+                    if (debugMode) Debug.Log($"[NPCManager] 🤝 {name} entrando en AllyCombatState (es aliado)");
+                    _brain.ChangeState(new States.AllyCombatState());
+                }
+                return; // No continuar con lógica de enemigos
+            }
+            
+            // ⚔️ ENEMIGO: Lógica normal
+            // Registrar NPC en el registro de combate activo
             ActiveCombatRegistry.RegisterNPC(gameObject);
             
             if (!(_brain.CurrentState is States.CombatState))
@@ -248,7 +289,7 @@ namespace Game.NPC
                 _brain.ChangeState(new States.CombatState());
             }
             
-            // ✅ NUEVO: Si es líder de un equipo, hacer que los compañeros también entren en combate
+            // Si es líder de un equipo, hacer que los compañeros también entren en combate
             var combatTeam = GetComponent<NPCCombatTeam>();
             if (combatTeam != null)
             {
@@ -305,6 +346,46 @@ namespace Game.NPC
         public void ForceIdle()
         {
             _brain.ForceState(new States.IdleState());
+        }
+
+        // =================================================================================
+        // 🤝 PARTY SYSTEM API
+        // =================================================================================
+        
+        /// <summary>
+        /// Une este NPC al equipo del jugador.
+        /// Requiere que el NPC tenga el comportamiento Companion configurado.
+        /// </summary>
+        public bool JoinPlayerParty()
+        {
+            var partyMember = GetComponent<NPCPartyMember>();
+            if (partyMember == null)
+            {
+                if (debugMode) Debug.LogWarning($"[NPCManager] {name} no tiene NPCPartyMember. Asegúrate de configurar Companion behaviour.");
+                return false;
+            }
+            
+            return partyMember.JoinParty();
+        }
+        
+        /// <summary>
+        /// Remueve este NPC del equipo del jugador.
+        /// </summary>
+        public bool LeavePlayerParty()
+        {
+            var partyMember = GetComponent<NPCPartyMember>();
+            if (partyMember == null) return false;
+            
+            return partyMember.LeaveParty();
+        }
+        
+        /// <summary>
+        /// Comprueba si este NPC está actualmente en el equipo del jugador.
+        /// </summary>
+        public bool IsInPlayerParty()
+        {
+            var partyMember = GetComponent<NPCPartyMember>();
+            return partyMember != null && partyMember.IsInParty;
         }
 
         // =================================================================================

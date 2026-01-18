@@ -55,6 +55,10 @@
         {
             "id": "EVT_08",
             "text": "Eldran shouts: 'Will! Use your magic, press <sprite name=\"interactable_x\"> and defeat the demon!'"
+        },
+        {
+            "id": "EVT_ESTELA_01",
+            "text": "[EN] Las arañas creían haber acorralado a una presa indefensa. No sabían que acababan de encerrarse con Estela."
         }
     ]
 }

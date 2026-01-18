@@ -144,6 +144,11 @@ public class NPCSimpleAnimator : MonoBehaviour
     #region Public Properties
     
     /// <summary>
+    /// Permite a sistemas externos (como narrativas) tomar control de la rotación.
+    /// </summary>
+    public bool AllowManualRotation { get; set; }
+
+    /// <summary>
     /// Indica si el NPC está en modo batalla
     /// </summary>
     public bool IsInBattle => _isInBattle;
@@ -1280,7 +1285,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         SetMovementSpeed(normalizedSpeed);
         
         // ✅ FIX: No actualizar rotación si está deshabilitada (ej: durante/después de cinemáticas)
-        if (_disableAutoRotation)
+        if (_disableAutoRotation || AllowManualRotation)
             return;
         
         // Update rotation based on velocity
@@ -1309,7 +1314,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     private void ApplySmoothRotation()
     {
         // Skip if auto rotation is disabled (e.g. during dialogue)
-        if (_disableAutoRotation)
+        if (_disableAutoRotation || AllowManualRotation)
             return;
             
         // Calculate angle difference

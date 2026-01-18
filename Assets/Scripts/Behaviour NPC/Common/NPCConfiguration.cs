@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿﻿using System;
 using UnityEngine;
 using Game.NPC.Modules;
 namespace Game.NPC.Common
@@ -28,6 +28,9 @@ namespace Game.NPC.Common
         
         [Tooltip("Config de narrativa interactiva (cadena de acciones al interactuar)")]
         public NPCInteractiveNarrativeConfig interactiveNarrativeConfig;
+        
+        [Tooltip("Config de compañero (seguir al jugador, formar equipo)")]
+        public NPCPartyConfig partyConfig;
         [Header("Configuración Base (Común a todos)")]
         [Min(0f)]
         [Tooltip("Velocidad de caminata del NPC (m/s). Usado cuando el NPC se mueve normalmente.")]
@@ -93,6 +96,13 @@ namespace Game.NPC.Common
                 isValid = false;
             }
             
+            // Validar Companion (Party)
+            if (HasBehaviour(NPCBehaviourType.Companion) && partyConfig == null)
+            {
+                errors += "Behaviour Companion activado pero no hay partyConfig asignado.\n";
+                isValid = false;
+            }
+            
             // Validar configs si están asignados
             if (ambientConfig != null && !ambientConfig.ValidateConfig(out string ambientError))
             {
@@ -121,6 +131,12 @@ namespace Game.NPC.Common
             if (interactiveNarrativeConfig != null && !interactiveNarrativeConfig.ValidateConfig(out string interactiveError))
             {
                 errors += $"Interactive Narrative Config: {interactiveError}\n";
+                isValid = false;
+            }
+            
+            if (partyConfig != null && !partyConfig.ValidateConfig(out string partyError))
+            {
+                errors += $"Party Config: {partyError}\n";
                 isValid = false;
             }
             

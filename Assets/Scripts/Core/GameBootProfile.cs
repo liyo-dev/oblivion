@@ -145,6 +145,12 @@ public class GameBootProfile : ScriptableObject
             : new List<string>();
         Debug.Log($"[GameBootProfile] 📜 Restauradas {p.completedInteractiveNarratives.Count} narrativas completadas desde save");
 
+        // === NUEVO: Restaurar miembros del equipo (party) ===
+        p.partyMemberIds = data.partyMemberIds != null 
+            ? new List<string>(data.partyMemberIds) 
+            : new List<string>();
+        Debug.Log($"[GameBootProfile] 🤝 Party: {p.partyMemberIds.Count} miembros a restaurar");
+
         // Restaurar NPCs persistidos directamente en el runtimePreset para que otros sistemas puedan aplicarlos
         if (p.npcPositions == null) p.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
         else p.npcPositions.Clear();

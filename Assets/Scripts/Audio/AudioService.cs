@@ -50,8 +50,12 @@ public sealed class AudioService : MonoBehaviour
     // --- estado cinemáticas / ducking / stack de música ---
     struct MusicStackItem { public AudioClip clip; }
     readonly Stack<MusicStackItem> _musicStack = new();
-    int _duckCount;
+    bool _isCinematicMode;
+
+    // --- control de música de victoria ---
+    Coroutine _victoryRestoreCoroutine;
     float _duckTarget = 1f;
+    int _duckCount = 0;
     Coroutine _duckRoutine;
     bool _battleActive;
 
@@ -359,6 +363,11 @@ public sealed class AudioService : MonoBehaviour
 
     void OnBattleWonRestoreMusic(AudioGraphProfile.BattleRule r)
     {
+        // ✅ IMPORTANTE: Restaurar el loop en los AudioSource (después de música de victoria)
+        _musicA.loop = true;
+        _musicB.loop = true;
+        Debug.Log($"[AudioService] 🔄 Loop restaurado en AudioSources de música");
+        
         // PRIORIDAD 1: Si hay una FogZone activa, restaurar su música (no usar el stack)
         var activeFogZone = FogZone.CurrentActiveZone;
         if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
@@ -457,27 +466,65 @@ public sealed class AudioService : MonoBehaviour
     }
 
     // Inicia música de victoria y tras un tiempo restaura a la escena actual
+    // Si holdSeconds <= 0, NO restaura automáticamente (control manual)
     public void PlayVictoryForBattle(string battleId, string victoryId, float holdSeconds = 2f)
     {
+        Debug.Log($"[AudioService] 🎵 PlayVictoryForBattle LLAMADO - battleId: '{battleId}', victoryId: '{victoryId}', holdSeconds: {holdSeconds}");
+        
+        // ✅ Cancelar cualquier corrutina de restauración anterior
+        if (_victoryRestoreCoroutine != null)
+        {
+            Debug.LogWarning($"[AudioService] ⚠️ Cancelando corrutina de restauración anterior - evitando doble restauración");
+            StopCoroutine(_victoryRestoreCoroutine);
+            _victoryRestoreCoroutine = null;
+        }
+        
         var battleRule = FindBattleRuleForId(battleId);
         var victoryRule = FindBattleRuleForId(victoryId);
         if (victoryRule != null && victoryRule.music != null)
         {
+            Debug.Log($"[AudioService] ✅ Reproduciendo música de victoria: {victoryRule.music.name}");
+            
+            // ✅ CRÍTICO: Desactivar loop para música de victoria
+            // La música de victoria debe reproducirse UNA SOLA VEZ
+            _musicA.loop = false;
+            _musicB.loop = false;
+            
             PlayMusic(victoryRule.music, victoryRule.fade);
         }
         else
         {
             Debug.LogWarning($"[AudioService] PlayVictoryForBattle: no hay música de victoria para id='{victoryId}'.");
         }
-        if (battleRule != null)
-            StartCoroutine(RestoreAfterVictoryDelay(battleRule, Mathf.Max(0f, holdSeconds)));
+        
+        // ✅ Solo programar restauración automática si holdSeconds > 0
+        if (holdSeconds > 0f && battleRule != null)
+        {
+            Debug.Log($"[AudioService] 🔄 Programando restauración automática de música después de {holdSeconds}s");
+            _victoryRestoreCoroutine = StartCoroutine(RestoreAfterVictoryDelay(battleRule, holdSeconds));
+        }
+        else if (holdSeconds <= 0f)
+        {
+            Debug.Log($"[AudioService] ⏸️ Restauración automática deshabilitada (holdSeconds={holdSeconds}) - se requiere llamada manual a RestoreBattleMusic()");
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] ⚠️ No se encontró battleRule para '{battleId}' - no se restaurará música");
+        }
     }
 
     IEnumerator RestoreAfterVictoryDelay(AudioGraphProfile.BattleRule battleRule, float holdSeconds)
     {
+        Debug.Log($"[AudioService] ⏱️ RestoreAfterVictoryDelay iniciado - esperando {holdSeconds}s");
+        
         if (holdSeconds > 0f)
             yield return new WaitForSecondsRealtime(holdSeconds);
+        
+        Debug.Log($"[AudioService] 🔄 Restaurando música después de victoria");
         OnBattleWonRestoreMusic(battleRule);
+        
+        // ✅ Limpiar referencia de corrutina
+        _victoryRestoreCoroutine = null;
     }
 
 

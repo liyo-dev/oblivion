@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 
@@ -269,6 +269,30 @@ namespace Game.NPC.Common
             
             if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔔 Mostrando icono por {useDuration}s");
         }
+
+        /// <summary>
+        /// Muestra un bocadillo de texto (speech/thought bubble)
+        /// </summary>
+        public void ShowSpeechBubble(GameObject bubblePrefab, string text, float duration = 3f)
+        {
+            if (bubblePrefab == null) return;
+            
+            if (!_headBoneSearched) FindHeadBone();
+            HideAlertIconImmediate();
+            
+            _targetScale = Vector3.one * iconScale;
+            _iconRoutine = StartCoroutine(ShowIconRoutine(bubblePrefab, duration, (instance) => {
+                // Configurar texto
+                var tmpro = instance.GetComponentInChildren<TMPro.TMP_Text>();
+                if (tmpro != null) tmpro.text = text;
+                else {
+                    var uiText = instance.GetComponentInChildren<UnityEngine.UI.Text>();
+                    if (uiText != null) uiText.text = text;
+                }
+            }));
+            
+            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 💬 Mostrando bocadillo: '{text}'");
+        }
         
         /// <summary>
         /// Muestra el icono de alerta (❗) - Detectó al jugador
@@ -471,13 +495,16 @@ namespace Game.NPC.Common
             if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] ⚡ Icono eliminado inmediatamente");
         }
         
-        private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration)
+        private IEnumerator ShowIconRoutine(GameObject iconPrefab, float duration, System.Action<GameObject> onInstanceCreated = null)
         {
             _isShowing = true;
             
             // Instanciar en WORLD SPACE
             _currentIconInstance = Instantiate(iconPrefab);
             _currentIconInstance.name = $"{iconPrefab.name}_{name}_Alert";
+            
+            // Callback de configuración
+            onInstanceCreated?.Invoke(_currentIconInstance);
             
             // Calcular posición inicial (ligeramente debajo de la posición final para el pop-up)
             Vector3 targetPos = GetIconWorldPosition();
