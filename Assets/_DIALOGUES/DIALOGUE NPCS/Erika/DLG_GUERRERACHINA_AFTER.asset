@@ -17,3 +17,6 @@ MonoBehaviour:
     textId: DLG_GUERRERACHINA_AFTER
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 1

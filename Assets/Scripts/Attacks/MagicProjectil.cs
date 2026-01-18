@@ -3,7 +3,6 @@ using UnityEngine;
 /// <summary>
 /// Proyectil mágico que se lanza desde MagicProjectileSpawner.
 /// Maneja movimiento, colisiones, daño y efectos visuales/sonoros.
-/// Soporta proyectiles del jugador Y de aliados (NPCs del party).
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
@@ -38,16 +37,12 @@ public class MagicProjectile : MonoBehaviour
         
         // Elemento de magia (para interacciones con puzzle)
         public MagicElement element;     // Fire, Ice, etc.
-        
-        // === NUEVO: Configuración para proyectiles de aliados ===
-        public bool isAllyProjectile;    // true = proyectil de aliado (daña enemigos)
     }
 
     // ==== Estado ===============================================================
     Rigidbody _rb;
     bool      _hasRb;
     bool      _ended;
-    bool      _initialized;
     bool      _movementEnabled = true;
 
     ProjectileConfig _cfg;
@@ -55,16 +50,6 @@ public class MagicProjectile : MonoBehaviour
 
     Vector3 _spawnPos;
     float   _spawnTime;
-    
-    [Header("Configuración de Aliado")]
-    [Tooltip("Si está activado, este proyectil es de un aliado y dañará a enemigos en lugar del jugador")]
-    [SerializeField] private bool isAllyProjectile = false;
-    
-    [Tooltip("Daño que hace este proyectil (usado si no se configura via Configure())")]
-    [SerializeField] private float defaultDamage = 15f;
-    
-    [Tooltip("Velocidad del proyectil (usado si no se configura via Configure())")]
-    [SerializeField] private float defaultSpeed = 12f;
     
     [Header("Lifetime (optional)")]
     [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
@@ -90,67 +75,6 @@ public class MagicProjectile : MonoBehaviour
         if (col != null) col.isTrigger = false;
 
         RefreshHasRigidbody();
-        
-        // 🤝 AUTO-CONFIGURAR si es proyectil de aliado y no se ha llamado a Configure()
-        if (isAllyProjectile && _cfg.damage == 0)
-        {
-            ConfigureAsAllyProjectile();
-        }
-        
-        _initialized = true;
-    }
-    
-    /// <summary>
-    /// Configura automáticamente el proyectil para ser usado por aliados.
-    /// Establece las layers correctas para dañar enemigos.
-    /// </summary>
-    private void ConfigureAsAllyProjectile()
-    {
-        // Capas de enemigos (Enemy, Boss)
-        int enemyLayer = LayerMask.NameToLayer("Enemy");
-        int bossLayer = LayerMask.NameToLayer("Boss");
-        
-        _cfg.isAllyProjectile = true;
-        _cfg.damage = defaultDamage;
-        _cfg.initialSpeed = defaultSpeed;
-        _cfg.destroyOnHit = true;
-        _cfg.maxRange = 30f;
-        
-        // Configurar hitLayers para dañar enemigos
-        _cfg.hitLayers = 0;
-        if (enemyLayer >= 0) _cfg.hitLayers |= (1 << enemyLayer);
-        if (bossLayer >= 0) _cfg.hitLayers |= (1 << bossLayer);
-        
-        // Configurar collisionLayers (enemigos + terreno)
-        int defaultLayer = LayerMask.NameToLayer("Default");
-        _cfg.collisionLayers = _cfg.hitLayers;
-        if (defaultLayer >= 0) _cfg.collisionLayers |= (1 << defaultLayer);
-        
-        Debug.Log($"[MagicProjectile] 🤝 Auto-configurado como proyectil de aliado. Daño: {_cfg.damage}, HitLayers: {_cfg.hitLayers.value}");
-    }
-    
-    /// <summary>
-    /// Configura el proyectil como aliado con parámetros específicos.
-    /// Llamar después de instanciar si necesitas personalizar.
-    /// </summary>
-    public void ConfigureAlly(float damage, float speed, GameObject instigator = null)
-    {
-        isAllyProjectile = true;
-        defaultDamage = damage;
-        defaultSpeed = speed;
-        _instigator = instigator;
-        
-        ConfigureAsAllyProjectile();
-        
-        // Ignorar colisiones con el instigador
-        if (_instigator != null)
-        {
-            var myCols = GetComponentsInChildren<Collider>(true);
-            var hisCols = _instigator.GetComponentsInChildren<Collider>(true);
-            foreach (var a in myCols)
-                foreach (var b in hisCols)
-                    if (a && b) Physics.IgnoreCollision(a, b, true);
-        }
     }
 
     bool _ttlScheduled;

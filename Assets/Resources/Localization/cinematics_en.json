@@ -59,6 +59,14 @@
         {
             "id": "EVT_ESTELA_01",
             "text": "[EN] Las arañas creían haber acorralado a una presa indefensa. No sabían que acababan de encerrarse con Estela."
+        },
+        {
+            "id": "EVT_ESTELA_02",
+            "text": "[EN] Con una sonrisa de desafío, Estela liberó su verdadero poder."
+        },
+        {
+            "id": "EVT_ESTELA_03",
+            "text": "[EN] Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
         }
     ]
 }

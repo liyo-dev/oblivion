@@ -21,4 +21,8 @@ public struct DialogueLine
     
     [Tooltip("Forzar un plano específico para esta línea (deja en Wide para automático)")]
     public CinematicSequence.ShotType forcedShotType;
+    
+    [Header("Emociones")]
+    [Tooltip("Emoción del NPC durante esta línea (None = sin cambio, mantiene la emoción anterior)")]
+    public NPCEmotion emotion;
 }

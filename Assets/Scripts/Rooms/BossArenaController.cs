@@ -48,6 +48,14 @@ public class BossArenaController : MonoBehaviour
     [Tooltip("Layer del suelo para colocar al boss después de la presentación.")]
     [SerializeField] private LayerMask floorLayer = 1 << 6; // Floor por defecto
     
+    [Header("VFX de Aparición del Boss")]
+    [Tooltip("Prefab de VFX para la aparición del boss (portal, humo, etc). Se destruye automáticamente.")]
+    [SerializeField] private GameObject bossSpawnVFXPrefab;
+    [Tooltip("Duración en segundos del VFX de aparición antes de destruirse.")]
+    [SerializeField] private float bossSpawnVFXDuration = 2f;
+    [Tooltip("Offset vertical para el VFX de aparición (por defecto 0).")]
+    [SerializeField] private float bossSpawnVFXHeightOffset = 0f;
+    
     [Header("Boss Presentation")]
     [Tooltip("Componente opcional para presentación cinemática del boss")]
     [SerializeField] private BossIntroPresentation bossIntroPresentation;
@@ -285,6 +293,16 @@ public class BossArenaController : MonoBehaviour
         Vector3 spawnPosition = bossSpawn ? bossSpawn.position : transform.position;
         Quaternion spawnRotation = bossSpawn ? bossSpawn.rotation : transform.rotation;
 
+        // Instanciar VFX de aparición si está configurado
+        if (bossSpawnVFXPrefab != null)
+        {
+            Vector3 vfxPosition = spawnPosition + Vector3.up * bossSpawnVFXHeightOffset;
+            GameObject vfx = Instantiate(bossSpawnVFXPrefab, vfxPosition, spawnRotation);
+            Destroy(vfx, bossSpawnVFXDuration);
+            if (showDebugLogs)
+                Debug.Log($"[BossArenaController] VFX de aparición instanciado en {vfxPosition}, se destruirá en {bossSpawnVFXDuration}s");
+        }
+
         GameObject boss = null;
 
         if (bossPrefab)
@@ -358,8 +376,19 @@ public class BossArenaController : MonoBehaviour
         if (impDemonAI != null)
         {
             impDemonAI.canStartCombat = true;
-            Debug.Log("[BossArenaController] Combate del boss activado.");
+            Debug.Log("[BossArenaController] Combate del boss (ImpDemon) activado.");
+            return;
         }
+        
+        var golemBossAI = boss.GetComponent<GolemBossAI>();
+        if (golemBossAI != null)
+        {
+            golemBossAI.canStartCombat = true;
+            Debug.Log("[BossArenaController] Combate del boss (Golem) activado.");
+            return;
+        }
+        
+        Debug.LogWarning("[BossArenaController] No se encontró componente de IA compatible en el boss.");
     }
 
     private void PlaceBossOnFloor(GameObject boss)

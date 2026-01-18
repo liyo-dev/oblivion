@@ -8,6 +8,7 @@ TagManager:
   - Pickable
   - PlayerEyes
   - PortraitCamera
+  - Estela
   layers:
   - Default
   - TransparentFX

@@ -20,7 +20,7 @@ MonoBehaviour:
   steps:
   - descriptionId: QUEST_ELDRAN_MISSION6_DESC_01
     description: 
-    conditionId: 
+    conditionId: QUEST_ELDRAN_MISSION6_STEP_00
   - descriptionId: QUEST_ELDRAN_MISSION6_DESC_02
     description: 
-    conditionId: 
+    conditionId: QUEST_ELDRAN_MISSION6_STEP_01

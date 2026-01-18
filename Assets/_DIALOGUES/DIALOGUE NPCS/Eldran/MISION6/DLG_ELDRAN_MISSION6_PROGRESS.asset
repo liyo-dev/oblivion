@@ -17,7 +17,13 @@ MonoBehaviour:
     textId: DLG_ELDRAN_MISSION6_PROGRESS_01
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION6_PROGRESS_02
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6

@@ -24,6 +24,12 @@ public class DialogueManager : MonoBehaviour
     /// El Transform es el NPC con el que se estaba hablando (puede ser null si no había NPC).
     /// </summary>
     public static event Action<Transform> OnDialogueClosed;
+    
+    /// <summary>
+    /// Evento disparado cuando cambia la línea de diálogo actual.
+    /// Incluye la línea actual (con su emoción) y el NPC involucrado.
+    /// </summary>
+    public static event Action<DialogueLine, Transform> OnDialogueLineChanged;
     #endregion
 
     [Header("UI")]
@@ -651,6 +657,9 @@ public class DialogueManager : MonoBehaviour
         Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
 
         var line = _current.lines[_index];
+        
+        // ✅ Emitir evento de cambio de línea (para sistema de emociones y otros)
+        OnDialogueLineChanged?.Invoke(line, _currentNpc);
         
         // Notificar al sistema cinematográfico del cambio de línea
         if (useCinematicCamera && DialogueCinematicController.Instance != null)

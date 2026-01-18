@@ -19164,6 +19164,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
+  isAllyProjectile: 1
+  defaultDamage: 15
+  defaultSpeed: 12
   lifeTimeSeconds: 0
 --- !u!1 &100008
 GameObject:

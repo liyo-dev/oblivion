@@ -15,7 +15,15 @@ MonoBehaviour:
   lines:
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_INPROGRESS_01
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_INPROGRESS_02
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 1

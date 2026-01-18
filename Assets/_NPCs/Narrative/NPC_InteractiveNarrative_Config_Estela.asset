@@ -18,8 +18,8 @@ MonoBehaviour:
   - description: 
     priority: 0
     condition:
-      conditionType: 0
-      targetQuest: {fileID: 0}
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
       debugMode: 0
     narrativeChain:
     - actionType: 0
@@ -100,8 +100,8 @@ MonoBehaviour:
     autoStartOnDetection: 0
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
-    showPersistentIcon: 0
-    persistentIconPrefab: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0

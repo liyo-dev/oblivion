@@ -56,6 +56,48 @@ namespace Game.NPC.Modules
         [Tooltip("Distancia de detección para unirse al combate del jugador")]
         [Range(5f, 20f)]
         public float combatAssistRange = 12f;
+        
+        [Header("Hechizos de Combate")]
+        [Tooltip("Hechizo de mano izquierda (ataque rápido)")]
+        public MagicSpellSO spellLeft;
+        
+        [Tooltip("Hechizo de mano derecha (ataque medio)")]
+        public MagicSpellSO spellRight;
+        
+        [Tooltip("Hechizo especial (ataque potente)")]
+        public MagicSpellSO spellSpecial;
+
+        [Header("Distancias de Combate")]
+        [Tooltip("Distancia mínima para atacar")]
+        [Range(1f, 5f)]
+        public float minAttackDistance = 2f;
+        
+        [Tooltip("Distancia máxima para atacar")]
+        [Range(5f, 30f)]
+        public float maxAttackDistance = 15f;
+        
+        /// <summary>
+        /// Obtiene el hechizo por índice (0=Left, 1=Right, 2=Special)
+        /// </summary>
+        public MagicSpellSO GetSpell(int index)
+        {
+            return index switch
+            {
+                0 => spellLeft,
+                1 => spellRight,
+                2 => spellSpecial,
+                _ => null
+            };
+        }
+        
+        /// <summary>
+        /// Obtiene el cooldown del hechizo por índice (del propio SO)
+        /// </summary>
+        public float GetSpellCooldown(int index)
+        {
+            var spell = GetSpell(index);
+            return spell != null ? spell.cooldown : 1f;
+        }
 
         [Header("Visual")]
         [Tooltip("Icono para mostrar en la UI del equipo")]

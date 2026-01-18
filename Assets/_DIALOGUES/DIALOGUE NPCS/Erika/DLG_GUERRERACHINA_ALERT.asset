@@ -17,31 +17,55 @@ MonoBehaviour:
     textId: DLG_GUERRERACHINA_01
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_02
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_03
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 4
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_04
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 3
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_05
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_06
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_07
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_GUERRERACHINA
     textId: DLG_GUERRERACHINA_08
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 3

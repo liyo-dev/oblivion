@@ -17,39 +17,69 @@ MonoBehaviour:
     textId: DLG_ELDRAN_MISSION5_OFFER_01
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 4
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_02
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 2
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_03
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_04
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_05
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 5
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_06
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 2
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_07
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_08
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_09
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION5_OFFER_10
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 6

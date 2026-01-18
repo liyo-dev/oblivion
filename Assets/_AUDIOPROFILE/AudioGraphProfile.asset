@@ -25,13 +25,16 @@ MonoBehaviour:
   - battleId: Npc_Battle_Victory
     music: {fileID: 8300000, guid: 5470781b602096348900f3a6c00ac749, type: 3}
     fade: 0
+  - battleId: Golem_1
+    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    fade: 0
   ambientZones:
   - zoneId: Woods
     music: {fileID: 8300000, guid: 15968ef8400ac3a48b0a18f1a182400d, type: 3}
     fade: 1
     loop: 1
   sceneMusic:
-  - sceneName: PrologoCinematica
+  - sceneName: Prologo
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
@@ -39,6 +42,8 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   - sceneName: MainWorld
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
+  - sceneName: Cinematic_EstelaAppears
+    music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
   eventSfx:
   - eventKey: UI_Navigate
     sfx: {fileID: 8300000, guid: c83e31fc92bdc722b8d62fa8ebea0722, type: 3}

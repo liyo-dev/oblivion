@@ -35,6 +35,11 @@ MonoBehaviour:
   - rid: 857240411820786340
   - rid: 857240411820786341
   - rid: 7908052880146039718
+  - rid: 7908053084941582561
+  - rid: 7908053084941582562
+  - rid: 7908053087356977375
+  - rid: 7908053087356977389
+  - rid: 7908053087356977390
   applicableSceneNames:
   - MainWorld
   references:
@@ -171,8 +176,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4010d494-e518-45bb-9852-29a412777758
-        position: {x: -6, y: 1098}
-        outputs: []
+        position: {x: -44, y: 1098}
+        outputs:
+        - d2c6cf0b-557c-41ae-9ccc-069ca97bade9
         questId: ELDRAN_MISSION5_2
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -346,6 +352,82 @@ MonoBehaviour:
         questId: ELDRAN_MISSION5
         stepConditionIds:
         - QUEST_ELDRAN_MISSION5_STEP_00
+        steps: 
+        completeQuest: 0
+        logWarnings: 1
+    - rid: 7908053084941582561
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ENCONTRAMOS A ESTELA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: d2c6cf0b-557c-41ae-9ccc-069ca97bade9
+        position: {x: 384, y: 1098}
+        outputs:
+        - c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+        eventKey: ESTELA_FOUND
+    - rid: 7908053084941582562
+      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: APARECE ESTELA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+        position: {x: 384, y: 1269}
+        outputs:
+        - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
+        - 9b63dbf6-fe76-4863-b369-de60261fa436
+        cinematicSceneName: Cinematic_EstelaAppears
+        useInternalCinematic: 1
+    - rid: 7908053087356977375
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: SALIMOS DEL BOSQUE
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
+        position: {x: 387, y: 1472}
+        outputs:
+        - 77ea1f0f-beb9-448f-92b1-644076d1b57e
+        eventKey: EXIT_FROM_WOODS_ESTELA
+    - rid: 7908053087356977389
+      type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'ARENA DE BATALLA: GOLEM'
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 77ea1f0f-beb9-448f-92b1-644076d1b57e
+        position: {x: 816, y: 1472}
+        outputs: []
+        battleId: Golem_1
+        bossArena: {fileID: 0}
+        useBattleById: 1
+        completeMission: 0
+        missionStringId: 
+        missionId: 0
+        arenaContext: 
+    - rid: 7908053087356977390
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completamos el paso 0 de la mision 6
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9b63dbf6-fe76-4863-b369-de60261fa436
+        position: {x: -136, y: 1438}
+        outputs: []
+        questId: ELDRAN_MISSION6
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION6_STEP_00
         steps: 
         completeQuest: 0
         logWarnings: 1

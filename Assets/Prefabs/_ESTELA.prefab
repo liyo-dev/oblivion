@@ -14332,11 +14332,12 @@ GameObject:
   - component: {fileID: 4044326825062619971}
   - component: {fileID: 3392072196240201786}
   - component: {fileID: 1187040435340309947}
+  - component: {fileID: 9069736355997653958}
   m_Layer: 8
   m_Name: _ESTELA
-  m_TagString: Untagged
+  m_TagString: Estela
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
+  m_NavMeshLayer: 1
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &7730161297972038515
@@ -14549,9 +14550,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 194
+    behaviourType: 192
     ambientConfig: {fileID: 0}
-    combatConfig: {fileID: 11400000, guid: d684ae60f9b380343b794a1819f37403, type: 2}
+    combatConfig: {fileID: 0}
     questConfig: {fileID: 0}
     narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 11400000, guid: ebc54ede431cdc94d92eebbad35015b3, type: 2}
@@ -14572,6 +14573,24 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+--- !u!114 &9069736355997653958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
+  emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  originalEyeMesh: {fileID: 0}
+  originalMouthMesh: {fileID: 0}
+  eyePrefix: Eye
+  mouthPrefix: Mouth
+  debugMode: 0
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0
