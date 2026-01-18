@@ -25,11 +25,13 @@ namespace Game.NPC.States
         private bool _isIdle;
         private bool _isRunning;
         private Vector3 _lastPlayerPosition;
+        private bool _hasRotatedToPlayer; // Para no rotar constantemente
         
         // Constants
         private const float PATH_UPDATE_INTERVAL = 0.3f;
         private const float PLAYER_MOVE_THRESHOLD = 0.5f;
         private const float ROTATION_SPEED_MULTIPLIER = 2f;
+        private const float IDLE_EXIT_HYSTERESIS = 0.5f; // Umbral extra para salir de idle
 
         public FollowPlayerState(NPCPartyMember partyMember)
         {
@@ -51,6 +53,7 @@ namespace Game.NPC.States
             _idleTimer = 0f;
             _isIdle = false;
             _isRunning = false;
+            _hasRotatedToPlayer = false;
             _lastPlayerPosition = context.Player?.position ?? Vector3.zero;
             
             // Configurar velocidad inicial
@@ -71,58 +74,69 @@ namespace Game.NPC.States
             float runDist = _config?.runToPlayerDistance ?? 8f;
             float minStopDist = _config?.minStopDistance ?? 1.5f;
             
-            // 1. Decidir si correr o caminar
-            bool shouldRun = distanceToPlayer > runDist;
-            if (shouldRun != _isRunning)
+            // Aplicar histéresis: si ya está en idle, necesita alejarse más para salir
+            float exitIdleDist = _isIdle ? (followDist + IDLE_EXIT_HYSTERESIS) : followDist;
+            
+            // 1. Decidir si correr o caminar (solo si no está idle)
+            if (!_isIdle)
             {
-                _isRunning = shouldRun;
-                if (shouldRun) SetRunSpeed(context);
-                else SetWalkSpeed(context);
+                bool shouldRun = distanceToPlayer > runDist;
+                if (shouldRun != _isRunning)
+                {
+                    _isRunning = shouldRun;
+                    if (shouldRun) SetRunSpeed(context);
+                    else SetWalkSpeed(context);
+                }
             }
             
             // 2. Decidir si quedarse idle o moverse
             bool closeEnough = distanceToPlayer <= followDist;
             bool tooClose = distanceToPlayer <= minStopDist;
+            bool playerMovedAway = distanceToPlayer > exitIdleDist;
+            bool playerMovedSignificantly = PlayerMovedSignificantly(context);
             
-            if (tooClose)
+            if (_isIdle)
             {
-                // Muy cerca, quedarse quieto
-                if (!_isIdle)
+                // Ya está en idle - solo salir si el jugador se aleja lo suficiente o se mueve
+                if (playerMovedAway || playerMovedSignificantly)
                 {
-                    EnterIdleMode(context);
+                    ExitIdleMode(context);
+                    _hasRotatedToPlayer = false;
                 }
-                
-                // Mirar hacia el jugador mientras está idle
-                RotateTowardsPlayer(context);
-            }
-            else if (closeEnough && !PlayerMovedSignificantly(context))
-            {
-                // Cerca y el jugador no se mueve, quedarse idle
-                if (!_isIdle)
+                else
                 {
-                    EnterIdleMode(context);
+                    // Rotar hacia el jugador solo una vez al entrar en idle
+                    if (!_hasRotatedToPlayer)
+                    {
+                        RotateTowardsPlayerSmooth(context);
+                        // Marcar como rotado cuando está casi mirando al jugador
+                        if (IsLookingAtPlayer(context))
+                        {
+                            _hasRotatedToPlayer = true;
+                        }
+                    }
+                    _idleTimer += Time.deltaTime;
                 }
-                
-                _idleTimer += Time.deltaTime;
             }
             else
             {
-                // Necesita moverse
-                if (_isIdle)
+                // No está en idle - decidir si entrar
+                if (tooClose || (closeEnough && !playerMovedSignificantly))
                 {
-                    ExitIdleMode(context);
+                    EnterIdleMode(context);
                 }
-                
-                // Actualizar path periódicamente
-                _pathUpdateTimer += Time.deltaTime;
-                if (_pathUpdateTimer >= PATH_UPDATE_INTERVAL)
+                else
                 {
-                    _pathUpdateTimer = 0f;
-                    UpdateDestination(context);
+                    // Necesita moverse
+                    _pathUpdateTimer += Time.deltaTime;
+                    if (_pathUpdateTimer >= PATH_UPDATE_INTERVAL)
+                    {
+                        _pathUpdateTimer = 0f;
+                        UpdateDestination(context);
+                    }
+                    
+                    UpdateMovementAnimation(context);
                 }
-                
-                // Actualizar animación de movimiento
-                UpdateMovementAnimation(context);
             }
             
             _lastPlayerPosition = context.Player.position;
@@ -231,6 +245,39 @@ namespace Game.NPC.States
                     rotSpeed * Time.deltaTime
                 );
             }
+        }
+        
+        private void RotateTowardsPlayerSmooth(NPCStateContext context)
+        {
+            if (context.Player == null) return;
+            
+            Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+            directionToPlayer.y = 0;
+            
+            if (directionToPlayer.sqrMagnitude > 0.001f)
+            {
+                // Rotación más suave para evitar temblor
+                float rotSpeed = (context.Config?.rotationSpeed ?? 180f) * 0.5f;
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+                context.Transform.rotation = Quaternion.Slerp(
+                    context.Transform.rotation, 
+                    targetRotation, 
+                    rotSpeed * Time.deltaTime * 0.1f
+                );
+            }
+        }
+        
+        private bool IsLookingAtPlayer(NPCStateContext context)
+        {
+            if (context.Player == null) return true;
+            
+            Vector3 directionToPlayer = (context.Player.position - context.Transform.position).normalized;
+            directionToPlayer.y = 0;
+            
+            if (directionToPlayer.sqrMagnitude < 0.001f) return true;
+            
+            float angle = Vector3.Angle(context.Transform.forward, directionToPlayer);
+            return angle < 10f; // Consideramos que mira al jugador si está dentro de 10 grados
         }
         #endregion
 

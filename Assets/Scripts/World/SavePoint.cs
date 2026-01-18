@@ -114,6 +114,9 @@ public class SavePoint : MonoBehaviour
         if (!string.IsNullOrEmpty(anchorId))
         {
             SpawnManager.SetCurrentAnchor(anchorId);
+            
+            // Desbloquear este punto de teleport antes de guardar
+            TeleportRegistry.UnlockPoint(anchorId);
         }
 
         if (healOnSave && playerGo != null)

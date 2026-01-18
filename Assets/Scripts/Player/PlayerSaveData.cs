@@ -29,6 +29,9 @@ public class PlayerSaveData
     // IDs narrativos de los NPCs que están en el equipo del jugador
     public List<string> partyMemberIds = new();
     
+    // === NUEVO: puntos de teletransporte desbloqueados ===
+    public List<string> unlockedTeleportPoints = new();
+    
     [Serializable]
     public struct NarrativeBlackboardSnapshot
     {
@@ -163,6 +166,10 @@ public class PlayerSaveData
             d.canFly = preset.abilities.fly;
             d.canMagic = preset.abilities.magic;
         }
+
+        // === NUEVO: persistir puntos de teletransporte desbloqueados ===
+        d.unlockedTeleportPoints = TeleportRegistry.ToSaveData();
+        Debug.Log($"[PlayerSaveData] 💾 Teleport points guardados: {d.unlockedTeleportPoints.Count}");
 
         return d;
     }

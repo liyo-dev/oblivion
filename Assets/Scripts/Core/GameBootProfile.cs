@@ -206,6 +206,15 @@ public class GameBootProfile : ScriptableObject
         p.abilities.climb = data.canClimb;
         p.abilities.fly = data.canFly;
         p.abilities.magic = data.canMagic;
+
+        // === NUEVO: restaurar puntos de teletransporte desbloqueados ===
+        if (data.unlockedTeleportPoints != null && data.unlockedTeleportPoints.Count > 0)
+        {
+            TeleportRegistry.LoadFromSaveData(data.unlockedTeleportPoints);
+            Debug.Log($"[GameBootProfile] 🚀 Teleport points restaurados: {data.unlockedTeleportPoints.Count}");
+        }
+        // NO limpiar si ya hay puntos cargados - evita borrar puntos al re-llamar esta función
+        // TeleportRegistry.Clear() solo se llama en NewGameReset()
     }
 
     /// <summary>Preset activo: siempre runtimePreset (creado desde bootPreset, save o default)</summary>
@@ -815,6 +824,10 @@ public class GameBootProfile : ScriptableObject
         // ✅ Limpiar el registro de NPCs narrativos para que se re-registren frescos
         Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
         Debug.Log("[GameBootProfile] 🔄 NPCInteractiveNarrativeRegistry limpiado para Nueva Partida");
+
+        // ✅ Limpiar puntos de teletransporte desbloqueados para nueva partida
+        TeleportRegistry.Clear();
+        Debug.Log("[GameBootProfile] 🚀 TeleportRegistry limpiado para Nueva Partida");
 
         NarrativeAutoSetup.ResetForNewGame();
 

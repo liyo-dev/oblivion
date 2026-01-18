@@ -14586,8 +14586,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
-  originalEyeMesh: {fileID: 0}
-  originalMouthMesh: {fileID: 0}
+  originalEyeMesh: {fileID: 128730223979561917}
+  originalMouthMesh: {fileID: 2900549033386391491}
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0

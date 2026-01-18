@@ -15,7 +15,15 @@ MonoBehaviour:
   lines:
   - speakerNameId: CHAR_PIRATA
     textId: DLG_PIRATE_01
+    text: 
     portrait: {fileID: 21300000, guid: 170c3148924dd1548874918d63b2c1bb, type: 3}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 3
   - speakerNameId: CHAR_PIRATA
     textId: DLG_PIRATE_02
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 3

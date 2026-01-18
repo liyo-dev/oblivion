@@ -17,3 +17,6 @@ MonoBehaviour:
     textId: DLG_PIRATE_04
     text: 
     portrait: {fileID: 21300000, guid: 170c3148924dd1548874918d63b2c1bb, type: 3}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 1

@@ -47,7 +47,7 @@ public class GolemBossAI : MonoBehaviour
     [Header("Ataque Especial - Onda Sísmica (Fase 3)")]
     [SerializeField] private GameObject shockwaveVFX;
     [SerializeField] private float shockwaveDamage = 40f;
-    [SerializeField] private float shockwaveRadius = 10f;
+    [SerializeField] private float shockwaveSpeed = 10f;
     [SerializeField] private float shockwaveKnockback = 15f;
 
     [Header("Cooldowns")]
@@ -121,10 +121,10 @@ public class GolemBossAI : MonoBehaviour
             damageable.OnDied += OnDeath;
         }
 
-        // Configurar velocidad inicial
         if (agent)
         {
             agent.speed = walkSpeed;
+            agent.isStopped = true;
         }
 
         StartCoroutine(SpawnSequence());
@@ -141,7 +141,13 @@ public class GolemBossAI : MonoBehaviour
 
     void Update()
     {
-        if (!hasSpawned || isDead || !player || !canStartCombat) return;
+        if (!hasSpawned || isDead || !player) return;
+
+        if (!canStartCombat)
+        {
+            if (debugMode) Debug.Log("[GolemBossAI] Esperando para iniciar combate (canStartCombat = false)");
+            return;
+        }
 
         UpdatePhase();
         UpdateBehavior();
@@ -150,21 +156,10 @@ public class GolemBossAI : MonoBehaviour
     private IEnumerator SpawnSequence()
     {
         currentState = BossState.Idle;
-        
-        if (agent && agent.isOnNavMesh)
-        {
-            agent.isStopped = true;
-        }
-        
         PlayAnimation(AnimIdle);
         yield return new WaitForSeconds(1f);
         
         hasSpawned = true;
-        
-        if (agent && agent.isOnNavMesh)
-        {
-            agent.isStopped = false;
-        }
         
         if (debugMode) Debug.Log("[GolemBossAI] Spawn completado, listo para combate");
     }
@@ -199,13 +194,11 @@ public class GolemBossAI : MonoBehaviour
         switch (currentPhase)
         {
             case BossPhase.Phase2:
-                // Más agresivo, habilita lluvia de rocas
                 if (agent) agent.speed = chaseSpeed;
                 StartCoroutine(PhaseTransitionRoar());
                 break;
             
             case BossPhase.Phase3:
-                // Modo furia, habilita onda sísmica
                 if (agent) agent.speed = chaseSpeed * 1.2f;
                 StartCoroutine(PhaseTransitionRoar());
                 break;
@@ -215,21 +208,20 @@ public class GolemBossAI : MonoBehaviour
     private IEnumerator PhaseTransitionRoar()
     {
         isAttacking = true;
-        if (agent && agent.isOnNavMesh) agent.isStopped = true;
+        StopMovement();
 
-        // Rugido/Grito de transición usando Attack02 (golpe de suelo)
         PlayAnimation(AnimAttack02);
         
-        // Pequeña onda de choque visual
         if (shockwaveVFX)
         {
-            Instantiate(shockwaveVFX, transform.position, Quaternion.identity);
+            var vfx = Instantiate(shockwaveVFX, transform.position, Quaternion.identity);
+            Destroy(vfx, 3f);
         }
 
         yield return new WaitForSeconds(2f);
 
         isAttacking = false;
-        if (agent && agent.isOnNavMesh) agent.isStopped = false;
+        ResumeMovement();
     }
 
     #endregion
@@ -242,52 +234,30 @@ public class GolemBossAI : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Fuera de rango de detección
         if (distanceToPlayer > detectionRange)
         {
-            currentState = BossState.Idle;
-            PlayAnimation(AnimIdle);
-            if (agent && agent.isOnNavMesh) agent.isStopped = true;
+            Idle();
             return;
         }
 
-        // Mirar hacia el jugador
         LookAtPlayer();
 
-        // Decidir acción según distancia y fase
+        if (TrySpecialAttacks(distanceToPlayer)) return;
+
         if (distanceToPlayer <= meleeRange)
         {
-            // Ataque cuerpo a cuerpo
-            if (agent && agent.isOnNavMesh) agent.isStopped = true;
+            StopMovement();
             DecideMeleeAttack();
         }
         else if (distanceToPlayer >= rangedMinRange && distanceToPlayer <= rangedMaxRange)
         {
-            // Ataque a distancia (preferido por el Golem)
-            if (agent && agent.isOnNavMesh) agent.isStopped = true;
+            StopMovement();
             DecideRangedAttack();
-        }
-        else if (distanceToPlayer < rangedMinRange)
-        {
-            // Demasiado cerca para ataque a distancia, retroceder o atacar cuerpo a cuerpo
-            if (CanMeleeAttack())
-            {
-                DecideMeleeAttack();
-            }
-            else
-            {
-                // Retroceder un poco
-                MoveAwayFromPlayer();
-            }
         }
         else
         {
-            // Perseguir al jugador
             ChasePlayer();
         }
-
-        // Ataques especiales según fase
-        TrySpecialAttacks(distanceToPlayer);
     }
 
     private void DecideMeleeAttack()
@@ -297,7 +267,6 @@ public class GolemBossAI : MonoBehaviour
 
         if (canSlam && (currentPhase != BossPhase.Phase1 || Random.value > 0.7f))
         {
-            // En fase 2+ priorizar slam, en fase 1 es menos frecuente
             StartCoroutine(SlamAttack());
         }
         else if (canPunch)
@@ -306,7 +275,7 @@ public class GolemBossAI : MonoBehaviour
         }
         else
         {
-            PlayAnimation(AnimIdle);
+            Idle();
         }
     }
 
@@ -315,7 +284,6 @@ public class GolemBossAI : MonoBehaviour
         bool canThrowRock = Time.time >= lastRockThrowTime + rockThrowCooldown;
         bool canRockRain = Time.time >= lastRockRainTime + rockRainCooldown && currentPhase != BossPhase.Phase1;
 
-        // En fase 2+ puede hacer lluvia de rocas
         if (canRockRain && Random.value > 0.6f)
         {
             StartCoroutine(RockRainAttack());
@@ -326,57 +294,57 @@ public class GolemBossAI : MonoBehaviour
         }
         else
         {
-            // Si no puede atacar a distancia, acercarse
             ChasePlayer();
         }
     }
 
-    private void TrySpecialAttacks(float distanceToPlayer)
+    private bool TrySpecialAttacks(float distanceToPlayer)
     {
-        // Onda sísmica solo en fase 3 y cuando el jugador está relativamente cerca
-        if (currentPhase == BossPhase.Phase3 && distanceToPlayer <= shockwaveRadius)
+        if (currentPhase == BossPhase.Phase3 && distanceToPlayer <= rangedMaxRange)
         {
             bool canShockwave = Time.time >= lastShockwaveTime + shockwaveCooldown;
             
             if (canShockwave && Random.value > 0.85f)
             {
                 StartCoroutine(ShockwaveAttack());
+                return true;
             }
         }
+        return false;
     }
 
-    private bool CanMeleeAttack()
+    private void Idle()
     {
-        return Time.time >= lastPunchTime + punchCooldown || 
-               Time.time >= lastSlamTime + slamCooldown;
+        currentState = BossState.Idle;
+        PlayAnimation(AnimIdle);
+        StopMovement();
     }
 
     private void ChasePlayer()
     {
         currentState = BossState.Walking;
+        PlayAnimation(AnimWalk);
+        ResumeMovement();
         if (agent && agent.isOnNavMesh)
         {
-            agent.isStopped = false;
             agent.SetDestination(player.position);
         }
-        PlayAnimation(AnimWalk);
     }
 
-    private void MoveAwayFromPlayer()
+    private void StopMovement()
     {
-        currentState = BossState.Walking;
-        Vector3 awayDirection = (transform.position - player.position).normalized;
-        Vector3 targetPosition = transform.position + awayDirection * 5f;
-        
-        if (agent && agent.isOnNavMesh)
+        if (agent && agent.isOnNavMesh && !agent.isStopped)
         {
-            if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
-            {
-                agent.isStopped = false;
-                agent.SetDestination(hit.position);
-            }
+            agent.isStopped = true;
         }
-        PlayAnimation(AnimWalk);
+    }
+
+    private void ResumeMovement()
+    {
+        if (agent && agent.isOnNavMesh && agent.isStopped)
+        {
+            agent.isStopped = false;
+        }
     }
 
     private void LookAtPlayer()
@@ -389,32 +357,32 @@ public class GolemBossAI : MonoBehaviour
         if (lookDir != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(lookDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 3f);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
     }
 
     #endregion
 
-    #region Ataques Cuerpo a Cuerpo
+    #region Ataques
 
     private IEnumerator PunchAttack()
     {
         isAttacking = true;
         currentState = BossState.Attacking;
         lastPunchTime = Time.time;
+        StopMovement();
 
         if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Puñetazo (Attack01)");
 
         PlayAnimation(AnimAttack01);
-        yield return new WaitForSeconds(0.6f); // Momento del impacto
+        yield return new WaitForSeconds(0.6f);
 
-        // Aplicar daño si el jugador está en rango
         if (player && Vector3.Distance(transform.position, player.position) <= meleeRange * 1.2f)
         {
             DamagePlayer(punchDamage);
         }
 
-        yield return new WaitForSeconds(0.6f); // Recuperación
+        yield return new WaitForSeconds(0.6f);
         isAttacking = false;
     }
 
@@ -423,67 +391,58 @@ public class GolemBossAI : MonoBehaviour
         isAttacking = true;
         currentState = BossState.Attacking;
         lastSlamTime = Time.time;
+        StopMovement();
 
         if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Golpe de Suelo (Attack02)");
 
         PlayAnimation(AnimAttack02);
-        yield return new WaitForSeconds(0.8f); // Momento del impacto
+        yield return new WaitForSeconds(0.8f);
 
-        // Daño en área
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, slamRadius, _overlapBuffer, playerLayer);
         for (int i = 0; i < hitCount; i++)
         {
-            var hit = _overlapBuffer[i];
-            var playerHealth = hit.GetComponent<PlayerHealthSystem>();
-            if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(slamDamage);
-                if (debugMode) Debug.Log($"[GolemBossAI] Slam golpeó al jugador por {slamDamage}");
-            }
+            DamagePlayerInCollider(hitCount > i ? _overlapBuffer[i] : null, slamDamage);
         }
 
-        // Efecto visual del impacto
         if (shockwaveVFX)
         {
-            Instantiate(shockwaveVFX, transform.position + Vector3.up * 0.1f, Quaternion.identity);
+            var vfx = Instantiate(shockwaveVFX, transform.position + Vector3.up * 0.1f, Quaternion.identity);
+            Destroy(vfx, 3f);
         }
 
-        yield return new WaitForSeconds(0.8f); // Recuperación más lenta por el golpe pesado
+        yield return new WaitForSeconds(0.8f);
         isAttacking = false;
     }
-
-    #endregion
-
-    #region Ataques a Distancia
 
     private IEnumerator RockThrowAttack()
     {
         isAttacking = true;
         currentState = BossState.Attacking;
         lastRockThrowTime = Time.time;
+        StopMovement();
 
         if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Lanzar Roca");
 
-        // Fase 1: Arrancar roca (usar Attack01 para la animación de preparación)
         PlayAnimation(AnimAttack01);
         
-        // VFX de arrancar roca
         if (rockPickupVFX && rockSpawnPoint)
         {
-            Instantiate(rockPickupVFX, rockSpawnPoint.position, Quaternion.identity);
+            var vfx = Instantiate(rockPickupVFX, rockSpawnPoint.position, Quaternion.identity);
+            Destroy(vfx, 2f);
         }
 
-        yield return new WaitForSeconds(0.5f); // Preparación
+        yield return new WaitForSeconds(1.0f);
 
-        // Fase 2: Lanzar la roca
+        PlayAnimation(AnimAttack02);
+        yield return new WaitForSeconds(0.5f);
+
         if (rockProjectilePrefab && rockSpawnPoint && player)
         {
-            Vector3 targetPos = player.position + Vector3.up * 1f; // Apuntar al centro del jugador
+            Vector3 targetPos = player.position + Vector3.up * 1f;
             Vector3 direction = (targetPos - rockSpawnPoint.position).normalized;
             
             GameObject rock = Instantiate(rockProjectilePrefab, rockSpawnPoint.position, Quaternion.LookRotation(direction));
             
-            // Configurar el proyectil
             var proj = rock.GetComponent<EnemyProjectile>();
             if (proj)
             {
@@ -491,18 +450,15 @@ public class GolemBossAI : MonoBehaviour
             }
             else
             {
-                // Si no tiene EnemyProjectile, mover manualmente con Rigidbody
                 var rb = rock.GetComponent<Rigidbody>();
-                if (rb)
-                {
-                    rb.linearVelocity = direction * rockSpeed;
-                }
+                if (rb) rb.linearVelocity = direction * rockSpeed;
             }
             
+            Destroy(rock, 5f);
             if (debugMode) Debug.Log($"[GolemBossAI] Roca lanzada hacia {player.name}");
         }
 
-        yield return new WaitForSeconds(0.7f); // Recuperación
+        yield return new WaitForSeconds(0.7f);
         isAttacking = false;
     }
 
@@ -511,28 +467,24 @@ public class GolemBossAI : MonoBehaviour
         isAttacking = true;
         currentState = BossState.Attacking;
         lastRockRainTime = Time.time;
+        StopMovement();
 
         if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Lluvia de Rocas");
 
-        // Animación de invocación (levantar brazos) - usar Attack02
         PlayAnimation(AnimAttack02);
         yield return new WaitForSeconds(1f);
 
-        // Hacer caer rocas en área alrededor del jugador
         if (player && fallingRockPrefab)
         {
             for (int i = 0; i < rockRainCount; i++)
             {
                 Vector2 randomOffset = Random.insideUnitCircle * rockRainRadius;
                 Vector3 spawnPos = player.position + new Vector3(randomOffset.x, 15f, randomOffset.y);
-                Vector3 targetPos = player.position + new Vector3(randomOffset.x, 0.5f, randomOffset.y);
                 
                 GameObject fallingRock = Instantiate(fallingRockPrefab, spawnPos, Quaternion.identity);
+                Destroy(fallingRock, 5f);
                 
-                // Configurar la roca que cae
-                StartCoroutine(FallingRockBehavior(fallingRock, targetPos));
-                
-                yield return new WaitForSeconds(0.2f); // Pequeño delay entre rocas
+                yield return new WaitForSeconds(0.2f);
             }
         }
 
@@ -540,95 +492,54 @@ public class GolemBossAI : MonoBehaviour
         isAttacking = false;
     }
 
-    private IEnumerator FallingRockBehavior(GameObject rock, Vector3 targetPos)
-    {
-        if (rock == null) yield break;
-
-        float fallSpeed = 20f;
-        float startTime = Time.time;
-        float maxDuration = 3f;
-
-        while (rock != null && Time.time - startTime < maxDuration)
-        {
-            rock.transform.position = Vector3.MoveTowards(rock.transform.position, targetPos, fallSpeed * Time.deltaTime);
-            
-            // Verificar si llegó al suelo
-            if (Vector3.Distance(rock.transform.position, targetPos) < 0.5f)
-            {
-                // Impacto
-                int hitCount = Physics.OverlapSphereNonAlloc(targetPos, 2f, _overlapBuffer, playerLayer);
-                for (int i = 0; i < hitCount; i++)
-                {
-                    var hit = _overlapBuffer[i];
-                    var playerHealth = hit.GetComponent<PlayerHealthSystem>();
-                    if (playerHealth != null)
-                    {
-                        playerHealth.TakeDamage(rockRainDamage);
-                    }
-                }
-                
-                // Destruir roca con efecto
-                Destroy(rock);
-                yield break;
-            }
-            
-            yield return null;
-        }
-
-        // Si pasó el tiempo máximo, destruir
-        if (rock != null)
-        {
-            Destroy(rock);
-        }
-    }
-
-    #endregion
-
-    #region Ataque Especial
-
     private IEnumerator ShockwaveAttack()
     {
         isAttacking = true;
         currentState = BossState.Attacking;
         lastShockwaveTime = Time.time;
+        StopMovement();
 
         if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Onda Sísmica");
 
-        // Cargar el ataque
         PlayAnimation(AnimAttack02);
         yield return new WaitForSeconds(1.2f);
 
-        // Crear onda sísmica
-        if (shockwaveVFX)
+        if (shockwaveVFX && player)
         {
-            Instantiate(shockwaveVFX, transform.position, Quaternion.identity);
+            Vector3 spawnPos = transform.position + transform.forward * 1.5f + Vector3.up * 0.1f;
+            GameObject shockwave = Instantiate(shockwaveVFX, spawnPos, transform.rotation);
+            StartCoroutine(MoveShockwave(shockwave, player.position));
+            Destroy(shockwave, 5f);
         }
 
-        // Daño y knockback en área
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, shockwaveRadius, _overlapBuffer, playerLayer);
-        for (int i = 0; i < hitCount; i++)
-        {
-            var hit = _overlapBuffer[i];
-            var playerHealth = hit.GetComponent<PlayerHealthSystem>();
-            if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(shockwaveDamage);
-                
-                // Aplicar knockback
-                var rb = hit.GetComponent<Rigidbody>();
-                if (rb)
-                {
-                    Vector3 knockbackDir = (hit.transform.position - transform.position).normalized;
-                    knockbackDir.y = 0.3f; // Pequeño impulso hacia arriba
-                    rb.AddForce(knockbackDir * shockwaveKnockback, ForceMode.Impulse);
-                }
-                
-                if (debugMode) Debug.Log($"[GolemBossAI] Onda sísmica golpeó por {shockwaveDamage} + knockback");
-            }
-        }
-
-        yield return new WaitForSeconds(1.5f); // Recuperación larga
+        yield return new WaitForSeconds(1.5f);
         isAttacking = false;
+    }
+
+    private IEnumerator MoveShockwave(GameObject shockwave, Vector3 playerPosition)
+    {
+        if (shockwave == null) yield break;
+
+        Vector3 targetPosition = new Vector3(playerPosition.x, shockwave.transform.position.y, playerPosition.z);
+        float duration = Vector3.Distance(shockwave.transform.position, targetPosition) / shockwaveSpeed;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration && shockwave != null)
+        {
+            shockwave.transform.position = Vector3.Lerp(shockwave.transform.position, targetPosition, elapsedTime / duration);
+            
+            int hitCount = Physics.OverlapSphereNonAlloc(shockwave.transform.position, 1.5f, _overlapBuffer, playerLayer);
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (DamagePlayerInCollider(hitCount > i ? _overlapBuffer[i] : null, shockwaveDamage))
+                {
+                    ApplyKnockback(_overlapBuffer[i].transform);
+                }
+            }
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
     }
 
     #endregion
@@ -637,12 +548,11 @@ public class GolemBossAI : MonoBehaviour
 
     private void OnDamageTaken(float damage)
     {
-        if (isDead || isAttacking) return;
+        if (isDead) return;
 
         if (debugMode) Debug.Log($"[GolemBossAI] Recibió {damage} de daño");
 
-        // Pequeña probabilidad de interrupción por daño (el Golem es resistente)
-        if (Random.value > 0.8f)
+        if (!isAttacking && Random.value > 0.8f)
         {
             StartCoroutine(TakeDamageReaction());
         }
@@ -650,17 +560,15 @@ public class GolemBossAI : MonoBehaviour
 
     private IEnumerator TakeDamageReaction()
     {
-        var previousState = currentState;
+        isAttacking = true;
         currentState = BossState.TakingDamage;
+        StopMovement();
         
         PlayAnimation(AnimGetHit);
-        
-        if (agent && agent.isOnNavMesh) agent.isStopped = true;
-
         yield return new WaitForSeconds(0.5f);
 
-        currentState = previousState;
-        if (agent && agent.isOnNavMesh) agent.isStopped = false;
+        currentState = BossState.Idle;
+        isAttacking = false;
     }
 
     private void OnDeath()
@@ -672,30 +580,25 @@ public class GolemBossAI : MonoBehaviour
         
         Debug.Log("[GolemBossAI] ¡Golem derrotado!");
 
-        if (agent && agent.isOnNavMesh) agent.isStopped = true;
-        
         StopAllCoroutines();
+        StopMovement();
         PlayAnimation(AnimDie);
         
-        // Desactivar colisiones
         var colliders = GetComponentsInChildren<Collider>();
         foreach (var col in colliders)
         {
             col.enabled = false;
         }
+        Destroy(gameObject, 10f);
     }
 
-    /// <summary>
-    /// Llamar cuando el jugador muere para que el Golem celebre.
-    /// </summary>
     public void OnPlayerDefeated()
     {
         if (isDead) return;
         
         StopAllCoroutines();
         isAttacking = false;
-        
-        if (agent && agent.isOnNavMesh) agent.isStopped = true;
+        StopMovement();
         
         PlayAnimation(AnimVictory);
         Debug.Log("[GolemBossAI] ¡Victoria!");
@@ -709,19 +612,36 @@ public class GolemBossAI : MonoBehaviour
     {
         if (!player) return;
         
-        var playerHealth = player.GetComponent<PlayerHealthSystem>();
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(damage);
-            if (debugMode) Debug.Log($"[GolemBossAI] Infligió {damage} de daño al jugador");
-            return;
-        }
-        
         var damageable = player.GetComponent<IDamageable>();
         if (damageable != null && damageable.IsAlive)
         {
             damageable.TakeDamage(damage);
             if (debugMode) Debug.Log($"[GolemBossAI] Infligió {damage} de daño (IDamageable)");
+        }
+    }
+
+    private bool DamagePlayerInCollider(Collider col, float damage)
+    {
+        if (col == null) return false;
+
+        var damageable = col.GetComponent<IDamageable>();
+        if (damageable != null && damageable.IsAlive)
+        {
+            damageable.TakeDamage(damage);
+            if (debugMode) Debug.Log($"[GolemBossAI] Golpeó a {col.name} por {damage}");
+            return true;
+        }
+        return false;
+    }
+
+    private void ApplyKnockback(Transform target)
+    {
+        var rb = target.GetComponent<Rigidbody>();
+        if (rb)
+        {
+            Vector3 knockbackDir = (target.position - transform.position).normalized;
+            knockbackDir.y = 0.3f;
+            rb.AddForce(knockbackDir * shockwaveKnockback, ForceMode.Impulse);
         }
     }
 
@@ -733,49 +653,27 @@ public class GolemBossAI : MonoBehaviour
         }
     }
 
-    private int AnimatorLayerContainingState(int stateHash)
-    {
-        if (animator == null) return -1;
-        
-        for (int i = 0; i < animator.layerCount; i++)
-        {
-            if (animator.HasState(i, stateHash))
-                return i;
-        }
-        return -1;
-    }
-
     #endregion
 
     #region Gizmos
 
     void OnDrawGizmosSelected()
     {
-        // Rango de detección
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
         
-        // Rango de melee
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, meleeRange);
         
-        // Rango mínimo de ataque a distancia
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, rangedMinRange);
         
-        // Rango máximo de ataque a distancia
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, rangedMaxRange);
         
-        // Radio del slam
         Gizmos.color = Color.magenta;
         Gizmos.DrawWireSphere(transform.position, slamRadius);
-        
-        // Radio de la onda sísmica
-        Gizmos.color = new Color(1f, 0.5f, 0f);
-        Gizmos.DrawWireSphere(transform.position, shockwaveRadius);
     }
 
     #endregion
 }
-

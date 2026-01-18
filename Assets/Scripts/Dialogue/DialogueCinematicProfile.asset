@@ -13,14 +13,10 @@ MonoBehaviour:
   m_Name: DialogueCinematicProfile
   m_EditorClassIdentifier: Assembly-CSharp::DialogueCinematicProfile
   openingShot:
-    shotType: 0
+    shotType: 2
     minimumDuration: 0
   npcShots:
-  - shotType: 1
-    minimumDuration: 0
   - shotType: 2
-    minimumDuration: 0
-  - shotType: 3
     minimumDuration: 0
   blendDuration: 0.8
   chainedDialogueDelay: 1

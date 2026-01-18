@@ -496,17 +496,44 @@ namespace Game.NPC
             
             Log($"Restaurando {memberIds.Count} miembros del equipo...");
             
+            // Log de todos los NPCs registrados actualmente
+            if (NPCRegistry.Instance != null)
+            {
+                var registeredIds = NPCRegistry.Instance.GetAllRegisteredIDs();
+                Log($"NPCs registrados en la escena ({registeredIds.Length}): [{string.Join(", ", registeredIds)}]");
+            }
+            else
+            {
+                LogWarning("NPCRegistry.Instance es null!");
+            }
+            
             foreach (var id in memberIds)
             {
+                Log($"Buscando NPC con ID: '{id}'");
+                
                 // Buscar NPC en el registro
                 var npcManager = NPCRegistry.Instance?.GetNPCByID(id);
                 if (npcManager != null)
                 {
+                    Log($"✅ NPC encontrado: {npcManager.name}");
                     var partyMember = npcManager.GetComponent<NPCPartyMember>();
                     if (partyMember != null && !HasMember(partyMember))
                     {
+                        Log($"Uniendo {partyMember.DisplayName} al party...");
                         partyMember.JoinParty(); // Esto llamará a AddMember internamente
                     }
+                    else if (partyMember == null)
+                    {
+                        LogWarning($"NPC {npcManager.name} no tiene componente NPCPartyMember");
+                    }
+                    else
+                    {
+                        Log($"NPC {partyMember.DisplayName} ya está en el party");
+                    }
+                }
+                else
+                {
+                    LogWarning($"❌ No se encontró NPC con ID: '{id}' en el registro");
                 }
             }
         }
