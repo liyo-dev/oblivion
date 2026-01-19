@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -291,6 +291,13 @@ namespace Game.NPC.States
             
             float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
             context.Animator.SetMovementSpeed(speedFactor);
+            
+            // ✅ FIX: Rotar hacia la dirección del movimiento para evitar caminar de espaldas
+            if (context.Agent.velocity.sqrMagnitude > 0.01f)
+            {
+                Vector3 moveDirection = context.Agent.velocity.normalized;
+                context.Animator.FaceDirection(moveDirection);
+            }
         }
         
         /// <summary>

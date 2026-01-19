@@ -47,6 +47,7 @@ public class QuestManager : MonoBehaviour
     
     void Start()
     {
+        Debug.Log("[QuestManager] 🚀 Start - Intentando suscribirse al inventario y wardrobe");
         // Intentar suscribirse al inventario y wardrobe
         TrySubscribeToInventory();
         TrySubscribeToWardrobe();
@@ -67,6 +68,7 @@ public class QuestManager : MonoBehaviour
     
     private void OnPlayerRegistered(GameObject player)
     {
+        Debug.Log($"[QuestManager] 🎮 OnPlayerRegistered llamado para '{player?.name}'");
         // Re-intentar suscripción cuando el player está disponible
         TrySubscribeToInventory();
         TrySubscribeToWardrobe();
@@ -870,18 +872,38 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     private void TrySubscribeToInventory()
     {
-        if (_isSubscribedToInventory) return;
-        
         if (!PlayerService.TryGetComponent(out Inventory inventory, includeInactive: true, allowSceneLookup: true))
         {
             // El inventario no está disponible todavía, se intentará más tarde
+            Debug.Log("[QuestManager] ⏳ Inventory no disponible aún para suscripción");
             return;
+        }
+        
+        // Verificar si el inventario cacheado fue destruido (Unity null check)
+        bool cachedIsValid = _cachedInventory != null && _cachedInventory; // Unity operator check
+        
+        // Verificar si ya estamos suscritos al mismo inventario válido
+        if (_isSubscribedToInventory && cachedIsValid && _cachedInventory == inventory)
+        {
+            Debug.Log("[QuestManager] ✅ Ya suscrito al mismo inventario válido");
+            return; // Ya suscritos al mismo inventario válido
+        }
+        
+        // Si estábamos suscritos a un inventario diferente o destruido, desuscribirse primero
+        if (_isSubscribedToInventory && cachedIsValid && _cachedInventory != inventory)
+        {
+            Debug.Log("[QuestManager] 🔄 Inventario cambió, re-suscribiendo...");
+            _cachedInventory.OnItemAdded -= OnInventoryItemAdded;
+        }
+        else if (_isSubscribedToInventory && !cachedIsValid)
+        {
+            Debug.Log("[QuestManager] ⚠️ Inventario cacheado fue destruido, re-suscribiendo a nuevo inventario...");
         }
         
         _cachedInventory = inventory;
         _cachedInventory.OnItemAdded += OnInventoryItemAdded;
         _isSubscribedToInventory = true;
-        // Debug.Log("[QuestManager] ✅ Suscrito a Inventory.OnItemAdded para detectar items de quests");
+        Debug.Log($"[QuestManager] ✅ Suscrito a Inventory.OnItemAdded (instancia: {inventory.GetInstanceID()}) para detectar items de quests");
     }
     
     /// <summary>
@@ -903,11 +925,17 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     private void OnInventoryItemAdded(ItemData item, int addedAmount, int newTotal)
     {
+        Debug.Log($"[QuestManager] 🔔 OnInventoryItemAdded LLAMADO - item={item?.itemId ?? "NULL"}, added={addedAmount}, total={newTotal}");
+        
         if (item == null) return;
         
         // Solo procesar si hay quests activas
         var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
-        if (activeQuests.Count == 0) return;
+        if (activeQuests.Count == 0)
+        {
+            Debug.Log("[QuestManager] ℹ️ No hay quests activas, ignorando item");
+            return;
+        }
         
         Debug.Log($"[QuestManager] 📦 Item '{item.itemId}' añadido al inventario (cantidad: {addedAmount}, total: {newTotal})");
         Debug.Log($"[QuestManager] Verificando {activeQuests.Count} quests activas...");
@@ -988,18 +1016,38 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     private void TrySubscribeToWardrobe()
     {
-        if (_isSubscribedToWardrobe) return;
-        
         if (!PlayerService.TryGetComponent(out WardrobeInventory wardrobe, includeInactive: true, allowSceneLookup: true))
         {
             // El wardrobe no está disponible todavía, se intentará más tarde
+            Debug.Log("[QuestManager] ⏳ WardrobeInventory no disponible aún para suscripción");
             return;
+        }
+        
+        // Verificar si el wardrobe cacheado fue destruido (Unity null check)
+        bool cachedIsValid = _cachedWardrobe != null && _cachedWardrobe; // Unity operator check
+        
+        // Verificar si ya estamos suscritos al mismo wardrobe válido
+        if (_isSubscribedToWardrobe && cachedIsValid && _cachedWardrobe == wardrobe)
+        {
+            Debug.Log("[QuestManager] ✅ Ya suscrito al mismo wardrobe válido");
+            return; // Ya suscritos al mismo wardrobe válido
+        }
+        
+        // Si estábamos suscritos a un wardrobe diferente o destruido, desuscribirse primero
+        if (_isSubscribedToWardrobe && cachedIsValid && _cachedWardrobe != wardrobe)
+        {
+            Debug.Log("[QuestManager] 🔄 Wardrobe cambió, re-suscribiendo...");
+            _cachedWardrobe.OnWardrobeChanged -= OnWardrobeChanged;
+        }
+        else if (_isSubscribedToWardrobe && !cachedIsValid)
+        {
+            Debug.Log("[QuestManager] ⚠️ Wardrobe cacheado fue destruido, re-suscribiendo a nuevo wardrobe...");
         }
         
         _cachedWardrobe = wardrobe;
         _cachedWardrobe.OnWardrobeChanged += OnWardrobeChanged;
         _isSubscribedToWardrobe = true;
-        Debug.Log("[QuestManager] ✅ Suscrito a WardrobeInventory.OnWardrobeChanged para detectar items de wardrobe de quests");
+        Debug.Log($"[QuestManager] ✅ Suscrito a WardrobeInventory.OnWardrobeChanged (instancia: {wardrobe.GetInstanceID()}) para detectar items de wardrobe de quests");
     }
     
     /// <summary>

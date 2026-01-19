@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
@@ -689,6 +689,16 @@ namespace Game.NPC.Modules
                 _animator.TransitionToIdle();
                 yield return new WaitForSeconds(0.3f);
                 _animator.SetMovementSpeed(0.5f); // Caminar lento (derrotado)
+                
+                // ✅ FIX: Habilitar rotación automática y rotar hacia el destino
+                _animator.AllowManualRotation = false;
+                _animator.EnableAutoRotation();
+                Vector3 directionToTarget = targetPos - transform.position;
+                directionToTarget.y = 0f;
+                if (directionToTarget.sqrMagnitude > 0.01f)
+                {
+                    _animator.FaceDirection(directionToTarget.normalized);
+                }
             }
             
             // Activar NavMeshAgent y mover
@@ -712,6 +722,12 @@ namespace Game.NPC.Modules
                     {
                         float speed = _agent.velocity.magnitude / _agent.speed;
                         _animator.SetMovementSpeed(speed * 0.5f);
+                        
+                        // ✅ FIX: Rotar hacia la dirección del movimiento
+                        if (_agent.velocity.sqrMagnitude > 0.01f)
+                        {
+                            _animator.FaceDirection(_agent.velocity.normalized);
+                        }
                     }
                     
                     // Verificar si llegó
@@ -761,7 +777,7 @@ namespace Game.NPC.Modules
         }
         
         /// <summary>
-        /// Mueve a los miembros del equipo a puntos aleatorios cerca del destino del líder
+        /// Mueve a los miembros del equipo a sus anchors configurados o puntos aleatorios si no tienen
         /// </summary>
         private IEnumerator MoveTeamMembersToRandomPoints()
         {
@@ -782,10 +798,51 @@ namespace Game.NPC.Modules
                     memberHandler.CancelDizzySequence();
                 }
                 
-                // Mover a punto aleatorio cerca del líder
-                Vector3 randomOffset = UnityEngine.Random.insideUnitSphere * 5f;
-                randomOffset.y = 0;
-                Vector3 targetPos = transform.position + randomOffset;
+                // ✅ FIX: Primero intentar usar el anchor individual del miembro
+                Vector3 targetPos;
+                var memberConfig = member.Configuration?.combatConfig;
+                bool hasIndividualAnchor = false;
+                
+                if (memberConfig != null && 
+                    memberConfig.postDefeatAction == PostDefeatAction.MoveToAnchor && 
+                    !string.IsNullOrEmpty(memberConfig.postDefeatMoveAnchor))
+                {
+                    // Buscar el anchor individual del miembro
+                    var memberAnchor = SpawnAnchor.FindById(memberConfig.postDefeatMoveAnchor);
+                    if (memberAnchor != null)
+                    {
+                        targetPos = memberAnchor.transform.position;
+                        hasIndividualAnchor = true;
+                        Debug.Log($"[Lifecycle] 🚶 Miembro {member.name} moviéndose a su SpawnAnchor: '{memberConfig.postDefeatMoveAnchor}'");
+                    }
+                    else
+                    {
+                        // Fallback: buscar por nombre
+                        var anchorGo = GameObject.Find(memberConfig.postDefeatMoveAnchor);
+                        if (anchorGo != null)
+                        {
+                            targetPos = anchorGo.transform.position;
+                            hasIndividualAnchor = true;
+                            Debug.Log($"[Lifecycle] 🚶 Miembro {member.name} moviéndose a su anchor (GameObject): '{memberConfig.postDefeatMoveAnchor}'");
+                        }
+                        else
+                        {
+                            // No se encontró el anchor, usar punto aleatorio
+                            Vector3 randomOffset = Random.insideUnitSphere * 5f;
+                            randomOffset.y = 0;
+                            targetPos = transform.position + randomOffset;
+                            Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró anchor '{memberConfig.postDefeatMoveAnchor}' para {member.name}, usando punto aleatorio");
+                        }
+                    }
+                }
+                else
+                {
+                    // Sin anchor configurado, mover a punto aleatorio cerca del líder
+                    Vector3 randomOffset = Random.insideUnitSphere * 5f;
+                    randomOffset.y = 0;
+                    targetPos = transform.position + randomOffset;
+                    Debug.Log($"[Lifecycle] 🚶 Miembro {member.name} sin anchor configurado, moviendo a punto aleatorio");
+                }
                 
                 if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
                 {
@@ -806,14 +863,101 @@ namespace Game.NPC.Modules
                     {
                         memberAnimator.TransitionToIdle();
                         memberAnimator.SetMovementSpeed(0.5f);
+                        
+                        // ✅ FIX: Habilitar rotación y rotar hacia el destino
+                        memberAnimator.AllowManualRotation = false;
+                        memberAnimator.EnableAutoRotation();
+                        Vector3 directionToTarget = targetPos - member.transform.position;
+                        directionToTarget.y = 0f;
+                        if (directionToTarget.sqrMagnitude > 0.01f)
+                        {
+                            memberAnimator.FaceDirection(directionToTarget.normalized);
+                        }
                     }
                     
-                    Debug.Log($"[Lifecycle] 🚶 Miembro de equipo {member.name} moviéndose a punto aleatorio");
+                    Debug.Log($"[Lifecycle] 🚶 Miembro de equipo {member.name} moviéndose a destino: {targetPos}");
+                    
+                    // ✅ FIX: Iniciar corrutina para esperar llegada y manejar post-acción
+                    member.StartCoroutine(WaitForMemberArrivalAndHandle(member, memberConfig, hasIndividualAnchor));
                 }
             }
             
             // Pequeña espera para que empiecen a moverse
             yield return new WaitForSeconds(0.5f);
+        }
+        
+        /// <summary>
+        /// Espera a que un miembro llegue a su destino y maneja la post-acción
+        /// </summary>
+        private IEnumerator WaitForMemberArrivalAndHandle(NPCBehaviourManagerV2 member, NPCCombatConfig config, bool hasIndividualAnchor)
+        {
+            if (member == null || member.Agent == null) yield break;
+            
+            var agent = member.Agent;
+            float timeout = 30f;
+            float elapsed = 0f;
+            
+            while (elapsed < timeout && member != null && agent != null && agent.isOnNavMesh)
+            {
+                // Actualizar animación
+                var animator = member.GetComponent<NPCSimpleAnimator>();
+                if (animator != null)
+                {
+                    float speed = agent.velocity.magnitude / Mathf.Max(agent.speed, 0.1f);
+                    animator.SetMovementSpeed(speed * 0.5f);
+                    
+                    // Rotar hacia la dirección del movimiento
+                    if (agent.velocity.sqrMagnitude > 0.01f)
+                    {
+                        animator.FaceDirection(agent.velocity.normalized);
+                    }
+                }
+                
+                // Verificar si llegó
+                if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.1f)
+                {
+                    Debug.Log($"[Lifecycle] ✅ Miembro {member.name} llegó a su destino");
+                    break;
+                }
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // Detener movimiento
+            if (member != null && agent != null)
+            {
+                agent.isStopped = true;
+                var animator = member.GetComponent<NPCSimpleAnimator>();
+                if (animator != null)
+                {
+                    animator.SetMovementSpeed(0f);
+                    animator.TransitionToIdle();
+                }
+                
+                // ¿Desaparecer al llegar?
+                if (config != null && config.disappearOnArrival)
+                {
+                    if (config.disappearOnArrivalVFX != null)
+                    {
+                        Instantiate(config.disappearOnArrivalVFX, member.transform.position + Vector3.up, Quaternion.identity);
+                    }
+                    
+                    yield return new WaitForSeconds(0.5f);
+                    member.gameObject.SetActive(false);
+                    Debug.Log($"[Lifecycle] 👋 Miembro {member.name} desapareció al llegar a destino");
+                }
+                else
+                {
+                    // Configurar como interactuable
+                    var memberHandler = member.GetComponent<NPCCombatLifecycleHandler>();
+                    if (memberHandler != null)
+                    {
+                        memberHandler.SetupPostCombatInteraction();
+                    }
+                    Debug.Log($"[Lifecycle] ✅ Miembro {member.name} configurado como interactuable en destino");
+                }
+            }
         }
 
         private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)
@@ -827,7 +971,7 @@ namespace Game.NPC.Modules
         // 🛠️ HELPER: Configurar NPC como interactuable tras combate
         // =================================================================================
         
-        private void SetupPostCombatInteraction()
+        public void SetupPostCombatInteraction()
         {
             // 1. Cambiar Layer
             int layer = LayerMask.NameToLayer("Interactable");

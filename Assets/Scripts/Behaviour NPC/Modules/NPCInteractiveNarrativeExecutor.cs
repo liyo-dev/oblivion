@@ -331,6 +331,22 @@ namespace Game.NPC.Modules
             {
                 targetAnchor = SpawnAnchor.FindById(entry.targetAnchorName);
             }
+            
+            // ✅ FIX: Desactivar AllowManualRotation durante el movimiento
+            // para que la rotación automática funcione y el NPC mire hacia donde camina
+            if (_npcManager?.SimpleAnimator != null)
+            {
+                _npcManager.SimpleAnimator.AllowManualRotation = false;
+                _npcManager.SimpleAnimator.EnableAutoRotation();
+                
+                // Rotar hacia el destino antes de empezar a caminar
+                Vector3 directionToTarget = targetPos - transform.position;
+                directionToTarget.y = 0f;
+                if (directionToTarget.sqrMagnitude > 0.01f)
+                {
+                    _npcManager.SimpleAnimator.FaceDirection(directionToTarget.normalized);
+                }
+            }
 
             if (entry.waitForPlayer)
             {
@@ -341,6 +357,13 @@ namespace Game.NPC.Modules
                 var moveSeq = new MoveToPositionSequence(_npcManager, targetPos, entry.maxMovementDuration, entry.turnAroundOnArrival, 999f, targetAnchor);
                 _npcManager.StartCinematicSequence(moveSeq);
                 while (!moveSeq.IsCompleted) yield return null;
+            }
+            
+            // ✅ FIX: Restaurar AllowManualRotation después del movimiento
+            // por si hay más acciones narrativas que necesiten control manual
+            if (_npcManager?.SimpleAnimator != null)
+            {
+                _npcManager.SimpleAnimator.AllowManualRotation = true;
             }
         }
 
@@ -377,6 +400,12 @@ namespace Game.NPC.Modules
                 if (!waiting)
                 {
                     _npcManager.SimpleAnimator?.SetMovementSpeed(agent.velocity.magnitude / agent.speed);
+                    
+                    // ✅ FIX: Rotar hacia la dirección del movimiento
+                    if (agent.velocity.sqrMagnitude > 0.01f && _npcManager?.SimpleAnimator != null)
+                    {
+                        _npcManager.SimpleAnimator.FaceDirection(agent.velocity.normalized);
+                    }
                 }
 
                 timer += Time.deltaTime;
