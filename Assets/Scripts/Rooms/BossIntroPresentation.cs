@@ -20,6 +20,17 @@ public class BossIntroPresentation : MonoBehaviour
     [Tooltip("Cámara del boss (hija del prefab) - Se configura automáticamente desde BossArenaController")]
     [SerializeField] private Camera bossCamera;
     
+    [Header("Camera Adjustments")]
+    [Tooltip("Multiplicador de distancia de la cámara al boss. 1 = posición original de la cámara del boss. >1 = más lejos, <1 = más cerca")]
+    [SerializeField] private float cameraDistanceMultiplier = 1f;
+    
+    [Tooltip("Offset adicional en el eje local de la cámara (X=derecha, Y=arriba, Z=adelante/atrás)")]
+    [SerializeField] private Vector3 cameraPositionOffset = Vector3.zero;
+    
+    [Tooltip("Offset de rotación adicional (para ajustar el ángulo de la cámara)")]
+    [SerializeField] private Vector3 cameraRotationOffset = Vector3.zero;
+    
+    [Header("Timing")]
     [Tooltip("Duración total de la presentación en segundos")]
     [SerializeField] private float introDuration = 3f;
     
@@ -118,12 +129,16 @@ public class BossIntroPresentation : MonoBehaviour
         if (PlayerLockService.HasInstance)
             PlayerLockService.Instance.Acquire(this);
 
-        // 1. Obtener posición de la cámara del boss
-        Vector3 targetCameraPosition = _bossCamera.transform.position;
-        Quaternion targetCameraRotation = _bossCamera.transform.rotation;
+        // 1. Obtener posición de la cámara del boss y aplicar ajustes
+        Vector3 bossCameraOriginalPos = _bossCamera.transform.position;
+        Quaternion bossCameraOriginalRot = _bossCamera.transform.rotation;
+        
+        // Calcular la posición ajustada
+        Vector3 targetCameraPosition = CalculateAdjustedCameraPosition(bossCameraOriginalPos, bossCameraOriginalRot);
+        Quaternion targetCameraRotation = bossCameraOriginalRot * Quaternion.Euler(cameraRotationOffset);
         
         if (showDebugLogs)
-            Debug.Log($"[BossIntroPresentation] Usando cámara del boss: pos={targetCameraPosition}, rot={targetCameraRotation.eulerAngles}");
+            Debug.Log($"[BossIntroPresentation] Usando cámara del boss: pos={targetCameraPosition}, rot={targetCameraRotation.eulerAngles}, distMult={cameraDistanceMultiplier}, offset={cameraPositionOffset}");
 
         // 2. Mover cámara suavemente hacia el boss
         float elapsed = 0f;
@@ -232,5 +247,43 @@ public class BossIntroPresentation : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log("[BossIntroPresentation] Presentación completada. ¡A luchar!");
+    }
+    
+    /// <summary>
+    /// Calcula la posición ajustada de la cámara aplicando el multiplicador de distancia y el offset.
+    /// </summary>
+    private Vector3 CalculateAdjustedCameraPosition(Vector3 originalCameraPos, Quaternion cameraRotation)
+    {
+        if (bossTransform == null)
+            return originalCameraPos;
+        
+        // Calcular la dirección desde el boss hacia la cámara
+        Vector3 bossPos = bossTransform.position;
+        Vector3 directionFromBoss = originalCameraPos - bossPos;
+        
+        // Aplicar multiplicador de distancia
+        Vector3 adjustedPosition = bossPos + (directionFromBoss * cameraDistanceMultiplier);
+        
+        // Aplicar offset en espacio local de la cámara
+        // X = derecha, Y = arriba, Z = hacia donde mira la cámara
+        if (cameraPositionOffset != Vector3.zero)
+        {
+            // Usar la dirección de la cámara para aplicar el offset correctamente
+            Vector3 right = cameraRotation * Vector3.right;
+            Vector3 up = cameraRotation * Vector3.up;
+            Vector3 forward = cameraRotation * Vector3.forward;
+            
+            adjustedPosition += right * cameraPositionOffset.x;
+            adjustedPosition += up * cameraPositionOffset.y;
+            adjustedPosition += forward * cameraPositionOffset.z;
+            
+            if (showDebugLogs)
+                Debug.Log($"[BossIntroPresentation] 📐 Offset aplicado: X={cameraPositionOffset.x}, Y={cameraPositionOffset.y}, Z={cameraPositionOffset.z}");
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[BossIntroPresentation] 📐 Posición original: {originalCameraPos}, Ajustada: {adjustedPosition}, Multiplicador: {cameraDistanceMultiplier}");
+        
+        return adjustedPosition;
     }
 }

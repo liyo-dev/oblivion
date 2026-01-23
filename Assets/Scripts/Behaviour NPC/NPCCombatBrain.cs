@@ -113,6 +113,11 @@ namespace Game.NPC
         private float _lastCombatTime; // Timestamp del último momento en combate activo
         private bool _wasInRecentCombat => (Time.time - _lastCombatTime) < RECENT_COMBAT_THRESHOLD;
         
+        // ✅ OPTIMIZACIÓN FASE 2: Buffers reutilizables para Physics queries (evita allocations)
+        private Collider[] _projectileBuffer = new Collider[16];
+        private Collider[] _coverBuffer = new Collider[32];
+        private Collider[] _obstacleBuffer = new Collider[32];
+        
         Coroutine _fsmRoutine;
         bool _isActive;
         #endregion
@@ -1314,8 +1319,8 @@ namespace Game.NPC
         {
             // Por ahora, verificar si hay proyectiles del player cerca
             // Esto es una aproximación - se puede mejorar con eventos
-            Collider[] nearbyProjectiles = Physics.OverlapSphere(transform.position, 10f, LayerMask.GetMask("PlayerProjectile"));
-            return nearbyProjectiles.Length > 0;
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, 10f, _projectileBuffer, LayerMask.GetMask("PlayerProjectile")); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+            return hitCount > 0;
         }
 
         // =================================================================================
@@ -1333,9 +1338,9 @@ namespace Game.NPC
             }
             
             // Fallback: buscar en el radio configurado con coverLayerMask
-            Collider[] hits = Physics.OverlapSphere(transform.position, settings.coverSearchRadius, settings.coverLayerMask);
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, settings.coverSearchRadius, _coverBuffer, settings.coverLayerMask); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
             
-            if (hits.Length == 0)
+            if (hitCount == 0)
             {
                 return false;
             }
@@ -1345,8 +1350,9 @@ namespace Game.NPC
             int defaultLayer = LayerMask.NameToLayer("Default");
             LayerMask defaultMask = 1 << defaultLayer;
 
-            foreach (var hit in hits)
+            for (int i = 0; i < hitCount; i++)
             {
+                var hit = _coverBuffer[i];
                 if (hit.isTrigger) continue;
                 
                 // Calcular punto opuesto al player detrás del objeto
@@ -1977,19 +1983,20 @@ namespace Game.NPC
             int defaultLayer = LayerMask.NameToLayer("Default");
             LayerMask defaultMask = 1 << defaultLayer;
             
-            Collider[] nearbyObstacles = Physics.OverlapSphere(
+            int obstacleCount = Physics.OverlapSphereNonAlloc(
                 transform.position, 
                 15f, // Radio de búsqueda de obstáculos
+                _obstacleBuffer,
                 defaultMask
-            );
+            ); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
             
-            if (nearbyObstacles.Length == 0)
+            if (obstacleCount == 0)
             {
                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ No se encontraron obstáculos Default cercanos");
                 return false;
             }
             
-            Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Encontrados {nearbyObstacles.Length} obstáculos Default para cobertura");
+            Debug.Log($"[CombatBrain:{gameObject.name}] 🔍 Encontrados {obstacleCount} obstáculos Default para cobertura");
             
             // Buscar el mejor obstáculo para esconderse
             float bestScore = float.MinValue;
@@ -2002,8 +2009,10 @@ namespace Game.NPC
             float minClearanceFromObstacle = 1.5f; // Distancia mínima detrás del obstáculo
             float maxClearanceFromObstacle = 4f;   // Distancia máxima detrás del obstáculo
             
-            foreach (var obstacle in nearbyObstacles)
+            for (int i = 0; i < obstacleCount; i++) // ✅ OPTIMIZACIÓN FASE 2: for loop para NonAlloc
             {
+                var obstacle = _obstacleBuffer[i];
+                
                 // Ignorar triggers
                 if (obstacle.isTrigger) continue;
                 

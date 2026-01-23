@@ -448,24 +448,48 @@ namespace Game.NPC
 
         private void RegisterNarrativeIdentity()
         {
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
+            // Obtener ID para registro (prioridad: interactiveNarrativeConfig > partyConfig > nombre del GO)
+            string registryId = null;
+            
+            // 1. Si tiene InteractiveNarrative, usar su persistenceId
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
             {
-                NPCRegistry.Instance.RegisterNPC(
-                    configuration.narrativeConfig.narrativeID, 
-                    configuration.narrativeConfig.narrativeTag, 
-                    this
-                );
+                registryId = !string.IsNullOrEmpty(configuration.interactiveNarrativeConfig.persistenceId) 
+                    ? configuration.interactiveNarrativeConfig.persistenceId 
+                    : gameObject.name;
+            }
+            // 2. Si tiene Companion/Party, usar nombre del GO
+            else if (configuration.HasBehaviour(NPCBehaviourType.Companion) || GetComponent<NPCPartyMember>() != null)
+            {
+                registryId = gameObject.name;
+            }
+            
+            // Registrar si tenemos un ID
+            if (!string.IsNullOrEmpty(registryId))
+            {
+                NPCRegistry.Instance.RegisterNPC(registryId, null, this);
+                if (debugMode) Debug.Log($"[NPCBehaviourManagerV2] 📝 NPC '{registryId}' registrado en NPCRegistry");
             }
         }
         
         private void UnregisterNarrativeIdentity()
         {
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.narrativeConfig != null)
+            string registryId = null;
+            
+            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
             {
-                NPCRegistry.Instance.UnregisterNPC(
-                    configuration.narrativeConfig.narrativeID, 
-                    configuration.narrativeConfig.narrativeTag
-                );
+                registryId = !string.IsNullOrEmpty(configuration.interactiveNarrativeConfig.persistenceId) 
+                    ? configuration.interactiveNarrativeConfig.persistenceId 
+                    : gameObject.name;
+            }
+            else if (configuration.HasBehaviour(NPCBehaviourType.Companion) || GetComponent<NPCPartyMember>() != null)
+            {
+                registryId = gameObject.name;
+            }
+            
+            if (!string.IsNullOrEmpty(registryId))
+            {
+                NPCRegistry.Instance.UnregisterNPC(registryId, null);
             }
         }
 

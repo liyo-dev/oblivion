@@ -59,6 +59,7 @@ public class GameBootService : MonoBehaviour
         PrepareActivePreset();
         
         // Notificar que el profile está listo
+        // Los servicios suscritos leerán del runtimePreset y actuarán en consecuencia
         OnProfileReady?.Invoke();
     }
 
@@ -209,13 +210,31 @@ public class GameBootService : MonoBehaviour
             var hub = NarrativeGraphHub.Instance;
             if (hub != null)
             {
-                // TODO: Implementar restauración de blackboards desde preset
-                // hub.RestoreBlackboards(preset.narrativeBlackboards);
-                Debug.Log($"[GameBootService]   ⚠️ Blackboards narrativos en preset: {preset.narrativeBlackboards.Count} (restauración pendiente)");
+                var runners = hub.GetAllRunners();
+                Debug.Log($"[GameBootService] 🔍 NarrativeGraphHub disponible con {runners?.Count ?? 0} runners");
+                
+                hub.RestoreBlackboards(preset.narrativeBlackboards);
+                Debug.Log($"[GameBootService]   ✅ Blackboards narrativos restaurados: {preset.narrativeBlackboards.Count}");
             }
+            else
+            {
+                Debug.LogWarning($"[GameBootService]   ⚠️ NarrativeGraphHub.Instance es NULL - no se pueden restaurar {preset.narrativeBlackboards.Count} blackboards");
+            }
+        }
+        else
+        {
+            Debug.Log("[GameBootService]   ℹ️ No hay blackboards narrativos en el preset para restaurar");
         }
         
         Debug.Log($"[GameBootService] 🎮 Preset de testeo aplicado como partida cargada - Sistema completo inicializado");
+        
+        // ✅ NUEVO: Limpiar locks del PlayerLockService al entrar en modo testeo
+        // Esto previene que el player quede bloqueado si viene de una sesión anterior
+        if (PlayerLockService.HasInstance && PlayerLockService.Instance.IsLocked)
+        {
+            Debug.LogWarning("[GameBootService] 🔓 Limpiando locks residuales del PlayerLockService en modo testeo");
+            PlayerLockService.Instance.ForceUnlock();
+        }
     }
     
     /// <summary>

@@ -1364,7 +1364,11 @@ public class NPCSimpleAnimator : MonoBehaviour
         CrossFadeToState(targetIdle, 0.2f);
     }
     
-    private void TransitionToLocomotion()
+    /// <summary>
+    /// Fuerza transición a estado de locomotion (caminar/correr).
+    /// Útil cuando necesitas mover el NPC inmediatamente desde dizzy u otro estado.
+    /// </summary>
+    public void TransitionToLocomotion()
     {
         if (_currentMovementSpeed > movementThreshold * 2f)
         {

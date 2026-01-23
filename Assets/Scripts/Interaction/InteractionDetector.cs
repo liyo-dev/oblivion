@@ -20,6 +20,9 @@ public class InteractionDetector : MonoBehaviour
 
     private Interactable current;
     private PlayerCarrySystem _carrySystem;
+    
+    // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
+    private Collider[] _interactableBuffer = new Collider[16];
 
     private void Awake()
     {
@@ -166,14 +169,15 @@ public class InteractionDetector : MonoBehaviour
         var t = aimSource ? aimSource : transform;
         Vector3 origin = t.position + Vector3.up * 1.1f;
 
-        var cols = Physics.OverlapSphere(origin, range, interactableMask, QueryTriggerInteraction.Collide);
-        if (cols == null || cols.Length == 0) return null;
+        int hitCount = Physics.OverlapSphereNonAlloc(origin, range, _interactableBuffer, interactableMask, QueryTriggerInteraction.Collide); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+        if (hitCount == 0) return null;
 
         float best = float.MaxValue;
         Interactable winner = null;
 
-        foreach (var c in cols)
+        for (int i = 0; i < hitCount; i++)
         {
+            var c = _interactableBuffer[i];
             var it = c.GetComponentInParent<Interactable>();
             if (!it || !it.CanInteract(gameObject)) continue;
 

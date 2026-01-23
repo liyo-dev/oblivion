@@ -1,4 +1,4 @@
-﻿# 🌟 El Sendero de las Estrellas
+﻿﻿# 🌟 El Sendero de las Estrellas
 
 **Género:** RPG de acción/aventura  
 **Motor:** Unity 2020.3+  
@@ -8,9 +8,11 @@
 
 ## 📘 Documentación
 
-### [📖 Documentación Técnica Completa](docs/DOCUMENTACION_TECNICA.md)
+### [📖 Documentación Técnica Completa](DOCUMENTACION_TECNICA_COMPLETA.md)
 
-**Ubicación:** `docs/DOCUMENTACION_TECNICA.md`
+**Ubicación:** `DOCUMENTACION_TECNICA_COMPLETA.md` (raíz del proyecto)
+
+✨ **NUEVO: Documento consolidado que contiene TODA la documentación técnica del proyecto** ✨
 
 Contiene toda la documentación del proyecto:
 - ✅ Arquitectura de escenas (START como núcleo)
@@ -20,13 +22,13 @@ Contiene toda la documentación del proyecto:
 - ✅ Sistemas Core (Input, Dialogue, Localización)
 - ✅ Sistema de guardado
 - ✅ Sistema de narrativa interactiva
-- ✅ **Sistema de Puzzles (Burnable, PressurePlate, PlatformElevator)** ⭐ NUEVO
-- ✅ **Sistema de Iconos en Diálogos (TextMeshPro)** ⭐ NUEVO
-- ✅ **Sistema de Iluminación (Bake Nocturno Optimizado)** ⭐ NUEVO
+- ✅ Sistema de Puzzles (Burnable, PressurePlate, PlatformElevator)
+- ✅ Sistema de Iconos en Diálogos (TextMeshPro)
+- ✅ **Optimizaciones de Rendimiento (FASE 1 y 2)** ⭐ NUEVO
+- ✅ **Fixes Importantes Aplicados (NPCs caminando en sitio v4)** ⭐ NUEVO
 - ✅ Debugging (F3, F4)
 - ✅ Troubleshooting completo
 - ✅ Mejores prácticas
-- ✅ Roadmap
 
 ---
 

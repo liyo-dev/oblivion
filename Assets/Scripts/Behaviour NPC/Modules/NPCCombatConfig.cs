@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 namespace Game.NPC.Modules
 {
@@ -140,6 +140,9 @@ namespace Game.NPC.Modules
         
         [Tooltip("Prefab del VFX de desaparición (solo si postDeathBehavior = Desaparecer)")]
         public GameObject disappearVFXPrefab;
+        
+        [Tooltip("TransitionSettings para la desaparición con fade (ej: Fade.asset)")]
+        public EasyTransition.TransitionSettings disappearTransition;
         
         [Tooltip("Duración del efecto de desaparición en segundos")]
         [Min(0.5f)]

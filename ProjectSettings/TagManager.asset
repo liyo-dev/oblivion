@@ -9,6 +9,7 @@ TagManager:
   - PlayerEyes
   - PortraitCamera
   - Estela
+  - Boss
   layers:
   - Default
   - TransparentFX

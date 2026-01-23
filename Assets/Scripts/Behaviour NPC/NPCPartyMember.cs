@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -33,6 +34,7 @@ namespace Game.NPC
         private bool _isInParty;
         private bool _wasInPartyBeforeCombat;
         private INPCState _stateBeforeJoining;
+        private bool _isJoining; // Flag para evitar joins simultáneos
         #endregion
 
         #region Events
@@ -111,9 +113,28 @@ namespace Game.NPC
         {
             if (autoJoinOnStart)
             {
-                // Delay para asegurar que todo esté inicializado
-                Invoke(nameof(JoinParty), 0.1f);
+                // Delay mayor para asegurar que todo esté inicializado (era 0.1f)
+                StartCoroutine(DelayedAutoJoin());
             }
+        }
+        
+        /// <summary>
+        /// Auto-join con delay seguro para evitar problemas de inicialización
+        /// </summary>
+        private IEnumerator DelayedAutoJoin()
+        {
+            // Esperar a que el NavMeshAgent esté en el NavMesh
+            int attempts = 0;
+            while (attempts < 30 && (_agent == null || !_agent.isOnNavMesh))
+            {
+                yield return new WaitForSeconds(0.1f);
+                attempts++;
+            }
+            
+            // Esperar un poco más para asegurar que todo está listo
+            yield return new WaitForSeconds(0.5f);
+            
+            JoinParty();
         }
 
         void OnDestroy()
@@ -146,16 +167,41 @@ namespace Game.NPC
                 return false;
             }
             
+            // ✅ FIX: Evitar joins simultáneos durante la carga de partida
+            if (_isJoining)
+            {
+                LogWarning("Ya hay un proceso de unión en curso, ignorando llamada duplicada");
+                return false;
+            }
+            
+            // ✅ FIX: Verificar que el NPC esté completamente inicializado
+            if (_npcManager == null || _agent == null)
+            {
+                LogWarning("NPC no está completamente inicializado, esperando...");
+                return false;
+            }
+            
+            // ✅ FIX: Verificar que el NavMeshAgent esté en un NavMesh
+            if (!_agent.isOnNavMesh)
+            {
+                LogWarning("NavMeshAgent no está en NavMesh, no se puede unir al party ahora");
+                return false;
+            }
+            
+            _isJoining = true;
+            
             _party = PlayerParty.Instance;
             if (_party == null)
             {
                 LogWarning("No se encontró PlayerParty en la escena");
+                _isJoining = false;
                 return false;
             }
             
             if (_party.IsFull)
             {
                 LogWarning("El equipo está lleno");
+                _isJoining = false;
                 return false;
             }
             
@@ -166,6 +212,12 @@ namespace Game.NPC
             }
             
             bool success = _party.AddMember(this);
+            
+            if (!success)
+            {
+                _isJoining = false;
+            }
+            
             return success;
         }
 
@@ -223,13 +275,51 @@ namespace Game.NPC
         {
             _party = party;
             _isInParty = true;
+            _isJoining = false; // ✅ FIX: Limpiar flag de joining
             
             Log($"✨ Unido al equipo (índice {PartyIndex})");
             
-            // Iniciar seguimiento
-            StartFollowing();
+            // ✅ FIX: Verificar que el Brain esté inicializado antes de cambiar estado
+            if (_npcManager?.Brain != null)
+            {
+                // Iniciar seguimiento
+                StartFollowing();
+            }
+            else
+            {
+                LogWarning("Brain no inicializado, posponiendo StartFollowing");
+                // Intentar iniciar seguimiento en el siguiente frame
+                StartCoroutine(DelayedStartFollowing());
+            }
             
             OnJoined?.Invoke();
+        }
+        
+        /// <summary>
+        /// Inicia el seguimiento con un pequeño delay si el Brain no está listo
+        /// </summary>
+        private IEnumerator DelayedStartFollowing()
+        {
+            yield return null; // Esperar 1 frame
+            
+            int attempts = 0;
+            while (attempts < 20 && (_npcManager == null || _npcManager.Brain == null)) // Aumentado a 20 intentos
+            {
+                yield return new WaitForSeconds(0.1f);
+                attempts++;
+            }
+            
+            if (_npcManager?.Brain != null && _isInParty)
+            {
+                // Esperar un poco más antes de empezar a seguir para evitar caos inicial
+                yield return new WaitForSeconds(0.2f);
+                StartFollowing();
+                Log("✅ Seguimiento iniciado después del delay");
+            }
+            else
+            {
+                LogWarning($"⚠️ No se pudo iniciar seguimiento después de {attempts} intentos (Brain: {_npcManager?.Brain != null}, InParty: {_isInParty})");
+            }
         }
 
         /// <summary>
@@ -238,6 +328,7 @@ namespace Game.NPC
         internal void OnLeftParty()
         {
             _isInParty = false;
+            _isJoining = false; // ✅ FIX: Limpiar flag por si acaso
             
             Log("👋 Abandonó el equipo");
             
@@ -250,41 +341,29 @@ namespace Game.NPC
 
         /// <summary>
         /// Llamado cuando el jugador entra en combate.
+        /// SIMPLIFICADO: Entra en combate sin verificar rango.
         /// </summary>
         internal void OnPlayerEnteredCombat(Transform enemy)
         {
-            if (_npcManager == null) return;
+            Debug.Log($"[NPCPartyMember:{name}] 🔔 OnPlayerEnteredCombat - Enemigo: {enemy?.name}");
             
-            // Verificar distancia al enemigo
-            float distance = Vector3.Distance(transform.position, enemy.position);
-            float assistRange = partyConfig?.combatAssistRange ?? 12f;
-            
-            if (distance <= assistRange)
+            if (_npcManager?.Brain == null)
             {
-                _wasInPartyBeforeCombat = _isInParty;
-                Log($"⚔️ Asistiendo al jugador en combate contra {enemy.name}");
-                
-                // Entrar en combate ALIADO (no como enemigo)
-                EnterAllyCombat(enemy);
+                Debug.LogError($"[NPCPartyMember:{name}] ⚠️ _npcManager.Brain es NULL!");
+                return;
             }
-        }
-        
-        /// <summary>
-        /// Entra en modo de combate aliado contra un enemigo específico.
-        /// </summary>
-        private void EnterAllyCombat(Transform enemy)
-        {
-            if (_npcManager?.Brain == null) return;
             
-            // Configurar el enemigo como objetivo (en context.Player)
-            _npcManager.Context.Player = enemy;
+            _wasInPartyBeforeCombat = _isInParty;
+            
+            // Entrar en combate directamente
             _npcManager.Context.IsInCombat = true;
             
-            // Usar AllyCombatState en lugar de CombatState
+            // Cambiar a AllyCombatState CON EL TARGET
             if (!(_npcManager.Brain.CurrentState is States.AllyCombatState))
             {
-                _npcManager.Brain.ChangeState(new States.AllyCombatState());
-                Log($"⚔️ Entrando en AllyCombatState contra {enemy.name}");
+                // Pasar el enemigo al constructor para que lo ataque directamente
+                _npcManager.Brain.ChangeState(new States.AllyCombatState(enemy));
+                Debug.Log($"[NPCPartyMember:{name}] ⚔️ CAMBIADO A AllyCombatState con target: {enemy?.name}");
             }
         }
 

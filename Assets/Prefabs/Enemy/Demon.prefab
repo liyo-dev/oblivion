@@ -4853,7 +4853,7 @@ ParticleSystem:
     vectorLabel1_3: W
 --- !u!199 &7384551571268962273
 ParticleSystemRenderer:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -4899,6 +4899,7 @@ ParticleSystemRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_RenderMode: 0
   m_MeshDistribution: 0
   m_SortMode: 0
@@ -4930,7 +4931,6 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
-  m_MaskInteraction: 0
 --- !u!1 &628954068275018737
 GameObject:
   m_ObjectHideFlags: 0
@@ -5456,7 +5456,7 @@ GameObject:
   - component: {fileID: 6837251540150738088}
   m_Layer: 7
   m_Name: Demon
-  m_TagString: Enemy
+  m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5638,6 +5638,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
   targetingRadius: 90
+  isInActiveCombat: 0
 --- !u!1 &3024701460706714017
 GameObject:
   m_ObjectHideFlags: 0
@@ -7265,6 +7266,7 @@ SkinnedMeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0

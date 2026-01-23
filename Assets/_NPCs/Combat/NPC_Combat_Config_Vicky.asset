@@ -33,6 +33,11 @@ MonoBehaviour:
   dialogueAfterDefeat: {fileID: 0}
   waitForAlertDialogue: 1
   postDeathBehavior: 1
+  postDefeatAction: 1
+  postDefeatMoveAnchor: 
+  disappearOnArrival: 0
+  disappearOnArrivalVFX: {fileID: 0}
+  moveTeamMembersOnDefeat: 1
   dialogueOnDizzy: {fileID: 11400000, guid: 24a33d8d18f10494fb2e7eeb6488f4d2, type: 2}
   disappearVFXPrefab: {fileID: 0}
   disappearDuration: 2

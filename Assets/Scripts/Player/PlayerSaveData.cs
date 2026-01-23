@@ -168,7 +168,11 @@ public class PlayerSaveData
         }
 
         // === NUEVO: persistir puntos de teletransporte desbloqueados ===
-        d.unlockedTeleportPoints = TeleportRegistry.ToSaveData();
+        // Leer desde el preset (que se sincroniza automáticamente al desbloquear puntos)
+        // Fallback a TeleportRegistry.ToSaveData() por compatibilidad
+        d.unlockedTeleportPoints = preset.unlockedTeleportPoints != null && preset.unlockedTeleportPoints.Count > 0
+            ? new List<string>(preset.unlockedTeleportPoints)
+            : TeleportRegistry.ToSaveData();
         Debug.Log($"[PlayerSaveData] 💾 Teleport points guardados: {d.unlockedTeleportPoints.Count}");
 
         return d;

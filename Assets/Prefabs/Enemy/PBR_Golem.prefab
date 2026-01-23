@@ -73,9 +73,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3411324387237086588}
-  m_Layer: 0
+  - component: {fileID: 6422596729655379090}
+  m_Layer: 7
   m_Name: Index_Proximal_L
-  m_TagString: Untagged
+  m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -94,7 +95,28 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3110537937919081361}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.66065097, y: -16.791199, z: -2.1882827}
+--- !u!65 &6422596729655379090
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 425080484554236418}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 100, y: 100, z: 100}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &939999298480460806
 GameObject:
   m_ObjectHideFlags: 0
@@ -110,9 +132,10 @@ GameObject:
   - component: {fileID: 4044291363522193637}
   - component: {fileID: 7102476385744797687}
   - component: {fileID: 6115329083915449752}
+  - component: {fileID: 2517759409743794487}
   m_Layer: 7
   m_Name: PBR_Golem
-  m_TagString: Untagged
+  m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -127,11 +150,12 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.1168398, y: -0.000010815729, z: 153.4196}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4132732988775027079}
   - {fileID: 1743088526946138915}
+  - {fileID: 8841478096083396395}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &2739644448425637822
@@ -168,7 +192,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 200
+  maxHealth: 500
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3
@@ -187,42 +211,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemBossAI
   player: {fileID: 0}
-  animator: {fileID: 0}
-  damageable: {fileID: 0}
-  agent: {fileID: 0}
+  animator: {fileID: 2739644448425637822}
+  damageable: {fileID: 6789971062230068163}
+  agent: {fileID: 2517759409743794487}
   detectionRange: 25
-  meleeRange: 4
-  rangedMinRange: 8
-  rangedMaxRange: 20
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
-  punchDamage: 25
-  slamDamage: 35
-  slamRadius: 5
-  rockProjectilePrefab: {fileID: 1375754531036840, guid: 71497ec4178769a4c8cdb38563f01fc0, type: 3}
-  rockSpawnPoint: {fileID: 3246696381935025708}
-  rockDamage: 20
-  rockSpeed: 15
+  attackRange: 15
+  minAttackRange: 6
+  rockPrefab: {fileID: 1375754531036840, guid: 71497ec4178769a4c8cdb38563f01fc0, type: 3}
+  rockHandPoint: {fileID: 7123563488054886675}
+  rockHandPointLeft: {fileID: 3411324387237086588}
+  rockSpeed: 20
   rockPickupVFX: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
-  fallingRockPrefab: {fileID: 1375754531036840, guid: 71497ec4178769a4c8cdb38563f01fc0, type: 3}
-  rockRainCount: 5
-  rockRainRadius: 8
-  rockRainDamage: 15
-  shockwaveVFX: {fileID: 6526302276393259002, guid: f9d9793366789ae48a7e1b0692763acc, type: 3}
-  shockwaveDamage: 40
+  phase2HealthThreshold: 0.8
+  rockRainCount: 15
+  rockRainRadius: 10
+  rockRainHeight: 15
+  rockRainSpeed: 12
+  rockRainInterval: 0.15
+  rockWarningVFX: {fileID: 0}
+  phase3HealthThreshold: 0.5
+  jumpHeight: 8
+  jumpDuration: 1.2
   shockwaveRadius: 10
+  shockwaveDamage: 30
   shockwaveKnockback: 15
-  punchCooldown: 2
-  slamCooldown: 4
-  rockThrowCooldown: 3
-  rockRainCooldown: 12
-  shockwaveCooldown: 15
-  phase2HealthPercent: 0.66
-  phase3HealthPercent: 0.33
+  shockwaveVFX: {fileID: 6526302276393259002, guid: f9d9793366789ae48a7e1b0692763acc, type: 3}
+  landingDustVFX: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
+  cameraShakeDuration: 0.5
+  cameraShakeIntensity: 0.3
+  attackCooldown: 3
+  rockRainCooldown: 8
+  jumpAttackCooldown: 12
+  chargeSpeed: 18
+  chargeAnimationSpeedMultiplier: 1.8
+  chargeMinDistance: 5
+  punchDamage: 25
+  punchRadius: 3
+  punchKnockback: 12
+  punchImpactVFX: {fileID: 0}
+  chargeCooldown: 10
+  chargeOnPhaseChangeChance: 0.7
   walkSpeed: 2.5
-  chaseSpeed: 3.5
-  canStartCombat: 0
+  rotationSpeed: 3
+  enableContactDamage: 1
+  contactDamage: 15
+  contactDamageCooldown: 1.5
+  chargeDamageMultiplier: 1.5
+  contactRadius: 2
+  autoStartOnDetection: 1
   debugMode: 0
 --- !u!65 &4044291363522193637
 BoxCollider:
@@ -243,8 +279,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.410513, y: 4.00788, z: 1}
-  m_Center: {x: 0.01976045, y: 1.50394, z: 0}
+  m_Size: {x: 2.410513, y: 4.00788, z: 1.971878}
+  m_Center: {x: 0.01976049, y: 1.5039401, z: 0.48593903}
 --- !u!114 &7102476385744797687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -281,6 +317,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Targetable
   targetingRadius: 90
   isInActiveCombat: 0
+--- !u!195 &2517759409743794487
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939999298480460806}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &1151455076570608189
 GameObject:
   m_ObjectHideFlags: 0
@@ -374,7 +432,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2774555545978186619}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0.6606799, y: 16.79154, z: 177.81166}
 --- !u!1 &1760568067026257816
 GameObject:
   m_ObjectHideFlags: 0
@@ -437,7 +495,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3409837602302156522}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -22.92549, y: -90, z: 0}
 --- !u!1 &2474889081811325806
 GameObject:
   m_ObjectHideFlags: 0
@@ -873,6 +931,134 @@ Transform:
   - {fileID: 2774555545978186619}
   m_Father: {fileID: 5414039289975630641}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8482017894348466406
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8841478096083396395}
+  - component: {fileID: 3671272856889464598}
+  - component: {fileID: 7598553100958893910}
+  m_Layer: 7
+  m_Name: Camera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8841478096083396395
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482017894348466406}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6622913385748811278}
+  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
+--- !u!20 &3671272856889464598
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482017894348466406}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 20.78461
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 60.000004
+  orthographic: 0
+  orthographic size: 5
+  m_Depth: 1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!114 &7598553100958893910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482017894348466406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &8573701946974836204
 GameObject:
   m_ObjectHideFlags: 0

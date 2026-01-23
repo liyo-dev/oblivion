@@ -244,11 +244,11 @@ public sealed class NarrativeGraphHub : MonoBehaviour
     {
         if (snapshots == null || snapshots.Count == 0)
         {
-            // Debug.Log("[NarrativeGraphHub] No hay blackboards guardados para restaurar");
+            Debug.Log("[NarrativeGraphHub] No hay blackboards guardados para restaurar");
             return;
         }
         
-        // Debug.Log($"[NarrativeGraphHub] RestoreBlackboards llamado con {snapshots.Count} snapshot(s)");
+        Debug.Log($"[NarrativeGraphHub] RestoreBlackboards llamado con {snapshots.Count} snapshot(s)");
         
         int restored = 0;
         foreach (var snapshot in snapshots)
@@ -259,7 +259,7 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                 continue;
             }
             
-            // Debug.Log($"[NarrativeGraphHub] Intentando restaurar '{snapshot.graphLabel}' con {(snapshot.blackboardData != null ? snapshot.blackboardData.Count : 0)} entradas");
+            Debug.Log($"[NarrativeGraphHub] Intentando restaurar '{snapshot.graphLabel}' con {(snapshot.blackboardData != null ? snapshot.blackboardData.Count : 0)} entradas");
             
             var runner = GetRunner(snapshot.graphLabel);
             if (runner == null)
@@ -287,10 +287,10 @@ public sealed class NarrativeGraphHub : MonoBehaviour
                     currentNodeName = $"{node.GetType().Name}";
             }
 
-            // Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
+            Debug.Log($"[NarrativeGraphHub] ✅ Blackboard restaurado para grafo '{snapshot.graphLabel}' | Nodo guardado: {currentNodeName} ({ShortGuid(currentNodeGuid)}...)");
         }
 
-        // Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
+        Debug.Log($"[NarrativeGraphHub] Restaurados {restored}/{snapshots.Count} blackboards");
     }
 
     static string ShortGuid(string guid)

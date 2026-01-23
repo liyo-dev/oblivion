@@ -9,73 +9,118 @@ namespace Game.NPC.Modules
     [CreateAssetMenu(fileName = "NewPartyConfig", menuName = "NPC/Party Config", order = 100)]
     public class NPCPartyConfig : NPCModuleConfigBase
     {
-        [Header("Configuración de Seguimiento")]
-        [Tooltip("Distancia ideal a mantener del jugador mientras sigue")]
-        [Range(1f, 5f)]
-        public float followDistance = 2.5f;
+        [Header("=== INFORMACIÓN DEL COMPAÑERO ===")]
         
-        [Tooltip("Si el compañero está más lejos que esta distancia, correrá para alcanzar")]
-        [Range(5f, 15f)]
-        public float runToPlayerDistance = 8f;
+        [Tooltip("Nombre que se muestra en la UI (si está vacío, usa el narrativeID o nombre del GameObject)")]
+        public string displayName;
         
-        [Tooltip("Si el compañero está más lejos que esta distancia, se teletransportará cerca del jugador")]
-        [Range(15f, 50f)]
-        public float teleportDistance = 25f;
+        [Header("=== SEGUIMIENTO DEL JUGADOR ===")]
         
-        [Tooltip("Distancia mínima para detenerse cerca del jugador")]
-        [Range(0.5f, 3f)]
-        public float minStopDistance = 1.5f;
+        [Tooltip("Distancia a la que se PARA cuando alcanza al jugador (mientras más bajo, más cerca se queda)")]
+        [Range(0.8f, 4f)]
+        public float distanciaParaPararse = 1.2f; // CAMBIADO: Más cerca (era 2f)
+        
+        [Tooltip("Si está MÁS LEJOS de esta distancia, empezará a CORRER para alcanzarte")]
+        [Range(2f, 10f)]
+        public float distanciaParaCorrer = 3f; // CAMBIADO: Correr antes (era 4f)
+        
+        [Tooltip("Si está MÁS LEJOS de esta distancia, se TELETRANSPORTA a tu lado")]
+        [Range(10f, 50f)]
+        public float distanciaParaTeletransporte = 15f; // CAMBIADO: Teleport antes (era 20f)
 
-        [Header("Comportamiento de Idle")]
-        [Tooltip("Tiempo mínimo de espera cuando está cerca del jugador")]
+        [Header("=== VELOCIDAD DE MOVIMIENTO ===")]
+        
+        [Tooltip("Velocidad al CAMINAR (cuando está cerca del jugador)")]
+        [Range(1f, 5f)]
+        public float velocidadCaminando = 3.5f;
+        
+        [Tooltip("Velocidad al CORRER (cuando el jugador corre o está lejos)")]
+        [Range(4f, 10f)]
+        public float velocidadCorriendo = 7.5f; // CAMBIADO: Un poco más rápido (era 7f)
+
+        [Header("=== POSICIONAMIENTO ===")]
+        
+        [Tooltip("Intentar quedarse DETRÁS del jugador")]
+        public bool quedarseDetras = true;
+        
+        [Tooltip("Offset lateral (para que no esté exactamente detrás)")]
+        public Vector2 offsetLateral = new Vector2(-1f, 1f);
+
+        [Header("=== COMPORTAMIENTO IDLE ===")]
+        
+        [Tooltip("Tiempo mínimo que espera quieto cuando está cerca del jugador")]
         [Range(0.5f, 5f)]
-        public float minIdleTime = 1f;
+        public float tiempoIdleMinimo = 1f;
         
-        [Tooltip("Tiempo máximo de espera cuando está cerca del jugador")]
+        [Tooltip("Tiempo máximo que espera quieto")]
         [Range(1f, 10f)]
-        public float maxIdleTime = 3f;
+        public float tiempoIdleMaximo = 3f;
         
-        [Tooltip("Si el compañero puede moverse libremente (wander) cuando está cerca del jugador")]
-        public bool allowWanderNearPlayer = false;
+        [Tooltip("Puede moverse un poco mientras espera cerca del jugador")]
+        public bool puedeVagarCerca = false;
         
-        [Tooltip("Radio de wander cuando está cerca del jugador")]
+        [Tooltip("Radio de vagabundeo cerca del jugador")]
         [Range(1f, 5f)]
-        public float wanderRadiusNearPlayer = 2f;
+        public float radioVagabundeo = 2f;
 
-        [Header("Posicionamiento")]
-        [Tooltip("Offset lateral preferido (para que no todos los compañeros estén en línea)")]
-        public Vector2 lateralOffsetRange = new Vector2(-1f, 1f);
+        [Header("=== COMBATE EN GRUPO ===")]
         
-        [Tooltip("Intentar posicionarse detrás del jugador")]
-        public bool preferBehindPlayer = true;
-
-        [Header("Combate en Grupo")]
-        [Tooltip("El compañero ayudará automáticamente si el jugador entra en combate")]
-        public bool autoJoinPlayerCombat = true;
+        [Tooltip("Entra en combate automáticamente cuando el jugador ataca")]
+        public bool autoUnirseACombate = true;
         
-        [Tooltip("Distancia de detección para unirse al combate del jugador")]
-        [Range(5f, 20f)]
-        public float combatAssistRange = 12f;
+        [Tooltip("Distancia máxima para detectar enemigos y unirse al combate")]
+        [Range(5f, 50f)]
+        public float rangoAsistenciaCombate = 30f;
         
-        [Header("Hechizos de Combate")]
-        [Tooltip("Hechizo de mano izquierda (ataque rápido)")]
+        [Header("=== HECHIZOS DE COMBATE ===")]
+        
+        [Tooltip("Hechizo principal (mano izquierda)")]
         public MagicSpellSO spellLeft;
         
-        [Tooltip("Hechizo de mano derecha (ataque medio)")]
+        [Tooltip("Hechizo secundario (mano derecha)")]
         public MagicSpellSO spellRight;
         
-        [Tooltip("Hechizo especial (ataque potente)")]
+        [Tooltip("Hechizo especial (más potente)")]
         public MagicSpellSO spellSpecial;
 
-        [Header("Distancias de Combate")]
-        [Tooltip("Distancia mínima para atacar")]
+        [Header("=== DISTANCIAS DE ATAQUE ===")]
+        
+        [Tooltip("Distancia mínima para atacar enemigos")]
         [Range(1f, 5f)]
-        public float minAttackDistance = 2f;
+        public float distanciaMinimaAtaque = 2f;
         
-        [Tooltip("Distancia máxima para atacar")]
+        [Tooltip("Distancia máxima para atacar enemigos")]
         [Range(5f, 30f)]
-        public float maxAttackDistance = 15f;
+        public float distanciaMaximaAtaque = 15f;
+
+        // ============ PROPIEDADES DE COMPATIBILIDAD (para que el código existente siga funcionando) ============
         
+        // Seguimiento
+        public float followDistance => distanciaParaPararse;
+        public float runToPlayerDistance => distanciaParaCorrer;
+        public float teleportDistance => distanciaParaTeletransporte;
+        public float minStopDistance => distanciaParaPararse * 0.8f; // Un poco más cerca que followDistance
+        
+        // Velocidades
+        public float walkSpeed => velocidadCaminando;
+        public float runSpeed => velocidadCorriendo;
+        
+        // Posicionamiento
+        public bool preferBehindPlayer => quedarseDetras;
+        public Vector2 lateralOffsetRange => offsetLateral;
+        
+        // Idle
+        public float minIdleTime => tiempoIdleMinimo;
+        public float maxIdleTime => tiempoIdleMaximo;
+        public bool allowWanderNearPlayer => puedeVagarCerca;
+        public float wanderRadiusNearPlayer => radioVagabundeo;
+        
+        // Combate
+        public bool autoJoinPlayerCombat => autoUnirseACombate;
+        public float combatAssistRange => rangoAsistenciaCombate;
+        public float minAttackDistance => distanciaMinimaAtaque;
+        public float maxAttackDistance => distanciaMaximaAtaque;
+
         /// <summary>
         /// Obtiene el hechizo por índice (0=Left, 1=Right, 2=Special)
         /// </summary>
@@ -89,48 +134,45 @@ namespace Game.NPC.Modules
                 _ => null
             };
         }
-        
+
         /// <summary>
-        /// Obtiene el cooldown del hechizo por índice (del propio SO)
+        /// Valida que la configuración sea correcta
         /// </summary>
-        public float GetSpellCooldown(int index)
-        {
-            var spell = GetSpell(index);
-            return spell != null ? spell.cooldown : 1f;
-        }
-
-        [Header("Visual")]
-        [Tooltip("Icono para mostrar en la UI del equipo")]
-        public Sprite partyIcon;
-        
-        [Tooltip("Nombre para mostrar en la UI")]
-        public string displayName;
-
         public override bool ValidateConfig(out string errorMessage)
         {
-            errorMessage = "";
-            bool isValid = true;
-
-            if (followDistance >= runToPlayerDistance)
+            // Validar que las distancias tengan sentido
+            if (distanciaParaCorrer <= distanciaParaPararse)
             {
-                errorMessage += "followDistance debe ser menor que runToPlayerDistance.\n";
-                isValid = false;
+                errorMessage = "La distancia para correr debe ser mayor que la distancia para pararse";
+                return false;
             }
-
-            if (runToPlayerDistance >= teleportDistance)
+            
+            if (distanciaParaTeletransporte <= distanciaParaCorrer)
             {
-                errorMessage += "runToPlayerDistance debe ser menor que teleportDistance.\n";
-                isValid = false;
+                errorMessage = "La distancia para teletransporte debe ser mayor que la distancia para correr";
+                return false;
             }
-
-            if (minIdleTime > maxIdleTime)
+            
+            if (velocidadCorriendo <= velocidadCaminando)
             {
-                errorMessage += "minIdleTime no puede ser mayor que maxIdleTime.\n";
-                isValid = false;
+                errorMessage = "La velocidad corriendo debe ser mayor que la velocidad caminando";
+                return false;
             }
-
-            return isValid;
+            
+            if (tiempoIdleMaximo <= tiempoIdleMinimo)
+            {
+                errorMessage = "El tiempo idle máximo debe ser mayor que el mínimo";
+                return false;
+            }
+            
+            if (distanciaMaximaAtaque <= distanciaMinimaAtaque)
+            {
+                errorMessage = "La distancia máxima de ataque debe ser mayor que la mínima";
+                return false;
+            }
+            
+            errorMessage = string.Empty;
+            return true;
         }
     }
 }
-

@@ -293,7 +293,25 @@ public class BossArenaController : MonoBehaviour
         Vector3 spawnPosition = bossSpawn ? bossSpawn.position : transform.position;
         Quaternion spawnRotation = bossSpawn ? bossSpawn.rotation : transform.rotation;
 
-        // Instanciar VFX de aparición si está configurado
+        // Instanciar portal de aparición si está configurado
+        GameObject portalVFX = null;
+        if (portalPrefab != null && portalSpawn != null)
+        {
+            Vector3 portalPosition = portalSpawn.position;
+            // Calcular posición del portal en el suelo usando raycast
+            if (Physics.Raycast(portalSpawn.position, Vector3.down, out RaycastHit hit, 100f, floorLayer))
+            {
+                portalPosition = hit.point;
+                if (showDebugLogs)
+                    Debug.Log($"[BossArenaController] Portal de aparición colocado en el suelo: {portalPosition}");
+            }
+            portalVFX = Instantiate(portalPrefab, portalPosition, portalSpawn.rotation, transform.parent);
+            
+            if (showDebugLogs)
+                Debug.Log($"[BossArenaController] Portal de aparición instanciado en {portalPosition}");
+        }
+
+        // Instanciar VFX de aparición adicional si está configurado
         if (bossSpawnVFXPrefab != null)
         {
             Vector3 vfxPosition = spawnPosition + Vector3.up * bossSpawnVFXHeightOffset;
@@ -314,7 +332,20 @@ public class BossArenaController : MonoBehaviour
         {
             Debug.LogError("[BossArenaController] No hay boss para esta sala.");
             started = false;
+            
+            // Destruir el portal si no hay boss
+            if (portalVFX != null)
+                Destroy(portalVFX);
+            
             return;
+        }
+
+        // Destruir el portal después de la duración del VFX
+        if (portalVFX != null)
+        {
+            Destroy(portalVFX, bossSpawnVFXDuration);
+            if (showDebugLogs)
+                Debug.Log($"[BossArenaController] Portal se destruirá en {bossSpawnVFXDuration}s");
         }
 
         // Preparar referencias para escuchar la derrota real del boss
@@ -332,10 +363,12 @@ public class BossArenaController : MonoBehaviour
         // Iniciar presentación o colocar directamente en el suelo
         if (bossIntroPresentation != null)
         {
+            Debug.Log($"[BossArenaController] ✅ BossIntroPresentation asignado para '{boss.name}'. Iniciando presentación...");
             StartCoroutine(PlayPresentationAndPlaceBoss(boss));
         }
         else
         {
+            Debug.Log($"[BossArenaController] ⚠️ No hay BossIntroPresentation asignado para '{boss.name}'. Colocando boss directamente.");
             PlaceBossOnFloor(boss);
             EnableBossCombat(boss);
         }
@@ -344,15 +377,17 @@ public class BossArenaController : MonoBehaviour
     private IEnumerator PlayPresentationAndPlaceBoss(GameObject boss)
     {
         // Buscar la cámara hija del boss
-        Camera bossCamera = boss.GetComponentInChildren<Camera>();
+        Camera bossCamera = boss.GetComponentInChildren<Camera>(true); // includeInactive = true
         
         if (bossCamera == null)
         {
-            Debug.LogWarning($"[BossArenaController] No se encontró cámara en el boss '{boss.name}'. Saltando presentación.");
+            Debug.LogWarning($"[BossArenaController] ❌ No se encontró cámara en el boss '{boss.name}' (ni activa ni inactiva). Saltando presentación.");
             PlaceBossOnFloor(boss);
             EnableBossCombat(boss);
             yield break;
         }
+        
+        Debug.Log($"[BossArenaController] 📷 Cámara encontrada: '{bossCamera.name}' en boss '{boss.name}'");
         
         // Configurar y reproducir presentación
         bossIntroPresentation.SetupBoss(boss.transform, bossCamera, bossDisplayName);
@@ -571,31 +606,7 @@ public class BossArenaController : MonoBehaviour
         }
 
         RestoreBattleDisables();
-        SpawnExitPortalIfNeeded();
-    }
-
-    void SpawnExitPortalIfNeeded()
-    {
-        if (!portalPrefab || !portalSpawn) return;
-        if (HasExistingPortal()) return;
-
-        Instantiate(portalPrefab, portalSpawn.position, portalSpawn.rotation, transform.parent);
-    }
-
-    bool HasExistingPortal()
-    {
-        if (!portalPrefab) return false;
-        var parent = transform.parent;
-        if (!parent) return false;
-
-        string prefabName = portalPrefab.name;
-        foreach (Transform child in parent)
-        {
-            if (!child) continue;
-            if (child.name.StartsWith(prefabName, StringComparison.Ordinal))
-                return true;
-        }
-        return false;
+        // Portal ya no se spawneea al final, solo al inicio de la batalla
     }
 
     // =========================== Visual Barrier ===========================

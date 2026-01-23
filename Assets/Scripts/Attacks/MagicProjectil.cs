@@ -51,6 +51,10 @@ public class MagicProjectile : MonoBehaviour
     Vector3 _spawnPos;
     float   _spawnTime;
     
+    // ✅ OPTIMIZACIÓN FASE 2: Buffers reutilizables para Physics queries
+    private Collider[] _targetSearchBuffer = new Collider[16];
+    private Collider[] _aoeHitBuffer = new Collider[32];
+    
     [Header("Lifetime (optional)")]
     [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
     [SerializeField, Min(0f)] private float lifeTimeSeconds = 0f;
@@ -69,10 +73,26 @@ public class MagicProjectile : MonoBehaviour
             _rb.useGravity = false;
         }
         
-        // IMPORTANTE: Collider NO debe ser trigger para detectar colisiones con árboles y otros objetos
-        // OnCollisionEnter funciona tanto con triggers como con colliders normales
-        var col = GetComponent<Collider>();
-        if (col != null) col.isTrigger = false;
+        // ✅ NOTA: NO forzamos isTrigger aquí - dejamos la configuración del prefab
+        // El prefab debe decidir si es trigger o no según el tipo de proyectil
+        // Los proyectiles de aliados deben tener collider NO-trigger para colisionar con enemigos trigger
+        
+        // Configurar Rigidbody para detección continua
+        if (_rb != null)
+        {
+            _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            _rb.interpolation = RigidbodyInterpolation.Interpolate;
+        }
+        
+        // Asegurar que el proyectil tenga la layer correcta para colisionar con enemigos
+        if (gameObject.layer == 0) // Si está en Default, mover a Projectile
+        {
+            int projectileLayer = LayerMask.NameToLayer("Projectile");
+            if (projectileLayer != -1)
+            {
+                gameObject.layer = projectileLayer;
+            }
+        }
 
         RefreshHasRigidbody();
     }
@@ -105,6 +125,15 @@ public class MagicProjectile : MonoBehaviour
     {
         _cfg        = cfg;
         _instigator = instigator;
+
+        // ✅ IMPORTANTE: Aplicar el lifeTime de la configuración del SO
+        // Esto sobrescribe el lifeTimeSeconds del prefab si el SO define un valor
+        if (_cfg.lifeTime > 0f)
+        {
+            CancelInvoke(nameof(EndByTTL));
+            Invoke(nameof(EndByTTL), _cfg.lifeTime);
+            _ttlScheduled = true;
+        }
 
         // Ignorar colisiones con el instigador
         if (ignoreSelfCollision && _instigator)
@@ -181,6 +210,55 @@ public class MagicProjectile : MonoBehaviour
             float sqr = (transform.position - _spawnPos).sqrMagnitude;
             if (sqr >= _cfg.maxRange * _cfg.maxRange) End(false);
         }
+        
+        // ✅ Detección activa de enemigos (fallback cuando las colisiones de Unity fallan)
+        CheckEnemyProximity();
+    }
+    
+    /// <summary>
+    /// Detecta enemigos cercanos usando OverlapSphere como fallback.
+    /// Esto es necesario porque las colisiones entre layers pueden no funcionar
+    /// si la Physics Matrix no está configurada correctamente.
+    /// </summary>
+    private void CheckEnemyProximity()
+    {
+        if (_ended) return;
+        
+        // Radio de detección del proyectil
+        float detectionRadius = 1.2f;
+        
+        // Buscar enemigos en el radio usando hitLayers configurado
+        LayerMask searchMask = _cfg.hitLayers;
+        if (searchMask.value == 0)
+        {
+            // Si no hay hitLayers configurado, usar Enemy y Boss por defecto
+            searchMask = LayerMask.GetMask("Enemy", "Boss");
+        }
+        
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _targetSearchBuffer, searchMask); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+        
+        if (hitCount > 0)
+        {
+            for (int i = 0; i < hitCount; i++)
+            {
+                var hit = _targetSearchBuffer[i];
+                
+                // Ignorar si es el instigador
+                if (_instigator != null && hit.transform.IsChildOf(_instigator.transform))
+                    continue;
+                
+                // Buscar Damageable
+                var damageable = hit.GetComponent<Damageable>() ?? hit.GetComponentInParent<Damageable>();
+                if (damageable != null)
+                {
+                    Debug.Log($"[MagicProjectile] 🎯 IMPACTO por PROXIMIDAD contra ENEMIGO: {hit.gameObject.name}!");
+                    damageable.TakeDamage(_cfg.damage);
+                    SpawnImpactEffects(transform.position);
+                    if (_cfg.destroyOnHit) End(true);
+                    return;
+                }
+            }
+        }
     }
 
     // ==== Colisiones ===========================================================
@@ -212,56 +290,145 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_ended || other == null) return;
 
-        // ✅ PRIORIDAD 1: Detectar colisión con proyectiles enemigos (layer "ProjectileEnemy")
-        if (other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy"))
+        int otherLayer = other.gameObject.layer;
+        string objectName = other.gameObject.name;
+        string layerName = LayerMask.LayerToName(otherLayer);
+        
+        // ✅ IGNORAR: Battle Arenas, objetos TransparentFX, proyectiles propios, y objetos de batalla
+        // Las arenas de batalla tienen colliders que no deben bloquear proyectiles de aliados
+        bool isBattleArena = objectName.Contains("BattleArena") || 
+                             objectName.Contains("Arena") ||
+                             objectName.Contains("BossArena") ||
+                             objectName.StartsWith("Battle");
+        bool isTransparentOrIgnored = layerName == "TransparentFX" || 
+                                       layerName == "Ignore Raycast" || 
+                                       otherLayer == 1 ||
+                                       otherLayer == 2; // IgnoreRaycast layer
+        bool isOtherProjectile = layerName == "Projectile"; // Ignorar colisión con otros proyectiles aliados
+        bool isEnemyProjectile = layerName == "ProjectileEnemy" || layerName == "EnemyProjectile";
+        
+        bool shouldIgnore = isBattleArena || isTransparentOrIgnored || isOtherProjectile || isEnemyProjectile;
+            
+        if (shouldIgnore)
+        {
+            // Solo log si es arena (los otros son muy frecuentes)
+            if (isBattleArena)
+            {
+                // Debug.Log($"[MagicProjectile] ⚠️ Ignorando arena: {objectName}");
+            }
+            return;
+        }
+        
+        // 🔍 DEBUG: Log de cada colisión (solo si no se ignora)
+        // Debug.Log($"[MagicProjectile] OnHit: {objectName} (Layer: {layerName}, Tag: {other.tag})");
+
+        // ✅ PRIORIDAD 1: Detectar colisión con proyectiles enemigos (layer "ProjectileEnemy" o "EnemyProjectile")
+        if (layerName == "ProjectileEnemy" || layerName == "EnemyProjectile")
         {
             Debug.Log($"[MagicProjectile] 💥 Colisión con proyectil enemigo detectada!");
             ProjectileCollisionHandler.HandleCollision(gameObject, other.gameObject, hitPoint);
             return; // El handler se encarga de destruir ambos proyectiles
         }
 
-        // ✅ PRIORIDAD 2: Detectar interacción con puzzle (enredaderas, etc.)
-        var burnable = other.GetComponent<Burnable>();
-        if (burnable != null)
+        // ✅ PRIORIDAD 2: Detectar colisión con layer Enemy o Boss directamente
+        // Detectamos por layer (Enemy o Boss) y opcionalmente por tag "Enemy"
+        bool isEnemy = layerName == "Enemy" || 
+                       layerName == "Boss" ||
+                       SafeCompareTag(other, "Enemy");
+        
+        if (isEnemy)
         {
-            burnable.OnHitByMagic(_cfg.element, hitPoint);
+            Debug.Log($"[MagicProjectile] 🎯 IMPACTO CONTRA ENEMIGO: {other.gameObject.name}!");
             
-            // VFX de impacto
-            if (_cfg.impactVFX)
+            // Buscar Damageable
+            var enemyDamageable = other.GetComponent<Damageable>();
+            if (enemyDamageable == null)
+                enemyDamageable = other.GetComponentInParent<Damageable>();
+            
+            if (enemyDamageable != null)
             {
-                var fx = Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
-                float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f;
-                Destroy(fx, destroyTime);
+                enemyDamageable.TakeDamage(_cfg.damage);
+                Debug.Log($"[MagicProjectile] ✅ Daño aplicado: {_cfg.damage} a {enemyDamageable.gameObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"[MagicProjectile] ⚠️ No se encontró Damageable en {other.gameObject.name}");
             }
             
-            // SFX de impacto
-            if (!string.IsNullOrEmpty(_cfg.impactSFXKey))
-            {
-                AudioService.Instance?.PlaySFX(_cfg.impactSFXKey, worldPosition: hitPoint);
-            }
-            
-            // Destruir proyectil tras quemar
+            SpawnImpactEffects(hitPoint);
             if (_cfg.destroyOnHit) End(true);
             return;
         }
 
-        // Verificar si colisionamos con esta capa (para destruir el proyectil)
-        int layer = other.gameObject.layer;
-        bool shouldCollide = (_cfg.collisionLayers.value & (1 << layer)) != 0;
+        // ✅ PRIORIDAD 3: Detectar interacción con puzzle (enredaderas, etc.)
+        var burnable = other.GetComponent<Burnable>();
+        if (burnable != null)
+        {
+            burnable.OnHitByMagic(_cfg.element, hitPoint);
+            SpawnImpactEffects(hitPoint);
+            if (_cfg.destroyOnHit) End(true);
+            return;
+        }
+
+        // ✅ PRIORIDAD 4: Intentar aplicar daño si el objeto tiene Damageable (independiente del layer)
+        // Esto permite dañar enemigos/bosses aunque estén en layer Default
+        var targetDamageable = other.GetComponent<Damageable>();
+        if (targetDamageable == null)
+            targetDamageable = other.GetComponentInParent<Damageable>();
+        
+        if (targetDamageable != null)
+        {
+            // Verificar que no sea aliado (el propio lanzador o sus aliados)
+            if (_instigator != null && targetDamageable.gameObject == _instigator)
+            {
+                return; // No dañarse a sí mismo
+            }
+            
+            // ✅ Aplicar daño al Damageable encontrado
+            Debug.Log($"[MagicProjectile] 🎯 Impacto contra {other.gameObject.name} - Aplicando {_cfg.damage} de daño via Damageable");
+            
+            if (_cfg.aoeRadius > 0f)
+            {
+                // Para AOE, buscar todos los Damageable en el radio
+                int aoeCount = Physics.OverlapSphereNonAlloc(hitPoint, _cfg.aoeRadius, _aoeHitBuffer); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+                for (int i = 0; i < aoeCount; i++)
+                {
+                    var c = _aoeHitBuffer[i];
+                    var d = c.GetComponent<Damageable>() ?? c.GetComponentInParent<Damageable>();
+                    if (d != null && (_instigator == null || d.gameObject != _instigator))
+                    {
+                        ApplyDamageAndKnockback(c, hitPoint);
+                    }
+                }
+            }
+            else
+            {
+                ApplyDamageAndKnockback(other, hitPoint);
+            }
+            
+            SpawnImpactEffects(hitPoint);
+            if (_cfg.destroyOnHit) End(true);
+            return;
+        }
+
+        // ✅ PRIORIDAD 5: Verificar colisión por layers (para objetos sin Damageable)
+        bool shouldCollide = (_cfg.collisionLayers.value & (1 << otherLayer)) != 0;
         
         if (!shouldCollide) return; // No colisionar con esta capa
 
-        // Verificar si esta capa recibe daño
-        bool shouldDamage = (_cfg.hitLayers.value & (1 << layer)) != 0;
-
+        // Verificar si esta capa recibe daño (fallback para objetos con Damageable en capas específicas)
+        bool shouldDamage = (_cfg.hitLayers.value & (1 << otherLayer)) != 0;
 
         if (shouldDamage)
         {
             // AOE o impacto directo
             if (_cfg.aoeRadius > 0f)
             {
-                var cols = Physics.OverlapSphere(hitPoint, _cfg.aoeRadius, _cfg.hitLayers, QueryTriggerInteraction.Ignore);
-                foreach (var c in cols) ApplyDamageAndKnockback(c, hitPoint);
+                int aoeCount = Physics.OverlapSphereNonAlloc(hitPoint, _cfg.aoeRadius, _aoeHitBuffer, _cfg.hitLayers, QueryTriggerInteraction.Ignore); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+                for (int i = 0; i < aoeCount; i++)
+                {
+                    ApplyDamageAndKnockback(_aoeHitBuffer[i], hitPoint);
+                }
             }
             else
             {
@@ -269,23 +436,28 @@ public class MagicProjectile : MonoBehaviour
             }
         }
 
-        // VFX de impacto (siempre se muestra aunque no haga daño)
+        SpawnImpactEffects(hitPoint);
+        if (_cfg.destroyOnHit) End(true);
+    }
+    
+    /// <summary>
+    /// Spawn VFX y SFX de impacto
+    /// </summary>
+    void SpawnImpactEffects(Vector3 hitPoint)
+    {
+        // VFX de impacto
         if (_cfg.impactVFX)
         {
             var fx = Instantiate(_cfg.impactVFX, hitPoint, Quaternion.identity);
-            // 🔥 CORRECCIÓN: Siempre destruir el VFX después de un tiempo
-            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f; // 3s por defecto
+            float destroyTime = _cfg.vfxLifetime > 0f ? _cfg.vfxLifetime : 3f;
             Destroy(fx, destroyTime);
         }
         
-        // 🔊 SFX de impacto
+        // SFX de impacto
         if (!string.IsNullOrEmpty(_cfg.impactSFXKey))
         {
             AudioService.Instance?.PlaySFX(_cfg.impactSFXKey, worldPosition: hitPoint);
         }
-
-        // Destruir proyectil al colisionar con cualquier cosa válida
-        if (_cfg.destroyOnHit) End(true);
     }
 
     void ApplyDamageAndKnockback(Collider col, Vector3 hitPoint)
@@ -334,5 +506,23 @@ public class MagicProjectile : MonoBehaviour
 
         // Si usas pooling, reemplaza por Despawn
         Destroy(gameObject);
+    }
+    
+    // ==== Helpers ==============================================================
+    
+    /// <summary>
+    /// CompareTag seguro que no lanza excepción si el tag no existe.
+    /// </summary>
+    private static bool SafeCompareTag(Component obj, string tag)
+    {
+        if (obj == null || string.IsNullOrEmpty(tag)) return false;
+        try
+        {
+            return obj.CompareTag(tag);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

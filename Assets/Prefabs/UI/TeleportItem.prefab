@@ -139,7 +139,6 @@ MonoBehaviour:
   backgroundImage: {fileID: 7885069161481618455}
   normalColor: {r: 1, g: 1, b: 1, a: 0.8}
   selectedColor: {r: 1, g: 0.81960785, b: 0.16078432, a: 0.9}
-  hoverColor: {r: 0.25, g: 0.35, b: 0.5, a: 0.85}
 --- !u!1 &4152469848845744433
 GameObject:
   m_ObjectHideFlags: 0
@@ -294,7 +293,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3962805872408208854
 RectTransform:
   m_ObjectHideFlags: 0

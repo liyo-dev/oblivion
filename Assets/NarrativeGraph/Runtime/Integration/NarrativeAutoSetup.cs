@@ -55,16 +55,13 @@ public class NarrativeAutoSetup : MonoBehaviour
 
     void Start()
     {
-        // Iniciar el grafo para que esté listo para escuchar señales
-        if (_runner != null && graph != null)
-        {
-            _runner.StartFromStartNode();
-            if (debugLogs) Debug.Log("[NarrativeAutoSetup] Grafo iniciado desde StartNode.");
-        }
-        
-        // DESHABILITADO: TryBootstrapQuestSignals() causaba emisiones duplicadas de LETTER_START
-        // Los eventos custom deben ser emitidos explícitamente por Interactables o scripts, no automáticamente
-        // TryBootstrapQuestSignals();
+        // NO iniciar el grafo aquí.
+        // El NarrativeGraphStarter en la escena se encargará de:
+        // 1. Restaurar blackboards desde el runtimePreset (sea de JSON o preset de testeo)
+        // 2. Iniciar el grafo, que verificará __currentNodeGuid y continuará desde ahí
+        //
+        // Esto garantiza que el sistema es agnóstico al origen de los datos.
+        if (debugLogs) Debug.Log("[NarrativeAutoSetup] Start() - grafo NO iniciado aquí (lo hará NarrativeGraphStarter)");
     }
 
     void TryBootstrapQuestSignals()
@@ -89,30 +86,36 @@ public class NarrativeAutoSetup : MonoBehaviour
     public static void ResetForNewGame()
     {
         if (_instance == null) return;
-        _instance.HandleReset("ResetForNewGame");
+        _instance.HandleReset("ResetForNewGame", clearBlackboard: true, restartGraph: true);
     }
 
     public static void ResetForLoadedProfile()
     {
         if (_instance == null) return;
-        _instance.HandleReset("ResetForLoadedProfile", rebootstrapSignals: true);
+        // Al cargar partida, NO limpiamos el blackboard ni reiniciamos el grafo
+        // El estado del grafo se restaurará desde los flags del preset
+        // Solo reseteamos los servicios de señales y quests para que se re-sincronicen
+        _instance.HandleReset("ResetForLoadedProfile", clearBlackboard: false, restartGraph: false);
     }
 
-    void HandleReset(string reason, bool rebootstrapSignals = false)
+    void HandleReset(string reason, bool clearBlackboard = false, bool restartGraph = false)
     {
-        if (debugLogs) Debug.Log($"[NarrativeAutoSetup] {reason}()");
+        if (debugLogs) Debug.Log($"[NarrativeAutoSetup] {reason}() - clearBlackboard={clearBlackboard}, restartGraph={restartGraph}");
 
         _signals?.ResetState();
         _questService?.ResetState();
         
         if (_runner != null)
         {
-            _runner.Blackboard?.Clear();
-            _runner.StartFromStartNode();
+            if (clearBlackboard)
+            {
+                _runner.Blackboard?.Clear();
+            }
+            
+            if (restartGraph)
+            {
+                _runner.StartFromStartNode();
+            }
         }
-
-        // DESHABILITADO: Bootstrap automático de señales causaba eventos duplicados
-        // if (rebootstrapSignals)
-        //     TryBootstrapQuestSignals();
     }
 }

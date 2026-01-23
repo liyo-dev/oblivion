@@ -233,6 +233,10 @@
             "value": "Siguiendo"
         },
         {
+            "key": "UI_TELETRANSPORTE",
+            "value": "Teletransporte "
+        },
+        {
             "key": "UI_VOLVER_MENU",
             "value": "Volver al menu"
         },

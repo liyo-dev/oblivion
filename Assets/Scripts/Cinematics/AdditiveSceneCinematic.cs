@@ -94,7 +94,8 @@ public class AdditiveSceneCinematic : MonoBehaviour
         }
 
         // Evitar instancias o cargas duplicadas cuando ya hay una cinemática en curso
-        if (isPlaying || isUnloading || (loadOp != null && !loadOp.isDone))
+        // IMPORTANTE: Verificar ANTES de hacer Acquire() del lock
+        if (isPlaying || isUnloading || (loadOp != null && !loadOp.isDone) || IsAnyAdditiveCinematicPlaying)
         {
             if (showDebugLogs)
                 Debug.Log("[AdditiveSceneCinematic] Ya hay una cinemática aditiva en curso o cargándose. Ignorando llamada.");
@@ -154,11 +155,11 @@ public class AdditiveSceneCinematic : MonoBehaviour
         isPlaying = false;
         finishActionsInvoked = false;
 
+        // Marcar ANTES de cualquier lock para prevenir carreras de condiciones
+        IsAnyAdditiveCinematicPlaying = true;
+
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Desactivando gameplay y cargando escena: {cinematicSceneName}");
-
-        // Marcar que hay una cinemática aditiva en reproducción
-        IsAnyAdditiveCinematicPlaying = true;
         
         // Bloquear movimiento del jugador
         if (PlayerLockService.HasInstance)
@@ -394,19 +395,29 @@ public class AdditiveSceneCinematic : MonoBehaviour
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Descargando escena: {cinematicSceneName}");
 
-        var scn = SceneManager.GetSceneByName(cinematicSceneName);
-        if (scn.isLoaded)
-            yield return SceneManager.UnloadSceneAsync(scn);
+        try
+        {
+            var scn = SceneManager.GetSceneByName(cinematicSceneName);
+            if (scn.isLoaded)
+                yield return SceneManager.UnloadSceneAsync(scn);
 
-        if (showDebugLogs)
-            Debug.Log("[AdditiveSceneCinematic] Reactivando gameplay.");
-
-        // Limpiar flag de cinemática aditiva en reproducción
-        IsAnyAdditiveCinematicPlaying = false;
-        
-        // Desbloquear movimiento del jugador
-        if (PlayerLockService.HasInstance)
-            PlayerLockService.Instance.Release(this);
+            if (showDebugLogs)
+                Debug.Log("[AdditiveSceneCinematic] Reactivando gameplay.");
+        }
+        finally
+        {
+            // GARANTIZAR que el lock se libere siempre, incluso si hay errores
+            // Limpiar flag de cinemática aditiva en reproducción
+            IsAnyAdditiveCinematicPlaying = false;
+            
+            // Desbloquear movimiento del jugador
+            if (PlayerLockService.HasInstance)
+            {
+                PlayerLockService.Instance.Release(this);
+                if (showDebugLogs)
+                    Debug.Log("[AdditiveSceneCinematic] ✅ PlayerLockService.Release() ejecutado");
+            }
+        }
 
         // Posicionamiento de salida: o restauramos la posición previa del jugador o usamos SpawnManager
         if (useLastPlayerPositionOnExit && hasSavedPlayerTransform)

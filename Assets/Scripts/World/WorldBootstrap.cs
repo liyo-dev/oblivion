@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class WorldBootstrap : MonoBehaviour
 {
-    private SaveSystem _saveSystem;
     private bool _initialized;
 
     void OnEnable()
@@ -44,8 +43,6 @@ public class WorldBootstrap : MonoBehaviour
             return;
         }
 
-        _saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
-
         // 1) Modo PRESET (test): SIEMPRE tiene prioridad sobre saves
         if (bootProfile.ShouldBootFromPreset())
         {
@@ -57,10 +54,10 @@ public class WorldBootstrap : MonoBehaviour
             var qm = QuestManager.Instance;
             if (qm != null)
             {
-                var preset = bootProfile.GetActivePresetResolved();
-                if (preset != null)
+                var testPreset = bootProfile.GetActivePresetResolved();
+                if (testPreset != null)
                 {
-                    qm.RestoreFromProfileFlags(preset.flags);
+                    qm.RestoreFromProfileFlags(testPreset.flags);
                 }
             }
 
@@ -74,43 +71,17 @@ public class WorldBootstrap : MonoBehaviour
             return;
         }
 
-        // 2) Flujo normal: si hay save → cargarlo; si no → usar defaultPreset
+        // 2) Flujo normal: El runtimePreset ya está configurado por GameBootService.PrepareActivePreset()
+        // Simplemente aplicar el preset al jugador sin recargar el save
         string anchorId = bootProfile.GetStartAnchorOrDefault();
-
-        if (_saveSystem != null && _saveSystem.Load(out var data))
+        
+        var activePreset = bootProfile.GetActivePresetResolved();
+        if (activePreset != null)
         {
-            // HAY SAVE → usar anchor del save
-            if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
-                anchorId = data.lastSpawnAnchorId;
-
-            bootProfile.SetRuntimePresetFromSave(data);
-            
             // Aplicar posiciones de NPCs usando el método robusto de GameBootProfile
-            // Esto asegura consistencia con el modo testing
-            var preset = bootProfile.GetActivePresetResolved();
-            if (preset != null)
-            {
-                bootProfile.ApplyNpcPositionsToScene(preset);
-            }
-
-            if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
-                presetService.ApplyCurrentPreset(includeInventory: true);
-            else
-            {
-                var svc = ServiceLocator.Get<PlayerPresetService>(false);
-                if (svc != null) svc.ApplyCurrentPreset(includeInventory: true);
-            }
-
-            // Debug.Log($"[WorldBootstrap] Save cargado → Anchor: '{anchorId}'");
-        }
-        else
-        {
-            // NO HAY SAVE → usar anchor del defaultPreset (ya en runtimePreset)
-            // Debug.Log($"[WorldBootstrap] Sin save → Anchor del preset: '{anchorId}'");
+            bootProfile.ApplyNpcPositionsToScene(activePreset);
             
-            var qm = QuestManager.Instance;
-            if (qm != null) qm.ResetAllQuests();
-            
+            // Aplicar el preset al jugador (incluye inventario y abilities)
             if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
                 presetService.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
             else
@@ -119,12 +90,11 @@ public class WorldBootstrap : MonoBehaviour
                 if (svc != null) svc.ApplyCurrentPreset(includeInventory: true, includeAbilities: true);
             }
             
-            // Aplicar posiciones de NPCs usando el método robusto de GameBootProfile
-            var preset = bootProfile.GetActivePresetResolved();
-            if (preset != null)
-            {
-                bootProfile.ApplyNpcPositionsToScene(preset);
-            }
+            // Aplicar estado de quests desde el preset
+            var qm = QuestManager.Instance;
+            if (qm != null) qm.RestoreFromProfileFlags(activePreset.flags);
+            
+            // Debug.Log($"[WorldBootstrap] Usando runtimePreset ya configurado → Anchor: '{anchorId}'");
         }
 
         // 3) Colocar jugador

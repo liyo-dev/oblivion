@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d087000332e4358971d6ff73011ab93, type: 3}
+  m_Name: Liam_PartyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCPartyConfig
+  moduleName: 
+  description: 
+  displayName: 
+  distanciaParaPararse: 2
+  distanciaParaCorrer: 3
+  distanciaParaTeletransporte: 20
+  velocidadCaminando: 5
+  velocidadCorriendo: 10
+  quedarseDetras: 1
+  offsetLateral: {x: -1, y: 1}
+  tiempoIdleMinimo: 1
+  tiempoIdleMaximo: 3
+  puedeVagarCerca: 0
+  radioVagabundeo: 2
+  autoUnirseACombate: 1
+  rangoAsistenciaCombate: 30
+  spellLeft: {fileID: 0}
+  spellRight: {fileID: 0}
+  spellSpecial: {fileID: 0}
+  distanciaMinimaAtaque: 2
+  distanciaMaximaAtaque: 15

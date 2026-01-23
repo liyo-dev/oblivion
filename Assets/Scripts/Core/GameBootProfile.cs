@@ -65,6 +65,58 @@ public class GameBootProfile : ScriptableObject
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
         dst.consumedInteractableIds = new List<string>(src.consumedInteractableIds ?? new List<string>());
         dst.completedInteractiveNarratives = new List<string>(src.completedInteractiveNarratives ?? new List<string>());
+        dst.partyMemberIds = new List<string>(src.partyMemberIds ?? new List<string>());
+        dst.unlockedTeleportPoints = new List<string>(src.unlockedTeleportPoints ?? new List<string>());
+        
+        // === CRÍTICO: Copiar narrativeBlackboards para que el grafo continúe desde la posición guardada ===
+        if (src.narrativeBlackboards != null && src.narrativeBlackboards.Count > 0)
+        {
+            dst.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+            foreach (var bb in src.narrativeBlackboards)
+            {
+                var copy = new PlayerSaveData.NarrativeBlackboardSnapshot
+                {
+                    graphLabel = bb.graphLabel,
+                    blackboardData = new List<SimpleBlackboard.Entry>()
+                };
+                if (bb.blackboardData != null)
+                {
+                    foreach (var entry in bb.blackboardData)
+                    {
+                        copy.blackboardData.Add(new SimpleBlackboard.Entry
+                        {
+                            key = entry.key,
+                            value = entry.value
+                        });
+                    }
+                }
+                dst.narrativeBlackboards.Add(copy);
+            }
+        }
+        else
+        {
+            dst.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+        }
+        
+        // === Copiar posiciones de NPCs ===
+        if (src.npcPositions != null && src.npcPositions.Count > 0)
+        {
+            dst.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
+            foreach (var npc in src.npcPositions)
+            {
+                dst.npcPositions.Add(new PlayerPresetSO.NpcPosEntry
+                {
+                    npcId = npc.npcId,
+                    position = npc.position,
+                    hasActiveState = npc.hasActiveState,
+                    isActive = npc.isActive
+                });
+            }
+        }
+        else
+        {
+            dst.npcPositions = new List<PlayerPresetSO.NpcPosEntry>();
+        }
         
         if (src.abilities != null)
         {
@@ -210,10 +262,18 @@ public class GameBootProfile : ScriptableObject
         // === NUEVO: restaurar puntos de teletransporte desbloqueados ===
         if (data.unlockedTeleportPoints != null && data.unlockedTeleportPoints.Count > 0)
         {
+            // Actualizar preset
+            p.unlockedTeleportPoints = new List<string>(data.unlockedTeleportPoints);
+            // Sincronizar con TeleportRegistry
             TeleportRegistry.LoadFromSaveData(data.unlockedTeleportPoints);
             Debug.Log($"[GameBootProfile] 🚀 Teleport points restaurados: {data.unlockedTeleportPoints.Count}");
         }
-        // NO limpiar si ya hay puntos cargados - evita borrar puntos al re-llamar esta función
+        else
+        {
+            // Limpiar si el save no tiene puntos
+            p.unlockedTeleportPoints = new List<string>();
+        }
+        // NO limpiar TeleportRegistry si ya hay puntos cargados - evita borrar puntos al re-llamar esta función
         // TeleportRegistry.Clear() solo se llama en NewGameReset()
     }
 
@@ -302,6 +362,16 @@ public class GameBootProfile : ScriptableObject
         data.narrativeBlackboards = activePreset.narrativeBlackboards != null 
             ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(activePreset.narrativeBlackboards) 
             : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+
+        // === NUEVO: incluir miembros del equipo (party) ===
+        data.partyMemberIds = activePreset.partyMemberIds != null
+            ? new List<string>(activePreset.partyMemberIds)
+            : new List<string>();
+
+        // === NUEVO: incluir puntos de teletransporte desbloqueados ===
+        data.unlockedTeleportPoints = activePreset.unlockedTeleportPoints != null
+            ? new List<string>(activePreset.unlockedTeleportPoints)
+            : new List<string>();
 
         return data;
     }
@@ -556,6 +626,21 @@ public class GameBootProfile : ScriptableObject
         {
             Debug.LogWarning("[GameBootProfile] NarrativeGraphHub.Instance es NULL - no se pueden guardar blackboards");
             p.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
+        }
+
+        // === NUEVO: sincronizar Party desde PlayerParty ===
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            var party = Game.NPC.PlayerParty.Instance;
+            var partyIds = party.GetMemberIdsForSave();
+            p.partyMemberIds = partyIds;
+            syncedSystems.Add($"Party({partyIds.Count})");
+            Debug.Log($"[GameBootProfile] Party sincronizado al preset: {partyIds.Count} miembros [{string.Join(", ", partyIds)}]");
+        }
+        else
+        {
+            p.partyMemberIds = new List<string>();
+            Debug.LogWarning("[GameBootProfile] PlayerParty no disponible - Party guardado vacío");
         }
 
         // Snapshot narrativo eliminado; no se captura
@@ -827,7 +912,18 @@ public class GameBootProfile : ScriptableObject
 
         // ✅ Limpiar puntos de teletransporte desbloqueados para nueva partida
         TeleportRegistry.Clear();
-        Debug.Log("[GameBootProfile] 🚀 TeleportRegistry limpiado para Nueva Partida");
+        if (runtimePreset != null && runtimePreset.unlockedTeleportPoints != null)
+        {
+            runtimePreset.unlockedTeleportPoints.Clear();
+        }
+        Debug.Log("[GameBootProfile] 🚀 TeleportRegistry y preset limpiados para Nueva Partida");
+
+        // ✅ Limpiar miembros del equipo para nueva partida
+        if (runtimePreset != null && runtimePreset.partyMemberIds != null)
+        {
+            runtimePreset.partyMemberIds.Clear();
+        }
+        Debug.Log("[GameBootProfile] 🤝 Party limpiado en preset para Nueva Partida");
 
         NarrativeAutoSetup.ResetForNewGame();
 

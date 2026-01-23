@@ -21,7 +21,7 @@ MonoBehaviour:
   chargeTime: 0
   chargeStartScale: 0.1
   followOriginDuringCharge: 1
-  initialSpeed: 10
+  initialSpeed: 20
   useGravity: 0
   maxRange: 40
   lifeTime: 2

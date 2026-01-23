@@ -67,6 +67,30 @@
         {
             "id": "EVT_ESTELA_03",
             "text": "Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
+        },
+        {
+            "id": "EVT_GOLEM_END_01",
+            "text": "Estela: Hmph. Tal y como predije. La trayectoria de la explosión fue perfecta."
+        },
+        {
+            "id": "EVT_GOLEM_END_02",
+            "text": "Estela: Lo tenía todo calculado."
+        },
+        {
+            "id": "EVT_GOLEM_END_03",
+            "text": "Will: ¿Calculado? ¡Si te has tropezado antes de disparar! Admítelo..."
+        },
+        {
+            "id": "EVT_GOLEM_END_04",
+            "text": "Will: Ha sido un milagro que no acabáramos hechos puré."
+        },
+        {
+            "id": "EVT_GOLEM_END_05",
+            "text": "Liam (desde las sombras): Esa hechicera es un problema imprevisto en mi ecuación."
+        },
+        {
+            "id": "EVT_GOLEM_END_06",
+            "text": "Liam: El Golem ha fallado. Si quiero que el chico llegue al final, tendré que guiarlo yo mismo."
         }
     ]
 }

@@ -42,6 +42,9 @@ public static class TeleportRegistry
         _unlockedPoints[point.anchorId] = point;
         Debug.Log($"[TeleportRegistry] ✨ Nuevo punto de teletransporte desbloqueado: {point.displayName} ({point.anchorId})");
         
+        // Sincronizar con el preset para persistencia durante gameplay
+        SyncToPreset();
+        
         OnPointUnlocked?.Invoke(point);
         OnRegistryChanged?.Invoke();
         return true;
@@ -149,6 +152,27 @@ public static class TeleportRegistry
         // Fallback: convertir anchorId a formato legible
         // "City_Gate" -> "City Gate"
         return anchorId.Replace("_", " ");
+    }
+    
+    /// <summary>
+    /// Sincroniza los puntos desbloqueados con el runtimePreset para persistencia durante gameplay.
+    /// Este método debe llamarse cada vez que cambia el estado del registro.
+    /// </summary>
+    private static void SyncToPreset()
+    {
+        try
+        {
+            var preset = GameBootService.Profile?.GetActivePresetResolved();
+            if (preset != null)
+            {
+                preset.unlockedTeleportPoints = ToSaveData();
+                Debug.Log($"[TeleportRegistry] 🔄 Sincronizado con preset: {preset.unlockedTeleportPoints.Count} puntos");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[TeleportRegistry] Error sincronizando con preset: {ex.Message}");
+        }
     }
 }
 

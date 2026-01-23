@@ -26,44 +26,47 @@ public class EnemyProjectile : MonoBehaviour
     private bool hasHit = false;
     private Rigidbody rb;
     private System.Collections.Generic.List<GameObject> _attachedVfx;
+    
+    // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
+    private Collider[] _playerDetectionBuffer = new Collider[8];
 
     void Awake()
     {
-        // ✅ Configurar el collider para colisiones FÍSICAS (no trigger)
-        // Esto permite detectar obstáculos Default correctamente
+        // ✅ Configurar el collider - NO forzamos isTrigger para permitir OnCollisionEnter con el player
         var col = GetComponent<SphereCollider>();
         if (col)
         {
-            col.isTrigger = false; // ← Cambio CRÍTICO: Usar colisiones físicas
+            // Usar la configuración del prefab (puede ser trigger o no)
+            // Si es trigger: OnTriggerEnter con otros triggers
+            // Si NO es trigger: OnCollisionEnter con otros colliders
             col.radius = 0.5f;
         }
 
-        // Configurar el rigidbody para movimiento suave CON colisiones físicas
+        // Configurar el rigidbody para movimiento suave
         rb = GetComponent<Rigidbody>();
         if (rb)
         {
             rb.useGravity = false;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // Mejor detección
-            
-            // ✅ SIEMPRE usar física no-kinematic para detectar colisiones
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.isKinematic = false;
-            rb.linearDamping = 0f; // Sin fricción
+            rb.linearDamping = 0f;
             rb.angularDamping = 0f;
-            
-            // ✅ Congelar rotación para que no gire al colisionar
             rb.freezeRotation = true;
         }
+        
+        Debug.Log($"[EnemyProjectile] Awake - Collider isTrigger: {col?.isTrigger}, Layer: {LayerMask.LayerToName(gameObject.layer)}");
     }
 
     public void Initialize(Vector3 dir, float dmg = -1f)
     {
         direction = dir.normalized;
         // Si no se pasa daño, usar el baseDamage del prefab
+        Debug.Log($"[EnemyProjectile] Initialize llamado: dmg={dmg}, baseDamage={baseDamage}");
         damage = dmg > 0f ? dmg : baseDamage;
         initialized = true;
         
-        Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño");
+        Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño (dmg pasado: {dmg}, baseDamage: {baseDamage})");
         
         // 🔊 Reproducir SFX de spawn
         if (!string.IsNullOrEmpty(spawnSFXKey))
@@ -111,31 +114,91 @@ public class EnemyProjectile : MonoBehaviour
         {
             rb.linearVelocity = direction * speed;
         }
+        
+        // ✅ Detección activa del player - CharacterController no dispara OnTriggerEnter correctamente
+        CheckPlayerProximity();
     }
-
-    // ✅ OnCollisionEnter: Para colisiones FÍSICAS (obstáculos Default, jugador)
-    void OnCollisionEnter(Collision collision)
+    
+    /// <summary>
+    /// Detecta si el proyectil está cerca del player usando OverlapSphere.
+    /// Esto es necesario porque CharacterController no dispara OnTriggerEnter de forma confiable.
+    /// </summary>
+    private void CheckPlayerProximity()
     {
         if (hasHit) return;
         
-        Collider other = collision.collider;
+        // Radio de detección del proyectil
+        float detectionRadius = 0.8f;
+        int playerLayer = LayerMask.GetMask("Player");
         
-        // Ignorar enemigos
-        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
+        // Buscar player en el radio
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _playerDetectionBuffer, playerLayer); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
+        
+        if (hitCount > 0)
+        {
+            for (int i = 0; i < hitCount; i++)
+            {
+                var hit = _playerDetectionBuffer[i];
+                
+                // Verificar que sea el player
+                var playerHealth = hit.GetComponent<PlayerHealthSystem>() ?? hit.GetComponentInParent<PlayerHealthSystem>();
+                if (playerHealth != null)
+                {
+                    hasHit = true;
+                    Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR detectado por proximidad! Aplicando {damage} de daño");
+                    playerHealth.TakeDamage(damage);
+                    DestroyProjectile();
+                    return;
+                }
+                
+                // También buscar por tag como fallback
+                Transform checkTransform = hit.transform;
+                for (int j = 0; j < 5 && checkTransform != null; j++) // ✅ FIX: Cambiado 'i' por 'j' para evitar conflicto
+                {
+                    if (checkTransform.CompareTag("Player"))
+                    {
+                        hasHit = true;
+                        Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (tag) por proximidad!");
+                        ApplyDamage(checkTransform.gameObject);
+                        DestroyProjectile();
+                        return;
+                    }
+                    checkTransform = checkTransform.parent;
+                }
+            }
+        }
+    }
+
+    // ✅ OnTriggerEnter: PRINCIPAL - Para colisiones con triggers (jugador, obstáculos)
+    void OnTriggerEnter(Collider other)
+    {
+        if (hasHit) return;
+        
+        // 🔍 DEBUG: Log de TODAS las colisiones
+        Debug.Log($"[EnemyProjectile] OnTriggerEnter: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.tag})");
+        
+        // Ignorar enemigos (el proyectil es de enemigos, no debe dañarlos)
+        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy") ||
+            other.gameObject.layer == LayerMask.NameToLayer("Boss")) 
         {
             return;
         }
         
-        // ✅ PRIORIDAD 1: Detectar colisión con layer Default (entorno/obstáculos)
-        if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
+        // ✅ Ignorar el arena del boss (layer TransparentFX)
+        if (other.gameObject.layer == LayerMask.NameToLayer("TransparentFX"))
         {
-            hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Impacto FÍSICO contra objeto Default: {other.gameObject.name}");
-            DestroyProjectile();
+            Debug.Log($"[EnemyProjectile] ⚠️ Ignorando colisión con arena: {other.gameObject.name}");
             return;
         }
         
-        // ✅ PRIORIDAD 2: Si impacta contra el escudo del jugador
+        // ✅ Ignorar otros proyectiles enemigos
+        if (other.gameObject.layer == LayerMask.NameToLayer("EnemyProjectile") ||
+            other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy"))
+        {
+            return;
+        }
+        
+        // ✅ PRIORIDAD 1: Si impacta contra el escudo del jugador
         if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
         {
             hasHit = true;
@@ -144,13 +207,25 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        // ✅ PRIORIDAD 3: Aplicar daño si es el jugador
+        // ✅ PRIORIDAD 2: Aplicar daño si es el jugador (buscar en toda la jerarquía)
+        // Primero verificar por layer "Player"
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        {
+            hasHit = true;
+            Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (layer Player)! Aplicando {damage} de daño");
+            ApplyDamage(other.gameObject);
+            DestroyProjectile();
+            return;
+        }
+        
+        // Buscar por tag en jerarquía
         Transform checkTransform = other.transform;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 5; i++)
         {
             if (checkTransform.CompareTag("Player"))
             {
                 hasHit = true;
+                Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (tag)! Aplicando {damage} de daño");
                 ApplyDamage(checkTransform.gameObject);
                 DestroyProjectile();
                 return;
@@ -162,42 +237,61 @@ public class EnemyProjectile : MonoBehaviour
                 break;
         }
 
+        // Buscar PlayerHealthSystem en jerarquía
         var playerHealth = other.GetComponentInParent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
             hasHit = true;
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (encontrado por componente)");
+            Debug.Log($"[EnemyProjectile] ✅ Daño aplicado al jugador via PlayerHealthSystem: {damage}");
             DestroyProjectile();
             return;
         }
 
-        // ✅ Cualquier otra colisión física
-        hasHit = true;
-        Debug.Log($"[EnemyProjectile] 💥 Impacto contra: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
-        DestroyProjectile();
-    }
-
-    // ✅ OnTriggerEnter: Solo para proyectiles del jugador (que usan triggers)
-    void OnTriggerEnter(Collider other)
-    {
-        if (hasHit) return;
-        
-        // Ignorar enemigos
-        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy")) 
-        {
-            return;
-        }
-        
-        // ✅ SOLO para colisión con proyectiles del jugador (layer "Projectile")
+        // ✅ Colisión con proyectiles del jugador (layer "Projectile")
         if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador detectada!");
+            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador!");
             Vector3 collisionPoint = other.ClosestPoint(transform.position);
             ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, collisionPoint);
             return;
         }
+        
+        // ✅ PRIORIDAD 3: Detectar colisión con layer Default (entorno/obstáculos)
+        // Solo destruir si es un objeto sólido del escenario (no trigger)
+        if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
+        {
+            // Ignorar triggers del entorno (zonas de eventos, etc)
+            if (other.isTrigger)
+            {
+                return;
+            }
+            
+            hasHit = true;
+            Debug.Log($"[EnemyProjectile] 💥 Impacto contra objeto Default: {other.gameObject.name}");
+            DestroyProjectile();
+            return;
+        }
+        
+        // ✅ Cualquier otra colisión con objetos no-trigger
+        if (!other.isTrigger)
+        {
+            hasHit = true;
+            Debug.Log($"[EnemyProjectile] 💥 Impacto contra: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
+            DestroyProjectile();
+        }
+    }
+    
+    // OnCollisionEnter: Fallback para colisiones físicas (si el collider NO es trigger)
+    void OnCollisionEnter(Collision collision)
+    {
+        if (hasHit) return;
+        
+        Collider other = collision.collider;
+        
+        // Redirigir a la lógica principal
+        OnTriggerEnter(other);
     }
 
     private void ApplyDamage(GameObject target)

@@ -233,6 +233,10 @@
             "value": "[EN] Siguiendo"
         },
         {
+            "key": "UI_TELETRANSPORTE",
+            "value": "Teleport"
+        },
+        {
             "key": "UI_VOLVER_MENU",
             "value": "Back to menu"
         },

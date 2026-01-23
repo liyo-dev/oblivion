@@ -70,4 +70,8 @@ public class PlayerPresetSO : ScriptableObject
     [Header("Equipo (Party)")]
     [Tooltip("IDs narrativos de los NPCs que están en el equipo del jugador.")]
     public List<string> partyMemberIds = new();
+
+    [Header("Sistema de Teletransporte")]
+    [Tooltip("IDs de los puntos de teletransporte desbloqueados por el jugador.")]
+    public List<string> unlockedTeleportPoints = new();
 }

@@ -102,6 +102,16 @@ public static class ActiveCombatRegistry
     }
     
     /// <summary>
+    /// Obtiene una lista de TODOS los NPCs actualmente en combate
+    /// </summary>
+    public static List<GameObject> GetAllInCombat()
+    {
+        // Limpiar NPCs destruidos primero
+        _npcsInCombat.RemoveWhere(npc => npc == null);
+        return new List<GameObject>(_npcsInCombat);
+    }
+    
+    /// <summary>
     /// Limpia NPCs destruidos del registro
     /// </summary>
     public static void CleanupDestroyedNPCs()

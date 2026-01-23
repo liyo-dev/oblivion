@@ -216,10 +216,43 @@ namespace Game.NPC
     /// </summary>
     public void NotifyPostDefeatDialogueFinished()
     {
+        if (IsPostDefeatDialogueFinished)
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning($"[NPCCombatTeam] {name}: NotifyPostDefeatDialogueFinished llamado múltiples veces - ignorando");
+            }
+            return;
+        }
+        
         IsPostDefeatDialogueFinished = true;
         if (showDebugLogs)
         {
             Debug.Log($"[NPCCombatTeam] {name}: Diálogo post-derrota finalizado. Notificando al equipo.");
+        }
+    }
+    
+    /// <summary>
+    /// Fuerza la finalización del diálogo si el sistema se atasca.
+    /// Útil para debugging o situaciones de emergencia.
+    /// </summary>
+    public void ForceFinishPostDefeatDialogue()
+    {
+        if (!IsPostDefeatDialogueFinished)
+        {
+            Debug.LogWarning($"[NPCCombatTeam] {name}: ⚠️ FORZANDO finalización de diálogo post-derrota");
+            IsPostDefeatDialogueFinished = true;
+            
+            // Cancelar dizzy en todos los miembros para que procedan
+            foreach (var member in _allMembers)
+            {
+                if (member == null) continue;
+                var lifecycle = member.GetComponent<NPCCombatLifecycleHandler>();
+                if (lifecycle != null)
+                {
+                    lifecycle.CancelDizzySequence();
+                }
+            }
         }
     }
     

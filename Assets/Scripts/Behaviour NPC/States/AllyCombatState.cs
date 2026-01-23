@@ -1,152 +1,474 @@
 using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
-using System.Collections;
 
 namespace Game.NPC.States
 {
     /// <summary>
     /// Estado de combate para NPCs aliados/compañeros.
-    /// Se queda atacando al target del jugador mientras esté dentro de un radio.
-    /// Solo se mueve si se aleja demasiado del jugador.
+    /// VERSIÓN MEJORADA: Usa ActiveCombatRegistry para encontrar enemigos activos en combate.
     /// </summary>
     public class AllyCombatState : NPCStateBase
     {
         public override string StateName => "AllyCombat";
 
         private Transform _currentTarget;
+        private Transform _forcedTarget; // Target forzado desde OnPlayerEnteredCombat
+        private string _forcedTargetName; // Nombre del target forzado para re-búsqueda
         private NPCPartyMember _partyMember;
         private Transform _player;
-        private PlayerTargeting _playerTargeting;
         
-        // Cache de layers para daño
-        private LayerMask _damageLayers;
-        private bool _damageLayersInitialized;
+        // Cooldowns de hechizos
+        private float _lastAttackTime;
+        private float _attackCooldown; // Cooldown dinámico basado en el hechizo
         
-        // Cooldowns individuales para cada hechizo
-        private float _spellLeftTimer;
-        private float _spellRightTimer;
-        private float _spellSpecialTimer;
+        // Configuración
+        private const float ATTACK_RANGE = 15f;
+        private const float DETECTION_RANGE = 30f; // ✅ OPTIMIZACIÓN: Reducido de 100m a 30m (más razonable)
+        private const float DEFAULT_ATTACK_COOLDOWN = 2f;
+        private const float NO_ENEMY_TIMEOUT = 30f; // 30 segundos - suficiente tiempo para batallas de boss
         
-        // Flag para evitar lanzar mientras hay un cast en progreso
+        private float _noEnemyTimer;
+        private bool _hasLoggedSearch; // Para no spamear logs
+        private float _searchCooldown; // Para no buscar cada frame
+        
+        // Movimiento táctico - valores ajustados para comportamiento más dinámico
+        private Vector3 _tacticalPosition;
+        private float _repositionTimer;
+        private const float REPOSITION_INTERVAL = 1.5f; // Reposicionarse cada 1.5 segundos (más frecuente)
+        private const float MIN_COMBAT_DISTANCE = 4f; // Distancia mínima al enemigo (más cerca)
+        private const float MAX_COMBAT_DISTANCE = 10f; // Distancia máxima al enemigo (más cerca)
+        private const float STRAFE_RADIUS = 5f; // Radio de movimiento lateral (más amplio)
+        
+        // Seguimiento del player durante combate
+        private const float MAX_PLAYER_DISTANCE = 30f; // Si el player está más lejos, acercarse a él
+        
+        // Estados de comportamiento
+        private enum CombatBehavior { Idle, Approaching, Strafing, Retreating, FollowingPlayer }
+        private CombatBehavior _currentBehavior = CombatBehavior.Idle;
+        private float _behaviorTimer;
+        private const float BEHAVIOR_CHANGE_CHANCE = 0.3f; // Probabilidad de cambiar comportamiento
+        
+        // Sistema de casting con delay
         private bool _isCasting;
+        private float _castTimer;
+        private MagicSpellSO _pendingSpell;
         
-        // Radio de combate - si está dentro de este radio del jugador, ataca libremente
-        private const float COMBAT_RADIUS = 12f;
-        // Si se aleja más de esto, DEBE moverse hacia el jugador
-        private const float MAX_DISTANCE_FROM_PLAYER = 15f;
+        // Rotación de hechizos entre los 3 disponibles
+        private int _currentSpellIndex = 0;
         
-        private const float LOSE_TARGET_TIME = 2f;
-        private float _timeSinceLastHadTarget;
+        // ✅ OPTIMIZACIÓN FASE 1: Buffer reutilizable para Physics queries (evita allocations)
+        private Collider[] _physicsBuffer = new Collider[32];
+
+        /// <summary>
+        /// Constructor que permite pasar un target inicial (desde OnPlayerEnteredCombat)
+        /// </summary>
+        public AllyCombatState(Transform forcedTarget = null)
+        {
+            _forcedTarget = forcedTarget;
+            // Guardar el nombre para poder re-buscar si el Transform se vuelve inválido
+            _forcedTargetName = forcedTarget != null ? forcedTarget.name : null;
+        }
 
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
             
-            context.Log("[AllyCombatState] ⚔️ Compañero entrando en combate aliado");
+            // ===== VERSIÓN 2: Forzar recompilación =====
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] ⚔️⚔️⚔️ ENTRANDO EN COMBATE (v2)");
+            Debug.Log($"[AllyCombatState:{context.Transform.name}]   - ForcedTarget: {_forcedTarget?.name ?? "NULL"} (gameObject null: {_forcedTarget?.gameObject == null})");
+            Debug.Log($"[AllyCombatState:{context.Transform.name}]   - ForcedTargetName: {_forcedTargetName ?? "NULL"}");
+            Debug.Log($"[AllyCombatState:{context.Transform.name}]   - ActiveCombatRegistry.Count: {ActiveCombatRegistry.Count}");
+            
+            // Listar todos los enemigos en el registry
+            var allCombatNPCs = ActiveCombatRegistry.GetAllInCombat();
+            foreach (var npc in allCombatNPCs)
+            {
+                Debug.Log($"[AllyCombatState:{context.Transform.name}]   - Registry NPC: {npc?.name ?? "NULL"} (active: {npc?.activeInHierarchy})");
+            }
+            
             context.IsInCombat = true;
             
             _partyMember = context.Transform.GetComponent<NPCPartyMember>();
-            _spellLeftTimer = 0f;
-            _spellRightTimer = 0f;
-            _spellSpecialTimer = 0f;
-            _timeSinceLastHadTarget = 0f;
+            _lastAttackTime = -DEFAULT_ATTACK_COOLDOWN; // Puede atacar inmediatamente
+            _attackCooldown = DEFAULT_ATTACK_COOLDOWN;
+            _noEnemyTimer = 0f;
+            _hasLoggedSearch = false;
+            _searchCooldown = 0f;
+            
+            // Movimiento táctico
+            _repositionTimer = 0f;
+            _tacticalPosition = context.Transform.position;
+            _currentBehavior = CombatBehavior.Idle;
+            _behaviorTimer = 0f;
+            
+            // Sistema de casting
             _isCasting = false;
+            _castTimer = 0f;
+            _pendingSpell = null;
             
-            // Obtener referencia al jugador y su sistema de targeting
-            FindPlayerAndTargeting();
+            // Obtener jugador
+            if (PlayerService.Player != null)
+            {
+                _player = PlayerService.Player.transform;
+            }
             
-            // Obtener las layers de daño
-            InitializeDamageLayers();
+            // Si tenemos un target forzado, usarlo DIRECTAMENTE sin validaciones
+            if (_forcedTarget != null && _forcedTarget.gameObject != null)
+            {
+                _currentTarget = _forcedTarget;
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🎯 TARGET FORZADO ASIGNADO: {_forcedTarget.name} (pos: {_forcedTarget.position})");
+            }
+            else
+            {
+                // Buscar en ActiveCombatRegistry primero
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔍 No hay target forzado, buscando en Registry...");
+                
+                var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 📊 Registry tiene {combatNPCs?.Count ?? 0} NPCs");
+                
+                if (combatNPCs != null && combatNPCs.Count > 0)
+                {
+                    foreach (var npc in combatNPCs)
+                    {
+                        // ✅ FIX: Verificar que el NPC esté vivo antes de asignarlo como target
+                        if (npc != null && npc != context.Transform.gameObject && npc.activeInHierarchy && IsTargetAlive(npc.transform))
+                        {
+                            _currentTarget = npc.transform;
+                            _forcedTarget = npc.transform; // También guardar como forzado
+                            _forcedTargetName = npc.name;
+                            Debug.Log($"[AllyCombatState:{context.Transform.name}] 🎯 Target del Registry (OnEnter): {npc.name}");
+                            break;
+                        }
+                    }
+                }
+                
+                if (_currentTarget == null)
+                {
+                    FindNearestEnemy(context);
+                }
+            }
             
-            // Activar modo batalla en el animator
+            // Activar modo batalla
             context.Animator?.SetBattleMode(true);
             
-            // Parar movimiento al entrar - atacar desde donde está
+            // Parar movimiento inicial
             StopMovement(context);
+            
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] 📍 OnEnter completado - CurrentTarget: {_currentTarget?.name ?? "NINGUNO"}");
         }
 
         public override void OnUpdate(NPCStateContext context)
         {
             base.OnUpdate(context);
             
-            // Asegurar referencias al jugador
-            if (_player == null || _playerTargeting == null)
+            // PRIORIDAD 1: Si tenemos un target forzado que aún existe y está VIVO, mantenerlo
+            if (_forcedTarget != null && _forcedTarget.gameObject != null && _forcedTarget.gameObject.activeInHierarchy)
             {
-                FindPlayerAndTargeting();
+                // ✅ FIX: Verificar que el target forzado siga VIVO antes de mantenerlo
+                if (IsTargetAlive(_forcedTarget))
+                {
+                    _currentTarget = _forcedTarget;
+                    _noEnemyTimer = 0f;
+                }
+                else
+                {
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] ☠️ Target forzado {_forcedTarget.name} está muerto, liberando target...");
+                    _forcedTarget = null;
+                    _forcedTargetName = null;
+                    _currentTarget = null;
+                }
+            }
+            // PRIORIDAD 1.5: Si perdimos el target forzado pero tenemos su nombre, re-buscarlo
+            else if (_forcedTarget == null && !string.IsNullOrEmpty(_forcedTargetName))
+            {
+                var foundByName = TryFindTargetByName(_forcedTargetName);
+                if (foundByName != null)
+                {
+                    _forcedTarget = foundByName;
+                    _currentTarget = foundByName;
+                    _noEnemyTimer = 0f;
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] 🎯 RE-ENCONTRADO target por nombre: {_forcedTargetName}");
+                }
+            }
+            // PRIORIDAD 2: Verificar si current target sigue siendo válido
+            else if (_currentTarget != null && _currentTarget.gameObject != null && _currentTarget.gameObject.activeInHierarchy)
+            {
+                // El target actual sigue existiendo, verificar si sigue vivo
+                var damageable = _currentTarget.GetComponent<Damageable>();
+                if (damageable != null && damageable.Current <= 0)
+                {
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] ☠️ Target {_currentTarget.name} murió, buscando otro...");
+                    _currentTarget = null;
+                }
+                else
+                {
+                    _noEnemyTimer = 0f; // Target válido, resetear timer
+                }
             }
             
-            // Sincronizar target con el jugador
-            SyncTargetWithPlayer(context);
-            
-            // Calcular distancia al jugador
-            float distanceToPlayer = _player != null 
-                ? Vector3.Distance(context.Transform.position, _player.position) 
-                : 0f;
-            
-            // ✅ LÓGICA SIMPLE:
-            // - Si está MUY lejos del jugador → moverse hacia él
-            // - Si está dentro del radio → quedarse quieto y atacar
-            
-            if (distanceToPlayer > MAX_DISTANCE_FROM_PLAYER)
-            {
-                // Demasiado lejos, correr hacia el jugador
-                MoveTowardsPlayer(context);
-                UpdateMovementAnimation(context);
-                return;
-            }
-            
-            // Dentro del radio de combate - QUEDARSE QUIETO y atacar
-            StopMovement(context);
-            
-            // Si no hay target, esperar
+            // PRIORIDAD 3: Si no hay target, buscar uno nuevo (con cooldown)
             if (_currentTarget == null)
             {
-                _timeSinceLastHadTarget += Time.deltaTime;
+                _searchCooldown -= Time.deltaTime;
+                
+                if (_searchCooldown <= 0f)
+                {
+                    _searchCooldown = 0.3f; // Buscar más frecuentemente (cada 0.3 segundos)
+                    
+                    // Primero intentar del Registry
+                    var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔍 Buscando target... Registry.Count={combatNPCs?.Count ?? 0}");
+                    
+                    if (combatNPCs != null && combatNPCs.Count > 0)
+                    {
+                        foreach (var npc in combatNPCs)
+                        {
+                            bool isNull = npc == null;
+                            bool isSelf = !isNull && npc == context.Transform.gameObject;
+                            bool isActive = !isNull && npc.activeInHierarchy;
+                            
+                            // ✅ FIX: También verificar que esté vivo
+                            bool isAlive = !isNull && isActive && IsTargetAlive(npc.transform);
+                            
+                            Debug.Log($"[AllyCombatState:{context.Transform.name}]   - Evaluando: {npc?.name ?? "NULL"} | null:{isNull} self:{isSelf} active:{isActive} alive:{isAlive}");
+                            
+                            if (!isNull && !isSelf && isActive && isAlive)
+                            {
+                                _currentTarget = npc.transform;
+                                _forcedTarget = npc.transform; // Guardar como forzado también
+                                _forcedTargetName = npc.name;
+                                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🎯✅ Target encontrado en Registry: {npc.name}");
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Si no encontramos en registry, buscar por tag/layer
+                    if (_currentTarget == null)
+                    {
+                        FindNearestEnemy(context);
+                    }
+                }
+                
+                // Incrementar timer de no-enemigo
+                if (_currentTarget == null)
+                {
+                    _noEnemyTimer += Time.deltaTime;
+                    
+                    // Log periódico cada segundo
+                    if ((int)_noEnemyTimer != (int)(_noEnemyTimer - Time.deltaTime) && _noEnemyTimer > 1f)
+                    {
+                        Debug.Log($"[AllyCombatState:{context.Transform.name}] ⏳ Sin enemigos por {_noEnemyTimer:F1}s (timeout: {NO_ENEMY_TIMEOUT}s, Registry: {ActiveCombatRegistry.Count})");
+                    }
+                    
+                    UpdateMovementAnimation(context);
+                    return;
+                }
+            }
+            
+            // ¡Tenemos target! Resetear timer y combatir
+            _noEnemyTimer = 0f;
+            
+            // ===== SISTEMA DE CASTING CON DELAY =====
+            if (_isCasting)
+            {
+                _castTimer -= Time.deltaTime;
+                
+                // Seguir mirando al enemigo mientras castea
+                RotateTowardsTarget(context);
+                StopMovement(context);
+                
+                if (_castTimer <= 0f)
+                {
+                    // ¡Lanzar el hechizo!
+                    ExecuteSpellLaunch(context, _pendingSpell);
+                    _isCasting = false;
+                    _pendingSpell = null;
+                }
+                
                 UpdateMovementAnimation(context);
                 return;
             }
             
-            _timeSinceLastHadTarget = 0f;
+            // Calcular distancias
+            float distanceToEnemy = Vector3.Distance(context.Transform.position, _currentTarget.position);
+            float distanceToPlayer = _player != null ? Vector3.Distance(context.Transform.position, _player.position) : 0f;
             
-            // Rotar hacia el enemigo
-            RotateTowardsTarget(context);
+            // ===== MOVIMIENTO TÁCTICO MEJORADO =====
+            _repositionTimer += Time.deltaTime;
+            _behaviorTimer += Time.deltaTime;
             
-            // Intentar atacar
-            TryAttack(context);
+            // Actualizar comportamiento
+            UpdateCombatBehavior(context, distanceToEnemy, distanceToPlayer);
             
-            // Actualizar animación (idle de batalla)
+            // Ejecutar comportamiento actual
+            switch (_currentBehavior)
+            {
+                case CombatBehavior.Approaching:
+                    MoveTowardsTarget(context);
+                    RotateTowardsTarget(context);
+                    // Intentar atacar mientras se acerca si está en rango
+                    if (distanceToEnemy <= MAX_COMBAT_DISTANCE)
+                        TryAttack(context);
+                    break;
+                    
+                case CombatBehavior.Strafing:
+                    if (_repositionTimer >= REPOSITION_INTERVAL)
+                    {
+                        _repositionTimer = 0f;
+                        CalculateTacticalPosition(context);
+                    }
+                    MoveToTacticalPosition(context);
+                    RotateTowardsTarget(context);
+                    TryAttack(context);
+                    break;
+                    
+                case CombatBehavior.Retreating:
+                    MoveAwayFromTarget(context);
+                    RotateTowardsTarget(context);
+                    TryAttack(context);
+                    break;
+                    
+                case CombatBehavior.FollowingPlayer:
+                    MoveTowardsPlayer(context);
+                    RotateTowardsTarget(context);
+                    break;
+                    
+                case CombatBehavior.Idle:
+                default:
+                    StopMovement(context);
+                    RotateTowardsTarget(context);
+                    TryAttack(context);
+                    break;
+            }
+            
             UpdateMovementAnimation(context);
+        }
+        
+        /// <summary>
+        /// Actualiza el comportamiento de combate basado en distancias y tiempo
+        /// </summary>
+        private void UpdateCombatBehavior(NPCStateContext context, float distanceToEnemy, float distanceToPlayer)
+        {
+            // PRIORIDAD 1: Si el player está muy lejos, seguirlo
+            if (_player != null && distanceToPlayer > MAX_PLAYER_DISTANCE)
+            {
+                if (_currentBehavior != CombatBehavior.FollowingPlayer)
+                {
+                    _currentBehavior = CombatBehavior.FollowingPlayer;
+                    _behaviorTimer = 0f;
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] 🏃 Siguiendo al jugador (distancia: {distanceToPlayer:F1}m)");
+                }
+                return;
+            }
+            
+            // PRIORIDAD 2: Si está muy lejos del enemigo, acercarse
+            if (distanceToEnemy > MAX_COMBAT_DISTANCE * 1.5f)
+            {
+                if (_currentBehavior != CombatBehavior.Approaching)
+                {
+                    _currentBehavior = CombatBehavior.Approaching;
+                    _behaviorTimer = 0f;
+                }
+                return;
+            }
+            
+            // PRIORIDAD 3: Si está muy cerca del enemigo, retroceder
+            if (distanceToEnemy < MIN_COMBAT_DISTANCE)
+            {
+                if (_currentBehavior != CombatBehavior.Retreating)
+                {
+                    _currentBehavior = CombatBehavior.Retreating;
+                    _behaviorTimer = 0f;
+                }
+                return;
+            }
+            
+            // En rango óptimo - alternar entre strafing e idle de forma natural
+            float behaviorDuration = _currentBehavior switch
+            {
+                CombatBehavior.Strafing => Random.Range(2f, 4f),
+                CombatBehavior.Idle => Random.Range(1f, 2f),
+                _ => 2f
+            };
+            
+            // Cambiar comportamiento cada cierto tiempo para ser más dinámico
+            if (_behaviorTimer > behaviorDuration || _currentBehavior == CombatBehavior.FollowingPlayer)
+            {
+                _behaviorTimer = 0f;
+                
+                // Probabilidad de cada comportamiento
+                float rand = Random.value;
+                if (rand < 0.5f)
+                {
+                    // 50% - Hacer strafe (más movimiento)
+                    _currentBehavior = CombatBehavior.Strafing;
+                    CalculateTacticalPosition(context);
+                    _repositionTimer = 0f;
+                }
+                else if (rand < 0.8f)
+                {
+                    // 30% - Acercarse un poco
+                    _currentBehavior = CombatBehavior.Approaching;
+                }
+                else
+                {
+                    // 20% - Quedarse quieto atacando
+                    _currentBehavior = CombatBehavior.Idle;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Moverse hacia el jugador (cuando está muy lejos)
+        /// </summary>
+        private void MoveTowardsPlayer(NPCStateContext context)
+        {
+            if (_player == null) return;
+            if (context.Agent == null || !context.Agent.isOnNavMesh) return;
+            
+            context.Agent.isStopped = false;
+            context.Agent.speed = context.Config?.runSpeed ?? 6f;
+            context.Agent.SetDestination(_player.position);
         }
 
         public override void OnExit(NPCStateContext context)
         {
             context.IsInCombat = false;
             context.Animator?.SetBattleMode(false);
+            _currentTarget = null;
+            _forcedTarget = null;
+            _hasLoggedSearch = false;
+            
+            // Resetear estado de casting
+            _isCasting = false;
+            _pendingSpell = null;
+            _castTimer = 0f;
+            
             StopMovement(context);
             
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] 🏳️ Saliendo de combate");
             base.OnExit(context);
         }
 
         public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // 1. Cinemática tiene prioridad
+            // 1. Cinemática
             if (context.IsInCinematic) return new CinematicState();
             
-            // 2. Si fue derrotado
-            if (context.WasDefeatedInCombat) return new DeadState();
+            // 2. Si no hay enemigos por mucho tiempo, volver a seguir
+            if (_noEnemyTimer > NO_ENEMY_TIMEOUT)
+            {
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] ⏰ TIMEOUT: Sin enemigos por {_noEnemyTimer:F1}s (>{NO_ENEMY_TIMEOUT}s), volviendo a seguir. Registry={ActiveCombatRegistry.Count}");
+                return new FollowPlayerState(_partyMember);
+            }
             
             // 3. Si ya no está en combate (forzado externamente)
-            if (!context.IsInCombat) return new FollowPlayerState(_partyMember);
-            
-            // 4. Si no hay target por mucho tiempo Y no hay enemigos en combate
-            if (_currentTarget == null && _timeSinceLastHadTarget > LOSE_TARGET_TIME)
+            if (!context.IsInCombat)
             {
-                if (ActiveCombatRegistry.Count == 0)
-                {
-                    context.Log("[AllyCombatState] 🏳️ Sin enemigos, fin del combate");
-                    return new FollowPlayerState(_partyMember);
-                }
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🏳️ IsInCombat=false externamente, saliendo de combate");
+                return new FollowPlayerState(_partyMember);
             }
             
             return null;
@@ -154,100 +476,156 @@ namespace Game.NPC.States
 
         #region Private Methods
         
-        private void FindPlayerAndTargeting()
+        /// <summary>
+        /// Busca el enemigo más cercano usando MÚLTIPLES métodos:
+        /// 1. ActiveCombatRegistry (NPCs actualmente en combate)
+        /// 2. Tag "Enemy"
+        /// 3. Layer "Enemy" o "Boss"
+        /// </summary>
+        private void FindNearestEnemy(NPCStateContext context)
         {
-            if (_player == null)
-            {
-                var playerGO = PlayerService.Player;
-                if (playerGO != null)
-                {
-                    _player = playerGO.transform;
-                    _playerTargeting = playerGO.GetComponent<PlayerTargeting>();
-                }
-            }
-        }
-        
-        private void InitializeDamageLayers()
-        {
-            if (_damageLayersInitialized) return;
+            _currentTarget = null;
+            float closestDistance = float.MaxValue;
             
-            // Intentar obtener del MagicProjectileSpawner del jugador
-            if (_player != null)
+            // MÉTODO 1: ActiveCombatRegistry - NPCs que están activamente en combate
+            var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
+            if (combatNPCs != null && combatNPCs.Count > 0)
             {
-                var spawner = _player.GetComponent<MagicProjectileSpawner>();
-                if (spawner != null)
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔍 ActiveCombatRegistry tiene {combatNPCs.Count} NPC(s) en combate");
+                
+                foreach (var npc in combatNPCs)
                 {
-                    var settingsField = spawner.GetType().GetField("projectileSettings", 
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (settingsField != null)
+                    if (npc == null) continue;
+                    if (npc == context.Transform.gameObject) continue; // No atacarnos a nosotros mismos
+                    
+                    // Verificar que esté vivo
+                    if (!IsTargetAlive(npc.transform)) continue;
+                    
+                    float dist = Vector3.Distance(context.Transform.position, npc.transform.position);
+                    
+                    if (dist < closestDistance && dist <= DETECTION_RANGE)
                     {
-                        var settings = settingsField.GetValue(spawner) as ProjectileSettingsSO;
-                        if (settings != null)
-                        {
-                            _damageLayers = settings.damageableLayers;
-                            _damageLayersInitialized = true;
-                            Debug.Log($"[AllyCombatState] ✅ Layers de daño obtenidas: {_damageLayers.value}");
-                            return;
-                        }
+                        closestDistance = dist;
+                        _currentTarget = npc.transform;
+                        Debug.Log($"[AllyCombatState:{context.Transform.name}] 📍 Candidato de Registry: {npc.name} a {dist:F1}m");
                     }
                 }
             }
             
-            // Fallback
-            _damageLayers = LayerMask.GetMask("Enemy", "Boss");
-            _damageLayersInitialized = true;
-            Debug.Log($"[AllyCombatState] ⚠️ Usando layers fallback: {_damageLayers.value}");
-        }
-        
-        private void SyncTargetWithPlayer(NPCStateContext context)
-        {
-            Transform playerTarget = _playerTargeting?.CurrentTarget;
-            
-            // Si el jugador tiene un target, usarlo
-            if (playerTarget != null)
+            // Si encontramos target en el registry, usarlo
+            if (_currentTarget != null)
             {
-                if (_currentTarget != playerTarget)
-                {
-                    _currentTarget = playerTarget;
-                    context.Log($"[AllyCombatState] 🎯 Target: {playerTarget.name}");
-                }
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] ✅ Enemigo encontrado via ActiveCombatRegistry: {_currentTarget.name} a {closestDistance:F1}m");
                 return;
             }
             
-            // El jugador NO tiene target, pero Estela puede mantener el suyo si sigue siendo válido
+            // ✅ OPTIMIZACIÓN FINAL: Método 2 eliminado - FindGameObjectsWithTag es costoso
+            // Solo usar Registry (Método 1) y Layer búsqueda (Método 3)
+            
+            // MÉTODO 3 (Fallback): Buscar por Layer "Enemy" o "Boss"
+            int enemyLayers = LayerMask.GetMask("Enemy", "Boss");
+            int hitCount = Physics.OverlapSphereNonAlloc(context.Transform.position, DETECTION_RANGE, _physicsBuffer, enemyLayers); // ✅ OPTIMIZACIÓN: NonAlloc
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔍 Buscando por Layer Enemy/Boss: encontrados {hitCount}");
+            
+            for (int i = 0; i < hitCount; i++)
+            {
+                var col = _physicsBuffer[i];
+                if (col == null) continue;
+                
+                // Verificar que esté vivo
+                if (!IsTargetAlive(col.transform)) continue;
+                
+                float dist = Vector3.Distance(context.Transform.position, col.transform.position);
+                
+                if (dist < closestDistance)
+                {
+                    closestDistance = dist;
+                    _currentTarget = col.transform;
+                    Debug.Log($"[AllyCombatState:{context.Transform.name}] 📍 Candidato de Layer: {col.name} a {dist:F1}m");
+                }
+            }
+            
             if (_currentTarget != null)
             {
-                // Verificar que el target siga vivo
-                var damageable = _currentTarget.GetComponent<Damageable>();
-                if (damageable != null && damageable.Current <= 0)
-                {
-                    context.Log("[AllyCombatState] 🎯 Target murió");
-                    _currentTarget = null;
-                    return;
-                }
-                
-                // Verificar que el target siga en rango
-                float dist = Vector3.Distance(context.Transform.position, _currentTarget.position);
-                if (dist > 25f) // Rango máximo de combate
-                {
-                    context.Log("[AllyCombatState] 🎯 Target fuera de rango");
-                    _currentTarget = null;
-                    return;
-                }
-                
-                // Target sigue siendo válido, mantenerlo
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] ✅ Enemigo encontrado via Layer: {_currentTarget.name} a {closestDistance:F1}m");
+            }
+            else
+            {
+                // ✅ OPTIMIZACIÓN FINAL: Solo Registry y Layer búsqueda - FindGameObjectsWithTag eliminado
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] ❌ No se encontró ningún enemigo (Registry:{combatNPCs?.Count ?? 0}, Layers:{hitCount})");
             }
         }
         
-        private void MoveTowardsPlayer(NPCStateContext context)
+        /// <summary>
+        /// Intenta re-encontrar un target por su nombre (útil si se perdió la referencia)
+        /// </summary>
+        private Transform TryFindTargetByName(string targetName)
         {
-            if (_player == null || !IsAgentValid(context)) return;
+            if (string.IsNullOrEmpty(targetName)) return null;
             
-            Vector3 targetPos = _player.position;
-            context.Agent.speed = context.Config?.runSpeed ?? 4f;
-            SetDestination(context, targetPos);
+            // Primero buscar en el registry
+            var combatNPCs = ActiveCombatRegistry.GetAllInCombat();
+            if (combatNPCs != null)
+            {
+                foreach (var npc in combatNPCs)
+                {
+                    if (npc != null && npc.name == targetName && npc.activeInHierarchy)
+                    {
+                        return npc.transform;
+                    }
+                }
+            }
+            
+            // Buscar en toda la escena
+            var found = GameObject.Find(targetName);
+            if (found != null && found.activeInHierarchy && IsTargetAlive(found.transform))
+            {
+                return found.transform;
+            }
+            
+            return null;
         }
-
+        
+        private bool IsTargetAlive(Transform target)
+        {
+            if (target == null) return false;
+            if (target.gameObject == null) return false;
+            if (!target.gameObject.activeInHierarchy) return false;
+            
+            var damageable = target.GetComponent<Damageable>();
+            if (damageable != null && damageable.Current <= 0)
+            {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        private bool IsTargetValid(Transform target)
+        {
+            if (target == null) return false;
+            if (target.gameObject == null) return false;
+            if (!target.gameObject.activeInHierarchy) return false;
+            
+            // Verificar que siga vivo
+            if (!IsTargetAlive(target)) return false;
+            
+            // ✅ REMOVIDO: Ya no verificamos distancia al jugador porque en batallas de boss
+            // el jugador puede estar lejos y queremos que los compañeros sigan atacando
+            
+            return true;
+        }
+        
+        private void MoveTowardsTarget(NPCStateContext context)
+        {
+            if (_currentTarget == null) return;
+            if (context.Agent == null || !context.Agent.isOnNavMesh) return;
+            
+            context.Agent.isStopped = false;
+            context.Agent.speed = context.Config?.runSpeed ?? 5f;
+            context.Agent.SetDestination(_currentTarget.position);
+        }
+        
         private void RotateTowardsTarget(NPCStateContext context)
         {
             if (_currentTarget == null) return;
@@ -258,271 +636,276 @@ namespace Game.NPC.States
             if (direction.sqrMagnitude > 0.001f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(direction);
-                float rotSpeed = context.Config?.rotationSpeed ?? 360f; // Rotación rápida
                 context.Transform.rotation = Quaternion.RotateTowards(
                     context.Transform.rotation,
                     targetRotation,
-                    rotSpeed * Time.deltaTime
+                    360f * Time.deltaTime
                 );
             }
         }
-
+        
         private void TryAttack(NPCStateContext context)
         {
-            // Si ya está casteando, no hacer nada
+            // Si ya estamos casteando, no iniciar otro ataque
             if (_isCasting) return;
             
-            // Actualizar cooldowns SIEMPRE (incluso si no ataca)
-            _spellLeftTimer += Time.deltaTime;
-            _spellRightTimer += Time.deltaTime;
-            _spellSpecialTimer += Time.deltaTime;
+            // Verificar cooldown
+            if (Time.time < _lastAttackTime + _attackCooldown) return;
             
+            // Verificar que está mirando al enemigo
+            if (!IsFacingTarget(context)) return;
+            
+            // Verificar que el target sigue válido
+            if (_currentTarget == null || !_currentTarget.gameObject.activeInHierarchy) return;
+            
+            // Obtener hechizo del PartyConfig - ROTAR ENTRE LOS 3 DISPONIBLES
             var partyConfig = _partyMember?.PartyConfig;
-            if (partyConfig == null) return;
-            
-            // Verificar que está mirando al target (ángulo < 45 grados - más permisivo)
-            if (!IsFacingTarget(context, 45f)) return;
-            
-            // Seleccionar hechizo disponible
-            int spellIndex = SelectAvailableSpell(partyConfig);
-            if (spellIndex == -1) return; // Todos en cooldown
-            
-            MagicSpellSO spell = partyConfig.GetSpell(spellIndex);
-            if (spell == null) return;
-            
-            // Verificar distancia de ataque
-            if (_currentTarget == null) return;
-            float distToTarget = Vector3.Distance(context.Transform.position, _currentTarget.position);
-            if (distToTarget > (partyConfig.maxAttackDistance > 0 ? partyConfig.maxAttackDistance : 20f)) return;
-            
-            // Resetear cooldown del hechizo usado
-            switch (spellIndex)
+            if (partyConfig == null)
             {
-                case 0: _spellLeftTimer = 0f; break;
-                case 1: _spellRightTimer = 0f; break;
-                case 2: _spellSpecialTimer = 0f; break;
+                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ No hay PartyConfig!");
+                return;
             }
             
-            CastSpell(context, spell, spellIndex);
-        }
-        
-        private bool IsFacingTarget(NPCStateContext context, float maxAngle)
-        {
-            if (_currentTarget == null) return false;
-            
-            Vector3 toTarget = (_currentTarget.position - context.Transform.position);
-            toTarget.y = 0;
-            
-            Vector3 forward = context.Transform.forward;
-            forward.y = 0;
-            
-            float angle = Vector3.Angle(forward, toTarget);
-            return angle < maxAngle;
-        }
-        
-        private int SelectAvailableSpell(NPCPartyConfig config)
-        {
-            // Verificar qué hechizos están disponibles (fuera de cooldown)
-            bool leftOk = config.spellLeft != null && _spellLeftTimer >= config.spellLeft.cooldown;
-            bool rightOk = config.spellRight != null && _spellRightTimer >= config.spellRight.cooldown;
-            bool specialOk = config.spellSpecial != null && _spellSpecialTimer >= config.spellSpecial.cooldown;
-            
-            // Construir lista de disponibles
-            var available = new System.Collections.Generic.List<int>();
-            if (leftOk) available.Add(0);
-            if (rightOk) available.Add(1);
-            if (specialOk) available.Add(2);
-            
-            if (available.Count == 0) return -1;
-            
-            // Seleccionar uno aleatorio de los disponibles
-            return available[Random.Range(0, available.Count)];
-        }
-        
-        private void CastSpell(NPCStateContext context, MagicSpellSO spell, int spellIndex)
-        {
-            if (spell == null || spell.prefab == null || _currentTarget == null) return;
-            
-            // Marcar que estamos casteando
-            _isCasting = true;
-            
-            // Animación INMEDIATAMENTE
-            switch (spellIndex)
+            // Intentar obtener el hechizo actual, si es null probar los siguientes
+            MagicSpellSO spell = null;
+            int attempts = 0;
+            int selectedIndex = _currentSpellIndex;
+            while (spell == null && attempts < 3)
             {
-                case 0: context.Animator?.PlaySpellCastLeft(); break;
-                case 1: context.Animator?.PlaySpellCastRight(); break;
-                case 2: context.Animator?.PlaySpellCastSpecial(); break;
-            }
-            
-            // ⭐ SFX INMEDIATAMENTE (antes del delay, igual que el jugador)
-            if (!string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
-            {
-                AudioService.Instance.PlaySFX(spell.castSFXKey);
-            }
-            
-            // Iniciar corrutina para el delay y spawn
-            var mono = context.Transform.GetComponent<MonoBehaviour>();
-            if (mono != null)
-            {
-                mono.StartCoroutine(Co_SpawnProjectileAfterDelay(context, spell));
-            }
-            else
-            {
-                // Fallback sin delay si no hay MonoBehaviour
-                SpawnProjectile(context, spell);
-                _isCasting = false;
-            }
-        }
-        
-        /// <summary>
-        /// Corrutina que espera el castDelaySeconds antes de instanciar el proyectil.
-        /// </summary>
-        private IEnumerator Co_SpawnProjectileAfterDelay(NPCStateContext context, MagicSpellSO spell)
-        {
-            // Esperar el delay de animación
-            float delay = Mathf.Max(0f, spell.castDelaySeconds);
-            if (delay > 0f)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-            
-            // Verificar que el target siga siendo válido después del delay
-            if (_currentTarget != null)
-            {
-                // Instanciar el proyectil
-                SpawnProjectile(context, spell);
-            }
-            
-            // Terminar el cast
-            _isCasting = false;
-        }
-        
-        /// <summary>
-        /// Instancia el proyectil (igual que LaunchProjectile del jugador).
-        /// </summary>
-        private void SpawnProjectile(NPCStateContext context, MagicSpellSO spell)
-        {
-            if (spell == null || spell.prefab == null || _currentTarget == null) return;
-            
-            // === Dirección hacia el target ===
-            Transform origin = context.Transform;
-            Vector3 targetPos = _currentTarget.position + Vector3.up * 1f;
-            Vector3 dir = (targetPos - origin.position).normalized;
-            
-            // Respetar flattenDirection del spell
-            if (spell.flattenDirection)
-            {
-                dir = Vector3.ProjectOnPlane(dir, Vector3.up).normalized;
-            }
-            if (dir.sqrMagnitude < 0.001f) dir = origin.forward;
-            
-            // === Posición de spawn (igual que el jugador) ===
-            Vector3 spawnPos = origin.position + dir * spell.forwardOffset;
-            
-            // Aplicar offset de posición
-            if (spell.positionOffset != Vector3.zero)
-            {
-                // Y es siempre arriba/abajo (espacio mundial)
-                spawnPos.y += spell.positionOffset.y;
-                
-                // X (derecha) y Z (adelante) en espacio local del caster
-                if (spell.positionOffset.x != 0f || spell.positionOffset.z != 0f)
+                spell = partyConfig.GetSpell(_currentSpellIndex);
+                if (spell == null)
                 {
-                    Vector3 localOffset = new Vector3(spell.positionOffset.x, 0f, spell.positionOffset.z);
-                    spawnPos += origin.TransformDirection(localOffset);
+                    _currentSpellIndex = (_currentSpellIndex + 1) % 3;
+                    attempts++;
+                }
+                else
+                {
+                    selectedIndex = _currentSpellIndex;
                 }
             }
             
-            Quaternion spawnRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(spell.visualRotationOffsetEuler);
-            
-            // === Spawn VFX ===
-            if (spell.spawnVFX != null)
+            if (spell == null)
             {
-                var fx = Object.Instantiate(spell.spawnVFX, spawnPos, spawnRot);
-                if (spell.useScaleOverride) fx.transform.localScale = spell.scaleOverride;
-                float destroyTime = spell.vfxLifetime > 0f ? spell.vfxLifetime : 3f;
-                Object.Destroy(fx, destroyTime);
+                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ No hay ningún hechizo configurado en PartyConfig!");
+                return;
             }
             
-            // === Instanciar proyectil ===
-            GameObject go = Object.Instantiate(spell.prefab, spawnPos, spawnRot);
-            if (spell.useScaleOverride) go.transform.localScale = spell.scaleOverride;
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] 📝 Hechizo seleccionado: [{selectedIndex}] {spell.name}");
             
-            // === Ignorar colisiones con el caster (Estela) y el jugador ===
-            IgnoreCollisionsBetween(go, context.Transform.gameObject);
+            // Rotar al siguiente hechizo para el próximo ataque
+            _currentSpellIndex = (_currentSpellIndex + 1) % 3;
             
-            // === Configurar MagicProjectile (igual que el jugador) ===
-            if (go.TryGetComponent<MagicProjectile>(out var mp))
+            // Iniciar casting con delay
+            StartCasting(context, spell);
+        }
+        
+        private bool IsFacingTarget(NPCStateContext context)
+        {
+            if (_currentTarget == null) return false;
+            
+            Vector3 dirToTarget = (_currentTarget.position - context.Transform.position).normalized;
+            float angle = Vector3.Angle(context.Transform.forward, dirToTarget);
+            return angle < 45f; // 45 grados para ser más permisivo
+        }
+        
+        /// <summary>
+        /// Inicia el casting de un hechizo con delay (para sincronizar con animación)
+        /// </summary>
+        private void StartCasting(NPCStateContext context, MagicSpellSO spell)
+        {
+            _pendingSpell = spell;
+            _isCasting = true;
+            
+            // Usar el castDelay del hechizo (como hace el player)
+            _castTimer = spell.castDelaySeconds > 0 ? spell.castDelaySeconds : 0.15f;
+            
+            // Actualizar cooldown basado en el hechizo
+            _attackCooldown = spell.cooldown > 0 ? spell.cooldown + 0.5f : DEFAULT_ATTACK_COOLDOWN;
+            
+            // Reproducir animación de casting ANTES de lanzar
+            context.Animator?.PlaySpellCast();
+            
+            // Reproducir SFX de cast si existe
+            if (!string.IsNullOrEmpty(spell.castSFXKey))
             {
-                var cfg = new MagicProjectile.ProjectileConfig
+                AudioService.Instance?.PlaySFX(spell.castSFXKey, worldPosition: context.Transform.position);
+            }
+            
+            Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔮 Iniciando cast de {spell.name} " +
+                      $"(delay:{_castTimer:F2}s, cd:{_attackCooldown:F1}s, speed:{spell.initialSpeed}, dmg:{spell.damage})");
+        }
+        
+        /// <summary>
+        /// Ejecuta el lanzamiento del hechizo después del delay de casting
+        /// </summary>
+        private void ExecuteSpellLaunch(NPCStateContext context, MagicSpellSO spell)
+        {
+            if (spell == null || spell.prefab == null)
+            {
+                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ Spell o prefab es null!");
+                return;
+            }
+            
+            // Verificar que aún tenemos target
+            if (_currentTarget == null || !_currentTarget.gameObject.activeInHierarchy)
+            {
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] ⚠️ Target perdido durante casting, cancelando...");
+                return;
+            }
+            
+            // Obtener punto de spawn (mano o centro)
+            Vector3 spawnPos = context.Transform.position + Vector3.up * 1.2f + context.Transform.forward * spell.forwardOffset;
+            
+            // Aplicar offset del spell si existe
+            spawnPos += context.Transform.TransformDirection(spell.positionOffset);
+            
+            // Dirección hacia el enemigo (apuntar al centro del cuerpo)
+            Vector3 targetPos = _currentTarget.position + Vector3.up * 1f;
+            Vector3 direction = (targetPos - spawnPos).normalized;
+            
+            // Aplanar dirección si el spell lo requiere
+            if (spell.flattenDirection)
+            {
+                direction.y = 0;
+                direction.Normalize();
+                if (direction.sqrMagnitude < 0.01f)
+                {
+                    direction = context.Transform.forward;
+                }
+            }
+            
+            // Spawn VFX si existe
+            if (spell.spawnVFX != null)
+            {
+                var vfx = Object.Instantiate(spell.spawnVFX, spawnPos, Quaternion.LookRotation(direction));
+                if (spell.vfxLifetime > 0)
+                    Object.Destroy(vfx, spell.vfxLifetime);
+            }
+            
+            // Instanciar proyectil
+            GameObject projectile = Object.Instantiate(spell.prefab, spawnPos, Quaternion.LookRotation(direction));
+            
+            // Aplicar escala si está configurado
+            if (spell.useScaleOverride)
+            {
+                projectile.transform.localScale = spell.scaleOverride;
+            }
+            
+            // Asignar layer Projectile para colisionar con enemigos
+            int projectileLayer = LayerMask.NameToLayer("Projectile");
+            if (projectileLayer != -1)
+            {
+                projectile.layer = projectileLayer;
+                foreach (Transform child in projectile.GetComponentsInChildren<Transform>(true))
+                {
+                    child.gameObject.layer = projectileLayer;
+                }
+            }
+            
+            // Configurar proyectil
+            var magicProj = projectile.GetComponent<MagicProjectile>();
+            if (magicProj != null)
+            {
+                // Crear config completa para el proyectil (incluyendo VFX!)
+                var config = new MagicProjectile.ProjectileConfig
                 {
                     damage = spell.damage,
                     aoeRadius = spell.aoeRadius,
                     knockbackForce = spell.knockbackForce,
-                    hitLayers = _damageLayers,
-                    collisionLayers = _damageLayers,
+                    hitLayers = LayerMask.GetMask("Enemy", "Boss"),
+                    collisionLayers = LayerMask.GetMask("Enemy", "Boss", "Default"),
                     destroyOnHit = spell.destroyOnHit,
                     lifeTime = spell.lifeTime,
                     maxRange = spell.maxRange,
                     initialSpeed = spell.initialSpeed,
                     useGravity = spell.useGravity,
+                    element = spell.element,
+                    // ✅ IMPORTANTE: Pasar los VFX del spell!
                     impactVFX = spell.impactVFX,
                     despawnVFX = spell.despawnVFX,
                     vfxLifetime = spell.vfxLifetime,
-                    impactSFXKey = spell.impactSFXKey,
-                    element = spell.element
+                    impactSFXKey = spell.impactSFXKey
                 };
-                mp.Configure(cfg, context.Transform.gameObject);
+                
+                magicProj.Configure(config, context.Transform.gameObject);
+                magicProj.Launch(direction, spell.initialSpeed, spell.useGravity);
+                
+                Debug.Log($"[AllyCombatState:{context.Transform.name}] 🔥 Lanzando {spell.name} hacia {_currentTarget.name} " +
+                          $"(dmg:{spell.damage}, speed:{spell.initialSpeed}, lifeTime:{spell.lifeTime}, maxRange:{spell.maxRange})");
             }
-            
-            // === Configurar Rigidbody (EXACTAMENTE como el jugador) ===
-            if (go.TryGetComponent<Rigidbody>(out var rb))
+            else
             {
-                rb.useGravity = spell.useGravity;
-                rb.isKinematic = false;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                rb.interpolation = RigidbodyInterpolation.Interpolate;
-                rb.constraints = RigidbodyConstraints.FreezeRotation;
-                rb.angularVelocity = Vector3.zero;
-                rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
+                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ Proyectil no tiene MagicProjectile component!");
             }
             
-            Debug.Log($"[AllyCombatState] 🔥 {spell.displayName} → {_currentTarget.name} | dmg:{spell.damage} speed:{spell.initialSpeed}");
+            _lastAttackTime = Time.time;
         }
         
-        private void IgnoreCollisionsBetween(GameObject projectile, GameObject caster)
+        #region Movimiento Táctico
+        
+        /// <summary>
+        /// Calcula una posición táctica para evadir y atacar desde diferentes ángulos
+        /// </summary>
+        private void CalculateTacticalPosition(NPCStateContext context)
         {
-            if (projectile == null || caster == null) return;
+            if (_currentTarget == null) return;
             
-            var projCols = projectile.GetComponentsInChildren<Collider>(true);
-            var casterCols = caster.GetComponentsInChildren<Collider>(true);
+            Vector3 dirToTarget = (_currentTarget.position - context.Transform.position).normalized;
             
-            foreach (var pc in projCols)
-            {
-                if (pc == null) continue;
-                foreach (var cc in casterCols)
-                {
-                    if (cc != null)
-                        Physics.IgnoreCollision(pc, cc, true);
-                }
-            }
+            // Elegir lado aleatorio para strafe
+            float strafeAngle = Random.value > 0.5f ? 90f : -90f;
+            strafeAngle += Random.Range(-30f, 30f); // Añadir variación
             
-            // También ignorar colisiones con el jugador para que no bloquee los proyectiles aliados
-            if (_player != null)
-            {
-                var playerCols = _player.GetComponentsInChildren<Collider>(true);
-                foreach (var pc in projCols)
-                {
-                    if (pc == null) continue;
-                    foreach (var playerCol in playerCols)
-                    {
-                        if (playerCol != null)
-                            Physics.IgnoreCollision(pc, playerCol, true);
-                    }
-                }
-            }
+            Vector3 strafeDir = Quaternion.Euler(0, strafeAngle, 0) * dirToTarget;
+            
+            // Distancia ideal al enemigo
+            float idealDistance = (MIN_COMBAT_DISTANCE + MAX_COMBAT_DISTANCE) / 2f;
+            
+            // Calcular posición base a distancia ideal
+            Vector3 basePos = _currentTarget.position - dirToTarget * idealDistance;
+            
+            // Añadir strafe
+            _tacticalPosition = basePos + strafeDir * Random.Range(1f, STRAFE_RADIUS);
+            _tacticalPosition.y = context.Transform.position.y; // Mantener altura
+        }
+        
+        /// <summary>
+        /// Moverse hacia la posición táctica calculada
+        /// </summary>
+        private void MoveToTacticalPosition(NPCStateContext context)
+        {
+            if (context.Agent == null || !context.Agent.isOnNavMesh) return;
+            
+            context.Agent.isStopped = false;
+            context.Agent.speed = context.Config?.walkSpeed ?? 3.5f; // Caminar al moverse tácticamente
+            context.Agent.SetDestination(_tacticalPosition);
+        }
+        
+        /// <summary>
+        /// Alejarse del enemigo cuando está demasiado cerca
+        /// </summary>
+        private void MoveAwayFromTarget(NPCStateContext context)
+        {
+            if (_currentTarget == null) return;
+            if (context.Agent == null || !context.Agent.isOnNavMesh) return;
+            
+            Vector3 awayDir = (context.Transform.position - _currentTarget.position).normalized;
+            Vector3 retreatPos = context.Transform.position + awayDir * 5f;
+            
+            context.Agent.isStopped = false;
+            context.Agent.speed = context.Config?.runSpeed ?? 5f;
+            context.Agent.SetDestination(retreatPos);
+        }
+        
+        #endregion
+        
+        // Mantener LaunchSpell para compatibilidad pero redirigir a ExecuteSpellLaunch
+        private void LaunchSpell(NPCStateContext context, MagicSpellSO spell)
+        {
+            ExecuteSpellLaunch(context, spell);
         }
         
         #endregion
     }
 }
+

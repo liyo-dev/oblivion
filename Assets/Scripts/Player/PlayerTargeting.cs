@@ -75,7 +75,24 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             _marker = go.transform;
             _markerOriginalScale = _marker.localScale;
             _marker.localScale = Vector3.zero; // Empezar pequeño para animación
-            // Debug.Log($"[PlayerTargeting] ✅ Marker instanciado: {go.name}");
+            
+            // ✅ Configurar el marker para que SIEMPRE se renderice delante
+            // Cambiar todos los renderers del marker al layer "UI" o usar ZTest Always
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
+            {
+                // Opción 1: Cambiar a layer UI (se renderiza después de todo)
+                // renderer.gameObject.layer = LayerMask.NameToLayer("UI");
+                
+                // Opción 2: Modificar el material para usar ZTest Always
+                foreach (var mat in renderer.materials)
+                {
+                    mat.renderQueue = 3000; // Render después de geometría opaca y transparente
+                    // Si el shader lo soporta, puedes forzar ZTest Always programáticamente
+                }
+            }
+            
+            Debug.Log($"[PlayerTargeting] ✅ Marker configurado para renderizar siempre delante - {renderers.Length} renderer(s)");
         }
         else
         {
@@ -318,9 +335,29 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         if (_lastTargetCol == null || _lastTargetCol.transform != t)
             _lastTargetCol = t.GetComponentInParent<Collider>();
 
-        Vector3 pos = t.position + markerOffset;
+        Vector3 pos;
         if (_lastTargetCol)
-            pos = _lastTargetCol.bounds.center + new Vector3(0, _lastTargetCol.bounds.extents.y, 0) + markerOffset * 0.2f;
+        {
+            // ✅ Calcular altura dinámica basada en el tamaño del enemigo
+            var bounds = _lastTargetCol.bounds;
+            float enemyHeight = bounds.size.y;
+            
+            // Para enemigos muy grandes (altura > 5m), añadir offset extra proporcional
+            float dynamicOffset = enemyHeight > 5f ? (enemyHeight * 0.15f) : 0f;
+            
+            // Posicionar SIEMPRE por encima del bounds + offset configurado + offset dinámico
+            pos = new Vector3(bounds.center.x, bounds.max.y + dynamicOffset, bounds.center.z) + markerOffset;
+            
+            // Debug para enemigos muy grandes
+            if (enemyHeight > 5f)
+            {
+                Debug.Log($"[PlayerTargeting] 📏 Marker para {t.name}: altura={enemyHeight:F1}m, dynamicOffset={dynamicOffset:F1}m, pos.y={pos.y:F1}m");
+            }
+        }
+        else
+        {
+            pos = t.position + markerOffset;
+        }
 
         if (!parentMarkerToTarget) _marker.position = pos;
         else _marker.localPosition = t.InverseTransformPoint(pos);
@@ -340,12 +377,37 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         if (CurrentTarget)
         {
-            Vector3 center = GetTargetCenter(CurrentTarget);
-            Vector3 dir = (center - origin.position);
+            // ✅ Apuntar a la posición del MARKER (arriba del enemigo) en lugar del centro
+            Vector3 targetPos = GetTargetMarkerPosition(CurrentTarget);
+            Vector3 dir = (targetPos - origin.position);
             if (dir.sqrMagnitude > 0.0001f)
-                return dir.normalized;              // <- ya NO aplano en Y aquí
+                return dir.normalized;
         }
         return fallbackForward.normalized;
+    }
+
+    /// <summary>
+    /// Obtiene la posición donde debería estar el marker (mismo cálculo que UpdateMarker)
+    /// </summary>
+    private Vector3 GetTargetMarkerPosition(Transform target)
+    {
+        var col = target.GetComponentInParent<Collider>();
+        
+        if (col)
+        {
+            // ✅ Mismo cálculo que UpdateMarker para consistencia
+            var bounds = col.bounds;
+            float enemyHeight = bounds.size.y;
+            
+            // Para enemigos muy grandes, añadir offset extra
+            float dynamicOffset = enemyHeight > 5f ? (enemyHeight * 0.15f) : 0f;
+            
+            // Posición del marker
+            return new Vector3(bounds.center.x, bounds.max.y + dynamicOffset, bounds.center.z) + markerOffset;
+        }
+        
+        // Fallback
+        return target.position + markerOffset;
     }
 
     static Vector3 GetTargetCenter(Transform target)

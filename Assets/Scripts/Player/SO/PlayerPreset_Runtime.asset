@@ -24,21 +24,13 @@ MonoBehaviour:
   rightSpellId: 2
   specialSpellId: 0
   flags:
-  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,7_22,3
-  - PICKUP_MainWorld_Coin_01 (19)_-31,6_1,7_30,3
-  - PICKUP_MainWorld_Coin_01 (21)_-31,8_1,5_15,0
-  - PICKUP_MainWorld_Coin_01 (22)_-30,6_1,5_15,8
-  - PICKUP_MainWorld_Coin_01 (4)_-3,5_0,6_22,8
+  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,5_22,3
   - CINEMATIC_SEEN:Cinematic_DemonAppears
   - CINEMATIC_SEEN:Cinematic_VillainPlans
   - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
-  - PICKUP_MainWorld_Coin_01 (7)_8,1_0,6_55,0
-  - PICKUP_MainWorld_Coin_01 (26)_-13,8_1,7_-34,8
-  - PICKUP_MainWorld_Coin_01 (11)_-19,9_1,7_47,1
   - CINEMATIC_SEEN:Cinematic_EstelaAppears
   - QUEST_COMPLETED:ELDRAN_MISSION1
   - QUEST_ARCHIVED:ELDRAN_MISSION1
-  - QUEST_ACTIVE:Q_RUDOLFO
   - QUEST_COMPLETED:ELDRAN_MISSION2
   - QUEST_ARCHIVED:ELDRAN_MISSION2
   - QUEST_COMPLETED:ELDRAN_MISSION3
@@ -75,7 +67,7 @@ MonoBehaviour:
   - Cloak02
   inventoryItems:
   - itemId: coin
-    count: 23
+    count: 16
   - itemId: pocionHP
     count: 1
   defeatedBossIds:
@@ -98,9 +90,6 @@ MonoBehaviour:
     - key: __quest_bc692d5b-b0ca-4095-85fc-2380f374f9d3_ELDRAN_MISSION4_started
       type: bool
       value: 1
-    - key: __parallelBranchGuids
-      type: string
-      value: d2c6cf0b-557c-41ae-9ccc-069ca97bade9
     - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
       type: bool
       value: 1
@@ -121,9 +110,6 @@ MonoBehaviour:
     - key: __currentNodeGuid
       type: string
       value: 
-    - key: __parallelBranchGuids
-      type: string
-      value: 099fe10e-98f2-475b-ae44-0f435002ee2c,8c033cc3-3046-49f4-96bd-373c132e7e61,00079bce-e03b-4fa9-bf56-051f0f3b427c,29625f69-6406-4f2c-a5b7-4f2351d2a8d1,fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
   npcPositions:
   - npcId: Oliver
     position: {x: -31.48, y: 1.2060261, z: 26.09}
@@ -144,5 +130,7 @@ MonoBehaviour:
   - erika-narrative-a7b3c2d1-unique_CN1
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN0
-  partyMemberIds:
-  - Estela
+  partyMemberIds: []
+  unlockedTeleportPoints:
+  - Woods_Entrance_SavePoint
+  - Woods_SavePoint

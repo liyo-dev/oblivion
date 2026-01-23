@@ -55,6 +55,9 @@ namespace Game.NPC
         private float _coverStayTimer;
         private bool _isBehindCover;
         private List<Vector3> _evaluatedPositions = new List<Vector3>();
+        
+        // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
+        private Collider[] _coverSearchBuffer = new Collider[32];
 
         public bool IsRetreating { get; private set; }
         public bool IsBehindCover => _isBehindCover;
@@ -168,9 +171,9 @@ namespace Game.NPC
             }
 
             // Buscar objetos cercanos que puedan servir de cobertura
-            Collider[] nearbyObjects = Physics.OverlapSphere(transform.position, coverSearchRadius, coverLayerMask);
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, coverSearchRadius, _coverSearchBuffer, coverLayerMask); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
             
-            if (nearbyObjects.Length == 0)
+            if (hitCount == 0)
             {
                 Debug.Log("[NPCTacticalRetreat] No hay objetos cercanos que sirvan de cobertura");
                 return false;
@@ -180,12 +183,12 @@ namespace Game.NPC
             Vector3 bestPosition = Vector3.zero;
             Transform bestObject = null;
 
-            // Limitar objetos a evaluar por performance
-            int objectsToCheck = Mathf.Min(nearbyObjects.Length, maxCoverObjectsToCheck);
+            // Limitar el número de objetos a evaluar para no penalizar rendimiento
+            int objectsToCheck = Mathf.Min(hitCount, maxCoverObjectsToCheck);
 
             for (int i = 0; i < objectsToCheck; i++)
             {
-                Collider col = nearbyObjects[i];
+                Collider col = _coverSearchBuffer[i];
                 
                 // Ignorar el propio NPC
                 if (col.transform == transform || col.transform.IsChildOf(transform))

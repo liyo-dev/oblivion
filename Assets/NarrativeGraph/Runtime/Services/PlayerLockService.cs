@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Core;
 
 /// <summary>
 /// Centraliza el bloqueo de movimiento del jugador con referencia por solicitante.
@@ -39,14 +37,38 @@ public class PlayerLockService : MonoBehaviour
 
     public bool IsLocked => _owners.Count > 0;
 
+    /// <summary>
+    /// Método de emergencia para forzar el desbloqueo del player.
+    /// Solo usar en debug si el player queda bloqueado por un bug.
+    /// </summary>
+    public void ForceUnlock()
+    {
+        if (_owners.Count == 0)
+        {
+            Debug.LogWarning("[PlayerLockService] ⚠️ ForceUnlock() llamado pero no hay locks activos");
+            return;
+        }
+
+        Debug.LogWarning($"[PlayerLockService] 🚨 FORCE UNLOCK - Limpiando {_owners.Count} locks forzadamente");
+        _owners.Clear();
+        ReleaseHardLock();
+    }
+
     public void Acquire(object owner)
     {
         if (owner == null) owner = this;
-        if (_owners.Contains(owner)) return;
+        if (_owners.Contains(owner))
+        {
+            Debug.LogWarning($"[PlayerLockService] ⚠️ Owner ya tenía un lock: {owner?.GetType().Name ?? "null"}");
+            return;
+        }
+        
         _owners.Add(owner);
+        Debug.Log($"[PlayerLockService] 🔒 Acquire de {owner?.GetType().Name ?? "null"}. Total locks: {_owners.Count}");
 
         if (_owners.Count == 1)
         {
+            Debug.Log("[PlayerLockService] 🚫 Primer lock - Deshabilitando movimiento del jugador");
             ApplyHardLock();
         }
     }
@@ -54,11 +76,19 @@ public class PlayerLockService : MonoBehaviour
     public void Release(object owner)
     {
         if (owner == null) owner = this;
-        if (!_owners.Contains(owner)) return;
+        
+        if (!_owners.Contains(owner))
+        {
+            Debug.LogWarning($"[PlayerLockService] ⚠️ Intento de Release de owner no registrado: {owner?.GetType().Name ?? "null"}");
+            return;
+        }
+        
         _owners.Remove(owner);
+        Debug.Log($"[PlayerLockService] 🔓 Release de {owner?.GetType().Name ?? "null"}. Locks restantes: {_owners.Count}");
 
         if (_owners.Count == 0)
         {
+            Debug.Log("[PlayerLockService] ✅ Todos los locks liberados - Reactivando movimiento del jugador");
             ReleaseHardLock();
         }
     }
@@ -148,21 +178,69 @@ public class PlayerLockService : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
-        _instance = this;
-        DontDestroyOnLoad(gameObject);
-        ServiceLocator.Register(this);
+        
+        // Suscribirse a cambios de escena para auto-limpieza
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
-
+    
     void OnDestroy()
     {
-        if (_instance == this)
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    /// <summary>
+    /// Al cargar una nueva escena, limpiar locks huérfanos (de objetos destruidos).
+    /// Esto previene que el player quede bloqueado en escenas de testeo.
+    /// </summary>
+    void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // Solo limpiar en carga normal (no aditiva)
+        if (mode == UnityEngine.SceneManagement.LoadSceneMode.Single)
         {
-            ServiceLocator.Unregister(this);
-            _instance = null;
+            Debug.Log($"[PlayerLockService] 🔍 Escena cargada '{scene.name}' - Verificando locks...");
+            
+            // Verificar si hay owners destruidos/huérfanos
+            var deadOwners = new List<object>();
+            foreach (var owner in _owners)
+            {
+                // Si el owner es un MonoBehaviour/GameObject destruido, marcarlo
+                if (owner is UnityEngine.Object unityObj && unityObj == null)
+                {
+                    deadOwners.Add(owner);
+                }
+            }
+            
+            if (deadOwners.Count > 0)
+            {
+                Debug.LogWarning($"[PlayerLockService] 🧹 Limpiando {deadOwners.Count} locks huérfanos al cargar escena '{scene.name}'");
+                foreach (var dead in deadOwners)
+                {
+                    _owners.Remove(dead);
+                }
+            }
+            
+            // NUEVO: En modo testeo o cuando no hay cinemáticas aditivas, limpiar todos los locks
+            // Esto previene que el player quede bloqueado cuando se skipean cinemáticas en grafos narrativos
+            bool isTestingMode = GameBootService.IsAvailable && 
+                                 GameBootService.Profile != null && 
+                                 GameBootService.Profile.ShouldBootFromPreset();
+            
+            if (isTestingMode && _owners.Count > 0)
+            {
+                Debug.LogWarning($"[PlayerLockService] 🧪 Modo testeo detectado - Limpiando {_owners.Count} locks al cargar escena '{scene.name}'");
+                _owners.Clear();
+            }
+            
+            // Si ya no quedan locks, liberar el player
+            if (_owners.Count == 0 && IsLocked)
+            {
+                Debug.Log("[PlayerLockService] ✅ Todos los locks limpiados - Reactivando movimiento del jugador");
+                ReleaseHardLock();
+            }
+            else if (_owners.Count > 0)
+            {
+                Debug.Log($"[PlayerLockService] ⚠️ {_owners.Count} locks aún activos tras limpieza");
+            }
         }
     }
-
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    static void Bootstrap() => _ = Instance;
 }

@@ -58,6 +58,15 @@ public class SaveSystem : MonoBehaviour
 
             var json = File.ReadAllText(path);
             data = JsonUtility.FromJson<PlayerSaveData>(json);
+            
+            // Sanitizar listas que podrían ser null en saves antiguos
+            if (data != null)
+            {
+                data.partyMemberIds ??= new System.Collections.Generic.List<string>();
+                data.unlockedTeleportPoints ??= new System.Collections.Generic.List<string>();
+                data.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
+            }
+            
             return data != null;
         }
         catch (System.Exception e)

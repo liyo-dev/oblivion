@@ -14,22 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCPartyConfig
   moduleName: 
   description: 
-  followDistance: 1
-  runToPlayerDistance: 5
-  teleportDistance: 25
-  minStopDistance: 1
-  minIdleTime: 1
-  maxIdleTime: 3
-  allowWanderNearPlayer: 0
-  wanderRadiusNearPlayer: 2
-  lateralOffsetRange: {x: -1, y: 1}
-  preferBehindPlayer: 1
-  autoJoinPlayerCombat: 1
-  combatAssistRange: 12
+  displayName: 
+  distanciaParaPararse: 1.49
+  distanciaParaCorrer: 3
+  distanciaParaTeletransporte: 20
+  velocidadCaminando: 5
+  velocidadCorriendo: 10
+  quedarseDetras: 1
+  offsetLateral: {x: -1, y: 1}
+  tiempoIdleMinimo: 1
+  tiempoIdleMaximo: 3
+  puedeVagarCerca: 0
+  radioVagabundeo: 2
+  autoUnirseACombate: 1
+  rangoAsistenciaCombate: 30
   spellLeft: {fileID: 11400000, guid: 60af2fbe1683a7648bad32993e434d75, type: 2}
   spellRight: {fileID: 11400000, guid: 0686630f8f80a5c4291f775845a499d7, type: 2}
   spellSpecial: {fileID: 11400000, guid: bdcedfac08b648a4393bdc5f82614590, type: 2}
-  minAttackDistance: 2
-  maxAttackDistance: 15
-  partyIcon: {fileID: 0}
-  displayName: 
+  distanciaMinimaAtaque: 2
+  distanciaMaximaAtaque: 15

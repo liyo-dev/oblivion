@@ -5,6 +5,12 @@ using Invector.vCharacterController;
 [DisallowMultipleComponent]
 public class MagicProjectileSpawner : MonoBehaviour
 {
+    /// <summary>
+    /// Evento estático que se dispara cuando el jugador lanza un hechizo.
+    /// Los compañeros del party pueden suscribirse para entrar en modo alerta/combate.
+    /// </summary>
+    public static event System.Action OnPlayerAttacked;
+    
     [Header("Listen")]
     [SerializeField] private vThirdPersonController controller;
     [SerializeField] private PlayerTargeting targeting;  // <- NUEVO
@@ -98,6 +104,9 @@ public class MagicProjectileSpawner : MonoBehaviour
 
         var (spell, origin) = GetSpellAndOrigin(slot);
         if (!spell || !spell.prefab) return;
+
+        // 🔔 Notificar a compañeros que el jugador atacó
+        OnPlayerAttacked?.Invoke();
 
         StartCoroutine(Co_SpawnAfterDelay(spell, origin));
     }

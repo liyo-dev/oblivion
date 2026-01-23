@@ -117,43 +117,37 @@ public class NarrativeGraphStarter : MonoBehaviour
     {
         if (!GameBootService.IsAvailable)
         {
-            // if (logDebug)
-            //     Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
+            Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
             return;
         }
 
         var profile = GameBootService.Profile;
         if (profile == null)
         {
-            // if (logDebug)
-            //     Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
+            Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
             return;
         }
 
         var preset = profile.GetActivePresetResolved();
         if (preset == null)
         {
-            // if (logDebug)
-            //     Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
+            Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
             return;
         }
 
         if (preset.narrativeBlackboards == null)
         {
-            // if (logDebug)
-            //     Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
+            Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
             return;
         }
 
         if (preset.narrativeBlackboards.Count == 0)
         {
-            // if (logDebug)
-            //     Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
+            Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
             return;
         }
 
-        // if (logDebug)
-        //     Debug.Log($"[NarrativeGraphStarter] Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
+        Debug.Log($"[NarrativeGraphStarter] 🔄 Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
 
         hub.RestoreBlackboards(preset.narrativeBlackboards);
     }

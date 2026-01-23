@@ -3,8 +3,14 @@ using UnityEngine.AI;
 using System.Collections;
 
 /// <summary>
-/// IA del Boss Golem - Un coloso lento pero devastador con ataques a distancia.
-/// Estados del Animator: Idle, Walk, Attack01, Attack02, GetHit, Die, Victory
+/// IA del Boss Golem - VERSIÓN SIMPLIFICADA
+/// 
+/// Comportamiento:
+/// - Camina hacia el jugador
+/// - Lanza rocas cuando está en rango
+/// 
+/// El daño al jugador lo maneja el prefab de la roca (EnemyProjectile).
+/// El Golem NO controla el daño, solo instancia y lanza el proyectil.
 /// </summary>
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(Damageable))]
@@ -18,88 +24,164 @@ public class GolemBossAI : MonoBehaviour
 
     [Header("Configuración General")]
     [SerializeField] private float detectionRange = 25f;
-    [SerializeField] private float meleeRange = 4f;
-    [SerializeField] private float rangedMinRange = 8f;
-    [SerializeField] private float rangedMaxRange = 20f;
-    [SerializeField] private LayerMask playerLayer;
+    [SerializeField] private float attackRange = 15f;
+    [SerializeField] private float minAttackRange = 5f;
 
-    [Header("Ataques Cuerpo a Cuerpo")]
-    [Tooltip("Daño del puñetazo (Attack01)")]
-    [SerializeField] private float punchDamage = 25f;
-    [Tooltip("Daño del golpe de suelo (Attack02)")]
-    [SerializeField] private float slamDamage = 35f;
-    [SerializeField] private float slamRadius = 5f;
-
-    [Header("Ataques a Distancia - Lanzar Roca")]
-    [SerializeField] private GameObject rockProjectilePrefab;
-    [SerializeField] private Transform rockSpawnPoint;
-    [SerializeField] private float rockDamage = 20f;
-    [SerializeField] private float rockSpeed = 15f;
-    [Tooltip("VFX de arrancar la roca del suelo")]
+    [Header("Ataque - Lanzar Roca")]
+    [Tooltip("Prefab de la roca (debe tener EnemyProjectile configurado con su propio daño)")]
+    [SerializeField] private GameObject rockPrefab;
+    [Tooltip("Transform de la mano donde aparece la roca (Fase 1)")]
+    [SerializeField] private Transform rockHandPoint;
+    [Tooltip("Transform de la segunda mano para ataques de Fase 2")]
+    [SerializeField] private Transform rockHandPointLeft;
+    [Tooltip("Velocidad de la roca al lanzarse")]
+    [SerializeField] private float rockSpeed = 18f;
+    [Tooltip("VFX de polvo cuando coge la roca")]
     [SerializeField] private GameObject rockPickupVFX;
-
-    [Header("Ataques a Distancia - Lluvia de Rocas (Fase 2+)")]
-    [SerializeField] private GameObject fallingRockPrefab;
-    [SerializeField] private int rockRainCount = 5;
-    [SerializeField] private float rockRainRadius = 8f;
-    [SerializeField] private float rockRainDamage = 15f;
-
-    [Header("Ataque Especial - Onda Sísmica (Fase 3)")]
-    [SerializeField] private GameObject shockwaveVFX;
-    [SerializeField] private float shockwaveDamage = 40f;
-    [SerializeField] private float shockwaveSpeed = 10f;
+    
+    [Header("Fase 2 - Lluvia de Rocas")]
+    [Tooltip("Porcentaje de vida para activar Fase 2 (0.5 = 50%)")]
+    [SerializeField] private float phase2HealthThreshold = 0.5f;
+    [Tooltip("Número de rocas en la lluvia")]
+    [SerializeField] private int rockRainCount = 8;
+    [Tooltip("Radio de dispersión de la lluvia")]
+    [SerializeField] private float rockRainRadius = 6f;
+    [Tooltip("Altura desde donde caen las rocas")]
+    [SerializeField] private float rockRainHeight = 15f;
+    [Tooltip("Velocidad de caída de las rocas")]
+    [SerializeField] private float rockRainSpeed = 12f;
+    [Tooltip("Tiempo entre cada roca de la lluvia")]
+    [SerializeField] private float rockRainInterval = 0.15f;
+    [Tooltip("VFX de advertencia en el suelo antes de que caiga la roca")]
+    [SerializeField] private GameObject rockWarningVFX;
+    
+    [Header("Fase 3 - Salto y Onda Expansiva")]
+    [Tooltip("Porcentaje de vida para activar Fase 3 (0.25 = 25%)")]
+    [SerializeField] private float phase3HealthThreshold = 0.25f;
+    [Tooltip("Altura máxima del salto")]
+    [SerializeField] private float jumpHeight = 8f;
+    [Tooltip("Duración del salto (subida + bajada)")]
+    [SerializeField] private float jumpDuration = 1.2f;
+    [Tooltip("Radio de la onda expansiva")]
+    [SerializeField] private float shockwaveRadius = 10f;
+    [Tooltip("Daño de la onda expansiva")]
+    [SerializeField] private float shockwaveDamage = 30f;
+    [Tooltip("Fuerza de empuje de la onda")]
     [SerializeField] private float shockwaveKnockback = 15f;
-
+    [Tooltip("VFX de la onda expansiva")]
+    [SerializeField] private GameObject shockwaveVFX;
+    [Tooltip("VFX de polvo al aterrizar")]
+    [SerializeField] private GameObject landingDustVFX;
+    [Tooltip("Tiempo que tiembla la cámara al aterrizar")]
+    [SerializeField] private float cameraShakeDuration = 0.5f;
+    [Tooltip("Intensidad del temblor de cámara")]
+    [SerializeField] private float cameraShakeIntensity = 0.3f;
+    
     [Header("Cooldowns")]
-    [SerializeField] private float punchCooldown = 2f;
-    [SerializeField] private float slamCooldown = 4f;
-    [SerializeField] private float rockThrowCooldown = 3f;
-    [SerializeField] private float rockRainCooldown = 12f;
-    [SerializeField] private float shockwaveCooldown = 15f;
-
-    [Header("Fases")]
-    [SerializeField] private float phase2HealthPercent = 0.66f;
-    [SerializeField] private float phase3HealthPercent = 0.33f;
+    [SerializeField] private float attackCooldown = 3f;
+    [SerializeField] private float rockRainCooldown = 8f;
+    [SerializeField] private float jumpAttackCooldown = 12f;
+    
+    [Header("Embestida con Puñetazo (Transición entre fases)")]
+    [Tooltip("Velocidad de carrera durante la embestida")]
+    [SerializeField] private float chargeSpeed = 12f;
+    [Tooltip("Multiplicador de velocidad de animación durante la embestida (1.0 = normal, 2.0 = doble velocidad)")]
+    [SerializeField] private float chargeAnimationSpeedMultiplier = 1.8f;
+    [Tooltip("Distancia mínima para iniciar embestida")]
+    [SerializeField] private float chargeMinDistance = 5f;
+    [Tooltip("Daño del puñetazo")]
+    [SerializeField] private float punchDamage = 25f;
+    [Tooltip("Radio del puñetazo")]
+    [SerializeField] private float punchRadius = 3f;
+    [Tooltip("Knockback del puñetazo")]
+    [SerializeField] private float punchKnockback = 12f;
+    [Tooltip("VFX del impacto del puñetazo")]
+    [SerializeField] private GameObject punchImpactVFX;
+    [Tooltip("Cooldown de la embestida")]
+    [SerializeField] private float chargeCooldown = 10f;
+    [Tooltip("Probabilidad de embestida al cambiar de fase (0-1)")]
+    [SerializeField] private float chargeOnPhaseChangeChance = 0.7f;
 
     [Header("Movimiento")]
     [SerializeField] private float walkSpeed = 2.5f;
-    [SerializeField] private float chaseSpeed = 3.5f;
+    [SerializeField] private float rotationSpeed = 3f;
+    
+    [Header("💥 Daño por Contacto/Colisión")]
+    [Tooltip("¿Activar daño por contacto cuando el jugador choca con el Golem?")]
+    [SerializeField] private bool enableContactDamage = true;
+    [Tooltip("Daño que hace el Golem al chocar con el jugador")]
+    [SerializeField] private float contactDamage = 15f;
+    [Tooltip("Cooldown entre daños por contacto (segundos)")]
+    [SerializeField] private float contactDamageCooldown = 1.5f;
+    [Tooltip("Multiplicador de daño durante embestida (x2 = doble daño)")]
+    [SerializeField] private float chargeDamageMultiplier = 1.5f;
+    [Tooltip("Radio de detección de colisión (debe coincidir con el collider del Golem)")]
+    [SerializeField] private float contactRadius = 2f;
 
     [Header("Combat Control")]
-    [Tooltip("Permite iniciar el combate. Se activa externamente después de la presentación.")]
-    public bool canStartCombat = false;
+    public bool canStartCombat
+    {
+        get => _canStartCombat;
+        set
+        {
+            if (_canStartCombat != value)
+            {
+                _canStartCombat = value;
+                if (_canStartCombat && !_registeredInCombat)
+                {
+                    ActiveCombatRegistry.RegisterNPC(gameObject);
+                    _registeredInCombat = true;
+                    Debug.Log($"[GolemBossAI] 🔴🔴🔴 GOLEM REGISTRADO EN COMBATE INMEDIATAMENTE - ActiveCombatRegistry.Count = {ActiveCombatRegistry.Count}");
+                }
+            }
+        }
+    }
+    private bool _canStartCombat = false;
+    
+    [SerializeField] private bool autoStartOnDetection = true;
 
     [Header("DEBUG")]
     [SerializeField] private bool debugMode = false;
 
     // Estado interno
-    private enum BossPhase { Phase1, Phase2, Phase3 }
-    private enum BossState { Idle, Walking, Attacking, TakingDamage, Dead }
+    private enum BossState { Idle, Walking, Attacking, Jumping, Charging, Dead }
+    private BossState _currentState = BossState.Idle;
     
-    private BossPhase currentPhase = BossPhase.Phase1;
-    private BossState currentState = BossState.Idle;
+    private float _lastAttackTime = -999f;
+    private float _lastRockRainTime = -999f;
+    private float _lastJumpAttackTime = -999f;
+    private float _lastChargeTime = -999f;
+    private float _lastContactDamageTime = -999f; // Timer para daño por contacto
+    private bool _isAttacking;
+    private bool _isJumping;
+    private bool _isCharging;
+    private bool _hasSpawned;
+    private bool _isDead;
+    private bool _registeredInCombat;
     
-    private float lastPunchTime = -999f;
-    private float lastSlamTime = -999f;
-    private float lastRockThrowTime = -999f;
-    private float lastRockRainTime = -999f;
-    private float lastShockwaveTime = -999f;
+    // Sistema de fases
+    private int _currentPhase = 1;
+    private bool _useLeftHand = false; // Alternar manos en Fase 2
+    private bool _pendingChargeAttack = false; // Para embestida al cambiar de fase
     
-    private bool isAttacking = false;
-    private bool hasSpawned = false;
-    private bool isDead = false;
+    // Posición original para el salto
+    private Vector3 _jumpStartPos;
+    private Vector3 _jumpTargetPos;
+    
+    // ✅ OPTIMIZACIÓN FASE 1: Buffers reutilizables para Physics queries (evita allocations)
+    private Collider[] _punchHitBuffer = new Collider[16];
+    private Collider[] _shockwaveHitBuffer = new Collider[32];
 
-    // Buffer para OverlapSphere (evita allocations)
-    private static Collider[] _overlapBuffer = new Collider[16];
+    // Animaciones
+    private const string ANIM_IDLE = "Idle";
+    private const string ANIM_WALK = "Walk";
+    private const string ANIM_ATTACK01 = "Attack01";
+    private const string ANIM_ATTACK02 = "Attack02";
+    private const string ANIM_JUMP = "Jump"; // O usar Attack02 si no hay animación de salto
+    private const string ANIM_GETHIT = "GetHit";
+    private const string ANIM_DIE = "Die";
 
-    // Hashes de animaciones
-    private static readonly int AnimIdle = Animator.StringToHash("Idle");
-    private static readonly int AnimWalk = Animator.StringToHash("Walk");
-    private static readonly int AnimAttack01 = Animator.StringToHash("Attack01");
-    private static readonly int AnimAttack02 = Animator.StringToHash("Attack02");
-    private static readonly int AnimGetHit = Animator.StringToHash("GetHit");
-    private static readonly int AnimDie = Animator.StringToHash("Die");
-    private static readonly int AnimVictory = Animator.StringToHash("Victory");
+    #region Unity Lifecycle
 
     void Awake()
     {
@@ -124,10 +206,16 @@ public class GolemBossAI : MonoBehaviour
         if (agent)
         {
             agent.speed = walkSpeed;
+            agent.angularSpeed = 0;
+            agent.updateRotation = false;
             agent.isStopped = true;
         }
 
-        StartCoroutine(SpawnSequence());
+        _hasSpawned = true;
+        _currentState = BossState.Idle;
+        PlayAnim(ANIM_IDLE);
+        
+        Log("✅ Golem inicializado");
     }
 
     void OnDestroy()
@@ -137,542 +225,1252 @@ public class GolemBossAI : MonoBehaviour
             damageable.OnDamaged -= OnDamageTaken;
             damageable.OnDied -= OnDeath;
         }
+        
+        if (_registeredInCombat)
+        {
+            ActiveCombatRegistry.UnregisterNPC(gameObject);
+        }
     }
 
     void Update()
     {
-        if (!hasSpawned || isDead || !player) return;
-
-        if (!canStartCombat)
-        {
-            if (debugMode) Debug.Log("[GolemBossAI] Esperando para iniciar combate (canStartCombat = false)");
-            return;
-        }
-
-        UpdatePhase();
-        UpdateBehavior();
-    }
-
-    private IEnumerator SpawnSequence()
-    {
-        currentState = BossState.Idle;
-        PlayAnimation(AnimIdle);
-        yield return new WaitForSeconds(1f);
+        if (!_hasSpawned || _isDead) return;
         
-        hasSpawned = true;
-        
-        if (debugMode) Debug.Log("[GolemBossAI] Spawn completado, listo para combate");
-    }
-
-    #region Fases
-
-    private void UpdatePhase()
-    {
-        if (!damageable) return;
-
-        float healthPercent = damageable.Current / damageable.Max;
-        BossPhase newPhase = currentPhase;
-
-        if (healthPercent <= phase3HealthPercent)
-            newPhase = BossPhase.Phase3;
-        else if (healthPercent <= phase2HealthPercent)
-            newPhase = BossPhase.Phase2;
-        else
-            newPhase = BossPhase.Phase1;
-
-        if (newPhase != currentPhase)
+        // Buscar jugador si no lo tenemos
+        if (!player && PlayerService.Player != null)
         {
-            currentPhase = newPhase;
-            OnPhaseChanged();
+            player = PlayerService.Player.transform;
         }
-    }
+        if (!player) return;
 
-    private void OnPhaseChanged()
-    {
-        Debug.Log($"[GolemBossAI] Cambiando a {currentPhase}");
-        
-        switch (currentPhase)
+        float distance = Vector3.Distance(transform.position, player.position);
+
+        // Auto-activar combate si está cerca
+        if (!canStartCombat && autoStartOnDetection && distance <= detectionRange)
         {
-            case BossPhase.Phase2:
-                if (agent) agent.speed = chaseSpeed;
-                StartCoroutine(PhaseTransitionRoar());
-                break;
-            
-            case BossPhase.Phase3:
-                if (agent) agent.speed = chaseSpeed * 1.2f;
-                StartCoroutine(PhaseTransitionRoar());
-                break;
+            canStartCombat = true;
+            Log("⚔️ Combate iniciado");
         }
-    }
-
-    private IEnumerator PhaseTransitionRoar()
-    {
-        isAttacking = true;
-        StopMovement();
-
-        PlayAnimation(AnimAttack02);
         
-        if (shockwaveVFX)
+        if (!canStartCombat) return;
+        
+        // ✅ OPTIMIZACIÓN FASE 1: Solo verificar contacto si el jugador está relativamente cerca
+        if (distance < contactRadius * 3) // Solo verificar si está a 3x el radio de contacto
         {
-            var vfx = Instantiate(shockwaveVFX, transform.position, Quaternion.identity);
-            Destroy(vfx, 3f);
+            CheckContactDamage(distance);
         }
-
-        yield return new WaitForSeconds(2f);
-
-        isAttacking = false;
-        ResumeMovement();
+        
+        UpdateBehavior(distance);
     }
 
     #endregion
 
     #region Comportamiento Principal
 
-    private void UpdateBehavior()
+    private void UpdateBehavior(float distance)
     {
-        if (isAttacking || currentState == BossState.TakingDamage) return;
+        if (_isAttacking) return;
 
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        // Verificar cambio de fase
+        CheckPhaseTransition();
 
-        if (distanceToPlayer > detectionRange)
+        // Fuera de rango de detección
+        if (distance > detectionRange)
         {
-            Idle();
+            SetIdle();
             return;
         }
 
-        LookAtPlayer();
+        // Siempre rotar hacia el jugador
+        RotateTowardsPlayer();
 
-        if (TrySpecialAttacks(distanceToPlayer)) return;
-
-        if (distanceToPlayer <= meleeRange)
+        // En rango de ataque
+        if (distance <= attackRange && distance >= minAttackRange)
         {
-            StopMovement();
-            DecideMeleeAttack();
-        }
-        else if (distanceToPlayer >= rangedMinRange && distanceToPlayer <= rangedMaxRange)
-        {
-            StopMovement();
-            DecideRangedAttack();
-        }
-        else
-        {
-            ChasePlayer();
-        }
-    }
-
-    private void DecideMeleeAttack()
-    {
-        bool canPunch = Time.time >= lastPunchTime + punchCooldown;
-        bool canSlam = Time.time >= lastSlamTime + slamCooldown;
-
-        if (canSlam && (currentPhase != BossPhase.Phase1 || Random.value > 0.7f))
-        {
-            StartCoroutine(SlamAttack());
-        }
-        else if (canPunch)
-        {
-            StartCoroutine(PunchAttack());
-        }
-        else
-        {
-            Idle();
-        }
-    }
-
-    private void DecideRangedAttack()
-    {
-        bool canThrowRock = Time.time >= lastRockThrowTime + rockThrowCooldown;
-        bool canRockRain = Time.time >= lastRockRainTime + rockRainCooldown && currentPhase != BossPhase.Phase1;
-
-        if (canRockRain && Random.value > 0.6f)
-        {
-            StartCoroutine(RockRainAttack());
-        }
-        else if (canThrowRock)
-        {
-            StartCoroutine(RockThrowAttack());
-        }
-        else
-        {
-            ChasePlayer();
-        }
-    }
-
-    private bool TrySpecialAttacks(float distanceToPlayer)
-    {
-        if (currentPhase == BossPhase.Phase3 && distanceToPlayer <= rangedMaxRange)
-        {
-            bool canShockwave = Time.time >= lastShockwaveTime + shockwaveCooldown;
-            
-            if (canShockwave && Random.value > 0.85f)
+            if (TryAttack())
             {
-                StartCoroutine(ShockwaveAttack());
+                // Ataque iniciado
+            }
+            else
+            {
+                SetIdle();
+            }
+        }
+        // Demasiado cerca
+        else if (distance < minAttackRange)
+        {
+            if (TryAttack())
+            {
+                // Ataque iniciado
+            }
+            else
+            {
+                SetIdle();
+            }
+        }
+        // Fuera de rango - perseguir
+        else
+        {
+            ChasePlayer();
+        }
+    }
+    
+    /// <summary>
+    /// Verifica si el Golem debe cambiar de fase basado en su vida actual
+    /// </summary>
+    private void CheckPhaseTransition()
+    {
+        if (!damageable) return;
+        
+        float healthPercent = damageable.Current / damageable.Max;
+        int previousPhase = _currentPhase;
+        
+        // Fase 3: Salto con onda expansiva
+        if (_currentPhase < 3 && healthPercent <= phase3HealthThreshold)
+        {
+            _currentPhase = 3;
+            Log($"🔥🔥🔥 FASE 3 ACTIVADA - Vida: {healthPercent:P0}");
+            Debug.Log($"[GolemBossAI] 🔥🔥🔥 FASE 3 ACTIVADA - El Golem ahora usará SALTO CON ONDA EXPANSIVA!");
+        }
+        // Fase 2: Lluvia de rocas
+        else if (_currentPhase < 2 && healthPercent <= phase2HealthThreshold)
+        {
+            _currentPhase = 2;
+            Log($"⚡⚡⚡ FASE 2 ACTIVADA - Vida: {healthPercent:P0}");
+            Debug.Log($"[GolemBossAI] ⚡⚡⚡ FASE 2 ACTIVADA - El Golem ahora usará lluvia de rocas!");
+        }
+        
+        // Si cambió de fase, posible embestida de transición
+        if (_currentPhase != previousPhase && !_isAttacking && !_isCharging)
+        {
+            if (Random.value <= chargeOnPhaseChangeChance)
+            {
+                _pendingChargeAttack = true;
+                Log($"🏃 ¡EMBESTIDA DE TRANSICIÓN ACTIVADA!");
+                Debug.Log($"[GolemBossAI] 🏃 ¡EMBESTIDA DE TRANSICIÓN! El Golem cargará hacia el jugador!");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Intenta ejecutar un ataque según la fase actual
+    /// </summary>
+    private bool TryAttack()
+    {
+        // PRIORIDAD MÁXIMA: Embestida pendiente por cambio de fase
+        if (_pendingChargeAttack && CanCharge())
+        {
+            _pendingChargeAttack = false;
+            StartCoroutine(ChargeAttack());
+            return true;
+        }
+        
+        // Embestida disponible en cualquier fase (cooldown independiente)
+        bool canDoCharge = CanCharge() && GetDistanceToPlayer() >= chargeMinDistance;
+        
+        if (_currentPhase == 1)
+        {
+            // Fase 1: Lanzar rocas + embestida ocasional
+            if (canDoCharge && Random.value < 0.2f) // 20% de probabilidad
+            {
+                StartCoroutine(ChargeAttack());
+                return true;
+            }
+            if (CanAttack())
+            {
+                StartCoroutine(RockThrowAttack());
                 return true;
             }
         }
+        else if (_currentPhase == 2)
+        {
+            // Fase 2: Lluvia + lanzar rocas + embestida ocasional
+            bool canDoRockRain = Time.time >= _lastRockRainTime + rockRainCooldown;
+            bool canDoThrow = CanAttack();
+            
+            if (canDoCharge && Random.value < 0.25f) // 25% de probabilidad
+            {
+                StartCoroutine(ChargeAttack());
+                return true;
+            }
+            if (canDoRockRain)
+            {
+                StartCoroutine(RockRainAttack());
+                return true;
+            }
+            else if (canDoThrow)
+            {
+                StartCoroutine(RockThrowAttackPhase2());
+                return true;
+            }
+        }
+        else // Fase 3
+        {
+            // Fase 3: Salto + lluvia + lanzar + embestida
+            bool canDoJump = Time.time >= _lastJumpAttackTime + jumpAttackCooldown;
+            bool canDoRockRain = Time.time >= _lastRockRainTime + rockRainCooldown;
+            bool canDoThrow = CanAttack();
+            
+            // Prioridad: Embestida (30%) > Salto > Lluvia > Lanzar
+            if (canDoCharge && Random.value < 0.3f)
+            {
+                StartCoroutine(ChargeAttack());
+                return true;
+            }
+            if (canDoJump)
+            {
+                StartCoroutine(JumpAttack());
+                return true;
+            }
+            else if (canDoRockRain)
+            {
+                StartCoroutine(RockRainAttack());
+                return true;
+            }
+            else if (canDoThrow)
+            {
+                StartCoroutine(RockThrowAttackPhase2());
+                return true;
+            }
+        }
+        
         return false;
     }
 
-    private void Idle()
+    private bool CanAttack() => Time.time >= _lastAttackTime + attackCooldown;
+    private bool CanCharge() => Time.time >= _lastChargeTime + chargeCooldown;
+    
+    private float GetDistanceToPlayer()
     {
-        currentState = BossState.Idle;
-        PlayAnimation(AnimIdle);
-        StopMovement();
+        if (!player) return float.MaxValue;
+        return Vector3.Distance(transform.position, player.position);
     }
+
+    #endregion
+
+    #region Movimiento
 
     private void ChasePlayer()
     {
-        currentState = BossState.Walking;
-        PlayAnimation(AnimWalk);
-        ResumeMovement();
-        if (agent && agent.isOnNavMesh)
+        if (!player || !agent || !agent.isOnNavMesh) return;
+        
+        if (_currentState != BossState.Walking)
         {
-            agent.SetDestination(player.position);
-        }
-    }
-
-    private void StopMovement()
-    {
-        if (agent && agent.isOnNavMesh && !agent.isStopped)
-        {
-            agent.isStopped = true;
-        }
-    }
-
-    private void ResumeMovement()
-    {
-        if (agent && agent.isOnNavMesh && agent.isStopped)
-        {
+            _currentState = BossState.Walking;
+            PlayAnim(ANIM_WALK);
             agent.isStopped = false;
         }
+        
+        agent.SetDestination(player.position);
     }
 
-    private void LookAtPlayer()
+    private void SetIdle()
+    {
+        if (_currentState != BossState.Idle)
+        {
+            _currentState = BossState.Idle;
+            PlayAnim(ANIM_IDLE);
+            StopAgent();
+        }
+    }
+
+    private void StopAgent()
+    {
+        if (agent && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+    }
+
+    private void RotateTowardsPlayer()
     {
         if (!player) return;
         
-        Vector3 lookDir = player.position - transform.position;
-        lookDir.y = 0;
+        Vector3 dir = player.position - transform.position;
+        dir.y = 0;
         
-        if (lookDir != Vector3.zero)
+        if (dir.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(lookDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
         }
     }
 
     #endregion
 
-    #region Ataques
+    #region Ataque - Lanzar Roca
 
-    private IEnumerator PunchAttack()
-    {
-        isAttacking = true;
-        currentState = BossState.Attacking;
-        lastPunchTime = Time.time;
-        StopMovement();
-
-        if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Puñetazo (Attack01)");
-
-        PlayAnimation(AnimAttack01);
-        yield return new WaitForSeconds(0.6f);
-
-        if (player && Vector3.Distance(transform.position, player.position) <= meleeRange * 1.2f)
-        {
-            DamagePlayer(punchDamage);
-        }
-
-        yield return new WaitForSeconds(0.6f);
-        isAttacking = false;
-    }
-
-    private IEnumerator SlamAttack()
-    {
-        isAttacking = true;
-        currentState = BossState.Attacking;
-        lastSlamTime = Time.time;
-        StopMovement();
-
-        if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Golpe de Suelo (Attack02)");
-
-        PlayAnimation(AnimAttack02);
-        yield return new WaitForSeconds(0.8f);
-
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, slamRadius, _overlapBuffer, playerLayer);
-        for (int i = 0; i < hitCount; i++)
-        {
-            DamagePlayerInCollider(hitCount > i ? _overlapBuffer[i] : null, slamDamage);
-        }
-
-        if (shockwaveVFX)
-        {
-            var vfx = Instantiate(shockwaveVFX, transform.position + Vector3.up * 0.1f, Quaternion.identity);
-            Destroy(vfx, 3f);
-        }
-
-        yield return new WaitForSeconds(0.8f);
-        isAttacking = false;
-    }
-
+    /// <summary>
+    /// Lanza una roca al jugador.
+    /// El proyectil (EnemyProjectile) maneja todo el daño.
+    /// </summary>
     private IEnumerator RockThrowAttack()
     {
-        isAttacking = true;
-        currentState = BossState.Attacking;
-        lastRockThrowTime = Time.time;
-        StopMovement();
-
-        if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Lanzar Roca");
-
-        PlayAnimation(AnimAttack01);
+        _isAttacking = true;
+        _currentState = BossState.Attacking;
+        _lastAttackTime = Time.time;
         
-        if (rockPickupVFX && rockSpawnPoint)
+        StopAgent();
+        
+        Log("🪨 Iniciando lanzar roca");
+        Debug.Log($"[GolemBossAI] 🪨 Iniciando lanzar roca");
+
+        // Reproducir animación
+        PlayAnim(ANIM_ATTACK01);
+        
+        // Esperar momento de coger la roca (0.3s)
+        yield return new WaitForSeconds(0.3f);
+        
+        // VFX de polvo en el suelo
+        Vector3 handPos = rockHandPoint ? rockHandPoint.position : transform.position + transform.forward * 2f;
+        Vector3 groundPos = new Vector3(handPos.x, transform.position.y + 0.2f, handPos.z);
+        
+        if (rockPickupVFX)
         {
-            var vfx = Instantiate(rockPickupVFX, rockSpawnPoint.position, Quaternion.identity);
-            Destroy(vfx, 2f);
+            GameObject dustVFX = Instantiate(rockPickupVFX, groundPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            dustVFX.transform.localScale = Vector3.one * 1.5f;
+            Destroy(dustVFX, 2f);
         }
-
-        yield return new WaitForSeconds(1.0f);
-
-        PlayAnimation(AnimAttack02);
-        yield return new WaitForSeconds(0.5f);
-
-        if (rockProjectilePrefab && rockSpawnPoint && player)
+        
+        // Crear la roca en la mano
+        GameObject rock = null;
+        if (rockPrefab && rockHandPoint)
         {
-            Vector3 targetPos = player.position + Vector3.up * 1f;
-            Vector3 direction = (targetPos - rockSpawnPoint.position).normalized;
+            rock = Instantiate(rockPrefab, rockHandPoint.position, Quaternion.identity);
+            rock.transform.localScale = rockPrefab.transform.localScale;
+            rock.transform.SetParent(rockHandPoint);
+            rock.transform.localPosition = Vector3.zero;
             
-            GameObject rock = Instantiate(rockProjectilePrefab, rockSpawnPoint.position, Quaternion.LookRotation(direction));
+            // Desactivar física mientras está en la mano
+            var proj = rock.GetComponent<EnemyProjectile>();
+            if (proj) proj.enabled = false;
             
+            var rb = rock.GetComponent<Rigidbody>();
+            if (rb)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+            
+            var col = rock.GetComponent<Collider>();
+            if (col) col.enabled = false;
+            
+            Log($"🪨 Roca creada en mano");
+        }
+        
+        // Esperar hasta el momento de lanzar (0.7s más = 1.0s total)
+        yield return new WaitForSeconds(0.7f);
+        
+        // LANZAR la roca
+        if (rock && player)
+        {
+            // Desadhirir de la mano
+            rock.transform.SetParent(null);
+            
+            // Calcular dirección hacia el jugador
+            Vector3 targetPos = player.position + Vector3.up * 1.2f;
+            Vector3 spawnPos = rock.transform.position;
+            Vector3 direction = (targetPos - spawnPos).normalized;
+            
+            // Configurar layer del proyectil
+            int projectileLayer = LayerMask.NameToLayer("EnemyProjectile");
+            if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("Projectile");
+            if (projectileLayer != -1)
+            {
+                rock.layer = projectileLayer;
+                foreach (Transform child in rock.GetComponentsInChildren<Transform>(true))
+                {
+                    child.gameObject.layer = projectileLayer;
+                }
+            }
+            
+            // Activar física
+            var rb = rock.GetComponent<Rigidbody>();
+            if (rb)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = false;
+                rb.linearVelocity = direction * rockSpeed;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            }
+            
+            // Activar collider
+            var col = rock.GetComponent<Collider>();
+            if (col) col.enabled = true;
+            
+            // ✅ IMPORTANTE: Inicializar el proyectil - él maneja el daño
             var proj = rock.GetComponent<EnemyProjectile>();
             if (proj)
             {
-                proj.Initialize(direction * rockSpeed, rockDamage);
+                proj.enabled = true;
+                // El daño se configura en el prefab (baseDamage del EnemyProjectile)
+                // Pasamos -1 para usar el daño configurado en el prefab
+                proj.Initialize(direction, -1f);
+                Debug.Log($"[GolemBossAI] 🎯 Roca lanzada - EnemyProjectile usará su baseDamage del prefab");
             }
             else
             {
-                var rb = rock.GetComponent<Rigidbody>();
-                if (rb) rb.linearVelocity = direction * rockSpeed;
+                Debug.LogError("[GolemBossAI] ❌ EnemyProjectile NO encontrado en la roca!");
             }
+            
+            // Auto-destruir
+            Destroy(rock, 5f);
+            
+            Log($"🪨 Roca lanzada hacia jugador");
+            Debug.Log($"[GolemBossAI] 🪨 Roca lanzada: dir={direction}, speed={rockSpeed}");
+        }
+        
+        // Esperar fin de animación
+        yield return new WaitForSeconds(0.8f);
+        
+        _isAttacking = false;
+    }
+    
+    /// <summary>
+    /// Lanza una roca en Fase 2 - alterna entre mano derecha e izquierda
+    /// </summary>
+    private IEnumerator RockThrowAttackPhase2()
+    {
+        _isAttacking = true;
+        _currentState = BossState.Attacking;
+        _lastAttackTime = Time.time;
+        
+        StopAgent();
+        
+        // Alternar mano
+        _useLeftHand = !_useLeftHand;
+        Transform handPoint = _useLeftHand && rockHandPointLeft ? rockHandPointLeft : rockHandPoint;
+        string animName = _useLeftHand ? ANIM_ATTACK02 : ANIM_ATTACK01;
+        
+        Log($"🪨 [Fase 2] Lanzando roca con mano {(_useLeftHand ? "izquierda" : "derecha")}");
+        Debug.Log($"[GolemBossAI] 🪨 [Fase 2] Lanzando roca con mano {(_useLeftHand ? "izquierda" : "derecha")}");
+
+        // Reproducir animación
+        PlayAnim(animName);
+        
+        // Esperar momento de coger la roca
+        yield return new WaitForSeconds(0.3f);
+        
+        // VFX de polvo
+        Vector3 handPos = handPoint ? handPoint.position : transform.position + transform.forward * 2f;
+        Vector3 groundPos = new Vector3(handPos.x, transform.position.y + 0.2f, handPos.z);
+        
+        if (rockPickupVFX)
+        {
+            GameObject dustVFX = Instantiate(rockPickupVFX, groundPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            dustVFX.transform.localScale = Vector3.one * 1.5f;
+            Destroy(dustVFX, 2f);
+        }
+        
+        // Crear la roca
+        GameObject rock = null;
+        if (rockPrefab && handPoint)
+        {
+            rock = Instantiate(rockPrefab, handPoint.position, Quaternion.identity);
+            rock.transform.localScale = rockPrefab.transform.localScale;
+            rock.transform.SetParent(handPoint);
+            rock.transform.localPosition = Vector3.zero;
+            
+            var proj = rock.GetComponent<EnemyProjectile>();
+            if (proj) proj.enabled = false;
+            
+            var rb = rock.GetComponent<Rigidbody>();
+            if (rb)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+            
+            var col = rock.GetComponent<Collider>();
+            if (col) col.enabled = false;
+        }
+        
+        yield return new WaitForSeconds(0.7f);
+        
+        // LANZAR
+        if (rock && player)
+        {
+            rock.transform.SetParent(null);
+            
+            Vector3 targetPos = player.position + Vector3.up * 1.2f;
+            Vector3 spawnPos = rock.transform.position;
+            Vector3 direction = (targetPos - spawnPos).normalized;
+            
+            SetupRockProjectile(rock, direction, rockSpeed);
             
             Destroy(rock, 5f);
-            if (debugMode) Debug.Log($"[GolemBossAI] Roca lanzada hacia {player.name}");
         }
-
-        yield return new WaitForSeconds(0.7f);
-        isAttacking = false;
+        
+        yield return new WaitForSeconds(0.8f);
+        
+        _isAttacking = false;
     }
-
+    
+    /// <summary>
+    /// Ataque especial de Fase 2: Lluvia de rocas sobre el jugador
+    /// </summary>
     private IEnumerator RockRainAttack()
     {
-        isAttacking = true;
-        currentState = BossState.Attacking;
-        lastRockRainTime = Time.time;
-        StopMovement();
-
-        if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Lluvia de Rocas");
-
-        PlayAnimation(AnimAttack02);
-        yield return new WaitForSeconds(1f);
-
-        if (player && fallingRockPrefab)
+        _isAttacking = true;
+        _currentState = BossState.Attacking;
+        _lastRockRainTime = Time.time;
+        _lastAttackTime = Time.time; // También actualizar cooldown normal
+        
+        StopAgent();
+        
+        Log("🌧️ [Fase 2] ¡LLUVIA DE ROCAS!");
+        Debug.Log($"[GolemBossAI] 🌧️ [Fase 2] ¡LLUVIA DE ROCAS! - {rockRainCount} rocas");
+        
+        // Animación de invocar (usar Attack02 para la mano izquierda alzada)
+        PlayAnim(ANIM_ATTACK02);
+        
+        // Esperar a que levante la mano
+        yield return new WaitForSeconds(0.5f);
+        
+        if (!player)
         {
-            for (int i = 0; i < rockRainCount; i++)
-            {
-                Vector2 randomOffset = Random.insideUnitCircle * rockRainRadius;
-                Vector3 spawnPos = player.position + new Vector3(randomOffset.x, 15f, randomOffset.y);
-                
-                GameObject fallingRock = Instantiate(fallingRockPrefab, spawnPos, Quaternion.identity);
-                Destroy(fallingRock, 5f);
-                
-                yield return new WaitForSeconds(0.2f);
-            }
+            _isAttacking = false;
+            yield break;
         }
-
-        yield return new WaitForSeconds(1f);
-        isAttacking = false;
-    }
-
-    private IEnumerator ShockwaveAttack()
-    {
-        isAttacking = true;
-        currentState = BossState.Attacking;
-        lastShockwaveTime = Time.time;
-        StopMovement();
-
-        if (debugMode) Debug.Log("[GolemBossAI] Ejecutando Onda Sísmica");
-
-        PlayAnimation(AnimAttack02);
-        yield return new WaitForSeconds(1.2f);
-
-        if (shockwaveVFX && player)
+        
+        // Centro de la lluvia = posición del jugador
+        Vector3 rainCenter = player.position;
+        
+        // Generar las rocas con delay entre cada una
+        for (int i = 0; i < rockRainCount; i++)
         {
-            Vector3 spawnPos = transform.position + transform.forward * 1.5f + Vector3.up * 0.1f;
-            GameObject shockwave = Instantiate(shockwaveVFX, spawnPos, transform.rotation);
-            StartCoroutine(MoveShockwave(shockwave, player.position));
-            Destroy(shockwave, 5f);
-        }
-
-        yield return new WaitForSeconds(1.5f);
-        isAttacking = false;
-    }
-
-    private IEnumerator MoveShockwave(GameObject shockwave, Vector3 playerPosition)
-    {
-        if (shockwave == null) yield break;
-
-        Vector3 targetPosition = new Vector3(playerPosition.x, shockwave.transform.position.y, playerPosition.z);
-        float duration = Vector3.Distance(shockwave.transform.position, targetPosition) / shockwaveSpeed;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < duration && shockwave != null)
-        {
-            shockwave.transform.position = Vector3.Lerp(shockwave.transform.position, targetPosition, elapsedTime / duration);
+            if (_isDead) yield break;
             
-            int hitCount = Physics.OverlapSphereNonAlloc(shockwave.transform.position, 1.5f, _overlapBuffer, playerLayer);
-            for (int i = 0; i < hitCount; i++)
+            // Posición aleatoria en círculo alrededor del jugador
+            Vector2 randomCircle = Random.insideUnitCircle * rockRainRadius;
+            Vector3 targetPos = rainCenter + new Vector3(randomCircle.x, 0f, randomCircle.y);
+            Vector3 spawnPos = targetPos + Vector3.up * rockRainHeight;
+            
+            // VFX de advertencia en el suelo
+            if (rockWarningVFX)
             {
-                if (DamagePlayerInCollider(hitCount > i ? _overlapBuffer[i] : null, shockwaveDamage))
-                {
-                    ApplyKnockback(_overlapBuffer[i].transform);
-                }
+                GameObject warning = Instantiate(rockWarningVFX, targetPos + Vector3.up * 0.1f, Quaternion.Euler(90f, 0f, 0f));
+                Destroy(warning, 1.5f);
             }
-
-            elapsedTime += Time.deltaTime;
+            
+            // Pequeño delay antes de que caiga la roca
+            yield return new WaitForSeconds(rockRainInterval);
+            
+            // Crear y lanzar la roca
+            SpawnFallingRock(spawnPos, targetPos);
+        }
+        
+        // Esperar a que terminen de caer
+        yield return new WaitForSeconds(1.5f);
+        
+        _isAttacking = false;
+        
+        Log("🌧️ Lluvia de rocas finalizada");
+    }
+    
+    /// <summary>
+    /// Crea una roca que cae desde arriba hacia un punto objetivo
+    /// </summary>
+    private void SpawnFallingRock(Vector3 spawnPos, Vector3 targetPos)
+    {
+        if (!rockPrefab) return;
+        
+        GameObject rock = Instantiate(rockPrefab, spawnPos, Quaternion.identity);
+        rock.transform.localScale = rockPrefab.transform.localScale * 0.8f; // Rocas un poco más pequeñas
+        
+        // Dirección hacia abajo (con ligera variación)
+        Vector3 direction = (targetPos - spawnPos).normalized;
+        
+        SetupRockProjectile(rock, direction, rockRainSpeed);
+        
+        Destroy(rock, 5f);
+    }
+    
+    /// <summary>
+    /// Configura un proyectil de roca con física y daño
+    /// </summary>
+    private void SetupRockProjectile(GameObject rock, Vector3 direction, float speed)
+    {
+        // Layer del proyectil
+        int projectileLayer = LayerMask.NameToLayer("EnemyProjectile");
+        if (projectileLayer == -1) projectileLayer = LayerMask.NameToLayer("Projectile");
+        if (projectileLayer != -1)
+        {
+            rock.layer = projectileLayer;
+            foreach (Transform child in rock.GetComponentsInChildren<Transform>(true))
+            {
+                child.gameObject.layer = projectileLayer;
+            }
+        }
+        
+        // Física
+        var rb = rock.GetComponent<Rigidbody>();
+        if (rb)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = false;
+            rb.linearVelocity = direction * speed;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        }
+        
+        // Collider
+        var col = rock.GetComponent<Collider>();
+        if (col) col.enabled = true;
+        
+        // Proyectil
+        var proj = rock.GetComponent<EnemyProjectile>();
+        if (proj)
+        {
+            proj.enabled = true;
+            proj.Initialize(direction, -1f); // Usar daño del prefab
+        }
+    }
+    
+    #endregion
+    
+    #region Embestida con Puñetazo
+    
+    /// <summary>
+    /// Embestida: El Golem corre rápidamente hacia el jugador y le da un puñetazo
+    /// </summary>
+    private IEnumerator ChargeAttack()
+    {
+        _isAttacking = true;
+        _isCharging = true;
+        _currentState = BossState.Charging;
+        _lastChargeTime = Time.time;
+        _lastAttackTime = Time.time;
+        
+        Log("🏃💨 ¡EMBESTIDA INICIADA!");
+        Debug.Log($"[GolemBossAI] 🏃💨 ¡EMBESTIDA! El Golem corre hacia el jugador!");
+        
+        if (!player)
+        {
+            _isAttacking = false;
+            _isCharging = false;
+            yield break;
+        }
+        
+        // Guardar posición objetivo inicial del jugador
+        Vector3 targetPos = player.position;
+        
+        // Configurar NavMeshAgent para velocidad de carga
+        if (agent && agent.isOnNavMesh)
+        {
+            agent.speed = chargeSpeed;
+            agent.isStopped = false;
+            agent.stoppingDistance = 1.5f; // Pararse cerca del jugador
+        }
+        
+        // Reproducir animación de correr más rápido para mayor impacto
+        PlayAnim(ANIM_WALK);
+        
+        // ✅ Acelerar la animación para que sea más impactante
+        if (animator)
+        {
+            animator.speed = chargeAnimationSpeedMultiplier;
+            Debug.Log($"[GolemBossAI] 🏃💨 Velocidad de animación aumentada a {chargeAnimationSpeedMultiplier}x para embestida!");
+        }
+        
+        // Perseguir al jugador hasta estar cerca
+        float chargeTimeout = 5f; // Máximo tiempo de persecución
+        float elapsed = 0f;
+        
+        while (elapsed < chargeTimeout)
+        {
+            if (_isDead) yield break;
+            
+            elapsed += Time.deltaTime;
+            
+            // Actualizar destino hacia el jugador
+            if (player && agent && agent.isOnNavMesh)
+            {
+                targetPos = player.position;
+                agent.SetDestination(targetPos);
+                
+                // Rotar hacia el jugador
+                RotateTowardsPlayer();
+            }
+            
+            // Verificar si llegamos al jugador
+            float distToPlayer = Vector3.Distance(transform.position, targetPos);
+            if (distToPlayer <= 2.5f)
+            {
+                break; // Llegamos, hora de golpear
+            }
+            
             yield return null;
         }
+        
+        // Parar movimiento
+        StopAgent();
+        
+        // Restaurar velocidad normal
+        if (agent)
+        {
+            agent.speed = walkSpeed;
+            agent.stoppingDistance = 0f;
+        }
+        
+        // ✅ Restaurar velocidad normal de la animación
+        if (animator)
+        {
+            animator.speed = 1f;
+            Debug.Log($"[GolemBossAI] 🏃 Velocidad de animación restaurada a normal (1.0x)");
+        }
+        
+        // ¡PUÑETAZO!
+        yield return StartCoroutine(ExecutePunch());
+        
+        _isAttacking = false;
+        _isCharging = false;
+        
+        Log("🏃 Embestida completada");
     }
-
+    
+    /// <summary>
+    /// Ejecuta el puñetazo al final de la embestida
+    /// </summary>
+    private IEnumerator ExecutePunch()
+    {
+        Log("👊 ¡PUÑETAZO!");
+        Debug.Log($"[GolemBossAI] 👊 ¡PUÑETAZO!");
+        
+        // Animación de ataque con la otra mano
+        PlayAnim(ANIM_ATTACK02);
+        
+        // Esperar al momento del impacto
+        yield return new WaitForSeconds(0.4f);
+        
+        // Aplicar daño en área
+        ApplyPunchDamage();
+        
+        // VFX de impacto
+        if (punchImpactVFX)
+        {
+            Vector3 impactPos = transform.position + transform.forward * 2f;
+            GameObject vfx = Instantiate(punchImpactVFX, impactPos, Quaternion.identity);
+            Destroy(vfx, 2f);
+        }
+        
+        // Esperar fin de animación
+        yield return new WaitForSeconds(0.6f);
+    }
+    
+    /// <summary>
+    /// Aplica daño del puñetazo a objetivos cercanos
+    /// </summary>
+    private void ApplyPunchDamage()
+    {
+        Vector3 punchCenter = transform.position + transform.forward * 1.5f + Vector3.up;
+        
+        Debug.Log($"[GolemBossAI] 👊 Verificando daño de puñetazo en posición {punchCenter}, radio {punchRadius}");
+        
+        int hitCount = Physics.OverlapSphereNonAlloc(punchCenter, punchRadius, _punchHitBuffer); // ✅ OPTIMIZACIÓN: NonAlloc
+        
+        Debug.Log($"[GolemBossAI] 👊 Detectados {hitCount} colliders en el área");
+        
+        for (int i = 0; i < hitCount; i++)
+        {
+            var hit = _punchHitBuffer[i];
+            Debug.Log($"[GolemBossAI] 👊 Evaluando collider: {hit.name} (Tag: {hit.tag})");
+            
+            // No dañarse a sí mismo
+            if (hit.transform == transform || hit.transform.IsChildOf(transform))
+            {
+                Debug.Log($"[GolemBossAI] 👊 Ignorando a sí mismo: {hit.name}");
+                continue;
+            }
+            
+            // Verificar si es el jugador o un aliado
+            bool isPlayer = hit.CompareTag("Player");
+            var partyMember = hit.GetComponent<Game.NPC.NPCPartyMember>();
+            bool isAlly = partyMember != null;
+            
+            Debug.Log($"[GolemBossAI] 👊 {hit.name}: isPlayer={isPlayer}, isAlly={isAlly}");
+            
+            if (isPlayer || isAlly)
+            {
+                // Calcular dirección del knockback
+                Vector3 knockbackDir = (hit.transform.position - transform.position).normalized;
+                knockbackDir.y = 0.2f;
+                knockbackDir.Normalize();
+                
+                // ✅ FIX: Aplicar daño con ambos sistemas (PlayerHealthSystem y Damageable)
+                bool damageApplied = false;
+                
+                // Intentar PlayerHealthSystem primero (para jugador)
+                var playerHealth = hit.GetComponent<PlayerHealthSystem>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(punchDamage);
+                    damageApplied = true;
+                    Log($"👊 Puñetazo golpeó a {hit.name} por {punchDamage}");
+                    Debug.Log($"[GolemBossAI] 👊 ✅ DAÑO APLICADO a {hit.name} via PlayerHealthSystem por {punchDamage}!");
+                }
+                else
+                {
+                    // Fallback: Damageable (para NPCs aliados)
+                    var hitDamageable = hit.GetComponent<Damageable>();
+                    if (hitDamageable != null)
+                    {
+                        hitDamageable.TakeDamage(punchDamage);
+                        damageApplied = true;
+                        Log($"👊 Puñetazo golpeó a {hit.name} por {punchDamage}");
+                        Debug.Log($"[GolemBossAI] 👊 ✅ DAÑO APLICADO a {hit.name} via Damageable por {punchDamage}!");
+                    }
+                }
+                
+                if (!damageApplied)
+                {
+                    Debug.LogWarning($"[GolemBossAI] 👊 ⚠️ {hit.name} no tiene PlayerHealthSystem ni Damageable!");
+                }
+                
+                // Aplicar knockback
+                var rb = hit.GetComponent<Rigidbody>();
+                if (rb != null && !rb.isKinematic)
+                {
+                    rb.AddForce(knockbackDir * punchKnockback, ForceMode.Impulse);
+                    Debug.Log($"[GolemBossAI] 👊 Knockback aplicado a {hit.name}");
+                }
+            }
+        }
+        
+        // Debug visual opcional
+        Debug.DrawRay(punchCenter, Vector3.up * 2f, Color.red, 2f);
+    }
+    
+    #endregion
+    
+    #region Fase 3 - Salto y Onda Expansiva
+    
+    /// <summary>
+    /// Ataque especial de Fase 3: Salta hacia el jugador y genera una onda expansiva al aterrizar
+    /// </summary>
+    private IEnumerator JumpAttack()
+    {
+        _isAttacking = true;
+        _isJumping = true;
+        _currentState = BossState.Jumping;
+        _lastJumpAttackTime = Time.time;
+        _lastAttackTime = Time.time;
+        
+        StopAgent();
+        
+        Log("🦘 [Fase 3] ¡SALTO HACIA EL JUGADOR!");
+        Debug.Log($"[GolemBossAI] 🦘 [Fase 3] ¡SALTO HACIA EL JUGADOR!");
+        
+        // Guardar posición inicial
+        _jumpStartPos = transform.position;
+        
+        // Calcular posición objetivo (donde está el jugador ahora)
+        if (!player)
+        {
+            _isAttacking = false;
+            _isJumping = false;
+            yield break;
+        }
+        
+        _jumpTargetPos = player.position;
+        
+        // Animación de preparación del salto
+        PlayAnim(ANIM_JUMP);
+        
+        // Pequeña pausa antes del salto (preparación)
+        yield return new WaitForSeconds(0.3f);
+        
+        // Desactivar NavMeshAgent durante el salto
+        if (agent)
+        {
+            agent.enabled = false;
+        }
+        
+        // Ejecutar el salto (curva parabólica)
+        float elapsed = 0f;
+        float halfDuration = jumpDuration / 2f;
+        
+        // Fase de subida
+        while (elapsed < halfDuration)
+        {
+            if (_isDead) yield break;
+            
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            
+            // Interpolación horizontal
+            Vector3 horizontalPos = Vector3.Lerp(_jumpStartPos, _jumpTargetPos, t * 0.5f);
+            
+            // Curva de altura (subida)
+            float heightT = Mathf.Sin(t * Mathf.PI * 0.5f); // 0 a 1 suavemente
+            float currentHeight = _jumpStartPos.y + (jumpHeight * heightT);
+            
+            transform.position = new Vector3(horizontalPos.x, currentHeight, horizontalPos.z);
+            
+            // Rotar hacia el objetivo durante el salto
+            Vector3 lookDir = (_jumpTargetPos - transform.position);
+            lookDir.y = 0;
+            if (lookDir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, 
+                    Quaternion.LookRotation(lookDir), Time.deltaTime * 5f);
+            }
+            
+            yield return null;
+        }
+        
+        // Fase de bajada
+        elapsed = 0f;
+        Vector3 peakPos = transform.position;
+        
+        while (elapsed < halfDuration)
+        {
+            if (_isDead) yield break;
+            
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            
+            // Interpolación horizontal (segunda mitad del viaje) - CORREGIDO
+            Vector3 horizontalPos = Vector3.Lerp(peakPos, _jumpTargetPos, t);
+            
+            // Curva de altura (bajada acelerada)
+            float heightT = 1f - (t * t); // Caída acelerada
+            float currentHeight = _jumpTargetPos.y + (jumpHeight * heightT);
+            
+            // Aplicar posición correctamente
+            transform.position = new Vector3(horizontalPos.x, currentHeight, horizontalPos.z);
+            
+            yield return null;
+        }
+        
+        // Aterrizaje - asegurar posición final exacta
+        transform.position = _jumpTargetPos;
+        
+        Debug.Log($"[GolemBossAI] 🦘 ¡ATERRIZAJE! Posición: {transform.position}");
+        
+        // Reactivar NavMeshAgent
+        if (agent)
+        {
+            agent.enabled = true;
+            agent.Warp(transform.position);
+        }
+        
+        // ¡IMPACTO! - Generar onda expansiva
+        CreateShockwave();
+        
+        // Esperar recuperación
+        yield return new WaitForSeconds(1.0f);
+        
+        _isAttacking = false;
+        _isJumping = false;
+        
+        Log("🦘 Salto completado");
+    }
+    
+    /// <summary>
+    /// Crea la onda expansiva al aterrizar
+    /// </summary>
+    private void CreateShockwave()
+    {
+        Vector3 impactPos = transform.position;
+        
+        Log($"💥 [Fase 3] ¡ONDA EXPANSIVA! Radio: {shockwaveRadius}, Daño: {shockwaveDamage}");
+        Debug.Log($"[GolemBossAI] 💥 [Fase 3] ¡ONDA EXPANSIVA! en {impactPos}, Radio: {shockwaveRadius}m, Daño: {shockwaveDamage}");
+        
+        // VFX de onda expansiva
+        if (shockwaveVFX)
+        {
+            GameObject vfx = Instantiate(shockwaveVFX, impactPos, Quaternion.identity);
+            vfx.transform.localScale = Vector3.one * (shockwaveRadius / 5f); // Escalar según radio
+            Destroy(vfx, 3f);
+            Debug.Log($"[GolemBossAI] 💥 VFX de onda expansiva creado");
+        }
+        else
+        {
+            Debug.LogWarning($"[GolemBossAI] 💥 ⚠️ No hay VFX de onda expansiva configurado!");
+        }
+        
+        // VFX de polvo al aterrizar
+        if (landingDustVFX)
+        {
+            GameObject dust = Instantiate(landingDustVFX, impactPos, Quaternion.identity);
+            dust.transform.localScale = Vector3.one * 2f;
+            Destroy(dust, 3f);
+            Debug.Log($"[GolemBossAI] 💥 VFX de polvo creado");
+        }
+        
+        // Temblor de cámara
+        TriggerCameraShake();
+        
+        // Detectar y dañar objetivos en el área
+        ApplyShockwaveDamage(impactPos);
+    }
+    
+    /// <summary>
+    /// Aplica daño y knockback a todos los objetivos en el radio de la onda
+    /// </summary>
+    private void ApplyShockwaveDamage(Vector3 center)
+    {
+        Debug.Log($"[GolemBossAI] 💥 Verificando daño de onda expansiva en {center}, radio {shockwaveRadius}");
+        
+        // Buscar todos los colliders en el radio
+        int hitCount = Physics.OverlapSphereNonAlloc(center, shockwaveRadius, _shockwaveHitBuffer); // ✅ OPTIMIZACIÓN: NonAlloc
+        
+        Debug.Log($"[GolemBossAI] 💥 Detectados {hitCount} colliders en el área de onda");
+        
+        for (int i = 0; i < hitCount; i++)
+        {
+            var hit = _shockwaveHitBuffer[i];
+            Debug.Log($"[GolemBossAI] 💥 Evaluando collider: {hit.name} (Tag: {hit.tag})");
+            
+            // No dañarse a sí mismo
+            if (hit.transform == transform || hit.transform.IsChildOf(transform))
+            {
+                Debug.Log($"[GolemBossAI] 💥 Ignorando a sí mismo: {hit.name}");
+                continue;
+            }
+            
+            // Verificar si es el jugador o un aliado
+            bool isPlayer = hit.CompareTag("Player");
+            var partyMember = hit.GetComponent<Game.NPC.NPCPartyMember>();
+            bool isAlly = partyMember != null;
+            
+            Debug.Log($"[GolemBossAI] 💥 {hit.name}: isPlayer={isPlayer}, isAlly={isAlly}");
+            
+            if (isPlayer || isAlly)
+            {
+                // Calcular dirección del knockback (desde el centro hacia el objetivo)
+                Vector3 knockbackDir = (hit.transform.position - center).normalized;
+                knockbackDir.y = 0.3f; // Añadir componente vertical para que salte un poco
+                knockbackDir.Normalize();
+                
+                // ✅ FIX: Aplicar daño con ambos sistemas (PlayerHealthSystem y Damageable)
+                bool damageApplied = false;
+                
+                // Intentar PlayerHealthSystem primero (para jugador)
+                var playerHealth = hit.GetComponent<PlayerHealthSystem>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(shockwaveDamage);
+                    damageApplied = true;
+                    Log($"💥 Onda dañó a {hit.name} por {shockwaveDamage}");
+                    Debug.Log($"[GolemBossAI] 💥 ✅ DAÑO APLICADO a {hit.name} via PlayerHealthSystem por {shockwaveDamage}!");
+                }
+                else
+                {
+                    // Fallback: Damageable (para NPCs aliados)
+                    var hitDamageable = hit.GetComponent<Damageable>();
+                    if (hitDamageable != null)
+                    {
+                        hitDamageable.TakeDamage(shockwaveDamage);
+                        damageApplied = true;
+                        Log($"💥 Onda dañó a {hit.name} por {shockwaveDamage}");
+                        Debug.Log($"[GolemBossAI] 💥 ✅ DAÑO APLICADO a {hit.name} via Damageable por {shockwaveDamage}!");
+                    }
+                }
+                
+                if (!damageApplied)
+                {
+                    Debug.LogWarning($"[GolemBossAI] 💥 ⚠️ {hit.name} no tiene PlayerHealthSystem ni Damageable!");
+                }
+                
+                // Aplicar knockback via Rigidbody si existe
+                var rb = hit.GetComponent<Rigidbody>();
+                if (rb != null && !rb.isKinematic)
+                {
+                    rb.AddForce(knockbackDir * shockwaveKnockback, ForceMode.Impulse);
+                    Debug.Log($"[GolemBossAI] 💥 Knockback aplicado a {hit.name}");
+                }
+                
+                // Alternativa: usar CharacterController para empujar
+                var cc = hit.GetComponent<CharacterController>();
+                if (cc != null)
+                {
+                    // El knockback se aplicará en el siguiente frame via el sistema de movimiento
+                    // Por ahora solo hacemos daño, el knockback es opcional
+                    Debug.Log($"[GolemBossAI] 💥 {hit.name} tiene CharacterController (knockback manual necesario)");
+                }
+            }
+        }
+        
+        // Debug visual opcional
+        Debug.DrawRay(center, Vector3.up * 5f, Color.yellow, 3f);
+    }
+    
+    /// <summary>
+    /// Activa el temblor de cámara (si hay un sistema disponible)
+    /// </summary>
+    private void TriggerCameraShake()
+    {
+        // Intentar usar Cinemachine Impulse si está disponible
+        // Nota: Requiere que haya un CinemachineImpulseListener en la cámara virtual
+        try
+        {
+            // Buscar cualquier componente de shake en la cámara principal
+            var mainCam = Camera.main;
+            if (mainCam != null)
+            {
+                // Intentar encontrar un componente genérico de shake
+                var shakeComponents = mainCam.GetComponents<MonoBehaviour>();
+                foreach (var comp in shakeComponents)
+                {
+                    // Buscar método Shake por reflection (para compatibilidad)
+                    var shakeMethod = comp.GetType().GetMethod("Shake");
+                    if (shakeMethod != null)
+                    {
+                        shakeMethod.Invoke(comp, new object[] { cameraShakeDuration, cameraShakeIntensity });
+                        return;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Log($"⚠️ No se pudo activar camera shake: {ex.Message}");
+        }
+    }
+    
+    #endregion
+    
+    #region Daño por Contacto
+    
+    /// <summary>
+    /// Verifica si el jugador está lo suficientemente cerca para recibir daño por contacto
+    /// </summary>
+    private void CheckContactDamage(float distance)
+    {
+        if (!enableContactDamage) return;
+        if (player == null) return;
+        
+        // Verificar cooldown
+        if (Time.time - _lastContactDamageTime < contactDamageCooldown) return;
+        
+        // Verificar si el jugador está dentro del radio de contacto
+        if (distance <= contactRadius)
+        {
+            ApplyContactDamage();
+        }
+    }
+    
+    /// <summary>
+    /// Aplica daño al jugador por contacto/colisión con el Golem
+    /// </summary>
+    private void ApplyContactDamage()
+    {
+        if (player == null) return;
+        
+        // Calcular daño (aumentado durante embestida)
+        float damage = contactDamage;
+        if (_isCharging)
+        {
+            damage *= chargeDamageMultiplier;
+            Debug.Log($"[GolemBossAI] 💥 ¡COLISIÓN DURANTE EMBESTIDA! Daño aumentado a {damage}");
+        }
+        
+        // ✅ FIX: Intentar ambos sistemas de daño (PlayerHealthSystem y Damageable)
+        var playerHealth = player.GetComponent<PlayerHealthSystem>();
+        if (playerHealth != null)
+        {
+            playerHealth.TakeDamage(damage);
+            _lastContactDamageTime = Time.time;
+            
+            Log($"💥 Daño por contacto: {damage} (Embestida: {_isCharging})");
+            Debug.Log($"[GolemBossAI] 💥 ✅ DAÑO POR CONTACTO aplicado al jugador via PlayerHealthSystem: {damage} (distancia: {Vector3.Distance(transform.position, player.position):F2}m)");
+            return;
+        }
+        
+        // Fallback: intentar Damageable
+        var playerDamageable = player.GetComponent<Damageable>();
+        if (playerDamageable != null)
+        {
+            playerDamageable.TakeDamage(damage);
+            _lastContactDamageTime = Time.time;
+            
+            Log($"💥 Daño por contacto: {damage} (Embestida: {_isCharging})");
+            Debug.Log($"[GolemBossAI] 💥 ✅ DAÑO POR CONTACTO aplicado al jugador via Damageable: {damage} (distancia: {Vector3.Distance(transform.position, player.position):F2}m)");
+            return;
+        }
+        
+        Debug.LogWarning($"[GolemBossAI] 💥 ⚠️ El jugador no tiene PlayerHealthSystem ni Damageable!");
+    }
+    
     #endregion
 
     #region Daño y Muerte
 
-    private void OnDamageTaken(float damage)
+    private void OnDamageTaken(float amount)
     {
-        if (isDead) return;
-
-        if (debugMode) Debug.Log($"[GolemBossAI] Recibió {damage} de daño");
-
-        if (!isAttacking && Random.value > 0.8f)
+        if (_isDead) return;
+        
+        Log($"💥 Recibió {amount} de daño");
+        
+        // No interrumpir ataques con animación de daño
+        if (!_isAttacking)
         {
-            StartCoroutine(TakeDamageReaction());
+            StartCoroutine(TakeDamageAnim());
         }
     }
 
-    private IEnumerator TakeDamageReaction()
+    private IEnumerator TakeDamageAnim()
     {
-        isAttacking = true;
-        currentState = BossState.TakingDamage;
-        StopMovement();
-        
-        PlayAnimation(AnimGetHit);
+        PlayAnim(ANIM_GETHIT);
         yield return new WaitForSeconds(0.5f);
-
-        currentState = BossState.Idle;
-        isAttacking = false;
+        
+        if (!_isDead && !_isAttacking)
+        {
+            PlayAnim(ANIM_IDLE);
+        }
     }
 
     private void OnDeath()
     {
-        if (isDead) return;
+        if (_isDead) return;
         
-        isDead = true;
-        currentState = BossState.Dead;
+        _isDead = true;
+        _currentState = BossState.Dead;
         
-        Debug.Log("[GolemBossAI] ¡Golem derrotado!");
-
-        StopAllCoroutines();
-        StopMovement();
-        PlayAnimation(AnimDie);
-        
-        var colliders = GetComponentsInChildren<Collider>();
-        foreach (var col in colliders)
-        {
-            col.enabled = false;
-        }
-        Destroy(gameObject, 10f);
-    }
-
-    public void OnPlayerDefeated()
-    {
-        if (isDead) return;
+        Log("💀 Golem derrotado");
         
         StopAllCoroutines();
-        isAttacking = false;
-        StopMovement();
+        StopAgent();
         
-        PlayAnimation(AnimVictory);
-        Debug.Log("[GolemBossAI] ¡Victoria!");
-    }
-
-    #endregion
-
-    #region Utilidades
-
-    private void DamagePlayer(float damage)
-    {
-        if (!player) return;
+        PlayAnim(ANIM_DIE);
         
-        var damageable = player.GetComponent<IDamageable>();
-        if (damageable != null && damageable.IsAlive)
+        if (_registeredInCombat)
         {
-            damageable.TakeDamage(damage);
-            if (debugMode) Debug.Log($"[GolemBossAI] Infligió {damage} de daño (IDamageable)");
-        }
-    }
-
-    private bool DamagePlayerInCollider(Collider col, float damage)
-    {
-        if (col == null) return false;
-
-        var damageable = col.GetComponent<IDamageable>();
-        if (damageable != null && damageable.IsAlive)
-        {
-            damageable.TakeDamage(damage);
-            if (debugMode) Debug.Log($"[GolemBossAI] Golpeó a {col.name} por {damage}");
-            return true;
-        }
-        return false;
-    }
-
-    private void ApplyKnockback(Transform target)
-    {
-        var rb = target.GetComponent<Rigidbody>();
-        if (rb)
-        {
-            Vector3 knockbackDir = (target.position - transform.position).normalized;
-            knockbackDir.y = 0.3f;
-            rb.AddForce(knockbackDir * shockwaveKnockback, ForceMode.Impulse);
-        }
-    }
-
-    private void PlayAnimation(int animHash)
-    {
-        if (animator && animator.isActiveAndEnabled)
-        {
-            animator.CrossFade(animHash, 0.1f);
+            ActiveCombatRegistry.UnregisterNPC(gameObject);
+            _registeredInCombat = false;
         }
     }
 
     #endregion
 
-    #region Gizmos
+    #region Animaciones
 
-    void OnDrawGizmosSelected()
+    private void PlayAnim(string animName)
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        if (!animator) return;
         
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, meleeRange);
-        
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, rangedMinRange);
-        
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, rangedMaxRange);
-        
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, slamRadius);
+        try
+        {
+            animator.Play(animName, 0, 0f);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[GolemBossAI] Error al reproducir animación '{animName}': {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Debug
+
+    private void Log(string msg)
+    {
+        if (debugMode)
+        {
+            Debug.Log($"[GolemBossAI] {msg}");
+        }
     }
 
     #endregion

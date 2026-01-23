@@ -44,6 +44,9 @@ public class PlayerLevitationController : MonoBehaviour
     // Layer del Animator para animaciones de magia
     private int _upperBodyLayerIndex = 1;
     
+    // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
+    private Collider[] _levitationTargetBuffer = new Collider[16];
+    
     // Propiedades de reflexión cacheadas para GamepadInputReader
     private static System.Type _gamepadReaderType;
     private static System.Reflection.PropertyInfo _leftPressedProp;
@@ -455,12 +458,14 @@ public class PlayerLevitationController : MonoBehaviour
         if (showDebugLogs) Debug.Log($"[Levitation] Buscando targets - Rango: {range}, Ángulo: {spell.levitationAngle}°, Layers: {spell.levitationTargetLayers.value}");
         
         // Buscar todos los colliders en el rango
-        var colliders = Physics.OverlapSphere(origin, range, spell.levitationTargetLayers);
+        int hitCount = Physics.OverlapSphereNonAlloc(origin, range, _levitationTargetBuffer, spell.levitationTargetLayers); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
         
-        if (showDebugLogs) Debug.Log($"[Levitation] Encontrados {colliders.Length} colliders en el rango");
+        if (showDebugLogs) Debug.Log($"[Levitation] Encontrados {hitCount} colliders en el rango");
         
-        foreach (var col in colliders)
+        for (int i = 0; i < hitCount; i++)
         {
+            var col = _levitationTargetBuffer[i];
+            
             // Verificar si tiene componente LevitationTarget
             var target = col.GetComponentInParent<LevitationTarget>();
             if (target == null)

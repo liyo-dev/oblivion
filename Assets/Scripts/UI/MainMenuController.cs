@@ -324,19 +324,9 @@ public class MainMenuController : MonoBehaviour
         }
         else if (hasSave)
         {
-            Debug.Log("[MainMenu] CONTINUE → Cargando save...");
-            if (GameBootService.IsAvailable && GameBootService.Profile != null)
-            {
-                bool loaded = GameBootService.Profile.LoadProfile(saveSystem);
-                if (!loaded)
-                    Debug.LogWarning("[MainMenu] No se pudo cargar el save antes de ir a la escena del mundo.");
-                else
-                    Debug.Log("[MainMenu] Save cargado correctamente");
-            }
-            else
-            {
-                Debug.LogWarning("[MainMenu] GameBootService no esta listo; se continuara con la sincronizacion en el mundo.");
-            }
+            Debug.Log("[MainMenu] CONTINUE → Save ya debería estar cargado por GameBootService");
+            // Nota: GameBootService.PrepareActivePreset() ya cargó el save automáticamente
+            // No es necesario volver a cargarlo aquí
         }
         else
         {

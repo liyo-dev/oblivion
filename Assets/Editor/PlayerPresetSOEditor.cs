@@ -40,28 +40,33 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
             CreateTestPresetFromCurrentState();
         }
         
+        EditorGUILayout.Space(5);
+        
+        if (GUILayout.Button("🔄 Actualizar ESTE Preset desde Estado Actual", GUILayout.Height(25)))
+        {
+            UpdateThisPresetFromCurrentState(preset);
+        }
+        
         GUI.enabled = true;
         
         if (!Application.isPlaying)
         {
             EditorGUILayout.HelpBox(
-                "⚠️ Este botón solo funciona en PLAY MODE.\n\n" +
-                "Úsalo para crear un nuevo preset capturando TODO el estado actual del jugador:\n" +
-                "• Stats (HP, MP, nivel)\n" +
-                "• Hechizos desbloqueados y equipados\n" +
-                "• Inventario completo\n" +
-                "• Apariencia y vestuario\n" +
-                "• Progreso de misiones\n" +
-                "• Narrativas completadas\n" +
-                "• Posiciones de NPCs\n\n" +
-                "Útil para crear puntos de guardado de testing sin tener que jugar desde el inicio.",
+                "⚠️ Estos botones solo funcionan en PLAY MODE.\n\n" +
+                "📸 CREAR: Crea un NUEVO preset capturando el estado actual.\n\n" +
+                "🔄 ACTUALIZAR: Sobrescribe ESTE preset con el estado actual.\n" +
+                "   Útil para actualizar presets de testeo existentes.\n\n" +
+                "Captura: Stats, hechizos, inventario, apariencia, quests,\n" +
+                "narrativas (con posición del grafo), NPCs, bosses, etc.",
                 MessageType.Info
             );
         }
         else
         {
             EditorGUILayout.HelpBox(
-                "✅ Modo Play activo. Al presionar el botón se creará un nuevo preset con el estado actual del jugador.",
+                "✅ Modo Play activo.\n\n" +
+                "📸 CREAR: Genera un nuevo preset.\n" +
+                "🔄 ACTUALIZAR: Sobrescribe '" + preset.name + "' con el estado actual.",
                 MessageType.Info
             );
         }
@@ -114,6 +119,45 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
         {
             EditorGUILayout.BeginVertical("box");
             
+            // === Diagnóstico de Blackboards Narrativos ===
+            EditorGUILayout.LabelField("📖 Blackboards Narrativos:", EditorStyles.boldLabel);
+            
+            if (preset.narrativeBlackboards == null || preset.narrativeBlackboards.Count == 0)
+            {
+                EditorGUILayout.HelpBox("⚠️ No hay blackboards narrativos.\n\nEl grafo narrativo empezará desde el inicio.", MessageType.Warning);
+            }
+            else
+            {
+                foreach (var bb in preset.narrativeBlackboards)
+                {
+                    var currentNodeEntry = bb.blackboardData?.FirstOrDefault(e => e.key == "__currentNodeGuid");
+                    bool hasCurrentNode = currentNodeEntry != null && !string.IsNullOrEmpty(currentNodeEntry.value);
+                    
+                    string status = hasCurrentNode ? "✅" : "❌";
+                    string nodeInfo = hasCurrentNode 
+                        ? $"Nodo: {currentNodeEntry.value.Substring(0, System.Math.Min(8, currentNodeEntry.value.Length))}..." 
+                        : "Sin posición (empezará desde inicio)";
+                    
+                    EditorGUILayout.LabelField($"{status} {bb.graphLabel}: {bb.blackboardData?.Count ?? 0} entradas");
+                    EditorGUILayout.LabelField($"     {nodeInfo}", EditorStyles.miniLabel);
+                }
+                
+                bool allHaveNode = preset.narrativeBlackboards.All(bb => 
+                    bb.blackboardData?.Any(e => e.key == "__currentNodeGuid" && !string.IsNullOrEmpty(e.value)) == true);
+                
+                if (!allHaveNode)
+                {
+                    EditorGUILayout.HelpBox(
+                        "⚠️ Algunos grafos NO tienen posición guardada (__currentNodeGuid).\n\n" +
+                        "Esto causará que el grafo recorra todos los nodos desde el inicio al cargar.\n\n" +
+                        "SOLUCIÓN: En Play Mode, usa el botón '🔄 Actualizar ESTE Preset' para capturar el estado correcto.", 
+                        MessageType.Warning);
+                }
+            }
+            
+            EditorGUILayout.Space(10);
+            
+            // === Diagnóstico de Flags de Quests (código existente) ===
             if (preset.flags == null || preset.flags.Count == 0)
             {
                 EditorGUILayout.HelpBox("Este preset no tiene flags configurados.", MessageType.Warning);
@@ -337,6 +381,106 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
         
         Debug.Log($"[PlayerPresetSOEditor] ✅ Preset de test creado: {newName}");
         Debug.Log($"[PlayerPresetSOEditor] 📋 Quests: {activeQuests} activas, {completedQuests} completadas, {stepsDone} steps");
+        
+        // Log de blackboards narrativos
+        if (newPreset.narrativeBlackboards != null && newPreset.narrativeBlackboards.Count > 0)
+        {
+            Debug.Log($"[PlayerPresetSOEditor] 📖 Narrativas capturadas: {newPreset.narrativeBlackboards.Count} grafos");
+            foreach (var bb in newPreset.narrativeBlackboards)
+            {
+                var currentNodeEntry = bb.blackboardData?.FirstOrDefault(e => e.key == "__currentNodeGuid");
+                var hasCurrentNode = currentNodeEntry != null && !string.IsNullOrEmpty(currentNodeEntry.value);
+                Debug.Log($"[PlayerPresetSOEditor]   • Grafo '{bb.graphLabel}': {bb.blackboardData?.Count ?? 0} entradas, __currentNodeGuid: {(hasCurrentNode ? "✅ SÍ" : "❌ NO")}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerPresetSOEditor] ⚠️ No se capturaron blackboards narrativos");
+        }
+    }
+    
+    private void UpdateThisPresetFromCurrentState(PlayerPresetSO preset)
+    {
+        if (!Application.isPlaying)
+        {
+            EditorUtility.DisplayDialog("Error", "Esta función solo funciona en Play Mode.", "OK");
+            return;
+        }
+        
+        // Confirmar la acción
+        if (!EditorUtility.DisplayDialog("Confirmar Actualización", 
+            $"¿Estás seguro de que quieres sobrescribir '{preset.name}' con el estado actual del juego?\n\n" +
+            "Esta acción NO se puede deshacer.",
+            "Sí, Actualizar", "Cancelar"))
+        {
+            return;
+        }
+        
+        // Obtener el GameBootProfile activo
+        var profile = GameBootService.Profile;
+        if (profile == null)
+        {
+            EditorUtility.DisplayDialog("Error", "No se encontró GameBootProfile activo.", "OK");
+            return;
+        }
+        
+        // Actualizar el runtimePreset con el estado actual
+        Debug.Log("[PlayerPresetSOEditor] 🔄 Actualizando runtimePreset desde el estado actual...");
+        profile.UpdateRuntimePresetFromCurrentState();
+        
+        var activePreset = profile.GetActivePresetResolved();
+        if (activePreset == null)
+        {
+            EditorUtility.DisplayDialog("Error", "No hay preset activo en el GameBootProfile.", "OK");
+            return;
+        }
+        
+        // Copiar los datos al preset seleccionado
+        Undo.RecordObject(preset, "Actualizar Preset desde Estado Actual");
+        CopyPresetData(activePreset, preset);
+        EditorUtility.SetDirty(preset);
+        AssetDatabase.SaveAssets();
+        
+        // Log de verificación de blackboards
+        int blackboardCount = preset.narrativeBlackboards?.Count ?? 0;
+        int blackboardsWithNode = 0;
+        if (preset.narrativeBlackboards != null)
+        {
+            foreach (var bb in preset.narrativeBlackboards)
+            {
+                var currentNodeEntry = bb.blackboardData?.FirstOrDefault(e => e.key == "__currentNodeGuid");
+                if (currentNodeEntry != null && !string.IsNullOrEmpty(currentNodeEntry.value))
+                {
+                    blackboardsWithNode++;
+                    Debug.Log($"[PlayerPresetSOEditor] ✅ Grafo '{bb.graphLabel}': __currentNodeGuid = {currentNodeEntry.value.Substring(0, System.Math.Min(8, currentNodeEntry.value.Length))}...");
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerPresetSOEditor] ⚠️ Grafo '{bb.graphLabel}': NO tiene __currentNodeGuid");
+                }
+            }
+        }
+        
+        // Mostrar resumen
+        var questFlags = preset.flags?.Where(f => f.StartsWith("QUEST_")).ToList() ?? new List<string>();
+        int activeQuests = questFlags.Count(f => f.StartsWith("QUEST_ACTIVE:"));
+        int completedQuests = questFlags.Count(f => f.StartsWith("QUEST_COMPLETED:"));
+        
+        string summary = $"✅ Preset '{preset.name}' actualizado:\n\n" +
+                        $"📊 Contenido:\n" +
+                        $"  • HP: {preset.currentHP}/{preset.maxHP}\n" +
+                        $"  • Quests activas: {activeQuests}, completadas: {completedQuests}\n" +
+                        $"  • Bosses derrotados: {preset.defeatedBossIds?.Count ?? 0}\n" +
+                        $"  • Party members: {preset.partyMemberIds?.Count ?? 0}\n\n" +
+                        $"📖 Narrativas: {blackboardCount} grafos\n" +
+                        $"   Con posición guardada: {blackboardsWithNode}/{blackboardCount}\n\n" +
+                        (blackboardsWithNode == blackboardCount && blackboardCount > 0 
+                            ? "✅ Los grafos narrativos continuarán desde donde estaban." 
+                            : "⚠️ Algunos grafos empezarán desde el inicio.");
+        
+        EditorUtility.DisplayDialog("Preset Actualizado", summary, "OK");
+        
+        Debug.Log($"[PlayerPresetSOEditor] ✅ Preset '{preset.name}' actualizado con {blackboardsWithNode}/{blackboardCount} grafos con posición guardada");
     }
     
     private void CopyPresetData(PlayerPresetSO source, PlayerPresetSO destination)
@@ -438,10 +582,16 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
         }
         
         // Interactuables
-        destination.consumedInteractableIds = new List<string>(source.consumedInteractableIds);
+        destination.consumedInteractableIds = new List<string>(source.consumedInteractableIds ?? new List<string>());
         
         // Narrativas interactivas
-        destination.completedInteractiveNarratives = new List<string>(source.completedInteractiveNarratives);
+        destination.completedInteractiveNarratives = new List<string>(source.completedInteractiveNarratives ?? new List<string>());
+        
+        // Party members
+        destination.partyMemberIds = new List<string>(source.partyMemberIds ?? new List<string>());
+        
+        // Teleport points
+        destination.unlockedTeleportPoints = new List<string>(source.unlockedTeleportPoints ?? new List<string>());
     }
     
     private void AddExampleActiveQuest(PlayerPresetSO preset)
