@@ -24,6 +24,11 @@ MonoBehaviour:
     narrativeChain:
     - actionType: 4
       dialogue: {fileID: 0}
+      speechBubbleText: 
+      isThoughtBubble: 0
+      speechBubbleDuration: 3
+      speechBubblePrefabOverride: {fileID: 0}
+      waitForBubble: 1
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -56,6 +61,11 @@ MonoBehaviour:
       sendEventOnStart: 0
     - actionType: 1
       dialogue: {fileID: 0}
+      speechBubbleText: 
+      isThoughtBubble: 0
+      speechBubbleDuration: 3
+      speechBubblePrefabOverride: {fileID: 0}
+      waitForBubble: 1
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 1
@@ -107,3 +117,7 @@ MonoBehaviour:
   alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
+  defaultSpeechBubblePrefab: {fileID: 0}
+  defaultThoughtBubblePrefab: {fileID: 0}
+  speechBubbleHeight: 2.8
+  enableDetailedLogs: 0

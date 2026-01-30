@@ -81,6 +81,9 @@ namespace Game.NPC
         // ✅ OPTIMIZACIÓN FASE 1: Timer para throttling de verificación de distancias
         private float _distanceCheckTimer;
         
+        // ✅ Sistema robusto: Timer para retry de miembros pendientes
+        private float _retryPendingTimer;
+        
         // ✅ OPTIMIZACIÓN FASE 1: Buffer reutilizable para Physics queries
         private Collider[] _enemySearchBuffer = new Collider[32];
         
@@ -460,38 +463,13 @@ namespace Game.NPC
             
             Debug.Log($"[PlayerParty] 🔄 Restaurando {preset.partyMemberIds.Count} miembros del party: [{string.Join(", ", preset.partyMemberIds)}]");
             
-            // Usar coroutine para esperar a que los NPCs se registren en la escena
-            StartCoroutine(RestorePartyDelayed(preset.partyMemberIds));
-        }
-
-        private System.Collections.IEnumerator RestorePartyDelayed(List<string> memberIds)
-        {
-            // Esperar unos frames para que los NPCs se inicialicen y registren
-            yield return null;
-            yield return null;
-            yield return new UnityEngine.WaitForSeconds(0.5f);
+            // Sistema robusto sin delays: intentar restaurar AHORA
+            RestoreMembersFromIds(preset.partyMemberIds);
             
-            RestoreMembersFromIds(memberIds);
-            
-            // Si quedaron miembros sin restaurar, hacer reintentos adicionales
+            // Si quedaron pendientes, el Update los manejará automáticamente
             if (_pendingMemberIds.Count > 0)
             {
-                Log($"⏳ {_pendingMemberIds.Count} miembros pendientes, reintentando en 1s...");
-                yield return new UnityEngine.WaitForSeconds(1f);
-                RetryPendingMembers();
-                
-                // Segundo reintento si aún quedan pendientes
-                if (_pendingMemberIds.Count > 0)
-                {
-                    Log($"⏳ {_pendingMemberIds.Count} miembros aún pendientes, último reintento en 2s...");
-                    yield return new UnityEngine.WaitForSeconds(2f);
-                    RetryPendingMembers();
-                }
-            }
-            
-            if (_pendingMemberIds.Count > 0)
-            {
-                LogWarning($"⚠️ No se pudieron restaurar {_pendingMemberIds.Count} miembros: [{string.Join(", ", _pendingMemberIds)}]");
+                Log($"⏳ {_pendingMemberIds.Count} miembros pendientes. Update los reintentará cuando estén disponibles.");
             }
         }
         
@@ -602,7 +580,7 @@ namespace Game.NPC
             if (_pendingMemberIds.Count > 0)
             {
                 Log($"🔄 Nueva escena cargada, reintentando restaurar {_pendingMemberIds.Count} miembros pendientes...");
-                StartCoroutine(RestorePartyDelayed(new List<string>(_pendingMemberIds)));
+                // Los reintentos se manejan automáticamente en Update()
             }
         }
 

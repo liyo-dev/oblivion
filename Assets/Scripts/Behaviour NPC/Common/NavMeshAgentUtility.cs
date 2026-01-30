@@ -53,8 +53,16 @@ namespace Game.NPC.Common
                 agent.ResetPath();
             }
 
+            // ✅ LIMPIEZA AGRESIVA: Eliminar toda velocidad residual
             agent.velocity = Vector3.zero;
             agent.nextPosition = agent.transform.position;
+            
+            // ✅ También limpiar la velocidad deseada para evitar acumulación
+            // Esto previene que el agente "recuerde" hacia dónde iba
+            if (agent.isOnNavMesh)
+            {
+                agent.SetDestination(agent.transform.position);
+            }
         }
 
         public static void SetDestination(NavMeshAgent agent, Vector3 destination, float stoppingDistance = -1f)

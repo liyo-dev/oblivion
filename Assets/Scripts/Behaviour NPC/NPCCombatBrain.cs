@@ -108,6 +108,10 @@ namespace Game.NPC
         Vector3 _lastKnownPlayerPosition;
         Vector3 _combatStartPosition; // Posición original para volver
         
+        // ✅ OPTIMIZACIÓN: Throttling para CheckLineOfSight (reducir raycasts)
+        private float _losCheckTimer;
+        private const float LOS_CHECK_INTERVAL = 0.1f; // Verificar cada 0.1s en lugar de cada frame
+        
         // 🔥 Memoria de combate reciente para evitar interrogación innecesaria
         private const float RECENT_COMBAT_THRESHOLD = 5f; // Si estuvo en combate hace menos de 5s, NO mostrar interrogación
         private float _lastCombatTime; // Timestamp del último momento en combate activo
@@ -117,6 +121,9 @@ namespace Game.NPC
         private Collider[] _projectileBuffer = new Collider[16];
         private Collider[] _coverBuffer = new Collider[32];
         private Collider[] _obstacleBuffer = new Collider[32];
+        
+        // ✅ OPTIMIZACIÓN: NavMeshPath reutilizable (evita allocations en MoveTo)
+        private NavMeshPath _reusablePath;
         
         Coroutine _fsmRoutine;
         bool _isActive;
@@ -146,6 +153,9 @@ namespace Game.NPC
             _agent.updateRotation = false; // Controlamos la rotación manualmente para encarar al player
             _agent.updatePosition = true;
             _agent.acceleration = 12f;
+            
+            // ✅ OPTIMIZACIÓN: Inicializar NavMeshPath reutilizable
+            _reusablePath = new NavMeshPath();
         }
 
         public void BeginCombat(Settings newSettings, Modules.NPCCombatConfig config = null)
@@ -271,16 +281,21 @@ namespace Game.NPC
             if (_shieldCd > 0) _shieldCd -= Time.deltaTime; // Escudo no se ve afectado por multiplicador
             if (_globalCd > 0) _globalCd -= dt;
 
-            // ✅ Verificar Line of Sight cada frame
+            // ✅ OPTIMIZACIÓN: Verificar Line of Sight cada 0.1s en lugar de cada frame (10x menos raycasts)
             if (_player != null)
             {
-                _hasLineOfSight = CheckLineOfSight();
-                
-                if (_hasLineOfSight)
+                _losCheckTimer += Time.deltaTime;
+                if (_losCheckTimer >= LOS_CHECK_INTERVAL)
                 {
-                    _lastSeenTime = Time.time;
-                    _lastCombatTime = Time.time; // 🔥 Actualizar tiempo de combate activo
-                    _lastKnownPlayerPosition = _player.position;
+                    _losCheckTimer = 0f;
+                    _hasLineOfSight = CheckLineOfSight();
+                    
+                    if (_hasLineOfSight)
+                    {
+                        _lastSeenTime = Time.time;
+                        _lastCombatTime = Time.time; // 🔥 Actualizar tiempo de combate activo
+                        _lastKnownPlayerPosition = _player.position;
+                    }
                 }
             }
 
@@ -1462,22 +1477,21 @@ namespace Game.NPC
                 return;
             }
             
-            // Verificar que hay un camino válido
-            NavMeshPath path = new NavMeshPath();
-            if (!_agent.CalculatePath(navHit.position, path))
+            // ✅ OPTIMIZACIÓN: Usar path reutilizable en lugar de crear uno nuevo (reduce GC)
+            if (!_agent.CalculatePath(navHit.position, _reusablePath))
             {
                 Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ No se puede calcular camino a {navHit.position}");
                 return;
             }
             
-            if (path.status != NavMeshPathStatus.PathComplete)
+            if (_reusablePath.status != NavMeshPathStatus.PathComplete)
             {
-                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Camino incompleto a {navHit.position} - status: {path.status}");
+                Debug.LogWarning($"[CombatBrain:{gameObject.name}] ⚠️ Camino incompleto a {navHit.position} - status: {_reusablePath.status}");
                 
                 // Si el camino es parcial, intentar ir al punto más cercano alcanzable
-                if (path.status == NavMeshPathStatus.PathPartial && path.corners.Length > 1)
+                if (_reusablePath.status == NavMeshPathStatus.PathPartial && _reusablePath.corners.Length > 1)
                 {
-                    Vector3 lastReachablePoint = path.corners[path.corners.Length - 1];
+                    Vector3 lastReachablePoint = _reusablePath.corners[_reusablePath.corners.Length - 1];
                     Debug.Log($"[CombatBrain:{gameObject.name}] 📍 Usando punto parcial más cercano: {lastReachablePoint}");
                     
                     if (_agent.enabled && _agent.isOnNavMesh)

@@ -15,11 +15,11 @@ MonoBehaviour:
   moduleName: 
   description: 
   displayName: 
-  distanciaParaPararse: 1.49
+  distanciaParaPararse: 2
   distanciaParaCorrer: 3
-  distanciaParaTeletransporte: 20
+  distanciaParaTeletransporte: 25
   velocidadCaminando: 5
-  velocidadCorriendo: 10
+  velocidadCorriendo: 8
   quedarseDetras: 1
   offsetLateral: {x: -1, y: 1}
   tiempoIdleMinimo: 1

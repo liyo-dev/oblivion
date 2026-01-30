@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Mision_6_1
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Entrada_Sendero_SavePoint
+  spawnAnchorId: CandyLand
   level: 1
   maxHP: 100
   currentHP: 100

@@ -6,7 +6,7 @@
     /// Servicio centralizado de feedbacks del juego (camera shake, VFX/SFX puntuales, etc.).
     /// - Orquesta llamadas y delega en proveedores especializados (Strategy pattern).
     /// - No mueve al jugador.
-    /// - CameraShake actúa sólo sobre la Main Camera (base), compatible con URP camera stacking.
+    /// - CameraShake actúa sobre la cámara especificada o la Main Camera por defecto.
     /// - Se auto-instancia (DontDestroyOnLoad) cuando se llama a cualquier método estático.
     /// </summary>
     public class FeedbackService : MonoBehaviour
@@ -29,6 +29,16 @@
             if (intensity <= 0f || duration <= 0f) return;
             var inst = EnsureInstance();
             EnsureCameraShakeProvider().Shake(inst, intensity, duration);
+        }
+
+        /// <summary>
+        /// Ejecuta un shake en una cámara específica.
+        /// </summary>
+        public static void CameraShake(Camera targetCamera, float intensity, float duration)
+        {
+            if (targetCamera == null || intensity <= 0f || duration <= 0f) return;
+            var inst = EnsureInstance();
+            EnsureCameraShakeProvider().Shake(inst, targetCamera, intensity, duration);
         }
 
         public static void SetCameraShakeProvider(ICameraShakeProvider provider) => _cameraShakeProvider = provider;

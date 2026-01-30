@@ -50,6 +50,30 @@ namespace Game.NPC.States
             
             _idleTimer += Time.deltaTime;
             
+            // ✅ FIX CRÍTICO: Asegurar que el NavMeshAgent permanezca detenido
+            // Esto previene que paths residuales o velocidad acumulada cause movimiento
+            if (context.Agent != null && context.Agent.enabled && context.Agent.isOnNavMesh)
+            {
+                // ⚠️ DETENCIÓN MUY AGRESIVA: Forzar cada frame
+                if (!context.Agent.isStopped)
+                {
+                    context.Log("[IdleState] ⚠️ Agent NO ESTABA DETENIDO - forzando detención");
+                    context.Agent.isStopped = true;
+                }
+                
+                if (context.Agent.hasPath)
+                {
+                    context.Log("[IdleState] ⚠️ Agent TIENE PATH ACTIVO - reseteando");
+                    context.Agent.ResetPath();
+                }
+                
+                if (context.Agent.velocity.sqrMagnitude > 0.01f)
+                {
+                    context.Log($"[IdleState] ⚠️ Agent TIENE VELOCIDAD ({context.Agent.velocity.magnitude:F1}) - limpiando");
+                    context.Agent.velocity = Vector3.zero;
+                }
+            }
+            
             // Detección visual periódica
             _playerDetectionTimer += Time.deltaTime;
             if (_playerDetectionTimer >= PLAYER_DETECTION_INTERVAL)

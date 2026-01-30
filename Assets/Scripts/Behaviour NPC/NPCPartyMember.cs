@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -113,28 +112,58 @@ namespace Game.NPC
         {
             if (autoJoinOnStart)
             {
-                // Delay mayor para asegurar que todo esté inicializado (era 0.1f)
-                StartCoroutine(DelayedAutoJoin());
+                // Sistema robusto sin delays: intentar join inmediato
+                TryAutoJoin();
             }
         }
         
         /// <summary>
-        /// Auto-join con delay seguro para evitar problemas de inicialización
+        /// Intenta auto-join de forma inmediata y robusta.
+        /// Si no está listo, se suscribe a eventos para intentar después.
+        /// CERO delays, CERO "yield return null".
         /// </summary>
-        private IEnumerator DelayedAutoJoin()
+        private void TryAutoJoin()
         {
-            // Esperar a que el NavMeshAgent esté en el NavMesh
-            int attempts = 0;
-            while (attempts < 30 && (_agent == null || !_agent.isOnNavMesh))
+            // Verificación inmediata de estado
+            if (!NPCInitializer.IsNPCReady(_npcManager, out string reason))
             {
-                yield return new WaitForSeconds(0.1f);
-                attempts++;
+                if (debugMode)
+                    Debug.Log($"[NPCPartyMember:{name}] No listo para auto-join: {reason}. Reintentando en Update.");
+                
+                // Si no está listo AHORA, lo intentaremos en Update hasta que lo esté
+                return;
             }
             
-            // Esperar un poco más para asegurar que todo está listo
-            yield return new WaitForSeconds(0.5f);
-            
+            // ¡Está listo! Unirse inmediatamente
             JoinParty();
+        }
+        
+        void Update()
+        {
+            // Si está esperando auto-join, verificar en cada frame hasta que esté listo
+            if (autoJoinOnStart && !_isInParty && !_isJoining)
+            {
+                if (NPCInitializer.IsNPCReady(_npcManager, out _))
+                {
+                    JoinParty();
+                }
+            }
+            
+            // Si está en el party pero no está siguiendo (Brain no estaba listo), verificar ahora
+            if (_isInParty && _npcManager != null && _npcManager.Brain != null)
+            {
+                var currentState = _npcManager.Brain.CurrentState;
+                
+                // Si está en IdleState pero debería estar siguiendo, corregir
+                if (currentState != null && currentState.StateName == "Idle")
+                {
+                    // Verificar que no esté en combate o cinemática
+                    if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
+                    {
+                        StartFollowing();
+                    }
+                }
+            }
         }
 
         void OnDestroy()
@@ -279,48 +308,21 @@ namespace Game.NPC
             
             Log($"✨ Unido al equipo (índice {PartyIndex})");
             
-            // ✅ FIX: Verificar que el Brain esté inicializado antes de cambiar estado
+            // Sistema robusto: verificar estado inmediatamente
             if (_npcManager?.Brain != null)
             {
-                // Iniciar seguimiento
+                // Iniciar seguimiento INMEDIATAMENTE
                 StartFollowing();
             }
             else
             {
-                LogWarning("Brain no inicializado, posponiendo StartFollowing");
-                // Intentar iniciar seguimiento en el siguiente frame
-                StartCoroutine(DelayedStartFollowing());
+                LogWarning("Brain no inicializado. El Update verificará cuando esté listo.");
+                // Update verificará y llamará StartFollowing cuando esté listo
             }
             
             OnJoined?.Invoke();
         }
         
-        /// <summary>
-        /// Inicia el seguimiento con un pequeño delay si el Brain no está listo
-        /// </summary>
-        private IEnumerator DelayedStartFollowing()
-        {
-            yield return null; // Esperar 1 frame
-            
-            int attempts = 0;
-            while (attempts < 20 && (_npcManager == null || _npcManager.Brain == null)) // Aumentado a 20 intentos
-            {
-                yield return new WaitForSeconds(0.1f);
-                attempts++;
-            }
-            
-            if (_npcManager?.Brain != null && _isInParty)
-            {
-                // Esperar un poco más antes de empezar a seguir para evitar caos inicial
-                yield return new WaitForSeconds(0.2f);
-                StartFollowing();
-                Log("✅ Seguimiento iniciado después del delay");
-            }
-            else
-            {
-                LogWarning($"⚠️ No se pudo iniciar seguimiento después de {attempts} intentos (Brain: {_npcManager?.Brain != null}, InParty: {_isInParty})");
-            }
-        }
 
         /// <summary>
         /// Llamado cuando se ha removido del equipo.

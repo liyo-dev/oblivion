@@ -1274,9 +1274,25 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!navAgent.enabled || !navAgent.isOnNavMesh)
             return;
         
+        // ✅ FIX CRÍTICO: Solo sincronizar si el agente tiene un path activo y no está detenido
+        // Esto previene que velocidad residual cause movimiento constante
+        if (navAgent.isStopped || !navAgent.hasPath)
+        {
+            // Si está detenido, asegurar que la animación también esté en 0
+            SetMovementSpeed(0f);
+            return;
+        }
+        
         // Get agent velocity
         float agentSpeed = navAgent.velocity.magnitude;
         float maxSpeed = navAgent.speed;
+        
+        // ✅ Threshold más estricto: Si la velocidad es muy baja, considerarlo como parado
+        if (agentSpeed < movementThreshold * 0.5f)
+        {
+            SetMovementSpeed(0f);
+            return;
+        }
         
         // Normalize speed
         float normalizedSpeed = maxSpeed > 0 ? Mathf.Clamp01(agentSpeed / maxSpeed) : 0f;
@@ -1361,7 +1377,12 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         // Elegir el idle correcto según el modo (batalla o normal)
         string targetIdle = _isInBattle ? idleBattleState : idleNormalState;
-        CrossFadeToState(targetIdle, 0.2f);
+        
+        // ✅ Seguridad: Si el estado no existe, no intentar CrossFade para evitar errores en consola
+        if (!string.IsNullOrEmpty(targetIdle) && animator != null && animator.HasState(0, Animator.StringToHash(targetIdle)))
+        {
+            CrossFadeToState(targetIdle, 0.2f);
+        }
     }
     
     /// <summary>
@@ -1404,7 +1425,9 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (string.IsNullOrEmpty(stateName) || animator == null)
         {
-            Debug.LogWarning($"[NPCAnimator] CrossFadeToState falló - stateName: {stateName}, animator: {animator != null}");
+            // Solo loguear si no es un string vacío intencional
+            if (!string.IsNullOrEmpty(stateName) && debugMode)
+                Debug.LogWarning($"[NPCAnimator] CrossFadeToState falló - stateName: {stateName}, animator: {animator != null}");
             return;
         }
         
@@ -1413,12 +1436,13 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Check if state exists in specified layer
         if (animator.HasState(layer, stateHash))
         {
-            // Debug.Log($"[NPCAnimator] ✅ CrossFade a estado '{stateName}' en layer {layer}, tiempo: {transitionTime}s");
             animator.CrossFadeInFixedTime(stateHash, transitionTime, layer, 0f);
         }
         else
         {
-            Debug.LogError($"[NPCAnimator] ❌ Estado '{stateName}' NO ENCONTRADO en layer {layer}. Verificar Animator Controller.");
+            // ✅ Cambiado a Warning para no ensuciar la consola si un NPC específico no tiene una animación opcional
+            if (debugMode)
+                Debug.LogWarning($"[NPCAnimator] ⚠️ Estado '{stateName}' no encontrado en layer {layer} para {gameObject.name}.");
         }
     }
     

@@ -73,8 +73,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3411324387237086588}
-  - component: {fileID: 6422596729655379090}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Index_Proximal_L
   m_TagString: Boss
   m_Icon: {fileID: 0}
@@ -96,27 +95,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3110537937919081361}
   m_LocalEulerAnglesHint: {x: -0.66065097, y: -16.791199, z: -2.1882827}
---- !u!65 &6422596729655379090
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 425080484554236418}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 100, y: 100, z: 100}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &939999298480460806
 GameObject:
   m_ObjectHideFlags: 0
@@ -942,7 +920,7 @@ GameObject:
   - component: {fileID: 8841478096083396395}
   - component: {fileID: 3671272856889464598}
   - component: {fileID: 7598553100958893910}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -958,7 +936,7 @@ Transform:
   m_GameObject: {fileID: 8482017894348466406}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 1, z: 2}
+  m_LocalPosition: {x: 0, y: 1.96, z: 4.17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -152,6 +152,27 @@ namespace Game.NPC
             if (persistLastPosition && Time.frameCount % 60 == 0) // Optimización: cada 60 frames
             {
                 lastPosition = transform.position;
+            }
+        }
+        
+        void LateUpdate()
+        {
+            // ✅ SAFETY CHECK: Si está en IdleState pero el agente no está detenido, forzar detención
+            // Esto captura casos donde algo externo está activando el agente
+            if (_brain != null && _brain.CurrentState != null && 
+                _brain.CurrentState.StateName == "Idle" &&
+                _agent != null && _agent.enabled && _agent.isOnNavMesh)
+            {
+                if (!_agent.isStopped || _agent.velocity.sqrMagnitude > 0.01f)
+                {
+                    if (debugMode)
+                        Debug.LogWarning($"[NPCManager:{name}] ⚠️ LateUpdate Safety: Agent no detenido en IdleState (isStopped={_agent.isStopped}, vel={_agent.velocity.magnitude:F1})");
+                    
+                    _agent.isStopped = true;
+                    _agent.velocity = Vector3.zero;
+                    if (_agent.hasPath)
+                        _agent.ResetPath();
+                }
             }
         }
 
@@ -502,7 +523,11 @@ namespace Game.NPC
         private void ResolvePlayerReferences() {
             if (ServiceLocator.TryGet(out PlayerService ps) && PlayerService.Player != null) {
                 _player = PlayerService.Player.transform;
-                _playerCamera = Camera.main?.transform;
+                // ✅ OPTIMIZACIÓN: Cachear Camera.main solo si no la tenemos ya
+                if (_playerCamera == null)
+                {
+                    _playerCamera = Camera.main?.transform;
+                }
                 if (_context != null) { _context.Player = _player; _context.PlayerCamera = _playerCamera; }
             }
         }
