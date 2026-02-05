@@ -58,6 +58,8 @@ namespace Game.NPC.States
             {
                 // ✅ IMPORTANTE: Empezar PARADO para evitar movimientos bruscos al inicio
                 context.Agent.isStopped = true;
+                context.Agent.updatePosition = false; // ✅ FIX: Evitar oscilación en Y cuando está quieto
+                context.Agent.updateRotation = false; // Controlaremos la rotación manualmente
                 context.Agent.speed = GetWalkSpeed();
                 
                 // Resetear path para evitar que vaya a destinos antiguos
@@ -116,7 +118,13 @@ namespace Game.NPC.States
             // 1. Si está MUY CERCA -> PARAR y MIRAR al jugador
             if (distance <= stopDist)
             {
-                context.Agent.isStopped = true;
+                // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
+                if (!context.Agent.isStopped || context.Agent.updatePosition)
+                {
+                    context.Agent.isStopped = true;
+                    context.Agent.updatePosition = false; // ✅ FIX: Desactivar actualización de posición para evitar oscilación en Y
+                    context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
+                }
                 context.Animator?.SetMovementSpeed(0f);
                 
                 _idleTimer += Time.deltaTime;
@@ -133,6 +141,20 @@ namespace Game.NPC.States
             // 2. Si el jugador SE ESTÁ MOVIENDO o está lejos -> SEGUIR
             if (playerIsMoving || distance > stopDist * 1.2f)
             {
+                // ✅ Reactivar actualización de posición cuando empieza a moverse
+                if (!context.Agent.updatePosition)
+                {
+                    // ✅ FIX: Sincronizar la posición del agente con el transform ANTES de reactivar
+                    // Esto evita el "salto" o teletransporte cuando se reactiva updatePosition
+                    if (context.Agent.isOnNavMesh)
+                    {
+                        context.Agent.nextPosition = context.Transform.position;
+                    }
+                    
+                    context.Agent.updatePosition = true;
+                    context.Agent.updateRotation = true;
+                }
+                
                 // Si está LEJOS -> CORRER
                 if (distance > runDist)
                 {
@@ -157,7 +179,13 @@ namespace Game.NPC.States
             // 3. Si el jugador ESTÁ QUIETO y el NPC está cerca -> PARAR
             else
             {
-                context.Agent.isStopped = true;
+                // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
+                if (!context.Agent.isStopped || context.Agent.updatePosition)
+                {
+                    context.Agent.isStopped = true;
+                    context.Agent.updatePosition = false; // ✅ FIX: Desactivar actualización de posición
+                    context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
+                }
                 context.Animator?.SetMovementSpeed(0f);
             }
             
@@ -231,6 +259,9 @@ namespace Game.NPC.States
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
                 context.Agent.isStopped = true;
+                // ✅ Restaurar valores por defecto al salir
+                context.Agent.updatePosition = true;
+                context.Agent.updateRotation = true;
             }
             base.OnExit(context);
         }
