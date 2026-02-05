@@ -318,6 +318,10 @@ namespace Game.NPC.Modules
                     // Esto marca automáticamente los pasos correspondientes como completados
                     CheckAndMarkInventoryRequirements(qm, entry, questId);
                     
+                    // ✅ Verificar si el jugador tiene los party members requeridos
+                    // Esto marca automáticamente los pasos correspondientes como completados
+                    CheckAndMarkPartyMemberRequirements(qm, entry, questId);
+                    
                     bool allDone = qm.AreAllStepsCompleted(questId);
                     
                     // ✅ NUEVO: Verificar si tiene todos los items requeridos del inventario
@@ -460,6 +464,81 @@ namespace Game.NPC.Modules
                     {
                         Debug.LogWarning($"[NPCQuestConfig] No se pudo determinar el step a marcar para item '{req.item.displayName}'");
                     }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si el jugador tiene los party members requeridos y marca los pasos correspondientes.
+        /// Se llama cuando el jugador habla con el NPC para verificar si los NPCs requeridos están en el party.
+        /// </summary>
+        private void CheckAndMarkPartyMemberRequirements(QuestManager qm, QuestChainEntry entry, string questId)
+        {
+            if (entry.requiredPartyMembers == null || entry.requiredPartyMembers.Length == 0)
+                return;
+            
+            // Verificar si PlayerParty está disponible
+            if (!Game.NPC.PlayerParty.HasInstance)
+            {
+                Debug.LogWarning($"[NPCQuestConfig] PlayerParty no está disponible para verificar party members");
+                return;
+            }
+            
+            var party = Game.NPC.PlayerParty.Instance;
+            Debug.Log($"[NPCQuestConfig] 🔍 Verificando {entry.requiredPartyMembers.Length} party members requeridos (party tiene {party.MemberCount} miembros)");
+            
+            foreach (var memberReq in entry.requiredPartyMembers)
+            {
+                if (string.IsNullOrEmpty(memberReq.memberId))
+                {
+                    Debug.LogWarning($"[NPCQuestConfig] PartyMemberRequirement con memberId vacío en quest '{questId}'");
+                    continue;
+                }
+                
+                // Verificar si el miembro está en el equipo
+                bool isInParty = party.Members.Any(m => 
+                    m.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId == memberReq.memberId ||
+                    m.gameObject.name == memberReq.memberId);
+                
+                Debug.Log($"[NPCQuestConfig] Verificando member '{memberReq.memberId}': {(isInParty ? "✅ EN PARTY" : "❌ NO EN PARTY")}");
+                
+                if (!isInParty) continue;
+                
+                // Determinar qué step marcar como completado
+                int stepToMark = -1;
+                
+                if (memberReq.stepIndex >= 0)
+                {
+                    // Usar stepIndex directamente
+                    stepToMark = memberReq.stepIndex;
+                }
+                else
+                {
+                    // Buscar por conditionId
+                    string conditionId = memberReq.GetStepConditionId();
+                    if (!string.IsNullOrEmpty(conditionId))
+                    {
+                        stepToMark = qm.FindStepIndexByConditionId(questId, conditionId);
+                    }
+                }
+                
+                if (stepToMark >= 0)
+                {
+                    // Verificar si el paso ya está completado
+                    var quest = qm.GetAll().FirstOrDefault(q => q.Id == questId);
+                    if (quest?.Steps != null && stepToMark < quest.Steps.Length && !quest.Steps[stepToMark].completed)
+                    {
+                        Debug.Log($"[NPCQuestConfig] ✅ Marcando step {stepToMark} de quest '{questId}' como completado (member '{memberReq.memberId}' está en party)");
+                        qm.MarkStepDone(questId, stepToMark);
+                    }
+                    else if (quest?.Steps != null && stepToMark < quest.Steps.Length && quest.Steps[stepToMark].completed)
+                    {
+                        Debug.Log($"[NPCQuestConfig] ℹ️ Step {stepToMark} ya estaba completado para member '{memberReq.memberId}'");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCQuestConfig] No se pudo determinar el step a marcar para party member '{memberReq.memberId}'");
                 }
             }
         }

@@ -40,6 +40,10 @@ namespace Game.NPC.Modules
         [Tooltip("Lista de items de wardrobe requeridos. Cada item se asocia a un step de la quest.")]
         public WardrobeItemRequirement[] requiredWardrobeItems = System.Array.Empty<WardrobeItemRequirement>();
 
+        [Header("Verificación de Miembros del Equipo")]
+        [Tooltip("Lista de miembros del equipo requeridos para completar pasos de la quest.")]
+        public PartyMemberRequirement[] requiredPartyMembers = System.Array.Empty<PartyMemberRequirement>();
+
         [Header("Diálogos")]
         [Tooltip("Diálogo antes de aceptar la quest.")]
         public DialogueAsset dlgBefore;
@@ -223,7 +227,31 @@ namespace Game.NPC.Modules
             return "";
         }
     }
+
+    /// <summary>
+    /// Requisito de miembro del equipo para una quest
+    /// </summary>
+    [Serializable]
+    public class PartyMemberRequirement
+    {
+        [Tooltip("ID narrativo del miembro del equipo requerido (persistenceId).")]
+        public string memberId;
+        
+        [Tooltip("ID de la condición del step de la quest. OPCIONAL - Si se deja vacío y stepIndex >= 0, se usa el índice directamente. Se auto-genera solo si ambos están vacíos.")]
+        public string stepConditionId = "";
+        
+        [Tooltip("Índice del step de la quest que corresponde a este miembro. Si es >= 0, se usa directamente sin necesidad de Condition Id.")]
+        public int stepIndex = -1;
+        
+        /// <summary>
+        /// Obtiene el stepConditionId, auto-generándolo si está vacío Y stepIndex no es válido
+        /// </summary>
+        public string GetStepConditionId()
+        {
+            if (stepIndex >= 0) return null;
+            if (!string.IsNullOrEmpty(stepConditionId)) return stepConditionId;
+            if (!string.IsNullOrEmpty(memberId)) return $"PARTY_{memberId}";
+            return "";
+        }
+    }
 }
-
-
-

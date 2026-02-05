@@ -305,6 +305,7 @@ namespace Game.NPC.Modules
                 case NarrativeActionType.ShowSpeechBubble: yield return ExecuteShowSpeechBubble(entry); break;
                 case NarrativeActionType.JoinParty:     yield return ExecuteJoinParty(); break;
                 case NarrativeActionType.LeaveParty:    yield return ExecuteLeaveParty(); break;
+                case NarrativeActionType.CheckPartyMembers: yield return ExecuteCheckPartyMembers(); break;
             }
         }
 
@@ -606,6 +607,26 @@ namespace Game.NPC.Modules
             {
                 Debug.Log($"[NarrativeExecutor:{name}] 👋 {name} abandonó el equipo del jugador");
             }
+            
+            yield return null;
+        }
+
+        /// <summary>
+        /// Ejecuta la verificación de miembros del equipo para quests activas.
+        /// Útil para asegurar que las quests se completan correctamente cuando se requiere un NPC en el party.
+        /// </summary>
+        private IEnumerator ExecuteCheckPartyMembers()
+        {
+            Debug.Log($"[NarrativeExecutor:{name}] 🔍 Verificando party members para quests activas...");
+            
+            var questManager = FindFirstObjectByType<QuestManager>();
+            if (questManager == null)
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ QuestManager no está disponible");
+                yield break;
+            }
+            
+            questManager.ForceCheckPartyMembersForActiveQuests();
             
             yield return null;
         }

@@ -317,6 +317,18 @@
             "value": "Venid a verme cuanto antes."
         },
         {
+            "key": "DLG_ELDRAN_MISSION6_TURNIN_01",
+            "value": "Que bien que ya estáis por aquí..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_TURNIN_02",
+            "value": "Ha sido pan comido..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION6_TURNIN_03",
+            "value": "Si claro, sobre todo la parte del Golem."
+        },
+        {
             "key": "DLG_ESTELA_BOSQUE_01",
             "value": "¡Wau! Parece una misión ultra secreta y super peligrosa."
         },

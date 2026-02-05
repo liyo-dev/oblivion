@@ -11171,7 +11171,7 @@ GameObject:
   m_Name: Eldran
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
+  m_NavMeshLayer: 1
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &3275434959031855424
@@ -11404,7 +11404,7 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
-  startInIdleState: 1
+  startInIdleState: 0
   forceKinematicRigidbody: 1
   persistLastPosition: 1
 --- !u!114 &1687942726773230502
@@ -11443,8 +11443,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
-  eyesParent: {fileID: 6400567201161015929}
-  mouthParent: {fileID: 1343241235477376117}
+  originalEyeMesh: {fileID: 0}
+  originalMouthMesh: {fileID: 0}
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0

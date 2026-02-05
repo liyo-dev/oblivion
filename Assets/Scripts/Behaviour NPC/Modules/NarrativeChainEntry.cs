@@ -17,7 +17,8 @@ namespace Game.NPC.Modules
         Wait,              // Esperar X segundos
         ShowSpeechBubble,  // Mostrar bocadillo de texto/pensamiento
         JoinParty,         // Unirse al equipo del jugador
-        LeaveParty         // Abandonar el equipo del jugador
+        LeaveParty,        // Abandonar el equipo del jugador
+        CheckPartyMembers  // Verificar miembros del equipo para quests activas
     }
 
     /// <summary>
