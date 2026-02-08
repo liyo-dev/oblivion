@@ -91,6 +91,14 @@
         {
             "id": "EVT_GOLEM_END_06",
             "text": "Liam: The Golem has failed. If I want the boy to reach the end, I'll have to guide him myself."
+        },
+        {
+            "id": "EVT_TABERNA_01",
+            "text": "[EN] Eldran, Will y Estela discuten de lo ocurrido y tratan de buscar una solución..."
+        },
+        {
+            "id": "EVT_TABERNA_02",
+            "text": "[EN] Cuando de repente el estómago de Estela rugió de forma atroz.Cuando de repente el estómago de Estela rugió de forma atroz."
         }
     ]
 }

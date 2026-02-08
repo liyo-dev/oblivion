@@ -93,13 +93,23 @@ public class BossProgressTracker : MonoBehaviour
     {
         _defeated.Clear();
 
+        Debug.Log($"[BossProgressTracker] 📥 LoadFromSnapshot llamado");
+
         if (defeatedBossIds != null)
         {
+            int count = 0;
             foreach (var id in defeatedBossIds)
             {
                 if (string.IsNullOrEmpty(id)) continue;
                 _defeated.Add(id);
+                count++;
+                Debug.Log($"[BossProgressTracker]   ✅ Boss derrotado cargado: '{id}'");
             }
+            Debug.Log($"[BossProgressTracker] 📊 Total bosses derrotados cargados: {count}");
+        }
+        else
+        {
+            Debug.Log($"[BossProgressTracker] ⚠️ defeatedBossIds es NULL - no hay bosses derrotados");
         }
 
         OnProgressRestored?.Invoke();

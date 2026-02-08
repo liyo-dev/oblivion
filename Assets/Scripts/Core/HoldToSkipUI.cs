@@ -76,70 +76,113 @@ public class HoldToSkipUI : MonoBehaviour
 
     void OnEnable()
     {
+        // Intentar configurar input, con retry si falla
+        StartCoroutine(InitializeInputWithRetry());
+        ResetHold();
+    }
+
+    private System.Collections.IEnumerator InitializeInputWithRetry()
+    {
+        int attempts = 0;
+        const int maxAttempts = 10;
+        
+        while (attempts < maxAttempts)
+        {
+            bool success = TryConfigureInput();
+            
+            if (success)
+            {
+                Debug.Log($"[HoldToSkipUI] ✅ Input configurado exitosamente (intento {attempts + 1}/{maxAttempts})");
+                yield break;
+            }
+            
+            attempts++;
+            
+            if (attempts < maxAttempts)
+            {
+                Debug.Log($"[HoldToSkipUI] ⏳ Input no disponible, reintentando... ({attempts}/{maxAttempts})");
+                yield return new WaitForSecondsRealtime(0.2f);
+            }
+        }
+        
+        Debug.LogError($"[HoldToSkipUI] ❌ No se pudo configurar input tras {maxAttempts} intentos");
+    }
+
+    private bool TryConfigureInput()
+    {
         // CRÍTICO: Durante cinemáticas, el sistema está en modo UI (Gameplay deshabilitado)
         // Por lo tanto, SIEMPRE debemos usar UI/Submit en lugar de GamePlay/Interact
         
         // Prioridad 1: Usar UI/Submit desde PlayerInputManager (RECOMENDADO para cinemáticas)
         if (Core.PlayerInputManager.Instance != null && Core.PlayerInputManager.Instance.Controls != null)
         {
-            holdAction = Core.PlayerInputManager.Instance.Controls.UI.Submit;
-            Debug.Log("[HoldToSkipUI] ✅ Usando acción UI/Submit desde PlayerInputManager (modo cinemática)");
+            var submitAction = Core.PlayerInputManager.Instance.Controls.UI.Submit;
+            if (submitAction != null)
+            {
+                holdAction = submitAction;
+                if (!holdAction.enabled) holdAction.Enable();
+                holdAction.started  += OnHoldStarted;
+                holdAction.canceled += OnHoldCanceled;
+                
+                Debug.Log($"[HoldToSkipUI] ✅ Usando UI/Submit desde PlayerInputManager - Enabled: {holdAction.enabled}");
+                return true;
+            }
         }
-        // Prioridad 2: Usar InputActionReference SOLO si apunta a UI/Submit
-        else if (holdActionRef != null && holdActionRef.action != null)
+        
+        // Prioridad 2: Usar InputActionReference asignado
+        if (holdActionRef != null && holdActionRef.action != null)
         {
-            // Verificar si la acción asignada es de UI o Gameplay
             string actionName = holdActionRef.action.name;
-            if (actionName.Contains("Submit") || actionName.Contains("UI"))
-            {
-                holdAction = holdActionRef.action;
-                Debug.Log($"[HoldToSkipUI] Usando InputActionReference asignado: {actionName}");
-            }
-            else
-            {
-                Debug.LogWarning($"[HoldToSkipUI] ⚠️ InputActionReference apunta a '{actionName}' (Gameplay), pero durante cinemáticas debe ser UI/Submit. Ignorando.");
-                // Intentar obtener UI/Submit manualmente
-                holdAction = Core.PlayerInputManager.Instance?.Controls?.UI.Submit;
-            }
-        }
-        // Prioridad 3: Fallback manual (última opción)
-        else
-        {
-            fallback = new InputAction("HoldToSkipFallback", InputActionType.Button, "<Gamepad>/buttonSouth");
-            fallback.Enable();
-            holdAction = fallback;
-            Debug.LogWarning("[HoldToSkipUI] ⚠️ Usando fallback con <Gamepad>/buttonSouth");
-        }
-
-        if (holdAction != null)
-        {
+            Debug.Log($"[HoldToSkipUI] Intentando usar InputActionReference: {actionName}");
+            
+            holdAction = holdActionRef.action;
             if (!holdAction.enabled) holdAction.Enable();
             holdAction.started  += OnHoldStarted;
             holdAction.canceled += OnHoldCanceled;
             
-            Debug.Log($"[HoldToSkipUI] ✅ Input configurado - Acción: {holdAction.name}, Enabled: {holdAction.enabled}, ActionMap: {holdAction.actionMap?.name ?? "N/A"}");
+            Debug.Log($"[HoldToSkipUI] ✅ Usando InputActionReference: {actionName}");
+            return true;
         }
-        else
+        
+        // Prioridad 3: Fallback manual con teclado y gamepad
+        if (fallback == null)
         {
-            Debug.LogError("[HoldToSkipUI] ❌ No se pudo configurar ninguna acción de input");
+            fallback = new InputAction("HoldToSkipFallback", InputActionType.Button);
+            fallback.AddBinding("<Gamepad>/buttonSouth");  // A en Xbox, X en PlayStation
+            fallback.AddBinding("<Keyboard>/space");        // Espacio en teclado
+            fallback.AddBinding("<Keyboard>/enter");        // Enter en teclado
+            fallback.Enable();
+            
+            holdAction = fallback;
+            holdAction.started  += OnHoldStarted;
+            holdAction.canceled += OnHoldCanceled;
+            
+            Debug.LogWarning("[HoldToSkipUI] ⚠️ Usando fallback multi-input (Gamepad/Teclado)");
+            return true;
         }
-
-        ResetHold();
+        
+        return false;
     }
 
     void OnDisable()
     {
+        // Detener corrutinas de retry si están corriendo
+        StopAllCoroutines();
+        
         if (holdAction != null)
         {
             holdAction.started  -= OnHoldStarted;
             holdAction.canceled -= OnHoldCanceled;
         }
+        
         if (fallback != null)
         {
             fallback.Disable();
             fallback.Dispose();
             fallback = null;
         }
+        
+        holdAction = null;
         ResetHold();
     }
 

@@ -3,6 +3,15 @@ using UnityEngine;
 namespace Game.NPC.Modules
 {
     /// <summary>
+    /// Lado de posicionamiento durante diálogos
+    /// </summary>
+    public enum DialoguePositionSide
+    {
+        Left,   // Izquierda del player
+        Right   // Derecha del player
+    }
+    
+    /// <summary>
     /// Configuración para NPCs que pueden unirse al equipo del jugador (Party).
     /// Define cómo se comporta el NPC cuando es compañero.
     /// </summary>
@@ -92,6 +101,26 @@ namespace Game.NPC.Modules
         [Tooltip("Distancia máxima para atacar enemigos")]
         [Range(5f, 30f)]
         public float distanciaMaximaAtaque = 15f;
+        
+        [Header("=== POSICIONAMIENTO EN DIÁLOGOS ===")]
+        
+        [Tooltip("¿Se posiciona automáticamente al lado del player durante diálogos?")]
+        public bool posicionarseDuranteDialogos = true;
+        
+        [Tooltip("Lado preferido durante diálogos: Left (izquierda) o Right (derecha)")]
+        public DialoguePositionSide ladoPreferidoDialogo = DialoguePositionSide.Right;
+        
+        [Tooltip("Distancia lateral desde el player (metros)")]
+        [Range(0.8f, 3f)]
+        public float distanciaLateralDialogo = 1.5f;
+        
+        [Tooltip("Offset hacia adelante/atrás respecto al player (negativo = atrás, positivo = adelante)")]
+        [Range(-1f, 1f)]
+        public float offsetDelanteDialogo = -0.3f;
+        
+        [Tooltip("Tiempo máximo para llegar a la posición (segundos). Si tarda más, se teletransporta.")]
+        [Range(1f, 5f)]
+        public float tiempoMaximoMovimientoDialogo = 2f;
 
         // ============ PROPIEDADES DE COMPATIBILIDAD (para que el código existente siga funcionando) ============
         

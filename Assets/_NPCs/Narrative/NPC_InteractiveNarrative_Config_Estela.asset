@@ -105,8 +105,99 @@ MonoBehaviour:
     sendNarrativeEvent: 0
     narrativeEventKey: 
     debugMode: 0
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: 772f4ab27e599a84db0b4ab0e6036a86, type: 2}
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: ad132c2f5b5bc054fbedad18cbe144eb, type: 2}
+      speechBubbleText: 
+      isThoughtBubble: 0
+      speechBubbleDuration: 3
+      speechBubblePrefabOverride: {fileID: 0}
+      waitForBubble: 1
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 8
+      dialogue: {fileID: 0}
+      speechBubbleText: 
+      isThoughtBubble: 0
+      speechBubbleDuration: 3
+      speechBubblePrefabOverride: {fileID: 0}
+      waitForBubble: 1
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
   persistState: 1
   persistenceId: NPC_InteractiveNarrative_Config_Estela_b17a2d68
+  dialogueCharacterId: CHAR_ESTELA
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

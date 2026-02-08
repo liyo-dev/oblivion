@@ -86,7 +86,6 @@ public static class GameState
                                  GamePhase.Inventory,
                                  GamePhase.Equipment,
                                  GamePhase.QuestMenu);
-            Debug.Log("[GameState] CanOpenPause: " + result);
             return result;
         }
     }

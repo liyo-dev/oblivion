@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -245,6 +245,25 @@ namespace Game.NPC
 
             // Esperar un frame para asegurar que todos los callbacks de CompleteQuest han terminado
             yield return null;
+
+            // ✅ VALIDACIÓN DE DISTANCIA: No ejecutar diálogos automáticos si el NPC está lejos del jugador
+            const float maxDialogueDistance = 20f; // Distancia máxima para auto-iniciar diálogos
+            
+            var player = PlayerService.Player;
+            if (player != null)
+            {
+                float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
+                
+                // Si hay diálogo pre-acción o la acción es un diálogo, validar distancia
+                bool hasDialogue = action.dialogueBeforeAction != null || action.actionType == QuestActionType.Dialogue;
+                
+                if (hasDialogue && distanceToPlayer > maxDialogueDistance)
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Diálogo cancelado - NPC muy lejos del jugador ({distanceToPlayer:F1}m > {maxDialogueDistance}m)");
+                    _isExecutingPostAction = false;
+                    yield break;
+                }
+            }
 
             // 1. Diálogo pre-acción
             if (action.dialogueBeforeAction != null)
@@ -661,6 +680,21 @@ namespace Game.NPC
             {
                 Debug.LogWarning($"[NPCQuestActionExecutor] Dialogue to play no asignado");
                 yield break;
+            }
+
+            // ✅ VALIDACIÓN DE DISTANCIA: No ejecutar si el NPC está lejos del jugador
+            const float maxDialogueDistance = 20f;
+            
+            var player = PlayerService.Player;
+            if (player != null)
+            {
+                float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
+                
+                if (distanceToPlayer > maxDialogueDistance)
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Diálogo cancelado - NPC muy lejos del jugador ({distanceToPlayer:F1}m > {maxDialogueDistance}m)");
+                    yield break;
+                }
             }
 
             if (debugMode)

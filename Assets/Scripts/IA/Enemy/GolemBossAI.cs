@@ -26,6 +26,8 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float detectionRange = 25f;
     [SerializeField] private float attackRange = 15f;
     [SerializeField] private float minAttackRange = 5f;
+    [Tooltip("Frecuencia de actualización de la IA (segundos). Valores más altos mejoran el rendimiento.")]
+    [SerializeField] private float aiUpdateFrequency = 0.1f;
 
     [Header("Ataque - Lanzar Roca")]
     [Tooltip("Prefab de la roca (debe tener EnemyProjectile configurado con su propio daño)")]
@@ -158,6 +160,7 @@ public class GolemBossAI : MonoBehaviour
     private bool _hasSpawned;
     private bool _isDead;
     private bool _registeredInCombat;
+    private Coroutine _aiRoutine;
     
     // Sistema de fases
     private int _currentPhase = 1;
@@ -215,6 +218,9 @@ public class GolemBossAI : MonoBehaviour
         _currentState = BossState.Idle;
         PlayAnim(ANIM_IDLE);
         
+        // Iniciar la rutina de IA
+        _aiRoutine = StartCoroutine(AIBehaviorRoutine());
+        
         Log("✅ Golem inicializado");
     }
 
@@ -230,13 +236,18 @@ public class GolemBossAI : MonoBehaviour
         {
             ActiveCombatRegistry.UnregisterNPC(gameObject);
         }
+        
+        if (_aiRoutine != null)
+        {
+            StopCoroutine(_aiRoutine);
+        }
     }
 
     void Update()
     {
         if (!_hasSpawned || _isDead) return;
         
-        // Buscar jugador si no lo tenemos
+        // Buscar jugador si no lo tenemos (esto puede quedar en Update por si el jugador cambia)
         if (!player && PlayerService.Player != null)
         {
             player = PlayerService.Player.transform;
@@ -245,7 +256,7 @@ public class GolemBossAI : MonoBehaviour
 
         float distance = Vector3.Distance(transform.position, player.position);
 
-        // Auto-activar combate si está cerca
+        // Auto-activar combate si está cerca (esto debe ser responsivo)
         if (!canStartCombat && autoStartOnDetection && distance <= detectionRange)
         {
             canStartCombat = true;
@@ -254,18 +265,34 @@ public class GolemBossAI : MonoBehaviour
         
         if (!canStartCombat) return;
         
-        // ✅ OPTIMIZACIÓN FASE 1: Solo verificar contacto si el jugador está relativamente cerca
-        if (distance < contactRadius * 3) // Solo verificar si está a 3x el radio de contacto
+        // El daño por contacto también debe ser responsivo
+        if (distance < contactRadius * 3)
         {
             CheckContactDamage(distance);
         }
         
-        UpdateBehavior(distance);
+        // La rotación es mejor en Update para que sea fluida
+        if (!_isAttacking)
+        {
+            RotateTowardsPlayer();
+        }
     }
 
     #endregion
 
     #region Comportamiento Principal
+
+    private IEnumerator AIBehaviorRoutine()
+    {
+        while (true)
+        {
+            if (canStartCombat && !_isDead && player)
+            {
+                UpdateBehavior(Vector3.Distance(transform.position, player.position));
+            }
+            yield return new WaitForSeconds(aiUpdateFrequency);
+        }
+    }
 
     private void UpdateBehavior(float distance)
     {
@@ -280,9 +307,6 @@ public class GolemBossAI : MonoBehaviour
             SetIdle();
             return;
         }
-
-        // Siempre rotar hacia el jugador
-        RotateTowardsPlayer();
 
         // En rango de ataque
         if (distance <= attackRange && distance >= minAttackRange)
@@ -528,6 +552,7 @@ public class GolemBossAI : MonoBehaviour
         
         if (rockPickupVFX)
         {
+            // TODO: Usar un sistema de pooling para evitar Instantiate/Destroy
             GameObject dustVFX = Instantiate(rockPickupVFX, groundPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
             dustVFX.transform.localScale = Vector3.one * 1.5f;
             Destroy(dustVFX, 2f);
@@ -537,6 +562,7 @@ public class GolemBossAI : MonoBehaviour
         GameObject rock = null;
         if (rockPrefab && rockHandPoint)
         {
+            // TODO: Usar un sistema de pooling
             rock = Instantiate(rockPrefab, rockHandPoint.position, Quaternion.identity);
             rock.transform.localScale = rockPrefab.transform.localScale;
             rock.transform.SetParent(rockHandPoint);
@@ -614,7 +640,7 @@ public class GolemBossAI : MonoBehaviour
                 Debug.LogError("[GolemBossAI] ❌ EnemyProjectile NO encontrado en la roca!");
             }
             
-            // Auto-destruir
+            // Auto-destruir (si no se usa pooling)
             Destroy(rock, 5f);
             
             Log($"🪨 Roca lanzada hacia jugador");
@@ -658,6 +684,7 @@ public class GolemBossAI : MonoBehaviour
         
         if (rockPickupVFX)
         {
+            // TODO: Usar un sistema de pooling
             GameObject dustVFX = Instantiate(rockPickupVFX, groundPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
             dustVFX.transform.localScale = Vector3.one * 1.5f;
             Destroy(dustVFX, 2f);
@@ -667,6 +694,7 @@ public class GolemBossAI : MonoBehaviour
         GameObject rock = null;
         if (rockPrefab && handPoint)
         {
+            // TODO: Usar un sistema de pooling
             rock = Instantiate(rockPrefab, handPoint.position, Quaternion.identity);
             rock.transform.localScale = rockPrefab.transform.localScale;
             rock.transform.SetParent(handPoint);
@@ -750,6 +778,7 @@ public class GolemBossAI : MonoBehaviour
             // VFX de advertencia en el suelo
             if (rockWarningVFX)
             {
+                // TODO: Usar un sistema de pooling
                 GameObject warning = Instantiate(rockWarningVFX, targetPos + Vector3.up * 0.1f, Quaternion.Euler(90f, 0f, 0f));
                 Destroy(warning, 1.5f);
             }
@@ -776,6 +805,7 @@ public class GolemBossAI : MonoBehaviour
     {
         if (!rockPrefab) return;
         
+        // TODO: Usar un sistema de pooling
         GameObject rock = Instantiate(rockPrefab, spawnPos, Quaternion.identity);
         rock.transform.localScale = rockPrefab.transform.localScale * 0.8f; // Rocas un poco más pequeñas
         
@@ -889,8 +919,7 @@ public class GolemBossAI : MonoBehaviour
                 targetPos = player.position;
                 agent.SetDestination(targetPos);
                 
-                // Rotar hacia el jugador
-                RotateTowardsPlayer();
+                // La rotación ya se maneja en Update, no es necesario aquí
             }
             
             // Verificar si llegamos al jugador
@@ -949,6 +978,7 @@ public class GolemBossAI : MonoBehaviour
         // VFX de impacto
         if (punchImpactVFX)
         {
+            // TODO: Usar un sistema de pooling
             Vector3 impactPos = transform.position + transform.forward * 2f;
             GameObject vfx = Instantiate(punchImpactVFX, impactPos, Quaternion.identity);
             Destroy(vfx, 2f);
@@ -1107,14 +1137,7 @@ public class GolemBossAI : MonoBehaviour
             
             transform.position = new Vector3(horizontalPos.x, currentHeight, horizontalPos.z);
             
-            // Rotar hacia el objetivo durante el salto
-            Vector3 lookDir = (_jumpTargetPos - transform.position);
-            lookDir.y = 0;
-            if (lookDir.sqrMagnitude > 0.01f)
-            {
-                transform.rotation = Quaternion.Slerp(transform.rotation, 
-                    Quaternion.LookRotation(lookDir), Time.deltaTime * 5f);
-            }
+            // La rotación ya se maneja en Update
             
             yield return null;
         }
@@ -1180,6 +1203,7 @@ public class GolemBossAI : MonoBehaviour
         // VFX de onda expansiva
         if (shockwaveVFX)
         {
+            // TODO: Usar un sistema de pooling
             GameObject vfx = Instantiate(shockwaveVFX, impactPos, Quaternion.identity);
             vfx.transform.localScale = Vector3.one * (shockwaveRadius / 5f); // Escalar según radio
             Destroy(vfx, 3f);
@@ -1193,6 +1217,7 @@ public class GolemBossAI : MonoBehaviour
         // VFX de polvo al aterrizar
         if (landingDustVFX)
         {
+            // TODO: Usar un sistema de pooling
             GameObject dust = Instantiate(landingDustVFX, impactPos, Quaternion.identity);
             dust.transform.localScale = Vector3.one * 2f;
             Destroy(dust, 3f);

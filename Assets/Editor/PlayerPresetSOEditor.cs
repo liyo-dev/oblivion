@@ -356,6 +356,26 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
         int completedQuests = questFlagsInPreset.Count(f => f.StartsWith("QUEST_COMPLETED:"));
         int stepsDone = questFlagsInPreset.Count(f => f.StartsWith("QUEST_STEP_DONE:"));
         
+        // Log detallado de datos capturados
+        Debug.Log($"[PlayerPresetSOEditor] 📸 Datos capturados del preset:");
+        Debug.Log($"  • Apariencia: {newPreset.appearance?.Count ?? 0} partes");
+        if (newPreset.appearance != null && newPreset.appearance.Count > 0)
+        {
+            foreach (var app in newPreset.appearance)
+            {
+                Debug.Log($"    - {app.category}: {app.partName ?? "(null)"}");
+            }
+        }
+        Debug.Log($"  • Party: {newPreset.partyMemberIds?.Count ?? 0} miembros");
+        if (newPreset.partyMemberIds != null && newPreset.partyMemberIds.Count > 0)
+        {
+            foreach (var memberId in newPreset.partyMemberIds)
+            {
+                Debug.Log($"    - {memberId}");
+            }
+        }
+        Debug.Log($"  • Wardrobe: {newPreset.unlockedWardrobeIds?.Count ?? 0} items");
+        
         // Mostrar resumen
         string summary = $"✅ Preset de test creado exitosamente:\n\n" +
                         $"📁 Ubicación: {newName}\n\n" +
@@ -367,6 +387,7 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
                         $"  • Items en inventario: {newPreset.inventoryItems?.Count ?? 0}\n" +
                         $"  • Apariencia: {newPreset.appearance?.Count ?? 0} partes\n" +
                         $"  • Vestuario: {newPreset.unlockedWardrobeIds?.Count ?? 0} items\n" +
+                        $"  • Party members: {newPreset.partyMemberIds?.Count ?? 0} miembros\n" +
                         $"  • 📋 QUESTS:\n" +
                         $"    - Activas: {activeQuests}\n" +
                         $"    - Completadas: {completedQuests}\n" +
@@ -374,7 +395,8 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
                         $"    - Total flags: {newPreset.flags?.Count ?? 0}\n" +
                         $"  • Narrativas completadas: {newPreset.completedInteractiveNarratives?.Count ?? 0}\n" +
                         $"  • NPCs persistidos: {newPreset.npcPositions?.Count ?? 0}\n" +
-                        $"  • Bosses derrotados: {newPreset.defeatedBossIds?.Count ?? 0}\n\n" +
+                        $"  • Bosses derrotados: {newPreset.defeatedBossIds?.Count ?? 0}\n" +
+                        $"  • Puntos teleport: {newPreset.unlockedTeleportPoints?.Count ?? 0}\n\n" +
                         $"Ahora puedes usar este preset en GameBootProfile para iniciar desde este punto.";
         
         EditorUtility.DisplayDialog("Preset de Test Creado", summary, "OK");

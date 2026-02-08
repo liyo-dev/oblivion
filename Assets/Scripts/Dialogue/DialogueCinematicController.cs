@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Cinemachine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
@@ -31,6 +32,11 @@ public class DialogueCinematicController : MonoBehaviour
     private CinemachineCamera currentVirtualCamera;
     private int currentLineIndex;
     private int nextCutAtLine;
+    
+    // ✅ Sistema de tracking de speakers para cambios de cámara
+    private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
+    private Transform currentSpeaker;     // Transform del speaker actual
+    private Dictionary<string, Transform> speakerCache = new Dictionary<string, Transform>(); // Cache de speakers
 
     // Pool de cámaras virtuales
     private List<CinemachineCamera> cameraPool = new List<CinemachineCamera>();
@@ -301,6 +307,19 @@ public class DialogueCinematicController : MonoBehaviour
         isInCinematicMode = true;
         currentLineIndex = 0;
         nextCutAtLine = CalculateNextCutLine();
+        
+        // ✅ Reiniciar sistema de tracking de speakers
+        currentSpeakerId = null;
+        currentSpeaker = null;
+        speakerCache.Clear();
+        
+        // Pre-cachear speakers conocidos
+        speakerCache["Player"] = currentPlayer;
+        speakerCache["MainNPC"] = currentNPC;
+        if (!string.IsNullOrEmpty(npc.name))
+        {
+            speakerCache[npc.name] = currentNPC;
+        }
 
         if (showDebugInfo)
             Debug.Log($"[DialogueCinematicController] Iniciando cinematográfica con {npc.name}");
@@ -444,8 +463,9 @@ public class DialogueCinematicController : MonoBehaviour
         }
         mainUnityCamera = null;
         
-        // Restaurar visibilidad del player
+        // Restaurar visibilidad del player y NPC
         ShowPlayer();
+        ShowNPC();
         
         // Mostrar el HUD con fade suave
         ShowHUD();
@@ -531,11 +551,90 @@ public class DialogueCinematicController : MonoBehaviour
                 Debug.Log($"[DialogueCinematicController] Player restaurado (forzado) - {renderers.Length} renderers activados");
         }
     }
+    
+    // ✅ Variables para guardar el estado del NPC
+    private Renderer[] npcRenderers;
+    private bool[] npcRenderersWereEnabled;
+    
+    /// <summary>
+    /// Oculta visualmente al NPC para que no aparezca en los planos del Player/Party
+    /// </summary>
+    private void HideNPC()
+    {
+        if (currentNPC == null) return;
+        
+        // Solo guardar los renderers si aún no están guardados
+        if (npcRenderers == null)
+        {
+            // Obtener todos los renderers del NPC (incluyendo hijos)
+            npcRenderers = currentNPC.GetComponentsInChildren<Renderer>(true);
+            npcRenderersWereEnabled = new bool[npcRenderers.Length];
+            
+            // Guardar estado original
+            for (int i = 0; i < npcRenderers.Length; i++)
+            {
+                npcRenderersWereEnabled[i] = npcRenderers[i].enabled;
+            }
+        }
+        
+        // Desactivar todos los renderers
+        for (int i = 0; i < npcRenderers.Length; i++)
+        {
+            if (npcRenderers[i] != null)
+            {
+                npcRenderers[i].enabled = false;
+            }
+        }
+        
+        if (showDebugInfo)
+            Debug.Log($"[DialogueCinematicController] NPC ocultado - {npcRenderers.Length} renderers desactivados");
+    }
+    
+    /// <summary>
+    /// Restaura la visibilidad del NPC
+    /// </summary>
+    private void ShowNPC()
+    {
+        // Si tenemos renderers guardados, restaurarlos
+        if (npcRenderers != null)
+        {
+            // Restaurar estado original de cada renderer
+            for (int i = 0; i < npcRenderers.Length; i++)
+            {
+                if (npcRenderers[i] != null)
+                {
+                    npcRenderers[i].enabled = npcRenderersWereEnabled[i];
+                }
+            }
+            
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] NPC restaurado - {npcRenderers.Length} renderers reactivados");
+            
+            // Limpiar referencias
+            npcRenderers = null;
+            npcRenderersWereEnabled = null;
+        }
+        // Si no hay renderers guardados pero hay currentNPC, activar todos sus renderers
+        else if (currentNPC != null)
+        {
+            Renderer[] renderers = currentNPC.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] NPC restaurado (forzado) - {renderers.Length} renderers activados");
+        }
+    }
 
         /// <summary>
         /// Notifica que ha avanzado una línea de diálogo
         /// </summary>
-        public void OnDialogueLineAdvanced(int lineIndex, int totalLines)
+        public void OnDialogueLineAdvanced(int lineIndex, int totalLines, DialogueLine currentLine)
         {
             if (!isInCinematicMode) return;
 
@@ -552,10 +651,24 @@ public class DialogueCinematicController : MonoBehaviour
                 nextCutAtLine = CalculateNextCutLine();
                 if (showDebugInfo)
                     Debug.Log($"[DialogueCinematicController] Línea 0 - Opening shot activo, próximo corte en línea {nextCutAtLine}");
+                
+                // ✅ Pero verificar si el speaker cambió y ajustar cámara
+                CheckAndAdjustCameraForSpeaker(currentLine, lineIndex, totalLines);
                 return;
             }
 
-            // Determinar si es momento de cortar (siempre activo ahora)
+            // ✅ PRIORIDAD 1: Verificar si cambió el speaker (Player, NPC, Party Member)
+            bool speakerChanged = CheckAndAdjustCameraForSpeaker(currentLine, lineIndex, totalLines);
+            
+            // Si ya cambiamos la cámara por cambio de speaker, no hacer corte automático
+            if (speakerChanged)
+            {
+                // Recalcular próximo corte desde este punto
+                nextCutAtLine = lineIndex + CalculateNextCutLine();
+                return;
+            }
+
+            // PRIORIDAD 2: Determinar si es momento de cortar automáticamente
             bool shouldCut = lineIndex >= nextCutAtLine;
 
             if (shouldCut)
@@ -572,6 +685,315 @@ public class DialogueCinematicController : MonoBehaviour
                 if (showDebugInfo)
                     Debug.Log($"[DialogueCinematicController] Corte aplicado en línea {lineIndex}, próximo corte en línea {nextCutAtLine}");
             }
+        }
+
+        /// <summary>
+        /// Verifica si cambió el speaker y ajusta la cámara en consecuencia
+        /// </summary>
+        /// <returns>True si cambió el speaker y se ajustó la cámara</returns>
+        private bool CheckAndAdjustCameraForSpeaker(DialogueLine line, int lineIndex, int totalLines)
+        {
+            // Determinar el ID del speaker de esta línea
+            string newSpeakerId = DetermineSpeakerId(line);
+            
+            // Si es el mismo speaker que antes, no hacer nada
+            if (newSpeakerId == currentSpeakerId)
+                return false;
+            
+            // Speaker cambió - buscar o determinar su Transform
+            Transform newSpeakerTransform = FindSpeakerTransform(newSpeakerId, line);
+            
+            if (newSpeakerTransform == null)
+            {
+                if (showDebugInfo)
+                    Debug.LogWarning($"[DialogueCinematicController] No se encontró Transform para speaker '{newSpeakerId}', usando NPC por defecto");
+                newSpeakerTransform = currentNPC;
+            }
+            
+            // Actualizar speaker actual
+            string previousSpeakerId = currentSpeakerId;
+            currentSpeakerId = newSpeakerId;
+            currentSpeaker = newSpeakerTransform;
+            
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] 🎬 Speaker cambió: '{previousSpeakerId}' → '{newSpeakerId}' ({newSpeakerTransform.name})");
+            
+            // Aplicar plano apropiado para este speaker
+            ApplyShotForSpeaker(newSpeakerTransform, line, lineIndex, totalLines);
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Determina el ID único del speaker basándose en la línea de diálogo
+        /// </summary>
+        private string DetermineSpeakerId(DialogueLine line)
+        {
+            // Si tiene speakerNameId, usarlo
+            if (!string.IsNullOrEmpty(line.speakerNameId))
+                return line.speakerNameId;
+            
+            // Si no, determinar por isPlayerSpeaking
+            if (line.isPlayerSpeaking)
+                return "Player";
+            
+            // Por defecto, asumir que es el NPC principal
+            return "MainNPC";
+        }
+        
+        /// <summary>
+        /// Encuentra el Transform del speaker basándose en su ID
+        /// </summary>
+        private Transform FindSpeakerTransform(string speakerId, DialogueLine line)
+        {
+            // Verificar cache primero
+            if (speakerCache.ContainsKey(speakerId))
+                return speakerCache[speakerId];
+            
+            Transform speakerTransform = null;
+            
+            // Caso 1: Es el jugador
+            if (speakerId == "Player" || line.isPlayerSpeaking)
+            {
+                speakerTransform = currentPlayer;
+            }
+            // Caso 2: Es el NPC principal (con quien iniciamos el diálogo)
+            else if (speakerId == "MainNPC" || speakerId == currentNPC.name)
+            {
+                speakerTransform = currentNPC;
+            }
+            // Caso 3: Buscar en party members
+            else if (Game.NPC.PlayerParty.HasInstance)
+            {
+                var party = Game.NPC.PlayerParty.Instance;
+                Game.NPC.NPCPartyMember partyMember = null;
+                
+                foreach (var m in party.Members)
+                {
+                    if (m.NPCManager?.Configuration?.interactiveNarrativeConfig != null)
+                    {
+                        var config = m.NPCManager.Configuration.interactiveNarrativeConfig;
+                        
+                        // ✅ PRIORIDAD 1: Comparar con dialogueCharacterId (nuevo campo específico para diálogos)
+                        if (!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
+                        {
+                            partyMember = m;
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 🎯 Match por dialogueCharacterId: '{config.dialogueCharacterId}' == '{speakerId}'");
+                            break;
+                        }
+                        
+                        // PRIORIDAD 2: Comparar con persistenceId (compatibilidad hacia atrás)
+                        if (config.persistenceId == speakerId)
+                        {
+                            partyMember = m;
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 🎯 Match por persistenceId: '{config.persistenceId}' == '{speakerId}'");
+                            break;
+                        }
+                        
+                        // PRIORIDAD 3: Comparar con narrativeID
+                        if (m.NPCManager.Configuration.narrativeConfig?.narrativeID == speakerId)
+                        {
+                            partyMember = m;
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 🎯 Match por narrativeID: '{m.NPCManager.Configuration.narrativeConfig.narrativeID}' == '{speakerId}'");
+                            break;
+                        }
+                    }
+                    
+                    // PRIORIDAD 4: GameObject.name (último recurso)
+                    if (m.gameObject.name == speakerId)
+                    {
+                        partyMember = m;
+                        if (showDebugInfo)
+                            Debug.Log($"[DialogueCinematicController] 🎯 Match por GameObject.name: '{m.gameObject.name}' == '{speakerId}'");
+                        break;
+                    }
+                }
+                
+                if (partyMember != null)
+                {
+                    speakerTransform = partyMember.transform;
+                    if (showDebugInfo)
+                        Debug.Log($"[DialogueCinematicController] 👥 Speaker '{speakerId}' encontrado en party: {partyMember.name}");
+                }
+            }
+            
+            // Caso 4: Buscar por dialogueCharacterId en todos los NPCs de la escena (fallback)
+            if (speakerTransform == null)
+            {
+                var allNPCs = GameObject.FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
+                foreach (var npc in allNPCs)
+                {
+                    if (npc.Configuration?.interactiveNarrativeConfig != null)
+                    {
+                        var config = npc.Configuration.interactiveNarrativeConfig;
+                        
+                        // Buscar por dialogueCharacterId primero
+                        if (!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
+                        {
+                            speakerTransform = npc.transform;
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 🔍 Speaker '{speakerId}' encontrado en escena por dialogueCharacterId: {npc.name}");
+                            break;
+                        }
+                        
+                        // Luego por persistenceId
+                        if (config.persistenceId == speakerId)
+                        {
+                            speakerTransform = npc.transform;
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 🔍 Speaker '{speakerId}' encontrado en escena por persistenceId: {npc.name}");
+                            break;
+                        }
+                    }
+                    
+                    // Por último por GameObject.name
+                    if (npc.gameObject.name == speakerId)
+                    {
+                        speakerTransform = npc.transform;
+                        if (showDebugInfo)
+                            Debug.Log($"[DialogueCinematicController] 🔍 Speaker '{speakerId}' encontrado en escena por nombre: {npc.name}");
+                        break;
+                    }
+                }
+            }
+            
+            // Cachear el resultado si se encontró
+            if (speakerTransform != null)
+            {
+                speakerCache[speakerId] = speakerTransform;
+            }
+            
+            return speakerTransform;
+        }
+        
+        /// <summary>
+        /// Aplica un plano cinematográfico apropiado para el speaker actual
+        /// </summary>
+        private void ApplyShotForSpeaker(Transform speaker, DialogueLine line, int lineIndex, int totalLines)
+        {
+            // TODO: Implementar forcedShotType cuando el enum esté alineado
+            // Por ahora usar el sistema automático
+            
+            // Determinar plano apropiado basándose en quién habla
+            CinematicCameraShot appropriateShot = null;
+            
+            // Usar el sistema existente del profile para obtener el shot
+            if (activeProfile != null && activeProfile.npcShots != null && activeProfile.npcShots.Length > 0)
+            {
+                // Alternar entre los shots disponibles
+                int shotIndex = lineIndex % activeProfile.npcShots.Length;
+                appropriateShot = activeProfile.npcShots[shotIndex];
+                
+                // ✅ Crear un nuevo shot con distancia ajustada según el speaker
+                if (appropriateShot != null)
+                {
+                    appropriateShot = CreateShotWithAdjustedDistance(appropriateShot, speaker);
+                }
+            }
+            
+            // Fallback al opening shot si no hay otros disponibles
+            if (appropriateShot == null && activeProfile != null)
+            {
+                appropriateShot = activeProfile.openingShot;
+                if (appropriateShot != null)
+                {
+                    appropriateShot = CreateShotWithAdjustedDistance(appropriateShot, speaker);
+                }
+            }
+            
+            if (appropriateShot != null)
+            {
+                ApplyShotWithContext(appropriateShot, false, speaker);
+            }
+        }
+        
+        /// <summary>
+        /// Crea un nuevo shot con distancia ajustada según el tipo de speaker
+        /// </summary>
+        private CinematicCameraShot CreateShotWithAdjustedDistance(CinematicCameraShot original, Transform speaker)
+        {
+            // Determinar multiplicador según el speaker
+            float distanceMultiplier = 1.0f;
+            
+            // ✅ AUMENTADO: Si es el player o un party member, usar distancia MUCHO mayor
+            if (speaker == currentPlayer)
+            {
+                distanceMultiplier = 2.5f; // Player necesita MUCHA más distancia (aumentado de 1.5f a 2.5f)
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] 📷 Ajustando distancia para Player (x{distanceMultiplier})");
+            }
+            else if (Game.NPC.PlayerParty.HasInstance)
+            {
+                // Verificar si es un party member (como Estela)
+                var party = Game.NPC.PlayerParty.Instance;
+                bool isPartyMember = party.Members.Any(m => m.transform == speaker);
+                
+                if (isPartyMember)
+                {
+                    distanceMultiplier = 2.5f; // Party members necesitan MUCHA más distancia (aumentado de 1.5f a 2.5f)
+                    if (showDebugInfo)
+                        Debug.Log($"[DialogueCinematicController] 📷 Ajustando distancia para Party Member (x{distanceMultiplier})");
+                }
+            }
+            
+            // Si no necesita ajuste, devolver el original
+            if (Mathf.Approximately(distanceMultiplier, 1.0f))
+            {
+                return original;
+            }
+            
+            // Crear un nuevo shot ajustado usando AdjustedCameraShot
+            return new AdjustedCameraShot(original, distanceMultiplier);
+        }
+    
+    /// <summary>
+    /// Wrapper para CinematicCameraShot que ajusta la distancia
+    /// </summary>
+    public class AdjustedCameraShot : CinematicCameraShot
+    {
+        private readonly CinematicCameraShot _original;
+        private readonly float _distanceMultiplier;
+        
+        public AdjustedCameraShot(CinematicCameraShot original, float distanceMultiplier)
+        {
+            _original = original;
+            _distanceMultiplier = distanceMultiplier;
+            
+            // Copiar el tipo de shot
+            this.shotType = original.shotType;
+            this.minimumDuration = original.minimumDuration;
+        }
+        
+        // Override de las propiedades para aplicar el multiplicador
+        public new float Distance => _original.Distance * _distanceMultiplier;
+        public new float Height => _original.Height;
+        public new Vector3 LookAtOffset => _original.LookAtOffset;
+        public new float LateralOffset => _original.LateralOffset;
+        public new float VerticalAngle => _original.VerticalAngle;
+        public new float DutchAngle => _original.DutchAngle;
+        public new float FieldOfView => _original.FieldOfView;
+    }
+        
+        /// <summary>
+        /// Crea un CinematicCameraShot basándose en un DialogueShotType
+        /// </summary>
+        private CinematicCameraShot CreateShotFromDialogueType(DialogueShotType shotType)
+        {
+            if (activeProfile == null || activeProfile.npcShots == null || activeProfile.npcShots.Length == 0)
+                return activeProfile?.openingShot;
+            
+            // Buscar un shot que coincida con el tipo solicitado
+            foreach (var shot in activeProfile.npcShots)
+            {
+                if (shot.shotType == shotType)
+                    return shot;
+            }
+            
+            // Si no se encuentra, usar el primero disponible o el opening
+            return activeProfile.npcShots.Length > 0 ? activeProfile.npcShots[0] : activeProfile.openingShot;
         }
 
         /// <summary>
@@ -747,8 +1169,9 @@ public class DialogueCinematicController : MonoBehaviour
 
             Vector3 camPos;
             
-            // ✅ AJUSTE: Aumentar distancia mínima para alejar todos los planos
-            float effectiveDistance = Mathf.Max(shot.Distance * 1.5f, 2.0f); // Multiplicador 1.5x y mínimo de 2m
+            // ✅ AJUSTE: Aumentar distancia mínima para alejar MUCHO MÁS todos los planos
+            // Aumentado especialmente para Player y Party Members (como Estela)
+            float effectiveDistance = Mathf.Max(shot.Distance * 2.2f, 3.0f); // Multiplicador 2.2x y mínimo de 3m
 
             switch (shot.shotType)
             {
@@ -768,7 +1191,7 @@ public class DialogueCinematicController : MonoBehaviour
                         Vector3 backDir = -playerToNPC; // Dirección hacia atrás desde el punto medio
                         
                         // ✅ Combinar movimiento lateral (más hacia la izquierda) y hacia atrás
-                        float wideDistance = Mathf.Max(shot.Distance * 1.8f, 4.5f); // Más alejado: mínimo 4.5m
+                        float wideDistance = Mathf.Max(shot.Distance * 2.0f, 5.0f); // Más alejado: mínimo 5m
                         float lateralAmount = wideDistance * 0.4f; // 40% lateral hacia la izquierda
                         float backAmount = wideDistance * 0.6f; // 60% hacia atrás
                         
@@ -786,12 +1209,11 @@ public class DialogueCinematicController : MonoBehaviour
                         playerToNPC.Normalize();
                         
                         // ✅ CONFIGURACIÓN MEJORADA: Offset lateral más pronunciado para evitar tapar al NPC
-                        // Aumentado de 0.9f a 1.1f para posicionar la cámara más hacia el lado
-                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.1f;
+                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.3f;
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, playerToNPC).normalized * lateralOffsetAmount;
                         
-                        // Retroceder más del player para mejor perspectiva
-                        float behindDistance = Mathf.Max(2.4f, actualDistance * 0.65f);
+                        // ✅ AUMENTADO: Retroceder MUCHO MÁS del player para mejor perspectiva
+                        float behindDistance = Mathf.Max(3.0f, actualDistance * 0.75f); // Aumentado de 2.4f a 3.0f
                         
                         // Avance ligero hacia el NPC para centrar mejor el encuadre
                         float forwardOffset = 0.6f;
@@ -800,8 +1222,7 @@ public class DialogueCinematicController : MonoBehaviour
                         camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset + playerToNPC * forwardOffset;
                         
                         // ✅ ALTURA AUMENTADA: Subir la cámara para ver por encima de la cabeza del player
-                        // Aumentado de +0.4f a +0.7f respecto a shot.Height
-                        camPos.y = currentPlayer.position.y + shot.Height + 0.7f;
+                        camPos.y = currentPlayer.position.y + shot.Height + 0.8f; // Aumentado a +0.8f
                     }
                     break;
 
@@ -814,16 +1235,16 @@ public class DialogueCinematicController : MonoBehaviour
                         npcToPlayer.Normalize();
                         
                         // ✅ MEJORADO: Offset lateral más pronunciado
-                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 0.9f; // Aumentado de 0.5f a 0.9f
+                        float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.1f;
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, npcToPlayer).normalized * lateralOffsetAmount;
                         
-                        // ✅ MEJORADO: Retroceder MÁS de la posición del NPC
-                        float behindDistance = Mathf.Max(1.8f, actualDistance * 0.5f); // Aumentado de 1.2f y 0.4f
+                        // ✅ AUMENTADO: Retroceder MUCHO MÁS de la posición del NPC
+                        float behindDistance = Mathf.Max(2.5f, actualDistance * 0.6f); // Aumentado de 1.8f a 2.5f
                         
                         camPos = currentNPC.position - npcToPlayer * behindDistance + shoulderOffset;
                         
                         // ✅ MEJORADO: Altura más elevada
-                        camPos.y = currentNPC.position.y + shot.Height + 0.3f;
+                        camPos.y = currentNPC.position.y + shot.Height + 0.5f; // Aumentado a +0.5f
                     }
                     break;
 
@@ -836,28 +1257,69 @@ public class DialogueCinematicController : MonoBehaviour
 
                 case DialogueShotType.MediumNPC:
                 case DialogueShotType.CloseUpNPC:
-                    // Cámara FRENTE al NPC (desde la posición del Player hacia el NPC)
+                    // ✅ CORREGIDO COMPLETAMENTE: Cámara FRENTE al target viendo su CARA
+                    // La cámara debe estar del lado del OTRO personaje mirando hacia el target
                     {
-                        // ✅ CORREGIDO: Dirección desde NPC hacia Player (para colocar cámara del lado del player)
-                        Vector3 npcToPlayer = (currentPlayer.position - currentNPC.position).normalized;
-                        npcToPlayer.y = 0;
-                        if (npcToPlayer.sqrMagnitude < 0.01f) npcToPlayer = currentNPC.forward;
-                        npcToPlayer.Normalize();
+                        // Dirección DESDE el target HACIA el otro personaje
+                        // Esto nos da la dirección en la que debemos colocar la cámara
+                        Vector3 towardsOther = Vector3.zero;
+                        
+                        if (target == currentNPC && currentPlayer != null)
+                        {
+                            // Target es NPC: dirección desde NPC hacia Player
+                            towardsOther = (currentPlayer.position - currentNPC.position).normalized;
+                        }
+                        else if (target == currentPlayer && currentNPC != null)
+                        {
+                            // Target es Player: dirección desde Player hacia NPC
+                            towardsOther = (currentNPC.position - currentPlayer.position).normalized;
+                        }
+                        else
+                        {
+                            // Fallback: frente al target
+                            towardsOther = -target.forward;
+                        }
+                        
+                        towardsOther.y = 0;
+                        if (towardsOther.sqrMagnitude < 0.01f) towardsOther = -target.forward;
+                        towardsOther.Normalize();
                         
                         // Offset lateral para variedad visual
-                        Vector3 lateral = Vector3.Cross(Vector3.up, npcToPlayer).normalized * shot.LateralOffset;
+                        Vector3 lateral = Vector3.Cross(Vector3.up, towardsOther).normalized * shot.LateralOffset;
                         
-                        // ✅ CORREGIDO: Posicionar cámara en dirección del Player (frente al NPC)
-                        // Esto coloca la cámara entre el Player y el NPC, mirando hacia el NPC
-                        camPos = currentNPC.position + npcToPlayer * effectiveDistance + lateral;
-                        camPos.y = currentNPC.position.y + shot.Height;
+                        // ✅ CORREGIDO: Posicionar cámara FRENTE al target (en dirección al otro personaje)
+                        // Esto garantiza que vemos la CARA del target, no su cogote
+                        camPos = target.position + towardsOther * effectiveDistance + lateral;
+                        camPos.y = target.position.y + shot.Height;
                     }
                     break;
 
                 default:
-                    // Fallback: frente al target
-                    camPos = basePos + fromOther * effectiveDistance;
-                    camPos.y = basePos.y + shot.Height;
+                    // ✅ CORREGIDO: Fallback debe estar FRENTE al target viendo su cara
+                    // Usar la dirección hacia el otro personaje, no desde el otro personaje
+                    {
+                        Vector3 towardsOther = Vector3.zero;
+                        
+                        if (target == currentNPC && currentPlayer != null)
+                        {
+                            towardsOther = (currentPlayer.position - currentNPC.position).normalized;
+                        }
+                        else if (target == currentPlayer && currentNPC != null)
+                        {
+                            towardsOther = (currentNPC.position - currentPlayer.position).normalized;
+                        }
+                        else
+                        {
+                            towardsOther = -target.forward;
+                        }
+                        
+                        towardsOther.y = 0;
+                        if (towardsOther.sqrMagnitude < 0.01f) towardsOther = -target.forward;
+                        towardsOther.Normalize();
+                        
+                        camPos = target.position + towardsOther * effectiveDistance;
+                        camPos.y = target.position.y + shot.Height;
+                    }
                     break;
             }
 
@@ -922,34 +1384,100 @@ public class DialogueCinematicController : MonoBehaviour
     /// <summary>
     /// Aplica un plano cinematográfico con contexto (útil para plano de apertura)
     /// </summary>
-    private void ApplyShotWithContext(CinematicCameraShot shot, bool isOpening = false)
+    /// <param name="shot">El plano a aplicar</param>
+    /// <param name="isOpening">Si es el plano de apertura</param>
+    /// <param name="targetOverride">Target específico (Player, NPC, o Party Member). Si es null, usa currentNPC</param>
+    private void ApplyShotWithContext(CinematicCameraShot shot, bool isOpening = false, Transform targetOverride = null)
     {
         if (shot == null) return;
         
-        // Solo ocultar al player en planos de primer plano y medio plano del NPC
-        // En planos amplios (Wide), Over-the-shoulder y Profile, el player debe verse
-        // de lo contrario parece que el NPC habla con la nada
-        bool shouldHidePlayer = shot.shotType == DialogueShotType.CloseUpNPC || shot.shotType == DialogueShotType.MediumNPC;
+        // Determinar el target efectivo (quien habla)
+        Transform effectiveTarget = targetOverride ?? currentNPC;
         
-        if (shouldHidePlayer)
+        // ✅ CORREGIDO: Determinar quién debe ser ocultado según quién habla
+        bool isPlayerOrPartySpeaking = (effectiveTarget == currentPlayer) || IsPartyMember(effectiveTarget);
+        bool isNPCSpeaking = effectiveTarget == currentNPC;
+        
+        // Lógica de ocultación mejorada:
+        // - Si habla el Player o Party Member → Ocultar al NPC para ver solo al speaker
+        // - Si habla el NPC → Ocultar al Player SOLO en planos cerrados
+        // - En planos Wide/OverShoulder → Mostrar ambos
+        
+        bool isCloseUpShot = (shot.shotType == DialogueShotType.CloseUpNPC || 
+                             shot.shotType == DialogueShotType.MediumNPC);
+        bool isWideShot = (shot.shotType == DialogueShotType.Wide || 
+                          shot.shotType == DialogueShotType.OverShoulderPlayer || 
+                          shot.shotType == DialogueShotType.OverShoulderNPC);
+        
+        if (isPlayerOrPartySpeaking)
         {
-            HidePlayer();
+            // Cuando habla el Player o Party Member: SIEMPRE ocultar al NPC para evitar que salga en el encuadre
+            HideNPC();
+            ShowPlayer();
+            
+            // ✅ HACER QUE EL SPEAKER MIRE AL NPC
+            MakeSpeakerLookAtNPC(effectiveTarget);
+            
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] 👁️ Player/Party hablando → NPC oculto, Player visible");
+        }
+        else if (isNPCSpeaking)
+        {
+            // Cuando habla el NPC: Ocultar Player solo en planos cerrados
+            ShowNPC();
+            if (isCloseUpShot)
+            {
+                HidePlayer();
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] 👁️ NPC hablando (CloseUp) → Player oculto");
+            }
+            else
+            {
+                ShowPlayer();
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] 👁️ NPC hablando (Wide) → Ambos visibles");
+            }
         }
         else
         {
+            // Caso genérico: mostrar ambos
+            ShowNPC();
             ShowPlayer();
         }
         
-        // Para Wide shots o plano de apertura, usar lógica especial
-        if (isOpening || shot.shotType == DialogueShotType.Wide)
+        // Aplicar el plano cinematográfico
+        ApplyShot(shot, effectiveTarget);
+    }
+    
+    /// <summary>
+    /// Verifica si un transform es un party member
+    /// </summary>
+    private bool IsPartyMember(Transform t)
+    {
+        if (!Game.NPC.PlayerParty.HasInstance) return false;
+        
+        var party = Game.NPC.PlayerParty.Instance;
+        return party.Members.Any(m => m != null && m.transform == t);
+    }
+    
+    /// <summary>
+    /// Hace que el speaker mire hacia el NPC con quien está hablando
+    /// </summary>
+    private void MakeSpeakerLookAtNPC(Transform speaker)
+    {
+        if (speaker == null || currentNPC == null) return;
+        
+        // Calcular dirección hacia el NPC (solo en plano horizontal)
+        Vector3 directionToNPC = currentNPC.position - speaker.position;
+        directionToNPC.y = 0;
+        
+        if (directionToNPC.sqrMagnitude > 0.01f)
         {
-            ApplyShot(shot, currentNPC); // Usa NPC como referencia pero la cámara se posicionará en medio
-        }
-        else
-        {
-            // Para otros planos, usar el target apropiado
-            Transform target = currentNPC; // Por defecto el NPC
-            ApplyShot(shot, target);
+            Quaternion targetRotation = Quaternion.LookRotation(directionToNPC);
+            speaker.rotation = targetRotation;
+            
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] 👀 {speaker.name} ahora mira hacia {currentNPC.name}");
         }
     }
 

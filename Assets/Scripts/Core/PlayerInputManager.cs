@@ -23,7 +23,10 @@ namespace Core
 
         [Header("Comportamiento")]
         [SerializeField] private bool dontDestroyOnLoad = true;
-        [SerializeField] private bool debugLogs = true; // TEMPORAL: Activado para debugging
+        
+#if UNITY_EDITOR
+        [SerializeField] private bool debugLogs = true;
+#endif
 
         private PlayerControls _controls;
         private bool _ownsControlsInstance;
@@ -51,8 +54,10 @@ namespace Core
             InitializeControls();
             ServiceLocator.Register(this);
 
+#if UNITY_EDITOR
             if (debugLogs)
                 Debug.Log("[PlayerInputManager] Inicializado");
+#endif
         }
 
         private void InitializeControls()
@@ -67,10 +72,12 @@ namespace Core
             _isInUIMode = false;
             _uiModeRefCount = 0;
 
+#if UNITY_EDITOR
             if (debugLogs)
             {
                 Debug.Log("[PlayerInputManager] Controls initialized in Gameplay mode");
             }
+#endif
         }
 
         /// <summary>
@@ -91,26 +98,30 @@ namespace Core
         {
             _uiModeRefCount++;
             
-            Debug.Log($"[PlayerInputManager] PushUIMode() llamado. RefCount: {_uiModeRefCount}");
+#if UNITY_EDITOR
+            if (debugLogs)
+                Debug.Log($"[PlayerInputManager] PushUIMode() llamado. RefCount: {_uiModeRefCount}");
+#endif
             
             if (_uiModeRefCount == 1) // Primera llamada
             {
                 _isInUIMode = true;
                 
-                Debug.Log($"[PlayerInputManager] GamePlay antes: {_controls.GamePlay.enabled}");
                 _controls.GamePlay.Disable();
-                Debug.Log($"[PlayerInputManager] GamePlay después: {_controls.GamePlay.enabled}");
-                
-                Debug.Log($"[PlayerInputManager] UI antes: {_controls.UI.enabled}");
                 _controls.UI.Enable();
-                Debug.Log($"[PlayerInputManager] UI después: {_controls.UI.enabled}");
 
-                Debug.Log("[PlayerInputManager] Modo UI ACTIVADO (refCount=1)");
+#if UNITY_EDITOR
+                if (debugLogs)
+                    Debug.Log("[PlayerInputManager] Modo UI ACTIVADO (refCount=1)");
+#endif
             }
+#if UNITY_EDITOR
             else
             {
-                Debug.Log($"[PlayerInputManager] Modo UI ya activo (refCount={_uiModeRefCount})");
+                if (debugLogs)
+                    Debug.Log($"[PlayerInputManager] Modo UI ya activo (refCount={_uiModeRefCount})");
             }
+#endif
         }
 
         /// <summary>
@@ -120,8 +131,10 @@ namespace Core
         {
             if (_uiModeRefCount <= 0)
             {
+#if UNITY_EDITOR
                 if (debugLogs)
                     Debug.LogWarning("[PlayerInputManager] PopUIMode llamado sin PushUIMode previo");
+#endif
                 return;
             }
 
@@ -133,13 +146,17 @@ namespace Core
                 _controls.UI.Disable();
                 _controls.GamePlay.Enable();
 
+#if UNITY_EDITOR
                 if (debugLogs)
                     Debug.Log("[PlayerInputManager] Modo GAMEPLAY restaurado (refCount=0)");
+#endif
             }
+#if UNITY_EDITOR
             else if (debugLogs)
             {
                 Debug.Log($"[PlayerInputManager] Modo UI aún activo (refCount={_uiModeRefCount})");
             }
+#endif
         }
 
         void OnEnable()

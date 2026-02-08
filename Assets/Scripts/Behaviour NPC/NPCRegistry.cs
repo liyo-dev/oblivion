@@ -1,36 +1,87 @@
-﻿﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+
 namespace Game.NPC
 {
     public class NPCRegistry : MonoBehaviour
     {
         private static NPCRegistry _instance;
+        private static bool _applicationQuitting;
+
+        /// <summary>
+        /// Verifica si existe una instancia de NPCRegistry sin crear una nueva.
+        /// Útil para evitar NullReferenceException en OnDestroy.
+        /// </summary>
+        public static bool HasInstance => _instance != null && !_applicationQuitting;
+
         public static NPCRegistry Instance
         {
             get
             {
+                // No crear instancias si la aplicación se está cerrando
+                if (_applicationQuitting)
+                {
+                    return null;
+                }
+
                 if (_instance == null)
                 {
-                    // Crear la instancia si no existe
-                    var go = new GameObject("[NPCRegistry]");
-                    _instance = go.AddComponent<NPCRegistry>();
-                    DontDestroyOnLoad(go);
+                    // Buscar si ya existe una instancia en la escena
+                    _instance = FindFirstObjectByType<NPCRegistry>();
+
+                    if (_instance == null)
+                    {
+                        // Crear la instancia si no existe
+                        var go = new GameObject("[NPCRegistry]");
+                        _instance = go.AddComponent<NPCRegistry>();
+                        DontDestroyOnLoad(go);
+                    }
                 }
                 return _instance;
             }
         }
+
         private readonly Dictionary<string, NPCBehaviourManagerV2> _npcsByID = new Dictionary<string, NPCBehaviourManagerV2>();
         private readonly Dictionary<string, List<NPCBehaviourManagerV2>> _npcsByTag = new Dictionary<string, List<NPCBehaviourManagerV2>>();
+
         void Awake()
         {
+            // Patrón singleton estándar
             if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
+
             _instance = this;
             DontDestroyOnLoad(gameObject);
         }
+
+        void OnApplicationQuit()
+        {
+            _applicationQuitting = true;
+        }
+
+        void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                // Limpiar referencias
+                _npcsByID.Clear();
+                _npcsByTag.Clear();
+                _instance = null;
+            }
+        }
+
+#if UNITY_EDITOR
+        // Limpiar al salir de Play Mode en el Editor
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _instance = null;
+            _applicationQuitting = false;
+        }
+#endif
         public void RegisterNPC(string narrativeID, string narrativeTag, NPCBehaviourManagerV2 npc)
         {
             if (npc == null)
@@ -111,13 +162,6 @@ namespace Game.NPC
             var ids = new string[_npcsByID.Count];
             _npcsByID.Keys.CopyTo(ids, 0);
             return ids;
-        }
-        void OnDestroy()
-        {
-            if (_instance == this)
-            {
-                _instance = null;
-            }
         }
     }
 }

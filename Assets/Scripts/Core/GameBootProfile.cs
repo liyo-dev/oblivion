@@ -481,6 +481,9 @@ public class GameBootProfile : ScriptableObject
             Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
             Debug.Log("[GameBootProfile] 🔄 NPCInteractiveNarrativeRegistry limpiado para carga de partida");
 
+            // ✅ Validar y corregir inconsistencias narrativas
+            ValidateAndFixNarrativeState(data);
+
             GameBootProfileDebugger.Log("LoadProfile", $"? Cargado exitoso - Anchor: {data.lastSpawnAnchorId}, HP: {data.currentHp:F0}", LogType.Log);
             return true;
         }
@@ -576,6 +579,19 @@ public class GameBootProfile : ScriptableObject
             p.inventoryItems = new List<InventoryItemSave>();
         }
 
+        // === NUEVO: sincronizar Wardrobe desde WardrobeInventory ===
+        if (PlayerService.TryGetComponent<WardrobeInventory>(out var wardrobe, includeInactive: true, allowSceneLookup: true))
+        {
+            p.unlockedWardrobeIds = wardrobe.GetUnlockedIds();
+            syncedSystems.Add($"Wardrobe({p.unlockedWardrobeIds?.Count ?? 0})");
+            Debug.Log($"[GameBootProfile] Wardrobe sincronizado al preset: {p.unlockedWardrobeIds?.Count ?? 0} items desbloqueados");
+        }
+        else
+        {
+            p.unlockedWardrobeIds = new List<string>();
+            Debug.LogWarning("[GameBootProfile] WardrobeInventory no disponible - Wardrobe guardado vacío");
+        }
+
         if (PlayerService.TryGetComponent<ModularAutoBuilder>(out var builder, includeInactive: true, allowSceneLookup: true))
         {
             var selection = builder.GetSelection();
@@ -593,10 +609,17 @@ public class GameBootProfile : ScriptableObject
                     });
                 }
                 syncedSystems.Add($"Appearance({p.appearance.Count})");
+                Debug.Log($"[GameBootProfile] Apariencia sincronizada: {p.appearance.Count} partes [{string.Join(", ", p.appearance.ConvertAll(a => $"{a.category}:{a.partName}"))}]");
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootProfile] ModularAutoBuilder.GetSelection() devolvió null");
+                p.appearance = new List<AppearanceEntry>();
             }
         }
         else
         {
+            Debug.LogWarning("[GameBootProfile] ModularAutoBuilder no encontrado - Apariencia guardada vacía");
             p.appearance = new List<AppearanceEntry>();
         }
 
@@ -694,7 +717,7 @@ public class GameBootProfile : ScriptableObject
                         existing.position = position;
                         preset.npcPositions[existingIndex] = existing;
                         Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition/transform: {position}");
-                    }
+                      }
                 }
                 // Si la posición sigue siendo default, mantener la entrada del preset sin cambios
                 continue;
@@ -977,6 +1000,80 @@ public class GameBootProfile : ScriptableObject
         // Sin magia, el man� debe iniciar en 0 para evitar mostrar barra llena.
         preset.maxMP = 0f;
         preset.currentMP = 0f;
+    }
+
+    /// <summary>
+    /// Valida que el progreso del grafo narrativo sea consistente con el estado del juego.
+    /// Si se detecta que el jugador tiene a Estela en el party pero los eventos previos no se completaron,
+    /// se emiten automáticamente para desbloquear el grafo.
+    /// </summary>
+    void ValidateAndFixNarrativeState(PlayerSaveData data)
+    {
+        if (data == null || runtimePreset == null) return;
+
+        // Verificar si Estela está en el party
+        bool hasEstela = data.partyMemberIds != null && 
+                         data.partyMemberIds.Exists(id => id.Contains("Estela"));
+
+        if (!hasEstela)
+        {
+            // Si no tiene a Estela, no hay inconsistencia
+            return;
+        }
+
+        // Si tiene a Estela, verificar que los eventos narrativos previos estén completados
+        var needsEventFix = false;
+        var eventsToEmit = new System.Collections.Generic.List<string>();
+
+        // Verificar eventos en el blackboard del grafo principal
+        var mainGraphSnapshot = data.narrativeBlackboards?.Find(bb => bb.graphLabel == "Historia Principal");
+        
+        if (mainGraphSnapshot.HasValue && mainGraphSnapshot.Value.blackboardData != null)
+        {
+            var blackboard = mainGraphSnapshot.Value.blackboardData;
+            
+            // Verificar si los eventos críticos están marcados como recibidos
+            // Los eventos se marcan con "_received" y son booleanos con valor "1" si fueron recibidos
+            bool hasLetterStart = blackboard.Exists(v => 
+                v.key.Contains("LETTER_START_received") && v.type == "bool" && v.value == "1");
+            
+            bool hasAddCloak = blackboard.Exists(v => 
+                v.key.Contains("ADD_CLOAK_received") && v.type == "bool" && v.value == "1");
+            
+            bool hasEstelaFound = blackboard.Exists(v => 
+                v.key.Contains("ESTELA_FOUND_received") && v.type == "bool" && v.value == "1");
+
+            bool hasExitFromWoods = blackboard.Exists(v => 
+                v.key.Contains("EXIT_FROM_WOODS_ESTELA_received") && v.type == "bool" && v.value == "1");
+
+            // Si Estela está en el party pero los eventos no están completados, hay inconsistencia
+            // NOTA: EXIT_FROM_WOODS_ESTELA NO se emite automáticamente porque debe ser activado por el trigger
+            if (!hasLetterStart || !hasAddCloak || !hasEstelaFound)
+            {
+                needsEventFix = true;
+                Debug.LogWarning("[GameBootProfile] ⚠️ ESTADO INCONSISTENTE DETECTADO:");
+                Debug.LogWarning($"  - Estela en party: ✅");
+                Debug.LogWarning($"  - LETTER_START completado: {(hasLetterStart ? "✅" : "❌")}");
+                Debug.LogWarning($"  - ADD_CLOAK completado: {(hasAddCloak ? "✅" : "❌")}");
+                Debug.LogWarning($"  - ESTELA_FOUND completado: {(hasEstelaFound ? "✅" : "❌")}");
+                Debug.LogWarning($"  - EXIT_FROM_WOODS_ESTELA completado: {(hasExitFromWoods ? "✅" : "❌")} (⚠️ NO SE AUTO-EMITE - requiere trigger)");
+                
+                // Emitir eventos en el orden correcto de la narrativa
+                if (!hasLetterStart) eventsToEmit.Add("LETTER_START");
+                if (!hasAddCloak) eventsToEmit.Add("ADD_CLOAK");
+                if (!hasEstelaFound) eventsToEmit.Add("ESTELA_FOUND");
+                // ⚠️ EXIT_FROM_WOODS_ESTELA se omite COMPLETAMENTE - debe ser activado SOLO por el trigger del jugador
+                // Si se emite automáticamente, activará el boss prematuramente
+            }
+        }
+
+        if (needsEventFix && eventsToEmit.Count > 0)
+        {
+            Debug.LogWarning($"[GameBootProfile] 🔧 AUTO-CORRECCIÓN: Programando emisión de {eventsToEmit.Count} eventos faltantes...");
+            
+            // Usar el componente auxiliar para emitir eventos (ScriptableObject no puede usar coroutines)
+            NarrativeStateFixer.EmitMissingEvents(eventsToEmit);
+        }
     }
 }
 

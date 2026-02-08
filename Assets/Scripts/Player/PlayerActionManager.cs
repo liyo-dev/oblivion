@@ -36,8 +36,10 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     [Tooltip("Declara aquí todo lo que debe bloquearse/deshabilitarse por modo. Orden no importa.")]
     [SerializeField] private ModeRule[] rules;
 
+#if UNITY_EDITOR
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
+#endif
 
     // --- Runtime: permisos globales aplicables desde presets u otros sistemas ---
     //private bool _allowPhysical = true; // ataques físicos
@@ -204,7 +206,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Interact);
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Fly);
 
+#if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
+#endif
     }
 
     public ActionMode Top => _stack[^1];
@@ -213,7 +217,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     {
         if (Top == mode) return;
         _stack.Add(mode);
+#if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Push: {mode} (stack size: {_stack.Count})");
+#endif
         ApplyTopMode();
     }
 
@@ -224,7 +230,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             if (_stack[i] == mode) 
             { 
                 _stack.RemoveAt(i); 
+#if UNITY_EDITOR
                 if (debugLogs) Debug.Log($"[PlayerActionManager] Pop: {mode} (stack size: {_stack.Count})");
+#endif
                 break; 
             }
         }
@@ -240,28 +248,36 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             case PlayerAbility.Jump:
                 if (!_allowJump)
                 {
+#if UNITY_EDITOR
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump deshabilitado por preset");
+#endif
                     return false;
                 }
                 break;
             case PlayerAbility.Fly:
                 if (!_allowFly)
                 {
+#if UNITY_EDITOR
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Fly deshabilitado por preset");
+#endif
                     return false;
                 }
                 break;
             case PlayerAbility.Climb:
                 if (!_allowClimb)
                 {
+#if UNITY_EDITOR
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Climb deshabilitado por preset");
+#endif
                     return false;
                 }
                 break;
             case PlayerAbility.Magic:
                 if (!_allowMagic)
                 {
+#if UNITY_EDITOR
                     if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Magic deshabilitado por preset");
+#endif
                     return false;
                 }
                 break;
@@ -281,7 +297,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             var m = _stack[i];
             if (_blockedByMode.TryGetValue(m, out var set) && set.Contains(ability))
             {
+#if UNITY_EDITOR
                 if (debugLogs) Debug.Log($"[PlayerActionManager] ❌ {ability} bloqueado por modo {m}");
+#endif
                 return false;
             }
         }
@@ -304,7 +322,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             {
                 _anim.SetBool(Invector.vCharacterController.vAnimatorParameters.IsGrounded, true);
                 _anim.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, 0f);
+#if UNITY_EDITOR
                 if (debugLogs) Debug.Log("[PlayerActionManager] Flight mode active - forcing IsGrounded=true and InputMagnitude=0 on animator to avoid fall animations.");
+#endif
             }
             catch { }
         }
@@ -316,7 +336,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             if (healthSystem != null)
             {
                 healthSystem.ResetDamageVisuals();
+#if UNITY_EDITOR
                 if (debugLogs) Debug.Log("[PlayerActionManager] Visuales de daño reseteados (modo Cinematic)");
+#endif
             }
         }
 
@@ -328,7 +350,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                     if (c) 
                     {
                         c.enabled = false;
+#if UNITY_EDITOR
                         if (debugLogs) Debug.Log($"[PlayerActionManager] Deshabilitando componente: {c.GetType().Name}");
+#endif
                     }
 
             // Deshabilitar acciones Input System
@@ -337,14 +361,18 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                     if (a && a.action != null && a.action.enabled) 
                     {
                         a.action.Disable();
+#if UNITY_EDITOR
                         if (debugLogs) Debug.Log($"[PlayerActionManager] Deshabilitando input: {a.action.name}");
+#endif
                     }
 
             // Control de peso de UpperBody
             if (rule.upperBodyWeight >= 0f && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
             {
                 _anim.SetLayerWeight(upperBodyLayer, rule.upperBodyWeight);
+#if UNITY_EDITOR
                 if (debugLogs) Debug.Log($"[PlayerActionManager] UpperBody weight: {rule.upperBodyWeight}");
+#endif
             }
 
             // Anim: UpperIdle limpio
@@ -359,7 +387,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         }
 
         OnTopModeChanged?.Invoke(top);
+#if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] ✅ Modo activo: {top}");
+#endif
 
         UpdatePlayerLock(top);
     }
@@ -402,7 +432,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos (Shop, Equipment, etc.), NO permitir saltar
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Jump bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -414,7 +446,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos, NO permitir sprint
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Sprint bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -426,7 +460,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos, NO permitir atacar
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Attack bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -438,7 +474,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos, NO permitir magia
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Magic bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -450,14 +488,18 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // IMPORTANTE: Cooldown después de interactuar para evitar que el botón A se procese como salto
         if (Time.unscaledTime < _interactCooldownUntil)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Interact en cooldown");
+#endif
             return false;
         }
         
         // Si hay menús abiertos, el botón A se usa para submit en UI, no para interactuar
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Interact bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -476,7 +518,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // para evitar que el botón A se procese como salto después de interactuar
         Core.GamepadInputReader.IgnoreJumpButton(INTERACT_COOLDOWN_DURATION);
         
+#if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Interact cooldown activado por {INTERACT_COOLDOWN_DURATION}s (Jump también ignorado)");
+#endif
     }
     
     public bool CanSwim() => _allowSwim;
@@ -486,7 +530,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos, NO permitir volar
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Fly bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         
@@ -498,7 +544,9 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         // Si hay menús abiertos, NO permitir trepar
         if (MenuManager.HasOpenMenus)
         {
+#if UNITY_EDITOR
             if (debugLogs) Debug.Log("[PlayerActionManager] ❌ Climb bloqueado - hay menús abiertos");
+#endif
             return false;
         }
         

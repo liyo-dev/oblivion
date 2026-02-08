@@ -287,6 +287,15 @@ public class WardrobeInventory : MonoBehaviour
         _currentPreset.unlockedWardrobeIds.AddRange(_persistedIds);
     }
 
+    /// <summary>
+    /// Obtiene una lista de todos los IDs de wardrobe desbloqueados y persistidos.
+    /// Se usa para sincronizar con el preset durante el guardado.
+    /// </summary>
+    public List<string> GetUnlockedIds()
+    {
+        return new List<string>(_persistedIds);
+    }
+
     void NotifyChanged()
     {
         OnWardrobeChanged?.Invoke();

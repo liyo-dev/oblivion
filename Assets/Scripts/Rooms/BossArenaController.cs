@@ -208,9 +208,19 @@ public class BossArenaController : MonoBehaviour
 
     void Start()
     {
-        if (IsBossAlreadyDefeated())
+        Debug.Log($"[BossArenaController] 🎬 Start() - Arena BattleId='{battleId}', BossId='{bossId}'");
+        
+        bool isDefeated = IsBossAlreadyDefeated();
+        Debug.Log($"[BossArenaController] 🔍 IsBossAlreadyDefeated() = {isDefeated} para BossId='{bossId}'");
+        
+        if (isDefeated)
         {
+            Debug.Log($"[BossArenaController] ✅ Boss '{bossId}' ya fue derrotado - desbloqueando área sin spawnearlo");
             ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
+        }
+        else
+        {
+            Debug.Log($"[BossArenaController] ⚔️ Boss '{bossId}' NO ha sido derrotado - esperando trigger del player");
         }
     }
 
@@ -543,11 +553,21 @@ public class BossArenaController : MonoBehaviour
 
     bool IsBossAlreadyDefeated()
     {
-        if (string.IsNullOrEmpty(bossId)) return false;
+        if (string.IsNullOrEmpty(bossId))
+        {
+            Debug.Log($"[BossArenaController] ⚠️ IsBossAlreadyDefeated: bossId está vacío para battleId='{battleId}'");
+            return false;
+        }
+        
         if (BossProgressTracker.TryGetInstance(out var tracker))
         {
-            return tracker.IsDefeated(bossId);
+            bool defeated = tracker.IsDefeated(bossId);
+            var allDefeated = tracker.DefeatedBossIds;
+            Debug.Log($"[BossArenaController] 🔍 Tracker encontrado - BossId='{bossId}', IsDefeated={defeated}, DefeatedBossIds=[{string.Join(", ", allDefeated)}]");
+            return defeated;
         }
+        
+        Debug.Log($"[BossArenaController] ⚠️ BossProgressTracker no encontrado - asumiendo boss NO derrotado");
         return false;
     }
 

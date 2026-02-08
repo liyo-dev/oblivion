@@ -40,6 +40,8 @@ MonoBehaviour:
   - rid: 7908053087356977375
   - rid: 7908053087356977389
   - rid: 7908053087356977390
+  - rid: 5669070048355942569
+  - rid: 5669070048355942570
   applicableSceneNames:
   - MainWorld
   references:
@@ -338,6 +340,32 @@ MonoBehaviour:
         - 254c563a-5c0e-4f68-8b1b-f16c35246e89
         wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
         logWarnings: 1
+    - rid: 5669070048355942569
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: ENTRAMOS A LA TABERNA
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2527bdd8-c302-4ac8-860b-0468611f73de
+        position: {x: 1192.0001, y: 1471.9999}
+        outputs:
+        - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
+        eventKey: TABERN_ENTER
+    - rid: 5669070048355942570
+      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: APARECE LIAM
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
+        position: {x: 1652, y: 1472}
+        outputs: []
+        cinematicSceneName: Cinematic_Taberna
+        useInternalCinematic: 1
     - rid: 7908052880146039718
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
@@ -406,7 +434,8 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 77ea1f0f-beb9-448f-92b1-644076d1b57e
         position: {x: 816, y: 1472}
-        outputs: []
+        outputs:
+        - 2527bdd8-c302-4ac8-860b-0468611f73de
         battleId: Golem_1
         bossArena: {fileID: 0}
         useBattleById: 1

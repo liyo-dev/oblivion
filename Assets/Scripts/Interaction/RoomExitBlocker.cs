@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +12,9 @@ using UnityEngine.SceneManagement;
 [RequireComponent(typeof(Collider))]
 public class RoomExitBlocker : MonoBehaviour
 {
+    // Registro estático de todas las instancias activas
+    private static readonly List<RoomExitBlocker> _allInstances = new List<RoomExitBlocker>();
+
     [Header("Requisito")]
     [SerializeField] private RequirementMode requirementMode = RequirementMode.AnyQuestStartedOrCompleted;
 
@@ -46,6 +49,10 @@ public class RoomExitBlocker : MonoBehaviour
 
     void OnEnable()
     {
+        // Registrar esta instancia
+        if (!_allInstances.Contains(this))
+            _allInstances.Add(this);
+
         if (_subscribed)
             EvaluateAndApplyState();
         else
@@ -56,6 +63,9 @@ public class RoomExitBlocker : MonoBehaviour
 
     void OnDisable()
     {
+        // Desregistrar esta instancia
+        _allInstances.Remove(this);
+        
         TryUnsubscribe();
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
@@ -83,11 +93,21 @@ public class RoomExitBlocker : MonoBehaviour
         {
             QuestManager.Instance.OnQuestsChanged += HandleQuestsChanged;
             _subscribed = true;
+            if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Suscrito a QuestManager");
         }
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // Forzar reevaluación después de cargar la escena
+        StartCoroutine(ReevaluateAfterSceneLoad());
+    }
+
+    private System.Collections.IEnumerator ReevaluateAfterSceneLoad()
+    {
+        // Esperar un frame para asegurar que todo esté inicializado
+        yield return null;
+        if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Reevaluando después de cargar escena");
         EvaluateAndApplyState();
     }
 
@@ -101,6 +121,23 @@ public class RoomExitBlocker : MonoBehaviour
 
     private void HandleQuestsChanged()
     {
+        if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] HandleQuestsChanged llamado");
+        
+        // Forzar reevaluación de TODAS las instancias activas
+        // Esto asegura que todos los bloqueadores se actualicen al mismo tiempo
+        for (int i = _allInstances.Count - 1; i >= 0; i--)
+        {
+            if (_allInstances[i] != null)
+                _allInstances[i].EvaluateAndApplyState();
+        }
+    }
+
+    /// <summary>
+    /// Método público para forzar una reevaluación manual del estado
+    /// </summary>
+    public void ForceReevaluate()
+    {
+        if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] ForceReevaluate llamado manualmente");
         EvaluateAndApplyState();
     }
 
@@ -109,15 +146,26 @@ public class RoomExitBlocker : MonoBehaviour
         bool shouldBlock = !RequirementSatisfied();
         _isBlocked = shouldBlock;
         ApplyColliderState();
-        //if (debugLogs) Debug.Log($"[RoomExitBlocker] Estado → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")}");
+        if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Estado → {(_isBlocked ? "BLOQUEADO" : "DESBLOQUEADO")} | Collider.isTrigger={(_col ? _col.isTrigger.ToString() : "null")}");
     }
 
     private void ApplyColliderState()
     {
         if (!_col) _col = GetComponent<Collider>();
-        if (!_col) return;
+        if (!_col)
+        {
+            if (debugLogs) Debug.LogError($"[RoomExitBlocker:{gameObject.name}] No se encontró Collider!");
+            return;
+        }
+        
         // Bloqueado = collider sólido; desbloqueado = trigger para dejar pasar
-        _col.isTrigger = !_isBlocked;
+        bool shouldBeTrigger = !_isBlocked;
+        
+        if (_col.isTrigger != shouldBeTrigger)
+        {
+            _col.isTrigger = shouldBeTrigger;
+            if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Collider.isTrigger cambiado a {shouldBeTrigger}");
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -222,7 +270,7 @@ public class RoomExitBlocker : MonoBehaviour
         var qm = QuestManager.Instance;
         if (qm == null)
         {
-            if (debugLogs) Debug.LogWarning("[RoomExitBlocker] QuestManager no disponible. Bloqueando por defecto.");
+            if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] QuestManager no disponible. Bloqueando por defecto.");
             return false;
         }
 
@@ -243,10 +291,19 @@ public class RoomExitBlocker : MonoBehaviour
             case RequirementMode.SpecificQuestsStarted:
             {
                 var ids = GetRequiredIds();
-                if (ids.Count == 0) return false;
+                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Modo SpecificQuestsStarted, verificando IDs: {string.Join(", ", ids)}");
+                if (ids.Count == 0)
+                {
+                    if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] No hay IDs configurados!");
+                    return false;
+                }
                 for (int i = 0; i < ids.Count; i++)
-                    if (qm.GetState(ids[i]) != QuestState.Active)
+                {
+                    var state = qm.GetState(ids[i]);
+                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Quest '{ids[i]}' estado: {state}");
+                    if (state != QuestState.Active)
                         return false;
+                }
                 return true;
             }
 

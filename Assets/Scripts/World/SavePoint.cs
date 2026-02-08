@@ -149,11 +149,23 @@ public class SavePoint : MonoBehaviour
         var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
         if (saveSystem != null)
         {
+            // ✅ NUEVO: Si estamos en modo testeo, guardar el runtime actual para poder continuar
+            // sin modo testeo más adelante. Esto permite "capturar" el progreso desde un preset.
+            bool wasTestingMode = GameBootService.IsPresetOverrideActive;
+            
             bool success = bootProfile.SaveCurrentGameState(saveSystem);
 
             if (success)
             {
-                Debug.Log("[SavePoint] Partida guardada correctamente");
+                if (wasTestingMode)
+                {
+                    Debug.Log("[SavePoint] 🧪 Partida guardada en MODO TESTEO - El estado runtime actual se ha guardado en el JSON. " +
+                              "Ahora puedes desactivar 'usePresetInsteadOfSave' para continuar desde aquí.");
+                }
+                else
+                {
+                    Debug.Log("[SavePoint] Partida guardada correctamente");
+                }
                 OnSaveCompleted?.Invoke();
                 ShowSaveSuccessFeedback();
             }

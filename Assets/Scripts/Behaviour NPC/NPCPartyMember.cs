@@ -294,6 +294,45 @@ namespace Game.NPC
                 _npcManager.ForceIdle();
             }
         }
+        
+        /// <summary>
+        /// Mueve al NPC a una posición específica para un diálogo.
+        /// El NPC cambia temporalmente a un estado de movimiento hacia esa posición.
+        /// </summary>
+        /// <param name="targetPosition">Posición objetivo al lado del player</param>
+        /// <param name="maxTime">Tiempo máximo antes de teletransportar</param>
+        /// <param name="npcTarget">El NPC con quien se está hablando (para mirar hacia él)</param>
+        public void MoveToDialoguePosition(Vector3 targetPosition, float maxTime, Transform npcTarget = null)
+        {
+            if (_npcManager?.Brain == null || _agent == null)
+            {
+                LogWarning("No se puede mover a posición de diálogo: NPC no inicializado");
+                return;
+            }
+            
+            // Cambiar a un estado especial de diálogo con el NPC target
+            _npcManager.Brain.ChangeState(new Game.NPC.States.DialoguePositionState(this, targetPosition, maxTime, npcTarget));
+            
+            Log($"📍 Moviéndose a posición de diálogo: {targetPosition}");
+        }
+        
+        /// <summary>
+        /// Libera al NPC del posicionamiento de diálogo y vuelve a seguir al player.
+        /// </summary>
+        public void ReleaseDialoguePosition()
+        {
+            if (!_isInParty || _npcManager?.Brain == null)
+                return;
+            
+            // Volver al estado de seguir al player
+            var currentState = _npcManager.Brain.CurrentState;
+            if (currentState is Game.NPC.States.DialoguePositionState)
+            {
+                _npcManager.Brain.ChangeState(new Game.NPC.States.FollowPlayerState(this));
+                Log("🔓 Liberado de posición de diálogo, volviendo a seguir");
+            }
+        }
+        
         #endregion
 
         #region Internal Callbacks (llamados por PlayerParty)

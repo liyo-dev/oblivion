@@ -60,7 +60,7 @@ MonoBehaviour:
       narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 0
-    autoStartOnDetection: 0
+    autoStartOnDetection: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -70,6 +70,7 @@ MonoBehaviour:
     debugMode: 0
   persistState: 1
   persistenceId: NPC_InteractiveNarrative_Config_Liam_cc7bd504
+  dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

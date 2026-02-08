@@ -1,4 +1,4 @@
-﻿using Invector;
+﻿﻿using Invector;
 using UnityEngine;
 
 /// <summary>
@@ -160,6 +160,48 @@ public class vThirdPersonCamera : MonoBehaviour
             mouseY = currentTarget.root.localEulerAngles.x;
             mouseX = currentTarget.root.localEulerAngles.y;
         }
+    }
+
+    /// <summary>
+    /// Fuerza la rotación de la cámara hacia un punto específico.
+    /// Útil para sistemas de targeting de combate.
+    /// </summary>
+    /// <param name="targetPosition">Posición mundial hacia la que mirar</param>
+    /// <param name="smooth">Si es true, interpola suavemente; si es false, snap instantáneo</param>
+    public void LookAtPosition(Vector3 targetPosition, bool smooth = true)
+    {
+        if (lockCameraForCinematic) return;
+        if (currentTarget == null) return;
+
+        // Calcular dirección desde el jugador hacia el objetivo
+        Vector3 direction = targetPosition - currentTarget.position;
+        direction.y = 0; // Proyectar en plano horizontal primero
+
+        if (direction.sqrMagnitude < 0.01f) return;
+
+        // Calcular ángulos necesarios
+        float targetMouseX = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        
+        // Calcular pitch (vertical)
+        Vector3 fullDirection = targetPosition - currentTarget.position;
+        float horizontalDistance = new Vector2(fullDirection.x, fullDirection.z).magnitude;
+        float targetMouseY = Mathf.Atan2(fullDirection.y, horizontalDistance) * Mathf.Rad2Deg;
+
+        if (smooth)
+        {
+            // Interpolar suavemente
+            mouseX = Mathf.LerpAngle(mouseX, targetMouseX, Time.deltaTime * smoothCameraRotation);
+            mouseY = Mathf.LerpAngle(mouseY, targetMouseY, Time.deltaTime * smoothCameraRotation);
+        }
+        else
+        {
+            // Snap instantáneo
+            mouseX = targetMouseX;
+            mouseY = targetMouseY;
+        }
+
+        // Aplicar límites
+        mouseY = vExtensions.ClampAngle(mouseY, yMinLimit, yMaxLimit);
     }
 
     void CameraMovement()

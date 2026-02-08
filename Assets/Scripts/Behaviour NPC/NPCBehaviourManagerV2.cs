@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Common;
@@ -495,6 +495,10 @@ namespace Game.NPC
         
         private void UnregisterNarrativeIdentity()
         {
+            // Verificación de seguridad: configuration puede ser null si el objeto se destruye prematuramente
+            if (configuration == null)
+                return;
+            
             string registryId = null;
             
             if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
@@ -508,7 +512,7 @@ namespace Game.NPC
                 registryId = gameObject.name;
             }
             
-            if (!string.IsNullOrEmpty(registryId))
+            if (!string.IsNullOrEmpty(registryId) && Game.NPC.NPCRegistry.HasInstance)
             {
                 NPCRegistry.Instance.UnregisterNPC(registryId, null);
             }

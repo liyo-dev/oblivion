@@ -327,6 +327,12 @@ public class DialogueManager : MonoBehaviour
         // ✅ CRÍTICO: Iniciar el diálogo PRIMERO para que IsOpen sea true
         StartDialogue(asset, onFinished);
         
+        // ✅ Posicionar party members para el diálogo
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
+        }
+        
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
         OnDialogueStarted?.Invoke(_currentNpc);
@@ -449,6 +455,12 @@ public class DialogueManager : MonoBehaviour
         {
             // Fallback al sistema antiguo
             DialogueCameraController.Instance.EndDialogueCamera();
+        }
+        
+        // ✅ Liberar posicionamiento de party members
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            Game.NPC.PlayerParty.Instance.ReleaseDialoguePositioning();
         }
 
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
@@ -658,6 +670,9 @@ public class DialogueManager : MonoBehaviour
 
         var line = _current.lines[_index];
         
+        // ✅ Activar animación de hablar para el speaker actual
+        ActivateSpeakerTalkAnimation(line);
+        
         // ✅ Emitir evento de cambio de línea (para sistema de emociones y otros)
         OnDialogueLineChanged?.Invoke(line, _currentNpc);
         
@@ -666,7 +681,8 @@ public class DialogueManager : MonoBehaviour
         {
             DialogueCinematicController.Instance.OnDialogueLineAdvanced(
                 _index, 
-                _current.lines.Length
+                _current.lines.Length,
+                line  // ✅ Pasar la línea completa para detectar cambios de speaker
             );
         }
 
@@ -879,6 +895,85 @@ public class DialogueManager : MonoBehaviour
         // NPCSimpleAnimator está en el namespace global
         var npcAnimator = npcTransform.GetComponent<NPCSimpleAnimator>();
         return npcAnimator != null;
+    }
+    
+    /// <summary>
+    /// Activa la animación de Talk para el speaker actual (player, NPC o party member)
+    /// </summary>
+    private void ActivateSpeakerTalkAnimation(DialogueLine line)
+    {
+        // Determinar quién está hablando
+        string speakerId = !string.IsNullOrEmpty(line.speakerNameId) ? line.speakerNameId : 
+                          line.isPlayerSpeaking ? "Player" : "MainNPC";
+        
+        // Caso 1: Es el player
+        if (line.isPlayerSpeaking || speakerId == "Player")
+        {
+            if (PlayerService.TryGetPlayer(out var playerGo))
+            {
+                var playerAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
+                if (playerAnimator != null)
+                {
+                    playerAnimator.SetTalking(true);
+                    Debug.Log($"[DialogueManager] 🗣️ Player animación Talk activada");
+                }
+            }
+            return;
+        }
+        
+        // Caso 2: Es el NPC principal
+        if (speakerId == "MainNPC" || (_currentNpc != null && _currentNpc.name == speakerId))
+        {
+            if (_currentNpc != null)
+            {
+                var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
+                if (npcAnimator != null)
+                {
+                    npcAnimator.SetTalking(true);
+                    Debug.Log($"[DialogueManager] 🗣️ NPC '{_currentNpc.name}' animación Talk activada");
+                }
+            }
+            return;
+        }
+        
+        // Caso 3: Buscar en party members
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            var party = Game.NPC.PlayerParty.Instance;
+            foreach (var member in party.Members)
+            {
+                if (member.NPCManager?.Configuration?.interactiveNarrativeConfig != null)
+                {
+                    var config = member.NPCManager.Configuration.interactiveNarrativeConfig;
+                    
+                    // Comparar con dialogueCharacterId, persistenceId, o nombre
+                    if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId) ||
+                        config.persistenceId == speakerId ||
+                        member.gameObject.name == speakerId)
+                    {
+                        var partyAnimator = member.GetComponent<NPCSimpleAnimator>();
+                        if (partyAnimator != null)
+                        {
+                            partyAnimator.SetTalking(true);
+                            Debug.Log($"[DialogueManager] 🗣️ Party member '{member.DisplayName}' animación Talk activada");
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // Caso 4: Buscar en la escena por nombre
+        var foundNPC = GameObject.Find(speakerId);
+        if (foundNPC != null)
+        {
+            var foundAnimator = foundNPC.GetComponent<NPCSimpleAnimator>();
+            if (foundAnimator != null)
+            {
+                foundAnimator.SetTalking(true);
+                Debug.Log($"[DialogueManager] 🗣️ NPC '{speakerId}' (escena) animación Talk activada");
+            }
+        }
     }
 }
 

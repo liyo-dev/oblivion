@@ -169,13 +169,15 @@ MonoBehaviour:
     quantity: 1
     amount: 0
     consumeEvenIfNoChange: 0
+  persistState: 1
+  pickupIdOverride: 
   destroyOnCollect: 1
   destroyDelay: 0
   deactivateRootOnCollect: 0
   disableOnCollect: []
+  collectOnTrigger: 1
   vfxPrefab: {fileID: 0}
-  pickupSfx: {fileID: 8300000, guid: ab5056e86d89a9b49af0adccd84af617, type: 3}
-  sfxVolume: 1
+  pickupSfxKey: 
   onCollected:
     m_PersistentCalls:
       m_Calls: []
@@ -198,7 +200,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2
+  m_Radius: 4
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!4 &4174475833387898759 stripped
 Transform:

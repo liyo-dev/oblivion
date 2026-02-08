@@ -55,6 +55,9 @@ namespace Game.NPC.Modules
 
         [Tooltip("ID único para persistencia (generado automáticamente basado en el nombre del asset).")]
         public string persistenceId;
+        
+        [Tooltip("ID del personaje para diálogos (ej: 'CHAR_ESTELA'). Se usa para identificar al speaker en diálogos con múltiples participantes y para localización del nombre.")]
+        public string dialogueCharacterId;
 
         [Header("Comportamiento General")]
         [Tooltip("¿El NPC gira hacia el jugador al interactuar?")]

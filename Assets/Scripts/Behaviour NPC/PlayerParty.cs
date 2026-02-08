@@ -211,6 +211,17 @@ namespace Game.NPC
                 _distanceCheckTimer = 0;
                 CheckMemberDistances();
             }
+            
+            // ✅ NUEVO: Retry agresivo de miembros pendientes cada 2 segundos
+            if (_pendingMemberIds.Count > 0)
+            {
+                _retryPendingTimer += Time.deltaTime;
+                if (_retryPendingTimer >= 2f)
+                {
+                    _retryPendingTimer = 0;
+                    RetryPendingMembers();
+                }
+            }
         }
         #endregion
 
@@ -349,6 +360,108 @@ namespace Game.NPC
                 TeleportMemberToPlayer(_members[i], i);
             }
         }
+        
+        /// <summary>
+        /// Posiciona a los party members al lado del player para un diálogo con un NPC.
+        /// Los miembros se posicionan según su configuración (izquierda/derecha).
+        /// </summary>
+        /// <param name="npcTarget">El NPC con quien el player está hablando (opcional, para orientación)</param>
+        public void PositionMembersForDialogue(Transform npcTarget = null)
+        {
+            if (_playerTransform == null || _members.Count == 0)
+                return;
+            
+            Log($"📍 Posicionando {_members.Count} party members para diálogo");
+            
+            // ✅ Rotar al player hacia el NPC
+            if (npcTarget != null)
+            {
+                Vector3 toNpc = (npcTarget.position - _playerTransform.position);
+                toNpc.y = 0;
+                if (toNpc.sqrMagnitude > 0.01f)
+                {
+                    Quaternion lookRotation = Quaternion.LookRotation(toNpc);
+                    _playerTransform.rotation = lookRotation;
+                    Log($"👁️ Player girado hacia {npcTarget.name}");
+                }
+            }
+            
+            // Determinar la dirección frontal del player (hacia el NPC)
+            Vector3 playerForward = _playerTransform.forward;
+            if (npcTarget != null)
+            {
+                Vector3 toNpc = (npcTarget.position - _playerTransform.position).normalized;
+                toNpc.y = 0;
+                if (toNpc.sqrMagnitude > 0.01f)
+                {
+                    playerForward = toNpc;
+                }
+            }
+            
+            // ✅ Calcular la derecha del player MIRANDO al NPC
+            // Right = Vector3.Cross(up, forward) → la derecha cuando miras hacia adelante
+            Vector3 playerRight = Vector3.Cross(Vector3.up, playerForward).normalized;
+            
+            // Contadores para distribuir múltiples NPCs en el mismo lado
+            int leftCount = 0;
+            int rightCount = 0;
+            
+            foreach (var member in _members)
+            {
+                if (member == null || !member.IsActiveInParty || member.PartyConfig == null)
+                    continue;
+                
+                // Verificar si debe posicionarse durante diálogos
+                if (!member.PartyConfig.posicionarseDuranteDialogos)
+                {
+                    Log($"  ↳ {member.DisplayName}: posicionamiento desactivado");
+                    continue;
+                }
+                
+                // Determinar el lado y calcular posición
+                bool isLeftSide = member.PartyConfig.ladoPreferidoDialogo == Modules.DialoguePositionSide.Left;
+                int sideCount = isLeftSide ? leftCount++ : rightCount++;
+                
+                // Calcular offset escalonado si hay múltiples NPCs en el mismo lado
+                float lateralDistance = member.PartyConfig.distanciaLateralDialogo + (sideCount * 0.5f);
+                float forwardOffset = member.PartyConfig.offsetDelanteDialogo - (sideCount * 0.3f);
+                
+                // Calcular posición objetivo
+                Vector3 lateralOffset = playerRight * lateralDistance * (isLeftSide ? -1f : 1f);
+                Vector3 forwardOffsetVec = playerForward * forwardOffset;
+                Vector3 targetPosition = _playerTransform.position + lateralOffset + forwardOffsetVec;
+                
+                // Validar en NavMesh
+                if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                {
+                    targetPosition = hit.position;
+                }
+                
+                // Enviar al miembro a esa posición
+                member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
+                
+                string sideName = isLeftSide ? "IZQUIERDA" : "DERECHA";
+                Log($"  ↳ {member.DisplayName} → {sideName} (distancia: {lateralDistance:F1}m, offset: {forwardOffset:F1}m)");
+            }
+        }
+        
+        /// <summary>
+        /// Libera a los party members del posicionamiento de diálogo y vuelven a seguir normalmente.
+        /// </summary>
+        public void ReleaseDialoguePositioning()
+        {
+            if (_members.Count == 0) return;
+            
+            Log($"🔓 Liberando posicionamiento de diálogo para {_members.Count} members");
+            
+            foreach (var member in _members)
+            {
+                if (member == null || !member.IsActiveInParty)
+                    continue;
+                
+                member.ReleaseDialoguePosition();
+            }
+        }
 
         /// <summary>
         /// Notifica a todos los compañeros que el jugador entró en combate.
@@ -480,58 +593,92 @@ namespace Game.NPC
         {
             if (_pendingMemberIds.Count == 0) return;
             
+            Log($"🔄 === RETRY PENDIENTES ===  {_pendingMemberIds.Count} miembros: [{string.Join(", ", _pendingMemberIds)}]");
+            
             // Log de NPCs registrados actualmente
             string[] registeredIds = System.Array.Empty<string>();
             if (NPCRegistry.Instance != null)
             {
                 registeredIds = NPCRegistry.Instance.GetAllRegisteredIDs();
-                Log($"🔄 Reintento - NPCs registrados ({registeredIds.Length}): [{string.Join(", ", registeredIds)}]");
+                Log($"📋 NPCs registrados ({registeredIds.Length}): [{string.Join(", ", registeredIds)}]");
+            }
+            else
+            {
+                LogWarning("⚠️ NPCRegistry.Instance es NULL - no se pueden buscar NPCs");
+                return;
             }
             
             var stillPending = new List<string>();
             foreach (var id in _pendingMemberIds)
             {
+                Log($"🔍 Buscando: '{id}'");
                 NPCBehaviourManagerV2 npcManager = null;
                 
                 // 1. Buscar por ID exacto
                 npcManager = NPCRegistry.Instance?.GetNPCByID(id);
+                if (npcManager != null)
+                {
+                    Log($"  ✅ Encontrado por ID exacto");
+                }
                 
                 // 2. Intentar sin guion bajo inicial
                 if (npcManager == null && id.StartsWith("_"))
                 {
                     var idSinGuion = id.Substring(1);
+                    Log($"  🔍 Intentando sin guion: '{idSinGuion}'");
                     npcManager = NPCRegistry.Instance?.GetNPCByID(idSinGuion);
+                    if (npcManager != null) Log($"  ✅ Encontrado sin guion");
                 }
                 
-                // 3. Buscar por coincidencia parcial
+                // 3. Intentar añadiendo guion bajo inicial
+                if (npcManager == null && !id.StartsWith("_"))
+                {
+                    var idConGuion = "_" + id;
+                    Log($"  🔍 Intentando con guion: '{idConGuion}'");
+                    npcManager = NPCRegistry.Instance?.GetNPCByID(idConGuion);
+                    if (npcManager != null) Log($"  ✅ Encontrado con guion");
+                }
+                
+                // 4. Buscar por coincidencia parcial en registrados
                 if (npcManager == null && registeredIds.Length > 0)
                 {
-                    var idLower = id.ToLowerInvariant().TrimStart('_');
+                    var idLower = id.ToLowerInvariant().Replace("_", "").Replace(" ", "");
+                    Log($"  🔍 Buscando coincidencia parcial con: '{idLower}'");
                     foreach (var regId in registeredIds)
                     {
-                        if (regId.ToLowerInvariant().Contains(idLower) || idLower.Contains(regId.ToLowerInvariant()))
+                        var regIdClean = regId.ToLowerInvariant().Replace("_", "").Replace(" ", "");
+                        if (regIdClean.Contains(idLower) || idLower.Contains(regIdClean))
                         {
+                            Log($"  🎯 Coincidencia parcial con: '{regId}'");
                             npcManager = NPCRegistry.Instance?.GetNPCByID(regId);
                             if (npcManager != null)
                             {
-                                Log($"  → Encontrado por coincidencia parcial: '{regId}'");
+                                Log($"  ✅ Encontrado por coincidencia parcial");
                                 break;
                             }
                         }
                     }
                 }
                 
-                // 4. ÚLTIMO RECURSO: Buscar NPCPartyMember directamente en la escena
+                // 5. ÚLTIMO RECURSO: Buscar NPCPartyMember directamente en la escena
                 if (npcManager == null)
                 {
+                    Log($"  🔍 ÚLTIMO RECURSO: Buscando en escena...");
                     var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(UnityEngine.FindObjectsSortMode.None);
-                    var idLower = id.ToLowerInvariant().TrimStart('_');
+                    Log($"  📋 {allPartyMembers.Length} NPCPartyMember encontrados en escena");
+                    
+                    var idLower = id.ToLowerInvariant().Replace("_", "").Replace(" ", "");
                     foreach (var pm in allPartyMembers)
                     {
-                        if (pm.gameObject.name.ToLowerInvariant().Contains(idLower) ||
-                            (pm.DisplayName != null && pm.DisplayName.ToLowerInvariant().Contains(idLower)))
+                        var goNameClean = pm.gameObject.name.ToLowerInvariant().Replace("_", "").Replace(" ", "").Replace("(clone)", "");
+                        var displayNameClean = pm.DisplayName != null ? pm.DisplayName.ToLowerInvariant().Replace("_", "").Replace(" ", "") : "";
+                        
+                        Log($"    Comparando con: GO='{pm.gameObject.name}' ({goNameClean}), DisplayName='{pm.DisplayName}' ({displayNameClean})");
+                        
+                        if (goNameClean.Contains(idLower) || idLower.Contains(goNameClean) ||
+                            (pm.DisplayName != null && (displayNameClean.Contains(idLower) || idLower.Contains(displayNameClean))))
                         {
-                            Log($"  → Encontrado por búsqueda directa en escena: '{pm.gameObject.name}'");
+                            Log($"  ✅ Encontrado en escena: '{pm.gameObject.name}'");
                             if (!HasMember(pm))
                             {
                                 pm.JoinParty();
@@ -550,9 +697,19 @@ namespace Game.NPC
                         Log($"✅ Reintento exitoso: {partyMember.DisplayName} encontrado y unido al party");
                         partyMember.JoinParty();
                     }
+                    else if (partyMember == null)
+                    {
+                        LogWarning($"  ⚠️ NPC encontrado pero sin NPCPartyMember component");
+                        stillPending.Add(id);
+                    }
+                    else
+                    {
+                        Log($"  ℹ️ Ya está en el party");
+                    }
                 }
                 else
                 {
+                    LogWarning($"  ❌ No encontrado - sigue pendiente");
                     stillPending.Add(id);
                 }
             }
@@ -560,7 +717,11 @@ namespace Game.NPC
             
             if (stillPending.Count > 0)
             {
-                Log($"⏳ Aún pendientes tras reintento: [{string.Join(", ", stillPending)}]");
+                LogWarning($"⏳ Aún pendientes tras reintento: [{string.Join(", ", stillPending)}]");
+            }
+            else
+            {
+                Log($"✅ Todos los miembros pendientes restaurados exitosamente!");
             }
         }
         
@@ -577,6 +738,30 @@ namespace Game.NPC
         /// </summary>
         public void OnSceneLoaded()
         {
+            // ✅ CRÍTICO: Limpiar miembros null (destruidos al cambiar de escena)
+            // Esto ocurre cuando sales al menú principal y vuelves a cargar
+            var nullCount = _members.RemoveAll(m => m == null);
+            if (nullCount > 0)
+            {
+                Log($"🧹 Limpiados {nullCount} miembros null tras cambio de escena");
+            }
+            
+            // ✅ CRÍTICO: Si el party quedó vacío pero hay IDs que deberían estar,
+            // forzar restauración desde el preset actual
+            if (_members.Count == 0)
+            {
+                var profile = GameBootService.Profile;
+                if (profile != null)
+                {
+                    var preset = profile.GetActivePresetResolved();
+                    if (preset != null && preset.partyMemberIds != null && preset.partyMemberIds.Count > 0)
+                    {
+                        Log($"🔄 Party vacío tras cambio de escena - Restaurando {preset.partyMemberIds.Count} miembros desde preset");
+                        RestoreMembersFromIds(preset.partyMemberIds);
+                    }
+                }
+            }
+            
             if (_pendingMemberIds.Count > 0)
             {
                 Log($"🔄 Nueva escena cargada, reintentando restaurar {_pendingMemberIds.Count} miembros pendientes...");

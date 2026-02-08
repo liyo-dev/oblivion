@@ -8879,8 +8879,8 @@ GameObject:
   - component: {fileID: 1062031804521613182}
   - component: {fileID: 8489721875542008483}
   - component: {fileID: 1219957402610385003}
-  - component: {fileID: 7378160220606803366}
   - component: {fileID: 7048766209318931401}
+  - component: {fileID: 7018044800083316402}
   m_Layer: 0
   m_Name: vThirdPersonCamera
   m_TagString: MainCamera
@@ -8975,7 +8975,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   lockCamera: 0
   rightOffset: 0
-  defaultDistance: 7
+  defaultDistance: 4
   height: 2
   smoothFollow: 10
   xMouseSensitivity: 3
@@ -9038,14 +9038,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!81 &7378160220606803366
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3685603612852488389}
-  m_Enabled: 1
 --- !u!114 &7048766209318931401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9071,6 +9063,14 @@ MonoBehaviour:
   noiseScale: 5
   edgeWidth: 0.2
   debugRays: 0
+--- !u!81 &7018044800083316402
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3685603612852488389}
+  m_Enabled: 1
 --- !u!1 &3700031740071713348
 GameObject:
   m_ObjectHideFlags: 0
@@ -12302,6 +12302,7 @@ GameObject:
   - component: {fileID: 7151600841813711728}
   - component: {fileID: 1750471286796519853}
   - component: {fileID: 4479948751999106379}
+  - component: {fileID: 4712360369832361797}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -12989,6 +12990,24 @@ MonoBehaviour:
   detectionHeightOffset: 1.2
   showDebugLogs: 1
   showDebugGizmos: 1
+--- !u!114 &4712360369832361797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
+  emotionProfile: {fileID: 0}
+  originalEyeMesh: {fileID: 0}
+  originalMouthMesh: {fileID: 0}
+  eyePrefix: Eye
+  mouthPrefix: Mouth
+  debugMode: 0
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

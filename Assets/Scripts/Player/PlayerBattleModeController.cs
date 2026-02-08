@@ -51,8 +51,10 @@ namespace Game.Player
         [Tooltip("Clave del evento de audio para victoria (configurado en AudioGraphProfile)")]
         [SerializeField] private string victorySfxKey = "Npc_Battle_Victory";
         
+#if UNITY_EDITOR
         [Header("Debug")]
         [SerializeField] private bool debugMode;
+#endif
         
         private bool _isInBattleMode;
         private bool _isPlayingVictory;
@@ -158,8 +160,10 @@ namespace Game.Player
                 // Forzar la animación de battle idle
                 animator.CrossFadeInFixedTime(statePath, 0.2f, upperBodyLayerIndex);
                 
+#if UNITY_EDITOR
                 if (debugMode)
                     Debug.Log($"[PlayerBattleMode] 🗡️ Battle Idle RESTAURADO después de animación de magia (weight actual: {_currentLayerWeight:F2} → 1.0)");
+#endif
             }
         }
         
@@ -246,10 +250,12 @@ namespace Game.Player
                 _currentLayerWeight = Mathf.MoveTowards(_currentLayerWeight, _targetLayerWeight, speed * Time.deltaTime);
                 animator.SetLayerWeight(upperBodyLayerIndex, _currentLayerWeight);
                 
+#if UNITY_EDITOR
                 if (debugMode && Mathf.Approximately(_currentLayerWeight, _targetLayerWeight))
                 {
                     Debug.Log($"[PlayerBattleMode] Capa UpperBody peso = {_currentLayerWeight:F2}");
                 }
+#endif
             }
         }
         
@@ -265,8 +271,10 @@ namespace Game.Player
                 var hitCollider = _hitColliders[i];
                 if (hitCollider == null) continue;
                 
+                var root = hitCollider.transform.root; // Get the root of the hierarchy
+                
                 // Verificar si es un NPC enemigo en combate
-                var npcManager = hitCollider.GetComponentInParent<NPC.NPCBehaviourManagerV2>();
+                var npcManager = root.GetComponentInChildren<NPC.NPCBehaviourManagerV2>();
                 if (npcManager != null)
                 {
                     var brain = npcManager.Brain;
@@ -281,11 +289,11 @@ namespace Game.Player
                 }
                 
                 // También detectar enemigos puros (sin NPCBehaviourManagerV2) que tengan Damageable
-                var damageable = hitCollider.GetComponentInParent<Damageable>();
+                var damageable = root.GetComponentInChildren<Damageable>();
                 if (damageable != null && damageable.IsAlive)
                 {
                     // Si tiene Targetable y está en combate activo
-                    var targetable = hitCollider.GetComponentInParent<Targetable>();
+                    var targetable = root.GetComponentInChildren<Targetable>();
                     if (targetable != null && targetable.isInActiveCombat)
                     {
                         return true;
@@ -318,8 +326,10 @@ namespace Game.Player
                 }
             }
             
+#if UNITY_EDITOR
             if (debugMode)
                 Debug.Log($"[PlayerBattleMode] 🗡️ ENTRANDO en Battle Mode - UpperBody Layer activándose");
+#endif
         }
         
         /// <summary>
@@ -332,8 +342,10 @@ namespace Game.Player
             _isInBattleMode = false;
             _targetLayerWeight = 0f;
             
+#if UNITY_EDITOR
             if (debugMode)
                 Debug.Log($"[PlayerBattleMode] 🏡 SALIENDO de Battle Mode - UpperBody Layer desactivándose");
+#endif
         }
         
         /// <summary>
@@ -438,11 +450,12 @@ namespace Game.Player
         // Debug Gizmos
         void OnDrawGizmosSelected()
         {
+#if UNITY_EDITOR
             if (!debugMode) return;
             
             Gizmos.color = _isInBattleMode ? Color.red : Color.green;
             Gizmos.DrawWireSphere(transform.position, enemyDetectionRadius);
+#endif
         }
     }
 }
-

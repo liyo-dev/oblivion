@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager Instance { get; private set; }
+    private static bool _applicationQuitting;
 
     [Tooltip("Catálogo opcional para arrancar quests por ID aunque no se hayan añadido antes.")]
     [SerializeField] private List<QuestData> questCatalog = new();
@@ -44,6 +45,28 @@ public class QuestManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
+
+    void OnApplicationQuit()
+    {
+        _applicationQuitting = true;
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+        _applicationQuitting = false;
+    }
+#endif
     
     void Start()
     {

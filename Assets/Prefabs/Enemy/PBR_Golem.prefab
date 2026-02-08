@@ -170,7 +170,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 500
+  maxHealth: 100
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3
@@ -195,6 +195,7 @@ MonoBehaviour:
   detectionRange: 25
   attackRange: 15
   minAttackRange: 6
+  aiUpdateFrequency: 0.1
   rockPrefab: {fileID: 1375754531036840, guid: 71497ec4178769a4c8cdb38563f01fc0, type: 3}
   rockHandPoint: {fileID: 7123563488054886675}
   rockHandPointLeft: {fileID: 3411324387237086588}
@@ -920,6 +921,7 @@ GameObject:
   - component: {fileID: 8841478096083396395}
   - component: {fileID: 3671272856889464598}
   - component: {fileID: 7598553100958893910}
+  - component: {fileID: 742307692113423353}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -1037,6 +1039,14 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!81 &742307692113423353
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8482017894348466406}
+  m_Enabled: 1
 --- !u!1 &8573701946974836204
 GameObject:
   m_ObjectHideFlags: 0
