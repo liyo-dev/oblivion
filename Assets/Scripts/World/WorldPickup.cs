@@ -38,6 +38,7 @@ public class WorldPickup : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += CheckPersistedState;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(WorldPickup));
 
         // Si el perfil ya está disponible (por ejemplo al volver a escena aditivamente),
         // re-evaluar inmediatamente para evitar que los pickups reaparezcan erróneamente.

@@ -21,6 +21,14 @@ namespace Core
     {
         public static PlayerInputManager Instance { get; private set; }
 
+        #if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Instance = null;
+        }
+        #endif
+
         [Header("Comportamiento")]
         [SerializeField] private bool dontDestroyOnLoad = true;
         

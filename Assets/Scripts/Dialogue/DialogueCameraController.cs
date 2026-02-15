@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Collections;
 
 /// <summary>
@@ -7,6 +7,14 @@ using System.Collections;
 public class DialogueCameraController : MonoBehaviour
 {
     public static DialogueCameraController Instance { get; private set; }
+
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
 
     [Header("Referencias")]
     [SerializeField] private vThirdPersonCamera thirdPersonCamera;

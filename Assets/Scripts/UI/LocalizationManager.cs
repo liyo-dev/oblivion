@@ -7,6 +7,14 @@ public class LocalizationManager : MonoBehaviour
 {
     public static LocalizationManager Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     [SerializeField] private string defaultLocale = "es";
     private static readonly string[] RequiredCatalogs = { "prologue", "ui", "cinematics", "dialogues", "quests", "other" };
     [SerializeField] private string[] catalogs = { "prologue", "ui", "cinematics", "dialogues", "quests", "other" };

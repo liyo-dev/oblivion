@@ -25,6 +25,7 @@ public class WardrobeInventory : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(WardrobeInventory));
         if (GameBootService.IsAvailable)
             HandleProfileReady();
     }

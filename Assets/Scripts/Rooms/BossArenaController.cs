@@ -113,6 +113,7 @@ public class BossArenaController : MonoBehaviour
     bool _bossDefeatHandled = false;
     bool _bossDeathConfirmed = false;
     bool _pendingStartBattle = false;
+    bool _profileReady = false; // ✅ Flag para rastrear si el perfil está listo
     EnemyMarker _activeBossMarker;
     Damageable _activeBossDamageable;
 
@@ -163,6 +164,8 @@ public class BossArenaController : MonoBehaviour
     void OnEnable()
     {
         BossProgressTracker.OnProgressRestored += HandleBossProgressRestored;
+        GameBootService.OnProfileReady += HandleProfileReady; // ✅ Suscribirse a OnProfileReady
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(BossArenaController)); // 🔍 Registrar para diagnósticos
 
         // Asegurar registro en OnEnable (por si el orden de Awake/Start causa que el registro aún no exista
         // cuando otros sistemas intenten activarlo). Normalizamos la clave.
@@ -180,6 +183,12 @@ public class BossArenaController : MonoBehaviour
             }
         }
 
+        // ✅ Verificar si el perfil ya está disponible (caso de reinicio de escena)
+        if (GameBootService.IsAvailable && GameBootService.Profile != null)
+        {
+            HandleProfileReady();
+        }
+
         // Si el inicio de batalla fue solicitado mientras el componente estaba inactivo,
         // arranquemos la batalla ahora que estamos habilitados.
         if (_pendingStartBattle)
@@ -193,6 +202,7 @@ public class BossArenaController : MonoBehaviour
     void OnDisable()
     {
         BossProgressTracker.OnProgressRestored -= HandleBossProgressRestored;
+        GameBootService.OnProfileReady -= HandleProfileReady; // ✅ Desuscribirse de OnProfileReady
         CleanupBossSubscriptions();
 
         // Desregistrar si estaba registrado
@@ -208,8 +218,46 @@ public class BossArenaController : MonoBehaviour
 
     void Start()
     {
-        Debug.Log($"[BossArenaController] 🎬 Start() - Arena BattleId='{battleId}', BossId='{bossId}'");
+        Debug.Log($"[BossArenaController] 🎬 Start() - Arena BattleId='{battleId}', BossId='{bossId}', ProfileReady={_profileReady}");
         
+        // ✅ CRÍTICO: Solo verificar el estado del boss si el perfil ya está listo
+        // Si no está listo, HandleProfileReady() lo verificará cuando se dispare OnProfileReady
+        if (_profileReady)
+        {
+            CheckBossStateAndApply();
+        }
+        else
+        {
+            Debug.Log($"[BossArenaController] ⏳ Esperando a que el perfil esté listo para verificar el estado del boss");
+        }
+    }
+
+    /// <summary>
+    /// Handler para OnProfileReady - se ejecuta cuando el perfil está completamente cargado y listo
+    /// </summary>
+    void HandleProfileReady()
+    {
+        if (_profileReady)
+        {
+            Debug.Log($"[BossArenaController] ⚠️ HandleProfileReady llamado múltiples veces para '{bossId}' - ignorando");
+            return;
+        }
+        
+        _profileReady = true;
+        Debug.Log($"[BossArenaController] ✅ Perfil listo para '{bossId}' - verificando estado del boss");
+        
+        // Desuscribirse para no recibir más notificaciones
+        GameBootService.OnProfileReady -= HandleProfileReady;
+        
+        // Verificar el estado del boss ahora que los datos están cargados
+        CheckBossStateAndApply();
+    }
+
+    /// <summary>
+    /// Verifica el estado del boss y aplica la configuración correspondiente
+    /// </summary>
+    void CheckBossStateAndApply()
+    {
         bool isDefeated = IsBossAlreadyDefeated();
         Debug.Log($"[BossArenaController] 🔍 IsBossAlreadyDefeated() = {isDefeated} para BossId='{bossId}'");
         
@@ -226,16 +274,27 @@ public class BossArenaController : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"[BossArenaController] 🚪 OnTriggerEnter - Tag: {other.tag}, Started: {started}, BossDefeated: {_bossDefeatHandled}, StartOnEnter: {startBarrierOnPlayerEnter}");
+        
         if (started || _bossDefeatHandled) return;
         if (!other.CompareTag(playerTag)) return;
-        if (!startBarrierOnPlayerEnter) return;
-
-        if (IsBossAlreadyDefeated())
+        if (!startBarrierOnPlayerEnter) 
         {
+            Debug.Log($"[BossArenaController] ⏸️ StartBarrierOnPlayerEnter está desactivado - no se inicia batalla automáticamente");
+            return;
+        }
+
+        bool isDefeated = IsBossAlreadyDefeated();
+        Debug.Log($"[BossArenaController] 🔍 Player entró al trigger - IsBossAlreadyDefeated={isDefeated}");
+        
+        if (isDefeated)
+        {
+            Debug.Log($"[BossArenaController] ✅ Boss ya derrotado - aplicando estado cleared");
             ApplyBossClearedState(invokeUnityEvents: false, markDefeatedInTracker: false, raiseSignals: false);
             return;
         }
 
+        Debug.Log($"[BossArenaController] ⚔️ Iniciando batalla con boss '{bossId}'");
         // Usamos el método centralizado para iniciar la batalla
         StartBattleInternal();
     }

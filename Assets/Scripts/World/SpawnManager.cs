@@ -9,11 +9,21 @@ public class SpawnManager : MonoBehaviour
     // Evento opcional para quien quiera reaccionar a cambios de anchor (HUD, etc.)
     public static event Action<string> OnAnchorChanged;
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        CurrentAnchorId = null;
+        OnAnchorChanged = null;
+    }
+    #endif
+
     private bool _initialized;
 
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(SpawnManager));
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();
@@ -29,15 +39,34 @@ public class SpawnManager : MonoBehaviour
     {
         if (_initialized) return;
 
+        Debug.Log($"[SpawnManager] 🔍 HandleProfileReady() llamado - GameBootService.IsAvailable: {GameBootService.IsAvailable}");
+
         // Inicializar con el anchor del preset activo
         var bootProfile = GameBootService.Profile;
         if (bootProfile != null)
         {
+            var activePreset = bootProfile.GetActivePresetResolved();
             var startAnchor = bootProfile.GetStartAnchorOrDefault();
+            
+            Debug.Log($"[SpawnManager] 🔍 Profile: {bootProfile.name}");
+            Debug.Log($"[SpawnManager] 🔍 ActivePreset: {(activePreset != null ? activePreset.name : "NULL")}");
+            Debug.Log($"[SpawnManager] 🔍 StartAnchor obtenido: '{startAnchor}'");
+            Debug.Log($"[SpawnManager] 🔍 ShouldBootFromPreset: {bootProfile.ShouldBootFromPreset()}");
+            Debug.Log($"[SpawnManager] 🔍 HasLoadedSaveData: {(bootProfile.GetActivePresetResolved()?.name.Contains("Runtime") ?? false)}");
+            
             if (!string.IsNullOrEmpty(startAnchor))
             {
                 SetCurrentAnchor(startAnchor);
+                Debug.Log($"[SpawnManager] ✅ Anchor establecido desde profile: '{startAnchor}'");
             }
+            else
+            {
+                Debug.LogWarning($"[SpawnManager] ⚠️ Profile no tiene anchor definido - usando fallback");
+            }
+        }
+        else
+        {
+            Debug.LogError($"[SpawnManager] ❌ Profile es NULL - no se pudo establecer anchor inicial");
         }
 
         _initialized = true;

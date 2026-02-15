@@ -12,6 +12,14 @@ public class DialogueCinematicController : MonoBehaviour
 {
     public static DialogueCinematicController Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     [Header("Configuración")]
     [SerializeField] private DialogueCinematicProfile defaultProfile;
     [SerializeField] private bool showDebugInfo;

@@ -11,6 +11,14 @@ public class TeleportHintUI : MonoBehaviour
 {
     public static TeleportHintUI Instance { get; private set; }
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+    
     [Header("Referencias UI")]
     [SerializeField] private GameObject hintRoot;
     [SerializeField] private CanvasGroup canvasGroup;

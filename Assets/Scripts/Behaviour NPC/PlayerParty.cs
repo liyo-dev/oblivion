@@ -106,6 +106,16 @@ namespace Game.NPC
         /// Se dispara cuando cambia la composición del equipo
         /// </summary>
         public static event Action<IReadOnlyList<NPCPartyMember>> OnPartyChanged;
+        
+        #if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            OnMemberJoined = null;
+            OnMemberLeft = null;
+            OnPartyChanged = null;
+        }
+        #endif
         #endregion
 
         #region Properties
@@ -168,6 +178,7 @@ namespace Game.NPC
             
             // Subscribirse a OnProfileReady para restaurar el party al cargar partida
             GameBootService.OnProfileReady += OnProfileReady;
+            ProfileReadyDiagnostics.RegisterSubscriber(nameof(PlayerParty));
             
             // Subscribirse a cambios de escena para reintentar miembros pendientes
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoadedHandler;
@@ -998,6 +1009,8 @@ namespace Game.NPC
         {
             try
             {
+                Debug.Log($"[PlayerParty] 🔄 SyncPartyToPreset() llamado - _members.Count = {_members.Count}");
+                
                 var profile = GameBootService.Profile;
                 if (profile == null)
                 {
@@ -1012,14 +1025,17 @@ namespace Game.NPC
                     return;
                 }
 
+                Debug.Log($"[PlayerParty] 📋 Preset encontrado: '{preset.name}', llamando a GetMemberIdsForSave()...");
                 var memberIds = GetMemberIdsForSave();
+                Debug.Log($"[PlayerParty] 📋 GetMemberIdsForSave() retornó {memberIds.Count} IDs: [{string.Join(", ", memberIds)}]");
+                
                 preset.partyMemberIds = memberIds;
                 
-                Debug.Log($"[PlayerParty] 🔄 Party sincronizado con preset '{preset.name}': {preset.partyMemberIds.Count} miembros [{string.Join(", ", memberIds)}]");
+                Debug.Log($"[PlayerParty] ✅ Party sincronizado con preset '{preset.name}': {preset.partyMemberIds.Count} miembros [{string.Join(", ", memberIds)}]");
             }
             catch (System.Exception ex)
             {
-                LogWarning($"Error sincronizando party con preset: {ex.Message}");
+                LogWarning($"Error sincronizando party con preset: {ex.Message}\n{ex.StackTrace}");
             }
         }
         
@@ -1030,6 +1046,40 @@ namespace Game.NPC
         public List<string> GetMemberIdsForSave()
         {
             Debug.Log($"[PlayerParty] 📊 GetMemberIdsForSave() - _members.Count = {_members.Count}");
+            
+            // ✅ CRÍTICO: Si _members está vacío o solo tiene nulls, leer desde el preset actual
+            // Esto ocurre cuando se guarda justo después de un cambio de escena (ej: al salir al menú)
+            int validMembersCount = _members.Count(m => m != null);
+            Debug.Log($"[PlayerParty] 📊 Valid members (non-null): {validMembersCount}");
+            
+            if (validMembersCount == 0)
+            {
+                Debug.LogWarning("[PlayerParty] ⚠️ _members está vacío o solo tiene nulls - Leyendo desde preset actual");
+                
+                var profile = GameBootService.Profile;
+                if (profile != null)
+                {
+                    var preset = profile.GetActivePresetResolved();
+                    if (preset != null && preset.partyMemberIds != null && preset.partyMemberIds.Count > 0)
+                    {
+                        Debug.Log($"[PlayerParty] ✅ Usando {preset.partyMemberIds.Count} IDs desde preset: [{string.Join(", ", preset.partyMemberIds)}]");
+                        return new List<string>(preset.partyMemberIds);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PlayerParty] ⚠️ Preset no tiene IDs (preset={preset != null}, partyMemberIds={(preset?.partyMemberIds != null ? preset.partyMemberIds.Count.ToString() : "null")})");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[PlayerParty] ⚠️ GameBootService.Profile es null");
+                }
+                
+                Debug.LogWarning("[PlayerParty] ⚠️ No se encontraron IDs en el preset - Retornando lista vacía");
+                return new List<string>();
+            }
+            
+            Debug.Log($"[PlayerParty] ✅ Extrayendo IDs de {validMembersCount} miembros válidos...");
             
             var result = new List<string>();
             

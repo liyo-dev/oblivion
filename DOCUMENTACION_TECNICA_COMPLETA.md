@@ -2,8 +2,8 @@
 
 **Proyecto:** El Sendero de las Estrellas  
 **Motor:** Unity 2020.3+  
-**Última Actualización:** 23 Enero 2026  
-**Versión del Documento:** 2.0 (Consolidada)
+**Última Actualización:** 11 Febrero 2026  
+**Versión del Documento:** 2.1 (Consolidada + Troubleshooting Avanzado)
 
 ---
 
@@ -21,6 +21,7 @@
 ### 10. [Fixes Importantes Aplicados](#10-fixes-importantes-aplicados)
 ### 11. [Debugging y Troubleshooting](#11-debugging-y-troubleshooting)
 ### 12. [Mejores Prácticas](#12-mejores-prácticas)
+### 13. [Troubleshooting Avanzado - Problemas Resueltos (Febrero 2026)](#13-troubleshooting-avanzado---problemas-resueltos-febrero-2026) ⭐ NUEVO
 
 ---
 
@@ -34,10 +35,14 @@
 
 ### Testing Rápido
 
-Para testear una escena específica:
-1. Añadir `EnsureStartSceneLoaded` component al GameObject raíz
-2. Play directamente desde esa escena
-3. Start se cargará automáticamente
+Para testear una escena específica (MainWorld, Woods, etc.):
+1. **Simplemente abre la escena y presiona Play** ✅
+2. El sistema `AutoBootstrapOnPlay` (en `Assets/Editor/`) detecta que no es Start
+3. Carga Start aditivamente **automáticamente** antes de entrar en PlayMode
+4. Todos los sistemas se inicializan correctamente
+5. El anchor y demás datos se cargan del save/preset correctamente
+
+**Nota:** No necesitas añadir ningún componente manual, el sistema es completamente automático.
 
 ---
 
@@ -1481,17 +1486,557 @@ if (isLastTeamMember && AudioService.Instance != null)
 
 ---
 
+## 13. Troubleshooting Avanzado - Problemas Resueltos (Febrero 2026)
+
+### 13.1 Problema: Spawn Inconsistente Según Escena Inicial
+
+#### Síntoma
+- Iniciar desde Start: Player spawnea correctamente ✅
+- Iniciar desde MainWorld: Player spawnea en anchor incorrecto ❌
+
+#### Causa Raíz
+`WorldBootstrap.cs` tenía un **timeout de solo 10 frames**:
+```csharp
+// ANTES (INCORRECTO):
+int maxWaitFrames = 10;
+while (!GameBootService.IsAvailable && framesWaited < maxWaitFrames)
+{
+    yield return null;
+    framesWaited++;
+}
+
+if (!GameBootService.IsAvailable)
+{
+    // ❌ Fallback peligroso con anchor hardcodeado
+    StartCoroutine(InitializeWorldWithoutBootService());
+}
+```
+
+**Timeline del problema:**
+```
+Frame 0:  MainWorld cargada
+Frame 1:  WorldBootstrap.Awake() - inicia espera
+Frame 3:  AutoBootstrapOnPlay detecta que no es Start
+Frame 4:  Carga Start.unity aditivamente (asíncrono)
+Frame 5-10: WorldBootstrap esperando...
+Frame 11: ❌ TIMEOUT → Usa "SpawnPoint" hardcodeado
+Frame 15: GameBootService finalmente disponible (demasiado tarde)
+```
+
+#### Solución Aplicada
+
+**Eliminado timeout y fallback:**
+```csharp
+// AHORA (CORRECTO):
+while (!GameBootService.IsAvailable)
+{
+    yield return null;
+    framesWaited++;
+    
+    // Timeout de seguridad solo para detectar errores FATALES
+    if (framesWaited > 1800) // 30 segundos a 60fps
+    {
+        Debug.LogError("[WorldBootstrap] ❌ FATAL: GameBootService no disponible después de 30 segundos");
+        yield break;
+    }
+}
+
+Debug.Log($"[WorldBootstrap] ✅ GameBootService disponible después de {framesWaited} frame(s)");
+HandleProfileReady();
+```
+
+**Archivo modificado:**
+- `Assets/Scripts/World/WorldBootstrap.cs`
+
+#### Verificación
+```
+Logs esperados desde MainWorld:
+[WorldBootstrap] ✅ GameBootService disponible después de 3-15 frame(s)
+[SpawnManager] ✅ Anchor establecido desde profile: '[ANCHOR_CORRECTO]'
+```
+
+---
+
+### 13.2 Problema: Boss Trigger Funciona con JSON pero NO con Preset
+
+#### Síntoma
+```
+CON JSON:    [Signals] Custom: EXIT_FROM_WOODS_ESTELA ✅
+CON PRESET:  [Signals] Custom: EXIT_FROM_WOODS_ESTELA (sin oyentes → pendiente) ❌
+```
+
+#### Causa Raíz (Actualizada - Febrero 2026)
+
+El problema era que `ResetForLoadedProfile()` llamaba a `ResetState()` que **limpiaba los eventos pendientes** (`_pending.Clear()`).
+
+**Secuencia del problema:**
+1. Player se posiciona en `Woods_Entrance_SavePoint` (área del trigger)
+2. Trigger se activa y emite `EXIT_FROM_WOODS_ESTELA` → Se guarda en `_pending`
+3. `NarrativeAutoSetup.ResetForLoadedProfile()` se llama → `ResetState()` **LIMPIA `_pending`** ❌
+4. Grafo narrativo se inicia y llega al `WaitCustomEventNode`
+5. `OnCustom()` busca en `_pending` pero ya está vacío → Se queda esperando permanentemente
+
+**Por qué funcionaba con JSON:**
+- El JSON guardaba el `__currentNodeGuid` apuntando al `WaitCustomEventNode`
+- El grafo continuaba desde ese nodo, suscribiéndose al evento ANTES de que el trigger se activara
+- Por timing, el listener existía cuando el trigger se disparaba
+
+#### Solución Aplicada (Febrero 2026)
+
+**Modificación en `DefaultNarrativeSignals.cs`:**
+```csharp
+// Nuevo método que permite preservar eventos pendientes
+public void ResetState(bool preservePending)
+{
+    _custom.Clear();
+    if (!preservePending)
+    {
+        _pending.Clear();
+        _battlePending.Clear();
+    }
+    _battleSubscribers.Clear();
+    _qs = null;
+}
+```
+
+**Modificación en `NarrativeAutoSetup.cs`:**
+```csharp
+public static void ResetForLoadedProfile()
+{
+    // IMPORTANTE: Preservamos eventos pendientes porque el trigger puede activarse antes que el grafo
+    _instance.HandleReset("ResetForLoadedProfile", clearBlackboard: false, restartGraph: false, preservePending: true);
+}
+```
+
+**Archivos modificados:**
+- `Assets/NarrativeGraph/Runtime/Integration/DefaultNarrativeSignals.cs`
+- `Assets/NarrativeGraph/Runtime/Integration/NarrativeAutoSetup.cs`
+
+#### Verificación
+```
+Al entrar al trigger con preset:
+[Signals] Custom: EXIT_FROM_WOODS_ESTELA (sin oyentes → pendiente)  ← Evento guardado
+[Signals] ResetState preservando 1 eventos pendientes              ← NO se limpia
+[Signals] Custom: EXIT_FROM_WOODS_ESTELA (consumido desde pendientes) ← ✅ Grafo lo consume
+[StartBattleNode] Suscrito a OnBattleWon                           ← ✅ BATALLA INICIA
+```
+
+#### Causa Anterior (Ya corregida)
+
+Anteriormente también había un problema si el preset tenía el flag `EXIT_FROM_WOODS_ESTELA_received` marcado:
+
+```yaml
+# INCORRECTO - Si el preset tiene esto, el nodo avanza sin esperar
+- key: __event_1db8d4ab-1b78-48f8-961e-9e0668aacf6e_EXIT_FROM_WOODS_ESTELA_received
+  type: 
+  value: 1
+```
+
+**Solución:** El preset NO debe tener el flag `EXIT_FROM_WOODS_ESTELA_received` si queremos que el trigger funcione.
+
+#### Causa Adicional: Tipos Vacíos en Blackboard (Febrero 2026)
+
+**Problema descubierto:** El sistema `SimpleBlackboard.ImportFromSerializable()` ignoraba entradas cuyo campo `type` estaba vacío:
+
+```csharp
+// Código original problemático:
+if (e == null || string.IsNullOrEmpty(e.key) || string.IsNullOrEmpty(e.type)) continue; // ← SALTA si type vacío
+```
+
+**En el preset YAML:**
+```yaml
+- key: __currentNodeGuid
+  type:          # ← VACÍO - la entrada se ignoraba!
+  value: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
+```
+
+**Resultado:** El `__currentNodeGuid` nunca se restauraba aunque estuviera en el preset.
+
+**Solución aplicada en `SimpleBlackboard.cs`:**
+- Ahora infiere el tipo automáticamente basándose en la clave y el valor
+- Claves con `_received` o `_started` → bool
+- Valores con formato GUID → string
+- Valores numéricos → int/float
+- Por defecto → string
+
+**Archivos modificados:**
+- `Assets/NarrativeGraph/Runtime/Graph/SimpleBlackboard.cs`
+
+---
+
+### 13.3 Problema: Variables Estáticas Contaminadas Entre Sesiones de PlayMode
+
+#### Síntoma
+- Al hacer Play/Stop/Play múltiples veces en el Editor:
+  - Managers duplicados
+  - Eventos con múltiples suscriptores
+  - Valores de variables incorrectos
+  - Comportamiento impredecible
+
+#### Causa
+Unity **NO resetea variables estáticas** automáticamente entre sesiones de PlayMode.
+
+**Ejemplo del problema:**
+```csharp
+public class SpawnManager : MonoBehaviour
+{
+    private static string CurrentAnchorId; // ← Mantiene valor entre sesiones
+    
+    void Awake()
+    {
+        if (string.IsNullOrEmpty(CurrentAnchorId))
+            CurrentAnchorId = "DefaultSpawn";
+        
+        // Primera sesión: CurrentAnchorId = "Woods_SavePoint"
+        // Segunda sesión: CurrentAnchorId = "Woods_SavePoint" (del anterior)
+        // ❌ Puede causar spawn en posición incorrecta
+    }
+}
+```
+
+#### Solución Aplicada
+
+**Patrón de reset automático:**
+```csharp
+public class SpawnManager : MonoBehaviour
+{
+    private static string CurrentAnchorId;
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        CurrentAnchorId = null;
+        OnAnchorChanged = null; // También eventos estáticos
+    }
+    #endif
+    
+    // ...resto del código
+}
+```
+
+**`RuntimeInitializeLoadType.SubsystemRegistration`:**
+- Se ejecuta **ANTES de cualquier Awake()**
+- Solo en el Editor (builds no lo necesitan)
+- Automático, no requiere llamadas manuales
+
+#### Archivos Modificados (18 total)
+
+**Críticos (afectaban gameplay):**
+1. ⭐ `SpawnManager.cs` - Anchor contaminado
+2. ⭐ `PlayerParty.cs` - Party members persistían
+3. ⭐ `GamepadInputReader.cs` - Input contaminado
+4. ⭐ `BossProgressTracker.cs` - Bosses derrotados incorrectos
+
+**Importantes (managers):**
+5. `PlayerInputManager.cs`
+6. `AudioService.cs`
+7. `MenuManager.cs`
+8. `TeleportSystem.cs`
+9. `TeleportRegistry.cs`
+10. `TeleportUI.cs`
+
+**Secundarios (evitan leaks):**
+11. `EnvironmentController.cs`
+12. `SimpleCinematicManager.cs`
+13. `ProjectileCollisionService.cs`
+14. `NPCInitializer.cs`
+15. `GameState.cs`
+16. `ActiveCombatRegistry.cs`
+17. `PlayerEquipmentMenuController.cs`
+18. `ProfileReadySubscriptionAnalyzer.cs`
+
+#### Verificación
+
+**Script de validación:**
+```powershell
+.\validate_static_resets.ps1
+```
+
+**Logs esperados:**
+```
+Sistemas con reset: 18/18 ✅
+No se encontraron problemas
+```
+
+---
+
+### 13.4 Sistema AutoBootstrapOnPlay
+
+#### Propósito
+Permite **iniciar PlayMode desde cualquier escena** sin necesidad de cargar Start manualmente.
+
+#### Ubicación
+```
+Assets/Editor/AutoBootstrapOnPlay.cs
+```
+
+#### Funcionamiento
+```csharp
+[InitializeOnEnterPlayMode]
+static void OnEnterPlayModeInEditor(EnterPlayModeOptions options)
+{
+    if (!EditorSceneManager.playModeStartScene)
+    {
+        Scene activeScene = EditorSceneManager.GetActiveScene();
+        
+        // Si NO es Start, cargar Start primero
+        if (activeScene.name != "Start")
+        {
+            EditorSceneManager.OpenScene("Assets/Scenes/Systems/Start.unity", 
+                                         OpenSceneMode.Additive);
+        }
+    }
+}
+```
+
+**Timeline:**
+```
+Usuario presiona Play en MainWorld
+  ↓
+AutoBootstrapOnPlay detecta que NO es Start
+  ↓
+Carga Start.unity aditivamente (2-5 frames)
+  ↓
+GameBootService.Awake() se ejecuta
+  ↓
+WorldBootstrap espera a GameBootService
+  ↓
+GameBootService dispara OnProfileReady
+  ↓
+SpawnManager recibe anchor correcto
+  ↓
+Player spawnea en posición correcta ✅
+```
+
+#### Configuración Requerida
+
+**Build Settings:**
+```
+Start.unity debe estar en la lista de escenas
+Index: 0 (primera escena)
+```
+
+**Script Execution Order:**
+```
+GameBootService: -1000 (se ejecuta primero)
+```
+
+---
+
+### 13.5 Diferencias JSON vs Preset - Aclaración Definitiva
+
+#### Arquitectura del Sistema
+
+**NO hay código específico para JSON o Preset:**
+```csharp
+// GameBootService.cs
+private void PrepareActivePreset()
+{
+    if (ShouldBootFromPreset())
+    {
+        // Cargar preset de testeo
+        activePreset = testingPreset;
+    }
+    else
+    {
+        // Cargar último save (JSON)
+        activePreset = GameBootProfile.LoadProfile(saveSystem);
+    }
+    
+    // ✅ Mismo código para ambos casos:
+    ApplyPreset(activePreset);
+}
+```
+
+**La única diferencia es la fuente de datos:**
+- **Modo Normal:** `activePreset` viene del JSON
+- **Modo Testeo:** `activePreset` viene del SO
+
+**Después de cargar, TODO es igual:**
+- Mismo flujo de inicialización
+- Mismas suscripciones
+- Mismo spawn
+- Mismas validaciones
+
+#### Problema Común: Presets con Datos Incorrectos
+
+**Presets creados DESPUÉS de eventos:**
+```yaml
+# ❌ Preset creado después del trigger del Golem:
+- key: __event_EXIT_FROM_WOODS_ESTELA_received
+  value: 1  ← El grafo piensa que ya pasó
+
+# ✅ Preset creado ANTES del trigger:
+# (No tiene ese flag, el grafo espera el evento)
+```
+
+**Solución:**
+1. Crear presets en momentos específicos del juego
+2. Documentar qué incluye cada preset
+3. Verificar blackboards con `analyze_test_presets_clean.ps1`
+
+---
+
+### 13.6 Checklist de Resolución de Problemas
+
+#### Problema: Player NO Spawnea Correctamente
+
+**Verificar:**
+```
+□ GameBootService está en Script Execution Order (-1000)
+□ Start.unity está en Build Settings (index 0)
+□ AutoBootstrapOnPlay está en Assets/Editor/
+□ Logs muestran: [WorldBootstrap] ✅ GameBootService disponible
+□ Logs muestran: [SpawnManager] ✅ Anchor establecido desde profile
+```
+
+**Si falla desde MainWorld pero funciona desde Start:**
+```
+→ WorldBootstrap tiene timeout corto
+→ Verificar que esperamos indefinidamente (ver sección 13.1)
+```
+
+---
+
+#### Problema: Triggers Narrativos NO Funcionan con Preset
+
+**Verificar:**
+```
+□ El preset NO tiene flags de eventos con "_received"
+□ Ejecutar: .\analyze_test_presets_clean.ps1
+□ Verificar blackboard en Inspector del preset
+□ Logs muestran: (sin oyentes → pendiente) ← Si aparece, preset tiene el flag
+```
+
+**Si funciona con JSON pero NO con preset:**
+```
+→ El preset fue creado DESPUÉS del trigger
+→ Limpiar blackboard del preset (ver sección 13.2)
+```
+
+---
+
+#### Problema: Variables Estáticas Contaminadas
+
+**Síntomas:**
+```
+□ Managers duplicados al hacer Play/Stop/Play
+□ Eventos se disparan múltiples veces
+□ Valores incorrectos en singletons
+□ Comportamiento diferente en primera vs segunda sesión
+```
+
+**Verificar:**
+```
+□ Los singletons tienen ResetStatics()
+□ El reset está marcado con #if UNITY_EDITOR
+□ Usar: .\validate_static_resets.ps1
+```
+
+**Patrón correcto:**
+```csharp
+public class MiManager : MonoBehaviour
+{
+    private static MiManager _instance;
+    public static MiManager Instance => _instance;
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        // Resetear TODAS las variables estáticas
+    }
+    #endif
+}
+```
+
+---
+
+### 13.7 Scripts de Diagnóstico
+
+#### Validar Resets de Estáticas
+```powershell
+.\validate_static_resets.ps1
+```
+
+**Output esperado:**
+```
+✅ SpawnManager tiene ResetStatics
+✅ PlayerParty tiene ResetStatics
+✅ GamepadInputReader tiene ResetStatics
+...
+Total: 18/18 sistemas con reset
+```
+
+#### Analizar Presets de Testeo
+```powershell
+.\analyze_test_presets_clean.ps1
+```
+
+**Output esperado:**
+```
+OK: PlayerPreset_Test.asset
+OK: PlayerPreset_Test_Golem_noderrotado.asset
+...
+Total presets: 6
+Con problemas: 0
+Limpios: 6
+```
+
+---
+
+### 13.8 Matriz de Compatibilidad (Actualizada Febrero 2026)
+
+| Escenario | Spawn | Boss Trigger | Party | Quests | Estado |
+|-----------|-------|--------------|-------|--------|--------|
+| Start + JSON | ✅ | ✅ | ✅ | ✅ | Siempre funcionó |
+| MainWorld + JSON | ✅ | ✅ | ✅ | ✅ | Arreglado Feb 2026 |
+| Start + Preset | ✅ | ✅ | ✅ | ✅ | Arreglado Feb 2026 |
+| MainWorld + Preset | ✅ | ✅ | ✅ | ✅ | Arreglado Feb 2026 |
+
+**Conclusión:** Ahora es **consistente** iniciar desde cualquier escena con cualquier método de carga.
+
+---
+
+### 13.9 Logs de Referencia - Comportamiento Correcto
+
+#### Inicialización Correcta (Cualquier Escena)
+```
+[AutoBootstrapOnPlay] Cargando Start.unity aditivamente
+[GameBootService] Awake - Inicializando servicios core
+[WorldBootstrap] ✅ GameBootService disponible después de 3 frame(s)
+[SpawnManager] ✅ Anchor establecido desde profile: 'Woods_Entrance_SavePoint'
+[PlayerParty] 🔄 Restaurando 1 miembros del party
+[ProfileReadyDiagnostics] 📊 Suscripciones: 13/13 presentes esperados
+```
+
+#### Boss Trigger Correcto (Con Preset Limpio)
+```
+[BossArenaController] 🚪 OnTriggerEnter - Tag: Player
+[Signals] Custom: EXIT_FROM_WOODS_ESTELA
+[StartBattleNode] Suscrito a OnBattleWon con context='Golem_1'
+[BossArenaController] 🔍 Tracker encontrado - IsDefeated=False
+[BossArenaController] Área del boss bloqueada
+[Signals] Custom: BATTLE_START:Golem_1
+[BossHealthBar] UI creada para 'Boss Golem'
+```
+
+---
+
 ## 📝 Notas Finales
 
 Este documento consolida TODA la documentación técnica del proyecto "El Sendero de las Estrellas". 
 
-**Última actualización:** 23 Enero 2026
+**Última actualización:** 11 Febrero 2026
 
 **Cambios recientes:**
-- ✅ Fix de NPCs caminando en sitio (v4)
-- ✅ Optimizaciones de rendimiento (FASE 1 y 2)
-- ✅ Sistema de combate en equipo
-- ✅ Música de victoria/restauración
+- ✅ Fix de spawn inconsistente (WorldBootstrap timeout)
+- ✅ Fix de boss triggers con presets (blackboard limpiado)
+- ✅ Reset de variables estáticas (18 archivos)
+- ✅ Sistema AutoBootstrapOnPlay documentado
+- ✅ Troubleshooting avanzado agregado
 
 **Todos los archivos MD individuales han sido consolidados aquí.**
 
@@ -1499,4 +2044,5 @@ Para reportar problemas o sugerir mejoras, contactar al equipo de desarrollo.
 
 ---
 
-**🌟 El Sendero de las Estrellas - Documentación Técnica Completa v2.0 🌟**
+**🌟 El Sendero de las Estrellas - Documentación Técnica Completa v2.1 🌟**
+

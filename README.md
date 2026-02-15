@@ -1,4 +1,4 @@
-﻿﻿# 🌟 El Sendero de las Estrellas
+﻿﻿﻿# 🌟 El Sendero de las Estrellas
 
 **Género:** RPG de acción/aventura  
 **Motor:** Unity 2020.3+  
@@ -12,7 +12,7 @@
 
 **Ubicación:** `DOCUMENTACION_TECNICA_COMPLETA.md` (raíz del proyecto)
 
-✨ **NUEVO: Documento consolidado que contiene TODA la documentación técnica del proyecto** ✨
+✨ **CONSOLIDADO (Feb 2026): Toda la documentación técnica en un solo archivo** ✨
 
 Contiene toda la documentación del proyecto:
 - ✅ Arquitectura de escenas (START como núcleo)
@@ -24,11 +24,14 @@ Contiene toda la documentación del proyecto:
 - ✅ Sistema de narrativa interactiva
 - ✅ Sistema de Puzzles (Burnable, PressurePlate, PlatformElevator)
 - ✅ Sistema de Iconos en Diálogos (TextMeshPro)
-- ✅ **Optimizaciones de Rendimiento (FASE 1 y 2)** ⭐ NUEVO
-- ✅ **Fixes Importantes Aplicados (NPCs caminando en sitio v4)** ⭐ NUEVO
+- ✅ Optimizaciones de Rendimiento (FASE 1 y 2)
+- ✅ Fixes Importantes Aplicados (NPCs caminando en sitio v4)
+- ✅ **Troubleshooting Avanzado (Spawn, Presets, Variables Estáticas)** ⭐ NUEVO
 - ✅ Debugging (F3, F4)
-- ✅ Troubleshooting completo
 - ✅ Mejores prácticas
+
+**Archivos consolidados:** 47 archivos .md individuales → 1 archivo completo  
+**Ver:** `LIMPIEZA_DOCUMENTACION_2026-02-11.md` para detalles de la consolidación
 
 ---
 
@@ -42,10 +45,14 @@ Contiene toda la documentación del proyecto:
 
 ### Testing Rápido
 
-Para testear una escena específica:
-1. Añadir `EnsureStartSceneLoaded` component al GameObject raíz
-2. Play directamente desde esa escena
-3. Start se cargará automáticamente
+Para testear una escena específica (MainWorld, Woods, etc.):
+1. **Simplemente abre la escena y presiona Play** ✅
+2. El sistema `AutoBootstrapOnPlay` (Editor) detecta automáticamente que no es Start
+3. Carga Start.unity aditivamente antes de entrar en PlayMode
+4. Todos los managers se inicializan correctamente
+5. El spawn funciona desde cualquier escena
+
+**Nota:** No necesitas añadir componentes manualmente, el sistema es completamente automático.
 
 ---
 
@@ -132,15 +139,15 @@ Assets/
 
 | Problema | Solución |
 |----------|----------|
-| Menús no se abren | Añade `EnsureStartSceneLoaded` |
-| NPC no se mueve suavemente | Verifica NavMeshAgent config |
-| Quest no se completa | Verifica `completionMode` y `dlgTurnIn` |
+| Player no spawnea correctamente | Verificar que GameBootService está en Script Execution Order (-1000) |
+| Boss trigger no funciona con preset | Preset tiene flag de evento, ver Sección 13.2 en documentación |
+| Menús no se abren | Verificar que Start.unity está en Build Settings |
+| NPC no se mueve suavemente | Verificar NavMeshAgent config |
+| Quest no se completa | Verificar `completionMode` y `dlgTurnIn` |
 | Targeting no funciona | NPC debe estar en Layer `Enemy` |
-| Interruptor no detecta | Collider debe ser Trigger + objeto con Rigidbody |
-| Iconos no aparecen | `Tools → Dialogue → Setup Icons` |
 | Errores AI Toolkit | **Ignorar** - Son inofensivos |
 
-**Más soluciones:** Consulta [DOCUMENTACION_TECNICA.md](docs/DOCUMENTACION_TECNICA.md) → Sección 15 (Troubleshooting)
+**Más soluciones:** Consulta [DOCUMENTACION_TECNICA_COMPLETA.md](DOCUMENTACION_TECNICA_COMPLETA.md) → Sección 13 (Troubleshooting Avanzado)
 
 ---
 
@@ -187,7 +194,7 @@ public NPCCombatConfig combatConfig;
 
 ## 📚 Documentación Adicional
 
-- **[docs/DOCUMENTACION_TECNICA.md](docs/DOCUMENTACION_TECNICA.md)** - Documentación técnica completa (5000+ líneas)
+- **[DOCUMENTACION_TECNICA_COMPLETA.md](DOCUMENTACION_TECNICA_COMPLETA.md)** - Documentación técnica completa consolidada
 - Todos los scripts tienen comentarios XML detallados
 - Gizmos en Scene view para debugging visual
 - Debug panels en runtime (F3, F4)
@@ -196,7 +203,7 @@ public NPCCombatConfig combatConfig;
 
 ## 🚧 Estado del Proyecto
 
-**Última actualización:** Enero 2026
+**Última actualización:** 11 Febrero 2026
 
 **Sistemas Completados:**
 - ✅ FSM de NPCs modular
@@ -205,8 +212,9 @@ public NPCCombatConfig combatConfig;
 - ✅ Sistema de diálogos con localización
 - ✅ Sistema de guardado
 - ✅ Sistema de puzzles (Burnable, PressurePlate)
-- ✅ Sistema de iconos en diálogos
-- ✅ Sistema de iluminación optimizado
+- ✅ Sistema de spawn consistente (desde cualquier escena)
+- ✅ Reset automático de variables estáticas
+- ✅ AutoBootstrapOnPlay para testing
 
 **En Desarrollo:**
 - 🔄 Sistema de inventario expandido
@@ -218,7 +226,7 @@ public NPCCombatConfig combatConfig;
 ## 📞 Recursos
 
 **Para más información:**
-- Consulta `docs/DOCUMENTACION_TECNICA.md` para guías detalladas
+- Consulta `DOCUMENTACION_TECNICA_COMPLETA.md` para guías detalladas
 - Revisa los comentarios XML en los scripts
 - Usa Gizmos en Scene view para visualizar sistemas
 - Activa debug visual (F3) y panel (F4) en runtime
@@ -227,5 +235,5 @@ public NPCCombatConfig combatConfig;
 
 **¡Proyecto en desarrollo activo!** 🎮
 
-Consulta la [documentación técnica completa](docs/DOCUMENTACION_TECNICA.md) para información detallada de todos los sistemas.
+Consulta la [documentación técnica completa](DOCUMENTACION_TECNICA_COMPLETA.md) para información detallada de todos los sistemas.
 

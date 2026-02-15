@@ -27,6 +27,16 @@ public static class MenuManager
     public static event Action<MenuKind> MenuClosed;
 
     static readonly Dictionary<MenuKind, bool> s_open = new();
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        MenuOpened = null;
+        MenuClosed = null;
+        s_open.Clear();
+    }
+    #endif
 
     /// <summary>Return true if this menu kind is currently registered as open.</summary>
     public static bool IsOpen(MenuKind kind)

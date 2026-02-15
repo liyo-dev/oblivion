@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// Sincroniza los flags de quests entre el QuestManager (runtime) y el PlayerPreset (runtimePreset).
@@ -19,6 +19,7 @@ public class QuestPersistenceBridge : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(QuestPersistenceBridge));
         if (GameBootService.IsAvailable) ApplyFlagsToQuestManager();
 
         // Enganchar eventos cuando el QuestManager esté disponible

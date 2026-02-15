@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Core;
@@ -145,6 +145,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private EquipmentBindings equipmentUI = new();
 
     static PlayerEquipmentMenuController _instance;
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+    }
+    #endif
 
     readonly List<Button> _tabButtons = new();
 
@@ -311,12 +319,26 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         // Debug.Log($"[PlayerEquipmentMenuController] Awake completado. Vistas configuradas: {(_inventoryView != null || _spellView != null || _equipmentView != null)}");
     }
 
+    void OnEnable()
+    {
+        GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(PlayerEquipmentMenuController));
+    }
+
     void OnDisable()
     {
+        GameBootService.OnProfileReady -= HandleProfileReady;
         if (_isOpen)
             CloseMenu();
         else
             ExitUiInputScope();
+    }
+
+    private void HandleProfileReady()
+    {
+        // El menú de equipamiento accede al Profile para obtener el preset activo
+        // No necesita inicialización especial, solo necesita que el Profile esté disponible
+        // cuando accede a él en RefreshInventoryTab() y otros métodos
     }
 
     void OnDestroy()

@@ -10,6 +10,14 @@ public sealed class AudioService : MonoBehaviour
 {
     public static AudioService Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     [Header("Perfil de reglas")]
     [SerializeField] public AudioGraphProfile profile;
 

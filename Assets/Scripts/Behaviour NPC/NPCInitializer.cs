@@ -11,6 +11,14 @@ namespace Game.NPC
     {
         public static event Action<NPCBehaviourManagerV2> OnNPCReady;
         
+        #if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            OnNPCReady = null;
+        }
+        #endif
+        
         /// <summary>
         /// Verifica si un NPC está completamente inicializado y listo para usar.
         /// NO usa delays ni coroutines, verificación INMEDIATA.

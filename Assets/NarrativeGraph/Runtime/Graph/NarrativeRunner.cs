@@ -49,12 +49,14 @@ public class NarrativeRunner : MonoBehaviour
 
         // Verificar si hay un nodo guardado en el blackboard
         var savedNodeGuid = Blackboard.Get<string>("__currentNodeGuid", null);
+        Debug.Log($"[NarrativeRunner] StartFromStartNode() - savedNodeGuid='{savedNodeGuid ?? "NULL"}'");
+        
         if (!string.IsNullOrEmpty(savedNodeGuid))
         {
             var savedNode = graph.FindNode(savedNodeGuid);
             if (savedNode != null)
             {
-                // Debug.Log($"[NarrativeRunner] Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
+                Debug.Log($"[NarrativeRunner] ✅ Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
                 GoTo(savedNode);
                 return;
             }
@@ -62,6 +64,10 @@ public class NarrativeRunner : MonoBehaviour
             {
                 Debug.LogWarning($"[NarrativeRunner] Nodo guardado con guid={savedNodeGuid} no encontrado. Iniciando desde Start.");
             }
+        }
+        else
+        {
+            Debug.Log($"[NarrativeRunner] ⚠️ No hay nodo guardado - iniciando desde StartNode");
         }
 
         if (string.IsNullOrEmpty(graph.startNodeGuid))

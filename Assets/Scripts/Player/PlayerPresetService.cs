@@ -53,6 +53,7 @@ public class PlayerPresetService : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(PlayerPresetService));
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();

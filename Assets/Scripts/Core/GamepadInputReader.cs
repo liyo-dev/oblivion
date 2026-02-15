@@ -54,6 +54,25 @@ namespace Core
     private static float _ignoreCancelUntil = 0f; // Tiempo hasta el cual ignorar el botón Cancel/B
     private static float _ignoreJumpUntil = 0f; // Tiempo hasta el cual ignorar el botón Jump/A (después de interactuar)
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        OnInput = null;
+        _controls = null;
+        _navCurrent = Vector2.zero;
+        _navPrevious = Vector2.zero;
+        _navFrame = -1;
+        _boundControls = null;
+        _pollingRegistered = false;
+        _gameplaySuppressionOwners.Clear();
+        _uiNavigationScopeCount = 0;
+        _ignoreCancelUntil = 0f;
+        _ignoreJumpUntil = 0f;
+        enableUIAudio = true;
+    }
+    #endif
+    
     /// <summary>
     /// Si está activado, reproduce SFX de UI automáticamente en navegación, submit, cancel, etc.
     /// </summary>

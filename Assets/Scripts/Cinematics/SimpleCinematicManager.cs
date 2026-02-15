@@ -11,6 +11,14 @@ namespace Game.Cinematics
     {
         public static SimpleCinematicManager Instance { get; private set; }
         
+        #if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Instance = null;
+        }
+        #endif
+        
         private CinemachineCamera _gameplayCamera;
         private int _defaultPriority = 10;
 

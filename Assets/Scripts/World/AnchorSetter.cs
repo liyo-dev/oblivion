@@ -13,6 +13,7 @@ public class AnchorSetter : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(AnchorSetter));
     }
 
     void OnDisable()

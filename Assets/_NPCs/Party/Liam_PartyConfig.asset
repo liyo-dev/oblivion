@@ -15,13 +15,13 @@ MonoBehaviour:
   moduleName: 
   description: 
   displayName: 
-  distanciaParaPararse: 2
-  distanciaParaCorrer: 3
+  distanciaParaPararse: 4
+  distanciaParaCorrer: 5
   distanciaParaTeletransporte: 20
   velocidadCaminando: 5
   velocidadCorriendo: 10
   quedarseDetras: 1
-  offsetLateral: {x: -1, y: 1}
+  offsetLateral: {x: 1, y: 1}
   tiempoIdleMinimo: 1
   tiempoIdleMaximo: 3
   puedeVagarCerca: 0
@@ -33,3 +33,8 @@ MonoBehaviour:
   spellSpecial: {fileID: 0}
   distanciaMinimaAtaque: 2
   distanciaMaximaAtaque: 15
+  posicionarseDuranteDialogos: 1
+  ladoPreferidoDialogo: 0
+  distanciaLateralDialogo: 1.5
+  offsetDelanteDialogo: -0.3
+  tiempoMaximoMovimientoDialogo: 2

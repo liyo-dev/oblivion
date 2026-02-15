@@ -45,9 +45,6 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         // todavía no fue activada en la jerarquía cuando se otorga la habilidad.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
-        
-        // Suscribirse al evento de profile ready para suprimir popups durante inicialización
-        GameBootService.OnProfileReady += HandleProfileReadyForSuppression;
 
         ReloadShownFlags();
 
@@ -85,6 +82,15 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void OnEnable()
     {
+        Debug.Log($"[AbilityUnlockPopupUI] OnEnable - Time: {Time.time:F3}s");
+        
+        // ✅ CRÍTICO: Suscribirse en OnEnable() para garantizar que el registro ocurra
+        // incluso si el GameObject se activa tarde o después de OnProfileReady
+        GameBootService.OnProfileReady += HandleProfileReadyForSuppression;
+        
+        Debug.Log($"[AbilityUnlockPopupUI] Llamando RegisterSubscriber - Time: {Time.time:F3}s");
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(AbilityUnlockPopupUI));
+        
         // Awake ya suscribe, pero mantener OnEnable para asegurar que la suscripción
         // siga activa si el dominio se recarga en modo editor.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
@@ -108,6 +114,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void OnDisable()
     {
+        GameBootService.OnProfileReady -= HandleProfileReadyForSuppression;
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
 

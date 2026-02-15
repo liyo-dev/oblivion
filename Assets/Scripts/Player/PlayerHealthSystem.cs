@@ -131,6 +131,7 @@ public class PlayerHealthSystem : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(PlayerHealthSystem));
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();

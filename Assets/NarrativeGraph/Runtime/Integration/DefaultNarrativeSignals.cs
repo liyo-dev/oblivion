@@ -6,6 +6,14 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 {
     public static DefaultNarrativeSignals Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     public static DefaultNarrativeSignals EnsureInstance()
     {
         if (Instance != null)
@@ -87,10 +95,26 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 
     public void ResetState()
     {
+        ResetState(preservePending: false);
+    }
+
+    /// <summary>
+    /// Resetea el estado de señales.
+    /// Si preservePending es true, mantiene los eventos pendientes (útil al cargar partida).
+    /// </summary>
+    public void ResetState(bool preservePending)
+    {
         _custom.Clear();
-        _pending.Clear();
+        if (!preservePending)
+        {
+            _pending.Clear();
+            _battlePending.Clear();
+        }
+        else if (_pending.Count > 0 || _battlePending.Count > 0)
+        {
+            Debug.Log($"[Signals] ResetState preservando {_pending.Count} eventos pendientes y {_battlePending.Count} batallas pendientes");
+        }
         _battleSubscribers.Clear();
-        _battlePending.Clear();
         _qs = null;
     }
 
@@ -165,6 +189,7 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         // Si estaba pendiente, lo consumimos inmediatamente (una sola vez) y NO lo guardamos
         if (_pending.Remove(key))
         {
+            Debug.Log($"[Signals] Custom: {key} (consumido desde pendientes)");
             try { cb(); } catch (Exception e) { Debug.LogException(e); }
             return;
         }

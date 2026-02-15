@@ -223,7 +223,14 @@ public class GameBootProfile : ScriptableObject
         }
         // Anchor procedente del save
         if (!string.IsNullOrEmpty(data.lastSpawnAnchorId))
+        {
             p.spawnAnchorId = data.lastSpawnAnchorId;
+            Debug.Log($"[GameBootProfile] 📍 Anchor establecido desde save: '{data.lastSpawnAnchorId}'");
+        }
+        else
+        {
+            Debug.LogWarning($"[GameBootProfile] ⚠️ Save no tiene lastSpawnAnchorId - anchor quedará como estaba: '{p.spawnAnchorId}'");
+        }
 
         // Slots: si el save trae slots, usarlos (validando); si no, fallback al comportamiento anterior
         var unlocked = p.unlockedSpells ?? new List<SpellId>();

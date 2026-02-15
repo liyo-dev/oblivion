@@ -25,6 +25,7 @@ public class PortalTrigger : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(PortalTrigger));
     }
 
     void OnDisable()

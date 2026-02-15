@@ -35,12 +35,35 @@ public class BossProgressPersistenceBridge : MonoBehaviour
         _instance = this;
         ServiceLocator.Register(this);
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(BossProgressPersistenceBridge));
         BossProgressTracker.OnBossMarkedDefeated += HandleBossMarked;
 
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();
         }
+        else
+        {
+            // ✅ CRÍTICO: Si no hay GameBootService (inicio directo desde MainWorld en editor),
+            // inicializar de todas formas para permitir testing
+            Debug.LogWarning("[BossProgressPersistenceBridge] GameBootService no disponible - Modo testing directo desde MainWorld");
+            StartCoroutine(WaitForTrackerAndInitialize());
+        }
+    }
+    
+    private System.Collections.IEnumerator WaitForTrackerAndInitialize()
+    {
+        // Esperar a que BossProgressTracker esté listo
+        while (!BossProgressTracker.TryGetInstance(out var _))
+        {
+            yield return null;
+        }
+        
+        // Esperar un frame adicional para asegurar que todas las arenas se hayan registrado
+        yield return null;
+        
+        Debug.Log("[BossProgressPersistenceBridge] ✅ BossProgressTracker listo - Inicializando estado vacío para testing");
+        _initialized = true;
     }
 
     private void OnDisable()

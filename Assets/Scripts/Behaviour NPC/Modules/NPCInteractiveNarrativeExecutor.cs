@@ -35,6 +35,9 @@ namespace Game.NPC.Modules
         private int _lastNarrativeCheckFrame = -1;
         private const int NARRATIVE_CHECK_INTERVAL = 10;
         
+        private bool _profileReady = false;
+        private bool _detectPlayerRoutineStarted = false;
+        
         private static readonly WaitForSeconds _waitHalfSecond = new WaitForSeconds(0.5f);
         private static readonly WaitForSeconds _waitPointTwo = new WaitForSeconds(0.2f);
         private static readonly WaitForSeconds _waitPointOne = new WaitForSeconds(0.1f);
@@ -81,8 +84,31 @@ namespace Game.NPC.Modules
             }
         }
 
-        private void OnEnable() => NPCInteractiveNarrativeRegistry.Register(this);
-        private void OnDisable() => NPCInteractiveNarrativeRegistry.Unregister(this);
+        private void OnEnable()
+        {
+            NPCInteractiveNarrativeRegistry.Register(this);
+            GameBootService.OnProfileReady += HandleProfileReady;
+            ProfileReadyDiagnostics.RegisterSubscriber(nameof(NPCInteractiveNarrativeExecutor));
+        }
+        
+        private void OnDisable()
+        {
+            NPCInteractiveNarrativeRegistry.Unregister(this);
+            GameBootService.OnProfileReady -= HandleProfileReady;
+        }
+        
+        private void HandleProfileReady()
+        {
+            _profileReady = true;
+            GameBootService.OnProfileReady -= HandleProfileReady;
+            
+            // Solo iniciar DetectPlayerRoutine si aún no se ha iniciado
+            if (!_detectPlayerRoutineStarted && _config != null)
+            {
+                _detectPlayerRoutineStarted = true;
+                StartCoroutine(DetectPlayerRoutine());
+            }
+        }
         
         public NPCInteractiveNarrativeConfig GetConfiguration()
         {

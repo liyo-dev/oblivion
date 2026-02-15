@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -41,6 +41,7 @@ public class PlayerAbilitiesUI : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(PlayerAbilitiesUI));
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();

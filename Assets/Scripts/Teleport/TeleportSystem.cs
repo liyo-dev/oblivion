@@ -12,6 +12,17 @@ public class TeleportSystem : MonoBehaviour
     private static TeleportSystem _instance;
     public static TeleportSystem Instance => _instance;
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        OnTeleportStarted = null;
+        OnTeleportCompleted = null;
+        IsTeleporting = false;
+    }
+    #endif
+    
     [Header("VFX")]
     [SerializeField] private GameObject teleportVfxPrefab;
     [SerializeField] private float vfxDuration = 1.5f;

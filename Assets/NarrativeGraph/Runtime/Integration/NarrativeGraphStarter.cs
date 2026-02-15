@@ -117,37 +117,37 @@ public class NarrativeGraphStarter : MonoBehaviour
     {
         if (!GameBootService.IsAvailable)
         {
-            Debug.Log("[NarrativeGraphStarter] GameBootService no disponible - no hay blackboards para restaurar");
+            Debug.LogWarning("[NarrativeGraphStarter] ⚠️ GameBootService no disponible - no hay blackboards para restaurar");
             return;
         }
 
         var profile = GameBootService.Profile;
         if (profile == null)
         {
-            Debug.LogWarning("[NarrativeGraphStarter] GameBootProfile es null");
+            Debug.LogWarning("[NarrativeGraphStarter] ⚠️ GameBootProfile es null");
             return;
         }
 
         var preset = profile.GetActivePresetResolved();
         if (preset == null)
         {
-            Debug.LogWarning("[NarrativeGraphStarter] Preset es null");
+            Debug.LogWarning("[NarrativeGraphStarter] ⚠️ Preset es null");
             return;
         }
 
         if (preset.narrativeBlackboards == null)
         {
-            Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards es null - no hay estado guardado");
+            Debug.LogWarning($"[NarrativeGraphStarter] ⚠️ preset.narrativeBlackboards es null para preset '{preset.name}' - Los grafos iniciarán desde el nodo Start");
             return;
         }
 
         if (preset.narrativeBlackboards.Count == 0)
         {
-            Debug.Log("[NarrativeGraphStarter] preset.narrativeBlackboards está vacío - no hay estado guardado");
+            Debug.LogWarning($"[NarrativeGraphStarter] ⚠️ preset.narrativeBlackboards está vacío para preset '{preset.name}' - Los grafos iniciarán desde el nodo Start");
             return;
         }
 
-        Debug.Log($"[NarrativeGraphStarter] 🔄 Restaurando blackboards desde preset ({preset.narrativeBlackboards.Count} grafos)");
+        Debug.Log($"[NarrativeGraphStarter] 🔄 Restaurando blackboards desde preset '{preset.name}' ({preset.narrativeBlackboards.Count} grafos)");
 
         hub.RestoreBlackboards(preset.narrativeBlackboards);
     }

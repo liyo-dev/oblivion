@@ -16,6 +16,16 @@ public static class TeleportRegistry
     /// <summary>Evento disparado cuando cambia la lista de puntos.</summary>
     public static event Action OnRegistryChanged;
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _unlockedPoints.Clear();
+        OnPointUnlocked = null;
+        OnRegistryChanged = null;
+    }
+    #endif
+    
     /// <summary>Número de puntos desbloqueados.</summary>
     public static int UnlockedCount => _unlockedPoints.Count;
     

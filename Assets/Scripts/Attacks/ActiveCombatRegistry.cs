@@ -20,6 +20,16 @@ public static class ActiveCombatRegistry
     /// </summary>
     public static event Action<GameObject> OnNPCExitedCombat;
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _npcsInCombat.Clear();
+        OnNPCEnteredCombat = null;
+        OnNPCExitedCombat = null;
+    }
+    #endif
+    
     /// <summary>
     /// Registra un NPC como "en combate"
     /// </summary>

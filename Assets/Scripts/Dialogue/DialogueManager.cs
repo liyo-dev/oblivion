@@ -112,6 +112,17 @@ public class DialogueManager : MonoBehaviour
     private float _lastLineCompletedAt = -999f;
     private const float LineCompleteCooldown = 0.2f;
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+        OnDialogueStarted = null;
+        OnDialogueClosed = null;
+        OnDialogueLineChanged = null;
+    }
+    #endif
+    
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }

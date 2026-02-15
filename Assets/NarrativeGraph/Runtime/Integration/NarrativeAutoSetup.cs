@@ -95,14 +95,15 @@ public class NarrativeAutoSetup : MonoBehaviour
         // Al cargar partida, NO limpiamos el blackboard ni reiniciamos el grafo
         // El estado del grafo se restaurará desde los flags del preset
         // Solo reseteamos los servicios de señales y quests para que se re-sincronicen
-        _instance.HandleReset("ResetForLoadedProfile", clearBlackboard: false, restartGraph: false);
+        // IMPORTANTE: Preservamos eventos pendientes porque el trigger puede activarse antes que el grafo
+        _instance.HandleReset("ResetForLoadedProfile", clearBlackboard: false, restartGraph: false, preservePending: true);
     }
 
-    void HandleReset(string reason, bool clearBlackboard = false, bool restartGraph = false)
+    void HandleReset(string reason, bool clearBlackboard = false, bool restartGraph = false, bool preservePending = false)
     {
-        if (debugLogs) Debug.Log($"[NarrativeAutoSetup] {reason}() - clearBlackboard={clearBlackboard}, restartGraph={restartGraph}");
+        if (debugLogs) Debug.Log($"[NarrativeAutoSetup] {reason}() - clearBlackboard={clearBlackboard}, restartGraph={restartGraph}, preservePending={preservePending}");
 
-        _signals?.ResetState();
+        _signals?.ResetState(preservePending);
         _questService?.ResetState();
         
         if (_runner != null)

@@ -1,5 +1,10 @@
 using UnityEngine;
 
+/// <summary>
+/// Inicializa el mundo cuando MainWorld se carga.
+/// Se ejecuta DESPUÉS de SpawnManager para usar el anchor ya establecido.
+/// </summary>
+[DefaultExecutionOrder(200)]
 public class WorldBootstrap : MonoBehaviour
 {
     private bool _initialized;
@@ -7,11 +12,56 @@ public class WorldBootstrap : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(WorldBootstrap));
+        
         if (GameBootService.IsAvailable)
         {
             HandleProfileReady();
         }
+        else
+        {
+            // ✅ En editor, Start puede cargarse aditivamente - Esperar un momento antes de asumir que no existe
+            #if UNITY_EDITOR
+            Debug.Log("[WorldBootstrap] ⏳ GameBootService no disponible aún - Esperando por si Start se carga aditivamente...");
+            StartCoroutine(WaitForGameBootServiceOrFallback());
+            #else
+            // En build, si no hay GameBootService es un error grave
+            Debug.LogWarning("[WorldBootstrap] GameBootService no disponible - Modo testing directo desde MainWorld sin preset");
+            StartCoroutine(InitializeWorldWithoutBootService());
+            #endif
+        }
     }
+    
+    #if UNITY_EDITOR
+    /// <summary>
+    /// En editor, espera un tiempo razonable por si Start se está cargando aditivamente.
+    /// Si después de esperar no hay GameBootService, usa valores por defecto.
+    /// </summary>
+    private System.Collections.IEnumerator WaitForGameBootServiceOrFallback()
+    {
+        int framesWaited = 0;
+        
+        // Esperar indefinidamente hasta que GameBootService esté disponible
+        // (con timeout de seguridad de 30 segundos para detectar errores graves)
+        while (!GameBootService.IsAvailable)
+        {
+            yield return null;
+            framesWaited++;
+            
+            // Timeout de seguridad: 1800 frames = 30 segundos a 60 FPS
+            if (framesWaited > 1800)
+            {
+                Debug.LogError($"[WorldBootstrap] ❌ FATAL: GameBootService no disponible después de 30 segundos ({framesWaited} frames)");
+                Debug.LogError($"[WorldBootstrap] ❌ Verifica que la escena 'Start' esté en Build Settings y se haya cargado correctamente");
+                Debug.LogError($"[WorldBootstrap] ❌ AutoBootstrapOnPlay debe haber cargado 'Start' aditivamente antes de PlayMode");
+                yield break;
+            }
+        }
+        
+        Debug.Log($"[WorldBootstrap] ✅ GameBootService disponible después de {framesWaited} frame(s) - Inicializando normalmente");
+        HandleProfileReady();
+    }
+    #endif
 
     void OnDisable()
     {
@@ -36,6 +86,8 @@ public class WorldBootstrap : MonoBehaviour
 
     private void InitializeWorld()
     {
+        Debug.Log($"[WorldBootstrap] 🌍 InitializeWorld() - Iniciando configuración del mundo");
+        
         var bootProfile = GameBootService.Profile;
         if (bootProfile == null)
         {
@@ -43,28 +95,34 @@ public class WorldBootstrap : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[WorldBootstrap] Profile encontrado - ShouldBootFromPreset: {bootProfile.ShouldBootFromPreset()}");
+
         // 1) Modo PRESET (test): SIEMPRE tiene prioridad sobre saves
         if (bootProfile.ShouldBootFromPreset())
         {
             bootProfile.EnsureRuntimePresetFromTemplate(bootProfile.bootPreset);
             
+            // ✅ El anchor ya fue establecido por SpawnManager.HandleProfileReady()
             var anchor = bootProfile.GetStartAnchorOrDefault();
-            SpawnManager.SetCurrentAnchor(anchor);
+            Debug.Log($"[WorldBootstrap] 📍 Modo PRESET - Anchor desde profile: '{anchor}', CurrentAnchorId: '{SpawnManager.CurrentAnchorId}'");
 
-            var qm = QuestManager.Instance;
-            if (qm != null)
+            var testPreset = bootProfile.GetActivePresetResolved();
+            if (testPreset != null)
             {
-                var testPreset = bootProfile.GetActivePresetResolved();
-                if (testPreset != null)
+                // Restaurar quests
+                var qm = QuestManager.Instance;
+                if (qm != null)
                 {
                     qm.RestoreFromProfileFlags(testPreset.flags);
                 }
+                
+                // ✅ CRÍTICO: Aplicar posiciones de NPCs AQUÍ (cuando MainWorld ya está cargada)
+                // GameBootService.ApplyPresetAsLoadedGame() se ejecuta ANTES de que MainWorld cargue
+                // En ese momento los NPCs no existen, por lo que NO se pueden posicionar
+                // AHORA es el momento correcto porque MainWorld está cargada y los NPCs existen
+                Debug.Log($"[WorldBootstrap] 🎯 Aplicando posiciones de {testPreset.npcPositions?.Count ?? 0} NPCs desde preset (modo testeo)");
+                bootProfile.ApplyNpcPositionsToScene(testPreset);
             }
-
-            // IMPORTANTE: NO aplicar posiciones de NPCs aquí cuando viene de modo preset
-            // GameBootService.ApplyPresetAsLoadedGame() ya las aplicó correctamente
-            // Si las aplicamos de nuevo aquí, causamos conflictos (doble aplicación)
-            // Debug.Log("[WorldBootstrap] Modo PRESET - Posiciones de NPCs ya aplicadas por GameBootService");
 
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
             // Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
@@ -74,12 +132,13 @@ public class WorldBootstrap : MonoBehaviour
         // 2) Flujo normal: El runtimePreset ya está configurado por GameBootService.PrepareActivePreset()
         // Simplemente aplicar el preset al jugador sin recargar el save
         string anchorId = bootProfile.GetStartAnchorOrDefault();
+        Debug.Log($"[WorldBootstrap] 📍 Modo NORMAL - Anchor desde profile: '{anchorId}', CurrentAnchorId: '{SpawnManager.CurrentAnchorId}'");
         
-        var activePreset = bootProfile.GetActivePresetResolved();
-        if (activePreset != null)
+        var runtimePreset = bootProfile.GetActivePresetResolved();
+        if (runtimePreset != null)
         {
             // Aplicar posiciones de NPCs usando el método robusto de GameBootProfile
-            bootProfile.ApplyNpcPositionsToScene(activePreset);
+            bootProfile.ApplyNpcPositionsToScene(runtimePreset);
             
             // Aplicar el preset al jugador (incluye inventario y abilities)
             if (PlayerService.TryGetComponent<PlayerPresetService>(out var presetService, includeInactive: true, allowSceneLookup: true))
@@ -92,7 +151,7 @@ public class WorldBootstrap : MonoBehaviour
             
             // Aplicar estado de quests desde el preset
             var qm = QuestManager.Instance;
-            if (qm != null) qm.RestoreFromProfileFlags(activePreset.flags);
+            if (qm != null) qm.RestoreFromProfileFlags(runtimePreset.flags);
             
             // Debug.Log($"[WorldBootstrap] Usando runtimePreset ya configurado → Anchor: '{anchorId}'");
         }

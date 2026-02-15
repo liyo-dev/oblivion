@@ -46,6 +46,14 @@ public class TeleportUI : MonoBehaviour
     private static TeleportUI _instance;
     public static TeleportUI Instance => _instance;
     
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+    }
+    #endif
+    
     private void Awake()
     {
         if (_instance != null && _instance != this)

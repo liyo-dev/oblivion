@@ -13,6 +13,16 @@ public class BossProgressTracker : MonoBehaviour
     public static event Action<string> OnBossMarkedDefeated;
     public static event Action OnProgressRestored;
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _instance = null;
+        OnBossMarkedDefeated = null;
+        OnProgressRestored = null;
+    }
+    #endif
+
     public static BossProgressTracker Instance
     {
         get

@@ -19,6 +19,14 @@ namespace Sendero.UI
         // Singleton instance
         public static PlayerHUDV2 Instance { get; private set; }
         
+        #if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Instance = null;
+        }
+        #endif
+        
         [Header("Referencias de Vida")]
         [Tooltip("Imagen fill para la barra de vida")]
         [SerializeField] private Image healthFillImage;

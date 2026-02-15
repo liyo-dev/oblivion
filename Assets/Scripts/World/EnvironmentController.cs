@@ -6,6 +6,14 @@ public class EnvironmentController : MonoBehaviour
 {
     public static EnvironmentController Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     [Header("Opcional")]
     public Material exteriorSkyboxOverride;   // si lo pones, se usará al volver a exterior
     public Camera targetCamera;               // si lo dejas vacío, se resuelve solo

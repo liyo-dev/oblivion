@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 /// <summary>
 /// Servicio singleton que gestiona el sistema de colisión de proyectiles.
@@ -17,6 +17,15 @@
 public class ProjectileCollisionService : MonoBehaviour
 {
     public static ProjectileCollisionService Instance { get; private set; }
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+        _isShuttingDown = false;
+    }
+    #endif
     
     [Header("Configuración")]
     [Tooltip("ScriptableObject con la configuración de colisiones de proyectiles")]

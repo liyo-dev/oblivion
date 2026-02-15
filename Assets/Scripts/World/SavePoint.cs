@@ -26,6 +26,7 @@ public class SavePoint : MonoBehaviour
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(SavePoint));
     }
 
     void OnDisable()

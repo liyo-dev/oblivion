@@ -23,6 +23,15 @@ public static class GameState
 {
     private static readonly Dictionary<GamePhase, int> _stack = new Dictionary<GamePhase, int>();
     public static event Action OnChanged;
+    
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _stack.Clear();
+        OnChanged = null;
+    }
+    #endif
 
     public static void Push(GamePhase phase)
     {

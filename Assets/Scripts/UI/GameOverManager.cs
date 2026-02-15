@@ -15,6 +15,14 @@ public class GameOverManager : MonoBehaviour
 {
     public static GameOverManager Instance { get; private set; }
 
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instance = null;
+    }
+    #endif
+
     [Header("Escenas")]
     [SerializeField] private string mainMenuScene = "MainMenu";
 
