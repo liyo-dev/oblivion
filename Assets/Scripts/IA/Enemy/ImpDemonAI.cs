@@ -385,6 +385,17 @@ public class ImpDemonAI : MonoBehaviour
             {
                 agent.isStopped = false;
                 agent.SetDestination(player.position);
+                
+                // ✅ NUEVO: Rotar hacia la dirección de movimiento mientras persigue
+                // Esto evita que el Imp camine de lado cuando el camino no es directo
+                if (agent.velocity.sqrMagnitude > 0.1f)
+                {
+                    LookAtDirection(agent.velocity.normalized);
+                }
+                else
+                {
+                    LookAtPlayer();
+                }
             }
             PlayAnimation(AnimFlyForward);
         }
@@ -621,6 +632,21 @@ public class ImpDemonAI : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
+        }
+    }
+    
+    /// <summary>
+    /// Rota hacia una dirección específica (útil para rotar hacia la dirección de movimiento)
+    /// </summary>
+    private void LookAtDirection(Vector3 direction)
+    {
+        direction.y = 0; // Solo rotación horizontal
+        
+        if (direction.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
+            // Usar velocidad de rotación más alta (x1.5) durante el movimiento
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 7.5f);
         }
     }
 

@@ -1,4 +1,4 @@
-﻿﻿namespace Sendero.Core.Feedback
+﻿﻿﻿namespace Sendero.Core.Feedback
 {
     using UnityEngine;
 
@@ -52,6 +52,109 @@
         }
 
         public static void SetScreenFlashProvider(IScreenFlashProvider provider) => _screenFlashProvider = provider;
+
+        // Screen Fade (transición suave a/desde negro)
+        /// <summary>
+        /// Hace un fade de pantalla completa. fadeIn=true va de transparente a color, fadeIn=false va de color a transparente.
+        /// </summary>
+        public static void ScreenFade(Color color, float duration, bool fadeIn = true)
+        {
+            if (duration <= 0f) return;
+            var inst = EnsureInstance();
+            inst.StartCoroutine(Co_ScreenFade(color, duration, fadeIn));
+        }
+        
+        /// <summary>
+        /// Versión async del fade de pantalla que permite hacer yield return.
+        /// </summary>
+        public static System.Collections.IEnumerator ScreenFadeAsync(Color color, float duration, bool fadeIn = true)
+        {
+            if (duration <= 0f) yield break;
+            EnsureInstance();
+            yield return Co_ScreenFade(color, duration, fadeIn);
+        }
+        
+        private static System.Collections.IEnumerator Co_ScreenFade(Color color, float duration, bool fadeIn)
+        {
+            var root = EnsureFadeRoot();
+            if (root == null || root.Image == null) yield break;
+            
+            var img = root.Image;
+            float elapsed = 0f;
+            
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                var c = color;
+                
+                if (fadeIn)
+                {
+                    // De transparente a color (fade IN a negro)
+                    c.a = Mathf.Lerp(0f, color.a, t);
+                }
+                else
+                {
+                    // De color a transparente (fade OUT desde negro)
+                    c.a = Mathf.Lerp(color.a, 0f, t);
+                }
+                
+                img.color = c;
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            
+            // Estado final
+            var final = color;
+            final.a = fadeIn ? color.a : 0f;
+            img.color = final;
+        }
+        
+        // Reutilizar el mismo sistema de overlay que Flash
+        private class FadeRoot { public UnityEngine.UI.Image Image; }
+        private static FadeRoot _fadeRoot;
+        
+        private static FadeRoot EnsureFadeRoot()
+        {
+            if (_fadeRoot != null && _fadeRoot.Image != null) return _fadeRoot;
+            
+            // Buscar si ya existe el FlashRoot y reutilizar su Image
+            var flashGo = GameObject.Find("FS_ScreenFlash");
+            if (flashGo != null)
+            {
+                var img = flashGo.GetComponentInChildren<UnityEngine.UI.Image>();
+                if (img != null)
+                {
+                    _fadeRoot = new FadeRoot { Image = img };
+                    return _fadeRoot;
+                }
+            }
+            
+            // Si no existe, crearlo
+            var go = new GameObject("FS_ScreenFade");
+            Object.DontDestroyOnLoad(go);
+            
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 9998; // justo debajo del flash
+            
+            var cg = go.AddComponent<CanvasGroup>();
+            cg.interactable = false;
+            cg.blocksRaycasts = false;
+            
+            var imageGo = new GameObject("FadeImage");
+            imageGo.transform.SetParent(go.transform, false);
+            var image = imageGo.AddComponent<UnityEngine.UI.Image>();
+            image.color = new Color(0, 0, 0, 0);
+            
+            var rt = image.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            
+            _fadeRoot = new FadeRoot { Image = image };
+            return _fadeRoot;
+        }
 
         // Hit Stop (pequeña pausa)
         public static void HitStop(float timeScale, float durationSeconds)

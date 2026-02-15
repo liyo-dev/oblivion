@@ -274,16 +274,16 @@ public class CombatCameraTargeting : MonoBehaviour
             thirdPersonCamera.xMouseSensitivity = originalCameraSensitivity * 0.3f; // Reducir movimiento horizontal
         }
         
-        // Sincronizar con PlayerTargeting para proyectiles
-        // TODO: Implementar SetManualTarget en PlayerTargeting
-        // if (syncWithProjectileTargeting && playerTargeting != null)
-        // {
-        //     playerTargeting.SetManualTarget(newTarget.transform);
-        //     Log($"🎯 PlayerTargeting sincronizado con: {newTarget.name}");
-        // }
+        // ✅ SINCRONIZAR con PlayerTargeting para proyectiles/hechizos
+        // El marker de PlayerTargeting será el único indicador visual (unificado)
+        if (syncWithProjectileTargeting && playerTargeting != null)
+        {
+            playerTargeting.SetManualTarget(newTarget.transform);
+            Log($"🎯 PlayerTargeting sincronizado con: {newTarget.name}");
+        }
         
-        // Crear indicador visual
-        CreateLockIndicator();
+        // ✅ NO crear indicador visual propio - usamos el de PlayerTargeting
+        // CreateLockIndicator(); // Desactivado: usamos el marker de PlayerTargeting
         
         Log($"🎯 Lock establecido en: {newTarget.name}");
     }
@@ -372,7 +372,14 @@ public class CombatCameraTargeting : MonoBehaviour
             thirdPersonCamera.xMouseSensitivity = originalCameraSensitivity;
         }
         
-        // Destruir indicador
+        // ✅ LIBERAR target manual de PlayerTargeting para volver a targeting automático
+        if (syncWithProjectileTargeting && playerTargeting != null)
+        {
+            playerTargeting.ClearManualTarget();
+            Log("🔓 PlayerTargeting: target manual liberado");
+        }
+        
+        // Destruir indicador (si existiera)
         DestroyLockIndicator();
     }
     

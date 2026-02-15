@@ -486,6 +486,13 @@ public class GolemBossAI : MonoBehaviour
         }
         
         agent.SetDestination(player.position);
+        
+        // ✅ NUEVO: Rotar hacia la dirección de movimiento mientras camina
+        // Esto evita que el Golem camine de perfil
+        if (agent.velocity.sqrMagnitude > 0.1f)
+        {
+            RotateTowardsMovementDirection();
+        }
     }
 
     private void SetIdle()
@@ -518,6 +525,23 @@ public class GolemBossAI : MonoBehaviour
         {
             Quaternion targetRot = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
+        }
+    }
+    
+    /// <summary>
+    /// Rota el Golem hacia su dirección de movimiento actual (velocidad del NavMeshAgent)
+    /// Usa una velocidad de rotación más alta para que no camine de perfil
+    /// </summary>
+    private void RotateTowardsMovementDirection()
+    {
+        Vector3 moveDir = agent.velocity;
+        moveDir.y = 0;
+        
+        if (moveDir.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized);
+            // Usar velocidad de rotación más alta (x3) cuando está caminando para evitar caminar de perfil
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed * 3f);
         }
     }
 

@@ -344,6 +344,13 @@ public class DialogueManager : MonoBehaviour
             Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
         }
         
+        // ✅ NUEVO: Activar animación de interacción del player (Will)
+        // Solo si es un NPC real (no objetos como cartas, save points, etc.)
+        if (IsActualNPC(npc))
+        {
+            ActivatePlayerInteractionAnimation(true);
+        }
+        
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
         OnDialogueStarted?.Invoke(_currentNpc);
@@ -473,6 +480,9 @@ public class DialogueManager : MonoBehaviour
         {
             Game.NPC.PlayerParty.Instance.ReleaseDialoguePositioning();
         }
+        
+        // ✅ NUEVO: Desactivar animación de interacción del player
+        ActivatePlayerInteractionAnimation(false);
 
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
@@ -984,6 +994,30 @@ public class DialogueManager : MonoBehaviour
                 foundAnimator.SetTalking(true);
                 Debug.Log($"[DialogueManager] 🗣️ NPC '{speakerId}' (escena) animación Talk activada");
             }
+        }
+    }
+    
+    /// <summary>
+    /// Activa/desactiva la animación de interacción (InteractWithPeople) del player durante diálogos
+    /// </summary>
+    private void ActivatePlayerInteractionAnimation(bool activate)
+    {
+        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
+            return;
+        
+        var playerAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
+        if (playerAnimator == null)
+            return;
+        
+        if (activate)
+        {
+            playerAnimator.BeginInteraction();
+            Debug.Log($"[DialogueManager] 🎭 Player animación InteractWithPeople ACTIVADA");
+        }
+        else
+        {
+            playerAnimator.EndInteraction();
+            Debug.Log($"[DialogueManager] 🎭 Player animación InteractWithPeople DESACTIVADA");
         }
     }
 }

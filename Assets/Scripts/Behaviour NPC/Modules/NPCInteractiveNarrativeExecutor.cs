@@ -31,6 +31,10 @@ namespace Game.NPC.Modules
         private float _lastExecutionEndTime = -999f;
         private const float POST_EXECUTION_COOLDOWN = 0.5f;
         
+        // ✅ NUEVO: Cooldown especial cuando JoinParty falla por party lleno
+        private float _joinPartyFailedUntil = -999f;
+        private const float JOIN_PARTY_FAILED_COOLDOWN = 30f; // 30 segundos antes de reintentar
+        
         private ConditionalNarrative _cachedActiveNarrative;
         private int _lastNarrativeCheckFrame = -1;
         private const int NARRATIVE_CHECK_INTERVAL = 10;
@@ -45,7 +49,7 @@ namespace Game.NPC.Modules
         #endregion
         
         #region 📢 Public API
-        public bool IsExecuting => _isExecuting || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN);
+        public bool IsExecuting => _isExecuting || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN) || (Time.time < _joinPartyFailedUntil);
         #endregion
         
         private ConditionalNarrative GetCachedActiveNarrative(bool forceRefresh = false)
@@ -136,7 +140,13 @@ namespace Game.NPC.Modules
             }
 
             ApplyInitialLayer();
-            StartCoroutine(DetectPlayerRoutine());
+            
+            // ✅ FIX: Solo iniciar si no se ha iniciado ya (evitar múltiples corrutinas)
+            if (!_detectPlayerRoutineStarted)
+            {
+                _detectPlayerRoutineStarted = true;
+                StartCoroutine(DetectPlayerRoutine());
+            }
         }
         
         private void InitializeAlertIconController()
@@ -237,7 +247,8 @@ namespace Game.NPC.Modules
 
         public bool TryExecuteNarrative()
         {
-            if (_isExecuting || _config == null) return false;
+            // ✅ FIX: Usar IsExecuting (propiedad) para respetar todos los cooldowns
+            if (IsExecuting || _config == null) return false;
 
             var activeNarrative = _config.GetActiveNarrative();
             if (activeNarrative == null) return false;
@@ -595,14 +606,45 @@ namespace Game.NPC.Modules
                 }
             }
             
+            // ✅ NUEVO: Verificar si YA está en el party antes de intentar unirse
+            if (partyMember.IsInParty)
+            {
+                Debug.Log($"[NarrativeExecutor:{name}] ℹ️ {name} YA está en el party, acción JoinParty ignorada");
+                
+                // ✅ FIX: Activar cooldown largo para evitar que la narrativa se ejecute en bucle
+                // Si ya está en el party, no tiene sentido seguir intentándolo
+                _joinPartyFailedUntil = Time.time + JOIN_PARTY_FAILED_COOLDOWN;
+                Debug.Log($"[NarrativeExecutor:{name}] ⏰ Cooldown de {JOIN_PARTY_FAILED_COOLDOWN}s activado (ya en party)");
+                
+                yield break;
+            }
+            
             bool success = partyMember.JoinParty();
             if (success)
             {
                 Debug.Log($"[NarrativeExecutor:{name}] ✨ {name} se unió al equipo del jugador");
+                // ✅ Resetear cooldown de fallo si logra unirse
+                _joinPartyFailedUntil = -999f;
             }
             else
             {
-                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ No se pudo unir al equipo (¿está lleno?)");
+                // ✅ MEJORADO: Verificar por qué falló y activar cooldown largo
+                if (Game.NPC.PlayerParty.HasInstance)
+                {
+                    var party = Game.NPC.PlayerParty.Instance;
+                    Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ No se pudo unir al equipo. " +
+                        $"Miembros actuales: {party.MemberCount}/{party.MaxSize}. " +
+                        $"¿Está lleno? {party.IsFull}. " +
+                        $"⏰ Cooldown de {JOIN_PARTY_FAILED_COOLDOWN}s activado.");
+                    
+                    // ✅ NUEVO: Activar cooldown largo para evitar spam de reintentos
+                    _joinPartyFailedUntil = Time.time + JOIN_PARTY_FAILED_COOLDOWN;
+                }
+                else
+                {
+                    Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ No se pudo unir al equipo - PlayerParty no existe");
+                    _joinPartyFailedUntil = Time.time + JOIN_PARTY_FAILED_COOLDOWN;
+                }
             }
             
             yield return null;
@@ -694,7 +736,9 @@ namespace Game.NPC.Modules
             while (true)
             {
                 var activeNarrative = GetCachedActiveNarrative(false);
-                if (activeNarrative == null || !activeNarrative.autoStartOnDetection || _hasDetectedPlayer || _isExecuting)
+                // ✅ FIX: Usar IsExecuting (propiedad) en lugar de _isExecuting (campo)
+                // IsExecuting incluye el cooldown de JoinParty fallido
+                if (activeNarrative == null || !activeNarrative.autoStartOnDetection || _hasDetectedPlayer || IsExecuting)
                 {
                     yield return _waitHalfSecond;
                     continue;

@@ -25,6 +25,12 @@ public class BossIntroPresentation : MonoBehaviour
     [Header("Effects")]
     [SerializeField] private float shakeIntensity = 0.3f;
     [SerializeField] private float shakeDuration = 0.5f;
+    
+    [Header("Camera Transition")]
+    [Tooltip("Duración del fade al entrar/salir de la cámara del boss")]
+    [SerializeField] private float cameraFadeDuration = 0.3f;
+    [Tooltip("Color del fade (negro por defecto)")]
+    [SerializeField] private Color fadeColor = Color.black;
 
     [Header("Audio")]
     [SerializeField] private AudioClip bossRoarClip;
@@ -54,12 +60,17 @@ public class BossIntroPresentation : MonoBehaviour
 
         if (PlayerLockService.HasInstance) PlayerLockService.Instance.Acquire(this);
 
-        // 1. Cambiar a la cámara del boss
-        // Guardamos el estado para restaurar, pero desactivamos la principal
+        // 1. FADE IN a negro (transición suave antes de cambiar cámaras)
+        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
+        
+        // 2. Cambiar a la cámara del boss (ahora invisible porque la pantalla está negra)
         _mainCamera.gameObject.SetActive(false);
         bossCamera.gameObject.SetActive(true);
+        
+        // 3. FADE OUT desde negro (revela la cámara del boss)
+        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
 
-        // 2. Iniciar efectos visuales y sonoros
+        // 4. Iniciar efectos visuales y sonoros
         if (bossNameCanvas != null && bossNameText != null)
         {
             bossNameText.text = bossName;
@@ -75,7 +86,7 @@ public class BossIntroPresentation : MonoBehaviour
         float elapsed = 0f;
         bool shakeDone = false;
 
-        // 3. Esperar duración y aplicar feedback sobre la cámara del boss
+        // 5. Esperar duración y aplicar feedback sobre la cámara del boss
         while (elapsed < introDuration)
         {
             elapsed += Time.deltaTime;
@@ -91,11 +102,18 @@ public class BossIntroPresentation : MonoBehaviour
             yield return null;
         }
 
-        // 4. Restaurar cámaras
+        // 6. FADE IN a negro (transición suave antes de restaurar cámaras)
+        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
+        
+        // 7. Restaurar cámaras (invisible porque la pantalla está negra)
         bossCamera.gameObject.SetActive(false);
         _mainCamera.gameObject.SetActive(true);
-
+        
         if (bossNameCanvas != null) bossNameCanvas.SetActive(false);
+        
+        // 8. FADE OUT desde negro (revela la cámara principal)
+        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: false);
+
         if (PlayerLockService.HasInstance) PlayerLockService.Instance.Release(this);
 
         _isPlaying = false;

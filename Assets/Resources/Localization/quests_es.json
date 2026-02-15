@@ -81,6 +81,14 @@
             "value": "Hacia el Bosque Prohibido"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION7_DESC",
+            "value": "Reúnete con Eldran en la taberna."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION7_NAME",
+            "value": "Nos vemos en la taberna."
+        },
+        {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
         },

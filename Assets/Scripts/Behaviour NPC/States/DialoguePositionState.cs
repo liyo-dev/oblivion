@@ -100,6 +100,9 @@ namespace Game.NPC.States
                     }
                 }
                 
+                // ✅ NUEVO: Activar animación de interacción (InteractWithPeople)
+                context.Animator?.BeginInteraction();
+                
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ✅ Llegó a posición de diálogo");
             }
             // Si tarda demasiado, teletransportar
@@ -125,6 +128,9 @@ namespace Game.NPC.States
                 
                 _hasReachedPosition = true;
                 
+                // ✅ NUEVO: Activar animación de interacción (InteractWithPeople)
+                context.Animator?.BeginInteraction();
+                
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ⚡ Teletransportado a posición de diálogo (tardó {_elapsedTime:F1}s)");
             }
             // Actualizar animación mientras se mueve
@@ -136,6 +142,9 @@ namespace Game.NPC.States
 
         public override void OnExit(NPCStateContext context)
         {
+            // ✅ NUEVO: Terminar animación de interacción
+            context.Animator?.EndInteraction();
+            
             // Restaurar valores por defecto
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {

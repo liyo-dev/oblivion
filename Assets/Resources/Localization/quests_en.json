@@ -81,6 +81,14 @@
             "value": "Toward the Forbidden Forest"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION7_DESC",
+            "value": "[EN] Reúnete con Eldran en la taberna."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION7_NAME",
+            "value": "[EN] Nos vemos en la taberna."
+        },
+        {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Talk to Eldran"
         },

@@ -166,6 +166,10 @@ namespace Game.NPC.States
         private bool _playerLocked;
         private Coroutine _activeCoroutine;
         
+        // ✅ NUEVO: Guardar estado original de obstacle avoidance para restaurarlo
+        private UnityEngine.AI.ObstacleAvoidanceType _originalObstacleAvoidanceType;
+        private bool _hasDisabledObstacleAvoidance;
+        
         // Cache para optimización de búsqueda de SpawnAnchors
         private static SpawnAnchor[] _cachedSpawnAnchors;
         private static float _lastCacheTime;
@@ -270,6 +274,13 @@ namespace Game.NPC.States
                 CleanupAndComplete(context);
                 return;
             }
+            
+            // ✅ NUEVO: Desactivar obstacle avoidance durante movimiento de cinemática
+            // Esto evita que el NPC se bloquee con el Player, Party Members u otros personajes
+            _originalObstacleAvoidanceType = context.Agent.obstacleAvoidanceType;
+            context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
+            _hasDisabledObstacleAvoidance = true;
+            context.Log($"[CinematicSequence] Obstacle avoidance desactivado temporalmente (era: {_originalObstacleAvoidanceType})");
             
             // Establecer destino
             Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);
@@ -540,6 +551,7 @@ namespace Game.NPC.States
         /// </summary>
         private void CleanupAndComplete(Common.NPCStateContext context)
         {
+            RestoreObstacleAvoidance(context);
             ReleasePlayerLock();
             IsCompleted = true;
         }
@@ -556,6 +568,7 @@ namespace Game.NPC.States
                 _activeCoroutine = null;
             }
             
+            RestoreObstacleAvoidance(context);
             ReleasePlayerLock();
             
             if (context.Agent != null)
@@ -566,6 +579,19 @@ namespace Game.NPC.States
             if (context.Animator != null)
             {
                 context.Animator.ResetMovement();
+            }
+        }
+        
+        /// <summary>
+        /// Restaura el obstacle avoidance a su valor original
+        /// </summary>
+        private void RestoreObstacleAvoidance(Common.NPCStateContext context)
+        {
+            if (_hasDisabledObstacleAvoidance && context.Agent != null && context.Agent.isOnNavMesh)
+            {
+                context.Agent.obstacleAvoidanceType = _originalObstacleAvoidanceType;
+                _hasDisabledObstacleAvoidance = false;
+                context.Log($"[CinematicSequence] Obstacle avoidance restaurado a: {_originalObstacleAvoidanceType}");
             }
         }
         

@@ -1160,6 +1160,15 @@ public class DialogueCinematicController : MonoBehaviour
                 // Dirección desde Player hacia NPC (frente del NPC respecto al Player)
                 fromOther = (target.position - currentPlayer.position).normalized;
             }
+            else if (IsPartyMember(target) && currentNPC != null)
+            {
+                // ✅ NUEVO: Para party members (como Estela), usar la dirección desde el NPC hacia el party member
+                // Esto asegura que la cámara vea la CARA del party member (que mira al NPC)
+                fromOther = (target.position - currentNPC.position).normalized;
+                
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] 🎬 Party member detectado: calculando dirección desde {currentNPC.name} hacia {target.name}");
+            }
             else
             {
                 // Fallback: usar la dirección forward del target
@@ -1282,6 +1291,15 @@ public class DialogueCinematicController : MonoBehaviour
                             // Target es Player: dirección desde Player hacia NPC
                             towardsOther = (currentNPC.position - currentPlayer.position).normalized;
                         }
+                        else if (IsPartyMember(target) && currentNPC != null)
+                        {
+                            // ✅ NUEVO: Target es Party Member (Estela, Liam, etc.)
+                            // La cámara debe estar del lado del NPC mirando hacia el party member
+                            towardsOther = (currentNPC.position - target.position).normalized;
+                            
+                            if (showDebugInfo)
+                                Debug.Log($"[DialogueCinematicController] 📷 CloseUp/Medium para Party Member: cámara desde dirección del NPC hacia {target.name}");
+                        }
                         else
                         {
                             // Fallback: frente al target
@@ -1315,6 +1333,11 @@ public class DialogueCinematicController : MonoBehaviour
                         else if (target == currentPlayer && currentNPC != null)
                         {
                             towardsOther = (currentNPC.position - currentPlayer.position).normalized;
+                        }
+                        else if (IsPartyMember(target) && currentNPC != null)
+                        {
+                            // ✅ NUEVO: Party member - cámara desde dirección del NPC
+                            towardsOther = (currentNPC.position - target.position).normalized;
                         }
                         else
                         {

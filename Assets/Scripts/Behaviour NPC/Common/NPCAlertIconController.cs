@@ -46,12 +46,16 @@ namespace Game.NPC.Common
         [Tooltip("Escala del icono")]
         [SerializeField] private float iconScale = 1f;
         
+        [Tooltip("Delay antes de mostrar el icono tras cerrar un diálogo (para que la cámara vuelva)")]
+        [SerializeField] private float restoreAfterDialogueDelay = 0.5f;
+        
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = false;
         
         // Referencias
         private GameObject _currentIconInstance;
         private Coroutine _iconRoutine;
+        private Coroutine _restoreAfterDialogueCoroutine;
         private Camera _mainCamera;
         private Tween _currentTween;
         private Transform _headBone;
@@ -183,21 +187,44 @@ namespace Game.NPC.Common
         }
         
         /// <summary>
-        /// Cuando termina un diálogo, restaurar el icono si estaba visible
+        /// Cuando termina un diálogo, restaurar el icono si estaba visible (con delay para esperar a la cámara)
         /// </summary>
         private void OnDialogueClosed(Transform npcInvolved)
         {
             if (_hiddenDuringDialogue && _currentIconInstance != null && !_isHiding)
             {
-                _hiddenDuringDialogue = false;
+                // Cancelar cualquier restauración pendiente
+                if (_restoreAfterDialogueCoroutine != null)
+                {
+                    StopCoroutine(_restoreAfterDialogueCoroutine);
+                }
                 
+                // Iniciar restauración con delay para que la cámara tenga tiempo de volver
+                _restoreAfterDialogueCoroutine = StartCoroutine(RestoreIconAfterDialogueDelay());
+            }
+        }
+        
+        /// <summary>
+        /// Corrutina que espera un momento antes de restaurar el icono tras el diálogo
+        /// </summary>
+        private IEnumerator RestoreIconAfterDialogueDelay()
+        {
+            // Esperar el delay configurado para que la cámara vuelva a su posición normal
+            yield return new WaitForSeconds(restoreAfterDialogueDelay);
+            
+            _hiddenDuringDialogue = false;
+            _restoreAfterDialogueCoroutine = null;
+            
+            // Verificar que el icono aún existe y debe mostrarse
+            if (_currentIconInstance != null && !_isHiding)
+            {
                 // Restaurar escala con animación
                 DOTween.Kill(this);
                 _currentIconInstance.transform.DOScale(_targetScale, 0.2f)
                     .SetEase(Ease.OutBack)
                     .SetId(this);
                     
-                if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔊 Restaurando icono tras diálogo");
+                if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔊 Restaurando icono tras diálogo (después de {restoreAfterDialogueDelay}s de delay)");
             }
         }
         

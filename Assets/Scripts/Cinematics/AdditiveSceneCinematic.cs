@@ -60,6 +60,14 @@ public class AdditiveSceneCinematic : MonoBehaviour
     [Header("Events")] 
     [Tooltip("Se dispara justo cuando la Timeline termina (natural o forzada) antes de descargar la escena.")]
     [SerializeField] private UnityEvent onCinematicFinished;
+    
+    [Header("Camera Transition")]
+    [Tooltip("Usar fade suave al entrar/salir de la cinemática")]
+    [SerializeField] private bool useFadeTransition = true;
+    [Tooltip("Duración del fade de entrada/salida")]
+    [SerializeField] private float fadeDuration = 0.4f;
+    [Tooltip("Color del fade (negro por defecto)")]
+    [SerializeField] private Color fadeColor = Color.black;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
@@ -164,6 +172,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
         // Bloquear movimiento del jugador
         if (PlayerLockService.HasInstance)
             PlayerLockService.Instance.Acquire(this);
+        
+        // ✅ FADE IN a negro antes de cargar la cinemática (transición suave)
+        if (useFadeTransition)
+        {
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, fadeDuration, fadeIn: true);
+        }
 
         loadOp = SceneManager.LoadSceneAsync(cinematicSceneName, LoadSceneMode.Additive);
         yield return loadOp;
@@ -180,6 +194,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
         else
         {
             director = GetComponentInChildren<PlayableDirector>(true);
+        }
+        
+        // ✅ FADE OUT desde negro después de cargar la cinemática (revela la escena)
+        if (useFadeTransition)
+        {
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, fadeDuration, fadeIn: false);
         }
 
         if (director)
@@ -394,6 +414,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Descargando escena: {cinematicSceneName}");
+        
+        // ✅ FADE IN a negro antes de descargar la cinemática (transición suave)
+        if (useFadeTransition)
+        {
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, fadeDuration, fadeIn: true);
+        }
 
         try
         {
@@ -428,6 +454,12 @@ public class AdditiveSceneCinematic : MonoBehaviour
         {
             // Teletransporte/posicionamiento de salida vía SpawnManager
             SafeTeleportToCurrent();
+        }
+        
+        // ✅ FADE OUT desde negro después de descargar (revela el mundo principal)
+        if (useFadeTransition)
+        {
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, fadeDuration, fadeIn: false);
         }
 
         director = null;

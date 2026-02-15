@@ -35,6 +35,10 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [SerializeField] private Color targetLineColor = new Color(1f, 0.8f, 0.2f, 0.9f);
 
     public Transform CurrentTarget { get; private set; }
+    
+    // ✅ NUEVO: Sistema de target manual (usado por CombatCameraTargeting para sincronizar)
+    private Transform _manualTarget;
+    private bool _useManualTarget;
 
     float _nextScan;
     Transform _marker;
@@ -131,14 +135,87 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         
         // Limpiar target y marker
         CurrentTarget = null;
+        _useManualTarget = false;
+        _manualTarget = null;
         OnTargetChanged(null);
         
         // Forzar un scan inmediato para buscar nuevo target
         _nextScan = 0f;
     }
+    
+    // ==================== API PÚBLICA - TARGET MANUAL ====================
+    
+    /// <summary>
+    /// Establece un target manual que sobrescribe el targeting automático.
+    /// Usado por CombatCameraTargeting para sincronizar el target de cámara con el de hechizos.
+    /// </summary>
+    public void SetManualTarget(Transform target)
+    {
+        if (target == null)
+        {
+            ClearManualTarget();
+            return;
+        }
+        
+        _manualTarget = target;
+        _useManualTarget = true;
+        
+        // Aplicar inmediatamente
+        var before = CurrentTarget;
+        CurrentTarget = target;
+        
+        if (before != CurrentTarget)
+        {
+            OnTargetChanged(CurrentTarget);
+        }
+        
+        Debug.Log($"[PlayerTargeting] 🎯 Target MANUAL establecido: {target.name}");
+    }
+    
+    /// <summary>
+    /// Limpia el target manual y vuelve al targeting automático.
+    /// </summary>
+    public void ClearManualTarget()
+    {
+        if (!_useManualTarget) return;
+        
+        _useManualTarget = false;
+        _manualTarget = null;
+        
+        // Forzar scan inmediato para encontrar nuevo target automático
+        _nextScan = 0f;
+        
+        Debug.Log($"[PlayerTargeting] 🔓 Target manual LIBERADO, volviendo a targeting automático");
+    }
+    
+    /// <summary>
+    /// Verifica si hay un target manual activo.
+    /// </summary>
+    public bool HasManualTarget => _useManualTarget && _manualTarget != null;
 
     void Update()
     {
+        // Si hay target manual, no hacer scan automático
+        if (_useManualTarget)
+        {
+            // Verificar que el target manual sigue siendo válido
+            if (_manualTarget == null || !_manualTarget.gameObject.activeInHierarchy)
+            {
+                ClearManualTarget();
+            }
+            else
+            {
+                // Verificar que el target manual sigue vivo
+                var damageable = _manualTarget.GetComponentInParent<Damageable>();
+                if (damageable != null && !damageable.IsAlive)
+                {
+                    Debug.Log($"[PlayerTargeting] 💀 Target manual muerto, liberando");
+                    ClearManualTarget();
+                }
+            }
+            return; // No hacer scan automático mientras hay target manual
+        }
+        
         if (updatesPerSecond <= 0f || Time.time >= _nextScan)
         {
             var before = CurrentTarget;
