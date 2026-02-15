@@ -346,9 +346,16 @@ public class DialogueManager : MonoBehaviour
         
         // ✅ NUEVO: Activar animación de interacción del player (Will)
         // Solo si es un NPC real (no objetos como cartas, save points, etc.)
-        if (IsActualNPC(npc))
+        bool isNpc = IsActualNPC(npc);
+        Debug.Log($"[DialogueManager] 🔍 IsActualNPC('{npc?.name ?? "NULL"}') = {isNpc}");
+        
+        if (isNpc)
         {
             ActivatePlayerInteractionAnimation(true);
+        }
+        else
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ No se activó animación de interacción del player porque '{npc?.name}' no es un NPC válido (no tiene NPCSimpleAnimator)");
         }
         
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
@@ -1003,21 +1010,27 @@ public class DialogueManager : MonoBehaviour
     private void ActivatePlayerInteractionAnimation(bool activate)
     {
         if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
+        {
+            Debug.LogWarning("[DialogueManager] ⚠️ ActivatePlayerInteractionAnimation: No se encontró el player");
             return;
+        }
         
         var playerAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
         if (playerAnimator == null)
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ ActivatePlayerInteractionAnimation: Player '{playerGo.name}' no tiene NPCSimpleAnimator");
             return;
+        }
         
         if (activate)
         {
             playerAnimator.BeginInteraction();
-            Debug.Log($"[DialogueManager] 🎭 Player animación InteractWithPeople ACTIVADA");
+            Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople ACTIVADA");
         }
         else
         {
             playerAnimator.EndInteraction();
-            Debug.Log($"[DialogueManager] 🎭 Player animación InteractWithPeople DESACTIVADA");
+            Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople DESACTIVADA");
         }
     }
 }

@@ -7,6 +7,7 @@ namespace Game.NPC.States
     /// <summary>
     /// Estado especial para posicionar a un party member durante un diálogo.
     /// El NPC se mueve a una posición específica (al lado del player) y se queda ahí quieto.
+    /// IMPORTANTE: Durante el diálogo, el party member mira al NPC con quien el player habla, NO al player.
     /// </summary>
     public class DialoguePositionState : NPCStateBase
     {
@@ -22,6 +23,7 @@ namespace Game.NPC.States
         private bool _hasTeleported;
         
         private const float ARRIVAL_THRESHOLD = 0.5f;  // Distancia para considerar que llegó
+        private const float ROTATION_SPEED = 360f;     // Grados por segundo para rotación suave
 
         public DialoguePositionState(NPCPartyMember partyMember, Vector3 targetPosition, float maxTime, Transform npcTarget = null)
         {
@@ -73,34 +75,14 @@ namespace Game.NPC.States
                 // Detener movimiento
                 context.Agent.isStopped = true;
                 context.Agent.updatePosition = false;
+                context.Agent.updateRotation = false; // ✅ Desactivar rotación automática del agent
                 context.Agent.ResetPath();
                 context.Animator?.SetMovementSpeed(0f);
                 
-                // ✅ Girar hacia el NPC con quien el player está hablando
-                if (_npcTarget != null)
-                {
-                    Vector3 dirToNpc = (_npcTarget.position - context.Transform.position).normalized;
-                    dirToNpc.y = 0;
-                    
-                    if (dirToNpc.sqrMagnitude > 0.01f)
-                    {
-                        context.Transform.rotation = Quaternion.LookRotation(dirToNpc);
-                        Debug.Log($"[DialoguePositionState:{context.Transform.name}] 👁️ Mirando hacia {_npcTarget.name}");
-                    }
-                }
-                // Fallback: mirar al player si no hay NPC target
-                else if (PlayerService.TryGetPlayer(out var playerGo))
-                {
-                    Vector3 dirToPlayer = (playerGo.transform.position - context.Transform.position).normalized;
-                    dirToPlayer.y = 0;
-                    
-                    if (dirToPlayer.sqrMagnitude > 0.01f)
-                    {
-                        context.Transform.rotation = Quaternion.LookRotation(dirToPlayer);
-                    }
-                }
+                // ✅ Girar hacia el NPC con quien el player está hablando (rotación inicial)
+                RotateTowardsTarget(context);
                 
-                // ✅ NUEVO: Activar animación de interacción (InteractWithPeople)
+                // ✅ Activar animación de interacción (InteractWithPeople)
                 context.Animator?.BeginInteraction();
                 
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ✅ Llegó a posición de diálogo");
@@ -123,12 +105,16 @@ namespace Game.NPC.States
                 // Detener movimiento
                 context.Agent.isStopped = true;
                 context.Agent.updatePosition = false;
+                context.Agent.updateRotation = false; // ✅ Desactivar rotación automática del agent
                 context.Agent.ResetPath();
                 context.Animator?.SetMovementSpeed(0f);
                 
                 _hasReachedPosition = true;
                 
-                // ✅ NUEVO: Activar animación de interacción (InteractWithPeople)
+                // ✅ Girar hacia el NPC (rotación inicial)
+                RotateTowardsTarget(context);
+                
+                // ✅ Activar animación de interacción (InteractWithPeople)
                 context.Animator?.BeginInteraction();
                 
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ⚡ Teletransportado a posición de diálogo (tardó {_elapsedTime:F1}s)");
@@ -137,6 +123,69 @@ namespace Game.NPC.States
             else if (!_hasReachedPosition)
             {
                 UpdateMovementAnimation(context);
+            }
+            // ✅ NUEVO: Mantener rotación hacia el NPC mientras está en posición de diálogo
+            else if (_hasReachedPosition)
+            {
+                // Mantener rotación suave hacia el NPC target durante todo el diálogo
+                RotateTowardsTargetSmooth(context);
+            }
+        }
+        
+        /// <summary>
+        /// Rota instantáneamente hacia el target (NPC o player como fallback)
+        /// </summary>
+        private void RotateTowardsTarget(NPCStateContext context)
+        {
+            if (_npcTarget != null)
+            {
+                Vector3 dirToNpc = (_npcTarget.position - context.Transform.position).normalized;
+                dirToNpc.y = 0;
+                
+                if (dirToNpc.sqrMagnitude > 0.01f)
+                {
+                    context.Transform.rotation = Quaternion.LookRotation(dirToNpc);
+                    Debug.Log($"[DialoguePositionState:{context.Transform.name}] 👁️ Mirando hacia {_npcTarget.name}");
+                }
+            }
+            else if (PlayerService.TryGetPlayer(out var playerGo))
+            {
+                Vector3 dirToPlayer = (playerGo.transform.position - context.Transform.position).normalized;
+                dirToPlayer.y = 0;
+                
+                if (dirToPlayer.sqrMagnitude > 0.01f)
+                {
+                    context.Transform.rotation = Quaternion.LookRotation(dirToPlayer);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Mantiene rotación suave hacia el target durante el diálogo
+        /// </summary>
+        private void RotateTowardsTargetSmooth(NPCStateContext context)
+        {
+            Vector3 targetDir = Vector3.zero;
+            
+            if (_npcTarget != null)
+            {
+                targetDir = (_npcTarget.position - context.Transform.position).normalized;
+            }
+            else if (PlayerService.TryGetPlayer(out var playerGo))
+            {
+                targetDir = (playerGo.transform.position - context.Transform.position).normalized;
+            }
+            
+            targetDir.y = 0;
+            
+            if (targetDir.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(targetDir);
+                context.Transform.rotation = Quaternion.RotateTowards(
+                    context.Transform.rotation, 
+                    targetRot, 
+                    ROTATION_SPEED * Time.deltaTime
+                );
             }
         }
 

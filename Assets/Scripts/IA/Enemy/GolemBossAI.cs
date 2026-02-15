@@ -107,6 +107,8 @@ public class GolemBossAI : MonoBehaviour
     [Header("Movimiento")]
     [SerializeField] private float walkSpeed = 2.5f;
     [SerializeField] private float rotationSpeed = 3f;
+    [Tooltip("Offset de rotación Y si el modelo está orientado incorrectamente (0, 90, 180, -90)")]
+    [SerializeField] private float modelRotationOffset = 0f;
     
     [Header("💥 Daño por Contacto/Colisión")]
     [Tooltip("¿Activar daño por contacto cuando el jugador choca con el Golem?")]
@@ -272,9 +274,19 @@ public class GolemBossAI : MonoBehaviour
         }
         
         // La rotación SIEMPRE en Update para que sea fluida
-        if (!_isAttacking)
+        // IMPORTANTE: Durante la embestida (_isCharging) SÍ debe rotar hacia la dirección de movimiento
+        bool isMovingState = _currentState == BossState.Walking || _currentState == BossState.Charging;
+        bool hasVelocity = agent != null && agent.velocity.sqrMagnitude > 0.1f;
+        
+        // Rotar durante movimiento (Walking o Charging) o cuando no está atacando (excepto embestida)
+        if (_isCharging && hasVelocity)
         {
-            if (_currentState == BossState.Walking && agent != null && agent.velocity.sqrMagnitude > 0.1f)
+            // Durante embestida: SIEMPRE rotar hacia la dirección de movimiento
+            RotateTowardsMovementDirection();
+        }
+        else if (!_isAttacking)
+        {
+            if (isMovingState && hasVelocity)
             {
                 // Durante walking: rotar hacia la dirección de movimiento
                 RotateTowardsMovementDirection();
@@ -527,7 +539,14 @@ public class GolemBossAI : MonoBehaviour
         if (dir.sqrMagnitude > 0.001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(dir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
+            // Aplicar offset si el modelo está orientado incorrectamente
+            if (modelRotationOffset != 0f)
+            {
+                targetRot *= Quaternion.Euler(0f, modelRotationOffset, 0f);
+            }
+            // Rotación más agresiva: 360 grados/segundo * rotationSpeed
+            float maxDegrees = rotationSpeed * 120f * Time.deltaTime;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, maxDegrees);
         }
     }
     
@@ -537,14 +556,22 @@ public class GolemBossAI : MonoBehaviour
     /// </summary>
     private void RotateTowardsMovementDirection()
     {
+        if (!agent) return;
+        
         Vector3 moveDir = agent.velocity;
         moveDir.y = 0;
         
         if (moveDir.sqrMagnitude > 0.01f)
         {
             Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized);
-            // Usar velocidad de rotación muy alta (x5) cuando está caminando para evitar caminar de perfil/espaldas
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed * 5f);
+            // Aplicar offset si el modelo está orientado incorrectamente
+            if (modelRotationOffset != 0f)
+            {
+                targetRot *= Quaternion.Euler(0f, modelRotationOffset, 0f);
+            }
+            // Rotación MUY rápida durante el movimiento: debe girar casi instantáneamente
+            float maxDegrees = rotationSpeed * 200f * Time.deltaTime;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, maxDegrees);
         }
     }
 
@@ -934,6 +961,15 @@ public class GolemBossAI : MonoBehaviour
         float chargeTimeout = 5f; // Máximo tiempo de persecución
         float elapsed = 0f;
         
+        // ✅ NUEVO: Variables para saltitos durante embestida
+        float hopInterval = 0.35f; // Intervalo entre saltos
+        float lastHopTime = 0f;
+        float hopHeight = 0.3f; // Altura del mini-salto
+        float hopDuration = 0.15f; // Duración de cada salto
+        bool isHopping = false;
+        float hopStartTime = 0f;
+        float originalY = transform.position.y;
+        
         while (elapsed < chargeTimeout)
         {
             if (_isDead) yield break;
@@ -946,7 +982,50 @@ public class GolemBossAI : MonoBehaviour
                 targetPos = player.position;
                 agent.SetDestination(targetPos);
                 
-                // La rotación ya se maneja en Update, no es necesario aquí
+                // Debug: Verificar que la rotación se está aplicando correctamente
+                if (debugMode)
+                {
+                    Debug.DrawRay(transform.position + Vector3.up * 2f, transform.forward * 5f, Color.green, 0.1f);
+                    Debug.DrawRay(transform.position + Vector3.up * 2f, agent.velocity.normalized * 5f, Color.blue, 0.1f);
+                }
+            }
+            
+            // ✅ NUEVO: Aplicar saltitos para dar sensación de peso
+            if (agent != null && agent.velocity.sqrMagnitude > 0.5f)
+            {
+                // Iniciar un nuevo salto si ha pasado el intervalo
+                if (!isHopping && elapsed - lastHopTime >= hopInterval)
+                {
+                    isHopping = true;
+                    hopStartTime = elapsed;
+                    lastHopTime = elapsed;
+                    originalY = transform.position.y;
+                    
+                    // Mini camera shake con cada paso
+                    Sendero.Core.Feedback.FeedbackService.CameraShake(0.15f, 0.1f);
+                }
+                
+                // Aplicar el salto parabólico
+                if (isHopping)
+                {
+                    float hopProgress = (elapsed - hopStartTime) / hopDuration;
+                    if (hopProgress >= 1f)
+                    {
+                        // Fin del salto
+                        isHopping = false;
+                        Vector3 pos = transform.position;
+                        pos.y = originalY;
+                        transform.position = pos;
+                    }
+                    else
+                    {
+                        // Curva parabólica para el salto
+                        float height = Mathf.Sin(hopProgress * Mathf.PI) * hopHeight;
+                        Vector3 pos = transform.position;
+                        pos.y = originalY + height;
+                        transform.position = pos;
+                    }
+                }
             }
             
             // Verificar si llegamos al jugador
@@ -957,6 +1036,14 @@ public class GolemBossAI : MonoBehaviour
             }
             
             yield return null;
+        }
+        
+        // ✅ Asegurar que volvemos a la altura original
+        if (agent != null && agent.isOnNavMesh)
+        {
+            Vector3 finalPos = transform.position;
+            finalPos.y = originalY;
+            transform.position = finalPos;
         }
         
         // Parar movimiento
@@ -1049,6 +1136,14 @@ public class GolemBossAI : MonoBehaviour
             
             if (isPlayer || isAlly)
             {
+                // ✅ VERIFICAR SI ESTÁ DEFENDIENDO
+                var shieldController = hit.GetComponent<PlayerShieldController>();
+                if (shieldController != null && shieldController.IsDefending)
+                {
+                    Debug.Log($"[GolemBossAI] 🛡️ {hit.name} está DEFENDIENDO - ¡Puñetazo BLOQUEADO!");
+                    continue; // No aplicar daño
+                }
+                
                 // Calcular dirección del knockback
                 Vector3 knockbackDir = (hit.transform.position - transform.position).normalized;
                 knockbackDir.y = 0.2f;
@@ -1203,6 +1298,8 @@ public class GolemBossAI : MonoBehaviour
         {
             agent.enabled = true;
             agent.Warp(transform.position);
+            // ✅ Asegurar que updateRotation siga desactivado para control manual de rotación
+            agent.updateRotation = false;
         }
         
         // ¡IMPACTO! - Generar onda expansiva
@@ -1291,6 +1388,15 @@ public class GolemBossAI : MonoBehaviour
             
             if (isPlayer || isAlly)
             {
+                // ✅ VERIFICAR SI ESTÁ DEFENDIENDO
+                var shieldController = hit.GetComponent<PlayerShieldController>();
+                if (shieldController != null && shieldController.IsDefending)
+                {
+                    Debug.Log($"[GolemBossAI] 🛡️ {hit.name} está DEFENDIENDO - ¡Onda expansiva BLOQUEADA!");
+                    // Reproducir efecto de bloqueo si existe
+                    continue; // No aplicar daño
+                }
+                
                 // Calcular dirección del knockback (desde el centro hacia el objetivo)
                 Vector3 knockbackDir = (hit.transform.position - center).normalized;
                 knockbackDir.y = 0.3f; // Añadir componente vertical para que salte un poco
@@ -1411,6 +1517,14 @@ public class GolemBossAI : MonoBehaviour
     {
         if (player == null) return;
         
+        // ✅ VERIFICAR SI ESTÁ DEFENDIENDO
+        var shieldController = player.GetComponent<PlayerShieldController>();
+        if (shieldController != null && shieldController.IsDefending)
+        {
+            Debug.Log($"[GolemBossAI] 🛡️ Jugador está DEFENDIENDO - ¡Daño por contacto BLOQUEADO!");
+            return; // No aplicar daño
+        }
+        
         // Calcular daño (aumentado durante embestida)
         float damage = contactDamage;
         if (_isCharging)
@@ -1523,6 +1637,35 @@ public class GolemBossAI : MonoBehaviour
         {
             Debug.Log($"[GolemBossAI] {msg}");
         }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        // Dibujar forward del Golem (verde = hacia donde mira)
+        Gizmos.color = Color.green;
+        Gizmos.DrawRay(transform.position + Vector3.up * 2f, transform.forward * 5f);
+        
+        // Dibujar dirección hacia el jugador (rojo)
+        if (player != null)
+        {
+            Gizmos.color = Color.red;
+            Vector3 toPlayer = (player.position - transform.position).normalized;
+            Gizmos.DrawRay(transform.position + Vector3.up * 2.2f, toPlayer * 5f);
+        }
+        
+        // Dibujar velocidad del NavMeshAgent (azul)
+        if (agent != null && agent.velocity.sqrMagnitude > 0.01f)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawRay(transform.position + Vector3.up * 1.8f, agent.velocity.normalized * 5f);
+        }
+        
+        // Dibujar rangos
+        Gizmos.color = new Color(1f, 1f, 0f, 0.3f);
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        
+        Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
+        Gizmos.DrawWireSphere(transform.position, attackRange);
     }
 
     #endregion
