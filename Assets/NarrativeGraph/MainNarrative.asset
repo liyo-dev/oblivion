@@ -42,6 +42,8 @@ MonoBehaviour:
   - rid: 7908053087356977390
   - rid: 5669070048355942569
   - rid: 5669070048355942570
+  - rid: 5669070214590627987
+  - rid: 5669070214780420243
   applicableSceneNames:
   - MainWorld
   references:
@@ -349,9 +351,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 2527bdd8-c302-4ac8-860b-0468611f73de
-        position: {x: 1192.0001, y: 1471.9999}
+        position: {x: 1685, y: 1470}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
+        - 88c40a96-33c8-4195-8e04-a9a1cee16535
         eventKey: TABERN_ENTER
     - rid: 5669070048355942570
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
@@ -362,10 +365,40 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
-        position: {x: 1652, y: 1472}
+        position: {x: 2079, y: 1334}
         outputs: []
         cinematicSceneName: Cinematic_Taberna
         useInternalCinematic: 1
+    - rid: 5669070214590627987
+      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: LIAM INTENTA QUITARSE A ESTELA DEL MEDIO
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
+        position: {x: 785, y: 1472}
+        outputs:
+        - 77ea1f0f-beb9-448f-92b1-644076d1b57e
+        cinematicSceneName: Cinematic_Golem
+        useInternalCinematic: 1
+    - rid: 5669070214780420243
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 88c40a96-33c8-4195-8e04-a9a1cee16535
+        position: {x: 2079, y: 1539}
+        outputs: []
+        questId: ELDRAN_MISSION7
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 1
     - rid: 7908052880146039718
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
@@ -422,7 +455,7 @@ MonoBehaviour:
         guid: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
         position: {x: 387, y: 1472}
         outputs:
-        - 77ea1f0f-beb9-448f-92b1-644076d1b57e
+        - 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
         eventKey: EXIT_FROM_WOODS_ESTELA
     - rid: 7908053087356977389
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
@@ -433,7 +466,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 77ea1f0f-beb9-448f-92b1-644076d1b57e
-        position: {x: 816, y: 1472}
+        position: {x: 1283, y: 1472}
         outputs:
         - 2527bdd8-c302-4ac8-860b-0468611f73de
         battleId: Golem_1

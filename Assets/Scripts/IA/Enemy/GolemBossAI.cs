@@ -271,10 +271,19 @@ public class GolemBossAI : MonoBehaviour
             CheckContactDamage(distance);
         }
         
-        // La rotación es mejor en Update para que sea fluida
+        // La rotación SIEMPRE en Update para que sea fluida
         if (!_isAttacking)
         {
-            RotateTowardsPlayer();
+            if (_currentState == BossState.Walking && agent != null && agent.velocity.sqrMagnitude > 0.1f)
+            {
+                // Durante walking: rotar hacia la dirección de movimiento
+                RotateTowardsMovementDirection();
+            }
+            else
+            {
+                // En otros estados o sin velocidad: rotar hacia el jugador
+                RotateTowardsPlayer();
+            }
         }
     }
 
@@ -470,7 +479,7 @@ public class GolemBossAI : MonoBehaviour
         return Vector3.Distance(transform.position, player.position);
     }
 
-    #endregion
+    #endregion 
 
     #region Movimiento
 
@@ -486,13 +495,7 @@ public class GolemBossAI : MonoBehaviour
         }
         
         agent.SetDestination(player.position);
-        
-        // ✅ NUEVO: Rotar hacia la dirección de movimiento mientras camina
-        // Esto evita que el Golem camine de perfil
-        if (agent.velocity.sqrMagnitude > 0.1f)
-        {
-            RotateTowardsMovementDirection();
-        }
+        // La rotación se maneja en Update() para que sea fluida cada frame
     }
 
     private void SetIdle()
@@ -540,8 +543,8 @@ public class GolemBossAI : MonoBehaviour
         if (moveDir.sqrMagnitude > 0.01f)
         {
             Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized);
-            // Usar velocidad de rotación más alta (x3) cuando está caminando para evitar caminar de perfil
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed * 3f);
+            // Usar velocidad de rotación muy alta (x5) cuando está caminando para evitar caminar de perfil/espaldas
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed * 5f);
         }
     }
 

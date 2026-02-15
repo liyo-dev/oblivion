@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using EasyTransition; // TransitionSettings y (opcional) TransitionManager
+using Sendero.Core.Feedback;
 
 /// <summary>
 /// Servicio estático centralizado para cargar escenas.
@@ -13,6 +14,7 @@ using EasyTransition; // TransitionSettings y (opcional) TransitionManager
 /// - La overlay se carga en aditivo, se busca LoadingScreenController, se marca DontDestroyOnLoad
 ///   para sobrevivir a la activación de la escena destino y se destruye al final.
 /// - Las corrutinas de UI (fades) siempre se lanzan desde un runner persistente.
+/// - Al finalizar la carga con overlay, se realiza un fade-in para una transición suave.
 /// </summary>
 public static class SceneTransitionLoader
 {
@@ -20,6 +22,10 @@ public static class SceneTransitionLoader
     public static string DefaultOverlayScene = null; // si no es null/empty, Load() usará overlay
     public static TransitionSettings DefaultFade = null; // usado cuando NO hay overlay
     public static float DefaultFadeDelay = 0f;
+    
+    // Configuración del fade-in post-carga
+    public static float PostLoadFadeDuration = 0.5f;
+    public static Color PostLoadFadeColor = Color.black;
     // ====================== API PÚBLICA ======================
 
     /// <summary>Carga una escena por nombre, sin overlay de progreso.</summary>
@@ -169,7 +175,15 @@ public static class SceneTransitionLoader
         // Seguridad: asegurar que timeScale esté a 1 al cargar una escena
         Time.timeScale = 1f;
 
-        // 4) Apagar overlay con fade-out y limpieza
+        // 4) ANTES de quitar la overlay, poner el fade en negro para cubrir la transición
+        if (hasOverlay && PostLoadFadeDuration > 0f)
+        {
+            // Poner pantalla en negro instantáneamente (esto cubre la escena mientras quitamos la overlay)
+            yield return EnsureRunner().StartCoroutine(
+                FeedbackService.ScreenFadeAsync(PostLoadFadeColor, 0.01f, fadeIn: true));
+        }
+
+        // 5) Apagar overlay con fade-out y limpieza
         if (ui != null)
         {
             yield return new WaitForSecondsRealtime(0.1f);
@@ -185,9 +199,17 @@ public static class SceneTransitionLoader
             while (unload != null && !unload.isDone) yield return null;
         }
 
-        // 5) (Opcional) Transición externa post (si quisieras una “entrada”),
-        //     podrías lanzar aquí SIEMPRE QUE el TransitionManager sea persistente.
-        //     Por defecto lo omitimos para evitar conflictos.
+        // 6) Fade-out suave desde negro (revela la escena)
+        if (hasOverlay && PostLoadFadeDuration > 0f)
+        {
+            // Pequeña pausa para que la escena se estabilice
+            yield return new WaitForSecondsRealtime(0.15f);
+            
+            // Fade-out desde negro (revela la escena)
+            yield return EnsureRunner().StartCoroutine(
+                FeedbackService.ScreenFadeAsync(PostLoadFadeColor, PostLoadFadeDuration, fadeIn: false));
+        }
+
         yield break;
     }
 

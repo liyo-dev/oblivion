@@ -69,6 +69,14 @@
             "text": "Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
         },
         {
+            "id": "EVT_GOLEM_01",
+            "text": "LIAM: Esa estúpida va a arruinar mis planes..."
+        },
+        {
+            "id": "EVT_GOLEM_02",
+            "text": "LIAM: Veremos si es tan fuerte como dicen..."
+        },
+        {
             "id": "EVT_GOLEM_END_01",
             "text": "Estela: Hmph. Tal y como predije. La trayectoria de la explosión fue perfecta."
         },

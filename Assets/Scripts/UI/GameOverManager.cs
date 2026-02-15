@@ -99,11 +99,17 @@ public class GameOverManager : MonoBehaviour
         ServiceLocator.Register(this);
         SceneManager.sceneLoaded += HandleSceneLoaded;
 
-        // Persistir si está en la escena inicial
-        if (gameObject.scene.isLoaded && gameObject.scene.buildIndex == 0)
+        // Siempre persistir entre escenas para evitar perder el GameOverManager
+        if (transform.parent == null)
         {
             DontDestroyOnLoad(gameObject);
             Debug.Log("[GameOverManager] Marcado como DontDestroyOnLoad");
+        }
+        else
+        {
+            // Si tiene padre, persistir el root
+            DontDestroyOnLoad(transform.root.gameObject);
+            Debug.Log($"[GameOverManager] Root '{transform.root.name}' marcado como DontDestroyOnLoad");
         }
     }
 
@@ -309,6 +315,7 @@ public class GameOverManager : MonoBehaviour
 
     /// <summary>
     /// Modo helper para notificar Game Over desde otros scripts de forma segura.
+    /// Crea una instancia de emergencia si no existe ninguna.
     /// </summary>
     public static void NotifyGameOver()
     {
@@ -316,12 +323,45 @@ public class GameOverManager : MonoBehaviour
         
         if (Instance == null)
         {
-            if (!ServiceLocator.TryGet(out GameOverManager found) || found == null)
+            // Intentar buscar en ServiceLocator
+            if (ServiceLocator.TryGet(out GameOverManager found) && found != null)
             {
-                Debug.LogError("[GameOverManager] ❌ No se encontró ninguna instancia para mostrar Game Over.");
-                return;
+                Instance = found;
             }
-            Instance = found;
+            else
+            {
+                // Buscar directamente incluyendo objetos inactivos
+                #if UNITY_2022_3_OR_NEWER
+                found = UnityEngine.Object.FindFirstObjectByType<GameOverManager>(FindObjectsInactive.Include);
+                #else
+                found = UnityEngine.Object.FindObjectOfType<GameOverManager>(true);
+                #endif
+                
+                if (found != null)
+                {
+                    Instance = found;
+                    ServiceLocator.Register(found);
+                    Debug.Log("[GameOverManager] ✅ Instancia encontrada (estaba inactiva o no registrada)");
+                }
+                else
+                {
+                    // Crear instancia de emergencia
+                    Debug.LogWarning("[GameOverManager] ⚠️ No se encontró instancia, creando una de emergencia...");
+                    var emergencyGO = new GameObject("[GameOverManager_Emergency]");
+                    Instance = emergencyGO.AddComponent<GameOverManager>();
+                    DontDestroyOnLoad(emergencyGO);
+                    Debug.Log("[GameOverManager] ✅ Instancia de emergencia creada");
+                }
+            }
+        }
+
+        if (Instance == null)
+        {
+            Debug.LogError("[GameOverManager] ❌ No se pudo crear/encontrar ninguna instancia.");
+            // Fallback: cargar menú principal directamente
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("MainMenu");
+            return;
         }
 
         if (!Instance.gameObject.activeSelf)
