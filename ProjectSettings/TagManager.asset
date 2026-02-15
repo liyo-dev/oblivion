@@ -10,6 +10,7 @@ TagManager:
   - PortraitCamera
   - Estela
   - Boss
+  - Liam
   layers:
   - Default
   - TransparentFX

@@ -99,6 +99,38 @@
         {
             "id": "EVT_TABERNA_02",
             "text": "[EN] Cuando de repente el estómago de Estela rugió de forma atroz.Cuando de repente el estómago de Estela rugió de forma atroz."
+        },
+        {
+            "id": "EVT_TABERNA_03",
+            "text": "[EN] Por fin llega la comida y nuestross héroes se diponen a comer."
+        },
+        {
+            "id": "EVT_TABERNA_04",
+            "text": "[EN] Estela lo hace de una forma un poco... especial..."
+        },
+        {
+            "id": "EVT_TABERNA_05",
+            "text": "[EN] Eldran y Will sorprendidos por la forma de ccomer de Estela pierden el apetito"
+        },
+        {
+            "id": "EVT_TABERNA_06",
+            "text": "[EN] En ese momento se acercca Liam que estaba escuchando la conversación desde lo lejosEn ese momento se acercca Liam que estaba escuchando la conversación desde lo lejos"
+        },
+        {
+            "id": "EVT_TABERNA_07",
+            "text": "[EN] Intenta contar al grupo algo pero llama la atención de Estela que en ese momento solo podía pensar en la comida."
+        },
+        {
+            "id": "EVT_TABERNA_08",
+            "text": "[EN] Estela enfadada por la interrupción conjura una bola de fuego. "
+        },
+        {
+            "id": "EVT_TABERNA_09",
+            "text": "[EN] Los tres se sorprenden.. ¿? "
+        },
+        {
+            "id": "EVT_TABERNA_10",
+            "text": "[EN] ELDRAN: ¡Corred! Huid de Estela hasta que se le pase el enfado."
         }
     ]
 }

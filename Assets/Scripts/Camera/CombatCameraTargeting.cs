@@ -83,7 +83,23 @@ public class CombatCameraTargeting : MonoBehaviour
     
     private void Update()
     {
-        if (playerTransform == null) return;
+        // Intentar obtener playerTransform si todavía es null
+        if (playerTransform == null)
+        {
+            if (PlayerService.TryGetPlayer(out var player))
+            {
+                playerTransform = player.transform;
+                Debug.Log($"[CombatCameraTargeting] ✅ PlayerTransform obtenido tardíamente: {player.name}");
+                
+                // También intentar obtener PlayerTargeting
+                if (playerTargeting == null)
+                    playerTargeting = playerTransform.GetComponentInChildren<PlayerTargeting>();
+            }
+            else
+            {
+                return; // Sin player, no podemos hacer nada
+            }
+        }
         
         // Verificar estado de combate
         bool isInCombat = ActiveCombatRegistry.Count > 0;
@@ -101,6 +117,12 @@ public class CombatCameraTargeting : MonoBehaviour
         
         wasInCombatLastFrame = isInCombat;
         
+        // Si estamos en combate pero no tenemos lock, intentar hacer lock periódicamente
+        if (isInCombat && !isLockActive)
+        {
+            TryAutoLock();
+        }
+        
         // Si estamos en lock activo
         if (isLockActive && currentTarget != null)
         {
@@ -110,13 +132,47 @@ public class CombatCameraTargeting : MonoBehaviour
     }
     
     /// <summary>
+    /// Intenta hacer lock automático al enemigo más cercano si no hay lock activo
+    /// </summary>
+    private float _lastAutoLockAttempt;
+    private const float AUTO_LOCK_CHECK_INTERVAL = 0.5f; // Verificar cada 0.5 segundos
+    
+    private void TryAutoLock()
+    {
+        // Throttle para no verificar cada frame
+        if (Time.time - _lastAutoLockAttempt < AUTO_LOCK_CHECK_INTERVAL)
+            return;
+        
+        _lastAutoLockAttempt = Time.time;
+        
+        if (playerTransform == null) return;
+        
+        GameObject closestEnemy = ActiveCombatRegistry.GetClosestCombatNPC(playerTransform.position, maxLockDistance);
+        
+        if (closestEnemy != null)
+        {
+            Log($"🎯 Auto-lock tardío: Enemigo '{closestEnemy.name}' ahora está lo suficientemente cerca");
+            SetTarget(closestEnemy);
+        }
+    }
+    
+    /// <summary>
     /// Maneja los inputs del gamepad (D-Pad Left/Right para cambiar de objetivo)
     /// </summary>
     private void HandleGamepadInput(GamepadInputReader.InputEvent inputEvent)
     {
+        // DEBUG TEMPORAL: Log INCONDICIONAL para verificar si llegan los eventos de D-Pad
+        if (inputEvent.Type == GamepadInputReader.InputEventType.DpadLeft || 
+            inputEvent.Type == GamepadInputReader.InputEventType.DpadRight)
+        {
+            Debug.Log($"[CombatCameraTargeting] 🎮 D-Pad RECIBIDO: {inputEvent.Type}, Phase: {inputEvent.Phase}, isLockActive: {isLockActive}, currentTarget: {(currentTarget != null ? currentTarget.name : "NULL")}, ActiveCombatCount: {ActiveCombatRegistry.Count}");
+        }
+        
         // Solo procesar inputs si estamos en lock activo
         if (!isLockActive || currentTarget == null)
+        {
             return;
+        }
         
         // Solo responder a eventos "performed" (pulsación)
         if (inputEvent.Phase != UnityEngine.InputSystem.InputActionPhase.Performed)
@@ -138,18 +194,26 @@ public class CombatCameraTargeting : MonoBehaviour
     
     private void OnEnterCombat()
     {
-        Log("🎯 Entrando en combate - Buscando objetivo para lock");
+        Debug.Log($"[CombatCameraTargeting] 🎯 Entrando en combate - Buscando objetivo para lock. ActiveCombatRegistry.Count = {ActiveCombatRegistry.Count}");
+        
+        // Listar todos los NPCs en combate para debug
+        var allInCombat = ActiveCombatRegistry.GetAllInCombat();
+        foreach (var npc in allInCombat)
+        {
+            Debug.Log($"[CombatCameraTargeting]   - NPC en combate: {(npc != null ? npc.name : "NULL")}");
+        }
         
         // Buscar enemigo más cercano
         GameObject closestEnemy = ActiveCombatRegistry.GetClosestCombatNPC(playerTransform.position, maxLockDistance);
         
         if (closestEnemy != null)
         {
+            Debug.Log($"[CombatCameraTargeting] ✅ Lock establecido en: {closestEnemy.name}");
             SetTarget(closestEnemy);
         }
         else
         {
-            Log("⚠️ No hay enemigos lo suficientemente cerca para lock automático");
+            Debug.Log("[CombatCameraTargeting] ⚠️ No hay enemigos lo suficientemente cerca para lock automático");
         }
     }
     
@@ -194,18 +258,29 @@ public class CombatCameraTargeting : MonoBehaviour
             return;
         }
         
+        // Guardar sensibilidad original ANTES de activar el lock (solo la primera vez)
+        bool wasLockActive = isLockActive;
+        
         currentTarget = newTarget;
         isLockActive = true;
         
         // Reducir sensibilidad de la cámara durante el lock
         if (thirdPersonCamera != null)
         {
-            if (!isLockActive) // Solo guardar la primera vez
+            if (!wasLockActive) // Solo guardar la primera vez (cuando no estaba en lock)
             {
                 originalCameraSensitivity = thirdPersonCamera.xMouseSensitivity;
             }
             thirdPersonCamera.xMouseSensitivity = originalCameraSensitivity * 0.3f; // Reducir movimiento horizontal
         }
+        
+        // Sincronizar con PlayerTargeting para proyectiles
+        // TODO: Implementar SetManualTarget en PlayerTargeting
+        // if (syncWithProjectileTargeting && playerTargeting != null)
+        // {
+        //     playerTargeting.SetManualTarget(newTarget.transform);
+        //     Log($"🎯 PlayerTargeting sincronizado con: {newTarget.name}");
+        // }
         
         // Crear indicador visual
         CreateLockIndicator();

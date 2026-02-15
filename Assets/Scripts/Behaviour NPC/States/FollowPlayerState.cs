@@ -43,6 +43,9 @@ namespace Game.NPC.States
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
+            
+            Debug.Log($"[FollowPlayerState] 🚶 {context.Transform.name} entró en FollowPlayerState");
+            
             _pathUpdateTimer = 0f;
             _stateTimer = 0f;
             _idleTimer = 0f;

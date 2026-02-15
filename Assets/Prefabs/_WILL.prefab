@@ -8881,6 +8881,7 @@ GameObject:
   - component: {fileID: 1219957402610385003}
   - component: {fileID: 7048766209318931401}
   - component: {fileID: 7018044800083316402}
+  - component: {fileID: 6700035099269481155}
   m_Layer: 0
   m_Name: vThirdPersonCamera
   m_TagString: MainCamera
@@ -9071,6 +9072,27 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3685603612852488389}
   m_Enabled: 1
+--- !u!114 &6700035099269481155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3685603612852488389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2405b4d3fce7414f83ef3a8a29df7356, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatCameraTargeting
+  thirdPersonCamera: {fileID: 8489721875542008483}
+  playerTransform: {fileID: 5899334287218393488}
+  playerTargeting: {fileID: 2788111570677460138}
+  syncWithProjectileTargeting: 1
+  maxLockDistance: 30
+  targetingRotationSpeed: 8
+  targetHeightOffset: 1.5
+  lockIndicatorPrefab: {fileID: 0}
+  showDebugLogs: 0
 --- !u!1 &3700031740071713348
 GameObject:
   m_ObjectHideFlags: 0
