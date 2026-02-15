@@ -89,7 +89,7 @@ public class InventoryRowWidget : MonoBehaviour, ISelectHandler, IPointerEnterHa
 
     public void Focus()
     {
-        if (button != null)
+        if (button != null && gameObject.activeInHierarchy)
         {
             StartCoroutine(ForceSelectionVisual());
         }

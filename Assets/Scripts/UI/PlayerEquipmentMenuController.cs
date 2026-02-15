@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System;
+﻿﻿﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Core;
@@ -1764,6 +1764,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             InventoryInteractionState _interactionState = InventoryInteractionState.Browsing;
             Vector3 _useButtonBaseScale;
             bool _useButtonVisualCached;
+            DG.Tweening.Tween _useButtonTween; // Tween del botón para poder cancelarlo al cerrar
 
         public InventoryView(InventoryBindings bindings)
         {
@@ -1815,10 +1816,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (_ui.root != null)
                 _ui.root.SetActive(value);
 
-            if (!value && _boundInventory != null)
+            if (!value)
             {
-                _boundInventory.OnInventoryChanged -= HandleInventoryChanged;
-                _boundInventory = null;
+                // Matar tweens pendientes al ocultar
+                _useButtonTween?.Kill();
+                _useButtonTween = null;
+                
+                if (_boundInventory != null)
+                {
+                    _boundInventory.OnInventoryChanged -= HandleInventoryChanged;
+                    _boundInventory = null;
+                }
             }
         }
 
@@ -1957,7 +1965,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void FocusRow(InventoryRowWidget widget, bool forceFocus)
         {
-            if (widget == null) return;
+            if (widget == null || !widget.gameObject.activeInHierarchy) return;
 
             if (forceFocus)
                 widget.Focus();
@@ -2111,15 +2119,25 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         
         void ResetUseButtonAfterUse(bool restoreSelection)
         {
+            // Matar cualquier tween previo
+            _useButtonTween?.Kill();
+            _useButtonTween = null;
+            
             // Pequeño delay para que se vean las animaciones antes de resetear
             if (_ui.useButton != null)
             {
-                _ui.useButton.transform
+                _useButtonTween = _ui.useButton.transform
                     .DOScale(_useButtonBaseScale, 0.2f)
                     .SetDelay(0.3f)
                     .SetEase(Ease.InOutQuad)
                     .SetUpdate(true)
                     .OnComplete(() => {
+                        _useButtonTween = null;
+                        
+                        // Verificar que el UI sigue activo antes de hacer cualquier cosa
+                        if (_ui.root == null || !_ui.root.activeInHierarchy)
+                            return;
+                        
                         if (_ui.useButton != null)
                         {
                             _ui.useButton.interactable = false;

@@ -114,6 +114,7 @@ public static class PlayerSettings
 
         _data = LoadFromDisk();
         _loaded = true;
+        Debug.Log($"[PlayerSettings] Cargado: invertLook={_data.invertLook}, invertFlightLook={_data.invertFlightLook}");
     }
 
     public static void SetLanguage(string locale)
@@ -172,6 +173,7 @@ public static class PlayerSettings
 
         _data.invertLook = invert;
         SaveToDisk();
+        Debug.Log($"[PlayerSettings] InvertLook cambiado a: {invert}");
         InvertLookChanged?.Invoke(invert);
     }
 
@@ -183,6 +185,7 @@ public static class PlayerSettings
 
         _data.invertFlightLook = invert;
         SaveToDisk();
+        Debug.Log($"[PlayerSettings] InvertFlightLook cambiado a: {invert}");
         InvertFlightLookChanged?.Invoke(invert);
     }
 
@@ -280,10 +283,23 @@ public static class PlayerSettings
         {
             var json = JsonUtility.ToJson(_data, true);
             File.WriteAllText(SettingsPath, json);
+            Debug.Log($"[PlayerSettings] Guardado en: {SettingsPath}");
         }
         catch (Exception e)
         {
             Debug.LogWarning($"[PlayerSettings] Error al guardar settings: {e.Message}");
         }
+    }
+
+    /// <summary>
+    /// Método de debug para resetear la configuración a valores por defecto.
+    /// Útil para testing.
+    /// </summary>
+    public static void ResetToDefaults()
+    {
+        _data = new PlayerSettingsData();
+        _loaded = true;
+        SaveToDisk();
+        Debug.Log("[PlayerSettings] Configuración reseteada a valores por defecto.");
     }
 }

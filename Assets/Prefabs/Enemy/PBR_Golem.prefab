@@ -170,7 +170,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 100
+  maxHealth: 500
   destroyOnDeath: 1
   deathVFX: {fileID: 0}
   deathVFXLifetime: 3

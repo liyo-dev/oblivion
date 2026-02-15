@@ -208,9 +208,18 @@ namespace Invector.vCharacterController
 
             try
             {
-                var t = Type.GetType("PlayerSettings");
+                // Buscar en Assembly-CSharp ya que PlayerSettings está ahí (no en firstpass)
+                var t = Type.GetType("PlayerSettings, Assembly-CSharp");
                 if (t == null)
+                {
+                    // Fallback: buscar sin assembly (por si está en el mismo)
+                    t = Type.GetType("PlayerSettings");
+                }
+                if (t == null)
+                {
+                    Debug.LogWarning("[vThirdPersonInput] No se encontró PlayerSettings. Inversión de cámara no funcionará.");
                     return;
+                }
 
                 // Preferred overload: Vector2 -> Vector2
                 var mi = t.GetMethod("ApplyLookInversion", new Type[] { typeof(Vector2) });
@@ -220,7 +229,10 @@ namespace Invector.vCharacterController
                 }
 
                 if (lookInversionDelegate != null)
+                {
+                    Debug.Log("[vThirdPersonInput] LookInversion configurado correctamente (sobrecarga simple).");
                     return;
+                }
 
                 // Fallback overload: Vector2 + context bool
                 mi = t.GetMethod("ApplyLookInversion", new Type[] { typeof(Vector2), typeof(bool) });
@@ -231,10 +243,16 @@ namespace Invector.vCharacterController
                         var res = mi.Invoke(null, new object[] { v, false });
                         return res is Vector2 vec ? vec : v;
                     };
+                    Debug.Log("[vThirdPersonInput] LookInversion configurado correctamente (sobrecarga con contexto).");
+                }
+                else
+                {
+                    Debug.LogWarning("[vThirdPersonInput] No se encontró método ApplyLookInversion en PlayerSettings.");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.LogError($"[vThirdPersonInput] Error configurando LookInversion: {ex.Message}");
                 lookInversionDelegate = null;
             }
         }
