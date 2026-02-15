@@ -25,9 +25,8 @@ public class WorldBootstrap : MonoBehaviour
             Debug.Log("[WorldBootstrap] ⏳ GameBootService no disponible aún - Esperando por si Start se carga aditivamente...");
             StartCoroutine(WaitForGameBootServiceOrFallback());
             #else
-            // En build, si no hay GameBootService es un error grave
-            Debug.LogWarning("[WorldBootstrap] GameBootService no disponible - Modo testing directo desde MainWorld sin preset");
-            StartCoroutine(InitializeWorldWithoutBootService());
+            // En build, si no hay GameBootService es un error grave - no se puede continuar
+            Debug.LogError("[WorldBootstrap] ❌ FATAL: GameBootService no disponible en build. La escena 'Start' debe cargarse primero.");
             #endif
         }
     }
