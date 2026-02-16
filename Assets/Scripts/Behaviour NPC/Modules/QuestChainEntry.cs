@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -146,6 +146,14 @@ namespace Game.NPC.Modules
         [Header("Custom Action")]
         [Tooltip("Evento personalizado (si actionType = Custom)")]
         public UnityEvent customAction;
+        
+        [Header("Encadenamiento de Quests")]
+        [Tooltip("Si está activado, inicia automáticamente la siguiente quest de la cadena cuando termine el post-action")]
+        public bool chainNextQuestAfterAction = false;
+        
+        [Tooltip("Delay adicional antes de iniciar la siguiente quest (segundos)")]
+        [Min(0f)]
+        public float chainDelay = 0.5f;
     }
     
     /// <summary>

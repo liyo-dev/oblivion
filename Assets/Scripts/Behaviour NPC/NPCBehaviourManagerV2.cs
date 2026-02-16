@@ -1,6 +1,7 @@
-﻿﻿using System;
+﻿﻿﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Events;
 using Game.NPC.Common;
 using Game.NPC.States;
 using Game.NPC.Modules; // Necesario para CombatLifecycleHandler
@@ -373,6 +374,27 @@ namespace Game.NPC
         // 🤝 PARTY SYSTEM API
         // =================================================================================
         
+        #region Party Events
+        
+        [Header("Party Events")]
+        [Tooltip("Evento que se invoca cuando el NPC se une al party")]
+        [SerializeField] private UnityEvent onJoinedParty;
+        
+        [Tooltip("Evento que se invoca cuando el NPC abandona el party")]
+        [SerializeField] private UnityEvent onLeftParty;
+        
+        /// <summary>
+        /// Evento C# que se dispara cuando el NPC se une al party
+        /// </summary>
+        public event Action OnJoinedParty;
+        
+        /// <summary>
+        /// Evento C# que se dispara cuando el NPC abandona el party
+        /// </summary>
+        public event Action OnLeftParty;
+        
+        #endregion
+        
         /// <summary>
         /// Une este NPC al equipo del jugador.
         /// Requiere que el NPC tenga el comportamiento Companion configurado.
@@ -386,7 +408,18 @@ namespace Game.NPC
                 return false;
             }
             
-            return partyMember.JoinParty();
+            bool success = partyMember.JoinParty();
+            
+            if (success)
+            {
+                // Disparar eventos
+                onJoinedParty?.Invoke();
+                OnJoinedParty?.Invoke();
+                
+                if (debugMode) Debug.Log($"[NPCManager:{name}] ✅ Se unió al party - Eventos disparados");
+            }
+            
+            return success;
         }
         
         /// <summary>
@@ -397,7 +430,18 @@ namespace Game.NPC
             var partyMember = GetComponent<NPCPartyMember>();
             if (partyMember == null) return false;
             
-            return partyMember.LeaveParty();
+            bool success = partyMember.LeaveParty();
+            
+            if (success)
+            {
+                // Disparar eventos
+                onLeftParty?.Invoke();
+                OnLeftParty?.Invoke();
+                
+                if (debugMode) Debug.Log($"[NPCManager:{name}] 👋 Abandonó el party - Eventos disparados");
+            }
+            
+            return success;
         }
         
         /// <summary>
@@ -407,6 +451,37 @@ namespace Game.NPC
         {
             var partyMember = GetComponent<NPCPartyMember>();
             return partyMember != null && partyMember.IsInParty;
+        }
+        
+        /// <summary>
+        /// Une este NPC al party del jugador.
+        /// Versión void para poder usarse desde Unity Events (OnMinigameWon, etc.)
+        /// </summary>
+        [ContextMenu("Añadir al Party")]
+        public void AddToParty()
+        {
+            bool success = JoinPlayerParty();
+            if (success)
+            {
+                Debug.Log($"[NPCManager:{name}] ✅ AddToParty exitoso");
+            }
+            else if (debugMode)
+            {
+                Debug.LogWarning($"[NPCManager:{name}] ⚠️ AddToParty falló - ¿Tiene Companion behaviour configurado?");
+            }
+        }
+        
+        /// <summary>
+        /// Remueve este NPC del party del jugador.
+        /// Versión void para poder usarse desde Unity Events.
+        /// </summary>
+        public void RemoveFromParty()
+        {
+            bool success = LeavePlayerParty();
+            if (!success && debugMode)
+            {
+                Debug.LogWarning($"[NPCManager:{name}] ⚠️ RemoveFromParty falló");
+            }
         }
 
         // =================================================================================

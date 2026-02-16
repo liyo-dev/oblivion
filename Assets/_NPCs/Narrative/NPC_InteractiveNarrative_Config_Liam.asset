@@ -18,8 +18,8 @@ MonoBehaviour:
   - description: 
     priority: 0
     condition:
-      conditionType: 0
-      targetQuest: {fileID: 0}
+      conditionType: 3
+      targetQuest: {fileID: 11400000, guid: 772f4ab27e599a84db0b4ab0e6036a86, type: 2}
       debugMode: 0
     narrativeChain:
     - actionType: 7
@@ -60,7 +60,8 @@ MonoBehaviour:
       narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 0
-    autoStartOnDetection: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0

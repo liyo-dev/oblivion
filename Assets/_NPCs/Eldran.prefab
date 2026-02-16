@@ -11384,13 +11384,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 4
+    behaviourType: 68
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
     narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
-    partyConfig: {fileID: 0}
+    partyConfig: {fileID: 11400000, guid: bbbb77fd6959bcf4dad34d4275eb5bd1, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180

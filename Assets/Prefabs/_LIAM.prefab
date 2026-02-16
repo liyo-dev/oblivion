@@ -5303,6 +5303,7 @@ GameObject:
   - component: {fileID: 1519951692045859438}
   - component: {fileID: 6188404468903936307}
   - component: {fileID: 389780427750767410}
+  - component: {fileID: 2398994187960678358}
   m_Layer: 9
   m_Name: Image
   m_TagString: Untagged
@@ -5367,6 +5368,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2398994187960678358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2233868027769160920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a4d86f7cded664aa88409892248c78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BillboardUI
 --- !u!1 &2284295473677616509
 GameObject:
   m_ObjectHideFlags: 0
@@ -7501,7 +7514,7 @@ GameObject:
   - component: {fileID: 1840189453117827499}
   - component: {fileID: 190871426165262911}
   - component: {fileID: 6256429109729949984}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: _LIAM
   m_TagString: Liam
   m_Icon: {fileID: 0}
@@ -15245,7 +15258,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7322074387568580266
 RectTransform:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
@@ -31,6 +31,9 @@ namespace Game.NPC.Modules
         
         [Tooltip("¿Iniciar automáticamente al detectar al jugador? Si es false, el jugador debe interactuar manualmente.")]
         public bool autoStartOnDetection = false;
+        
+        [Tooltip("¿Ejecutar automáticamente cuando se cumpla la condición de quest? (Ej: cuando una quest se complete). Útil para unir NPCs al party automáticamente tras completar una misión.")]
+        public bool autoExecuteOnQuestConditionMet = false;
         
         [Header("Estado Post-Narrativa")]
         [Tooltip("¿Qué hace el NPC después de completar ESTA narrativa? Solo aplica si es singleUse=true.")]

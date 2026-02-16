@@ -13,9 +13,6 @@ public sealed class StartTagMinigameNode : NarrativeNode
     [Tooltip("ID del minijuego (coincide con TagMinigameController.MinigameId).")]
     public string minigameId = "TAG_MINIGAME_01";
 
-    [Tooltip("Referencia directa al controlador del minijuego (fallback si no se encuentra por ID).")]
-    public TagMinigameController minigameController;
-
     [Header("Opciones")]
     [Tooltip("Si true, activa el GameObject del minijuego antes de iniciarlo.")]
     public bool activateOnStart = true;
@@ -114,13 +111,7 @@ public sealed class StartTagMinigameNode : NarrativeNode
 
     private TagMinigameController FindMinigameController()
     {
-        // 1) Si tenemos referencia directa, usarla
-        if (minigameController != null)
-        {
-            return minigameController;
-        }
-
-        // 2) Buscar por ID en todas las escenas cargadas (incluye objetos inactivos)
+        // Buscar por ID en todas las escenas cargadas (incluye objetos inactivos)
         if (!string.IsNullOrEmpty(minigameId))
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -142,7 +133,7 @@ public sealed class StartTagMinigameNode : NarrativeNode
             }
         }
 
-        // 3) Buscar cualquier controlador como último recurso
+        // Buscar cualquier controlador como último recurso
         return UnityEngine.Object.FindFirstObjectByType<TagMinigameController>();
     }
 }

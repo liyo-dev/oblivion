@@ -54,6 +54,8 @@ public sealed class AudioService : MonoBehaviour
     readonly Dictionary<string, Action> _sfxHandlers = new();          // key → handler (OnCustom)
     readonly Dictionary<string, Action> _battleStartHandlers = new();  // $"BATTLE_START:{id}" → handler (OnCustom)
     readonly Dictionary<object, Action> _battleWinHandlers = new();    // battleId → handler (OnBattleWon)
+    readonly Dictionary<string, Action> _minigameStartHandlers = new(); // $"MINIGAME_START:{id}" → handler (OnCustom)
+    readonly Dictionary<string, Action> _minigameEndHandlers = new();   // $"MINIGAME_{id}_WON" → handler (OnCustom)
 
     // --- estado cinemáticas / ducking / stack de música ---
     struct MusicStackItem { public AudioClip clip; }
@@ -66,6 +68,7 @@ public sealed class AudioService : MonoBehaviour
     int _duckCount = 0;
     Coroutine _duckRoutine;
     bool _battleActive;
+    bool _minigameActive;
 
     // Recuerdo qué clip pidió la última escena base (no aditiva)
     AudioClip _lastRequestedSceneClip;
@@ -121,11 +124,15 @@ public sealed class AudioService : MonoBehaviour
             foreach (var kv in _sfxHandlers)         _signals.OffCustom(kv.Key, kv.Value);
             foreach (var kv in _battleStartHandlers) _signals.OffCustom(kv.Key, kv.Value);
             foreach (var kv in _battleWinHandlers)   _signals.OffBattleWon(kv.Key, kv.Value);
+            foreach (var kv in _minigameStartHandlers) _signals.OffCustom(kv.Key, kv.Value);
+            foreach (var kv in _minigameEndHandlers)   _signals.OffCustom(kv.Key, kv.Value);
         }
 
         _sfxHandlers.Clear();
         _battleStartHandlers.Clear();
         _battleWinHandlers.Clear();
+        _minigameStartHandlers.Clear();
+        _minigameEndHandlers.Clear();
     }
 
     // ===========================================================
@@ -144,8 +151,9 @@ public sealed class AudioService : MonoBehaviour
         WireEventSfx();
         WireBattleStarts();
         WireBattleWins();
+        WireMinigames();
         _signalsWired = true;
-        // Debug.Log("[AudioService] Señales conectadas (SFX, BattleStarts, BattleWins).");
+        // Debug.Log("[AudioService] Señales conectadas (SFX, BattleStarts, BattleWins, Minigames).");
     }
 
     IEnumerator EnsureSignalsRoutine()
@@ -209,6 +217,30 @@ public sealed class AudioService : MonoBehaviour
             Action h = () => OnBattleWonRestoreMusic(r);
             _signals.OnBattleWon(key, h);
             _battleWinHandlers[key] = h;
+        }
+    }
+
+    void WireMinigames()
+    {
+        if (_signals == null || profile == null || profile.minigames == null) return;
+        if (_minigameStartHandlers.Count > 0) return;
+
+        for (int i = 0; i < profile.minigames.Count; i++)
+        {
+            var r = profile.minigames[i];
+            if (r == null || string.IsNullOrWhiteSpace(r.minigameId)) continue;
+
+            // Evento de inicio: MINIGAME_START:{id}
+            string startKey = $"MINIGAME_START:{r.minigameId}";
+            Action startHandler = () => BeginMinigameMusic(r);
+            _signals.OnCustom(startKey, startHandler);
+            _minigameStartHandlers[startKey] = startHandler;
+
+            // Evento de victoria/fin: MINIGAME_{id}_WON (el TagMinigameController emite esto)
+            string endKey = $"MINIGAME_{r.minigameId}_WON";
+            Action endHandler = () => OnMinigameEndRestoreMusic(r);
+            _signals.OnCustom(endKey, endHandler);
+            _minigameEndHandlers[endKey] = endHandler;
         }
     }
 
@@ -401,6 +433,95 @@ public sealed class AudioService : MonoBehaviour
             StopMusic(r.fade);
         }
         _battleActive = false;
+    }
+    
+    // ===========================================================
+    // Minijuegos
+    void BeginMinigameMusic(AudioGraphProfile.MinigameRule r)
+    {
+        if (r.music == null)
+        {
+            Debug.LogWarning($"[AudioService] Minigame '{r.minigameId}' no tiene música configurada");
+            return;
+        }
+        
+        var current = GetCurrentMusicClip();
+        _musicStack.Push(new MusicStackItem { clip = current });
+        _minigameActive = true;
+        
+        // Configurar loop según la regla
+        _musicA.loop = r.loop;
+        _musicB.loop = r.loop;
+        
+        PlayMusic(r.music, r.fade);
+        Debug.Log($"[AudioService] 🎮 Música de minijuego '{r.minigameId}' iniciada");
+    }
+
+    void OnMinigameEndRestoreMusic(AudioGraphProfile.MinigameRule r)
+    {
+        if (!_minigameActive)
+        {
+            Debug.Log($"[AudioService] Minijuego '{r.minigameId}' no estaba activo, ignorando restauración");
+            return;
+        }
+        
+        // Restaurar loop
+        _musicA.loop = true;
+        _musicB.loop = true;
+        Debug.Log($"[AudioService] 🔄 Loop restaurado en AudioSources de música después de minijuego");
+        
+        // PRIORIDAD 1: Si hay una FogZone activa, restaurar su música
+        var activeFogZone = FogZone.CurrentActiveZone;
+        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        {
+            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            if (zoneRule?.music != null)
+            {
+                Debug.Log($"[AudioService] Restaurando música de FogZone '{activeFogZone.MusicZoneId}' después de minijuego");
+                PlayMusic(zoneRule.music, r.fade);
+                if (_musicStack.Count > 0) _musicStack.Pop();
+                _minigameActive = false;
+                return;
+            }
+        }
+        
+        // PRIORIDAD 2: Restaurar música del stack o de la escena
+        if (_musicStack.Count > 0) _musicStack.Pop();
+        
+        if (!RestoreSceneMusic(r.fade))
+        {
+            StopMusic(r.fade);
+        }
+        _minigameActive = false;
+        Debug.Log($"[AudioService] 🎮 Música de minijuego '{r.minigameId}' finalizada, música restaurada");
+    }
+    
+    /// <summary>
+    /// Inicia la música de un minijuego por ID (llamado manualmente si no se usa señales)
+    /// </summary>
+    public void BeginMinigameById(string minigameId)
+    {
+        var rule = profile?.GetMinigameRule(minigameId);
+        if (rule != null)
+        {
+            BeginMinigameMusic(rule);
+        }
+        else
+        {
+            Debug.LogWarning($"[AudioService] No se encontró regla de música para minijuego '{minigameId}'");
+        }
+    }
+    
+    /// <summary>
+    /// Finaliza la música de un minijuego por ID (llamado manualmente si no se usa señales)
+    /// </summary>
+    public void EndMinigameById(string minigameId)
+    {
+        var rule = profile?.GetMinigameRule(minigameId);
+        if (rule != null)
+        {
+            OnMinigameEndRestoreMusic(rule);
+        }
     }
     
     // --- Helpers para lookup de batallas por id (exacto y fallback substring) ---

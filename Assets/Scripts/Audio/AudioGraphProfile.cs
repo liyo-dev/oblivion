@@ -19,6 +19,19 @@ public class AudioGraphProfile : ScriptableObject
     }
     
     [Serializable]
+    public class MinigameRule
+    {
+        [Tooltip("ID del minijuego (debe coincidir con TagMinigameController.MinigameId o similar)")]
+        public string minigameId;
+        [Tooltip("Música a reproducir durante el minijuego")]
+        public AudioClip music;
+        [Tooltip("Tiempo de fade para la transición")]
+        [Min(0f)] public float fade = 0.5f;
+        [Tooltip("Si true, la música hace loop")]
+        public bool loop = true;
+    }
+    
+    [Serializable]
     public class AmbientZoneRule
     {
         [Tooltip("ID de la zona (debe coincidir con el zoneId del FogZone)")]
@@ -32,6 +45,7 @@ public class AudioGraphProfile : ScriptableObject
     }
 
     public List<BattleRule> battles = new();
+    public List<MinigameRule> minigames = new();
     public List<AmbientZoneRule> ambientZones = new();
     
     [Serializable]
@@ -66,6 +80,24 @@ public class AudioGraphProfile : ScriptableObject
             if (string.IsNullOrEmpty(rule.zoneId)) continue;
             if (zoneId.Contains(rule.zoneId, StringComparison.OrdinalIgnoreCase) ||
                 rule.zoneId.Contains(zoneId, StringComparison.OrdinalIgnoreCase))
+            {
+                return rule;
+            }
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// Busca la regla de música para un minijuego específico
+    /// </summary>
+    public MinigameRule GetMinigameRule(string minigameId)
+    {
+        if (string.IsNullOrEmpty(minigameId)) return null;
+        
+        foreach (var rule in minigames)
+        {
+            if (string.IsNullOrEmpty(rule.minigameId)) continue;
+            if (string.Equals(rule.minigameId, minigameId, StringComparison.OrdinalIgnoreCase))
             {
                 return rule;
             }

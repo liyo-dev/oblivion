@@ -38,6 +38,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Cinematics/Aditivas/Cinematic_Golem.unity
     guid: c62383d441740634c96dcb725ccdf021
+  - enabled: 1
+    path: Assets/Scenes/Cinematics/Aditivas/Cinematic_Mountain.unity
+    guid: e120c2169270aaf4f9cc4561d3324795
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}

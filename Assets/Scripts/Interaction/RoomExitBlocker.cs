@@ -14,6 +14,9 @@ public class RoomExitBlocker : MonoBehaviour
 {
     // Registro estático de todas las instancias activas
     private static readonly List<RoomExitBlocker> _allInstances = new List<RoomExitBlocker>();
+    
+    // ✅ FIX: Flag estático para controlar la suscripción única al evento
+    private static bool _staticSubscribed = false;
 
     [Header("Requisito")]
     [SerializeField] private RequirementMode requirementMode = RequirementMode.AnyQuestStartedOrCompleted;
@@ -88,12 +91,36 @@ public class RoomExitBlocker : MonoBehaviour
 
     private void EnsureSubscription()
     {
+        // ✅ FIX: Cada instancia debe marcar _subscribed = true para su propia evaluación
         if (_subscribed) return;
+        
         if (QuestManager.Instance != null)
         {
-            QuestManager.Instance.OnQuestsChanged += HandleQuestsChanged;
+            // Solo crear la suscripción estática una vez
+            if (!_staticSubscribed)
+            {
+                QuestManager.Instance.OnQuestsChanged += HandleQuestsChangedStatic;
+                _staticSubscribed = true;
+                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Suscripción ESTÁTICA al QuestManager creada");
+            }
+            
             _subscribed = true;
-            if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Suscrito a QuestManager");
+            if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Instancia marcada como suscrita");
+        }
+    }
+    
+    /// <summary>
+    /// Handler estático que actualiza TODAS las instancias cuando cambian las quests
+    /// </summary>
+    private static void HandleQuestsChangedStatic()
+    {
+        // Actualizar todas las instancias de forma segura
+        for (int i = _allInstances.Count - 1; i >= 0; i--)
+        {
+            if (_allInstances[i] != null && _allInstances[i].gameObject != null)
+            {
+                _allInstances[i].EvaluateAndApplyState();
+            }
         }
     }
 
@@ -113,22 +140,14 @@ public class RoomExitBlocker : MonoBehaviour
 
     private void TryUnsubscribe()
     {
-        if (!_subscribed) return;
-        if (QuestManager.Instance != null)
-            QuestManager.Instance.OnQuestsChanged -= HandleQuestsChanged;
         _subscribed = false;
-    }
-
-    private void HandleQuestsChanged()
-    {
-        if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] HandleQuestsChanged llamado");
         
-        // Forzar reevaluación de TODAS las instancias activas
-        // Esto asegura que todos los bloqueadores se actualicen al mismo tiempo
-        for (int i = _allInstances.Count - 1; i >= 0; i--)
+        // ✅ FIX: Solo desuscribir estáticamente si no quedan más instancias
+        if (_allInstances.Count == 0 && _staticSubscribed)
         {
-            if (_allInstances[i] != null)
-                _allInstances[i].EvaluateAndApplyState();
+            if (QuestManager.Instance != null)
+                QuestManager.Instance.OnQuestsChanged -= HandleQuestsChangedStatic;
+            _staticSubscribed = false;
         }
     }
 
@@ -143,6 +162,12 @@ public class RoomExitBlocker : MonoBehaviour
 
     private void EvaluateAndApplyState()
     {
+        // Asegurar que estamos suscritos antes de evaluar
+        if (!_subscribed)
+        {
+            EnsureSubscription();
+        }
+        
         bool shouldBlock = !RequirementSatisfied();
         _isBlocked = shouldBlock;
         ApplyColliderState();
@@ -291,20 +316,33 @@ public class RoomExitBlocker : MonoBehaviour
             case RequirementMode.SpecificQuestsStarted:
             {
                 var ids = GetRequiredIds();
-                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Modo SpecificQuestsStarted, verificando IDs: {string.Join(", ", ids)}");
+                if (debugLogs) 
+                {
+                    Debug.Log($"[RoomExitBlocker:{gameObject.name}] ========== EVALUANDO SpecificQuestsStarted ==========");
+                    Debug.Log($"[RoomExitBlocker:{gameObject.name}] IDs requeridos: {string.Join(", ", ids)} (total: {ids.Count})");
+                    Debug.Log($"[RoomExitBlocker:{gameObject.name}] requiredQuestIds.Count: {requiredQuestIds.Count}");
+                    Debug.Log($"[RoomExitBlocker:{gameObject.name}] requiredQuestRefs.Count: {requiredQuestRefs.Count}");
+                }
                 if (ids.Count == 0)
                 {
-                    if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] No hay IDs configurados!");
+                    if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] ❌ No hay IDs configurados!");
                     return false;
                 }
+                
+                bool allActive = true;
                 for (int i = 0; i < ids.Count; i++)
                 {
                     var state = qm.GetState(ids[i]);
-                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Quest '{ids[i]}' estado: {state}");
-                    if (state != QuestState.Active)
-                        return false;
+                    bool isActive = (state == QuestState.Active);
+                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Quest '{ids[i]}' estado: {state} → {(isActive ? "✅" : "❌")}");
+                    if (!isActive)
+                    {
+                        allActive = false;
+                    }
                 }
-                return true;
+                
+                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Resultado: {(allActive ? "✅ DESBLOQUEADO" : "❌ BLOQUEADO")}");
+                return allActive;
             }
 
             case RequirementMode.SpecificQuestsCompleted:
@@ -323,16 +361,40 @@ public class RoomExitBlocker : MonoBehaviour
     private List<string> GetRequiredIds()
     {
         var set = new HashSet<string>(StringComparer.Ordinal);
+        
+        // Obtener IDs de la lista de strings
         for (int i = 0; i < requiredQuestIds.Count; i++)
         {
             var id = requiredQuestIds[i];
-            if (!string.IsNullOrEmpty(id)) set.Add(id);
+            if (!string.IsNullOrEmpty(id)) 
+            {
+                set.Add(id);
+                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] ID de lista: '{id}'");
+            }
         }
+        
+        // Obtener IDs de las referencias a QuestData
         for (int i = 0; i < requiredQuestRefs.Count; i++)
         {
             var r = requiredQuestRefs[i];
-            if (r != null && !string.IsNullOrEmpty(r.questId)) set.Add(r.questId);
+            if (r != null)
+            {
+                if (!string.IsNullOrEmpty(r.questId)) 
+                {
+                    set.Add(r.questId);
+                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] ID de QuestData '{r.name}': '{r.questId}'");
+                }
+                else
+                {
+                    if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] ⚠️ QuestData '{r.name}' tiene questId vacío!");
+                }
+            }
+            else
+            {
+                if (debugLogs) Debug.LogWarning($"[RoomExitBlocker:{gameObject.name}] ⚠️ requiredQuestRefs[{i}] es NULL!");
+            }
         }
+        
         return set.ToList();
     }
     private void OnDrawGizmos() { }

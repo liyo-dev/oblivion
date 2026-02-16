@@ -28,6 +28,11 @@ MonoBehaviour:
   - battleId: Golem_1
     music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
     fade: 0
+  minigames:
+  - minigameId: TAG_MINIGAME_01
+    music: {fileID: 8300000, guid: 12b75233fcb8ce046a74b5ffa2f95be3, type: 3}
+    fade: 0
+    loop: 0
   ambientZones:
   - zoneId: Woods
     music: {fileID: 8300000, guid: 15968ef8400ac3a48b0a18f1a182400d, type: 3}

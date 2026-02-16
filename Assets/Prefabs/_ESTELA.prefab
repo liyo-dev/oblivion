@@ -14333,6 +14333,7 @@ GameObject:
   - component: {fileID: 3392072196240201786}
   - component: {fileID: 1187040435340309947}
   - component: {fileID: 9069736355997653958}
+  - component: {fileID: 8633260300737531714}
   m_Layer: 8
   m_Name: _ESTELA
   m_TagString: Estela
@@ -14573,6 +14574,12 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  onJoinedParty:
+    m_PersistentCalls:
+      m_Calls: []
+  onLeftParty:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &9069736355997653958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14591,6 +14598,25 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
+--- !u!114 &8633260300737531714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71502e3d469043c39b0240edd3c4f296, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChaserAI
+  target: {fileID: 0}
+  agent: {fileID: 3392072196240201786}
+  chaseSpeed: 20
+  catchDistance: 1.2
+  updatePathInterval: 0.2
+  animator: {fileID: 0}
+  runAnimParam: IsRunning
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0

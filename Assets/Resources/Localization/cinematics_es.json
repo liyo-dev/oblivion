@@ -101,6 +101,14 @@
             "text": "Liam: El Golem ha fallado. Si quiero que el chico llegue al final, tendré que guiarlo yo mismo."
         },
         {
+            "id": "EVT_MOUNTAIN_01",
+            "text": "ESTELA: ¡Nadie me interrumpe mientras como!"
+        },
+        {
+            "id": "EVT_MOUNTAIN_02",
+            "text": "ESTELA: ¡Así que comete esta!"
+        },
+        {
             "id": "EVT_TABERNA_01",
             "text": "Eldran, Will y Estela discuten de lo ocurrido y tratan de buscar una solución..."
         },

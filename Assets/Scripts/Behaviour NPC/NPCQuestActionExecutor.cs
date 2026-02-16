@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using Game.NPC.Modules;
 using Game.NPC.States;
@@ -246,6 +246,31 @@ namespace Game.NPC
             // Esperar un frame para asegurar que todos los callbacks de CompleteQuest han terminado
             yield return null;
 
+            // ✅ FIX: Si ya hay un diálogo abierto (ej: del grafo narrativo), esperar a que termine o cancelar
+            var dm = DialogueManager.Instance;
+            if (dm != null && dm.IsOpen)
+            {
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏳ Ya hay un diálogo abierto - esperando a que termine antes de ejecutar post-action");
+                
+                // Esperar a que termine el diálogo actual (máximo 30 segundos)
+                float waitTime = 0f;
+                while (dm.IsOpen && waitTime < 30f)
+                {
+                    yield return new WaitForSeconds(0.5f);
+                    waitTime += 0.5f;
+                }
+                
+                if (dm.IsOpen)
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏭️ Timeout esperando diálogo - cancelando post-action");
+                    _isExecutingPostAction = false;
+                    yield break;
+                }
+                
+                // Esperar un poco más después de que termine
+                yield return new WaitForSeconds(0.5f);
+            }
+
             // ✅ VALIDACIÓN DE DISTANCIA: No ejecutar diálogos automáticos si el NPC está lejos del jugador
             const float maxDialogueDistance = 20f; // Distancia máxima para auto-iniciar diálogos
             
@@ -268,11 +293,17 @@ namespace Game.NPC
             // 1. Diálogo pre-acción
             if (action.dialogueBeforeAction != null)
             {
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 💬 Reproduciendo diálogo pre-acción");
-
                 var dialogueManager = DialogueManager.Instance;
-                if (dialogueManager != null)
+                
+                // ✅ FIX: No iniciar diálogo si ya hay uno activo o una cinemática en curso
+                if (dialogueManager != null && dialogueManager.IsOpen)
                 {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏭️ Saltando diálogo pre-acción - Ya hay un diálogo activo");
+                }
+                else if (dialogueManager != null)
+                {
+                    if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 💬 Reproduciendo diálogo pre-acción");
+
                     // ✅ FIX: Pasar el transform del NPC para activar la cámara cinematográfica
                     dialogueManager.StartDialogue(action.dialogueBeforeAction, transform);
 
@@ -280,9 +311,9 @@ namespace Game.NPC
                     {
                         yield return null;
                     }
+                    
+                    if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Diálogo pre-acción completado");
                 }
-
-                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Diálogo pre-acción completado");
             }
 
             // 2. Espera opcional
@@ -342,11 +373,94 @@ namespace Game.NPC
                         unityEvent?.Invoke();
                         if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 📣 Evento onPostActionCompleted disparado");
                     }
+                    
+                    // ✅ NUEVO: Encadenar siguiente quest si está configurado
+                    if (action.chainNextQuestAfterAction)
+                    {
+                        if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🔗 chainNextQuestAfterAction activado - iniciando siguiente quest");
+                        StartCoroutine(ChainNextQuestDelayed(questConfig, questIndex, action.chainDelay));
+                    }
                 }
             }
 
             _isExecutingPostAction = false;
             if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✨ Post-action {questIndex} COMPLETADA");
+        }
+        
+        /// <summary>
+        /// Inicia la siguiente quest de la cadena después de un delay
+        /// </summary>
+        private IEnumerator ChainNextQuestDelayed(Game.NPC.Modules.NPCQuestConfig questConfig, int currentQuestIndex, float delay)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+            
+            // Verificar si hay siguiente quest en la cadena
+            int nextIndex = currentQuestIndex + 1;
+            if (nextIndex >= questConfig.questChain.Length)
+            {
+                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🔗 No hay más quests en la cadena (index {nextIndex} >= {questConfig.questChain.Length})");
+                yield break;
+            }
+            
+            var nextEntry = questConfig.questChain[nextIndex];
+            if (nextEntry?.questData == null)
+            {
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] 🔗 Siguiente entrada en la cadena no tiene questData");
+                yield break;
+            }
+            
+            var qm = QuestManager.Instance;
+            if (qm == null)
+            {
+                Debug.LogError($"[NPCQuestActionExecutor:{name}] 🔗 QuestManager.Instance es null");
+                yield break;
+            }
+            
+            // Verificar que la quest no esté ya iniciada
+            var nextState = qm.GetState(nextEntry.questData.questId);
+            if (nextState != QuestState.Inactive)
+            {
+                if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 🔗 Quest '{nextEntry.questData.questId}' ya está en estado {nextState}");
+                yield break;
+            }
+            
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 🔗 Encadenando siguiente quest: '{nextEntry.questData.questId}'");
+            
+            // Si tiene diálogo antes, reproducirlo (solo si no hay otro diálogo activo)
+            if (nextEntry.dlgBefore != null)
+            {
+                var dm = DialogueManager.Instance;
+                
+                // ✅ FIX: No iniciar diálogo si ya hay uno activo
+                if (dm != null && dm.IsOpen)
+                {
+                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] 🔗 Saltando dlgBefore - Ya hay un diálogo activo");
+                }
+                else if (dm != null)
+                {
+                    nextEntry.onOfferDialogueStarted?.Invoke();
+                    
+                    bool dialogueFinished = false;
+                    dm.StartDialogue(nextEntry.dlgBefore, transform, () => dialogueFinished = true);
+                    
+                    // Esperar a que termine el diálogo
+                    while (!dialogueFinished)
+                    {
+                        yield return null;
+                    }
+                    
+                    nextEntry.onOfferDialogueFinished?.Invoke();
+                }
+            }
+            
+            // Añadir e iniciar la quest
+            qm.AddQuest(nextEntry.questData);
+            qm.StartQuest(nextEntry.questData.questId);
+            
+            Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Quest '{nextEntry.questData.questId}' iniciada por encadenamiento");
         }
 
         private IEnumerator ExecuteMoveAction(QuestPostAction action)

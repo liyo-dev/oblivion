@@ -93,13 +93,126 @@ namespace Game.NPC.Modules
             NPCInteractiveNarrativeRegistry.Register(this);
             GameBootService.OnProfileReady += HandleProfileReady;
             ProfileReadyDiagnostics.RegisterSubscriber(nameof(NPCInteractiveNarrativeExecutor));
+            
+            // Suscribirse a eventos de quest para auto-ejecución
+            SubscribeToQuestEvents();
         }
         
         private void OnDisable()
         {
             NPCInteractiveNarrativeRegistry.Unregister(this);
             GameBootService.OnProfileReady -= HandleProfileReady;
+            
+            // Desuscribirse de eventos de quest
+            UnsubscribeFromQuestEvents();
         }
+        
+        #region Quest Auto-Execute
+        
+        private bool _subscribedToQuests = false;
+        
+        private void SubscribeToQuestEvents()
+        {
+            if (_subscribedToQuests) return;
+            
+            var questManager = QuestManager.Instance;
+            if (questManager != null)
+            {
+                questManager.OnQuestCompleted += OnQuestCompletedHandler;
+                questManager.OnQuestStarted += OnQuestStartedHandler;
+                _subscribedToQuests = true;
+            }
+            else
+            {
+                // Reintentar después si QuestManager aún no está listo
+                StartCoroutine(RetrySubscribeToQuests());
+            }
+        }
+        
+        private void UnsubscribeFromQuestEvents()
+        {
+            if (!_subscribedToQuests) return;
+            
+            var questManager = QuestManager.Instance;
+            if (questManager != null)
+            {
+                questManager.OnQuestCompleted -= OnQuestCompletedHandler;
+                questManager.OnQuestStarted -= OnQuestStartedHandler;
+            }
+            _subscribedToQuests = false;
+        }
+        
+        private IEnumerator RetrySubscribeToQuests()
+        {
+            yield return _waitHalfSecond;
+            SubscribeToQuestEvents();
+        }
+        
+        /// <summary>
+        /// Llamado cuando se completa una quest - verifica si hay narrativas que deban ejecutarse automáticamente
+        /// </summary>
+        private void OnQuestCompletedHandler(string questId)
+        {
+            CheckAndAutoExecuteQuestNarrative(questId, NarrativeConditionType.QuestCompleted);
+        }
+        
+        /// <summary>
+        /// Llamado cuando se inicia una quest - verifica si hay narrativas que deban ejecutarse automáticamente
+        /// </summary>
+        private void OnQuestStartedHandler(string questId)
+        {
+            CheckAndAutoExecuteQuestNarrative(questId, NarrativeConditionType.QuestStarted);
+        }
+        
+        /// <summary>
+        /// Verifica si hay narrativas con autoExecuteOnQuestConditionMet que deben ejecutarse
+        /// </summary>
+        private void CheckAndAutoExecuteQuestNarrative(string questId, NarrativeConditionType expectedConditionType)
+        {
+            if (_config == null || _config.conditionalNarratives == null) return;
+            if (_isExecuting) return; // Ya ejecutando otra narrativa
+            
+            foreach (var narrative in _config.conditionalNarratives)
+            {
+                if (narrative == null) continue;
+                if (!narrative.autoExecuteOnQuestConditionMet) continue;
+                
+                // Verificar si la condición es del tipo correcto y para esta quest
+                if (narrative.condition.conditionType != expectedConditionType) continue;
+                if (narrative.condition.targetQuest == null) continue;
+                if (narrative.condition.targetQuest.questId != questId) continue;
+                
+                // Verificar si puede ejecutarse (condición cumplida y no usada si es singleUse)
+                if (narrative.CanExecute())
+                {
+                    Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' porque quest '{questId}' cumplió condición {expectedConditionType}");
+                    
+                    // Ejecutar la narrativa
+                    StartCoroutine(AutoExecuteNarrative(narrative));
+                    return; // Solo ejecutar una
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Ejecuta una narrativa automáticamente (sin interacción del jugador)
+        /// </summary>
+        private IEnumerator AutoExecuteNarrative(ConditionalNarrative narrative)
+        {
+            // Pequeña espera para que el sistema se estabilice
+            yield return _waitPointTwo;
+            
+            if (_isExecuting) yield break;
+            
+            // Invalidar caché y forzar esta narrativa
+            InvalidateNarrativeCache();
+            _cachedActiveNarrative = narrative;
+            
+            // Ejecutar
+            TryExecuteNarrative();
+        }
+        
+        #endregion
         
         private void HandleProfileReady()
         {
