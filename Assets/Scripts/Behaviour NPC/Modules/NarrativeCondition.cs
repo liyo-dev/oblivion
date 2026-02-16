@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using UnityEngine;
 
 namespace Game.NPC.Modules
@@ -29,6 +29,14 @@ namespace Game.NPC.Modules
         [Header("Quest Condition")]
         [Tooltip("Quest a verificar (si conditionType requiere quest)")]
         public QuestData targetQuest;
+        
+        [Header("Custom Event Condition")]
+        [Tooltip("Clave del evento custom a escuchar (ej: EVT_MOUNTAIN). Usado cuando conditionType = Custom")]
+        public string customEventKey = "";
+        
+        // Estado runtime: true si el evento custom fue recibido
+        [NonSerialized]
+        private bool _customEventReceived = false;
         
         [Header("Debug")]
         [Tooltip("Mostrar logs cuando se evalúa esta condición")]
@@ -84,11 +92,10 @@ namespace Game.NPC.Modules
                     break;
                 
                 case NarrativeConditionType.Custom:
-                    // Para custom, siempre retorna false por defecto
-                    // El código que usa esto puede override el comportamiento
+                    // Para custom, verificamos si el evento fue recibido
+                    result = _customEventReceived;
                     if (debugMode)
-                        Debug.LogWarning("[NarrativeCondition] Custom condition not implemented, returning false");
-                    result = false;
+                        Debug.Log($"[NarrativeCondition] Custom('{customEventKey}') = {result} (eventReceived={_customEventReceived})");
                     break;
                 
                 default:
@@ -240,12 +247,43 @@ namespace Game.NPC.Modules
                         : "Quest activa (sin quest)";
                 
                 case NarrativeConditionType.Custom:
-                    return "Condición custom";
+                    return !string.IsNullOrEmpty(customEventKey) 
+                        ? $"Evento '{customEventKey}'" 
+                        : "Evento custom (sin clave)";
                 
                 default:
                     return "Desconocida";
             }
         }
+        
+        /// <summary>
+        /// Marca que el evento custom fue recibido
+        /// </summary>
+        public void MarkCustomEventReceived()
+        {
+            _customEventReceived = true;
+            if (debugMode)
+                Debug.Log($"[NarrativeCondition] ✅ Evento custom '{customEventKey}' recibido");
+        }
+        
+        /// <summary>
+        /// Resetea el estado del evento custom
+        /// </summary>
+        public void ResetCustomEventState()
+        {
+            _customEventReceived = false;
+        }
+        
+        /// <summary>
+        /// Indica si esta condición requiere suscripción a eventos custom
+        /// </summary>
+        public bool RequiresCustomEventSubscription => 
+            conditionType == NarrativeConditionType.Custom && !string.IsNullOrEmpty(customEventKey);
+        
+        /// <summary>
+        /// Indica si el evento custom ya fue recibido
+        /// </summary>
+        public bool CustomEventReceived => _customEventReceived;
     }
 }
 

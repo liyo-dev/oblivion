@@ -32,7 +32,7 @@ namespace Game.NPC.Modules
         [Tooltip("¿Iniciar automáticamente al detectar al jugador? Si es false, el jugador debe interactuar manualmente.")]
         public bool autoStartOnDetection = false;
         
-        [Tooltip("¿Ejecutar automáticamente cuando se cumpla la condición de quest? (Ej: cuando una quest se complete). Útil para unir NPCs al party automáticamente tras completar una misión.")]
+        [Tooltip("¿Ejecutar automáticamente cuando se cumpla la condición? Aplica a:\n- Quests: cuando se complete/inicie una quest\n- Eventos Custom: cuando se emita el evento especificado (ej: EVT_MOUNTAIN)")]
         public bool autoExecuteOnQuestConditionMet = false;
         
         [Header("Estado Post-Narrativa")]
@@ -98,14 +98,17 @@ namespace Game.NPC.Modules
         }
         
         /// <summary>
-        /// Resetea el estado de ejecución (útil para testing)
+        /// Resetea el estado de ejecución (útil para testing o reinicio de partida)
         /// </summary>
         public void ResetExecutionState()
         {
             _hasBeenExecuted = false;
             
+            // También resetear el estado del evento custom si aplica
+            condition?.ResetCustomEventState();
+            
             if (debugMode)
-                Debug.Log($"[ConditionalNarrative:{description}] Estado reseteado");
+                Debug.Log($"[ConditionalNarrative:{description}] Estado reseteado (incluyendo eventos custom)");
         }
         
         /// <summary>

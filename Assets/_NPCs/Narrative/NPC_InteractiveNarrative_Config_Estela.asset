@@ -20,6 +20,7 @@ MonoBehaviour:
     condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 0
@@ -111,6 +112,7 @@ MonoBehaviour:
     condition:
       conditionType: 5
       targetQuest: {fileID: 0}
+      customEventKey: EVT_MOUNTAIN
       debugMode: 0
     narrativeChain:
     - actionType: 0
@@ -150,9 +152,9 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    singleUse: 0
-    autoStartOnDetection: 1
-    autoExecuteOnQuestConditionMet: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1

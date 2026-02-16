@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.States;
@@ -96,6 +97,9 @@ namespace Game.NPC.Modules
             
             // Suscribirse a eventos de quest para auto-ejecución
             SubscribeToQuestEvents();
+            
+            // ⚠️ NO suscribirse a eventos custom aquí - se hará en Start() después de RestoreState()
+            // para evitar que eventos pendientes de sesiones anteriores activen narrativas ya completadas
         }
         
         private void OnDisable()
@@ -105,6 +109,9 @@ namespace Game.NPC.Modules
             
             // Desuscribirse de eventos de quest
             UnsubscribeFromQuestEvents();
+            
+            // Desuscribirse de eventos custom
+            UnsubscribeFromCustomEvents();
         }
         
         #region Quest Auto-Execute
@@ -214,6 +221,111 @@ namespace Game.NPC.Modules
         
         #endregion
         
+        #region Custom Event Auto-Execute
+        
+        private readonly Dictionary<string, System.Action> _customEventHandlers = new();
+        
+        private void SubscribeToCustomEvents()
+        {
+            if (_config == null || _config.conditionalNarratives == null) return;
+            
+            var signals = DefaultNarrativeSignals.Instance;
+            if (signals == null)
+            {
+                // Reintentar después si DefaultNarrativeSignals aún no está listo
+                StartCoroutine(RetrySubscribeToCustomEvents());
+                return;
+            }
+            
+            foreach (var narrative in _config.conditionalNarratives)
+            {
+                if (narrative == null) continue;
+                if (!narrative.condition.RequiresCustomEventSubscription) continue;
+                
+                string eventKey = narrative.condition.customEventKey;
+                if (_customEventHandlers.ContainsKey(eventKey)) continue; // Ya suscrito
+                
+                // Crear handler para este evento
+                var narrativeRef = narrative; // Captura local para el closure
+                System.Action handler = () => OnCustomEventReceived(eventKey, narrativeRef);
+                _customEventHandlers[eventKey] = handler;
+                
+                signals.OnCustom(eventKey, handler);
+                
+                if (narrative.condition.debugMode)
+                    Debug.Log($"[NarrativeExecutor:{name}] 📡 Suscrito a evento custom '{eventKey}'");
+            }
+        }
+        
+        private void UnsubscribeFromCustomEvents()
+        {
+            var signals = DefaultNarrativeSignals.Instance;
+            if (signals == null) return;
+            
+            foreach (var kvp in _customEventHandlers)
+            {
+                signals.OffCustom(kvp.Key, kvp.Value);
+            }
+            _customEventHandlers.Clear();
+        }
+        
+        private IEnumerator RetrySubscribeToCustomEvents()
+        {
+            yield return _waitHalfSecond;
+            SubscribeToCustomEvents();
+        }
+        
+        /// <summary>
+        /// Llamado cuando se recibe un evento custom
+        /// </summary>
+        private void OnCustomEventReceived(string eventKey, ConditionalNarrative narrative)
+        {
+            if (narrative == null) return;
+            
+            // ✅ IMPORTANTE: Verificar si la narrativa ya fue ejecutada (singleUse)
+            // Esto previene que eventos pendientes de sesiones anteriores reactiven narrativas ya completadas
+            if (narrative.singleUse && narrative.HasBeenExecuted)
+            {
+                Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya fue ejecutada (singleUse)");
+                return;
+            }
+            
+            // ✅ También verificar si está en la lista de completadas del preset (persistencia)
+            if (_config != null && _config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
+            {
+                var preset = GameBootService.Profile?.runtimePreset;
+                if (preset != null && preset.completedInteractiveNarratives != null)
+                {
+                    string narrativeId = GetConditionalNarrativeId(System.Array.IndexOf(_config.conditionalNarratives, narrative));
+                    if (preset.completedInteractiveNarratives.Contains(narrativeId))
+                    {
+                        Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya completada en preset");
+                        return;
+                    }
+                }
+            }
+            
+            // Marcar que el evento fue recibido
+            narrative.condition.MarkCustomEventReceived();
+            
+            Debug.Log($"[NarrativeExecutor:{name}] 📨 Evento custom '{eventKey}' recibido para narrativa '{narrative.description}'");
+            
+            // Si tiene autoExecuteOnQuestConditionMet, auto-ejecutar
+            if (narrative.autoExecuteOnQuestConditionMet && !_isExecuting)
+            {
+                if (narrative.CanExecute())
+                {
+                    Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' por evento custom '{eventKey}'");
+                    StartCoroutine(AutoExecuteNarrative(narrative));
+                }
+            }
+            
+            // Invalidar caché para que se re-evalúe
+            InvalidateNarrativeCache();
+        }
+        
+        #endregion
+        
         private void HandleProfileReady()
         {
             _profileReady = true;
@@ -251,6 +363,10 @@ namespace Game.NPC.Modules
             {
                 RestoreState();
             }
+
+            // ✅ Suscribirse a eventos custom DESPUÉS de RestoreState()
+            // Esto evita que eventos pendientes de sesiones anteriores activen narrativas ya completadas
+            SubscribeToCustomEvents();
 
             ApplyInitialLayer();
             

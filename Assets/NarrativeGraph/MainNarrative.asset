@@ -45,6 +45,7 @@ MonoBehaviour:
   - rid: 5669070227972817055
   - rid: 5669070227972817138
   - rid: 5669070231065591993
+  - rid: 5669070235360559104
   applicableSceneNames:
   - MainWorld
   references:
@@ -409,10 +410,23 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d82c3b85-2b54-4889-b43d-702eba5413f1
-        position: {x: 2829, y: 1472}
-        outputs: []
+        position: {x: -136, y: 1960}
+        outputs:
+        - 36aafbb7-da7c-4c8b-84b8-14e9fcb7a7f1
         cinematicSceneName: Cinematic_Mountain
         useInternalCinematic: 1
+    - rid: 5669070235360559104
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 36aafbb7-da7c-4c8b-84b8-14e9fcb7a7f1
+        position: {x: 247, y: 1960}
+        outputs: []
+        eventKey: EVT_MOUNTAIN
     - rid: 7908052880146039718
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
