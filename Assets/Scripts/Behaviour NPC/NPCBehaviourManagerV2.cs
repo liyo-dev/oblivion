@@ -1,21 +1,22 @@
-﻿﻿﻿using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
 using Game.NPC.Common;
 using Game.NPC.States;
-using Game.NPC.Modules; // Necesario para CombatLifecycleHandler
+using Game.NPC.Modules;
+using Game.Interfaces; // Añadido para ICombatTarget
 
 namespace Game.NPC
 {
     /// <summary>
     /// Gestor de comportamiento de NPC basado en FSM (Finite State Machine).
-    /// Versión 2.1 - Integración completa con Sistema de Combate y Persistencia.
+    /// Versión 2.2 - Implementa ICombatTarget para integración con cámara.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(NPCSimpleAnimator))]
     [DisallowMultipleComponent]
-    public class NPCBehaviourManagerV2 : MonoBehaviour
+    public class NPCBehaviourManagerV2 : MonoBehaviour, ICombatTarget
     {
         #region ⚙️ Configuration
         [Header("FSM Configuration")]
@@ -43,6 +44,7 @@ namespace Game.NPC
         private Rigidbody _rigidbody;
         private NPCBrain _brain;
         private NPCStateContext _context;
+        private NPCCombatLifecycleHandler _lifecycleHandler;
         
         // Player References
         private Transform _player;
@@ -73,6 +75,22 @@ namespace Game.NPC
             }
         }
         #endregion
+        
+        #region ICombatTarget Implementation
+        public Transform TargetTransform => transform;
+        public Vector3 AimPoint => transform.position + Vector3.up * 1.5f; // Apuntar al centro del cuerpo
+        public bool IsTargetable
+        {
+            get
+            {
+                if (_lifecycleHandler == null)
+                    _lifecycleHandler = GetComponent<NPCCombatLifecycleHandler>();
+                
+                // Es "targetable" si no está derrotado/muerto
+                return _lifecycleHandler == null || !_lifecycleHandler.IsDefeatedAndInactive;
+            }
+        }
+        #endregion
 
         void Awake()
         {
@@ -87,6 +105,7 @@ namespace Game.NPC
             _animator = GetComponent<NPCSimpleAnimator>();
             _unityAnimator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody>();
+            _lifecycleHandler = GetComponent<NPCCombatLifecycleHandler>(); // Cachear
             
             // ✅ FIX: Configurar NavMeshAgent para que NO controle la rotación
             // NPCSimpleAnimator se encarga de la rotación para evitar conflictos
@@ -237,12 +256,7 @@ namespace Game.NPC
                 // B. CombatLifecycleHandler (Gestión de muerte/stun)
                 if (!GetComponent<NPCCombatLifecycleHandler>())
                 {
-                    gameObject.AddComponent<NPCCombatLifecycleHandler>();
-                    //if (debugMode) Debug.Log($"[NPCManager] ☠️ NPCCombatLifecycleHandler añadido (Pre-Combate) para {name}");
-                }
-                else
-                {
-                    //if (debugMode) Debug.Log($"[NPCManager] ℹ️ NPCCombatLifecycleHandler ya existe en {name}");
+                    _lifecycleHandler = gameObject.AddComponent<NPCCombatLifecycleHandler>();
                 }
 
                 // C. Targetable (Para que el jugador pueda apuntarle antes de pelear)
@@ -281,8 +295,7 @@ namespace Game.NPC
         public void EnterCombat()
         {
             // Evitar entrar en combate si ya estamos muertos
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+            if (_lifecycleHandler != null && _lifecycleHandler.IsDefeatedAndInactive) return;
 
             _context.IsInCombat = true;
             
@@ -347,8 +360,7 @@ namespace Game.NPC
         public void ForceEnterCombat(Transform target)
         {
             // Evitar entrar en combate si ya estamos muertos
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+            if (_lifecycleHandler != null && _lifecycleHandler.IsDefeatedAndInactive) return;
             
             // Asignar el objetivo
             _context.Player = target;
@@ -527,10 +539,10 @@ namespace Game.NPC
         {
             // No interactuar si estamos muertos o en combate
             if (_context.IsInCombat) return;
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
+            
             // Si está derrotado, el LifecycleHandler gestiona la interacción especial (diálogo post-derrota)
             // pero si está vivo y bien, el Brain gestiona la interacción normal.
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive)
+            if (_lifecycleHandler != null && _lifecycleHandler.IsDefeatedAndInactive)
             {
                 // TODO: Implementar HandlePostDefeatInteraction en NPCCombatLifecycleHandler
                 // Por ahora, delegar al Brain para que maneje la interacción normalmente

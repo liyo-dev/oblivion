@@ -5,10 +5,6 @@ using Game.NPC.Modules;
 
 namespace Game.NPC.States
 {
-    /// <summary>
-    /// Estado FSM para NPCs que siguen al jugador como compañeros de equipo.
-    /// VERSIÓN MEJORADA: Sigue al jugador pegadito como en Pokémon/Zelda.
-    /// </summary>
     public class FollowPlayerState : NPCStateBase
     {
         public override string StateName => "FollowPlayer";
@@ -16,23 +12,20 @@ namespace Game.NPC.States
         private readonly NPCPartyMember _partyMember;
         private NPCPartyConfig _config;
         
-        // Timers
         private float _pathUpdateTimer;
-        private float _stateTimer; // Tiempo total en este estado
-        private float _idleTimer; // Tiempo que lleva parado
+        private float _stateTimer;
+        private float _idleTimer;
         
-        // Estados internos
         private bool _isInitialized;
         private Vector3 _lastPlayerPosition;
         
-        // Valores por defecto (se usan si no hay config)
-        private const float PATH_UPDATE_INTERVAL = 0.1f; // Actualizar path MÁS frecuente (era 0.15)
-        private const float DEFAULT_STOP_DISTANCE = 1.2f; // MÁS CERCA (era 2f)
-        private const float DEFAULT_RUN_DISTANCE = 3f; // Correr antes (era 4f)
+        private const float PATH_UPDATE_INTERVAL = 0.1f;
+        private const float DEFAULT_STOP_DISTANCE = 1.2f;
+        private const float DEFAULT_RUN_DISTANCE = 3f;
         private const float DEFAULT_WALK_SPEED = 3.5f;
-        private const float DEFAULT_RUN_SPEED = 7.5f; // Un poco más rápido
-        private const float PLAYER_MOVE_THRESHOLD = 0.1f; // Umbral de movimiento del jugador
-        private const float INITIAL_DELAY = 0.3f; // Delay inicial antes de empezar a seguir
+        private const float DEFAULT_RUN_SPEED = 7.5f;
+        private const float PLAYER_MOVE_THRESHOLD = 0.05f; // Reducido para mayor sensibilidad
+        private const float INITIAL_DELAY = 0.3f;
 
         public FollowPlayerState(NPCPartyMember partyMember)
         {
@@ -44,56 +37,48 @@ namespace Game.NPC.States
         {
             base.OnEnter(context);
             
-            Debug.Log($"[FollowPlayerState] 🚶 {context.Transform.name} entró en FollowPlayerState");
-            
-            _pathUpdateTimer = 0f;
-            _stateTimer = 0f;
-            _idleTimer = 0f;
-            _isInitialized = false;
-            
-            // Guardar posición inicial del jugador
-            if (context.Player != null)
+            if (context.Animator != null)
             {
-                _lastPlayerPosition = context.Player.position;
+                // Permitir que NPCSimpleAnimator controle la rotación
+                context.Animator.EnableAutoRotation(); 
             }
-            
+
             if (context.Agent != null)
             {
-                // ✅ IMPORTANTE: Empezar PARADO para evitar movimientos bruscos al inicio
                 context.Agent.isStopped = true;
-                context.Agent.updatePosition = true; 
-                context.Agent.updateRotation = false; // Controlaremos la rotación manualmente
+                context.Agent.updateRotation = false; // NPCSimpleAnimator se encarga de la rotación
                 context.Agent.speed = GetWalkSpeed();
-                
-                // Resetear path para evitar que vaya a destinos antiguos
                 if (context.Agent.isOnNavMesh)
                 {
                     context.Agent.ResetPath();
                 }
             }
             
-            // Asegurar animación idle al inicio
             context.Animator?.SetMovementSpeed(0f);
+            
+            if (context.Player != null)
+            {
+                _lastPlayerPosition = context.Player.position;
+            }
         }
 
         public override void OnUpdate(NPCStateContext context)
         {
             base.OnUpdate(context);
             
-            if (context.Player == null) return;
-            if (context.Agent == null || !context.Agent.isOnNavMesh) return;
+            if (context.Player == null || context.Agent == null || !context.Agent.isOnNavMesh) return;
             
             _stateTimer += Time.deltaTime;
             
-            // ✅ DELAY INICIAL: Esperar un poco antes de empezar a seguir (evita caos al inicio)
             if (_stateTimer < INITIAL_DELAY)
             {
                 context.Agent.isStopped = true;
                 context.Animator?.SetMovementSpeed(0f);
+                // Mirar al jugador incluso durante el delay inicial
+                RotateTowardsPlayer(context);
                 return;
             }
             
-            // Marcar como inicializado después del delay
             if (!_isInitialized)
             {
                 _isInitialized = true;
@@ -102,63 +87,44 @@ namespace Game.NPC.States
             
             float distance = Vector3.Distance(context.Transform.position, context.Player.position);
             
-            // Obtener valores del config o usar defaults
             float stopDist = _config?.distanciaParaPararse ?? DEFAULT_STOP_DISTANCE;
             float runDist = _config?.distanciaParaCorrer ?? DEFAULT_RUN_DISTANCE;
             float walkSpeed = _config?.velocidadCaminando ?? DEFAULT_WALK_SPEED;
             float runSpeed = _config?.velocidadCorriendo ?? DEFAULT_RUN_SPEED;
             
-            // ✅ DETECTAR SI EL JUGADOR SE ESTÁ MOVIENDO
             bool playerIsMoving = Vector3.Distance(_lastPlayerPosition, context.Player.position) > PLAYER_MOVE_THRESHOLD;
             if (playerIsMoving)
             {
                 _lastPlayerPosition = context.Player.position;
-                _idleTimer = 0f; // Resetear idle timer
+                _idleTimer = 0f;
             }
-            
-            // ===== LÓGICA MEJORADA DE SEGUIMIENTO =====
-            
-            // 1. Si está MUY CERCA -> PARAR y MIRAR al jugador
-            if (distance <= stopDist)
+            else
             {
-                // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
+                _idleTimer += Time.deltaTime;
+            }
+
+            // Si está muy cerca o el jugador está quieto por un momento, parar y mirar.
+            if (distance <= stopDist || (!playerIsMoving && _idleTimer > 0.2f))
+            {
                 if (!context.Agent.isStopped)
                 {
                     context.Agent.isStopped = true;
-                    context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
+                    context.Agent.ResetPath();
                 }
                 context.Animator?.SetMovementSpeed(0f);
                 
-                _idleTimer += Time.deltaTime;
-                
-                // Girar suavemente hacia el jugador cuando está cerca
-                if (_idleTimer > 0.1f) // Esperar un poco antes de girar
-                {
-                    RotateTowardsPlayer(context);
-                }
-                
+                // Siempre mirar al jugador cuando se está quieto.
+                RotateTowardsPlayer(context);
                 return;
             }
             
-            // 2. Si el jugador SE ESTÁ MOVIENDO o está lejos -> SEGUIR
+            // Si el jugador se mueve o el NPC está demasiado lejos, seguir.
             if (playerIsMoving || distance > stopDist * 1.2f)
             {
-                context.Agent.updateRotation = true;
-
-                // Si está LEJOS -> CORRER
-                if (distance > runDist)
-                {
-                    context.Agent.isStopped = false;
-                    context.Agent.speed = runSpeed;
-                }
-                // Si está CERCA pero no en rango de parada -> CAMINAR
-                else
-                {
-                    context.Agent.isStopped = false;
-                    context.Agent.speed = walkSpeed;
-                }
+                context.Agent.isStopped = false;
                 
-                // Actualizar destino periódicamente
+                context.Agent.speed = distance > runDist ? runSpeed : walkSpeed;
+                
                 _pathUpdateTimer += Time.deltaTime;
                 if (_pathUpdateTimer >= PATH_UPDATE_INTERVAL)
                 {
@@ -166,68 +132,37 @@ namespace Game.NPC.States
                     UpdateDestination(context, stopDist);
                 }
             }
-            // 3. Si el jugador ESTÁ QUIETO y el NPC está cerca -> PARAR
-            else
-            {
-                // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
-                if (!context.Agent.isStopped)
-                {
-                    context.Agent.isStopped = true;
-                    context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
-                }
-                context.Animator?.SetMovementSpeed(0f);
-                RotateTowardsPlayer(context);
-            }
             
-            // Actualizar animación de movimiento
-            UpdateMovementAnimation(context);
+            // NPCSimpleAnimator se encargará de la rotación basándose en la velocidad del NavMeshAgent.
+            // No es necesario hacer nada más aquí para la rotación en movimiento.
         }
         
-        /// <summary>
-        /// Gira suavemente hacia el jugador cuando está cerca
-        /// </summary>
         private void RotateTowardsPlayer(NPCStateContext context)
         {
-            if (context.Player == null) return;
+            if (context.Player == null || context.Animator == null) return;
             
-            context.Agent.updateRotation = false;
-            Vector3 directionToPlayer = context.Player.position - context.Transform.position;
-            directionToPlayer.y = 0; // Mantener en plano horizontal
-            
-            if (directionToPlayer.sqrMagnitude > 0.01f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                context.Transform.rotation = Quaternion.Slerp(
-                    context.Transform.rotation, 
-                    targetRotation, 
-                    Time.deltaTime * 5f // Velocidad de rotación suave
-                );
-            }
+            // Delegar la rotación a NPCSimpleAnimator
+            context.Animator.FaceTarget(context.Player.position);
         }
         
         private void UpdateDestination(NPCStateContext context, float followDist)
         {
             bool preferBehind = _config?.quedarseDetras ?? true;
             
-            // Calcular posición objetivo
             Vector3 targetPos;
             if (preferBehind)
             {
-                // Posición detrás del jugador (más cercana que antes)
-                Vector3 behindOffset = -context.Player.forward * (followDist * 0.7f); // 70% de la distancia
+                Vector3 behindOffset = -context.Player.forward * (followDist * 0.7f);
                 targetPos = context.Player.position + behindOffset;
             }
             else
             {
-                // Directamente hacia el jugador
                 Vector3 direction = (context.Transform.position - context.Player.position).normalized;
                 targetPos = context.Player.position + direction * followDist;
             }
             
-            // Validar en NavMesh
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 3f, NavMesh.AllAreas))
             {
-                // Solo actualizar si el destino cambió significativamente
                 if (Vector3.Distance(context.Agent.destination, hit.position) > 0.5f)
                 {
                     context.Agent.SetDestination(hit.position);
@@ -235,7 +170,6 @@ namespace Game.NPC.States
             }
             else
             {
-                // Fallback: ir directamente al jugador
                 context.Agent.SetDestination(context.Player.position);
             }
         }
@@ -250,27 +184,24 @@ namespace Game.NPC.States
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
                 context.Agent.isStopped = true;
-                // ✅ Restaurar valores por defecto al salir
-                context.Agent.updatePosition = true;
-                context.Agent.updateRotation = true;
+            }
+            
+            if (context.Animator != null)
+            {
+                // Restaurar rotación automática por si otro estado la necesita
+                context.Animator.EnableAutoRotation();
             }
             base.OnExit(context);
         }
 
         public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // 1. Cinemática
             if (context.IsInCinematic) return new CinematicState();
-            
-            // 2. Combate
             if (context.IsInCombat) return new AllyCombatState();
-            
-            // 3. Si ya no está en el equipo
             if (_partyMember == null || !_partyMember.IsInParty)
             {
                 return new IdleState();
             }
-            
             return null;
         }
     }

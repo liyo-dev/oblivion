@@ -9089,8 +9089,9 @@ MonoBehaviour:
   playerTargeting: {fileID: 2788111570677460138}
   syncWithProjectileTargeting: 1
   maxLockDistance: 30
-  targetingRotationSpeed: 8
-  targetHeightOffset: 1.5
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
   lockIndicatorPrefab: {fileID: 0}
   showDebugLogs: 0
 --- !u!1 &3700031740071713348
