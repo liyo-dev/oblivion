@@ -61,7 +61,7 @@ namespace Game.NPC.States
             {
                 // ✅ IMPORTANTE: Empezar PARADO para evitar movimientos bruscos al inicio
                 context.Agent.isStopped = true;
-                context.Agent.updatePosition = false; // ✅ FIX: Evitar oscilación en Y cuando está quieto
+                context.Agent.updatePosition = true; 
                 context.Agent.updateRotation = false; // Controlaremos la rotación manualmente
                 context.Agent.speed = GetWalkSpeed();
                 
@@ -122,10 +122,9 @@ namespace Game.NPC.States
             if (distance <= stopDist)
             {
                 // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
-                if (!context.Agent.isStopped || context.Agent.updatePosition)
+                if (!context.Agent.isStopped)
                 {
                     context.Agent.isStopped = true;
-                    context.Agent.updatePosition = false; // ✅ FIX: Desactivar actualización de posición para evitar oscilación en Y
                     context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
                 }
                 context.Animator?.SetMovementSpeed(0f);
@@ -133,7 +132,7 @@ namespace Game.NPC.States
                 _idleTimer += Time.deltaTime;
                 
                 // Girar suavemente hacia el jugador cuando está cerca
-                if (_idleTimer > 0.5f) // Esperar medio segundo antes de girar
+                if (_idleTimer > 0.1f) // Esperar un poco antes de girar
                 {
                     RotateTowardsPlayer(context);
                 }
@@ -144,20 +143,8 @@ namespace Game.NPC.States
             // 2. Si el jugador SE ESTÁ MOVIENDO o está lejos -> SEGUIR
             if (playerIsMoving || distance > stopDist * 1.2f)
             {
-                // ✅ Reactivar actualización de posición cuando empieza a moverse
-                if (!context.Agent.updatePosition)
-                {
-                    // ✅ FIX: Sincronizar la posición del agente con el transform ANTES de reactivar
-                    // Esto evita el "salto" o teletransporte cuando se reactiva updatePosition
-                    if (context.Agent.isOnNavMesh)
-                    {
-                        context.Agent.nextPosition = context.Transform.position;
-                    }
-                    
-                    context.Agent.updatePosition = true;
-                    context.Agent.updateRotation = true;
-                }
-                
+                context.Agent.updateRotation = true;
+
                 // Si está LEJOS -> CORRER
                 if (distance > runDist)
                 {
@@ -183,13 +170,13 @@ namespace Game.NPC.States
             else
             {
                 // ✅ Solo actualizar si no estaba detenido antes (evita llamadas repetidas)
-                if (!context.Agent.isStopped || context.Agent.updatePosition)
+                if (!context.Agent.isStopped)
                 {
                     context.Agent.isStopped = true;
-                    context.Agent.updatePosition = false; // ✅ FIX: Desactivar actualización de posición
                     context.Agent.ResetPath(); // ✅ Limpiar el path para asegurar que no hay movimiento residual
                 }
                 context.Animator?.SetMovementSpeed(0f);
+                RotateTowardsPlayer(context);
             }
             
             // Actualizar animación de movimiento
@@ -203,6 +190,7 @@ namespace Game.NPC.States
         {
             if (context.Player == null) return;
             
+            context.Agent.updateRotation = false;
             Vector3 directionToPlayer = context.Player.position - context.Transform.position;
             directionToPlayer.y = 0; // Mantener en plano horizontal
             
@@ -212,7 +200,7 @@ namespace Game.NPC.States
                 context.Transform.rotation = Quaternion.Slerp(
                     context.Transform.rotation, 
                     targetRotation, 
-                    Time.deltaTime * 3f // Velocidad de rotación suave
+                    Time.deltaTime * 5f // Velocidad de rotación suave
                 );
             }
         }
