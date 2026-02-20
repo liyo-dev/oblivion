@@ -11390,7 +11390,7 @@ MonoBehaviour:
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
     narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
-    partyConfig: {fileID: 11400000, guid: bbbb77fd6959bcf4dad34d4275eb5bd1, type: 2}
+    partyConfig: {fileID: 11400000, guid: f6b5cb3e960bb514bab91b9e915b7b48, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -11407,6 +11407,12 @@ MonoBehaviour:
   startInIdleState: 0
   forceKinematicRigidbody: 1
   persistLastPosition: 1
+  onJoinedParty:
+    m_PersistentCalls:
+      m_Calls: []
+  onLeftParty:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1687942726773230502
 MonoBehaviour:
   m_ObjectHideFlags: 0
