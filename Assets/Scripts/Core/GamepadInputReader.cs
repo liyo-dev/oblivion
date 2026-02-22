@@ -50,6 +50,7 @@ namespace Core
     private static PlayerControls _boundControls;
     private static bool _pollingRegistered;
     private static readonly System.Collections.Generic.HashSet<object> _gameplaySuppressionOwners = new();
+    private static readonly int[] _lastEmittedFrameByType = CreateEmissionFrameCache();
     private static int _uiNavigationScopeCount;
     private static float _ignoreCancelUntil = 0f; // Tiempo hasta el cual ignorar el botón Cancel/B
     private static float _ignoreJumpUntil = 0f; // Tiempo hasta el cual ignorar el botón Jump/A (después de interactuar)
@@ -66,6 +67,8 @@ namespace Core
         _boundControls = null;
         _pollingRegistered = false;
         _gameplaySuppressionOwners.Clear();
+        for (int i = 0; i < _lastEmittedFrameByType.Length; i++)
+            _lastEmittedFrameByType[i] = -1;
         _uiNavigationScopeCount = 0;
         _ignoreCancelUntil = 0f;
         _ignoreJumpUntil = 0f;
@@ -77,6 +80,15 @@ namespace Core
     /// Si está activado, reproduce SFX de UI automáticamente en navegación, submit, cancel, etc.
     /// </summary>
     public static bool enableUIAudio = true;
+
+    private static int[] CreateEmissionFrameCache()
+    {
+        int count = Enum.GetValues(typeof(InputEventType)).Length;
+        var cache = new int[count];
+        for (int i = 0; i < cache.Length; i++)
+            cache[i] = -1;
+        return cache;
+    }
 
 #if ENABLE_INPUT_SYSTEM
     private static Gamepad GetGamepad()
@@ -339,15 +351,37 @@ namespace Core
 
     private static void Raise(InputEventType type, InputAction.CallbackContext ctx, Vector2 value)
     {
-        if (ShouldSuppress(type)) return;
-        OnInput?.Invoke(new InputEvent(type, value, ctx.phase));
+        Emit(type, value, ctx.phase, applySuppression: true, dedupePerFrame: true);
+    }
 
+    private static void Emit(InputEventType type, Vector2 value, InputActionPhase phase, bool applySuppression, bool dedupePerFrame)
+    {
+        if (applySuppression && ShouldSuppress(type)) return;
+        if (dedupePerFrame && WasEmittedThisFrame(type)) return;
+
+        MarkEmitted(type);
+        OnInput?.Invoke(new InputEvent(type, value, phase));
+    }
+
+    private static bool WasEmittedThisFrame(InputEventType type)
+    {
+        int index = (int)type;
+        if (index < 0 || index >= _lastEmittedFrameByType.Length) return false;
+        return _lastEmittedFrameByType[index] == Time.frameCount;
+    }
+
+    private static void MarkEmitted(InputEventType type)
+    {
+        int index = (int)type;
+        if (index < 0 || index >= _lastEmittedFrameByType.Length) return;
+        _lastEmittedFrameByType[index] = Time.frameCount;
     }
 
     private static bool ShouldSuppress(InputEventType type)
     {
         bool suppressGameplay = _gameplaySuppressionOwners.Count > 0 || (_controls != null && !_controls.GamePlay.enabled);
         bool allowNavigationDuringUi = _uiNavigationScopeCount > 0;
+        
         if (!suppressGameplay) return false;
 
         switch (type)
@@ -378,16 +412,16 @@ namespace Core
 
         if (gp.startButton != null && gp.startButton.wasPressedThisFrame)
         {
-            OnInput?.Invoke(new InputEvent(InputEventType.Start, Vector2.zero, InputActionPhase.Performed));
+            Emit(InputEventType.Start, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         }
 
         var dpad = gp.dpad;
         if (dpad != null)
         {
-            if (dpad.up.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadUp)) OnInput?.Invoke(new InputEvent(InputEventType.DpadUp, Vector2.up, InputActionPhase.Performed));
-            if (dpad.down.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadDown)) OnInput?.Invoke(new InputEvent(InputEventType.DpadDown, Vector2.down, InputActionPhase.Performed));
-            if (dpad.left.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadLeft)) OnInput?.Invoke(new InputEvent(InputEventType.DpadLeft, Vector2.left, InputActionPhase.Performed));
-            if (dpad.right.wasPressedThisFrame && !ShouldSuppress(InputEventType.DpadRight)) OnInput?.Invoke(new InputEvent(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed));
+            if (dpad.up.wasPressedThisFrame) Emit(InputEventType.DpadUp, Vector2.up, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+            if (dpad.down.wasPressedThisFrame) Emit(InputEventType.DpadDown, Vector2.down, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+            if (dpad.left.wasPressedThisFrame) Emit(InputEventType.DpadLeft, Vector2.left, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
+            if (dpad.right.wasPressedThisFrame) Emit(InputEventType.DpadRight, Vector2.right, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         }
         if (gp.buttonEast != null && gp.buttonEast.wasPressedThisFrame)
         {
@@ -398,15 +432,15 @@ namespace Core
             }
             else
             {
-                OnInput?.Invoke(new InputEvent(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed));
+                Emit(InputEventType.Cancel, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
             }
         }
         if (gp.buttonSouth != null && gp.buttonSouth.wasPressedThisFrame)
-            OnInput?.Invoke(new InputEvent(InputEventType.Submit, Vector2.zero, InputActionPhase.Performed));
+            Emit(InputEventType.Submit, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         if (gp.leftShoulder != null && gp.leftShoulder.wasPressedThisFrame)
-            OnInput?.Invoke(new InputEvent(InputEventType.LeftShoulder, Vector2.left, InputActionPhase.Performed));
+            Emit(InputEventType.LeftShoulder, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
         if (gp.rightShoulder != null && gp.rightShoulder.wasPressedThisFrame)
-            OnInput?.Invoke(new InputEvent(InputEventType.RightShoulder, Vector2.right, InputActionPhase.Performed));
+            Emit(InputEventType.RightShoulder, Vector2.zero, InputActionPhase.Performed, applySuppression: true, dedupePerFrame: true);
     }
 #endif
 

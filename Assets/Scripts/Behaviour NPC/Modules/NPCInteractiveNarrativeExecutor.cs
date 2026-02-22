@@ -23,6 +23,9 @@ namespace Game.NPC.Modules
         private Transform _player;
         #endregion
 
+        [Header("Debug")]
+        [SerializeField] private bool verboseLogging = false;
+        
         #region 📊 State
         private bool _isExecuting;
         private bool _hasBeenUsed;
@@ -192,7 +195,7 @@ namespace Game.NPC.Modules
                 // Verificar si puede ejecutarse (condición cumplida y no usada si es singleUse)
                 if (narrative.CanExecute())
                 {
-                    Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' porque quest '{questId}' cumplió condición {expectedConditionType}");
+                    if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' porque quest '{questId}' cumplió condición {expectedConditionType}");
                     
                     // Ejecutar la narrativa
                     StartCoroutine(AutoExecuteNarrative(narrative));
@@ -252,7 +255,7 @@ namespace Game.NPC.Modules
                 
                 signals.OnCustom(eventKey, handler);
                 
-                if (narrative.condition.debugMode)
+                if (verboseLogging || narrative.condition.debugMode)
                     Debug.Log($"[NarrativeExecutor:{name}] 📡 Suscrito a evento custom '{eventKey}'");
             }
         }
@@ -286,7 +289,7 @@ namespace Game.NPC.Modules
             // Esto previene que eventos pendientes de sesiones anteriores reactiven narrativas ya completadas
             if (narrative.singleUse && narrative.HasBeenExecuted)
             {
-                Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya fue ejecutada (singleUse)");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya fue ejecutada (singleUse)");
                 return;
             }
             
@@ -299,7 +302,7 @@ namespace Game.NPC.Modules
                     string narrativeId = GetConditionalNarrativeId(System.Array.IndexOf(_config.conditionalNarratives, narrative));
                     if (preset.completedInteractiveNarratives.Contains(narrativeId))
                     {
-                        Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya completada en preset");
+                        if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏭️ Ignorando evento '{eventKey}' - narrativa '{narrative.description}' ya completada en preset");
                         return;
                     }
                 }
@@ -308,14 +311,14 @@ namespace Game.NPC.Modules
             // Marcar que el evento fue recibido
             narrative.condition.MarkCustomEventReceived();
             
-            Debug.Log($"[NarrativeExecutor:{name}] 📨 Evento custom '{eventKey}' recibido para narrativa '{narrative.description}'");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 📨 Evento custom '{eventKey}' recibido para narrativa '{narrative.description}'");
             
             // Si tiene autoExecuteOnQuestConditionMet, auto-ejecutar
             if (narrative.autoExecuteOnQuestConditionMet && !_isExecuting)
             {
                 if (narrative.CanExecute())
                 {
-                    Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' por evento custom '{eventKey}'");
+                    if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' por evento custom '{eventKey}'");
                     StartCoroutine(AutoExecuteNarrative(narrative));
                 }
             }
@@ -524,7 +527,7 @@ namespace Game.NPC.Modules
                 var entry = chain[i];
                 _currentActionIndex = i;
                 
-                Debug.Log($"[NarrativeExecutor:{name}] -> Executing Action #{i}: {entry.actionType}");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] -> Executing Action #{i}: {entry.actionType}");
 
                 if (entry.sendNarrativeEvent && entry.sendEventOnStart)
                     SendNarrativeEvent(entry.narrativeEventKey);
@@ -555,7 +558,7 @@ namespace Game.NPC.Modules
 
             _isExecuting = false;
             _lastExecutionEndTime = Time.time;
-            Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
         }
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)
@@ -767,13 +770,13 @@ namespace Game.NPC.Modules
                 gameObject.AddComponent<NPCCombatLifecycleHandler>();
             }
             
-            Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
             yield break;
         }
 
         private IEnumerator ExecuteShowSpeechBubble(NarrativeChainEntry entry)
         {
-            Debug.Log($"[NarrativeExecutor:{name}] Attempting to show bubble. Text: '{entry.speechBubbleText}'");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] Attempting to show bubble. Text: '{entry.speechBubbleText}'");
 
             if (string.IsNullOrEmpty(entry.speechBubbleText)) 
             {
@@ -796,7 +799,7 @@ namespace Game.NPC.Modules
                 yield break;
             }
             
-            Debug.Log($"[NarrativeExecutor:{name}] Using prefab '{prefabToUse.name}' for speech bubble.");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] Using prefab '{prefabToUse.name}' for speech bubble.");
 
             if (_config != null && _config.speechBubbleHeight > 0)
             {
@@ -816,7 +819,7 @@ namespace Game.NPC.Modules
         /// </summary>
         private IEnumerator ExecuteJoinParty()
         {
-            Debug.Log($"[NarrativeExecutor:{name}] 🤝 Intentando unir al party...");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🤝 Intentando unir al party...");
             
             var partyMember = GetComponent<Game.NPC.NPCPartyMember>();
             if (partyMember == null)
@@ -826,7 +829,7 @@ namespace Game.NPC.Modules
                 {
                     partyMember = gameObject.AddComponent<Game.NPC.NPCPartyMember>();
                     partyMember.SetConfig(_npcManager.Configuration.partyConfig);
-                    Debug.Log($"[NarrativeExecutor:{name}] 🤝 NPCPartyMember creado dinámicamente");
+                    if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🤝 NPCPartyMember creado dinámicamente");
                 }
                 else
                 {
@@ -838,12 +841,12 @@ namespace Game.NPC.Modules
             // ✅ NUEVO: Verificar si YA está en el party antes de intentar unirse
             if (partyMember.IsInParty)
             {
-                Debug.Log($"[NarrativeExecutor:{name}] ℹ️ {name} YA está en el party, acción JoinParty ignorada");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ℹ️ {name} YA está en el party, acción JoinParty ignorada");
                 
                 // ✅ FIX: Activar cooldown largo para evitar que la narrativa se ejecute en bucle
                 // Si ya está en el party, no tiene sentido seguir intentándolo
                 _joinPartyFailedUntil = Time.time + JOIN_PARTY_FAILED_COOLDOWN;
-                Debug.Log($"[NarrativeExecutor:{name}] ⏰ Cooldown de {JOIN_PARTY_FAILED_COOLDOWN}s activado (ya en party)");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏰ Cooldown de {JOIN_PARTY_FAILED_COOLDOWN}s activado (ya en party)");
                 
                 yield break;
             }
@@ -851,7 +854,7 @@ namespace Game.NPC.Modules
             bool success = partyMember.JoinParty();
             if (success)
             {
-                Debug.Log($"[NarrativeExecutor:{name}] ✨ {name} se unió al equipo del jugador");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ✨ {name} se unió al equipo del jugador");
                 // ✅ Resetear cooldown de fallo si logra unirse
                 _joinPartyFailedUntil = -999f;
             }
@@ -884,7 +887,7 @@ namespace Game.NPC.Modules
         /// </summary>
         private IEnumerator ExecuteLeaveParty()
         {
-            Debug.Log($"[NarrativeExecutor:{name}] 👋 Intentando abandonar el party...");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 👋 Intentando abandonar el party...");
             
             var partyMember = GetComponent<Game.NPC.NPCPartyMember>();
             if (partyMember == null)
@@ -895,14 +898,14 @@ namespace Game.NPC.Modules
             
             if (!partyMember.IsInParty)
             {
-                Debug.Log($"[NarrativeExecutor:{name}] ℹ️ {name} no está en el equipo");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ℹ️ {name} no está en el equipo");
                 yield break;
             }
             
             bool success = partyMember.LeaveParty();
             if (success)
             {
-                Debug.Log($"[NarrativeExecutor:{name}] 👋 {name} abandonó el equipo del jugador");
+                if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 👋 {name} abandonó el equipo del jugador");
             }
             
             yield return null;
@@ -914,7 +917,7 @@ namespace Game.NPC.Modules
         /// </summary>
         private IEnumerator ExecuteCheckPartyMembers()
         {
-            Debug.Log($"[NarrativeExecutor:{name}] 🔍 Verificando party members para quests activas...");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🔍 Verificando party members para quests activas...");
             
             var questManager = FindFirstObjectByType<QuestManager>();
             if (questManager == null)
@@ -935,7 +938,7 @@ namespace Game.NPC.Modules
                 yield break;
             }
             
-            Debug.Log($"[NarrativeExecutor:{name}] ✅ Executing PostNarrativeState: {narrativeData.postNarrativeState} for narrative '{narrativeData.description}'");
+            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ✅ Executing PostNarrativeState: {narrativeData.postNarrativeState} for narrative '{narrativeData.description}'");
             
             switch (narrativeData.postNarrativeState)
             {

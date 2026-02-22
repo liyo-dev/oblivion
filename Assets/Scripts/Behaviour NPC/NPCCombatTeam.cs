@@ -42,7 +42,7 @@ namespace Game.NPC
     [SerializeField] private float resurrectDelay = 0.5f;
     
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = true;
+    [SerializeField] private bool showDebugLogs = false;
     
     #endregion
     
@@ -240,7 +240,7 @@ namespace Game.NPC
     {
         if (!IsPostDefeatDialogueFinished)
         {
-            Debug.LogWarning($"[NPCCombatTeam] {name}: ⚠️ FORZANDO finalización de diálogo post-derrota");
+            if (showDebugLogs) Debug.LogWarning($"[NPCCombatTeam] {name}: ⚠️ FORZANDO finalización de diálogo post-derrota");
             IsPostDefeatDialogueFinished = true;
             
             // Cancelar dizzy en todos los miembros para que procedan
@@ -287,6 +287,9 @@ namespace Game.NPC
         if (!_allMembers.Contains(member)) return;
         
         _defeatedCount++;
+        
+        // Desregistrar al miembro derrotado del combate activo
+        ActiveCombatRegistry.UnregisterNPC(member.gameObject);
         
         if (showDebugLogs)
         {

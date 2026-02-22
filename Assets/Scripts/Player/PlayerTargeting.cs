@@ -4,63 +4,48 @@ using DG.Tweening;
 [DisallowMultipleComponent]
 public class PlayerTargeting : MonoBehaviour, ITargetProvider
 {
-    // ================== SCAN / TARGETING ==================
     [Header("Búsqueda")]
     [SerializeField] private float radius = 8f;
-    [Tooltip("Radio máximo usado para detectar enemigos (debe ser >= los radios personalizados de los enemigos).")]
     [SerializeField] private float scanRadius = 12f;
     [SerializeField] private LayerMask enemyMask;
     [SerializeField] private float fovDegrees = 140f;
-    [SerializeField] private bool requireLineOfSight = true;     // <- ahora true por defecto
-    [SerializeField] private Transform aimOrigin;                 // arrastra la cámara aquí
+    [SerializeField] private bool requireLineOfSight = true;
+    [SerializeField] private Transform aimOrigin;
     [SerializeField] private float updatesPerSecond = 10f;
 
     [Header("Visibilidad en pantalla")]
-    [SerializeField] private bool mustBeOnScreen = true;          // <- NUEVO
+    [SerializeField] private bool mustBeOnScreen = true;
     [SerializeField, Range(0f, 0.2f)] private float screenEdgePadding = 0.03f;
 
     [Header("Targeting Automático")]
-    [Tooltip("Si está activo, cualquier objeto en enemyMask será targeteable automáticamente sin necesidad del componente Targetable")]
     [SerializeField] private bool autoTargetByLayer = true;
-    [Tooltip("Si autoTargetByLayer está activo, ¿requiere que el enemigo tenga Damageable y esté vivo?")]
     [SerializeField] private bool requireDamageableAlive = true;
 
-    [Header("Debug Gizmos")]
-    [SerializeField] private bool drawRadius = true;
-    [SerializeField] private bool drawFOV = true;
-    [SerializeField] private bool drawTargetLine = true;
-    [SerializeField] private Color radiusColor = new Color(0f, 0.7f, 1f, 0.35f);
-    [SerializeField] private Color scanRadiusColor = new Color(0f, 0.4f, 1f, 0.18f);
-    [SerializeField] private Color fovColor = new Color(0.2f, 1f, 0.4f, 0.25f);
-    [SerializeField] private Color targetLineColor = new Color(1f, 0.8f, 0.2f, 0.9f);
-
-    public Transform CurrentTarget { get; private set; }
-    
-    // ✅ NUEVO: Sistema de target manual (usado por CombatCameraTargeting para sincronizar)
-    private Transform _manualTarget;
-    private bool _useManualTarget;
-
-    float _nextScan;
-    Transform _marker;
-    Collider _lastTargetCol;
-    Camera _cam;
-    // buffer reutilizable para evitar allocations en OverlapSphereNonAlloc
-    private Collider[] _overlapBuffer = new Collider[64];
-    
-    // Referencia al Damageable del target actual para detectar muerte inmediata
-    private Damageable _currentTargetDamageable;
-
-    [Header("Feedback de Target (Opcional)")]
+    [Header("Feedback de Target")]
     [SerializeField] private bool enableMarker = true;
     [SerializeField] private GameObject markerPrefab;
     [SerializeField] private Vector3 markerOffset = new(0, 1.8f, 0);
     [SerializeField] private bool billboardToCamera = true;
-    [SerializeField] private bool parentMarkerToTarget;
     
     [Header("Animación del Marker")]
     [SerializeField] private float markerShowDuration = 0.25f;
     [SerializeField] private float markerHideDuration = 0.15f;
+
+    [Header("Debug")]
+    [SerializeField] private bool verboseLogging = false;
+    [SerializeField] private bool drawRadius = true;
+    [SerializeField] private bool drawFOV = true;
+    [SerializeField] private bool drawTargetLine = true;
     
+    public Transform CurrentTarget { get; private set; }
+    public bool IsManualTargetActive => _isManualTargetActive;
+    
+    private bool _isManualTargetActive;
+    private float _nextScan;
+    private Transform _marker;
+    private Camera _cam;
+    private Collider[] _overlapBuffer = new Collider[64];
+    private Damageable _currentTargetDamageable;
     private Vector3 _markerOriginalScale;
     private Tween _markerTween;
     private bool _markerVisible;
@@ -69,41 +54,25 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         _cam = Camera.main;
         
-        // Debug: Verificar configuración del marker
-        // Debug.Log($"[PlayerTargeting] Awake - enableMarker={enableMarker}, markerPrefab={markerPrefab}, enemyMask={enemyMask.value}");
-        
         if (enableMarker && markerPrefab)
         {
             var go = Instantiate(markerPrefab);
             go.SetActive(false);
             _marker = go.transform;
             _markerOriginalScale = _marker.localScale;
-            _marker.localScale = Vector3.zero; // Empezar pequeño para animación
+            _marker.localScale = Vector3.zero;
             
-            // ✅ Configurar el marker para que SIEMPRE se renderice delante
-            // Cambiar todos los renderers del marker al layer "UI" o usar ZTest Always
             var renderers = go.GetComponentsInChildren<Renderer>(true);
             foreach (var renderer in renderers)
             {
-                // Opción 1: Cambiar a layer UI (se renderiza después de todo)
-                // renderer.gameObject.layer = LayerMask.NameToLayer("UI");
-                
-                // Opción 2: Modificar el material para usar ZTest Always
                 foreach (var mat in renderer.materials)
                 {
-                    mat.renderQueue = 3000; // Render después de geometría opaca y transparente
-                    // Si el shader lo soporta, puedes forzar ZTest Always programáticamente
+                    mat.renderQueue = 3000;
                 }
             }
-            
-            Debug.Log($"[PlayerTargeting] ✅ Marker configurado para renderizar siempre delante - {renderers.Length} renderer(s)");
-        }
-        else
-        {
-            Debug.LogWarning($"[PlayerTargeting] ⚠️ Marker NO instanciado - enableMarker={enableMarker}, markerPrefab={(markerPrefab != null ? markerPrefab.name : "NULL")}");
         }
         
-        if (!aimOrigin && _cam) aimOrigin = _cam.transform; // <- recomendable
+        if (!aimOrigin && _cam) aimOrigin = _cam.transform;
     }
 
     void OnDestroy()
@@ -111,44 +80,18 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         _markerTween?.Kill();
         if (_marker) Destroy(_marker.gameObject);
         
-        // Desuscribirse del Damageable del target actual
         if (_currentTargetDamageable != null)
         {
             _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
-            _currentTargetDamageable = null;
         }
     }
     
-    /// <summary>
-    /// Callback cuando el target actual muere - limpia el marker inmediatamente
-    /// </summary>
     private void OnCurrentTargetDied()
     {
-        Debug.Log($"[PlayerTargeting] 💀 Target muerto, limpiando marker inmediatamente");
-        
-        // Desuscribirse
-        if (_currentTargetDamageable != null)
-        {
-            _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
-            _currentTargetDamageable = null;
-        }
-        
-        // Limpiar target y marker
-        CurrentTarget = null;
-        _useManualTarget = false;
-        _manualTarget = null;
-        OnTargetChanged(null);
-        
-        // Forzar un scan inmediato para buscar nuevo target
-        _nextScan = 0f;
+        if (verboseLogging) Debug.Log($"[PlayerTargeting] Target '{_currentTargetDamageable.name}' muerto, limpiando.");
+        ClearManualTarget();
     }
     
-    // ==================== API PÚBLICA - TARGET MANUAL ====================
-    
-    /// <summary>
-    /// Establece un target manual que sobrescribe el targeting automático.
-    /// Usado por CombatCameraTargeting para sincronizar el target de cámara con el de hechizos.
-    /// </summary>
     public void SetManualTarget(Transform target)
     {
         if (target == null)
@@ -156,75 +99,66 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             ClearManualTarget();
             return;
         }
+
+        _isManualTargetActive = (target != null);
         
-        _manualTarget = target;
-        _useManualTarget = true;
-        
-        // Aplicar inmediatamente
-        var before = CurrentTarget;
-        CurrentTarget = target;
-        
-        if (before != CurrentTarget)
+        bool changed = CurrentTarget != target;
+        if (changed)
         {
-            OnTargetChanged(CurrentTarget);
+            CurrentTarget = target;
+            OnTargetChanged(target);
         }
+        else if (_marker != null && (!_markerVisible || !_marker.gameObject.activeSelf))
+        {
+            // Reforzar el estado visual si otro sistema desactivó el marker.
+            OnTargetChanged(target);
+        }
+
+        UpdateMarker();
         
-        Debug.Log($"[PlayerTargeting] 🎯 Target MANUAL establecido: {target.name}");
+        if (verboseLogging) Debug.Log($"[PlayerTargeting] Target MANUAL establecido: {(target ? target.name : "NULL")}");
     }
     
-    /// <summary>
-    /// Limpia el target manual y vuelve al targeting automático.
-    /// </summary>
     public void ClearManualTarget()
     {
-        if (!_useManualTarget) return;
+        if (!_isManualTargetActive) return;
         
-        _useManualTarget = false;
-        _manualTarget = null;
-        
-        // Forzar scan inmediato para encontrar nuevo target automático
-        _nextScan = 0f;
-        
-        Debug.Log($"[PlayerTargeting] 🔓 Target manual LIBERADO, volviendo a targeting automático");
+        _isManualTargetActive = false;
+        if (CurrentTarget != null)
+        {
+            CurrentTarget = null;
+            OnTargetChanged(null);
+        }
+        if (verboseLogging) Debug.Log($"[PlayerTargeting] Target manual liberado.");
     }
-    
-    /// <summary>
-    /// Verifica si hay un target manual activo.
-    /// </summary>
-    public bool HasManualTarget => _useManualTarget && _manualTarget != null;
+
+    public void ForceVisualRefresh()
+    {
+        OnTargetChanged(CurrentTarget);
+        UpdateMarker();
+    }
 
     void Update()
     {
-        // Si hay target manual, no hacer scan automático
-        if (_useManualTarget)
+        if (_isManualTargetActive)
         {
-            // Verificar que el target manual sigue siendo válido
-            if (_manualTarget == null || !_manualTarget.gameObject.activeInHierarchy)
+            if (CurrentTarget == null || !CurrentTarget.gameObject.activeInHierarchy || (_currentTargetDamageable != null && !_currentTargetDamageable.IsAlive))
             {
+                if (verboseLogging) Debug.Log($"[PlayerTargeting] Target manual inválido, limpiando.");
                 ClearManualTarget();
             }
-            else
-            {
-                // Verificar que el target manual sigue vivo
-                var damageable = _manualTarget.GetComponentInParent<Damageable>();
-                if (damageable != null && !damageable.IsAlive)
-                {
-                    Debug.Log($"[PlayerTargeting] 💀 Target manual muerto, liberando");
-                    ClearManualTarget();
-                }
-            }
-            return; // No hacer scan automático mientras hay target manual
+            return;
         }
-        
+
         if (updatesPerSecond <= 0f || Time.time >= _nextScan)
         {
             var before = CurrentTarget;
             Scan();
-            if (updatesPerSecond > 0f)
-                _nextScan = Time.time + 1f / updatesPerSecond;
-
             if (before != CurrentTarget)
                 OnTargetChanged(CurrentTarget);
+            
+            if (updatesPerSecond > 0f)
+                _nextScan = Time.time + 1f / updatesPerSecond;
         }
     }
 
@@ -233,217 +167,118 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     void Scan()
     {
         var origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up;
-        var fwd    = aimOrigin ? aimOrigin.forward  : transform.forward;
+        var fwd = aimOrigin ? aimOrigin.forward : transform.forward;
 
-        int hitCount = Physics.OverlapSphereNonAlloc(origin, /*radius*/ scanRadius, _overlapBuffer, enemyMask, QueryTriggerInteraction.Collide);
-         float bestScore = float.NegativeInfinity;
-         Transform best = null;
+        int hitCount = Physics.OverlapSphereNonAlloc(origin, scanRadius, _overlapBuffer, enemyMask, QueryTriggerInteraction.Collide);
+        float bestScore = float.NegativeInfinity;
+        Transform best = null;
 
-         for (int i = 0; i < hitCount; i++)
-         {
-             var h = _overlapBuffer[i];
-             if (!h) continue;
-             
-             // Verificar que el collider y su gameObject estén activos
-             if (!h.enabled || !h.gameObject.activeInHierarchy) continue;
+        for (int i = 0; i < hitCount; i++)
+        {
+            var h = _overlapBuffer[i];
+            if (!h || !h.enabled || !h.gameObject.activeInHierarchy) continue;
 
-             Vector3 center = GetTargetCenter(h.transform);
-             Vector3 to = center - origin;
-             float dist = to.magnitude;
-             if (dist < 0.01f) continue;
-
-            // Si el enemigo tiene un componente Targetable, verificar si está en combate activo
-            var cfg = h.transform.GetComponentInParent<Targetable>();
-            
-            // Determinar si este enemigo es válido para targeting
-            bool isValidTarget = false;
-            float allowedRadius = radius;
-            
-            // ✅ SIEMPRE verificar si el enemigo está vivo antes de targetearlo
             if (requireDamageableAlive)
             {
-                var damageable = h.transform.GetComponentInParent<Damageable>();
+                var damageable = h.GetComponentInParent<Damageable>();
                 if (damageable == null || !damageable.IsAlive) continue;
             }
-            
-            if (cfg != null && cfg.isInActiveCombat)
-            {
-                // Tiene Targetable con combate activo: usar su configuración
-                isValidTarget = true;
-                if (cfg.targetingRadius > 0f)
-                    allowedRadius = cfg.targetingRadius;
-            }
-            else if (cfg != null && !cfg.isInActiveCombat)
-            {
-                // Tiene Targetable pero NO está en combate activo
-                // Verificar si es un enemigo puro (sin sistema NPC narrativo) o un NPC en alerta
-                var npcManager = h.transform.GetComponentInParent<Game.NPC.NPCBehaviourManagerV2>();
-                
-                if (npcManager != null)
-                {
-                    // Es un NPC con sistema narrativo: NO targetear si no está en combate activo
-                    // (Esto incluye NPCs en diálogo de alerta pre-combate)
-                    continue;
-                }
-                else
-                {
-                    // Es un enemigo puro sin sistema NPC: targeteable siempre (ej: demonio, arañas)
-                    isValidTarget = true;
-                    if (cfg.targetingRadius > 0f)
-                        allowedRadius = cfg.targetingRadius;
-                }
-            }
-            else if (autoTargetByLayer && cfg == null)
-            {
-                // NO tiene Targetable, usar autoTargetByLayer
-                // (Esto es para enemigos simples como monstruos sin el sistema NPC)
-                isValidTarget = true;
-            }
-            
-            if (!isValidTarget) continue;
-             
-             // Si está fuera del radio permitido para ese enemigo, ignóralo
-             if (dist > allowedRadius) continue;
 
-             Vector3 dir = to / dist;
+            Vector3 center = GetTargetCenter(h.transform);
+            Vector3 to = center - origin;
+            float dist = to.magnitude;
+            if (dist < 0.01f) continue;
 
-            // FOV respecto al aim (cámara si la arrastras a aimOrigin)
-            float ang = Vector3.Angle(fwd, dir);
-            if (ang > fovDegrees * 0.5f) continue;
+            var cfg = h.GetComponentInParent<Targetable>();
+            float allowedRadius = (cfg && cfg.targetingRadius > 0) ? cfg.targetingRadius : radius;
+            if (dist > allowedRadius) continue;
 
-            // En pantalla (si se exige)
-            if (mustBeOnScreen && (_cam || (_cam = Camera.main)))
+            Vector3 dir = to / dist;
+            if (Vector3.Angle(fwd, dir) > fovDegrees * 0.5f) continue;
+
+            if (mustBeOnScreen && _cam)
             {
                 Vector3 vp = _cam.WorldToViewportPoint(center);
-                if (vp.z <= 0f) continue; // detrás de la cámara
-                float pad = screenEdgePadding;
-                if (vp.x < pad || vp.x > 1f - pad || vp.y < pad || vp.y > 1f - pad) continue;
+                if (vp.z <= 0f || vp.x < screenEdgePadding || vp.x > 1f - screenEdgePadding || vp.y < screenEdgePadding || vp.y > 1f - screenEdgePadding) continue;
             }
 
-            // Línea de visión
-            if (requireLineOfSight)
+            if (requireLineOfSight && Physics.Raycast(origin, dir, out var rh, dist, ~0, QueryTriggerInteraction.Ignore) && rh.collider.transform.root != h.transform.root)
             {
-                if (Physics.Raycast(origin, dir, out var rh, dist, ~0, QueryTriggerInteraction.Ignore))
-                {
-                    if (rh.collider.transform.root != h.transform.root) continue;
-                }
+                continue;
             }
 
-            // score: favorece estar centrado y más cerca
-            float score = Vector3.Dot(fwd, dir) * 1.0f - (dist / Mathf.Max(0.0001f, allowedRadius)) * 0.35f;
+            float score = Vector3.Dot(fwd, dir) - (dist / allowedRadius) * 0.35f;
             if (score > bestScore) { bestScore = score; best = h.transform; }
         }
-
         CurrentTarget = best;
     }
 
     void OnTargetChanged(Transform newT)
     {
-        Debug.Log($"[PlayerTargeting] 🎯 Target changed: {(newT != null ? newT.name : "NULL")}");
+        if (verboseLogging) Debug.Log($"[PlayerTargeting] OnTargetChanged: {(newT ? newT.name : "NULL")}");
         
-        // Desuscribirse del Damageable anterior
-        if (_currentTargetDamageable != null)
-        {
-            _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
-            _currentTargetDamageable = null;
-        }
+        if (_currentTargetDamageable != null) _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
         
-        // Suscribirse al nuevo Damageable para detectar muerte inmediata
         if (newT != null)
         {
             _currentTargetDamageable = newT.GetComponentInParent<Damageable>();
-            if (_currentTargetDamageable != null)
-            {
-                _currentTargetDamageable.OnDied += OnCurrentTargetDied;
-            }
+            if (_currentTargetDamageable != null) _currentTargetDamageable.OnDied += OnCurrentTargetDied;
         }
         
         if (!_marker) return;
 
-        if (parentMarkerToTarget)
-            _marker.SetParent(newT, worldPositionStays: true);
-
-        if (!newT)
+        _markerTween?.Kill();
+        if (newT)
         {
-            // Ocultar marker con animación
-            if (_markerVisible)
-            {
-                _markerVisible = false;
-                _markerTween?.Kill();
-                _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration)
-                    .SetEase(Ease.InBack)
-                    .OnComplete(() =>
-                    {
-                        if (_marker != null)
-                            _marker.gameObject.SetActive(false);
-                    });
-            }
-            _lastTargetCol = null;
-        }
-        else
-        {
-            // Mostrar marker con animación
             if (!_markerVisible)
             {
                 _markerVisible = true;
                 _marker.gameObject.SetActive(true);
                 _marker.localScale = Vector3.zero;
-                _markerTween?.Kill();
-                _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration)
-                    .SetEase(Ease.OutBack);
+                _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration).SetEase(Ease.OutBack);
+            }
+        }
+        else
+        {
+            if (_markerVisible)
+            {
+                _markerVisible = false;
+                _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration).SetEase(Ease.InBack).OnComplete(() => _marker.gameObject.SetActive(false));
             }
         }
     }
 
     void UpdateMarker()
     {
-        if (!_marker || !enableMarker) return;
+        if (!_marker) return;
 
-        var t = CurrentTarget;
-        if (!t)
+        if (CurrentTarget == null)
         {
-            // No desactivar aquí - OnTargetChanged maneja la animación
+            if (_marker.gameObject.activeSelf)
+                _marker.gameObject.SetActive(false);
             return;
         }
+        
+        if (!_marker.gameObject.activeSelf)
+            _marker.gameObject.SetActive(true);
 
-        // No activar aquí si está en animación de ocultar
-        if (!_markerVisible) return;
-
-        if (_lastTargetCol == null || _lastTargetCol.transform != t)
-            _lastTargetCol = t.GetComponentInParent<Collider>();
-
-        Vector3 pos;
-        if (_lastTargetCol)
+        Vector3 pos = GetTargetCenter(CurrentTarget) + markerOffset;
+        _marker.position = pos;
+        
+        // DEBUG: Verificar posición del marcador
+        if (verboseLogging)
         {
-            // ✅ Calcular altura dinámica basada en el tamaño del enemigo
-            var bounds = _lastTargetCol.bounds;
-            float enemyHeight = bounds.size.y;
-            
-            // Para enemigos muy grandes (altura > 5m), añadir offset extra proporcional
-            float dynamicOffset = enemyHeight > 5f ? (enemyHeight * 0.15f) : 0f;
-            
-            // Posicionar SIEMPRE por encima del bounds + offset configurado + offset dinámico
-            pos = new Vector3(bounds.center.x, bounds.max.y + dynamicOffset, bounds.center.z) + markerOffset;
-            
-            // Debug para enemigos muy grandes
-            if (enemyHeight > 5f)
+            // Solo loguear cada 60 frames para no saturar
+            if (Time.frameCount % 60 == 0)
             {
-                Debug.Log($"[PlayerTargeting] 📏 Marker para {t.name}: altura={enemyHeight:F1}m, dynamicOffset={dynamicOffset:F1}m, pos.y={pos.y:F1}m");
+                Debug.Log($"[PlayerTargeting] UpdateMarker: Target={CurrentTarget.name}, Pos={pos}, MarkerPos={_marker.position}");
             }
         }
-        else
-        {
-            pos = t.position + markerOffset;
-        }
 
-        if (!parentMarkerToTarget) _marker.position = pos;
-        else _marker.localPosition = t.InverseTransformPoint(pos);
-
-        if (billboardToCamera && (_cam || (_cam = Camera.main)))
+        if (billboardToCamera && _cam)
             _marker.forward = (_marker.position - _cam.transform.position).normalized;
     }
 
-    // ================== ITargetProvider ==================
     public bool TryGetTarget(out Transform t)
     {
         t = CurrentTarget;
@@ -454,64 +289,35 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         if (CurrentTarget)
         {
-            // ✅ Apuntar a la posición del MARKER (arriba del enemigo) en lugar del centro
-            Vector3 targetPos = GetTargetMarkerPosition(CurrentTarget);
-            Vector3 dir = (targetPos - origin.position);
-            if (dir.sqrMagnitude > 0.0001f)
-                return dir.normalized;
+            Vector3 targetPos = GetTargetCenter(CurrentTarget) + markerOffset;
+            return (targetPos - origin.position).normalized;
         }
-        return fallbackForward.normalized;
-    }
-
-    /// <summary>
-    /// Obtiene la posición donde debería estar el marker (mismo cálculo que UpdateMarker)
-    /// </summary>
-    private Vector3 GetTargetMarkerPosition(Transform target)
-    {
-        var col = target.GetComponentInParent<Collider>();
-        
-        if (col)
-        {
-            // ✅ Mismo cálculo que UpdateMarker para consistencia
-            var bounds = col.bounds;
-            float enemyHeight = bounds.size.y;
-            
-            // Para enemigos muy grandes, añadir offset extra
-            float dynamicOffset = enemyHeight > 5f ? (enemyHeight * 0.15f) : 0f;
-            
-            // Posición del marker
-            return new Vector3(bounds.center.x, bounds.max.y + dynamicOffset, bounds.center.z) + markerOffset;
-        }
-        
-        // Fallback
-        return target.position + markerOffset;
+        return fallbackForward;
     }
 
     static Vector3 GetTargetCenter(Transform target)
     {
         var col = target.GetComponentInParent<Collider>();
-        return col ? col.bounds.center : target.position + Vector3.up * 1.0f;
+        return col ? col.bounds.center : target.position + Vector3.up;
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        Vector3 origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up * 1f;
-        Vector3 fwd    = aimOrigin ? aimOrigin.forward  : transform.forward;
+        Vector3 origin = aimOrigin ? aimOrigin.position : transform.position + Vector3.up;
+        Vector3 fwd = aimOrigin ? aimOrigin.forward : transform.forward;
 
         if (drawRadius)
         {
-            Gizmos.color = radiusColor;
-            // dibujar radio de targeting (radius)
+            Gizmos.color = new Color(0f, 0.7f, 1f, 0.35f);
             Gizmos.DrawWireSphere(origin, radius);
-            // dibujar radio de scan (scanRadius) con color más sutil
-            Gizmos.color = scanRadiusColor;
+            Gizmos.color = new Color(0f, 0.4f, 1f, 0.18f);
             Gizmos.DrawWireSphere(origin, scanRadius);
         }
 
         if (drawFOV)
         {
-            Gizmos.color = fovColor;
+            Gizmos.color = new Color(0.2f, 1f, 0.4f, 0.25f);
             float half = fovDegrees * 0.5f;
             Gizmos.DrawRay(origin, Quaternion.AngleAxis(-half, Vector3.up) * fwd * scanRadius);
             Gizmos.DrawRay(origin, Quaternion.AngleAxis(+half, Vector3.up) * fwd * scanRadius);
@@ -519,7 +325,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
         if (drawTargetLine && CurrentTarget)
         {
-            Gizmos.color = targetLineColor;
+            Gizmos.color = new Color(1f, 0.8f, 0.2f, 0.9f);
             Gizmos.DrawLine(origin, GetTargetCenter(CurrentTarget));
         }
     }

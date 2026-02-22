@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 
@@ -201,14 +201,12 @@ namespace Game.NPC.States
             if (distSqr > detectionRange * detectionRange) return;
 
             // 2. Chequeo de Campo de Visión (FOV)
-            // Asumimos que los ojos están un poco arriba del pivote
             Vector3 eyePos = context.Transform.position + Vector3.up * 1.6f;
             Vector3 playerTargetPos = context.Player.position + Vector3.up * 1.0f; // Pecho del jugador
             Vector3 dirToTarget = (playerTargetPos - eyePos).normalized;
 
             float angle = Vector3.Angle(context.Transform.forward, dirToTarget);
-            float fov = combatConfig.fieldOfView > 0 ? combatConfig.fieldOfView : 160f; // 160 grados por defecto
-
+            float fov = combatConfig.fieldOfView > 0 ? combatConfig.fieldOfView : 160f;
             if (angle > fov * 0.5f) return;
 
             // 3. Chequeo de Línea de Visión (Raycast) - ¡CRÍTICO PARA PAREDES!

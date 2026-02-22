@@ -91,6 +91,9 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private bool enableDpadHorizontalFallback = true; // si Navigate no recoge el D-Pad
     [SerializeField, Min(0f)] private float dpadRepeatDelay = 0.2f;
 
+    [Header("Debug")]
+    [SerializeField] private bool verboseLogging = false;
+
     float _nextDpadTime;
 
     Action _onYes;
@@ -189,14 +192,14 @@ public class DialogueManager : MonoBehaviour
         // PROTECCIÓN: Ignorar inputs durante el período de gracia después de abrir el diálogo
         if (Time.unscaledTime - _dialogueOpenedAt < InputGracePeriod)
         {
-            Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante período de gracia inicial ({Time.unscaledTime - _dialogueOpenedAt:F3}s desde apertura)");
+            if (verboseLogging) Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante período de gracia inicial ({Time.unscaledTime - _dialogueOpenedAt:F3}s desde apertura)");
             return;
         }
         
         // PROTECCIÓN: Ignorar inputs durante el cooldown después de completar una línea
         if (Time.unscaledTime - _lastLineCompletedAt < LineCompleteCooldown)
         {
-            Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante cooldown de línea completada ({Time.unscaledTime - _lastLineCompletedAt:F3}s desde completado)");
+            if (verboseLogging) Debug.Log($"[DialogueManager] ⏸️ Input ignorado durante cooldown de línea completada ({Time.unscaledTime - _lastLineCompletedAt:F3}s desde completado)");
             return;
         }
 
@@ -242,13 +245,13 @@ public class DialogueManager : MonoBehaviour
                 if (cur == yesButton.gameObject && right)
                 {
                     es.SetSelectedGameObject(noButton.gameObject);
-                    Debug.Log("[DialogueManager] Navegación: Yes -> No");
+                    if (verboseLogging) Debug.Log("[DialogueManager] Navegación: Yes -> No");
                 }
                 // CORREGIDO: Si estamos en No y presionamos izquierda -> vamos a Yes
                 else if (cur == noButton.gameObject && left)
                 {
                     es.SetSelectedGameObject(yesButton.gameObject);
-                    Debug.Log("[DialogueManager] Navegación: No -> Yes");
+                    if (verboseLogging) Debug.Log("[DialogueManager] Navegación: No -> Yes");
                 }
             }
         }
@@ -266,7 +269,7 @@ public class DialogueManager : MonoBehaviour
 
         // Marcar el momento en que se abre el diálogo para ignorar inputs inmediatos
         _dialogueOpenedAt = Time.unscaledTime;
-        Debug.Log($"[DialogueManager] 🕐 Diálogo abierto en t={_dialogueOpenedAt:F3} - período de gracia activo");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🕐 Diálogo abierto en t={_dialogueOpenedAt:F3} - período de gracia activo");
 
         // Mostrar UI
         if (group != null)
@@ -274,7 +277,7 @@ public class DialogueManager : MonoBehaviour
             group.alpha = 1f;
             group.blocksRaycasts = true;
             group.interactable = true;
-            Debug.Log($"[DialogueManager] ✅ UI activada - alpha={group.alpha}, blocksRaycasts={group.blocksRaycasts}, Canvas activo={group.gameObject.activeInHierarchy}");
+            if (verboseLogging) Debug.Log($"[DialogueManager] ✅ UI activada - alpha={group.alpha}, blocksRaycasts={group.blocksRaycasts}, Canvas activo={group.gameObject.activeInHierarchy}");
         }
         else
         {
@@ -299,7 +302,7 @@ public class DialogueManager : MonoBehaviour
             GameObject playerObj = PlayerService.Player;
             if (playerObj != null)
             {
-                Debug.Log($"[DialogueManager] 🎬 Activando sistema cinematográfico para NPC: {_currentNpc.name}");
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🎬 Activando sistema cinematográfico para NPC: {_currentNpc.name}");
                 DialogueCinematicController.Instance.StartCinematic(playerObj.transform, _currentNpc, cinematicProfile);
             }
             else
@@ -310,14 +313,14 @@ public class DialogueManager : MonoBehaviour
         else if (useDialogueCameraLegacy && isActualNPC && DialogueCameraController.Instance != null)
         {
             // Fallback al sistema antiguo si no está el nuevo
-            Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo legacy para NPC: {_currentNpc.name}");
+            if (verboseLogging) Debug.Log($"[DialogueManager] 🎥 Activando cámara de diálogo legacy para NPC: {_currentNpc.name}");
             DialogueCameraController.Instance.StartDialogueCamera(_currentNpc);
         }
         else
         {
             if (_currentNpc != null && !isActualNPC)
             {
-                Debug.Log($"[DialogueManager] 💬 Diálogo con objeto interactivo '{_currentNpc.name}' (no NPC) - cámaras cinematográficas desactivadas");
+                if (verboseLogging) Debug.Log($"[DialogueManager] 💬 Diálogo con objeto interactivo '{_currentNpc.name}' (no NPC) - cámaras cinematográficas desactivadas");
             }
             else
             {
@@ -347,7 +350,7 @@ public class DialogueManager : MonoBehaviour
         // ✅ NUEVO: Activar animación de interacción del player (Will)
         // Solo si es un NPC real (no objetos como cartas, save points, etc.)
         bool isNpc = IsActualNPC(npc);
-        Debug.Log($"[DialogueManager] 🔍 IsActualNPC('{npc?.name ?? "NULL"}') = {isNpc}");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🔍 IsActualNPC('{npc?.name ?? "NULL"}') = {isNpc}");
         
         if (isNpc)
         {
@@ -361,7 +364,7 @@ public class DialogueManager : MonoBehaviour
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
         OnDialogueStarted?.Invoke(_currentNpc);
-        Debug.Log($"[DialogueManager] 📢 OnDialogueStarted emitido para '{_currentNpc?.name ?? "NULL"}'");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 📢 OnDialogueStarted emitido para '{_currentNpc?.name ?? "NULL"}'");
     }
 
     /// <summary>
@@ -388,7 +391,7 @@ public class DialogueManager : MonoBehaviour
     /// <param name="applySlowmo">Si es true, aplica slowmo (solo para pre-batalla, no para derrota)</param>
     private void PreparePlayerForBattleDialogue(GameObject player, Transform npc, bool applySlowmo = true)
     {
-        Debug.Log($"[DialogueManager] ⚔️ Preparando jugador para diálogo de batalla con '{npc.name}'");
+        if (verboseLogging) Debug.Log($"[DialogueManager] ⚔️ Preparando jugador para diálogo de batalla con '{npc.name}'");
         
         // 1. Girar al jugador hacia el NPC
         Vector3 directionToNpc = npc.position - player.transform.position;
@@ -398,17 +401,17 @@ public class DialogueManager : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(directionToNpc);
             player.transform.rotation = targetRotation;
-            Debug.Log($"[DialogueManager] 👁️ Jugador girado hacia NPC '{npc.name}'");
+            if (verboseLogging) Debug.Log($"[DialogueManager] 👁️ Jugador girado hacia NPC '{npc.name}'");
         }
         
         // 2. Activar animación de Idle de batalla
         var playerAnimator = player.GetComponent<Animator>();
         if (playerAnimator != null)
         {
-            // Reproducir animación de Idle de batalla directamente
+            // Reproducir animación de Idle de batalla (está en capa UpperBody, índice 1)
             // Usar Play para activar inmediatamente el estado, no CrossFade
-            playerAnimator.Play("Idle_Battle_NoWeapon", 0);
-            Debug.Log($"[DialogueManager] 🥋 Animación 'Idle_Battle_NoWeapon' activada");
+            playerAnimator.Play("Idle_Battle_NoWeapon", 1);
+            if (verboseLogging) Debug.Log($"[DialogueManager] 🥋 Animación 'Idle_Battle_NoWeapon' activada");
         }
         else
         {
@@ -418,22 +421,22 @@ public class DialogueManager : MonoBehaviour
         // 3. EFECTOS CINEMATOGRÁFICOS DE CÁMARA
         // Camera shake para impacto inicial
         FeedbackService.CameraShake(0.4f, 0.3f);
-        Debug.Log($"[DialogueManager] 📹 Camera shake aplicado");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 📹 Camera shake aplicado");
         
         // Slowmo breve SOLO si es diálogo de pre-batalla (no de derrota)
         if (applySlowmo)
         {
             FeedbackService.HitStop(0.5f, 0.3f);
-            Debug.Log($"[DialogueManager] ⏱️ Slowmo breve aplicado para dramatismo (pre-batalla)");
+            if (verboseLogging) Debug.Log($"[DialogueManager] ⏱️ Slowmo breve aplicado para dramatismo (pre-batalla)");
         }
-        else
+        else if (verboseLogging)
         {
             Debug.Log($"[DialogueManager] ⏭️ Slowmo omitido (diálogo de derrota)");
         }
         
         // Screen flash rojo sutil para tensión
         FeedbackService.ScreenFlash(new Color(1f, 0f, 0f, 0.1f), 0.2f);
-        Debug.Log($"[DialogueManager] 🔴 Flash rojo sutil aplicado");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🔴 Flash rojo sutil aplicado");
     }
 
     public void Advance()
@@ -494,7 +497,7 @@ public class DialogueManager : MonoBehaviour
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
         OnDialogueClosed?.Invoke(_currentNpc);
-        Debug.Log($"[DialogueManager] 📢 OnDialogueClosed emitido para '{_currentNpc?.name ?? "NULL"}'");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 📢 OnDialogueClosed emitido para '{_currentNpc?.name ?? "NULL"}'");
 
         _currentNpc = null;
 
@@ -507,7 +510,7 @@ public class DialogueManager : MonoBehaviour
         // ✅ IMPORTANTE: Ignorar el botón de salto (A/Submit) después de cerrar el diálogo
         // para evitar que el mismo botón que cerró el diálogo se procese como salto
         GamepadInputReader.IgnoreJumpButton(0.3f);
-        Debug.Log($"[DialogueManager] 🚫 Ignorando botón de salto por 0.3s después de cerrar diálogo");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🚫 Ignorando botón de salto por 0.3s después de cerrar diálogo");
 
         // Seguridad extra: si por algún motivo quedó SavePrompt activo, liberarlo
         if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
@@ -694,7 +697,7 @@ public class DialogueManager : MonoBehaviour
         
         // Resetear el período de gracia para cada nueva línea
         _dialogueOpenedAt = Time.unscaledTime;
-        Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
 
         var line = _current.lines[_index];
         
@@ -752,14 +755,14 @@ public class DialogueManager : MonoBehaviour
             bodyText.text = _currentText;
             if (useTypewriter)
             {
-                Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
+                if (verboseLogging) Debug.Log($"[DialogueManager] TYPEWRITER ACTIVADO - Texto: '{_currentText}' ({_currentText.Length} chars) - Velocidad: {charsPerSecond} chars/s");
                 bodyText.ForceMeshUpdate();
                 bodyText.maxVisibleCharacters = 0;
                 _typeRoutine = StartCoroutine(TypeRoutine());
             }
             else
             {
-                Debug.Log($"[DialogueManager] TYPEWRITER DESACTIVADO - Mostrando texto completo instantáneamente");
+                if (verboseLogging) Debug.Log($"[DialogueManager] TYPEWRITER DESACTIVADO - Mostrando texto completo instantáneamente");
                 bodyText.maxVisibleCharacters = int.MaxValue;
             }
         }
@@ -783,7 +786,7 @@ public class DialogueManager : MonoBehaviour
         float timePerChar = 1f / charsPerSecond; // Tiempo que debe pasar para mostrar 1 carácter
         float timeAccumulated = 0f; // Acumulador de tiempo
         
-        Debug.Log($"[DialogueManager TypeRoutine] ✅ Iniciando typewriter - Total: {total} chars, Velocidad: {charsPerSecond} chars/s ({timePerChar:F4}s por char)");
+        if (verboseLogging) Debug.Log($"[DialogueManager TypeRoutine] ✅ Iniciando typewriter - Total: {total} chars, Velocidad: {charsPerSecond} chars/s ({timePerChar:F4}s por char)");
 
         while (shown < total)
         {
@@ -829,7 +832,7 @@ public class DialogueManager : MonoBehaviour
         
         // Marcar el momento en que se completó la línea para ignorar inputs inmediatos
         _lastLineCompletedAt = Time.unscaledTime;
-        Debug.Log($"[DialogueManager] Línea completada instantáneamente en t={_lastLineCompletedAt:F3}");
+        if (verboseLogging) Debug.Log($"[DialogueManager] Línea completada instantáneamente en t={_lastLineCompletedAt:F3}");
         
         // Mostrar el icono de Submit con animación después de completar instantáneamente
         ShowSubmitHintWithAnimation();
@@ -902,12 +905,12 @@ public class DialogueManager : MonoBehaviour
         if (activate)
         {
             actionManager.PushMode(ActionMode.Cinematic);
-            Debug.Log("[DialogueManager] Modo Cinematic ACTIVADO - Jugador bloqueado para diálogo");
+            if (verboseLogging) Debug.Log("[DialogueManager] Modo Cinematic ACTIVADO - Jugador bloqueado para diálogo");
         }
         else
         {
             actionManager.PopMode(ActionMode.Cinematic);
-            Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
+            if (verboseLogging) Debug.Log("[DialogueManager] Modo Cinematic DESACTIVADO - Jugador desbloqueado tras diálogo");
         }
     }
 
@@ -943,7 +946,7 @@ public class DialogueManager : MonoBehaviour
                 if (playerAnimator != null)
                 {
                     playerAnimator.SetTalking(true);
-                    Debug.Log($"[DialogueManager] 🗣️ Player animación Talk activada");
+                    if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Player animación Talk activada");
                 }
             }
             return;
@@ -958,7 +961,7 @@ public class DialogueManager : MonoBehaviour
                 if (npcAnimator != null)
                 {
                     npcAnimator.SetTalking(true);
-                    Debug.Log($"[DialogueManager] 🗣️ NPC '{_currentNpc.name}' animación Talk activada");
+                    if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ NPC '{_currentNpc.name}' animación Talk activada");
                 }
             }
             return;
@@ -983,7 +986,7 @@ public class DialogueManager : MonoBehaviour
                         if (partyAnimator != null)
                         {
                             partyAnimator.SetTalking(true);
-                            Debug.Log($"[DialogueManager] 🗣️ Party member '{member.DisplayName}' animación Talk activada");
+                            if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Party member '{member.DisplayName}' animación Talk activada");
                         }
                         return;
                     }
@@ -999,7 +1002,7 @@ public class DialogueManager : MonoBehaviour
             if (foundAnimator != null)
             {
                 foundAnimator.SetTalking(true);
-                Debug.Log($"[DialogueManager] 🗣️ NPC '{speakerId}' (escena) animación Talk activada");
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ NPC '{speakerId}' (escena) animación Talk activada");
             }
         }
     }
@@ -1025,12 +1028,12 @@ public class DialogueManager : MonoBehaviour
         if (activate)
         {
             playerAnimator.BeginInteraction();
-            Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople ACTIVADA");
+            if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople ACTIVADA");
         }
         else
         {
             playerAnimator.EndInteraction();
-            Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople DESACTIVADA");
+            if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople DESACTIVADA");
         }
     }
 }

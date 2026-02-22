@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 32c5ce8247e817a438d7243fe114bbb2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305629
+  packageName: Customizable Rocks and Cliffs PBR - Sample
+  packageVersion: 1.0
+  assetPath: Assets/PolishedSurfaces/System_RockSet_Sample/Art/Materials/2. URP/M_RockSet_01_Master_0_All_Sample.mat
+  uploadId: 826628

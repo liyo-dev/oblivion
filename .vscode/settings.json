@@ -67,5 +67,6 @@
         "*.sln": "*.csproj"
     },
     "dotnet.defaultSolution": "El Sendero de las Estrellas.slnx",
-    "chatgpt.openOnStartup": true
+    "chatgpt.openOnStartup": true,
+    "dotnet.preferCSharpExtension": true
 }

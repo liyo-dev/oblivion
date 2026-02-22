@@ -1,11 +1,6 @@
-﻿﻿using Invector;
+using Invector;
 using UnityEngine;
 
-/// <summary>
-/// vThirdPersonCamera con opción de oclusión por "sombra": en vez de acercar la cámara
-/// cuando hay un obstáculo entre cámara y jugador, convierte esos renderers a ShadowsOnly.
-/// Requiere el componente auxiliar CameraOcclusionShadowsOnly en la misma cámara (se añade solo).
-/// </summary>
 public class vThirdPersonCamera : MonoBehaviour
 {
     #region Inspector
@@ -28,47 +23,33 @@ public class vThirdPersonCamera : MonoBehaviour
     public float yMinLimit = -40f;
     public float yMaxLimit = 80f;
 
-    // Solo dejamos la opción de oclusión por sombras (ShadowsOnly)
-
     [Header("Oclusión → Sombras (alternativa)")]
-    [Tooltip("No acercar cámara; poner obstáculos en ShadowsOnly para ver al player")]
     public bool useShadowsOnlyOcclusion = false;
-    [Tooltip("Capas que se volverán 'sombras' cuando tapen al player (excluye al Player)")]
     public LayerMask obstructionMask = ~0;
-    [Tooltip("Radio del SphereCast entre cámara y objetivo (línea de visión)")]
     public float obstructionCheckRadius = 0.15f;
+    
+    [Header("Anulación de Lock-On")]
+    public float overrideTargetHeightOffset = 1.5f;
 
     #endregion
 
     #region Estado oculto
-
-    [HideInInspector] public int indexList, indexLookPoint;
-    [HideInInspector] public float offSetPlayerPivot;
-    [HideInInspector] public string currentStateName;
-    [HideInInspector] public Transform currentTarget;
-    [HideInInspector] public Vector2 movementSpeed;
-
-    private Transform targetLookAt;
-    private Vector3 currentTargetPos;
-    private Vector3 current_cPos;
-    private Camera _camera;
-
-    private float distance = 5f;
-    private float mouseY = 0f;
-    private float mouseX = 0f;
-    private float currentHeight;
-    private float cullingDistance;
-    private float checkHeightRadius = 0.4f;
-    private float clipPlaneMargin = 0f;
-    private float forward = -1f;
-    private float xMinLimit = -360f;
-    private float xMaxLimit = 360f;
-    private float cullingHeight = 0.2f;
-    private float cullingMinDist = 0.1f;
-
-    private CameraOcclusionShadowsOnly _occlusionFader;
     
-    // Flag estático para que sistemas externos (como cinemáticas en otros assemblies) puedan bloquear la cámara
+    [HideInInspector] public Transform currentTarget;
+    
+    // Variable privada para el target de bloqueo
+    [SerializeField]
+    private Transform _lockTarget;
+    public Transform LockTarget => _lockTarget;
+    
+    private Transform targetLookAt;
+    private Camera _camera;
+    private float distance;
+    private float mouseY;
+    private float mouseX;
+    private float currentHeight;
+    private float forward = -1f;
+    private CameraOcclusionShadowsOnly _occlusionFader;
     public static bool lockCameraForCinematic = false;
 
     #endregion
@@ -81,26 +62,17 @@ public class vThirdPersonCamera : MonoBehaviour
 
         _camera = GetComponent<Camera>();
         currentTarget = target;
-        currentTargetPos = new Vector3(
-            currentTarget.position.x,
-            currentTarget.position.y + offSetPlayerPivot,
-            currentTarget.position.z);
 
         if (targetLookAt == null)
         {
             targetLookAt = new GameObject("targetLookAt").transform;
             targetLookAt.hideFlags = HideFlags.HideInHierarchy;
         }
-        targetLookAt.position = currentTarget.position;
-        targetLookAt.rotation = currentTarget.rotation;
-
+        
         mouseY = currentTarget.eulerAngles.x;
         mouseX = currentTarget.eulerAngles.y;
-
         distance = defaultDistance;
         currentHeight = height;
-
-        // Solo oclusión por sombras
 
         _occlusionFader = GetComponent<CameraOcclusionShadowsOnly>();
         if (_occlusionFader == null) _occlusionFader = gameObject.AddComponent<CameraOcclusionShadowsOnly>();
@@ -110,21 +82,26 @@ public class vThirdPersonCamera : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (target == null || targetLookAt == null) return;
-        
-        // --- PROTECCIÓN CINEMÁTICA ---
-        if (lockCameraForCinematic) return;
-        
+        if (target == null || lockCameraForCinematic) return;
         CameraMovement();
     }
 
-    /// <summary>Setea target secundario (seguimiento temporal)</summary>
-    public void SetTarget(Transform newTarget)
+    // ===================================================================================
+    // API PÚBLICA PARA LOCK-ON
+    // ===================================================================================
+
+    public void SetLockTarget(Transform target)
     {
-        currentTarget = newTarget ? newTarget : target;
+        // Debug.Log($"[vThirdPersonCamera] SetLockTarget LLAMADO en '{this.gameObject.name}'. Nuevo target: {(target != null ? target.name : "NULL")}");
+        _lockTarget = target;
     }
 
-    /// <summary>Setea target principal y re-inicializa</summary>
+    public void ClearLockTarget()
+    {
+        // if (_lockTarget != null) Debug.Log($"[vThirdPersonCamera] ClearLockTarget LLAMADO en '{this.gameObject.name}'. Liberando target: {_lockTarget.name}");
+        _lockTarget = null;
+    }
+
     public void SetMainTarget(Transform newTarget)
     {
         target = newTarget;
@@ -134,73 +111,12 @@ public class vThirdPersonCamera : MonoBehaviour
         Init();
     }
 
-    public Ray ScreenPointToRay(Vector3 point)
-    {
-        return GetComponent<Camera>().ScreenPointToRay(point);
-    }
-
     public void RotateCamera(float x, float y)
     {
-        // --- PROTECCIÓN CINEMÁTICA ---
-        if (lockCameraForCinematic) return;
+        if (lockCameraForCinematic || _lockTarget != null) return;
 
         mouseX += x * xMouseSensitivity;
         mouseY -= y * yMouseSensitivity;
-
-        movementSpeed.x = x;
-        movementSpeed.y = -y;
-
-        if (!lockCamera)
-        {
-            mouseY = vExtensions.ClampAngle(mouseY, yMinLimit, yMaxLimit);
-            mouseX = vExtensions.ClampAngle(mouseX, xMinLimit, xMaxLimit);
-        }
-        else
-        {
-            mouseY = currentTarget.root.localEulerAngles.x;
-            mouseX = currentTarget.root.localEulerAngles.y;
-        }
-    }
-
-    /// <summary>
-    /// Fuerza la rotación de la cámara hacia un punto específico.
-    /// Útil para sistemas de targeting de combate.
-    /// </summary>
-    /// <param name="targetPosition">Posición mundial hacia la que mirar</param>
-    /// <param name="smooth">Si es true, interpola suavemente; si es false, snap instantáneo</param>
-    public void LookAtPosition(Vector3 targetPosition, bool smooth = true)
-    {
-        if (lockCameraForCinematic) return;
-        if (currentTarget == null) return;
-
-        // Calcular dirección desde el jugador hacia el objetivo
-        Vector3 direction = targetPosition - currentTarget.position;
-        direction.y = 0; // Proyectar en plano horizontal primero
-
-        if (direction.sqrMagnitude < 0.01f) return;
-
-        // Calcular ángulos necesarios
-        float targetMouseX = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-        
-        // Calcular pitch (vertical)
-        Vector3 fullDirection = targetPosition - currentTarget.position;
-        float horizontalDistance = new Vector2(fullDirection.x, fullDirection.z).magnitude;
-        float targetMouseY = Mathf.Atan2(fullDirection.y, horizontalDistance) * Mathf.Rad2Deg;
-
-        if (smooth)
-        {
-            // Interpolar suavemente
-            mouseX = Mathf.LerpAngle(mouseX, targetMouseX, Time.deltaTime * smoothCameraRotation);
-            mouseY = Mathf.LerpAngle(mouseY, targetMouseY, Time.deltaTime * smoothCameraRotation);
-        }
-        else
-        {
-            // Snap instantáneo
-            mouseX = targetMouseX;
-            mouseY = targetMouseY;
-        }
-
-        // Aplicar límites
         mouseY = vExtensions.ClampAngle(mouseY, yMinLimit, yMaxLimit);
     }
 
@@ -208,82 +124,64 @@ public class vThirdPersonCamera : MonoBehaviour
     {
         if (currentTarget == null) return;
 
-        // direcciones base
-        var camDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
-        camDir = camDir.normalized;
-
-        // posiciones objetivo
-        var targetPos = new Vector3(currentTarget.position.x, currentTarget.position.y + offSetPlayerPivot, currentTarget.position.z);
-        currentTargetPos = targetPos;
-
-        var desired_cPos = targetPos + new Vector3(0, height, 0);
-        current_cPos = currentTargetPos + new Vector3(0, currentHeight, 0);
-
-        RaycastHit hitInfo;
-        var planePoints = _camera.NearClipPlanePoints(current_cPos + (camDir * (distance)), clipPlaneMargin);
-        var oldPoints   = _camera.NearClipPlanePoints(desired_cPos + (camDir * distance), clipPlaneMargin);
-
-        // Altura: si hay techo cerca, ajustar hacia cullingHeight
-        if (Physics.SphereCast(targetPos, checkHeightRadius, Vector3.up, out hitInfo, cullingHeight + 0.2f, cullingLayer))
-        {
-            var t = hitInfo.distance - 0.2f;
-            t -= height;
-            t /= (cullingHeight - height);
-            cullingHeight = Mathf.Lerp(height, cullingHeight, Mathf.Clamp(t, 0.0f, 1.0f));
-        }
-
-        // Solo oclusión por sombras: no tocamos la distancia, nos quedamos en defaultDistance con un leve lerp para estabilidad
         distance = Mathf.Lerp(distance, defaultDistance, smoothFollow * Time.deltaTime);
         currentHeight = height;
-        current_cPos = currentTargetPos + new Vector3(0, currentHeight, 0);
+        
+        Vector3 targetPos = new Vector3(currentTarget.position.x, currentTarget.position.y, currentTarget.position.z);
+        Vector3 current_cPos = targetPos + new Vector3(0, currentHeight, 0);
+        
+        Quaternion newRot;
 
-        // Apuntar lookAt y rotación
-        var lookPoint = current_cPos + targetLookAt.forward * 2f;
-        lookPoint += (targetLookAt.right * Vector3.Dot(camDir * (distance), targetLookAt.right));
+        if (_lockTarget != null)
+        {
+            // --- MODO LOCK-ON ---
+            Vector3 lookAtPoint = _lockTarget.position + new Vector3(0, overrideTargetHeightOffset, 0);
+            Vector3 dirToTarget = lookAtPoint - current_cPos;
+
+            if (dirToTarget.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(dirToTarget);
+                
+                // Asignar directamente los ángulos objetivo.
+                // La suavidad vendrá del Slerp final de targetLookAt.rotation.
+                mouseX = targetRot.eulerAngles.y;
+                mouseY = targetRot.eulerAngles.x;
+            }
+            
+            // Asegurar que mouseY respete los límites incluso en lock-on
+            // (opcional, pero evita giros extraños si el enemigo está muy arriba/abajo)
+            // mouseY = vExtensions.ClampAngle(mouseY, yMinLimit, yMaxLimit); 
+            
+            newRot = Quaternion.Euler(mouseY, mouseX, 0);
+        }
+        else
+        {
+            // --- MODO LIBRE ---
+            var camDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
+            camDir = camDir.normalized;
+            newRot = Quaternion.Euler(mouseY, mouseX, 0);
+        }
+
+        // Aplicar rotación al pivote
         targetLookAt.position = current_cPos;
-
-        Quaternion newRot = Quaternion.Euler(mouseY, mouseX, 0);
-        targetLookAt.rotation = Quaternion.Slerp(targetLookAt.rotation, newRot, smoothCameraRotation * Time.deltaTime);
-
-        // Colocar cámara
-        Vector3 camPos = current_cPos + (camDir * (distance));
+        targetLookAt.rotation = Quaternion.Slerp(targetLookAt.rotation, newRot, smoothCameraRotation * Time.fixedDeltaTime);
+        
+        // Calcular posición final de la cámara
+        var finalCamDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
+        finalCamDir = finalCamDir.normalized;
+        
+        Vector3 camPos = current_cPos + (finalCamDir * distance);
         transform.position = camPos;
+        
+        // Mirar siempre al pivote
+        var lookPoint = current_cPos + targetLookAt.forward * 2f;
+        lookPoint += (targetLookAt.right * Vector3.Dot(finalCamDir * (distance), targetLookAt.right));
         transform.rotation = Quaternion.LookRotation((lookPoint) - transform.position);
 
-        // Línea de visión → convertir obstáculos a ShadowsOnly
+        // Oclusión
         if (_occlusionFader != null)
         {
-            Vector3 from = transform.position;
-            Vector3 to   = currentTargetPos + new Vector3(0, currentHeight, 0);
-            _occlusionFader.Process(from, to);
+            _occlusionFader.Process(transform.position, targetPos + new Vector3(0, currentHeight, 0));
         }
-
-        movementSpeed = Vector2.zero;
-    }
-
-    /// <summary>Raycasts contra los 4 puntos del near clip.</summary>
-    bool CullingRayCast(Vector3 from, ClipPlanePoints to, out RaycastHit hitInfo, float dist, LayerMask layer, Color debug)
-    {
-        bool hitAny = false;
-        hitInfo = default;
-
-        if (Physics.Raycast(from, to.LowerLeft - from, out var h1, dist, layer)) { hitAny = true; hitInfo = h1; cullingDistance = h1.distance; }
-        if (Physics.Raycast(from, to.LowerRight - from, out var h2, dist, layer))
-        {
-            if (!hitAny || h2.distance < cullingDistance) { hitInfo = h2; cullingDistance = h2.distance; }
-            hitAny = true;
-        }
-        if (Physics.Raycast(from, to.UpperLeft - from, out var h3, dist, layer))
-        {
-            if (!hitAny || h3.distance < cullingDistance) { hitInfo = h3; cullingDistance = h3.distance; }
-            hitAny = true;
-        }
-        if (Physics.Raycast(from, to.UpperRight - from, out var h4, dist, layer))
-        {
-            if (!hitAny || h4.distance < cullingDistance) { hitInfo = h4; cullingDistance = h4.distance; }
-            hitAny = true;
-        }
-
-        return hitAny && hitInfo.collider;
     }
 }

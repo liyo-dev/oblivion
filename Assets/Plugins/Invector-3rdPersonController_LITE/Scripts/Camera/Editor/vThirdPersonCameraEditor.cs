@@ -22,7 +22,6 @@ namespace Invector.vCamera
         {
             m_Logo = (Texture2D)Resources.Load("tp_camera", typeof(Texture2D));
             tpCamera = (vThirdPersonCamera)target;
-            tpCamera.indexLookPoint = 0;
         }
 
         public override void OnInspectorGUI()

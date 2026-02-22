@@ -313,7 +313,7 @@ namespace Invector.vCharacterController
         {
             if (strafePressed)
             {
-                cc.Strafe();
+                //cc.Strafe();
                 strafePressed = false;
             }
         }

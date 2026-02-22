@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.Modules;
 
@@ -137,14 +137,12 @@ namespace Game.NPC.States
             if (distSqr > detectionRange * detectionRange) return;
             
             // 2. Campo de Visión (FOV)
-            // Asumimos ojos a 1.6m de altura
             Vector3 eyePos = context.Transform.position + Vector3.up * 1.6f;
             Vector3 playerTarget = context.Player.position + Vector3.up * 1.0f;
             Vector3 dirToTarget = (playerTarget - eyePos).normalized;
             
             float angle = Vector3.Angle(context.Transform.forward, dirToTarget);
             float fov = combatConfig.fieldOfView > 0 ? combatConfig.fieldOfView : 160f;
-            
             if (angle > fov * 0.5f) return;
             
             // 3. Línea de Visión (Raycast) - Evita ver a través de paredes
