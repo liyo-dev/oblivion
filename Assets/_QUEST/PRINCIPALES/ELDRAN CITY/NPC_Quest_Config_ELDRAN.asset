@@ -339,7 +339,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 1
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: 772f4ab27e599a84db0b4ab0e6036a86, type: 2}
-    completionMode: 0
+    completionMode: 1
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 1
     itemTag: 
@@ -366,7 +366,7 @@ MonoBehaviour:
         m_Calls: []
     postAction:
       actionType: 0
-      dialogueBeforeAction: {fileID: 11400000, guid: dfff9e52f2d58754dab45789fe6fc230, type: 2}
+      dialogueBeforeAction: {fileID: 0}
       targetAnchorName: House_FrontDoor
       targetTransform: {fileID: 0}
       maxMovementDuration: 15

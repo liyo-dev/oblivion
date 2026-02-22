@@ -30,7 +30,7 @@ MonoBehaviour:
     fade: 0
   minigames:
   - minigameId: TAG_MINIGAME_01
-    music: {fileID: 8300000, guid: 12b75233fcb8ce046a74b5ffa2f95be3, type: 3}
+    music: {fileID: 8300000, guid: 7eb1b7c0d589a3b458134ef956f69bb2, type: 3}
     fade: 0
     loop: 0
   ambientZones:
