@@ -43,6 +43,7 @@ public class Interactable : MonoBehaviour
 
     bool used, enabledForUse;
     NPCBehaviourManagerV2 _npcManager;
+    NPCPartyMember _partyMember;
     bool _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
@@ -60,6 +61,7 @@ public class Interactable : MonoBehaviour
             }
         }
         _npcManager = GetComponent<NPCBehaviourManagerV2>();
+        _partyMember = GetComponent<NPCPartyMember>() ?? GetComponentInParent<NPCPartyMember>();
     }
 
     void OnEnable()
@@ -125,6 +127,9 @@ public class Interactable : MonoBehaviour
 
     public bool CanInteract(GameObject interactor)
     {
+        if (_partyMember == null)
+            _partyMember = GetComponent<NPCPartyMember>() ?? GetComponentInParent<NPCPartyMember>();
+
         var dm = DialogueManager.Instance;
         if (dm != null && dm.IsOpen)
             return false;
@@ -135,6 +140,9 @@ public class Interactable : MonoBehaviour
         if (!enabledForUse)
             return false;
         if (singleUse && used)
+            return false;
+        // Los NPCs en el equipo no deben ser interactuables (sin botón A ni acción).
+        if (_partyMember != null && _partyMember.IsInParty)
             return false;
 
         // Bloqueo central: durante combate/diálogo/cinemática no permitir nuevas interacciones

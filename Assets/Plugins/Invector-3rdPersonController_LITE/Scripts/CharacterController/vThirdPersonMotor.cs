@@ -33,21 +33,25 @@ namespace Invector.vCharacterController
         [Tooltip("Rotate or not while airborne")]
         public bool jumpAndRotate = true;
         [Tooltip("How much time the character will be jumping")]
-        public float jumpTimer = 0.3f;
+        public float jumpTimer = 0.14f;
         [Tooltip("Add Extra jump height, if you want to jump only with Root Motion leave the value with 0.")]
         public float jumpHeight = 4f;
+        [Tooltip("Multiplicador del impulso inicial al despegar.")]
+        [Range(0.5f, 6f)] public float jumpTakeoffBoost = 3.2f;
+        [Tooltip("Velocidad vertical mínima al inicio del salto para asegurar despegue visible.")]
+        [Range(0f, 20f)] public float minJumpTakeoffSpeed = 7.6f;
         [Tooltip("Multiplicador para el empuje de salto mantenido. 1 = comportamiento clásico, menor valor = salto menos 'lunar'.")]
-        [Range(0f, 1f)] public float jumpSustainMultiplier = 0.65f;
+        [Range(0f, 1f)] public float jumpSustainMultiplier = 0.06f;
         [Tooltip("Activa un perfil de salto estilo action-RPG (inspirado en Sora/KH).")]
         public bool useSoraStyleJump = true;
         [Tooltip("Gravedad mientras asciende (1 = normal, <1 más flotante).")]
-        [Range(0.1f, 2f)] public float soraAscentGravityMultiplier = 0.7f;
+        [Range(0.1f, 4f)] public float soraAscentGravityMultiplier = 1.9f;
         [Tooltip("Gravedad cerca del ápice (hang time).")]
-        [Range(0.05f, 1f)] public float soraApexGravityMultiplier = 0.3f;
+        [Range(0.05f, 4f)] public float soraApexGravityMultiplier = 2.8f;
         [Tooltip("Gravedad al caer (1 = normal, >1 caída más firme).")]
-        [Range(0.5f, 3f)] public float soraFallGravityMultiplier = 1.55f;
+        [Range(0.5f, 6f)] public float soraFallGravityMultiplier = 3.8f;
         [Tooltip("Umbral de velocidad vertical para considerar que está en ápice.")]
-        [Range(0.05f, 2f)] public float soraApexVelocityThreshold = 0.9f;
+        [Range(0.01f, 2f)] public float soraApexVelocityThreshold = 0.06f;
 
         [Tooltip("Speed that the character will move while airborne")]
         public float airSpeed = 5f;
@@ -308,11 +312,12 @@ namespace Invector.vCharacterController
             // Aplicamos un empuje decreciente según el tiempo restante de salto.
             if (jumpHeight > 0f)
             {
-                float timer = Mathf.Max(0.0001f, jumpTimer);
+                float timer = useSoraStyleJump ? Mathf.Max(0.0001f, Mathf.Min(jumpTimer, 0.14f)) : Mathf.Max(0.0001f, jumpTimer);
                 float normalizedJumpTime = Mathf.Clamp01(jumpCounter / timer);
+                float sustainMultiplier = useSoraStyleJump ? Mathf.Min(jumpSustainMultiplier, 0.08f) : jumpSustainMultiplier;
                 float sustainFactor = useSoraStyleJump
-                    ? (normalizedJumpTime * normalizedJumpTime) * jumpSustainMultiplier
-                    : normalizedJumpTime * jumpSustainMultiplier;
+                    ? (normalizedJumpTime * normalizedJumpTime * normalizedJumpTime * normalizedJumpTime) * sustainMultiplier
+                    : normalizedJumpTime * sustainMultiplier;
                 float targetUpSpeed = jumpHeight * sustainFactor;
 
                 var vel = _rigidbody.linearVelocity;
@@ -427,7 +432,7 @@ namespace Invector.vCharacterController
                 }
                 else if (!isJumping || useSoraStyleJump)
                 {
-                    float nearGroundMultiplier = useSoraStyleJump ? 1.2f : 2f;
+                    float nearGroundMultiplier = useSoraStyleJump ? 2.2f : 2f;
                     _rigidbody.AddForce(transform.up * (extraGravity * nearGroundMultiplier * Time.deltaTime), ForceMode.VelocityChange);
                 }
             }
@@ -435,13 +440,18 @@ namespace Invector.vCharacterController
 
         protected virtual float GetSoraJumpGravityMultiplier(float currentVerticalVelocity)
         {
-            if (currentVerticalVelocity > soraApexVelocityThreshold)
-                return soraAscentGravityMultiplier;
+            float apexThreshold = Mathf.Min(soraApexVelocityThreshold, 0.08f);
+            float ascent = Mathf.Max(soraAscentGravityMultiplier, 1.8f);
+            float apex = Mathf.Max(soraApexGravityMultiplier, 2.6f);
+            float fall = Mathf.Max(soraFallGravityMultiplier, 3.4f);
 
-            if (Mathf.Abs(currentVerticalVelocity) <= soraApexVelocityThreshold)
-                return soraApexGravityMultiplier;
+            if (currentVerticalVelocity > apexThreshold)
+                return ascent;
 
-            return soraFallGravityMultiplier;
+            if (Mathf.Abs(currentVerticalVelocity) <= apexThreshold)
+                return apex;
+
+            return fall;
         }
 
         protected virtual void ControlMaterialPhysics()

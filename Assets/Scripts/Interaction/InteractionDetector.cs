@@ -158,7 +158,14 @@ public class InteractionDetector : MonoBehaviour
 
     private void SetCurrent(Interactable next)
     {
-        if (current == next) return;
+        if (current == next)
+        {
+            // Mantener el hint sincronizado aunque el foco no cambie.
+            // Esto soluciona casos donde se oculta por diálogo/cooldown y no vuelve al terminar.
+            if (current)
+                current.SetHintVisible(true, gameObject);
+            return;
+        }
 
         if (current) current.SetHintVisible(false);
         current = next;

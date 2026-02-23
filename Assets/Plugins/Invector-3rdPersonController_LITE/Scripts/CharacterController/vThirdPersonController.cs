@@ -176,6 +176,29 @@ namespace Invector.vCharacterController
 
             jumpCounter = jumpTimer;
             isJumping = true;
+            
+            // Impulso inicial real al despegar para evitar sensación de "pegado al suelo".
+            // El sustain del motor seguirá modulando la curva del salto en frames siguientes.
+            if (_rigidbody != null)
+            {
+                var vel = _rigidbody.linearVelocity;
+                float soraMinImpulse = useSoraStyleJump ? 7.6f : 0f;
+                float baseJumpImpulse = Mathf.Max(jumpHeight * jumpTakeoffBoost, minJumpTakeoffSpeed, soraMinImpulse);
+
+                // Si llega con velocidad negativa por pendiente/step, limpiamos antes del despegue.
+                if (vel.y < 0f)
+                    vel.y = 0f;
+
+                if (vel.y < baseJumpImpulse)
+                {
+                    vel.y = baseJumpImpulse;
+                    if (!float.IsNaN(vel.x) && !float.IsNaN(vel.y) && !float.IsNaN(vel.z) &&
+                        !float.IsInfinity(vel.x) && !float.IsInfinity(vel.y) && !float.IsInfinity(vel.z))
+                    {
+                        _rigidbody.linearVelocity = vel;
+                    }
+                }
+            }
 
             // Play jump SFX
             if (jumpSfx != null)

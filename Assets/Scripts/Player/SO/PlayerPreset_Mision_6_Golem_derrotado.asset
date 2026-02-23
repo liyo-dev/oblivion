@@ -45,8 +45,8 @@ MonoBehaviour:
   - QUEST_ACTIVE:ELDRAN_MISSION6
   - QUEST_STEP_DONE:ELDRAN_MISSION6:0
   abilities:
-    swim: 0
-    jump: 0
+    swim: 1
+    jump: 1
     climb: 0
     magic: 1
     fly: 0

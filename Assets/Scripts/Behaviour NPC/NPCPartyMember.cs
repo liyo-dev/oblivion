@@ -30,6 +30,7 @@ namespace Game.NPC
         private PlayerParty _party;
         private NPCBehaviourManagerV2 _npcManager;
         private NavMeshAgent _agent;
+        private Interactable _interactable;
         private bool _isInParty;
         private bool _wasInPartyBeforeCombat;
         private INPCState _stateBeforeJoining;
@@ -101,6 +102,7 @@ namespace Game.NPC
         {
             _npcManager = GetComponent<NPCBehaviourManagerV2>();
             _agent = GetComponent<NavMeshAgent>();
+            _interactable = GetComponent<Interactable>() ?? GetComponentInChildren<Interactable>(true);
             
             if (_npcManager == null)
             {
@@ -344,6 +346,9 @@ namespace Game.NPC
             _party = party;
             _isInParty = true;
             _isJoining = false; // ✅ FIX: Limpiar flag de joining
+            if (_interactable == null)
+                _interactable = GetComponent<Interactable>() ?? GetComponentInChildren<Interactable>(true);
+            _interactable?.SetHintVisible(false);
             
             Log($"✨ Unido al equipo (índice {PartyIndex})");
             
