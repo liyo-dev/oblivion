@@ -82,9 +82,6 @@ namespace Game.NPC.States
                 // ✅ Girar hacia el NPC con quien el player está hablando (rotación inicial)
                 RotateTowardsTarget(context);
                 
-                // ✅ Activar animación de interacción (InteractWithPeople)
-                context.Animator?.BeginInteraction();
-                
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ✅ Llegó a posición de diálogo");
             }
             // Si tarda demasiado, teletransportar
@@ -113,9 +110,6 @@ namespace Game.NPC.States
                 
                 // ✅ Girar hacia el NPC (rotación inicial)
                 RotateTowardsTarget(context);
-                
-                // ✅ Activar animación de interacción (InteractWithPeople)
-                context.Animator?.BeginInteraction();
                 
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ⚡ Teletransportado a posición de diálogo (tardó {_elapsedTime:F1}s)");
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -329,20 +329,21 @@ public class RoomExitBlocker : MonoBehaviour
                     return false;
                 }
                 
-                bool allActive = true;
+                bool allStarted = true;
                 for (int i = 0; i < ids.Count; i++)
                 {
                     var state = qm.GetState(ids[i]);
-                    bool isActive = (state == QuestState.Active);
-                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Quest '{ids[i]}' estado: {state} → {(isActive ? "✅" : "❌")}");
-                    if (!isActive)
+                    // "Started" = la quest ya salió de Inactive (Active o Completed)
+                    bool isStarted = (state == QuestState.Active || state == QuestState.Completed);
+                    if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Quest '{ids[i]}' estado: {state} → {(isStarted ? "✅" : "❌")}");
+                    if (!isStarted)
                     {
-                        allActive = false;
+                        allStarted = false;
                     }
                 }
                 
-                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Resultado: {(allActive ? "✅ DESBLOQUEADO" : "❌ BLOQUEADO")}");
-                return allActive;
+                if (debugLogs) Debug.Log($"[RoomExitBlocker:{gameObject.name}] Resultado: {(allStarted ? "✅ DESBLOQUEADO" : "❌ BLOQUEADO")}");
+                return allStarted;
             }
 
             case RequirementMode.SpecificQuestsCompleted:

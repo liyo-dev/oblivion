@@ -31,7 +31,7 @@ MonoBehaviour:
     textId: DLG_ELDRAN_MISSION6_TURNIN_03
     text: 
     portrait: {fileID: 0}
-    isPlayerSpeaking: 0
+    isPlayerSpeaking: 1
     forcedShotType: 0
     emotion: 8
   - speakerNameId: CHAR_ELDRAN

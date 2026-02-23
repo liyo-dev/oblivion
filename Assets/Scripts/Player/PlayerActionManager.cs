@@ -135,6 +135,11 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         if (!_blockedByMode.ContainsKey(ActionMode.Default))
             _blockedByMode[ActionMode.Default] = new HashSet<PlayerAbility>();
 
+        // GARANTIZAR bloqueo de interacción durante cinemática/diálogo
+        if (!_blockedByMode.ContainsKey(ActionMode.Cinematic))
+            _blockedByMode[ActionMode.Cinematic] = new HashSet<PlayerAbility>();
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Interact);
+
         // GARANTIZAR bloqueos críticos para modo Carrying (independiente del Inspector)
         if (!_blockedByMode.ContainsKey(ActionMode.Carrying))
             _blockedByMode[ActionMode.Carrying] = new HashSet<PlayerAbility>();
@@ -205,6 +210,11 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Carry);
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Interact);
         _blockedByMode[ActionMode.Climbing].Add(PlayerAbility.Fly);
+
+        // GARANTIZAR bloqueo de interacción durante combate
+        if (!_blockedByMode.ContainsKey(ActionMode.Combat))
+            _blockedByMode[ActionMode.Combat] = new HashSet<PlayerAbility>();
+        _blockedByMode[ActionMode.Combat].Add(PlayerAbility.Interact);
 
 #if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");

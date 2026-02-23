@@ -168,6 +168,18 @@ namespace Game.NPC
         // ✅ FIX: Usar _alertIconsShown como guard adicional para evitar bucles
         // _isRegrouping se pone false muy rápido, necesitamos un flag persistente
         if (_isTeamInCombat || _isRegrouping || _alertIconsShown) return;
+
+        // Bloqueo global: si ya hay un combate activo y ningún miembro de este equipo
+        // está en combate todavía, no iniciar un segundo combate paralelo.
+        ActiveCombatRegistry.CleanupDestroyedNPCs();
+        if (ActiveCombatRegistry.Count > 0 && !IsAnyTeamMemberInCombat())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log($"[NPCCombatTeam] {name}: Combate global activo, se cancela nueva detección del equipo.");
+            }
+            return;
+        }
         
         if (showDebugLogs)
         {
@@ -178,6 +190,20 @@ namespace Game.NPC
         ShowTeamAlertIcons();
         
         StartCoroutine(Co_RegroupAndStartCombat(player));
+    }
+
+    private bool IsAnyTeamMemberInCombat()
+    {
+        for (int i = 0; i < _allMembers.Count; i++)
+        {
+            var member = _allMembers[i];
+            if (member == null)
+                continue;
+            if (ActiveCombatRegistry.IsInCombat(member.gameObject))
+                return true;
+        }
+
+        return false;
     }
     
     /// <summary>

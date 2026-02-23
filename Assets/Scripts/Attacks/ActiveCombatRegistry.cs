@@ -65,6 +65,26 @@ public static class ActiveCombatRegistry
     {
         return npc != null && _npcsInCombat.Contains(npc);
     }
+
+    /// <summary>
+    /// Verifica si existe al menos un combate activo distinto al NPC indicado.
+    /// Útil para bloquear que un NPC externo inicie un segundo combate.
+    /// </summary>
+    public static bool HasActiveCombatExcluding(GameObject npc)
+    {
+        CleanupDestroyedNPCs();
+
+        foreach (var combatNpc in _npcsInCombat)
+        {
+            if (combatNpc == null)
+                continue;
+            if (combatNpc == npc)
+                continue;
+            return true;
+        }
+
+        return false;
+    }
     
     /// <summary>
     /// Obtiene el NPC en combate más cercano a una posición

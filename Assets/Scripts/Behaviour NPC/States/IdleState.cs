@@ -118,6 +118,12 @@ namespace Game.NPC.States
             if (context.WasDefeatedInCombat) return;
             if (context.Player == null) return;
             
+            // Bloqueo global: si ya hay otro combate activo, este NPC no debe iniciar uno nuevo.
+            if (ActiveCombatRegistry.HasActiveCombatExcluding(context.Transform.gameObject))
+            {
+                return;
+            }
+            
             // ✅ FIX: Si soy miembro de un equipo y ya notifiqué, no sigo detectando
             // Esto evita el bucle infinito de detección
             var teamMember = context.Transform.GetComponent<NPCTeamMember>();

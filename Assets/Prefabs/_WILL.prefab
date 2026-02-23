@@ -8988,12 +8988,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 7159
   obstructionCheckRadius: 0.15
-  indexList: 0
-  indexLookPoint: 0
-  offSetPlayerPivot: 0
-  currentStateName: 
+  overrideTargetHeightOffset: 1.5
   currentTarget: {fileID: 0}
-  movementSpeed: {x: 0, y: 0}
+  _lockTarget: {fileID: 0}
 --- !u!114 &1219957402610385003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9089,9 +9086,8 @@ MonoBehaviour:
   playerTargeting: {fileID: 2788111570677460138}
   syncWithProjectileTargeting: 1
   maxLockDistance: 30
-  targetingRotationSpeed: 8
-  targetHeightOffset: 1.5
-  lockIndicatorPrefab: {fileID: 0}
+  visualResyncInterval: 0.1
+  shoulderSwitchDebounce: 0.12
   showDebugLogs: 0
 --- !u!1 &3700031740071713348
 GameObject:
@@ -12574,20 +12570,16 @@ MonoBehaviour:
   screenEdgePadding: 0.03
   autoTargetByLayer: 1
   requireDamageableAlive: 1
-  drawRadius: 1
-  drawFOV: 1
-  drawTargetLine: 1
-  radiusColor: {r: 0, g: 0.7, b: 1, a: 0.35}
-  scanRadiusColor: {r: 0, g: 0.4, b: 1, a: 0.18}
-  fovColor: {r: 0.2, g: 1, b: 0.4, a: 0.25}
-  targetLineColor: {r: 1, g: 0.8, b: 0.2, a: 0.9}
   enableMarker: 1
   markerPrefab: {fileID: 6257368771293304010, guid: 0a8d3d2e80c7acf42880b491ab93fce0, type: 3}
   markerOffset: {x: 0, y: 0, z: 0}
   billboardToCamera: 1
-  parentMarkerToTarget: 0
   markerShowDuration: 0.25
   markerHideDuration: 0.15
+  verboseLogging: 0
+  drawRadius: 1
+  drawFOV: 1
+  drawTargetLine: 1
 --- !u!114 &5411191197508503009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12629,6 +12621,7 @@ MonoBehaviour:
   interactAction: {fileID: 4603114644073994948, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
   jumpAction: {fileID: -4604816535962114212, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
   disableJumpWhenFocused: 1
+  hintReappearDelay: 1
 --- !u!114 &6570775665125871610
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12978,6 +12971,7 @@ MonoBehaviour:
   animator: {fileID: 6005525575959977289}
   controller: {fileID: 8092544119751004760}
   playerRigidbody: {fileID: 6059246465518525408}
+  actionManager: {fileID: 0}
   upperBodyLayerIndex: 1
   battleIdleStateName: Idle_Battle_NoWeapon
   battleIdleFullPath: UpperBody.Idle_Battle_NoWeapon

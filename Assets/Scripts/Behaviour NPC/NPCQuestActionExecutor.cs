@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 using Game.NPC.Modules;
 using Game.NPC.States;
 
@@ -463,6 +464,66 @@ namespace Game.NPC
             Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Quest '{nextEntry.questData.questId}' iniciada por encadenamiento");
         }
 
+        /// <summary>
+        /// Coloca al NPC en una posición objetivo manteniendo sincronizado NavMeshAgent + Transform.
+        /// Evita que el agent recupere una posición interna antigua en frames posteriores.
+        /// </summary>
+        private void PlaceNpcAtPosition(Vector3 targetPosition, Quaternion targetRotation, bool turnAroundOnArrival, string reason)
+        {
+            Quaternion finalRotation = targetRotation;
+            if (turnAroundOnArrival)
+            {
+                finalRotation = Quaternion.Euler(0f, targetRotation.eulerAngles.y + 180f, 0f);
+            }
+
+            var agent = GetComponent<NavMeshAgent>();
+            bool warped = false;
+
+            if (agent != null && agent.enabled)
+            {
+                if (agent.isOnNavMesh)
+                {
+                    agent.isStopped = true;
+                    agent.ResetPath();
+                    agent.velocity = Vector3.zero;
+                    warped = agent.Warp(targetPosition);
+                }
+                else if (NavMesh.SamplePosition(targetPosition, out var navHit, 2f, NavMesh.AllAreas))
+                {
+                    warped = agent.Warp(navHit.position);
+                }
+            }
+
+            if (!warped)
+            {
+                transform.position = targetPosition;
+            }
+            else
+            {
+                // Si Warp fue exitoso, usar la posición efectiva del agent.
+                transform.position = agent != null ? agent.transform.position : targetPosition;
+            }
+
+            transform.rotation = finalRotation;
+
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.nextPosition = transform.position;
+                agent.velocity = Vector3.zero;
+                agent.isStopped = true;
+                if (agent.hasPath) agent.ResetPath();
+            }
+
+            var npcAnimator = GetComponent<NPCSimpleAnimator>();
+            if (npcAnimator != null)
+            {
+                npcAnimator.DisableAutoRotation();
+                npcAnimator.EnableAutoRotation();
+            }
+
+            Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC colocado ({reason}) en: {transform.position}, Rotación: {transform.rotation.eulerAngles}, WarpAgent={warped}");
+        }
+
         private IEnumerator ExecuteMoveAction(QuestPostAction action)
         {
             Debug.Log($"[NPCQuestActionExecutor:{name}] 🚶 ExecuteMoveAction iniciado - Buscando anchor '{action.targetAnchorName}'");
@@ -561,52 +622,19 @@ namespace Game.NPC
                     // Callback para teletransportar al NPC en el punto de corte
                     void OnCutPoint()
                     {
-                        // ✅ FIX: Detener NavMeshAgent ANTES de teleportar para evitar movimiento residual
-                        var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-                        if (agent != null && agent.isOnNavMesh)
-                        {
-                            agent.isStopped = true;
-                            agent.ResetPath();
-                            agent.velocity = Vector3.zero;
-                        }
-                        
                         // ✅ FIX: Forzar salida del estado cinemático PRIMERO
                         if (npcManager != null)
                         {
                             npcManager.ForceIdle();
                         }
-                        
-                        // ✅ Aplicar posición y rotación DESPUÉS de ForceIdle
-                        transform.position = targetPosition;
-                        
-                        // Calcular la rotación final
-                        Quaternion finalRotation = targetRotation;
-                        if (action.turnAroundOnArrival)
-                        {
-                            finalRotation = Quaternion.Euler(0f, targetRotation.eulerAngles.y + 180f, 0f);
-                        }
-                        transform.rotation = finalRotation;
-                        
-                        // ✅ FIX: Re-colocar NavMeshAgent en la nueva posición
-                        if (agent != null)
-                        {
-                            agent.Warp(targetPosition);
-                        }
-                        
-                        // ✅ FIX CRÍTICO: Sincronizar el _targetRotation del NPCSimpleAnimator
-                        // para que no gire hacia una dirección antigua cuando se reactive la auto-rotación
-                        var npcAnimator = GetComponent<NPCSimpleAnimator>();
-                        if (npcAnimator != null)
-                        {
-                            // Desactivar temporalmente y reactivar para forzar sincronización
-                            // EnableAutoRotation() sincroniza _targetRotation con transform.rotation actual
-                            npcAnimator.DisableAutoRotation();
-                            npcAnimator.EnableAutoRotation();
-                            
-                            Debug.Log($"[NPCQuestActionExecutor:{name}] 🔄 Animator sincronizado con rotación: {transform.rotation.eulerAngles}");
-                        }
-                        
-                        Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC teletransportado a {targetPosition}, rotación: {finalRotation.eulerAngles}");
+
+                        PlaceNpcAtPosition(
+                            targetPosition,
+                            targetRotation,
+                            action.turnAroundOnArrival,
+                            "transición"
+                        );
+
                         transitionManager.onTransitionCutPointReached -= OnCutPoint;
                     }
 
@@ -636,43 +664,35 @@ namespace Game.NPC
                 else
                 {
                     Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ TransitionManager no disponible, teletransporte directo");
-                    transform.position = targetPosition;
-                    transform.rotation = targetRotation;
-                    
-                    if (action.turnAroundOnArrival)
-                    {
-                        transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
-                    }
+                    PlaceNpcAtPosition(
+                        targetPosition,
+                        targetRotation,
+                        action.turnAroundOnArrival,
+                        "fallback sin TransitionManager"
+                    );
                 }
             }
             else if (finalDistance > 1f)
             {
                 // Sin transición pero tampoco llegó, teletransporte directo
                 Debug.Log($"[NPCQuestActionExecutor:{name}] ⚡ Sin transición, teletransporte directo al destino");
-                transform.position = targetPosition;
-                transform.rotation = targetRotation;
-                
-                if (action.turnAroundOnArrival)
-                {
-                    transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
-                }
-                
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC colocado en: {transform.position}, Rotación: {transform.rotation.eulerAngles}");
+                PlaceNpcAtPosition(
+                    targetPosition,
+                    targetRotation,
+                    action.turnAroundOnArrival,
+                    "sin transición"
+                );
             }
             else
             {
                 // Llegó caminando
                 Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ NPC llegó caminando al destino");
-                
-                // Aplicar la rotación del anchor
-                transform.rotation = targetRotation;
-                
-                if (action.turnAroundOnArrival)
-                {
-                    transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
-                }
-                
-                Debug.Log($"[NPCQuestActionExecutor:{name}] 📍 NPC en: {transform.position}, Rotación: {transform.rotation.eulerAngles}");
+                PlaceNpcAtPosition(
+                    targetPosition,
+                    targetRotation,
+                    action.turnAroundOnArrival,
+                    "llegada caminando"
+                );
             }
 
             Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Move COMPLETADO");
@@ -746,14 +766,13 @@ namespace Game.NPC
 
             // 2. Teletransportar al NPC al mismo anchor
             if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] 👤 Teletransportando NPC a anchor '{action.targetAnchorName}'");
-            
-            transform.position = targetAnchor.transform.position;
-            transform.rotation = targetAnchor.transform.rotation;
 
-            if (action.turnAroundOnArrival)
-            {
-                transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
-            }
+            PlaceNpcAtPosition(
+                targetAnchor.transform.position,
+                targetAnchor.transform.rotation,
+                action.turnAroundOnArrival,
+                "acción Teleport"
+            );
 
             if (debugMode) Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Teletransporte completado - Player y NPC en anchor '{action.targetAnchorName}'");
             

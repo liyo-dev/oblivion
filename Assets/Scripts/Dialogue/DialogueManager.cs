@@ -106,6 +106,8 @@ public class DialogueManager : MonoBehaviour
 
     // NPC para cámara de diálogo
     private Transform _currentNpc;
+    private NPCSimpleAnimator _activeDialogueSpeakerAnimator;
+    private bool _activeDialogueSpeakerIsPlayer;
     
     // Protección contra input inmediato al abrir diálogo
     private float _dialogueOpenedAt = -999f;
@@ -114,6 +116,31 @@ public class DialogueManager : MonoBehaviour
     // Protección contra avance doble al completar línea
     private float _lastLineCompletedAt = -999f;
     private const float LineCompleteCooldown = 0.2f;
+
+    // Fallbacks para el player speaker (cuando no usa NPCSimpleAnimator)
+    private static readonly string[] PlayerSpeakStateCandidates =
+    {
+        "Greeting01_NoWeapon",
+        "Greeting01",
+        "UpperBody.Greeting01_NoWeapon",
+        "Base Layer.Greeting01_NoWeapon",
+        "InteractWithPeople_NoWeapon",
+        "UpperBody.UpperIdle",
+        "UpperIdle"
+    };
+
+    private static readonly string[] PlayerLocomotionStateCandidates =
+    {
+        "Locomotion",
+        "Free Locomotion",
+        "UpperBody.UpperIdle",
+        "UpperIdle"
+    };
+
+    private static readonly string[] PlayerTalkBoolCandidates =
+    {
+        "IsTalking"
+    };
 
     #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -263,6 +290,7 @@ public class DialogueManager : MonoBehaviour
     {
         if (asset == null || asset.lines == null || asset.lines.Length == 0) return;
 
+        ClearActiveSpeakerAnimations();
         _current = asset;
         _onEnd = onFinished;
         _index = -1;
@@ -345,20 +373,6 @@ public class DialogueManager : MonoBehaviour
         if (Game.NPC.PlayerParty.HasInstance)
         {
             Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
-        }
-        
-        // ✅ NUEVO: Activar animación de interacción del player (Will)
-        // Solo si es un NPC real (no objetos como cartas, save points, etc.)
-        bool isNpc = IsActualNPC(npc);
-        if (verboseLogging) Debug.Log($"[DialogueManager] 🔍 IsActualNPC('{npc?.name ?? "NULL"}') = {isNpc}");
-        
-        if (isNpc)
-        {
-            ActivatePlayerInteractionAnimation(true);
-        }
-        else
-        {
-            Debug.LogWarning($"[DialogueManager] ⚠️ No se activó animación de interacción del player porque '{npc?.name}' no es un NPC válido (no tiene NPCSimpleAnimator)");
         }
         
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
@@ -490,9 +504,9 @@ public class DialogueManager : MonoBehaviour
         {
             Game.NPC.PlayerParty.Instance.ReleaseDialoguePositioning();
         }
-        
-        // ✅ NUEVO: Desactivar animación de interacción del player
-        ActivatePlayerInteractionAnimation(false);
+
+        // ✅ Finalizar visuales del speaker activo (sea player, NPC o party member)
+        ClearActiveSpeakerAnimations();
 
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
@@ -936,79 +950,187 @@ public class DialogueManager : MonoBehaviour
         // Determinar quién está hablando
         string speakerId = !string.IsNullOrEmpty(line.speakerNameId) ? line.speakerNameId : 
                           line.isPlayerSpeaking ? "Player" : "MainNPC";
-        
-        // Caso 1: Es el player
-        if (line.isPlayerSpeaking || speakerId == "Player")
+        bool speakerIsPlayer = line.isPlayerSpeaking || speakerId == "Player";
+
+        if (speakerIsPlayer)
         {
-            if (PlayerService.TryGetPlayer(out var playerGo))
+            if (_activeDialogueSpeakerIsPlayer && _activeDialogueSpeakerAnimator == null)
             {
-                var playerAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
-                if (playerAnimator != null)
-                {
-                    playerAnimator.SetTalking(true);
-                    if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Player animación Talk activada");
-                }
+                SetPlayerTalkingAnimation(true);
+                return;
             }
+
+            ClearActiveSpeakerAnimations();
+            SetPlayerTalkingAnimation(true);
+            ActivatePlayerInteractionAnimation(true);
+            _activeDialogueSpeakerIsPlayer = true;
+            if (verboseLogging) Debug.Log("[DialogueManager] 🗣️ Player speaker activado");
             return;
         }
-        
-        // Caso 2: Es el NPC principal
+
+        NPCSimpleAnimator speakerAnimator = null;
+        string speakerDebugName = speakerId;
+
+        // Caso 1: NPC principal
         if (speakerId == "MainNPC" || (_currentNpc != null && _currentNpc.name == speakerId))
         {
             if (_currentNpc != null)
             {
-                var npcAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
-                if (npcAnimator != null)
-                {
-                    npcAnimator.SetTalking(true);
-                    if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ NPC '{_currentNpc.name}' animación Talk activada");
-                }
+                speakerAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
+                speakerDebugName = _currentNpc.name;
             }
-            return;
         }
-        
-        // Caso 3: Buscar en party members
-        if (Game.NPC.PlayerParty.HasInstance)
+
+        // Caso 2: Party members
+        if (speakerAnimator == null && Game.NPC.PlayerParty.HasInstance)
         {
             var party = Game.NPC.PlayerParty.Instance;
             foreach (var member in party.Members)
             {
-                if (member.NPCManager?.Configuration?.interactiveNarrativeConfig != null)
+                if (member.NPCManager?.Configuration?.interactiveNarrativeConfig == null)
+                    continue;
+
+                var config = member.NPCManager.Configuration.interactiveNarrativeConfig;
+                if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId) ||
+                    config.persistenceId == speakerId ||
+                    member.gameObject.name == speakerId)
                 {
-                    var config = member.NPCManager.Configuration.interactiveNarrativeConfig;
-                    
-                    // Comparar con dialogueCharacterId, persistenceId, o nombre
-                    if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId) ||
-                        config.persistenceId == speakerId ||
-                        member.gameObject.name == speakerId)
-                    {
-                        var partyAnimator = member.GetComponent<NPCSimpleAnimator>();
-                        if (partyAnimator != null)
-                        {
-                            partyAnimator.SetTalking(true);
-                            if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Party member '{member.DisplayName}' animación Talk activada");
-                        }
-                        return;
-                    }
+                    speakerAnimator = member.GetComponent<NPCSimpleAnimator>();
+                    speakerDebugName = member.DisplayName;
+                    break;
                 }
             }
         }
-        
-        // Caso 4: Buscar en la escena por nombre
-        var foundNPC = GameObject.Find(speakerId);
-        if (foundNPC != null)
+
+        // Caso 3: Buscar en escena por nombre
+        if (speakerAnimator == null)
         {
-            var foundAnimator = foundNPC.GetComponent<NPCSimpleAnimator>();
-            if (foundAnimator != null)
+            var foundNPC = GameObject.Find(speakerId);
+            if (foundNPC != null)
             {
-                foundAnimator.SetTalking(true);
-                if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ NPC '{speakerId}' (escena) animación Talk activada");
+                speakerAnimator = foundNPC.GetComponent<NPCSimpleAnimator>();
+                speakerDebugName = foundNPC.name;
             }
         }
+
+        if (speakerAnimator == null)
+        {
+            ClearActiveSpeakerAnimations();
+            if (verboseLogging) Debug.LogWarning($"[DialogueManager] ⚠️ No se encontró animator para speaker '{speakerId}'");
+            return;
+        }
+
+        // Si sigue hablando el mismo speaker, evitar re-disparar animaciones cada línea
+        if (!_activeDialogueSpeakerIsPlayer && _activeDialogueSpeakerAnimator == speakerAnimator)
+        {
+            speakerAnimator.SetTalking(true);
+            return;
+        }
+
+        ClearActiveSpeakerAnimations();
+        speakerAnimator.BeginInteraction();
+        speakerAnimator.SetTalking(true);
+        _activeDialogueSpeakerAnimator = speakerAnimator;
+        if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Speaker '{speakerDebugName}' activado");
+    }
+
+    private void ClearActiveSpeakerAnimations()
+    {
+        if (_activeDialogueSpeakerIsPlayer)
+        {
+            SetPlayerTalkingAnimation(false);
+            ActivatePlayerInteractionAnimation(false);
+            _activeDialogueSpeakerIsPlayer = false;
+        }
+
+        if (_activeDialogueSpeakerAnimator != null)
+        {
+            _activeDialogueSpeakerAnimator.SetTalking(false);
+            _activeDialogueSpeakerAnimator.EndInteraction();
+            _activeDialogueSpeakerAnimator = null;
+        }
+    }
+
+    private bool SetPlayerTalkingAnimation(bool isTalking)
+    {
+        if (!PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) || playerGo == null)
+            return false;
+
+        var npcAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
+        if (npcAnimator != null)
+        {
+            npcAnimator.SetTalking(isTalking);
+            return true;
+        }
+
+        var animator = playerGo.GetComponent<Animator>() ?? playerGo.GetComponentInChildren<Animator>(true);
+        if (animator == null)
+            return false;
+
+        foreach (var paramName in PlayerTalkBoolCandidates)
+        {
+            if (TrySetAnimatorBool(animator, paramName, isTalking))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool TrySetAnimatorBool(Animator animator, string parameterName, bool value)
+    {
+        if (animator == null || string.IsNullOrEmpty(parameterName))
+            return false;
+
+        foreach (var param in animator.parameters)
+        {
+            if (param.type == AnimatorControllerParameterType.Bool && param.name == parameterName)
+            {
+                animator.SetBool(parameterName, value);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryPlayStateOnAnyLayer(Animator animator, string stateName, float crossFadeDuration = 0.12f)
+    {
+        if (animator == null || string.IsNullOrEmpty(stateName))
+            return false;
+
+        int stateHash = Animator.StringToHash(stateName);
+        for (int layer = 0; layer < animator.layerCount; layer++)
+        {
+            if (!animator.HasState(layer, stateHash))
+                continue;
+
+            animator.CrossFade(stateHash, crossFadeDuration, layer, 0f);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryPlayAnyState(Animator animator, string[] stateCandidates, out string playedState)
+    {
+        playedState = null;
+        if (animator == null || stateCandidates == null)
+            return false;
+
+        foreach (var state in stateCandidates)
+        {
+            if (!TryPlayStateOnAnyLayer(animator, state))
+                continue;
+
+            playedState = state;
+            return true;
+        }
+
+        return false;
     }
     
     /// <summary>
-    /// Activa/desactiva la animación de interacción (InteractWithPeople) del player durante diálogos
+    /// Activa/desactiva la animación del player speaker durante diálogos
     /// </summary>
     private void ActivatePlayerInteractionAnimation(bool activate)
     {
@@ -1017,24 +1139,51 @@ public class DialogueManager : MonoBehaviour
             Debug.LogWarning("[DialogueManager] ⚠️ ActivatePlayerInteractionAnimation: No se encontró el player");
             return;
         }
-        
-        var playerAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
-        if (playerAnimator == null)
+
+        // Compatibilidad retro: si el player usa NPCSimpleAnimator, usar saludo (no abrir puertas/interactuar)
+        var npcSimpleAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
+        if (npcSimpleAnimator != null)
         {
-            Debug.LogWarning($"[DialogueManager] ⚠️ ActivatePlayerInteractionAnimation: Player '{playerGo.name}' no tiene NPCSimpleAnimator");
+            if (activate)
+            {
+                npcSimpleAnimator.PlayGreeting();
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación Greeting ACTIVADA (NPCSimpleAnimator)");
+            }
+            else
+            {
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación Greeting DESACTIVADA (NPCSimpleAnimator)");
+            }
             return;
         }
-        
+
+        // Fallback para player real (Invector / Animator directo)
+        var animator = playerGo.GetComponent<Animator>() ?? playerGo.GetComponentInChildren<Animator>(true);
+        if (animator == null)
+        {
+            Debug.LogWarning($"[DialogueManager] ⚠️ ActivatePlayerInteractionAnimation: Player '{playerGo.name}' no tiene Animator");
+            return;
+        }
+
         if (activate)
         {
-            playerAnimator.BeginInteraction();
-            if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople ACTIVADA");
+            bool played = TryPlayAnyState(animator, PlayerSpeakStateCandidates, out var playedState);
+            if (verboseLogging)
+            {
+                if (played)
+                    Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación diálogo ACTIVADA via Animator state '{playedState}'");
+                else
+                    Debug.LogWarning($"[DialogueManager] ⚠️ Player '{playerGo.name}' no tiene un state de interacción compatible para diálogo");
+            }
         }
         else
         {
-            playerAnimator.EndInteraction();
-            if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople DESACTIVADA");
+            SetPlayerTalkingAnimation(false);
+
+            bool played = TryPlayAnyState(animator, PlayerLocomotionStateCandidates, out var playedState);
+            if (verboseLogging && played)
+            {
+                Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación diálogo DESACTIVADA, retorno a '{playedState}'");
+            }
         }
     }
 }
-

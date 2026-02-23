@@ -52,7 +52,8 @@ public class QuestObjectDisabler : MonoBehaviour
         var qm = QuestManager.Instance;
         if (qm == null)
         {
-            if (debugLogs) Debug.LogWarning($"[QuestObjectDisabler] QuestManager.Instance es null. No se puede evaluar '{questId}'.");
+            // Cambiado a Log normal para evitar spam de warnings durante la inicialización
+            if (debugLogs) Debug.Log($"[QuestObjectDisabler] QuestManager.Instance es null. No se puede evaluar '{questId}'.");
             return;
         }
 

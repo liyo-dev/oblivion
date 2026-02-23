@@ -17,9 +17,17 @@ public class InteractionDetector : MonoBehaviour
     [Tooltip("Acción GamePlay/Jump (A). Se deshabilita al enfocar para que no salte.")]
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private bool disableJumpWhenFocused = true;
+    
+    [Header("Hint")]
+    [Tooltip("Retardo antes de volver a mostrar iconos tras terminar un estado bloqueante (diálogo/combate/cinemática).")]
+    [SerializeField] private float hintReappearDelay = 0.12f;
 
     private Interactable current;
     private PlayerCarrySystem _carrySystem;
+    private PlayerActionManager _actionManager;
+    private Game.Player.PlayerBattleModeController _battleModeController;
+    private bool _wasBlockedLastFrame;
+    private float _resumeAfterBlockAt;
     
     // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
     private Collider[] _interactableBuffer = new Collider[16];
@@ -27,6 +35,8 @@ public class InteractionDetector : MonoBehaviour
     private void Awake()
     {
         _carrySystem = GetComponent<PlayerCarrySystem>();
+        _actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
+        _battleModeController = GetComponent<Game.Player.PlayerBattleModeController>() ?? GetComponentInParent<Game.Player.PlayerBattleModeController>();
     }
 
     private void OnEnable()
@@ -54,36 +64,37 @@ public class InteractionDetector : MonoBehaviour
 
     private void Update()
     {
-        // Si hay UI bloqueante (pausa/menús/diálogo/saveprompt/cinemáticas), no enfocamos nada nuevo
-        bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
-        bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
-        bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu y MainMenu
-        bool cinematicPlaying = AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying;
-        
-        if (dialogueActive || choicePromptActive || menusBlock || cinematicPlaying)
+        // Si hay estado bloqueante (combate/diálogo/UI/cinemática), no enfocamos nada nuevo.
+        if (IsInteractionBlocked(out string blockedReason, out bool forceDisableInteractAction))
         {
-            // Log solo cuando cambia el estado
             if (current != null)
             {
-                if (dialogueActive)
-                    Debug.Log("[InteractionDetector] 💬 Diálogo activo, desenfocando interactable");
-                else if (choicePromptActive)
-                    Debug.Log("[InteractionDetector] ⚠️ SavePrompt activo, desenfocando interactable");
-                else if (menusBlock)
-                    Debug.Log("[InteractionDetector] 🚫 Menús bloqueando (CanInteractGlobally=false), desenfocando interactable");
-                else if (cinematicPlaying)
-                    Debug.Log("[InteractionDetector] 🎬 Cinemática activa, desenfocando interactable");
+                Debug.Log($"[InteractionDetector] 🚫 {blockedReason}, desenfocando interactable");
             }
             
             SetCurrent(null);
-            
-            // CRÍTICO: Deshabilitar completamente la acción de interact durante cinemáticas
-            // para evitar que interfiera con el HoldToSkipUI
-            if (cinematicPlaying)
-            {
+
+            if (_carrySystem != null && _carrySystem.IsCarrying)
+                EnableInteractAction(true);
+            else if (forceDisableInteractAction)
                 EnableInteractAction(false);
-            }
+
+            _wasBlockedLastFrame = true;
+            _resumeAfterBlockAt = Time.unscaledTime + Mathf.Max(0f, hintReappearDelay);
             
+            return;
+        }
+
+        // Evita "flash" del icono justo al salir de diálogo/combate/cinemática.
+        if (_wasBlockedLastFrame)
+        {
+            _wasBlockedLastFrame = false;
+            _resumeAfterBlockAt = Time.unscaledTime + Mathf.Max(0f, hintReappearDelay);
+        }
+        if (Time.unscaledTime < _resumeAfterBlockAt)
+        {
+            SetCurrent(null);
+            EnableInteractAction(false);
             return;
         }
 
@@ -99,7 +110,7 @@ public class InteractionDetector : MonoBehaviour
         SetCurrent(nearest);
     }
 
-    private void OnInteract(InputAction.CallbackContext _)
+    private void OnInteract(InputAction.CallbackContext _context)
     {
         Debug.Log($"[InteractionDetector] 🔘 OnInteract llamado - IsCarrying={_carrySystem?.IsCarrying}, current={current?.name}");
         
@@ -108,6 +119,17 @@ public class InteractionDetector : MonoBehaviour
         {
             _carrySystem.DropObject();
             Debug.Log($"[InteractionDetector] 📦 Objeto soltado - bloqueando interacciones por cooldown");
+            return;
+        }
+
+        if (IsInteractionBlocked(out string blockedReason, out bool _ignored))
+        {
+            Debug.Log($"[InteractionDetector] 🚫 Interacción ignorada: {blockedReason}");
+            return;
+        }
+        if (Time.unscaledTime < _resumeAfterBlockAt)
+        {
+            Debug.Log("[InteractionDetector] ⏳ Esperando retardo de reactivación del hint/interacción");
             return;
         }
 
@@ -140,7 +162,7 @@ public class InteractionDetector : MonoBehaviour
 
         if (current) current.SetHintVisible(false);
         current = next;
-        if (current) current.SetHintVisible(true);
+        if (current) current.SetHintVisible(true, gameObject);
 
         EnableInteractAction(current != null);
 
@@ -162,6 +184,72 @@ public class InteractionDetector : MonoBehaviour
             if (enable && !ia.enabled) ia.Enable();
             else if (!enable && ia.enabled) ia.Disable();
         }
+    }
+
+    private bool IsInteractionBlocked(out string reason, out bool forceDisableInteractAction)
+    {
+        bool dialogueActive = DialogueManager.Instance != null && DialogueManager.Instance.IsOpen;
+        bool choicePromptActive = GameState.Is(GamePhase.SavePrompt);
+        bool menusBlock = !GameState.CanInteractGlobally; // incluye PauseMenu/MainMenu
+        bool cinematicPlaying = AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying;
+        bool combatBlocked = IsCombatBlockingInteractions();
+
+        if (dialogueActive)
+        {
+            reason = "Diálogo activo";
+            forceDisableInteractAction = true;
+            return true;
+        }
+
+        if (choicePromptActive)
+        {
+            reason = "SavePrompt activo";
+            forceDisableInteractAction = true;
+            return true;
+        }
+
+        if (menusBlock)
+        {
+            reason = "Menús bloqueando (CanInteractGlobally=false)";
+            forceDisableInteractAction = true;
+            return true;
+        }
+
+        if (cinematicPlaying)
+        {
+            reason = "Cinemática activa";
+            forceDisableInteractAction = true;
+            return true;
+        }
+
+        if (combatBlocked)
+        {
+            reason = "Combate/interacción bloqueada por estado actual";
+            forceDisableInteractAction = true;
+            return true;
+        }
+
+        reason = string.Empty;
+        forceDisableInteractAction = false;
+        return false;
+    }
+
+    private bool IsCombatBlockingInteractions()
+    {
+        if (ActiveCombatRegistry.Count > 0)
+        {
+            ActiveCombatRegistry.CleanupDestroyedNPCs();
+            if (ActiveCombatRegistry.Count > 0)
+                return true;
+        }
+
+        if (_battleModeController != null && _battleModeController.IsInBattleMode)
+            return true;
+
+        if (_actionManager != null && _actionManager.Top == ActionMode.Combat)
+            return true;
+
+        return false;
     }
 
     private Interactable FindNearest()

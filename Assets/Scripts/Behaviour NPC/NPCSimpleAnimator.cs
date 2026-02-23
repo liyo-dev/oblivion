@@ -1028,9 +1028,6 @@ public class NPCSimpleAnimator : MonoBehaviour
         // Rotar instantáneamente hacia el jugador y desactivar rotación automática
         FacePlayerInstantly();
         
-        // Reproducir animación de interacción
-        BeginInteraction();
-        
         // Iniciar la corrutina de seguimiento continuo
         _dialogueLookAtCoroutine = StartCoroutine(KeepLookingAtPlayerDuringDialogue());
     }

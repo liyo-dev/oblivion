@@ -21,40 +21,43 @@ public static class WardrobeService
 
         if (PlayerService.TryGetComponent(out WardrobeInventory wardrobe, includeInactive: true, allowSceneLookup: true))
         {
-        Debug.Log($"[WardrobeService] WardrobeInventory encontrado, desbloqueando...");
-        bool changed = wardrobe.Unlock(item, persistToPreset: true);
-        if (changed)
-        {
-            Debug.Log($"[WardrobeService] ✅ Item '{item.WardrobeId}' desbloqueado correctamente");
-            Debug.Log($"[WardrobeService] 📢 Invocando OnWardrobeItemUnlocked para '{item.WardrobeId}'");
-            OnWardrobeItemUnlocked?.Invoke(item);
-            TryShowPopup(item);
-            
-            // Log del estado actual del wardrobe después del desbloqueo
-            var method = wardrobe.GetType().GetMethod("GetUnlockedOptions");
-            if (method != null)
+            Debug.Log($"[WardrobeService] WardrobeInventory encontrado, desbloqueando...");
+            bool changed = wardrobe.Unlock(item, persistToPreset: true);
+            if (changed)
             {
-                try
+                Debug.Log($"[WardrobeService] ✅ Item '{item.WardrobeId}' desbloqueado correctamente");
+                Debug.Log($"[WardrobeService] 📢 Invocando OnWardrobeItemUnlocked para '{item.WardrobeId}'");
+                OnWardrobeItemUnlocked?.Invoke(item);
+                TryShowPopup(item);
+                
+                // Log del estado actual del wardrobe después del desbloqueo
+                var method = wardrobe.GetType().GetMethod("GetUnlockedOptions");
+                if (method != null)
                 {
-                    var paramType = method.GetParameters()[0].ParameterType;
-                    var categoryName = item.Category.ToString();
-                    var enumVal = System.Enum.Parse(paramType, categoryName);
-                    var result = method.Invoke(wardrobe, new object[] { enumVal });
-                    if (result != null)
+                    try
                     {
-                        var count = (int)result.GetType().GetProperty("Count").GetValue(result);
-                        Debug.Log($"[WardrobeService] Tras desbloquear, categoría {categoryName} tiene {count} items");
+                        var paramType = method.GetParameters()[0].ParameterType;
+                        var categoryName = item.Category.ToString();
+                        var enumVal = System.Enum.Parse(paramType, categoryName);
+                        var result = method.Invoke(wardrobe, new object[] { enumVal });
+                        if (result != null)
+                        {
+                            var count = (int)result.GetType().GetProperty("Count").GetValue(result);
+                            Debug.Log($"[WardrobeService] Tras desbloquear, categoría {categoryName} tiene {count} items");
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[WardrobeService] Error al verificar opciones desbloqueadas: {ex.Message}");
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"[WardrobeService] Error al verificar opciones desbloqueadas: {ex.Message}");
-                }
             }
-        }
-        else if (logWarnings)
-            Debug.LogWarning($"[WardrobeService] El item '{item.WardrobeId}' ya estaba desbloqueado.");
-        return changed;
+            else if (logWarnings)
+            {
+                // Cambiado a Log normal para evitar spam de warnings cuando se recarga una escena o save
+                Debug.Log($"[WardrobeService] El item '{item.WardrobeId}' ya estaba desbloqueado.");
+            }
+            return changed;
         }
 
         Debug.LogWarning("[WardrobeService] No se encontró WardrobeInventory en el player, guardando directamente al preset");
@@ -73,7 +76,7 @@ public static class WardrobeService
         if (preset.unlockedWardrobeIds.Contains(item.WardrobeId))
         {
             if (logWarnings)
-                Debug.LogWarning($"[WardrobeService] El item '{item.WardrobeId}' ya estaba en el preset.");
+                Debug.Log($"[WardrobeService] El item '{item.WardrobeId}' ya estaba en el preset.");
             return false;
         }
 

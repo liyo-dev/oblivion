@@ -16,6 +16,7 @@ namespace Game.Player
         [SerializeField] private Animator animator;
         [SerializeField] private vThirdPersonController controller;
         [SerializeField] private Rigidbody playerRigidbody;
+        [SerializeField] private PlayerActionManager actionManager;
         
         [Header("Configuración de Capas del Animator")]
         [Tooltip("Índice de la capa UpperBody en el Animator (normalmente 1)")]
@@ -85,6 +86,9 @@ namespace Game.Player
             
             if (playerRigidbody == null)
                 playerRigidbody = GetComponent<Rigidbody>() ?? GetComponentInChildren<Rigidbody>();
+
+            if (actionManager == null)
+                actionManager = GetComponent<PlayerActionManager>() ?? GetComponentInParent<PlayerActionManager>();
             
             // Cachear hashes de estados
             _battleIdleHash = Animator.StringToHash(battleIdleStateName);
@@ -118,6 +122,14 @@ namespace Game.Player
             {
                 animator.SetLayerWeight(upperBodyLayerIndex, 0f);
             }
+
+            if (_isInBattleMode && actionManager != null)
+            {
+                actionManager.PopMode(ActionMode.Combat);
+            }
+            _isInBattleMode = false;
+            _targetLayerWeight = 0f;
+            _currentLayerWeight = 0f;
             
             // Desuscribirse del evento
             if (controller != null)
@@ -313,6 +325,9 @@ namespace Game.Player
             
             _isInBattleMode = true;
             _targetLayerWeight = 1f;
+
+            if (actionManager != null)
+                actionManager.PushMode(ActionMode.Combat);
             
             // Asegurar que la animación de batalla esté reproduciéndose en la capa
             if (animator != null && animator.layerCount > upperBodyLayerIndex)
@@ -341,6 +356,9 @@ namespace Game.Player
             
             _isInBattleMode = false;
             _targetLayerWeight = 0f;
+
+            if (actionManager != null)
+                actionManager.PopMode(ActionMode.Combat);
             
 #if UNITY_EDITOR
             if (debugMode)

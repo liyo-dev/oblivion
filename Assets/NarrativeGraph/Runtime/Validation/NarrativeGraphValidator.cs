@@ -30,12 +30,15 @@ public static class NarrativeGraphValidator
                 }
             }
             
+            // Reducir ruido: solo mostrar warnings si hay errores o si se habilita explícitamente
+            // Para evitar spam en la consola durante el desarrollo normal
             if (Warnings.Count > 0)
             {
-                Debug.LogWarning($"[NarrativeGraphValidator] ⚠️ Grafo '{graphName}' tiene {Warnings.Count} advertencia(s):");
+                // Opcional: comentar o usar Log en lugar de LogWarning para reducir severidad visual
+                Debug.Log($"[NarrativeGraphValidator] ℹ️ Grafo '{graphName}' tiene {Warnings.Count} advertencia(s):");
                 foreach (var warning in Warnings)
                 {
-                    Debug.LogWarning($"  • {warning}");
+                    Debug.Log($"  • {warning}");
                 }
             }
         }

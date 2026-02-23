@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 4898272611367852019}
   - component: {fileID: 9008191843567210651}
   - component: {fileID: 4037131170446020507}
+  - component: {fileID: 3885172327166257690}
   m_Layer: 0
   m_Name: Pref_PopupCollectible
   m_TagString: Untagged
@@ -170,6 +171,27 @@ MonoBehaviour:
   slideDistance: 200
   slideInDuration: 1
   minPreferredHeight: 32
+  maxLifetime: 10
+--- !u!114 &3885172327166257690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3835360506599310560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &8375086378797176426
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,6 +370,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0

@@ -47,7 +47,18 @@ public class TeleportHintUI : MonoBehaviour
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        
+        // Solo aplicar DontDestroyOnLoad si es un objeto raíz
+        if (transform.parent == null)
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            // Si es hijo de otro objeto (ej. HUD), no podemos usar DontDestroyOnLoad directamente
+            // pero podemos confiar en que el padre (HUD) persista o se gestione adecuadamente
+            Debug.Log("[TeleportHintUI] Inicializado como hijo de otro objeto, no se aplica DontDestroyOnLoad.");
+        }
         
         // Inicializar oculto
         if (hintRoot != null)
@@ -203,4 +214,3 @@ public class TeleportHintUI : MonoBehaviour
         hintText.text = text;
     }
 }
-

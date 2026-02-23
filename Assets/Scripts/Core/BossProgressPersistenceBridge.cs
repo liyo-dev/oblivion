@@ -46,7 +46,8 @@ public class BossProgressPersistenceBridge : MonoBehaviour
         {
             // ✅ CRÍTICO: Si no hay GameBootService (inicio directo desde MainWorld en editor),
             // inicializar de todas formas para permitir testing
-            Debug.LogWarning("[BossProgressPersistenceBridge] GameBootService no disponible - Modo testing directo desde MainWorld");
+            // Cambiado a Log normal para evitar spam de warnings en modo testing
+            Debug.Log("[BossProgressPersistenceBridge] GameBootService no disponible - Modo testing directo desde MainWorld");
             StartCoroutine(WaitForTrackerAndInitialize());
         }
     }

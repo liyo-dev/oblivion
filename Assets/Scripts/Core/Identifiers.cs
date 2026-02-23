@@ -94,7 +94,8 @@ public enum ActionMode
     Stunned,
     Swimming,
     Flying,
-    Climbing
+    Climbing,
+    Combat
 }
 
 /// <summary>Habilidades básicas que puede usar el jugador.</summary>

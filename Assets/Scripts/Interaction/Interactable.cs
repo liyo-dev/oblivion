@@ -85,12 +85,12 @@ public class Interactable : MonoBehaviour
         RestoreSingleUseStateFromPreset();
     }
 
-    public void SetHintVisible(bool visible)
+    public void SetHintVisible(bool visible, GameObject interactor = null)
     {
         if (hint == null) return;
         
         // Solo mostrar hint si puede interactuar
-        bool canShow = visible && !used && enabledForUse && CanInteract(null);
+        bool canShow = visible && !used && enabledForUse && CanInteract(interactor);
         
         // Si el estado no cambia, no hacer nada
         if (canShow == _hintVisible) return;
@@ -106,14 +106,14 @@ public class Interactable : MonoBehaviour
             hint.SetActive(true);
             hint.transform.localScale = Vector3.zero;
             _hintTween = hint.transform.DOScale(_hintOriginalScale, hintAnimDuration)
-                .SetEase(Ease.OutBack)
+                .SetEase(Ease.OutCubic)
                 .SetUpdate(true); // Usar tiempo no escalado por si está en pausa
         }
         else
         {
             // Ocultar con animación
             _hintTween = hint.transform.DOScale(Vector3.zero, hintAnimDuration * 0.7f)
-                .SetEase(Ease.InBack)
+                .SetEase(Ease.InCubic)
                 .SetUpdate(true)
                 .OnComplete(() =>
                 {
@@ -123,7 +123,7 @@ public class Interactable : MonoBehaviour
         }
     }
 
-    public bool CanInteract(GameObject _)
+    public bool CanInteract(GameObject interactor)
     {
         var dm = DialogueManager.Instance;
         if (dm != null && dm.IsOpen)
@@ -135,6 +135,10 @@ public class Interactable : MonoBehaviour
         if (!enabledForUse)
             return false;
         if (singleUse && used)
+            return false;
+
+        // Bloqueo central: durante combate/diálogo/cinemática no permitir nuevas interacciones
+        if (IsInteractionBlockedByCurrentState(interactor))
             return false;
         
         // Bloquear interacción si el NPC está ejecutando una narrativa
@@ -151,13 +155,19 @@ public class Interactable : MonoBehaviour
 
         // IMPORTANTE: Establecer cooldown en PlayerActionManager para evitar que el botón A
         // se procese como salto inmediatamente después de interactuar
+        PlayerActionManager actionManager = null;
         if (interactor != null)
         {
-            var actionManager = interactor.GetComponent<PlayerActionManager>();
-            if (actionManager != null)
-            {
-                actionManager.SetInteractCooldown();
-            }
+            actionManager = interactor.GetComponent<PlayerActionManager>() ??
+                            interactor.GetComponentInParent<PlayerActionManager>();
+        }
+        if (actionManager == null)
+        {
+            PlayerService.TryGetComponent(out actionManager, includeInactive: true, allowSceneLookup: true);
+        }
+        if (actionManager != null)
+        {
+            actionManager.SetInteractCooldown();
         }
 
         OnInteract?.Invoke(interactor);
@@ -223,6 +233,45 @@ public class Interactable : MonoBehaviour
 
         Interact(playerGo);
         return true;
+    }
+
+    private bool IsInteractionBlockedByCurrentState(GameObject interactor)
+    {
+        // Regla global: si existe combate activo en el mundo, no se permite interactuar.
+        if (ActiveCombatRegistry.Count > 0)
+        {
+            ActiveCombatRegistry.CleanupDestroyedNPCs();
+            if (ActiveCombatRegistry.Count > 0)
+                return true;
+        }
+
+        PlayerActionManager actionManager = null;
+        if (interactor != null)
+        {
+            actionManager = interactor.GetComponent<PlayerActionManager>() ??
+                            interactor.GetComponentInParent<PlayerActionManager>();
+        }
+        if (actionManager == null)
+        {
+            PlayerService.TryGetComponent(out actionManager, includeInactive: true, allowSceneLookup: true);
+        }
+        if (actionManager != null && !actionManager.CanInteract())
+            return true;
+
+        Game.Player.PlayerBattleModeController battleController = null;
+        if (interactor != null)
+        {
+            battleController = interactor.GetComponent<Game.Player.PlayerBattleModeController>() ??
+                               interactor.GetComponentInParent<Game.Player.PlayerBattleModeController>();
+        }
+        if (battleController == null)
+        {
+            PlayerService.TryGetComponent(out battleController, includeInactive: true, allowSceneLookup: true);
+        }
+        if (battleController != null && battleController.IsInBattleMode)
+            return true;
+
+        return false;
     }
 
     void StartDialogue()
@@ -475,4 +524,3 @@ public class Interactable : MonoBehaviour
         }
     }
 }
-
