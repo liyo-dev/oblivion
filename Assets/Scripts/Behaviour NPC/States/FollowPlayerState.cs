@@ -33,6 +33,7 @@ namespace Game.NPC.States
         private const float DEFAULT_RUN_SPEED = 7.5f; // Un poco más rápido
         private const float PLAYER_MOVE_THRESHOLD = 0.1f; // Umbral de movimiento del jugador
         private const float INITIAL_DELAY = 0.3f; // Delay inicial antes de empezar a seguir
+        private const float ROTATION_ANGLE_DEADZONE = 2.5f; // Evita micro-jitter al mirar al player
 
         public FollowPlayerState(NPCPartyMember partyMember)
         {
@@ -155,7 +156,7 @@ namespace Game.NPC.States
                     }
                     
                     context.Agent.updatePosition = true;
-                    context.Agent.updateRotation = true;
+                    context.Agent.updateRotation = false; // NPCSimpleAnimator controla la rotación
                 }
                 
                 // Si está LEJOS -> CORRER
@@ -208,12 +209,15 @@ namespace Game.NPC.States
             
             if (directionToPlayer.sqrMagnitude > 0.01f)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-                context.Transform.rotation = Quaternion.Slerp(
-                    context.Transform.rotation, 
-                    targetRotation, 
-                    Time.deltaTime * 3f // Velocidad de rotación suave
-                );
+                // Evita temblor cuando ya está prácticamente encarando al jugador.
+                float angleToPlayer = Vector3.Angle(context.Transform.forward, directionToPlayer.normalized);
+                if (angleToPlayer <= ROTATION_ANGLE_DEADZONE)
+                    return;
+
+                // Usar siempre el sistema centralizado de rotación del animator
+                // para no pelear con ApplySmoothRotation en LateUpdate.
+                if (context.Animator != null)
+                    context.Animator.FaceDirection(directionToPlayer);
             }
         }
         
@@ -264,7 +268,7 @@ namespace Game.NPC.States
                 context.Agent.isStopped = true;
                 // ✅ Restaurar valores por defecto al salir
                 context.Agent.updatePosition = true;
-                context.Agent.updateRotation = true;
+                context.Agent.updateRotation = false; // NPCSimpleAnimator sigue siendo dueño de la rotación
             }
             base.OnExit(context);
         }

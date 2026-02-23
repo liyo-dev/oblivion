@@ -36,6 +36,18 @@ namespace Invector.vCharacterController
         public float jumpTimer = 0.3f;
         [Tooltip("Add Extra jump height, if you want to jump only with Root Motion leave the value with 0.")]
         public float jumpHeight = 4f;
+        [Tooltip("Multiplicador para el empuje de salto mantenido. 1 = comportamiento clásico, menor valor = salto menos 'lunar'.")]
+        [Range(0f, 1f)] public float jumpSustainMultiplier = 0.65f;
+        [Tooltip("Activa un perfil de salto estilo action-RPG (inspirado en Sora/KH).")]
+        public bool useSoraStyleJump = true;
+        [Tooltip("Gravedad mientras asciende (1 = normal, <1 más flotante).")]
+        [Range(0.1f, 2f)] public float soraAscentGravityMultiplier = 0.7f;
+        [Tooltip("Gravedad cerca del ápice (hang time).")]
+        [Range(0.05f, 1f)] public float soraApexGravityMultiplier = 0.3f;
+        [Tooltip("Gravedad al caer (1 = normal, >1 caída más firme).")]
+        [Range(0.5f, 3f)] public float soraFallGravityMultiplier = 1.55f;
+        [Tooltip("Umbral de velocidad vertical para considerar que está en ápice.")]
+        [Range(0.05f, 2f)] public float soraApexVelocityThreshold = 0.9f;
 
         [Tooltip("Speed that the character will move while airborne")]
         public float airSpeed = 5f;
@@ -292,16 +304,30 @@ namespace Invector.vCharacterController
                 jumpCounter = 0;
                 isJumping = false;
             }
-            // apply extra force to the jump height   
-            var vel = _rigidbody.linearVelocity;
-            vel.y = jumpHeight;
-            if (IsFiniteVector(vel))
+            // Evitar sensación "lunar": no mantener velocidad Y fija durante todo el salto.
+            // Aplicamos un empuje decreciente según el tiempo restante de salto.
+            if (jumpHeight > 0f)
             {
-                _rigidbody.linearVelocity = vel;
-            }
-            else
-            {
-                Debug.LogWarning("[vThirdPersonMotor] Skipping assignment of jump velocity because it's invalid (NaN/Infinity).");
+                float timer = Mathf.Max(0.0001f, jumpTimer);
+                float normalizedJumpTime = Mathf.Clamp01(jumpCounter / timer);
+                float sustainFactor = useSoraStyleJump
+                    ? (normalizedJumpTime * normalizedJumpTime) * jumpSustainMultiplier
+                    : normalizedJumpTime * jumpSustainMultiplier;
+                float targetUpSpeed = jumpHeight * sustainFactor;
+
+                var vel = _rigidbody.linearVelocity;
+                if (vel.y < targetUpSpeed)
+                {
+                    vel.y = targetUpSpeed;
+                    if (IsFiniteVector(vel))
+                    {
+                        _rigidbody.linearVelocity = vel;
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[vThirdPersonMotor] Skipping assignment of jump velocity because it's invalid (NaN/Infinity).");
+                    }
+                }
             }
         }
 
@@ -385,17 +411,37 @@ namespace Invector.vCharacterController
                     isGrounded = false;
                     // check vertical velocity
                     verticalVelocity = _rigidbody.linearVelocity.y;
-                    // apply extra gravity when falling
-                    if (!isJumping)
+
+                    float gravityMultiplier = 1f;
+                    if (useSoraStyleJump)
                     {
-                        _rigidbody.AddForce(transform.up * extraGravity * Time.deltaTime, ForceMode.VelocityChange);
+                        gravityMultiplier = GetSoraJumpGravityMultiplier(verticalVelocity);
                     }
+                    else if (isJumping)
+                    {
+                        gravityMultiplier = 0f;
+                    }
+
+                    if (gravityMultiplier > 0f)
+                        _rigidbody.AddForce(transform.up * (extraGravity * gravityMultiplier * Time.deltaTime), ForceMode.VelocityChange);
                 }
-                else if (!isJumping)
+                else if (!isJumping || useSoraStyleJump)
                 {
-                    _rigidbody.AddForce(transform.up * (extraGravity * 2 * Time.deltaTime), ForceMode.VelocityChange);
+                    float nearGroundMultiplier = useSoraStyleJump ? 1.2f : 2f;
+                    _rigidbody.AddForce(transform.up * (extraGravity * nearGroundMultiplier * Time.deltaTime), ForceMode.VelocityChange);
                 }
             }
+        }
+
+        protected virtual float GetSoraJumpGravityMultiplier(float currentVerticalVelocity)
+        {
+            if (currentVerticalVelocity > soraApexVelocityThreshold)
+                return soraAscentGravityMultiplier;
+
+            if (Mathf.Abs(currentVerticalVelocity) <= soraApexVelocityThreshold)
+                return soraApexGravityMultiplier;
+
+            return soraFallGravityMultiplier;
         }
 
         protected virtual void ControlMaterialPhysics()
