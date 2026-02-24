@@ -278,7 +278,7 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_02",
-            "value": "Pulsa el botón <sprite name=\"start\"> y desplazate con <sprite name=\"<sprite name=\"lifePotion\">\"> hasta Equipo."
+            "value": "Pulsa el botón <sprite name=\"start\"> y desplázate con <sprite name=\"interactable_rb\"> hasta Equipo."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_03",

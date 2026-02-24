@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   questChain:
   - questData: {fileID: 11400000, guid: 9fb084e325631df429d6365395b71d5a, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 
@@ -62,7 +62,7 @@ MonoBehaviour:
         m_PersistentCalls:
           m_Calls: []
   - questData: {fileID: 11400000, guid: a23098449c6bdba469bc3be0eb8c7f3f, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 

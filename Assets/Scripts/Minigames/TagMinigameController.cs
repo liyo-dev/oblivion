@@ -2,8 +2,12 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
+using Core;
 using Game.NPC;
+using Game.NPC.Common;
+using Game.NPC.Modules;
 
 /// <summary>
 /// Controlador del minijuego "Pilla Pilla" (Tag).
@@ -14,6 +18,35 @@ using Game.NPC;
 /// </summary>
 public class TagMinigameController : MonoBehaviour
 {
+    private enum ProtectionButton
+    {
+        A,
+        B,
+        X,
+        Y
+    }
+
+    [System.Serializable]
+    private sealed class ProtectNpcTarget
+    {
+        [Tooltip("Transform raíz del NPC a proteger")]
+        public Transform npcRoot;
+        [Tooltip("Punto opcional donde instanciar el escudo. Si está vacío, usa npcRoot")]
+        public Transform shieldAnchor;
+
+        [HideInInspector] public bool isProtected;
+        [HideInInspector] public ProtectionButton requiredButton;
+        [HideInInspector] public Transform systemsRoot;
+        [HideInInspector] public NPCAlertIconController iconController;
+        [HideInInspector] public GameObject spawnedShield;
+    }
+
+    private sealed class SuspendedBehaviourState
+    {
+        public Behaviour behaviour;
+        public bool wasEnabled;
+    }
+
     [Header("Configuración")]
     [SerializeField] private string minigameId = "TAG_MINIGAME_01";
     [SerializeField] private float duration = 30f;
@@ -74,11 +107,42 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI countdownText;
     [SerializeField] private TextMeshProUGUI messageText;
+    [SerializeField] private TextMeshProUGUI objectiveText;
+
+    [Header("Objetivo: Proteger NPCs")]
+    [SerializeField] private ProtectNpcTarget[] protectTargets;
+    [SerializeField] private int requiredProtectedCount = 10;
+    [SerializeField] private bool autoPopulateProtectTargetsIfEmpty = true;
+    [SerializeField] private int autoPopulateTargetCount = 10;
+    [SerializeField] private float protectDistance = 2.8f;
+    [SerializeField] private GameObject shieldPrefab;
+    [SerializeField] private Vector3 shieldOffset = new Vector3(0f, 1.15f, 0f);
+    [SerializeField] private bool parentShieldToNpc = true;
+    [SerializeField] private bool clearShieldsOnStop = true;
+    [SerializeField] private bool clearShieldsOnWin = false;
+
+    [Header("Iconos Botón NPC (arrastrar Sprites X/Y/A/B)")]
+    [SerializeField] private Sprite iconButtonASprite;
+    [SerializeField] private Sprite iconButtonBSprite;
+    [SerializeField] private Sprite iconButtonXSprite;
+    [SerializeField] private Sprite iconButtonYSprite;
+    [SerializeField] private float iconSpriteScale = 0.8f;
+    [SerializeField] private int iconSpriteSortingOrder = 250;
+
+    [Header("Animación Player (protección)")]
+    [SerializeField] private int playerUpperBodyLayer = 1;
+    [SerializeField] private string playerCastLeftStatePath = "UpperBody.Magic.MagicLeft";
+    [SerializeField] private string playerCastRightStatePath = "UpperBody.Magic.MagicRight";
+    [SerializeField] private string playerCastSpecialStatePath = "UpperBody.Magic.MagicSpecial";
+    [SerializeField] private float playerCastLayerFadeOut = 0.22f;
 
     [Header("Mensajes")]
     [SerializeField] private string startMessage = "¡HUYE!";
     [SerializeField] private string caughtMessage = "¡Te atraparon!";
     [SerializeField] private string winMessage = "¡Escapaste!";
+    [SerializeField] private string protectNpcMessageFormat = "¡NPC protegido! {0}/{1}";
+    [SerializeField] private string objectiveFormat = "Protegidos: {0}/{1}";
+    [SerializeField] private string timeFailedMessage = "¡Se acabó el tiempo! Estela te atrapó.";
 
     [Header("Eventos")]
     public UnityEvent OnMinigameStarted;
@@ -96,6 +160,7 @@ public class TagMinigameController : MonoBehaviour
     private Vector3 chaserStartPosition;
     private Quaternion chaserStartRotation;
     private int catchCount = 0;
+    private int protectedCount = 0;
     
     // Estado del party
     private bool chaserWasInParty = false;
@@ -129,6 +194,24 @@ public class TagMinigameController : MonoBehaviour
     // Valores originales del ChaserAI para restaurar al terminar
     private float _originalChaserSpeed;
     private float _originalCatchDistance;
+
+    // Control del player durante el minijuego
+    private Animator _playerAnimator;
+    private PlayerActionManager _playerActionManager;
+    private PlayerActionManager _modeOwnerActionManager;
+    private bool _playerMinigameModeApplied = false;
+    private Coroutine _playerCastRoutine;
+    private GameObject _iconTemplateA;
+    private GameObject _iconTemplateB;
+    private GameObject _iconTemplateX;
+    private GameObject _iconTemplateY;
+    private GameObject _fallbackIconTemplateA;
+    private GameObject _fallbackIconTemplateB;
+    private GameObject _fallbackIconTemplateX;
+    private GameObject _fallbackIconTemplateY;
+    private readonly List<SuspendedBehaviourState> _suspendedTargetNpcSystems = new List<SuspendedBehaviourState>();
+    private bool _targetNpcSystemsSuspended;
+    private bool _loggedMissingProtectionConfig;
 
     // Para integración con sistema narrativo
     public string MinigameId => minigameId;
@@ -326,10 +409,275 @@ public class TagMinigameController : MonoBehaviour
         _controllerWasMadePersistent = false;
         Debug.Log($"[TagMinigame] 🔓 Controller '{name}' restaurado");
     }
+    
+    private int RequiredProtectCount
+    {
+        get
+        {
+            int configured = Mathf.Max(0, requiredProtectedCount);
+            int available = CountValidProtectTargets();
+            return Mathf.Min(configured, available);
+        }
+    }
+
+    private bool HasProtectionObjectiveConfigured => RequiredProtectCount > 0;
+
+    private int CountValidProtectTargets()
+    {
+        if (protectTargets == null) return 0;
+
+        int count = 0;
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            if (protectTargets[i] != null && protectTargets[i].npcRoot != null)
+                count++;
+        }
+
+        return count;
+    }
+
+    private void TryAutoPopulateProtectionTargets()
+    {
+        if (!autoPopulateProtectTargetsIfEmpty) return;
+        if (CountValidProtectTargets() > 0) return;
+
+        int desiredCount = Mathf.Max(1, autoPopulateTargetCount);
+        var allNpcManagers = FindObjectsOfType<NPCBehaviourManagerV2>(true);
+        if (allNpcManagers == null || allNpcManagers.Length == 0)
+            return;
+
+        var candidates = new List<NPCBehaviourManagerV2>(allNpcManagers.Length);
+        for (int i = 0; i < allNpcManagers.Length; i++)
+        {
+            var npc = allNpcManagers[i];
+            if (npc == null) continue;
+            if (chaserNPC != null && npc == chaserNPC) continue;
+            if (chaser != null && npc.transform == chaser.transform) continue;
+            if (!npc.gameObject.activeInHierarchy) continue;
+            candidates.Add(npc);
+        }
+
+        if (candidates.Count == 0) return;
+
+        if (player != null)
+        {
+            Vector3 playerPos = player.position;
+            candidates.Sort((a, b) =>
+            {
+                float da = (a.transform.position - playerPos).sqrMagnitude;
+                float db = (b.transform.position - playerPos).sqrMagnitude;
+                return da.CompareTo(db);
+            });
+        }
+
+        int finalCount = Mathf.Min(desiredCount, candidates.Count);
+        var generatedTargets = new ProtectNpcTarget[finalCount];
+        for (int i = 0; i < finalCount; i++)
+        {
+            generatedTargets[i] = new ProtectNpcTarget
+            {
+                npcRoot = candidates[i].transform
+            };
+        }
+
+        protectTargets = generatedTargets;
+        Debug.Log($"[TagMinigame] 🛡️ Objetivo auto-configurado con {finalCount} NPCs (protectTargets estaba vacío).");
+    }
+
+    private void EnsureObjectiveTextReference()
+    {
+        if (objectiveText != null || uiContainer == null) return;
+
+        var texts = uiContainer.GetComponentsInChildren<TextMeshProUGUI>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            var candidate = texts[i];
+            if (candidate == null) continue;
+            string n = candidate.name.ToLowerInvariant();
+            if (n.Contains("objective") || n.Contains("objetivo"))
+            {
+                objectiveText = candidate;
+                return;
+            }
+        }
+
+        var runtimeTextGo = new GameObject("ObjectiveText_Runtime", typeof(RectTransform), typeof(TextMeshProUGUI));
+        runtimeTextGo.transform.SetParent(uiContainer.transform, false);
+        var rt = runtimeTextGo.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0f);
+        rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.pivot = new Vector2(0.5f, 0f);
+        rt.anchoredPosition = new Vector2(0f, 44f);
+        rt.sizeDelta = new Vector2(560f, 52f);
+
+        objectiveText = runtimeTextGo.GetComponent<TextMeshProUGUI>();
+        objectiveText.alignment = TextAlignmentOptions.Center;
+        objectiveText.fontSize = 30f;
+        objectiveText.color = Color.white;
+        objectiveText.text = string.Empty;
+        Debug.Log("[TagMinigame] 🛠️ objectiveText no asignado: creado TextMeshProUGUI runtime para el contador de protección.");
+    }
+
+    private void CachePlayerRuntimeReferences()
+    {
+        if (player == null)
+        {
+            _playerAnimator = null;
+            _playerActionManager = null;
+            return;
+        }
+
+        _playerAnimator = player.GetComponent<Animator>() ?? player.GetComponentInChildren<Animator>();
+        _playerActionManager = player.GetComponent<PlayerActionManager>() ?? player.GetComponentInParent<PlayerActionManager>();
+    }
+
+    private void EnableMinigameActionRestrictions()
+    {
+        CachePlayerRuntimeReferences();
+        if (_playerActionManager == null) return;
+
+        if (_modeOwnerActionManager != null && _modeOwnerActionManager != _playerActionManager && _playerMinigameModeApplied)
+        {
+            _modeOwnerActionManager.PopMode(ActionMode.Minigame);
+            _playerMinigameModeApplied = false;
+        }
+
+        _modeOwnerActionManager = _playerActionManager;
+
+        if (_playerMinigameModeApplied) return;
+
+        _modeOwnerActionManager.PushMode(ActionMode.Minigame);
+        _playerMinigameModeApplied = true;
+    }
+
+    private void DisableMinigameActionRestrictions()
+    {
+        if (_modeOwnerActionManager != null && _playerMinigameModeApplied)
+        {
+            _modeOwnerActionManager.PopMode(ActionMode.Minigame);
+        }
+
+        _playerMinigameModeApplied = false;
+        _modeOwnerActionManager = null;
+    }
+
+    private void SuspendTargetNpcSystemsForMinigame()
+    {
+        if (_targetNpcSystemsSuspended || !HasProtectionObjectiveConfigured || protectTargets == null)
+            return;
+
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            var target = protectTargets[i];
+            if (target == null || target.npcRoot == null)
+                continue;
+
+            Transform systemsRoot = ResolveNpcSystemsRoot(target.npcRoot);
+            target.systemsRoot = systemsRoot;
+
+            HideExternalNpcIcons(systemsRoot);
+            SuspendBehavioursInHierarchy<NPCQuestIconManager>(systemsRoot);
+            SuspendBehavioursInHierarchy<NPCInteractiveNarrativeExecutor>(systemsRoot);
+            SuspendBehavioursInHierarchy<NPCPersistentIconController>(systemsRoot);
+            SuspendBehavioursInHierarchy<NPCCombatBrain>(systemsRoot);
+            SuspendBehavioursInHierarchy<Interactable>(systemsRoot);
+        }
+
+        _targetNpcSystemsSuspended = true;
+    }
+
+    private void RestoreTargetNpcSystemsAfterMinigame()
+    {
+        if (_suspendedTargetNpcSystems.Count == 0)
+        {
+            _targetNpcSystemsSuspended = false;
+            return;
+        }
+
+        for (int i = _suspendedTargetNpcSystems.Count - 1; i >= 0; i--)
+        {
+            var state = _suspendedTargetNpcSystems[i];
+            if (state == null || state.behaviour == null)
+                continue;
+
+            state.behaviour.enabled = state.wasEnabled;
+        }
+
+        _suspendedTargetNpcSystems.Clear();
+        _targetNpcSystemsSuspended = false;
+    }
+
+    private static void HideExternalNpcIcons(Transform npcRoot)
+    {
+        if (npcRoot == null) return;
+
+        var alertIcons = npcRoot.GetComponentsInChildren<NPCAlertIconController>(true);
+        for (int i = 0; i < alertIcons.Length; i++)
+        {
+            if (alertIcons[i] != null)
+                alertIcons[i].HideAlertIconImmediate();
+        }
+
+        var persistentIcons = npcRoot.GetComponentsInChildren<NPCPersistentIconController>(true);
+        for (int i = 0; i < persistentIcons.Length; i++)
+        {
+            if (persistentIcons[i] != null)
+                persistentIcons[i].HideIcon();
+        }
+    }
+
+    private static Transform ResolveNpcSystemsRoot(Transform targetTransform)
+    {
+        if (targetTransform == null) return null;
+
+        var npcManager = targetTransform.GetComponentInParent<NPCBehaviourManagerV2>();
+        if (npcManager != null)
+            return npcManager.transform;
+
+        return targetTransform;
+    }
+
+    private void SuspendBehavioursInHierarchy<T>(Transform root) where T : Behaviour
+    {
+        if (root == null) return;
+
+        var behaviours = root.GetComponentsInChildren<T>(true);
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            TrackAndDisableBehaviour(behaviours[i]);
+        }
+    }
+
+    private void TrackAndDisableBehaviour(Behaviour behaviour)
+    {
+        if (behaviour == null) return;
+        if (IsBehaviourAlreadySuspended(behaviour)) return;
+
+        _suspendedTargetNpcSystems.Add(new SuspendedBehaviourState
+        {
+            behaviour = behaviour,
+            wasEnabled = behaviour.enabled
+        });
+
+        behaviour.enabled = false;
+    }
+
+    private bool IsBehaviourAlreadySuspended(Behaviour behaviour)
+    {
+        for (int i = 0; i < _suspendedTargetNpcSystems.Count; i++)
+        {
+            if (_suspendedTargetNpcSystems[i] != null && _suspendedTargetNpcSystems[i].behaviour == behaviour)
+                return true;
+        }
+
+        return false;
+    }
 
     void Awake()
     {
         if (uiContainer) uiContainer.SetActive(false);
+        EnsureObjectiveTextReference();
+        UpdateObjectiveUI();
     }
     
     void OnEnable()
@@ -350,6 +698,10 @@ public class TagMinigameController : MonoBehaviour
         
         // ✅ Desuscribirse de cambios de escena
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        DisableMinigameActionRestrictions();
+        HideAllProtectionIcons();
+        RestoreTargetNpcSystemsAfterMinigame();
     }
     
     /// <summary>
@@ -384,6 +736,9 @@ public class TagMinigameController : MonoBehaviour
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             player = playerGo.transform;
+            CachePlayerRuntimeReferences();
+            if (_playerMinigameModeApplied)
+                EnableMinigameActionRestrictions();
             Debug.Log($"[TagMinigame] 🌍 Player encontrado en nueva escena: {player.name} @ {player.position}");
             
             // Verificar/re-resolver perseguidor
@@ -448,6 +803,9 @@ public class TagMinigameController : MonoBehaviour
         if (PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             player = playerGo.transform;
+            CachePlayerRuntimeReferences();
+            if (_playerMinigameModeApplied)
+                EnableMinigameActionRestrictions();
             Debug.Log($"[TagMinigame] ✅ Player actualizado: {player.name} en posición {player.position}");
         }
         else
@@ -538,6 +896,7 @@ public class TagMinigameController : MonoBehaviour
         {
             player = playerGo.transform;
         }
+        CachePlayerRuntimeReferences();
 
         if (chaser)
         {
@@ -552,6 +911,380 @@ public class TagMinigameController : MonoBehaviour
             _chaserRenderers = chaser.GetComponentsInChildren<Renderer>();
             CacheOriginalColors();
         }
+    }
+
+    private void InitializeProtectionTargetsForRound(bool clearShields)
+    {
+        protectedCount = 0;
+
+        if (protectTargets == null || protectTargets.Length == 0)
+        {
+            UpdateObjectiveUI();
+            return;
+        }
+
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            var target = protectTargets[i];
+            if (target == null || target.npcRoot == null) continue;
+
+            target.isProtected = false;
+            target.requiredButton = GetRandomProtectionButton();
+            target.systemsRoot = ResolveNpcSystemsRoot(target.npcRoot);
+
+            if (target.iconController == null)
+            {
+                Transform iconRoot = target.systemsRoot != null ? target.systemsRoot : target.npcRoot;
+                target.iconController = iconRoot.GetComponent<NPCAlertIconController>();
+                if (target.iconController == null)
+                    target.iconController = iconRoot.gameObject.AddComponent<NPCAlertIconController>();
+            }
+
+            if (clearShields && target.spawnedShield != null)
+            {
+                Destroy(target.spawnedShield);
+                target.spawnedShield = null;
+            }
+
+            target.iconController.HideAlertIconImmediate();
+        }
+
+        UpdateObjectiveUI();
+    }
+
+    private void HideAllProtectionIcons()
+    {
+        if (protectTargets == null) return;
+
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            var target = protectTargets[i];
+            if (target == null || target.iconController == null) continue;
+            target.iconController.HideAlertIconImmediate();
+        }
+    }
+
+    private void DisposeRuntimeIconTemplates()
+    {
+        DestroyRuntimeIconTemplate(ref _iconTemplateA);
+        DestroyRuntimeIconTemplate(ref _iconTemplateB);
+        DestroyRuntimeIconTemplate(ref _iconTemplateX);
+        DestroyRuntimeIconTemplate(ref _iconTemplateY);
+        DestroyRuntimeIconTemplate(ref _fallbackIconTemplateA);
+        DestroyRuntimeIconTemplate(ref _fallbackIconTemplateB);
+        DestroyRuntimeIconTemplate(ref _fallbackIconTemplateX);
+        DestroyRuntimeIconTemplate(ref _fallbackIconTemplateY);
+    }
+
+    private static void DestroyRuntimeIconTemplate(ref GameObject template)
+    {
+        if (template == null) return;
+        UnityEngine.Object.Destroy(template);
+        template = null;
+    }
+
+    private void ClearAllProtectionShields()
+    {
+        if (protectTargets == null) return;
+
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            var target = protectTargets[i];
+            if (target == null || target.spawnedShield == null) continue;
+            Destroy(target.spawnedShield);
+            target.spawnedShield = null;
+        }
+    }
+
+    private ProtectionButton GetRandomProtectionButton()
+    {
+        return (ProtectionButton)Random.Range(0, 4);
+    }
+
+    private GameObject GetIconPrefabForButton(ProtectionButton button)
+    {
+        switch (button)
+        {
+            case ProtectionButton.A:
+            {
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateA, iconButtonASprite, "ProtectBtn_A");
+                return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateA, "A", "ProtectBtn_A_Text");
+            }
+            case ProtectionButton.B:
+            {
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateB, iconButtonBSprite, "ProtectBtn_B");
+                return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateB, "B", "ProtectBtn_B_Text");
+            }
+            case ProtectionButton.X:
+            {
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateX, iconButtonXSprite, "ProtectBtn_X");
+                return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateX, "X", "ProtectBtn_X_Text");
+            }
+            case ProtectionButton.Y:
+            {
+                var spriteTemplate = ResolveRuntimeIconTemplate(ref _iconTemplateY, iconButtonYSprite, "ProtectBtn_Y");
+                return spriteTemplate != null ? spriteTemplate : ResolveTextIconTemplate(ref _fallbackIconTemplateY, "Y", "ProtectBtn_Y_Text");
+            }
+            default: return null;
+        }
+    }
+
+    private GameObject ResolveRuntimeIconTemplate(ref GameObject templateCache, Sprite sprite, string templateName)
+    {
+        if (templateCache != null) return templateCache;
+        if (sprite == null) return null;
+
+        templateCache = CreateRuntimeIconTemplate(sprite, templateName);
+        return templateCache;
+    }
+
+    private GameObject ResolveTextIconTemplate(ref GameObject templateCache, string text, string templateName)
+    {
+        if (templateCache != null) return templateCache;
+        templateCache = CreateTextIconTemplate(text, templateName);
+        return templateCache;
+    }
+
+    private GameObject CreateRuntimeIconTemplate(Sprite sprite, string templateName)
+    {
+        var go = new GameObject(templateName);
+        go.hideFlags = HideFlags.HideAndDontSave;
+
+        var renderer = go.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.sortingOrder = iconSpriteSortingOrder;
+
+        float scale = Mathf.Max(0.01f, iconSpriteScale);
+        go.transform.localScale = new Vector3(scale, scale, 1f);
+        go.SetActive(false);
+        return go;
+    }
+
+    private GameObject CreateTextIconTemplate(string text, string templateName)
+    {
+        var go = new GameObject(templateName);
+        go.hideFlags = HideFlags.HideAndDontSave;
+
+        var label = go.AddComponent<TextMeshPro>();
+        label.text = text;
+        label.alignment = TextAlignmentOptions.Center;
+        label.fontSize = 2.8f;
+        label.color = Color.white;
+        label.outlineWidth = 0.28f;
+        label.outlineColor = Color.black;
+
+        float scale = Mathf.Max(0.01f, iconSpriteScale);
+        go.transform.localScale = new Vector3(scale, scale, 1f);
+        go.SetActive(false);
+        return go;
+    }
+
+    private ProtectionButton? ReadProtectionButtonPressed()
+    {
+        if (GamepadInputReader.JumpPressed) return ProtectionButton.A;
+        if (GamepadInputReader.AttackMagicRightPressed) return ProtectionButton.B;
+        if (GamepadInputReader.AttackMagicLeftPressed) return ProtectionButton.X;
+        if (GamepadInputReader.AttackMagicSpecialPressed) return ProtectionButton.Y;
+        return null;
+    }
+
+    private void UpdateProtectionObjectiveGameplay()
+    {
+        if (!HasProtectionObjectiveConfigured || player == null || protectTargets == null) return;
+
+        float maxDistanceSqr = protectDistance * protectDistance;
+        ProtectionButton? pressedButton = ReadProtectionButtonPressed();
+
+        ProtectNpcTarget nearestInRange = null;
+        ProtectNpcTarget bestMatchingTarget = null;
+        float nearestInRangeDistSqr = float.MaxValue;
+        float bestMatchingDistSqr = float.MaxValue;
+
+        for (int i = 0; i < protectTargets.Length; i++)
+        {
+            var target = protectTargets[i];
+            if (target == null || target.npcRoot == null) continue;
+
+            if (target.isProtected)
+            {
+                if (target.iconController != null)
+                    target.iconController.HideAlertIconImmediate();
+                continue;
+            }
+
+            float distSqr = (player.position - target.npcRoot.position).sqrMagnitude;
+            bool inRange = distSqr <= maxDistanceSqr;
+
+            if (inRange)
+            {
+                if (target.iconController != null)
+                {
+                    var iconPrefab = GetIconPrefabForButton(target.requiredButton);
+                    if (iconPrefab != null)
+                        target.iconController.ShowPersistentIcon(iconPrefab);
+                }
+
+                if (distSqr < nearestInRangeDistSqr)
+                {
+                    nearestInRangeDistSqr = distSqr;
+                    nearestInRange = target;
+                }
+
+                if (pressedButton.HasValue && target.requiredButton == pressedButton.Value && distSqr < bestMatchingDistSqr)
+                {
+                    bestMatchingDistSqr = distSqr;
+                    bestMatchingTarget = target;
+                }
+            }
+            else if (target.iconController != null)
+            {
+                target.iconController.HideAlertIconImmediate();
+            }
+        }
+
+        if (!pressedButton.HasValue)
+            return;
+
+        if (bestMatchingTarget != null)
+        {
+            ProtectNpc(bestMatchingTarget);
+            return;
+        }
+
+        // Si pulsa un botón incorrecto cerca de un NPC, se rerollea el botón objetivo para aumentar dificultad.
+        if (nearestInRange != null)
+        {
+            nearestInRange.requiredButton = GetRandomProtectionButton();
+            if (nearestInRange.iconController != null)
+            {
+                nearestInRange.iconController.HideAlertIconImmediate();
+                var iconPrefab = GetIconPrefabForButton(nearestInRange.requiredButton);
+                if (iconPrefab != null)
+                    nearestInRange.iconController.ShowPersistentIcon(iconPrefab);
+            }
+        }
+    }
+
+    private void ProtectNpc(ProtectNpcTarget target)
+    {
+        if (target == null || target.npcRoot == null || target.isProtected) return;
+
+        target.isProtected = true;
+        protectedCount++;
+
+        if (target.iconController != null)
+            target.iconController.HideAlertIconImmediate();
+
+        PlayPlayerProtectionCastAnimation(target.requiredButton);
+        SpawnShieldForTarget(target);
+        UpdateObjectiveUI();
+
+        int required = RequiredProtectCount;
+        ShowMessage(string.Format(protectNpcMessageFormat, Mathf.Min(protectedCount, required), required), 1.4f);
+
+        if (HasProtectionObjectiveConfigured && protectedCount >= required)
+        {
+            WinMinigame();
+        }
+    }
+
+    private void SpawnShieldForTarget(ProtectNpcTarget target)
+    {
+        if (shieldPrefab == null || target == null || target.npcRoot == null) return;
+
+        if (target.spawnedShield != null)
+        {
+            Destroy(target.spawnedShield);
+            target.spawnedShield = null;
+        }
+
+        Transform anchor = target.shieldAnchor != null ? target.shieldAnchor : target.npcRoot;
+        Vector3 spawnPos = anchor.position + shieldOffset;
+        Quaternion spawnRot = anchor.rotation;
+
+        if (parentShieldToNpc)
+        {
+            target.spawnedShield = Instantiate(shieldPrefab, spawnPos, spawnRot, anchor);
+        }
+        else
+        {
+            target.spawnedShield = Instantiate(shieldPrefab, spawnPos, spawnRot);
+        }
+    }
+
+    private void PlayPlayerProtectionCastAnimation(ProtectionButton button)
+    {
+        if (_playerAnimator == null) return;
+
+        string statePath;
+        switch (button)
+        {
+            case ProtectionButton.X:
+                statePath = playerCastLeftStatePath;
+                break;
+            case ProtectionButton.B:
+                statePath = playerCastRightStatePath;
+                break;
+            case ProtectionButton.Y:
+            case ProtectionButton.A:
+                statePath = playerCastSpecialStatePath;
+                break;
+            default:
+                statePath = playerCastSpecialStatePath;
+                break;
+        }
+
+        if (string.IsNullOrEmpty(statePath)) return;
+        if (_playerAnimator.layerCount <= playerUpperBodyLayer) return;
+
+        _playerAnimator.SetLayerWeight(playerUpperBodyLayer, 1f);
+        _playerAnimator.Play(statePath, playerUpperBodyLayer, 0f);
+
+        if (_playerCastRoutine != null)
+            StopCoroutine(_playerCastRoutine);
+        _playerCastRoutine = StartCoroutine(FadeOutPlayerCastLayer());
+    }
+
+    private IEnumerator FadeOutPlayerCastLayer()
+    {
+        yield return new WaitForSeconds(0.2f);
+
+        if (_playerAnimator == null || _playerAnimator.layerCount <= playerUpperBodyLayer)
+            yield break;
+
+        float elapsed = 0f;
+        float startWeight = _playerAnimator.GetLayerWeight(playerUpperBodyLayer);
+        float fadeDuration = Mathf.Max(0.01f, playerCastLayerFadeOut);
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            if (_playerAnimator == null) yield break;
+
+            float t = Mathf.Clamp01(elapsed / fadeDuration);
+            _playerAnimator.SetLayerWeight(playerUpperBodyLayer, Mathf.Lerp(startWeight, 0f, t));
+            yield return null;
+        }
+
+        if (_playerAnimator != null && _playerAnimator.layerCount > playerUpperBodyLayer)
+            _playerAnimator.SetLayerWeight(playerUpperBodyLayer, 0f);
+
+        _playerCastRoutine = null;
+    }
+
+    private void UpdateObjectiveUI()
+    {
+        EnsureObjectiveTextReference();
+        if (objectiveText == null) return;
+
+        if (!HasProtectionObjectiveConfigured)
+        {
+            objectiveText.text = string.Empty;
+            return;
+        }
+
+        int required = RequiredProtectCount;
+        objectiveText.text = string.Format(objectiveFormat, Mathf.Min(protectedCount, required), required);
     }
     
     /// <summary>
@@ -602,6 +1335,11 @@ public class TagMinigameController : MonoBehaviour
         {
             chaser.OnCaughtPlayer -= OnCaught;
         }
+
+        DisableMinigameActionRestrictions();
+        HideAllProtectionIcons();
+        RestoreTargetNpcSystemsAfterMinigame();
+        DisposeRuntimeIconTemplates();
     }
 
     void Update()
@@ -609,11 +1347,28 @@ public class TagMinigameController : MonoBehaviour
         if (!isRunning) return;
 
         remainingTime -= Time.deltaTime;
+
+        if (HasProtectionObjectiveConfigured)
+        {
+            UpdateProtectionObjectiveGameplay();
+
+            if (!isRunning)
+                return;
+        }
+
         UpdateTimerUI();
+        UpdateObjectiveUI();
 
         if (remainingTime <= 0f)
         {
-            WinMinigame();
+            if (HasProtectionObjectiveConfigured && protectedCount < RequiredProtectCount)
+            {
+                LoseByTimeout();
+            }
+            else
+            {
+                WinMinigame();
+            }
             return;
         }
         
@@ -707,9 +1462,17 @@ public class TagMinigameController : MonoBehaviour
             Debug.LogWarning("[TagMinigame] Ya está en ejecución.");
             return;
         }
+
+        if (player == null && PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
+        {
+            player = playerGo.transform;
+        }
+        CachePlayerRuntimeReferences();
         
         // ✅ Resolver referencias del NPC perseguidor si no están asignadas
         ResolveNPCReferences();
+        EnsureObjectiveTextReference();
+        TryAutoPopulateProtectionTargets();
 
         // ✅ Log de diagnóstico
         Debug.Log($"[TagMinigame] ========== DIAGNÓSTICO ==========");
@@ -723,6 +1486,22 @@ public class TagMinigameController : MonoBehaviour
 
         Debug.Log($"[TagMinigame] Iniciando minijuego '{minigameId}'...");
         catchCount = 0;
+        protectedCount = 0;
+
+        int availableProtectTargets = CountValidProtectTargets();
+        int requiredForRound = RequiredProtectCount;
+        Debug.Log($"[TagMinigame] 🛡️ Objetivo protección: disponibles={availableProtectTargets}, requeridos={requiredForRound}, configurado={requiredProtectedCount}");
+
+        if (availableProtectTargets == 0 && !_loggedMissingProtectionConfig)
+        {
+            Debug.LogWarning("[TagMinigame] ⚠️ No hay NPCs válidos en protectTargets. No se activará la mecánica de proteger NPCs hasta configurar/auto-detectar objetivos.");
+            _loggedMissingProtectionConfig = true;
+        }
+
+        if (requiredProtectedCount > availableProtectTargets && availableProtectTargets > 0)
+        {
+            Debug.LogWarning($"[TagMinigame] Solo hay {availableProtectTargets} NPCs configurados para proteger. El objetivo real será {RequiredProtectCount}.");
+        }
 
         // Guardar posición inicial del jugador (usar spawn point si existe, si no la posición actual)
         if (player)
@@ -748,6 +1527,8 @@ public class TagMinigameController : MonoBehaviour
     private IEnumerator StartWithCountdown(bool isRestart = false)
     {
         isCountingDown = true;
+        EnableMinigameActionRestrictions();
+        SuspendTargetNpcSystemsForMinigame();
 
         // ✅ Solo hacer estas operaciones en el inicio inicial, no en reinicios
         if (!isRestart)
@@ -786,7 +1567,9 @@ public class TagMinigameController : MonoBehaviour
 
         if (uiContainer) uiContainer.SetActive(true);
         if (timerText) timerText.text = FormatTime(duration);
+        UpdateObjectiveUI();
 
+        InitializeProtectionTargetsForRound(clearShields: true);
         ResetPositions();
         
         // ✅ Emitir señal de inicio AHORA para que la música comience desde la cuenta atrás
@@ -1240,6 +2023,12 @@ public class TagMinigameController : MonoBehaviour
 
         if (chaser) chaser.StopChasing();
         if (uiContainer) uiContainer.SetActive(false);
+        if (countdownText) countdownText.text = string.Empty;
+
+        HideAllProtectionIcons();
+        RestoreTargetNpcSystemsAfterMinigame();
+        if (clearShieldsOnStop)
+            ClearAllProtectionShields();
         
         // ✅ Restaurar configuración de dificultad del perseguidor
         RestoreChaserDifficulty();
@@ -1255,6 +2044,9 @@ public class TagMinigameController : MonoBehaviour
         
         // ✅ Devolver al party (si estaba)
         ReturnChaserToParty();
+
+        DisableMinigameActionRestrictions();
+        UpdateObjectiveUI();
 
         Debug.Log("[TagMinigame] Minijuego detenido.");
     }
@@ -1275,9 +2067,11 @@ public class TagMinigameController : MonoBehaviour
     private IEnumerator RestartAfterCaught()
     {
         isRunning = false;
+        isTeleporting = false;
         
         // Detener la persecución mientras se reinicia
         if (chaser) chaser.StopChasing();
+        HideAllProtectionIcons();
 
         yield return new WaitForSeconds(1.5f);
 
@@ -1293,6 +2087,36 @@ public class TagMinigameController : MonoBehaviour
         Debug.Log($"[TagMinigame] 🔄 Reiniciando minijuego completo (atrapado #{catchCount})");
         
         // Iniciar la cuenta atrás de nuevo (esto también reinicia el tiempo)
+        StartCoroutine(StartWithCountdown(isRestart: true));
+    }
+
+    private void LoseByTimeout()
+    {
+        if (!isRunning) return;
+
+        isRunning = false;
+        isTeleporting = false;
+
+        if (chaser) chaser.StopChasing();
+
+        ShowMessage(timeFailedMessage, 2f);
+        OnMinigameLost?.Invoke();
+
+        StartCoroutine(RestartAfterTimeout());
+    }
+
+    private IEnumerator RestartAfterTimeout()
+    {
+        HideAllProtectionIcons();
+
+        yield return new WaitForSeconds(1.5f);
+
+        ResetPositions();
+        EnableNPCBehaviour();
+
+        yield return new WaitForSeconds(0.5f);
+
+        Debug.Log("[TagMinigame] 🔄 Reiniciando minijuego tras quedarse sin tiempo");
         StartCoroutine(StartWithCountdown(isRestart: true));
     }
 
@@ -1325,11 +2149,15 @@ public class TagMinigameController : MonoBehaviour
     {
         isRunning = false;
         isTeleporting = false;
-        Debug.Log($"[TagMinigame] ¡Victoria! El jugador escapó.");
+        Debug.Log($"[TagMinigame] ¡Victoria! Objetivo completado.");
 
         if (chaser) chaser.StopChasing();
 
         ShowMessage(winMessage, 3f);
+        HideAllProtectionIcons();
+        RestoreTargetNpcSystemsAfterMinigame();
+        if (clearShieldsOnWin)
+            ClearAllProtectionShields();
         
         // ✅ Limpiar efectos visuales de enfado
         StopAngerEffects();
@@ -1351,6 +2179,9 @@ public class TagMinigameController : MonoBehaviour
         
         // ✅ Unir NPCs adicionales al party
         JoinAdditionalNPCsToParty();
+
+        DisableMinigameActionRestrictions();
+        UpdateObjectiveUI();
 
         OnMinigameWon?.Invoke();
 

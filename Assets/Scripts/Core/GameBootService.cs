@@ -433,6 +433,13 @@ public class GameBootService : MonoBehaviour
         _profile.NewGameReset(save);
         _testingModeInitialized = false; // ✅ Resetear flag para modo normal
 
+        // Limpiar estado runtime persistente (DontDestroyOnLoad) que puede arrastrarse
+        // cuando se inicia "Nueva Partida" sin reiniciar la aplicación.
+        if (Game.NPC.PlayerParty.HasInstance)
+        {
+            Game.NPC.PlayerParty.Instance.ResetForNewGame();
+        }
+
         // Limpiar blackboards de todos los grafos narrativos para nueva partida
         // Los grafos siguen esperando eventos, pero con estado limpio
         NarrativeGraphHub.Instance?.ClearAllBlackboards();

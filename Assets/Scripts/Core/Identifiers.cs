@@ -95,7 +95,8 @@ public enum ActionMode
     Swimming,
     Flying,
     Climbing,
-    Combat
+    Combat,
+    Minigame
 }
 
 /// <summary>Habilidades básicas que puede usar el jugador.</summary>
@@ -155,7 +156,8 @@ public enum QuestCompletionMode
 {
     Manual,
     AutoCompleteOnTalk,
-    CompleteOnTalkIfStepsReady
+    CompleteOnTalkIfStepsReady,
+    AutoCompleteWhenStepsReady
 }
 
 /// <summary>Modo de objetivo (como encontrar el primero, uno específico o por nombre).</summary>

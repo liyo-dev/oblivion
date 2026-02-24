@@ -120,11 +120,13 @@ public class DialogueManager : MonoBehaviour
     // Fallbacks para el player speaker (cuando no usa NPCSimpleAnimator)
     private static readonly string[] PlayerSpeakStateCandidates =
     {
+        "InteractWithPeople_NoWeapon",
+        "UpperBody.InteractWithPeople_NoWeapon",
+        "Base Layer.InteractWithPeople_NoWeapon",
         "Greeting01_NoWeapon",
         "Greeting01",
         "UpperBody.Greeting01_NoWeapon",
         "Base Layer.Greeting01_NoWeapon",
-        "InteractWithPeople_NoWeapon",
         "UpperBody.UpperIdle",
         "UpperIdle"
     };
@@ -1140,18 +1142,19 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
-        // Compatibilidad retro: si el player usa NPCSimpleAnimator, usar saludo (no abrir puertas/interactuar)
+        // Si el player usa NPCSimpleAnimator, usar la animación de interacción de diálogo.
         var npcSimpleAnimator = playerGo.GetComponent<NPCSimpleAnimator>();
         if (npcSimpleAnimator != null)
         {
             if (activate)
             {
-                npcSimpleAnimator.PlayGreeting();
-                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación Greeting ACTIVADA (NPCSimpleAnimator)");
+                npcSimpleAnimator.BeginInteraction();
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople ACTIVADA (NPCSimpleAnimator)");
             }
             else
             {
-                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación Greeting DESACTIVADA (NPCSimpleAnimator)");
+                npcSimpleAnimator.EndInteraction();
+                if (verboseLogging) Debug.Log($"[DialogueManager] 🎭 Player '{playerGo.name}' animación InteractWithPeople DESACTIVADA (NPCSimpleAnimator)");
             }
             return;
         }

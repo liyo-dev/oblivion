@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   questChain:
   - questData: {fileID: 11400000, guid: b178523d91c8f6e46bde4691055b0dbe, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 

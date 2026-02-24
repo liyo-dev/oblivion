@@ -355,10 +355,29 @@ namespace Game.NPC.Modules
                             break;
 
                         case QuestCompletionMode.CompleteOnTalkIfStepsReady:
-                        case QuestCompletionMode.Manual:
                             if (allDone && hasAllRequiredItems)
                             {
                                 // ✅ Consumir los items requeridos al completar la quest
+                                ConsumeRequiredItems(entry);
+                                FinishQuest(qm, entry, questId, context);
+                            }
+                            else
+                            {
+                                PlayDialogue(entry.dlgInProgress, context);
+                            }
+                            break;
+
+                        case QuestCompletionMode.Manual:
+                            // Modo estrictamente manual: este módulo no completa la quest automáticamente
+                            // al hablar con el NPC, incluso si todos los steps están listos.
+                            PlayDialogue(entry.dlgInProgress, context);
+                            break;
+
+                        case QuestCompletionMode.AutoCompleteWhenStepsReady:
+                            // Seguridad: normalmente esta modalidad se completa automáticamente
+                            // desde QuestManager.MarkStepDone cuando todos los steps están listos.
+                            if (allDone && hasAllRequiredItems)
+                            {
                                 ConsumeRequiredItems(entry);
                                 FinishQuest(qm, entry, questId, context);
                             }

@@ -217,6 +217,20 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             _blockedByMode[ActionMode.Combat] = new HashSet<PlayerAbility>();
         _blockedByMode[ActionMode.Combat].Add(PlayerAbility.Interact);
 
+        // GARANTIZAR bloqueos para minijuegos (sin bloquear movimiento)
+        if (!_blockedByMode.ContainsKey(ActionMode.Minigame))
+            _blockedByMode[ActionMode.Minigame] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Magic);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Interact);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Carry);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Aim);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Fly);
+        _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Climb);
+
 #if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
 #endif

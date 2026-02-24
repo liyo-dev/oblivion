@@ -535,6 +535,25 @@ namespace Game.NPC
                 RemoveMember(member);
             }
         }
+
+        /// <summary>
+        /// Limpia completamente el party para flujo de Nueva Partida.
+        /// </summary>
+        public void ResetForNewGame()
+        {
+            Log("🧼 ResetForNewGame: limpiando miembros y pendientes del party");
+
+            _pendingMemberIds.Clear();
+            DisbandParty();
+
+            // Seguridad extra: en caso de referencias residuales/nulls.
+            _members.RemoveAll(m => m == null);
+            if (_members.Count > 0)
+                _members.Clear();
+
+            SyncPartyToPreset();
+            OnPartyChanged?.Invoke(_members);
+        }
         #endregion
 
         #region Internal
@@ -581,7 +600,15 @@ namespace Game.NPC
             
             if (preset.partyMemberIds == null || preset.partyMemberIds.Count == 0)
             {
-                Debug.Log("[PlayerParty] ℹ️ No hay miembros de party en el preset para restaurar");
+                if (_members.Count > 0)
+                {
+                    Debug.Log($"[PlayerParty] 🔄 Preset sin partyMemberIds; limpiando {_members.Count} miembros residuales");
+                    ResetForNewGame();
+                }
+                else
+                {
+                    Debug.Log("[PlayerParty] ℹ️ No hay miembros de party en el preset para restaurar");
+                }
                 return;
             }
             
@@ -1026,7 +1053,7 @@ namespace Game.NPC
                 }
 
                 Debug.Log($"[PlayerParty] 📋 Preset encontrado: '{preset.name}', llamando a GetMemberIdsForSave()...");
-                var memberIds = GetMemberIdsForSave();
+                var memberIds = GetMemberIdsForSave(allowPresetFallbackWhenEmpty: false);
                 Debug.Log($"[PlayerParty] 📋 GetMemberIdsForSave() retornó {memberIds.Count} IDs: [{string.Join(", ", memberIds)}]");
                 
                 preset.partyMemberIds = memberIds;
@@ -1043,7 +1070,7 @@ namespace Game.NPC
         /// Obtiene los IDs de los miembros actuales para guardar.
         /// Usa interactiveNarrativeConfig.persistenceId o el nombre del GameObject como fallback.
         /// </summary>
-        public List<string> GetMemberIdsForSave()
+        public List<string> GetMemberIdsForSave(bool allowPresetFallbackWhenEmpty = true)
         {
             Debug.Log($"[PlayerParty] 📊 GetMemberIdsForSave() - _members.Count = {_members.Count}");
             
@@ -1054,6 +1081,12 @@ namespace Game.NPC
             
             if (validMembersCount == 0)
             {
+                if (!allowPresetFallbackWhenEmpty)
+                {
+                    Debug.Log("[PlayerParty] ℹ️ GetMemberIdsForSave sin fallback: retornando lista vacía");
+                    return new List<string>();
+                }
+
                 Debug.LogWarning("[PlayerParty] ⚠️ _members está vacío o solo tiene nulls - Leyendo desde preset actual");
                 
                 var profile = GameBootService.Profile;

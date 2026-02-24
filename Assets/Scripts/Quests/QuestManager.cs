@@ -347,8 +347,10 @@ public class QuestManager : MonoBehaviour
                 CompleteQuest(questId);
                 return;
             }
-            
-            Debug.Log($"[QuestManager] ℹ️ Quest '{questId}' con todos los pasos completos, esperando entrega por diálogo con NPC (CompletionMode: on-talk).");
+
+            var questEntry = FindQuestChainEntry(questId);
+            var completionMode = questEntry != null ? questEntry.completionMode.ToString() : "Unknown/NoChainEntry";
+            Debug.Log($"[QuestManager] ℹ️ Quest '{questId}' con todos los pasos completos, sin autocompletado (CompletionMode: {completionMode}).");
         }
 
         OnQuestsChanged?.Invoke();
@@ -356,22 +358,15 @@ public class QuestManager : MonoBehaviour
 
     /// <summary>
     /// Determina si una quest debe auto-completarse al tener todos los pasos listos.
-    /// Las quests encadenadas en NPCs se entregan hablando con el NPC (on-talk), no automáticamente.
+    /// Regla estricta: SOLO auto-completa cuando el modo es AutoCompleteWhenStepsReady.
     /// </summary>
     private bool ShouldAutoCompleteWhenAllStepsDone(string questId)
     {
         var questEntry = FindQuestChainEntry(questId);
         if (questEntry == null)
-            return true; // quests no ligadas a NPC chain mantienen comportamiento clásico
+            return false;
 
-        return questEntry.completionMode switch
-        {
-            // En las quests de NPC la entrega final es conversacional.
-            QuestCompletionMode.Manual => false,
-            QuestCompletionMode.CompleteOnTalkIfStepsReady => false,
-            QuestCompletionMode.AutoCompleteOnTalk => false,
-            _ => true
-        };
+        return questEntry.completionMode == QuestCompletionMode.AutoCompleteWhenStepsReady;
     }
 
     /// <summary>
@@ -597,6 +592,25 @@ public class QuestManager : MonoBehaviour
                 rq2.Steps[stepIdx].completed = true;
         }
 
+        // 5) Auto-completar quests activas que ya están con todos los pasos completos
+        // (caso típico al cargar save y/o tras cambiar el completionMode en configs).
+        var questsReadyToAutoComplete = new List<string>();
+        foreach (var kvp in _runtime)
+        {
+            var rq = kvp.Value;
+            if (rq.State != QuestState.Active) continue;
+            if (!AllStepsCompleted(rq)) continue;
+            if (!ShouldAutoCompleteWhenAllStepsDone(rq.Id)) continue;
+            questsReadyToAutoComplete.Add(rq.Id);
+        }
+
+        for (int i = 0; i < questsReadyToAutoComplete.Count; i++)
+        {
+            var questId = questsReadyToAutoComplete[i];
+            Debug.Log($"[QuestManager] 🔄 Auto-completando quest '{questId}' tras RestoreFromProfileFlags (steps ya completos).");
+            CompleteQuest(questId);
+        }
+
         OnQuestsChanged?.Invoke();
 
         // helper local
@@ -783,7 +797,7 @@ public class QuestManager : MonoBehaviour
             int stepIdx = FindStepIndex(rq, conditionId, itemReq.stepIndex);
             if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
             {
-                rq.Steps[stepIdx].completed = true;
+                MarkStepDone(rq.Id, stepIdx);
                 stepsCompleted++;
             }
         }
@@ -806,7 +820,7 @@ public class QuestManager : MonoBehaviour
             int stepIdx = FindStepIndex(rq, conditionId, wardrobeReq.stepIndex);
             if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
             {
-                rq.Steps[stepIdx].completed = true;
+                MarkStepDone(rq.Id, stepIdx);
                 stepsCompleted++;
             }
         }
@@ -843,7 +857,7 @@ public class QuestManager : MonoBehaviour
             
             if (stepIdx >= 0 && !rq.Steps[stepIdx].completed)
             {
-                rq.Steps[stepIdx].completed = true;
+                MarkStepDone(rq.Id, stepIdx);
                 stepsCompleted++;
                 Debug.Log($"[QuestManager] ✅ Step {stepIdx} de quest '{rq.Id}' completado por miembro '{memberReq.memberId}' en el equipo");
             }

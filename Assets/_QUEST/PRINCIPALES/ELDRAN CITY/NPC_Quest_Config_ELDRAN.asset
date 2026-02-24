@@ -61,7 +61,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: 0fe966196a1e24449b4c4d1535721e2a, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 1
     itemDeliveryStepIndex: 0
     itemTag: Pickable
@@ -106,7 +106,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: b6bca4c14a2270847bce04a6eae9c353, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 
@@ -196,7 +196,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
-    completionMode: 0
+    completionMode: 3
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 
@@ -291,7 +291,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
-    completionMode: 0
+    completionMode: 2
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 1
     itemTag: 
