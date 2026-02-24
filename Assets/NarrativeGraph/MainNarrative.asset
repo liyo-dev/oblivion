@@ -45,6 +45,7 @@ MonoBehaviour:
   - rid: 5669070227972817055
   - rid: 5669070227972817138
   - rid: 5669070231065591993
+  - rid: 5669070411734712530
   applicableSceneNames:
   - MainWorld
   references:
@@ -207,9 +208,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -251, y: -374}
+        position: {x: -406, y: -407}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
+        - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
         debugLogs: 0
     - rid: 4128268622357594945
@@ -413,6 +415,21 @@ MonoBehaviour:
         outputs: []
         cinematicSceneName: Cinematic_Mountain
         useInternalCinematic: 1
+    - rid: 5669070411734712530
+      type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 64ed2870-8561-471f-bb08-803a726be060
+        position: {x: -546, y: -173}
+        outputs: []
+        item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
+        amount: 20
+        logWarnings: 0
+        onlyOnce: 1
     - rid: 7908052880146039718
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
