@@ -51,8 +51,8 @@ MonoBehaviour:
   spell1Chance: 0.5
   spell2Chance: 0.3
   spell3Chance: 0.2
-  useShield: 0
-  shieldPrefab: {fileID: 0}
+  useShield: 1
+  shieldPrefab: {fileID: 6287953604210959080, guid: 5156d6689efbccb4991059f3a5755566, type: 3}
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
@@ -72,3 +72,11 @@ MonoBehaviour:
   passiveSearchDuration: 8
   searchMovementRadius: 6
   returnToOriginAfterSearch: 1
+  manaBarPrefab: {fileID: 662809776453450714, guid: 06a21cf2429ee2d4e879a503cb78faf6, type: 3}
+  maxMana: 100
+  manaRegenPerSecond: 18
+  manaRegenDelayAfterSpend: 1.2
+  spell1ManaCost: 20
+  spell2ManaCost: 30
+  spell3ManaCost: 45
+  lowManaRetreatThreshold: 0.25

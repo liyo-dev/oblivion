@@ -103,6 +103,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     private Animator _anim;
     private float _originalUpperWeight = 0f;
     private readonly object _lockOwner = new();
+    private bool _hasMovementLock;
     
     // Cooldown para Interact - evita que el botón A se procese como salto justo después de interactuar
     private float _interactCooldownUntil = 0f;
@@ -429,7 +430,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         ReenableAll();
         _stack.Clear();
         _stack.Add(ActionMode.Default);
-        UpdatePlayerLock(ActionMode.Default);
+        ReleasePlayerLockIfHeld();
     }
 
     // API pública para consultar estado
@@ -569,12 +570,22 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
         if (shouldLock)
         {
+            if (_hasMovementLock) return;
             PlayerLockService.Instance.Acquire(_lockOwner);
+            _hasMovementLock = true;
         }
-        else if (PlayerLockService.HasInstance)
+        else
         {
-            PlayerLockService.Instance.Release(_lockOwner);
+            ReleasePlayerLockIfHeld();
         }
+    }
+
+    void ReleasePlayerLockIfHeld()
+    {
+        if (!_hasMovementLock) return;
+        if (PlayerLockService.HasInstance)
+            PlayerLockService.Instance.Release(_lockOwner);
+        _hasMovementLock = false;
     }
 
     bool ShouldLockMovement(ActionMode mode)

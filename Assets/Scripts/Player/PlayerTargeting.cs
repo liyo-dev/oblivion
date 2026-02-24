@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 public class PlayerTargeting : MonoBehaviour, ITargetProvider
@@ -30,6 +31,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     [Header("Animación del Marker")]
     [SerializeField] private float markerShowDuration = 0.25f;
     [SerializeField] private float markerHideDuration = 0.15f;
+    [SerializeField] private int markerSortingOrder = 500;
+    [SerializeField] private bool forceUnlitForSpriteMarker = true;
 
     [Header("Debug")]
     [SerializeField] private bool verboseLogging = false;
@@ -49,6 +52,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     private Vector3 _markerOriginalScale;
     private Tween _markerTween;
     private bool _markerVisible;
+    private readonly List<Material> _runtimeMarkerMaterials = new();
 
     void Awake()
     {
@@ -61,15 +65,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             _marker = go.transform;
             _markerOriginalScale = _marker.localScale;
             _marker.localScale = Vector3.zero;
-            
-            var renderers = go.GetComponentsInChildren<Renderer>(true);
-            foreach (var renderer in renderers)
-            {
-                foreach (var mat in renderer.materials)
-                {
-                    mat.renderQueue = 3000;
-                }
-            }
+            ConfigureMarkerVisuals(go);
         }
         
         if (!aimOrigin && _cam) aimOrigin = _cam.transform;
@@ -79,6 +75,11 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         _markerTween?.Kill();
         if (_marker) Destroy(_marker.gameObject);
+        foreach (var material in _runtimeMarkerMaterials)
+        {
+            if (material != null) Destroy(material);
+        }
+        _runtimeMarkerMaterials.Clear();
         
         if (_currentTargetDamageable != null)
         {
@@ -89,7 +90,15 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     private void OnCurrentTargetDied()
     {
         if (verboseLogging) Debug.Log($"[PlayerTargeting] Target '{_currentTargetDamageable.name}' muerto, limpiando.");
-        ClearManualTarget();
+        if (_isManualTargetActive)
+        {
+            ClearManualTarget();
+            return;
+        }
+
+        CurrentTarget = null;
+        OnTargetChanged(null);
+        _nextScan = 0f;
     }
     
     public void SetManualTarget(Transform target)
@@ -117,6 +126,56 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         UpdateMarker();
         
         if (verboseLogging) Debug.Log($"[PlayerTargeting] Target MANUAL establecido: {(target ? target.name : "NULL")}");
+    }
+
+    void ConfigureMarkerVisuals(GameObject markerRoot)
+    {
+        if (markerRoot == null) return;
+
+        var spriteRenderers = markerRoot.GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (var spriteRenderer in spriteRenderers)
+        {
+            if (spriteRenderer == null) continue;
+            spriteRenderer.sortingOrder = Mathf.Max(spriteRenderer.sortingOrder, markerSortingOrder);
+            spriteRenderer.color = Color.white;
+
+            if (!forceUnlitForSpriteMarker) continue;
+
+            var sharedMaterial = spriteRenderer.sharedMaterial;
+            bool shouldApplyUnlitFallback = sharedMaterial == null;
+            if (!shouldApplyUnlitFallback && sharedMaterial.shader != null)
+            {
+                string shaderName = sharedMaterial.shader.name;
+                shouldApplyUnlitFallback =
+                    shaderName.IndexOf("Sprite-Lit", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (shaderName.IndexOf("Sprite", System.StringComparison.OrdinalIgnoreCase) >= 0 &&
+                     shaderName.IndexOf("Lit", System.StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            if (!shouldApplyUnlitFallback) continue;
+
+            Shader unlitShader = Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlitShader == null) continue;
+
+            var runtimeMaterial = new Material(unlitShader)
+            {
+                name = $"{spriteRenderer.gameObject.name}_MarkerRuntime"
+            };
+
+            if (spriteRenderer.sprite != null)
+            {
+                var texture = spriteRenderer.sprite.texture;
+                if (runtimeMaterial.HasProperty("_MainTex")) runtimeMaterial.SetTexture("_MainTex", texture);
+                if (runtimeMaterial.HasProperty("_BaseMap")) runtimeMaterial.SetTexture("_BaseMap", texture);
+            }
+
+            if (runtimeMaterial.HasProperty("_Color")) runtimeMaterial.SetColor("_Color", Color.white);
+            if (runtimeMaterial.HasProperty("_BaseColor")) runtimeMaterial.SetColor("_BaseColor", Color.white);
+            runtimeMaterial.renderQueue = 3000;
+
+            spriteRenderer.material = runtimeMaterial;
+            _runtimeMarkerMaterials.Add(runtimeMaterial);
+        }
     }
     
     public void ClearManualTarget()

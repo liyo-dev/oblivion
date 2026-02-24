@@ -232,7 +232,7 @@ public class PlayerLockService : MonoBehaviour
             }
             
             // Si ya no quedan locks, liberar el player
-            if (_owners.Count == 0 && IsLocked)
+            if (_owners.Count == 0)
             {
                 Debug.Log("[PlayerLockService] ✅ Todos los locks limpiados - Reactivando movimiento del jugador");
                 ReleaseHardLock();

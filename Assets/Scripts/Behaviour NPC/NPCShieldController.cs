@@ -22,7 +22,7 @@ public class NPCShieldController : MonoBehaviour
     [SerializeField, Min(0f)] private float hitFeedbackDuration = 0.3f;
 
     [Header("Colisiones a bloquear")]
-    [SerializeField] private string[] blockLayerNames = { "Projectile", "PlayerProjectile" };
+    [SerializeField] private string[] blockLayerNames = { "Projectile", "ProjectilePlayer", "MagicProjectile" };
 
     [Header("Duración")]
     [SerializeField, Min(0f)] private float minDefendDuration = 2f;  // Mínimo 2s defendiendo
@@ -37,6 +37,16 @@ public class NPCShieldController : MonoBehaviour
     private float _originalUpperBodyWeight;
 
     public bool IsDefending => _isDefending;
+
+    /// <summary>
+    /// Permite configurar el escudo desde NPCCombatConfig en runtime.
+    /// </summary>
+    public void ConfigureShield(GameObject prefab, float minDuration, float maxDuration)
+    {
+        shieldPrefab = prefab != null ? prefab : shieldPrefab;
+        minDefendDuration = Mathf.Max(0f, minDuration);
+        maxDefendDuration = Mathf.Max(minDefendDuration, maxDuration);
+    }
 
     void Awake()
     {
@@ -109,20 +119,21 @@ public class NPCShieldController : MonoBehaviour
     {
         if (_shieldInstance == null)
         {
-            if (shieldPrefab == null)
+            GameObject resolvedShieldPrefab = ResolveShieldPrefab(shieldPrefab);
+            if (resolvedShieldPrefab == null)
             {
                 Debug.LogWarning("[NPCShieldController] ⚠️ shieldPrefab no asignado, no se puede instanciar el escudo.");
                 return;
             }
 
             Transform parent = shieldAnchor != null ? shieldAnchor : transform;
-            _shieldInstance = Instantiate(shieldPrefab, parent);
+            _shieldInstance = Instantiate(resolvedShieldPrefab, parent);
             _shieldInstance.transform.localPosition = shieldOffset;
             _shieldInstance.transform.localRotation = Quaternion.identity;
 
             ConfigureShieldDetector(_shieldInstance);
 
-            Debug.Log($"[NPCShieldController] ✅ Escudo instanciado");
+            Debug.Log($"[NPCShieldController] ✅ Escudo instanciado: '{resolvedShieldPrefab.name}' en {_shieldInstance.transform.position}");
         }
     }
 
@@ -139,6 +150,7 @@ public class NPCShieldController : MonoBehaviour
     private void PlayUpperBodyAnimation(string animationName)
     {
         if (_animator == null || string.IsNullOrEmpty(animationName)) return;
+        if (_animator.runtimeAnimatorController == null) return;
 
         if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
         {
@@ -154,7 +166,7 @@ public class NPCShieldController : MonoBehaviour
     {
         _originalUpperBodyWeight = 0f;
 
-        if (_animator == null)
+        if (_animator == null || _animator.runtimeAnimatorController == null)
             return;
 
         if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
@@ -163,7 +175,7 @@ public class NPCShieldController : MonoBehaviour
 
     private void SetUpperBodyWeight(float weight)
     {
-        if (_animator == null)
+        if (_animator == null || _animator.runtimeAnimatorController == null)
             return;
 
         if (upperBodyLayer >= 0 && upperBodyLayer < _animator.layerCount)
@@ -189,9 +201,25 @@ public class NPCShieldController : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[NPCShieldController] ⚠️ No se encontró la capa '{name}'.");
+                Debug.Log($"[NPCShieldController] ℹ️ Capa '{name}' no existe en este proyecto, se omite.");
             }
         }
+    }
+
+    private GameObject ResolveShieldPrefab(GameObject configuredPrefab)
+    {
+        if (configuredPrefab == null)
+            return null;
+
+        // Compatibilidad: algunos assets asignaron un prefab "wrapper" que contiene otro NPCShieldController.
+        // En ese caso usamos directamente el prefab visual interno para que el escudo se vea.
+        var nestedController = configuredPrefab.GetComponent<NPCShieldController>();
+        if (nestedController != null && nestedController != this && nestedController.shieldPrefab != null)
+        {
+            return nestedController.shieldPrefab;
+        }
+
+        return configuredPrefab;
     }
 
     private void ConfigureShieldDetector(GameObject shield)
@@ -324,4 +352,3 @@ public class NPCShieldController : MonoBehaviour
     /// </summary>
     public class NPCShieldMarker : MonoBehaviour { }
 }
-

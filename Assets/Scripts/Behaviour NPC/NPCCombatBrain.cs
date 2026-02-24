@@ -45,6 +45,15 @@ namespace Game.NPC
             public float globalCooldown;            // Pausa entre ataques
             public bool spawnProjectileViaAnimEvent;
             public float fireDelaySeconds;          // Si no usa anim events
+            
+            [Header("Mana")]
+            public float maxMana;
+            public float manaRegenPerSecond;
+            public float manaRegenDelayAfterSpend;
+            public float manaCostLeft;
+            public float manaCostRight;
+            public float manaCostSpecial;
+            [Range(0f, 1f)] public float lowManaRetreatThreshold;
 
             [Header("Defense & Tactics")]
             [Range(0f, 1f)] public float difficultyLevel; // 0=Torpe, 1=Experto
@@ -92,6 +101,14 @@ namespace Game.NPC
 
         // Cooldowns
         float _leftCd, _rightCd, _specialCd, _shieldCd, _globalCd;
+        
+        // Mana
+        [SerializeField, ReadOnly] private float _currentMana;
+        [SerializeField, ReadOnly] private float _maxMana;
+        private float _lastManaSpendTime = -999f;
+        public event Action<float> OnManaChanged;
+        public float CurrentMana => _currentMana;
+        public float MaxMana => _maxMana;
         
         // Control de transiciones de estado para evitar nerviosismo
         private float _lastStateChangeTime;
@@ -175,6 +192,11 @@ namespace Game.NPC
             _lastKnownPlayerPosition = _player.position;
             _lastSeenTime = Time.time;
             _hasLineOfSight = true;
+            
+            _maxMana = Mathf.Max(1f, settings.maxMana);
+            _currentMana = _maxMana;
+            _lastManaSpendTime = -999f;
+            NotifyManaChanged();
 
             // ✅ Mostrar icono de admiración - ¡Te vi!
             if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
@@ -195,6 +217,10 @@ namespace Game.NPC
             if (_agent.enabled && _agent.isOnNavMesh) _agent.isStopped = true;
             _animator.SetBattleMode(false);
         }
+        
+        public float GetCurrentMana() => _currentMana;
+        public float GetMaxMana() => _maxMana;
+        public float GetManaPercent() => _maxMana > 0f ? _currentMana / _maxMana : 0f;
         
         /// <summary>
         /// Llamado cuando el NPC recibe daño. Si está buscando o huyendo, activa alerta inmediata.
@@ -280,6 +306,8 @@ namespace Game.NPC
             if (_specialCd > 0) _specialCd -= dt;
             if (_shieldCd > 0) _shieldCd -= Time.deltaTime; // Escudo no se ve afectado por multiplicador
             if (_globalCd > 0) _globalCd -= dt;
+            
+            RegenerateMana();
 
             // ✅ OPTIMIZACIÓN: Verificar Line of Sight cada 0.1s en lugar de cada frame (10x menos raycasts)
             if (_player != null)
@@ -411,6 +439,15 @@ namespace Game.NPC
                 yield break;
             }
             
+            // ✅ C. Reacción inteligente ante proyectiles entrantes (sin depender de azar)
+            if (HasIncomingProjectileThreat())
+            {
+                bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
+                _currentState = canShieldNow ? CombatState.DEFENSE : CombatState.REPOSITION;
+                Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Amenaza entrante detectada - {(canShieldNow ? "defensa con escudo" : "esquiva/reposición")}");
+                yield break;
+            }
+            
             // ✅ B2. NUEVO: Verificar si hay línea de fuego ANTES de decidir atacar
             // Si no hay línea de fuego clara, moverse a mejor posición
             if (!HasClearLineOfFire())
@@ -422,6 +459,15 @@ namespace Game.NPC
 
             // ✅ C. LÓGICA PRINCIPAL: ¿Tengo ataques disponibles?
             int attacksReady = CountAttacksReady();
+            float manaPercent = GetManaPercent();
+            
+            if (manaPercent <= settings.lowManaRetreatThreshold && attacksReady <= 1)
+            {
+                bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
+                _currentState = canShieldNow ? CombatState.DEFENSE : CombatState.HIDING_TO_RECHARGE;
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Maná bajo ({_currentMana:F1}/{_maxMana:F1}) - priorizando {(canShieldNow ? "defensa" : "cobertura/recarga")}");
+                yield break;
+            }
             
             // 🎭 DECISIÓN ESTRATÉGICA: ¿Debería fingir quedarse sin magia?
             // Solo considera engaño si:
@@ -475,11 +521,21 @@ namespace Game.NPC
             }
             else
             {
-                // ======== SIN ATAQUES: NECESITO RECARGAR DE VERDAD ========
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Sin ataques disponibles - Necesito esconderme para recargar (REAL)");
+                // ======== SIN ATAQUES: DEFENDER o RECARGAR ========
+                bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
+                if (canShieldNow)
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Sin ataques disponibles - priorizando escudo antes de recargar");
+                    _currentState = CombatState.DEFENSE;
+                }
+                else
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🔋 Sin ataques disponibles - Necesito esconderme para recargar (REAL)");
+                    _currentState = CombatState.HIDING_TO_RECHARGE;
+                }
+                
                 _isUsingDeceptionStrategy = false; // Ya no está fingiendo
                 _attacksReservedForAmbush = 0;
-                _currentState = CombatState.HIDING_TO_RECHARGE;
                 yield break;
             }
 
@@ -492,10 +548,152 @@ namespace Game.NPC
         private int CountAttacksReady()
         {
             int count = 0;
-            if (_leftCd <= 0) count++;
-            if (_rightCd <= 0) count++;
-            if (_specialCd <= 0) count++;
+            if (CanUseAttackSlot(settings.leftAttack, _leftCd)) count++;
+            if (CanUseAttackSlot(settings.rightAttack, _rightCd)) count++;
+            if (CanUseAttackSlot(settings.specialAttack, _specialCd)) count++;
             return count;
+        }
+        
+        private bool CanUseAttackSlot(AttackSlot slot, float currentCooldown)
+        {
+            if (_ctx?.Config?.combatConfig == null)
+                return false;
+            if (!_ctx.Config.combatConfig.HasSpell(slot.slotIndex))
+                return false;
+            if (currentCooldown > 0f)
+                return false;
+            return HasManaForSlot(slot.slotIndex);
+        }
+        
+        private bool TrySelectAttackSlot(out AttackSlot chosenAttack)
+        {
+            chosenAttack = default;
+            
+            bool canSpecial = CanUseAttackSlot(settings.specialAttack, _specialCd);
+            bool canRight = CanUseAttackSlot(settings.rightAttack, _rightCd);
+            bool canLeft = CanUseAttackSlot(settings.leftAttack, _leftCd);
+            
+            if (canSpecial && UnityEngine.Random.value > 0.4f) // 60% chance de special
+            {
+                chosenAttack = settings.specialAttack;
+                return true;
+            }
+            
+            if (canRight)
+            {
+                chosenAttack = settings.rightAttack;
+                return true;
+            }
+            
+            if (canLeft)
+            {
+                chosenAttack = settings.leftAttack;
+                return true;
+            }
+            
+            // Fallback: si special estaba disponible pero no entró por probabilidad
+            if (canSpecial)
+            {
+                chosenAttack = settings.specialAttack;
+                return true;
+            }
+            
+            return false;
+        }
+        
+        private float GetManaCostForSlot(int slotIndex)
+        {
+            return slotIndex switch
+            {
+                0 => Mathf.Max(0f, settings.manaCostLeft),
+                1 => Mathf.Max(0f, settings.manaCostRight),
+                2 => Mathf.Max(0f, settings.manaCostSpecial),
+                _ => 0f
+            };
+        }
+        
+        private bool HasManaForSlot(int slotIndex)
+        {
+            float manaCost = GetManaCostForSlot(slotIndex);
+            return _currentMana + 0.001f >= manaCost;
+        }
+        
+        private bool TrySpendManaForSlot(int slotIndex)
+        {
+            float manaCost = GetManaCostForSlot(slotIndex);
+            if (manaCost <= 0f) return true;
+            if (_currentMana < manaCost) return false;
+            
+            _currentMana = Mathf.Max(0f, _currentMana - manaCost);
+            _lastManaSpendTime = Time.time;
+            NotifyManaChanged();
+            return true;
+        }
+        
+        private void SetCooldownForSlot(int slotIndex, float cooldown)
+        {
+            float clamped = Mathf.Max(0f, cooldown);
+            switch (slotIndex)
+            {
+                case 0:
+                    _leftCd = clamped;
+                    break;
+                case 1:
+                    _rightCd = clamped;
+                    break;
+                case 2:
+                    _specialCd = clamped;
+                    break;
+            }
+        }
+        
+        private void RegenerateMana()
+        {
+            if (_maxMana <= 0f || _currentMana >= _maxMana)
+                return;
+            if (Time.time - _lastManaSpendTime < Mathf.Max(0f, settings.manaRegenDelayAfterSpend))
+                return;
+            
+            float before = _currentMana;
+            _currentMana = Mathf.Min(_maxMana, _currentMana + Mathf.Max(0f, settings.manaRegenPerSecond) * Time.deltaTime);
+            if (_currentMana > before + 0.01f)
+            {
+                NotifyManaChanged();
+            }
+        }
+        
+        private void NotifyManaChanged()
+        {
+            OnManaChanged?.Invoke(GetManaPercent());
+        }
+        
+        private float EstimateTimeToRecoverAnyAttack()
+        {
+            if (_ctx?.Config?.combatConfig == null)
+                return 0f;
+            if (CountAttacksReady() > 0)
+                return 0f;
+            
+            float minManaNeeded = float.PositiveInfinity;
+            if (_ctx.Config.combatConfig.HasSpell(0))
+            {
+                minManaNeeded = Mathf.Min(minManaNeeded, Mathf.Max(0f, settings.manaCostLeft) - _currentMana);
+            }
+            if (_ctx.Config.combatConfig.HasSpell(1))
+            {
+                minManaNeeded = Mathf.Min(minManaNeeded, Mathf.Max(0f, settings.manaCostRight) - _currentMana);
+            }
+            if (_ctx.Config.combatConfig.HasSpell(2))
+            {
+                minManaNeeded = Mathf.Min(minManaNeeded, Mathf.Max(0f, settings.manaCostSpecial) - _currentMana);
+            }
+            
+            if (float.IsPositiveInfinity(minManaNeeded))
+                return 0f;
+            
+            float manaToRecover = Mathf.Max(0f, minManaNeeded);
+            float regen = Mathf.Max(0.01f, settings.manaRegenPerSecond);
+            return Mathf.Max(0f, settings.manaRegenDelayAfterSpend) + (manaToRecover / regen);
         }
 
         // 2. REPOSICIONARSE: Moverse a un lugar seguro o mejor posición de ataque
@@ -764,20 +962,7 @@ namespace Game.NPC
 
             // Seleccionar ataque disponible (Prioridad: Special > Right > Left)
             AttackSlot chosenAttack = new AttackSlot();
-            bool found = false;
-
-            if (_specialCd <= 0 && UnityEngine.Random.value > 0.4f) // 60% chance de special
-            {
-                chosenAttack = settings.specialAttack; _specialCd = chosenAttack.cooldown; found = true;
-            }
-            else if (_rightCd <= 0)
-            {
-                chosenAttack = settings.rightAttack; _rightCd = chosenAttack.cooldown; found = true;
-            }
-            else if (_leftCd <= 0)
-            {
-                chosenAttack = settings.leftAttack; _leftCd = chosenAttack.cooldown; found = true;
-            }
+            bool found = TrySelectAttackSlot(out chosenAttack);
 
             if (found)
             {
@@ -799,6 +984,16 @@ namespace Game.NPC
                     _currentState = CombatState.REPOSITION;
                     yield break;
                 }
+                
+                // Consumir maná al confirmar ejecución del hechizo
+                if (!TrySpendManaForSlot(chosenAttack.slotIndex))
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Ataque cancelado: maná insuficiente en ejecución");
+                    _currentState = CombatState.HIDING_TO_RECHARGE;
+                    yield break;
+                }
+                
+                SetCooldownForSlot(chosenAttack.slotIndex, chosenAttack.cooldown);
                 
                 // Ejecutar Animación
                 _rawAnimator.Play(chosenAttack.animationState, settings.upperBodyLayer);
@@ -857,6 +1052,12 @@ namespace Game.NPC
                     }
                 }
             }
+            else
+            {
+                // No hay hechizos disponibles por maná/cooldown
+                _currentState = CombatState.EVALUATE;
+                yield break;
+            }
 
             _currentState = CombatState.EVALUATE;
         }
@@ -864,95 +1065,103 @@ namespace Game.NPC
         // 4. DEFENSA: La lógica inteligente basada en dificultad
         IEnumerator State_Defense()
         {
-            StopMove();
+            bool canShieldNow = settings.useShield && _shieldController != null && _shieldCd <= 0f;
+            if (canShieldNow)
+            {
+                Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando ESCUDO defensivo por {settings.shieldDuration:F1}s");
+                
+                _shieldController.StartDefending(settings.shieldDuration);
+                _shieldCd = settings.shieldCooldown + settings.shieldDuration;
+                
+                // Mientras defiende puede moverse: retrocede si está muy cerca o se desplaza lateralmente.
+                float defendTime = settings.shieldDuration;
+                float elapsed = 0f;
+                float repathTimer = 0f;
+                Vector3 strafeDirection = Vector3.zero;
+                while (elapsed < defendTime)
+                {
+                    if (_player != null)
+                    {
+                        repathTimer -= Time.deltaTime;
+                        if (repathTimer <= 0f)
+                        {
+                            Vector3 toPlayer = _player.position - transform.position;
+                            toPlayer.y = 0f;
+                            float dist = toPlayer.magnitude;
+                            if (dist > 0.01f)
+                            {
+                                Vector3 targetPos;
+                                if (dist < settings.minSafeDistance * 0.8f)
+                                {
+                                    Vector3 retreatDir = -toPlayer.normalized;
+                                    targetPos = transform.position + retreatDir * 2f;
+                                    MoveTo(targetPos, settings.walkSpeed * 0.55f);
+                                }
+                                else
+                                {
+                                    if (strafeDirection == Vector3.zero || UnityEngine.Random.value < 0.2f)
+                                    {
+                                        Vector3 right = Vector3.Cross(Vector3.up, toPlayer.normalized);
+                                        strafeDirection = UnityEngine.Random.value < 0.5f ? right : -right;
+                                    }
 
-            // Factor de decisión basado en dificultad
-            // Si Dificultad es 0.8, hay 80% de probabilidad de tomar la decisión "Experta"
+                                    targetPos = transform.position + strafeDirection * 1.5f;
+                                    MoveTo(targetPos, settings.walkSpeed * 0.65f);
+                                }
+                            }
+
+                            repathTimer = 0.35f;
+                        }
+                    }
+                    
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+                
+                StopMove();
+                Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Escudo completado - volviendo a evaluar");
+                _currentState = CombatState.EVALUATE;
+                yield break;
+            }
+            
+            // Sin escudo disponible, decidir cobertura/esquiva según dificultad
             bool makeSmartDecision = UnityEngine.Random.value < settings.difficultyLevel;
-
             if (makeSmartDecision)
             {
-                // === LÓGICA EXPERTA (Escudo o Cobertura) ===
-                
-                // A. Intentar usar ESCUDO si está disponible
-                if (settings.useShield && _shieldController != null && _shieldCd <= 0)
+                if (_shieldCd > 0)
                 {
-                    Debug.Log($"[CombatBrain:{gameObject.name}] 🛡️ Activando ESCUDO defensivo por {settings.shieldDuration:F1}s");
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Escudo en cooldown ({_shieldCd:F1}s) - buscando cobertura");
+                }
+                
+                Vector3 coverPos;
+                if (TryGetCoverPosition(out coverPos))
+                {
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🌳 Corriendo hacia cobertura para recargar");
+                    MoveTo(coverPos, settings.runSpeed);
                     
-                    _shieldController.StartDefending(settings.shieldDuration);
-                    _shieldCd = settings.shieldCooldown + settings.shieldDuration;
-                    
-                    // 🔥 NUEVO: Mientras se defiende, puede moverse lentamente
-                    // Esto permite estrategias como "defender y flanquear" o "retroceder con escudo"
-                    float defendTime = settings.shieldDuration;
-                    float elapsed = 0f;
-                    
-                    while (elapsed < defendTime)
+                    float timeout = 3f;
+                    while (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance > 0.5f && timeout > 0 && _agent.pathStatus == NavMeshPathStatus.PathComplete)
                     {
-                        // Si el jugador está muy cerca, retroceder lentamente con escudo
-                        if (_player != null)
-                        {
-                            float dist = Vector3.Distance(transform.position, _player.position);
-                            if (dist < settings.minSafeDistance * 0.7f)
-                            {
-                                Vector3 retreatDir = (transform.position - _player.position).normalized;
-                                Vector3 retreatPos = transform.position + retreatDir * 2f;
-                                MoveTo(retreatPos, settings.walkSpeed * 0.5f); // Retroceso lento
-                                
-                                Debug.Log($"[CombatBrain:{gameObject.name}] 🚶 Retrocediendo con escudo activo");
-                            }
-                        }
-                        
-                        elapsed += Time.deltaTime;
+                        timeout -= Time.deltaTime;
                         yield return null;
                     }
                     
-                    Debug.Log($"[CombatBrain:{gameObject.name}] ✅ Escudo completado - volviendo a evaluar");
+                    Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Esperando tras cobertura, recargando cooldowns...");
+                    yield return new WaitForSeconds(2.0f);
                 }
-                // B. Si no hay escudo disponible, buscar COBERTURA
                 else
                 {
-                    if (_shieldCd > 0)
-                    {
-                        Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Escudo en cooldown ({_shieldCd:F1}s) - buscando cobertura");
-                    }
-                    
-                    Vector3 coverPos;
-                    if (TryGetCoverPosition(out coverPos))
-                    {
-                        Debug.Log($"[CombatBrain:{gameObject.name}] 🌳 Corriendo hacia cobertura para recargar");
-                        MoveTo(coverPos, settings.runSpeed);
-                        
-                        // Esperar a llegar o timeout
-                        float timeout = 3f;
-                        while (_agent.enabled && _agent.isOnNavMesh && _agent.remainingDistance > 0.5f && timeout > 0 && _agent.pathStatus == NavMeshPathStatus.PathComplete)
-                        {
-                            timeout -= Time.deltaTime;
-                            yield return null;
-                        }
-                        
-                        // Esperar tras la cobertura recuperando cooldowns
-                        Debug.Log($"[CombatBrain:{gameObject.name}] ⏳ Esperando tras cobertura, recargando cooldowns...");
-                        yield return new WaitForSeconds(2.0f);
-                    }
-                    else
-                    {
-                        // Si no hay cobertura, esquiva simple
-                        Debug.Log($"[CombatBrain:{gameObject.name}] 🤸 No hay cobertura - esquiva táctica");
-                        yield return DoDodge();
-                    }
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🤸 No hay cobertura - esquiva táctica");
+                    yield return DoDodge();
                 }
             }
             else
             {
-                // === LÓGICA TORPE/BAJA DIFICULTAD ===
                 Debug.Log($"[CombatBrain:{gameObject.name}] 😵 Defensa torpe (baja dificultad)");
-                
-                // Solo espera un poco o hace una esquiva tonta
                 if (UnityEngine.Random.value > 0.5f)
                     yield return DoDodge();
-                else
-                    yield return new WaitForSeconds(1.0f); // Quedarse pasmado
+                else 
+                    yield return new WaitForSeconds(1.0f);
             }
 
             _currentState = CombatState.EVALUATE;
@@ -1093,7 +1302,10 @@ namespace Game.NPC
             }
             
             float rechargeStartTime = Time.time;
-            float maxRechargeTime = Mathf.Max(settings.leftAttack.cooldown, settings.rightAttack.cooldown, settings.specialAttack.cooldown);
+            float maxRechargeTime = Mathf.Max(
+                Mathf.Max(settings.leftAttack.cooldown, settings.rightAttack.cooldown, settings.specialAttack.cooldown),
+                EstimateTimeToRecoverAnyAttack() + 1.5f
+            );
             
             // 🎭 LÓGICA DE EMBOSCADA: Monitorear distancia del player
             float ambushTriggerDistance = settings.optimalDistance * 1.2f; // Activar emboscada cuando esté cerca
@@ -1191,7 +1403,10 @@ namespace Game.NPC
                 }
                 
                 // Si es recarga real, verificar si recargó suficientes ataques
-                if (!isAmbush && currentAttacks >= 2)
+                int desiredReadyAttacks = _ctx?.Config?.combatConfig != null
+                    ? Mathf.Clamp(_ctx.Config.combatConfig.GetSpellCount(), 1, 2)
+                    : 1;
+                if (!isAmbush && currentAttacks >= desiredReadyAttacks)
                 {
                     break; // Recarga completada
                 }
@@ -1332,10 +1547,75 @@ namespace Game.NPC
         /// </summary>
         private bool IsPlayerAttacking()
         {
-            // Por ahora, verificar si hay proyectiles del player cerca
-            // Esto es una aproximación - se puede mejorar con eventos
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, 10f, _projectileBuffer, LayerMask.GetMask("PlayerProjectile")); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
-            return hitCount > 0;
+            return HasIncomingProjectileThreat(10f);
+        }
+        
+        private bool HasIncomingProjectileThreat(float scanRadius = 8f)
+        {
+            LayerMask projectileMask = LayerMask.GetMask("PlayerProjectile", "Projectile", "ProjectilePlayer", "MagicProjectile");
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _projectileBuffer, projectileMask);
+            
+            // Fallback: en algunos prefabs los layers no están normalizados.
+            // Hacemos un segundo escaneo abierto y filtramos por tipo.
+            if (hitCount <= 0)
+            {
+                hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _projectileBuffer);
+                if (hitCount <= 0)
+                    return false;
+            }
+            
+            Vector3 npcCenter = transform.position + Vector3.up * 1.1f;
+            for (int i = 0; i < hitCount; i++)
+            {
+                var col = _projectileBuffer[i];
+                if (col == null) continue;
+                
+                GameObject projectileGo = col.attachedRigidbody != null ? col.attachedRigidbody.gameObject : col.gameObject;
+                if (projectileGo == null) continue;
+                if (projectileGo == gameObject || projectileGo.transform.IsChildOf(transform)) continue;
+                if (!IsLikelyPlayerProjectile(projectileGo)) continue;
+                
+                Vector3 toNpc = npcCenter - projectileGo.transform.position;
+                if (toNpc.sqrMagnitude < 0.05f) return true;
+                
+                Vector3 velocity = Vector3.zero;
+                var rb = projectileGo.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    velocity = rb.linearVelocity;
+                }
+                if (velocity.sqrMagnitude < 0.01f)
+                {
+                    velocity = projectileGo.transform.forward * 10f;
+                }
+                
+                float approachDot = Vector3.Dot(velocity.normalized, toNpc.normalized);
+                if (approachDot > 0.65f)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        private bool IsLikelyPlayerProjectile(GameObject projectileGo)
+        {
+            if (projectileGo == null)
+                return false;
+            
+            // Ignorar proyectiles de enemigos.
+            if (projectileGo.GetComponentInParent<EnemyProjectile>() != null)
+                return false;
+            
+            string layerName = LayerMask.LayerToName(projectileGo.layer);
+            if (layerName == "Projectile" || layerName == "PlayerProjectile" || layerName == "ProjectilePlayer" || layerName == "MagicProjectile")
+                return true;
+            
+            if (projectileGo.GetComponentInParent<MagicProjectile>() != null)
+                return true;
+            
+            return false;
         }
 
         // =================================================================================
@@ -1459,7 +1739,7 @@ namespace Game.NPC
 
         private bool HasAnyAttackReady()
         {
-            return _leftCd <= 0 || _rightCd <= 0 || _specialCd <= 0;
+            return CountAttacksReady() > 0;
         }
 
         private void MoveTo(Vector3 pos, float speed)
@@ -1533,22 +1813,27 @@ namespace Game.NPC
             Vector3 targetPos = _player.position + Vector3.up * 1.0f; // Centro del jugador
             Vector3 direction = targetPos - origin;
             float distance = direction.magnitude;
-            
-            // ✅ Raycast para detectar obstáculos (usa QueryTriggerInteraction.Ignore para no detectar triggers)
-            if (Physics.Raycast(origin, direction.normalized, out RaycastHit hit, distance, ~0, QueryTriggerInteraction.Ignore))
+
+            RaycastHit[] hits = Physics.RaycastAll(origin, direction.normalized, distance, ~0, QueryTriggerInteraction.Ignore);
+            if (hits.Length > 0)
             {
-                // Verificar si el objeto golpeado ES el jugador
-                if (hit.collider.CompareTag("Player"))
+                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                for (int i = 0; i < hits.Length; i++)
                 {
-                    // Línea de visión clara - golpeó directamente al jugador
-                    Debug.DrawRay(origin, direction, Color.green);
-                    return true;
+                    var hit = hits[i];
+                    if (hit.collider == null) continue;
+                    if (ShouldIgnoreVisionHit(hit.collider)) continue;
+                    
+                    if (hit.collider.CompareTag("Player"))
+                    {
+                        Debug.DrawRay(origin, direction, Color.green);
+                        return true;
+                    }
+                    
+                    Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
+                    Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Tag: {hit.collider.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
+                    return false;
                 }
-                
-                // ✅ Golpeó otra cosa ANTES que al jugador - visión bloqueada
-                Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
-                Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Tag: {hit.collider.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
-                return false;
             }
             
             // No golpeó nada - línea de visión clara (caso raro)
@@ -1571,37 +1856,45 @@ namespace Game.NPC
             Vector3 direction = (targetPos - spawnPos).normalized;
             float distance = Vector3.Distance(spawnPos, targetPos);
             
-            // Layer mask para obstáculos (Default layer)
-            int defaultLayer = LayerMask.NameToLayer("Default");
-            LayerMask obstacleMask = 1 << defaultLayer;
-            
-            // Verificar si hay obstáculos en el camino del proyectil
-            if (Physics.Raycast(spawnPos, direction, out RaycastHit hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+            RaycastHit[] hits = Physics.RaycastAll(spawnPos, direction, distance, ~0, QueryTriggerInteraction.Ignore);
+            if (hits.Length > 0)
             {
-                // Hay un obstáculo entre el NPC y el jugador
-                float distToObstacle = hit.distance;
-                
-                // Si el obstáculo está muy cerca (menos de 2 metros), definitivamente no disparar
-                if (distToObstacle < 2f)
+                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                for (int i = 0; i < hits.Length; i++)
                 {
-                    Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Línea de fuego bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m - MUY CERCA");
-                    Debug.DrawLine(spawnPos, hit.point, Color.red, 0.5f);
-                    return false;
-                }
-                
-                // Si el obstáculo está a media distancia, también es peligroso
-                if (distToObstacle < distance * 0.5f)
-                {
-                    Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Línea de fuego parcialmente bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m");
-                    Debug.DrawLine(spawnPos, hit.point, Color.yellow, 0.5f);
-                    return false;
+                    var hit = hits[i];
+                    if (hit.collider == null) continue;
+                    if (ShouldIgnoreVisionHit(hit.collider)) continue;
+                    if (hit.collider.CompareTag("Player")) break;
+                    
+                    float distToObstacle = hit.distance;
+                    if (distToObstacle < 2f)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Línea de fuego bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m - MUY CERCA");
+                        Debug.DrawLine(spawnPos, hit.point, Color.red, 0.5f);
+                        return false;
+                    }
+                    
+                    if (distToObstacle < distance * 0.5f)
+                    {
+                        Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Línea de fuego parcialmente bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m");
+                        Debug.DrawLine(spawnPos, hit.point, Color.yellow, 0.5f);
+                        return false;
+                    }
+                    break;
                 }
             }
             
             // Verificación adicional: raycast esférico para detectar obstáculos cercanos al camino del proyectil
             float projectileRadius = 0.3f; // Radio aproximado del proyectil
-            if (Physics.SphereCast(spawnPos, projectileRadius, direction, out RaycastHit sphereHit, distance * 0.9f, obstacleMask, QueryTriggerInteraction.Ignore))
+            if (Physics.SphereCast(spawnPos, projectileRadius, direction, out RaycastHit sphereHit, distance * 0.9f, ~0, QueryTriggerInteraction.Ignore))
             {
+                if (sphereHit.collider != null && ShouldIgnoreVisionHit(sphereHit.collider))
+                {
+                    Debug.DrawLine(spawnPos, targetPos, Color.green, 0.5f);
+                    return true;
+                }
+                
                 // Verificar si no es el jugador
                 if (!sphereHit.collider.CompareTag("Player"))
                 {
@@ -1619,6 +1912,27 @@ namespace Game.NPC
             // Línea de fuego clara
             Debug.DrawLine(spawnPos, targetPos, Color.green, 0.5f);
             return true;
+        }
+        
+        private bool ShouldIgnoreVisionHit(Collider col)
+        {
+            if (col == null) return true;
+            GameObject go = col.attachedRigidbody != null ? col.attachedRigidbody.gameObject : col.gameObject;
+            if (go == null) return true;
+            
+            if (go == gameObject || go.transform.IsChildOf(transform))
+                return true;
+            
+            // Proyectiles y VFX transitorios no deben bloquear visión ni línea de fuego.
+            if (go.GetComponentInParent<MagicProjectile>() != null) return true;
+            if (go.GetComponentInParent<EnemyProjectile>() != null) return true;
+            if (go.GetComponentInParent<NPCShieldController.NPCShieldMarker>() != null) return true;
+            
+            string layerName = LayerMask.LayerToName(go.layer);
+            if (layerName == "Projectile" || layerName == "ProjectileEnemy" || layerName == "EnemyProjectile" || layerName == "PlayerProjectile" || layerName == "ProjectilePlayer")
+                return true;
+            
+            return false;
         }
         
         /// <summary>

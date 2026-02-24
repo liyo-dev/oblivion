@@ -102,6 +102,12 @@ namespace Game.NPC.Modules
         [Tooltip("Prefab de la barra de vida del NPC (Canvas con NPCHealthBarUI)")]
         public GameObject healthBarPrefab;
         
+        [Tooltip("Prefab de la barra de maná del NPC (Canvas con NPCManaBarUI)")]
+        public GameObject manaBarPrefab;
+        
+        [Tooltip("Si está activo, muestra la barra de maná del NPC al jugador (recomendado OFF para no revelar recursos internos)")]
+        public bool showManaBarToPlayer = false;
+        
         [Header("Diálogos")]
         [Tooltip("Diálogo que se muestra durante la fase de alerta (antes del combate)")]
         public DialogueAsset dialogueOnAlert;
@@ -204,6 +210,35 @@ namespace Game.NPC.Modules
         [Tooltip("Probabilidad de usar hechizo 3 especial (0-1)")]
         public float spell3Chance = 0.2f;
         
+        [Header("🔋 Maná (NPC)")]
+        [Min(1f)]
+        [Tooltip("Maná máximo del NPC")]
+        public float maxMana = 100f;
+        
+        [Min(0f)]
+        [Tooltip("Regeneración de maná por segundo")]
+        public float manaRegenPerSecond = 18f;
+        
+        [Min(0f)]
+        [Tooltip("Retraso tras gastar maná antes de empezar a regenerar")]
+        public float manaRegenDelayAfterSpend = 1.2f;
+        
+        [Min(0f)]
+        [Tooltip("Coste de maná del hechizo 1")]
+        public float spell1ManaCost = 20f;
+        
+        [Min(0f)]
+        [Tooltip("Coste de maná del hechizo 2")]
+        public float spell2ManaCost = 30f;
+        
+        [Min(0f)]
+        [Tooltip("Coste de maná del hechizo 3")]
+        public float spell3ManaCost = 45f;
+        
+        [Range(0f, 1f)]
+        [Tooltip("Umbral de maná bajo para priorizar cobertura/defensa")]
+        public float lowManaRetreatThreshold = 0.25f;
+        
         [Header("🛡️ Escudo Defensivo")]
         [Tooltip("¿El NPC puede usar escudo para defenderse cuando no puede atacar?")]
         public bool useShield = false;
@@ -286,6 +321,12 @@ namespace Game.NPC.Modules
                 return false;
             }
             
+            if (maxMana <= 0f)
+            {
+                errorMessage = "Max Mana debe ser mayor a 0";
+                return false;
+            }
+            
             if (detectionRange < maxAttackDistance)
             {
                 errorMessage = "Detection Range debe ser mayor o igual a Max Attack Distance";
@@ -364,6 +405,20 @@ namespace Game.NPC.Modules
                 0 => spell1Chance,
                 1 => spell2Chance,
                 2 => spell3Chance,
+                _ => 0f
+            };
+        }
+        
+        /// <summary>
+        /// Obtiene el coste de maná de un hechizo por su índice (0-2)
+        /// </summary>
+        public float GetSpellManaCost(int spellIndex)
+        {
+            return spellIndex switch
+            {
+                0 => spell1ManaCost,
+                1 => spell2ManaCost,
+                2 => spell3ManaCost,
                 _ => 0f
             };
         }

@@ -340,12 +340,38 @@ public class QuestManager : MonoBehaviour
 
         if (AllStepsCompleted(rq))
         {
-            rq.State = QuestState.Completed;
-            OnQuestCompleted?.Invoke(questId);
-            ArchiveCompletedQuest(questId);
+            if (ShouldAutoCompleteWhenAllStepsDone(questId))
+            {
+                // Usar la ruta centralizada para mantener side-effects consistentes
+                // (consumo de items, archivado, eventos, etc.).
+                CompleteQuest(questId);
+                return;
+            }
+            
+            Debug.Log($"[QuestManager] ℹ️ Quest '{questId}' con todos los pasos completos, esperando entrega por diálogo con NPC (CompletionMode: on-talk).");
         }
 
         OnQuestsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Determina si una quest debe auto-completarse al tener todos los pasos listos.
+    /// Las quests encadenadas en NPCs se entregan hablando con el NPC (on-talk), no automáticamente.
+    /// </summary>
+    private bool ShouldAutoCompleteWhenAllStepsDone(string questId)
+    {
+        var questEntry = FindQuestChainEntry(questId);
+        if (questEntry == null)
+            return true; // quests no ligadas a NPC chain mantienen comportamiento clásico
+
+        return questEntry.completionMode switch
+        {
+            // En las quests de NPC la entrega final es conversacional.
+            QuestCompletionMode.Manual => false,
+            QuestCompletionMode.CompleteOnTalkIfStepsReady => false,
+            QuestCompletionMode.AutoCompleteOnTalk => false,
+            _ => true
+        };
     }
 
     /// <summary>

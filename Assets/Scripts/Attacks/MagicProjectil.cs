@@ -167,27 +167,41 @@ public class MagicProjectile : MonoBehaviour
     /// </summary>
     public void Launch(Vector3 direction, float speed, bool useGravity)
     {
-        if (direction.sqrMagnitude > 0.0001f)
-            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        Vector3 normalizedDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
+        if (normalizedDirection.sqrMagnitude <= 0.0001f)
+            normalizedDirection = Vector3.forward;
+
+        transform.rotation = Quaternion.LookRotation(normalizedDirection, Vector3.up);
 
         _cfg.initialSpeed = speed;
         _cfg.useGravity = useGravity;
 
         if (_rb != null)
         {
-            _rb.useGravity = useGravity;
-                // Asegurar estado físico limpio antes de aplicar velocidad
+            // Nunca aplicar velocidades físicas a RB cinemático (evita warnings de Unity).
+            if (!_rb.isKinematic)
+            {
+                _rb.useGravity = useGravity;
                 _rb.angularVelocity = Vector3.zero;
-                _rb.linearVelocity = direction.normalized * Mathf.Max(0f, speed);
-                // Garantizar que el proyectil usa la posición actual como origen de rango
-                _spawnPos = transform.position;
+                _rb.linearVelocity = normalizedDirection * Mathf.Max(0f, speed);
                 _movementEnabled = true;
+            }
+            else
+            {
+                _rb.useGravity = false;
+                _movementEnabled = true;
+                transform.forward = normalizedDirection;
+            }
+
+            // Garantizar que el proyectil usa la posición actual como origen de rango
+            _spawnPos = transform.position;
         }
         else
         {
             // Movimiento manual en Update usa _cfg.initialSpeed
-            transform.forward = direction.normalized;
-                _spawnPos = transform.position;
+            transform.forward = normalizedDirection;
+            _spawnPos = transform.position;
+            _movementEnabled = true;
         }
     }
 
@@ -246,13 +260,17 @@ public class MagicProjectile : MonoBehaviour
                 // Ignorar si es el instigador
                 if (_instigator != null && hit.transform.IsChildOf(_instigator.transform))
                     continue;
+
+                // Escudo NPC activo: bloquea impacto y evita daño.
+                if (TryHandleNpcShieldBlock(hit, transform.position))
+                    return;
                 
                 // Buscar Damageable
                 var damageable = hit.GetComponent<Damageable>() ?? hit.GetComponentInParent<Damageable>();
                 if (damageable != null)
                 {
                     Debug.Log($"[MagicProjectile] 🎯 IMPACTO por PROXIMIDAD contra ENEMIGO: {hit.gameObject.name}!");
-                    damageable.TakeDamage(_cfg.damage);
+                    ApplyDamageAndKnockback(hit, transform.position);
                     SpawnImpactEffects(transform.position);
                     if (_cfg.destroyOnHit) End(true);
                     return;
@@ -318,6 +336,10 @@ public class MagicProjectile : MonoBehaviour
             }
             return;
         }
+
+        // Escudo NPC activo: bloquear antes de cualquier lógica de daño.
+        if (TryHandleNpcShieldBlock(other, hitPoint))
+            return;
         
         // 🔍 DEBUG: Log de cada colisión (solo si no se ignora)
         // Debug.Log($"[MagicProjectile] OnHit: {objectName} (Layer: {layerName}, Tag: {other.tag})");
@@ -339,21 +361,8 @@ public class MagicProjectile : MonoBehaviour
         if (isEnemy)
         {
             Debug.Log($"[MagicProjectile] 🎯 IMPACTO CONTRA ENEMIGO: {other.gameObject.name}!");
-            
-            // Buscar Damageable
-            var enemyDamageable = other.GetComponent<Damageable>();
-            if (enemyDamageable == null)
-                enemyDamageable = other.GetComponentInParent<Damageable>();
-            
-            if (enemyDamageable != null)
-            {
-                enemyDamageable.TakeDamage(_cfg.damage);
-                Debug.Log($"[MagicProjectile] ✅ Daño aplicado: {_cfg.damage} a {enemyDamageable.gameObject.name}");
-            }
-            else
-            {
-                Debug.LogWarning($"[MagicProjectile] ⚠️ No se encontró Damageable en {other.gameObject.name}");
-            }
+
+            ApplyDamageAndKnockback(other, hitPoint);
             
             SpawnImpactEffects(hitPoint);
             if (_cfg.destroyOnHit) End(true);
@@ -462,6 +471,13 @@ public class MagicProjectile : MonoBehaviour
 
     void ApplyDamageAndKnockback(Collider col, Vector3 hitPoint)
     {
+        // Si el objetivo está defendiendo con escudo NPC, no recibe daño ni knockback.
+        if (col != null && TryGetDefendingNpcShield(col, out var defendingShield))
+        {
+            defendingShield.OnShieldHit();
+            return;
+        }
+
         // Daño simple
         if (col)
         {
@@ -506,6 +522,70 @@ public class MagicProjectile : MonoBehaviour
 
         // Si usas pooling, reemplaza por Despawn
         Destroy(gameObject);
+    }
+
+    private bool TryHandleNpcShieldBlock(Collider other, Vector3 hitPoint)
+    {
+        if (!TryGetDefendingNpcShield(other, out var shieldController))
+            return false;
+
+        shieldController.OnShieldHit();
+        SpawnImpactEffects(hitPoint);
+        End(true);
+        Debug.Log($"[MagicProjectile] 🛡️ Bloqueado por escudo NPC: {shieldController.gameObject.name}");
+        return true;
+    }
+
+    private static bool TryGetDefendingNpcShield(Collider other, out NPCShieldController shieldController)
+    {
+        shieldController = null;
+        if (other == null) return false;
+
+        if (TryGetDefendingNpcShieldFromTransform(other.transform, out shieldController))
+            return true;
+
+        if (other.attachedRigidbody != null &&
+            TryGetDefendingNpcShieldFromTransform(other.attachedRigidbody.transform, out shieldController))
+            return true;
+
+        var damageable = other.GetComponent<Damageable>() ??
+                         other.GetComponentInParent<Damageable>() ??
+                         other.GetComponentInChildren<Damageable>(true);
+        if (damageable != null && TryGetDefendingNpcShieldFromTransform(damageable.transform, out shieldController))
+            return true;
+
+        if (other.transform.root != null &&
+            TryGetDefendingNpcShieldFromTransform(other.transform.root, out shieldController))
+            return true;
+
+        shieldController = null;
+        return false;
+    }
+
+    private static bool TryGetDefendingNpcShieldFromTransform(Transform source, out NPCShieldController shieldController)
+    {
+        shieldController = null;
+        if (source == null) return false;
+
+        var shieldMarker = source.GetComponent<NPCShieldController.NPCShieldMarker>() ??
+                           source.GetComponentInParent<NPCShieldController.NPCShieldMarker>() ??
+                           source.GetComponentInChildren<NPCShieldController.NPCShieldMarker>(true);
+        if (shieldMarker != null)
+        {
+            shieldController = shieldMarker.GetComponentInParent<NPCShieldController>() ??
+                               shieldMarker.GetComponentInChildren<NPCShieldController>(true);
+            if (shieldController != null && shieldController.IsDefending)
+                return true;
+        }
+
+        shieldController = source.GetComponent<NPCShieldController>() ??
+                           source.GetComponentInParent<NPCShieldController>() ??
+                           source.GetComponentInChildren<NPCShieldController>(true);
+        if (shieldController != null && shieldController.IsDefending)
+            return true;
+
+        shieldController = null;
+        return false;
     }
     
     // ==== Helpers ==============================================================

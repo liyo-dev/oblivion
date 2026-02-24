@@ -28,6 +28,8 @@ MonoBehaviour:
   alertIconDuration: 2
   alertIconHeight: 2.5
   healthBarPrefab: {fileID: 662809776453450714, guid: c9ac1bd5123d1544b8b85daac217ad0b, type: 3}
+  manaBarPrefab: {fileID: 662809776453450714, guid: 06a21cf2429ee2d4e879a503cb78faf6, type: 3}
+  showManaBarToPlayer: 0
   dialogueOnAlert: {fileID: 11400000, guid: 700d531819f7be649a1401510b181f8c, type: 2}
   dialogueOnDefeat: {fileID: 0}
   dialogueAfterDefeat: {fileID: 0}
@@ -40,6 +42,7 @@ MonoBehaviour:
   moveTeamMembersOnDefeat: 1
   dialogueOnDizzy: {fileID: 11400000, guid: 24a33d8d18f10494fb2e7eeb6488f4d2, type: 2}
   disappearVFXPrefab: {fileID: 0}
+  disappearTransition: {fileID: 0}
   disappearDuration: 2
   alertMusicEvent: Npc_Battle_Alert
   battleMusicId: Npc_Battle
@@ -56,12 +59,19 @@ MonoBehaviour:
   spell1Chance: 0.5
   spell2Chance: 0.3
   spell3Chance: 0.2
-  useShield: 0
-  shieldPrefab: {fileID: 0}
+  maxMana: 100
+  manaRegenPerSecond: 18
+  manaRegenDelayAfterSpend: 1.2
+  spell1ManaCost: 20
+  spell2ManaCost: 30
+  spell3ManaCost: 45
+  lowManaRetreatThreshold: 0.25
+  useShield: 1
+  shieldPrefab: {fileID: 6287953604210959080, guid: 5156d6689efbccb4991059f3a5755566, type: 3}
   shieldMinDuration: 2
   shieldMaxDuration: 5
   shieldCooldown: 10
-  useTacticalRetreat: 0
+  useTacticalRetreat: 1
   retreatHealthThreshold: 0.3
   retreatCooldown: 15
   coverSearchRadius: 15

@@ -2,6 +2,7 @@
 using Game.NPC.Common;
 using Game.NPC.Modules;
 using Game.NPC;
+using Game.UI;
 
 namespace Game.NPC.States
 {
@@ -94,6 +95,13 @@ namespace Game.NPC.States
                     globalCooldown = 1.5f, // Pausa entre acciones para "ritmo humano"
                     spawnProjectileViaAnimEvent = false,
                     fireDelaySeconds = 0.4f, // Ajustar según animación
+                    maxMana = cc.maxMana,
+                    manaRegenPerSecond = cc.manaRegenPerSecond,
+                    manaRegenDelayAfterSpend = cc.manaRegenDelayAfterSpend,
+                    manaCostLeft = cc.spell1ManaCost,
+                    manaCostRight = cc.spell2ManaCost,
+                    manaCostSpecial = cc.spell3ManaCost,
+                    lowManaRetreatThreshold = cc.lowManaRetreatThreshold,
                     
                     // Tácticas & Defensa
                     difficultyLevel = 0.7f, // Valor por defecto equilibrado
@@ -226,12 +234,33 @@ namespace Game.NPC.States
             var healthBar = context.Transform.GetComponent<NPCHealthBarSpawner>();
             if (healthBar == null) healthBar = context.Transform.gameObject.AddComponent<NPCHealthBarSpawner>();
             
+            // Escudo (opcional según config)
+            if (cc.useShield)
+            {
+                var shieldController = context.Transform.GetComponent<NPCShieldController>();
+                if (shieldController == null)
+                {
+                    shieldController = context.Transform.gameObject.AddComponent<NPCShieldController>();
+                }
+                shieldController.ConfigureShield(cc.shieldPrefab, cc.shieldMinDuration, cc.shieldMaxDuration);
+            }
+            
             // Solo resetear vida y spawnear barra si NO ha sido derrotado previamente
             if (!context.WasDefeatedInCombat)
             {
                 damageable.SetMaxAndCurrent(cc.health, cc.health);
                 if (cc.healthBarPrefab != null) healthBar.SetHealthBarPrefab(cc.healthBarPrefab);
                 healthBar.SpawnHealthBar();
+                
+                // UI Barra de Maná (opcional, recomendado solo debug)
+                if (cc.showManaBarToPlayer && cc.manaBarPrefab != null)
+                {
+                    var manaBar = context.Transform.GetComponentInChildren<NPCManaBarUI>(true);
+                    if (manaBar == null)
+                    {
+                        Object.Instantiate(cc.manaBarPrefab, context.Transform);
+                    }
+                }
             }
 
             // Desactivar interacción "Hablar" durante pelea

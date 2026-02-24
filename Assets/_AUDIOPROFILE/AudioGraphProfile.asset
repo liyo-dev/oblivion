@@ -47,8 +47,6 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   - sceneName: MainWorld
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
-  - sceneName: Mountains
-    music: {fileID: 8300000, guid: 962ab2ced719b6d49a59008f80d9e59c, type: 3}
   eventSfx:
   - eventKey: UI_Navigate
     sfx: {fileID: 8300000, guid: c83e31fc92bdc722b8d62fa8ebea0722, type: 3}
