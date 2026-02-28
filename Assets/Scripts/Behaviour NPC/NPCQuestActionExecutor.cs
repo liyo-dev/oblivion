@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Game.NPC.Modules;
@@ -247,52 +247,51 @@ namespace Game.NPC
             // Esperar un frame para asegurar que todos los callbacks de CompleteQuest han terminado
             yield return null;
 
-            // ✅ FIX: Si ya hay un diálogo abierto (ej: del grafo narrativo), esperar a que termine o cancelar
+            // Si ya hay un diálogo abierto (ej: del grafo narrativo iniciando la siguiente quest),
+            // esperar a que termine. La post-action SIEMPRE debe ejecutarse sin importar cuánto tarde.
             var dm = DialogueManager.Instance;
             if (dm != null && dm.IsOpen)
             {
-                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏳ Ya hay un diálogo abierto - esperando a que termine antes de ejecutar post-action");
-                
-                // Esperar a que termine el diálogo actual (máximo 30 segundos)
-                float waitTime = 0f;
-                while (dm.IsOpen && waitTime < 30f)
+                Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏳ Diálogo activo - esperando que termine para ejecutar post-action...");
+
+                while (dm.IsOpen)
                 {
                     yield return new WaitForSeconds(0.5f);
-                    waitTime += 0.5f;
                 }
-                
-                if (dm.IsOpen)
-                {
-                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⏭️ Timeout esperando diálogo - cancelando post-action");
-                    _isExecutingPostAction = false;
-                    yield break;
-                }
-                
-                // Esperar un poco más después de que termine
+
+                // Pequeña pausa tras el cierre para evitar conflictos de frame
                 yield return new WaitForSeconds(0.5f);
             }
 
-            // ✅ VALIDACIÓN DE DISTANCIA: No ejecutar diálogos automáticos si el NPC está lejos del jugador
-            const float maxDialogueDistance = 20f; // Distancia máxima para auto-iniciar diálogos
-            
+            // VALIDACIÓN DE DISTANCIA: cancela solo diálogos puros; para Move/Teleport/Combat
+            // saltar el diálogo previo pero siempre ejecutar la acción principal.
+            bool skipPreActionDialogue = false;
+
             var player = PlayerService.Player;
             if (player != null)
             {
                 float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
-                
-                // Si hay diálogo pre-acción o la acción es un diálogo, validar distancia
-                bool hasDialogue = action.dialogueBeforeAction != null || action.actionType == QuestActionType.Dialogue;
-                
-                if (hasDialogue && distanceToPlayer > maxDialogueDistance)
+
+                if (distanceToPlayer > action.maxDialogueDistance)
                 {
-                    Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Diálogo cancelado - NPC muy lejos del jugador ({distanceToPlayer:F1}m > {maxDialogueDistance}m)");
-                    _isExecutingPostAction = false;
-                    yield break;
+                    if (action.actionType == QuestActionType.Dialogue)
+                    {
+                        // Acción puramente de diálogo y NPC muy lejos: cancelar
+                        Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Acción de diálogo cancelada - NPC muy lejos ({distanceToPlayer:F1}m > {maxDialogueDistance}m)");
+                        _isExecutingPostAction = false;
+                        yield break;
+                    }
+                    else
+                    {
+                        // Acción de Move/Teleport/Combat: saltar diálogo previo pero ejecutar la acción
+                        Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ NPC lejos ({distanceToPlayer:F1}m) - saltando diálogo previo, ejecutando {action.actionType} igualmente");
+                        skipPreActionDialogue = true;
+                    }
                 }
             }
 
-            // 1. Diálogo pre-acción
-            if (action.dialogueBeforeAction != null)
+            // 1. Diálogo pre-acción (se omite si el NPC está lejos del jugador)
+            if (!skipPreActionDialogue && action.dialogueBeforeAction != null)
             {
                 var dialogueManager = DialogueManager.Instance;
                 

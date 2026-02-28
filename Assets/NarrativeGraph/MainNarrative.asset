@@ -210,7 +210,6 @@ MonoBehaviour:
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
         position: {x: -406, y: -407}
         outputs:
-        - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
         debugLogs: 0
@@ -424,8 +423,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 64ed2870-8561-471f-bb08-803a726be060
-        position: {x: -546, y: -173}
-        outputs: []
+        position: {x: -97, y: -158}
+        outputs:
+        - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
         amount: 20
         logWarnings: 0

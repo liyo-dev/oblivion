@@ -100,6 +100,11 @@ namespace Game.NPC.Modules
         [Header("Diálogo Pre-Acción")]
         [Tooltip("Diálogo antes de ejecutar la acción (opcional)")]
         public DialogueAsset dialogueBeforeAction;
+
+        [Tooltip("Distancia máxima jugador-NPC para reproducir el diálogo previo. " +
+                 "Si el jugador está más lejos el diálogo se salta, pero la acción (Move/Teleport) siempre se ejecuta.")]
+        [Min(1f)]
+        public float maxDialogueDistance = 30f;
         
         [Header("Move/Teleport Settings")]
         [Tooltip("Nombre del anchor de destino (sistema de teletransporte)")]
