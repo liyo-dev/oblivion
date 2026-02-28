@@ -585,6 +585,15 @@ namespace Game.NPC.Modules
         private IEnumerator ExecuteDialogue(NarrativeChainEntry entry)
         {
             if (entry.dialogue == null || DialogueManager.Instance == null) yield break;
+
+            // Reproducir animación de interacción igual que Interactable.StartDialogue()
+            if (_npcManager?.SimpleAnimator != null &&
+                (_npcManager.Context == null || !_npcManager.Context.IsInCombat))
+            {
+                _npcManager.SimpleAnimator.PlayOneShot("InteractWithPeople_NoWeapon");
+                yield return null;
+            }
+
             bool completed = false;
             DialogueManager.Instance.StartDialogue(entry.dialogue, transform, () => completed = true);
             while (!completed) yield return null;

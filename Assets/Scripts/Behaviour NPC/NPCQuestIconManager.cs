@@ -181,22 +181,30 @@ namespace Game.NPC
         private void ShowIcon(GameObject prefab)
         {
             if (_iconController == null || prefab == null) return;
-            
+
             _iconController.SetIconOffset(_questConfig.questIconOffset);
             _iconController.ShowPersistentIcon(prefab);
-            
-            //Debug.Log($"[NPCQuestIconManager:{name}] Mostrando icono de quest");
+
+            // Actualizar marcador de minimapa con el sprite del prefab
+            var sr = prefab.GetComponentInChildren<SpriteRenderer>();
+            Sprite markerSprite = sr != null ? sr.sprite : null;
+
+            var marker = GetComponent<MinimapMarker>() ?? gameObject.AddComponent<MinimapMarker>();
+            marker.SetIcon(markerSprite, Color.white);
+            marker.SetVisible(true);
         }
-        
+
         private void HideIcon()
         {
             if (_iconController == null) return;
-            
+
             if (_iconController.HasPersistentIcon)
             {
                 _iconController.HideAlertIcon();
                 Debug.Log($"[NPCQuestIconManager:{name}] Ocultando icono de quest");
             }
+
+            GetComponent<MinimapMarker>()?.SetVisible(false);
         }
         
         [ContextMenu("Force Update Icon")]

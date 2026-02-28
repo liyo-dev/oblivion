@@ -81,17 +81,17 @@ namespace Game.NPC.Common
         {
             if (_iconInstance != null || iconPrefab == null)
                 return;
-            
+
             // Instanciar el prefab como hijo
             _iconInstance = Instantiate(iconPrefab, transform);
             _iconInstance.transform.localPosition = iconOffset;
             _iconInstance.transform.localScale = iconScale;
             _iconInstance.transform.localRotation = Quaternion.identity;
-            
+
             _baseLocalPosition = iconOffset;
             _isVisible = true;
         }
-        
+
         /// <summary>
         /// Oculta el icono persistente
         /// </summary>
@@ -102,7 +102,7 @@ namespace Game.NPC.Common
                 Destroy(_iconInstance);
                 _iconInstance = null;
             }
-            
+
             _isVisible = false;
         }
         

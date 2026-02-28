@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,6 +6,11 @@ using UnityEngine.SceneManagement;
 public class EnvironmentController : MonoBehaviour
 {
     public static EnvironmentController Instance { get; private set; }
+
+    /// <summary>Disparado al entrar en un interior. Usado por MinimapController para ocultar el minimapa.</summary>
+    public static event Action OnInteriorEntered;
+    /// <summary>Disparado al volver al exterior. Usado por MinimapController para mostrar el minimapa.</summary>
+    public static event Action OnInteriorExited;
 
     #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -102,6 +108,7 @@ public class EnvironmentController : MonoBehaviour
 
         var cam = ResolveCamera();
         ApplyInteriorTo(cam, env);   // si cam es null, haremos reapply cuando exista
+        OnInteriorEntered?.Invoke();
     }
 
     public void ApplyExterior()
@@ -111,6 +118,7 @@ public class EnvironmentController : MonoBehaviour
 
         var cam = ResolveCamera();
         ApplyExteriorTo(cam);
+        OnInteriorExited?.Invoke();
     }
 
     public void RefreshCameraNow()

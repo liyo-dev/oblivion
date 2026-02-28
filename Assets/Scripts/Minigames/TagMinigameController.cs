@@ -474,6 +474,11 @@ public class TagMinigameController : MonoBehaviour
             if (chaserNPC != null && npc == chaserNPC) continue;
             if (chaser != null && npc.transform == chaser.transform) continue;
             if (!npc.gameObject.activeInHierarchy) continue;
+
+            // Excluir miembros del equipo del jugador
+            var partyMember = npc.GetComponent<NPCPartyMember>();
+            if (partyMember != null && partyMember.IsInParty) continue;
+
             candidates.Add(npc);
         }
 

@@ -93,6 +93,10 @@ public class BossArenaController : MonoBehaviour
     // Registro estático para buscar arenas por id desde otros sistemas (p.ej. la cinematica)
     private static readonly System.Collections.Generic.Dictionary<string, BossArenaController> s_arenaRegistry = new();
 
+    // Eventos globales para que otros sistemas (ej: minimapa) reaccionen al inicio/fin de batalla
+    public static event Action OnAnyBattleStarted;
+    public static event Action OnAnyBattleEnded;
+
     // Exponer el id públicamente de solo lectura
     public string BattleId => battleId;
 
@@ -329,6 +333,8 @@ public class BossArenaController : MonoBehaviour
 
         started = true;
         _bossDeathConfirmed = false;
+
+        OnAnyBattleStarted?.Invoke();
 
         // Puertas o barrera
         if (useDoorMode)
@@ -669,6 +675,8 @@ public class BossArenaController : MonoBehaviour
         // SOLO si raiseSignals=true (evita sonar música al cargar partida)
         if (raiseSignals)
         {
+            OnAnyBattleEnded?.Invoke();
+
             try
             {
                 // Usar BattleId (fallback a bossId ya fue aplicado en Awake)

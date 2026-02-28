@@ -106,7 +106,7 @@ MonoBehaviour:
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
   - questData: {fileID: 11400000, guid: b6bca4c14a2270847bce04a6eae9c353, type: 2}
-    completionMode: 2
+    completionMode: 0
     autoDetectItemDelivery: 0
     itemDeliveryStepIndex: 0
     itemTag: 
