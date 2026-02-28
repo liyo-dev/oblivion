@@ -8,6 +8,7 @@ using Core;
 using Game.NPC;
 using Game.NPC.Common;
 using Game.NPC.Modules;
+using Sendero.Core.Feedback;
 
 /// <summary>
 /// Controlador del minijuego "Pilla Pilla" (Tag).
@@ -126,8 +127,27 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private Sprite iconButtonBSprite;
     [SerializeField] private Sprite iconButtonXSprite;
     [SerializeField] private Sprite iconButtonYSprite;
-    [SerializeField] private float iconSpriteScale = 0.8f;
+    [Tooltip("Multiplicador de escala para los iconos (renombrado para forzar actualización)")]
+    [SerializeField] private float iconScaleMultiplierV4 = 3.0f;
+    [Tooltip("Altura objetivo en unidades de mundo (renombrado para forzar actualización)")]
+    [SerializeField] private float iconTargetHeightV4 = 0.4f;
     [SerializeField] private int iconSpriteSortingOrder = 250;
+
+    [Header("Feedback (Minijuego)")]
+    [SerializeField] private float introShakeIntensity = 0.18f;
+    [SerializeField] private float introShakeDuration = 0.2f;
+    [SerializeField] private float chaseStartShakeIntensity = 0.24f;
+    [SerializeField] private float chaseStartShakeDuration = 0.25f;
+    [SerializeField] private float caughtShakeIntensity = 0.45f;
+    [SerializeField] private float caughtShakeDuration = 0.35f;
+    [SerializeField] private Color caughtFlashColor = new Color(1f, 0.18f, 0.18f, 0.22f);
+    [SerializeField] private float caughtFlashDuration = 0.12f;
+
+    [Header("Plano Intro Estela")]
+    [SerializeField] private bool enableEstelaIntroCameraBeat = true;
+    [SerializeField] private vThirdPersonCamera introCamera;
+    [SerializeField] private float introCameraBeatDelay = 0.15f;
+    [SerializeField] private float introCameraBeatDuration = 0.85f;
 
     [Header("Animación Player (protección)")]
     [SerializeField] private int playerUpperBodyLayer = 1;
@@ -1054,8 +1074,9 @@ public class TagMinigameController : MonoBehaviour
         renderer.sprite = sprite;
         renderer.sortingOrder = iconSpriteSortingOrder;
 
-        float scale = Mathf.Max(0.01f, iconSpriteScale);
-        go.transform.localScale = new Vector3(scale, scale, 1f);
+        float scale = ResolveSpriteIconScale(sprite);
+        // ✅ FIX: Flip X scale to correct mirroring issue
+        go.transform.localScale = new Vector3(-scale, scale, 1f);
         go.SetActive(false);
         return go;
     }
@@ -1073,10 +1094,26 @@ public class TagMinigameController : MonoBehaviour
         label.outlineWidth = 0.28f;
         label.outlineColor = Color.black;
 
-        float scale = Mathf.Max(0.01f, iconSpriteScale);
-        go.transform.localScale = new Vector3(scale, scale, 1f);
+        float scale = ResolveTextIconScale();
+        // ✅ FIX: Flip X scale to correct mirroring issue
+        go.transform.localScale = new Vector3(-scale, scale, 1f);
         go.SetActive(false);
         return go;
+    }
+
+    private float ResolveSpriteIconScale(Sprite sprite)
+    {
+        float normalizedMultiplier = Mathf.Clamp(iconScaleMultiplierV4, 0.01f, 5f);
+        float desiredHeight = Mathf.Max(0.01f, iconTargetHeightV4);
+        float spriteHeight = sprite != null ? Mathf.Max(0.001f, sprite.bounds.size.y) : 1f;
+        return (desiredHeight / spriteHeight) * normalizedMultiplier;
+    }
+
+    private float ResolveTextIconScale()
+    {
+        float normalizedMultiplier = Mathf.Clamp(iconScaleMultiplierV4, 0.01f, 5f);
+        float desiredHeight = Mathf.Max(0.01f, iconTargetHeightV4);
+        return desiredHeight * normalizedMultiplier * 0.35f;
     }
 
     private ProtectionButton? ReadProtectionButtonPressed()
@@ -1575,6 +1612,11 @@ public class TagMinigameController : MonoBehaviour
         // ✅ Emitir señal de inicio AHORA para que la música comience desde la cuenta atrás
         // En reinicios, esto permite que la música continue o se reinicie
         RaiseStartSignal();
+        if (!isRestart)
+        {
+            StartCoroutine(PlayEstelaIntroCameraBeat());
+            FeedbackService.CameraShake(introShakeIntensity, introShakeDuration);
+        }
         
         // ✅ Activar efectos de enfado durante la cuenta atrás
         StartAngerEffects();
@@ -1620,6 +1662,7 @@ public class TagMinigameController : MonoBehaviour
             
             // ✅ Aplicar configuración de dificultad al perseguidor
             ApplyChaserDifficulty();
+            FeedbackService.CameraShake(chaseStartShakeIntensity, chaseStartShakeDuration);
             
             Debug.Log($"[TagMinigame] 🏃 Llamando a StartChasing()...");
             chaser.StartChasing();
@@ -2022,6 +2065,7 @@ public class TagMinigameController : MonoBehaviour
         StopAngerEffects();
 
         if (chaser) chaser.StopChasing();
+        ReleaseIntroCameraLock();
         if (uiContainer) uiContainer.SetActive(false);
         if (countdownText) countdownText.text = string.Empty;
 
@@ -2058,6 +2102,9 @@ public class TagMinigameController : MonoBehaviour
         catchCount++;
         Debug.Log($"[TagMinigame] ¡Jugador atrapado! (Vez #{catchCount})");
 
+        FeedbackService.CameraShake(caughtShakeIntensity, caughtShakeDuration);
+        FeedbackService.ScreenFlash(caughtFlashColor, caughtFlashDuration);
+        ReleaseIntroCameraLock();
         OnPlayerCaught?.Invoke();
         ShowMessage(caughtMessage, 2f);
 
@@ -2152,6 +2199,7 @@ public class TagMinigameController : MonoBehaviour
         Debug.Log($"[TagMinigame] ¡Victoria! Objetivo completado.");
 
         if (chaser) chaser.StopChasing();
+        ReleaseIntroCameraLock();
 
         ShowMessage(winMessage, 3f);
         HideAllProtectionIcons();
@@ -2308,4 +2356,32 @@ public class TagMinigameController : MonoBehaviour
     public float RemainingTime => remainingTime;
     public bool IsRunning => isRunning;
     public int CatchCount => catchCount;
+
+    private IEnumerator PlayEstelaIntroCameraBeat()
+    {
+        if (!enableEstelaIntroCameraBeat || chaser == null)
+            yield break;
+
+        if (introCamera == null)
+            PlayerService.TryGetComponent(out introCamera, includeInactive: true, allowSceneLookup: true);
+
+        if (introCamera == null)
+            yield break;
+
+        if (introCameraBeatDelay > 0f)
+            yield return new WaitForSeconds(introCameraBeatDelay);
+
+        introCamera.SetLockTarget(chaser.transform);
+
+        float hold = Mathf.Max(0.05f, introCameraBeatDuration);
+        yield return new WaitForSeconds(hold);
+
+        ReleaseIntroCameraLock();
+    }
+
+    private void ReleaseIntroCameraLock()
+    {
+        if (introCamera != null)
+            introCamera.ClearLockTarget();
+    }
 }

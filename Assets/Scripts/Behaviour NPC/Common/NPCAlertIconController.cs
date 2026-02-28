@@ -211,20 +211,30 @@ namespace Game.NPC.Common
         {
             // Esperar el delay configurado para que la cámara vuelva a su posición normal
             yield return new WaitForSeconds(restoreAfterDialogueDelay);
-            
-            _hiddenDuringDialogue = false;
+
             _restoreAfterDialogueCoroutine = null;
-            
+
             // Verificar que el icono aún existe y debe mostrarse
             if (_currentIconInstance != null && !_isHiding)
             {
-                // Restaurar escala con animación
+                // Fijar posición y orientación correctas ANTES de animar la escala.
+                // Así el coroutine loop no interfiere con el billboard mientras DOScale
+                // anima desde cero (lo que producía deformación visual).
+                _currentIconInstance.transform.position = GetIconWorldPosition();
+                _currentIconInstance.transform.localScale = Vector3.zero;
+                ApplyBillboard(_currentIconInstance.transform);
+
                 DOTween.Kill(this);
                 _currentIconInstance.transform.DOScale(_targetScale, 0.2f)
                     .SetEase(Ease.OutBack)
-                    .SetId(this);
-                    
+                    .SetId(this)
+                    .OnComplete(() => _hiddenDuringDialogue = false); // Reanudar updates DESPUÉS de la animación
+
                 if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔊 Restaurando icono tras diálogo (después de {restoreAfterDialogueDelay}s de delay)");
+            }
+            else
+            {
+                _hiddenDuringDialogue = false;
             }
         }
         
@@ -291,7 +301,10 @@ namespace Game.NPC.Common
             HideAlertIconImmediate();
             
             float useDuration = duration > 0f ? duration : iconDuration;
-            _targetScale = Vector3.one * iconScale;
+            
+            // ✅ FIX: Respetar la escala original del prefab multiplicándola por iconScale
+            _targetScale = Vector3.Scale(iconPrefab.transform.localScale, Vector3.one * iconScale);
+            
             _iconRoutine = StartCoroutine(ShowIconRoutine(iconPrefab, useDuration));
             
             if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔔 Mostrando icono por {useDuration}s");
@@ -307,7 +320,9 @@ namespace Game.NPC.Common
             if (!_headBoneSearched) FindHeadBone();
             HideAlertIconImmediate();
             
-            _targetScale = Vector3.one * iconScale;
+            // ✅ FIX: Respetar la escala original del prefab multiplicándola por iconScale
+            _targetScale = Vector3.Scale(bubblePrefab.transform.localScale, Vector3.one * iconScale);
+            
             _iconRoutine = StartCoroutine(ShowIconRoutine(bubblePrefab, duration, (instance) => {
                 // Configurar texto
                 var tmpro = instance.GetComponentInChildren<TMPro.TMP_Text>();
@@ -426,7 +441,9 @@ namespace Game.NPC.Common
             UpdateCameraReference();
             HideAlertIconImmediate();
             
-            _targetScale = Vector3.one * iconScale;
+            // ✅ FIX: Respetar la escala original del prefab multiplicándola por iconScale
+            _targetScale = Vector3.Scale(iconPrefab.transform.localScale, Vector3.one * iconScale);
+
             _iconRoutine = StartCoroutine(ShowPersistentIconRoutine(iconPrefab));
             
             if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 📌 Mostrando icono persistente");
@@ -604,6 +621,9 @@ namespace Game.NPC.Common
             var cam = GetCurrentCamera();
             if (cam != null && iconTransform != null)
             {
+                // ✅ FIX: Revert to standard "LookAt" direction (Towards camera)
+                // This ensures we see the "front" face of the sprite.
+                // If the sprite is mirrored, we handle it by flipping X scale in TagMinigameController.
                 Vector3 lookDir = cam.transform.position - iconTransform.position;
                 lookDir.y = 0; // Solo rotar en Y para mantener vertical
                 

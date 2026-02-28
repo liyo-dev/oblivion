@@ -1818,6 +1818,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             if (!value)
             {
+                ExitUseButtonFocus(false);
+                ResetUseButtonFeedback();
+                if (_ui.useButton != null)
+                {
+                    _ui.useButton.interactable = false;
+                    _ui.useButton.gameObject.SetActive(false);
+                }
+
+                var selected = EventSystem.current?.currentSelectedGameObject;
+                if (_ui.root != null && selected != null && selected.transform.IsChildOf(_ui.root.transform))
+                    EventSystem.current?.SetSelectedGameObject(null);
+
                 // Matar tweens pendientes al ocultar
                 _useButtonTween?.Kill();
                 _useButtonTween = null;
@@ -1828,6 +1840,14 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                     _boundInventory = null;
                 }
             }
+        }
+
+        bool IsInventoryInputContextValid()
+        {
+            if (Instance == null) return false;
+            if (Instance._activeTab != 0) return false;
+            if (_ui.root == null) return false;
+            return _ui.root.activeInHierarchy;
         }
 
         public void Refresh(bool rebuildList)
@@ -2049,6 +2069,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         void UseSelectedItem()
         {
+            if (!IsInventoryInputContextValid())
+            {
+                Debug.LogWarning("[InventoryView] Ignorando UseSelectedItem fuera del tab de inventario.");
+                return;
+            }
+
             if (_inventory == null || _selectedItem == null) return;
             
             // NUEVO: Activar flag INMEDIATAMENTE
@@ -2369,6 +2395,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         public bool TryHandleCancel()
         {
+            if (!IsInventoryInputContextValid())
+                return false;
+
             if (_interactionState == InventoryInteractionState.UseButtonFocused)
             {
                 ExitUseButtonFocus(true);
@@ -2379,6 +2408,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         public bool TryHandleSubmit()
         {
+            if (!IsInventoryInputContextValid())
+                return false;
+
             Debug.Log($"[InventoryView] TryHandleSubmit - Estado: {_interactionState}, SelectedRow: {(_lastSelectedRow != null ? "OK" : "NULL")}, SelectedItem: {(_selectedItem != null ? _selectedItem.displayName : "NULL")}");
             
             if (_interactionState == InventoryInteractionState.UseButtonFocused)

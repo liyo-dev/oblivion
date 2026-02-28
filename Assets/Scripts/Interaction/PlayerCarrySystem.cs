@@ -204,6 +204,18 @@ public class PlayerCarrySystem : MonoBehaviour
         }
     }
 
+    void LateUpdate()
+    {
+        if (_isCarrying && _carriedObject != null && carryPoint != null)
+        {
+            _carriedObject.transform.position = carryPoint.position;
+            // Mantener el objeto recto: solo hereda la rotación Y del player (yaw),
+            // sin inclinarse con la animación del carryPoint
+            float playerYaw = transform.eulerAngles.y;
+            _carriedObject.transform.rotation = Quaternion.Euler(0f, playerYaw, 0f);
+        }
+    }
+
     public bool IsCarrying => _isCarrying;
     public bool IsPickingUp => _isPickingUp;
     public GameObject CarriedObject => _carriedObject;

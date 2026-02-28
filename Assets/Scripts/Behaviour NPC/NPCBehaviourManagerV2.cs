@@ -43,6 +43,7 @@ namespace Game.NPC
         private Rigidbody _rigidbody;
         private NPCBrain _brain;
         private NPCStateContext _context;
+        private int _externalMovementOverrideRequests;
         
         // Player References
         private Transform _player;
@@ -54,6 +55,7 @@ namespace Game.NPC
         public NPCStateContext Context => _context;
         public NPCConfiguration Configuration => configuration;
         public bool IsInCinematic => _context != null && _context.IsInCinematic;
+        public bool IsExternalMovementOverrideActive => _externalMovementOverrideRequests > 0;
         
         // Accessors
         public NavMeshAgent Agent => _agent;
@@ -158,6 +160,9 @@ namespace Game.NPC
         
         void LateUpdate()
         {
+            if (IsExternalMovementOverrideActive)
+                return;
+
             // ✅ SAFETY CHECK: Si está en IdleState pero el agente no está detenido, forzar detención
             // Esto captura casos donde algo externo está activando el agente
             if (_brain != null && _brain.CurrentState != null && 
@@ -368,6 +373,17 @@ namespace Game.NPC
         public void ForceIdle()
         {
             _brain.ForceState(new States.IdleState());
+        }
+
+        public void PushExternalMovementOverride()
+        {
+            _externalMovementOverrideRequests++;
+        }
+
+        public void PopExternalMovementOverride()
+        {
+            if (_externalMovementOverrideRequests > 0)
+                _externalMovementOverrideRequests--;
         }
 
         // =================================================================================

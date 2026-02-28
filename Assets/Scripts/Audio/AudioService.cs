@@ -444,6 +444,17 @@ public sealed class AudioService : MonoBehaviour
             Debug.LogWarning($"[AudioService] Minigame '{r.minigameId}' no tiene música configurada");
             return;
         }
+
+        // Si el minijuego ya está activo (reinicio de ronda), no apilar de nuevo:
+        // simplemente reiniciar la pista desde el inicio.
+        if (_minigameActive)
+        {
+            _musicA.loop = r.loop;
+            _musicB.loop = r.loop;
+            RestartMusicClipFromBeginning(r.music, r.fade);
+            Debug.Log($"[AudioService] 🔁 Música de minijuego '{r.minigameId}' reiniciada desde el inicio");
+            return;
+        }
         
         var current = GetCurrentMusicClip();
         _musicStack.Push(new MusicStackItem { clip = current });
@@ -455,6 +466,38 @@ public sealed class AudioService : MonoBehaviour
         
         PlayMusic(r.music, r.fade);
         Debug.Log($"[AudioService] 🎮 Música de minijuego '{r.minigameId}' iniciada");
+    }
+
+    void RestartMusicClipFromBeginning(AudioClip clip, float fadeSeconds)
+    {
+        if (clip == null) return;
+        if (fadeSeconds < 0f) fadeSeconds = defaultFade;
+
+        var current = _musicATurn ? _musicB : _musicA;
+        var other = _musicATurn ? _musicA : _musicB;
+
+        // Seleccionar la fuente que está realmente sonando ahora.
+        AudioSource active = current.isPlaying ? current : (other.isPlaying ? other : current);
+
+        // Si por algún motivo no sonaba el clip esperado, delegar al flujo estándar.
+        if (active.clip != clip)
+        {
+            PlayMusic(clip, fadeSeconds);
+            return;
+        }
+
+        StopAllCoroutines();
+        active.Stop();
+        active.timeSamples = 0;
+        active.volume = GetDuckedVolume(1f);
+        active.Play();
+
+        // Evitar duplicados en la otra fuente.
+        if (other != active && other.isPlaying && other.clip == clip)
+        {
+            other.Stop();
+            other.timeSamples = 0;
+        }
     }
 
     void OnMinigameEndRestoreMusic(AudioGraphProfile.MinigameRule r)

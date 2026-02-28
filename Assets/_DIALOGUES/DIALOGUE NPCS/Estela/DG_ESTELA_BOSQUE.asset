@@ -13,6 +13,13 @@ MonoBehaviour:
   m_Name: DG_ESTELA_BOSQUE
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
+  - speakerNameId: CHAR_WILL
+    textId: DLG_ESTELA_BOSQUE_00
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    forcedShotType: 0
+    emotion: 6
   - speakerNameId: CHAR_ESTELA
     textId: DLG_ESTELA_BOSQUE_01
     text: 

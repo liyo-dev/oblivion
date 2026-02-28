@@ -281,6 +281,14 @@ namespace Game.NPC.States
             context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
             _hasDisabledObstacleAvoidance = true;
             context.Log($"[CinematicSequence] Obstacle avoidance desactivado temporalmente (era: {_originalObstacleAvoidanceType})");
+
+            // Asegurar que no quede la pose de interacción del diálogo al iniciar movimiento.
+            if (context.Animator != null)
+            {
+                context.Animator.SetTalking(false);
+                context.Animator.EndInteraction();
+                context.Animator.TransitionToLocomotion();
+            }
             
             // Establecer destino
             Common.NavMeshAgentUtility.SetDestination(context.Agent, _targetPosition);

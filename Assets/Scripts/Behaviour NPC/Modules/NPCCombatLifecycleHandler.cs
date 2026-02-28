@@ -630,181 +630,146 @@ namespace Game.NPC.Modules
             switch (action)
             {
                 case PostDefeatAction.FleeAndDisappear:
+                    bool fleeMovementStarted = false;
                     // Huir del jugador
                     if (PlayerService.TryGetPlayer(out GameObject player))
                     {
                         Vector3 fleeDir = (transform.position - player.transform.position).normalized;
                         Vector3 fleePos = transform.position + fleeDir * 10f;
-                        
-                        // Usar NavMesh para encontrar punto válido
+
+                        // Usar NavMesh para encontrar punto válido inicial
                         if (NavMesh.SamplePosition(fleePos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
                         {
                             fleePos = hit.position;
                         }
-                        
+
                         // Activar movimiento
                         if (_agent != null)
                         {
                             _agent.enabled = true;
-                            
+
                             // ✅ VALIDACIÓN 1: Verificar que está en NavMesh
                             if (!_agent.isOnNavMesh)
                             {
                                 Debug.LogError($"[Lifecycle] ❌ {name} NO está en NavMesh! No puede huir. Posición: {transform.position}");
-                                // Intentar recolocarlo
                                 if (NavMesh.SamplePosition(transform.position, out NavMeshHit repoHit, 2f, NavMesh.AllAreas))
                                 {
                                     transform.position = repoHit.position;
+                                    _agent.Warp(repoHit.position);
                                     Debug.Log($"[Lifecycle] 🔄 {name} recolocado en NavMesh: {repoHit.position}");
                                 }
                                 else
                                 {
-                                    Debug.LogError($"[Lifecycle] ❌ No se pudo recolocar {name} en NavMesh - cancelando huida");
-                                    yield break;
+                                    Debug.LogError($"[Lifecycle] ❌ No se pudo recolocar {name} en NavMesh - se aplicará fallback de desaparición");
                                 }
                             }
-                            
-                            // Guardar configuración original
-                            bool originalUpdateRotation = _agent.updateRotation;
-                            float originalSpeed = _agent.speed;
-                            
-                            _agent.isStopped = false;
-                            
-                            // ✅ CRÍTICO: Restaurar updatePosition (PlayDeath lo desactiva)
-                            _agent.updatePosition = true;
-                            
-                            // ✅ Deshabilitar updateRotation para que NPCSimpleAnimator maneje la rotación
-                            _agent.updateRotation = false;
-                            
-                            // ✅ CRÍTICO v4: Warp del agent para asegurar que esté correctamente en NavMesh
-                            if (!_agent.Warp(transform.position))
+
+                            if (_agent.isOnNavMesh)
                             {
-                                Debug.LogError($"[Lifecycle] ❌ {name} no pudo hacer Warp a {transform.position} - cancelando huida");
-                                _agent.updateRotation = originalUpdateRotation;
-                                _agent.speed = originalSpeed;
-                                yield break;
-                            }
-                            Debug.Log($"[Lifecycle] ✅ {name} warped correctamente a {transform.position}");
-                            
-                            // ✅ VALIDACIÓN 2: Establecer destino y verificar path
-                            _agent.SetDestination(fleePos);
-                            
-                            // Esperar a que el path se calcule
-                            float pathWaitTime = 0f;
-                            while (_agent.pathPending && pathWaitTime < 1f)
-                            {
-                                pathWaitTime += Time.deltaTime;
-                                yield return null;
-                            }
-                            
-                            // ✅ VALIDACIÓN 3: Verificar que el path es válido
-                            if (!_agent.hasPath || _agent.path.status != NavMeshPathStatus.PathComplete)
-                            {
-                                Debug.LogError($"[Lifecycle] ❌ {name} no puede calcular path hacia {fleePos}! Status: {(_agent.hasPath ? _agent.path.status.ToString() : "NO PATH")}");
-                                _agent.updateRotation = originalUpdateRotation;
-                                _agent.speed = originalSpeed;
-                                yield break;
-                            }
-                            
-                            // ✅ CRÍTICO: Transicionar a locomotion ANTES de mover (v3 FIX)
-                            if (_animator != null)
-                            {
-                                _animator.AllowManualRotation = false;
-                                _animator.EnableAutoRotation();
-                                
-                                // ✅ FIX DEFINITIVO: Transicionar explícitamente a locomotion
-                                // SetMovementSpeed NO funciona porque velocity todavía es 0
-                                _animator.TransitionToLocomotion();
-                                Debug.Log($"[Lifecycle] 🎬 {name} transicionado a locomotion (v3 fix aplicado)");
-                                
-                                // Ahora establecer velocidad de movimiento
-                                _animator.SetMovementSpeed(1f, 0.1f);
-                            }
-                            
-                            Debug.Log($"[Lifecycle] ✅ {name} iniciando huida:");
-                            Debug.Log($"  Destino: {fleePos}");
-                            Debug.Log($"  Distancia: {Vector3.Distance(transform.position, fleePos):F2}m");
-                            Debug.Log($"  Speed: {_agent.speed:F2}");
-                            Debug.Log($"  Path Status: {_agent.path.status}");
-                            Debug.Log($"  UpdateRotation: {_agent.updateRotation}");
-                            Debug.Log($"  ObstacleAvoidanceType: {_agent.obstacleAvoidanceType}");
-                            Debug.Log($"  AvoidancePriority: {_agent.avoidancePriority}");
-                            Debug.Log($"  DesiredVelocity: {_agent.desiredVelocity}");
-                            Debug.Log($"[Lifecycle] 🏃 {name} huyendo hacia {fleePos}");
-                            
-                            // ✅ EXTRA: Dar 1 frame para que el agent procese el destino
-                            yield return null;
-                            
-                            // ✅ Esperar mientras huye, actualizando animación Y detectando stuck
-                            float fleeTime = 0f;
-                            float maxFleeTime = 2f;
-                            Vector3 lastPosition = transform.position;
-                            float stuckCheckInterval = 1f;
-                            float timeSinceLastCheck = 0f;
-                            
-                            while (fleeTime < maxFleeTime && _agent != null && _agent.isOnNavMesh)
-                            {
-                                // Actualizar animación según velocidad real
-                                if (_animator != null && _agent.velocity.sqrMagnitude > 0.01f)
+                                // Guardar configuración original
+                                bool originalUpdateRotation = _agent.updateRotation;
+                                float originalSpeed = _agent.speed;
+
+                                _agent.isStopped = false;
+                                _agent.updatePosition = true; // PlayDeath lo desactiva
+                                _agent.updateRotation = false; // NPCSimpleAnimator maneja la rotación
+
+                                if (!_agent.Warp(transform.position))
                                 {
-                                    float speed = _agent.velocity.magnitude / Mathf.Max(_agent.speed, 0.1f);
-                                    _animator.SetMovementSpeed(speed, 0.1f);
-                                    
-                                    // Rotar hacia dirección de movimiento
-                                    Vector3 moveDir = _agent.velocity.normalized;
-                                    moveDir.y = 0f;
-                                    if (moveDir.sqrMagnitude > 0.01f)
+                                    Debug.LogError($"[Lifecycle] ❌ {name} no pudo hacer Warp a {transform.position} - se aplicará fallback de desaparición");
+                                }
+                                else if (!TryResolveReachableDestination(_agent, fleePos, out Vector3 resolvedFleePos))
+                                {
+                                    Debug.LogError($"[Lifecycle] ❌ {name} no encontró destino alcanzable para huida cerca de {fleePos}");
+                                }
+                                else
+                                {
+                                    fleePos = resolvedFleePos;
+                                    _agent.SetDestination(fleePos);
+
+                                    float pathWaitTime = 0f;
+                                    while (_agent.pathPending && pathWaitTime < 1f)
                                     {
-                                        _animator.FaceDirection(moveDir);
-                                    }
-                                }
-                                else if (_animator != null && !_agent.pathPending)
-                                {
-                                    // ⚠️ Velocity = 0 pero debería moverse
-                                    Debug.LogWarning($"[Lifecycle] ⚠️ {name} velocity = 0 durante huida pero debería moverse!");
-                                    Debug.LogWarning($"  remainingDistance: {_agent.remainingDistance:F2}");
-                                    Debug.LogWarning($"  stoppingDistance: {_agent.stoppingDistance:F2}");
-                                    Debug.LogWarning($"  isStopped: {_agent.isStopped}");
-                                    Debug.LogWarning($"  pathPending: {_agent.pathPending}");
-                                    Debug.LogWarning($"  path.status: {(_agent.path != null ? _agent.path.status.ToString() : "NULL")}");
-                                }
-                                
-                                // ✅ Detección de stuck cada segundo
-                                timeSinceLastCheck += Time.deltaTime;
-                                if (timeSinceLastCheck >= stuckCheckInterval)
-                                {
-                                    float distanceMoved = Vector3.Distance(transform.position, lastPosition);
-                                    if (distanceMoved < 0.1f && _agent.remainingDistance > 0.5f)
-                                    {
-                                        Debug.LogWarning($"[Lifecycle] ⚠️ {name} parece estar atascado durante huida (movido {distanceMoved:F3}m en {timeSinceLastCheck:F1}s)");
-                                        
-                                        // Intentar reconfigurar
-                                        _agent.isStopped = true;
+                                        pathWaitTime += Time.deltaTime;
                                         yield return null;
-                                        _agent.isStopped = false;
-                                        _agent.SetDestination(fleePos);
-                                        
-                                        Debug.Log($"[Lifecycle] 🔄 {name} reconfigurado - Velocity: {_agent.velocity.magnitude:F2}, IsOnNavMesh: {_agent.isOnNavMesh}");
                                     }
-                                    
-                                    lastPosition = transform.position;
-                                    timeSinceLastCheck = 0f;
+
+                                    if (_agent.hasPath && _agent.path.status == NavMeshPathStatus.PathComplete)
+                                    {
+                                        if (_animator != null)
+                                        {
+                                            _animator.AllowManualRotation = false;
+                                            _animator.EnableAutoRotation();
+                                            _animator.TransitionToLocomotion();
+                                            _animator.SetMovementSpeed(1f, 0.1f);
+                                        }
+
+                                        // ✅ EXTRA: Dar 1 frame para que el agent procese el destino
+                                        yield return null;
+
+                                        float fleeTime = 0f;
+                                        float maxFleeTime = 2f;
+                                        Vector3 lastPosition = transform.position;
+                                        float stuckCheckInterval = 1f;
+                                        float timeSinceLastCheck = 0f;
+
+                                        while (fleeTime < maxFleeTime && _agent != null && _agent.isOnNavMesh)
+                                        {
+                                            if (_animator != null && _agent.velocity.sqrMagnitude > 0.01f)
+                                            {
+                                                float speed = _agent.velocity.magnitude / Mathf.Max(_agent.speed, 0.1f);
+                                                _animator.SetMovementSpeed(speed, 0.1f);
+
+                                                Vector3 moveDir = _agent.velocity.normalized;
+                                                moveDir.y = 0f;
+                                                if (moveDir.sqrMagnitude > 0.01f)
+                                                {
+                                                    _animator.FaceDirection(moveDir);
+                                                }
+                                            }
+
+                                            timeSinceLastCheck += Time.deltaTime;
+                                            if (timeSinceLastCheck >= stuckCheckInterval)
+                                            {
+                                                float distanceMoved = Vector3.Distance(transform.position, lastPosition);
+                                                if (distanceMoved < 0.1f && _agent.remainingDistance > 0.5f)
+                                                {
+                                                    _agent.isStopped = true;
+                                                    yield return null;
+                                                    _agent.isStopped = false;
+                                                    _agent.SetDestination(fleePos);
+                                                }
+
+                                                lastPosition = transform.position;
+                                                timeSinceLastCheck = 0f;
+                                            }
+
+                                            fleeTime += Time.deltaTime;
+                                            yield return null;
+                                        }
+
+                                        fleeMovementStarted = true;
+                                    }
+                                    else
+                                    {
+                                        Debug.LogError($"[Lifecycle] ❌ {name} no puede calcular path hacia {fleePos}! Status: {(_agent.hasPath ? _agent.path.status.ToString() : "NO PATH")}");
+                                    }
                                 }
-                                
-                                fleeTime += Time.deltaTime;
-                                yield return null;
-                            }
-                            
-                            // Detener y restaurar configuración
-                            if (_agent != null && _agent.isOnNavMesh)
-                            {
-                                _agent.isStopped = true;
-                                _agent.updateRotation = originalUpdateRotation;
-                                _agent.speed = originalSpeed;
-                                
-                                Debug.Log($"[Lifecycle] ✅ {name} completó huida - configuración restaurada");
+
+                                // Detener y restaurar configuración
+                                if (_agent != null && _agent.isOnNavMesh)
+                                {
+                                    _agent.isStopped = true;
+                                    _agent.updateRotation = originalUpdateRotation;
+                                    _agent.speed = originalSpeed;
+                                }
                             }
                         }
+                    }
+
+                    if (!fleeMovementStarted)
+                    {
+                        Debug.LogWarning($"[Lifecycle] ⚠️ {name} no pudo ejecutar huida - aplicando desaparición directa");
                     }
                     
                     // ✅ Desaparecer con TransitionManager si está configurado
@@ -906,24 +871,33 @@ namespace Game.NPC.Modules
                 yield break;
             }
             
-            // Buscar el anchor de destino
-            var anchor = GameObject.Find(_config.postDefeatMoveAnchor);
-            if (anchor == null)
+            // Buscar el anchor de destino (primero por SpawnAnchor ID, luego por nombre de GameObject)
+            var anchorTransform = ResolveAnchorTransform(_config.postDefeatMoveAnchor);
+            if (anchorTransform == null)
             {
                 Debug.LogWarning($"[Lifecycle] ⚠️ No se encontró el anchor '{_config.postDefeatMoveAnchor}' para {name}");
                 SetupPostCombatInteraction();
                 yield break;
             }
             
-            Vector3 targetPos = anchor.transform.position;
+            Vector3 targetPos = anchorTransform.position;
             Debug.Log($"[Lifecycle] 🚶 {name} moviéndose a anchor '{_config.postDefeatMoveAnchor}'");
             
             // Cancelar la secuencia dizzy para que no interfiera
             _shouldCancelDizzySequence = true;
+
+            bool externalMovementOverridePushed = false;
+            if (_manager != null)
+            {
+                _manager.PushExternalMovementOverride();
+                externalMovementOverridePushed = true;
+            }
             
             // ✅ Transicionar a animación de caminar
             if (_animator != null)
             {
+                _animator.SetTalking(false);
+                _animator.EndInteraction();
                 _animator.TransitionToIdle();
                 yield return new WaitForSeconds(0.3f);
                 
@@ -932,159 +906,176 @@ namespace Game.NPC.Modules
                 _animator.EnableAutoRotation();
             }
             
-            // Activar NavMeshAgent y mover
-            if (_agent != null)
+            try
             {
-                // ✅ Validación exhaustiva del NavMeshAgent
-                if (!_agent.isOnNavMesh)
+                // Activar NavMeshAgent y mover
+                if (_agent != null)
                 {
-                    Debug.LogError($"[Lifecycle] ❌ {name} NO está en NavMesh! Posición: {transform.position}");
-                    SetupPostCombatInteraction();
-                    yield break;
-                }
-                
-                _agent.enabled = true;
-                _agent.isStopped = false;
-                
-                // ✅ Guardar configuración original para restaurar después
-                float originalSpeed = _agent.speed;
-                bool originalUpdateRotation = _agent.updateRotation;
-                
-                _agent.speed = originalSpeed * 0.5f; // Más lento de lo normal
-                _agent.updateRotation = false; // NPCSimpleAnimator maneja la rotación
-                
-                // ✅ CRÍTICO: Establecer destino y verificar que el path es válido
-                _agent.SetDestination(targetPos);
-                
-                // Esperar un frame para que Unity calcule el path
-                yield return null;
-                
-                // ✅ Verificar que el path es válido
-                if (_agent.pathPending)
-                {
-                    float waitTime = 0f;
-                    while (_agent.pathPending && waitTime < 1f)
+                    // ✅ Validación exhaustiva del NavMeshAgent
+                    if (!_agent.isOnNavMesh)
                     {
-                        waitTime += Time.deltaTime;
+                        Debug.LogError($"[Lifecycle] ❌ {name} NO está en NavMesh! Posición: {transform.position}");
+                        SetupPostCombatInteraction();
+                        yield break;
+                    }
+                    
+                    _agent.enabled = true;
+                    _agent.isStopped = false;
+                    
+                    // ✅ Guardar configuración original para restaurar después
+                    float originalSpeed = _agent.speed;
+                    bool originalUpdateRotation = _agent.updateRotation;
+                    
+                    _agent.speed = originalSpeed * 0.5f; // Más lento de lo normal
+                    _agent.updateRotation = false; // NPCSimpleAnimator maneja la rotación
+                    
+                    // ✅ CRÍTICO: Establecer destino y verificar que el path es válido
+                    _agent.SetDestination(targetPos);
+                    
+                    // Esperar un frame para que Unity calcule el path
+                    yield return null;
+                    
+                    // ✅ Verificar que el path es válido
+                    if (_agent.pathPending)
+                    {
+                        float waitTime = 0f;
+                        while (_agent.pathPending && waitTime < 1f)
+                        {
+                            waitTime += Time.deltaTime;
+                            yield return null;
+                        }
+                    }
+                    
+                    if (_agent.path.status != NavMeshPathStatus.PathComplete)
+                    {
+                        Debug.LogError($"[Lifecycle] ❌ {name} no puede calcular path hacia {targetPos}! Status: {_agent.path.status}");
+                        SetupPostCombatInteraction();
+                        yield break;
+                    }
+                    
+                    Debug.Log($"[Lifecycle] ✅ {name} iniciando movimiento:\n" +
+                             $"  Destino: {targetPos}\n" +
+                             $"  Distancia: {Vector3.Distance(transform.position, targetPos):F2}m\n" +
+                             $"  Speed: {_agent.speed}\n" +
+                             $"  Path Status: {_agent.path.status}\n" +
+                             $"  UpdateRotation: {_agent.updateRotation}");
+                    
+                    // Loop de movimiento con verificación continua
+                    float timeout = 30f;
+                    float elapsed = 0f;
+                    float stuckCheckInterval = 1f;
+                    float lastStuckCheck = 0f;
+                    Vector3 lastCheckPos = transform.position;
+                    
+                    while (elapsed < timeout)
+                    {
+                        if (_agent == null || !_agent.isOnNavMesh) break;
+                        
+                        // ✅ Verificar si está "atascado" (no se ha movido en 1 segundo)
+                        if (elapsed - lastStuckCheck >= stuckCheckInterval)
+                        {
+                            float movedDistance = Vector3.Distance(transform.position, lastCheckPos);
+                            if (movedDistance < 0.1f && !_agent.pathPending)
+                            {
+                                Debug.LogWarning($"[Lifecycle] ⚠️ {name} parece estar atascado (movido {movedDistance:F3}m en {stuckCheckInterval}s)");
+                                
+                                // Intentar reconfigurar el agent
+                                _agent.isStopped = true;
+                                yield return new WaitForSeconds(0.1f);
+                                _agent.isStopped = false;
+                                _agent.SetDestination(targetPos);
+                                
+                                Debug.Log($"[Lifecycle] 🔄 {name} reconfigurado - Velocity: {_agent.velocity.magnitude:F2}, IsOnNavMesh: {_agent.isOnNavMesh}");
+                            }
+                            
+                            lastStuckCheck = elapsed;
+                            lastCheckPos = transform.position;
+                        }
+                        
+                        // ✅ CRÍTICO: Actualizar animación CADA FRAME
+                        if (_animator != null)
+                        {
+                            float agentSpeed = _agent.velocity.magnitude;
+                            
+                            // ✅ Log si velocity es 0 pero debería moverse
+                            if (agentSpeed < 0.01f && !_agent.pathPending && _agent.remainingDistance > _agent.stoppingDistance + 0.5f)
+                            {
+                                if (Time.frameCount % 60 == 0) // Cada 60 frames (~1 segundo)
+                                {
+                                    Debug.LogWarning($"[Lifecycle] ⚠️ {name} velocity = 0 pero debería moverse!\n" +
+                                                   $"  remainingDistance: {_agent.remainingDistance:F2}\n" +
+                                                   $"  stoppingDistance: {_agent.stoppingDistance:F2}\n" +
+                                                   $"  isStopped: {_agent.isStopped}\n" +
+                                                   $"  pathPending: {_agent.pathPending}\n" +
+                                                   $"  path.status: {_agent.path.status}");
+                                }
+                            }
+                            
+                            if (agentSpeed > 0.01f)
+                            {
+                                // Calcular velocidad normalizada (0 = parado, 1 = velocidad máxima)
+                                float maxSpeed = Mathf.Max(_agent.speed, 0.1f);
+                                float normalizedSpeed = Mathf.Clamp01(agentSpeed / maxSpeed);
+                                
+                                // Aplicar velocidad más lenta (derrotado)
+                                _animator.SetMovementSpeed(normalizedSpeed * 0.5f, 0.1f);
+                                
+                                // ✅ Rotar hacia la dirección del movimiento
+                                Vector3 moveDir = _agent.velocity.normalized;
+                                moveDir.y = 0f;
+                                if (moveDir.sqrMagnitude > 0.01f)
+                                {
+                                    _animator.FaceDirection(moveDir);
+                                }
+                            }
+                            else
+                            {
+                                // Si no se está moviendo, velocidad 0
+                                _animator.SetMovementSpeed(0f, 0.1f);
+                            }
+                        }
+                        
+                        // Verificar si llegó
+                        if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
+                        {
+                            Debug.Log($"[Lifecycle] ✅ {name} llegó a su destino (elapsed: {elapsed:F1}s)");
+                            break;
+                        }
+                        
+                        elapsed += Time.deltaTime;
                         yield return null;
                     }
-                }
-                
-                if (_agent.path.status != NavMeshPathStatus.PathComplete)
-                {
-                    Debug.LogError($"[Lifecycle] ❌ {name} no puede calcular path hacia {targetPos}! Status: {_agent.path.status}");
-                    SetupPostCombatInteraction();
-                    yield break;
-                }
-                
-                Debug.Log($"[Lifecycle] ✅ {name} iniciando movimiento:\n" +
-                         $"  Destino: {targetPos}\n" +
-                         $"  Distancia: {Vector3.Distance(transform.position, targetPos):F2}m\n" +
-                         $"  Speed: {_agent.speed}\n" +
-                         $"  Path Status: {_agent.path.status}\n" +
-                         $"  UpdateRotation: {_agent.updateRotation}");
-                
-                // Loop de movimiento con verificación continua
-                float timeout = 30f;
-                float elapsed = 0f;
-                float stuckCheckInterval = 1f;
-                float lastStuckCheck = 0f;
-                Vector3 lastCheckPos = transform.position;
-                
-                while (elapsed < timeout)
-                {
-                    if (_agent == null || !_agent.isOnNavMesh) break;
                     
-                    // ✅ Verificar si está "atascado" (no se ha movido en 1 segundo)
-                    if (elapsed - lastStuckCheck >= stuckCheckInterval)
+                    if (elapsed >= timeout)
                     {
-                        float movedDistance = Vector3.Distance(transform.position, lastCheckPos);
-                        if (movedDistance < 0.1f && !_agent.pathPending)
-                        {
-                            Debug.LogWarning($"[Lifecycle] ⚠️ {name} parece estar atascado (movido {movedDistance:F3}m en {stuckCheckInterval}s)");
-                            
-                            // Intentar reconfigurar el agent
-                            _agent.isStopped = true;
-                            yield return new WaitForSeconds(0.1f);
-                            _agent.isStopped = false;
-                            _agent.SetDestination(targetPos);
-                            
-                            Debug.Log($"[Lifecycle] 🔄 {name} reconfigurado - Velocity: {_agent.velocity.magnitude:F2}, IsOnNavMesh: {_agent.isOnNavMesh}");
-                        }
-                        
-                        lastStuckCheck = elapsed;
-                        lastCheckPos = transform.position;
+                        Debug.LogWarning($"[Lifecycle] ⏱️ {name} timeout alcanzado ({timeout}s) - Forzando parada");
                     }
                     
-                    // ✅ CRÍTICO: Actualizar animación CADA FRAME
+                    // Detener movimiento y restaurar configuración
+                    _agent.isStopped = true;
+                    _agent.speed = originalSpeed;
+                    _agent.updateRotation = originalUpdateRotation;
+                    
                     if (_animator != null)
                     {
-                        float agentSpeed = _agent.velocity.magnitude;
-                        
-                        // ✅ Log si velocity es 0 pero debería moverse
-                        if (agentSpeed < 0.01f && !_agent.pathPending && _agent.remainingDistance > _agent.stoppingDistance + 0.5f)
-                        {
-                            if (Time.frameCount % 60 == 0) // Cada 60 frames (~1 segundo)
-                            {
-                                Debug.LogWarning($"[Lifecycle] ⚠️ {name} velocity = 0 pero debería moverse!\n" +
-                                               $"  remainingDistance: {_agent.remainingDistance:F2}\n" +
-                                               $"  stoppingDistance: {_agent.stoppingDistance:F2}\n" +
-                                               $"  isStopped: {_agent.isStopped}\n" +
-                                               $"  pathPending: {_agent.pathPending}\n" +
-                                               $"  path.status: {_agent.path.status}");
-                            }
-                        }
-                        
-                        if (agentSpeed > 0.01f)
-                        {
-                            // Calcular velocidad normalizada (0 = parado, 1 = velocidad máxima)
-                            float maxSpeed = Mathf.Max(_agent.speed, 0.1f);
-                            float normalizedSpeed = Mathf.Clamp01(agentSpeed / maxSpeed);
-                            
-                            // Aplicar velocidad más lenta (derrotado)
-                            _animator.SetMovementSpeed(normalizedSpeed * 0.5f, 0.1f);
-                            
-                            // ✅ Rotar hacia la dirección del movimiento
-                            Vector3 moveDir = _agent.velocity.normalized;
-                            moveDir.y = 0f;
-                            if (moveDir.sqrMagnitude > 0.01f)
-                            {
-                                _animator.FaceDirection(moveDir);
-                            }
-                        }
-                        else
-                        {
-                            // Si no se está moviendo, velocidad 0
-                            _animator.SetMovementSpeed(0f, 0.1f);
-                        }
+                        _animator.SetMovementSpeed(0f, 0.1f);
+                        _animator.TransitionToIdle();
                     }
-                    
-                    // Verificar si llegó
-                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance + 0.1f)
-                    {
-                        Debug.Log($"[Lifecycle] ✅ {name} llegó a su destino (elapsed: {elapsed:F1}s)");
-                        break;
-                    }
-                    
-                    elapsed += Time.deltaTime;
-                    yield return null;
                 }
-                
-                if (elapsed >= timeout)
+            }
+            finally
+            {
+                if (externalMovementOverridePushed && _manager != null)
                 {
-                    Debug.LogWarning($"[Lifecycle] ⏱️ {name} timeout alcanzado ({timeout}s) - Forzando parada");
+                    _manager.PopExternalMovementOverride();
                 }
-                
-                // Detener movimiento y restaurar configuración
-                _agent.isStopped = true;
-                _agent.speed = originalSpeed;
-                _agent.updateRotation = originalUpdateRotation;
-                
-                if (_animator != null)
-                {
-                    _animator.SetMovementSpeed(0f, 0.1f);
-                    _animator.TransitionToIdle();
-                }
+            }
+
+            // Si es líder de equipo y debe mover a los compañeros, hacerlo ANTES de desaparecer.
+            var teamMember = GetComponent<NPCTeamMember>();
+            if (teamMember != null && teamMember.IsLeader && _config.moveTeamMembersOnDefeat)
+            {
+                yield return MoveTeamMembersToRandomPoints();
             }
             
             // ¿Desaparecer al llegar?
@@ -1103,13 +1094,6 @@ namespace Game.NPC.Modules
             {
                 // Configurar como interactuable
                 SetupPostCombatInteraction();
-            }
-            
-            // Si es líder de equipo y debe mover a los compañeros
-            var teamMember = GetComponent<NPCTeamMember>();
-            if (teamMember != null && teamMember.IsLeader && _config.moveTeamMembersOnDefeat)
-            {
-                yield return MoveTeamMembersToRandomPoints();
             }
         }
         
@@ -1207,12 +1191,15 @@ namespace Game.NPC.Modules
                     
                     memberAgent.speed = originalSpeed * 0.5f;
                     memberAgent.updateRotation = false; // NPCSimpleAnimator maneja la rotación
+                    member.PushExternalMovementOverride();
                     
                     // ✅ Establecer destino y esperar cálculo de path
                     memberAgent.SetDestination(targetPos);
                     
                     if (memberAnimator != null)
                     {
+                        memberAnimator.SetTalking(false);
+                        memberAnimator.EndInteraction();
                         memberAnimator.TransitionToIdle();
                         yield return new WaitForSeconds(0.1f); // Pequeña espera para transición
                         
@@ -1238,6 +1225,7 @@ namespace Game.NPC.Modules
                     if (memberAgent.path.status != NavMeshPathStatus.PathComplete)
                     {
                         Debug.LogError($"[Lifecycle] ❌ Miembro {member.name} no puede calcular path hacia {targetPos}! Status: {memberAgent.path.status}");
+                        member.PopExternalMovementOverride();
                         continue; // Saltar este miembro
                     }
                     
@@ -1249,7 +1237,7 @@ namespace Game.NPC.Modules
                              $"  UpdateRotation: {memberAgent.updateRotation}");
                     
                     // ✅ Iniciar corrutina para esperar llegada y manejar post-acción
-                    member.StartCoroutine(WaitForMemberArrivalAndHandle(member, memberConfig, hasIndividualAnchor, originalSpeed, originalUpdateRotation));
+                    member.StartCoroutine(WaitForMemberArrivalAndHandle(member, memberConfig, hasIndividualAnchor, originalSpeed, originalUpdateRotation, true));
                 }
             }
             
@@ -1260,7 +1248,7 @@ namespace Game.NPC.Modules
         /// <summary>
         /// Espera a que un miembro llegue a su destino y maneja la post-acción
         /// </summary>
-        private IEnumerator WaitForMemberArrivalAndHandle(NPCBehaviourManagerV2 member, NPCCombatConfig config, bool hasIndividualAnchor, float originalSpeed, bool originalUpdateRotation)
+        private IEnumerator WaitForMemberArrivalAndHandle(NPCBehaviourManagerV2 member, NPCCombatConfig config, bool hasIndividualAnchor, float originalSpeed, bool originalUpdateRotation, bool releaseExternalMovementOverride)
         {
             if (member == null || member.Agent == null) yield break;
             
@@ -1372,6 +1360,12 @@ namespace Game.NPC.Modules
                 // ¿Desaparecer al llegar?
                 if (config != null && config.disappearOnArrival)
                 {
+                    if (releaseExternalMovementOverride)
+                    {
+                        member.PopExternalMovementOverride();
+                        releaseExternalMovementOverride = false;
+                    }
+
                     if (config.disappearOnArrivalVFX != null)
                     {
                         Instantiate(config.disappearOnArrivalVFX, member.transform.position + Vector3.up, Quaternion.identity);
@@ -1392,6 +1386,47 @@ namespace Game.NPC.Modules
                     Debug.Log($"[Lifecycle] ✅ Miembro {member.name} configurado como interactuable en destino");
                 }
             }
+
+            if (releaseExternalMovementOverride && member != null)
+            {
+                member.PopExternalMovementOverride();
+            }
+        }
+
+        private bool TryResolveReachableDestination(NavMeshAgent agent, Vector3 targetPos, out Vector3 resolvedPos)
+        {
+            resolvedPos = targetPos;
+            NavMeshPath path = new NavMeshPath();
+            
+            if (agent.CalculatePath(targetPos, path))
+            {
+                if (path.status == NavMeshPathStatus.PathComplete)
+                {
+                    resolvedPos = targetPos;
+                    return true;
+                }
+                
+                if (path.status == NavMeshPathStatus.PathPartial && path.corners.Length > 0)
+                {
+                    resolvedPos = path.corners[path.corners.Length - 1];
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        private Transform ResolveAnchorTransform(string anchorIdOrName)
+        {
+            if (string.IsNullOrWhiteSpace(anchorIdOrName))
+                return null;
+
+            var spawnAnchor = SpawnAnchor.FindById(anchorIdOrName);
+            if (spawnAnchor != null)
+                return spawnAnchor.transform;
+
+            var anchorGo = GameObject.Find(anchorIdOrName);
+            return anchorGo != null ? anchorGo.transform : null;
         }
 
         private IEnumerator RunDialogueRoutine(DialogueAsset dialogue)

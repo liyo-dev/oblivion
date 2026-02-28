@@ -58,6 +58,7 @@ public class ImpDemonAI : MonoBehaviour
     private bool isAttacking = false;
     private bool hasSpawned = false;
     private bool isDead = false;
+    private bool _registeredInCombat = false;
 
     // Buffer estático para evitar allocations en OverlapSphereNonAlloc
     private static Collider[] _overlapBuffer = new Collider[16];
@@ -252,14 +253,43 @@ public class ImpDemonAI : MonoBehaviour
             damageable.OnDamaged -= OnDamageTaken;
             damageable.OnDied -= OnDeath;
         }
+
+        UnregisterFromCombatRegistry();
     }
 
     void Update()
     {
+        SyncCombatRegistryState();
         if (!hasSpawned || isDead || !player || !canStartCombat) return;
 
         UpdatePhase();
         UpdateBehavior();
+    }
+
+    private void SyncCombatRegistryState()
+    {
+        if (isDead)
+        {
+            UnregisterFromCombatRegistry();
+            return;
+        }
+
+        if (canStartCombat && !_registeredInCombat)
+        {
+            ActiveCombatRegistry.RegisterNPC(gameObject);
+            _registeredInCombat = true;
+        }
+        else if (!canStartCombat && _registeredInCombat)
+        {
+            UnregisterFromCombatRegistry();
+        }
+    }
+
+    private void UnregisterFromCombatRegistry()
+    {
+        if (!_registeredInCombat) return;
+        ActiveCombatRegistry.UnregisterNPC(gameObject);
+        _registeredInCombat = false;
     }
 
     private IEnumerator SpawnSequence()
@@ -762,6 +792,7 @@ public class ImpDemonAI : MonoBehaviour
         
         isDead = true;
         currentState = BossState.Dead;
+        UnregisterFromCombatRegistry();
         
         if (agent && agent.isOnNavMesh)
         {
