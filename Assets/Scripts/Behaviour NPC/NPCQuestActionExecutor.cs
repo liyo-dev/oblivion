@@ -277,7 +277,7 @@ namespace Game.NPC
                     if (action.actionType == QuestActionType.Dialogue)
                     {
                         // Acción puramente de diálogo y NPC muy lejos: cancelar
-                        Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Acción de diálogo cancelada - NPC muy lejos ({distanceToPlayer:F1}m > {maxDialogueDistance}m)");
+                        Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ Acción de diálogo cancelada - NPC muy lejos ({distanceToPlayer:F1}m > {action.maxDialogueDistance}m)");
                         _isExecutingPostAction = false;
                         yield break;
                     }
