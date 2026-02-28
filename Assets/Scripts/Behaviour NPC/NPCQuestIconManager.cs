@@ -103,8 +103,14 @@ namespace Game.NPC
             }
             else if (_iconForcedHidden)
             {
-                // Restaurar icono cuando termine
+                // Restaurar icono cuando termine.
+                // Resetear caché para forzar re-evaluación completa:
+                // si el estado cambió mientras estaba force-hidden (ej: nueva quest iniciada
+                // por grafo narrativo durante diálogo/cinemática), _lastIconState ya tiene
+                // el nuevo valor y UpdateIconState() no detectaría cambio → icono no aparece.
                 _iconForcedHidden = false;
+                _lastIconState = NPCQuestConfig.QuestIconState.None;
+                _currentIconPrefab = null;
                 UpdateIconState();
             }
         }

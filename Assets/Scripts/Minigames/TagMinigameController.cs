@@ -160,6 +160,7 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string startMessage = "¡HUYE!";
     [SerializeField] private string caughtMessage = "¡Te atraparon!";
     [SerializeField] private string winMessage = "¡Escapaste!";
+    [SerializeField] private string countdownTaskDescription = "¡Prepárate para huir!";
     [SerializeField] private string protectNpcMessageFormat = "¡NPC protegido! {0}/{1}";
     [SerializeField] private string objectiveFormat = "Protegidos: {0}/{1}";
     [SerializeField] private string timeFailedMessage = "¡Se acabó el tiempo! Estela te atrapó.";
@@ -1626,19 +1627,26 @@ public class TagMinigameController : MonoBehaviour
         // ✅ Activar efectos de enfado durante la cuenta atrás
         StartAngerEffects();
 
+        // Durante el countdown: la tarea aparece donde estaba el 3,2,1
+        // y el número aparece donde estaba el timer (arriba)
+        if (countdownText) countdownText.text = countdownTaskDescription;
+
         float countdown = countdownBeforeStart;
         while (countdown > 0)
         {
-            if (countdownText) countdownText.text = Mathf.CeilToInt(countdown).ToString();
-            
+            // El número de cuenta atrás ocupa la posición del timer
+            if (timerText) timerText.text = Mathf.CeilToInt(countdown).ToString();
+
             // Incrementar efecto de enfado progresivamente
             float angerProgress = 1f - (countdown / countdownBeforeStart);
             UpdateAngerIntensity(angerProgress);
-            
+
             yield return new WaitForSeconds(1f);
             countdown -= 1f;
         }
 
+        // Restaurar el timer en su posición al terminar la cuenta atrás
+        if (timerText) timerText.text = FormatTime(duration);
         if (countdownText) countdownText.text = "";
         ShowMessage(startMessage, 1.5f);
         
