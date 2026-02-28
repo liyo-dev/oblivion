@@ -52,12 +52,13 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     private Vector3 _markerOriginalScale;
     private Tween _markerTween;
     private bool _markerVisible;
+    private bool _hiddenByDialogue;
     private readonly List<Material> _runtimeMarkerMaterials = new();
 
     void Awake()
     {
         _cam = Camera.main;
-        
+
         if (enableMarker && markerPrefab)
         {
             var go = Instantiate(markerPrefab);
@@ -67,8 +68,42 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             _marker.localScale = Vector3.zero;
             ConfigureMarkerVisuals(go);
         }
-        
+
         if (!aimOrigin && _cam) aimOrigin = _cam.transform;
+    }
+
+    void OnEnable()
+    {
+        DialogueManager.OnDialogueStarted += HandleDialogueStarted;
+        DialogueManager.OnDialogueClosed += HandleDialogueClosed;
+    }
+
+    void OnDisable()
+    {
+        DialogueManager.OnDialogueStarted -= HandleDialogueStarted;
+        DialogueManager.OnDialogueClosed -= HandleDialogueClosed;
+    }
+
+    void HandleDialogueStarted(Transform _)
+    {
+        if (!_marker || !_markerVisible) return;
+        _hiddenByDialogue = true;
+        _markerTween?.Kill();
+        _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration).SetEase(Ease.InBack)
+            .OnComplete(() => _marker.gameObject.SetActive(false));
+    }
+
+    void HandleDialogueClosed(Transform _)
+    {
+        if (!_hiddenByDialogue) return;
+        _hiddenByDialogue = false;
+        if (_marker && _markerVisible && CurrentTarget != null)
+        {
+            _markerTween?.Kill();
+            _marker.gameObject.SetActive(true);
+            _marker.localScale = Vector3.zero;
+            _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration).SetEase(Ease.OutBack);
+        }
     }
 
     void OnDestroy()
@@ -292,9 +327,12 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (!_markerVisible)
             {
                 _markerVisible = true;
-                _marker.gameObject.SetActive(true);
-                _marker.localScale = Vector3.zero;
-                _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration).SetEase(Ease.OutBack);
+                if (!_hiddenByDialogue)
+                {
+                    _marker.gameObject.SetActive(true);
+                    _marker.localScale = Vector3.zero;
+                    _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration).SetEase(Ease.OutBack);
+                }
             }
         }
         else
@@ -311,13 +349,15 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     {
         if (!_marker) return;
 
+        if (_hiddenByDialogue) return;
+
         if (CurrentTarget == null)
         {
             if (_marker.gameObject.activeSelf)
                 _marker.gameObject.SetActive(false);
             return;
         }
-        
+
         if (!_marker.gameObject.activeSelf)
             _marker.gameObject.SetActive(true);
 
