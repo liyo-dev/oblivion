@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Core;
@@ -109,6 +109,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private Button inventoryTabButton;
     [SerializeField] private Button spellsTabButton;
     [SerializeField] private Button equipmentTabButton;
+    [SerializeField] private Color tabActiveColor   = Color.white;
+    [SerializeField] private Color tabInactiveColor = new Color(1f, 1f, 1f, 0.35f);
 
     [Header("Panel de jugador")]
     [SerializeField] private TextMeshProUGUI levelText;
@@ -155,6 +157,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     #endif
 
     readonly List<Button> _tabButtons = new();
+    readonly Dictionary<Button, ColorBlock> _tabOriginalColors = new();
 
     InventoryView _inventoryView;
     SpellView _spellView;
@@ -1370,7 +1373,24 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             var button = _tabButtons[i];
             if (button == null) continue;
-            button.interactable = i != _activeTab;
+
+            bool isActive = i == _activeTab;
+            button.interactable = !isActive;
+
+            var colors = button.colors;
+            if (isActive)
+            {
+                // Activo (interactable=false): disabledColor blanco para que se vea brillante
+                colors.disabledColor  = Color.white;
+                colors.colorMultiplier = 1f;
+            }
+            else
+            {
+                // Inactivos: tenues pero visibles
+                colors.normalColor    = Color.white;
+                colors.colorMultiplier = 0.45f;
+            }
+            button.colors = colors;
         }
     }
 
@@ -3064,19 +3084,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
             bool canAssignPending = _assignmentMode == AssignmentMode.WaitingForSlotSelection && CanAssign(slot, _pendingSpell);
             bool isWaitingForSlot = _assignmentMode == AssignmentMode.WaitingForSlotSelection;
+            bool isFocused = slot == _focusedSlot;
 
-            if (isWaitingForSlot)
+            if (isWaitingForSlot && canAssignPending && isFocused)
             {
-                if (canAssignPending)
-                {
-                    PlaySlotPulseFeedback(slot);
-                }
-                else
-                {
-                    KillSlotFeedback(slot);
-                    if (_slotDefaultColors.TryGetValue(button, out var defaultColors))
-                        button.colors = defaultColors;
-                }
+                PlaySlotPulseFeedback(slot);
             }
             else
             {
@@ -3089,6 +3101,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         void HandleSlotFocused(Button button, MagicSlot slot)
         {
             _focusedSlot = slot;
+            if (_assignmentMode == AssignmentMode.WaitingForSlotSelection)
+                UpdateSlotButtonVisuals();
         }
 
         bool CanAssign(MagicSlot slot, SpellId spellId)
@@ -3135,25 +3149,17 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (!_slotToButton.TryGetValue(slot, out var button) || button == null)
                 return;
 
-            KillSlotFeedback(slot);
-
-            if (!_slotDefaultColors.ContainsKey(button))
-                _slotDefaultColors[button] = button.colors;
+            // No añadir tween si ya está corriendo para este slot
+            if (_slotFeedbackTweens.ContainsKey(button)) return;
 
             if (!_slotBaseScales.ContainsKey(button))
                 _slotBaseScales[button] = button.transform.localScale;
 
-            var pulseColor = new Color(1f, 0.9f, 0.3f, 1f);
-            var colors = button.colors;
-            colors.normalColor = pulseColor;
-            colors.highlightedColor = pulseColor * 1.1f;
-            colors.selectedColor = pulseColor * 1.1f;
-            button.colors = colors;
-
             var baseScale = _slotBaseScales[button];
             var tween = button.transform
-                .DOPunchScale(Vector3.one * 0.1f, 0.6f, vibrato: 4, elasticity: 0.5f)
-                .SetLoops(-1, LoopType.Restart)
+                .DOScale(baseScale * 1.12f, 0.35f)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetEase(Ease.InOutSine)
                 .SetUpdate(true);
             _slotFeedbackTweens[button] = tween;
         }
@@ -3362,6 +3368,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         public void SetVisible(bool value)
         {
+            if (!value)
+                ResetAllHighlights();
             if (_ui.root != null)
                 _ui.root.SetActive(value);
         }
@@ -3955,9 +3963,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         class ButtonHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerClickHandler, ISubmitHandler
         {
             public Graphic target;
-            public Color highlightColor = Color.white;
-            Color _baseColor;
-            bool _baseColorCaptured;
+            public Color highlightColor = Color.white; // ya no se usa para colorear, se mantiene por compatibilidad
+            Vector3 _baseScale;
+            bool _baseScaleCaptured;
+            Tween _pulseTween;
 
             void Awake()
             {
@@ -3970,55 +3979,61 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             public void Configure(Color color)
             {
                 highlightColor = color;
-                // Capturar color base solo si no está seleccionado actualmente
-                if (target != null && !_baseColorCaptured)
+                if (!_baseScaleCaptured)
                 {
-                    _baseColor = target.color;
-                    _baseColorCaptured = true;
+                    _baseScale = transform.localScale;
+                    _baseScaleCaptured = true;
                 }
             }
 
             public void OnSelect(BaseEventData eventData)
             {
-                if (target != null)
-                    target.color = highlightColor;
-            }
-            
-            public void OnDeselect(BaseEventData eventData)
-            {
-                if (target != null)
-                    target.color = _baseColor;
+                if (!_baseScaleCaptured)
+                {
+                    _baseScale = transform.localScale;
+                    _baseScaleCaptured = true;
+                }
+                _pulseTween?.Kill();
+                _pulseTween = transform
+                    .DOScale(_baseScale * 1.12f, 0.35f)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetEase(Ease.InOutSine)
+                    .SetUpdate(true);
             }
 
-            // Cuando se hace click con mouse, resetear el color después
+            public void OnDeselect(BaseEventData eventData)
+            {
+                StopPulse();
+            }
+
             public void OnPointerClick(PointerEventData eventData)
             {
-                // El click ya ejecutó la acción, resetear el highlight
                 StartCoroutine(ResetAfterFrame());
             }
-            
-            // Cuando se pulsa Submit (gamepad/teclado), resetear el color después
+
             public void OnSubmit(BaseEventData eventData)
             {
-                // El submit ya ejecutó la acción, resetear el highlight
                 StartCoroutine(ResetAfterFrame());
             }
-            
+
             System.Collections.IEnumerator ResetAfterFrame()
             {
-                yield return null; // Esperar un frame
-                // Solo resetear si este objeto ya no está seleccionado
+                yield return null;
                 if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != gameObject)
-                {
-                    if (target != null)
-                        target.color = _baseColor;
-                }
+                    StopPulse();
             }
 
             public void ResetColor()
             {
-                if (target != null)
-                    target.color = _baseColor;
+                StopPulse();
+            }
+
+            void StopPulse()
+            {
+                _pulseTween?.Kill();
+                _pulseTween = null;
+                if (_baseScaleCaptured)
+                    transform.localScale = _baseScale;
             }
         }
     }
