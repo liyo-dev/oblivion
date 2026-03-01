@@ -12,7 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _SHADING_STYLE_SKIN_AND_TEXTILES
+  - _SHADING_STYLE_HAIR_AND_METAL
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -110,14 +110,14 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _PaintbrushStrokesAngle: 40
-    - _PaintbrushStrokesSize: 1
+    - _PaintbrushStrokesSize: 0.01
     - _Parallax: 0.005
     - _QueueControl: -1
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _SHADING_STYLE: 0
+    - _SHADING_STYLE: 1
     - _ShadowsFloor: 0.25
-    - _Smoothness: 0.5
+    - _Smoothness: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SpecularNoiseSize: 1

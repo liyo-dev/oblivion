@@ -41,11 +41,22 @@ namespace Game.NPC.Modules
                 {
                     if (existing != null && existing != executor)
                     {
-                        Debug.LogError($"[NPCInteractiveNarrativeRegistry] ❌ ERROR CRÍTICO: persistenceId DUPLICADO '{id}'\n" +
-                                       $"  → NPC existente: '{existing.name}'\n" +
-                                       $"  → NPC nuevo: '{executor.name}'\n" +
-                                       $"  ⚠️ Esto causa que el guardado de estado de un NPC afecte al otro.\n" +
-                                       $"  🔧 SOLUCIÓN: Asigna un persistenceId ÚNICO a cada NPCInteractiveNarrativeConfig.");
+                        if (existing.name == executor.name)
+                        {
+                            // Mismo NPC, distinta instancia: ocurre al recargar escena mientras el NPC
+                            // del party sigue vivo (DontDestroyOnLoad). La nueva instancia de escena
+                            // reemplaza la referencia obsoleta — comportamiento esperado.
+                            Debug.Log($"[NPCInteractiveNarrativeRegistry] ♻️ Reemplazando referencia obsoleta de '{id}' ({executor.name}) — recarga de escena");
+                        }
+                        else
+                        {
+                            // IDs iguales en NPCs DISTINTOS: esto sí es un error de configuración.
+                            Debug.LogError($"[NPCInteractiveNarrativeRegistry] ❌ ERROR CRÍTICO: persistenceId DUPLICADO '{id}'\n" +
+                                           $"  → NPC existente: '{existing.name}'\n" +
+                                           $"  → NPC nuevo: '{executor.name}'\n" +
+                                           $"  ⚠️ Esto causa que el guardado de estado de un NPC afecte al otro.\n" +
+                                           $"  🔧 SOLUCIÓN: Asigna un persistenceId ÚNICO a cada NPCInteractiveNarrativeConfig.");
+                        }
                     }
                     // Si es el mismo executor, solo actualizamos (re-registro)
                 }
@@ -128,10 +139,14 @@ namespace Game.NPC.Modules
         /// Se llama al cargar partida o iniciar nueva partida para que los NPCs
         /// se re-registren con el estado correcto del preset cargado.
         /// </summary>
-        public static void Clear()
-        { // Resetear el estado de ejecución de todos los executors
-            // Esto es importante porque al cargar una partida anterior, el preset
-            // puede tener una lista diferente de completedInteractiveNarratives
+        /// <param name="fullClear">
+        /// Si true, limpia también _all y _byId (usar cuando la escena va a recargarse y los
+        /// executors llamarán OnEnable de nuevo). Si false, solo resetea estados (reset en mitad
+        /// de sesión con los NPCs aún en escena — OnEnable ya pasó y no se volverá a llamar).
+        /// </param>
+        public static void Clear(bool fullClear = false)
+        {
+            // Resetear el estado de ejecución de todos los executors
             int resetCount = 0;
             foreach (var executor in _all)
             {
@@ -141,15 +156,21 @@ namespace Game.NPC.Modules
                     resetCount++;
                 }
             }
-            
-            // NOTA: NO limpiamos _all ni _byId porque los executors siguen siendo válidos
-            // Solo necesitamos resetear su estado. Si limpiáramos las listas, los executors
-            // no se re-registrarían automáticamente (OnEnable ya pasó) y el registro quedaría vacío.
-            
-            // Limpiamos referencias null que pudieran existir
+
             _all.RemoveAll(e => e == null);
-            
-            Debug.Log($"[NPCInteractiveNarrativeRegistry] 🔄 Estados reseteados en {resetCount} executor(es), registro mantiene {_all.Count} entradas");
+
+            if (fullClear)
+            {
+                // Limpieza completa previa a recarga de escena: los executors volverán a
+                // registrarse solos vía OnEnable cuando la nueva escena cargue.
+                _all.Clear();
+                _byId.Clear();
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] 🗑️ Registro limpiado completamente (pre-carga de escena), {resetCount} estado(s) reseteados");
+            }
+            else
+            {
+                Debug.Log($"[NPCInteractiveNarrativeRegistry] 🔄 Estados reseteados en {resetCount} executor(es), registro mantiene {_all.Count} entradas");
+            }
         }
         
         /// <summary>

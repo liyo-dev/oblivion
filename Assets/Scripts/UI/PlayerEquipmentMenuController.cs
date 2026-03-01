@@ -731,6 +731,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         
         _isOpen = false;
         ExitUiInputScope();
+        // Evitar que el botón B que cerró el menú dispare acciones de gameplay en el mismo frame.
+        GamepadInputReader.IgnoreCancelButton(0.2f);
         if (_actionModeActive && _actionManager != null)
         {
             _actionManager.PopMode(ActionMode.Inventory);
@@ -746,35 +748,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     void OnQuitToMainMenu()
     {
         Debug.Log("[PlayerEquipmentMenuController] Iniciando transición al Main Menu");
-        
-        // ✅ CRÍTICO: Guardar el estado actual antes de salir (incluyendo party)
-        var bootProfile = GameBootService.Profile;
-        if (bootProfile != null)
-        {
-            Debug.Log("[PlayerEquipmentMenuController] 💾 Guardando estado actual antes de salir al menú...");
-            
-            // Actualizar el runtimePreset con el estado actual (party, quests, etc.)
-            bootProfile.UpdateRuntimePresetFromCurrentState();
-            
-            // Guardar el runtime al JSON si hay save system disponible
-            if (ServiceLocator.TryGet(out SaveSystem saveSystem))
-            {
-                bool saved = bootProfile.SaveCurrentGameState(saveSystem);
-                if (saved)
-                {
-                    Debug.Log("[PlayerEquipmentMenuController] ✅ Estado guardado correctamente (party incluido)");
-                }
-                else
-                {
-                    Debug.LogWarning("[PlayerEquipmentMenuController] ⚠️ No se pudo guardar el estado");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerEquipmentMenuController] ⚠️ SaveSystem no disponible - estado no guardado");
-            }
-        }
-        
+
         // Cerrar el menú SIN reproducir sonido (ya sonó UI_Cancel arriba)
         if (_isOpen)
         {

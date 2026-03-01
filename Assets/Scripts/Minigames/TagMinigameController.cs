@@ -736,13 +736,21 @@ public class TagMinigameController : MonoBehaviour
     /// </summary>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!isRunning)
+        if (!isRunning && !isCountingDown)
+            return;
+
+        // Si la escena carga durante la cuenta atrás (antes de que isRunning sea true),
+        // abortar inmediatamente: la corutina StartWithCountdown seguiría corriendo
+        // y llamaría a StartChasing() en la nueva escena (p.ej. menú principal) sin jugador.
+        if (isCountingDown && !isRunning)
         {
+            Debug.LogWarning($"[TagMinigame] 🌍 Escena '{scene.name}' cargada durante cuenta atrás. Abortando minijuego.");
+            StopMinigame();
             return;
         }
-        
+
         Debug.Log($"[TagMinigame] 🌍 Nueva escena cargada: '{scene.name}' (mode={mode})");
-        
+
         // Dar tiempo a que la escena se inicialice
         StartCoroutine(HandleSceneChange(scene));
     }
@@ -787,7 +795,10 @@ public class TagMinigameController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[TagMinigame] 🌍 ⚠️ No se pudo encontrar al jugador en la nueva escena");
+            // Si no hay jugador en la nueva escena (p.ej. el jugador salió al menú principal),
+            // abortar el minijuego para limpiar la UI y el estado.
+            Debug.LogWarning("[TagMinigame] 🌍 ⚠️ No se encontró jugador en la nueva escena. Abortando minijuego.");
+            StopMinigame();
         }
     }
     

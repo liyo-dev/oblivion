@@ -134,6 +134,15 @@ namespace Game.NPC.Modules
         {
             if (_isInvulnerable || _isProcessingDefeat) return;
 
+            // Si el NPC no está en combate y recibe daño, entrar en combate inmediatamente.
+            // Cubre ataques por la espalda y cualquier caso donde no haya detectado al jugador.
+            if (_manager != null && _manager.Context != null && !_manager.Context.IsInCombat && !IsDefeatedAndInactive)
+            {
+                var attacker = _manager.Player;
+                if (attacker != null)
+                    _manager.ForceEnterCombat(attacker);
+            }
+
             // 🔍 DEBUG: Log de vida actual
             Debug.Log($"[Lifecycle] ⚔️ {name} recibió {amount} de daño - Vida: {_damageable.Current}/{_damageable.Max} - IsAlive: {_damageable.IsAlive}");
 

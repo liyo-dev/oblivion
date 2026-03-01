@@ -324,9 +324,18 @@ public class MainMenuController : MonoBehaviour
         }
         else if (hasSave)
         {
-            Debug.Log("[MainMenu] CONTINUE → Save ya debería estar cargado por GameBootService");
-            // Nota: GameBootService.PrepareActivePreset() ya cargó el save automáticamente
-            // No es necesario volver a cargarlo aquí
+            // Recargar siempre desde disco antes de continuar.
+            // Durante la sesión anterior, QuestPersistenceBridge puede haber actualizado
+            // runtimePreset.flags en memoria (p.ej. misiones completadas/archivadas).
+            // Si el jugador no guardó, save.json tiene el estado antiguo correcto,
+            // pero runtimePreset ya tiene el estado evolucionado → hay que recargar desde disco
+            // para que QuestManager quede con el estado correcto antes de que cargue la escena.
+            var bootProfile = GameBootService.Profile;
+            if (bootProfile != null)
+            {
+                bootProfile.LoadProfile(saveSystem);
+                Debug.Log("[MainMenu] CONTINUE → Perfil recargado desde disco");
+            }
         }
         else
         {

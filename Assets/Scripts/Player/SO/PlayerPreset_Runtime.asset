@@ -15,7 +15,7 @@ MonoBehaviour:
   spawnAnchorId: Woods_Entrance_SavePoint
   level: 1
   maxHP: 100
-  currentHP: 100
+  currentHP: 80
   maxMP: 50
   currentMP: 50
   unlockedAbilities: 01000000
@@ -24,11 +24,22 @@ MonoBehaviour:
   rightSpellId: 2
   specialSpellId: 0
   flags:
-  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,5_22,3
+  - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,7_22,3
+  - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
   - CINEMATIC_SEEN:Cinematic_DemonAppears
   - CINEMATIC_SEEN:Cinematic_VillainPlans
-  - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
+  - PICKUP_MainWorld_Coin_01_5,3_2,1_-4,7
+  - PICKUP_MainWorld_Coin_01 (19)_-31,6_1,7_30,3
+  - PICKUP_MainWorld_Coin_01 (18)_-38,5_1,7_34,1
+  - PICKUP_MainWorld_Coin_01 (12)_-26,9_1,5_47,1
+  - PICKUP_MainWorld_Coin_01 (13)_-24,6_1,5_47,1
+  - PICKUP_MainWorld_Coin_01 (11)_-19,9_1,6_47,1
   - CINEMATIC_SEEN:Cinematic_EstelaAppears
+  - CINEMATIC_SEEN:Cinematic_Golem
+  - CINEMATIC_SEEN:Cinematic_Taberna
+  - PICKUP_MainWorld_Coin_01 (7)_8,1_0,6_55,0
+  - PICKUP_MainWorld_Coin_01 (4)_-3,5_0,6_22,8
+  - CINEMATIC_SEEN:Cinematic_Mountain
   - QUEST_COMPLETED:ELDRAN_MISSION1
   - QUEST_ARCHIVED:ELDRAN_MISSION1
   - QUEST_COMPLETED:ELDRAN_MISSION2
@@ -41,8 +52,8 @@ MonoBehaviour:
   - QUEST_ARCHIVED:ELDRAN_MISSION5
   - QUEST_COMPLETED:ELDRAN_MISSION5_2
   - QUEST_ARCHIVED:ELDRAN_MISSION5_2
-  - QUEST_ACTIVE:ELDRAN_MISSION6
-  - QUEST_STEP_DONE:ELDRAN_MISSION6:0
+  - QUEST_COMPLETED:ELDRAN_MISSION6
+  - QUEST_ARCHIVED:ELDRAN_MISSION6
   abilities:
     swim: 0
     jump: 0
@@ -67,21 +78,20 @@ MonoBehaviour:
   - Cloak02
   inventoryItems:
   - itemId: coin
-    count: 16
-  - itemId: pocionHP
-    count: 1
+    count: 44
   defeatedBossIds:
   - Demon_1
+  - Golem_1
   narrativeBlackboards:
   - graphLabel: Historia Principal
     blackboardData:
-    - key: __currentNodeGuid
-      type: string
-      value: 
     - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
       type: bool
       value: 1
     - key: __quest_16d41261-7e42-42bb-b91a-1cab8d52164e_ELDRAN_MISSION1_started
+      type: bool
+      value: 1
+    - key: INV_GIVEN:MainNarrative:64ed2870-8561-471f-bb08-803a726be060:coin
       type: bool
       value: 1
     - key: __quest_da331290-6f7e-4aa3-937d-83cb066bbfe7_ELDRAN_MISSION3_started
@@ -90,13 +100,13 @@ MonoBehaviour:
     - key: __quest_bc692d5b-b0ca-4095-85fc-2380f374f9d3_ELDRAN_MISSION4_started
       type: bool
       value: 1
-    - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
-      type: bool
-      value: 1
     - key: __event_c235d486-6f5e-4a93-8d96-8721b6dad7d3_ERIKA_FIGHT_received
       type: bool
       value: 1
     - key: __event_c9ca7493-60c5-44db-ae66-9b0e232343e3_ERIKA_BATTLE_WON_received
+      type: bool
+      value: 1
+    - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
       type: bool
       value: 1
     - key: __quest_4010d494-e518-45bb-9852-29a412777758_ELDRAN_MISSION5_2_started
@@ -105,6 +115,12 @@ MonoBehaviour:
     - key: __event_d2c6cf0b-557c-41ae-9ccc-069ca97bade9_ESTELA_FOUND_received
       type: bool
       value: 1
+    - key: __event_1db8d4ab-1b78-48f8-961e-9e0668aacf6e_EXIT_FROM_WOODS_ESTELA_received
+      type: bool
+      value: 1
+    - key: __currentNodeGuid
+      type: string
+      value: 
   - graphLabel: Misiones Secundarias
     blackboardData:
     - key: __currentNodeGuid
@@ -112,11 +128,11 @@ MonoBehaviour:
       value: 
   npcPositions:
   - npcId: Oliver
-    position: {x: -31.48, y: 1.2060261, z: 26.09}
+    position: {x: -31.48, y: 1.224823, z: 26.09}
     hasActiveState: 0
     isActive: 1
   - npcId: Eldran
-    position: {x: -39.945, y: 1.2060261, z: 26.09}
+    position: {x: -11.161622, y: 0.058135986, z: 207.5533}
     hasActiveState: 0
     isActive: 1
   consumedInteractableIds:
@@ -124,13 +140,17 @@ MonoBehaviour:
   completedInteractiveNarratives:
   - oliver-narrative-b8a7c6d5-unique
   - oliver-narrative-b8a7c6d5-unique_CN0
-  - victoria-narrative-f5e4d3c2-unique
-  - victoria-narrative-f5e4d3c2-unique_CN1
   - erika-narrative-a7b3c2d1-unique
   - erika-narrative-a7b3c2d1-unique_CN1
+  - victoria-narrative-f5e4d3c2-unique
+  - victoria-narrative-f5e4d3c2-unique_CN1
+  - NPC_InteractiveNarrative_Config_Lety_Vicky_7dcb9cf0
+  - NPC_InteractiveNarrative_Config_Lety_Vicky_7dcb9cf0_CN0
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN0
-  partyMemberIds: []
+  - NPC_InteractiveNarrative_Config_Liam_cc7bd504
+  partyMemberIds:
+  - Eldran
   unlockedTeleportPoints:
   - Woods_Entrance_SavePoint
   - Woods_SavePoint

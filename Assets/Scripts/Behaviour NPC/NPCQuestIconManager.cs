@@ -16,6 +16,10 @@ namespace Game.NPC
         private NPCAlertIconController _iconController;
         private NPCInteractiveNarrativeExecutor _narrativeExecutor;
         
+        [Header("Distancia de visibilidad")]
+        [Tooltip("Distancia máxima (unidades de mundo) a la que se muestra el icono sobre la cabeza del NPC. 0 = sin límite.")]
+        [SerializeField] private float questIconMaxDistance = 30f;
+
         private NPCQuestConfig.QuestIconState _lastIconState = NPCQuestConfig.QuestIconState.None;
         private GameObject _currentIconPrefab;
         private bool _isInDialogue;
@@ -84,17 +88,29 @@ namespace Game.NPC
             DialogueManager.OnDialogueClosed -= OnDialogueClosed;
         }
         
+        private bool IsPlayerTooFar()
+        {
+            if (questIconMaxDistance <= 0f) return false;
+            var player = _npcManager?.Player;
+            if (player == null) return false;
+            float sqrDist = (player.position - transform.position).sqrMagnitude;
+            return sqrDist > questIconMaxDistance * questIconMaxDistance;
+        }
+
         private void Update()
         {
             // Verificar si el NPC está ejecutando una narrativa
             bool isExecuting = _narrativeExecutor != null && _narrativeExecutor.IsExecuting;
-            
+
             // Verificar si el NPC está en combate
             bool isInCombat = _npcManager != null && _npcManager.Context != null && _npcManager.Context.IsInCombat;
-            
-            if (isExecuting || _isInDialogue || isInCombat)
+
+            // Verificar si el jugador está demasiado lejos
+            bool isTooFar = IsPlayerTooFar();
+
+            if (isExecuting || _isInDialogue || isInCombat || isTooFar)
             {
-                // Forzar ocultar icono mientras ejecuta, está en diálogo o combate
+                // Forzar ocultar icono mientras ejecuta, está en diálogo, combate o fuera de rango
                 if (!_iconForcedHidden)
                 {
                     _iconForcedHidden = true;

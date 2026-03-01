@@ -484,8 +484,10 @@ public class GameBootProfile : ScriptableObject
 
             NarrativeAutoSetup.ResetForLoadedProfile();
             
-            // ✅ Limpiar el registro de NPCs narrativos para que se re-registren con el estado correcto
-            Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
+            // ✅ Limpiar el registro de NPCs narrativos para que se re-registren con el estado correcto.
+            // fullClear=true porque LoadProfile() siempre precede a una carga de escena:
+            // los executors volverán a llamar OnEnable y se re-registrarán solos.
+            Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear(fullClear: true);
             Debug.Log("[GameBootProfile] 🔄 NPCInteractiveNarrativeRegistry limpiado para carga de partida");
 
             // ✅ Validar y corregir inconsistencias narrativas

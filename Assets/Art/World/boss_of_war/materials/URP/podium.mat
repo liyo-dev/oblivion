@@ -92,7 +92,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddPrecomputedVelocity: 0
-    - _AdditionalLightCutoffPoint: 0.8
+    - _AdditionalLightCutoffPoint: 1
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Blend: 0
@@ -107,7 +107,7 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
-    - _ExtraBandThickness: 0.3
+    - _ExtraBandThickness: 0.1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossinessSource: 0
@@ -122,19 +122,19 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _SHADING_STYLE: 1
-    - _ShadowsFloor: 0.25
+    - _ShadowsFloor: 0.5
     - _Shininess: 0
     - _Smoothness: 0
     - _SmoothnessSource: 0
     - _SmoothnessTextureChannel: 0
     - _SpecSource: 0
     - _SpecularHighlights: 1
-    - _SpecularNoiseSize: 1
+    - _SpecularNoiseSize: 10
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _StrongRimStrength: 0
     - _Surface: 0
-    - _ToonCutoffPoint: 0.2
+    - _ToonCutoffPoint: 0.01
     - _UVSec: 0
     - _UseEmission: 1
     - _WorkflowMode: 1
