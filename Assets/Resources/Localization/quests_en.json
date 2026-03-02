@@ -5,6 +5,10 @@
             "value": "Get the Fruit Crate"
         },
         {
+            "key": "ELDRAN_MISSION8",
+            "value": "[EN] Protege a la gente del Reino de la furia de Estela."
+        },
+        {
             "key": "Q_NIÑOPEZ",
             "value": "Before entering the water you need to help the fish boy."
         },
@@ -87,6 +91,14 @@
         {
             "key": "QUEST_ELDRAN_MISSION7_NAME",
             "value": "[EN] Nos vemos en la taberna."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION8_DESC",
+            "value": "[EN] Acercate a la gente del Reino y usa los botones para lanzar un hechizo protector."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION8_NAME",
+            "value": "[EN] Protege a la gente del Reino."
         },
         {
             "key": "QUEST_MISSION1_STEP1",

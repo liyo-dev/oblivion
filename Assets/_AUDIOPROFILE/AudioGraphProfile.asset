@@ -67,7 +67,7 @@ MonoBehaviour:
   - eventKey: Chest
     sfx: {fileID: 8300000, guid: fd8d9eef98a47b148af17b768903835c, type: 3}
   - eventKey: Coin
-    sfx: {fileID: 8300000, guid: ab5056e86d89a9b49af0adccd84af617, type: 3}
+    sfx: {fileID: 8300000, guid: fd8d9eef98a47b148af17b768903835c, type: 3}
   - eventKey: GameOverMenu
     sfx: {fileID: 8300000, guid: 2f07c3b7706a64f489133201c2342886, type: 3}
   - eventKey: BolaPrisma

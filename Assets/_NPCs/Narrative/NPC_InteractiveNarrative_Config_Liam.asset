@@ -20,6 +20,7 @@ MonoBehaviour:
     condition:
       conditionType: 3
       targetQuest: {fileID: 11400000, guid: 772f4ab27e599a84db0b4ab0e6036a86, type: 2}
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 7
@@ -59,7 +60,62 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    singleUse: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 1
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 3
+      targetQuest: {fileID: 11400000, guid: 14489f43f7fa9bb408dfbb7636ccf2ba, type: 2}
+      customEventKey: 
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: f7c587c6522284e4c936498ad07e2b82, type: 2}
+      speechBubbleText: 
+      isThoughtBubble: 0
+      speechBubbleDuration: 0
+      speechBubblePrefabOverride: {fileID: 0}
+      waitForBubble: 0
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1
     postNarrativeState: 0

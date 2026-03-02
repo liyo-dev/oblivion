@@ -337,6 +337,10 @@
             "value": "[EN] ¡Por fin! que con el estómago vacío no puedo pensar."
         },
         {
+            "key": "DLG_ESTELA_BOSQUE_00",
+            "value": "[EN] Tu debes ser Estela... me manda Eldran. Ha aparecido un demonio y necesitamos tu ayuda."
+        },
+        {
             "key": "DLG_ESTELA_BOSQUE_01",
             "value": "[EN] ¡Wau! Parece una misión ultra secreta y super peligrosa."
         },
