@@ -161,6 +161,11 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string caughtMessage = "¡Te atraparon!";
     [SerializeField] private string winMessage = "¡Escapaste!";
     [SerializeField] private string countdownTaskDescription = "¡Prepárate para huir!";
+    [SerializeField] private bool showEscapeCountdown = false;
+    [Tooltip("Texto que aparece tras el mensaje de victoria con la cuenta atrás de huida.")]
+    [SerializeField] private string escapeMessage = "¡Sal del Reino!";
+    [Tooltip("Segundos de cuenta atrás de huida.")]
+    [SerializeField] private float escapeCountdownDuration = 10f;
     [SerializeField] private string protectNpcMessageFormat = "¡NPC protegido! {0}/{1}";
     [SerializeField] private string objectiveFormat = "Protegidos: {0}/{1}";
     [SerializeField] private string timeFailedMessage = "¡Se acabó el tiempo! Estela te atrapó.";
@@ -174,6 +179,7 @@ public class TagMinigameController : MonoBehaviour
     // Estado interno
     private float remainingTime;
     private bool isRunning = false;
+    private bool _waitingForKingdomExit = false; // NPCs protegidos, esperando que el jugador salga del reino
     private bool isCountingDown = false;
     private Transform player;
     private Vector3 playerStartPosition;
@@ -1238,7 +1244,10 @@ public class TagMinigameController : MonoBehaviour
 
         if (HasProtectionObjectiveConfigured && protectedCount >= required)
         {
-            WinMinigame();
+            if (showEscapeCountdown)
+                StartCoroutine(WaitForKingdomExit());
+            else
+                WinMinigame();
         }
     }
 
@@ -1415,8 +1424,10 @@ public class TagMinigameController : MonoBehaviour
 
         if (remainingTime <= 0f)
         {
-            if (HasProtectionObjectiveConfigured && protectedCount < RequiredProtectCount)
+            // Pierde por tiempo si: no protegió todos los NPCs, O si aún esperaba salir del reino
+            if (HasProtectionObjectiveConfigured && (protectedCount < RequiredProtectCount || _waitingForKingdomExit))
             {
+                _waitingForKingdomExit = false;
                 LoseByTimeout();
             }
             else
@@ -2252,6 +2263,10 @@ public class TagMinigameController : MonoBehaviour
         // ✅ Unir NPCs adicionales al party
         JoinAdditionalNPCsToParty();
 
+        // ✅ Reunir a todos los miembros del party junto al jugador inmediatamente
+        if (Game.NPC.PlayerParty.HasInstance)
+            Game.NPC.PlayerParty.Instance.TeleportAllMembersToPlayer();
+
         DisableMinigameActionRestrictions();
         UpdateObjectiveUI();
 
@@ -2261,7 +2276,56 @@ public class TagMinigameController : MonoBehaviour
 
         StartCoroutine(HideUIAfterDelay(3f));
     }
-    
+
+    /// <summary>
+    /// Muestra el countdown "¡Sal del Reino!" y espera a que el jugador cruce el trigger de salida.
+    /// La victoria no se registra hasta que ocurra.
+    /// </summary>
+    private IEnumerator WaitForKingdomExit()
+    {
+        _waitingForKingdomExit = true;
+
+        if (messageText) messageText.text = escapeMessage;
+
+        // Usamos el mismo timer principal (remainingTime) — no hay countdown separado.
+        // El Update() detectará cuando remainingTime <= 0 y llamará LoseByTimeout().
+        while (_waitingForKingdomExit && remainingTime > 0f)
+            yield return null;
+    }
+
+    /// <summary>
+    /// Llamado por MinigameExitTrigger cuando el jugador cruza la zona de salida del reino.
+    /// Si el minijuego está esperando la salida, completa la victoria.
+    /// </summary>
+    public void PlayerExitedKingdom()
+    {
+        if (!_waitingForKingdomExit) return;
+        _waitingForKingdomExit = false;
+        WinMinigame();
+    }
+
+    private IEnumerator EscapeCountdownAfterWin()
+    {
+        // Esperar a que termine el mensaje de victoria (igual que la duración pasada a ShowMessage)
+        yield return new WaitForSeconds(3f);
+
+        // Mostrar mensaje de huida
+        if (messageText) messageText.text = escapeMessage;
+
+        // Cuenta atrás en el timerText
+        float countdown = Mathf.Max(1f, escapeCountdownDuration);
+        while (countdown > 0f)
+        {
+            if (timerText) timerText.text = Mathf.CeilToInt(countdown).ToString();
+            yield return new WaitForSeconds(1f);
+            countdown -= 1f;
+        }
+
+        if (timerText)    timerText.text    = "";
+        if (messageText)  messageText.text  = "";
+        if (uiContainer)  uiContainer.SetActive(false);
+    }
+
     /// <summary>
     /// Une los NPCs configurados en npcsToJoinOnWin al party del jugador
     /// </summary>

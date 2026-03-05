@@ -417,11 +417,11 @@ public class PlayerLevitationController : MonoBehaviour
         {
             if (target == null) continue;
             
-            // Dirección desde el jugador hacia el target (alejándose del jugador)
-            Vector3 pushDir = (target.transform.position - playerPos);
+            // Dirección: el forward del jugador (hacia donde apunta la cámara/personaje)
+            Vector3 pushDir = playerForward;
             pushDir.y = 0;
             if (pushDir.sqrMagnitude < 0.01f)
-                pushDir = playerForward;
+                pushDir = Vector3.forward;
             pushDir = pushDir.normalized;
             
             // Instanciar VFX de release en la posición del NPC

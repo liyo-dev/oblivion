@@ -563,9 +563,10 @@ namespace Game.NPC.Modules
                             Debug.Log($"[Lifecycle] 🎵 Restaurando música de batalla después del diálogo: {_config.battleMusicId}");
                             AudioService.Instance.EndBattleById(_config.battleMusicId);
                         }
-                        else
+                        else if (AudioService.Instance != null)
                         {
-                            Debug.LogWarning($"[Lifecycle] ⚠️ No se puede restaurar música - battleMusicId es '{_config?.battleMusicId}', AudioService existe: {AudioService.Instance != null}");
+                            Debug.Log($"[Lifecycle] 🎵 Restaurando música después del diálogo (sin battleMusicId)");
+                            AudioService.Instance.RestoreAfterBattle();
                         }
                     }
                     else
@@ -594,6 +595,11 @@ namespace Game.NPC.Modules
                         {
                             Debug.Log($"[Lifecycle] 🎵 Restaurando música de batalla (sin diálogo): {_config.battleMusicId}");
                             AudioService.Instance.EndBattleById(_config.battleMusicId);
+                        }
+                        else if (AudioService.Instance != null)
+                        {
+                            Debug.Log($"[Lifecycle] 🎵 Restaurando música (sin diálogo, sin battleMusicId)");
+                            AudioService.Instance.RestoreAfterBattle();
                         }
                     }
                 }

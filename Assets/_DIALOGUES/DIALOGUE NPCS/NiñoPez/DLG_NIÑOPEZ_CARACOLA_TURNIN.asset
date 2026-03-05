@@ -17,3 +17,13 @@ MonoBehaviour:
     textId: "DLG_NI\xD1OPEZ_CARACOLA_TURNIN"
     text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: "CHAR_NI\xD1OPEZ"
+    textId: "DLG_NI\xD1OPEZ_CARACOLA_TURNIN_02"
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0

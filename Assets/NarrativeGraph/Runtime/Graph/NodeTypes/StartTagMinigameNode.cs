@@ -133,7 +133,7 @@ public sealed class StartTagMinigameNode : NarrativeNode
             }
         }
 
-        // Buscar cualquier controlador como último recurso
-        return UnityEngine.Object.FindFirstObjectByType<TagMinigameController>();
+        Debug.LogError($"[StartTagMinigameNode] No se encontró TagMinigameController con minigameId='{minigameId}' en ninguna escena cargada.");
+        return null;
     }
 }

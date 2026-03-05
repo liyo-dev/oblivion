@@ -48,6 +48,10 @@ namespace Game.NPC
         // Player References
         private Transform _player;
         private Transform _playerCamera;
+
+        // Cached components (evita GetComponent repetido)
+        private NPCPartyMember _cachedPartyMember;
+        private NPCCombatLifecycleHandler _cachedLifecycle;
         #endregion
 
         #region 📢 Public API
@@ -66,14 +70,7 @@ namespace Game.NPC
         /// <summary>
         /// Indica si este NPC es un aliado del jugador (miembro del party).
         /// </summary>
-        public bool IsAlly
-        {
-            get
-            {
-                var partyMember = GetComponent<NPCPartyMember>();
-                return partyMember != null && partyMember.IsInParty;
-            }
-        }
+        public bool IsAlly => _cachedPartyMember != null && _cachedPartyMember.IsInParty;
         #endregion
 
         void Awake()
@@ -277,6 +274,10 @@ namespace Game.NPC
                     if (debugMode) Debug.Log($"[NPCManager] 🤝 NPCPartyMember añadido para {name}");
                 }
             }
+
+            // Cachear componentes frecuentemente usados
+            _cachedPartyMember = GetComponent<NPCPartyMember>();
+            _cachedLifecycle = GetComponent<NPCCombatLifecycleHandler>();
         }
 
         // =================================================================================
@@ -286,14 +287,12 @@ namespace Game.NPC
         public void EnterCombat()
         {
             // Evitar entrar en combate si ya estamos muertos
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+            if (_cachedLifecycle != null && _cachedLifecycle.IsDefeatedAndInactive) return;
 
             _context.IsInCombat = true;
-            
+
             // ✅ Verificar si es un aliado (miembro del party)
-            var partyMember = GetComponent<NPCPartyMember>();
-            bool isAlly = partyMember != null && partyMember.IsInParty;
+            bool isAlly = _cachedPartyMember != null && _cachedPartyMember.IsInParty;
             
             if (isAlly)
             {
@@ -352,8 +351,7 @@ namespace Game.NPC
         public void ForceEnterCombat(Transform target)
         {
             // Evitar entrar en combate si ya estamos muertos
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive) return;
+            if (_cachedLifecycle != null && _cachedLifecycle.IsDefeatedAndInactive) return;
             
             // Asignar el objetivo
             _context.Player = target;
@@ -417,14 +415,13 @@ namespace Game.NPC
         /// </summary>
         public bool JoinPlayerParty()
         {
-            var partyMember = GetComponent<NPCPartyMember>();
-            if (partyMember == null)
+            if (_cachedPartyMember == null)
             {
                 if (debugMode) Debug.LogWarning($"[NPCManager] {name} no tiene NPCPartyMember. Asegúrate de configurar Companion behaviour.");
                 return false;
             }
-            
-            bool success = partyMember.JoinParty();
+
+            bool success = _cachedPartyMember.JoinParty();
             
             if (success)
             {
@@ -443,10 +440,9 @@ namespace Game.NPC
         /// </summary>
         public bool LeavePlayerParty()
         {
-            var partyMember = GetComponent<NPCPartyMember>();
-            if (partyMember == null) return false;
-            
-            bool success = partyMember.LeaveParty();
+            if (_cachedPartyMember == null) return false;
+
+            bool success = _cachedPartyMember.LeaveParty();
             
             if (success)
             {
@@ -463,11 +459,7 @@ namespace Game.NPC
         /// <summary>
         /// Comprueba si este NPC está actualmente en el equipo del jugador.
         /// </summary>
-        public bool IsInPlayerParty()
-        {
-            var partyMember = GetComponent<NPCPartyMember>();
-            return partyMember != null && partyMember.IsInParty;
-        }
+        public bool IsInPlayerParty() => _cachedPartyMember != null && _cachedPartyMember.IsInParty;
         
         /// <summary>
         /// Une este NPC al party del jugador.
@@ -543,10 +535,7 @@ namespace Game.NPC
         {
             // No interactuar si estamos muertos o en combate
             if (_context.IsInCombat) return;
-            var lifecycle = GetComponent<NPCCombatLifecycleHandler>();
-            // Si está derrotado, el LifecycleHandler gestiona la interacción especial (diálogo post-derrota)
-            // pero si está vivo y bien, el Brain gestiona la interacción normal.
-            if (lifecycle != null && lifecycle.IsDefeatedAndInactive)
+            if (_cachedLifecycle != null && _cachedLifecycle.IsDefeatedAndInactive)
             {
                 // TODO: Implementar HandlePostDefeatInteraction en NPCCombatLifecycleHandler
                 // Por ahora, delegar al Brain para que maneje la interacción normalmente

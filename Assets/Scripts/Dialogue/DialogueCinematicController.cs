@@ -40,7 +40,15 @@ public class DialogueCinematicController : MonoBehaviour
     private CinemachineCamera currentVirtualCamera;
     private int currentLineIndex;
     private int nextCutAtLine;
-    
+
+    // Modo conversación grupal
+    private bool _isGroupConversation;
+    [Header("Conversación Grupal")]
+    [Tooltip("Distancia horizontal de la cámara al centro del grupo")]
+    [SerializeField] private float groupCameraDistance = 6f;
+    [Tooltip("Altura de la cámara sobre los personajes. Valores altos = cenital, bajos = cinematográfico)")]
+    [SerializeField] private float groupCameraHeight = 1.4f;
+
     // ✅ Sistema de tracking de speakers para cambios de cámara
     private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
     private Transform currentSpeaker;     // Transform del speaker actual
@@ -263,7 +271,7 @@ public class DialogueCinematicController : MonoBehaviour
     /// <summary>
     /// Inicia el modo cinematográfico para un diálogo
         /// </summary>
-        public void StartCinematic(Transform player, Transform npc, DialogueCinematicProfile profile = null)
+        public void StartCinematic(Transform player, Transform npc, DialogueCinematicProfile profile = null, bool isGroupConversation = false)
         {
             // Si hay un apagado pendiente, cancelarlo (diálogo encadenado)
             if (isPendingEnd && pendingEndCinematicCoroutine != null)
@@ -315,7 +323,8 @@ public class DialogueCinematicController : MonoBehaviour
         isInCinematicMode = true;
         currentLineIndex = 0;
         nextCutAtLine = CalculateNextCutLine();
-        
+        _isGroupConversation = isGroupConversation;
+
         // ✅ Reiniciar sistema de tracking de speakers
         currentSpeakerId = null;
         currentSpeaker = null;
@@ -800,12 +809,12 @@ public class DialogueCinematicController : MonoBehaviour
                             break;
                         }
                         
-                        // PRIORIDAD 3: Comparar con narrativeID
-                        if (m.NPCManager.Configuration.narrativeConfig?.narrativeID == speakerId)
+                        // PRIORIDAD 3: Comparar con narrativeID (usa interactiveNarrativeConfig.persistenceId como fallback)
+                        if (m.NPCManager.Configuration.interactiveNarrativeConfig?.persistenceId == speakerId)
                         {
                             partyMember = m;
                             if (showDebugInfo)
-                                Debug.Log($"[DialogueCinematicController] 🎯 Match por narrativeID: '{m.NPCManager.Configuration.narrativeConfig.narrativeID}' == '{speakerId}'");
+                                Debug.Log($"[DialogueCinematicController] 🎯 Match por persistenceId (p3): '{m.NPCManager.Configuration.interactiveNarrativeConfig.persistenceId}' == '{speakerId}'");
                             break;
                         }
                     }
@@ -1044,15 +1053,34 @@ public class DialogueCinematicController : MonoBehaviour
         {
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
-            Vector3 lookAtPos = target.position + shot.LookAtOffset;
-            
-            // ✅ AJUSTE ESPECIAL: Para planos OverShoulder, mirar más hacia el pecho/torso
-            // Esto evita que la cabeza del personaje en primer plano tape al otro personaje
-            if (shot.shotType == DialogueShotType.OverShoulderPlayer || 
-                shot.shotType == DialogueShotType.OverShoulderNPC)
+
+            // En modo grupal: la cámara mira al CENTRO de todos los participantes
+            Vector3 lookAtPos;
+            if (_isGroupConversation && currentPlayer != null)
             {
-                // Bajar el punto de mira 0.3m para apuntar más al torso que a la cabeza
-                lookAtPos.y -= 0.3f;
+                Vector3 center = currentPlayer.position;
+                int count = 1;
+                if (currentNPC != null) { center += currentNPC.position; count++; }
+                var partyForLook = Game.NPC.PlayerParty.HasInstance ? Game.NPC.PlayerParty.Instance : null;
+                if (partyForLook != null)
+                {
+                    foreach (var m in partyForLook.Members)
+                    {
+                        if (m != null && m.IsActiveInParty)
+                        { center += m.transform.position; count++; }
+                    }
+                }
+                lookAtPos = center / count;
+                lookAtPos.y += 1.0f; // Altura de torso
+            }
+            else
+            {
+                lookAtPos = target.position + shot.LookAtOffset;
+                if (shot.shotType == DialogueShotType.OverShoulderPlayer ||
+                    shot.shotType == DialogueShotType.OverShoulderNPC)
+                {
+                    lookAtPos.y -= 0.3f;
+                }
             }
 
             // Aplicar posición
@@ -1131,18 +1159,48 @@ public class DialogueCinematicController : MonoBehaviour
         /// </summary>
         private Vector3 CalculateCameraPosition(CinematicCameraShot shot, Transform target)
         {
+            // ── MODO CONVERSACIÓN GRUPAL ──
+            // Cámara inclinada en ángulo 3/4 que encuadra a todo el grupo
+            if (_isGroupConversation && target != null)
+            {
+                // Centro del grupo incluyendo party members si están disponibles
+                Vector3 groupCenter = currentPlayer.position;
+                int participantCount = 1;
+                if (currentNPC != null) { groupCenter += currentNPC.position; participantCount++; }
+                var party = Game.NPC.PlayerParty.HasInstance ? Game.NPC.PlayerParty.Instance : null;
+                if (party != null)
+                {
+                    foreach (var m in party.Members)
+                    {
+                        if (m != null && m.IsActiveInParty)
+                        { groupCenter += m.transform.position; participantCount++; }
+                    }
+                }
+                groupCenter /= participantCount;
+
+                // Cámara detrás del grupo respecto al speaker actual
+                Vector3 toTarget = target.position - groupCenter;
+                toTarget.y = 0f;
+                if (toTarget.sqrMagnitude < 0.01f) toTarget = -target.forward;
+                toTarget.Normalize();
+
+                Vector3 groupCamPos = groupCenter - toTarget * groupCameraDistance;
+                groupCamPos.y = target.position.y + groupCameraHeight;
+                return groupCamPos;
+            }
+
             Vector3 basePos = target.position;
-            
+
             // IMPORTANTE: Distancia mínima entre personajes para cálculos de cámara
             // Esto evita problemas cuando el player y NPC están muy juntos
             const float MIN_CHARACTER_DISTANCE = 2.0f;
-            
+
             // Calcular distancia real entre personajes
             float actualDistance = Vector3.Distance(
                 new Vector3(currentPlayer.position.x, 0, currentPlayer.position.z),
                 new Vector3(currentNPC.position.x, 0, currentNPC.position.z)
             );
-            
+
             // Factor de escala para cuando están muy cerca
             float distanceFactor = Mathf.Max(1f, MIN_CHARACTER_DISTANCE / Mathf.Max(actualDistance, 0.1f));
             
@@ -1224,20 +1282,20 @@ public class DialogueCinematicController : MonoBehaviour
                         playerToNPC.y = 0;
                         if (playerToNPC.sqrMagnitude < 0.01f) playerToNPC = currentPlayer.forward;
                         playerToNPC.Normalize();
-                        
+
                         // ✅ CONFIGURACIÓN MEJORADA: Offset lateral más pronunciado para evitar tapar al NPC
                         float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.3f;
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, playerToNPC).normalized * lateralOffsetAmount;
-                        
+
                         // ✅ AUMENTADO: Retroceder MUCHO MÁS del player para mejor perspectiva
                         float behindDistance = Mathf.Max(3.0f, actualDistance * 0.75f); // Aumentado de 2.4f a 3.0f
-                        
+
                         // Avance ligero hacia el NPC para centrar mejor el encuadre
                         float forwardOffset = 0.6f;
-                        
+
                         // Posición base: atrás del player + offset lateral + ligero avance hacia NPC
                         camPos = currentPlayer.position - playerToNPC * behindDistance + shoulderOffset + playerToNPC * forwardOffset;
-                        
+
                         // ✅ ALTURA AUMENTADA: Subir la cámara para ver por encima de la cabeza del player
                         camPos.y = currentPlayer.position.y + shot.Height + 0.8f; // Aumentado a +0.8f
                     }
@@ -1250,16 +1308,16 @@ public class DialogueCinematicController : MonoBehaviour
                         npcToPlayer.y = 0;
                         if (npcToPlayer.sqrMagnitude < 0.01f) npcToPlayer = currentNPC.forward;
                         npcToPlayer.Normalize();
-                        
+
                         // ✅ MEJORADO: Offset lateral más pronunciado
                         float lateralOffsetAmount = shot.LateralOffset != 0 ? shot.LateralOffset : 1.1f;
                         Vector3 shoulderOffset = Vector3.Cross(Vector3.up, npcToPlayer).normalized * lateralOffsetAmount;
-                        
+
                         // ✅ AUMENTADO: Retroceder MUCHO MÁS de la posición del NPC
                         float behindDistance = Mathf.Max(2.5f, actualDistance * 0.6f); // Aumentado de 1.8f a 2.5f
-                        
+
                         camPos = currentNPC.position - npcToPlayer * behindDistance + shoulderOffset;
-                        
+
                         // ✅ MEJORADO: Altura más elevada
                         camPos.y = currentNPC.position.y + shot.Height + 0.5f; // Aumentado a +0.5f
                     }

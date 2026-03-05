@@ -34,6 +34,7 @@ public class MinimapController : MonoBehaviour
     Transform _playerTransform;
     bool _hiddenByInterior;
     bool _hiddenByBattle;
+    bool _hiddenByMenu;
 
     // ── API para MinimapUIController ─────────────────────────────────────────
     public Vector3 PlayerPosition => _playerTransform != null ? _playerTransform.position : Vector3.zero;
@@ -80,6 +81,8 @@ public class MinimapController : MonoBehaviour
         EnvironmentController.OnInteriorExited  += OnInteriorExited;
         BossArenaController.OnAnyBattleStarted  += OnBattleStarted;
         BossArenaController.OnAnyBattleEnded    += OnBattleEnded;
+        MenuManager.MenuOpened                  += OnMenuOpened;
+        MenuManager.MenuClosed                  += OnMenuClosed;
     }
 
     void OnDisable()
@@ -88,6 +91,8 @@ public class MinimapController : MonoBehaviour
         EnvironmentController.OnInteriorExited  -= OnInteriorExited;
         BossArenaController.OnAnyBattleStarted  -= OnBattleStarted;
         BossArenaController.OnAnyBattleEnded    -= OnBattleEnded;
+        MenuManager.MenuOpened                  -= OnMenuOpened;
+        MenuManager.MenuClosed                  -= OnMenuClosed;
     }
 
     void Update()
@@ -116,10 +121,8 @@ public class MinimapController : MonoBehaviour
     {
         if (_playerTransform != null) return;
 
-        // Intentar via PlayerService
         _playerTransform = PlayerService.PlayerTransform;
 
-        // Fallback: buscar por tag directamente
         if (_playerTransform == null)
         {
             var go = GameObject.FindWithTag("Player");
@@ -151,9 +154,21 @@ public class MinimapController : MonoBehaviour
         RefreshMinimapVisibility();
     }
 
+    void OnMenuOpened(MenuKind kind)
+    {
+        _hiddenByMenu = true;
+        RefreshMinimapVisibility();
+    }
+
+    void OnMenuClosed(MenuKind kind)
+    {
+        _hiddenByMenu = !MenuManager.AnyOpen();
+        RefreshMinimapVisibility();
+    }
+
     void RefreshMinimapVisibility()
     {
         if (minimapRoot != null)
-            minimapRoot.SetActive(!_hiddenByInterior && !_hiddenByBattle);
+            minimapRoot.SetActive(!_hiddenByInterior && !_hiddenByBattle && !_hiddenByMenu);
     }
 }

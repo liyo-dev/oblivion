@@ -23,40 +23,45 @@ MonoBehaviour:
   - rid: 5623891500440224034
   - rid: 5623891572275806459
   - rid: 5623891572275806460
-  - rid: 857239913217393070
-  - rid: 857239913217393071
+  - rid: 2337184645389222053
+  - rid: 2337184645389222054
   applicableSceneNames:
   - MainWorld
   references:
     version: 2
     RefIds:
-    - rid: 857239913217393070
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+    - rid: 2337184645389222053
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: INTRO
+        displayTitle: Encuentro la caracola
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 8c033cc3-3046-49f4-96bd-373c132e7e61
-        position: {x: 92, y: -401}
+        guid: 19e6376b-e48c-41d5-bf3a-aa9beef62892
+        position: {x: 1548, y: -259}
         outputs:
-        - befa0b8d-cb25-4ed4-8ef3-5225773ec796
-        eventKey: INTRO
-    - rid: 857239913217393071
-      type: {class: PlayMusicNode, ns: , asm: Assembly-CSharp}
+        - 1a1603a0-9b04-479e-a110-442a4dcf20c0
+        questId: "Q_NI\xD1OPEZ_CARACOLA"
+        debugLogs: 0
+    - rid: 2337184645389222054
+      type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: "Ponemos m\xFAsica para la intro"
+        displayTitle: "Coraz\xF3n Estelar"
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: befa0b8d-cb25-4ed4-8ef3-5225773ec796
-        position: {x: 400, y: -508}
+        guid: 1a1603a0-9b04-479e-a110-442a4dcf20c0
+        position: {x: 1969, y: -259}
         outputs: []
-        clip: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
-        fadeSeconds: 0.5
-        loop: 1
+        abilityKeysToUnlock: 
+        abilitiesToUnlock: 
+        spellsToUnlock: 03000000
+        assignSpellsToEmptySlot: 1
+        oneShotFlag: 
+        applyPresetAfterUnlock: 1
+        saveAfterUnlock: 0
     - rid: 5623891252771815605
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -97,7 +102,6 @@ MonoBehaviour:
         position: {x: -160, y: -103}
         outputs:
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
-        - 8c033cc3-3046-49f4-96bd-373c132e7e61
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
         - 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
         - fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
@@ -157,7 +161,8 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
         position: {x: 1095, y: -259}
-        outputs: []
+        outputs:
+        - 19e6376b-e48c-41d5-bf3a-aa9beef62892
         abilityKeysToUnlock: 00000000
         abilitiesToUnlock: 
         spellsToUnlock: 

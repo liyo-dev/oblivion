@@ -23,9 +23,6 @@ namespace Game.NPC.Common
         [Tooltip("Config de misiones (quest chain)")]
         public NPCQuestConfig questConfig;
         
-        [Tooltip("Config de narrativa (ID para el grafo)")]
-        public NPCNarrativeConfig narrativeConfig;
-        
         [Tooltip("Config de narrativa interactiva (cadena de acciones al interactuar)")]
         public NPCInteractiveNarrativeConfig interactiveNarrativeConfig;
         
@@ -119,12 +116,6 @@ namespace Game.NPC.Common
             if (questConfig != null && !questConfig.ValidateConfig(out string questError))
             {
                 errors += $"Quest Config: {questError}\n";
-                isValid = false;
-            }
-            
-            if (narrativeConfig != null && !narrativeConfig.ValidateConfig(out string narrativeError))
-            {
-                errors += $"Narrative Config: {narrativeError}\n";
                 isValid = false;
             }
             

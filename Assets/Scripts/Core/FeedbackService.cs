@@ -73,6 +73,17 @@
             EnsureInstance();
             yield return Co_ScreenFade(color, duration, fadeIn);
         }
+
+        /// <summary>
+        /// Establece el overlay de fade de pantalla a un color exacto de forma instantánea, sin animación.
+        /// Útil para poner la pantalla en negro antes de activar una nueva escena y evitar parpadeos.
+        /// </summary>
+        public static void SetScreenFadeImmediate(Color color)
+        {
+            EnsureInstance();
+            var root = EnsureFadeRoot();
+            if (root?.Image != null) root.Image.color = color;
+        }
         
         private static System.Collections.IEnumerator Co_ScreenFade(Color color, float duration, bool fadeIn)
         {

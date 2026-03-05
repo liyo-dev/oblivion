@@ -621,6 +621,37 @@ public sealed class AudioService : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Restaura la música después de una batalla sin necesitar una BattleRule específica.
+    /// Úsalo cuando el NPC no tiene battleMusicId configurado pero sí reproduce música de victoria.
+    /// </summary>
+    public void RestoreAfterBattle(float fade = -1f)
+    {
+        if (fade < 0f) fade = defaultFade;
+
+        _musicA.loop = true;
+        _musicB.loop = true;
+
+        var activeFogZone = FogZone.CurrentActiveZone;
+        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        {
+            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            if (zoneRule?.music != null)
+            {
+                Debug.Log($"[AudioService] RestoreAfterBattle: restaurando música de FogZone '{activeFogZone.MusicZoneId}'");
+                PlayMusic(zoneRule.music, fade);
+                if (_musicStack.Count > 0) _musicStack.Pop();
+                _battleActive = false;
+                return;
+            }
+        }
+
+        if (_musicStack.Count > 0) _musicStack.Pop();
+        if (!RestoreSceneMusic(fade))
+            StopMusic(fade);
+        _battleActive = false;
+    }
+
     // ===========================================================
     // Alerta (no inicia estado de batalla; solo cambia música)
     public void BeginAlertById(string id)
@@ -723,6 +754,7 @@ public sealed class AudioService : MonoBehaviour
 
             // llevar al volumen objetivo suavemente (sin cambiar de fuente)
             StopAllCoroutines();
+            _duckRoutine = null;
             StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
@@ -733,6 +765,7 @@ public sealed class AudioService : MonoBehaviour
         {
             float target = GetDuckedVolume(1f);
             StopAllCoroutines();
+            _duckRoutine = null;
             StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
@@ -749,6 +782,7 @@ public sealed class AudioService : MonoBehaviour
         if (from.isPlaying)
         {
             StopAllCoroutines();
+            _duckRoutine = null;
             StartCoroutine(Crossfade(from, to, fadeSeconds));
         }
         else
@@ -766,6 +800,7 @@ public sealed class AudioService : MonoBehaviour
         var current = _musicATurn ? _musicB : _musicA;
         if (!current.isPlaying) return;
         StopAllCoroutines();
+        _duckRoutine = null;
         StartCoroutine(FadeOutAndStop(current, fadeOut));
     }
 

@@ -163,6 +163,13 @@ public static class SceneTransitionLoader
 
                 // Pequeño respiro antes de activar
                 yield return new WaitForSecondsRealtime(0.05f);
+
+                // Poner pantalla en negro ANTES de activar la escena para evitar el parpadeo:
+                // la overlay de carga sigue encima en este punto, así que no se ve nada raro
+                // mientras se crea el canvas. Cuando la escena destino active, ya estará cubierta.
+                if (hasOverlay && PostLoadFadeDuration > 0f)
+                    FeedbackService.SetScreenFadeImmediate(PostLoadFadeColor);
+
                 op.allowSceneActivation = true;
             }
 
@@ -175,13 +182,8 @@ public static class SceneTransitionLoader
         // Seguridad: asegurar que timeScale esté a 1 al cargar una escena
         Time.timeScale = 1f;
 
-        // 4) ANTES de quitar la overlay, poner el fade en negro para cubrir la transición
-        if (hasOverlay && PostLoadFadeDuration > 0f)
-        {
-            // Poner pantalla en negro instantáneamente (esto cubre la escena mientras quitamos la overlay)
-            yield return EnsureRunner().StartCoroutine(
-                FeedbackService.ScreenFadeAsync(PostLoadFadeColor, 0.01f, fadeIn: true));
-        }
+        // 4) La pantalla ya está en negro (se puso antes de activar la escena).
+        //    Pasamos directamente a apagar la overlay.
 
         // 5) Apagar overlay con fade-out y limpieza
         if (ui != null)

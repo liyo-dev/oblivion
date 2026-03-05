@@ -28,6 +28,8 @@ MonoBehaviour:
       stepConditionId: 
       stepIndex: 0
       consumeOnComplete: 1
+    requiredWardrobeItems: []
+    requiredPartyMembers: []
     dlgBefore: {fileID: 11400000, guid: 1a4b3d11fdc02b1458216cbbd2882434, type: 2}
     dlgInProgress: {fileID: 11400000, guid: a4031d39b54297c4395850a92ac15227, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: bb6e14ad4333cb54fbdb4edc372e084a, type: 2}
@@ -47,6 +49,7 @@ MonoBehaviour:
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
+      maxDialogueDistance: 30
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 0
@@ -61,6 +64,8 @@ MonoBehaviour:
       customAction:
         m_PersistentCalls:
           m_Calls: []
+      chainNextQuestAfterAction: 0
+      chainDelay: 0.5
   - questData: {fileID: 11400000, guid: a23098449c6bdba469bc3be0eb8c7f3f, type: 2}
     completionMode: 2
     autoDetectItemDelivery: 0
@@ -68,7 +73,14 @@ MonoBehaviour:
     itemTag: 
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
-    requiredItems: []
+    requiredItems:
+    - item: {fileID: 11400000, guid: e4361cb7c95d93541ac11e631ba883d1, type: 2}
+      amount: 1
+      stepConditionId: 
+      stepIndex: 0
+      consumeOnComplete: 1
+    requiredWardrobeItems: []
+    requiredPartyMembers: []
     dlgBefore: {fileID: 11400000, guid: 8ca60b2e0a32ef640892a67144051cb6, type: 2}
     dlgInProgress: {fileID: 11400000, guid: 8ca60b2e0a32ef640892a67144051cb6, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: 342289eb02ee4ab468df382db09f3bad, type: 2}
@@ -88,6 +100,7 @@ MonoBehaviour:
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
+      maxDialogueDistance: 30
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 0
@@ -102,6 +115,8 @@ MonoBehaviour:
       customAction:
         m_PersistentCalls:
           m_Calls: []
+      chainNextQuestAfterAction: 0
+      chainDelay: 0.5
   enableItemDetection: 0
   detectionRadius: 3
   detectionAngle: 90

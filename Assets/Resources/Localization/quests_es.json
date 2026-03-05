@@ -101,6 +101,14 @@
             "value": "Protege a la gente del Reino."
         },
         {
+            "key": "QUEST_ELDRAN_MISSION9_DESC",
+            "value": "Sigue al guardia hasta el palacio para ver al Rey."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_NAME",
+            "value": "Arrestados"
+        },
+        {
             "key": "QUEST_MISSION1_STEP1",
             "value": "Habla con Eldran"
         },

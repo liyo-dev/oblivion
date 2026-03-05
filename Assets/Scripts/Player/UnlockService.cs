@@ -30,10 +30,12 @@ public static class UnlockService
 
         bool changed = false;
 
+        bool isNewUnlock = false;
         if (!preset.unlockedAbilities.Contains(ability))
         {
             preset.unlockedAbilities.Add(ability);
             changed = true;
+            isNewUnlock = true;
             OnAbilityUnlocked?.Invoke(ability);
         }
 
@@ -53,9 +55,8 @@ public static class UnlockService
                 // Asegurar que exista una reserva mínima de maná y RELLENAR AL 100%
                 const float minMagicMaxMp = 50f;
                 float desiredMax = Mathf.Max(preset.maxMP, minMagicMaxMp);
-                // Al desbloquear magia, SIEMPRE rellenar al máximo
                 float desiredCurrent = desiredMax;
-                
+
                 if (!Mathf.Approximately(preset.maxMP, desiredMax) || !Mathf.Approximately(preset.currentMP, desiredCurrent))
                 {
                     preset.maxMP = desiredMax;
@@ -64,8 +65,9 @@ public static class UnlockService
                     Debug.Log($"[UnlockService] MagicAttack desbloqueado: Maná seteado a {desiredCurrent}/{desiredMax} (100%)");
                 }
 
-                // Propagar por el sistema un unlock de la habilidad "Magic" (AbilityKey)
-                try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Magic); } catch { }
+                // Propagar el unlock de Magic (AbilityKey) SOLO si es la primera vez
+                if (isNewUnlock)
+                    try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Magic); } catch { }
                 break;
         }
 
@@ -153,78 +155,6 @@ public static class UnlockService
         }
 
         return changed;
-    }
-
-    /// Desbloquea volar en el preset activo.
-    public static bool UnlockFly()
-    {
-        var preset = GetActivePreset();
-        if (!preset) return false;
-
-        if (preset.abilities == null)
-            preset.abilities = new PlayerAbilities();
-
-        if (!preset.abilities.fly)
-        {
-            preset.abilities.fly = true;
-            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Fly); } catch { }
-            return true;
-        }
-        return false;
-    }
-
-    /// Desbloquea nadar en el preset activo.
-    public static bool UnlockSwim()
-    {
-        var preset = GetActivePreset();
-        if (!preset) return false;
-
-        if (preset.abilities == null)
-            preset.abilities = new PlayerAbilities();
-
-        if (!preset.abilities.swim)
-        {
-            preset.abilities.swim = true;
-            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Swim); } catch { }
-            return true;
-        }
-        return false;
-    }
-
-    /// Desbloquea trepar en el preset activo.
-    public static bool UnlockClimb()
-    {
-        var preset = GetActivePreset();
-        if (!preset) return false;
-
-        if (preset.abilities == null)
-            preset.abilities = new PlayerAbilities();
-
-        if (!preset.abilities.climb)
-        {
-            preset.abilities.climb = true;
-            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Climb); } catch { }
-            return true;
-        }
-        return false;
-    }
-
-    /// Desbloquea saltar en el preset activo.
-    public static bool UnlockJump()
-    {
-        var preset = GetActivePreset();
-        if (!preset) return false;
-
-        if (preset.abilities == null)
-            preset.abilities = new PlayerAbilities();
-
-        if (!preset.abilities.jump)
-        {
-            preset.abilities.jump = true;
-            try { OnAbilityUnlockedKey?.Invoke(AbilityKey.Jump); } catch { }
-            return true;
-        }
-        return false;
     }
 
     /// Desbloquea un hechizo y opcionalmente lo asigna a un slot vacío.

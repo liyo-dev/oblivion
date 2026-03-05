@@ -1006,6 +1006,141 @@ namespace Game.NPC.States
         #endregion
     }
     
+    /// <summary>
+    /// Secuencia de escolta: el NPC camina hacia un anchor mientras el jugador le sigue.
+    /// Si el jugador se aleja, el NPC para y vuelve a buscarle antes de reanudar.
+    /// Se ejecuta dentro de CinematicState para que el Brain no interfiera con el agente.
+    /// </summary>
+    public class LeadPlayerToAnchorSequence : CinematicSequence
+    {
+        private readonly Vector3 _anchorPos;
+        private readonly Transform _player;
+        private readonly float _maxDuration;
+        private readonly float _escortMaxDist;
+        private readonly float _escortResumeDist;
+
+        private float _timer;
+        private float _fetchUpdateTimer;
+        private bool _initialized;
+        private bool _fetchingPlayer;
+
+        public LeadPlayerToAnchorSequence(Vector3 anchorPos, Transform player,
+            float maxDuration, float escortMaxDist, float escortResumeDist)
+        {
+            _anchorPos      = anchorPos;
+            _player         = player;
+            _maxDuration    = maxDuration;
+            _escortMaxDist  = escortMaxDist;
+            _escortResumeDist = escortResumeDist;
+        }
+
+        public override void Update(Common.NPCStateContext context)
+        {
+            if (IsCompleted) return;
+
+            var agent = context.Agent;
+
+            // Validación de requisitos críticos
+            if (agent == null || _player == null)
+            {
+                UnityEngine.Debug.LogError($"[LeadPlayerToAnchorSequence] ❌ Requisito nulo: agent={agent != null}, player={_player != null}. Abortando.");
+                IsCompleted = true; return;
+            }
+
+            // Si el agente está desactivado (p.ej. por NavMeshAgentForceStop en IdleState anterior),
+            // reactivarlo y esperar un frame para que vuelva al NavMesh.
+            if (!agent.enabled)
+            {
+                UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ NavMeshAgent desactivado, reactivando...");
+                agent.enabled = true;
+                return;
+            }
+
+            if (!agent.isOnNavMesh)
+            {
+                UnityEngine.Debug.LogError($"[LeadPlayerToAnchorSequence] ❌ Agente fuera del NavMesh (enabled={agent.enabled}). Abortando.");
+                IsCompleted = true; return;
+            }
+
+            // Primer frame: arrancar hacia el anchor
+            if (!_initialized)
+            {
+                float startDist = Vector3.Distance(context.Transform.position, _anchorPos);
+                UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] 🚀 Iniciando escolta. distAnchor={startDist:F2}, isStopped={agent.isStopped}, isOnNavMesh={agent.isOnNavMesh}");
+                _initialized = true;
+                agent.isStopped = false;
+                if (!agent.SetDestination(_anchorPos))
+                    UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh.");
+                return;
+            }
+
+            _timer += Time.deltaTime;
+            if (_timer >= _maxDuration)
+            {
+                UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⏱️ Tiempo agotado ({_maxDuration}s).");
+                IsCompleted = true; return;
+            }
+
+            float distToPlayer = Vector3.Distance(context.Transform.position, _player.position);
+
+            if (!_fetchingPlayer)
+            {
+                // Comprobar llegada al anchor
+                bool navArrived  = !agent.pathPending && agent.hasPath && agent.remainingDistance < 0.6f;
+                float distToAnchor = Vector3.Distance(context.Transform.position, _anchorPos);
+                bool realArrived = distToAnchor < 0.8f;
+                if (navArrived && realArrived)
+                {
+                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Llegada al anchor (navDist={agent.remainingDistance:F2}, realDist={distToAnchor:F2})");
+                    IsCompleted = true; return;
+                }
+
+                // Jugador demasiado lejos → ir a buscarlo
+                if (distToPlayer > _escortMaxDist)
+                {
+                    _fetchingPlayer = true;
+                    agent.SetDestination(_player.position);
+                }
+            }
+            else
+            {
+                // Actualizar destino hacia el jugador 4 veces/s
+                _fetchUpdateTimer += Time.deltaTime;
+                if (_fetchUpdateTimer >= 0.25f)
+                {
+                    agent.SetDestination(_player.position);
+                    _fetchUpdateTimer = 0f;
+                }
+
+                // Jugador cerca de nuevo → reanudar hacia el anchor
+                if (distToPlayer <= _escortResumeDist)
+                {
+                    _fetchingPlayer = false;
+                    agent.SetDestination(_anchorPos);
+                }
+            }
+
+            // Animación de movimiento
+            if (context.Animator != null && context.Agent != null)
+            {
+                float speedFactor = Common.NavMeshAgentUtility.ComputeSpeedFactor(context.Agent);
+                context.Animator.SetMovementSpeed(speedFactor);
+                if (context.Agent.velocity.sqrMagnitude > 0.01f)
+                    context.Animator.FaceDirection(context.Agent.velocity.normalized);
+            }
+        }
+
+        public override void Cleanup(Common.NPCStateContext context)
+        {
+            var agent = context.Agent;
+            if (agent != null)
+            {
+                Common.NavMeshAgentUtility.HardStop(agent);
+            }
+            context.Animator?.ResetMovement();
+        }
+    }
+
     #endregion
 }
 

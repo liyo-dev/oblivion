@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using Core;
 
 public class CombatCameraTargeting : MonoBehaviour
@@ -27,6 +26,8 @@ public class CombatCameraTargeting : MonoBehaviour
     private float _lastAutoLockAttempt;
     private float _lastVisualResync;
     private float _lastShoulderSwitchAt = -999f;
+    private bool _isInDialogue;
+    private bool _suppressedByLevitation;
 
     private void Awake()
     {
@@ -45,14 +46,39 @@ public class CombatCameraTargeting : MonoBehaviour
         ActiveCombatRegistry.OnNPCEnteredCombat += OnNPCEnteredCombat;
         ActiveCombatRegistry.OnNPCExitedCombat += OnNPCExitedCombat;
         GamepadInputReader.OnInput += HandleGamepadInput;
+        DialogueManager.OnDialogueStarted += OnDialogueStarted;
+        DialogueManager.OnDialogueClosed += OnDialogueClosed;
+        LevitationTarget.OnAnyLevitationStarted += OnLevitationStarted;
+        LevitationTarget.OnAnyLevitationEnded += OnLevitationEnded;
     }
-    
+
     private void OnDisable()
     {
         ActiveCombatRegistry.OnNPCEnteredCombat -= OnNPCEnteredCombat;
         ActiveCombatRegistry.OnNPCExitedCombat -= OnNPCExitedCombat;
         GamepadInputReader.OnInput -= HandleGamepadInput;
+        DialogueManager.OnDialogueStarted -= OnDialogueStarted;
+        DialogueManager.OnDialogueClosed -= OnDialogueClosed;
+        LevitationTarget.OnAnyLevitationStarted -= OnLevitationStarted;
+        LevitationTarget.OnAnyLevitationEnded -= OnLevitationEnded;
         ReleaseLock();
+    }
+
+    private void OnDialogueStarted(Transform _) => _isInDialogue = true;
+
+    private void OnDialogueClosed(Transform _)
+    {
+        _isInDialogue = false;
+        // Forzar resync inmediato del marker al cerrar el diálogo
+        if (isLockActive && currentTarget != null)
+        {
+            _lastVisualResync = 0f;
+            if (syncWithProjectileTargeting && playerTargeting != null)
+            {
+                playerTargeting.SetManualTarget(currentTarget.transform);
+                playerTargeting.ForceVisualRefresh();
+            }
+        }
     }
     
     private void Update()
@@ -75,7 +101,7 @@ public class CombatCameraTargeting : MonoBehaviour
         
         wasInCombatLastFrame = isInCombat;
         
-        if (isInCombat && !isLockActive) TryAutoLock();
+        if (isInCombat && !isLockActive && !_suppressedByLevitation) TryAutoLock();
         if (isLockActive) EnsureVisualLockSync();
     }
     
@@ -171,7 +197,7 @@ public class CombatCameraTargeting : MonoBehaviour
             thirdPersonCamera.SetLockTarget(newTarget.transform);
         }
 
-        if (syncWithProjectileTargeting && playerTargeting != null)
+        if (syncWithProjectileTargeting && playerTargeting != null && !_isInDialogue)
         {
             playerTargeting.SetManualTarget(newTarget.transform);
             playerTargeting.ForceVisualRefresh();
@@ -181,18 +207,36 @@ public class CombatCameraTargeting : MonoBehaviour
         Log($"🎯 Lock establecido en: {newTarget.name}");
     }
     
+    private readonly List<GameObject> _orderedEnemiesCache = new();
+
     private List<GameObject> GetOrderedEnemies()
     {
-        if (playerTransform == null) return new List<GameObject>();
-        
+        _orderedEnemiesCache.Clear();
+        if (playerTransform == null) return _orderedEnemiesCache;
+
         var raw = ActiveCombatRegistry.GetAllInCombat();
+        for (int i = 0; i < raw.Count; i++)
+        {
+            var g = raw[i];
+            if (g != null && g.activeInHierarchy)
+                _orderedEnemiesCache.Add(g);
+        }
+
+        if (_orderedEnemiesCache.Count <= 1) return _orderedEnemiesCache;
+
         Vector3 playerFwd = playerTransform.forward;
         playerFwd.y = 0;
         playerFwd.Normalize();
-        
-        return raw.Where(g => g != null && g.activeInHierarchy)
-            .OrderBy(g => Vector3.SignedAngle(playerFwd, (g.transform.position - playerTransform.position).normalized, Vector3.up))
-            .ToList();
+        Vector3 origin = playerTransform.position;
+
+        _orderedEnemiesCache.Sort((a, b) =>
+        {
+            float angleA = Vector3.SignedAngle(playerFwd, (a.transform.position - origin).normalized, Vector3.up);
+            float angleB = Vector3.SignedAngle(playerFwd, (b.transform.position - origin).normalized, Vector3.up);
+            return angleA.CompareTo(angleB);
+        });
+
+        return _orderedEnemiesCache;
     }
     
     private void SwitchToNextTarget()
@@ -258,6 +302,9 @@ public class CombatCameraTargeting : MonoBehaviour
             Log($"🔁 Resync cámara -> {currentTarget.name}");
         }
 
+        // No sincronizar el marcador durante diálogos para evitar que aparezca
+        if (_isInDialogue) return;
+
         if (syncWithProjectileTargeting && playerTargeting != null)
         {
             if (!playerTargeting.IsManualTargetActive || playerTargeting.CurrentTarget != currentTarget.transform)
@@ -267,12 +314,29 @@ public class CombatCameraTargeting : MonoBehaviour
             }
             else if (Time.frameCount % 30 == 0)
             {
-                // Refresco ligero para escenarios donde el marker quedó oculto por otro sistema.
                 playerTargeting.ForceVisualRefresh();
             }
         }
     }
     
+    private void OnLevitationStarted()
+    {
+        _suppressedByLevitation = true;
+        if (isLockActive)
+        {
+            Log("🪄 Levitación activa → liberando lock de cámara temporalmente");
+            ReleaseLock();
+        }
+    }
+
+    private void OnLevitationEnded()
+    {
+        _suppressedByLevitation = false;
+        // Forzar re-lock inmediato en el siguiente Update si seguimos en combate
+        _lastAutoLockAttempt = 0f;
+        Log("🪄 Levitación terminada → restaurando lock de cámara");
+    }
+
     private void Log(string message)
     {
         if (showDebugLogs) Debug.Log($"[CombatCameraTargeting] {message}");

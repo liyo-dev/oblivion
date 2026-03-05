@@ -421,12 +421,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             // Mantener el Animator en idle continuamente
             MaintainAnimatorIdle();
             
-            // DEBUG: Verificar estado de inputs cada 60 frames
-            if (Time.frameCount % 60 == 0)
-            {
-                Debug.Log($"[PlayerEquipmentMenu] Frame {Time.frameCount} - IsOpen: {_isOpen}, ActiveTab: {_activeTab}, SubmitPressed: {GamepadInputReader.SubmitPressed}");
-            }
-            
             // Manejar inputs específicos de cada tab
             if (_activeTab == 0) // Inventario
             {

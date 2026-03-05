@@ -15,7 +15,29 @@ MonoBehaviour:
   lines:
   - speakerNameId: CHAR_GUARD
     textId: DLG_GUARD_01
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
   - speakerNameId: CHAR_GUARD
     textId: DLG_GUARD_02
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_GUARD
+    textId: DLG_GUARD_03
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_GUARD
+    textId: DLG_GUARD_04
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0

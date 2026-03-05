@@ -333,7 +333,7 @@ public class DialogueManager : MonoBehaviour
             if (playerObj != null)
             {
                 if (verboseLogging) Debug.Log($"[DialogueManager] 🎬 Activando sistema cinematográfico para NPC: {_currentNpc.name}");
-                DialogueCinematicController.Instance.StartCinematic(playerObj.transform, _currentNpc, cinematicProfile);
+                DialogueCinematicController.Instance.StartCinematic(playerObj.transform, _currentNpc, cinematicProfile, _current?.isGroupConversation ?? false);
             }
             else
             {

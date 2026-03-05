@@ -316,8 +316,8 @@ namespace Game.NPC
         /// </summary>
         public NPCPartyMember GetMemberByNarrativeId(string narrativeId)
         {
-            return _members.FirstOrDefault(m => 
-                m.NPCManager?.Configuration?.narrativeConfig?.narrativeID == narrativeId);
+            return _members.FirstOrDefault(m =>
+                m.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId == narrativeId);
         }
         
         /// <summary>
@@ -448,6 +448,19 @@ namespace Game.NPC
                     targetPosition = hit.position;
                 }
                 
+                // Si el miembro está lejos, teleportarlo directamente para que estén todos en el diálogo
+                const float teleportThreshold = 3f;
+                float distToTarget = Vector3.Distance(member.transform.position, targetPosition);
+                if (distToTarget > teleportThreshold)
+                {
+                    var navAgent = member.NPCManager?.Agent;
+                    if (navAgent != null && navAgent.isOnNavMesh)
+                        navAgent.Warp(targetPosition);
+                    else
+                        member.transform.position = targetPosition;
+                    Log($"  ↳ {member.DisplayName} teleportado a posición de diálogo (distancia era {distToTarget:F1}m > {teleportThreshold}m)");
+                }
+
                 // Enviar al miembro a esa posición
                 member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
                 

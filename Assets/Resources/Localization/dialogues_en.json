@@ -37,6 +37,10 @@
             "value": "Lety & Vicky"
         },
         {
+            "key": "CHAR_LIAM",
+            "value": "Liam"
+        },
+        {
             "key": "CHAR_MAGO",
             "value": "Magician"
         },
@@ -99,6 +103,22 @@
         {
             "key": "CHAR_WILL",
             "value": "Will"
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_01 ",
+            "value": ""
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_02",
+            "value": ""
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_03",
+            "value": ""
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_04",
+            "value": ""
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -350,19 +370,23 @@
         },
         {
             "key": "DLG_GUARD_01",
-            "value": "Halt. The castle isn't open to the public."
+            "value": "[EN] Alto ahí... ¿os creeis que podeis ir destruyendo montalas como si nada?"
         },
         {
             "key": "DLG_GUARD_02",
-            "value": "Captain's orders: no one without an insignia."
+            "value": "[EN] Por órdenes de su majestad debéis acompañarme."
         },
         {
             "key": "DLG_GUARD_03",
-            "value": "Prove your worth helping the townsfolk."
+            "value": "[EN] Que no se quede nadie atrás."
         },
         {
             "key": "DLG_GUARD_04",
-            "value": "With an insignia I might reconsider letting you through."
+            "value": "[EN] A su majestad no le gusta que le hagan esperar."
+        },
+        {
+            "key": "DLG_GUARD_05",
+            "value": "[EN[ Entrad, su majestad os espera."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -503,6 +527,10 @@
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN",
             "value": "Thank you, you're my hero."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN_02",
+            "value": "[EN] Te doy a cambio este hechizo: CORAZÓN ESTELAR que yo no puedo usar la magia."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",

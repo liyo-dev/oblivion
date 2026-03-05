@@ -21,6 +21,7 @@ namespace Game.NPC.States
         private float _elapsedTime;
         private bool _hasReachedPosition;
         private bool _hasTeleported;
+        private float _originalStoppingDistance;
         
         private const float ARRIVAL_THRESHOLD = 0.5f;  // Distancia para considerar que llegó
         private const float ROTATION_SPEED = 360f;     // Grados por segundo para rotación suave
@@ -47,7 +48,11 @@ namespace Game.NPC.States
                 context.Agent.updatePosition = true;
                 context.Agent.updateRotation = true;
                 context.Agent.speed = _partyMember.PartyConfig?.walkSpeed ?? 3.5f;
-                
+                // Forzar stopping distance pequeño para que llegue a la posición exacta del diálogo
+                // (el FollowState deja el valor de distanciaParaPararse que puede ser ~3m)
+                _originalStoppingDistance = context.Agent.stoppingDistance;
+                context.Agent.stoppingDistance = ARRIVAL_THRESHOLD * 0.5f;
+
                 // Establecer destino
                 context.Agent.SetDestination(_targetPosition);
                 
@@ -185,14 +190,13 @@ namespace Game.NPC.States
 
         public override void OnExit(NPCStateContext context)
         {
-            // ✅ NUEVO: Terminar animación de interacción
             context.Animator?.EndInteraction();
-            
-            // Restaurar valores por defecto
+
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
                 context.Agent.updatePosition = true;
                 context.Agent.updateRotation = true;
+                context.Agent.stoppingDistance = _originalStoppingDistance;
             }
             
             base.OnExit(context);

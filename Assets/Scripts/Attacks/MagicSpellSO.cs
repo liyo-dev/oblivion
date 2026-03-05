@@ -92,6 +92,12 @@ public class MagicSpellSO : ScriptableObject
     [Tooltip("Duración del camera shake al soltar.")]
     [Min(0f)] public float levitationReleaseShakeDuration = 0.3f;
 
+    [Header("Levitación - Daño de Impacto")]
+    [Tooltip("Daño base aplicado al NPC al impactar contra una superficie tras ser lanzado.")]
+    [Min(0f)] public float levitationImpactDamage = 25f;
+    [Tooltip("Velocidad mínima de impacto (m/s) para que se aplique daño. Por debajo de este valor no hay daño.")]
+    [Min(0f)] public float levitationImpactMinSpeed = 4f;
+
     [Header("VFX (centralizado)")]
     public GameObject spawnVFX;
     public GameObject impactVFX;

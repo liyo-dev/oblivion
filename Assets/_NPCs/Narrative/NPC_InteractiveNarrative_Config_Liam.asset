@@ -40,6 +40,8 @@ MonoBehaviour:
       moveTeamMembers: 0
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -57,6 +59,10 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      escortOutOfRangeText: 
+      escortBubbleDuration: 3
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -95,6 +101,8 @@ MonoBehaviour:
       moveTeamMembers: 0
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -112,8 +120,12 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      escortOutOfRangeText: 
+      escortBubbleDuration: 3
+      sendNarrativeEvent: 1
+      narrativeEventKey: EVT_ARRESTO
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0

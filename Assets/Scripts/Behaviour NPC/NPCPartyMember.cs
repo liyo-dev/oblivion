@@ -35,6 +35,7 @@ namespace Game.NPC
         private bool _wasInPartyBeforeCombat;
         private INPCState _stateBeforeJoining;
         private bool _isJoining; // Flag para evitar joins simultáneos
+        private float _nextIdleCheck;
         #endregion
 
         #region Events
@@ -76,8 +77,8 @@ namespace Game.NPC
         /// <summary>
         /// Nombre para mostrar en UI
         /// </summary>
-        public string DisplayName => partyConfig?.displayName ?? 
-            (_npcManager?.Configuration?.narrativeConfig?.narrativeID ?? gameObject.name);
+        public string DisplayName => partyConfig?.displayName ??
+            (_npcManager?.Configuration?.interactiveNarrativeConfig?.persistenceId ?? gameObject.name);
         
         /// <summary>
         /// Índice en el equipo (para formación)
@@ -151,19 +152,15 @@ namespace Game.NPC
                 }
             }
             
-            // Si está en el party pero no está siguiendo (Brain no estaba listo), verificar ahora
-            if (_isInParty && _npcManager != null && _npcManager.Brain != null)
+            // Si está en el party pero no está siguiendo (Brain no estaba listo), verificar cada 0.5s
+            if (_isInParty && _npcManager != null && _npcManager.Brain != null && Time.time >= _nextIdleCheck)
             {
+                _nextIdleCheck = Time.time + 0.5f;
                 var currentState = _npcManager.Brain.CurrentState;
-                
-                // Si está en IdleState pero debería estar siguiendo, corregir
-                if (currentState != null && currentState.StateName == "Idle")
+                if (currentState != null && currentState.StateName == "Idle"
+                    && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
                 {
-                    // Verificar que no esté en combate o cinemática
-                    if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
-                    {
-                        StartFollowing();
-                    }
+                    StartFollowing();
                 }
             }
         }

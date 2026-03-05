@@ -44,7 +44,7 @@ public class AdditiveSceneCinematic : MonoBehaviour
     [SerializeField] private string singlePlayId = "";
 
     [Header("Gameplay Lock")]
-    [Tooltip("OBSOLETO: Ya no se usa.")]
+    [Tooltip("GameObjects que se desactivan mientras la cinemática está en reproducción y se reactivan al terminar.")]
     [SerializeField] private GameObject[] toDisableDuringCinematic;
 
     [Header("Exit Positioning")]
@@ -172,7 +172,10 @@ public class AdditiveSceneCinematic : MonoBehaviour
         // Bloquear movimiento del jugador
         if (PlayerLockService.HasInstance)
             PlayerLockService.Instance.Acquire(this);
-        
+
+        // Desactivar objetos de gameplay (enemigos, triggers, etc.) durante la cinemática
+        SetCinematicObjectsActive(false);
+
         // ✅ FADE IN a negro antes de cargar la cinemática (transición suave)
         if (useFadeTransition)
         {
@@ -435,7 +438,10 @@ public class AdditiveSceneCinematic : MonoBehaviour
             // GARANTIZAR que el lock se libere siempre, incluso si hay errores
             // Limpiar flag de cinemática aditiva en reproducción
             IsAnyAdditiveCinematicPlaying = false;
-            
+
+            // Reactivar objetos de gameplay desactivados al inicio
+            SetCinematicObjectsActive(true);
+
             // Desbloquear movimiento del jugador
             if (PlayerLockService.HasInstance)
             {
@@ -560,6 +566,15 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
         if (showDebugLogs)
             Debug.Log($"[AdditiveSceneCinematic] Restaurada posición y rotación previas del jugador: {savedPlayerPosition} / {savedPlayerRotation.eulerAngles}.");
+    }
+
+    void SetCinematicObjectsActive(bool active)
+    {
+        if (toDisableDuringCinematic == null) return;
+        foreach (var go in toDisableDuringCinematic)
+            if (go) go.SetActive(active);
+        if (showDebugLogs)
+            Debug.Log($"[AdditiveSceneCinematic] Objetos de gameplay {(active ? "reactivados" : "desactivados")} ({toDisableDuringCinematic.Length}).");
     }
 
     // =========================== PlayAndBlock ===========================

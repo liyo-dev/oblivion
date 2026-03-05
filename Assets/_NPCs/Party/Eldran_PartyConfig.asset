@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: 
   distanciaParaPararse: 4
   distanciaParaCorrer: 5
-  distanciaParaTeletransporte: 20
+  distanciaParaTeletransporte: 25
   velocidadCaminando: 5
   velocidadCorriendo: 10
   quedarseDetras: 1

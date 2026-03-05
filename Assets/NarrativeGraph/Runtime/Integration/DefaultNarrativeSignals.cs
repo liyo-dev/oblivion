@@ -45,6 +45,13 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     // Eventos que llegaron antes de que hubiera oyentes (se consumen al suscribirse)
     readonly HashSet<string> _pending = new();
 
+    /// <summary>
+    /// Se dispara justo después de cualquier llamada a ResetState().
+    /// Permite que otros sistemas (p.ej. NPCInteractiveNarrativeExecutor) se re-suscriban
+    /// tras el borrado de _custom que hace el reset del grafo narrativo.
+    /// </summary>
+    public static event Action OnAfterReset;
+
     // ====== BATTLE subscribers (por arena key) ======
     readonly Dictionary<object, Action> _battleSubscribers = new();
     readonly HashSet<object> _battlePending = new();
@@ -116,6 +123,9 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         }
         _battleSubscribers.Clear();
         _qs = null;
+
+        try { OnAfterReset?.Invoke(); }
+        catch (Exception e) { Debug.LogError($"[Signals] Error en OnAfterReset: {e}"); }
     }
 
     IQuestService QS

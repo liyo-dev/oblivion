@@ -18,7 +18,10 @@ namespace Game.NPC.Modules
         ShowSpeechBubble,  // Mostrar bocadillo de texto/pensamiento
         JoinParty,         // Unirse al equipo del jugador
         LeaveParty,        // Abandonar el equipo del jugador
-        CheckPartyMembers  // Verificar miembros del equipo para quests activas
+        CheckPartyMembers,  // Verificar miembros del equipo para quests activas
+        MoveNearPlayer,      // Moverse a una posición cercana al jugador
+        LeadPlayerToAnchor,  // Guiar al jugador hacia un anchor (modo escolta): el NPC camina al anchor y vuelve a buscar al jugador si se aleja
+        TeleportNearPlayer   // Aparece al lado del jugador instantáneamente con transición de pantalla (inverso del Move+desaparecer)
     }
 
     /// <summary>
@@ -87,6 +90,14 @@ namespace Game.NPC.Modules
         [Tooltip("Girar 180° al llegar")]
         public bool turnAroundOnArrival = false;
 
+        [Header("Move Near Player")]
+        [Tooltip("Distancia al jugador a la que el NPC se posicionará (si actionType = MoveNearPlayer)")]
+        [Min(0.5f)]
+        public float nearPlayerRadius = 1.8f;
+
+        [Tooltip("¿Mirar hacia el jugador al llegar?")]
+        public bool lookAtPlayerOnArrival = true;
+
         [Header("Follow Player (Movement)")]
         [Tooltip("¿El NPC debe esperar al jugador si se aleja? (útil para 'sígueme')")]
         public bool waitForPlayer = false;
@@ -149,6 +160,22 @@ namespace Game.NPC.Modules
         
         [Tooltip("Offset del icono respecto al NPC")]
         public Vector3 alertIconOffset = new Vector3(0, 2.5f, 0);
+
+        [Header("Lead Player (Escort)")]
+        [Tooltip("Distancia máxima entre el NPC guía y el jugador antes de que el NPC pare y vuelva a buscarle.")]
+        [Min(2f)]
+        public float escortMaxPlayerDistance = 8f;
+
+        [Tooltip("Distancia a la que el jugador debe estar del NPC para que éste reanude su camino al anchor.")]
+        [Min(1f)]
+        public float escortResumeDistance = 3f;
+
+        [Tooltip("Texto del bocadillo que muestra el NPC cuando el jugador se aleja demasiado. Vacío = sin bocadillo.")]
+        public string escortOutOfRangeText = "";
+
+        [Tooltip("Duración del bocadillo de aviso en segundos.")]
+        [Min(0.5f)]
+        public float escortBubbleDuration = 3f;
 
         [Header("Narrative Event (Evento al Grafo)")]
         [Tooltip("¿Enviar evento al grafo narrativo al completar esta acción?")]

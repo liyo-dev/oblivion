@@ -209,9 +209,14 @@ public class TeleportUI : MonoBehaviour
     public void Close()
     {
         if (!_isOpen) return;
-        
+
         _isOpen = false;
-        
+
+        // Evitar que los botones A/B usados para cerrar/confirmar disparen acciones de gameplay
+        // (salto, magia) en el mismo frame en que se re-habilita el input de gameplay.
+        Core.GamepadInputReader.IgnoreJumpButton(0.3f);
+        Core.GamepadInputReader.IgnoreCancelButton(0.3f);
+
         GamepadInputReader.PlayUISound("UI_Cancel");
         
         _fadeTween?.Kill();

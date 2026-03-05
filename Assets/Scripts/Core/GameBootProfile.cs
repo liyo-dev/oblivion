@@ -677,6 +677,10 @@ public class GameBootProfile : ScriptableObject
 
         // Snapshot narrativo eliminado; no se captura
 
+        // === Sincronizar puntos de teletransporte desbloqueados desde TeleportRegistry ===
+        p.unlockedTeleportPoints = TeleportRegistry.ToSaveData();
+        syncedSystems.Add($"Teleports({p.unlockedTeleportPoints?.Count ?? 0})");
+
         Debug.Log($"[GameBootProfile] RuntimePreset actualizado - Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}");
         GameBootProfileDebugger.Log("UpdateRuntimePreset", $"? Sincronizados: {string.Join(", ", syncedSystems)}", LogType.Log);
     }

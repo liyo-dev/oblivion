@@ -15,9 +15,9 @@ MonoBehaviour:
   moduleName: 
   description: 
   displayName: 
-  distanciaParaPararse: 4
-  distanciaParaCorrer: 5
-  distanciaParaTeletransporte: 20
+  distanciaParaPararse: 3
+  distanciaParaCorrer: 4
+  distanciaParaTeletransporte: 25
   velocidadCaminando: 5
   velocidadCorriendo: 10
   quedarseDetras: 1

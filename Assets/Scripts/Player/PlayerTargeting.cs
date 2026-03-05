@@ -86,8 +86,9 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
 
     void HandleDialogueStarted(Transform _)
     {
-        if (!_marker || !_markerVisible) return;
+        if (!_marker) return;
         _hiddenByDialogue = true;
+        if (!_markerVisible) return;
         _markerTween?.Kill();
         _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration).SetEase(Ease.InBack)
             .OnComplete(() => _marker.gameObject.SetActive(false));
@@ -321,7 +322,6 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         
         if (!_marker) return;
 
-        _markerTween?.Kill();
         if (newT)
         {
             if (!_markerVisible)
@@ -329,6 +329,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
                 _markerVisible = true;
                 if (!_hiddenByDialogue)
                 {
+                    _markerTween?.Kill();
                     _marker.gameObject.SetActive(true);
                     _marker.localScale = Vector3.zero;
                     _markerTween = _marker.DOScale(_markerOriginalScale, markerShowDuration).SetEase(Ease.OutBack);
@@ -340,6 +341,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (_markerVisible)
             {
                 _markerVisible = false;
+                _markerTween?.Kill();
                 _markerTween = _marker.DOScale(Vector3.zero, markerHideDuration).SetEase(Ease.InBack).OnComplete(() => _marker.gameObject.SetActive(false));
             }
         }

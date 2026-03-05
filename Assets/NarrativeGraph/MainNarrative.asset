@@ -48,6 +48,8 @@ MonoBehaviour:
   - rid: 5669070411734712530
   - rid: 2337184644940693504
   - rid: 2337184644940693505
+  - rid: 2337184684933644599
+  - rid: 2337184684933644600
   applicableSceneNames:
   - MainWorld
   references:
@@ -210,12 +212,38 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         position: {x: 287, y: 1960}
-        outputs: []
+        outputs:
+        - 76cc647a-0938-4a59-bb15-896836a33946
         questId: ELDRAN_MISSION8
         stepConditionIds: []
         steps: 
         completeQuest: 1
         logWarnings: 1
+    - rid: 2337184684933644599
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 76cc647a-0938-4a59-bb15-896836a33946
+        position: {x: 609.4791, y: 1960}
+        outputs:
+        - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
+        eventKey: EVT_ARRESTADOS
+    - rid: 2337184684933644600
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
+        position: {x: 954.36, y: 1960}
+        outputs: []
+        questId: ELDRAN_MISSION9
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

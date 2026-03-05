@@ -37,6 +37,10 @@
             "value": "Lety y Vicky"
         },
         {
+            "key": "CHAR_LIAM",
+            "value": "Liam"
+        },
+        {
             "key": "CHAR_MAGO",
             "value": "Mago"
         },
@@ -99,6 +103,22 @@
         {
             "key": "CHAR_WILL",
             "value": "Will"
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_01 ",
+            "value": "¡Estela! ¿¡Qué acabas de hacer!?"
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_02",
+            "value": "El tonto este se interponía entre mi estómago y mi paz mental."
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_03",
+            "value": "La Guardia Real no tardará en investigar."
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_04",
+            "value": "A ver yo solo quería ayudar.... estupendo bonita, mira quien viene por ahi...."
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -350,19 +370,23 @@
         },
         {
             "key": "DLG_GUARD_01",
-            "value": "Alto. El castillo no está abierto al público."
+            "value": "Alto ahí... ¿os creeis que podeis ir destruyendo montalas como si nada?"
         },
         {
             "key": "DLG_GUARD_02",
-            "value": "Órdenes del capitán: nadie sin insignia."
+            "value": "Por órdenes de su majestad debéis acompañarme."
         },
         {
             "key": "DLG_GUARD_03",
-            "value": "Prueba demostrar tu valor ayudando a la gente del pueblo."
+            "value": "Que no se quede nadie atrás."
         },
         {
             "key": "DLG_GUARD_04",
-            "value": "Con una insignia quizá reconsidere dejarte pasar."
+            "value": "A su majestad no le gusta que le hagan esperar."
+        },
+        {
+            "key": "DLG_GUARD_05",
+            "value": "Entrad, su majestad os espera."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -503,6 +527,10 @@
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN",
             "value": "Gracias, eres mi héroe."
+        },
+        {
+            "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN_02",
+            "value": "Te doy a cambio este hechizo: CORAZÓN ESTELAR que yo no puedo usar la magia."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",

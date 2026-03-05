@@ -4,6 +4,7 @@ using UnityEngine;
 using Game.NPC.Common;
 using Game.NPC.States;
 using Sendero.Core.Feedback; // Para eventos narrativos
+using EasyTransition;
 
 namespace Game.NPC.Modules
 {
@@ -228,11 +229,11 @@ namespace Game.NPC.Modules
         #region Custom Event Auto-Execute
         
         private readonly Dictionary<string, System.Action> _customEventHandlers = new();
-        
+
         private void SubscribeToCustomEvents()
         {
             if (_config == null || _config.conditionalNarratives == null) return;
-            
+
             var signals = DefaultNarrativeSignals.Instance;
             if (signals == null)
             {
@@ -240,32 +241,47 @@ namespace Game.NPC.Modules
                 StartCoroutine(RetrySubscribeToCustomEvents());
                 return;
             }
-            
+
             foreach (var narrative in _config.conditionalNarratives)
             {
                 if (narrative == null) continue;
                 if (!narrative.condition.RequiresCustomEventSubscription) continue;
-                
+
                 string eventKey = narrative.condition.customEventKey;
                 if (_customEventHandlers.ContainsKey(eventKey)) continue; // Ya suscrito
-                
+
                 // Crear handler para este evento
                 var narrativeRef = narrative; // Captura local para el closure
                 System.Action handler = () => OnCustomEventReceived(eventKey, narrativeRef);
                 _customEventHandlers[eventKey] = handler;
-                
+
                 signals.OnCustom(eventKey, handler);
-                
+
                 if (verboseLogging || narrative.condition.debugMode)
                     Debug.Log($"[NarrativeExecutor:{name}] 📡 Suscrito a evento custom '{eventKey}'");
             }
         }
-        
+
+        /// <summary>
+        /// Llamado cuando DefaultNarrativeSignals hace ResetState() (el grafo narrativo se reinicia).
+        /// _custom queda borrado, así que re-registramos nuestros handlers.
+        /// </summary>
+        private void OnSignalsReset()
+        {
+            // Borrar caché local para que SubscribeToCustomEvents() los registre de nuevo
+            _customEventHandlers.Clear();
+            SubscribeToCustomEvents();
+            if (verboseLogging)
+                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Re-suscrito a eventos custom tras reset de señales");
+        }
+
         private void UnsubscribeFromCustomEvents()
         {
+            DefaultNarrativeSignals.OnAfterReset -= OnSignalsReset;
+
             var signals = DefaultNarrativeSignals.Instance;
             if (signals == null) return;
-            
+
             foreach (var kvp in _customEventHandlers)
             {
                 signals.OffCustom(kvp.Key, kvp.Value);
@@ -370,6 +386,7 @@ namespace Game.NPC.Modules
 
             // ✅ Suscribirse a eventos custom DESPUÉS de RestoreState()
             // Esto evita que eventos pendientes de sesiones anteriores activen narrativas ya completadas
+            DefaultNarrativeSignals.OnAfterReset += OnSignalsReset;
             SubscribeToCustomEvents();
 
             ApplyInitialLayer();
@@ -580,9 +597,12 @@ namespace Game.NPC.Modules
         {
             switch (entry.actionType)
             {
-                case NarrativeActionType.Dialogue:      yield return ExecuteDialogue(entry); break;
-                case NarrativeActionType.Move:          yield return ExecuteMove(entry); break;
-                case NarrativeActionType.PlayAnimation: yield return ExecuteAnimation(entry); break;
+                case NarrativeActionType.Dialogue:       yield return ExecuteDialogue(entry); break;
+                case NarrativeActionType.Move:           yield return ExecuteMove(entry); break;
+                case NarrativeActionType.MoveNearPlayer:    yield return ExecuteMoveNearPlayer(entry); break;
+                case NarrativeActionType.LeadPlayerToAnchor:  yield return ExecuteLeadPlayerToAnchor(entry); break;
+                case NarrativeActionType.TeleportNearPlayer:  yield return ExecuteTeleportNearPlayer(entry); break;
+                case NarrativeActionType.PlayAnimation:        yield return ExecuteAnimation(entry); break;
                 case NarrativeActionType.StartQuest:    yield return ExecuteStartQuest(entry); break;
                 case NarrativeActionType.StartCombat:   yield return ExecuteStartCombat(entry); break;
                 case NarrativeActionType.Wait:          yield return new WaitForSeconds(entry.waitDuration); break;
@@ -659,6 +679,204 @@ namespace Game.NPC.Modules
             {
                 _npcManager.SimpleAnimator.AllowManualRotation = true;
             }
+        }
+
+        /// <summary>
+        /// Mueve al NPC a una posición cercana al jugador. Útil para que un NPC
+        /// se acerque al jugador y le inicie un diálogo tras recibir un evento.
+        /// </summary>
+        private IEnumerator ExecuteMoveNearPlayer(NarrativeChainEntry entry)
+        {
+            Debug.Log($"[NarrativeExecutor:{name}] 🚶 MoveNearPlayer iniciado.");
+            if (!PlayerService.TryGetPlayer(out var player, true))
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ MoveNearPlayer: no se encontró al jugador (PlayerService).");
+                yield break;
+            }
+
+            // Calcular posición al lado del jugador: dirección desde el NPC hacia el jugador,
+            // retrocediendo el radio para quedar frente a él.
+            Vector3 toPlayer = player.transform.position - transform.position;
+            toPlayer.y = 0f;
+
+            Vector3 offsetDir = toPlayer.sqrMagnitude > 0.01f
+                ? toPlayer.normalized
+                : -transform.forward;
+
+            Vector3 desiredPos = player.transform.position - offsetDir * entry.nearPlayerRadius;
+
+            // Buscar posición válida en el NavMesh
+            Vector3 targetPos = desiredPos;
+            if (UnityEngine.AI.NavMesh.SamplePosition(desiredPos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                targetPos = hit.position;
+            else if (UnityEngine.AI.NavMesh.SamplePosition(player.transform.position, out hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                targetPos = hit.position;
+            else
+            {
+                // Fallback: posición del jugador directamente (sin NavMesh válido)
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ MoveNearPlayer: NavMesh.SamplePosition falló en {desiredPos} - usando posición directa del jugador.");
+                targetPos = player.transform.position;
+            }
+
+            // Activar auto-rotación durante el movimiento
+            if (_npcManager?.SimpleAnimator != null)
+            {
+                _npcManager.SimpleAnimator.AllowManualRotation = false;
+                _npcManager.SimpleAnimator.EnableAutoRotation();
+
+                Vector3 dir = targetPos - transform.position;
+                dir.y = 0f;
+                if (dir.sqrMagnitude > 0.01f)
+                    _npcManager.SimpleAnimator.FaceDirection(dir.normalized);
+            }
+
+            // Moverse
+            var moveSeq = new MoveToPositionSequence(_npcManager, targetPos, entry.maxMovementDuration,
+                                                      turnAroundOnArrival: false, walkDisplayDuration: 999f, targetAnchor: null);
+            _npcManager.StartCinematicSequence(moveSeq);
+            while (!moveSeq.IsCompleted) yield return null;
+
+            // Restaurar rotación manual
+            if (_npcManager?.SimpleAnimator != null)
+                _npcManager.SimpleAnimator.AllowManualRotation = true;
+
+            // Girar hacia el jugador al llegar
+            if (entry.lookAtPlayerOnArrival)
+                yield return RotateToPlayer();
+        }
+
+        /// <summary>
+        /// Aparece instantáneamente al lado del jugador usando una transición de pantalla.
+        /// Inverso del Move+disappearOnArrival: primero la pantalla se cubre, luego el NPC hace Warp junto al jugador.
+        /// Usa los mismos campos que MoveNearPlayer (nearPlayerRadius, lookAtPlayerOnArrival)
+        /// y disappearTransition para el efecto visual.
+        /// </summary>
+        private IEnumerator ExecuteTeleportNearPlayer(NarrativeChainEntry entry)
+        {
+            Debug.Log($"[NarrativeExecutor:{name}] ⚡ TeleportNearPlayer iniciado.");
+            if (!PlayerService.TryGetPlayer(out var player, true))
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ TeleportNearPlayer: no se encontró al jugador (PlayerService).");
+                yield break;
+            }
+
+            // ── Calcular posición válida en NavMesh al lado del jugador ──
+            Vector3 toPlayer = player.transform.position - transform.position;
+            toPlayer.y = 0f;
+            Vector3 offsetDir = toPlayer.sqrMagnitude > 0.01f ? toPlayer.normalized : -transform.forward;
+            Vector3 desiredPos = player.transform.position - offsetDir * entry.nearPlayerRadius;
+
+            Vector3 targetPos = desiredPos;
+            if (UnityEngine.AI.NavMesh.SamplePosition(desiredPos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                targetPos = hit.position;
+            else if (UnityEngine.AI.NavMesh.SamplePosition(player.transform.position, out hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+                targetPos = hit.position;
+            else
+            {
+                // Fallback: posición del jugador directamente (sin NavMesh válido en el área)
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ TeleportNearPlayer: NavMesh.SamplePosition falló en {desiredPos} - usando posición directa del jugador.");
+                targetPos = player.transform.position;
+            }
+
+            // ── Transición de pantalla (in): cubre la pantalla ──
+            var tm = TransitionManager.Instance();
+            if (entry.disappearTransition != null && tm != null)
+            {
+                tm.Transition(entry.disappearTransition, 0f);
+
+                float coverTime = entry.disappearTransition.autoAdjustTransitionTime
+                    ? entry.disappearTransition.transitionTime / entry.disappearTransition.transitionSpeed
+                    : entry.disappearTransition.transitionTime;
+
+                // Esperar hasta que la pantalla esté completamente cubierta
+                yield return new WaitForSecondsRealtime(coverTime);
+            }
+
+            // ── Warp instantáneo ──
+            var agent = _npcManager.Agent;
+            if (agent != null && agent.isOnNavMesh)
+                agent.Warp(targetPos);
+            else
+                transform.position = targetPos;
+
+            // ── La transición continúa y hace el fade-out automáticamente ──
+            // Girar hacia el jugador al aparecer
+            if (entry.lookAtPlayerOnArrival)
+                yield return RotateToPlayer();
+
+            if (verboseLogging)
+                Debug.Log($"[NarrativeExecutor:{name}] ⚡ TeleportNearPlayer: apareció junto al jugador en {targetPos}");
+        }
+
+        /// <summary>
+        /// El NPC camina hacia un anchor mientras el jugador debe seguirle.
+        /// Si el jugador se aleja más de 'escortMaxPlayerDistance', el NPC para y vuelve a buscarlo.
+        /// Cuando el jugador está de nuevo cerca, el NPC reanuda su camino al anchor.
+        /// </summary>
+        private IEnumerator ExecuteLeadPlayerToAnchor(NarrativeChainEntry entry)
+        {
+            // Verificar que el anchor existe antes de hacer nada
+            if (!string.IsNullOrEmpty(entry.targetAnchorName))
+            {
+                var foundAnchor = SpawnAnchor.FindById(entry.targetAnchorName);
+                if (foundAnchor == null)
+                {
+                    Debug.LogError($"[NarrativeExecutor:{name}] ❌ LeadPlayerToAnchor: No se encontró anchor con ID '{entry.targetAnchorName}'. " +
+                                   $"Anchors registrados: [{string.Join(", ", AnchorRegistry.All.Keys)}]");
+                    yield break;
+                }
+            }
+            else if (entry.targetTransform == null)
+            {
+                Debug.LogError($"[NarrativeExecutor:{name}] ❌ LeadPlayerToAnchor: No hay targetAnchorName ni targetTransform asignado.");
+                yield break;
+            }
+
+            Vector3 anchorPos = GetTargetPosition(entry);
+
+            if (!PlayerService.TryGetPlayer(out var player, true))
+            {
+                Debug.LogError($"[NarrativeExecutor:{name}] ❌ LeadPlayerToAnchor: No se encontró al jugador.");
+                yield break;
+            }
+
+            var agent = _npcManager.Agent;
+            if (agent == null)
+            {
+                Debug.LogError($"[NarrativeExecutor:{name}] ❌ LeadPlayerToAnchor: No hay NavMeshAgent.");
+                yield break;
+            }
+
+            // Reactivar el agente si fue desactivado (p.ej. por NavMeshAgentForceStop en IdleState)
+            if (!agent.enabled)
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ LeadPlayerToAnchor: Agente desactivado, reactivando...");
+                agent.enabled = true;
+                yield return null; // esperar un frame para que vuelva al NavMesh
+            }
+
+            if (!agent.isOnNavMesh)
+            {
+                Debug.LogError($"[NarrativeExecutor:{name}] ❌ LeadPlayerToAnchor: Agente fuera del NavMesh (enabled={agent.enabled}). ¿Está en un NavMesh Surface?");
+                yield break;
+            }
+
+            Debug.Log($"[NarrativeExecutor:{name}] 🚶 LeadPlayerToAnchor iniciado → anchor '{entry.targetAnchorName}' pos={anchorPos}");
+
+            var escortSeq = new LeadPlayerToAnchorSequence(
+                anchorPos,
+                player.transform,
+                entry.maxMovementDuration,
+                entry.escortMaxPlayerDistance,
+                entry.escortResumeDistance);
+
+            _npcManager.StartCinematicSequence(escortSeq);
+
+            while (!escortSeq.IsCompleted)
+                yield return null;
+
+            if (verboseLogging)
+                Debug.Log($"[NarrativeExecutor:{name}] 🏁 LeadPlayer: llegado al anchor o tiempo agotado");
         }
 
         private IEnumerator ExecuteMoveWithPlayerFollow(NarrativeChainEntry entry, Vector3 targetPos, SpawnAnchor targetAnchor)

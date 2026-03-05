@@ -1,115 +1,58 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEngine.InputSystem;
 using UnityEngine;
 using UnityEngine.UI;
-using Core;
+using DG.Tweening;
 
 /// <summary>
-/// Muestra un popup cuando se desbloquea una habilidad 
+/// Muestra un popup cuando se desbloquea una habilidad.
+/// Aparece en el lado derecho con animación DOTween y se cierra automáticamente.
+/// Solo aparece una vez por habilidad — el flag se persiste en el preset.
 /// </summary>
 public class AbilityUnlockPopupUI : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField] private GameObject popupRoot;
+    [SerializeField] private RectTransform popupRoot;
+    [SerializeField] private CanvasGroup popupCanvasGroup;
     [SerializeField] private TextMeshProUGUI abilityTitleText;
     [SerializeField] private TextMeshProUGUI abilityDescriptionText;
     [SerializeField] private Image abilityIcon;
-    
+
     [Header("Datos")]
     [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
     [SerializeField] private List<AbilityPresentationForKey> abilityKeyPresentations = new();
 
-    AbilityId? _pendingAbility;
-    AbilityKey? _pendingAbilityKey;
-    private bool _waitingForCloseInput = false;
-    private bool _deferredByCinematic = false;
-    private PlayerActionManager _actionManager;
+    [Header("Animación")]
+    [SerializeField] private float slideOffscreenX = 450f;
+    [SerializeField] private float animInDuration = 0.45f;
+    [SerializeField] private float animOutDuration = 0.3f;
+    [SerializeField] private float displayDuration = 3.5f;
+
+    private AbilityId? _pendingAbility;
+    private AbilityKey? _pendingAbilityKey;
     private readonly HashSet<string> _shownFlags = new();
     private bool _flagsLoaded;
+    private Coroutine _autoDismissCoroutine;
+    private bool _isShowing;
+    private bool _suppressPopupDuringInit;
+    private const float InitSuppressionDuration = 2f;
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
 
-    // Evitar mostrar popup durante la inicialización de nueva partida
-    private bool _suppressPopupDuringInit = false;
-    private const float INIT_SUPPRESSION_DURATION = 2f;
-
     void Awake()
     {
-        Debug.Log("[AbilityUnlockPopupUI] Awake");
         if (popupRoot != null)
-            popupRoot.SetActive(false);
-
-        // Suscribirse lo antes posible para no perder eventos de desbloqueo si la UI
-        // todavía no fue activada en la jerarquía cuando se otorga la habilidad.
-        UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
-        UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
-
-        ReloadShownFlags();
-
-        // Intentar resolver PlayerActionManager para detectar modo Cinematic
-        if (_actionManager == null)
-        {
-            _actionManager = GetComponentInParent<PlayerActionManager>();
-            if (_actionManager == null)
-            {
-                PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
-            }
-        }
-    }
-    
-    private void HandleProfileReadyForSuppression()
-    {
-        // Suprimir popups durante los primeros segundos tras cargar el preset
-        // para evitar que aparezcan al aplicar abilities desde defaultPlayerPreset
-        _suppressPopupDuringInit = true;
-        _flagsLoaded = false;
-        ReloadShownFlags();
-        Debug.Log("[AbilityUnlockPopupUI] Suprimiendo popups durante inicialización de preset");
-        
-        // Cancelar supresión después de un tiempo
-        if (gameObject.activeInHierarchy)
-            StartCoroutine(ClearSuppressionAfterDelay());
-    }
-    
-    private System.Collections.IEnumerator ClearSuppressionAfterDelay()
-    {
-        yield return new WaitForSeconds(INIT_SUPPRESSION_DURATION);
-        _suppressPopupDuringInit = false;
-        Debug.Log("[AbilityUnlockPopupUI] Supresión de popups finalizada");
+            popupRoot.gameObject.SetActive(false);
     }
 
     void OnEnable()
     {
-        Debug.Log($"[AbilityUnlockPopupUI] OnEnable - Time: {Time.time:F3}s");
-        
-        // ✅ CRÍTICO: Suscribirse en OnEnable() para garantizar que el registro ocurra
-        // incluso si el GameObject se activa tarde o después de OnProfileReady
         GameBootService.OnProfileReady += HandleProfileReadyForSuppression;
-        
-        Debug.Log($"[AbilityUnlockPopupUI] Llamando RegisterSubscriber - Time: {Time.time:F3}s");
-        ProfileReadyDiagnostics.RegisterSubscriber(nameof(AbilityUnlockPopupUI));
-        
-        // Awake ya suscribe, pero mantener OnEnable para asegurar que la suscripción
-        // siga activa si el dominio se recarga en modo editor.
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
-
-        GamepadInputReader.EnsureInputEventsSubscribed();
-        GamepadInputReader.OnInput += HandleGamepadInput;
-
-        // Suscribirse a cambios de modo para saber cuándo termina la cinemática
-        if (_actionManager == null)
-        {
-            _actionManager = GetComponentInParent<PlayerActionManager>();
-            if (_actionManager == null)
-            {
-                PlayerService.TryGetComponent(out _actionManager, includeInactive: true, allowSceneLookup: true);
-            }
-        }
-        if (_actionManager != null)
-            _actionManager.OnTopModeChanged += HandleTopModeChanged;
+        ReloadShownFlags();
     }
 
     void OnDisable()
@@ -117,25 +60,36 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         GameBootService.OnProfileReady -= HandleProfileReadyForSuppression;
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
-
-        GamepadInputReader.OnInput -= HandleGamepadInput;
-
-        if (_actionManager != null)
-            _actionManager.OnTopModeChanged -= HandleTopModeChanged;
     }
 
     void OnDestroy()
     {
-        UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
-        UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
-        GameBootService.OnProfileReady -= HandleProfileReadyForSuppression;
-
-        if (_actionManager != null)
-            _actionManager.OnTopModeChanged -= HandleTopModeChanged;
+        if (popupRoot != null) popupRoot.DOKill();
+        if (popupCanvasGroup != null) popupCanvasGroup.DOKill();
     }
 
+    // ── Supresión al cargar preset ─────────────────────────────────────────────
+
+    private void HandleProfileReadyForSuppression()
+    {
+        _suppressPopupDuringInit = true;
+        _flagsLoaded = false;
+        ReloadShownFlags();
+        if (gameObject.activeInHierarchy)
+            StartCoroutine(ClearSuppressionAfterDelay());
+    }
+
+    private IEnumerator ClearSuppressionAfterDelay()
+    {
+        yield return new WaitForSeconds(InitSuppressionDuration);
+        _suppressPopupDuringInit = false;
+    }
+
+    // ── Handlers de desbloqueo ─────────────────────────────────────────────────
+
     private void HandleAbilityUnlocked(AbilityId ability)
-    {  
+    {
+        if (_suppressPopupDuringInit) return;
         _pendingAbility = ability;
         _pendingAbilityKey = null;
         ShowPopup();
@@ -143,115 +97,105 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void HandleAbilityUnlockedKey(AbilityKey key)
     {
-        Debug.Log($"[AbilityUnlockPopupUI] HandleAbilityUnlockedKey: {key} (suppressed={_suppressPopupDuringInit})");
-        
-        if (_suppressPopupDuringInit)
-        {
-            Debug.Log("[AbilityUnlockPopupUI] Popup suprimido durante inicialización");
-            return;
-        }
-        
+        if (_suppressPopupDuringInit) return;
         _pendingAbilityKey = key;
         _pendingAbility = null;
         ShowPopup();
     }
+
+    // ── Lógica de popup ────────────────────────────────────────────────────────
 
     private void ShowPopup()
     {
         if (_pendingAbility == null && _pendingAbilityKey == null) return;
         ReloadShownFlags();
 
-        Debug.Log($"[AbilityUnlockPopupUI] ShowPopup: pendingAbility={_pendingAbility}, pendingAbilityKey={_pendingAbilityKey}");
-
-        // Si estamos en modo Cinematic, aplazar el popup hasta que termine
-        if (_actionManager != null && _actionManager.Top == ActionMode.Cinematic)
-        {
-            _deferredByCinematic = true;
-            Debug.Log("[AbilityUnlockPopupUI] Cinemática activa → se aplaza el popup de habilidad");
-            return;
-        }
-
         if (_pendingAbility != null)
         {
-            var presentation = AbilityPresentationLookup.Resolve(_pendingAbility.Value, abilityPresentations);
             if (HasSeenFlag(GetAbilityFlag(_pendingAbility.Value)))
             {
-                Debug.Log($"[AbilityUnlockPopupUI] Ability {_pendingAbility.Value} ya mostrada. Se omite popup.");
                 _pendingAbility = null;
                 return;
             }
+            var p = AbilityPresentationLookup.Resolve(_pendingAbility.Value, abilityPresentations);
             MarkFlag(GetAbilityFlag(_pendingAbility.Value));
-            if (abilityTitleText != null) abilityTitleText.text = presentation.title;
-            if (abilityDescriptionText != null) abilityDescriptionText.text = presentation.description;
-            if (abilityIcon != null)
-            {
-                abilityIcon.sprite = presentation.icon;
-                abilityIcon.enabled = presentation.icon != null;
-            }
+            SetTexts(p.title, p.description, p.icon);
         }
-        else if (_pendingAbilityKey != null)
+        else
         {
-            var presentation = AbilityPresentationKeyLookup.Resolve(_pendingAbilityKey.Value, abilityKeyPresentations);
+            if (_pendingAbilityKey == null) return;
             if (HasSeenFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value)))
             {
-                Debug.Log($"[AbilityUnlockPopupUI] AbilityKey {_pendingAbilityKey.Value} ya mostrada. Se omite popup.");
                 _pendingAbilityKey = null;
                 return;
             }
+            var p = AbilityPresentationKeyLookup.Resolve(_pendingAbilityKey.Value, abilityKeyPresentations);
             MarkFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value));
-            if (abilityTitleText != null) abilityTitleText.text = presentation.title;
-            if (abilityDescriptionText != null) abilityDescriptionText.text = presentation.description;
-            if (abilityIcon != null)
-            {
-                abilityIcon.sprite = presentation.icon;
-                abilityIcon.enabled = presentation.icon != null;
-            }
+            SetTexts(p.title, p.description, p.icon);
         }
 
-        if (popupRoot != null)
-            popupRoot.SetActive(true);
+        AnimateIn();
+    }
 
-        // Empezar a escuchar el botón B/Cancel para poder cerrar el popup.
-        _waitingForCloseInput = true;
+    private void SetTexts(string title, string description, Sprite icon)
+    {
+        if (abilityTitleText != null) abilityTitleText.text = title;
+        if (abilityDescriptionText != null) abilityDescriptionText.text = description;
+        if (abilityIcon != null) { abilityIcon.sprite = icon; abilityIcon.enabled = icon != null; }
+    }
+
+    private void AnimateIn()
+    {
+        if (popupRoot == null) return;
+
+        if (_autoDismissCoroutine != null) StopCoroutine(_autoDismissCoroutine);
+        popupRoot.DOKill();
+        if (popupCanvasGroup != null) popupCanvasGroup.DOKill();
+
+        // Posicionar fuera de pantalla (derecha) y transparente
+        popupRoot.gameObject.SetActive(true);
+        popupRoot.anchoredPosition = new Vector2(slideOffscreenX, popupRoot.anchoredPosition.y);
+        if (popupCanvasGroup != null) popupCanvasGroup.alpha = 0f;
+
+        _isShowing = true;
+
+        popupRoot.DOAnchorPosX(0f, animInDuration).SetEase(Ease.OutBack).SetUpdate(true);
+        if (popupCanvasGroup != null)
+            popupCanvasGroup.DOFade(1f, animInDuration * 0.7f).SetUpdate(true);
+
+        _autoDismissCoroutine = StartCoroutine(AutoDismiss());
+    }
+
+    private IEnumerator AutoDismiss()
+    {
+        yield return new WaitForSecondsRealtime(displayDuration);
+        HidePopup();
     }
 
     public void HidePopup()
     {
-        Debug.Log("[AbilityUnlockPopupUI] HidePopup");
+        if (popupRoot == null || !_isShowing) return;
+
+        _isShowing = false;
         _pendingAbility = null;
         _pendingAbilityKey = null;
-        _waitingForCloseInput = false;
-        if (popupRoot != null)
-            popupRoot.SetActive(false);
+
+        if (_autoDismissCoroutine != null) { StopCoroutine(_autoDismissCoroutine); _autoDismissCoroutine = null; }
+
+        popupRoot.DOKill();
+        if (popupCanvasGroup != null) popupCanvasGroup.DOKill();
+
+        popupRoot.DOAnchorPosX(slideOffscreenX, animOutDuration).SetEase(Ease.InBack).SetUpdate(true)
+            .OnComplete(() => { if (popupRoot != null) popupRoot.gameObject.SetActive(false); });
+        if (popupCanvasGroup != null)
+            popupCanvasGroup.DOFade(0f, animOutDuration).SetUpdate(true);
     }
 
-    void HandleGamepadInput(GamepadInputReader.InputEvent input)
-    {
-        if (!_waitingForCloseInput || popupRoot == null || !popupRoot.activeInHierarchy)
-            return;
-
-        if (input.Phase != InputActionPhase.Performed)
-            return;
-
-        if (input.Type == GamepadInputReader.InputEventType.Cancel)
-            HidePopup();
-    }
-
-    void HandleTopModeChanged(ActionMode top)
-    {
-        // Cuando la cinemática termina y existe un popup aplazado, mostrarlo ahora
-        if (_deferredByCinematic && top != ActionMode.Cinematic)
-        {
-            _deferredByCinematic = false;
-            // Reintentar mostrar usando los datos pendientes
-            ShowPopup();
-        }
-    }
+    // ── Flags (persistencia de "ya mostrado") ──────────────────────────────────
 
     void ReloadShownFlags()
     {
         if (_flagsLoaded) return;
-
         _shownFlags.Clear();
         var preset = UnlockService.GetActivePreset();
         var flags = preset?.flags;
@@ -260,8 +204,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             for (int i = 0; i < flags.Count; i++)
             {
                 var flag = flags[i];
-                if (string.IsNullOrEmpty(flag))
-                    continue;
+                if (string.IsNullOrEmpty(flag)) continue;
                 if (flag.StartsWith(AbilityFlagPrefix) || flag.StartsWith(AbilityKeyFlagPrefix))
                     _shownFlags.Add(flag);
             }
@@ -274,25 +217,19 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     bool HasSeenFlag(string flag)
     {
-        if (string.IsNullOrEmpty(flag))
-            return false;
+        if (string.IsNullOrEmpty(flag)) return false;
         ReloadShownFlags();
         return _shownFlags.Contains(flag);
     }
 
     void MarkFlag(string flag)
     {
-        if (string.IsNullOrEmpty(flag))
-            return;
+        if (string.IsNullOrEmpty(flag)) return;
         ReloadShownFlags();
-        if (!_shownFlags.Add(flag))
-            return;
-
+        if (!_shownFlags.Add(flag)) return;
         var preset = UnlockService.GetActivePreset();
         if (preset == null) return;
-        if (preset.flags == null)
-            preset.flags = new List<string>();
-        if (!preset.flags.Contains(flag))
-            preset.flags.Add(flag);
+        if (preset.flags == null) preset.flags = new List<string>();
+        if (!preset.flags.Contains(flag)) preset.flags.Add(flag);
     }
 }

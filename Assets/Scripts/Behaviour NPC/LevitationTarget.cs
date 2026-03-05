@@ -35,6 +35,10 @@ public class LevitationTarget : MonoBehaviour
     [Header("VFX")]
     [Tooltip("Prefab del efecto visual que se instancia sobre el NPC mientras está levitando.")]
     [SerializeField] private GameObject levitationVFXPrefab;
+    [Tooltip("Prefab del efecto visual que se instancia en el punto de impacto al chocar tras ser lanzado.")]
+    [SerializeField] private GameObject impactVFXPrefab;
+    [Tooltip("Tiempo en segundos antes de destruir el VFX de impacto (0 = se autodestruye).")]
+    [Min(0f)] [SerializeField] private float impactVFXLifetime = 2f;
     [Tooltip("Offset de posición para el VFX respecto al centro del NPC.")]
     [SerializeField] private Vector3 vfxOffset = Vector3.up;
     [Tooltip("Escala del VFX de levitación (útil para ajustar el tamaño según el NPC).")]
@@ -52,11 +56,14 @@ public class LevitationTarget : MonoBehaviour
     
     // Estado
     private bool _isBeingLevitated;
+    private bool _isInFlight;          // true entre EndLevitation y el aterrizaje
     private PlayerLevitationController _currentLevitator;
     private float _targetHeight;
     private float _originalDrag;
     private bool _wasNavAgentEnabled;
     private bool _wasKinematic;
+    private bool _wasRootMotion;
+    private MagicSpellSO _flightSpell; // guardada para OnCollisionEnter
     
     // VFX
     private GameObject _currentVFXInstance;
@@ -69,6 +76,11 @@ public class LevitationTarget : MonoBehaviour
     
     public bool CanBeLevitated => canBeLevitated && !_isBeingLevitated;
     public bool IsBeingLevitated => _isBeingLevitated;
+
+    /// <summary>Fired when any NPC starts being levitated (NPC sube al aire).</summary>
+    public static event System.Action OnAnyLevitationStarted;
+    /// <summary>Fired when any levitated NPC lands back on the ground.</summary>
+    public static event System.Action OnAnyLevitationEnded;
     
     void Awake()
     {
@@ -107,6 +119,13 @@ public class LevitationTarget : MonoBehaviour
             _navAgent.enabled = false;
         }
         
+        // Desactivar root motion para que la física controle el movimiento
+        if (_animator != null)
+        {
+            _wasRootMotion = _animator.applyRootMotion;
+            _animator.applyRootMotion = false;
+        }
+
         // Iniciar animación de levitación
         if (_animator != null && _levitationStateHash != 0)
         {
@@ -117,6 +136,7 @@ public class LevitationTarget : MonoBehaviour
         // Instanciar VFX de levitación
         SpawnLevitationVFX();
         
+        OnAnyLevitationStarted?.Invoke();
         if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} comenzando levitación, altura objetivo: {_targetHeight}");
     }
     
@@ -192,22 +212,31 @@ public class LevitationTarget : MonoBehaviour
             _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
         }
         
-        // Configurar física para el lanzamiento - mantener sin gravedad brevemente para el impulso
-        _rigidbody.linearDamping = 0.5f; // Reducir drag para que salga disparado
-        
-        // Aplicar fuerza de repulsión POTENTE (tipo Stranger Things - disparado hacia afuera)
+        // Guardar referencia al hechizo para el daño de impacto
+        _flightSpell = spell;
+        _isInFlight = true;
+
+        // Configurar física para el lanzamiento:
+        // - Asegurar que no es kinematic (algo pudo haberlo cambiado durante el hold)
+        _rigidbody.isKinematic = false;
+        // - Limpiar la velocidad residual del hold para que el impulso no se vea amortiguado
+        _rigidbody.linearVelocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
+        // - Sin drag para que salga disparado con toda la fuerza
+        _rigidbody.linearDamping = 0f;
+
+        // Aplicar fuerza de repulsión (disparado hacia afuera como en Stranger Things)
         Vector3 push = pushDirection * pushForce * pushForceMultiplier;
-        // Componente vertical significativo para el efecto de "lanzamiento hacia arriba y afuera"
-        push.y = pushForce * 0.8f;
+        push.y = pushForce * 0.8f; // componente vertical para el efecto de "lanzamiento hacia arriba"
         _rigidbody.AddForce(push, ForceMode.Impulse);
-        
-        // Aplicar torque intenso para la voltereta
+
+        // Aplicar torque para la voltereta
         Vector3 torqueAxis = Vector3.Cross(Vector3.up, pushDirection);
         _rigidbody.AddTorque(torqueAxis * pushForce * 4f, ForceMode.Impulse);
-        
+
         // Habilitar gravedad para que caiga después del impulso
         _rigidbody.useGravity = true;
-        
+
         // Iniciar el proceso de finalización
         StartCoroutine(Co_FinishLevitation(spell));
     }
@@ -304,6 +333,8 @@ public class LevitationTarget : MonoBehaviour
     void RestoreNormalState()
     {
         _isBeingLevitated = false;
+        _isInFlight = false;
+        _flightSpell = null;
         _currentLevitator = null;
         
         // Restaurar física
@@ -320,37 +351,39 @@ public class LevitationTarget : MonoBehaviour
             transform.eulerAngles = new Vector3(0f, euler.y, 0f);
         }
         
-        // Forzar la vuelta a la animación idle
+        // Si el NPC murió durante el vuelo, el NPCCombatLifecycleHandler ya gestiona
+        // la animación de muerte. No resetear el animator ni reactivar el agente.
+        var damageable = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
+        bool isDead = damageable != null && !damageable.IsAlive;
+
+        // Restaurar root motion siempre (necesario aunque esté muerto para no dejar estado corrupto)
         if (_animator != null)
+            _animator.applyRootMotion = _wasRootMotion;
+
+        if (!isDead)
         {
-            // Intentar volver al estado de locomotion/idle
-            // Primero probar con triggers/states comunes
-            _animator.Rebind(); // Esto fuerza el reseteo del animator
-            _animator.Update(0f);
-            
-            // O si hay un estado idle conocido
-            if (_animator.HasState(0, Animator.StringToHash("Idle")))
+            // Forzar la vuelta a la animación idle
+            if (_animator != null)
             {
-                _animator.Play("Idle", 0, 0f);
+                _animator.Rebind();
+                _animator.Update(0f);
+                if (_animator.HasState(0, Animator.StringToHash("Idle")))
+                    _animator.Play("Idle", 0, 0f);
+                else if (_animator.HasState(0, Animator.StringToHash("Locomotion")))
+                    _animator.Play("Locomotion", 0, 0f);
             }
-            else if (_animator.HasState(0, Animator.StringToHash("Locomotion")))
+
+            // Restaurar NavMeshAgent
+            if (_navAgent != null && _wasNavAgentEnabled)
             {
-                _animator.Play("Locomotion", 0, 0f);
+                UnityEngine.AI.NavMeshHit hit;
+                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                    transform.position = hit.position;
+                _navAgent.enabled = true;
             }
         }
         
-        // Restaurar NavMeshAgent
-        if (_navAgent != null && _wasNavAgentEnabled)
-        {
-            // Intentar reposicionar en el NavMesh antes de reactivar
-            UnityEngine.AI.NavMeshHit hit;
-            if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
-            {
-                transform.position = hit.position;
-            }
-            _navAgent.enabled = true;
-        }
-        
+        OnAnyLevitationEnded?.Invoke();
         if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} estado normal restaurado");
     }
     
@@ -403,6 +436,47 @@ public class LevitationTarget : MonoBehaviour
         }
     }
     
+    void OnCollisionEnter(Collision collision)
+    {
+        if (!_isInFlight || _flightSpell == null) return;
+        if (collision.contactCount == 0) return;
+
+        ContactPoint contact = collision.GetContact(0);
+
+        // Solo paredes: ignorar el suelo (normal apuntando hacia arriba)
+        if (contact.normal.y > 0.5f) return;
+
+        float speed = collision.relativeVelocity.magnitude;
+        if (speed < _flightSpell.levitationImpactMinSpeed) return;
+
+        // Si el NPC está bloqueando, no aplicar daño
+        var shield = GetComponent<NPCShieldController>() ?? GetComponentInParent<NPCShieldController>();
+        if (shield != null && shield.IsDefending)
+        {
+            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto en pared bloqueado por escudo");
+            return;
+        }
+
+        // Aplicar daño escalado con la velocidad de impacto
+        float damage = _flightSpell.levitationImpactDamage * (speed / _flightSpell.levitationImpactMinSpeed);
+        var damageable = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
+        if (damageable != null && damageable.IsAlive)
+        {
+            damageable.TakeDamage(damage);
+            if (showDebugLogs)
+                Debug.Log($"[LevitationTarget] {name} impacto en pared → velocidad={speed:F1} m/s, daño={damage:F0}");
+        }
+
+        // VFX de impacto en el punto de contacto, orientado a la normal de la superficie
+        if (impactVFXPrefab != null)
+        {
+            Quaternion rot = Quaternion.LookRotation(contact.normal);
+            GameObject vfx = Instantiate(impactVFXPrefab, contact.point, rot);
+            if (impactVFXLifetime > 0f)
+                Destroy(vfx, impactVFXLifetime);
+        }
+    }
+
     void OnDisable()
     {
         if (_isBeingLevitated)
