@@ -44,14 +44,24 @@ public class SavePointTeleportTrigger : MonoBehaviour
             }
         }
         
+        private void Start()
+        {
+            // Si el punto ya está desbloqueado y tiene displayName configurado,
+            // actualizar el nombre en el registro (puede venir de LoadFromSaveData con nombre derivado)
+            if (!string.IsNullOrEmpty(_anchorId) && !string.IsNullOrEmpty(displayNameOverride))
+                TeleportRegistry.UpdateDisplayNameIfUnlocked(_anchorId, displayNameOverride);
+        }
+
         private void OnEnable()
         {
             TeleportRegistry.OnRegistryChanged += UpdateHintVisibility;
+            GameState.OnChanged += UpdateHintVisibility;
         }
-        
+
         private void OnDisable()
         {
             TeleportRegistry.OnRegistryChanged -= UpdateHintVisibility;
+            GameState.OnChanged -= UpdateHintVisibility;
             
             // Liberar hint si estaba activo
             if (_hintRequested)

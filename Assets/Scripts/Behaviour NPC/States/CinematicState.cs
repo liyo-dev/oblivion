@@ -1023,6 +1023,14 @@ namespace Game.NPC.States
         private float _fetchUpdateTimer;
         private bool _initialized;
         private bool _fetchingPlayer;
+        private UnityEngine.AI.ObstacleAvoidanceType _originalObstacleAvoidanceType;
+        private bool _hasDisabledObstacleAvoidance;
+
+        /// <summary>
+        /// Verdadero cuando el NPC acaba de recuperar al jugador y está esperando que se reproduzca el diálogo.
+        /// El executor debe llamar AcknowledgePlayerRetrieved() para reanudar la escolta.
+        /// </summary>
+        public bool WaitingForRetrievedDialogue { get; private set; }
 
         public LeadPlayerToAnchorSequence(Vector3 anchorPos, Transform player,
             float maxDuration, float escortMaxDist, float escortResumeDist)
@@ -1065,13 +1073,32 @@ namespace Game.NPC.States
             // Primer frame: arrancar hacia el anchor
             if (!_initialized)
             {
+                // Desactivar obstacle avoidance para que los party members no bloqueen al guardia
+                _originalObstacleAvoidanceType = agent.obstacleAvoidanceType;
+                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
+                _hasDisabledObstacleAvoidance = true;
+
+                // Salir de la pose de diálogo/idle y activar animación de locomoción
+                context.Animator?.SetTalking(false);
+                context.Animator?.EndInteraction();
+                context.Animator?.TransitionToLocomotion();
+
                 float startDist = Vector3.Distance(context.Transform.position, _anchorPos);
                 UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] 🚀 Iniciando escolta. distAnchor={startDist:F2}, isStopped={agent.isStopped}, isOnNavMesh={agent.isOnNavMesh}");
                 _initialized = true;
                 agent.isStopped = false;
                 if (!agent.SetDestination(_anchorPos))
-                    UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh.");
+                    UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh o en una superficie no conectada.");
                 return;
+            }
+
+            // Segundo frame: verificar si el agente tiene ruta válida
+            if (_timer == 0f && !agent.pathPending)
+            {
+                if (!agent.hasPath)
+                    UnityEngine.Debug.LogError($"[LeadPlayerToAnchorSequence] ❌ No hay ruta válida al anchor {_anchorPos}. Comprueba que el anchor esté en el NavMesh y conectado con la posición actual del guardia.");
+                else
+                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Ruta calculada. Distancia NavMesh={agent.remainingDistance:F1}m");
             }
 
             _timer += Time.deltaTime;
@@ -1080,6 +1107,9 @@ namespace Game.NPC.States
                 UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⏱️ Tiempo agotado ({_maxDuration}s).");
                 IsCompleted = true; return;
             }
+
+            // Si estamos esperando que el executor reproduzca el diálogo, no hacer nada más
+            if (WaitingForRetrievedDialogue) return;
 
             float distToPlayer = Vector3.Distance(context.Transform.position, _player.position);
 
@@ -1112,11 +1142,12 @@ namespace Game.NPC.States
                     _fetchUpdateTimer = 0f;
                 }
 
-                // Jugador cerca de nuevo → reanudar hacia el anchor
+                // Jugador cerca de nuevo → parar y señalar al executor para el diálogo
                 if (distToPlayer <= _escortResumeDist)
                 {
                     _fetchingPlayer = false;
-                    agent.SetDestination(_anchorPos);
+                    WaitingForRetrievedDialogue = true;
+                    agent.isStopped = true;
                 }
             }
 
@@ -1130,11 +1161,31 @@ namespace Game.NPC.States
             }
         }
 
+        /// <summary>
+        /// Llamar desde el executor tras reproducir el diálogo de "jugador recuperado".
+        /// Reanuda la marcha hacia el anchor.
+        /// </summary>
+        public void AcknowledgePlayerRetrieved(Common.NPCStateContext context)
+        {
+            WaitingForRetrievedDialogue = false;
+            var agent = context.Agent;
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = false;
+                agent.SetDestination(_anchorPos);
+            }
+            // Arrancar animación de andar inmediatamente sin esperar a que agent.velocity tenga magnitud
+            context.Animator?.TransitionToLocomotion();
+            context.Animator?.SetMovementSpeed(1f);
+        }
+
         public override void Cleanup(Common.NPCStateContext context)
         {
             var agent = context.Agent;
             if (agent != null)
             {
+                if (_hasDisabledObstacleAvoidance)
+                    agent.obstacleAvoidanceType = _originalObstacleAvoidanceType;
                 Common.NavMeshAgentUtility.HardStop(agent);
             }
             context.Animator?.ResetMovement();

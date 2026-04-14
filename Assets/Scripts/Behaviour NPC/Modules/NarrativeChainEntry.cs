@@ -7,21 +7,30 @@ namespace Game.NPC.Modules
     /// <summary>
     /// Tipos de acciones que se pueden encadenar en una narrativa interactiva
     /// </summary>
+    /// <summary>
+    /// IMPORTANTE: Los valores enteros son explícitos y NO deben cambiarse nunca.
+    /// Unity serializa enums por su valor entero en los .asset. Si se elimina o reordena
+    /// un valor sin mantener su entero, todos los ScriptableObjects que lo usaran quedarán
+    /// apuntando a la acción equivocada. Para "eliminar" un tipo, márcalo como obsoleto
+    /// con [System.Obsolete] pero mantén su valor numérico en la lista.
+    /// Para añadir un tipo nuevo, asigna el siguiente número libre (nunca reutilices).
+    /// </summary>
     public enum NarrativeActionType
     {
-        Dialogue,           // Mostrar diálogo
-        Move,              // Mover a punto
-        PlayAnimation,     // Reproducir animación
-        StartQuest,        // Iniciar quest
-        StartCombat,       // Iniciar combate
-        Wait,              // Esperar X segundos
-        ShowSpeechBubble,  // Mostrar bocadillo de texto/pensamiento
-        JoinParty,         // Unirse al equipo del jugador
-        LeaveParty,        // Abandonar el equipo del jugador
-        CheckPartyMembers,  // Verificar miembros del equipo para quests activas
-        MoveNearPlayer,      // Moverse a una posición cercana al jugador
-        LeadPlayerToAnchor,  // Guiar al jugador hacia un anchor (modo escolta): el NPC camina al anchor y vuelve a buscar al jugador si se aleja
-        TeleportNearPlayer   // Aparece al lado del jugador instantáneamente con transición de pantalla (inverso del Move+desaparecer)
+        Dialogue          = 0,  // Mostrar diálogo
+        Move              = 1,  // Mover a punto
+        PlayAnimation     = 2,  // Reproducir animación
+        StartQuest        = 3,  // Iniciar quest
+        StartCombat       = 4,  // Iniciar combate
+        Wait              = 5,  // Esperar X segundos
+        JoinParty         = 6,  // Unirse al equipo del jugador
+        LeaveParty        = 7,  // Abandonar el equipo del jugador
+        CheckPartyMembers = 8,  // Verificar miembros del equipo para quests activas
+        MoveNearPlayer    = 9,  // Moverse a una posición cercana al jugador
+        LeadPlayerToAnchor = 10, // Guiar al jugador hacia un anchor (modo escolta)
+        TeleportNearPlayer = 11, // Aparece al lado del jugador instantáneamente
+        // 12 era ShowSpeechBubble — eliminado. NO reutilizar el 12.
+        TeleportPlayer     = 13, // Teletransporta al jugador a un anchor/Transform con transición
     }
 
     /// <summary>
@@ -38,26 +47,9 @@ namespace Game.NPC.Modules
         [Tooltip("Diálogo a reproducir (si actionType = Dialogue)")]
         public DialogueAsset dialogue;
 
-        [Header("Speech Bubble")]
-        [Tooltip("Texto a mostrar en el bocadillo (si actionType = ShowSpeechBubble)")]
-        [TextArea(2, 5)]
-        public string speechBubbleText;
-
-        [Tooltip("¿Es un bocadillo de pensamiento? (cambia el estilo visual si está configurado)")]
-        public bool isThoughtBubble;
-
-        [Tooltip("Duración del bocadillo en segundos")]
-        [Min(0.5f)]
-        public float speechBubbleDuration = 3f;
-
-        [Tooltip("Prefab específico para este bocadillo (opcional, si null usa el default del config)")]
-        public GameObject speechBubblePrefabOverride;
-
-        [Tooltip("¿Esperar a que termine la duración del bocadillo antes de continuar con la siguiente acción?")]
-        public bool waitForBubble = true;
-
         [Header("Movement")]
-        [Tooltip("Nombre del anchor de destino (si actionType = Move)")]
+        [Tooltip("Nombre del anchor de destino. Usado por: Move, LeadPlayerToAnchor (escolta al guardia). " +
+                 "Para escolta, configura también 'escortMaxDuration' en la sección 'Lead Player'.")]
         public string targetAnchorName;
         
         [Tooltip("O usa un Transform directo")]
@@ -162,6 +154,12 @@ namespace Game.NPC.Modules
         public Vector3 alertIconOffset = new Vector3(0, 2.5f, 0);
 
         [Header("Lead Player (Escort)")]
+        [Tooltip("Duración máxima de la escolta en segundos. Aumenta para trayectos largos. " +
+                 "IMPORTANTE: Si el guardia no se mueve o para antes de llegar, sube este valor. " +
+                 "El destino se configura en 'targetAnchorName' (sección Movement).")]
+        [Min(5f)]
+        public float escortMaxDuration = 120f;
+
         [Tooltip("Distancia máxima entre el NPC guía y el jugador antes de que el NPC pare y vuelva a buscarle.")]
         [Min(2f)]
         public float escortMaxPlayerDistance = 8f;
@@ -170,12 +168,22 @@ namespace Game.NPC.Modules
         [Min(1f)]
         public float escortResumeDistance = 3f;
 
-        [Tooltip("Texto del bocadillo que muestra el NPC cuando el jugador se aleja demasiado. Vacío = sin bocadillo.")]
-        public string escortOutOfRangeText = "";
+        [Tooltip("Diálogo que muestra el NPC cuando el jugador se aleja demasiado y el NPC vuelve a buscarlo. Vacío = sin diálogo.")]
+        public DialogueAsset outOfRangeDialogue;
 
-        [Tooltip("Duración del bocadillo de aviso en segundos.")]
-        [Min(0.5f)]
-        public float escortBubbleDuration = 3f;
+        [Tooltip("Velocidad del NPC durante la escolta (unidades/s). " +
+                 "Súbela si el jugador le adelanta. 0 = usar la velocidad por defecto del NPC.")]
+        [Min(0f)]
+        public float escortNpcSpeed = 0f;
+
+        [Tooltip("Multiplicador de velocidad del jugador durante la escolta (0.5 = mitad de velocidad). " +
+                 "Evita que el jugador adelante al NPC. 1 = sin cambio.")]
+        [Range(0.1f, 1f)]
+        public float escortPlayerSpeedMultiplier = 0.6f;
+
+        [Header("Teleport Player")]
+        [Tooltip("Transición de pantalla para cubrir y descubrir el teletransporte del jugador")]
+        public TransitionSettings teleportTransition;
 
         [Header("Narrative Event (Evento al Grafo)")]
         [Tooltip("¿Enviar evento al grafo narrativo al completar esta acción?")]

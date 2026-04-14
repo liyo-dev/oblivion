@@ -140,6 +140,18 @@ public static class TeleportRegistry
         OnRegistryChanged?.Invoke();
     }
     
+    /// <summary>
+    /// Actualiza el nombre de visualización de un punto YA desbloqueado.
+    /// No desbloquea el punto si no estaba previamente en el registro.
+    /// </summary>
+    public static void UpdateDisplayNameIfUnlocked(string anchorId, string displayName)
+    {
+        if (string.IsNullOrEmpty(anchorId) || string.IsNullOrEmpty(displayName)) return;
+        if (!_unlockedPoints.TryGetValue(anchorId, out var existing)) return;
+
+        existing.displayName = displayName;
+    }
+
     /// <summary>Guarda los puntos desbloqueados en una lista serializable.</summary>
     public static List<string> ToSaveData()
     {

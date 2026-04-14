@@ -43,11 +43,23 @@ public class DialogueCinematicController : MonoBehaviour
 
     // Modo conversación grupal
     private bool _isGroupConversation;
+    private Vector3 _groupCamBaseDir = Vector3.back; // dirección fija calculada al inicio del diálogo
+    private Vector3 _cachedGroupCenter;              // centro del grupo (actualizado en CalculateCameraPosition)
     [Header("Conversación Grupal")]
-    [Tooltip("Distancia horizontal de la cámara al centro del grupo")]
-    [SerializeField] private float groupCameraDistance = 6f;
-    [Tooltip("Altura de la cámara sobre los personajes. Valores altos = cenital, bajos = cinematográfico)")]
-    [SerializeField] private float groupCameraHeight = 1.4f;
+    [Tooltip("Distancia total de la cámara al centro del grupo (metros). Aumenta para ver a más personajes.")]
+    [SerializeField] private float groupCameraDistance = 5f;
+    [Tooltip("Ángulo de elevación de la cámara (grados sobre horizontal). " +
+             "0 = horizontal, 90 = cenital. " +
+             "30-45° = vista cinematográfica elevada que ve a varios NPCs sin ser cenital.")]
+    [Range(10f, 80f)]
+    [SerializeField] private float groupElevationAngle = 38f;
+    [Tooltip("Altura del punto al que mira la cámara dentro del grupo (0 = suelo, 1 = torso, 1.5 = cabeza)")]
+    [SerializeField] private float groupLookAtHeight = 1.1f;
+    [Tooltip("FOV para el plano grupal. Aumenta para un plano más abierto que el diálogo normal (ej: 60-70)")]
+    [SerializeField] private float groupFieldOfView = 65f;
+    [Tooltip("Sesgo de la cámara hacia el speaker actual (0 = cámara fija, 1 = cámara centrada en speaker)")]
+    [Range(0f, 0.6f)]
+    [SerializeField] private float groupSpeakerBias = 0.25f;
 
     // ✅ Sistema de tracking de speakers para cambios de cámara
     private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
@@ -324,6 +336,28 @@ public class DialogueCinematicController : MonoBehaviour
         currentLineIndex = 0;
         nextCutAtLine = CalculateNextCutLine();
         _isGroupConversation = isGroupConversation;
+
+        // Calcular dirección base de cámara grupal una sola vez (evita saltos al cambiar de speaker)
+        if (isGroupConversation && currentNPC != null)
+        {
+            Vector3 npcToPlayer = currentPlayer.position - currentNPC.position;
+            npcToPlayer.y = 0f;
+            _groupCamBaseDir = npcToPlayer.sqrMagnitude > 0.01f
+                ? npcToPlayer.normalized
+                : Vector3.back;
+
+            // Asegurar que todos los party members tengan sus renderers activos al inicio
+            // (pueden haber quedado desactivados por diálogos previos donde eran currentNPC)
+            if (Game.NPC.PlayerParty.HasInstance)
+            {
+                foreach (var m in Game.NPC.PlayerParty.Instance.Members)
+                {
+                    if (m == null) continue;
+                    foreach (var r in m.GetComponentsInChildren<Renderer>(true))
+                        if (r != null) r.enabled = true;
+                }
+            }
+        }
 
         // ✅ Reiniciar sistema de tracking de speakers
         currentSpeakerId = null;
@@ -1054,24 +1088,13 @@ public class DialogueCinematicController : MonoBehaviour
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
 
-            // En modo grupal: la cámara mira al CENTRO de todos los participantes
+            // En modo grupal: la cámara mira al CENTRO DEL GRUPO a altura de torso (no al speaker)
+            // Esto da un ángulo horizontal suave y encuadra a todos los participantes.
             Vector3 lookAtPos;
             if (_isGroupConversation && currentPlayer != null)
             {
-                Vector3 center = currentPlayer.position;
-                int count = 1;
-                if (currentNPC != null) { center += currentNPC.position; count++; }
-                var partyForLook = Game.NPC.PlayerParty.HasInstance ? Game.NPC.PlayerParty.Instance : null;
-                if (partyForLook != null)
-                {
-                    foreach (var m in partyForLook.Members)
-                    {
-                        if (m != null && m.IsActiveInParty)
-                        { center += m.transform.position; count++; }
-                    }
-                }
-                lookAtPos = center / count;
-                lookAtPos.y += 1.0f; // Altura de torso
+                lookAtPos = _cachedGroupCenter;
+                lookAtPos.y = _cachedGroupCenter.y + groupLookAtHeight;
             }
             else
             {
@@ -1123,8 +1146,8 @@ public class DialogueCinematicController : MonoBehaviour
                 vcam.transform.Rotate(Vector3.forward, shot.DutchAngle, Space.Self);
             }
 
-            // Configurar lens (FOV)
-            vcam.Lens.FieldOfView = shot.FieldOfView;
+            // Configurar lens (FOV): en modo grupal usar FOV propio más abierto
+            vcam.Lens.FieldOfView = _isGroupConversation ? groupFieldOfView : shot.FieldOfView;
 
             // Configurar blend time en el brain de diálogo
             // IMPORTANTE: Detectar si el cambio de ángulo es muy grande (>90°) para usar corte
@@ -1160,7 +1183,8 @@ public class DialogueCinematicController : MonoBehaviour
         private Vector3 CalculateCameraPosition(CinematicCameraShot shot, Transform target)
         {
             // ── MODO CONVERSACIÓN GRUPAL ──
-            // Cámara inclinada en ángulo 3/4 que encuadra a todo el grupo
+            // Cámara estable en ángulo 3/4 que encuadra a todo el grupo,
+            // con ligero sesgo hacia el speaker actual.
             if (_isGroupConversation && target != null)
             {
                 // Centro del grupo incluyendo party members si están disponibles
@@ -1177,15 +1201,26 @@ public class DialogueCinematicController : MonoBehaviour
                     }
                 }
                 groupCenter /= participantCount;
+                _cachedGroupCenter = groupCenter;
 
-                // Cámara detrás del grupo respecto al speaker actual
-                Vector3 toTarget = target.position - groupCenter;
-                toTarget.y = 0f;
-                if (toTarget.sqrMagnitude < 0.01f) toTarget = -target.forward;
-                toTarget.Normalize();
+                // Dirección base: fija desde el inicio del diálogo (no salta entre speakers ni al rotar el player)
+                Vector3 baseDir = _groupCamBaseDir;
 
-                Vector3 groupCamPos = groupCenter - toTarget * groupCameraDistance;
-                groupCamPos.y = target.position.y + groupCameraHeight;
+                // Ligero sesgo hacia la posición opuesta del speaker para ver su cara
+                Vector3 toSpeaker = target.position - groupCenter;
+                toSpeaker.y = 0f;
+                if (toSpeaker.sqrMagnitude > 0.01f)
+                {
+                    // Mover la cámara ligeramente al lado opuesto del speaker para ver su cara
+                    baseDir = Vector3.Lerp(baseDir, -toSpeaker.normalized, groupSpeakerBias).normalized;
+                }
+
+                float rad = groupElevationAngle * Mathf.Deg2Rad;
+                float horizontalDist = groupCameraDistance * Mathf.Cos(rad);
+                float height         = groupCameraDistance * Mathf.Sin(rad);
+
+                Vector3 groupCamPos = groupCenter + baseDir * horizontalDist;
+                groupCamPos.y = groupCenter.y + height;
                 return groupCamPos;
             }
 
@@ -1484,29 +1519,38 @@ public class DialogueCinematicController : MonoBehaviour
         Transform effectiveTarget = targetOverride ?? currentNPC;
         
         // ✅ CORREGIDO: Determinar quién debe ser ocultado según quién habla
-        bool isPlayerOrPartySpeaking = (effectiveTarget == currentPlayer) || IsPartyMember(effectiveTarget);
+        bool isPlayerOrPartySpeaking = (effectiveTarget == currentPlayer) || (IsPartyMember(effectiveTarget) && effectiveTarget != currentNPC);
         bool isNPCSpeaking = effectiveTarget == currentNPC;
         
-        // Lógica de ocultación mejorada:
+        // En conversaciones grupales: todos visibles siempre (player, NPC y party members)
+        if (_isGroupConversation)
+        {
+            ShowNPC();
+            ShowPlayer();
+            ApplyShot(shot, effectiveTarget);
+            return;
+        }
+
+        // Lógica de ocultación mejorada (solo en diálogos 1:1):
         // - Si habla el Player o Party Member → Ocultar al NPC para ver solo al speaker
         // - Si habla el NPC → Ocultar al Player SOLO en planos cerrados
         // - En planos Wide/OverShoulder → Mostrar ambos
-        
-        bool isCloseUpShot = (shot.shotType == DialogueShotType.CloseUpNPC || 
+
+        bool isCloseUpShot = (shot.shotType == DialogueShotType.CloseUpNPC ||
                              shot.shotType == DialogueShotType.MediumNPC);
-        bool isWideShot = (shot.shotType == DialogueShotType.Wide || 
-                          shot.shotType == DialogueShotType.OverShoulderPlayer || 
+        bool isWideShot = (shot.shotType == DialogueShotType.Wide ||
+                          shot.shotType == DialogueShotType.OverShoulderPlayer ||
                           shot.shotType == DialogueShotType.OverShoulderNPC);
-        
+
         if (isPlayerOrPartySpeaking)
         {
             // Cuando habla el Player o Party Member: SIEMPRE ocultar al NPC para evitar que salga en el encuadre
             HideNPC();
             ShowPlayer();
-            
+
             // ✅ HACER QUE EL SPEAKER MIRE AL NPC
             MakeSpeakerLookAtNPC(effectiveTarget);
-            
+
             if (showDebugInfo)
                 Debug.Log($"[DialogueCinematicController] 👁️ Player/Party hablando → NPC oculto, Player visible");
         }

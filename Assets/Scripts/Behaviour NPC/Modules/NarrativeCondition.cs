@@ -8,12 +8,12 @@ namespace Game.NPC.Modules
     /// </summary>
     public enum NarrativeConditionType
     {
-        None,              // Sin condición (siempre se ejecuta)
-        QuestNotStarted,   // La quest no ha sido iniciada
-        QuestStarted,      // La quest ha sido iniciada
-        QuestCompleted,    // La quest ha sido completada
-        QuestActive,       // La quest está activa (iniciada pero no completada)
-        Custom             // Condición custom (delegate/función)
+        None            = 0, // Sin condición (siempre se ejecuta)
+        QuestNotStarted = 1, // La quest no ha sido iniciada
+        QuestStarted    = 2, // La quest ha sido iniciada
+        QuestCompleted  = 3, // La quest ha sido completada
+        QuestActive     = 4, // La quest está activa (iniciada pero no completada)
+        Custom          = 5  // Condición custom (delegate/función)
     }
     
     /// <summary>

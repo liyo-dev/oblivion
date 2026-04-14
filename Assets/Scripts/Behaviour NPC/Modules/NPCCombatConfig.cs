@@ -8,10 +8,10 @@ namespace Game.NPC.Modules
     public enum PostDeathBehavior
     {
         [Tooltip("El NPC desaparece con VFX después de la muerte")]
-        Disappear,
-        
+        Disappear  = 0,
+
         [Tooltip("El NPC se levanta mareado y muestra un diálogo")]
-        GetUpDizzy
+        GetUpDizzy = 1
     }
 
     /// <summary>
@@ -20,16 +20,16 @@ namespace Game.NPC.Modules
     public enum PostDefeatAction
     {
         [Tooltip("Quedarse en estado dizzy/idle")]
-        None,
-        
+        None             = 0,
+
         [Tooltip("Huir del jugador y desaparecer")]
-        FleeAndDisappear,
-        
+        FleeAndDisappear = 1,
+
         [Tooltip("Volver a patrullar/idle")]
-        ReturnToIdle,
-        
+        ReturnToIdle     = 2,
+
         [Tooltip("Moverse a un punto específico (anchor) después de la derrota")]
-        MoveToAnchor
+        MoveToAnchor     = 3
     }
     
     /// <summary>

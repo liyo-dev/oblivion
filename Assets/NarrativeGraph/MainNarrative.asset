@@ -50,6 +50,10 @@ MonoBehaviour:
   - rid: 2337184644940693505
   - rid: 2337184684933644599
   - rid: 2337184684933644600
+  - rid: 2337184709046960285
+  - rid: 2337184709046960286
+  - rid: 1823530463036440737
+  - rid: 1823530463036440738
   applicableSceneNames:
   - MainWorld
   references:
@@ -190,6 +194,31 @@ MonoBehaviour:
         outputs:
         - d2c6cf0b-557c-41ae-9ccc-069ca97bade9
         questId: ELDRAN_MISSION5_2
+    - rid: 1823530463036440737
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Hay que escapar de la prision
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        position: {x: 1797.3004, y: 2338}
+        outputs:
+        - b9285f43-9af8-40f2-8674-ef92fbbe0aaa
+        eventKey: WE_HAVE_TO_SCAPE
+    - rid: 1823530463036440738
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: MISION 10
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
+        position: {x: 2215, y: 2338}
+        outputs: []
+        questId: ELDRAN_MISSION10
     - rid: 2337184644940693504
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -199,7 +228,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        position: {x: 2440, y: 1308}
+        position: {x: 2272.7266, y: 1738.0001}
         outputs: []
         questId: ELDRAN_MISSION8
     - rid: 2337184644940693505
@@ -211,7 +240,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 5d259d98-0364-4a7b-93b7-a36bdabcd27f
-        position: {x: 287, y: 1960}
+        position: {x: 245.00006, y: 2128}
         outputs:
         - 76cc647a-0938-4a59-bb15-896836a33946
         questId: ELDRAN_MISSION8
@@ -228,7 +257,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 76cc647a-0938-4a59-bb15-896836a33946
-        position: {x: 609.4791, y: 1960}
+        position: {x: 567, y: 2128}
         outputs:
         - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
         eventKey: EVT_ARRESTADOS
@@ -241,9 +270,40 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
-        position: {x: 954.36, y: 1960}
-        outputs: []
+        position: {x: 912.00006, y: 2128}
+        outputs:
+        - bc4c26f2-2721-4852-b55f-632f2042e7fd
         questId: ELDRAN_MISSION9
+    - rid: 2337184709046960285
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: bc4c26f2-2721-4852-b55f-632f2042e7fd
+        position: {x: 1254, y: 2089}
+        outputs:
+        - f796b6ba-da9e-4ef6-aee9-1507c8effbb9
+        eventKey: EVT_ARRESTADOS_OK
+    - rid: 2337184709046960286
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: f796b6ba-da9e-4ef6-aee9-1507c8effbb9
+        position: {x: 1457.0503, y: 2338}
+        outputs:
+        - 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        questId: ELDRAN_MISSION9
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -411,7 +471,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
-        position: {x: 2103, y: 1476}
+        position: {x: 1935.2565, y: 1738.0001}
         outputs:
         - 330dfba1-aa17-4afd-9a25-ced60a36d329
         - 32e285b4-6777-4bbc-9a79-3f6c61c16d56
@@ -440,7 +500,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 2450, y: 1476}
+        position: {x: 567, y: 1759.0001}
         outputs:
         - d82c3b85-2b54-4889-b43d-702eba5413f1
         minigameId: TAG_MINIGAME_01
@@ -469,7 +529,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d82c3b85-2b54-4889-b43d-702eba5413f1
-        position: {x: -136, y: 1960}
+        position: {x: -177.99994, y: 2128}
         outputs:
         - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         cinematicSceneName: Cinematic_Mountain

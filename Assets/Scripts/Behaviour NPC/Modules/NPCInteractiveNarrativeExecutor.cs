@@ -5,6 +5,7 @@ using Game.NPC.Common;
 using Game.NPC.States;
 using Sendero.Core.Feedback; // Para eventos narrativos
 using EasyTransition;
+using Invector.vCharacterController;
 
 namespace Game.NPC.Modules
 {
@@ -409,7 +410,7 @@ namespace Game.NPC.Modules
                 {
                     foreach (var narrative in _config.conditionalNarratives)
                     {
-                        if (narrative != null && (narrative.showPersistentIcon || DoesChainUseBubbles(narrative.narrativeChain)))
+                        if (narrative != null && narrative.showPersistentIcon)
                         {
                             needsIconController = true;
                             break;
@@ -422,16 +423,6 @@ namespace Game.NPC.Modules
                     _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
                 }
             }
-        }
-
-        private bool DoesChainUseBubbles(NarrativeChainEntry[] chain)
-        {
-            if (chain == null) return false;
-            foreach(var entry in chain)
-            {
-                if (entry.actionType == NarrativeActionType.ShowSpeechBubble) return true;
-            }
-            return false;
         }
 
         private void Update()
@@ -606,10 +597,10 @@ namespace Game.NPC.Modules
                 case NarrativeActionType.StartQuest:    yield return ExecuteStartQuest(entry); break;
                 case NarrativeActionType.StartCombat:   yield return ExecuteStartCombat(entry); break;
                 case NarrativeActionType.Wait:          yield return new WaitForSeconds(entry.waitDuration); break;
-                case NarrativeActionType.ShowSpeechBubble: yield return ExecuteShowSpeechBubble(entry); break;
                 case NarrativeActionType.JoinParty:     yield return ExecuteJoinParty(); break;
                 case NarrativeActionType.LeaveParty:    yield return ExecuteLeaveParty(); break;
                 case NarrativeActionType.CheckPartyMembers: yield return ExecuteCheckPartyMembers(); break;
+                case NarrativeActionType.TeleportPlayer:    yield return ExecuteTeleportPlayer(entry); break;
             }
         }
 
@@ -809,6 +800,82 @@ namespace Game.NPC.Modules
         }
 
         /// <summary>
+        /// Teletransporta al JUGADOR a un anchor o Transform con transición de pantalla.
+        /// Usa 'targetAnchorName' o 'targetTransform' (sección Movement) para el destino
+        /// y 'teleportTransition' (sección Teleport Player) para el efecto visual.
+        /// La pantalla se cubre → el jugador se mueve → la transición hace fade-out automáticamente.
+        /// </summary>
+        private IEnumerator ExecuteTeleportPlayer(NarrativeChainEntry entry)
+        {
+            Debug.Log($"[NarrativeExecutor:{name}] 🚀 TeleportPlayer iniciado.");
+
+            // ── Resolver destino ──
+            Vector3 targetPos = Vector3.zero;
+            Quaternion targetRot = Quaternion.identity;
+            bool hasTarget = false;
+
+            if (entry.targetTransform != null)
+            {
+                targetPos = entry.targetTransform.position;
+                targetRot = entry.targetTransform.rotation;
+                hasTarget = true;
+            }
+            else if (!string.IsNullOrEmpty(entry.targetAnchorName))
+            {
+                var anchor = SpawnAnchor.FindById(entry.targetAnchorName);
+                if (anchor != null)
+                {
+                    targetPos = anchor.transform.position;
+                    targetRot = anchor.transform.rotation;
+                    hasTarget = true;
+                }
+                else
+                {
+                    Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ TeleportPlayer: anchor '{entry.targetAnchorName}' no encontrado.");
+                    yield break;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ TeleportPlayer: no se configuró 'targetTransform' ni 'targetAnchorName'.");
+                yield break;
+            }
+
+            if (!hasTarget) yield break;
+
+            if (!PlayerService.TryGetPlayer(out var player, true))
+            {
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ TeleportPlayer: no se encontró al jugador (PlayerService).");
+                yield break;
+            }
+
+            // ── Transición de entrada: cubre la pantalla ──
+            var tm = TransitionManager.Instance();
+            if (entry.teleportTransition != null && tm != null)
+            {
+                tm.Transition(entry.teleportTransition, 0f);
+
+                float coverTime = entry.teleportTransition.autoAdjustTransitionTime
+                    ? entry.teleportTransition.transitionTime / entry.teleportTransition.transitionSpeed
+                    : entry.teleportTransition.transitionTime;
+
+                yield return new WaitForSecondsRealtime(coverTime);
+            }
+
+            // ── Teletransporte del jugador ──
+            // Desactivar CharacterController para que Unity permita mover el Transform
+            var charCtrl = player.GetComponent<UnityEngine.CharacterController>();
+            if (charCtrl != null) charCtrl.enabled = false;
+            player.transform.position = targetPos;
+            player.transform.rotation = targetRot;
+            if (charCtrl != null) charCtrl.enabled = true;
+
+            // ── La transición hace el fade-out automáticamente ──
+            if (verboseLogging)
+                Debug.Log($"[NarrativeExecutor:{name}] 🚀 TeleportPlayer: jugador teletransportado a {targetPos}");
+        }
+
+        /// <summary>
         /// El NPC camina hacia un anchor mientras el jugador debe seguirle.
         /// Si el jugador se aleja más de 'escortMaxPlayerDistance', el NPC para y vuelve a buscarlo.
         /// Cuando el jugador está de nuevo cerca, el NPC reanuda su camino al anchor.
@@ -863,20 +930,97 @@ namespace Game.NPC.Modules
 
             Debug.Log($"[NarrativeExecutor:{name}] 🚶 LeadPlayerToAnchor iniciado → anchor '{entry.targetAnchorName}' pos={anchorPos}");
 
+            // Activar auto-rotación para que el NPC mire hacia donde camina
+            if (_npcManager?.SimpleAnimator != null)
+            {
+                _npcManager.SimpleAnimator.AllowManualRotation = false;
+                _npcManager.SimpleAnimator.EnableAutoRotation();
+                Vector3 dirToAnchor = anchorPos - transform.position;
+                dirToAnchor.y = 0f;
+                if (dirToAnchor.sqrMagnitude > 0.01f)
+                    _npcManager.SimpleAnimator.FaceDirection(dirToAnchor.normalized);
+            }
+
             var escortSeq = new LeadPlayerToAnchorSequence(
                 anchorPos,
                 player.transform,
-                entry.maxMovementDuration,
+                entry.escortMaxDuration,
                 entry.escortMaxPlayerDistance,
                 entry.escortResumeDistance);
+
+            // Velocidad del NPC durante la escolta
+            float originalAgentSpeed = agent.speed;
+            if (entry.escortNpcSpeed > 0f)
+                agent.speed = entry.escortNpcSpeed;
+
+            // Reducir la velocidad del jugador para que no pueda adelantar al NPC
+            vThirdPersonController playerController = null;
+            float origFreeWalk = 0f, origFreeRun = 0f, origFreeSprint = 0f;
+            float origStrafeWalk = 0f, origStrafeRun = 0f, origStrafeSprint = 0f;
+            float mult = Mathf.Clamp(entry.escortPlayerSpeedMultiplier, 0.1f, 1f);
+            if (mult < 1f && PlayerService.TryGetComponent<vThirdPersonController>(out playerController))
+            {
+                origFreeWalk    = playerController.freeSpeed.walkSpeed;
+                origFreeRun     = playerController.freeSpeed.runningSpeed;
+                origFreeSprint  = playerController.freeSpeed.sprintSpeed;
+                origStrafeWalk  = playerController.strafeSpeed.walkSpeed;
+                origStrafeRun   = playerController.strafeSpeed.runningSpeed;
+                origStrafeSprint = playerController.strafeSpeed.sprintSpeed;
+
+                playerController.freeSpeed.walkSpeed    = origFreeWalk   * mult;
+                playerController.freeSpeed.runningSpeed = origFreeRun    * mult;
+                playerController.freeSpeed.sprintSpeed  = origFreeSprint * mult;
+                playerController.strafeSpeed.walkSpeed    = origStrafeWalk   * mult;
+                playerController.strafeSpeed.runningSpeed = origStrafeRun    * mult;
+                playerController.strafeSpeed.sprintSpeed  = origStrafeSprint * mult;
+            }
 
             _npcManager.StartCinematicSequence(escortSeq);
 
             while (!escortSeq.IsCompleted)
+            {
+                if (escortSeq.WaitingForRetrievedDialogue)
+                {
+                    Debug.Log($"[NarrativeExecutor:{name}] 🔔 WaitingForRetrievedDialogue=true | outOfRangeDialogue={entry.outOfRangeDialogue?.name ?? "NULL"} | lines={entry.outOfRangeDialogue?.lines?.Length ?? -1} | DM={DialogueManager.Instance != null}");
+                    if (entry.outOfRangeDialogue != null && DialogueManager.Instance != null &&
+                        entry.outOfRangeDialogue.lines != null && entry.outOfRangeDialogue.lines.Length > 0)
+                    {
+                        if (_npcManager?.SimpleAnimator != null)
+                            _npcManager.SimpleAnimator.PlayOneShot("InteractWithPeople_NoWeapon");
+
+                        bool dialogueDone = false;
+                        Debug.Log($"[NarrativeExecutor:{name}] 💬 Iniciando outOfRangeDialogue: {entry.outOfRangeDialogue.name}");
+                        DialogueManager.Instance.StartDialogue(entry.outOfRangeDialogue, transform, () => dialogueDone = true);
+                        while (!dialogueDone) yield return null;
+                        Debug.Log($"[NarrativeExecutor:{name}] ✅ outOfRangeDialogue completado");
+                    }
+
+                    escortSeq.AcknowledgePlayerRetrieved(_npcManager.Context);
+                }
+
                 yield return null;
+            }
+
+            // Restaurar velocidad del NPC
+            if (entry.escortNpcSpeed > 0f)
+                agent.speed = originalAgentSpeed;
+
+            // Restaurar velocidad del jugador
+            if (playerController != null)
+            {
+                playerController.freeSpeed.walkSpeed    = origFreeWalk;
+                playerController.freeSpeed.runningSpeed = origFreeRun;
+                playerController.freeSpeed.sprintSpeed  = origFreeSprint;
+                playerController.strafeSpeed.walkSpeed    = origStrafeWalk;
+                playerController.strafeSpeed.runningSpeed = origStrafeRun;
+                playerController.strafeSpeed.sprintSpeed  = origStrafeSprint;
+            }
+
+            if (_npcManager?.SimpleAnimator != null)
+                _npcManager.SimpleAnimator.AllowManualRotation = true;
 
             if (verboseLogging)
-                Debug.Log($"[NarrativeExecutor:{name}] 🏁 LeadPlayer: llegado al anchor o tiempo agotado");
+                Debug.Log($"[NarrativeExecutor:{name}] LeadPlayer: llegado al anchor o tiempo agotado");
         }
 
         private IEnumerator ExecuteMoveWithPlayerFollow(NarrativeChainEntry entry, Vector3 targetPos, SpawnAnchor targetAnchor)
@@ -1014,46 +1158,6 @@ namespace Game.NPC.Modules
             
             if (verboseLogging) Debug.Log($"[NarrativeExecutor] ✅ NPC preparado para combate - esperando detección natural del jugador");
             yield break;
-        }
-
-        private IEnumerator ExecuteShowSpeechBubble(NarrativeChainEntry entry)
-        {
-            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] Attempting to show bubble. Text: '{entry.speechBubbleText}'");
-
-            if (string.IsNullOrEmpty(entry.speechBubbleText)) 
-            {
-                Debug.LogWarning($"[NarrativeExecutor:{name}] SpeechBubble text is empty. Aborting action.");
-                yield break;
-            }
-
-            if (_alertIconController == null) InitializeAlertIconController();
-            if (_alertIconController == null)
-            {
-                Debug.LogError($"[NarrativeExecutor:{name}] NPCAlertIconController is missing and could not be created.");
-                yield break;
-            }
-
-            GameObject prefabToUse = entry.speechBubblePrefabOverride ?? (entry.isThoughtBubble ? _config?.defaultThoughtBubblePrefab : _config?.defaultSpeechBubblePrefab);
-
-            if (prefabToUse == null)
-            {
-                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ No prefab for SpeechBubble (IsThought={entry.isThoughtBubble}). Assign one in NPCInteractiveNarrativeConfig or the NarrativeChainEntry.");
-                yield break;
-            }
-            
-            if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] Using prefab '{prefabToUse.name}' for speech bubble.");
-
-            if (_config != null && _config.speechBubbleHeight > 0)
-            {
-                _alertIconController.SetIconHeight(_config.speechBubbleHeight);
-            }
-
-            _alertIconController.ShowSpeechBubble(prefabToUse, entry.speechBubbleText, entry.speechBubbleDuration);
-
-            if (entry.waitForBubble)
-            {
-                yield return new WaitForSeconds(entry.speechBubbleDuration);
-            }
         }
 
         /// <summary>

@@ -23,13 +23,8 @@ MonoBehaviour:
       customEventKey: 
       debugMode: 0
     narrativeChain:
-    - actionType: 7
+    - actionType: 6
       dialogue: {fileID: 0}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 0
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 0
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -59,10 +54,13 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
       escortMaxPlayerDistance: 8
       escortResumeDistance: 3
-      escortOutOfRangeText: 
-      escortBubbleDuration: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -86,11 +84,6 @@ MonoBehaviour:
     narrativeChain:
     - actionType: 0
       dialogue: {fileID: 11400000, guid: f7c587c6522284e4c936498ad07e2b82, type: 2}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 0
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 0
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -120,10 +113,13 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
       escortMaxPlayerDistance: 8
       escortResumeDistance: 3
-      escortOutOfRangeText: 
-      escortBubbleDuration: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 1
       narrativeEventKey: EVT_ARRESTO
       sendEventOnStart: 0
@@ -139,7 +135,7 @@ MonoBehaviour:
     debugMode: 0
   persistState: 1
   persistenceId: NPC_InteractiveNarrative_Config_Liam_cc7bd504
-  dialogueCharacterId: 
+  dialogueCharacterId: CHAR_LIAM
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0
@@ -150,7 +146,4 @@ MonoBehaviour:
   alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
-  defaultSpeechBubblePrefab: {fileID: 0}
-  defaultThoughtBubblePrefab: {fileID: 0}
-  speechBubbleHeight: 2.8
   enableDetailedLogs: 0

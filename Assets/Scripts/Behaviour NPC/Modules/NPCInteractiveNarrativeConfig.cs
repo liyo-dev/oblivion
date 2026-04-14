@@ -97,17 +97,6 @@ namespace Game.NPC.Modules
         [Min(0.5f)]
         public float stopDistanceFromPlayer = 2f;
 
-        [Header("Speech Bubbles (Bocadillos)")]
-        [Tooltip("Prefab por defecto para bocadillos de diálogo (tipo cómic)")]
-        public GameObject defaultSpeechBubblePrefab;
-
-        [Tooltip("Prefab por defecto para bocadillos de pensamiento (tipo cómic)")]
-        public GameObject defaultThoughtBubblePrefab;
-
-        [Tooltip("Altura del bocadillo sobre el NPC (Y offset)")]
-        [Range(0.5f, 5f)]
-        public float speechBubbleHeight = 2.8f;
-        
         [Header("Debug")]
         [Tooltip("⚠️ Solo para DEBUG. Habilitar logs detallados de evaluación de narrativas. DESACTIVAR en producción por rendimiento.")]
         public bool enableDetailedLogs;
@@ -228,13 +217,6 @@ namespace Game.NPC.Modules
                     }
                     break;
 
-                case NarrativeActionType.ShowSpeechBubble:
-                    if (string.IsNullOrEmpty(entry.speechBubbleText))
-                    {
-                        errorMessage = $"Entry {index} tipo ShowSpeechBubble requiere speechBubbleText";
-                        return false;
-                    }
-                    break;
             }
             
             return true;
@@ -375,21 +357,21 @@ namespace Game.NPC.Modules
     /// </summary>
     public enum PostNarrativeState
     {
-        None,              // No hacer nada especial, el NPC continúa como estaba
-        Idle,              // Forzar al NPC a estado Idle
-        Wander,            // Activar comportamiento Wander
-        SwitchToAmbient,   // Cambiar a un NPCAmbientConfig específico
-        Disable            // Desactivar el GameObject del NPC
+        None            = 0, // No hacer nada especial, el NPC continúa como estaba
+        Idle            = 1, // Forzar al NPC a estado Idle
+        Wander          = 2, // Activar comportamiento Wander
+        SwitchToAmbient = 3, // Cambiar a un NPCAmbientConfig específico
+        Disable         = 4  // Desactivar el GameObject del NPC
     }
-    
+
     /// <summary>
     /// Modo de capa para el NPC durante la narrativa interactiva
     /// </summary>
     public enum LayerMode
     {
-        Interactable,      // Capa "Interactable" - permite interacción con el NPC
-        Enemy,             // Capa "Enemy" - necesaria para combate
-        Default,           // Capa "Default" - sin función específica
-        Custom             // Usar la capa actual del NPC sin cambiar
+        Interactable = 0, // Capa "Interactable" - permite interacción con el NPC
+        Enemy        = 1, // Capa "Enemy" - necesaria para combate
+        Default      = 2, // Capa "Default" - sin función específica
+        Custom       = 3  // Usar la capa actual del NPC sin cambiar
     }
 }

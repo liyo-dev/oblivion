@@ -45,7 +45,26 @@ public class MinimapController : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
 
+        // Suscribir aquí (no en OnEnable) para que los eventos lleguen aunque
+        // minimapRoot esté desactivado (lo que haría llamar OnDisable en este componente).
+        EnvironmentController.OnInteriorEntered += OnInteriorEntered;
+        EnvironmentController.OnInteriorExited  += OnInteriorExited;
+        BossArenaController.OnAnyBattleStarted  += OnBattleStarted;
+        BossArenaController.OnAnyBattleEnded    += OnBattleEnded;
+        MenuManager.MenuOpened                  += OnMenuOpened;
+        MenuManager.MenuClosed                  += OnMenuClosed;
+
         SetupCamera();
+    }
+
+    void OnDestroy()
+    {
+        EnvironmentController.OnInteriorEntered -= OnInteriorEntered;
+        EnvironmentController.OnInteriorExited  -= OnInteriorExited;
+        BossArenaController.OnAnyBattleStarted  -= OnBattleStarted;
+        BossArenaController.OnAnyBattleEnded    -= OnBattleEnded;
+        MenuManager.MenuOpened                  -= OnMenuOpened;
+        MenuManager.MenuClosed                  -= OnMenuClosed;
     }
 
     void SetupCamera()
@@ -75,25 +94,6 @@ public class MinimapController : MonoBehaviour
         }
     }
 
-    void OnEnable()
-    {
-        EnvironmentController.OnInteriorEntered += OnInteriorEntered;
-        EnvironmentController.OnInteriorExited  += OnInteriorExited;
-        BossArenaController.OnAnyBattleStarted  += OnBattleStarted;
-        BossArenaController.OnAnyBattleEnded    += OnBattleEnded;
-        MenuManager.MenuOpened                  += OnMenuOpened;
-        MenuManager.MenuClosed                  += OnMenuClosed;
-    }
-
-    void OnDisable()
-    {
-        EnvironmentController.OnInteriorEntered -= OnInteriorEntered;
-        EnvironmentController.OnInteriorExited  -= OnInteriorExited;
-        BossArenaController.OnAnyBattleStarted  -= OnBattleStarted;
-        BossArenaController.OnAnyBattleEnded    -= OnBattleEnded;
-        MenuManager.MenuOpened                  -= OnMenuOpened;
-        MenuManager.MenuClosed                  -= OnMenuClosed;
-    }
 
     void Update()
     {

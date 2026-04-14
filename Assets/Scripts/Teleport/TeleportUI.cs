@@ -38,6 +38,7 @@ public class TeleportUI : MonoBehaviour
     private float _ignoreInputUntil;
     private Tween _fadeTween;
     private bool _hasPushedInventory;
+    private bool _hasBlockedMovement;
     private string _currentAnchorId; // Anchor actual para excluir de la lista
     
     public bool IsOpen => _isOpen;
@@ -178,6 +179,13 @@ public class TeleportUI : MonoBehaviour
         // Bloquear gameplay
         GameState.Push(GamePhase.Inventory);
         _hasPushedInventory = true;
+
+        // Deshabilitar vThirdPersonInput directamente para que Invector no lea input
+        if (PlayerService.TryGetComponent<Invector.vCharacterController.vThirdPersonInput>(out var tpiOpen))
+        {
+            tpiOpen.enabled = false;
+            _hasBlockedMovement = true;
+        }
         
         // Poblar lista
         RefreshList();
@@ -237,6 +245,17 @@ public class TeleportUI : MonoBehaviour
             windowRoot.SetActive(false);
         }
         
+        // Restaurar vThirdPersonInput
+        if (_hasBlockedMovement)
+        {
+            if (PlayerService.TryGetComponent<Invector.vCharacterController.vThirdPersonInput>(out var tpiClose))
+            {
+                tpiClose.enabled = false; // ciclo para resetear estado interno
+                tpiClose.enabled = true;
+            }
+            _hasBlockedMovement = false;
+        }
+
         // Restaurar gameplay
         if (_hasPushedInventory)
         {

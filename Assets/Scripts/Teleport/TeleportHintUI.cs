@@ -85,19 +85,36 @@ public class TeleportHintUI : MonoBehaviour
     private void OnEnable()
     {
         TeleportRegistry.OnRegistryChanged += OnRegistryChanged;
+        GameState.OnChanged += OnGameStateChanged;
     }
-    
+
     private void OnDisable()
     {
         TeleportRegistry.OnRegistryChanged -= OnRegistryChanged;
+        GameState.OnChanged -= OnGameStateChanged;
     }
-    
+
     private void OnRegistryChanged()
     {
         // Si el sistema ya no está disponible, ocultar el hint
         if (!TeleportRegistry.IsSystemAvailable && _isVisible)
         {
             ForceHide();
+        }
+    }
+
+    private void OnGameStateChanged()
+    {
+        // Si hay solicitudes activas pero el hint no se está mostrando (se bloqueó por GameState),
+        // intentar mostrar ahora que el estado cambió
+        if (_activeRequestCount > 0 && !_isVisible)
+        {
+            Show();
+        }
+        // Si el estado ya no permite interacción, ocultar
+        else if (!GameState.CanInteractGlobally && _isVisible)
+        {
+            Hide();
         }
     }
     

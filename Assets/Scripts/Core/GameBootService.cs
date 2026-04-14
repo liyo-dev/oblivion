@@ -334,7 +334,11 @@ public class GameBootService : MonoBehaviour
         Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
         Debug.Log($"[GameBootService]   ✅ NPCInteractiveNarrativeRegistry limpiado");
         
-        // 7. Restaurar blackboards narrativos si existen
+        // 7. Restaurar puntos de teletransporte desbloqueados
+        TeleportRegistry.LoadFromSaveData(preset.unlockedTeleportPoints);
+        Debug.Log($"[GameBootService]   ✅ Teleport points restaurados desde preset: {preset.unlockedTeleportPoints?.Count ?? 0}");
+
+        // 8. Restaurar blackboards narrativos si existen
         if (preset.narrativeBlackboards != null && preset.narrativeBlackboards.Count > 0)
         {
             Debug.Log($"[GameBootService] 📖 Intentando restaurar {preset.narrativeBlackboards.Count} blackboards narrativos...");

@@ -311,32 +311,6 @@ namespace Game.NPC.Common
         }
 
         /// <summary>
-        /// Muestra un bocadillo de texto (speech/thought bubble)
-        /// </summary>
-        public void ShowSpeechBubble(GameObject bubblePrefab, string text, float duration = 3f)
-        {
-            if (bubblePrefab == null) return;
-            
-            if (!_headBoneSearched) FindHeadBone();
-            HideAlertIconImmediate();
-            
-            // ✅ FIX: Respetar la escala original del prefab multiplicándola por iconScale
-            _targetScale = Vector3.Scale(bubblePrefab.transform.localScale, Vector3.one * iconScale);
-            
-            _iconRoutine = StartCoroutine(ShowIconRoutine(bubblePrefab, duration, (instance) => {
-                // Configurar texto
-                var tmpro = instance.GetComponentInChildren<TMPro.TMP_Text>();
-                if (tmpro != null) tmpro.text = text;
-                else {
-                    var uiText = instance.GetComponentInChildren<UnityEngine.UI.Text>();
-                    if (uiText != null) uiText.text = text;
-                }
-            }));
-            
-            if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 💬 Mostrando bocadillo: '{text}'");
-        }
-        
-        /// <summary>
         /// Muestra el icono de alerta (❗) - Detectó al jugador
         /// </summary>
         public void ShowAlert(GameObject alertPrefab, float duration = -1f)

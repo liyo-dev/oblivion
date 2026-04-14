@@ -25,11 +25,6 @@ MonoBehaviour:
     narrativeChain:
     - actionType: 0
       dialogue: {fileID: 11400000, guid: ad132c2f5b5bc054fbedad18cbe144eb, type: 2}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 3
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 1
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -40,6 +35,8 @@ MonoBehaviour:
       moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -57,16 +54,18 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
     - actionType: 7
       dialogue: {fileID: 0}
-      speechBubbleText: 
-      isThoughtBubble: 0
-      speechBubbleDuration: 3
-      speechBubblePrefabOverride: {fileID: 0}
-      waitForBubble: 1
       targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
@@ -77,6 +76,8 @@ MonoBehaviour:
       moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -94,6 +95,113 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 0
       alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 0
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 1
+    persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 2
+      targetQuest: {fileID: 11400000, guid: cc9a1d98d77ae164ba188ce19fc44a83, type: 2}
+      customEventKey: 
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 27bb1bcde5de02e4fb6e79a06837a267, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 7
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -120,7 +228,4 @@ MonoBehaviour:
   alertIconHeight: 2.5
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
-  defaultSpeechBubblePrefab: {fileID: 0}
-  defaultThoughtBubblePrefab: {fileID: 0}
-  speechBubbleHeight: 2.8
   enableDetailedLogs: 0

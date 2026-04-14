@@ -7,8 +7,8 @@ namespace Game.NPC.Modules
     /// </summary>
     public enum DialoguePositionSide
     {
-        Left,   // Izquierda del player
-        Right   // Derecha del player
+        Left  = 0, // Izquierda del player
+        Right = 1  // Derecha del player
     }
     
     /// <summary>

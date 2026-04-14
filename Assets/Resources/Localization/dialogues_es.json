@@ -29,6 +29,10 @@
             "value": "Erika"
         },
         {
+            "key": "CHAR_KING",
+            "value": "Rey"
+        },
+        {
             "key": "CHAR_LEONARDO",
             "value": "Leonardo"
         },
@@ -389,6 +393,10 @@
             "value": "Entrad, su majestad os espera."
         },
         {
+            "key": "DLG_GUARD_06",
+            "value": "Seguidme y no os quedeis atrás."
+        },
+        {
             "key": "DLG_GUERRERACHINA_01",
             "value": "Así que tú eres Will… Eldran me habló de ti."
         },
@@ -431,6 +439,34 @@
         {
             "key": "DLG_GUERRERACHINA_DEFEAT",
             "value": "Sigue entrenando para ser un gran mago."
+        },
+        {
+            "key": "DLG_KING_01",
+            "value": "Asi que vosotros sois los que habéis destruido la montaña."
+        },
+        {
+            "key": "DLG_KING_02",
+            "value": "Bueno en realidad ha sido ella..."
+        },
+        {
+            "key": "DLG_KING_03",
+            "value": "Ya verás cuando te pille."
+        },
+        {
+            "key": "DLG_KING_04",
+            "value": "Me temo que eso no será aquí. Por la segurdad de nuestros ciudadanos me veo obligado a deteneros."
+        },
+        {
+            "key": "DLG_KING_05",
+            "value": "Disculpe majestad... hay un asunto más importante que debería conocer."
+        },
+        {
+            "key": "DLG_KING_06",
+            "value": "Me temo que tendrá que esperar a mañana."
+        },
+        {
+            "key": "DLG_KING_07",
+            "value": "¡Guardias! arrestadles."
         },
         {
             "key": "DLG_LEONARDO_01",

@@ -46,6 +46,7 @@ public class TeleportSystem : MonoBehaviour
     
     private Coroutine _teleportCoroutine;
     private bool _hasPushedCutscene;
+    private bool _hasBlockedMovement;
     
     private void Awake()
     {
@@ -169,44 +170,67 @@ public class TeleportSystem : MonoBehaviour
         // Bloquear input del jugador durante el teletransporte
         GameState.Push(GamePhase.Cutscene);
         _hasPushedCutscene = true;
-        
+
+        // Deshabilitar vThirdPersonInput directamente para que Invector no lea input
+        Invector.vCharacterController.vThirdPersonInput tpi = null;
+        PlayerService.TryGetComponent(out tpi);
+        if (tpi != null)
+        {
+            tpi.enabled = false;
+            _hasBlockedMovement = true;
+        }
+
         // Reproducir SFX de inicio
         if (teleportStartSfx != null)
             FeedbackService.PlaySfx(teleportStartSfx, player.transform.position);
-        
+
         // Instanciar VFX
         GameObject vfxInstance = null;
         if (teleportVfxPrefab != null)
         {
             vfxInstance = FeedbackService.PlayVFX(
-                teleportVfxPrefab, 
-                player.transform.position, 
-                Quaternion.identity, 
+                teleportVfxPrefab,
+                player.transform.position,
+                Quaternion.identity,
                 vfxDuration + teleportDelayAfterVfx + 1f
             );
         }
-        
+
         // Esperar la duración del VFX
         yield return new WaitForSeconds(vfxDuration);
-        
-        // Realizar el teletransporte usando TeleportService existente
+
+        // Suscribirse al fin de transición antes de disparar el teletransporte
+        bool transitionEnded = false;
+        System.Action onTransitionEnd = () => transitionEnded = true;
+        TeleportService.OnTeleportEnded += onTransitionEnd;
+
+        // Realizar el teletransporte (dispara la transición de pantalla internamente)
         SpawnManager.TeleportTo(destinationAnchorId, true);
-        
-        // Esperar un poco más después del teletransporte
-        yield return new WaitForSeconds(teleportDelayAfterVfx);
-        
+
+        // Esperar a que la transición termine por completo (fade in incluido)
+        yield return new WaitUntil(() => transitionEnded);
+        TeleportService.OnTeleportEnded -= onTransitionEnd;
+
         // Reproducir SFX de llegada
         PlayerService.TryGetPlayer(out player, allowSceneLookup: true);
         if (teleportEndSfx != null && player != null)
             FeedbackService.PlaySfx(teleportEndSfx, player.transform.position);
-        
+
+        // Restaurar vThirdPersonInput ahora que la transición ha terminado
+        if (_hasBlockedMovement && tpi != null)
+        {
+            tpi.enabled = false; // ciclo para resetear estado interno
+            tpi.enabled = true;
+            _hasBlockedMovement = false;
+        }
+
         // Restaurar control al jugador
         if (_hasPushedCutscene)
         {
             GameState.Pop(GamePhase.Cutscene);
             _hasPushedCutscene = false;
         }
-        
+
         IsTeleporting = false;
         OnTeleportCompleted?.Invoke();
         _teleportCoroutine = null;
@@ -225,12 +249,22 @@ public class TeleportSystem : MonoBehaviour
             _teleportCoroutine = null;
         }
         
+        if (_hasBlockedMovement)
+        {
+            if (PlayerService.TryGetComponent<Invector.vCharacterController.vThirdPersonInput>(out var tpi))
+            {
+                tpi.enabled = false;
+                tpi.enabled = true;
+            }
+            _hasBlockedMovement = false;
+        }
+
         if (_hasPushedCutscene)
         {
             GameState.Pop(GamePhase.Cutscene);
             _hasPushedCutscene = false;
         }
-        
+
         IsTeleporting = false;
     }
 }
