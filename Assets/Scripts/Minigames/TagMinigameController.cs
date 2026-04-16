@@ -1528,6 +1528,13 @@ public class TagMinigameController : MonoBehaviour
             return;
         }
 
+        // No arrancar si el minijuego ya fue superado y está guardado
+        if (IsAlreadyCompleted())
+        {
+            Debug.Log($"[TagMinigame] Minijuego '{minigameId}' ya completado, se omite.");
+            return;
+        }
+
         if (player == null && PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             player = playerGo.transform;
@@ -2227,11 +2234,43 @@ public class TagMinigameController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Devuelve true si el minijuego ya fue completado y está guardado en el save.
+    /// </summary>
+    public bool IsAlreadyCompleted()
+    {
+        var preset = GameBootService.IsAvailable ? GameBootService.Profile?.GetActivePresetResolved() : null;
+        if (preset?.completedInteractiveNarratives == null) return false;
+        return preset.completedInteractiveNarratives.Contains(minigameId);
+    }
+
+    /// <summary>
+    /// Registra el minijuego como completado en el preset activo (persiste al guardar).
+    /// </summary>
+    private void MarkAsCompleted()
+    {
+        var preset = GameBootService.IsAvailable ? GameBootService.Profile?.GetActivePresetResolved() : null;
+        if (preset == null)
+        {
+            Debug.LogWarning("[TagMinigame] No se pudo registrar la victoria: preset no disponible.");
+            return;
+        }
+        preset.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
+        if (!preset.completedInteractiveNarratives.Contains(minigameId))
+        {
+            preset.completedInteractiveNarratives.Add(minigameId);
+            Debug.Log($"[TagMinigame] ✅ Victoria registrada en save: '{minigameId}'");
+        }
+    }
+
     private void WinMinigame()
     {
         isRunning = false;
         isTeleporting = false;
         Debug.Log($"[TagMinigame] ¡Victoria! Objetivo completado.");
+
+        // Persistir la victoria para que no vuelva a arrancar al cargar partida
+        MarkAsCompleted();
 
         if (chaser) chaser.StopChasing();
         ReleaseIntroCameraLock();

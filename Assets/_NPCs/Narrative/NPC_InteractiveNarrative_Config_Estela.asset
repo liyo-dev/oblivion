@@ -207,10 +207,10 @@ MonoBehaviour:
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0
-    autoExecuteOnQuestConditionMet: 0
+    autoExecuteOnQuestConditionMet: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
-    showPersistentIcon: 1
+    showPersistentIcon: 0
     persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
     sendNarrativeEvent: 0
     narrativeEventKey: 

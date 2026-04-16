@@ -98,7 +98,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION8_NAME",
-            "value": "Protege a la gente del Reino."
+            "value": "Protege a la gente del Reino. Pulsa <sprite name=\"iinteractable_Joystick\"> para sprintar."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_DESC",

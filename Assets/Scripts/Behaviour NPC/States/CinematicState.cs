@@ -275,12 +275,13 @@ namespace Game.NPC.States
                 return;
             }
             
-            // ✅ NUEVO: Desactivar obstacle avoidance durante movimiento de cinemática
-            // Esto evita que el NPC se bloquee con el Player, Party Members u otros personajes
+            // Reducir obstacle avoidance durante movimiento de cinemática al mínimo para que
+            // Player y Party Members no bloqueen al NPC, pero mantener reacción a obstáculos dinámicos.
+            // NoObstacleAvoidance provocaba travesía de objetos con NavMeshObstacle(Carve=false).
             _originalObstacleAvoidanceType = context.Agent.obstacleAvoidanceType;
-            context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
+            context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.LowQualityObstacleAvoidance;
             _hasDisabledObstacleAvoidance = true;
-            context.Log($"[CinematicSequence] Obstacle avoidance desactivado temporalmente (era: {_originalObstacleAvoidanceType})");
+            context.Log($"[CinematicSequence] Obstacle avoidance reducido temporalmente (era: {_originalObstacleAvoidanceType})");
 
             // Asegurar que no quede la pose de interacción del diálogo al iniciar movimiento.
             if (context.Animator != null)
@@ -1073,9 +1074,11 @@ namespace Game.NPC.States
             // Primer frame: arrancar hacia el anchor
             if (!_initialized)
             {
-                // Desactivar obstacle avoidance para que los party members no bloqueen al guardia
+                // Reducir obstacle avoidance (RVO) al mínimo para que los party members no bloqueen
+                // al NPC escolta, pero manteniendo la reacción a obstáculos dinámicos sin carving.
+                // NoObstacleAvoidance provocaba que el NPC atravesara objetos con NavMeshObstacle(Carve=false).
                 _originalObstacleAvoidanceType = agent.obstacleAvoidanceType;
-                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
+                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.LowQualityObstacleAvoidance;
                 _hasDisabledObstacleAvoidance = true;
 
                 // Salir de la pose de diálogo/idle y activar animación de locomoción

@@ -65,6 +65,12 @@ public class SavePoint : MonoBehaviour
     /// <summary>API única para guardar en este punto de guardado.</summary>
     public void Save()
     {
+        if (TeleportSystem.IsTeleporting)
+        {
+            Debug.Log("[SavePoint] Teletransporte en progreso, guardado bloqueado.");
+            return;
+        }
+
         // En este flujo el Interactable muestra el prompt cuando el player está encima,
         // pero no dependamos del trigger para guardar: usamos PlayerService y caemos a _playerInRange.
         GameObject player = null;

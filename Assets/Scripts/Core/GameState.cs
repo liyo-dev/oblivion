@@ -75,6 +75,7 @@ public static class GameState
                   GamePhase.MainMenu,
                   GamePhase.Dialogue,
                   GamePhase.SavePrompt,
+                  GamePhase.Cutscene,
                   GamePhase.Loading,
                   GamePhase.Inventory,
                   GamePhase.Equipment,
