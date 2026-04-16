@@ -101,6 +101,14 @@
             "value": "[EN] Protege a la gente del Reino."
         },
         {
+            "key": "QUEST_ELDRAN_MISSION9_2_DESC",
+            "value": "[EN] Sigue al guardia y entra al castillo y habla con el Rey."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_2_NAME",
+            "value": "[EN] Arrestados"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION9_DESC",
             "value": "[EN] Sigue al guardia hasta el palacio para ver al Rey."
         },

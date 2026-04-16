@@ -275,13 +275,14 @@ namespace Game.NPC.States
                 return;
             }
             
-            // Reducir obstacle avoidance durante movimiento de cinemática al mínimo para que
-            // Player y Party Members no bloqueen al NPC, pero mantener reacción a obstáculos dinámicos.
-            // NoObstacleAvoidance provocaba travesía de objetos con NavMeshObstacle(Carve=false).
+            // Desactivar obstacle avoidance durante movimiento de cinemática para que
+            // Player y Party Members no bloqueen al NPC. Los objetos que deben ser obstáculos
+            // deben tener NavMeshObstacle con Carve=true (o estar bakeados en el NavMesh),
+            // no depender de RVO para ser evitados.
             _originalObstacleAvoidanceType = context.Agent.obstacleAvoidanceType;
-            context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+            context.Agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
             _hasDisabledObstacleAvoidance = true;
-            context.Log($"[CinematicSequence] Obstacle avoidance reducido temporalmente (era: {_originalObstacleAvoidanceType})");
+            context.Log($"[CinematicSequence] Obstacle avoidance desactivado temporalmente (era: {_originalObstacleAvoidanceType})");
 
             // Asegurar que no quede la pose de interacción del diálogo al iniciar movimiento.
             if (context.Animator != null)
@@ -1074,11 +1075,11 @@ namespace Game.NPC.States
             // Primer frame: arrancar hacia el anchor
             if (!_initialized)
             {
-                // Reducir obstacle avoidance (RVO) al mínimo para que los party members no bloqueen
-                // al NPC escolta, pero manteniendo la reacción a obstáculos dinámicos sin carving.
-                // NoObstacleAvoidance provocaba que el NPC atravesara objetos con NavMeshObstacle(Carve=false).
+                // Desactivar obstacle avoidance local (RVO) para que los party members no bloqueen
+                // al NPC escolta. Los obstáculos estáticos/dinámicos se evitan mediante NavMesh carving
+                // (NavMeshObstacle con Carve=true), no mediante RVO.
                 _originalObstacleAvoidanceType = agent.obstacleAvoidanceType;
-                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
                 _hasDisabledObstacleAvoidance = true;
 
                 // Salir de la pose de diálogo/idle y activar animación de locomoción

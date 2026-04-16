@@ -251,13 +251,13 @@ MonoBehaviour:
     - rid: 2337184684933644599
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Termina el dialogo con el guardia
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 76cc647a-0938-4a59-bb15-896836a33946
-        position: {x: 567, y: 2128}
+        position: {x: 532.8, y: 2128}
         outputs:
         - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
         eventKey: EVT_ARRESTADOS
@@ -270,7 +270,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
-        position: {x: 912.00006, y: 2128}
+        position: {x: 949.6, y: 2088.8}
         outputs:
         - bc4c26f2-2721-4852-b55f-632f2042e7fd
         questId: ELDRAN_MISSION9
