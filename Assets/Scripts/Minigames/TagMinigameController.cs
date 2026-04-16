@@ -156,19 +156,19 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string playerCastSpecialStatePath = "UpperBody.Magic.MagicSpecial";
     [SerializeField] private float playerCastLayerFadeOut = 0.22f;
 
-    [Header("Mensajes")]
-    [SerializeField] private string startMessage = "¡HUYE!";
-    [SerializeField] private string caughtMessage = "¡Te atraparon!";
-    [SerializeField] private string winMessage = "¡Escapaste!";
-    [SerializeField] private string countdownTaskDescription = "¡Prepárate para huir!";
+    [Header("Mensajes (claves de traducción)")]
+    [SerializeField] private string startMessage = "MINIGAME_TAG_START";
+    [SerializeField] private string caughtMessage = "MINIGAME_TAG_CAUGHT";
+    [SerializeField] private string winMessage = "MINIGAME_TAG_WIN";
+    [SerializeField] private string countdownTaskDescription = "MINIGAME_TAG_COUNTDOWN";
     [SerializeField] private bool showEscapeCountdown = false;
-    [Tooltip("Texto que aparece tras el mensaje de victoria con la cuenta atrás de huida.")]
-    [SerializeField] private string escapeMessage = "¡Sal del Reino!";
+    [Tooltip("Clave de traducción del mensaje que aparece tras la victoria con cuenta atrás de huida.")]
+    [SerializeField] private string escapeMessage = "MINIGAME_TAG_ESCAPE";
     [Tooltip("Segundos de cuenta atrás de huida.")]
     [SerializeField] private float escapeCountdownDuration = 10f;
-    [SerializeField] private string protectNpcMessageFormat = "¡NPC protegido! {0}/{1}";
-    [SerializeField] private string objectiveFormat = "Protegidos: {0}/{1}";
-    [SerializeField] private string timeFailedMessage = "¡Se acabó el tiempo! Estela te atrapó.";
+    [SerializeField] private string protectNpcMessageFormat = "MINIGAME_TAG_PROTECT_NPC";
+    [SerializeField] private string objectiveFormat = "MINIGAME_TAG_OBJECTIVE";
+    [SerializeField] private string timeFailedMessage = "MINIGAME_TAG_TIMEOUT";
 
     [Header("Eventos")]
     public UnityEvent OnMinigameStarted;
@@ -1240,7 +1240,7 @@ public class TagMinigameController : MonoBehaviour
         UpdateObjectiveUI();
 
         int required = RequiredProtectCount;
-        ShowMessage(string.Format(protectNpcMessageFormat, Mathf.Min(protectedCount, required), required), 1.4f);
+        ShowMessage(string.Format(Loc(protectNpcMessageFormat), Mathf.Min(protectedCount, required), required), 1.4f);
 
         if (HasProtectionObjectiveConfigured && protectedCount >= required)
         {
@@ -1347,7 +1347,7 @@ public class TagMinigameController : MonoBehaviour
         }
 
         int required = RequiredProtectCount;
-        objectiveText.text = string.Format(objectiveFormat, Mathf.Min(protectedCount, required), required);
+        objectiveText.text = string.Format(Loc(objectiveFormat), Mathf.Min(protectedCount, required), required);
     }
     
     /// <summary>
@@ -1658,7 +1658,7 @@ public class TagMinigameController : MonoBehaviour
 
         // Durante el countdown: la tarea aparece donde estaba el 3,2,1
         // y el número aparece donde estaba el timer (arriba)
-        if (countdownText) countdownText.text = countdownTaskDescription;
+        if (countdownText) countdownText.text = Loc(countdownTaskDescription);
 
         float countdown = countdownBeforeStart;
         while (countdown > 0)
@@ -1677,7 +1677,7 @@ public class TagMinigameController : MonoBehaviour
         // Restaurar el timer en su posición al terminar la cuenta atrás
         if (timerText) timerText.text = FormatTime(duration);
         if (countdownText) countdownText.text = "";
-        ShowMessage(startMessage, 1.5f);
+        ShowMessage(Loc(startMessage), 1.5f);
         
         // ✅ Los efectos de enfado (cara roja, VFX) se mantienen durante TODO el minijuego
         // Solo se desactivan cuando termina (en WinMinigame, StopMinigame, o si te atrapan)
@@ -2148,7 +2148,7 @@ public class TagMinigameController : MonoBehaviour
         FeedbackService.ScreenFlash(caughtFlashColor, caughtFlashDuration);
         ReleaseIntroCameraLock();
         OnPlayerCaught?.Invoke();
-        ShowMessage(caughtMessage, 2f);
+        ShowMessage(Loc(caughtMessage), 2f);
 
         StartCoroutine(RestartAfterCaught());
     }
@@ -2188,7 +2188,7 @@ public class TagMinigameController : MonoBehaviour
 
         if (chaser) chaser.StopChasing();
 
-        ShowMessage(timeFailedMessage, 2f);
+        ShowMessage(Loc(timeFailedMessage), 2f);
         OnMinigameLost?.Invoke();
 
         StartCoroutine(RestartAfterTimeout());
@@ -2235,6 +2235,12 @@ public class TagMinigameController : MonoBehaviour
     }
 
     /// <summary>
+    /// Resuelve una clave de traducción. Si no hay LocalizationManager devuelve la clave como fallback.
+    /// </summary>
+    private string Loc(string key) =>
+        LocalizationManager.Instance != null ? LocalizationManager.Instance.Get(key, key) : key;
+
+    /// <summary>
     /// Devuelve true si el minijuego ya fue completado y está guardado en el save.
     /// </summary>
     public bool IsAlreadyCompleted()
@@ -2275,7 +2281,7 @@ public class TagMinigameController : MonoBehaviour
         if (chaser) chaser.StopChasing();
         ReleaseIntroCameraLock();
 
-        ShowMessage(winMessage, 3f);
+        ShowMessage(Loc(winMessage), 3f);
         HideAllProtectionIcons();
         RestoreTargetNpcSystemsAfterMinigame();
         if (clearShieldsOnWin)
@@ -2324,7 +2330,7 @@ public class TagMinigameController : MonoBehaviour
     {
         _waitingForKingdomExit = true;
 
-        if (messageText) messageText.text = escapeMessage;
+        if (messageText) messageText.text = Loc(escapeMessage);
 
         // Usamos el mismo timer principal (remainingTime) — no hay countdown separado.
         // El Update() detectará cuando remainingTime <= 0 y llamará LoseByTimeout().
@@ -2349,7 +2355,7 @@ public class TagMinigameController : MonoBehaviour
         yield return new WaitForSeconds(3f);
 
         // Mostrar mensaje de huida
-        if (messageText) messageText.text = escapeMessage;
+        if (messageText) messageText.text = Loc(escapeMessage);
 
         // Cuenta atrás en el timerText
         float countdown = Mathf.Max(1f, escapeCountdownDuration);

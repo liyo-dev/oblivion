@@ -1,3 +1,36 @@
 {
-    "texts": []
+    "texts": [
+        {
+            "key": "MINIGAME_CAUGHT_MESSAGE",
+            "value": "¡Te atraparon!"
+        },
+        {
+            "key": "MINIGAME_ESCAPE",
+            "value": "¡Sal del Reino!"
+        },
+        {
+            "key": "MINIGAME_OBJECTIVE_FORMAT",
+            "value": "Protegidos: {0}/{1}"
+        },
+        {
+            "key": "MINIGAME_PROTECT_NPC",
+            "value": "¡Protegido! {0}/{1}"
+        },
+        {
+            "key": "MINIGAME_START_MESSAGE",
+            "value": "¡CORRE!"
+        },
+        {
+            "key": "MINIGAME_TASK",
+            "value": " Pulsa <sprite name=\"interactable_Joystick\">  para sprintar y protege a la gente del Reino."
+        },
+        {
+            "key": "MINIGAME_TIME_FAILED",
+            "value": "¡Se acabó el tiempo! "
+        },
+        {
+            "key": "MINIGAME_WIN",
+            "value": "¡Escapaste!"
+        }
+    ]
 }
