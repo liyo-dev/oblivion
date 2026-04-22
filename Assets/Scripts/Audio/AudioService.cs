@@ -315,8 +315,8 @@ public sealed class AudioService : MonoBehaviour
         // Dar un frame para que la nueva escena base haga su OnSceneLoaded y fije _lastRequestedSceneClip
         yield return null;
 
-        // Si hay batalla activa, no restauramos ni forzamos música de base.
-        if (_battleActive)
+        // Si hay batalla o minijuego activo, no restauramos música de base.
+        if (_battleActive || _minigameActive)
             yield break;
 
         var current = GetCurrentMusicClip();

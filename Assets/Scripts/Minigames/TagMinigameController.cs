@@ -2330,7 +2330,11 @@ public class TagMinigameController : MonoBehaviour
     {
         _waitingForKingdomExit = true;
 
-        if (messageText) messageText.text = Loc(escapeMessage);
+        if (messageText)
+        {
+            StopCoroutine(nameof(ClearMessageAfter));
+            messageText.text = Loc(escapeMessage);
+        }
 
         // Usamos el mismo timer principal (remainingTime) — no hay countdown separado.
         // El Update() detectará cuando remainingTime <= 0 y llamará LoseByTimeout().

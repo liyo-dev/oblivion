@@ -105,3 +105,9 @@ MonoBehaviour:
     duckTo: 0
     fade: 1
     restoreBaseSceneName: MainWorld
+  - sceneName: Cinematic_Taberna
+    music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
+    duckInsteadOfReplace: 0
+    duckTo: 0
+    fade: 1
+    restoreBaseSceneName: 
