@@ -207,34 +207,11 @@ namespace Game.World
                 
                 if (debugMode) Debug.Log($"[MeshSwapper:{name}] 💨 Instanciando {effectsOnSwap.Length} efectos en posición {targetPosition}");
                 
-                foreach (var effectPrefab in effectsOnSwap)
+                foreach (var effect in effectsOnSwap)
                 {
-                    if (effectPrefab != null)
-                    {
-                        // ✅ INSTANCIAR el efecto en la posición objetivo
-                        GameObject effectInstance = Instantiate(effectPrefab.gameObject, targetPosition, Quaternion.identity);
-                        
-                        // Obtener el ParticleSystem de la instancia
-                        ParticleSystem ps = effectInstance.GetComponent<ParticleSystem>();
-                        if (ps != null)
-                        {
-                            // Reproducir
-                            ps.Play(true);
-                            
-                            // Calcular duración total para auto-destrucción
-                            float duration = ps.main.duration + ps.main.startLifetime.constantMax;
-                            
-                            // Destruir después de que termine
-                            Destroy(effectInstance, duration + 1f);
-                            
-                            if (debugMode) Debug.Log($"[MeshSwapper:{name}] ✅ Efecto '{effectPrefab.name}' instanciado en {targetPosition}, se destruirá en {duration + 1f}s");
-                        }
-                        else
-                        {
-                            // Si no tiene ParticleSystem, destruir después de 5 segundos
-                            Destroy(effectInstance, 5f);
-                        }
-                    }
+                    if (effect == null) continue;
+                    Instantiate(effect.gameObject, targetPosition, effect.transform.rotation);
+                    if (debugMode) Debug.Log($"[MeshSwapper:{name}] ✅ Efecto '{effect.name}' instanciado en {targetPosition}");
                 }
             }
 
