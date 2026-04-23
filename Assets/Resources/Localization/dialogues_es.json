@@ -374,7 +374,7 @@
         },
         {
             "key": "DLG_GUARD_01",
-            "value": "Alto ahí... ¿os creeis que podeis ir destruyendo montalas como si nada?"
+            "value": "Alto ahí... ¿os creeis que podeis ir destruyendo montañas como si nada?"
         },
         {
             "key": "DLG_GUARD_02",
@@ -719,6 +719,46 @@
         {
             "key": "DLG_WOODS_GUARD",
             "value": "Solo los magos pueden pasar al bosque prohibido."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_1",
+            "value": "De verdad, ¿por una montaña? Qué exagerados."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_10",
+            "value": "Os lo creáis o no puede que ahí esten vuestras respuestas... aunque no creo que sea el momento para hablarlo."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_2",
+            "value": "Bueno ahora lo importante es salir de este embrollo."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_3",
+            "value": "Oye Liam, ¿de qué nos ibas a hablar en la taberna?"
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_4",
+            "value": "Pues no pude evitar escuchar vuestra conversacción."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_5",
+            "value": "¿Os parece casualidad lo del Golem y el Demonio?"
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_6",
+            "value": "Desde luego que no chico."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_7",
+            "value": "¿Conocéis la leyenda del Sendero de las Estrellas?"
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_8",
+            "value": "Algo he escuchado alguna vez."
+        },
+        {
+            "key": "LORE_ESCOLTA_GUARDIA_9",
+            "value": "¿Un cuento de niños?"
         }
     ]
 }

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Mision_7_taberna
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Woods_SavePoint
+  spawnAnchorId: Woods_Entrance_SavePoint
   level: 1
   maxHP: 100
   currentHP: 100
@@ -21,7 +21,7 @@ MonoBehaviour:
   unlockedAbilities: 01000000
   unlockedSpells: 010000000200000004000000
   leftSpellId: 1
-  rightSpellId: 0
+  rightSpellId: 2
   specialSpellId: 4
   flags:
   - CINEMATIC_SEEN:Cinematic_DemonAppears
@@ -55,6 +55,8 @@ MonoBehaviour:
   appearance:
   - category: 0
     partName: Body05
+  - category: 1
+    partName: Cloak02
   - category: 2
     partName: Head01_Male
   - category: 3
@@ -107,12 +109,12 @@ MonoBehaviour:
     - key: __event_1db8d4ab-1b78-48f8-961e-9e0668aacf6e_EXIT_FROM_WOODS_ESTELA_received
       type: 
       value: 1
-    - key: __currentNodeGuid
-      type: 
-      value: 
     - key: INV_GIVEN:MainNarrative:64ed2870-8561-471f-bb08-803a726be060:coin
       type: 
       value: 1
+    - key: __currentNodeGuid
+      type: 
+      value: 
   - graphLabel: Misiones Secundarias
     blackboardData:
     - key: __currentNodeGuid
@@ -120,11 +122,11 @@ MonoBehaviour:
       value: 
   npcPositions:
   - npcId: Oliver
-    position: {x: -31.48, y: 1.2060261, z: 26.09}
+    position: {x: -31.48, y: 1.224823, z: 26.09}
     hasActiveState: 0
     isActive: 1
   - npcId: Eldran
-    position: {x: 40.746, y: 1.2060261, z: 45.92}
+    position: {x: 40.746, y: 1.224823, z: 45.92}
     hasActiveState: 0
     isActive: 1
   consumedInteractableIds:

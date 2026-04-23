@@ -55,6 +55,7 @@ MonoBehaviour:
   - rid: 1823530463036440737
   - rid: 1823530463036440738
   - rid: 1823530647445045440
+  - rid: 1823530650326270172
   applicableSceneNames:
   - MainWorld
   references:
@@ -229,10 +230,22 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a11afd55-0efb-465f-b673-7557e1525d58
-        position: {x: -169.01033, y: 2128}
+        position: {x: -168.8, y: 2128}
         outputs:
         - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         focusId: ESTELA_MOUNTAIN_SHOT
+    - rid: 1823530650326270172
+      type: {class: LorePopupNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Conversacion durante la escolta
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 3e012768-5c1f-458f-aaf4-6c713eb76562
+        position: {x: 912, y: 2379.2}
+        outputs: []
+        popupId: LORE_ESCOLTA_GUARDIA
     - rid: 2337184644940693504
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -274,6 +287,7 @@ MonoBehaviour:
         position: {x: 532.8, y: 2128}
         outputs:
         - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
+        - 3e012768-5c1f-458f-aaf4-6c713eb76562
         eventKey: EVT_ARRESTADOS
     - rid: 2337184684933644600
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
@@ -284,7 +298,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
-        position: {x: 949.6, y: 2088.8}
+        position: {x: 949.60004, y: 2088.8}
         outputs:
         - bc4c26f2-2721-4852-b55f-632f2042e7fd
         questId: ELDRAN_MISSION9
@@ -297,7 +311,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: bc4c26f2-2721-4852-b55f-632f2042e7fd
-        position: {x: 1254.4, y: 2088.8}
+        position: {x: 1254.3999, y: 2088.8}
         outputs:
         - f796b6ba-da9e-4ef6-aee9-1507c8effbb9
         eventKey: EVT_ARRESTADOS_OK
@@ -310,7 +324,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f796b6ba-da9e-4ef6-aee9-1507c8effbb9
-        position: {x: 1456.8, y: 2338.4}
+        position: {x: 1456.7999, y: 2338.4}
         outputs:
         - 002ddca5-949f-4b0e-8a1a-581b4b85290f
         questId: ELDRAN_MISSION9
@@ -340,7 +354,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -405.6, y: -407.2}
+        position: {x: -405.59998, y: -407.2}
         outputs:
         - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
@@ -400,7 +414,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 1220.8, y: -355.2}
+        position: {x: 1220.7999, y: -355.2}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         questId: ELDRAN_MISSION3
@@ -529,7 +543,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-        position: {x: 1696.8, y: 1476}
+        position: {x: 1696.7999, y: 1476}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
         questId: ELDRAN_MISSION7
@@ -573,7 +587,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
-        position: {x: 1650.4, y: 392.8}
+        position: {x: 1650.3999, y: 392.8}
         outputs: []
         questId: ELDRAN_MISSION5
         stepConditionIds:
