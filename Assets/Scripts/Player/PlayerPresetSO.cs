@@ -67,6 +67,10 @@ public class PlayerPresetSO : ScriptableObject
     [Tooltip("IDs de persistencia de narrativas interactivas de NPCs que ya se han ejecutado.")]
     public List<string> completedInteractiveNarratives = new();
 
+    [Header("Popups de lore vistos (single-use)")]
+    [Tooltip("IDs de persistencia de LorePopupEntry que ya se han mostrado.")]
+    public List<string> seenLorePopupIds = new();
+
     [Header("Equipo (Party)")]
     [Tooltip("IDs narrativos de los NPCs que están en el equipo del jugador.")]
     public List<string> partyMemberIds = new();

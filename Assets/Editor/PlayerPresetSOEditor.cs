@@ -582,7 +582,8 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
                     newBb.blackboardData.Add(new SimpleBlackboard.Entry
                     {
                         key = entry.key,
-                        value = entry.value
+                        value = entry.value,
+                        type = entry.type
                     });
                 }
             }
@@ -605,13 +606,16 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
         
         // Interactuables
         destination.consumedInteractableIds = new List<string>(source.consumedInteractableIds ?? new List<string>());
-        
+
         // Narrativas interactivas
         destination.completedInteractiveNarratives = new List<string>(source.completedInteractiveNarratives ?? new List<string>());
-        
+
+        // Lore popups vistos
+        destination.seenLorePopupIds = new List<string>(source.seenLorePopupIds ?? new List<string>());
+
         // Party members
         destination.partyMemberIds = new List<string>(source.partyMemberIds ?? new List<string>());
-        
+
         // Teleport points
         destination.unlockedTeleportPoints = new List<string>(source.unlockedTeleportPoints ?? new List<string>());
     }

@@ -65,6 +65,7 @@ public class GameBootProfile : ScriptableObject
         dst.defeatedBossIds = new List<string>(src.defeatedBossIds ?? new List<string>());
         dst.consumedInteractableIds = new List<string>(src.consumedInteractableIds ?? new List<string>());
         dst.completedInteractiveNarratives = new List<string>(src.completedInteractiveNarratives ?? new List<string>());
+        dst.seenLorePopupIds = new List<string>(src.seenLorePopupIds ?? new List<string>());
         dst.partyMemberIds = new List<string>(src.partyMemberIds ?? new List<string>());
         dst.unlockedTeleportPoints = new List<string>(src.unlockedTeleportPoints ?? new List<string>());
         
@@ -86,7 +87,8 @@ public class GameBootProfile : ScriptableObject
                         copy.blackboardData.Add(new SimpleBlackboard.Entry
                         {
                             key = entry.key,
-                            value = entry.value
+                            value = entry.value,
+                            type = entry.type
                         });
                     }
                 }
@@ -188,7 +190,8 @@ public class GameBootProfile : ScriptableObject
         p.defeatedBossIds   = data.defeatedBossIds != null ? new List<string>(data.defeatedBossIds) : new List<string>();
         p.narrativeBlackboards = data.narrativeBlackboards != null ? new List<PlayerSaveData.NarrativeBlackboardSnapshot>(data.narrativeBlackboards) : new List<PlayerSaveData.NarrativeBlackboardSnapshot>();
         p.consumedInteractableIds = data.consumedInteractables != null ? new List<string>(data.consumedInteractables) : new List<string>();
-        
+        p.seenLorePopupIds = data.seenLorePopupIds != null ? new List<string>(data.seenLorePopupIds) : new List<string>();
+
         // === CRÍTICO: Restaurar narrativas interactivas completadas desde el save ===
         // Esto permite que al cargar una partida anterior, las narrativas de un solo uso
         // que NO estaban completadas en ese save vuelvan a estar disponibles
@@ -324,6 +327,9 @@ public class GameBootProfile : ScriptableObject
         data.unlockedWardrobeIds = activePreset.unlockedWardrobeIds != null ? new List<string>(activePreset.unlockedWardrobeIds) : new List<string>();
         data.consumedInteractables = activePreset.consumedInteractableIds != null
             ? new List<string>(activePreset.consumedInteractableIds)
+            : new List<string>();
+        data.seenLorePopupIds = activePreset.seenLorePopupIds != null
+            ? new List<string>(activePreset.seenLorePopupIds)
             : new List<string>();
         data.inventory = SanitizeInventorySnapshot(activePreset.inventoryItems);
         data.defeatedBossIds = activePreset.defeatedBossIds != null ? new List<string>(activePreset.defeatedBossIds) : new List<string>();
@@ -941,6 +947,13 @@ public class GameBootProfile : ScriptableObject
             runtimePreset.completedInteractiveNarratives.Clear();
             Debug.Log("[GameBootProfile] ✅ Narrativas interactivas limpiadas para Nueva Partida");
         }
+
+        // Limpiar lore popups vistos para que se puedan volver a mostrar en una nueva partida
+        if (runtimePreset != null)
+        {
+            runtimePreset.seenLorePopupIds ??= new List<string>();
+            runtimePreset.seenLorePopupIds.Clear();
+        }
         
         // ✅ Limpiar el registro de NPCs narrativos para que se re-registren frescos
         Game.NPC.Modules.NPCInteractiveNarrativeRegistry.Clear();
@@ -984,6 +997,7 @@ public class GameBootProfile : ScriptableObject
         p.inventoryItems = new List<InventoryItemSave>();
         p.defeatedBossIds = new List<string>();
         p.consumedInteractableIds = new List<string>();
+        p.seenLorePopupIds = new List<string>();
         // === NUEVO: resetear abilities ===
         p.abilities = new PlayerAbilities();
     }

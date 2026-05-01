@@ -126,6 +126,59 @@ public class DialogueCinematicController : MonoBehaviour
     }
 
     /// <summary>
+    /// Aplica a dialogueCamera los clearFlags correctos según el entorno actual del jugador:
+    /// interior con SolidColor, interior con Skybox propio, o exterior con Skybox.
+    /// Se llama cada vez que se activa la cámara de diálogo para evitar que el snapshot
+    /// de Awake quede desactualizado.
+    /// </summary>
+    private void SyncClearFlagsToEnvironment()
+    {
+        if (dialogueCamera == null) return;
+
+        var envCtrl = EnvironmentController.Instance;
+        if (envCtrl == null) return;
+
+        if (envCtrl.CurrentMode == EnvironmentMode.Interior)
+        {
+            var interior = envCtrl.CurrentInterior;
+
+            if (interior != null && interior.useSolidColorBackground)
+            {
+                dialogueCamera.clearFlags = CameraClearFlags.SolidColor;
+                dialogueCamera.backgroundColor = interior.interiorBgColor;
+                // Limpiar override de skybox per-cámara si lo hubiera
+                var camSkybox = dialogueCamera.GetComponent<Skybox>();
+                if (camSkybox != null) camSkybox.material = null;
+            }
+            else if (interior != null && interior.interiorSkyboxOverride != null)
+            {
+                // Skybox propio del interior: usar componente por-cámara para no tocar RenderSettings global
+                dialogueCamera.clearFlags = CameraClearFlags.Skybox;
+                var camSkybox = dialogueCamera.GetComponent<Skybox>();
+                if (camSkybox == null) camSkybox = dialogueCamera.gameObject.AddComponent<Skybox>();
+                camSkybox.material = interior.interiorSkyboxOverride;
+            }
+            else
+            {
+                // Interior sin config → negro sólido como fallback seguro
+                dialogueCamera.clearFlags = CameraClearFlags.SolidColor;
+                dialogueCamera.backgroundColor = Color.black;
+            }
+        }
+        else
+        {
+            // Exterior: Skybox normal (RenderSettings.skybox ya está configurado por EnvironmentController)
+            dialogueCamera.clearFlags = CameraClearFlags.Skybox;
+            // Limpiar override per-cámara que pudiera haber quedado de un interior anterior
+            var camSkybox = dialogueCamera.GetComponent<Skybox>();
+            if (camSkybox != null) camSkybox.material = null;
+        }
+
+        if (showDebugInfo)
+            Debug.Log($"[DialogueCinematicController] ClearFlags → {dialogueCamera.clearFlags} (EntornoActual: {envCtrl.CurrentMode})");
+    }
+
+    /// <summary>
     /// Crea una cámara separada específicamente para los diálogos
     /// </summary>
     private void CreateDialogueCamera()
@@ -405,12 +458,10 @@ public class DialogueCinematicController : MonoBehaviour
         {
             bool wasEnabled = dialogueCamera.enabled;
             dialogueCamera.enabled = true;
-            
-            // NO asignar tag MainCamera - esto causa problemas con UI/iconos que dependen de Camera.main
-            // La cámara de diálogo ya tiene depth más alto, eso es suficiente para renderizar encima
-            // originalDialogueCameraTag = dialogueCameraObject.tag;
-            // dialogueCameraObject.tag = "MainCamera";
-            
+
+            // Sincronizar clearFlags con el entorno actual (interior → solid color/skybox interior, exterior → skybox)
+            SyncClearFlagsToEnvironment();
+
             // Activar rendering forzado
             forceRenderingActive = true;
 

@@ -208,7 +208,33 @@ public class GameBootService : MonoBehaviour
         {
             Debug.Log($"[GameBootService] 📋 MODO TESTING - Usando bootPreset: '{profile.bootPreset.name}'");
             profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-            
+
+            // Si existe un save, restaurar progresión narrativa para evitar re-ejecutar
+            // contenido ya visto (CameraFocusNode, LorePopupNode, etc.).
+            // El estado de mundo (HP, anchor, party, flags) sigue viniendo del bootPreset.
+            if (saveSystem != null && saveSystem.HasSave() && saveSystem.Load(out var savedProgress))
+            {
+                var rtp = profile.GetActivePresetResolved();
+                if (rtp != null)
+                {
+                    if (savedProgress.seenLorePopupIds?.Count > 0)
+                    {
+                        rtp.seenLorePopupIds = new List<string>(savedProgress.seenLorePopupIds);
+                        Debug.Log($"[GameBootService] 🧪 Popups de lore vistos cargados desde save: {rtp.seenLorePopupIds.Count}");
+                    }
+                    if (savedProgress.narrativeBlackboards?.Count > 0)
+                    {
+                        rtp.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>(savedProgress.narrativeBlackboards);
+                        Debug.Log($"[GameBootService] 🧪 Blackboards narrativos cargados desde save: {rtp.narrativeBlackboards.Count}");
+                    }
+                    if (savedProgress.completedInteractiveNarratives?.Count > 0)
+                    {
+                        rtp.completedInteractiveNarratives = new List<string>(savedProgress.completedInteractiveNarratives);
+                        Debug.Log($"[GameBootService] 🧪 Narrativas completadas cargadas desde save: {rtp.completedInteractiveNarratives.Count}");
+                    }
+                }
+            }
+
             // ✅ CRÍTICO: Aplicar el preset de testeo usando la misma lógica que LoadProfile
             // Esto asegura que TODOS los sistemas se inicialicen correctamente
             ApplyPresetAsLoadedGame(profile);

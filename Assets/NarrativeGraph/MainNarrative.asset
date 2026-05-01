@@ -56,6 +56,8 @@ MonoBehaviour:
   - rid: 1823530463036440738
   - rid: 1823530647445045440
   - rid: 1823530650326270172
+  - rid: 1823530669888241844
+  - rid: 1823530669888241845
   applicableSceneNames:
   - MainWorld
   references:
@@ -243,9 +245,40 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 3e012768-5c1f-458f-aaf4-6c713eb76562
-        position: {x: 912, y: 2379.2}
+        position: {x: 754.4, y: 2432}
         outputs: []
         popupId: LORE_ESCOLTA_GUARDIA
+    - rid: 1823530669888241844
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Hablamos con el Rey
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: a67736f3-a25d-46e1-9f0e-79fb4102b07f
+        position: {x: 1775.2, y: 2811.2}
+        outputs:
+        - 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
+        eventKey: TALK_KING
+    - rid: 1823530669888241845
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
+        position: {x: 2156.8, y: 2811.2}
+        outputs:
+        - 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        questId: ELDRAN_MISSION9
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION9_STEP_01
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
     - rid: 2337184644940693504
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -255,7 +288,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        position: {x: 2272.8, y: 1738.4}
+        position: {x: 1516, y: 1878.4}
         outputs: []
         questId: ELDRAN_MISSION8
     - rid: 2337184644940693505
@@ -292,13 +325,13 @@ MonoBehaviour:
     - rid: 2337184684933644600
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Sigue al guardia
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
-        position: {x: 949.60004, y: 2088.8}
+        position: {x: 949.6, y: 2088.8}
         outputs:
         - bc4c26f2-2721-4852-b55f-632f2042e7fd
         questId: ELDRAN_MISSION9
@@ -311,7 +344,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: bc4c26f2-2721-4852-b55f-632f2042e7fd
-        position: {x: 1254.3999, y: 2088.8}
+        position: {x: 1254.4, y: 2088.8}
         outputs:
         - f796b6ba-da9e-4ef6-aee9-1507c8effbb9
         eventKey: EVT_ARRESTADOS_OK
@@ -324,13 +357,14 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f796b6ba-da9e-4ef6-aee9-1507c8effbb9
-        position: {x: 1456.7999, y: 2338.4}
+        position: {x: 1339.2, y: 2338.4}
         outputs:
-        - 002ddca5-949f-4b0e-8a1a-581b4b85290f
+        - a67736f3-a25d-46e1-9f0e-79fb4102b07f
         questId: ELDRAN_MISSION9
-        stepConditionIds: []
+        stepConditionIds:
+        - QUEST_ELDRAN_MISSION9_STEP_00
         steps: 
-        completeQuest: 1
+        completeQuest: 0
         logWarnings: 0
     - rid: 4128268622357594630
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -354,7 +388,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -405.59998, y: -407.2}
+        position: {x: -405.6, y: -407.2}
         outputs:
         - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
@@ -414,7 +448,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 1220.7999, y: -355.2}
+        position: {x: 1220.8, y: -355.2}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         questId: ELDRAN_MISSION3
@@ -528,7 +562,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 567.2, y: 1759.2}
+        position: {x: 931.2, y: 1804}
         outputs:
         - d82c3b85-2b54-4889-b43d-702eba5413f1
         minigameId: TAG_MINIGAME_01
@@ -543,7 +577,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-        position: {x: 1696.7999, y: 1476}
+        position: {x: 1696.8, y: 1476}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
         questId: ELDRAN_MISSION7
@@ -587,7 +621,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
-        position: {x: 1650.3999, y: 392.8}
+        position: {x: 1650.4, y: 392.8}
         outputs: []
         questId: ELDRAN_MISSION5
         stepConditionIds:

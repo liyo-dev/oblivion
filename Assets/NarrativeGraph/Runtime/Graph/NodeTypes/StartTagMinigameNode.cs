@@ -45,6 +45,14 @@ public sealed class StartTagMinigameNode : NarrativeNode
             return;
         }
 
+        // Si el minijuego ya fue completado en una sesión anterior, avanzar sin bloquearse
+        if (controller.IsAlreadyCompleted())
+        {
+            Debug.Log($"[StartTagMinigameNode] Minijuego '{minigameId}' ya completado → avanzando sin reiniciar.");
+            onReadyToAdvance?.Invoke();
+            return;
+        }
+
         // Activar si es necesario
         if (activateOnStart && !controller.gameObject.activeInHierarchy)
         {

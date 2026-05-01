@@ -373,6 +373,50 @@
             "value": "[EN] ¡Me apunto!"
         },
         {
+            "key": "DLG_ESTELA_PRISION_00",
+            "value": "[EN] Estupendo... y ahora ¿qué hacemos?"
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_01",
+            "value": "[EN] Pues está claro ¿no?"
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_02",
+            "value": "[EN] Dejadmelo a mi y vuelo esto por los aires."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_03",
+            "value": "[EN] Calma chicos. Lo mejor es que intentemos razonar con el Rey."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_04",
+            "value": "[EN] La verdad que con demonios y golems amenazando el reino.... no me quedo muy tranquilo aquí dentro."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_05",
+            "value": "[EN] Tienes razón..."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_06",
+            "value": "[EN] Entonces iniciamos la operación explosiva..."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_07",
+            "value": "[EN] ¡No! Escuchad..."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_08",
+            "value": "[EN] Will vamos a busccar una forma de salir de aqui..."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_09",
+            "value": "[EN] Asi al salir Eldran puede hablar con el Rey y contarle lo que ha pasado mientras nosotros intentamos averiguar qué ocurre."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_10",
+            "value": "[EN] Entonces iniciamos la operación ¡Avestruz!"
+        },
+        {
             "key": "DLG_GUARD_01",
             "value": "[EN] Alto ahí... ¿os creeis que podeis ir destruyendo montalas como si nada?"
         },

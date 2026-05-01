@@ -20,6 +20,7 @@ public class PlayerSaveData
     public List<AppearanceEntry> appearance = new();
     public List<string> unlockedWardrobeIds = new();
     public List<string> consumedInteractables = new();
+    public List<string> seenLorePopupIds = new();
     
     // === NUEVO: narrativas interactivas completadas ===
     // Permite persistir qué narrativas de un solo uso ya se han ejecutado
@@ -110,6 +111,7 @@ public class PlayerSaveData
         d.appearance = preset.appearance != null ? new List<AppearanceEntry>(preset.appearance) : new List<AppearanceEntry>();
         d.unlockedWardrobeIds = preset.unlockedWardrobeIds != null ? new List<string>(preset.unlockedWardrobeIds) : new List<string>();
         d.consumedInteractables = preset.consumedInteractableIds != null ? new List<string>(preset.consumedInteractableIds) : new List<string>();
+        d.seenLorePopupIds = preset.seenLorePopupIds != null ? new List<string>(preset.seenLorePopupIds) : new List<string>();
         d.completedInteractiveNarratives = preset.completedInteractiveNarratives != null ? new List<string>(preset.completedInteractiveNarratives) : new List<string>();
         
         // DEBUG: Ver qué narrativas se están guardando

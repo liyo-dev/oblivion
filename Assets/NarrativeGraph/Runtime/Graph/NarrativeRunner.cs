@@ -173,7 +173,16 @@ public class NarrativeRunner : MonoBehaviour
         }
 
         // Si hay múltiples salidas -> lanzar cada rama en paralelo mediante coroutines independientes
+        // Evitar re-lanzar ramas si este fork ya se procesó en una sesión anterior (save/load)
+        var forkKey = $"__forked_{_current.guid}";
+        if (Blackboard.Get<bool>(forkKey, false))
+        {
+            _current = null;
+            return;
+        }
+
         Blackboard.Set("__currentNodeGuid", string.Empty);
+        Blackboard.Set(forkKey, true);
         foreach (var guid in outs)
         {
             if (string.IsNullOrEmpty(guid)) continue;

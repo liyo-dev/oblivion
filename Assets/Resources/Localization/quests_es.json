@@ -25,6 +25,14 @@
             "value": "De buena mañana"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION10_DESC",
+            "value": "Busca la forma de salir."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION10_NAME",
+            "value": "Atrapados"
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
         },
@@ -111,6 +119,10 @@
         {
             "key": "QUEST_ELDRAN_MISSION9_DESC",
             "value": "Sigue al guardia hasta el palacio para ver al Rey."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION9_DESC_02",
+            "value": "Entra al castillo y habla con el Rey."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_NAME",

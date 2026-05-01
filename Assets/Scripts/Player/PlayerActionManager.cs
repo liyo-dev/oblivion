@@ -112,9 +112,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
     void Awake()
     {
         _anim = GetComponent<Animator>();
+        if (_anim == null)
+        {
+            Debug.LogWarning($"[PlayerActionManager] No Animator on '{name}' — animation features disabled. (Is this component on a disabled GO that never ran Awake?)", gameObject);
+        }
 
         // Guardar peso original del UpperBody
-        if (upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
+        if (_anim != null && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
             _originalUpperWeight = _anim.GetLayerWeight(upperBodyLayer);
 
         // Preconstruir diccionarios para O(1) en runtime
@@ -392,7 +396,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
                     }
 
             // Control de peso de UpperBody
-            if (rule.upperBodyWeight >= 0f && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
+            if (_anim != null && rule.upperBodyWeight >= 0f && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
             {
                 _anim.SetLayerWeight(upperBodyLayer, rule.upperBodyWeight);
 #if UNITY_EDITOR
@@ -401,13 +405,13 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             }
 
             // Anim: UpperIdle limpio
-            if (rule.forceUpperIdle && upperBodyLayer > 0 && !string.IsNullOrEmpty(upperIdleState))
+            if (_anim != null && rule.forceUpperIdle && upperBodyLayer > 0 && !string.IsNullOrEmpty(upperIdleState))
                 _anim.CrossFade(upperIdleState, 0.1f, upperBodyLayer);
         }
         else
         {
             // Modo Default: restaurar peso original
-            if (top == ActionMode.Default && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
+            if (_anim != null && top == ActionMode.Default && upperBodyLayer > 0 && _anim.layerCount > upperBodyLayer)
                 _anim.SetLayerWeight(upperBodyLayer, _originalUpperWeight);
         }
 

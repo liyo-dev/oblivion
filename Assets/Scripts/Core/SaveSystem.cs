@@ -65,6 +65,7 @@ public class SaveSystem : MonoBehaviour
                 data.partyMemberIds ??= new System.Collections.Generic.List<string>();
                 data.unlockedTeleportPoints ??= new System.Collections.Generic.List<string>();
                 data.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
+                data.seenLorePopupIds ??= new System.Collections.Generic.List<string>();
             }
             
             return data != null;
