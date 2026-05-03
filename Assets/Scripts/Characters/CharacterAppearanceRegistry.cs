@@ -1,0 +1,143 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Almacena y gestiona la apariencia visual de cada personaje del equipo.
+/// Actúa como puente entre el ModularAutoBuilder (único, en Will) y las
+/// apariencias individuales de Liam, Will y Estela, incluyendo cambios
+/// de vestuario durante la aventura.
+///
+/// Uso típico:
+///   CharacterAppearanceRegistry.Instance.ApplyAppearance(CharacterSlot.Liam);
+///   CharacterAppearanceRegistry.Instance.UpdatePart(CharacterSlot.Estela, PartCategory.Hat, "Hat03");
+/// </summary>
+[DefaultExecutionOrder(-100)]
+public class CharacterAppearanceRegistry : MonoBehaviour
+{
+    #region Singleton
+    public static CharacterAppearanceRegistry Instance { get; private set; }
+
+#if UNITY_EDITOR
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => Instance = null;
+#endif
+    #endregion
+
+    [Header("Referencia al ModularAutoBuilder de Will")]
+    [SerializeField] private ModularAutoBuilder builder;
+
+    [Header("Apariencia inicial de Liam")]
+    [Tooltip("Partes activas de Liam. Deben coincidir con los nombres en la jerarquía de Will.")]
+    [SerializeField] private List<AppearanceEntry> liamDefault = new();
+
+    [Header("Apariencia inicial de Estela")]
+    [Tooltip("Partes activas de Estela. Deben coincidir con los nombres en la jerarquía de Will.")]
+    [SerializeField] private List<AppearanceEntry> estelaDefault = new();
+
+    // Una entrada por slot (indexado por CharacterSlot int)
+    private readonly Dictionary<PartCategory, string>[] _appearances = new Dictionary<PartCategory, string>[3];
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this); return; }
+        Instance = this;
+
+        if (builder == null)
+            builder = GetComponentInChildren<ModularAutoBuilder>(true);
+
+        if (builder == null)
+            Debug.LogError("[CharacterAppearanceRegistry] No se encontró ModularAutoBuilder. Asígnalo en el Inspector.");
+
+        // Liam y Estela: configurados manualmente en el Inspector
+        _appearances[(int)PartyControlManager.CharacterSlot.Liam]   = ToDict(liamDefault);
+        _appearances[(int)PartyControlManager.CharacterSlot.Estela] = ToDict(estelaDefault);
+    }
+
+    private void Start()
+    {
+        // Will: snapshot después de que ModularAutoBuilder.Awake() haya cacheado sus partes
+        if (builder != null)
+            _appearances[(int)PartyControlManager.CharacterSlot.Will] = builder.GetSelection();
+    }
+
+    // ─── API ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Aplica la apariencia almacenada del personaje al builder (cambia el modelo visual de Will).
+    /// Llama a DeactivateAllCategories() antes para limpiar el estado anterior.
+    /// </summary>
+    public void ApplyAppearance(PartyControlManager.CharacterSlot slot)
+    {
+        if (builder == null) return;
+        builder.DeactivateAllCategories();
+        builder.ApplySelection(_appearances[(int)slot]);
+    }
+
+    /// <summary>
+    /// Lee la selección actual del builder y la guarda como apariencia de este slot.
+    /// Útil para capturar cambios de vestuario hechos desde el menú de inventario.
+    /// </summary>
+    public void CaptureCurrentAppearance(PartyControlManager.CharacterSlot slot)
+    {
+        if (builder == null) return;
+        _appearances[(int)slot] = builder.GetSelection();
+    }
+
+    /// <summary>
+    /// Actualiza una pieza individual para un personaje.
+    /// Pasar partName vacío o null elimina la categoría (la desactiva).
+    /// </summary>
+    public void UpdatePart(PartyControlManager.CharacterSlot slot, PartCategory category, string partName)
+    {
+        var dict = _appearances[(int)slot];
+        if (dict == null) return;
+
+        if (string.IsNullOrEmpty(partName))
+            dict.Remove(category);
+        else
+            dict[category] = partName;
+    }
+
+    /// <summary>Devuelve una copia del diccionario de apariencia del slot.</summary>
+    public Dictionary<PartCategory, string> GetAppearance(PartyControlManager.CharacterSlot slot)
+    {
+        var src = _appearances[(int)slot];
+        return src != null
+            ? new Dictionary<PartCategory, string>(src)
+            : new Dictionary<PartCategory, string>();
+    }
+
+    /// <summary>
+    /// Devuelve la apariencia como List&lt;AppearanceEntry&gt; para serialización en save data.
+    /// </summary>
+    public List<AppearanceEntry> GetAppearanceAsList(PartyControlManager.CharacterSlot slot)
+    {
+        var list = new List<AppearanceEntry>();
+        var dict = _appearances[(int)slot];
+        if (dict == null) return list;
+        foreach (var kv in dict)
+            list.Add(new AppearanceEntry { category = kv.Key, partName = kv.Value });
+        return list;
+    }
+
+    /// <summary>
+    /// Carga una apariencia desde datos guardados (p.ej. al continuar una partida).
+    /// No aplica el cambio al builder — llama a ApplyAppearance() después si es necesario.
+    /// </summary>
+    public void SetAppearanceFromList(PartyControlManager.CharacterSlot slot, List<AppearanceEntry> entries)
+    {
+        _appearances[(int)slot] = ToDict(entries);
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private static Dictionary<PartCategory, string> ToDict(List<AppearanceEntry> entries)
+    {
+        var dict = new Dictionary<PartCategory, string>();
+        if (entries == null) return dict;
+        foreach (var e in entries)
+            if (!string.IsNullOrEmpty(e.partName))
+                dict[e.category] = e.partName;
+        return dict;
+    }
+}

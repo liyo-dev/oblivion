@@ -38,6 +38,12 @@ namespace Invector.vCharacterController
         // Flight control
         public bool DisableVerticalCameraRotation { get; set; } = false;
 
+        /// <summary>
+        /// Cuando está activo, suprime movimiento, sprint y salto pero mantiene la rotación de cámara.
+        /// Usado por PartyControlManager cuando posee un compañero.
+        /// </summary>
+        public bool SuppressMoveInput { get; set; } = false;
+
         // Valores capturados del GamepadInputReader
         private Vector2 moveInput;
         private Vector2 cameraInput;
@@ -286,6 +292,7 @@ namespace Invector.vCharacterController
 
         public virtual void MoveInput()
         {
+            if (SuppressMoveInput) { cc.input.x = 0; cc.input.z = 0; return; }
             cc.input.x = moveInput.x;
             cc.input.z = moveInput.y;
         }
@@ -318,7 +325,7 @@ namespace Invector.vCharacterController
             }
         }
 
-        protected virtual void SprintInput() => cc.Sprint(sprintHeld);
+        protected virtual void SprintInput() => cc.Sprint(SuppressMoveInput ? false : sprintHeld);
 
         protected virtual bool JumpConditions()
         {
@@ -327,7 +334,7 @@ namespace Invector.vCharacterController
 
         protected virtual void JumpInput()
         {
-            if (jumpPressed && JumpConditions())
+            if (!SuppressMoveInput && jumpPressed && JumpConditions())
             {
                 cc.Jump();
                 jumpPressed = false;

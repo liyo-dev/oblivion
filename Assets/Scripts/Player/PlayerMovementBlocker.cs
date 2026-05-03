@@ -31,6 +31,7 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
     Rigidbody _rigidbody;
     Animator _animator;
     bool _isBlocked;
+    bool _lockedViaController;
 
     void Awake()
     {
@@ -110,6 +111,53 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
     }
 
     /// <summary>
+    /// Bloquea el movimiento pero mantiene vThirdPersonInput activo para que la cámara siga rotando.
+    /// Usa lockMovement del controlador en lugar de deshabilitar el componente de input.
+    /// </summary>
+    public void BlockMovementKeepCamera()
+    {
+        if (_isBlocked)
+            return;
+
+        CacheDependencies();
+
+        if (playerRoot == null)
+        {
+            Debug.LogWarning("[PlayerMovementBlocker] No se encontró el Player para bloquear el movimiento.");
+            return;
+        }
+
+        _isBlocked = true;
+        _lockedViaController = true;
+
+        if (_animator != null)
+        {
+            _animator.SetFloat(vAnimatorParameters.InputMagnitude, 0f);
+            _animator.SetFloat(vAnimatorParameters.InputHorizontal, 0f);
+            _animator.SetFloat(vAnimatorParameters.InputVertical, 0f);
+            _animator.SetBool(vAnimatorParameters.IsSprinting, false);
+        }
+
+        // Suprimir movimiento en el input handler (vThirdPersonInput sigue activo → cámara funciona)
+        if (_thirdPersonInput != null)
+            _thirdPersonInput.SuppressMoveInput = true;
+
+        if (_rigidbody != null && !_rigidbody.isKinematic)
+        {
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+        }
+
+        if (suspendGravity && _rigidbody != null)
+            _rigidbody.useGravity = false;
+
+        if (disableCharacterController && _characterController != null)
+            _characterController.enabled = false;
+
+        onMovementBlocked?.Invoke();
+    }
+
+    /// <summary>
     /// Restaura el movimiento del jugador y re-activa los componentes.
     /// </summary>
     [ContextMenu("Restore Movement")]
@@ -124,6 +172,12 @@ public sealed class PlayerMovementBlocker : MonoBehaviour
             return;
 
         _isBlocked = false;
+
+        if (_lockedViaController && _thirdPersonInput != null)
+        {
+            _thirdPersonInput.SuppressMoveInput = false;
+            _lockedViaController = false;
+        }
 
         if (disableCharacterController && _characterController != null && !_characterController.enabled)
         {

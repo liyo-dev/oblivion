@@ -389,10 +389,17 @@ namespace Game.NPC
         internal void OnPlayerEnteredCombat(Transform enemy)
         {
             Debug.Log($"[NPCPartyMember:{name}] 🔔 OnPlayerEnteredCombat - Enemigo: {enemy?.name}");
-            
+
             if (_npcManager?.Brain == null)
             {
                 Debug.LogError($"[NPCPartyMember:{name}] ⚠️ _npcManager.Brain es NULL!");
+                return;
+            }
+
+            // No interrumpir si el jugador está controlando directamente este NPC
+            if (_npcManager.Brain.CurrentState is States.PossessedState)
+            {
+                Debug.Log($"[NPCPartyMember:{name}] ℹ️ Ignorando combate: personaje bajo control del jugador");
                 return;
             }
             
