@@ -502,6 +502,11 @@ public class QuestManager : MonoBehaviour
                 var qid = f.Substring(Q_COMPLETED.Length);
                 if (string.IsNullOrEmpty(qid)) continue;
                 EnsureRuntimeQuest(qid, out var rq);
+                if (rq == null)
+                {
+                    Debug.LogWarning($"[QuestManager.RestoreFromProfileFlags] ⚠️ Quest '{qid}' no encontrada en catálogo aunque tiene flag QUEST_COMPLETED");
+                    continue;
+                }
                 rq.State = QuestState.Completed;
                 _visibility[qid] = QuestVisibility.Hidden;
                 // Marcar todos los pasos como completados si la misión está completada
@@ -587,6 +592,11 @@ public class QuestManager : MonoBehaviour
             if (!int.TryParse(idxStr, out int stepIdx)) continue;
 
             EnsureRuntimeQuest(qid, out var rq2);
+            if (rq2 == null)
+            {
+                Debug.LogWarning($"[QuestManager.RestoreFromProfileFlags] ⚠️ Quest '{qid}' no encontrada en catálogo aunque tiene flag QUEST_STEP_DONE");
+                continue;
+            }
             if (rq2.State == QuestState.Inactive) rq2.State = QuestState.Active;
             if ((uint)stepIdx < (uint)rq2.Steps.Length)
                 rq2.Steps[stepIdx].completed = true;

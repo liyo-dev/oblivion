@@ -1,9 +1,219 @@
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
-*.psd filter=lfs diff=lfs merge=lfs -text
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.obj filter=lfs diff=lfs merge=lfs -text
-*.blend filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.unity filter=lfs diff=lfs merge=lfs -text
-*.hdr filter=lfs diff=lfs merge=lfs -text
+# =============================================================================
+# .gitattributes para proyecto Unity en Windows
+# Basado en recomendaciones oficiales de Unity para colaboracion con git
+# https://docs.unity3d.com/Manual/SmartMerge.html
+# =============================================================================
+
+# Comportamiento por defecto: normalizar line endings a LF en el repo
+* text=auto eol=lf
+
+# ---------------------------------------------------------------------------
+# ARCHIVOS DE TEXTO: normalizar a LF en repo, checkout segun plataforma
+# ---------------------------------------------------------------------------
+
+# C# / Scripts
+*.cs        text eol=lf diff=csharp
+*.cs.meta   text eol=lf
+
+# Shaders
+*.shader    text eol=lf
+*.shader.meta text eol=lf
+*.cginc     text eol=lf
+*.hlsl      text eol=lf
+*.glsl      text eol=lf
+*.compute   text eol=lf
+
+# Unity YAML serialization (scenes, prefabs, assets, controllers...)
+# Importante: Unity guarda estos como YAML texto cuando el proyecto usa
+# "Force Text" en Asset Serialization (Project Settings > Editor)
+*.unity     text eol=lf merge=unityyamlmerge
+*.prefab    text eol=lf merge=unityyamlmerge
+*.asset     text eol=lf merge=unityyamlmerge
+*.meta      text eol=lf merge=unityyamlmerge
+*.mat       text eol=lf merge=unityyamlmerge
+*.anim      text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.overrideController text eol=lf merge=unityyamlmerge
+*.physicMaterial text eol=lf
+*.physicsMaterial2D text eol=lf
+*.playable  text eol=lf merge=unityyamlmerge
+*.signal    text eol=lf
+*.renderTexture text eol=lf
+*.flare     text eol=lf
+*.fontsettings text eol=lf
+*.guiskin   text eol=lf
+*.giparams  text eol=lf
+*.lighting  text eol=lf
+*.spriteatlas text eol=lf merge=unityyamlmerge
+*.terrainlayer text eol=lf
+*.brush     text eol=lf
+*.mask      text eol=lf
+
+# Scenes lighting settings
+*.lighting.meta text eol=lf
+
+# Scene template
+*.scenetemplate text eol=lf
+
+# Input system
+*.inputactions text eol=lf merge=unityyamlmerge
+
+# Timeline
+*.playable  text eol=lf
+
+# Addressables
+*.bin       binary
+
+# JSON / YAML / XML / datos
+*.json      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.xml       text eol=lf
+*.txt       text eol=lf
+*.csv       text eol=lf
+*.tsv       text eol=lf
+
+# Archivos web / config
+*.html      text eol=lf
+*.htm       text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+*.ts        text eol=lf
+*.md        text eol=lf
+*.markdown  text eol=lf
+
+# Build / project files
+*.csproj    text eol=lf
+*.sln       text eol=lf
+.gitignore  text eol=lf
+.gitattributes text eol=lf
+
+# ---------------------------------------------------------------------------
+# ARCHIVOS BINARIOS: sin conversion de line endings, sin diff de texto
+# ---------------------------------------------------------------------------
+
+# Texturas / imagenes
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.bmp       binary
+*.tga       binary
+*.tif       binary
+*.tiff      binary
+*.psd       binary
+*.hdr       binary
+*.exr       binary
+*.dds       binary
+*.ico       binary
+*.svg       binary
+*.webp      binary
+*.ktx       binary
+*.ktx2      binary
+
+# Modelos 3D
+*.fbx       binary
+*.obj       binary
+*.dae       binary
+*.3ds       binary
+*.max       binary
+*.blend     binary
+*.ma        binary
+*.mb        binary
+
+# Audio
+*.mp3       binary
+*.ogg       binary
+*.wav       binary
+*.aiff      binary
+*.aif       binary
+*.flac      binary
+*.mid       binary
+*.midi      binary
+
+# Video
+*.mp4       binary
+*.mov       binary
+*.avi       binary
+*.webm      binary
+*.mkv       binary
+
+# Fuentes
+*.ttf       binary
+*.otf       binary
+*.woff      binary
+*.woff2     binary
+
+# Compilados / ejecutables
+*.dll       binary
+*.exe       binary
+*.so        binary
+*.dylib     binary
+*.a         binary
+*.lib       binary
+
+# Assets precompilados Unity
+*.unitypackage binary
+*.apk       binary
+*.aab       binary
+*.app       binary
+
+# Shaders compilados
+*.cso       binary
+*.spv       binary
+
+# Archivos comprimidos
+*.zip       binary
+*.7z        binary
+*.rar       binary
+*.tar       binary
+*.gz        binary
+
+# Documentos
+*.pdf       binary
+
+# Bases de datos
+*.db        binary
+*.sqlite    binary
+
+# ---------------------------------------------------------------------------
+# GIT LFS: archivos grandes que deben ir a LFS en lugar del repo principal
+# Necesita: git lfs install  (una vez por maquina)
+#           git lfs track <patron> (para agregar nuevos patrones)
+# ---------------------------------------------------------------------------
+
+# Texturas grandes (LFS)
+*.jpg       filter=lfs diff=lfs merge=lfs -text
+*.jpeg      filter=lfs diff=lfs merge=lfs -text
+*.png       filter=lfs diff=lfs merge=lfs -text
+*.tga       filter=lfs diff=lfs merge=lfs -text
+*.psd       filter=lfs diff=lfs merge=lfs -text
+*.hdr       filter=lfs diff=lfs merge=lfs -text
+*.exr       filter=lfs diff=lfs merge=lfs -text
+
+# Modelos 3D grandes (LFS)
+*.fbx       filter=lfs diff=lfs merge=lfs -text
+*.obj       filter=lfs diff=lfs merge=lfs -text
+*.blend     filter=lfs diff=lfs merge=lfs -text
+
+# Audio (LFS)
+*.mp3       filter=lfs diff=lfs merge=lfs -text
+*.ogg       filter=lfs diff=lfs merge=lfs -text
+*.wav       filter=lfs diff=lfs merge=lfs -text
+
+# Video (LFS)
+*.mp4       filter=lfs diff=lfs merge=lfs -text
+*.mov       filter=lfs diff=lfs merge=lfs -text
+
+# Escenas Unity en LFS (si son muy grandes, descomenta):
+# *.unity   filter=lfs diff=lfs merge=lfs -text
+
+# ---------------------------------------------------------------------------
+# UNITY YAML MERGE DRIVER (UnityYAMLMerge)
+# Para activarlo, agrega esto a tu .git/config o ~/.gitconfig:
+#
+# [merge "unityyamlmerge"]
+#   name = Unity SmartMerge
+#   driver = 'C:/Program Files/Unity/Hub/Editor/<version>/Editor/Data/Tools/UnityYAMLMerge.exe' merge -p %O %B %A %P
+#   recursive = binary
+# ---------------------------------------------------------------------------

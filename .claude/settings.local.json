@@ -13,7 +13,8 @@
       "Bash(xargs -I{} git ls-tree -r {} --name-only)",
       "Bash(grep -E \"\\\\.cs$\")",
       "Bash(grep -E \"\\\\.\\(prefab|unity\\)$\")",
-      "Bash(findstr /i \"mission\\\\|mision\\\\|MISSION\\\\|QUEST\\\\|quest\")"
+      "Bash(findstr /i \"mission\\\\|mision\\\\|MISSION\\\\|QUEST\\\\|quest\")",
+      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" | Where-Object { -not $_.PSIsContainer } | Select-Object Name, LastWriteTime | Sort-Object Name)"
     ]
   }
 }
