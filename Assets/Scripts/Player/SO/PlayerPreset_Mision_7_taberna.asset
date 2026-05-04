@@ -113,8 +113,17 @@ MonoBehaviour:
       type: 
       value: 1
     - key: __currentNodeGuid
-      type: 
-      value: 
+      type:
+      value: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+    - key: __forked_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+      type:
+      value: 1
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_0_node
+      type:
+      value: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_1_node
+      type:
+      value: __DONE__
   - graphLabel: Misiones Secundarias
     blackboardData:
     - key: __currentNodeGuid

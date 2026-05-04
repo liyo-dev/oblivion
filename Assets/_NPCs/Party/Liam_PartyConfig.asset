@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d087000332e4358971d6ff73011ab93, type: 3}
   m_Name: Liam_PartyConfig
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCPartyConfig
-  moduleName: 
+  moduleName: Liam
   description: 
-  displayName: 
+  displayName: Liam
   distanciaParaPararse: 3
   distanciaParaCorrer: 4
   distanciaParaTeletransporte: 25

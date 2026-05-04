@@ -54,8 +54,6 @@ MonoBehaviour:
   - rid: 2337184709046960286
   - rid: 1823530463036440737
   - rid: 1823530463036440738
-  - rid: 1823530647445045440
-  - rid: 1823530650326270172
   - rid: 1823530669888241844
   - rid: 1823530669888241845
   applicableSceneNames:
@@ -223,31 +221,6 @@ MonoBehaviour:
         position: {x: 2215.2, y: 2338.4}
         outputs: []
         questId: ELDRAN_MISSION10
-    - rid: 1823530647445045440
-      type: {class: CameraFocusNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "Vemos la monta\xF1a rota"
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: a11afd55-0efb-465f-b673-7557e1525d58
-        position: {x: -168.8, y: 2128}
-        outputs:
-        - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
-        focusId: ESTELA_MOUNTAIN_SHOT
-    - rid: 1823530650326270172
-      type: {class: LorePopupNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: Conversacion durante la escolta
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 3e012768-5c1f-458f-aaf4-6c713eb76562
-        position: {x: 754.4, y: 2432}
-        outputs: []
-        popupId: LORE_ESCOLTA_GUARDIA
     - rid: 1823530669888241844
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

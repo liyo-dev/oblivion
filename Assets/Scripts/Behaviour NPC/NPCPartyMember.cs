@@ -50,6 +50,29 @@ namespace Game.NPC
         public event Action OnLeft;
         #endregion
 
+        #region Runtime spell overrides
+        private MagicSpellSO[] _runtimeSpells; // null = usar PartyConfig
+
+        /// <summary>
+        /// Sobreescribe los hechizos en runtime sin modificar el ScriptableObject.
+        /// Usado por ActiveCharacterSwapper para sincronizar los hechizos actuales de Will.
+        /// </summary>
+        public void SetRuntimeSpells(MagicSpellSO left, MagicSpellSO right, MagicSpellSO special)
+        {
+            _runtimeSpells = new[] { left, right, special };
+        }
+
+        /// <summary>
+        /// Devuelve el hechizo efectivo: override runtime si existe, si no el del PartyConfig.
+        /// </summary>
+        public MagicSpellSO GetEffectiveSpell(int index)
+        {
+            if (_runtimeSpells != null && index >= 0 && index < _runtimeSpells.Length)
+                return _runtimeSpells[index];
+            return partyConfig?.GetSpell(index);
+        }
+        #endregion
+
         #region Properties
         /// <summary>
         /// Configuración de comportamiento en el equipo
@@ -158,7 +181,8 @@ namespace Game.NPC
                 _nextIdleCheck = Time.time + 0.5f;
                 var currentState = _npcManager.Brain.CurrentState;
                 if (currentState != null && currentState.StateName == "Idle"
-                    && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
+                    && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
+                    && (PartyControlManager.Instance?.IsPartyFollowing ?? true))
                 {
                     StartFollowing();
                 }
@@ -269,12 +293,23 @@ namespace Game.NPC
         public void StartFollowing()
         {
             if (_npcManager?.Brain == null) return;
-            
+
             // Solo cambiar a FollowState si no estamos en combate/cinemática
             if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
             {
                 _npcManager.Brain.ChangeState(new FollowPlayerState(this));
             }
+        }
+
+        /// <summary>
+        /// Igual que StartFollowing pero omite la verificación de pertenencia al party.
+        /// Útil para NPCs temporales como el Will NPC instanciado al cambiar de personaje.
+        /// </summary>
+        public void StartFollowingIgnorePartyCheck()
+        {
+            if (_npcManager?.Brain == null) return;
+            if (!_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic)
+                _npcManager.Brain.ChangeState(new FollowPlayerState(this, skipPartyCheck: true));
         }
 
         /// <summary>
@@ -397,7 +432,7 @@ namespace Game.NPC
             }
 
             // No interrumpir si el jugador está controlando directamente este NPC
-            if (_npcManager.Brain.CurrentState is States.PossessedState)
+            if (ActiveCharacterSwapper.Instance != null && ActiveCharacterSwapper.Instance.HiddenNpc == this)
             {
                 Debug.Log($"[NPCPartyMember:{name}] ℹ️ Ignorando combate: personaje bajo control del jugador");
                 return;
@@ -429,7 +464,10 @@ namespace Game.NPC
             {
                 Log("🏳️ Combate terminado, volviendo a seguir al jugador");
                 _npcManager.ExitCombat();
-                StartFollowing();
+                if (PartyControlManager.Instance?.IsPartyFollowing ?? true)
+                    StartFollowing();
+                else
+                    _npcManager.ForceIdle();
             }
         }
 

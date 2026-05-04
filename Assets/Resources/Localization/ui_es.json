@@ -25,6 +25,14 @@
             "value": "Saltar"
         },
         {
+            "key": "HUD_FOLLOW_STATUS_FOLLOWING",
+            "value": "Equipo Junto"
+        },
+        {
+            "key": "HUD_FOLLOW_STATUS_FREE",
+            "value": "Equipo Libre"
+        },
+        {
             "key": "INTERACT_CHEST_OPEN",
             "value": "Abrir cofre [A]"
         },

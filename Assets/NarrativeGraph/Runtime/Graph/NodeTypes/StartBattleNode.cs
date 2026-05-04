@@ -153,19 +153,25 @@ public sealed class StartBattleNode : NarrativeNode
         bool triggered = false;
         BossArenaController targetArena = null;
 
-        // 1) Buscar por id en escenas cargadas (incluye inactivos)
+        // 1) Registro estático (más fiable — poblado en Awake antes de cualquier coroutine)
         if (useBattleById && !string.IsNullOrEmpty(battleId))
+        {
+            BossArenaController.TryGetById(battleId, out targetArena);
+        }
+
+        // 2) Fallback: búsqueda por escenas (ServiceLocator + iteración)
+        if (targetArena == null && useBattleById && !string.IsNullOrEmpty(battleId))
         {
             targetArena = TryFindArenaInLoadedScenesById(battleId);
         }
 
-        // 2) Fallback: referencia directa si es válida
+        // 3) Fallback: referencia directa si es válida
         if (targetArena == null && bossArena != null && bossArena.gameObject.scene.IsValid())
         {
             targetArena = bossArena;
         }
 
-        // 3) Verificar si la batalla ya fue ganada (al restaurar desde save)
+        // 4) Verificar si la batalla ya fue ganada (al restaurar desde save)
         if (targetArena != null && IsBattleAlreadyWon(targetArena))
         {
             Debug.Log($"[StartBattleNode] Batalla '{battleId}' ya fue ganada. Avanzando inmediatamente sin disparar.");
@@ -174,12 +180,17 @@ public sealed class StartBattleNode : NarrativeNode
             return;
         }
 
-        // 4) Trigger batalla
+        // 5) Habilitar trigger de arena como red de seguridad: si TriggerStartBattle() falla por
+        //    cualquier motivo de timing, el player entrando al trigger iniciará la batalla igualmente.
+        if (targetArena != null)
+        {
+            targetArena.SetStartBarrierOnPlayerEnter(true);
+        }
+
+        // 6) Trigger batalla
         if (targetArena != null)
         {
             triggered = TriggerArena(targetArena);
-            
-                    
             DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}");
         }
 

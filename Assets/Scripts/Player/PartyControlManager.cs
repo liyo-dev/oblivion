@@ -77,11 +77,13 @@ public class PartyControlManager : MonoBehaviour
     private void Start()
     {
         GamepadInputReader.OnInput += HandleInput;
+        GameBootService.OnProfileReady += HandleProfileReady; // Suscribirse al evento
     }
 
     private void OnDestroy()
     {
         GamepadInputReader.OnInput -= HandleInput;
+        GameBootService.OnProfileReady -= HandleProfileReady; // Desuscribirse
         if (Instance == this) Instance = null;
     }
     #endregion
@@ -188,4 +190,18 @@ public class PartyControlManager : MonoBehaviour
         OnActiveCharacterChanged?.Invoke(_activeIndex);
     }
     #endregion
+
+    private void HandleProfileReady()
+    {
+        Debug.Log("[PartyControlManager] 🔄 GameBootService.OnProfileReady recibido. Reinicializando estado del party.");
+        // Asumir que Will es el personaje activo por defecto al cargar una partida
+        _activeIndex = (int)CharacterSlot.Will;
+        _isPartyFollowing = true;
+        
+        // Forzar el refresco para que los eventos se disparen y el ActiveCharacterSwapper se actualice
+        ForceRefreshFollowMode();
+        
+        // Asegurarse de que ActiveCharacterSwapper también se reinicialice si es necesario
+        ActiveCharacterSwapper.Instance?.ResetState();
+    }
 }

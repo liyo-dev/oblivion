@@ -35,9 +35,12 @@ namespace Game.NPC.States
         private const float INITIAL_DELAY = 0.3f; // Delay inicial antes de empezar a seguir
         private const float ROTATION_ANGLE_DEADZONE = 2.5f; // Evita micro-jitter al mirar al player
 
-        public FollowPlayerState(NPCPartyMember partyMember)
+        private readonly bool _skipPartyCheck;
+
+        public FollowPlayerState(NPCPartyMember partyMember, bool skipPartyCheck = false)
         {
             _partyMember = partyMember;
+            _skipPartyCheck = skipPartyCheck;
             _config = partyMember?.PartyConfig;
         }
 
@@ -281,8 +284,8 @@ namespace Game.NPC.States
             // 2. Combate
             if (context.IsInCombat) return new AllyCombatState();
             
-            // 3. Si ya no está en el equipo
-            if (_partyMember == null || !_partyMember.IsInParty)
+            // 3. Si estaba en el equipo y lo abandonó
+            if (!_skipPartyCheck && _partyMember != null && !_partyMember.IsInParty)
             {
                 return new IdleState();
             }

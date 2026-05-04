@@ -33,18 +33,28 @@ namespace Sendero.UI
         [SerializeField] private float activeAlpha = 1f;
         [Tooltip("Duración del tween de alpha al cambiar")]
         [SerializeField] private float alphaTweenDuration = 0.25f;
+        [Tooltip("Escala de punch al activarse (ej: 0.1 = 10% de agrandamiento momentáneo)")]
+        [SerializeField] private float portraitPunchStrength = 0.1f;
+        [SerializeField] private float portraitPunchDuration = 0.35f;
 
-        [Header("Texto de estado")]
+        [Header("Panel de estado de seguimiento")]
+        [SerializeField] private CanvasGroup followStatusPanel;
         [SerializeField] private TextMeshProUGUI followStatusText;
-        [SerializeField] private string followingText = "Siguiendo";
-        [SerializeField] private string freeText = "Libre";
+        [SerializeField] private string followingTextKey = "HUD_FOLLOW_STATUS_FOLLOWING";
+        [SerializeField] private string freeTextKey = "HUD_FOLLOW_STATUS_FREE";
+        [SerializeField] private float panelFadeInDuration = 0.25f;
+        [SerializeField] private float panelVisibleDuration = 1f;
+        [SerializeField] private float panelFadeOutDuration = 0.3f;
+        [SerializeField] private float panelSlideOffset = 40f;
 
         [Header("Nombres para identificar compañeros en el party")]
         [SerializeField] private string liamDisplayName = "Liam";
         [SerializeField] private string estelaDisplayName = "Estela";
 
         private Image[] _portraits; // 0=Liam, 1=Will, 2=Estela
-        private Coroutine _flashRoutine;
+        private Sequence _panelSequence;
+        private RectTransform _followStatusRect;
+        private Vector2 _panelStartPos;
 
         private void Awake()
         {
@@ -64,12 +74,18 @@ namespace Sendero.UI
             PlayerParty.OnPartyChanged -= OnPartyChanged;
             PartyControlManager.OnActiveCharacterChanged -= OnActiveCharacterChanged;
             PartyControlManager.OnFollowModeChanged -= OnFollowModeChanged;
+            _panelSequence?.Kill();
         }
 
         private void Start()
         {
-            if (followStatusText != null)
-                followStatusText.gameObject.SetActive(false);
+            if (followStatusPanel != null)
+            {
+                _followStatusRect = followStatusPanel.GetComponent<RectTransform>();
+                _panelStartPos = _followStatusRect != null ? _followStatusRect.anchoredPosition : Vector2.zero;
+                followStatusPanel.alpha = 0f;
+                followStatusPanel.gameObject.SetActive(false);
+            }
             Refresh();
         }
 
@@ -98,19 +114,34 @@ namespace Sendero.UI
         private void OnFollowModeChanged(bool isFollowing)
         {
             UpdateFollowText(isFollowing);
-            if (followStatusText != null)
-            {
-                if (_flashRoutine != null) StopCoroutine(_flashRoutine);
-                _flashRoutine = StartCoroutine(FlashFollowText());
-            }
+            ShowFollowStatusPanel();
         }
 
-        private System.Collections.IEnumerator FlashFollowText()
+        private void ShowFollowStatusPanel()
         {
-            followStatusText.gameObject.SetActive(true);
-            yield return new WaitForSecondsRealtime(1f);
-            followStatusText.gameObject.SetActive(false);
-            _flashRoutine = null;
+            if (followStatusPanel == null) return;
+
+            _panelSequence?.Kill();
+
+            followStatusPanel.gameObject.SetActive(true);
+            followStatusPanel.alpha = 0f;
+
+            if (_followStatusRect != null)
+                _followStatusRect.anchoredPosition = _panelStartPos + Vector2.up * panelSlideOffset;
+
+            _panelSequence = DOTween.Sequence().SetUpdate(true);
+            _panelSequence.Append(followStatusPanel.DOFade(1f, panelFadeInDuration).SetEase(Ease.OutQuad));
+            if (_followStatusRect != null)
+                _panelSequence.Join(_followStatusRect.DOAnchorPos(_panelStartPos, panelFadeInDuration).SetEase(Ease.OutBack));
+            _panelSequence.AppendInterval(panelVisibleDuration);
+            _panelSequence.Append(followStatusPanel.DOFade(0f, panelFadeOutDuration).SetEase(Ease.InQuad));
+            if (_followStatusRect != null)
+                _panelSequence.Join(_followStatusRect.DOAnchorPos(_panelStartPos + Vector2.up * panelSlideOffset, panelFadeOutDuration).SetEase(Ease.InQuad));
+            _panelSequence.OnComplete(() =>
+            {
+                followStatusPanel.gameObject.SetActive(false);
+                _panelSequence = null;
+            });
         }
 
         // ─── Refresco completo ─────────────────────────────────────────────────────
@@ -142,8 +173,12 @@ namespace Sendero.UI
 
         private void UpdateFollowText(bool isFollowing)
         {
-            if (followStatusText != null)
-                followStatusText.text = isFollowing ? followingText : freeText;
+            if (followStatusText == null) return;
+            string key = isFollowing ? followingTextKey : freeTextKey;
+            string fallback = isFollowing ? "Siguiendo" : "Libre";
+            followStatusText.text = LocalizationManager.Instance != null
+                ? LocalizationManager.Instance.Get(key, fallback)
+                : fallback;
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -158,6 +193,11 @@ namespace Sendero.UI
             if (_portraits[index] == null) return;
             _portraits[index].DOKill();
             _portraits[index].DOFade(target, alphaTweenDuration).SetUpdate(true);
+
+            var t = _portraits[index].transform;
+            t.DOKill();
+            if (target >= activeAlpha)
+                t.DOPunchScale(Vector3.one * portraitPunchStrength, portraitPunchDuration, 1, 0.5f).SetUpdate(true);
         }
 
         private void SetAlphaImmediate(int index, float alpha)

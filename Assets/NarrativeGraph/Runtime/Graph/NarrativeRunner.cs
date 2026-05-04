@@ -50,7 +50,7 @@ public class NarrativeRunner : MonoBehaviour
         // Verificar si hay un nodo guardado en el blackboard
         var savedNodeGuid = Blackboard.Get<string>("__currentNodeGuid", null);
         Debug.Log($"[NarrativeRunner] StartFromStartNode() - savedNodeGuid='{savedNodeGuid ?? "NULL"}'");
-        
+
         if (!string.IsNullOrEmpty(savedNodeGuid))
         {
             var savedNode = graph.FindNode(savedNodeGuid);
@@ -115,7 +115,7 @@ public class NarrativeRunner : MonoBehaviour
     public void GoTo(NarrativeNode node)
     {
         // Debug.Log($"[Runner] GoTo → {node?.GetType().Name}");
-        
+
         _current?.Exit(_ctx);
         _current = node;
 
@@ -172,39 +172,106 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
-        // Si hay múltiples salidas -> lanzar cada rama en paralelo mediante coroutines independientes
-        // Evitar re-lanzar ramas si este fork ya se procesó en una sesión anterior (save/load)
-        var forkKey = $"__forked_{_current.guid}";
+        // Fork: múltiples salidas
+        var forkNode = _current;
+        var forkGuid = forkNode.guid;
+        var forkKey = $"__forked_{forkGuid}";
+
+        // Al entrar en fork, __currentNodeGuid apunta al nodo fork (puesto por GoTo).
+        // En el path de primera vez lo limpiamos; en reload lo dejamos apuntando al fork
+        // para que las recargas subsecuentes retomen directamente desde aquí.
+
+        _current = null;
+
         if (Blackboard.Get<bool>(forkKey, false))
         {
-            _current = null;
+            // Fork ya ejecutado en sesión anterior — reanudar ramas en progreso
+            Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' ya ejecutado — reanudando ramas persistidas.");
+            RelaunchForkBranches(forkGuid, outs);
             return;
         }
 
+        // Primera vez: limpiar currentNodeGuid y marcar fork activo
         Blackboard.Set("__currentNodeGuid", string.Empty);
         Blackboard.Set(forkKey, true);
-        foreach (var guid in outs)
+
+        for (int i = 0; i < outs.Count; i++)
         {
+            var guid = outs[i];
             if (string.IsNullOrEmpty(guid)) continue;
             var node = graph.FindNode(guid);
             if (node == null)
             {
-                Debug.LogError($"[Narrative] ForceBranch: no existe nodo guid={guid}.");
+                Debug.LogError($"[Narrative] Fork: no existe nodo guid={guid}.");
                 continue;
             }
-            StartCoroutine(RunSubGraph(node));
+            StartCoroutine(RunSubGraph(node, forkGuid, i));
         }
-
-        // El flujo principal no continúa con una sola 'current' cuando se lanzan ramas paralelas
-        _current = null;
     }
 
-    // Ejecuta una rama de nodos secuencialmente a partir de 'start'
-    System.Collections.IEnumerator RunSubGraph(NarrativeNode start)
+    /// <summary>
+    /// Reanuda las ramas de un fork que ya fue ejecutado, usando el estado guardado en el blackboard.
+    /// Si una rama no tiene estado guardado (save antiguo) se relanza desde el inicio de esa rama.
+    /// </summary>
+    void RelaunchForkBranches(string forkGuid, List<string> branchStartGuids)
     {
+        for (int i = 0; i < branchStartGuids.Count; i++)
+        {
+            var branchStartGuid = branchStartGuids[i];
+            if (string.IsNullOrEmpty(branchStartGuid)) continue;
+
+            var branchKey = $"__fork_{forkGuid}_{i}_node";
+            var savedNodeGuid = Blackboard.Get<string>(branchKey, null);
+
+            if (savedNodeGuid == "__DONE__")
+            {
+                Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: completada, omitiendo.");
+                continue;
+            }
+
+            // Si no hay estado guardado (save anterior al fix), relanzar desde el inicio de la rama
+            string resumeGuid = !string.IsNullOrEmpty(savedNodeGuid) ? savedNodeGuid : branchStartGuid;
+            var resumeNode = graph.FindNode(resumeGuid);
+
+            if (resumeNode == null)
+            {
+                Debug.LogWarning($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: nodo '{resumeGuid}' no encontrado. Saltando.");
+                continue;
+            }
+
+            Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: reanudando desde {resumeNode.GetType().Name} ({resumeGuid}).");
+            StartCoroutine(RunSubGraph(resumeNode, forkGuid, i));
+        }
+    }
+
+    /// <summary>
+    /// Ejecuta una rama de nodos secuencialmente a partir de 'start'.
+    /// Rastrea el progreso en el blackboard para permitir guardar y reanudar.
+    /// </summary>
+    System.Collections.IEnumerator RunSubGraph(NarrativeNode start, string forkGuid, int branchIndex)
+    {
+        bool track = !string.IsNullOrEmpty(forkGuid) && branchIndex >= 0;
         var node = start;
+
+        if (track)
+            Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
+
         while (node != null)
         {
+            // Detectar fork anidado ya ejecutado ANTES de hacer Enter para evitar re-ejecutar el nodo
+            if (node.outputs != null && node.outputs.Count > 1)
+            {
+                var nestedForkKey = $"__forked_{node.guid}";
+                if (Blackboard.Get<bool>(nestedForkKey, false))
+                {
+                    Debug.Log($"[NarrativeRunner] Fork anidado '{node.guid}' en rama {branchIndex} — reanudando subramas sin re-ejecutar nodo.");
+                    if (track)
+                        Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
+                    RelaunchForkBranches(node.guid, node.outputs);
+                    yield break;
+                }
+            }
+
             bool ready = false;
             try
             {
@@ -212,38 +279,49 @@ public class NarrativeRunner : MonoBehaviour
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[Narrative] RunSubGraph Enter error: {ex.Message}");
+                Debug.LogError($"[Narrative] RunSubGraph Enter error en {node.GetType().Name}: {ex.Message}");
                 yield break;
             }
 
-            // Esperar a que el nodo invoque el callback
             yield return new WaitUntil(() => ready);
 
-            // Obtener salidas
             var outs = node.outputs;
             if (outs == null || outs.Count == 0)
             {
-                // fin de esta rama
+                if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
                 yield break;
             }
 
             if (outs.Count == 1)
             {
                 var nextGuid = outs[0];
-                if (string.IsNullOrEmpty(nextGuid)) yield break;
+                if (string.IsNullOrEmpty(nextGuid))
+                {
+                    if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
+                    yield break;
+                }
                 var next = graph.FindNode(nextGuid);
-                if (next == null) yield break;
+                if (next == null)
+                {
+                    if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
+                    yield break;
+                }
                 node = next;
+                if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
                 continue;
             }
 
-            // Si hay múltiples salidas, disparar sub-ramas para cada salida y terminar esta rama
-            foreach (var guid in outs)
+            // Fork anidado — primera vez
+            var nfKey = $"__forked_{node.guid}";
+            Blackboard.Set(nfKey, true);
+            // Mantener puntero al nodo fork para poder reanudar en recargas futuras
+            if (track) Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
+            for (int ni = 0; ni < outs.Count; ni++)
             {
-                if (string.IsNullOrEmpty(guid)) continue;
-                var n = graph.FindNode(guid);
-                if (n == null) continue;
-                StartCoroutine(RunSubGraph(n));
+                var gid = outs[ni];
+                if (string.IsNullOrEmpty(gid)) continue;
+                var n = graph.FindNode(gid);
+                if (n != null) StartCoroutine(RunSubGraph(n, node.guid, ni));
             }
             yield break;
         }

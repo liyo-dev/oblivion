@@ -25,6 +25,14 @@
             "value": "Skip"
         },
         {
+            "key": "HUD_FOLLOW_STATUS_FOLLOWING",
+            "value": "All Together"
+        },
+        {
+            "key": "HUD_FOLLOW_STATUS_FREE",
+            "value": "[EN] Equipo Libre"
+        },
+        {
             "key": "INTERACT_CHEST_OPEN",
             "value": "Open chest [A]"
         },

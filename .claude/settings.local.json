@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"83c73fb858dfffc4e9c0ac7b657d2dde\" --no-renames)",
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"ea4690ade68c4ee4c8b5a6808e56c296\" --no-renames)",
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"ee0e7be372694a64aa127e065be52e9d\" --no-renames)",
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"Caracola\" --no-renames -- \"*.prefab\" \"*.meta\")",
+      "Bash(git restore *)",
+      "Bash(xargs grep *)",
+      "Bash(dir \"Assets\\\\_NPCs\\\\Party\")",
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"2cc0b2e577149df4f8a3bc35ba74a5de\" --no-renames)",
+      "Bash(git -c diff.renameLimit=0 log --all --oneline -S \"ebc54ede431cdc94d92eebbad35015b3\" --no-renames)",
+      "Bash(xargs -I{} git ls-tree -r {} --name-only)",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(grep -E \"\\\\.\\(prefab|unity\\)$\")",
+      "Bash(findstr /i \"mission\\\\|mision\\\\|MISSION\\\\|QUEST\\\\|quest\")"
+    ]
+  }
+}

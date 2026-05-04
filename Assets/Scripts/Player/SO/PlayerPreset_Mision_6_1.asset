@@ -74,8 +74,17 @@ MonoBehaviour:
   - graphLabel: Historia Principal
     blackboardData:
     - key: __currentNodeGuid
-      type: 
-      value: 
+      type:
+      value: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+    - key: __forked_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+      type:
+      value: 1
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_0_node
+      type:
+      value: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_1_node
+      type:
+      value: __DONE__
     - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
       type: 
       value: 1

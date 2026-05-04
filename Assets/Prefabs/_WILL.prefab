@@ -4382,7 +4382,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2565669848064650075
 Transform:
   m_ObjectHideFlags: 0
@@ -12321,6 +12321,7 @@ GameObject:
   - component: {fileID: 1750471286796519853}
   - component: {fileID: 4479948751999106379}
   - component: {fileID: 4712360369832361797}
+  - component: {fileID: 8164817358401321661}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -13033,6 +13034,22 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
+--- !u!114 &8164817358401321661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 863fbfa17355ad34a989547de4c3fc68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActiveCharacterSwapper
+  magicCaster: {fileID: 4974162908857341787}
+  liamDisplayName: Liam
+  estelaDisplayName: Estela
+  willNpcPrefab: {fileID: 6699691312287338962, guid: fcd86dfbea8f82140b097131a0157b9f, type: 3}
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

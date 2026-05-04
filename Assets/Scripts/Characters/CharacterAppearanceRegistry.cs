@@ -7,6 +7,9 @@ using UnityEngine;
 /// apariencias individuales de Liam, Will y Estela, incluyendo cambios
 /// de vestuario durante la aventura.
 ///
+/// El ModularAutoBuilder se resuelve en tiempo de ejecución vía PlayerService,
+/// por lo que este componente no necesita referencias de escena al prefab de Will.
+///
 /// Uso típico:
 ///   CharacterAppearanceRegistry.Instance.ApplyAppearance(CharacterSlot.Liam);
 ///   CharacterAppearanceRegistry.Instance.UpdatePart(CharacterSlot.Estela, PartCategory.Hat, "Hat03");
@@ -23,9 +26,6 @@ public class CharacterAppearanceRegistry : MonoBehaviour
 #endif
     #endregion
 
-    [Header("Referencia al ModularAutoBuilder de Will")]
-    [SerializeField] private ModularAutoBuilder builder;
-
     [Header("Apariencia inicial de Liam")]
     [Tooltip("Partes activas de Liam. Deben coincidir con los nombres en la jerarquía de Will.")]
     [SerializeField] private List<AppearanceEntry> liamDefault = new();
@@ -37,27 +37,27 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     // Una entrada por slot (indexado por CharacterSlot int)
     private readonly Dictionary<PartCategory, string>[] _appearances = new Dictionary<PartCategory, string>[3];
 
+    // Builder resuelto lazily desde PlayerService cuando el jugador ya está en escena
+    private ModularAutoBuilder _builder;
+    private bool _willSnapshotTaken;
+
+    private ModularAutoBuilder Builder
+    {
+        get
+        {
+            if (_builder != null) return _builder;
+            PlayerService.TryGetComponent(out _builder);
+            return _builder;
+        }
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
 
-        if (builder == null)
-            builder = GetComponentInChildren<ModularAutoBuilder>(true);
-
-        if (builder == null)
-            Debug.LogError("[CharacterAppearanceRegistry] No se encontró ModularAutoBuilder. Asígnalo en el Inspector.");
-
-        // Liam y Estela: configurados manualmente en el Inspector
         _appearances[(int)PartyControlManager.CharacterSlot.Liam]   = ToDict(liamDefault);
         _appearances[(int)PartyControlManager.CharacterSlot.Estela] = ToDict(estelaDefault);
-    }
-
-    private void Start()
-    {
-        // Will: snapshot después de que ModularAutoBuilder.Awake() haya cacheado sus partes
-        if (builder != null)
-            _appearances[(int)PartyControlManager.CharacterSlot.Will] = builder.GetSelection();
     }
 
     // ─── API ──────────────────────────────────────────────────────────────────
@@ -68,9 +68,12 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     /// </summary>
     public void ApplyAppearance(PartyControlManager.CharacterSlot slot)
     {
-        if (builder == null) return;
-        builder.DeactivateAllCategories();
-        builder.ApplySelection(_appearances[(int)slot]);
+        var b = Builder;
+        if (b == null) return;
+
+        EnsureWillSnapshot(b);
+        b.DeactivateAllCategories();
+        b.ApplySelection(_appearances[(int)slot]);
     }
 
     /// <summary>
@@ -79,8 +82,11 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     /// </summary>
     public void CaptureCurrentAppearance(PartyControlManager.CharacterSlot slot)
     {
-        if (builder == null) return;
-        _appearances[(int)slot] = builder.GetSelection();
+        var b = Builder;
+        if (b == null) return;
+
+        EnsureWillSnapshot(b);
+        _appearances[(int)slot] = b.GetSelection();
     }
 
     /// <summary>
@@ -130,6 +136,14 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    // Captura el snapshot de Will la primera vez que el builder está disponible.
+    private void EnsureWillSnapshot(ModularAutoBuilder b)
+    {
+        if (_willSnapshotTaken) return;
+        _appearances[(int)PartyControlManager.CharacterSlot.Will] = b.GetSelection();
+        _willSnapshotTaken = true;
+    }
 
     private static Dictionary<PartCategory, string> ToDict(List<AppearanceEntry> entries)
     {

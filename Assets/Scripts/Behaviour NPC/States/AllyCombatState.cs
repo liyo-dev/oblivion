@@ -613,21 +613,19 @@ namespace Game.NPC.States
             // Verificar que el target sigue válido
             if (_currentTarget == null || !_currentTarget.gameObject.activeInHierarchy) return;
             
-            // Obtener hechizo del PartyConfig - ROTAR ENTRE LOS 3 DISPONIBLES
-            var partyConfig = _partyMember?.PartyConfig;
-            if (partyConfig == null)
+            if (_partyMember == null)
             {
-                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ No hay PartyConfig!");
+                Debug.LogWarning($"[AllyCombatState:{context.Transform.name}] ⚠️ No hay NPCPartyMember!");
                 return;
             }
-            
-            // Intentar obtener el hechizo actual, si es null probar los siguientes
+
+            // Rotar entre los 3 hechizos disponibles (runtime overrides o PartyConfig)
             MagicSpellSO spell = null;
             int attempts = 0;
             int selectedIndex = _currentSpellIndex;
             while (spell == null && attempts < 3)
             {
-                spell = partyConfig.GetSpell(_currentSpellIndex);
+                spell = _partyMember.GetEffectiveSpell(_currentSpellIndex);
                 if (spell == null)
                 {
                     _currentSpellIndex = (_currentSpellIndex + 1) % 3;

@@ -215,7 +215,7 @@ MonoBehaviour:
   shockwaveDamage: 30
   shockwaveKnockback: 15
   shockwaveVFX: {fileID: 6526302276393259002, guid: f9d9793366789ae48a7e1b0692763acc, type: 3}
-  landingDustVFX: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
+  landingDustVFX: {fileID: 4994997792314849709, guid: 3dd50886582244645be87adb42aa8528, type: 3}
   cameraShakeDuration: 0.5
   cameraShakeIntensity: 0.3
   attackCooldown: 3
@@ -232,6 +232,7 @@ MonoBehaviour:
   chargeOnPhaseChangeChance: 0.7
   walkSpeed: 2.5
   rotationSpeed: 3
+  modelRotationOffset: 0
   enableContactDamage: 1
   contactDamage: 15
   contactDamageCooldown: 1.5

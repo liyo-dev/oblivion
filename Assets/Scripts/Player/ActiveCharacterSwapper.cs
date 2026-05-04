@@ -12,8 +12,8 @@ using Game.NPC;
 ///   4. Oculta el NPC objetivo (el controller ES ese personaje ahora).
 ///   5. Reactiva el NPC anterior (Will vuelve a ser un compañero IA, o Liam/Estela reanudan seguimiento).
 ///
-/// El WillNpcProxy (opcional) es un GameObject con apariencia de Will que aparece
-/// cuando Will no es el líder activo.
+/// Will nunca desaparece del mundo: cuando no es el personaje activo su NPC
+/// permanece visible y sigue al jugador como IA.
 /// </summary>
 [DefaultExecutionOrder(-50)]
 public class ActiveCharacterSwapper : MonoBehaviour
@@ -31,15 +31,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
     [Tooltip("El MagicCaster del jugador. Se auto-busca si no se asigna.")]
     [SerializeField] private MagicCaster magicCaster;
 
-    [Header("NPCs del equipo")]
-    [SerializeField] private NPCPartyMember liamNpc;
-    [SerializeField] private NPCPartyMember estelaaNpc;
+    [Header("Nombres en el party (deben coincidir con NPCPartyConfig.displayName)")]
+    [SerializeField] private string liamDisplayName = "Liam";
+    [SerializeField] private string estelaDisplayName = "Estela";
 
-    [Header("Proxy de Will como NPC (opcional)")]
-    [Tooltip("GameObject con aspecto de Will que aparece cuando Will no es el líder.")]
-    [SerializeField] private GameObject willNpcProxy;
+    [Header("NPC de Will (prefab, se instancia cuando Will no es el activo)")]
+    [Tooltip("Prefab de Will como NPC. Se instancia al cambiar a Liam/Estela y se destruye al volver a Will.")]
+    [SerializeField] private GameObject willNpcPrefab;
 
-    // Hechizos originales de Will, capturados en Start()
+    private NPCPartyMember _willNpcInstance;
+
+    // Hechizos de Will, actualizados cada vez que se abandona su slot
     private MagicSpellSO _willLeft, _willRight, _willSpecial;
 
     // NPC actualmente oculto porque el controller lo está representando
@@ -60,22 +62,16 @@ public class ActiveCharacterSwapper : MonoBehaviour
             magicCaster = GetComponentInParent<MagicCaster>()
                 ?? UnityEngine.Object.FindFirstObjectByType<MagicCaster>();
 
-        // Snapshot de los hechizos iniciales de Will para poder restaurarlos
-        if (magicCaster != null)
-        {
-            _willLeft    = magicCaster.GetSpellForSlot(MagicSlot.Left);
-            _willRight   = magicCaster.GetSpellForSlot(MagicSlot.Right);
-            _willSpecial = magicCaster.GetSpellForSlot(MagicSlot.Special);
-        }
+        CaptureWillSpells();
 
-        if (willNpcProxy != null)
-            willNpcProxy.SetActive(false);
+        PartyControlManager.OnFollowModeChanged += OnFollowModeChanged;
 
         _ready = true;
     }
 
     private void OnDestroy()
     {
+        PartyControlManager.OnFollowModeChanged -= OnFollowModeChanged;
         if (Instance == this) Instance = null;
     }
     #endregion
@@ -91,8 +87,13 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         var registry = CharacterAppearanceRegistry.Instance;
 
-        // 1. Guardar cambios de vestuario del personaje que se abandona
+        // 1. Guardar estado del personaje que se abandona
         registry?.CaptureCurrentAppearance(from);
+        if (from == PartyControlManager.CharacterSlot.Will)
+        {
+            CaptureWillSpells();
+            _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
+        }
 
         // 2. Teleportar el controller a la posición del NPC objetivo (solo al ir a Liam/Estela)
         var toNpc = GetNpc(to);
@@ -105,17 +106,34 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // 4. Cambiar hechizos del player
         ApplySpells(to);
 
-        // 5. Gestionar visibilidad de NPCs
-        // Reactiva al NPC anterior (dejamos de ser ese personaje)
+        // 5. Gestionar visibilidad de NPCs de Liam/Estela
         SetNpcVisible(_hiddenNpc, true);
-
-        // Oculta al NPC objetivo (el controller ahora ES ese personaje)
         _hiddenNpc = toNpc;
         SetNpcVisible(_hiddenNpc, false);
 
-        // 6. Proxy de Will
-        if (willNpcProxy != null)
-            willNpcProxy.SetActive(to != PartyControlManager.CharacterSlot.Will);
+        // 6. NPC de Will: instanciar al alejarse de Will, destruir al volver
+        bool willIsActive = to == PartyControlManager.CharacterSlot.Will;
+        if (willIsActive)
+        {
+            DestroyWillNpc();
+        }
+        else if (_willNpcInstance == null)
+        {
+            SpawnWillNpc();
+        }
+    }
+
+    /// <summary>
+    /// Resetea el estado del swapper, útil al cargar una nueva partida o volver del menú.
+    /// </summary>
+    public void ResetState()
+    {
+        Debug.Log("[ActiveCharacterSwapper] 🔄 Reseteando estado.");
+        DestroyWillNpc();
+        _hiddenNpc = null;
+        // Asegurarse de que los hechizos de Will se capturen de nuevo si es necesario
+        CaptureWillSpells();
+        _ready = true; // Asegurarse de que esté listo para operar
     }
 
     /// <summary>
@@ -126,10 +144,59 @@ public class ActiveCharacterSwapper : MonoBehaviour
     #endregion
 
     #region Internals
+    private void OnFollowModeChanged(bool isFollowing)
+    {
+        if (_willNpcInstance == null) return;
+
+        if (isFollowing)
+            _willNpcInstance.StartFollowingIgnorePartyCheck();
+        else
+            _willNpcInstance.StopFollowing();
+    }
+
+    private void SpawnWillNpc()
+    {
+        if (willNpcPrefab == null) return;
+
+        PlayerService.TryGetPlayer(out var playerGO);
+
+        // Calcular posición detrás del jugador para que Will no aparezca encima del personaje activo
+        Vector3 pos = Vector3.zero;
+        Quaternion rot = Quaternion.identity;
+        if (playerGO != null)
+        {
+            rot = playerGO.transform.rotation;
+            Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
+            pos = NavMesh.SamplePosition(behind, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : playerGO.transform.position;
+        }
+
+        var go = Instantiate(willNpcPrefab, pos, rot);
+        _willNpcInstance = go.GetComponent<NPCPartyMember>();
+        _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
+
+        // Aplicar modo de seguimiento actual una vez que el NPC esté inicializado
+        if (_willNpcInstance != null)
+            StartCoroutine(ApplyFollowModeToWillNpc());
+    }
+
+    private System.Collections.IEnumerator ApplyFollowModeToWillNpc()
+    {
+        yield return null; // Esperar un frame para que el Brain esté listo
+        if (_willNpcInstance != null && PartyControlManager.Instance?.IsPartyFollowing == true)
+            _willNpcInstance.StartFollowingIgnorePartyCheck();
+    }
+
+    private void DestroyWillNpc()
+    {
+        if (_willNpcInstance == null) return;
+        Destroy(_willNpcInstance.gameObject);
+        _willNpcInstance = null;
+    }
+
     private NPCPartyMember GetNpc(PartyControlManager.CharacterSlot slot) => slot switch
     {
-        PartyControlManager.CharacterSlot.Liam   => liamNpc,
-        PartyControlManager.CharacterSlot.Estela => estelaaNpc,
+        PartyControlManager.CharacterSlot.Liam   => PlayerParty.Instance?.GetMemberByName(liamDisplayName),
+        PartyControlManager.CharacterSlot.Estela => PlayerParty.Instance?.GetMemberByName(estelaDisplayName),
         _                                         => null
     };
 
@@ -143,6 +210,14 @@ public class ActiveCharacterSwapper : MonoBehaviour
         playerGO.transform.SetPositionAndRotation(position, rotation);
 
         if (cc != null) cc.enabled = true;
+    }
+
+    private void CaptureWillSpells()
+    {
+        if (magicCaster == null) return;
+        _willLeft    = magicCaster.GetSpellForSlot(MagicSlot.Left);
+        _willRight   = magicCaster.GetSpellForSlot(MagicSlot.Right);
+        _willSpecial = magicCaster.GetSpellForSlot(MagicSlot.Special);
     }
 
     private void ApplySpells(PartyControlManager.CharacterSlot slot)

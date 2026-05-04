@@ -157,6 +157,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     #endif
 
     readonly List<Button> _tabButtons = new();
+    readonly Dictionary<Button, int> _tabButtonIndices = new();
     readonly Dictionary<Button, ColorBlock> _tabOriginalColors = new();
 
     InventoryView _inventoryView;
@@ -471,8 +472,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             inventoryTabButton.onClick.AddListener(() => ShowTab(0));
             _tabButtons.Add(inventoryTabButton);
-            
-            // Asegurar que tiene componente de audio
+            _tabButtonIndices[inventoryTabButton] = 0;
+
             if (inventoryTabButton.GetComponent<UIButtonAudio>() == null)
                 inventoryTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
@@ -480,8 +481,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             spellsTabButton.onClick.AddListener(() => ShowTab(1));
             _tabButtons.Add(spellsTabButton);
-            
-            // Asegurar que tiene componente de audio
+            _tabButtonIndices[spellsTabButton] = 1;
+
             if (spellsTabButton.GetComponent<UIButtonAudio>() == null)
                 spellsTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
@@ -489,8 +490,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         {
             equipmentTabButton.onClick.AddListener(() => ShowTab(2));
             _tabButtons.Add(equipmentTabButton);
-            
-            // Asegurar que tiene componente de audio
+            _tabButtonIndices[equipmentTabButton] = 2;
+
             if (equipmentTabButton.GetComponent<UIButtonAudio>() == null)
                 equipmentTabButton.gameObject.AddComponent<UIButtonAudio>();
         }
@@ -1337,12 +1338,13 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void UpdateTabButtonStates()
     {
-        for (int i = 0; i < _tabButtons.Count; i++)
+        foreach (var button in _tabButtons)
         {
-            var button = _tabButtons[i];
             if (button == null) continue;
 
-            bool isActive = i == _activeTab;
+            // Usar el índice real del tab registrado para este botón (no el índice en la lista)
+            int tabIndex = _tabButtonIndices.TryGetValue(button, out var idx) ? idx : -1;
+            bool isActive = tabIndex == _activeTab;
             button.interactable = !isActive;
 
             var colors = button.colors;
