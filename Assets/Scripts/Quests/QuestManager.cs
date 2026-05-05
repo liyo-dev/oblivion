@@ -22,13 +22,18 @@ public class QuestManager : MonoBehaviour
     // índice: conditionId -> lista de (questId, stepIndex) para completar en O(1)
     private readonly Dictionary<string, List<StepRef>> _conditionIndex = new(64, StringComparer.Ordinal);
 
-    // ✅ NUEVO: Referencia al inventario para detectar items añadidos
+    // Referencia al inventario para detectar items añadidos
     private Inventory _cachedInventory;
     private bool _isSubscribedToInventory;
-    
-    // ✅ NUEVO: Referencia al wardrobe para detectar items de wardrobe añadidos
+
+    // Referencia al wardrobe para detectar items de wardrobe añadidos
     private WardrobeInventory _cachedWardrobe;
     private bool _isSubscribedToWardrobe;
+
+    // Índice de QuestChainEntries: questId → entry, para evitar FindObjectsByType en hot paths.
+    // Se marca dirty al cargar/descargar escena; se reconstruye bajo demanda.
+    private readonly Dictionary<string, Game.NPC.Modules.QuestChainEntry> _questChainIndex = new(32, StringComparer.Ordinal);
+    private bool _questChainIndexDirty = true;
 
     // Eventos públicos para UI/lógica externa
     public event Action<string> OnQuestStarted;
@@ -78,20 +83,27 @@ public class QuestManager : MonoBehaviour
     
     void OnEnable()
     {
-        // Suscribirse cuando el player se registre
         PlayerService.OnPlayerRegistered += OnPlayerRegistered;
-        
-        // Suscribirse a cambios en el equipo
         Game.NPC.PlayerParty.OnMemberJoined += OnPartyMemberJoined;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded   += OnSceneLoaded;
+        UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
-    
+
     void OnDisable()
     {
         PlayerService.OnPlayerRegistered -= OnPlayerRegistered;
         Game.NPC.PlayerParty.OnMemberJoined -= OnPartyMemberJoined;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded   -= OnSceneLoaded;
+        UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= OnSceneUnloaded;
         UnsubscribeFromInventory();
         UnsubscribeFromWardrobe();
     }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        => _questChainIndexDirty = true;
+
+    private void OnSceneUnloaded(UnityEngine.SceneManagement.Scene scene)
+        => _questChainIndexDirty = true;
     
     private void OnPlayerRegistered(GameObject player)
     {
@@ -293,37 +305,24 @@ public class QuestManager : MonoBehaviour
         }
 
         var party = Game.NPC.PlayerParty.Instance;
-        Debug.Log($"[QuestManager] 🔄 ForceCheckPartyMembersForActiveQuests - Miembros en party: {party.MemberCount}");
-        
-        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
-        Debug.Log($"[QuestManager] 🔄 Verificando {activeQuests.Count} quests activas...");
-        
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[QuestManager] ForceCheckPartyMembersForActiveQuests - Miembros en party: {party.MemberCount}");
+#endif
         int totalStepsCompleted = 0;
-        foreach (var rq in activeQuests)
+        foreach (var kv in _runtime)
         {
+            if (kv.Value.State != QuestState.Active) continue;
+            var rq = kv.Value;
             var questEntry = FindQuestChainEntry(rq.Id);
             if (questEntry != null && questEntry.requiredPartyMembers != null && questEntry.requiredPartyMembers.Length > 0)
             {
-                Debug.Log($"[QuestManager] 🔄 Verificando quest '{rq.Id}' con {questEntry.requiredPartyMembers.Length} requisitos de party members");
                 int stepsCompleted = CheckPartyMembersForQuest(rq, party, questEntry.requiredPartyMembers);
                 totalStepsCompleted += stepsCompleted;
-                
-                if (stepsCompleted > 0)
-                {
-                    Debug.Log($"[QuestManager] 🔄 ✅ Quest '{rq.Id}': {stepsCompleted} step(s) completados");
-                }
             }
         }
-        
+
         if (totalStepsCompleted > 0)
-        {
-            Debug.Log($"[QuestManager] 🔄 ✅ Total: {totalStepsCompleted} step(s) completados en todas las quests");
             OnQuestsChanged?.Invoke();
-        }
-        else
-        {
-            Debug.Log($"[QuestManager] 🔄 No se completó ningún step adicional");
-        }
     }
 
     public void MarkStepDone(string questId, int stepIndex)
@@ -916,30 +915,35 @@ public class QuestManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Busca el QuestChainEntry correspondiente a un questId en TODOS los NPCs de la escena.
+    /// Reconstruye el índice questId → QuestChainEntry escaneando los NPCs de la escena.
+    /// Se llama solo cuando el índice está marcado como dirty (al cargar/descargar escenas).
+    /// </summary>
+    private void RebuildQuestChainIndex()
+    {
+        _questChainIndex.Clear();
+        var allNpcManagers = FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
+        if (allNpcManagers == null) { _questChainIndexDirty = false; return; }
+
+        foreach (var npcManager in allNpcManagers)
+        {
+            if (npcManager == null || npcManager.Configuration?.questConfig?.questChain == null) continue;
+            foreach (var entry in npcManager.Configuration.questConfig.questChain)
+            {
+                if (entry.questData != null && !_questChainIndex.ContainsKey(entry.questData.questId))
+                    _questChainIndex[entry.questData.questId] = entry;
+            }
+        }
+        _questChainIndexDirty = false;
+    }
+
+    /// <summary>
+    /// Busca el QuestChainEntry para un questId usando el índice cacheado (O(1) tras la primera llamada).
     /// </summary>
     private Game.NPC.Modules.QuestChainEntry FindQuestChainEntry(string questId)
     {
-        var allNpcManagers = FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
-        if (allNpcManagers == null) return null;
-        
-        foreach (var npcManager in allNpcManagers)
-        {
-            if (npcManager == null || npcManager.Configuration == null || npcManager.Configuration.questConfig == null)
-                continue;
-            
-            var questConfig = npcManager.Configuration.questConfig;
-            if (questConfig.questChain == null) continue;
-            
-            foreach (var entry in questConfig.questChain)
-            {
-                if (entry.questData != null && entry.questData.questId == questId)
-                {
-                    return entry;
-                }
-            }
-        }
-        return null;
+        if (_questChainIndexDirty) RebuildQuestChainIndex();
+        _questChainIndex.TryGetValue(questId, out var entry);
+        return entry;
     }
 
     /// <summary>
@@ -994,10 +998,10 @@ public class QuestManager : MonoBehaviour
     private void OnInventoryItemAdded(ItemData item, int addedAmount, int newTotal)
     {
         if (item == null) return;
-        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
-        foreach (var rq in activeQuests)
+        foreach (var kv in _runtime)
         {
-            CheckItemForQuest(rq, item, newTotal);
+            if (kv.Value.State == QuestState.Active)
+                CheckItemForQuest(kv.Value, item, newTotal);
         }
     }
     
@@ -1072,10 +1076,10 @@ public class QuestManager : MonoBehaviour
     
     private void OnWardrobeChanged()
     {
-        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
-        foreach (var rq in activeQuests)
+        foreach (var kv in _runtime)
         {
-            CheckWardrobeForQuest(rq);
+            if (kv.Value.State == QuestState.Active)
+                CheckWardrobeForQuest(kv.Value);
         }
     }
     
@@ -1132,22 +1136,10 @@ public class QuestManager : MonoBehaviour
         string gameObjectName = member.gameObject.name;
         
         Debug.Log($"[QuestManager] 👥 ===== OnPartyMemberJoined DISPARADO =====");
-        Debug.Log($"[QuestManager] 👥 Miembro unido: persistenceId='{persistenceId}', gameObject='{gameObjectName}'");
-        Debug.Log($"[QuestManager] 👥 NPCManager: {(member.NPCManager != null ? "✅" : "❌")}");
-        Debug.Log($"[QuestManager] 👥 Configuration: {(member.NPCManager?.Configuration != null ? "✅" : "❌")}");
-        Debug.Log($"[QuestManager] 👥 interactiveNarrativeConfig: {(member.NPCManager?.Configuration?.interactiveNarrativeConfig != null ? "✅" : "❌")}");
-        
-        var activeQuests = _runtime.Values.Where(rq => rq.State == QuestState.Active).ToList();
-        Debug.Log($"[QuestManager] 👥 Quests activas: {activeQuests.Count}");
-        
-        if (activeQuests.Count == 0)
+        foreach (var kv in _runtime)
         {
-            Debug.LogWarning("[QuestManager] 👥 ⚠️ NO HAY QUESTS ACTIVAS para verificar");
-            return;
-        }
-        
-        foreach (var rq in activeQuests)
-        {
+            if (kv.Value.State != QuestState.Active) continue;
+            var rq = kv.Value;
             Debug.Log($"[QuestManager] 👥 Verificando quest '{rq.Id}' (Estado: {rq.State})");
             
             var questEntry = FindQuestChainEntry(rq.Id);

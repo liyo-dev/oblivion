@@ -18,6 +18,7 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
 
     // Cooldowns por slot
     private readonly Dictionary<MagicSlot, float> _slotCooldowns = new();
+    private static readonly MagicSlot[] AllSlots = { MagicSlot.Left, MagicSlot.Right, MagicSlot.Special };
     
     // Hechizos actuales por slot
     private MagicSpellSO _leftSpell, _rightSpell, _specialSpell;
@@ -50,13 +51,12 @@ public class MagicCaster : MonoBehaviour, IMagicCaster
 
     void Update()
     {
-        // Reducir cooldowns
-        float deltaTime = Time.deltaTime;
-        var keys = new List<MagicSlot>(_slotCooldowns.Keys);
-        foreach (var slot in keys)
+        float dt = Time.deltaTime;
+        for (int i = 0; i < AllSlots.Length; i++)
         {
-            if (_slotCooldowns[slot] > 0f)
-                _slotCooldowns[slot] = Mathf.Max(0f, _slotCooldowns[slot] - deltaTime);
+            var s = AllSlots[i];
+            if (_slotCooldowns.TryGetValue(s, out float cd) && cd > 0f)
+                _slotCooldowns[s] = Mathf.Max(0f, cd - dt);
         }
     }
 

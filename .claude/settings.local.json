@@ -14,7 +14,15 @@
       "Bash(grep -E \"\\\\.cs$\")",
       "Bash(grep -E \"\\\\.\\(prefab|unity\\)$\")",
       "Bash(findstr /i \"mission\\\\|mision\\\\|MISSION\\\\|QUEST\\\\|quest\")",
-      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" | Where-Object { -not $_.PSIsContainer } | Select-Object Name, LastWriteTime | Sort-Object Name)"
+      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" | Where-Object { -not $_.PSIsContainer } | Select-Object Name, LastWriteTime | Sort-Object Name)",
+      "Bash(Test-Path *)",
+      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" -Recurse -Depth 0 | Select-Object Name, LastWriteTime, @{N='Type';E={if\\($_.PSIsContainer\\){'DIR'}else{'FILE'}}} | Format-Table -AutoSize)",
+      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" | Where-Object { -not $_.PSIsContainer } | Select-Object Name, @{N='SizeKB';E={[math]::Round\\($_.Length/1KB,1\\)}}, LastWriteTime | Sort-Object SizeKB -Descending)",
+      "PowerShell(cd \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\"; Get-ChildItem -Path \".\" | Where-Object { $_.PSIsContainer } | Select-Object Name, LastWriteTime | Sort-Object Name)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -File | Select-Object Name, @{N='SizeKB';E={[math]::Round\\($_.Length/1KB,1\\)}} | Sort-Object Name | Format-Table -AutoSize)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

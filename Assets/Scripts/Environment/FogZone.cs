@@ -70,7 +70,19 @@ public class FogZone : MonoBehaviour
     // Música anterior para restaurar
     private static AudioClip _previousMusic;
     private static bool _wasMusicPlaying;
-    
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _defaultsCaptured = false;
+        _currentActiveZone = null;
+        _currentTween = null;
+        _previousMusic = null;
+        _wasMusicPlaying = false;
+    }
+#endif
+
     /// <summary>
     /// Zona de fog actualmente activa (donde está el jugador)
     /// </summary>

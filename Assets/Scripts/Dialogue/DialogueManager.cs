@@ -711,10 +711,6 @@ public class DialogueManager : MonoBehaviour
             return;
         }
         
-        // Resetear el período de gracia para cada nueva línea
-        _dialogueOpenedAt = Time.unscaledTime;
-        if (verboseLogging) Debug.Log($"[DialogueManager] 🕐 Nueva línea {_index} - período de gracia reseteado en t={_dialogueOpenedAt:F3}");
-
         var line = _current.lines[_index];
         
         // ✅ Activar animación de hablar para el speaker actual

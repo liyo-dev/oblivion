@@ -68,12 +68,13 @@ public static class MenuManager
         if (allowed == null || allowed.Length == 0)
             return AnyOpen();
 
-        var allowedSet = new HashSet<MenuKind>(allowed);
-
         foreach (var kv in s_open)
         {
-            if (kv.Value && !allowedSet.Contains(kv.Key))
-                return true;
+            if (!kv.Value) continue;
+            bool excluded = false;
+            for (int i = 0; i < allowed.Length; i++)
+                if (allowed[i] == kv.Key) { excluded = true; break; }
+            if (!excluded) return true;
         }
 
         return false;

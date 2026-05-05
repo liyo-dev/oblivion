@@ -70,6 +70,11 @@ public sealed class AudioService : MonoBehaviour
     bool _battleActive;
     bool _minigameActive;
 
+    // Coroutines de música rastreadas individualmente para no matar el pool SFX
+    Coroutine _crossfadeRoutine;
+    Coroutine _fadeOutRoutine;
+    Coroutine _setVolumeRoutine;
+
     // Recuerdo qué clip pidió la última escena base (no aditiva)
     AudioClip _lastRequestedSceneClip;
     
@@ -468,6 +473,15 @@ public sealed class AudioService : MonoBehaviour
         Debug.Log($"[AudioService] 🎮 Música de minijuego '{r.minigameId}' iniciada");
     }
 
+    // Para las corrutinas de música se usan referencias explícitas y nunca StopAllCoroutines,
+    // porque éste mataría las corrutinas ReturnWhenDone del pool SFX.
+    void StopMusicCoroutines()
+    {
+        if (_crossfadeRoutine != null) { StopCoroutine(_crossfadeRoutine); _crossfadeRoutine = null; }
+        if (_fadeOutRoutine   != null) { StopCoroutine(_fadeOutRoutine);   _fadeOutRoutine   = null; }
+        if (_setVolumeRoutine != null) { StopCoroutine(_setVolumeRoutine); _setVolumeRoutine = null; }
+    }
+
     void RestartMusicClipFromBeginning(AudioClip clip, float fadeSeconds)
     {
         if (clip == null) return;
@@ -486,7 +500,7 @@ public sealed class AudioService : MonoBehaviour
             return;
         }
 
-        StopAllCoroutines();
+        StopMusicCoroutines();
         active.Stop();
         active.timeSamples = 0;
         active.volume = GetDuckedVolume(1f);
@@ -753,9 +767,9 @@ public sealed class AudioService : MonoBehaviour
                 current.Play();
 
             // llevar al volumen objetivo suavemente (sin cambiar de fuente)
-            StopAllCoroutines();
+            StopMusicCoroutines();
             _duckRoutine = null;
-            StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
+            _setVolumeRoutine = StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
 
@@ -764,9 +778,9 @@ public sealed class AudioService : MonoBehaviour
         if (other.clip == clip && other.isPlaying)
         {
             float target = GetDuckedVolume(1f);
-            StopAllCoroutines();
+            StopMusicCoroutines();
             _duckRoutine = null;
-            StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
+            _setVolumeRoutine = StartCoroutine(SetMusicVolumeTo(target, fadeSeconds));
             return;
         }
 
@@ -781,9 +795,9 @@ public sealed class AudioService : MonoBehaviour
 
         if (from.isPlaying)
         {
-            StopAllCoroutines();
+            StopMusicCoroutines();
             _duckRoutine = null;
-            StartCoroutine(Crossfade(from, to, fadeSeconds));
+            _crossfadeRoutine = StartCoroutine(Crossfade(from, to, fadeSeconds));
         }
         else
         {
@@ -799,14 +813,14 @@ public sealed class AudioService : MonoBehaviour
         if (fadeOut < 0f) fadeOut = defaultFade;
         var current = _musicATurn ? _musicB : _musicA;
         if (!current.isPlaying) return;
-        StopAllCoroutines();
+        StopMusicCoroutines();
         _duckRoutine = null;
-        StartCoroutine(FadeOutAndStop(current, fadeOut));
+        _fadeOutRoutine = StartCoroutine(FadeOutAndStop(current, fadeOut));
     }
 
     IEnumerator Crossfade(AudioSource from, AudioSource to, float seconds)
     {
-        if (seconds <= 0f) { from.Stop(); to.volume = GetDuckedVolume(1f); yield break; }
+        if (seconds <= 0f) { from.Stop(); to.volume = GetDuckedVolume(1f); _crossfadeRoutine = null; yield break; }
         float t = 0f;
         float startFrom = from.volume;
         float targetTo  = GetDuckedVolume(1f);
@@ -820,11 +834,12 @@ public sealed class AudioService : MonoBehaviour
         }
         from.Stop();
         to.volume = targetTo;
+        _crossfadeRoutine = null;
     }
 
     IEnumerator FadeOutAndStop(AudioSource src, float seconds)
     {
-        if (seconds <= 0f) { src.Stop(); yield break; }
+        if (seconds <= 0f) { src.Stop(); _fadeOutRoutine = null; yield break; }
         float start = src.volume, t = 0f;
         while (t < seconds)
         {
@@ -834,6 +849,7 @@ public sealed class AudioService : MonoBehaviour
         }
         src.Stop();
         src.volume = GetDuckedVolume(1f);
+        _fadeOutRoutine = null;
     }
 
     // Ducking simple (para cinemáticas aditivas duckInsteadOfReplace)
@@ -876,6 +892,7 @@ public sealed class AudioService : MonoBehaviour
         current.volume = target;
         other.volume   = target;
         _duckRoutine = null;
+        _setVolumeRoutine = null;
     }
 
     // ===========================================================

@@ -429,13 +429,20 @@ public class GameBootService : MonoBehaviour
     private System.Collections.IEnumerator RestoreQuestsWhenReady(System.Collections.Generic.List<string> flags)
     {
         Debug.Log("[GameBootService] ⏳ Esperando a que QuestManager esté disponible...");
-        
-        // Esperar hasta que QuestManager.Instance no sea null
+
+        float waited = 0f;
+        const float timeout = 10f;
         while (QuestManager.Instance == null)
         {
             yield return null;
+            waited += Time.unscaledDeltaTime;
+            if (waited >= timeout)
+            {
+                Debug.LogError("[GameBootService] Timeout esperando QuestManager — quests no restauradas.");
+                yield break;
+            }
         }
-        
+
         Debug.Log($"[GameBootService] ✅ QuestManager disponible - Restaurando {flags?.Count ?? 0} flags");
         QuestManager.Instance.RestoreFromProfileFlags(flags);
     }

@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
   m_Name: NPC_InteractiveNarrative_Config_Guard
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
-  moduleName:
-  description:
+  moduleName: 
+  description: 
   conditionalNarratives:
   - description: Placeholder
     priority: 0
     condition:
-      conditionType: 0
+      conditionType: 3
       targetQuest: {fileID: 0}
-      customEventKey:
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 5
       dialogue: {fileID: 0}
-      targetAnchorName:
+      targetAnchorName: 
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
       randomMoveMinRadius: 5
@@ -40,14 +40,14 @@ MonoBehaviour:
       waitForPlayer: 0
       maxPlayerDistance: 10
       resumePlayerDistance: 5
-      animationTrigger:
+      animationTrigger: 
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
       combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
       sendEventOnDefeat: 0
-      defeatEventKey:
+      defeatEventKey: 
       sendDefeatEventBeforeDeath: 0
       waitDuration: 1
       showAlertIcon: 0
@@ -62,7 +62,7 @@ MonoBehaviour:
       escortPlayerSpeedMultiplier: 0.6
       teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
-      narrativeEventKey:
+      narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 0
     autoStartOnDetection: 0
@@ -72,11 +72,11 @@ MonoBehaviour:
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
     sendNarrativeEvent: 0
-    narrativeEventKey:
+    narrativeEventKey: 
     debugMode: 0
   persistState: 0
-  persistenceId:
-  dialogueCharacterId:
+  persistenceId: 
+  dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

@@ -50,6 +50,7 @@ public class MagicSlotsUI : MonoBehaviour
         public TextMeshProUGUI buttonText;
         public TextMeshProUGUI cooldownText;
         public MagicSlot slotType;
+        [System.NonSerialized] public bool isFlashing;
     }
 
     void Awake()
@@ -327,10 +328,9 @@ public class MagicSlotsUI : MonoBehaviour
                 Time.deltaTime * 10f
             );
             
-            // Efecto de "ready" cuando vuelve a estar disponible
-            if (canCast && slot.iconImage.color != availableColor)
+            // Efecto de "ready" cuando vuelve a estar disponible (guard against per-frame launch)
+            if (canCast && !slot.isFlashing && slot.iconImage.color != availableColor)
             {
-                // Mini-flash cuando está listo
                 StartCoroutine(FlashSlotReady(slot));
             }
         }
@@ -347,7 +347,8 @@ public class MagicSlotsUI : MonoBehaviour
     private IEnumerator FlashSlotReady(MagicSlotUI slot)
     {
         if (slot?.slotObject == null) yield break;
-        
+        slot.isFlashing = true;
+
         // Flash rápido de color
         Color originalColor = slot.iconImage.color;
         slot.iconImage.color = Color.white;
@@ -373,8 +374,9 @@ public class MagicSlotsUI : MonoBehaviour
             yield return null;
         }
         
-        slot.iconImage.color = originalColor;
+        slot.iconImage.color = availableColor;
         slot.slotObject.transform.localScale = Vector3.one;
+        slot.isFlashing = false;
     }
 
     private Sprite CreateDefaultSpellIcon()

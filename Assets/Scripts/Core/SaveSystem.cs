@@ -26,8 +26,15 @@ public class SaveSystem : MonoBehaviour
         try
         {
             var json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(SavePath, json);
+            // Escritura atómica: escribimos a .tmp y luego movemos.
+            // Si el proceso se interrumpe durante la escritura el save existente queda intacto.
+            var tmpPath = SavePath + ".tmp";
+            File.WriteAllText(tmpPath, json);
+            if (File.Exists(SavePath)) File.Delete(SavePath);
+            File.Move(tmpPath, SavePath);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[SaveSystem] Partida guardada en: {SavePath}");
+#endif
             return true;
         }
         catch (System.Exception e)

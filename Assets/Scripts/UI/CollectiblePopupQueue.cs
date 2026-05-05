@@ -140,16 +140,12 @@ public class CollectiblePopupQueue : MonoBehaviour
 
         // Aggregate multiple quick additions for the same item into one popup
         var id = item.itemId ?? item.displayName ?? "__null__";
-        lock (_pending)
+        if (_pending.TryGetValue(id, out var cur))
+            _pending[id] = cur + addedAmount;
+        else
         {
-            if (_pending.TryGetValue(id, out var cur))
-                _pending[id] = cur + addedAmount;
-            else
-            {
-                _pending[id] = addedAmount;
-                // start flush coroutine for this item
-                StartCoroutine(FlushGroupedPopup(id, item, groupingWindow));
-            }
+            _pending[id] = addedAmount;
+            StartCoroutine(FlushGroupedPopup(id, item, groupingWindow));
         }
     }
 
@@ -195,13 +191,10 @@ public class CollectiblePopupQueue : MonoBehaviour
         yield return new WaitForSecondsRealtime(delay);
 
         int amount = 0;
-        lock (_pending)
+        if (_pending.TryGetValue(itemId, out var v))
         {
-            if (_pending.TryGetValue(itemId, out var v))
-            {
-                amount = v;
-                _pending.Remove(itemId);
-            }
+            amount = v;
+            _pending.Remove(itemId);
         }
 
         if (amount > 0)
@@ -232,10 +225,8 @@ public class CollectiblePopupQueue : MonoBehaviour
 
     void ClearPendingState()
     {
-        lock (_pending)
-            _pending.Clear();
-        lock (_activeOrCreating)
-            _activeOrCreating.Clear();
+        _pending.Clear();
+        _activeOrCreating.Clear();
         _lastSpawnTime.Clear();
     }
 
@@ -257,41 +248,32 @@ public class CollectiblePopupQueue : MonoBehaviour
             var key = item.itemId ?? item.displayName ?? "__null__";
 
             // If there's a pending grouped flush for this item, skip spawning now; the flush will spawn the aggregated popup.
-            lock (_pending)
+            if (_pending.ContainsKey(key))
             {
-                if (_pending.ContainsKey(key))
-                {
-                    Debug.Log($"[CollectiblePopupQueue] Spawn suppressed because a grouped flush is pending for {key}");
-                    return;
-                }
+                Debug.Log($"[CollectiblePopupQueue] Spawn suppressed because a grouped flush is pending for {key}");
+                return;
             }
 
-            // If already active or being created, aggregate into existing (avoid race where two coroutines try to instantiate)
-            lock (_activeOrCreating)
+            // If already active or being created, aggregate into existing
+            if (_activeOrCreating.Contains(key))
             {
-                if (_activeOrCreating.Contains(key))
+                if (popupParent != null)
                 {
-                    // try to find the existing panel and add amount
-                    if (popupParent != null)
+                    var existing = popupParent.GetComponentsInChildren<CollectiblePopupPanel>(true);
+                    foreach (var p in existing)
                     {
-                        var existing = popupParent.GetComponentsInChildren<CollectiblePopupPanel>(true);
-                        foreach (var p in existing)
+                        if (p != null && p.ItemId == key)
                         {
-                            if (p != null && p.ItemId == key)
-                            {
-                                Debug.Log($"[CollectiblePopupQueue] Aggregating into already-creating popup for {key} (adding {amountToShow})");
-                                p.AddAmount(amountToShow);
-                                return;
-                            }
+                            Debug.Log($"[CollectiblePopupQueue] Aggregating into already-creating popup for {key} (adding {amountToShow})");
+                            p.AddAmount(amountToShow);
+                            return;
                         }
                     }
-                    // If we couldn't find it yet, still skip; the creation will aggregate once ready.
-                    Debug.Log($"[CollectiblePopupQueue] Deferring spawn because {key} is being created");
-                    return;
                 }
-                // reserve key to mark creation in progress
-                _activeOrCreating.Add(key);
+                Debug.Log($"[CollectiblePopupQueue] Deferring spawn because {key} is being created");
+                return;
             }
+            _activeOrCreating.Add(key);
 
             if (_lastSpawnTime.TryGetValue(key, out var last))
             {
@@ -299,7 +281,7 @@ public class CollectiblePopupQueue : MonoBehaviour
                 {
                     Debug.Log($"[CollectiblePopupQueue] Suppressed duplicate popup for {key} (within dedupe window {dedupeWindow}s)");
                     // remove creation reservation since we won't create
-                    lock (_activeOrCreating) { _activeOrCreating.Remove(key); }
+                    _activeOrCreating.Remove(key);
                     return;
                 }
             }
@@ -315,7 +297,7 @@ public class CollectiblePopupQueue : MonoBehaviour
                     {
                         Debug.Log($"[CollectiblePopupQueue] Aggregating into existing popup for {key} (adding {amountToShow})");
                         p.AddAmount(amountToShow);
-                        lock (_activeOrCreating) { _activeOrCreating.Remove(key); }
+                        _activeOrCreating.Remove(key);
                         return;
                     }
                 }
@@ -411,7 +393,7 @@ public class CollectiblePopupQueue : MonoBehaviour
                 if (item != null)
                 {
                     var key = item.itemId ?? item.displayName ?? "__null__";
-                    lock (_activeOrCreating) { _activeOrCreating.Remove(key); }
+                    _activeOrCreating.Remove(key);
                 }
                 Destroy(go);
             }
@@ -421,9 +403,6 @@ public class CollectiblePopupQueue : MonoBehaviour
     private System.Collections.IEnumerator RemoveActiveAfter(string key, float seconds)
     {
         yield return new WaitForSecondsRealtime(seconds);
-        lock (_activeOrCreating)
-        {
-            _activeOrCreating.Remove(key);
-        }
+        _activeOrCreating.Remove(key);
     }
 }

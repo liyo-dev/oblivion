@@ -487,6 +487,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2980712844520284136
 GameObject:
@@ -630,6 +631,7 @@ SkinnedMeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -1002,6 +1004,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4148375987265031375
 GameObject:
@@ -1311,7 +1314,7 @@ GameObject:
   m_Name: "Ni\xF1oPez"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
+  m_NavMeshLayer: 1
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6194758922004196885
@@ -1536,12 +1539,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 0
+    behaviourType: 4
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
-    questConfig: {fileID: 0}
-    narrativeConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: ad398b65ae38d9e43afc38ea0ae7c4e8, type: 2}
     interactiveNarrativeConfig: {fileID: 0}
+    partyConfig: {fileID: 0}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -1557,7 +1560,13 @@ MonoBehaviour:
   debugMode: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
-  persistLastPosition: 1
+  persistLastPosition: 0
+  onJoinedParty:
+    m_PersistentCalls:
+      m_Calls: []
+  onLeftParty:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5641907057482256553
 GameObject:
   m_ObjectHideFlags: 0
@@ -1804,6 +1813,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &6474031242004901803
 GameObject:
@@ -2180,6 +2190,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &9092605598491265561
 GameObject:

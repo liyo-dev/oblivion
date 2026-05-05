@@ -67,9 +67,6 @@ namespace Game.Player
         private float _currentLayerWeight;
         private float _targetLayerWeight;
         
-        // Colliders buffer para OverlapSphereNonAlloc (evitar allocation)
-        private readonly Collider[] _hitColliders = new Collider[20];
-        
         /// <summary>
         /// Indica si actualmente se está reproduciendo la secuencia de victoria
         /// </summary>
@@ -272,48 +269,12 @@ namespace Game.Player
         }
         
         /// <summary>
-        /// Detecta si hay enemigos cerca (NPCs en CombatState o enemigos puros)
+        /// Detecta si hay enemigos en combate activo consultando ActiveCombatRegistry.
+        /// O(1) — no physics queries, no GetComponentInChildren.
         /// </summary>
         bool DetectEnemiesNearby()
         {
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, enemyDetectionRadius, _hitColliders, enemyLayer);
-            
-            for (int i = 0; i < hitCount; i++)
-            {
-                var hitCollider = _hitColliders[i];
-                if (hitCollider == null) continue;
-                
-                var root = hitCollider.transform.root; // Get the root of the hierarchy
-                
-                // Verificar si es un NPC enemigo en combate
-                var npcManager = root.GetComponentInChildren<NPC.NPCBehaviourManagerV2>();
-                if (npcManager != null)
-                {
-                    var brain = npcManager.Brain;
-                    if (brain != null && brain.CurrentState != null)
-                    {
-                        string stateName = brain.CurrentState.GetType().Name;
-                        if (stateName == "CombatState")
-                        {
-                            return true;
-                        }
-                    }
-                }
-                
-                // También detectar enemigos puros (sin NPCBehaviourManagerV2) que tengan Damageable
-                var damageable = root.GetComponentInChildren<Damageable>();
-                if (damageable != null && damageable.IsAlive)
-                {
-                    // Si tiene Targetable y está en combate activo
-                    var targetable = root.GetComponentInChildren<Targetable>();
-                    if (targetable != null && targetable.isInActiveCombat)
-                    {
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
+            return ActiveCombatRegistry.Count > 0;
         }
         
         /// <summary>

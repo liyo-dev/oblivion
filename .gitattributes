@@ -38,7 +38,7 @@
 *.physicsMaterial2D text eol=lf
 *.playable  text eol=lf merge=unityyamlmerge
 *.signal    text eol=lf
-*.renderTexture text eol=lf
+*.renderTexture binary
 *.flare     text eol=lf
 *.fontsettings text eol=lf
 *.guiskin   text eol=lf

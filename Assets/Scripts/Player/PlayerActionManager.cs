@@ -62,25 +62,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _allowJump = abilities.jump;
         _allowClimb = abilities.climb;
         _allowFly = abilities.fly;
-        // 'magic' read with reflection as fallback (some analyzers/assemblies may not resolve the member)
-        try
-        {
-            var t = abilities.GetType();
-            var f = t.GetField("magic");
-            if (f != null && f.FieldType == typeof(bool))
-            {
-                _allowMagic = (bool)f.GetValue(abilities);
-            }
-            else
-            {
-                // por compatibilidad, mantener true si no existe
-                _allowMagic = true;
-            }
-        }
-        catch
-        {
-            _allowMagic = true;
-        }
+        _allowMagic = abilities.magic;
 
         //if (debugLogs) Debug.Log($"[PlayerActionManager] Abilities applied: Swim={_allowSwim} Jump={_allowJump} Climb={_allowClimb} Fly={_allowFly} Magic={_allowMagic}");
         //else Debug.Log($"[PlayerActionManager] Abilities applied: Fly={_allowFly}");

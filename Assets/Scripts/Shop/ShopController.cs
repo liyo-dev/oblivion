@@ -11,6 +11,8 @@ public class ShopController : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private ItemData currencyItem;
 
+    public ItemData CurrencyItem => currencyItem;
+
     [Header("Stock (por tienda)")]
     [SerializeField] private List<ShopItemEntry> stock = new();
 

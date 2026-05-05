@@ -357,21 +357,14 @@ public class ShopUI : MonoBehaviour
         if (currencyText == null || _playerInventory == null || shopController == null)
             return;
         
-        // Asume que el ShopController tiene referencia a currencyItem
-        var currencyItemField = shopController.GetType().GetField("currencyItem", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        if (currencyItemField != null)
+        var currencyItem = shopController.CurrencyItem;
+        if (currencyItem != null)
         {
-            var currencyItem = currencyItemField.GetValue(shopController) as ItemData;
-            if (currencyItem != null)
-            {
-                int amount = _playerInventory.Count(currencyItem.itemId);
-                currencyText.text = $"💰 {amount}";
-                return;
-            }
+            int amount = _playerInventory.Count(currencyItem.itemId);
+            currencyText.text = $"💰 {amount}";
+            return;
         }
-        
+
         currencyText.text = "💰 0";
     }
 

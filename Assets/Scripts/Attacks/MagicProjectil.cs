@@ -51,9 +51,12 @@ public class MagicProjectile : MonoBehaviour
     Vector3 _spawnPos;
     float   _spawnTime;
     
-    // ✅ OPTIMIZACIÓN FASE 2: Buffers reutilizables para Physics queries
+    // Buffers reutilizables para Physics queries
     private Collider[] _targetSearchBuffer = new Collider[16];
     private Collider[] _aoeHitBuffer = new Collider[32];
+
+    // Throttle proximity check to ~20/sec to avoid per-frame OverlapSphere per projectile
+    private float _nextProximityCheck;
     
     [Header("Lifetime (optional)")]
     [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
@@ -225,8 +228,12 @@ public class MagicProjectile : MonoBehaviour
             if (sqr >= _cfg.maxRange * _cfg.maxRange) End(false);
         }
         
-        // ✅ Detección activa de enemigos (fallback cuando las colisiones de Unity fallan)
-        CheckEnemyProximity();
+        // Fallback enemy detection throttled to 20/sec (OverlapSphere is expensive per-projectile per-frame)
+        if (Time.time >= _nextProximityCheck)
+        {
+            _nextProximityCheck = Time.time + 0.05f;
+            CheckEnemyProximity();
+        }
     }
     
     /// <summary>
