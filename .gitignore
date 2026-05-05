@@ -1,3 +1,25 @@
+# --- Claude Code (no versionar configuracion local) ---
+.claude/
+
+# --- IDEs (configuracion local, no compartir) ---
+.idea/
+.vscode/
+*.DotSettings
+
+# --- Scripts temporales de análisis (no versionar) ---
+tmp_*.txt
+fix_*.py
+fix_*.ps1
+analyze_*.ps1
+detailed_*.ps1
+simple_analysis.ps1
+validate_static_resets.ps1
+copilot-language.txt
+
+# --- Archivos de recuperación / diagnóstico ---
+Recovered/
+GeneratedAssets_deleted/
+
 # This .gitignore file should be placed at the root of your Unity project directory
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
