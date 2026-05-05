@@ -671,7 +671,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 9b63dbf6-fe76-4863-b369-de60261fa436
-        position: {x: -136, y: 1438.4}
+        position: {x: -100, y: 1286}
         outputs: []
         questId: ELDRAN_MISSION6
         stepConditionIds:

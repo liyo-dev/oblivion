@@ -62,6 +62,7 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         "NarrativeGraphStarter",     // Acceso condicional para restaurar blackboards
         "PlayerHUDV2",               // No accede al Profile, usa ServiceLocator
         "SpawnManager",              // ✅ Tiene métodos estáticos que acceden al Profile, pero está correctamente suscrito
+        "MainMenuController",        // Acceso bajo demanda desde menú principal
     };
 
     private static readonly HashSet<string> _actualSubscribers = new HashSet<string>();

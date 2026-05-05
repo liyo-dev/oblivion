@@ -22,8 +22,18 @@ public class GameBootService : MonoBehaviour
     private static bool _testingModeInitialized; // ✅ NUEVO: Evita resetear el runtime en cada escena en modo testeo
     private static GameBootService _instance; // ✅ Referencia al singleton
     
-    // Evento para notificar cuando el profile está listo
-    public static event System.Action OnProfileReady;
+    // Evento sticky: si ya disparó, los suscriptores tardíos lo reciben inmediatamente
+    private static bool _profileReadyFired;
+    private static System.Action _onProfileReady;
+    public static event System.Action OnProfileReady
+    {
+        add
+        {
+            _onProfileReady += value;
+            if (_profileReadyFired) value?.Invoke();
+        }
+        remove { _onProfileReady -= value; }
+    }
     
     // Propiedad pública para acceder al profile desde cualquier lugar
     public static GameBootProfile Profile 
@@ -74,7 +84,8 @@ public class GameBootService : MonoBehaviour
         _testingModeInitialized = false;
         _instance = null;
         _profile = null;
-        OnProfileReady = null;
+        _onProfileReady = null;
+        _profileReadyFired = false;
         Debug.Log("[GameBootService] 🔄 Variables estáticas reseteadas al entrar en PlayMode");
     }
     #endif
@@ -143,7 +154,8 @@ public class GameBootService : MonoBehaviour
         
         // Ahora notificar que el profile está listo
         Debug.Log($"[GameBootService] 📢 Disparando OnProfileReady (componentes listos para recibir)");
-        OnProfileReady?.Invoke();
+        _profileReadyFired = true;
+        _onProfileReady?.Invoke();
     }
 
     void OnDestroy()

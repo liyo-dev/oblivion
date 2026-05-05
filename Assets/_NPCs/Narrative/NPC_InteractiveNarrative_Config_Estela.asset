@@ -64,7 +64,7 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    - actionType: 7
+    - actionType: 6
       dialogue: {fileID: 0}
       targetAnchorName: 
       targetTransform: {fileID: 0}
@@ -119,7 +119,7 @@ MonoBehaviour:
     priority: 0
     condition:
       conditionType: 2
-      targetQuest: {fileID: 11400000, guid: cc9a1d98d77ae164ba188ce19fc44a83, type: 2}
+      targetQuest: {fileID: 0}
       customEventKey: 
       debugMode: 0
     narrativeChain:

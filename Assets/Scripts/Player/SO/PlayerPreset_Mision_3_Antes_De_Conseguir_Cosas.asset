@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
-  m_Name: PlayerPreset_Mision_3_Al_Bosque_Prohibido_Con_Capa
+  m_Name: PlayerPreset_Mision_3_Antes_De_Conseguir_Cosas
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
   spawnAnchorId: Woods_Entrance_SavePoint
   level: 1
@@ -19,15 +19,13 @@ MonoBehaviour:
   maxMP: 50
   currentMP: 50
   unlockedAbilities: 01000000
-  unlockedSpells: 0100000002000000
+  unlockedSpells: 01000000
   leftSpellId: 1
-  rightSpellId: 2
+  rightSpellId: 0
   specialSpellId: 0
   flags:
   - CINEMATIC_SEEN:Cinematic_DemonAppears
   - CINEMATIC_SEEN:Cinematic_VillainPlans
-  - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
-  - PICKUP_MainWorld_Coin_01 (13)_-24,6_1,7_47,1
   - QUEST_COMPLETED:ELDRAN_MISSION1
   - QUEST_ARCHIVED:ELDRAN_MISSION1
   - QUEST_COMPLETED:ELDRAN_MISSION2
@@ -36,11 +34,7 @@ MonoBehaviour:
   - QUEST_ARCHIVED:ELDRAN_MISSION3
   - QUEST_COMPLETED:ELDRAN_MISSION4
   - QUEST_ARCHIVED:ELDRAN_MISSION4
-  - QUEST_COMPLETED:ELDRAN_MISSION5
-  - QUEST_ARCHIVED:ELDRAN_MISSION5
-  - QUEST_COMPLETED:ELDRAN_MISSION5_2
-  - QUEST_ARCHIVED:ELDRAN_MISSION5_2
-  - QUEST_ACTIVE:ELDRAN_MISSION6
+  - QUEST_ACTIVE:ELDRAN_MISSION5
   abilities:
     swim: 0
     jump: 0
@@ -50,8 +44,6 @@ MonoBehaviour:
   appearance:
   - category: 0
     partName: Body05
-  - category: 1
-    partName: Cloak02
   - category: 2
     partName: Head01_Male
   - category: 3
@@ -62,12 +54,9 @@ MonoBehaviour:
     partName: Mouth01
   unlockedWardrobeIds:
   - Body05
-  - Cloak02
   inventoryItems:
   - itemId: coin
-    count: 6
-  - itemId: pocionHP
-    count: 3
+    count: 20
   defeatedBossIds:
   - Demon_1
   narrativeBlackboards:
@@ -96,25 +85,13 @@ MonoBehaviour:
       value: 1
     - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_0_node
       type: string
-      value: __DONE__
+      value: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
     - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_1_node
       type: string
-      value: __DONE__
+      value: c235d486-6f5e-4a93-8d96-8721b6dad7d3
     - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_2_node
       type: string
-      value: d2c6cf0b-557c-41ae-9ccc-069ca97bade9
-    - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
-      type: bool
-      value: 1
-    - key: __event_c235d486-6f5e-4a93-8d96-8721b6dad7d3_ERIKA_FIGHT_received
-      type: bool
-      value: 1
-    - key: __event_c9ca7493-60c5-44db-ae66-9b0e232343e3_ERIKA_BATTLE_WON_received
-      type: bool
-      value: 1
-    - key: __quest_4010d494-e518-45bb-9852-29a412777758_ELDRAN_MISSION5_2_started
-      type: bool
-      value: 1
+      value: 2caf285b-fdb8-4361-8176-192475b9c678
   - graphLabel: Misiones Secundarias
     blackboardData:
     - key: __currentNodeGuid
@@ -149,10 +126,6 @@ MonoBehaviour:
   completedInteractiveNarratives:
   - oliver-narrative-b8a7c6d5-unique
   - oliver-narrative-b8a7c6d5-unique_CN0
-  - victoria-narrative-f5e4d3c2-unique
-  - victoria-narrative-f5e4d3c2-unique_CN1
-  - erika-narrative-a7b3c2d1-unique
-  - erika-narrative-a7b3c2d1-unique_CN1
   seenLorePopupIds: []
   partyMemberIds: []
   unlockedTeleportPoints:

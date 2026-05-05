@@ -621,6 +621,7 @@ Lista de issues identificados en la revisión de código de Mayo 2026, ordenados
 | C4 | Player | `MagicCaster.cs:53` | `new List<MagicSlot>(_slotCooldowns.Keys)` en `Update()` cada frame. |
 | C5 | Player | `PlayerBattleModeController.cs:278` | 3× `GetComponentInChildren` en `Update` por cada collider detectado. |
 | C6 | Player | `MagicProjectil.cs:229` | `Physics.OverlapSphereNonAlloc` en `Update` por cada proyectil en vuelo como fallback de colisión. |
+| C7 | Save/Narrativa | `SavePoint.cs` + `NarrativeRunner.cs` | Condición de carrera: si el SavePoint se activa mientras un nodo narrativo está en progreso (ej: durante una cinemática), el blackboard puede guardarse antes de que `WaitCustomEventNode` escriba su flag `_received`. Al recargar, el runner reanuda desde `__currentNodeGuid` correctamente, pero si ese nodo ya fue procesado en la sesión anterior y el grafo avanzó, la cinemática no se repite — el runner continúa desde el nodo guardado. No es necesario ningún parche externo. |
 
 ### Importantes
 
@@ -694,3 +695,16 @@ Al crear un preset para testing, capturarlo en el momento exacto del estado que 
 - **Después** de un evento → el flag `_received` estará en el blackboard y el grafo lo saltará.
 
 Documentar en el nombre del asset el estado de juego que representa (ej: `Preset_AntesDeBatallaGolem`, `Preset_PostEstela_Unida`).
+
+### Game Over y cinemáticas que se repiten al recargar
+
+**Síntoma:** al morir, volver al menú y cargar partida, aparece una cinemática que ya se había visto.
+
+**Causa esperada:** la última vez que se guardó con el SavePoint, el blackboard capturó el grafo en un estado anterior al de esa cinemática. Cargar la partida restaura ese estado exacto — el grafo vuelve al nodo donde estaba en el momento del guardado.
+
+**Principio de diseño (no violar):**
+- **Game Over / salir al menú = no se guarda nada.** El estado en memoria se descarta. Al recargar, el sistema lee el último JSON escrito por un SavePoint.
+- **El save es la única fuente de verdad.** Nada en código debe compensar, inyectar eventos ni corregir el estado cargado.
+- **El grafo narrativo se auto-restaura** vía `__currentNodeGuid` (reanuda desde el nodo exacto) y los flags `_received` (los `WaitCustomEventNode` ya procesados se saltan automáticamente).
+
+**Si la cinemática se repite siempre aunque el SavePoint esté después de ella:** el SavePoint está guardando el estado antes de que el nodo `WaitCustomEventNode` escriba el flag `_received`. Solución: asegurarse de que el `WaitCustomEventNode` avanza al siguiente nodo antes de que el jugador llegue al SavePoint, o añadir un nodo intermedio que confirme el estado antes del guardado.
