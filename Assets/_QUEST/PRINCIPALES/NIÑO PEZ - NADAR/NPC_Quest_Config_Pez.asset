@@ -74,7 +74,7 @@ MonoBehaviour:
     ignoreFovForItem: 0
     overrideDetectionRadius: 0
     requiredItems:
-    - item: {fileID: 11400000, guid: e4361cb7c95d93541ac11e631ba883d1, type: 2}
+    - item: {fileID: 11400000, guid: 38456767fc43b56458cb082eb87b2e9d, type: 2}
       amount: 1
       stepConditionId: 
       stepIndex: 0
