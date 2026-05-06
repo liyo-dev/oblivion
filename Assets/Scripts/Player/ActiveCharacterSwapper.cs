@@ -41,6 +41,12 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
     private NPCPartyMember _willNpcInstance;
 
+    /// <summary>
+    /// Referencia al NPC instanciado de Will (cuando no es el personaje activo).
+    /// Usado por PlayerParty para notificarle eventos de combate.
+    /// </summary>
+    public NPCPartyMember WillNpcInstance => _willNpcInstance;
+
     // Hechizos de Will, actualizados cada vez que se abandona su slot
     private MagicSpellSO _willLeft, _willRight, _willSpecial;
 
@@ -141,6 +147,30 @@ public class ActiveCharacterSwapper : MonoBehaviour
     /// Útil para que PartyControlManager lo excluya del modo Libre/Siguiendo.
     /// </summary>
     public NPCPartyMember HiddenNpc => _hiddenNpc;
+
+    /// <summary>
+    /// Teleporta el NPC instanciado de Will cerca del jugador.
+    /// Llamado por TeleportService tras teleportar al jugador.
+    /// </summary>
+    public void TeleportWillNpcToPlayer()
+    {
+        if (_willNpcInstance == null) return;
+        if (!PlayerService.TryGetPlayer(out var playerGO)) return;
+
+        Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
+        if (NavMesh.SamplePosition(behind, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+            behind = hit.position;
+
+        var agent = _willNpcInstance.GetComponent<NavMeshAgent>();
+        if (agent != null && agent.isOnNavMesh)
+            agent.Warp(behind);
+        else
+            _willNpcInstance.transform.position = behind;
+
+        // Reanudar seguimiento si corresponde
+        if (PartyControlManager.Instance?.IsPartyFollowing == true)
+            _willNpcInstance.StartFollowingIgnorePartyCheck();
+    }
     #endregion
 
     #region Internals

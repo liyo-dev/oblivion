@@ -521,6 +521,15 @@ namespace Game.NPC
             }
             
             Debug.Log($"[PlayerParty] 📊 Total notificados: {notifiedCount}/{_members.Count}");
+            
+            // Notificar al Will NPC instanciado (no está en _members pero debe asistir en combate)
+            var willNpc = ActiveCharacterSwapper.Instance?.WillNpcInstance;
+            if (willNpc != null && willNpc.PartyConfig != null && willNpc.PartyConfig.autoJoinPlayerCombat)
+            {
+                Debug.Log($"[PlayerParty] ✅ Notificando al Will NPC instanciado sobre combate con {enemy.name}");
+                willNpc.OnPlayerEnteredCombat(enemy);
+                notifiedCount++;
+            }
         }
 
         /// <summary>
@@ -531,6 +540,13 @@ namespace Game.NPC
             foreach (var member in _members)
             {
                 member.OnPlayerExitedCombat();
+            }
+            
+            // Notificar al Will NPC instanciado
+            var willNpc = ActiveCharacterSwapper.Instance?.WillNpcInstance;
+            if (willNpc != null)
+            {
+                willNpc.OnPlayerExitedCombat();
             }
         }
 

@@ -567,6 +567,7 @@ MonoBehaviour:
         position: {x: -187.2, y: 1892.8}
         outputs:
         - a11afd55-0efb-465f-b673-7557e1525d58
+        - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         cinematicSceneName: Cinematic_Mountain
         useInternalCinematic: 1
     - rid: 5669070411734712530

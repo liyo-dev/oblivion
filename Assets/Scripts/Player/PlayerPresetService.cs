@@ -271,6 +271,10 @@ public class PlayerPresetService : MonoBehaviour
         }
 
         Debug.Log("[PlayerPresetService] Apariencia guardada en el preset activo.");
+        
+        // Sincronizar con CharacterAppearanceRegistry para que el switch de personaje
+        // mantenga los cambios de vestuario realizados (ej: la capa)
+        CharacterAppearanceRegistry.Instance?.CaptureActiveCharacterAppearance();
     }
 
     void ApplyWardrobeFromPreset(PlayerPresetSO preset)

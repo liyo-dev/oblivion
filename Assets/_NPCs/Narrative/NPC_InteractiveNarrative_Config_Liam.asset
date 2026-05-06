@@ -78,7 +78,7 @@ MonoBehaviour:
     priority: 0
     condition:
       conditionType: 3
-      targetQuest: {fileID: 11400000, guid: 14489f43f7fa9bb408dfbb7636ccf2ba, type: 2}
+      targetQuest: {fileID: 11400000, guid: ee4f9622634252c4985e0744103a1d84, type: 2}
       customEventKey: 
       debugMode: 0
     narrativeChain:

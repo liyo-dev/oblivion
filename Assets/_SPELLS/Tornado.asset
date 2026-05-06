@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
+  m_Name: Tornado
+  m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
+  spellId: 6
+  displayName: Cycloneburst
+  kind: 0
+  element: 2
+  prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
+  castDelaySeconds: 0.5
+  chargeTime: 0
+  chargeStartScale: 0.1
+  followOriginDuringCharge: 1
+  initialSpeed: 30
+  useGravity: 0
+  maxRange: 40
+  lifeTime: 2
+  damage: 30
+  aoeRadius: 0
+  knockbackForce: 0
+  destroyOnHit: 1
+  forwardOffset: 0
+  positionOffset: {x: 0, y: 0, z: 0}
+  visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
+  flattenDirection: 1
+  useScaleOverride: 0
+  scaleOverride: {x: 1, y: 1, z: 1}
+  manaCost: 5
+  cooldown: 1
+  levitationRange: 10
+  levitationAngle: 45
+  levitationPullForce: 5
+  levitationPushForce: 15
+  levitationHoldDistance: 3
+  levitationHeight: 2
+  levitationLiftSpeed: 3
+  levitationTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  levitationDrainDelay: 1
+  levitationManaDrainPerSecond: 5
+  levitationHoldVFX: {fileID: 0}
+  levitationReleaseVFX: {fileID: 0}
+  levitationRangeIndicatorVFX: {fileID: 0}
+  rangeIndicatorCount: 3
+  levitationCaptureShakeIntensity: 0.3
+  levitationCaptureShakeDuration: 0.2
+  levitationReleaseShakeIntensity: 0.5
+  levitationReleaseShakeDuration: 0.3
+  levitationImpactDamage: 25
+  levitationImpactMinSpeed: 4
+  spawnVFX: {fileID: 2020661361868494885, guid: 895c6d094b6b213418cddcfb520298e9, type: 3}
+  impactVFX: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
+  despawnVFX: {fileID: 8680598818964007281, guid: dcd90c4976197424b9958a7c54b6bb8c, type: 3}
+  vfxLifetime: 3
+  castSFXKey: LlamaAstral
+  impactSFXKey: Impact1
+  slotType: 0
+  attackIcon: {fileID: 21300000, guid: 7522bb52d0451d3418f913dd207b577a, type: 3}

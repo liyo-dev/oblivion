@@ -13,10 +13,32 @@ MonoBehaviour:
   m_Name: DG_LIAM_ARRESTO
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
-  - speakerNameId: CHAR_LIAM
-    textId: DLG_LIAM_ARRESTO_00
-    text: '...'
+  - speakerNameId: CHAR_WILL
+    textId: DG_LIAM_ARRESTO_01
+    text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 0
+  - speakerNameId: CHAR_ESTELA
+    textId: DG_LIAM_ARRESTO_02
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: DG_LIAM_ARRESTO_03
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIAM_ARRESTO_04
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  isGroupConversation: 0

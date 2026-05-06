@@ -189,6 +189,7 @@ public class TeleportService : MonoBehaviour
         void OnCut()
         {
             MovePlayerSafely(player, worldPos, worldRot);
+            TeleportCompanionsToPlayer();
             ApplyEnvironmentForAnchor(anchorForEnv);
             // Notificar corte (momento del movimiento)
             InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
@@ -213,6 +214,7 @@ public class TeleportService : MonoBehaviour
     private void MoveNow(GameObject player, Vector3 pos, Quaternion rot, Transform anchorForEnv)
     {
         MovePlayerSafely(player, pos, rot);
+        TeleportCompanionsToPlayer();
         ApplyEnvironmentForAnchor(anchorForEnv);
         // En modo inmediato, emitir cut y end seguidos
         InvokeEvent(OnTeleportCut, nameof(OnTeleportCut));
@@ -231,6 +233,20 @@ public class TeleportService : MonoBehaviour
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
+    }
+
+    /// <summary>
+    /// Teleporta a todos los compañeros (party members + Will NPC instanciado) cerca del jugador.
+    /// Llamado automáticamente después de cada teleport del jugador.
+    /// </summary>
+    private static void TeleportCompanionsToPlayer()
+    {
+        // 1. Teleportar party members registrados
+        if (Game.NPC.PlayerParty.HasInstance)
+            Game.NPC.PlayerParty.Instance.TeleportAllMembersToPlayer();
+
+        // 2. Teleportar Will NPC instanciado (no está en el party formal)
+        ActiveCharacterSwapper.Instance?.TeleportWillNpcToPlayer();
     }
 
     /// <summary>

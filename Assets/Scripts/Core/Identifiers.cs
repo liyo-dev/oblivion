@@ -46,7 +46,9 @@ public enum SpellId
     Fireball,
     Plasmaball,
     LightSpecial,
-    Levitation
+    Levitation,
+    Verdantbolt,
+    Cycloneburst
 }
 
 /// <summary>Ranuras de magia (mano izquierda, derecha, o especial).</summary>

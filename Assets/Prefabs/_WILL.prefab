@@ -12322,6 +12322,7 @@ GameObject:
   - component: {fileID: 4479948751999106379}
   - component: {fileID: 4712360369832361797}
   - component: {fileID: 8164817358401321661}
+  - component: {fileID: 5299980531833264534}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -13050,6 +13051,21 @@ MonoBehaviour:
   liamDisplayName: Liam
   estelaDisplayName: Estela
   willNpcPrefab: {fileID: 6699691312287338962, guid: fcd86dfbea8f82140b097131a0157b9f, type: 3}
+--- !u!114 &5299980531833264534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00dd1a97300da2549bf6f5d44b24f7d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SprintVFXController
+  hyperdriveVfxPrefab: {fileID: 5749441552287667129, guid: ee71d8dfb36a7b048aef24b0bc8f9764, type: 3}
+  vfxOffset: {x: 0, y: 1, z: 0}
+  activationDelay: 0.15
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

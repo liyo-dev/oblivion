@@ -104,6 +104,17 @@ public class CharacterAppearanceRegistry : MonoBehaviour
             dict[category] = partName;
     }
 
+    /// <summary>
+    /// Captura la apariencia actual del builder para el personaje activo.
+    /// Llamar después de cualquier cambio de vestuario (menú de equipamiento, etc.)
+    /// para que al hacer switch de personaje se mantenga la apariencia correcta.
+    /// </summary>
+    public void CaptureActiveCharacterAppearance()
+    {
+        var slot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
+        CaptureCurrentAppearance(slot);
+    }
+
     /// <summary>Devuelve una copia del diccionario de apariencia del slot.</summary>
     public Dictionary<PartCategory, string> GetAppearance(PartyControlManager.CharacterSlot slot)
     {
