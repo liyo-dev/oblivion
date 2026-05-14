@@ -46,6 +46,7 @@ public class PartyControlManager : MonoBehaviour
     #region State
     private int _activeIndex = (int)CharacterSlot.Will;
     private bool _isPartyFollowing = true;
+    private bool _switchingLocked;
     #endregion
 
     #region Events
@@ -60,6 +61,7 @@ public class PartyControlManager : MonoBehaviour
     public int ActiveIndex => _activeIndex;
     public bool IsPartyFollowing => _isPartyFollowing;
     public CharacterSlot ActiveSlot => (CharacterSlot)_activeIndex;
+    public bool IsSwitchingLocked => _switchingLocked;
     #endregion
 
     #region Lifecycle
@@ -77,13 +79,15 @@ public class PartyControlManager : MonoBehaviour
     private void Start()
     {
         GamepadInputReader.OnInput += HandleInput;
-        GameBootService.OnProfileReady += HandleProfileReady; // Suscribirse al evento
+        GameBootService.OnProfileReady += HandleProfileReady;
+        WillOnlyMomentManager.OnSwitchLockChanged += SetSwitchingLocked;
     }
 
     private void OnDestroy()
     {
         GamepadInputReader.OnInput -= HandleInput;
-        GameBootService.OnProfileReady -= HandleProfileReady; // Desuscribirse
+        GameBootService.OnProfileReady -= HandleProfileReady;
+        WillOnlyMomentManager.OnSwitchLockChanged -= SetSwitchingLocked;
         if (Instance == this) Instance = null;
     }
     #endregion
@@ -111,6 +115,8 @@ public class PartyControlManager : MonoBehaviour
     #region Character Switching
     private void TrySwitchLeft()
     {
+        if (_switchingLocked) return;
+
         for (int i = _activeIndex - 1; i >= 0; i--)
         {
             if (IsSlotAvailable(i))
@@ -123,6 +129,8 @@ public class PartyControlManager : MonoBehaviour
 
     private void TrySwitchRight()
     {
+        if (_switchingLocked) return;
+
         for (int i = _activeIndex + 1; i <= 2; i++)
         {
             if (IsSlotAvailable(i))
@@ -131,6 +139,11 @@ public class PartyControlManager : MonoBehaviour
                 return;
             }
         }
+    }
+
+    private void SetSwitchingLocked(bool locked)
+    {
+        _switchingLocked = locked;
     }
 
     private bool IsSlotAvailable(int index)
@@ -188,6 +201,15 @@ public class PartyControlManager : MonoBehaviour
     {
         OnFollowModeChanged?.Invoke(_isPartyFollowing);
         OnActiveCharacterChanged?.Invoke(_activeIndex);
+    }
+
+    /// <summary>
+    /// Fuerza el cambio de personaje activo, ignorando el bloqueo de switching.
+    /// Usado internamente por WillOnlyMomentManager.
+    /// </summary>
+    public void ForceSwitch(CharacterSlot slot)
+    {
+        SwitchToCharacter((int)slot);
     }
     #endregion
 

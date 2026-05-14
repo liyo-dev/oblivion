@@ -665,6 +665,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
@@ -11167,6 +11168,7 @@ GameObject:
   - component: {fileID: 7707363998424899796}
   - component: {fileID: 1687942726773230502}
   - component: {fileID: 5014074110871755233}
+  - component: {fileID: 671181542998378555}
   m_Layer: 8
   m_Name: Eldran
   m_TagString: Untagged
@@ -11388,7 +11390,6 @@ MonoBehaviour:
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
-    narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 11400000, guid: f6b5cb3e960bb514bab91b9e915b7b48, type: 2}
     walkSpeed: 1.5
@@ -11454,6 +11455,20 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
+--- !u!114 &671181542998378555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8894687061216898430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 148cc197287f13b4286b9f01c5372ba5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WillOnlyInteractable
+  willIndicatorIconPrefab: {fileID: 6303534759802428624, guid: eedabd97341e47c45a3970f206222306, type: 3}
+  showPersistentIcon: 1
 --- !u!1 &8911537771988408263
 GameObject:
   m_ObjectHideFlags: 0

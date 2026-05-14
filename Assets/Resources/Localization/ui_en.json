@@ -255,6 +255,10 @@
         {
             "key": "WOODS_EXIT_BLOCKED",
             "value": "[EN] Debería hablar con ese guarda."
+        },
+        {
+            "key": "NPC_REQUIRES_WILL",
+            "value": "Only Will can speak with this character"
         }
     ]
 }

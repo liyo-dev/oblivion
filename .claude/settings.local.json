@@ -50,7 +50,8 @@
       "Bash(awk 'NR>=2090 && NR<=2130' Assets/Scripts/Minigames/TagMinigameController.cs)",
       "Bash(awk 'NR>=2340 && NR<=2380' Assets/Scripts/Minigames/TagMinigameController.cs)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -Recurse -Directory)",
-      "Bash(Select-Object -First 20)"
+      "Bash(Select-Object -First 20)",
+      "Bash(findstr /i \"interact\")"
     ]
   }
 }

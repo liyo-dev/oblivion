@@ -21,21 +21,21 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: big_stone_2
-  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 3bb35f7f86ffc45c2aa6fc4291f787fc, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _SHADING_STYLE_SKIN_AND_TEXTILES
+  m_InvalidKeywords:
   - _EMISSION
   - _METALLICSPECGLOSSMAP
   - _NORMALMAP
   - _OCCLUSIONMAP
-  m_InvalidKeywords: []
   m_LightmapFlags: 7
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap:
-    RenderType: Opaque
+  stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
   m_LockedProperties: 
@@ -74,6 +74,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 6b886fc105af8414db18e5e724b4c928, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
         m_Texture: {fileID: 2800000, guid: 210b7b4af8602804e88997c0aa76f451, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -101,6 +105,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddPrecomputedVelocity: 0
+    - _AdditionalLightCutoffPoint: 0.8
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Blend: 0
@@ -115,6 +120,7 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _ExtraBandThickness: 0.3
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossinessSource: 0
@@ -122,19 +128,28 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
+    - _PaintbrushStrokesAngle: 40
+    - _PaintbrushStrokesSize: 1
     - _Parallax: 0.02
+    - _QueueControl: -1
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _SHADING_STYLE: 0
+    - _ShadowsFloor: 0.25
     - _Shininess: 0
     - _Smoothness: 0.5
     - _SmoothnessSource: 0
     - _SmoothnessTextureChannel: 0
     - _SpecSource: 0
     - _SpecularHighlights: 1
+    - _SpecularNoiseSize: 1
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
+    - _StrongRimStrength: 0
     - _Surface: 0
+    - _ToonCutoffPoint: 0.2
     - _UVSec: 0
+    - _UseEmission: 0
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
@@ -143,5 +158,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

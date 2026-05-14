@@ -52,6 +52,8 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string minigameId = "TAG_MINIGAME_01";
     [SerializeField] private float duration = 30f;
     [SerializeField] private float countdownBeforeStart = 3f;
+    [Tooltip("Si true, fuerza el cambio a Will y deshabilita el cambio de personaje durante el minijuego")]
+    [SerializeField] private bool requiresWill = false;
 
     [Header("Referencias")]
     [Tooltip("Si está vacío, se buscará usando chaserNarrativeId")]
@@ -1535,6 +1537,9 @@ public class TagMinigameController : MonoBehaviour
             return;
         }
 
+        if (requiresWill)
+            WillOnlyMomentManager.Instance?.EnterMoment(minigameId);
+
         if (player == null && PlayerService.TryGetPlayer(out var playerGo, allowSceneLookup: true) && playerGo != null)
         {
             player = playerGo.transform;
@@ -2102,7 +2107,10 @@ public class TagMinigameController : MonoBehaviour
         isRunning = false;
         isCountingDown = false;
         isTeleporting = false;
-        
+
+        if (requiresWill)
+            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
+
         // ✅ Limpiar efectos visuales
         StopAngerEffects();
 
@@ -2273,6 +2281,8 @@ public class TagMinigameController : MonoBehaviour
     {
         isRunning = false;
         isTeleporting = false;
+        if (requiresWill)
+            WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
         Debug.Log($"[TagMinigame] ¡Victoria! Objetivo completado.");
 
         // Persistir la victoria para que no vuelva a arrancar al cargar partida

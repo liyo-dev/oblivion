@@ -159,6 +159,14 @@ public class Interactable : MonoBehaviour
 
     public void Interact(GameObject interactor)
     {
+        // Verificar si este NPC requiere Will como personaje activo
+        var willOnly = GetComponent<WillOnlyInteractable>();
+        if (willOnly != null && !willOnly.IsWillActive())
+        {
+            willOnly.ShowFeedback();
+            return;
+        }
+
         if (!CanInteract(interactor)) return;
 
         // IMPORTANTE: Establecer cooldown en PlayerActionManager para evitar que el botón A
