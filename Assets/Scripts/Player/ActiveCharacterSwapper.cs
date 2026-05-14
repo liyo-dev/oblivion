@@ -113,8 +113,11 @@ public class ActiveCharacterSwapper : MonoBehaviour
         ApplySpells(to);
 
         // 5. Gestionar visibilidad de NPCs de Liam/Estela
-        SetNpcVisible(_hiddenNpc, true);
+        // IMPORTANT: actualizar _hiddenNpc antes de llamar SetNpcVisible para que el guard
+        // en OnPlayerEnteredCombat no bloquee al NPC que acaba de ser liberado del control del jugador.
+        var prevHidden = _hiddenNpc;
         _hiddenNpc = toNpc;
+        SetNpcVisible(prevHidden, true);
         SetNpcVisible(_hiddenNpc, false);
 
         // 6. NPC de Will: instanciar al alejarse de Will, destruir al volver
@@ -204,6 +207,18 @@ public class ActiveCharacterSwapper : MonoBehaviour
         _willNpcInstance = go.GetComponent<NPCPartyMember>();
         _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
 
+        // ✅ Aplicar la apariencia actual de Will al NPC instanciado
+        if (CharacterAppearanceRegistry.Instance != null)
+        {
+            var willAppearance = CharacterAppearanceRegistry.Instance.GetAppearance(PartyControlManager.CharacterSlot.Will);
+            var npcBuilder = go.GetComponentInChildren<ModularAutoBuilder>(true);
+            if (npcBuilder != null && willAppearance != null)
+            {
+                npcBuilder.DeactivateAllCategories();
+                npcBuilder.ApplySelection(willAppearance);
+            }
+        }
+
         // Aplicar modo de seguimiento actual una vez que el NPC esté inicializado
         if (_willNpcInstance != null)
             StartCoroutine(ApplyFollowModeToWillNpc());
@@ -212,7 +227,12 @@ public class ActiveCharacterSwapper : MonoBehaviour
     private System.Collections.IEnumerator ApplyFollowModeToWillNpc()
     {
         yield return null; // Esperar un frame para que el Brain esté listo
-        if (_willNpcInstance != null && PartyControlManager.Instance?.IsPartyFollowing == true)
+        if (_willNpcInstance == null) yield break;
+
+        var enemy = GetActiveCombatEnemy();
+        if (enemy != null)
+            _willNpcInstance.OnPlayerEnteredCombat(enemy);
+        else if (PartyControlManager.Instance?.IsPartyFollowing == true)
             _willNpcInstance.StartFollowingIgnorePartyCheck();
     }
 
@@ -278,7 +298,11 @@ public class ActiveCharacterSwapper : MonoBehaviour
             if (visible)
             {
                 agent.isStopped = false;
-                npc.StartFollowing();
+                var enemy = GetActiveCombatEnemy();
+                if (enemy != null)
+                    npc.OnPlayerEnteredCombat(enemy);
+                else
+                    npc.StartFollowing();
             }
             else
             {
@@ -286,6 +310,20 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 agent.isStopped = true;
             }
         }
+    }
+
+    /// <summary>
+    /// Devuelve el Transform del primer enemigo activo en combate (excluye compañeros de party).
+    /// </summary>
+    private Transform GetActiveCombatEnemy()
+    {
+        foreach (var go in ActiveCombatRegistry.GetAllInCombat())
+        {
+            if (go == null) continue;
+            if (go.GetComponent<NPCPartyMember>() != null) continue;
+            return go.transform;
+        }
+        return null;
     }
     #endregion
 }

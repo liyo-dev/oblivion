@@ -80,6 +80,10 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 4e7a7e55b33e3e526a00fcc81ee4a7dc, type: 3}
   - eventKey: PlasmaSphere
     sfx: {fileID: 8300000, guid: 96a146f9cdecc2e718b1d0395e94cb48, type: 3}
+  - eventKey: UI_Open
+    sfx: {fileID: 8300000, guid: 89ae9828e2f8913779b44d7d553bad9a, type: 3}
+  - eventKey: UI_Confirm
+    sfx: {fileID: 8300000, guid: 43ccdaf4e06a1324fa8c6defac11f3fe, type: 3}
   additiveCinematics:
   - sceneName: Cinematic_DemonAppears
     music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}

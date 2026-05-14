@@ -5090,7 +5090,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 409535700260879272}
   m_Enabled: 1
-  serializedVersion: 12
+  serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 0.6, b: 0.3, a: 1}
   m_Intensity: 0.08
@@ -5142,7 +5142,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShadowRadius: 0
+  m_ShapeRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
