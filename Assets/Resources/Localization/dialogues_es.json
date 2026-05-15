@@ -803,6 +803,34 @@
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
             "value": "¿Un cuento de niños?"
+        },
+        {
+            "key": "LORE_CELDA_1",
+            "value": "¡Tú! ¡Todo esto es por tu culpa! ¡Estaba a punto de comer y tuviste que venir a molestar! Si no hubieras interrumpido, no estaríamos en esta pocilga."
+        },
+        {
+            "key": "LORE_CELDA_2",
+            "value": "Estela, por favor... Tampoco hacía falta destrozar una montaña. Pero es verdad, chico, nos has metido en un buen embrollo."
+        },
+        {
+            "key": "LORE_CELDA_3",
+            "value": "Dejad de llorar por un plato y despertad. El Rey os considera una amenaza. Aunque escapemos, seréis fugitivos para siempre. No os queda un hogar al que volver."
+        },
+        {
+            "key": "LORE_CELDA_4",
+            "value": "Pero Liam... En el pasillo hablaste del Sendero de las Estrellas. Si es real, ¿por qué nos necesitas? ¿Qué ganamos yendo allí?"
+        },
+        {
+            "key": "LORE_CELDA_5",
+            "value": "El Sendero concede cualquier deseo. Es la única oportunidad para limpiar vuestros nombres y recuperar la libertad. Y para ti, Will, el único lugar para comprender tu poder. O nos pudrimos aquí como criminales, o venís conmigo."
+        },
+        {
+            "key": "LORE_CELDA_6",
+            "value": "Agh... Odio admitirlo, pero el sabelotodo tiene razón. No pienso pasarme la vida huyendo de los guardias ni comiendo el rancho asqueroso de este sitio. ¿Cómo salimos?"
+        },
+        {
+            "key": "LORE_CELDA_7",
+            "value": "Dejadme eso a mí..."
         }
     ]
 }

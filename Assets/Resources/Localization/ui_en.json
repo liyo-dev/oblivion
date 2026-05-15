@@ -30,7 +30,7 @@
         },
         {
             "key": "HUD_FOLLOW_STATUS_FREE",
-            "value": "[EN] Equipo Libre"
+            "value": "Free Party"
         },
         {
             "key": "INTERACT_CHEST_OPEN",
@@ -94,7 +94,7 @@
         },
         {
             "key": "ROOM_EXIT_BLOCKED",
-            "value": "[EN] Antes de salir necesitas leer la carta que hay sobre la mesita."
+            "value": "Before leaving, you need to read the letter on the side table."
         },
         {
             "key": "ROOM_EXIT_NEEDS",
@@ -138,7 +138,7 @@
         },
         {
             "key": "SHOP_VENDOR",
-            "value": "[EN] ¿Qué te apetece comprar hoy?"
+            "value": "What would you like to buy today?"
         },
         {
             "key": "System_Error",
@@ -154,11 +154,11 @@
         },
         {
             "key": "UI_ARCHIVADAS",
-            "value": "[EN] Archivadas"
+            "value": "Archived"
         },
         {
             "key": "UI_ARCHIVAR",
-            "value": "[EN] Archivar"
+            "value": "Archive"
         },
         {
             "key": "UI_Experience",
@@ -194,11 +194,11 @@
         },
         {
             "key": "UI_MISIONES_ACTIVAS",
-            "value": "[EN] Misiones Activas"
+            "value": "Active Quests"
         },
         {
             "key": "UI_MISIONES_ARCHIVADAS",
-            "value": "[EN] Misiones Archivadas"
+            "value": "Archived Quests"
         },
         {
             "key": "UI_MISIONES_OCULTAR",
@@ -210,11 +210,11 @@
         },
         {
             "key": "UI_MISIONES_VER_ACTIVAS",
-            "value": "[EN] Ver Activas"
+            "value": "View Active"
         },
         {
             "key": "UI_MISIONES_VER_ARCHIVADAS",
-            "value": "[EN] Ver Archivadas"
+            "value": "View Archived"
         },
         {
             "key": "UI_MP",
@@ -234,11 +234,11 @@
         },
         {
             "key": "UI_SEGUIR",
-            "value": "[EN] Seguir"
+            "value": "Follow"
         },
         {
             "key": "UI_SIGUIENDO",
-            "value": "[EN] Siguiendo"
+            "value": "Following"
         },
         {
             "key": "UI_TELETRANSPORTE",
@@ -254,7 +254,7 @@
         },
         {
             "key": "WOODS_EXIT_BLOCKED",
-            "value": "[EN] Debería hablar con ese guarda."
+            "value": "I should talk to that guard."
         },
         {
             "key": "NPC_REQUIRES_WILL",

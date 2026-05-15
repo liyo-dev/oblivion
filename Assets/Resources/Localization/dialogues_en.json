@@ -10,7 +10,7 @@
         },
         {
             "key": "CHAR_COMERCIANTE",
-            "value": "[EN] Comerciante"
+            "value": "Merchant"
         },
         {
             "key": "CHAR_ELDRAN",
@@ -109,24 +109,36 @@
             "value": "Will"
         },
         {
-            "key": "DG_LIAM_ARRESTO_01 ",
-            "value": ""
+            "key": "DG_LIAM_ARRESTO_01",
+            "value": "You! This is all your fault! I was about to take the perfect bite of my food and you just had to come and ruin it! If you hadn't interrupted, we wouldn't be locked up in this dump."
         },
         {
             "key": "DG_LIAM_ARRESTO_02",
-            "value": ""
+            "value": "Estela, please... There was no need to blow up half a mountain over a plate of food either. But she's right, kid, you've gotten us into a massive mess."
         },
         {
             "key": "DG_LIAM_ARRESTO_03",
-            "value": ""
+            "value": "Stop crying over a plate of food and wake up. The King considers you terrorists, and me your accomplice. Even if we break out of here, you will be fugitives forever. You have no home to go back to."
         },
         {
             "key": "DG_LIAM_ARRESTO_04",
-            "value": ""
+            "value": "But Liam... Back in the hallway, you mentioned the Path of the Stars. If it's actually real, why do you need us? What do we even gain by going there?"
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_05",
+            "value": "The Path grants any wish. It is our only shot at a wish that clears your names, restores your freedom, and keeps the King away. And for you, Will... it's the only place in the world where you'll understand your power. Either we rot here as criminals, or you come with me."
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_06",
+            "value": "Ugh... I hate to admit it, but Mr. Know-It-All makes a point. I'm not spending my life running from guards or eating the disgusting slop they serve in this place. Besides, that King is going to hear from me once my name is cleared... How do we get out?"
+        },
+        {
+            "key": "DG_LIAM_ARRESTO_07",
+            "value": "Leave that to me..."
         },
         {
             "key": "DLG_AMIGAPEZ_01",
-            "value": "[EN] ¿Buscas a mi amigo? Siempre se esconde cerca del mar."
+            "value": "Are you looking for my friend? He always hides near the sea."
         },
         {
             "key": "DLG_AMIGAPEZ_02",
@@ -138,11 +150,11 @@
         },
         {
             "key": "DLG_AMIGAPEZ_04",
-            "value": "[EN] Si te las pide puedes preguntar en las tiendas del reino."
+            "value": "If he asks you for them, you can ask around the kingdom's shops."
         },
         {
             "key": "DLG_AMIGAPEZ_05",
-            "value": "[EN] A veces les sobra y hasta te la pueden regalar."
+            "value": "Sometimes they have plenty left over and might even give them to you for free."
         },
         {
             "key": "DLG_ANTIPATICO_01",
@@ -178,15 +190,15 @@
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_01",
-            "value": "[EN] Ah pues mira, las has encontrado."
+            "value": "Oh well, look at that, you found them."
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_02",
-            "value": "[EN] ¿Sabes qué? Pensaba que no lo conseguirías. Ahí va el secreto:"
+            "value": "You know what? I didn't think you'd make it. Here's the secret:"
         },
         {
             "key": "DLG_ANTIPATICO_TURNIN_03",
-            "value": "[EN] Con ellas podrás saltar. Denada muchacho... Ahora fuera de mi vista."
+            "value": "With them, you'll be able to jump. You're welcome, kid... Now get out of my sight."
         },
         {
             "key": "DLG_ELDRAN_MISSION1_01",
@@ -198,11 +210,11 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
-            "value": "[EN] La caja debe estar cerca de un árbol."
+            "value": "The crate should be near a tree."
         },
         {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_02",
-            "value": "[EN] Búscala por esta zona no debe andar muy lejos."
+            "value": "Look for it around this area, it shouldn't be too far away."
         },
         {
             "key": "DLG_ELDRAN_MISSION2_OFFER_01",
@@ -234,43 +246,43 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION2_TURNIN_03",
-            "value": "[EN] Toma, unas monedas por tu ayuda.Toma, unas monedas por tu ayuda."
+            "value": "Here, some coins for your help."
         },
         {
             "key": "DLG_ELDRAN_MISSION3_COMPLETE",
-            "value": "[EN] ¡Bien hecho! Te espero en la puerta de tu casa, ven cuando estes preparado."
+            "value": "Well done! I'll be waiting for you at your front door, come when you are ready."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_01",
-            "value": "[EN] Will, la amenaza del demonio ha despertado la magia de tu interior."
+            "value": "Will, the demon's threat has awakened the magic inside you."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_02",
-            "value": "[EN] Pero hay algo que no me gusta..."
+            "value": "But there's something I don't like..."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_03",
-            "value": "[EN] Desde hace mucho tiempo nuestro reino está protegido con magia de amenazas."
+            "value": "For a long time, our kingdom has been protected from threats with magic."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_04",
-            "value": "[EN] Por alguna razón ese demonio ha conseguido atravesar la barrera."
+            "value": "For some reason, that demon managed to break through the barrier."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_05",
-            "value": "[EN] De momento no digamos nada para no alterar al pueblo."
+            "value": "Let's not say anything for now so we don't upset the townspeople."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_06",
-            "value": "[EN] Pero necesito que vayas al bosque prohibido y busques a Estela. Una maga y amiga que siempre anda por ahí."
+            "value": "But I need you to go to the forbidden forest and look for Estela. She's a magician and a friend who's always around there."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_07",
-            "value": "[EN] Aunque antes necesitas alguna cosilla para que el guardia te deje pasar."
+            "value": "Although first you'll need a few things so the guard lets you pass."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_08",
-            "value": "[EN] Lo primero es una capa de mago. Busca a Victoria en la tienda de ropa y dile que vas de mi parte. Ella te la dará."
+            "value": "The first thing is a magician's cloak. Look for Victoria at the clothing shop and tell her you come on my behalf. She'll give it to you."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_OFFER_09",
@@ -290,155 +302,155 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION5_PROGRESS_03",
-            "value": "[EN] Habla con E suele ir de verde y debe andar por el Reino."
+            "value": "Talk to Erika, she usually wears green and should be around the Kingdom."
         },
         {
             "key": "DLG_ELDRAN_MISSION5_TURNIN",
-            "value": "[EN] Has conseguido todo y muy rápido."
+            "value": "You've got everything, and very fast."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_01",
-            "value": "[EN] Bien hecho Willl, ahora puedes ponerte la capa de mago desde el menú."
+            "value": "Well done Will, now you can put on the magician's cloak from the menu."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_02",
-            "value": "[EN] Pulsa el botón del DPad abajo y desplazate con RB hasta Equipo."
+            "value": "Press the DPad Down button and navigate with RB to Equipment."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_03",
-            "value": "[EN] Baja hasta la sección capas y equipala."
+            "value": "Go down to the cloaks section and equip it."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_04",
-            "value": "[EN] Ahora siempre que consigas algo de vestimenta nueva podras cambiar tu apariencia desde este menú."
+            "value": "Now, whenever you get any new clothing item, you can change your appearance from this menu."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_05",
-            "value": "[EN] Pero bueno, a lo importante..."
+            "value": "But anyway, back to what matters..."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_06",
-            "value": "[EN] Sal del Reino y ve hacia el bosque prohibido."
+            "value": "Leave the Kingdom and head towards the forbidden forest."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_07",
-            "value": "[EN] Te mucho cuidado y usa las técnica que te ha enseñado Erika."
+            "value": "Be very careful and use the techniques that Erika taught you."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_08",
-            "value": "[EN] Una vez estés en el bosque busca a Estela y regresad."
+            "value": "Once you are in the forest, find Estela and come back."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_OFFER_09",
-            "value": "[EN] Will aqui es donde empieza tu aventura."
+            "value": "Will, this is where your adventure begins."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_PROGRESS_01",
-            "value": "[EN] Busca a Estela en el bosque prohibido."
+            "value": "Look for Estela in the forbidden forest."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_PROGRESS_02",
-            "value": "[EN] Venid a verme cuanto antes."
+            "value": "Come see me as soon as possible."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_TURNIN_01",
-            "value": "[EN] Que bien que ya estáis por aquí..."
+            "value": "It's great to have you back here..."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_TURNIN_02",
-            "value": "[EN] Ha sido pan comido..."
+            "value": "It was a piece of cake..."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_TURNIN_03",
-            "value": "[EN] Si claro, sobre todo la parte del Golem."
+            "value": "Yeah right, especially the Golem part."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_TURNIN_04",
-            "value": "[EN] Bueno mejor será no hablar aquí, nos vemos en la taberna."
+            "value": "Well, we better not talk here, see you at the tavern."
         },
         {
             "key": "DLG_ELDRAN_MISSION6_TURNIN_05",
-            "value": "[EN] ¡Por fin! que con el estómago vacío no puedo pensar."
+            "value": "Finally! I can't think straight on an empty stomach."
         },
         {
             "key": "DLG_ESTELA_BOSQUE_00",
-            "value": "[EN] Tu debes ser Estela... me manda Eldran. Ha aparecido un demonio y necesitamos tu ayuda."
+            "value": "You must be Estela... Eldran sent me. A demon has appeared and we need your help."
         },
         {
             "key": "DLG_ESTELA_BOSQUE_01",
-            "value": "[EN] ¡Wau! Parece una misión ultra secreta y super peligrosa."
+            "value": "Wow! Sounds like an ultra-secret and super dangerous mission."
         },
         {
             "key": "DLG_ESTELA_BOSQUE_02",
-            "value": "[EN] ¡Me apunto!"
+            "value": "Count me in!"
         },
         {
             "key": "DLG_ESTELA_PRISION_00",
-            "value": "[EN] Estupendo... y ahora ¿qué hacemos?"
+            "value": "Great... now what do we do?"
         },
         {
             "key": "DLG_ESTELA_PRISION_01",
-            "value": "[EN] Pues está claro ¿no?"
+            "value": "Well, it's obvious, isn't it?"
         },
         {
             "key": "DLG_ESTELA_PRISION_02",
-            "value": "[EN] Dejadmelo a mi y vuelo esto por los aires."
+            "value": "Leave it to me, I'll blow this place sky-high."
         },
         {
             "key": "DLG_ESTELA_PRISION_03",
-            "value": "[EN] Calma chicos. Lo mejor es que intentemos razonar con el Rey."
+            "value": "Calm down, guys. The best thing is to try and reason with the King."
         },
         {
             "key": "DLG_ESTELA_PRISION_04",
-            "value": "[EN] La verdad que con demonios y golems amenazando el reino.... no me quedo muy tranquilo aquí dentro."
+            "value": "To be honest, with demons and golems threatening the kingdom... I don't feel very safe locked up in here."
         },
         {
             "key": "DLG_ESTELA_PRISION_05",
-            "value": "[EN] Tienes razón..."
+            "value": "You're right..."
         },
         {
             "key": "DLG_ESTELA_PRISION_06",
-            "value": "[EN] Entonces iniciamos la operación explosiva..."
+            "value": "So we start operation explosive..."
         },
         {
             "key": "DLG_ESTELA_PRISION_07",
-            "value": "[EN] ¡No! Escuchad..."
+            "value": "No! Listen..."
         },
         {
             "key": "DLG_ESTELA_PRISION_08",
-            "value": "[EN] Will vamos a busccar una forma de salir de aqui..."
+            "value": "Will, let's find a way out of here..."
         },
         {
             "key": "DLG_ESTELA_PRISION_09",
-            "value": "[EN] Asi al salir Eldran puede hablar con el Rey y contarle lo que ha pasado mientras nosotros intentamos averiguar qué ocurre."
+            "value": "That way, once we're out, Eldran can talk to the King and tell him what happened while we try to figure out what's going on."
         },
         {
             "key": "DLG_ESTELA_PRISION_10",
-            "value": "[EN] Entonces iniciamos la operación ¡Avestruz!"
+            "value": "So we start operation Ostrich!"
         },
         {
             "key": "DLG_GUARD_01",
-            "value": "[EN] Alto ahí... ¿os creeis que podeis ir destruyendo montalas como si nada?"
+            "value": "Hold it right there... do you think you can just go around destroying mountains like it's nothing?"
         },
         {
             "key": "DLG_GUARD_02",
-            "value": "[EN] Por órdenes de su majestad debéis acompañarme."
+            "value": "By order of his majesty, you must come with me."
         },
         {
             "key": "DLG_GUARD_03",
-            "value": "[EN] Que no se quede nadie atrás."
+            "value": "Don't let anyone fall behind."
         },
         {
             "key": "DLG_GUARD_04",
-            "value": "[EN] A su majestad no le gusta que le hagan esperar."
+            "value": "His majesty doesn't like to be kept waiting."
         },
         {
             "key": "DLG_GUARD_05",
-            "value": "[EN[ Entrad, su majestad os espera."
+            "value": "Go on in, his majesty is expecting you."
         },
         {
             "key": "DLG_GUARD_06",
-            "value": "[EN] Seguidme y no os quedeis atrás."
+            "value": "Follow me, and don't lag behind."
         },
         {
             "key": "DLG_GUERRERACHINA_01",
@@ -458,15 +470,15 @@
         },
         {
             "key": "DLG_GUERRERACHINA_05",
-            "value": "[EN] Podrás usar PROTECCIÓN si presionas <sprite name=\"interactable_lt\"> y <sprite name=\"interactable_rt\"> a la vez."
+            "value": "You can use PROTECTION if you press <sprite name=\"interactable_lt\"> and <sprite name=\"interactable_rt\"> at the same time."
         },
         {
             "key": "DLG_GUERRERACHINA_06",
-            "value": "[EN] Voy a darte un hechizo nuevo: BOLA PRISMA. Usa <sprite name=\"interactable_b\"> y atacame con él."
+            "value": "I'm going to give you a new spell: PRISM BALL. Use <sprite name=\"interactable_b\"> and attack me with it."
         },
         {
             "key": "DLG_GUERRERACHINA_07",
-            "value": "[EN] Por último espero que traigas al menos una POCION DE VIDA. Desde el menú inventario puedes usarla y recuperar vida."
+            "value": "Lastly, I hope you brought at least one LIFE POTION. You can use it from the inventory menu to restore health."
         },
         {
             "key": "DLG_GUERRERACHINA_08",
@@ -474,63 +486,63 @@
         },
         {
             "key": "DLG_GUERRERACHINA_AFTER",
-            "value": "[EN] Así se hace."
+            "value": "That's how it's done."
         },
         {
             "key": "DLG_GUERRERACHINA_BEFORE",
-            "value": "[EN] Bienvenido a la zona de entrenamiento. Solo lo hacemos con magos lo siento."
+            "value": "Welcome to the training grounds. We only do this with magicians, sorry."
         },
         {
             "key": "DLG_GUERRERACHINA_DEFEAT",
-            "value": "[EN] Sigue entrenando para ser un gran mago."
+            "value": "Keep training to become a great wizard."
         },
         {
             "key": "DLG_KING_01",
-            "value": "[EN] Asi que vosotros sois los que habéis destruido la montaña."
+            "value": "So, you are the ones who destroyed the mountain."
         },
         {
             "key": "DLG_KING_02",
-            "value": "[EN] Bueno en realidad ha sido ella..."
+            "value": "Well, actually it was her..."
         },
         {
             "key": "DLG_KING_03",
-            "value": "[EN] Ya verás cuando te pille."
+            "value": "Just wait until I catch you."
         },
         {
             "key": "DLG_KING_04",
-            "value": "[EN] Me temo que eso no será aquí. Por la segurdad de nuestros ciudadanos me veo obligado a deteneros."
+            "value": "I'm afraid that won't happen here. For the safety of our citizens, I am forced to detain you."
         },
         {
             "key": "DLG_KING_05",
-            "value": "[EN] Disculpe majestad... hay un asunto más importante que debería conocer."
+            "value": "Excuse me, majesty... there is a more important matter you should know about."
         },
         {
             "key": "DLG_KING_06",
-            "value": "[EN] Me temo que tendrá que esperar a mañana."
+            "value": "I'm afraid it will have to wait until tomorrow."
         },
         {
             "key": "DLG_KING_07",
-            "value": "[EN] ¡Guardias! arrestadles."
+            "value": "Guards! Arrest them."
         },
         {
             "key": "DLG_LEONARDO_01",
-            "value": "[EN] Habla con Erika suele ir de verde y debe andar por el Reino."
+            "value": "Talk to Erika, she usually wears green and should be around the Kingdom."
         },
         {
             "key": "DLG_LEONARDO_02",
-            "value": "[EN] Para abrir el menú de Pausa hazlo con <sprite name=\"start\">."
+            "value": "To open the Pause menu, do it with <sprite name=\"start\">."
         },
         {
             "key": "DLG_LEONARDO_03",
-            "value": "[EN] Para abrir el menú de misiones pulsa dos veces <sprite name=\"interactable_dpad\">."
+            "value": "To open the quest menu, press <sprite name=\"interactable_dpad\"> twice."
         },
         {
             "key": "DLG_LEONARDO_04",
-            "value": "[EN] Para abrir el panel de inventario pulsa <sprite name=\"interactable_dpad\">."
+            "value": "To open the inventory panel, press <sprite name=\"interactable_dpad\">."
         },
         {
             "key": "DLG_LETTER_INTRO_01",
-            "value": "[EN] Will ven a verme cuando despiertes."
+            "value": "Will, come see me when you wake up."
         },
         {
             "key": "DLG_LETTER_INTRO_02",
@@ -538,51 +550,51 @@
         },
         {
             "key": "DLG_LETY_VICKY_ALERT_01",
-            "value": "[EN] Mira Vicky, una presa fácil."
+            "value": "Look Vicky, an easy target."
         },
         {
             "key": "DLG_LETY_VICKY_ALERT_02",
-            "value": "[EN] Ya veo Lety... atento muchacho a nuestro ataque dual."
+            "value": "I see, Lety... watch out boy, here comes our dual attack."
         },
         {
             "key": "DLG_LETY_VICKY_DEFEATED",
-            "value": "[EN] Corre Vicky, Corre..."
+            "value": "Run Vicky, run..."
         },
         {
             "key": "DLG_MAGO#1_ALERT",
-            "value": "[EN] No deberías estar aquí."
+            "value": "You shouldn't be here."
         },
         {
             "key": "DLG_MAGO#1_DEFEATED",
-            "value": "[EN] ¡Auch! Eso ha dolido."
+            "value": "Ouch! That hurt."
         },
         {
             "key": "DLG_MAGO#2_ALERT",
-            "value": "[EN] ¡Alto ahí! Aqui se cobra peaje muchacho."
+            "value": "Stop right there! A toll is collected here, boy."
         },
         {
             "key": "DLG_MAGO#2_DEFEATED",
-            "value": "[EN] Seguiré entrenando para estar a tu altura."
+            "value": "I'll keep training to be at your level."
         },
         {
             "key": "DLG_MAGO#3_ALERT",
-            "value": "[EN] Demuestrame tu poder."
+            "value": "Show me your power."
         },
         {
             "key": "DLG_MAGO#3_DEFEATED",
-            "value": "[EN] Pues si que eres fuerte."
+            "value": "Well, you certainly are strong."
         },
         {
             "key": "DLG_MANUEL_01",
-            "value": "[EN] Lo que ves entre esas columnas es un punto de guardado. Acércate y podrás guardar la partida."
+            "value": "What you see between those pillars is a save point. Approach it and you can save your game."
         },
         {
             "key": "DLG_NIÑOPEZ_01",
-            "value": "[EN] ¡Glub! Perdón, a veces olvido hablar aire."
+            "value": "Glub! Sorry, sometimes I forget to speak air."
         },
         {
             "key": "DLG_NIÑOPEZ_02",
-            "value": "[EN] ¿Has visto mi caracola azul? La uso para llamar a mis amigos marinos."
+            "value": "Have you seen my blue conch shell? I use it to call my marine friends."
         },
         {
             "key": "DLG_NIÑOPEZ_03",
@@ -610,7 +622,7 @@
         },
         {
             "key": "DLG_NIÑOPEZ_CARACOLA_TURNIN_02",
-            "value": "[EN] Te doy a cambio este hechizo: CORAZÓN ESTELAR que yo no puedo usar la magia."
+            "value": "I'll give you this spell in return: STELLAR HEART, since I can't use magic."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_01",
@@ -618,47 +630,47 @@
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_02",
-            "value": "[EN] Es muy fácil, solo tienes que mover los brazos para nadar."
+            "value": "It's very easy, you just have to move your arms to swim."
         },
         {
             "key": "DLG_NIÑOPEZ_TURNIN_03",
-            "value": "[EN] Pruebalo y ayúdame a buscar mi caracola."
+            "value": "Try it out and help me look for my conch shell."
         },
         {
             "key": "DLG_NORA_01",
-            "value": "[EN] Me encantan los abrazos calentitos."
+            "value": "I love warm hugs."
         },
         {
             "key": "DLG_OLIVER_MENUS_01",
-            "value": "[EN] Por fin apareces..."
+            "value": "Finally you show up..."
         },
         {
             "key": "DLG_OLIVER_MENUS_02",
-            "value": "[EN] Estoy recordando a todo el mundo como podemos abrir los menús del juego."
+            "value": "I'm reminding everyone how we can open the game menus."
         },
         {
             "key": "DLG_OLIVER_MENUS_03",
-            "value": "[EN] Cuando quieras abrir el MENÚ PRINCIPAL pulsa <sprite name=\"start\">"
+            "value": "Whenever you want to open the MAIN MENU press <sprite name=\"start\">"
         },
         {
             "key": "DLG_OLIVER_MENUS_04",
-            "value": "[EN] Ahí podrás pausar el juego, volver al menú..."
+            "value": "There you can pause the game, go back to the menu..."
         },
         {
             "key": "DLG_OLIVER_MENUS_05",
-            "value": "[EN] ver tu inventario, y más cosillas que no te cuento para no enrollarme."
+            "value": "see your inventory, and more things I won't list so I don't ramble on."
         },
         {
             "key": "DLG_OLIVER_MENUS_06",
-            "value": "[EN] Por último cuando quieras ver las misiones que tienes pendiente puedes usar <sprite name=\"interactable_dpad\"> ARRIBA."
+            "value": "Lastly, when you want to see your pending quests you can use <sprite name=\"interactable_dpad\"> UP."
         },
         {
             "key": "DLG_OLIVER_MENUS_07",
-            "value": "[EN] Con el menú de misiones abierto podrás editarlas si pulsas de nuevo <sprite name=\"interactable_dpad\"> ARRIBA."
+            "value": "With the quest menu open, you can edit them if you press <sprite name=\"interactable_dpad\"> UP again."
         },
         {
             "key": "DLG_OLIVER_MENUS_08",
-            "value": "[EN] Y ahora un descansito que menuda mañana..."
+            "value": "And now for a little break, what a busy morning..."
         },
         {
             "key": "DLG_PIRATE_01",
@@ -670,11 +682,11 @@
         },
         {
             "key": "DLG_PIRATE_03",
-            "value": "[EN] Te he subestimado grumete."
+            "value": "I underestimated you, cabin boy."
         },
         {
             "key": "DLG_PIRATE_04",
-            "value": "[EN] Continúa así y serás un gran mago."
+            "value": "Keep it up and you'll be a great magician."
         },
         {
             "key": "DLG_ROBERTO_01",
@@ -738,71 +750,71 @@
         },
         {
             "key": "DLG_VICTORIA_01",
-            "value": "[EN] Asi que te manda Eldran... en qué estará metido ahora..."
+            "value": "So Eldran sent you... what could he be up to now..."
         },
         {
             "key": "DLG_VICTORIA_02",
-            "value": "[EN] Bueno cariño tu no te preocupes, que Victoria está aquí para ayudarte."
+            "value": "Well, don't you worry, darling, Victoria is here to help you."
         },
         {
             "key": "DLG_VICTORIA_03",
-            "value": "[EN] ¿Una capa de mago? Claro que sí, lo que mi Eldran necesite..."
+            "value": "A wizard cloak? Of course, whatever my Eldran needs..."
         },
         {
             "key": "DLG_VICTORIA_04",
-            "value": "[EN] ¿Una capa de mago? Claro que sí, lo que mi Eldran necesite..."
+            "value": "A wizard cloak? Of course, whatever my Eldran needs..."
         },
         {
             "key": "DLG_VICTORIA_05",
-            "value": "[EN] Dale saludos a Eldran de mi parte."
+            "value": "Give Eldran my regards."
         },
         {
             "key": "DLG_VICTORIA_BEFORE",
-            "value": "[EN] Tengo la tienda cerrada. Vuelve más tarde."
+            "value": "My shop is closed. Come back later."
         },
         {
             "key": "DLG_WOODS_GUARD",
-            "value": "[EN] Solo los magos pueden pasar al bosque prohibido."
+            "value": "Only wizards are allowed into the forbidden forest."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_1",
-            "value": "[EN] De verdad, ¿por una montaña? Qué exagerados."
+            "value": "Seriously, over a mountain? Talk about overreacting."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_10",
-            "value": "[EN] Os lo creáis o no puede que ahí esten vuestras respuestas... aunque no creo que sea el momento para hablarlo."
+            "value": "Whether you believe it or not, your answers might be right there... though I don't think this is the time to talk about it."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_2",
-            "value": "[EN] Bueno ahora lo importante es salir de este embrollo."
+            "value": "Well, right now the important thing is getting out of this mess."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_3",
-            "value": "[EN] Oye Liam, ¿de qué nos ibas a hablar en la taberna?"
+            "value": "Hey Liam, what were you going to tell us back at the tavern?"
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_4",
-            "value": "[EN] Pues no pude evitar escuchar vuestra conversacción."
+            "value": "Well, I couldn't help but overhear your conversation."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_5",
-            "value": "[EN] ¿Os parece casualidad lo del Golem y el Demonio?"
+            "value": "Do you really think the Golem and the Demon were just a coincidence?"
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_6",
-            "value": "[EN] Desde luego que no chico."
+            "value": "Certainly not, kid."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_7",
-            "value": "[EN] ¿Conocéis la leyenda del Sendero de las Estrellas?"
+            "value": "Do you know the legend of the Path of the Stars?"
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_8",
-            "value": "[EN] Algo he escucchado alguna vez."
+            "value": "I've heard something about it once."
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
-            "value": "[EN] ¿Un cuento de niños?"
+            "value": "A children's fairy tale?"
         }
     ]
 }

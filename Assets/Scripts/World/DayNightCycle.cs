@@ -2,25 +2,22 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Rendering;
 
-/// <summary>
-/// Sistema avanzado de ciclo día/noche con transiciones suaves entre múltiples periodos del día,
-/// usando todos los skyboxes disponibles y con soporte para efectos de clima como lluvia.
-/// </summary>
 [DisallowMultipleComponent]
 public class DayNightCycle : MonoBehaviour
 {
     public enum TimeOfDay
     {
-        AfterNoon,      // SkyAfterNoon
-        BrightMorning,  // SkyBrightMorning
-        Cloudy,         // SkyCloudy (clima nublado)
-        EarlyDusk,      // SkyEarlyDusk
-        HaloSky,        // SkyHaloSky
-        Midnight,       // SkyMidnight
-        Morning,        // SkyMorning
-        Night,          // SkyNight
-        Sunset          // SkySunset
+        AfterNoon,
+        BrightMorning,
+        Cloudy,
+        EarlyDusk,
+        HaloSky,
+        Midnight,
+        Morning,
+        Night,
+        Sunset
     }
 
     [System.Serializable]
@@ -28,10 +25,23 @@ public class DayNightCycle : MonoBehaviour
     {
         public TimeOfDay timeOfDay;
         public Material skybox;
+
+        [Header("Luz direccional")]
         public Color lightColor = Color.white;
         [Range(0f, 2f)] public float lightIntensity = 1f;
-        [Range(0f, 360f)] public float sunRotationX = 50f; // Rotación del sol
-        public float duration = 60f; // Duración en segundos
+        [Range(0f, 360f)] public float sunRotationX = 50f;
+        [Range(0f, 360f)] public float sunRotationY = 170f;
+
+        [Header("Luz ambiental")]
+        public Color ambientColor = new Color(0.2f, 0.2f, 0.25f);
+        [Range(0f, 2f)] public float ambientIntensity = 1f;
+
+        [Header("Niebla")]
+        public Color fogColor = new Color(0.5f, 0.5f, 0.5f);
+        [Range(0f, 0.1f)] public float fogDensity = 0.01f;
+
+        [Header("Ciclo")]
+        public float duration = 60f;
         [Tooltip("Si es true, este periodo SIEMPRE tendrá lluvia activa")]
         public bool forceRain = false;
     }
@@ -39,13 +49,62 @@ public class DayNightCycle : MonoBehaviour
     [Header("Periodos del día")]
     [SerializeField] private TimeOfDaySettings[] timeSettings = new TimeOfDaySettings[]
     {
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.Morning, duration = 120f, lightIntensity = 1.2f, sunRotationX = 50f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.BrightMorning, duration = 90f, lightIntensity = 1.4f, sunRotationX = 60f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.AfterNoon, duration = 120f, lightIntensity = 1.3f, sunRotationX = 80f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.EarlyDusk, duration = 60f, lightIntensity = 0.9f, sunRotationX = 100f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.Sunset, duration = 45f, lightIntensity = 0.6f, sunRotationX = 110f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.Night, duration = 90f, lightIntensity = 0.3f, sunRotationX = 140f },
-        new TimeOfDaySettings { timeOfDay = TimeOfDay.Midnight, duration = 60f, lightIntensity = 0.2f, sunRotationX = 180f }
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.Morning,
+            duration = 120f,
+            lightColor = new Color(1f, 0.88f, 0.68f), lightIntensity = 1.1f,
+            sunRotationX = 15f, sunRotationY = 90f,
+            ambientColor = new Color(0.28f, 0.3f, 0.42f), ambientIntensity = 0.8f,
+            fogColor = new Color(0.68f, 0.78f, 0.92f), fogDensity = 0.008f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.BrightMorning,
+            duration = 90f,
+            lightColor = new Color(1f, 0.97f, 0.88f), lightIntensity = 1.4f,
+            sunRotationX = 35f, sunRotationY = 120f,
+            ambientColor = new Color(0.38f, 0.37f, 0.33f), ambientIntensity = 1.0f,
+            fogColor = new Color(0.88f, 0.9f, 0.92f), fogDensity = 0.005f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.AfterNoon,
+            duration = 120f,
+            lightColor = new Color(1f, 0.97f, 0.85f), lightIntensity = 1.3f,
+            sunRotationX = 65f, sunRotationY = 165f,
+            ambientColor = new Color(0.4f, 0.38f, 0.33f), ambientIntensity = 1.1f,
+            fogColor = new Color(0.85f, 0.85f, 0.85f), fogDensity = 0.004f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.EarlyDusk,
+            duration = 60f,
+            lightColor = new Color(1f, 0.78f, 0.48f), lightIntensity = 0.9f,
+            sunRotationX = 82f, sunRotationY = 210f,
+            ambientColor = new Color(0.36f, 0.28f, 0.22f), ambientIntensity = 0.85f,
+            fogColor = new Color(0.78f, 0.65f, 0.52f), fogDensity = 0.009f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.Sunset,
+            duration = 45f,
+            lightColor = new Color(1f, 0.5f, 0.18f), lightIntensity = 0.6f,
+            sunRotationX = 96f, sunRotationY = 250f,
+            ambientColor = new Color(0.35f, 0.18f, 0.1f), ambientIntensity = 0.65f,
+            fogColor = new Color(0.9f, 0.55f, 0.3f), fogDensity = 0.013f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.Night,
+            duration = 90f,
+            lightColor = new Color(0.55f, 0.65f, 1f), lightIntensity = 0.25f,
+            sunRotationX = 140f, sunRotationY = 290f,
+            ambientColor = new Color(0.08f, 0.08f, 0.18f), ambientIntensity = 0.45f,
+            fogColor = new Color(0.08f, 0.08f, 0.18f), fogDensity = 0.016f
+        },
+        new TimeOfDaySettings {
+            timeOfDay = TimeOfDay.Midnight,
+            duration = 60f,
+            lightColor = new Color(0.38f, 0.45f, 0.88f), lightIntensity = 0.12f,
+            sunRotationX = 180f, sunRotationY = 355f,
+            ambientColor = new Color(0.04f, 0.04f, 0.1f), ambientIntensity = 0.3f,
+            fogColor = new Color(0.04f, 0.04f, 0.1f), fogDensity = 0.022f
+        }
     };
 
     [Header("Luz direccional")]
@@ -54,21 +113,26 @@ public class DayNightCycle : MonoBehaviour
     [Header("Transiciones")]
     [Tooltip("Duración de la transición entre periodos del día en segundos.")]
     [SerializeField] private float transitionDuration = 10f;
-    
-    [Tooltip("Usar transiciones suaves entre skyboxes (requiere más recursos).")]
+    [Tooltip("Usar transiciones suaves entre periodos (requiere más recursos).")]
     [SerializeField] private bool useSmoothTransitions = true;
+
+    [Header("Control de entorno")]
+    [Tooltip("Si es true, el ciclo controlará la luz ambiental global.")]
+    [SerializeField] private bool controlAmbientLight = true;
+    [Tooltip("Si es true, el ciclo controlará la niebla global.")]
+    [SerializeField] private bool controlFog = true;
 
     [Header("Clima - Lluvia")]
     [Tooltip("Prefab del sistema de partículas de lluvia.")]
     [SerializeField] private GameObject rainPrefab;
-    
     [Tooltip("Si es true, la lluvia dura todo el periodo. Si es false, tiene duración aleatoria.")]
     [SerializeField] private bool rainLastsWholePeriod = true;
+    [Tooltip("Segundos que tardan en desaparecer las partículas al detener la lluvia.")]
+    [SerializeField] private float rainFadeOutTime = 3f;
 
     [Header("Ciclo")]
     [Tooltip("Si es falso, no avanza automáticamente el ciclo.")]
     [SerializeField] private bool autoAdvance = true;
-    
     [Tooltip("Índice del periodo inicial (0 = primero en la lista).")]
     [SerializeField] private int startingTimeIndex = 0;
 
@@ -92,15 +156,10 @@ public class DayNightCycle : MonoBehaviour
     private GameObject _activeRainInstance;
     private Coroutine _rainCoroutine;
     private Coroutine _transitionCoroutine;
-
-    // Para transiciones de skybox suaves
-    private Material _transitionMaterial;
-    private Material _previousSkybox;
-    private Material _targetSkybox;
+    private Coroutine _rainFadeCoroutine;
 
     void Awake()
     {
-        // Validar configuración
         if (timeSettings == null || timeSettings.Length == 0)
         {
             Debug.LogError("[DayNightCycle] No hay periodos configurados en timeSettings.");
@@ -109,6 +168,12 @@ public class DayNightCycle : MonoBehaviour
         }
 
         _currentIndex = Mathf.Clamp(startingTimeIndex, 0, timeSettings.Length - 1);
+
+        if (controlAmbientLight)
+            RenderSettings.ambientMode = AmbientMode.Flat;
+
+        if (controlFog)
+            RenderSettings.fog = true;
     }
 
     void OnEnable()
@@ -119,6 +184,7 @@ public class DayNightCycle : MonoBehaviour
     void OnDisable()
     {
         StopAllCoroutines();
+        IsRaining = false;
         if (_activeRainInstance != null)
         {
             Destroy(_activeRainInstance);
@@ -131,11 +197,9 @@ public class DayNightCycle : MonoBehaviour
         if (!autoAdvance || _isTransitioning) return;
 
         _timeElapsed += Time.deltaTime;
-        
+
         if (_timeElapsed >= _currentDuration)
-        {
             AdvanceToNextPeriod();
-        }
     }
 
     void InitializeCycle()
@@ -162,11 +226,7 @@ public class DayNightCycle : MonoBehaviour
         Debug.LogWarning($"[DayNightCycle] TimeOfDay '{timeOfDay}' no encontrado en la configuración.");
     }
 
-    // Método sin parámetros para invocar desde UnityEvent y forzar noche
-    public void SetNight()
-    {
-        SetTimeOfDay(TimeOfDay.Night, immediate: false);
-    }
+    public void SetNight() => SetTimeOfDay(TimeOfDay.Night, immediate: false);
 
     public void SetTimeOfDayByIndex(int index, bool immediate = false)
     {
@@ -180,20 +240,18 @@ public class DayNightCycle : MonoBehaviour
 
     public void ToggleRain()
     {
-        if (IsRaining)
-            StopRain();
-        else
-            StartRain();
+        if (IsRaining) StopRain();
+        else StartRain();
     }
 
     public void StartRain(float? duration = null)
     {
-        if (IsRaining || rainPrefab == null) return;
+        if (rainPrefab == null || IsRaining) return;
 
         if (_rainCoroutine != null)
             StopCoroutine(_rainCoroutine);
 
-        float rainDuration = duration ?? 60f; // Duración por defecto si no se especifica
+        float rainDuration = duration ?? 60f;
         _rainCoroutine = StartCoroutine(RainRoutine(rainDuration));
     }
 
@@ -207,7 +265,7 @@ public class DayNightCycle : MonoBehaviour
             _rainCoroutine = null;
         }
 
-        DeactivateRain();
+        BeginRainFadeOut();
     }
 
     void ApplyTimeOfDay(int index, bool immediate, bool invokeEvents)
@@ -226,31 +284,14 @@ public class DayNightCycle : MonoBehaviour
         _timeElapsed = 0f;
 
         if (immediate || !useSmoothTransitions || !Application.isPlaying)
-        {
             ApplySettingsImmediate(settings);
-        }
         else
-        {
             _transitionCoroutine = StartCoroutine(TransitionToSettings(settings));
-        }
 
-        // Manejar lluvia: si el periodo fuerza lluvia (ej: Cloudy), activarla
         if (settings.forceRain)
-        {
-            if (rainLastsWholePeriod)
-            {
-                StartRain(settings.duration);
-            }
-            else
-            {
-                StartRain();
-            }
-        }
+            StartRain(rainLastsWholePeriod ? settings.duration : (float?)null);
         else if (IsRaining)
-        {
-            // Si cambió a un periodo sin lluvia, detenerla
             StopRain();
-        }
 
         if (invokeEvents)
         {
@@ -271,52 +312,70 @@ public class DayNightCycle : MonoBehaviour
         {
             directionalLight.color = settings.lightColor;
             directionalLight.intensity = settings.lightIntensity;
-            
-            Vector3 rotation = directionalLight.transform.eulerAngles;
-            rotation.x = settings.sunRotationX;
-            directionalLight.transform.eulerAngles = rotation;
+            directionalLight.transform.eulerAngles = new Vector3(settings.sunRotationX, settings.sunRotationY, 0f);
+        }
+
+        if (controlAmbientLight)
+            RenderSettings.ambientLight = settings.ambientColor * settings.ambientIntensity;
+
+        if (controlFog)
+        {
+            RenderSettings.fogColor = settings.fogColor;
+            RenderSettings.fogDensity = settings.fogDensity;
         }
     }
 
-    IEnumerator TransitionToSettings(TimeOfDaySettings targetSettings)
+    IEnumerator TransitionToSettings(TimeOfDaySettings target)
     {
         _isTransitioning = true;
 
+        // El skybox cambia al inicio para que cielo y luz evolucionen juntos, evitando el "pop" al final
+        if (target.skybox != null && RenderSettings.skybox != target.skybox)
+        {
+            RenderSettings.skybox = target.skybox;
+            DynamicGI.UpdateEnvironment();
+        }
+
         var light = directionalLight;
-        Material startSkybox = RenderSettings.skybox;
-        Color startColor = light ? light.color : Color.white;
+        Color startLightColor = light ? light.color : Color.white;
         float startIntensity = light ? light.intensity : 1f;
-        float startRotationX = light ? light.transform.eulerAngles.x : 0f;
+        float startRotX = light ? light.transform.eulerAngles.x : 0f;
+        float startRotY = light ? light.transform.eulerAngles.y : 0f;
+        Color startAmbient = RenderSettings.ambientLight;
+        Color startFogColor = RenderSettings.fogColor;
+        float startFogDensity = RenderSettings.fogDensity;
 
         float elapsed = 0f;
-
         while (elapsed < transitionDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / transitionDuration);
-            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / transitionDuration));
 
             if (light != null)
             {
-                light.color = Color.Lerp(startColor, targetSettings.lightColor, smoothT);
-                light.intensity = Mathf.Lerp(startIntensity, targetSettings.lightIntensity, smoothT);
+                light.color = Color.Lerp(startLightColor, target.lightColor, t);
+                light.intensity = Mathf.Lerp(startIntensity, target.lightIntensity, t);
+                light.transform.eulerAngles = new Vector3(
+                    Mathf.LerpAngle(startRotX, target.sunRotationX, t),
+                    Mathf.LerpAngle(startRotY, target.sunRotationY, t),
+                    0f
+                );
+            }
 
-                Vector3 rotation = light.transform.eulerAngles;
-                rotation.x = Mathf.LerpAngle(startRotationX, targetSettings.sunRotationX, smoothT);
-                light.transform.eulerAngles = rotation;
+            if (controlAmbientLight)
+                RenderSettings.ambientLight = Color.Lerp(startAmbient, target.ambientColor * target.ambientIntensity, t);
+
+            if (controlFog)
+            {
+                RenderSettings.fogColor = Color.Lerp(startFogColor, target.fogColor, t);
+                RenderSettings.fogDensity = Mathf.Lerp(startFogDensity, target.fogDensity, t);
             }
 
             yield return null;
         }
 
-        // Aplicar skybox y GI una sola vez al finalizar para evitar parpadeos
-        if (targetSettings.skybox != null && RenderSettings.skybox != targetSettings.skybox)
-        {
-            RenderSettings.skybox = targetSettings.skybox;
-            DynamicGI.UpdateEnvironment();
-        }
-
-        ApplySettingsImmediate(targetSettings);
+        // Asegurar valores exactos al finalizar
+        ApplySettingsImmediate(target);
 
         _isTransitioning = false;
         _transitionCoroutine = null;
@@ -326,7 +385,7 @@ public class DayNightCycle : MonoBehaviour
     {
         ActivateRain();
         yield return new WaitForSeconds(duration);
-        DeactivateRain();
+        BeginRainFadeOut();
         _rainCoroutine = null;
     }
 
@@ -334,16 +393,20 @@ public class DayNightCycle : MonoBehaviour
     {
         if (IsRaining || rainPrefab == null) return;
 
-        // Instanciar lluvia como hijo del jugador
-        Transform parent = null;
-        if (PlayerService.Player != null)
+        // Cancelar fade-out activo antes de instanciar nueva lluvia
+        if (_rainFadeCoroutine != null)
         {
-            parent = PlayerService.Player.transform;
+            StopCoroutine(_rainFadeCoroutine);
+            _rainFadeCoroutine = null;
+            if (_activeRainInstance != null)
+            {
+                Destroy(_activeRainInstance);
+                _activeRainInstance = null;
+            }
         }
-        else if (Camera.main != null)
-        {
-            parent = Camera.main.transform;
-        }
+
+        Transform parent = PlayerService.Player != null ? PlayerService.Player.transform :
+                           Camera.main != null ? Camera.main.transform : null;
 
         if (parent != null)
         {
@@ -359,37 +422,47 @@ public class DayNightCycle : MonoBehaviour
         IsRaining = true;
         onRainStarted?.Invoke();
         RainStarted?.Invoke();
-        
-        Debug.Log("[DayNightCycle] Lluvia iniciada");
     }
 
-    void DeactivateRain()
+    void BeginRainFadeOut()
     {
         if (!IsRaining) return;
-
-        if (_activeRainInstance != null)
-        {
-            Destroy(_activeRainInstance);
-            _activeRainInstance = null;
-        }
 
         IsRaining = false;
         onRainStopped?.Invoke();
         RainStopped?.Invoke();
-        
-        Debug.Log("[DayNightCycle] Lluvia detenida");
+
+        if (_rainFadeCoroutine != null)
+            StopCoroutine(_rainFadeCoroutine);
+
+        if (_activeRainInstance != null)
+            _rainFadeCoroutine = StartCoroutine(RainFadeOutRoutine(_activeRainInstance));
     }
 
-    // Métodos públicos para debug/testing
-    [ContextMenu("Avanzar al siguiente periodo")]
-    public void DebugAdvanceTime()
+    IEnumerator RainFadeOutRoutine(GameObject rainInstance)
     {
-        AdvanceToNextPeriod();
+        // Detener emisión para que las partículas existentes terminen de caer
+        var particles = rainInstance.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in particles)
+        {
+            var emission = ps.emission;
+            emission.enabled = false;
+        }
+
+        yield return new WaitForSeconds(rainFadeOutTime);
+
+        if (rainInstance != null)
+            Destroy(rainInstance);
+
+        if (_activeRainInstance == rainInstance)
+            _activeRainInstance = null;
+
+        _rainFadeCoroutine = null;
     }
+
+    [ContextMenu("Avanzar al siguiente periodo")]
+    public void DebugAdvanceTime() => AdvanceToNextPeriod();
 
     [ContextMenu("Activar/Desactivar lluvia")]
-    public void DebugToggleRain()
-    {
-        ToggleRain();
-    }
+    public void DebugToggleRain() => ToggleRain();
 }

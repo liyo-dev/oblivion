@@ -6,11 +6,11 @@
         },
         {
             "id": "CH1_02",
-            "text": "Here our hero Will, lives."
+            "text": "Here, our hero Will lives."
         },
         {
             "id": "CH1_03",
-            "text": "His neighbor is named Eldran, and he has taken care of him since he was little.\r\n"
+            "text": "His neighbor is named Eldran, and he has taken care of him since he was little."
         },
         {
             "id": "CH1_04",
@@ -30,7 +30,7 @@
         },
         {
             "id": "EVT_02",
-            "text": "Suddenly he senses something."
+            "text": "Suddenly, he senses something."
         },
         {
             "id": "EVT_03",
@@ -58,23 +58,23 @@
         },
         {
             "id": "EVT_ESTELA_01",
-            "text": "[EN] Las arañas creían haber acorralado a una presa indefensa. No sabían que acababan de encerrarse con Estela."
+            "text": "The spiders thought they had cornered a helpless prey. They didn't know they had just locked themselves in with Estela."
         },
         {
             "id": "EVT_ESTELA_02",
-            "text": "[EN] Con una sonrisa de desafío, Estela liberó su verdadero poder."
+            "text": "With a defiant smile, Estela unleashed her true power."
         },
         {
             "id": "EVT_ESTELA_03",
-            "text": "[EN] Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
+            "text": "With a mischievous wink and a satisfied grin, Estela looked upon her work. Not a single spider was left standing."
         },
         {
             "id": "EVT_GOLEM_01",
-            "text": "[EN] LIAM: Esa estúpida va a arruinar mis planes..."
+            "text": "LIAM: That fool is going to ruin my plans..."
         },
         {
             "id": "EVT_GOLEM_02",
-            "text": "[EN] LIAM: Veremos si es tan fuerte como dicen..."
+            "text": "LIAM: Let's see if she's as strong as they say..."
         },
         {
             "id": "EVT_GOLEM_END_01",
@@ -102,51 +102,51 @@
         },
         {
             "id": "EVT_MOUNTAIN_01",
-            "text": "[EN] ESTELA: ¡Nadie me interrumpe mientras como!"
+            "text": "ESTELA: Nobody interrupts me while I'm eating!"
         },
         {
             "id": "EVT_MOUNTAIN_02",
-            "text": "[EN] ESTELA: ¡Así que comete esta!"
+            "text": "ESTELA: So take this!"
         },
         {
             "id": "EVT_TABERNA_01",
-            "text": "[EN] Eldran, Will y Estela discuten de lo ocurrido y tratan de buscar una solución..."
+            "text": "Eldran, Will, and Estela discuss what happened and try to find a solution..."
         },
         {
             "id": "EVT_TABERNA_02",
-            "text": "[EN] Cuando de repente el estómago de Estela rugió de forma atroz.Cuando de repente el estómago de Estela rugió de forma atroz."
+            "text": "When suddenly, Estela's stomach growled ferociously."
         },
         {
             "id": "EVT_TABERNA_03",
-            "text": "[EN] Por fin llega la comida y nuestross héroes se diponen a comer."
+            "text": "The food finally arrives, and our heroes prepare to eat."
         },
         {
             "id": "EVT_TABERNA_04",
-            "text": "[EN] Estela lo hace de una forma un poco... especial..."
+            "text": "Estela does it in a rather... unique way..."
         },
         {
             "id": "EVT_TABERNA_05",
-            "text": "[EN] Eldran y Will sorprendidos por la forma de ccomer de Estela pierden el apetito"
+            "text": "Eldran and Will, shocked by Estela's eating manners, lose their appetite."
         },
         {
             "id": "EVT_TABERNA_06",
-            "text": "[EN] En ese momento se acercca Liam que estaba escuchando la conversación desde lo lejosEn ese momento se acercca Liam que estaba escuchando la conversación desde lo lejos"
+            "text": "At that moment, Liam approaches, having eavesdropped on the conversation from afar."
         },
         {
             "id": "EVT_TABERNA_07",
-            "text": "[EN] Intenta contar al grupo algo pero llama la atención de Estela que en ese momento solo podía pensar en la comida."
+            "text": "He tries to tell the group something, but catches the attention of Estela, who could only think about food at that moment."
         },
         {
             "id": "EVT_TABERNA_08",
-            "text": "[EN] Estela enfadada por la interrupción conjura una bola de fuego. "
+            "text": "Furious about the interruption, Estela conjures a fireball."
         },
         {
             "id": "EVT_TABERNA_09",
-            "text": "[EN] Los tres se sorprenden.. ¿? "
+            "text": "The three of them are caught completely off guard..."
         },
         {
             "id": "EVT_TABERNA_10",
-            "text": "[EN] ELDRAN: ¡Corred! Huid de Estela hasta que se le pase el enfado."
+            "text": "ELDRAN: Run! Flee from Estela until her anger blows over!"
         }
     ]
 }

@@ -6,7 +6,7 @@
         },
         {
             "key": "ELDRAN_MISSION8",
-            "value": "[EN] Protege a la gente del Reino de la furia de Estela."
+            "value": "Protect the citizens of the Kingdom from Estela's wrath."
         },
         {
             "key": "Q_NIÑOPEZ",
@@ -26,11 +26,11 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION10_DESC",
-            "value": "[EN] Busca la forma de salir."
+            "value": "Find a way to escape."
         },
         {
             "key": "QUEST_ELDRAN_MISSION10_NAME",
-            "value": "[EN] Atrapados"
+            "value": "Trapped"
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
@@ -94,39 +94,39 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION7_DESC",
-            "value": "[EN] Reúnete con Eldran en la taberna."
+            "value": "Meet Eldran at the tavern."
         },
         {
             "key": "QUEST_ELDRAN_MISSION7_NAME",
-            "value": "[EN] Nos vemos en la taberna."
+            "value": "See You at the Tavern"
         },
         {
             "key": "QUEST_ELDRAN_MISSION8_DESC",
-            "value": "[EN] Acercate a la gente del Reino y usa los botones para lanzar un hechizo protector."
+            "value": "Approach the citizens of the Kingdom and use the buttons to cast a protective spell."
         },
         {
             "key": "QUEST_ELDRAN_MISSION8_NAME",
-            "value": "[EN] Protege a la gente del Reino."
+            "value": "Protect the Citizens."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_2_DESC",
-            "value": "[EN] Sigue al guardia y entra al castillo y habla con el Rey."
+            "value": "Follow the guard, enter the castle, and speak with the King."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_2_NAME",
-            "value": "[EN] Arrestados"
+            "value": "Arrested"
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_DESC",
-            "value": "[EN] Sigue al guardia hasta el palacio para ver al Rey."
+            "value": "Follow the guard to the palace to see the King."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_DESC_02",
-            "value": "[EN] Entra al castillo y habla con el Rey."
+            "value": "Enter the castle and speak with the King."
         },
         {
             "key": "QUEST_ELDRAN_MISSION9_NAME",
-            "value": "[EN] Arrestados"
+            "value": "Arrested"
         },
         {
             "key": "QUEST_MISSION1_STEP1",
@@ -162,7 +162,7 @@
         },
         {
             "key": "READ_THE_LETTER_DESC",
-            "value": "read the letter on the side table."
+            "value": "Read the letter on the side table."
         }
     ]
 }

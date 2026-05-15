@@ -127892,7 +127892,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1045300659}
+  m_Father: {fileID: 1788915190}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &666928106
 MonoBehaviour:
@@ -214647,39 +214647,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 473706, guid: c221e37ad15f8f14580e546f625060d2, type: 3}
   m_PrefabInstance: {fileID: 1044218574}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1045300658
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1045300659}
-  m_Layer: 0
-  m_Name: _Light & PostProcess
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1045300659
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1045300658}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 666928105}
-  - {fileID: 1948117834}
-  m_Father: {fileID: 1788915190}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1045627857
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -246075,6 +246042,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.2
     sunRotationX: 50
+    sunRotationY: 90
+    ambientColor: {r: 0.28, g: 0.3, b: 0.42, a: 1}
+    ambientIntensity: 0.8
+    fogColor: {r: 0.68, g: 0.78, b: 0.92, a: 1}
+    fogDensity: 0.008
     duration: 120
     forceRain: 0
   - timeOfDay: 1
@@ -246082,6 +246054,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.4
     sunRotationX: 60
+    sunRotationY: 120
+    ambientColor: {r: 0.38, g: 0.37, b: 0.33, a: 1}
+    ambientIntensity: 1
+    fogColor: {r: 0.88, g: 0.9, b: 0.92, a: 1}
+    fogDensity: 0.005
     duration: 90
     forceRain: 0
   - timeOfDay: 0
@@ -246089,6 +246066,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 1.3
     sunRotationX: 80
+    sunRotationY: 165
+    ambientColor: {r: 0.4, g: 0.38, b: 0.33, a: 1}
+    ambientIntensity: 1.1
+    fogColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
+    fogDensity: 0.004
     duration: 120
     forceRain: 0
   - timeOfDay: 3
@@ -246096,6 +246078,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.9
     sunRotationX: 100
+    sunRotationY: 210
+    ambientColor: {r: 0.36, g: 0.28, b: 0.22, a: 1}
+    ambientIntensity: 0.85
+    fogColor: {r: 0.78, g: 0.65, b: 0.52, a: 1}
+    fogDensity: 0.009
     duration: 60
     forceRain: 0
   - timeOfDay: 8
@@ -246103,6 +246090,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.6
     sunRotationX: 110
+    sunRotationY: 250
+    ambientColor: {r: 0.35, g: 0.18, b: 0.1, a: 1}
+    ambientIntensity: 0.65
+    fogColor: {r: 0.9, g: 0.55, b: 0.3, a: 1}
+    fogDensity: 0.013
     duration: 45
     forceRain: 0
   - timeOfDay: 7
@@ -246110,6 +246102,11 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.3
     sunRotationX: 140
+    sunRotationY: 290
+    ambientColor: {r: 0.08, g: 0.08, b: 0.18, a: 1}
+    ambientIntensity: 0.45
+    fogColor: {r: 0.08, g: 0.08, b: 0.18, a: 1}
+    fogDensity: 0.016
     duration: 90
     forceRain: 0
   - timeOfDay: 5
@@ -246117,13 +246114,21 @@ MonoBehaviour:
     lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.2
     sunRotationX: 180
+    sunRotationY: 355
+    ambientColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
+    ambientIntensity: 0.3
+    fogColor: {r: 0.04, g: 0.04, b: 0.1, a: 1}
+    fogDensity: 0.022
     duration: 60
     forceRain: 0
   directionalLight: {fileID: 1948117836}
   transitionDuration: 10
   useSmoothTransitions: 1
+  controlAmbientLight: 1
+  controlFog: 1
   rainPrefab: {fileID: 3292688598545588766, guid: 1b7e584853e241a1956d417c4436d159, type: 3}
   rainLastsWholePeriod: 0
+  rainFadeOutTime: 3
   autoAdvance: 1
   startingTimeIndex: 0
   onTimeOfDayChanged:
@@ -363380,7 +363385,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 253680763}
-  - {fileID: 1045300659}
+  - {fileID: 666928105}
+  - {fileID: 1948117834}
   - {fileID: 164012870}
   - {fileID: 1166073538}
   - {fileID: 775861897}
@@ -368623,27 +368629,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 9171980722928935, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 206955243820471005, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 238272532394400607, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2052766923886183289, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3032424197757487374, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3714833892687663537, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4909843728885285984, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_Name
@@ -368651,7 +368657,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5254754835644330641, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -368695,23 +368701,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7501852539256436559, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7612423805484779947, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8136900788614217912, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8872017054573630166, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9089431727824238727, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -393186,7 +393192,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1045300659}
+  m_Father: {fileID: 1788915190}
   m_LocalEulerAnglesHint: {x: 132.174, y: 62.05699, z: -47.057007}
 --- !u!114 &1948117835
 MonoBehaviour:
