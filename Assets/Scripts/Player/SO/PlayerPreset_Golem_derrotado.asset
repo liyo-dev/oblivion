@@ -1,0 +1,183 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
+  m_Name: PlayerPreset_Golem_derrotado
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
+  spawnAnchorId: Woods_Entrance_SavePoint
+  level: 1
+  maxHP: 100
+  currentHP: 100
+  maxMP: 50
+  currentMP: 50
+  unlockedAbilities: 01000000
+  unlockedSpells: 0100000002000000
+  leftSpellId: 1
+  rightSpellId: 2
+  specialSpellId: 0
+  flags:
+  - CINEMATIC_SEEN:Cinematic_DemonAppears
+  - CINEMATIC_SEEN:Cinematic_VillainPlans
+  - PICKUP_MainWorld_Chest01_10,2_0,0_14,2
+  - PICKUP_MainWorld_Coin_01 (13)_-24,6_1,7_47,1
+  - CINEMATIC_SEEN:Cinematic_EstelaAppears
+  - CINEMATIC_SEEN:Cinematic_Golem
+  - QUEST_COMPLETED:ELDRAN_MISSION1
+  - QUEST_ARCHIVED:ELDRAN_MISSION1
+  - QUEST_COMPLETED:ELDRAN_MISSION2
+  - QUEST_ARCHIVED:ELDRAN_MISSION2
+  - QUEST_COMPLETED:ELDRAN_MISSION3
+  - QUEST_ARCHIVED:ELDRAN_MISSION3
+  - QUEST_COMPLETED:ELDRAN_MISSION4
+  - QUEST_ARCHIVED:ELDRAN_MISSION4
+  - QUEST_COMPLETED:ELDRAN_MISSION5
+  - QUEST_ARCHIVED:ELDRAN_MISSION5
+  - QUEST_COMPLETED:ELDRAN_MISSION5_2
+  - QUEST_ARCHIVED:ELDRAN_MISSION5_2
+  - QUEST_ACTIVE:ELDRAN_MISSION6
+  - QUEST_STEP_DONE:ELDRAN_MISSION6:0
+  - QUEST_STEP_DONE:ELDRAN_MISSION6:1
+  abilities:
+    swim: 0
+    jump: 0
+    climb: 0
+    magic: 1
+    fly: 0
+  appearance:
+  - category: 0
+    partName: Body09
+  - category: 8
+    partName: AC09_Ribbon
+  - category: 4
+    partName: Eye02
+  - category: 5
+    partName: Mouth02
+  - category: 3
+    partName: Hair08
+  - category: 2
+    partName: Head02_Female
+  unlockedWardrobeIds:
+  - Body05
+  - Cloak02
+  inventoryItems:
+  - itemId: coin
+    count: 6
+  - itemId: pocionHP
+    count: 3
+  defeatedBossIds:
+  - Demon_1
+  - Golem_1
+  narrativeBlackboards:
+  - graphLabel: Historia Principal
+    blackboardData:
+    - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
+      type: bool
+      value: 1
+    - key: __quest_16d41261-7e42-42bb-b91a-1cab8d52164e_ELDRAN_MISSION1_started
+      type: bool
+      value: 1
+    - key: INV_GIVEN:MainNarrative:64ed2870-8561-471f-bb08-803a726be060:coin
+      type: bool
+      value: 1
+    - key: __quest_da331290-6f7e-4aa3-937d-83cb066bbfe7_ELDRAN_MISSION3_started
+      type: bool
+      value: 1
+    - key: __quest_bc692d5b-b0ca-4095-85fc-2380f374f9d3_ELDRAN_MISSION4_started
+      type: bool
+      value: 1
+    - key: __forked_10559b15-8995-40fa-bb17-eb2f5dd42b6d
+      type: bool
+      value: 1
+    - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_0_node
+      type: string
+      value: __DONE__
+    - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_1_node
+      type: string
+      value: __DONE__
+    - key: __fork_10559b15-8995-40fa-bb17-eb2f5dd42b6d_2_node
+      type: string
+      value: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+    - key: __event_4eed0901-c1cb-4e89-9d72-9ab6a6c57307_ADD_CLOAK_received
+      type: bool
+      value: 1
+    - key: __event_c235d486-6f5e-4a93-8d96-8721b6dad7d3_ERIKA_FIGHT_received
+      type: bool
+      value: 1
+    - key: __event_c9ca7493-60c5-44db-ae66-9b0e232343e3_ERIKA_BATTLE_WON_received
+      type: bool
+      value: 1
+    - key: __quest_4010d494-e518-45bb-9852-29a412777758_ELDRAN_MISSION5_2_started
+      type: bool
+      value: 1
+    - key: __currentNodeGuid
+      type: string
+      value: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
+    - key: __event_d2c6cf0b-557c-41ae-9ccc-069ca97bade9_ESTELA_FOUND_received
+      type: bool
+      value: 1
+    - key: __forked_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+      type: bool
+      value: 1
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_0_node
+      type: string
+      value: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
+    - key: __fork_c102ae27-75e4-4be7-8d7b-fc8cd51d7f28_1_node
+      type: string
+      value: __DONE__
+    - key: __event_1db8d4ab-1b78-48f8-961e-9e0668aacf6e_EXIT_FROM_WOODS_ESTELA_received
+      type: bool
+      value: 1
+  - graphLabel: Misiones Secundarias
+    blackboardData:
+    - key: __forked_434108a8-8f50-407a-b807-74d22ff2a5ac
+      type: bool
+      value: 1
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_0_node
+      type: string
+      value: 099fe10e-98f2-475b-ae44-0f435002ee2c
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_1_node
+      type: string
+      value: 00079bce-e03b-4fa9-bf56-051f0f3b427c
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_2_node
+      type: string
+      value: 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_3_node
+      type: string
+      value: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
+    - key: __currentNodeGuid
+      type: string
+      value: 434108a8-8f50-407a-b807-74d22ff2a5ac
+  npcPositions:
+  - npcId: Eldran
+    position: {x: -39.945, y: 1.224823, z: 26.09}
+    hasActiveState: 0
+    isActive: 1
+  - npcId: Oliver
+    position: {x: -31.48, y: 1.224823, z: 26.09}
+    hasActiveState: 0
+    isActive: 1
+  consumedInteractableIds:
+  - MainWorld:Carta_1231,6_1000,8_3,4
+  completedInteractiveNarratives:
+  - oliver-narrative-b8a7c6d5-unique
+  - oliver-narrative-b8a7c6d5-unique_CN0
+  - victoria-narrative-f5e4d3c2-unique
+  - victoria-narrative-f5e4d3c2-unique_CN1
+  - erika-narrative-a7b3c2d1-unique
+  - erika-narrative-a7b3c2d1-unique_CN1
+  - NPC_InteractiveNarrative_Config_Estela_b17a2d68
+  - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN0
+  seenLorePopupIds: []
+  partyMemberIds:
+  - NPC_InteractiveNarrative_Config_Estela_b17a2d68
+  unlockedTeleportPoints:
+  - Woods_Entrance_SavePoint
+  - Woods_SavePoint

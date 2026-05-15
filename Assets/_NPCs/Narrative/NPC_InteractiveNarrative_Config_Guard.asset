@@ -64,9 +64,9 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    - actionType: 1
+    - actionType: 10
       dialogue: {fileID: 0}
-      targetAnchorName: Castillo_SavePoint
+      targetAnchorName: CastleOutGuard
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
       randomMoveMinRadius: 5
