@@ -221,31 +221,8 @@ public class GameBootService : MonoBehaviour
             Debug.Log($"[GameBootService] 📋 MODO TESTING - Usando bootPreset: '{profile.bootPreset.name}'");
             profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
 
-            // Si existe un save, restaurar progresión narrativa para evitar re-ejecutar
-            // contenido ya visto (CameraFocusNode, LorePopupNode, etc.).
-            // El estado de mundo (HP, anchor, party, flags) sigue viniendo del bootPreset.
-            if (saveSystem != null && saveSystem.HasSave() && saveSystem.Load(out var savedProgress))
-            {
-                var rtp = profile.GetActivePresetResolved();
-                if (rtp != null)
-                {
-                    if (savedProgress.seenLorePopupIds?.Count > 0)
-                    {
-                        rtp.seenLorePopupIds = new List<string>(savedProgress.seenLorePopupIds);
-                        Debug.Log($"[GameBootService] 🧪 Popups de lore vistos cargados desde save: {rtp.seenLorePopupIds.Count}");
-                    }
-                    if (savedProgress.narrativeBlackboards?.Count > 0)
-                    {
-                        rtp.narrativeBlackboards = new List<PlayerSaveData.NarrativeBlackboardSnapshot>(savedProgress.narrativeBlackboards);
-                        Debug.Log($"[GameBootService] 🧪 Blackboards narrativos cargados desde save: {rtp.narrativeBlackboards.Count}");
-                    }
-                    if (savedProgress.completedInteractiveNarratives?.Count > 0)
-                    {
-                        rtp.completedInteractiveNarratives = new List<string>(savedProgress.completedInteractiveNarratives);
-                        Debug.Log($"[GameBootService] 🧪 Narrativas completadas cargadas desde save: {rtp.completedInteractiveNarratives.Count}");
-                    }
-                }
-            }
+            // En modo testeo el preset define el estado exacto del juego.
+            // No se lee ni mezcla nada del save JSON: "se vuelca al preset runtime lo que tenga el preset de testeo".
 
             // ✅ CRÍTICO: Aplicar el preset de testeo usando la misma lógica que LoadProfile
             // Esto asegura que TODOS los sistemas se inicialicen correctamente
@@ -457,6 +434,36 @@ public class GameBootService : MonoBehaviour
 
         Debug.Log($"[GameBootService] ✅ QuestManager disponible - Restaurando {flags?.Count ?? 0} flags");
         QuestManager.Instance.RestoreFromProfileFlags(flags);
+    }
+
+    // === API pública para recargar preset de testeo ===
+    /// <summary>
+    /// En modo testeo, descarta los avances de la sesión actual y vuelca el bootPreset
+    /// desde cero: detiene runners huérfanos, resetea el runtimePreset y re-aplica todos
+    /// los sistemas (señales, quests, blackboards). Equivale a la primera carga.
+    /// Llamar desde el menú antes de cargar la escena de juego.
+    /// </summary>
+    public static void ReloadTestPreset()
+    {
+        if (_instance == null || !IsAvailable || !_profile.ShouldBootFromPreset()) return;
+        _instance.ReloadTestPresetInternal();
+    }
+
+    private void ReloadTestPresetInternal()
+    {
+        Debug.Log("[GameBootService] 🔄 ReloadTestPreset — descartando sesión anterior y recargando bootPreset...");
+
+        // 1. Parar corrutinas huérfanas de la sesión anterior
+        NarrativeGraphHub.Instance?.StopAllRunners();
+
+        // 2. Volcar el bootPreset al runtimePreset (borra avances)
+        _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
+
+        // 3. Aplicar todos los sistemas igual que en la primera carga
+        ApplyPresetAsLoadedGame(_profile);
+
+        _testingModeInitialized = true;
+        Debug.Log("[GameBootService] ✅ Test preset recargado — sistema reiniciado como primera carga");
     }
 
     // === NUEVO: API estática para Nueva Partida ===

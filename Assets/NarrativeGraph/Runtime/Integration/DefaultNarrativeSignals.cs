@@ -44,6 +44,10 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     readonly Dictionary<string, Action> _custom = new();
     // Eventos que llegaron antes de que hubiera oyentes (se consumen al suscribirse)
     readonly HashSet<string> _pending = new();
+    // Registro persistente: eventos sin oyentes que sobreviven a ResetState(preservePending=true).
+    // Garantiza que una señal disparada antes de que el grafo se suscriba no se pierda nunca.
+    // Solo se limpia en reset completo (nueva partida).
+    readonly HashSet<string> _raised = new();
 
     /// <summary>
     /// Se dispara justo después de cualquier llamada a ResetState().
@@ -116,10 +120,11 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         {
             _pending.Clear();
             _battlePending.Clear();
+            _raised.Clear();
         }
-        else if (_pending.Count > 0 || _battlePending.Count > 0)
+        else if (_pending.Count > 0 || _battlePending.Count > 0 || _raised.Count > 0)
         {
-            Debug.Log($"[Signals] ResetState preservando {_pending.Count} eventos pendientes y {_battlePending.Count} batallas pendientes");
+            Debug.Log($"[Signals] ResetState preservando {_pending.Count} pendientes, {_raised.Count} persistentes, {_battlePending.Count} batallas");
         }
         _battleSubscribers.Clear();
         _qs = null;
@@ -186,8 +191,9 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         }
         else
         {
-            // nadie suscrito → lo dejamos pendiente
+            // nadie suscrito → lo dejamos pendiente y en el registro persistente
             _pending.Add(key);
+            _raised.Add(key);
             Debug.Log($"[Signals] Custom: {key} (sin oyentes → pendiente)");
         }
     }
@@ -196,10 +202,14 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     {
         if (string.IsNullOrWhiteSpace(key) || cb == null) return;
 
-        // Si estaba pendiente, lo consumimos inmediatamente (una sola vez) y NO lo guardamos
-        if (_pending.Remove(key))
+        // Consumir desde _pending (sesión actual) o _raised (persistente a través de resets suaves).
+        // Ambos se limpian juntos: si el evento estaba en cualquiera de los dos, lo disparamos ya.
+        bool wasPending = _pending.Remove(key);
+        bool wasRaised  = _raised.Remove(key);
+
+        if (wasPending || wasRaised)
         {
-            Debug.Log($"[Signals] Custom: {key} (consumido desde pendientes)");
+            Debug.Log($"[Signals] Custom: {key} (consumido desde {(wasRaised && !wasPending ? "registro persistente" : "pendientes")})");
             try { cb(); } catch (Exception e) { Debug.LogException(e); }
             return;
         }

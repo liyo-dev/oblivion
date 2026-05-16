@@ -54,7 +54,11 @@
       "Bash(findstr /i \"interact\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -Directory -ErrorAction SilentlyContinue)",
       "Bash(Select-Object Name)",
-      "Bash(Select-String \"\\\\.cs$\")"
+      "Bash(Select-String \"\\\\.cs$\")",
+      "Bash(ls -la *.md)",
+      "Bash(dir /b *.md)",
+      "Bash(ls CLAUDE.md)",
+      "Bash(dir CLAUDE.md)"
     ]
   }
 }

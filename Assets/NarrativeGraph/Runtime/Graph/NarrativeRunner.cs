@@ -15,11 +15,27 @@ public class NarrativeRunner : MonoBehaviour
     // Ya no hay auto-start. Los grafos se activan mediante señales/eventos.
 
     /// <summary>
+    /// Detiene toda ejecución en curso: para corrutinas huérfanas y limpia el nodo actual.
+    /// Llamar antes de iniciar una nueva sesión de grafo sobre el mismo runner.
+    /// </summary>
+    public void StopExecution()
+    {
+        StopAllCoroutines();
+        if (_current != null && _ctx != null)
+        {
+            try { _current.Exit(_ctx); }
+            catch (System.Exception ex) { Debug.LogError($"[NarrativeRunner] StopExecution Exit error: {ex.Message}"); }
+        }
+        _current = null;
+    }
+
+    /// <summary>
     /// Inicia el grafo desde un nodo específico mediante su GUID.
     /// Útil cuando un evento/señal quiere activar el grafo.
     /// </summary>
     public void StartFromNode(string nodeGuid)
     {
+        StopExecution();
         if (!TryBuildContext()) return;
 
         if (string.IsNullOrEmpty(nodeGuid))
@@ -45,6 +61,7 @@ public class NarrativeRunner : MonoBehaviour
     /// </summary>
     public void StartFromStartNode()
     {
+        StopExecution();
         if (!TryBuildContext()) return;
 
         // Verificar si hay un nodo guardado en el blackboard
@@ -122,15 +139,11 @@ public class NarrativeRunner : MonoBehaviour
         if (_current == null)
         {
             Debug.LogWarning("[Narrative] GoTo(null). Fin del flujo.");
-            // Limpiar el nodo actual del blackboard
             Blackboard.Set("__currentNodeGuid", string.Empty);
             return;
         }
 
-        // Guardar el GUID del nodo actual en el blackboard para persistencia
         Blackboard.Set("__currentNodeGuid", _current.guid);
-
-        // El nodo llama a ready() cuando esté listo para avanzar
         _current.Enter(_ctx, Advance);
     }
 

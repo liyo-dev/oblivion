@@ -319,8 +319,10 @@ public class MainMenuController : MonoBehaviour
 
         if (forcePreset)
         {
-            // MODO TESTING: El preset de testeo tiene prioridad absoluta - ignora saves completamente
-            Debug.Log("[MainMenu] CONTINUE en modo preset/test → Save IGNORADO, se usará bootPreset configurado");
+            // MODO TESTING: Descartar avances de la sesión y recargar el bootPreset desde cero.
+            // Esto detiene corrutinas huérfanas, resetea el runtimePreset y re-aplica todos los sistemas.
+            Debug.Log("[MainMenu] CONTINUE en modo preset/test → Recargando bootPreset desde cero");
+            GameBootService.ReloadTestPreset();
         }
         else if (hasSave)
         {

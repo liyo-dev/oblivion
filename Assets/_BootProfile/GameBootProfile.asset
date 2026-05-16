@@ -15,6 +15,6 @@ MonoBehaviour:
   sceneToLoad: MainMenu
   defaultPlayerPreset: {fileID: 11400000, guid: c0f280fecc17c3f4fbcbe7f0d274f342, type: 2}
   usePresetInsteadOfSave: 1
-  bootPreset: {fileID: 11400000, guid: f2fbf9571fd771342ab4a86deb6c767a, type: 2}
+  bootPreset: {fileID: 11400000, guid: 8f9c7047cfc888e4684f81ece95c6cac, type: 2}
   runtimePreset: {fileID: 11400000, guid: fee66c719481427428bc6c595a24ff8b, type: 2}
   allowAutoSaves: 0

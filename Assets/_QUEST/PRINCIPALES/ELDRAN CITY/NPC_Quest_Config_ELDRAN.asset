@@ -332,12 +332,12 @@ MonoBehaviour:
       targetAnchorName: RestaurantEldran
       targetTransform: {fileID: 0}
       maxMovementDuration: 15
-      walkDisplayDuration: 3
-      turnAroundOnArrival: 1
+      walkDisplayDuration: 1
+      turnAroundOnArrival: 0
       combatTarget: {fileID: 0}
       dialogueToPlay: {fileID: 0}
       delayBeforeAction: 0
-      transitionSettings: {fileID: 0}
+      transitionSettings: {fileID: 11400000, guid: d641980330b54c243a644222c797e582, type: 2}
       useTransition: 1
       transitionDelay: 0
       customAction:

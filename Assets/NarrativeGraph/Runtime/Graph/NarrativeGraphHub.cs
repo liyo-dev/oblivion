@@ -143,6 +143,20 @@ public sealed class NarrativeGraphHub : MonoBehaviour
     }
 
     /// <summary>
+    /// Detiene la ejecución de todos los runners. Llamar antes de recargar un preset
+    /// para evitar que corrutinas de la sesión anterior interfieran con la nueva.
+    /// </summary>
+    public void StopAllRunners()
+    {
+        foreach (var runner in _allRunners)
+        {
+            if (runner != null)
+                runner.StopExecution();
+        }
+        Debug.Log("[NarrativeGraphHub] Todos los runners detenidos.");
+    }
+
+    /// <summary>
     /// Limpia todos los blackboards. Útil al iniciar nueva partida.
     /// Los grafos se deben reiniciar manualmente usando NarrativeGraphStarter en cada escena.
     /// </summary>

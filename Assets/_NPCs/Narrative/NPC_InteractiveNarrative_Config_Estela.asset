@@ -164,7 +164,7 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    - actionType: 7
+    - actionType: 6
       dialogue: {fileID: 0}
       targetAnchorName: 
       targetTransform: {fileID: 0}
