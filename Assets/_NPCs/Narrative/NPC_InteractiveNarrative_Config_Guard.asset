@@ -15,7 +15,7 @@ MonoBehaviour:
   moduleName: 
   description: 
   conditionalNarratives:
-  - description: Arresta al jugador tras completar M6
+  - description: "Arresta al grupo cuando Estela rompe la monta\xF1a"
     priority: 0
     condition:
       conditionType: 5
@@ -98,9 +98,9 @@ MonoBehaviour:
       escortMaxDuration: 120
       escortMaxPlayerDistance: 8
       escortResumeDistance: 3
-      outOfRangeDialogue: {fileID: 0}
+      outOfRangeDialogue: {fileID: 11400000, guid: 87105195ac662d9468082353795d8961, type: 2}
       escortNpcSpeed: 0
-      escortPlayerSpeedMultiplier: 0.6
+      escortPlayerSpeedMultiplier: 0.265
       teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 

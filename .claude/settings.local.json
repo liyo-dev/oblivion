@@ -58,7 +58,10 @@
       "Bash(ls -la *.md)",
       "Bash(dir /b *.md)",
       "Bash(ls CLAUDE.md)",
-      "Bash(dir CLAUDE.md)"
+      "Bash(dir CLAUDE.md)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Directory)",
+      "Bash(Get-Content -Path \"Assets\\\\_NPCs\\\\Narrative\\\\NPC_InteractiveNarrative_Config_Estela.asset\" -TotalCount 100)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

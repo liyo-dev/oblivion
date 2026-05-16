@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6acc03efce17b4479f2b4b3403f4d68, type: 3}
+  m_Name: LoreCfg_GUARD_FOLLOW
+  m_EditorClassIdentifier: Assembly-CSharp::LorePopupConfig
+  entries:
+  - portrait: {fileID: 21300000, guid: 7a3e96bb11e328145bd5582e8a7ae081, type: 3}
+    speakerNameId: CHAR_ESTELA
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_1
+    text: 
+  - portrait: {fileID: 21300000, guid: 9a5897eb50f15fe4bb903bfaa72c9e17, type: 3}
+    speakerNameId: CHAR_LIAM
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_2
+    text: 
+  - portrait: {fileID: 21300000, guid: 0be5b49dc8e6b94449177b4bdc51dac6, type: 3}
+    speakerNameId: CHAR_WILL
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_3
+    text: 
+  - portrait: {fileID: 21300000, guid: e2d1efaf042ab4c49b0865fe8e44fe58, type: 3}
+    speakerNameId: CHAR_LIAM
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_4
+    text: 
+  - portrait: {fileID: 21300000, guid: d810d0e47f4756d42a3181733040b598, type: 3}
+    speakerNameId: CHAR_LIAM
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_5
+    text: 
+  - portrait: {fileID: 21300000, guid: 8a7009212cfa5a947b45e69f219da9ca, type: 3}
+    speakerNameId: CHAR_ELDRAN
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_6
+    text: 
+  - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
+    speakerNameId: CHAR_LIAM
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_7
+    text: 
+  - portrait: {fileID: 21300000, guid: b2f81540a5cebdc4299cdc5994d0ecf6, type: 3}
+    speakerNameId: CHAR_ELDRAN
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_8
+    text: 
+  - portrait: {fileID: 21300000, guid: 7a3e96bb11e328145bd5582e8a7ae081, type: 3}
+    speakerNameId: CHAR_ESTELA
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_9
+    text: 
+  - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
+    speakerNameId: CHAR_LIAM
+    speakerName: 
+    textId: LORE_ESCOLTA_GUARDIA_10
+    text: 
