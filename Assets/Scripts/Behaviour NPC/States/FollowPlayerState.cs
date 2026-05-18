@@ -269,9 +269,14 @@ namespace Game.NPC.States
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
                 context.Agent.isStopped = true;
-                // ✅ Restaurar valores por defecto al salir
+                // Sincronizar nextPosition antes de reactivar updatePosition.
+                // Si el NPC estaba parado con updatePosition=false, el agente puede tener
+                // un nextPosition desincronizado. Reactivar sin sincronizar causa un snap
+                // en el primer frame del estado siguiente.
+                if (!context.Agent.updatePosition)
+                    context.Agent.nextPosition = context.Transform.position;
                 context.Agent.updatePosition = true;
-                context.Agent.updateRotation = false; // NPCSimpleAnimator sigue siendo dueño de la rotación
+                context.Agent.updateRotation = false;
             }
             base.OnExit(context);
         }

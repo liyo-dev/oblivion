@@ -12,6 +12,10 @@ public class NarrativeRunner : MonoBehaviour
     NarrativeContext _ctx;
     NarrativeNode _current;
 
+    // ✅ API pública para acceder al nodo actual y su estado
+    public NarrativeNode CurrentNode => _current;
+    public bool IsCurrentNodeBlockingSave => _current != null && _current.blockSaving;
+
     // Ya no hay auto-start. Los grafos se activan mediante señales/eventos.
 
     /// <summary>
@@ -131,8 +135,6 @@ public class NarrativeRunner : MonoBehaviour
 
     public void GoTo(NarrativeNode node)
     {
-        // Debug.Log($"[Runner] GoTo → {node?.GetType().Name}");
-
         _current?.Exit(_ctx);
         _current = node;
 
@@ -143,8 +145,13 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[NarrativeRunner] ▶ GoTo → {_current.GetType().Name} '{_current.displayTitle}' ({_current.guid})");
         Blackboard.Set("__currentNodeGuid", _current.guid);
-        _current.Enter(_ctx, Advance);
+        _current.Enter(_ctx, () =>
+        {
+            Debug.Log($"[NarrativeRunner] ✅ Advance desde {_current?.GetType().Name ?? "null"} '{_current?.displayTitle}'");
+            Advance();
+        });
     }
 
     void Advance()
@@ -286,9 +293,14 @@ public class NarrativeRunner : MonoBehaviour
             }
 
             bool ready = false;
+            Debug.Log($"[NarrativeRunner] ▶ SubGraph[{branchIndex}] → {node.GetType().Name} '{node.displayTitle}' ({node.guid})");
             try
             {
-                node.Enter(_ctx, () => ready = true);
+                node.Enter(_ctx, () =>
+                {
+                    Debug.Log($"[NarrativeRunner] ✅ SubGraph[{branchIndex}] completó {node.GetType().Name} '{node.displayTitle}'");
+                    ready = true;
+                });
             }
             catch (System.Exception ex)
             {

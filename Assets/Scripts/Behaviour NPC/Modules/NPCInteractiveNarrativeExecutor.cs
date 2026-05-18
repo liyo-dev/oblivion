@@ -826,7 +826,7 @@ namespace Game.NPC.Modules
                 if (anchor != null)
                 {
                     targetPos = anchor.transform.position;
-                    targetRot = anchor.transform.rotation;
+                    targetRot = anchor.GetCharacterRotation();
                     hasTarget = true;
                 }
                 else
@@ -953,7 +953,7 @@ namespace Game.NPC.Modules
             if (entry.escortNpcSpeed > 0f)
                 agent.speed = entry.escortNpcSpeed;
 
-            // Reducir la velocidad del jugador para que no pueda adelantar al NPC
+            // Reducir la velocidad del jugador activo y de los miembros del partido
             vThirdPersonController playerController = null;
             float origFreeWalk = 0f, origFreeRun = 0f, origFreeSprint = 0f;
             float origStrafeWalk = 0f, origStrafeRun = 0f, origStrafeSprint = 0f;
@@ -973,6 +973,20 @@ namespace Game.NPC.Modules
                 playerController.strafeSpeed.walkSpeed    = origStrafeWalk   * mult;
                 playerController.strafeSpeed.runningSpeed = origStrafeRun    * mult;
                 playerController.strafeSpeed.sprintSpeed  = origStrafeSprint * mult;
+            }
+
+            // Reducir también el NavMeshAgent de cada miembro del partido para que
+            // sigan al jugador a la misma velocidad reducida y no adelanten al guardia
+            var partyOriginalSpeeds = new System.Collections.Generic.Dictionary<UnityEngine.AI.NavMeshAgent, float>();
+            if (mult < 1f && Game.NPC.PlayerParty.HasInstance)
+            {
+                foreach (var member in Game.NPC.PlayerParty.Instance.Members)
+                {
+                    var memberAgent = member?.NPCManager?.Agent;
+                    if (memberAgent == null || !memberAgent.isOnNavMesh) continue;
+                    partyOriginalSpeeds[memberAgent] = memberAgent.speed;
+                    memberAgent.speed *= mult;
+                }
             }
 
             _npcManager.StartCinematicSequence(escortSeq);
@@ -1005,7 +1019,7 @@ namespace Game.NPC.Modules
             if (entry.escortNpcSpeed > 0f)
                 agent.speed = originalAgentSpeed;
 
-            // Restaurar velocidad del jugador
+            // Restaurar velocidad del jugador activo
             if (playerController != null)
             {
                 playerController.freeSpeed.walkSpeed    = origFreeWalk;
@@ -1015,6 +1029,10 @@ namespace Game.NPC.Modules
                 playerController.strafeSpeed.runningSpeed = origStrafeRun;
                 playerController.strafeSpeed.sprintSpeed  = origStrafeSprint;
             }
+
+            // Restaurar velocidad de los miembros del partido
+            foreach (var kvp in partyOriginalSpeeds)
+                if (kvp.Key != null) kvp.Key.speed = kvp.Value;
 
             if (_npcManager?.SimpleAnimator != null)
                 _npcManager.SimpleAnimator.AllowManualRotation = true;

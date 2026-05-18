@@ -2,9 +2,6 @@
   "dependencies": {
     "com.unity.2d.enhancers": "1.0.0",
     "com.unity.2d.sprite": "1.0.0",
-    "com.unity.ai.assistant": "1.0.0-pre.12",
-    "com.unity.ai.generators": "1.0.0-pre.20",
-    "com.unity.ai.inference": "2.6.1",
     "com.unity.ai.navigation": "2.0.12",
     "com.unity.burst": "1.8.29",
     "com.unity.cinemachine": "3.1.5",

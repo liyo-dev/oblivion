@@ -216,14 +216,53 @@ public class PartyControlManager : MonoBehaviour
     private void HandleProfileReady()
     {
         Debug.Log("[PartyControlManager] 🔄 GameBootService.OnProfileReady recibido. Reinicializando estado del party.");
-        // Asumir que Will es el personaje activo por defecto al cargar una partida
-        _activeIndex = (int)CharacterSlot.Will;
+        
+        var bootProfile = GameBootService.Profile;
+        if (bootProfile != null)
+        {
+            var preset = bootProfile.GetActivePresetResolved();
+            if (preset != null)
+            {
+                // Cargar el personaje activo desde el save/preset, por defecto es Will (1) si no hay
+                int savedSlot = preset.activeCharacterSlot;
+                
+                // Si intenta cargar Liam o Estela, pero no estn disponibles en este save, volver a Will
+                if (savedSlot != (int)CharacterSlot.Will && !IsSlotAvailable(savedSlot))
+                {
+                    Debug.LogWarning($"[PartyControlManager] El slot guardado {savedSlot} no está disponible. Volviendo a Will por defecto.");
+                    savedSlot = (int)CharacterSlot.Will;
+                }
+                
+                if (savedSlot != _activeIndex) 
+                {
+                    Debug.Log($"[PartyControlManager] Restaurando personaje activo: {(CharacterSlot)savedSlot} (desde {_activeIndex})");
+                    var from = (CharacterSlot)_activeIndex;
+                    var to = (CharacterSlot)savedSlot;
+                    _activeIndex = savedSlot;
+                    
+                    // Asegurarse de que ActiveCharacterSwapper también se reinicialice
+                    ActiveCharacterSwapper.Instance?.ResetState();
+                    
+                    // Hacer el cambio inicial para ocultar el NPC que controlamos
+                    ActiveCharacterSwapper.Instance?.SwitchCharacter(from, to);
+                } 
+                else 
+                {
+                    // Asegurarse de que ActiveCharacterSwapper también se reinicialice
+                    ActiveCharacterSwapper.Instance?.ResetState();
+                }
+            }
+        }
+        else 
+        {
+            // Asumir que Will es el personaje activo por defecto si no hay perfil
+            _activeIndex = (int)CharacterSlot.Will;
+            ActiveCharacterSwapper.Instance?.ResetState();
+        }
+
         _isPartyFollowing = true;
         
-        // Forzar el refresco para que los eventos se disparen y el ActiveCharacterSwapper se actualice
+        // Forzar el refresco para que los eventos se disparen
         ForceRefreshFollowMode();
-        
-        // Asegurarse de que ActiveCharacterSwapper también se reinicialice si es necesario
-        ActiveCharacterSwapper.Instance?.ResetState();
     }
 }

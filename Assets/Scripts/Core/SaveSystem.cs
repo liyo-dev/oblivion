@@ -10,6 +10,12 @@ public class SaveSystem : MonoBehaviour
 
     void Awake()
     {
+        var existing = FindFirstObjectByType<SaveSystem>();
+        if (existing != null && existing != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         DontDestroyOnLoad(gameObject);
         ServiceLocator.Register(this);
     }

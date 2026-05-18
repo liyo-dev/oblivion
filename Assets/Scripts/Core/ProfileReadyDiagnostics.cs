@@ -137,7 +137,7 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         }
     }
 
-    private void HandleProfileReadyForDiagnostics()
+    public void HandleProfileReadyForDiagnostics()
     {
         _profileReadyFired = true;
         _profileReadyTime = Time.time;
@@ -180,7 +180,7 @@ public class ProfileReadyDiagnostics : MonoBehaviour
         if (unsafeAccessors.Count > 0)
         {
             report.AppendLine($"  ⚠️  ACCESOS SIN SUSCRIPCIÓN ({unsafeAccessors.Count}): {string.Join(", ", unsafeAccessors.OrderBy(x => x))}");
-            report.AppendLine("     🔥 Estos sistemas acceden al Profile pero NO están suscritos - POSIBLE BUG!");
+            report.AppendLine("     🔥 Estos sistemas acceden al Profile pero NO están suscritos a OnProfileReady - POSIBLE BUG!");
         }
 
         // Log con nivel apropiado

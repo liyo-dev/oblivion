@@ -30,6 +30,8 @@ public class PlayerSaveData
     // IDs narrativos de los NPCs que están en el equipo del jugador
     public List<string> partyMemberIds = new();
     
+    public int activeCharacterSlot = 1; // 1 = Will por defecto
+    
     // === NUEVO: puntos de teletransporte desbloqueados ===
     public List<string> unlockedTeleportPoints = new();
     
@@ -136,6 +138,8 @@ public class PlayerSaveData
         {
             d.partyMemberIds = preset.partyMemberIds != null ? new List<string>(preset.partyMemberIds) : new List<string>();
         }
+        
+        d.activeCharacterSlot = preset.activeCharacterSlot;
         
         // NPCs
         if (preset.npcPositions != null && preset.npcPositions.Count > 0)

@@ -156,7 +156,16 @@ public class LorePopupUI : MonoBehaviour
 
     IEnumerator AnimateInRoutine()
     {
-        if (popupRoot == null) yield break;
+        if (popupRoot == null)
+        {
+            Debug.LogError("[LorePopupUI] ❌ 'popupRoot' no está asignado en el Inspector. El popup no será visible.");
+            yield break;
+        }
+        if (canvasGroup == null)
+        {
+            Debug.LogError("[LorePopupUI] ❌ 'canvasGroup' no está asignado en el Inspector. El popup no será visible.");
+            yield break;
+        }
 
         if (_anchoredPositionOpen == Vector2.zero)
             _anchoredPositionOpen = popupRoot.anchoredPosition;

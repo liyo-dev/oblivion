@@ -71,6 +71,15 @@ public class SavePoint : MonoBehaviour
             return;
         }
 
+        // ✅ Verificar si el nodo narrativo actual bloquea el guardado
+        var narrativeRunner = FindObjectOfType<NarrativeRunner>();
+        if (narrativeRunner != null && narrativeRunner.IsCurrentNodeBlockingSave)
+        {
+            Debug.Log("[SavePoint] No se puede guardar: el nodo narrativo actual bloquea el guardado.");
+            ShowBlockedSaveFeedback();
+            return;
+        }
+
         // En este flujo el Interactable muestra el prompt cuando el player está encima,
         // pero no dependamos del trigger para guardar: usamos PlayerService y caemos a _playerInRange.
         GameObject player = null;
@@ -214,6 +223,18 @@ public class SavePoint : MonoBehaviour
         string message = saveSuccessFallback;
         if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(saveSuccessLocalizationKey))
             message = LocalizationManager.Instance.Get(saveSuccessLocalizationKey, saveSuccessFallback);
+
+        StartCoroutine(ShowSaveFeedbackNextFrame(message));
+    }
+
+    /// <summary>Muestra feedback cuando el guardado está bloqueado</summary>
+    void ShowBlockedSaveFeedback()
+    {
+        string message = "No puedes guardar en este momento...";
+        
+        // Intentar localizar el mensaje
+        if (LocalizationManager.Instance != null)
+            message = LocalizationManager.Instance.Get("SAVEPOINT_BLOCKED", message);
 
         StartCoroutine(ShowSaveFeedbackNextFrame(message));
     }

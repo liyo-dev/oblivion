@@ -552,7 +552,7 @@ namespace Game.NPC
             }
 
             Vector3 targetPosition = targetAnchor.transform.position;
-            Quaternion targetRotation = targetAnchor.transform.rotation;
+            Quaternion targetRotation = targetAnchor.GetCharacterRotation();
             float distance = Vector3.Distance(transform.position, targetPosition);
 
             Debug.Log($"[NPCQuestActionExecutor:{name}] ✅ Anchor '{action.targetAnchorName}' ENCONTRADO");
@@ -755,7 +755,7 @@ namespace Game.NPC
                 {
                     Debug.LogWarning($"[NPCQuestActionExecutor:{name}] ⚠️ TeleportService no disponible, usando teletransporte directo");
                     player.transform.position = targetAnchor.transform.position;
-                    player.transform.rotation = targetAnchor.transform.rotation;
+                    player.transform.rotation = targetAnchor.GetCharacterRotation();
                 }
             }
             else
@@ -768,7 +768,7 @@ namespace Game.NPC
 
             PlaceNpcAtPosition(
                 targetAnchor.transform.position,
-                targetAnchor.transform.rotation,
+                targetAnchor.GetCharacterRotation(),
                 action.turnAroundOnArrival,
                 "acción Teleport"
             );

@@ -1,178 +1,195 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 /// <summary>
-/// Servicio simple que hace persistir el GameBootProfile entre escenas
-/// Su única función es actuar como contenedor estático del ScriptableObject
+/// Orquesta el arranque del juego, la carga de saves y la gestión del perfil de jugador.
+///
+/// Flujo de arranque:
+/// 1. Awake() se ejecuta al iniciar el juego (desde la escena 'Start').
+/// 2. Carga el GameBootProfile desde Resources.
+/// 3. Llama a PrepareActivePreset() para decidir qué datos usar:
+///    - Si está en modo test (usePresetInsteadOfSave=true), usa el 'bootPreset'.
+///    - Si no, intenta cargar el save JSON.
+///    - Si no hay save, usa el 'defaultPlayerPreset'.
+/// 4. Dispara el evento OnProfileReady para que otros sistemas se inicialicen.
+/// 5. Carga la escena principal del juego (ej: 'MainWorld').
+///
+/// El GameBootService persiste entre escenas.
 /// </summary>
-[DefaultExecutionOrder(100)] // ✅ Ejecutarse DESPUÉS de managers como QuestManager
+[DefaultExecutionOrder(-1000)]
 public class GameBootService : MonoBehaviour
 {
-    [Header("Boot Profile")]
-    [SerializeField] private GameBootProfile bootProfile;
-    
-    // Cache estático para acceso global
+    #region Singleton y State
+    private static GameBootService _instance;
+    public static bool IsAvailable => _instance != null;
+
     private static GameBootProfile _profile;
-    private static bool _isInitialized;
-    private static bool _testingModeInitialized; // ✅ NUEVO: Evita resetear el runtime en cada escena en modo testeo
-    private static GameBootService _instance; // ✅ Referencia al singleton
+    public static GameBootProfile Profile => _profile;
+
+    private static SaveSystem _saveSystem;
+    public static SaveSystem SaveSystem => _saveSystem;
+
+    public static event System.Action OnProfileReady;
     
-    // Evento sticky: si ya disparó, los suscriptores tardíos lo reciben inmediatamente
-    private static bool _profileReadyFired;
-    private static System.Action _onProfileReady;
-    public static event System.Action OnProfileReady
+    private bool _isInitialized;
+    #endregion
+
+    #region Editor
+#if UNITY_EDITOR
+    [UnityEditor.MenuItem("Game/Boot/Force Reload Test Preset")]
+    public static void ForceReloadTestPreset()
     {
-        add
+        if (!Application.isPlaying || _instance == null)
         {
-            _onProfileReady += value;
-            if (_profileReadyFired) value?.Invoke();
+            Debug.LogWarning("Esta opción solo funciona en PlayMode.");
+            return;
         }
-        remove { _onProfileReady -= value; }
+        ReloadTestPreset();
     }
     
-    // Propiedad pública para acceder al profile desde cualquier lugar
-    public static GameBootProfile Profile 
-    { 
-        get 
+    [UnityEditor.MenuItem("Game/Boot/Force New Game Reset")]
+    public static void ForceNewGameReset()
+    {
+        if (!Application.isPlaying || _instance == null)
         {
-            // ✅ Registrar quién está accediendo al Profile para diagnóstico
-            #if UNITY_EDITOR
-            if (_profile != null)
+            Debug.LogWarning("Esta opción solo funciona en PlayMode.");
+            return;
+        }
+        NewGameReset();
+    }
+#endif
+    #endregion
+
+    #region Static Lifecycle
+    /// <summary>
+    /// Garantiza que el GameBootService exista al iniciar el juego.
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (_instance != null) return;
+
+        var existing = FindFirstObjectByType<GameBootService>();
+        if (existing)
+        {
+            _instance = existing;
+            return;
+        }
+        
+        var go = new GameObject("GameBootService");
+        _instance = go.AddComponent<GameBootService>();
+    }
+
+#if UNITY_EDITOR
+    [UnityEditor.Callbacks.DidReloadScripts]
+    private static void OnScriptsReloaded()
+    {
+        // Si el juego está en PlayMode y se recargan los scripts,
+        // es posible que las referencias estáticas se pierdan.
+        if (Application.isPlaying && _instance == null)
+        {
+            _instance = FindFirstObjectByType<GameBootService>();
+            if (_instance)
             {
-                var stackTrace = new System.Diagnostics.StackTrace(1, false);
-                var frame = stackTrace.GetFrame(0);
-                if (frame != null)
-                {
-                    var method = frame.GetMethod();
-                    if (method != null && method.DeclaringType != null)
-                    {
-                        string callerType = method.DeclaringType.Name;
-                        ProfileReadyDiagnostics.RegisterProfileAccess(callerType);
-                    }
-                }
+                Debug.Log("[GameBootService] 🔄 Referencia estática restaurada tras recarga de scripts.");
             }
-            #endif
-            
-            return _profile;
         }
     }
-
-    /// <summary>
-    /// Verifica si el servicio está disponible y inicializado.
-    /// </summary>
-    public static bool IsAvailable => _isInitialized && _profile != null;
-
-    /// <summary>
-    /// Indica si el perfil está configurado para forzar el boot desde el preset (modo test).
-    /// </summary>
-    public static bool IsPresetOverrideActive => _profile != null && _profile.ShouldBootFromPreset();
     
-    #if UNITY_EDITOR
-    /// <summary>
-    /// Resetea las variables estáticas cuando se sale de PlayMode en el editor.
-    /// Esto previene que valores de ejecuciones anteriores contaminen nuevas sesiones.
-    /// </summary>
-    [UnityEditor.InitializeOnEnterPlayMode]
-    private static void ResetStaticsOnEnterPlayMode(UnityEditor.EnterPlayModeOptions options)
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticsOnEnterPlayMode()
     {
-        _isInitialized = false;
-        _testingModeInitialized = false;
+        Debug.Log("[GameBootService] 🔄 Variables estáticas reseteadas al entrar en PlayMode");
         _instance = null;
         _profile = null;
-        _onProfileReady = null;
-        _profileReadyFired = false;
-        Debug.Log("[GameBootService] 🔄 Variables estáticas reseteadas al entrar en PlayMode");
+        _saveSystem = null;
+        OnProfileReady = null;
     }
-    #endif
-    
-    void Awake()
-    {
-        // ✅ CRÍTICO: En editor, permitir reinicialización si se inicia desde otra escena
-        // En build, el flujo siempre es Start → MainWorld, pero en editor se puede iniciar desde cualquier escena
-        #if UNITY_EDITOR
-        bool isReinitInEditor = _isInitialized && UnityEditor.EditorApplication.isPlaying;
-        if (isReinitInEditor)
-        {
-            Debug.Log("[GameBootService] 🔄 Reinicializando desde editor (inicio desde escena diferente a Start)");
-            // Destruir el GameObject anterior y permitir que este nuevo se inicialice
-            if (_instance != null && _instance != this)
-            {
-                Destroy(_instance.gameObject);
-            }
-            _isInitialized = false;
-            _instance = null;
-            _profile = null;
-        }
-        #endif
-        
-        // Si ya tenemos el profile cacheado, destruir este GameObject (evita duplicados en build)
-        if (_isInitialized)
-        {
-            Debug.Log("[GameBootService] Profile ya está inicializado. Destruyendo duplicado.");
-            Destroy(gameObject);
-            return;
-        }
-        
-        // Validar que tenemos el profile asignado
-        if (bootProfile == null)
-        {
-            Debug.LogError("[GameBootService] No se ha asignado GameBootProfile en el inspector!");
-            Destroy(gameObject);
-            return;
-        }
-        
-        // Cachear el profile para acceso global
-        _profile = bootProfile;
-        _instance = this;
-        _isInitialized = true;
-        
-        // Hacer que este GameObject persista entre escenas
-        DontDestroyOnLoad(gameObject);
-        
-        // Suscribirse a eventos de carga de escena para reforzar el preset de testeo
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        
-        Debug.Log($"[GameBootService] 🎮 GameBootProfile '{bootProfile.name}' cacheado - Preparando preset...");
+#endif
+    #endregion
 
+    #region Unity Lifecycle
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        if (_isInitialized) return;
+        _isInitialized = true;
+
+        // Cargar el perfil de arranque
+        _profile = Resources.Load<GameBootProfile>("GameBootProfile");
+        if (_profile == null)
+        {
+            Debug.LogError("[GameBootService] No se encontró 'GameBootProfile' en Resources. El juego no puede arrancar.");
+            return;
+        }
+
+        // Inicializar el sistema de guardado
+        _saveSystem = FindFirstObjectByType<SaveSystem>();
+        if (_saveSystem == null)
+        {
+            var saveGo = new GameObject("[SaveSystem]");
+            _saveSystem = saveGo.AddComponent<SaveSystem>();
+        }
+
+        Debug.Log($"[GameBootService] 🎮 GameBootProfile '{_profile.name}' cacheado - Preparando preset...");
+        
         // Preparar el runtimePreset según reglas: preset de test -> save -> default
         PrepareActivePreset();
         
         // ✅ CRÍTICO: Diferir OnProfileReady un frame para permitir que todos los OnEnable() se ejecuten
-        // Esto garantiza que BossArenaController, NPCManager, etc. estén suscritos antes de disparar el evento
         StartCoroutine(NotifyProfileReadyDelayed());
-    }
-    
-    private System.Collections.IEnumerator NotifyProfileReadyDelayed()
-    {
-        // Esperar un frame para que todos los OnEnable() se ejecuten
-        yield return null;
         
-        // Ahora notificar que el profile está listo
-        Debug.Log($"[GameBootService] 📢 Disparando OnProfileReady (componentes listos para recibir)");
-        _profileReadyFired = true;
-        _onProfileReady?.Invoke();
+        // Suscribirse a eventos de carga de escena para reforzar el preset de testeo
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (_instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            _instance = null;
+        }
     }
 
+    private IEnumerator NotifyProfileReadyDelayed()
+    {
+        yield return null; // Esperar un frame
+        Debug.Log($"[GameBootService] 📢 Disparando OnProfileReady (componentes listos para recibir)");
+        OnProfileReady?.Invoke();
+        
+        var diagnostics = FindFirstObjectByType<ProfileReadyDiagnostics>();
+        if (diagnostics != null)
+        {
+            diagnostics.HandleProfileReadyForDiagnostics();
+        }
+    }
+    #endregion
+
+    #region Public API
+    /// <summary>
+    /// Indica si el perfil está configurado para forzar el boot desde el preset (modo test).
+    /// </summary>
+    public static bool IsPresetOverrideActive => _profile != null && _profile.ShouldBootFromPreset();
+    #endregion
+
+    #region Scene Load Handling
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // ✅ NUEVO COMPORTAMIENTO: En modo testeo, solo aplicar el preset la PRIMERA vez
-        // Luego permitir que el runtime evolucione libremente entre escenas
-        // Esto permite guardar el progreso en SavePoints y continuar acumulando avances
         if (_profile != null && _profile.ShouldBootFromPreset() && _profile.bootPreset != null)
         {
             // Solo resetear al bootPreset si es la primera inicialización
-            // En cambios de escena subsecuentes, mantener el runtime evolucionado
-            if (!_testingModeInitialized)
+            if (scene.name == "Start")
             {
                 _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
                 
@@ -182,12 +199,9 @@ public class GameBootService : MonoBehaviour
                 {
                     var preset = _profile.GetActivePresetResolved();
                     if (preset != null)
-                    {
                         qm.RestoreFromProfileFlags(preset.flags);
-                    }
                 }
                 
-                _testingModeInitialized = true;
                 Debug.Log($"[GameBootService] 🧪 Modo testeo inicializado desde bootPreset '{_profile.bootPreset.name}' - El runtime ahora evolucionará libremente");
             }
             else
@@ -196,101 +210,79 @@ public class GameBootService : MonoBehaviour
             }
         }
     }
+    #endregion
 
+    #region Preset and Save Loading
     private void PrepareActivePreset()
     {
         Debug.Log($"[GameBootService] 🚀 PrepareActivePreset() iniciado");
         
-        var profile = _profile;
-        if (profile == null) return;
-
-        // Intentar localizar un SaveSystem en escena (persistente)
-        var saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
+        if (_profile == null)
+        {
+            Debug.LogError("[GameBootService] _profile es null. No se puede preparar preset.");
+            return;
+        }
         
-        Debug.Log($"[GameBootService] 🔍 SaveSystem: {(saveSystem != null ? "Disponible" : "NULL")}");
-        Debug.Log($"[GameBootService] 🔍 SaveSystem.HasSave(): {(saveSystem?.HasSave() ?? false)}");
-        Debug.Log($"[GameBootService] 🔍 Profile.ShouldBootFromPreset(): {profile.ShouldBootFromPreset()}");
-        Debug.Log($"[GameBootService] 🔍 Profile.bootPreset: {(profile.bootPreset != null ? profile.bootPreset.name : "NULL")}");
-
-        bool initialized = false;
+        Debug.Log($"[GameBootService] 🔍 SaveSystem: {(_saveSystem != null ? "Disponible" : "NO Disponible")}");
+        Debug.Log($"[GameBootService] 🔍 SaveSystem.HasSave(): {_saveSystem?.HasSave()}");
+        Debug.Log($"[GameBootService] 🔍 Profile.ShouldBootFromPreset(): {_profile.ShouldBootFromPreset()}");
+        Debug.Log($"[GameBootService] 🔍 Profile.bootPreset: {(_profile.bootPreset != null ? _profile.bootPreset.name : "NULL")}");
 
         // 1) MODO TESTING: El preset de testeo actúa COMO SI FUERA una partida cargada
-        // Aplica TODOS los sistemas (quests, NPCs, blackboards, etc.) como LoadProfile()
-        if (profile.ShouldBootFromPreset())
+        if (_profile.ShouldBootFromPreset())
         {
-            Debug.Log($"[GameBootService] 📋 MODO TESTING - Usando bootPreset: '{profile.bootPreset.name}'");
-            profile.EnsureRuntimePresetFromTemplate(profile.bootPreset);
-
+            Debug.Log($"[GameBootService] 📋 MODO TESTING - Usando bootPreset: '{_profile.bootPreset.name}'");
+            _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
+            
             // En modo testeo el preset define el estado exacto del juego.
             // No se lee ni mezcla nada del save JSON: "se vuelca al preset runtime lo que tenga el preset de testeo".
-
+            
             // ✅ CRÍTICO: Aplicar el preset de testeo usando la misma lógica que LoadProfile
-            // Esto asegura que TODOS los sistemas se inicialicen correctamente
-            ApplyPresetAsLoadedGame(profile);
-            
-            // Marcar como inicializado para que OnSceneLoaded no resetee
-            _testingModeInitialized = true;
-            
-            // Solo log en modo testing (útil para debug)
+            ApplyPresetAsLoadedGame(_profile);
             Debug.Log("[GameBootService] ✅ Inicializado desde bootPreset (testing mode) - Aplicados todos los sistemas como si fuera una partida cargada");
-            initialized = true;
         }
         // 2) Intentar cargar partida si existe (SOLO si NO hay preset de testeo)
-        else if (saveSystem != null && saveSystem.HasSave())
+        else if (_saveSystem != null && _saveSystem.HasSave())
         {
-            if (profile.LoadProfile(saveSystem))
-            {
-                // Log eliminado - carga normal no necesita log
-                _testingModeInitialized = false; // ✅ En modo normal, resetear flag
-                initialized = true;
-            }
+            Debug.Log("[GameBootService] 💾 Cargando partida desde save JSON...");
+            _profile.LoadProfile(_saveSystem);
         }
-
         // 3) Si no, usar preset por defecto
-        if (!initialized)
+        else
         {
-            if (profile.defaultPlayerPreset)
+            Debug.Log("[GameBootService] 📄 No hay save - Usando preset por defecto");
+            if (_profile.defaultPlayerPreset)
             {
-                profile.EnsureRuntimePresetFromTemplate(profile.defaultPlayerPreset);
-                // Log eliminado - inicialización normal no necesita log
+                _profile.EnsureRuntimePresetFromTemplate(_profile.defaultPlayerPreset);
             }
             else
             {
-                profile.EnsureRuntimePreset();
+                _profile.EnsureRuntimePreset();
                 Debug.LogWarning("[GameBootService] No hay defaultPlayerPreset. Se crea runtimePreset vacío.");
             }
-            _testingModeInitialized = false; // ✅ En modo normal, resetear flag
         }
 
-        // Log rápido de diagnóstico
-        var p = profile.GetActivePresetResolved();
-        if (p)
+        var p = _profile.GetActivePresetResolved();
+        if (p != null)
         {
             // Debug.Log($"[GameBootService] RuntimePreset listo → Anchor: {p.spawnAnchorId}, HP: {p.currentHP}/{p.maxHP}, MP: {p.currentMP}/{p.maxMP}, Slots: L:{p.leftSpellId} R:{p.rightSpellId} S:{p.specialSpellId}");
         }
         
-        // === reconstruir estados del QuestManager desde flags del perfil ===
         // NOTA: Esto ya se hace en ApplyPresetAsLoadedGame() para modo testing,
         // pero lo dejamos aquí para el caso de defaultPlayerPreset
-        if (!profile.ShouldBootFromPreset())
+        if (!_profile.ShouldBootFromPreset())
         {
-            var qm = QuestManager.Instance;
-            if (qm != null && p != null)
+            // Aplicar el preset por defecto al jugador
+            var playerPresetService = FindFirstObjectByType<PlayerPresetService>();
+            if (playerPresetService != null)
             {
-                qm.RestoreFromProfileFlags(p.flags);
-                Debug.Log($"[GameBootService] ✅ Quests restauradas (modo normal) desde {p.flags?.Count ?? 0} flags");
-            }
-            else if (p != null && p.flags != null && p.flags.Count > 0)
-            {
-                Debug.LogWarning($"[GameBootService] ⚠️ QuestManager.Instance es NULL en modo normal - Restaurando cuando esté listo");
-                StartCoroutine(RestoreQuestsWhenReady(p.flags));
+                playerPresetService.ApplyCurrentPreset();
             }
         }
     }
-    
+
     /// <summary>
     /// Aplica un preset como si fuera una partida cargada, inicializando TODOS los sistemas.
-    /// Esto incluye: quests, NPCs, blackboards, bosses, spawn anchor, etc.
     /// </summary>
     private void ApplyPresetAsLoadedGame(GameBootProfile profile)
     {
@@ -323,11 +315,10 @@ public class GameBootService : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[GameBootService]   ⚠️ QuestManager.Instance es NULL - Las quests se restaurarán cuando QuestManager esté disponible");
-            // ✅ CRÍTICO: Restaurar quests cuando QuestManager esté listo
+            // Si QuestManager no está listo, diferir la restauración
             StartCoroutine(RestoreQuestsWhenReady(preset.flags));
         }
-        
+
         // 4. Aplicar posiciones de NPCs
         // ⚠️ NOTA: En modo testeo con preset, esto se ejecuta ANTES de que MainWorld cargue
         // Los NPCs no existen todavía, por lo que WorldBootstrap lo hará cuando MainWorld esté cargada
@@ -370,7 +361,6 @@ public class GameBootService : MonoBehaviour
             }
             else
             {
-                // ✅ CRÍTICO: Si el Hub no está disponible aún, diferir la restauración
                 Debug.LogWarning($"[GameBootService]   ⏳ NarrativeGraphHub.Instance es NULL - diferiendo restauración de {preset.narrativeBlackboards.Count} blackboards");
                 StartCoroutine(RestoreBlackboardsWhenHubReady(preset.narrativeBlackboards));
             }
@@ -382,66 +372,46 @@ public class GameBootService : MonoBehaviour
         
         Debug.Log($"[GameBootService] 🎮 Preset de testeo aplicado como partida cargada - Sistema completo inicializado");
     }
-    
-    /// <summary>
-    /// Espera a que NarrativeGraphHub esté listo y luego restaura los blackboards.
-    /// </summary>
-    private System.Collections.IEnumerator RestoreBlackboardsWhenHubReady(List<PlayerSaveData.NarrativeBlackboardSnapshot> blackboards)
-    {
-        int attempts = 0;
-        const int maxAttempts = 100; // 5 segundos máximo (50ms * 100)
-        
-        while (attempts < maxAttempts)
-        {
-            var hub = NarrativeGraphHub.Instance;
-            if (hub != null)
-            {
-                var runners = hub.GetAllRunners();
-                if (runners != null && runners.Count > 0)
-                {
-                    Debug.Log($"[GameBootService] ✅ NarrativeGraphHub listo con {runners.Count} runners - restaurando {blackboards.Count} blackboards");
-                    hub.RestoreBlackboards(blackboards);
-                    yield break;
-                }
-            }
-            
-            attempts++;
-            yield return new WaitForSeconds(0.05f);
-        }
-        
-        Debug.LogError($"[GameBootService] ❌ Timeout esperando NarrativeGraphHub - NO se restauraron {blackboards.Count} blackboards");
-    }
-    
-    /// <summary>
-    /// Corrutina que espera a que QuestManager esté disponible y luego restaura las quests.
-    /// </summary>
-    private System.Collections.IEnumerator RestoreQuestsWhenReady(System.Collections.Generic.List<string> flags)
-    {
-        Debug.Log("[GameBootService] ⏳ Esperando a que QuestManager esté disponible...");
 
-        float waited = 0f;
-        const float timeout = 10f;
-        while (QuestManager.Instance == null)
+    private IEnumerator RestoreQuestsWhenReady(IReadOnlyList<string> flags)
+    {
+        var wait = new WaitForSeconds(0.1f);
+        for (int i = 0; i < 10; i++) // 1 segundo de timeout
         {
-            yield return null;
-            waited += Time.unscaledDeltaTime;
-            if (waited >= timeout)
+            if (QuestManager.Instance != null)
             {
-                Debug.LogError("[GameBootService] Timeout esperando QuestManager — quests no restauradas.");
+                QuestManager.Instance.RestoreFromProfileFlags(flags);
+                Debug.Log($"[GameBootService]   ✅ (Diferido) Quests restauradas desde {flags?.Count ?? 0} flags");
                 yield break;
             }
+            yield return wait;
         }
-
-        Debug.Log($"[GameBootService] ✅ QuestManager disponible - Restaurando {flags?.Count ?? 0} flags");
-        QuestManager.Instance.RestoreFromProfileFlags(flags);
+        Debug.LogError("[GameBootService] Timeout esperando a QuestManager.Instance");
     }
 
-    // === API pública para recargar preset de testeo ===
+    private IEnumerator RestoreBlackboardsWhenHubReady(List<PlayerSaveData.NarrativeBlackboardSnapshot> blackboards)
+    {
+        var wait = new WaitForSeconds(0.1f);
+        for (int i = 0; i < 10; i++) // 1 segundo de timeout
+        {
+            if (NarrativeGraphHub.Instance != null)
+            {
+                NarrativeGraphHub.Instance.RestoreBlackboards(blackboards);
+                Debug.Log($"[GameBootService]   ✅ (Diferido) Blackboards narrativos restaurados: {blackboards.Count}");
+                yield break;
+            }
+            yield return wait;
+        }
+        Debug.LogError("[GameBootService] Timeout esperando a NarrativeGraphHub.Instance");
+    }
+    #endregion
+
+    #region Public API para Testing y Resets
+    // ==== API pública para recargar preset de testeo ====
     /// <summary>
     /// En modo testeo, descarta los avances de la sesión actual y vuelca el bootPreset
     /// desde cero: detiene runners huérfanos, resetea el runtimePreset y re-aplica todos
-    /// los sistemas (señales, quests, blackboards). Equivale a la primera carga.
-    /// Llamar desde el menú antes de cargar la escena de juego.
+    /// los sistemas como si fuera la primera vez que se carga.
     /// </summary>
     public static void ReloadTestPreset()
     {
@@ -452,52 +422,46 @@ public class GameBootService : MonoBehaviour
     private void ReloadTestPresetInternal()
     {
         Debug.Log("[GameBootService] 🔄 ReloadTestPreset — descartando sesión anterior y recargando bootPreset...");
-
-        // 1. Parar corrutinas huérfanas de la sesión anterior
-        NarrativeGraphHub.Instance?.StopAllRunners();
-
+        
+        // 1. Detener todos los grafos narrativos para evitar runners huérfanos
+        if (NarrativeGraphHub.Instance != null)
+        {
+            NarrativeGraphHub.Instance.StopAllRunners();
+        }
+        
         // 2. Volcar el bootPreset al runtimePreset (borra avances)
         _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
-
-        // 3. Aplicar todos los sistemas igual que en la primera carga
+        
+        // 3. Re-aplicar todos los sistemas como si fuera una carga de partida
         ApplyPresetAsLoadedGame(_profile);
-
-        _testingModeInitialized = true;
+        
+        // 4. Forzar que todos los sistemas suscritos a OnProfileReady se re-inicialicen
+        OnProfileReady?.Invoke();
+        
         Debug.Log("[GameBootService] ✅ Test preset recargado — sistema reiniciado como primera carga");
     }
 
-    // === NUEVO: API estática para Nueva Partida ===
     /// <summary>
     /// Borra el save y restablece el runtimePreset al defaultPlayerPreset.
-    /// Llamar desde menú antes de cargar la escena inicial de juego.
     /// IMPORTANTE: Si el modo testing está activo, respeta el bootPreset en lugar de resetear.
     /// </summary>
     public static void NewGameReset()
     {
-        if (!IsAvailable) return;
-        
+        if (_instance == null || !IsAvailable) return;
+
         // Si el modo testing está activo, no resetear - mantener el bootPreset
         if (_profile.ShouldBootFromPreset() && _profile.bootPreset != null)
         {
             _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
-            _testingModeInitialized = true; // ✅ Marcar como inicializado
             Debug.Log("[GameBootService] NewGameReset llamado con testing mode activo → Manteniendo bootPreset");
-            return;
+        }
+        else
+        {
+            _profile.NewGameReset(_saveSystem);
         }
         
-        var save = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
-        _profile.NewGameReset(save);
-        _testingModeInitialized = false; // ✅ Resetear flag para modo normal
-
-        // Limpiar estado runtime persistente (DontDestroyOnLoad) que puede arrastrarse
-        // cuando se inicia "Nueva Partida" sin reiniciar la aplicación.
-        if (Game.NPC.PlayerParty.HasInstance)
-        {
-            Game.NPC.PlayerParty.Instance.ResetForNewGame();
-        }
-
-        // Limpiar blackboards de todos los grafos narrativos para nueva partida
-        // Los grafos siguen esperando eventos, pero con estado limpio
-        NarrativeGraphHub.Instance?.ClearAllBlackboards();
+        // Forzar re-inicialización de sistemas
+        OnProfileReady?.Invoke();
     }
+    #endregion
 }

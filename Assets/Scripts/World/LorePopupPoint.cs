@@ -34,23 +34,53 @@ public class LorePopupPoint : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (_usedThisSession) return;
-        if (!other.CompareTag("Player")) return;
-        if (AlreadySeen()) return;
+        Debug.Log($"[LorePopupPoint:{name}] OnTriggerEnter: '{other.name}' tag='{other.tag}' | usedThisSession={_usedThisSession} | persistenceId='{persistenceId}'");
+
+        if (_usedThisSession)
+        {
+            Debug.Log($"[LorePopupPoint:{name}] Bloqueado: ya usado esta sesión.");
+            return;
+        }
+
+        if (!other.CompareTag("Player"))
+        {
+            Debug.Log($"[LorePopupPoint:{name}] Bloqueado: tag '{other.tag}' no es 'Player'.");
+            return;
+        }
+
+        if (AlreadySeen())
+        {
+            Debug.Log($"[LorePopupPoint:{name}] Bloqueado: persistenceId '{persistenceId}' ya está en seenLorePopupIds.");
+            return;
+        }
 
         _usedThisSession = true;
         MarkAsSeen();
 
         // Mostrar popup directo si hay config asignada
         if (loreConfig != null)
-            LorePopupUI.Instance?.Show(loreConfig, null);
+        {
+            if (LorePopupUI.Instance == null)
+                Debug.LogError($"[LorePopupPoint:{name}] ❌ loreConfig asignado pero LorePopupUI.Instance es NULL. Añade un LorePopupUI al Canvas de la escena.");
+            else
+                LorePopupUI.Instance.Show(loreConfig, null);
+        }
 
         // Disparar evento al grafo si hay clave definida
         if (!string.IsNullOrEmpty(narrativeEventKey))
         {
             var signals = DefaultNarrativeSignals.Instance;
-            signals?.RaiseCustom(narrativeEventKey);
+            if (signals == null)
+                Debug.LogError($"[LorePopupPoint:{name}] ❌ narrativeEventKey='{narrativeEventKey}' pero DefaultNarrativeSignals.Instance es NULL.");
+            else
+            {
+                Debug.Log($"[LorePopupPoint:{name}] ✅ RaiseCustom('{narrativeEventKey}')");
+                signals.RaiseCustom(narrativeEventKey);
+            }
         }
+
+        if (loreConfig == null && string.IsNullOrEmpty(narrativeEventKey))
+            Debug.LogWarning($"[LorePopupPoint:{name}] ⚠️ Ni loreConfig ni narrativeEventKey están asignados. El trigger no hace nada.");
 
         if (disableAfterUse)
             gameObject.SetActive(false);

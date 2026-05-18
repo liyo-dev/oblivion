@@ -16,6 +16,9 @@ public abstract class NarrativeNode
     // Título visible en la card
     public string displayTitle;
 
+    [Tooltip("Si esta marcado, el jugador NO podra guardar partida mientras esta en este nodo narrativo.")]
+    public bool blockSaving = false;
+
     // Campos legacy (ocultos) para mantener compatibilidad con grafos existentes.
     [HideInInspector] public PortAnchor inputAnchor = PortAnchor.Left;
     [HideInInspector] public PortAnchor outputAnchor = PortAnchor.Right;

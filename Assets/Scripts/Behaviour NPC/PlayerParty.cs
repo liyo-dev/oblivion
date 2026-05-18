@@ -813,22 +813,6 @@ namespace Game.NPC
                 Log($"🧹 Limpiados {nullCount} miembros null tras cambio de escena");
             }
             
-            // ✅ CRÍTICO: Si el party quedó vacío pero hay IDs que deberían estar,
-            // forzar restauración desde el preset actual
-            if (_members.Count == 0)
-            {
-                var profile = GameBootService.Profile;
-                if (profile != null)
-                {
-                    var preset = profile.GetActivePresetResolved();
-                    if (preset != null && preset.partyMemberIds != null && preset.partyMemberIds.Count > 0)
-                    {
-                        Log($"🔄 Party vacío tras cambio de escena - Restaurando {preset.partyMemberIds.Count} miembros desde preset");
-                        RestoreMembersFromIds(preset.partyMemberIds);
-                    }
-                }
-            }
-            
             if (_pendingMemberIds.Count > 0)
             {
                 Log($"🔄 Nueva escena cargada, reintentando restaurar {_pendingMemberIds.Count} miembros pendientes...");
@@ -884,18 +868,21 @@ namespace Game.NPC
         private void TeleportFarMembersForCombat()
         {
             const float combatTeleportThreshold = 15f; // Si está más lejos de 15m, teletransportar
-            
+
             for (int i = 0; i < _members.Count; i++)
             {
                 var member = _members[i];
                 if (member == null) continue;
-                
+
+                // No teletransportar miembros en cinemática (escoltas, secuencias, etc.)
+                if (member.NPCManager != null && member.NPCManager.IsInCinematic) continue;
+
                 // Verificar si tiene autoJoinCombat activado
                 if (member.PartyConfig != null && !member.PartyConfig.autoJoinPlayerCombat)
                     continue;
-                
+
                 float distance = Vector3.Distance(member.transform.position, _playerTransform.position);
-                
+
                 if (distance > combatTeleportThreshold)
                 {
                     Debug.Log($"[PlayerParty] ⚡ Teletransportando a {member.DisplayName} para combate (estaba a {distance:F1}m)");
@@ -992,12 +979,15 @@ namespace Game.NPC
             {
                 var member = _members[i];
                 if (member == null || !member.IsActiveInParty) continue;
-                
+
+                // No teletransportar miembros en cinemática (escoltas, secuencias, etc.)
+                if (member.NPCManager != null && member.NPCManager.IsInCinematic) continue;
+
                 float distance = Vector3.Distance(member.transform.position, _playerTransform.position);
-                
+
                 // Usar distancia del config del miembro (o 15f por defecto, más agresivo que antes)
                 float teleportThreshold = member.PartyConfig?.distanciaParaTeletransporte ?? 15f;
-                
+
                 if (distance > teleportThreshold)
                 {
                     Log($"⚡ {member.DisplayName} demasiado lejos ({distance:F1}m > {teleportThreshold:F1}m), teletransportando...");
@@ -1087,6 +1077,12 @@ namespace Game.NPC
                 
                 preset.partyMemberIds = memberIds;
                 
+                // ALSO SAVE THE ACTIVE CHARACTER LEADER FOR THE SAVE LOAD
+                if (PartyControlManager.Instance != null)
+                {
+                    preset.activeCharacterSlot = PartyControlManager.Instance.ActiveIndex;
+                }
+                
                 Debug.Log($"[PlayerParty] ✅ Party sincronizado con preset '{preset.name}': {preset.partyMemberIds.Count} miembros [{string.Join(", ", memberIds)}]");
             }
             catch (System.Exception ex)
@@ -1097,7 +1093,6 @@ namespace Game.NPC
         
         /// <summary>
         /// Obtiene los IDs de los miembros actuales para guardar.
-        /// Usa interactiveNarrativeConfig.persistenceId o el nombre del GameObject como fallback.
         /// </summary>
         public List<string> GetMemberIdsForSave(bool allowPresetFallbackWhenEmpty = true)
         {
@@ -1153,29 +1148,29 @@ namespace Game.NPC
                     continue;
                 }
                 
-                // Intentar obtener el ID de persistencia de la configuración
-                string persistenceId = null;
+                // PRIORIZAR EL NOMBRE COMO ID: En el sistema de party, el ID narrativo genera duplicados (Estela_Config_XXX).
+                // Es preferible usar el nombre del GameObject (Estela, Oliver, etc) que se enlaza más fácil en el Load.
+                string persistenceId = member.gameObject.name.Replace("(Clone)", "").Trim();
                 
+                // Validar si el NPCRegistry tiene su ID bajo un nombre explícito distinto
                 var npcManager = member.NPCManager;
-                if (npcManager != null)
+                if (npcManager != null && NPCRegistry.HasInstance)
                 {
-                    var config = npcManager.Configuration;
-                    if (config != null)
-                    {
-                        // Usar interactiveNarrativeConfig.persistenceId (sistema actual)
-                        var interactiveConfig = config.interactiveNarrativeConfig;
-                        if (interactiveConfig != null && !string.IsNullOrEmpty(interactiveConfig.persistenceId))
-                        {
-                            persistenceId = interactiveConfig.persistenceId;
-                        }
-                    }
-                }
-                
-                // FALLBACK: Usar el nombre del GameObject si no se pudo obtener el ID
-                if (string.IsNullOrEmpty(persistenceId))
-                {
-                    persistenceId = member.gameObject.name;
-                    Debug.Log($"[PlayerParty] ℹ️ Usando nombre del GO como ID: '{persistenceId}'");
+                   // Try to find if there is a direct registration for this NPC to use its correct ID
+                   var allIds = NPCRegistry.Instance.GetAllRegisteredIDs();
+                   foreach(var id in allIds) 
+                   {
+                       var registeredNpc = NPCRegistry.Instance.GetNPCByID(id);
+                       if (registeredNpc != null && registeredNpc == npcManager) 
+                       {
+                           // Only use it if it's not a narrative config ID (which causes duplicates)
+                           if (!id.StartsWith("NPC_InteractiveNarrative_Config_")) 
+                           {
+                               persistenceId = id;
+                               break;
+                           }
+                       }
+                   }
                 }
                 
                 result.Add(persistenceId);
@@ -1214,64 +1209,90 @@ namespace Game.NPC
             
             foreach (var id in memberIds)
             {
-                Log($"Buscando NPC con ID: '{id}'");
-                
-                // 1. Buscar NPC en el registro por ID exacto
-                var npcManager = NPCRegistry.Instance?.GetNPCByID(id);
-                
-                // 2. FALLBACK: Si no se encontró, intentar sin guion bajo inicial (por si fue guardado con nombre de GO)
-                if (npcManager == null && id.StartsWith("_"))
+                // Ignorar explícitamente IDs narrativos antiguos o corruptos que se guardaron antes de este parche
+                if (id.StartsWith("NPC_InteractiveNarrative_Config_"))
                 {
-                    var idSinGuion = id.Substring(1);
-                    Log($"  → Intentando sin guion bajo: '{idSinGuion}'");
-                    npcManager = NPCRegistry.Instance?.GetNPCByID(idSinGuion);
+                    Log($"⚠️ Ignorando ID narrativo del party '{id}'. Tratando de extraer el nombre real...");
+                    string possibleName = "Estela";
+                    if (id.ToLower().Contains("oliver")) possibleName = "Oliver";
+                    else if (id.ToLower().Contains("victoria")) possibleName = "Victoria";
+                    else if (id.ToLower().Contains("liam")) possibleName = "Liam";
+                    
+                    Log($"⚠️ Reemplazando ID '{id}' -> '{possibleName}'");
+                    var newId = possibleName;
+                    
+                    // Solo intentar restaurar si no está ya restaurado
+                    bool alreadyFound = _members.Any(m => m != null && m.DisplayName != null && m.DisplayName.Equals(possibleName, StringComparison.OrdinalIgnoreCase));
+                    if (alreadyFound) continue;
+                    
+                    Log($"Buscando NPC (parcheado) con ID: '{newId}'");
+                    FindAndRestore(newId, registeredIds);
                 }
-                
-                // 3. FALLBACK: Buscar por nombre similar en los registrados
-                if (npcManager == null)
+                else 
                 {
-                    var idLower = id.ToLowerInvariant().TrimStart('_');
-                    foreach (var regId in registeredIds)
-                    {
-                        if (regId.ToLowerInvariant().Contains(idLower) || idLower.Contains(regId.ToLowerInvariant()))
-                        {
-                            Log($"  → Encontrado por coincidencia parcial: '{regId}'");
-                            npcManager = NPCRegistry.Instance?.GetNPCByID(regId);
-                            break;
-                        }
-                    }
-                }
-                
-                if (npcManager != null)
-                {
-                    Log($"✅ NPC encontrado: {npcManager.name}");
-                    var partyMember = npcManager.GetComponent<NPCPartyMember>();
-                    if (partyMember != null && !HasMember(partyMember))
-                    {
-                        Log($"Uniendo {partyMember.DisplayName} al party...");
-                        partyMember.JoinParty(); // Esto llamará a AddMember internamente
-                    }
-                    else if (partyMember == null)
-                    {
-                        LogWarning($"NPC {npcManager.name} no tiene componente NPCPartyMember");
-                        // Marcar como pendiente para reintentar
-                        _pendingMemberIds.Add(id);
-                    }
-                    else
-                    {
-                        Log($"NPC {partyMember.DisplayName} ya está en el party");
-                    }
-                }
-                else
-                {
-                    LogWarning($"❌ No se encontró NPC con ID: '{id}' en el registro - marcado como pendiente");
-                    _pendingMemberIds.Add(id);
+                    Log($"Buscando NPC con ID: '{id}'");
+                    FindAndRestore(id, registeredIds);
                 }
             }
             
             Log($"Restauración completada. Miembros activos: {_members.Count}, Pendientes: {_pendingMemberIds.Count}");
         }
+
+        private void FindAndRestore(string id, string[] registeredIds)
+        {
+            // 1. Buscar NPC en el registro por ID exacto
+            var npcManager = NPCRegistry.Instance?.GetNPCByID(id);
+            
+            // 2. FALLBACK: Si no se encontró, intentar sin guion bajo inicial (por si fue guardado con nombre de GO)
+            if (npcManager == null && id.StartsWith("_"))
+            {
+                var idSinGuion = id.Substring(1);
+                Log($"  → Intentando sin guion bajo: '{idSinGuion}'");
+                npcManager = NPCRegistry.Instance?.GetNPCByID(idSinGuion);
+            }
+            
+            // 3. FALLBACK: Buscar por nombre similar en los registrados
+            if (npcManager == null)
+            {
+                var idLower = id.ToLowerInvariant().TrimStart('_');
+                foreach (var regId in registeredIds)
+                {
+                    if (regId.ToLowerInvariant().Contains(idLower) || idLower.Contains(regId.ToLowerInvariant()))
+                    {
+                        Log($"  → Encontrado por coincidencia parcial: '{regId}'");
+                        npcManager = NPCRegistry.Instance?.GetNPCByID(regId);
+                        break;
+                    }
+                }
+            }
+            
+            if (npcManager != null)
+            {
+                Log($"✅ NPC encontrado: {npcManager.name}");
+                var partyMember = npcManager.GetComponent<NPCPartyMember>();
+                if (partyMember != null && !HasMember(partyMember))
+                {
+                    Log($"Uniendo {partyMember.DisplayName} al party...");
+                    partyMember.JoinParty(); // Esto llamará a AddMember internamente
+                }
+                else if (partyMember == null)
+                {
+                    LogWarning($"NPC {npcManager.name} no tiene componente NPCPartyMember");
+                    // Marcar como pendiente para reintentar
+                    _pendingMemberIds.Add(id);
+                }
+                else
+                {
+                    Log($"NPC {partyMember.DisplayName} ya está en el party");
+                }
+            }
+            else
+            {
+                LogWarning($"❌ No se encontró NPC con ID: '{id}' en el registro - marcado como pendiente");
+                _pendingMemberIds.Add(id);
+            }
+        }
+
         #endregion
     }
 }
-

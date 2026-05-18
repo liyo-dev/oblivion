@@ -1023,10 +1023,16 @@ namespace Game.NPC.States
 
         private float _timer;
         private float _fetchUpdateTimer;
+        private float _startupTimer;
         private bool _initialized;
+        private bool _startupDone;
         private bool _fetchingPlayer;
+        private float _baseSpeed;
         private UnityEngine.AI.ObstacleAvoidanceType _originalObstacleAvoidanceType;
         private bool _hasDisabledObstacleAvoidance;
+
+        // Segundos que el guardia espera mirando al jugador antes de empezar a caminar.
+        private const float STARTUP_WAIT = 1.5f;
 
         /// <summary>
         /// Verdadero cuando el NPC acaba de recuperar al jugador y está esperando que se reproduzca el diálogo.
@@ -1072,7 +1078,7 @@ namespace Game.NPC.States
                 IsCompleted = true; return;
             }
 
-            // Primer frame: arrancar hacia el anchor
+            // Primer frame: preparar escolta y esperar STARTUP_WAIT segundos antes de andar
             if (!_initialized)
             {
                 // Desactivar obstacle avoidance local (RVO) para que los party members no bloqueen
@@ -1082,17 +1088,38 @@ namespace Game.NPC.States
                 agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
                 _hasDisabledObstacleAvoidance = true;
 
-                // Salir de la pose de diálogo/idle y activar animación de locomoción
+                // Salir de la pose de diálogo/idle (sin activar locomoción todavía)
                 context.Animator?.SetTalking(false);
                 context.Animator?.EndInteraction();
-                context.Animator?.TransitionToLocomotion();
 
                 float startDist = Vector3.Distance(context.Transform.position, _anchorPos);
-                UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] 🚀 Iniciando escolta. distAnchor={startDist:F2}, isStopped={agent.isStopped}, isOnNavMesh={agent.isOnNavMesh}");
+                UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] 🚀 Iniciando fase de espera ({STARTUP_WAIT}s). distAnchor={startDist:F2}, isOnNavMesh={agent.isOnNavMesh}");
+                _baseSpeed = agent.speed;
                 _initialized = true;
-                agent.isStopped = false;
-                if (!agent.SetDestination(_anchorPos))
-                    UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh o en una superficie no conectada.");
+                agent.isStopped = true;
+                return;
+            }
+
+            // Fase de espera inicial: el guardia mira al jugador antes de empezar a andar
+            if (!_startupDone)
+            {
+                _startupTimer += Time.deltaTime;
+                if (_player != null)
+                {
+                    Vector3 dir = _player.position - context.Transform.position;
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > 0.01f)
+                        context.Animator?.FaceDirection(dir.normalized);
+                }
+                if (_startupTimer >= STARTUP_WAIT)
+                {
+                    _startupDone = true;
+                    agent.isStopped = false;
+                    if (!agent.SetDestination(_anchorPos))
+                        UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh o en una superficie no conectada.");
+                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Startup completado, iniciando marcha al anchor.");
+                    context.Animator?.TransitionToLocomotion();
+                }
                 return;
             }
 
@@ -1133,7 +1160,20 @@ namespace Game.NPC.States
                 if (distToPlayer > _escortMaxDist)
                 {
                     _fetchingPlayer = true;
+                    agent.speed = _baseSpeed;
+                    // Limpiar la ruta anterior antes de cambiar destino.
+                    // Sin ResetPath el agente navega desde un waypoint intermedio
+                    // de la ruta vieja, provocando el snap visual ("teleport").
+                    agent.ResetPath();
                     agent.SetDestination(_player.position);
+                }
+                else
+                {
+                    // Reducir velocidad progresivamente cuando el jugador se va quedando atrás.
+                    // distToPlayer == _escortResumeDist → velocidad máxima
+                    // distToPlayer == _escortMaxDist   → velocidad mínima (20 %)
+                    float t = Mathf.Clamp01((distToPlayer - _escortResumeDist) / (_escortMaxDist - _escortResumeDist));
+                    agent.speed = Mathf.Lerp(_baseSpeed, _baseSpeed * 0.2f, t);
                 }
             }
             else
@@ -1175,7 +1215,9 @@ namespace Game.NPC.States
             var agent = context.Agent;
             if (agent != null && agent.enabled && agent.isOnNavMesh)
             {
+                agent.speed = _baseSpeed;
                 agent.isStopped = false;
+                agent.ResetPath(); // Limpiar ruta de fetch antes de volver al anchor
                 agent.SetDestination(_anchorPos);
             }
             // Arrancar animación de andar inmediatamente sin esperar a que agent.velocity tenga magnitud

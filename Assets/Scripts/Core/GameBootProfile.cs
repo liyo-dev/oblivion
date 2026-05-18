@@ -67,6 +67,7 @@ public class GameBootProfile : ScriptableObject
         dst.completedInteractiveNarratives = new List<string>(src.completedInteractiveNarratives ?? new List<string>());
         dst.seenLorePopupIds = new List<string>(src.seenLorePopupIds ?? new List<string>());
         dst.partyMemberIds = new List<string>(src.partyMemberIds ?? new List<string>());
+        dst.activeCharacterSlot = src.activeCharacterSlot;
         dst.unlockedTeleportPoints = new List<string>(src.unlockedTeleportPoints ?? new List<string>());
         
         // === CRÍTICO: Copiar narrativeBlackboards para que el grafo continúe desde la posición guardada ===
@@ -204,6 +205,7 @@ public class GameBootProfile : ScriptableObject
         p.partyMemberIds = data.partyMemberIds != null 
             ? new List<string>(data.partyMemberIds) 
             : new List<string>();
+        p.activeCharacterSlot = data.activeCharacterSlot;
         Debug.Log($"[GameBootProfile] 🤝 Party: {p.partyMemberIds.Count} miembros a restaurar");
 
         // Restaurar NPCs persistidos directamente en el runtimePreset para que otros sistemas puedan aplicarlos
@@ -380,6 +382,7 @@ public class GameBootProfile : ScriptableObject
         data.partyMemberIds = activePreset.partyMemberIds != null
             ? new List<string>(activePreset.partyMemberIds)
             : new List<string>();
+        data.activeCharacterSlot = activePreset.activeCharacterSlot;
 
         // === NUEVO: incluir puntos de teletransporte desbloqueados ===
         data.unlockedTeleportPoints = activePreset.unlockedTeleportPoints != null
@@ -447,7 +450,7 @@ public class GameBootProfile : ScriptableObject
         return d;
     }
 
-    // === NUEVO: M�todos para guardar/cargar el profile completo ===
+    // === NUEVO: Mtodos para guardar/cargar el profile completo ===
 
     /// <summary>Guarda el estado actual del profile en el SaveSystem</summary>
     public bool SaveProfile(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
@@ -530,7 +533,7 @@ public class GameBootProfile : ScriptableObject
             syncedSystems.Add($"Health({p.currentHP:F0}/{p.maxHP:F0})");
         }
 
-        // Obtener datos del sistema de man� si existe
+        // Obtener datos del sistema de man si existe
         var manaPool = FindFirstObjectByType<ManaPool>();
         if (manaPool != null)
         {
@@ -557,7 +560,7 @@ public class GameBootProfile : ScriptableObject
                 }
             }
 
-            // A�adir flags exportados por el QuestManager (active/completed/steps)
+            // Aadir flags exportados por el QuestManager (active/completed/steps)
             qm.ExportFlags(newFlags);
 
             // Log detallado de quests activas/completadas para debug
@@ -581,7 +584,7 @@ public class GameBootProfile : ScriptableObject
             syncedSystems.Add($"Abilities(S:{actionManager.AllowSwim},J:{actionManager.AllowJump},C:{actionManager.AllowClimb},F:{actionManager.AllowFly},M:{actionManager.AllowMagic})");
          }
 
-        // Nota: Los dem�s datos (level, abilities, spells, flags) se mantienen del preset actual
+        // Nota: Los dems datos (level, abilities, spells, flags) se mantienen del preset actual
         if (PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true))
         {
             p.inventoryItems = SanitizeInventorySnapshot(inventory.GetSaveSnapshot());
@@ -814,7 +817,7 @@ public class GameBootProfile : ScriptableObject
 
             try
             {
-                // Si tiene NavMeshAgent, usar Warp para evitar f�sica/paths
+                // Si tiene NavMeshAgent, usar Warp para evitar fsica/paths
                 var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (agent != null && agent.isOnNavMesh)
                 {
@@ -843,7 +846,7 @@ public class GameBootProfile : ScriptableObject
         }
     }
 
-    /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves autom�ticos.</summary>
+    /// <summary>Actualaiza runtimePreset desde los sistemas y guarda en el SaveSystem. Respeta allowAutoSaves para saves automticos.</summary>
     public bool SaveCurrentGameState(SaveSystem saveSystem, SaveRequestContext context = SaveRequestContext.Manual)
     {
         if (!saveSystem)
@@ -898,8 +901,8 @@ public class GameBootProfile : ScriptableObject
         Debug.Log("[GameBootProfile] Bloqueando magia para nueva partida");
         LockMagicForNewGame(runtimePreset);
 
-        // La apariencia ya se copi� del defaultPlayerPreset en EnsureRuntimePresetFromTemplate
-        // No hace falta aplicar nada adicional, la apariencia del default ya est� en runtimePreset
+        // La apariencia ya se copi del defaultPlayerPreset en EnsureRuntimePresetFromTemplate
+        // No hace falta aplicar nada adicional, la apariencia del default ya est en runtimePreset
 
         // Asegurar que las posiciones de NPC NO se arrastran en Nueva Partida
         if (runtimePreset != null)
@@ -908,7 +911,7 @@ public class GameBootProfile : ScriptableObject
                 runtimePreset.npcPositions.Clear();
         }
 
-        // Limpiar flags transitorias (ej: cinem�ticas vistas) para garantizar que Nueva Partida siempre las repita.
+        // Limpiar flags transitorias (ej: cinemticas vistas) para garantizar que Nueva Partida siempre las repita.
         if (runtimePreset != null && runtimePreset.flags != null)
         {
             runtimePreset.flags.RemoveAll(flag => !string.IsNullOrEmpty(flag) && flag.StartsWith("CINEMATIC_SEEN:", StringComparison.OrdinalIgnoreCase));
@@ -1022,10 +1025,9 @@ public class GameBootProfile : ScriptableObject
         preset.rightSpellId = SpellId.None;
         preset.specialSpellId = SpellId.None;
 
-        // Sin magia, el man� debe iniciar en 0 para evitar mostrar barra llena.
+        // Sin magia, el man debe iniciar en 0 para evitar mostrar barra llena.
         preset.maxMP = 0f;
         preset.currentMP = 0f;
     }
 
 }
-
