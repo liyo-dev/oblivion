@@ -23,6 +23,47 @@ MonoBehaviour:
       customEventKey: EVT_ARRESTO
       debugMode: 0
     narrativeChain:
+    - actionType: 11
+      dialogue: {fileID: 0}
+      targetAnchorName: CastleOutGuard
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 5
+      randomMoveMaxRadius: 15
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 1
+      maxMovementDuration: 30
+      turnAroundOnArrival: 1
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
+      waitForPlayer: 1
+      maxPlayerDistance: 10
+      resumePlayerDistance: 5
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 1
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 2
+      alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 11400000, guid: 87105195ac662d9468082353795d8961, type: 2}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.265
+      teleportTransition: {fileID: 0}
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
     - actionType: 0
       dialogue: {fileID: 11400000, guid: 45764b34275b0d548bfff14891d76687, type: 2}
       targetAnchorName: 
