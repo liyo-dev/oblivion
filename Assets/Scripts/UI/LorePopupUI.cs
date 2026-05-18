@@ -46,6 +46,7 @@ public class LorePopupUI : MonoBehaviour
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(transform.root.gameObject);
 
         if (popupRoot != null) popupRoot.gameObject.SetActive(false);
         if (canvasGroup != null) canvasGroup.alpha = 0f;

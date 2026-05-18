@@ -1283,7 +1283,7 @@ namespace Game.NPC.Modules
         {
             if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🔍 Verificando party members para quests activas...");
             
-            var questManager = FindFirstObjectByType<QuestManager>();
+            var questManager = QuestManager.Instance;
             if (questManager == null)
             {
                 Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ QuestManager no está disponible");
@@ -1451,8 +1451,8 @@ namespace Game.NPC.Modules
 
         private void SendNarrativeEvent(string key)
         {
-            if (!string.IsNullOrEmpty(key)) 
-                DefaultNarrativeSignals.Instance?.RaiseCustom(key);
+            if (!string.IsNullOrEmpty(key))
+                DefaultNarrativeSignals.Instance?.RaiseCustom(key, name);
         }
         
         private void SaveState()

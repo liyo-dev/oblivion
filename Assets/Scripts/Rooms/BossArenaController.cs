@@ -353,7 +353,7 @@ public class BossArenaController : MonoBehaviour
         if (!string.IsNullOrEmpty(id))
         {
             // Señal (si está a tiempo)
-            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{id}");
+            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{id}", name);
 
             // Fallback directo (si el wiring llega tarde)
             if (AudioService.Instance != null)

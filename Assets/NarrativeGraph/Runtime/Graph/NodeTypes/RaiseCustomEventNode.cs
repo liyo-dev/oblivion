@@ -21,7 +21,7 @@ public sealed class RaiseCustomEventNode : NarrativeNode
         else
         {
             Debug.Log($"[RaiseCustomEventNode] 📤 Emitiendo evento: '{eventKey}'");
-            ctx.Signals?.RaiseCustom(eventKey);
+            ctx.Signals?.RaiseCustom(eventKey, $"[Nodo] {eventKey}");
         }
         
         onReadyToAdvance?.Invoke();

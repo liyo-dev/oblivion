@@ -15,8 +15,9 @@ public interface INarrativeSignals
     void OnBattleWon(object arena, Action cb);
     void OffBattleWon(object arena, Action cb);
 
-    // CUSTOM EVENTS 
+    // CUSTOM EVENTS
     void RaiseCustom(string key);
+    void RaiseCustom(string key, string context);
     void OnCustom(string key, Action cb);
     void OffCustom(string key, Action cb);
 }

@@ -102,8 +102,8 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.6
       teleportTransition: {fileID: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
+      sendNarrativeEvent: 1
+      narrativeEventKey: EVT_ARRESTADOS
       sendEventOnStart: 0
     - actionType: 10
       dialogue: {fileID: 0}
@@ -147,7 +147,7 @@ MonoBehaviour:
       narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 1
-    autoStartOnDetection: 1
+    autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}

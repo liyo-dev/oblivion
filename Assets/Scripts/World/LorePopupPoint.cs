@@ -75,7 +75,7 @@ public class LorePopupPoint : MonoBehaviour
             else
             {
                 Debug.Log($"[LorePopupPoint:{name}] ✅ RaiseCustom('{narrativeEventKey}')");
-                signals.RaiseCustom(narrativeEventKey);
+                signals.RaiseCustom(narrativeEventKey, name);
             }
         }
 

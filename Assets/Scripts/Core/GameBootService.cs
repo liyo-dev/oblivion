@@ -427,8 +427,12 @@ public class GameBootService : MonoBehaviour
         if (NarrativeGraphHub.Instance != null)
         {
             NarrativeGraphHub.Instance.StopAllRunners();
+            // Limpiar blackboards en memoria: fork keys y branch-done markers de la sesión
+            // anterior quedarían marcados como __DONE__ y los nodos terminales (p.ej. ShowLorePopupNode)
+            // serían saltados silenciosamente por RelaunchForkBranches en el próximo run.
+            NarrativeGraphHub.Instance.ClearAllBlackboards();
         }
-        
+
         // 2. Volcar el bootPreset al runtimePreset (borra avances)
         _profile.EnsureRuntimePresetFromTemplate(_profile.bootPreset);
         

@@ -1735,7 +1735,7 @@ public class TagMinigameController : MonoBehaviour
         if (signals != null)
         {
             string eventKey = $"MINIGAME_START:{minigameId}";
-            signals.RaiseCustom(eventKey);
+            signals.RaiseCustom(eventKey, name);
             Debug.Log($"[TagMinigame] 🎮 Señal de inicio emitida: '{eventKey}'");
         }
     }
@@ -2453,7 +2453,7 @@ public class TagMinigameController : MonoBehaviour
         if (signals != null)
         {
             string eventKey = $"MINIGAME_{minigameId}_WON";
-            signals.RaiseCustom(eventKey);
+            signals.RaiseCustom(eventKey, name);
             Debug.Log($"[TagMinigame] Señal emitida: '{eventKey}'");
         }
         else

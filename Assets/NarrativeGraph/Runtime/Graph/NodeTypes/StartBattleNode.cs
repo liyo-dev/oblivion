@@ -191,7 +191,7 @@ public sealed class StartBattleNode : NarrativeNode
         if (targetArena != null)
         {
             triggered = TriggerArena(targetArena);
-            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}");
+            DefaultNarrativeSignals.Instance?.RaiseCustom($"BATTLE_START:{battleId}", $"[Nodo] StartBattle:{battleId}");
         }
 
         if (!triggered)

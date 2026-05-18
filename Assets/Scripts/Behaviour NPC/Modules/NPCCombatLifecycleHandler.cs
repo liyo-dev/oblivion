@@ -282,7 +282,7 @@ namespace Game.NPC.Modules
             if (_config != null && _config.sendEventOnDefeat && _config.sendDefeatEventBeforeDeath && !string.IsNullOrEmpty(_config.defeatEventKey))
             {
                 Debug.Log($"[Lifecycle] 📤 Enviando evento de derrota ANTES de muerte: '{_config.defeatEventKey}'");
-                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey);
+                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey, name);
             }
 
             // 2. VFX inicial
@@ -363,7 +363,7 @@ namespace Game.NPC.Modules
             if (_config != null && _config.sendEventOnDefeat && !_config.sendDefeatEventBeforeDeath && !string.IsNullOrEmpty(_config.defeatEventKey))
             {
                 Debug.Log($"[Lifecycle] 📤 Enviando evento de derrota al grafo narrativo: '{_config.defeatEventKey}'");
-                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey);
+                DefaultNarrativeSignals.Instance?.RaiseCustom(_config.defeatEventKey, name);
             }
 
             // ✅ 7. POST-MUERTE (Desaparecer o continuar con Dizzy)

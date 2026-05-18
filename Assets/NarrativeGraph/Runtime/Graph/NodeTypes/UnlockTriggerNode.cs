@@ -10,7 +10,7 @@ public sealed class UnlockTriggerNode : NarrativeNode
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
         // Ejemplo: levantar un custom signal para el trigger
-        ctx.Signals.RaiseCustom(triggerKey);
+        ctx.Signals.RaiseCustom(triggerKey, $"[Nodo] {triggerKey}");
         onReadyToAdvance?.Invoke();
     }
 }

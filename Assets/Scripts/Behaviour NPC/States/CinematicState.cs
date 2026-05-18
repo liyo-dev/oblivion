@@ -511,44 +511,26 @@ namespace Game.NPC.States
         /// </summary>
         private static SpawnAnchor FindNearbySpawnAnchor(Vector3 position)
         {
-            // Refrescar caché cada X segundos (evitar FindObjectsByType constante)
             if (_cachedSpawnAnchors == null || Time.time - _lastCacheTime > CACHE_REFRESH_INTERVAL)
             {
                 _cachedSpawnAnchors = UnityEngine.Object.FindObjectsByType<SpawnAnchor>(FindObjectsSortMode.None);
                 _lastCacheTime = Time.time;
             }
-            
-            // Primero intentar con OverlapSphere (más rápido si hay colliders)
-            // Usar búfer estático para evitar alocaciones
-            var nearbyColliders = Physics.OverlapSphere(position, SPAWN_ANCHOR_SEARCH_RADIUS);
-            
-            foreach (var col in nearbyColliders)
-            {
-                var anchor = col.GetComponentInParent<SpawnAnchor>();
-                if (anchor != null)
-                {
-                    return anchor;
-                }
-            }
-            
-            // Fallback: buscar en el caché usando sqrMagnitude (optimización crítica)
+
             SpawnAnchor closest = null;
             float closestSqrDistance = SQR_SPAWN_ANCHOR_SEARCH_RADIUS;
-            
+
             foreach (var anchor in _cachedSpawnAnchors)
             {
                 if (anchor == null) continue;
-                
-                // Usar sqrMagnitude en lugar de Distance (evita sqrt, ~10x más rápido)
                 float sqrDistance = (anchor.transform.position - position).sqrMagnitude;
-                
                 if (sqrDistance < closestSqrDistance)
                 {
                     closestSqrDistance = sqrDistance;
                     closest = anchor;
                 }
             }
-            
+
             return closest;
         }
         
@@ -1093,7 +1075,7 @@ namespace Game.NPC.States
                 context.Animator?.EndInteraction();
 
                 float startDist = Vector3.Distance(context.Transform.position, _anchorPos);
-                UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] 🚀 Iniciando fase de espera ({STARTUP_WAIT}s). distAnchor={startDist:F2}, isOnNavMesh={agent.isOnNavMesh}");
+                context.Log($"[LeadPlayerToAnchorSequence] Iniciando fase de espera ({STARTUP_WAIT}s). distAnchor={startDist:F2}, isOnNavMesh={agent.isOnNavMesh}");
                 _baseSpeed = agent.speed;
                 _initialized = true;
                 agent.isStopped = true;
@@ -1117,7 +1099,7 @@ namespace Game.NPC.States
                     agent.isStopped = false;
                     if (!agent.SetDestination(_anchorPos))
                         UnityEngine.Debug.LogWarning($"[LeadPlayerToAnchorSequence] ⚠️ SetDestination falló para {_anchorPos}. El anchor puede estar fuera del NavMesh o en una superficie no conectada.");
-                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Startup completado, iniciando marcha al anchor.");
+                    context.Log($"[LeadPlayerToAnchorSequence] Startup completado, iniciando marcha al anchor.");
                     context.Animator?.TransitionToLocomotion();
                 }
                 return;
@@ -1129,7 +1111,7 @@ namespace Game.NPC.States
                 if (!agent.hasPath)
                     UnityEngine.Debug.LogError($"[LeadPlayerToAnchorSequence] ❌ No hay ruta válida al anchor {_anchorPos}. Comprueba que el anchor esté en el NavMesh y conectado con la posición actual del guardia.");
                 else
-                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Ruta calculada. Distancia NavMesh={agent.remainingDistance:F1}m");
+                    context.Log($"[LeadPlayerToAnchorSequence] Ruta calculada. Distancia NavMesh={agent.remainingDistance:F1}m");
             }
 
             _timer += Time.deltaTime;
@@ -1152,7 +1134,7 @@ namespace Game.NPC.States
                 bool realArrived = distToAnchor < 0.8f;
                 if (navArrived && realArrived)
                 {
-                    UnityEngine.Debug.Log($"[LeadPlayerToAnchorSequence] ✅ Llegada al anchor (navDist={agent.remainingDistance:F2}, realDist={distToAnchor:F2})");
+                    context.Log($"[LeadPlayerToAnchorSequence] Llegada al anchor (navDist={agent.remainingDistance:F2}, realDist={distToAnchor:F2})");
                     IsCompleted = true; return;
                 }
 

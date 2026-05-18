@@ -97,7 +97,7 @@ public class NarrativeEventDebugger : MonoBehaviour
         }
         
         Debug.Log($"[NarrativeEventDebugger] 📤 Emitiendo evento: '{key}'");
-        _signals.RaiseCustom(key);
+        _signals.RaiseCustom(key, name);
     }
 
     /// <summary>

@@ -769,7 +769,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 680, y: 270}
+  m_SizeDelta: {x: 780, y: 270}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &125996578
 CanvasRenderer:
@@ -5306,11 +5306,11 @@ MonoBehaviour:
   portraitImage: {fileID: 596615680}
   speakerText: {fileID: 1472735170}
   bodyText: {fileID: 1965163393}
-  advanceIndicator: {fileID: 0}
   animInDuration: 0.35
   animOutDuration: 0.25
   easeIn: 27
   slideInFromOffset: {x: 0, y: -40}
+  crossFadeDuration: 0.2
 --- !u!1 &718997811
 GameObject:
   m_ObjectHideFlags: 0
@@ -6430,7 +6430,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8feec6eda1ed4106a151f8ae1205e78d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameBootService
-  bootProfile: {fileID: 11400000, guid: b549fc53c0aefe140ba3e08d06d0bb58, type: 2}
 --- !u!1 &831323749
 GameObject:
   m_ObjectHideFlags: 0
@@ -8441,7 +8440,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 450, y: 200}
+  m_SizeDelta: {x: 550, y: 200}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &1239752466
 CanvasRenderer:

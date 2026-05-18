@@ -18,48 +18,58 @@ MonoBehaviour:
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_1
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 9a5897eb50f15fe4bb903bfaa72c9e17, type: 3}
     speakerNameId: CHAR_LIAM
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_2
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 0be5b49dc8e6b94449177b4bdc51dac6, type: 3}
     speakerNameId: CHAR_WILL
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_3
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: e2d1efaf042ab4c49b0865fe8e44fe58, type: 3}
     speakerNameId: CHAR_LIAM
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_4
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: d810d0e47f4756d42a3181733040b598, type: 3}
     speakerNameId: CHAR_LIAM
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_5
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 8a7009212cfa5a947b45e69f219da9ca, type: 3}
     speakerNameId: CHAR_ELDRAN
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_6
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
     speakerNameId: CHAR_LIAM
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_7
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: b2f81540a5cebdc4299cdc5994d0ecf6, type: 3}
     speakerNameId: CHAR_ELDRAN
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_8
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 7a3e96bb11e328145bd5582e8a7ae081, type: 3}
     speakerNameId: CHAR_ESTELA
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_9
     text: 
+    duration: 3
   - portrait: {fileID: 21300000, guid: 8863788beef1f5b429bf9291c1ca1285, type: 3}
     speakerNameId: CHAR_LIAM
     speakerName: 
     textId: LORE_ESCOLTA_GUARDIA_10
     text: 
+    duration: 3

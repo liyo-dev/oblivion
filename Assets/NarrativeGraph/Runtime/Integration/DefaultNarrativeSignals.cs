@@ -56,6 +56,90 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     /// </summary>
     public static event Action OnAfterReset;
 
+    // ── Observabilidad (Editor + Development builds) ─────────────
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    public enum SignalStatus { Fired, Queued, Consumed, Reset }
+
+    public readonly struct SignalRecord
+    {
+        public readonly float  time;
+        public readonly string key;
+        public readonly SignalStatus status;
+        public readonly string detail;
+        public readonly string caller;
+        public SignalRecord(string key, SignalStatus status, string detail, string caller)
+        {
+            this.time   = UnityEngine.Time.time;
+            this.key    = key;
+            this.status = status;
+            this.detail = detail;
+            this.caller = caller;
+        }
+    }
+
+    public static readonly System.Collections.Generic.List<SignalRecord> History = new();
+    private const int MaxHistory = 400;
+    public static event Action HistoryChanged;
+
+    // skipFrames=2 salta Record() + el método que llama a Record() (RaiseCustom/OnCustom/ResetState)
+    // y deja en frame 0 el código de juego que realmente disparó el evento.
+    static void Record(string key, SignalStatus status, string detail)
+    {
+        string caller = CaptureGameCaller(skipFrames: 2);
+        if (History.Count >= MaxHistory) History.RemoveAt(0);
+        History.Add(new SignalRecord(key, status, detail, caller));
+        try { HistoryChanged?.Invoke(); } catch { }
+    }
+
+    // Variante que antepone el nombre del GO/contexto al caller capturado por stack trace.
+    static void RecordWithContext(string key, SignalStatus status, string detail, string context)
+    {
+        string caller = CaptureGameCaller(skipFrames: 3); // +1 frame extra por la indirección RaiseCustom(key,ctx)→RecordWithContext
+        if (!string.IsNullOrEmpty(context))
+            caller = string.IsNullOrEmpty(caller) ? $"[{context}]" : $"[{context}]  {caller}";
+        if (History.Count >= MaxHistory) History.RemoveAt(0);
+        History.Add(new SignalRecord(key, status, detail, caller));
+        try { HistoryChanged?.Invoke(); } catch { }
+    }
+
+    static string CaptureGameCaller(int skipFrames)
+    {
+        try
+        {
+            var st = new System.Diagnostics.StackTrace(skipFrames, fNeedFileInfo: true);
+            for (int i = 0; i < System.Math.Min(st.FrameCount, 12); i++)
+            {
+                var frame  = st.GetFrame(i);
+                var method = frame?.GetMethod();
+                if (method == null) continue;
+                string typeName = method.DeclaringType?.Name ?? "";
+                // Saltar frames internos de Unity/Mono/.NET y del propio DefaultNarrativeSignals
+                if (typeName.StartsWith("UnityEngine")
+                 || typeName.StartsWith("UnityEditor")
+                 || typeName.StartsWith("System")
+                 || typeName == nameof(DefaultNarrativeSignals))
+                    continue;
+                string file  = frame.GetFileName() ?? "";
+                int    line  = frame.GetFileLineNumber();
+                string fShort = file.Length > 0
+                    ? System.IO.Path.GetFileName(file)
+                    : "";
+                return string.IsNullOrEmpty(fShort)
+                    ? $"{typeName}.{method.Name}()"
+                    : $"{typeName}.{method.Name}()  [{fShort}:{line}]";
+            }
+        }
+        catch { }
+        return "";
+    }
+
+    public static void ClearHistory() { History.Clear(); try { HistoryChanged?.Invoke(); } catch { } }
+
+    public System.Collections.Generic.IReadOnlyDictionary<string, Action> CurrentSubscribers => _custom;
+    public IReadOnlyCollection<string> CurrentPending => _pending;
+    public IReadOnlyCollection<string> CurrentRaised  => _raised;
+#endif
+
     // ====== BATTLE subscribers (por arena key) ======
     readonly Dictionary<object, Action> _battleSubscribers = new();
     readonly HashSet<object> _battlePending = new();
@@ -121,10 +205,16 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
             _pending.Clear();
             _battlePending.Clear();
             _raised.Clear();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Record("__RESET__", SignalStatus.Reset, "ResetState completo — _pending, _raised y _custom limpiados");
+#endif
         }
         else if (_pending.Count > 0 || _battlePending.Count > 0 || _raised.Count > 0)
         {
             Debug.Log($"[Signals] ResetState preservando {_pending.Count} pendientes, {_raised.Count} persistentes, {_battlePending.Count} batallas");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Record("__RESET__", SignalStatus.Reset, $"ResetState suave — preservando {_pending.Count} pending, {_raised.Count} raised");
+#endif
         }
         _battleSubscribers.Clear();
         _qs = null;
@@ -180,21 +270,29 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
     }
 
     // ============= CUSTOM (sticky) =============
-    public void RaiseCustom(string key)
+    public void RaiseCustom(string key) => RaiseCustom(key, null);
+
+    public void RaiseCustom(string key, string context)
     {
         if (string.IsNullOrWhiteSpace(key)) return;
 
         if (_custom.TryGetValue(key, out var a) && a != null)
         {
-            Debug.Log($"[Signals] Custom: {key}");
+            int listenerCount = a.GetInvocationList().Length;
+            Debug.Log($"[Signals] Custom: {key}" + (string.IsNullOrEmpty(context) ? "" : $" ({context})"));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RecordWithContext(key, SignalStatus.Fired, $"{listenerCount} oyente(s)", context);
+#endif
             try { a.Invoke(); } catch (Exception e) { Debug.LogException(e); }
         }
         else
         {
-            // nadie suscrito → lo dejamos pendiente y en el registro persistente
             _pending.Add(key);
             _raised.Add(key);
-            Debug.Log($"[Signals] Custom: {key} (sin oyentes → pendiente)");
+            Debug.Log($"[Signals] Custom: {key} (sin oyentes → pendiente)" + (string.IsNullOrEmpty(context) ? "" : $" ({context})"));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RecordWithContext(key, SignalStatus.Queued, "sin oyentes, guardado en _pending y _raised", context);
+#endif
         }
     }
 
@@ -209,7 +307,11 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
 
         if (wasPending || wasRaised)
         {
+            string src = wasRaised && !wasPending ? "_raised" : "_pending";
             Debug.Log($"[Signals] Custom: {key} (consumido desde {(wasRaised && !wasPending ? "registro persistente" : "pendientes")})");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Record(key, SignalStatus.Consumed, $"consumido desde {src} al suscribirse");
+#endif
             try { cb(); } catch (Exception e) { Debug.LogException(e); }
             return;
         }
