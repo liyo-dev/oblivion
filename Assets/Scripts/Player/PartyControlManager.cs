@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Core;
@@ -47,6 +48,7 @@ public class PartyControlManager : MonoBehaviour
     private int _activeIndex = (int)CharacterSlot.Will;
     private bool _isPartyFollowing = true;
     private bool _switchingLocked;
+    private int _pendingSlotToRestore = -1;
     #endregion
 
     #region Events
@@ -88,6 +90,7 @@ public class PartyControlManager : MonoBehaviour
         GamepadInputReader.OnInput -= HandleInput;
         GameBootService.OnProfileReady -= HandleProfileReady;
         WillOnlyMomentManager.OnSwitchLockChanged -= SetSwitchingLocked;
+        PlayerParty.OnPartyChanged -= TryRestoreSavedSlot;
         if (Instance == this) Instance = null;
     }
     #endregion
@@ -216,53 +219,41 @@ public class PartyControlManager : MonoBehaviour
     private void HandleProfileReady()
     {
         Debug.Log("[PartyControlManager] 🔄 GameBootService.OnProfileReady recibido. Reinicializando estado del party.");
-        
-        var bootProfile = GameBootService.Profile;
-        if (bootProfile != null)
-        {
-            var preset = bootProfile.GetActivePresetResolved();
-            if (preset != null)
-            {
-                // Cargar el personaje activo desde el save/preset, por defecto es Will (1) si no hay
-                int savedSlot = preset.activeCharacterSlot;
-                
-                // Si intenta cargar Liam o Estela, pero no estn disponibles en este save, volver a Will
-                if (savedSlot != (int)CharacterSlot.Will && !IsSlotAvailable(savedSlot))
-                {
-                    Debug.LogWarning($"[PartyControlManager] El slot guardado {savedSlot} no está disponible. Volviendo a Will por defecto.");
-                    savedSlot = (int)CharacterSlot.Will;
-                }
-                
-                if (savedSlot != _activeIndex) 
-                {
-                    Debug.Log($"[PartyControlManager] Restaurando personaje activo: {(CharacterSlot)savedSlot} (desde {_activeIndex})");
-                    var from = (CharacterSlot)_activeIndex;
-                    var to = (CharacterSlot)savedSlot;
-                    _activeIndex = savedSlot;
-                    
-                    // Asegurarse de que ActiveCharacterSwapper también se reinicialice
-                    ActiveCharacterSwapper.Instance?.ResetState();
-                    
-                    // Hacer el cambio inicial para ocultar el NPC que controlamos
-                    ActiveCharacterSwapper.Instance?.SwitchCharacter(from, to);
-                } 
-                else 
-                {
-                    // Asegurarse de que ActiveCharacterSwapper también se reinicialice
-                    ActiveCharacterSwapper.Instance?.ResetState();
-                }
-            }
-        }
-        else 
-        {
-            // Asumir que Will es el personaje activo por defecto si no hay perfil
-            _activeIndex = (int)CharacterSlot.Will;
-            ActiveCharacterSwapper.Instance?.ResetState();
-        }
+
+        // Cancelar cualquier restauración diferida de una sesión anterior
+        PlayerParty.OnPartyChanged -= TryRestoreSavedSlot;
+        _pendingSlotToRestore = -1;
+
+        // Al cargar partida siempre se arranca como Will
+        _activeIndex = (int)CharacterSlot.Will;
+        ActiveCharacterSwapper.Instance?.ResetState();
 
         _isPartyFollowing = true;
-        
-        // Forzar el refresco para que los eventos se disparen
         ForceRefreshFollowMode();
+    }
+
+    private void TryRestoreSavedSlot(IReadOnlyList<NPCPartyMember> _)
+    {
+        if (_pendingSlotToRestore < 0) return;
+        if (!IsSlotAvailable(_pendingSlotToRestore)) return;
+        // Si el swapper aún no inicializó su Start(), SwitchCharacter falla silenciosamente.
+        // Mantener la suscripción a OnPartyChanged y esperar a OnSwapperReady().
+        if (ActiveCharacterSwapper.Instance == null || !ActiveCharacterSwapper.Instance.IsReady) return;
+
+        PlayerParty.OnPartyChanged -= TryRestoreSavedSlot;
+        Debug.Log($"[PartyControlManager] Party listo. Restaurando personaje guardado: {(CharacterSlot)_pendingSlotToRestore}");
+        int slotToRestore = _pendingSlotToRestore;
+        _pendingSlotToRestore = -1;
+        SwitchToCharacter(slotToRestore);
+    }
+
+    /// <summary>
+    /// Llamado por ActiveCharacterSwapper cuando su Start() termina y _ready pasa a true.
+    /// Reintenta la restauración diferida del slot guardado si aún está pendiente.
+    /// </summary>
+    public void OnSwapperReady()
+    {
+        if (_pendingSlotToRestore >= 0)
+            TryRestoreSavedSlot(null);
     }
 }

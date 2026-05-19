@@ -21,6 +21,9 @@ namespace Game.NPC
         [Header("Estado Inicial")]
         [Tooltip("Si está activado, este NPC se unirá al equipo automáticamente al iniciar")]
         [SerializeField] private bool autoJoinOnStart = false;
+
+        [Tooltip("Si está activado, este NPC se ocultará (SetActive false) cuando no esté en el party y se activará al unirse")]
+        [SerializeField] private bool hideWhenNotInParty = false;
         
         [Header("Debug")]
         [SerializeField] private bool debugMode = false;
@@ -84,6 +87,11 @@ namespace Game.NPC
         /// </summary>
         public NPCBehaviourManagerV2 NPCManager => _npcManager;
         
+        /// <summary>
+        /// Si true, el NPC se oculta cuando no está en el party y se activa al unirse.
+        /// </summary>
+        public bool HideWhenNotInParty => hideWhenNotInParty;
+
         /// <summary>
         /// ¿Está actualmente en el equipo?
         /// </summary>
@@ -375,6 +383,10 @@ namespace Game.NPC
         /// </summary>
         internal void OnJoinedParty(PlayerParty party)
         {
+            // Asegurar que los renderers están visibles (pueden haber sido ocultados por HideNonPartyNPCs)
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+                r.enabled = true;
+
             _party = party;
             _isInParty = true;
             _isJoining = false; // ✅ FIX: Limpiar flag de joining
@@ -407,12 +419,12 @@ namespace Game.NPC
         {
             _isInParty = false;
             _isJoining = false; // ✅ FIX: Limpiar flag por si acaso
-            
+
             Log("👋 Abandonó el equipo");
-            
+
             // Detener seguimiento
             StopFollowing();
-            
+
             _party = null;
             OnLeft?.Invoke();
         }

@@ -25,6 +25,8 @@ public class GameBootService : MonoBehaviour
     private static GameBootService _instance;
     public static bool IsAvailable => _instance != null;
 
+    [SerializeField] private GameBootProfile _bootProfileAsset;
+
     private static GameBootProfile _profile;
     public static GameBootProfile Profile => _profile;
 
@@ -124,11 +126,16 @@ public class GameBootService : MonoBehaviour
         if (_isInitialized) return;
         _isInitialized = true;
 
-        // Cargar el perfil de arranque
-        _profile = Resources.Load<GameBootProfile>("GameBootProfile");
+        // Cargar el perfil de arranque desde referencia directa o fallback de editor
+        _profile = _bootProfileAsset;
+#if UNITY_EDITOR
+        if (_profile == null)
+            _profile = UnityEditor.AssetDatabase.LoadAssetAtPath<GameBootProfile>(
+                "Assets/_BootProfile/GameBootProfile.asset");
+#endif
         if (_profile == null)
         {
-            Debug.LogError("[GameBootService] No se encontró 'GameBootProfile' en Resources. El juego no puede arrancar.");
+            Debug.LogError("[GameBootService] GameBootProfile no encontrado. Asígnalo en el Inspector del componente GameBootService en la escena 'Start'.");
             return;
         }
 

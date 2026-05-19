@@ -54,6 +54,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
     private NPCPartyMember _hiddenNpc;
 
     private bool _ready;
+    public bool IsReady => _ready;
 
     #region Lifecycle
     private void Awake()
@@ -73,6 +74,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
         PartyControlManager.OnFollowModeChanged += OnFollowModeChanged;
 
         _ready = true;
+        // Notificar al PartyControlManager para que reintente cualquier restauración
+        // diferida que se bloqueó porque Start() aún no había corrido.
+        PartyControlManager.Instance?.OnSwapperReady();
     }
 
     private void OnDestroy()

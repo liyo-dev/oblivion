@@ -41,6 +41,8 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     private ModularAutoBuilder _builder;
     private bool _willSnapshotTaken;
 
+    public bool HasWillSnapshot => _willSnapshotTaken;
+
     private ModularAutoBuilder Builder
     {
         get
@@ -73,7 +75,9 @@ public class CharacterAppearanceRegistry : MonoBehaviour
 
         EnsureWillSnapshot(b);
         b.DeactivateAllCategories();
-        b.ApplySelection(_appearances[(int)slot]);
+        var app = _appearances[(int)slot];
+        Debug.Log($"[CharacterAppearanceRegistry] ApplyAppearance({slot}) — partes: [{(app != null ? string.Join(", ", System.Linq.Enumerable.Select(app, kv => $"{kv.Key}:{kv.Value}")) : "NULL")}]");
+        b.ApplySelection(app);
     }
 
     /// <summary>
@@ -140,13 +144,30 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     /// <summary>
     /// Carga una apariencia desde datos guardados (p.ej. al continuar una partida).
     /// No aplica el cambio al builder — llama a ApplyAppearance() después si es necesario.
+    /// Si slot es Will, marca el snapshot como tomado para que EnsureWillSnapshot
+    /// no sobreescriba estos datos con el estado actual del builder.
     /// </summary>
     public void SetAppearanceFromList(PartyControlManager.CharacterSlot slot, List<AppearanceEntry> entries)
     {
         _appearances[(int)slot] = ToDict(entries);
+        if (slot == PartyControlManager.CharacterSlot.Will)
+            _willSnapshotTaken = true;
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Captura el snapshot de Will desde el builder ANTES de que se aplique cualquier preset.
+    /// Usar el builder proporcionado directamente evita dependencias de timing con PlayerService.
+    /// </summary>
+    public void SnapshotWillFromBuilderIfNeeded(ModularAutoBuilder b)
+    {
+        if (_willSnapshotTaken) return;
+        if (b == null) return;
+        _appearances[(int)PartyControlManager.CharacterSlot.Will] = b.GetSelection();
+        _willSnapshotTaken = true;
+        Debug.Log($"[CharacterAppearanceRegistry] 📸 Pre-snapshot Will tomado: [{string.Join(", ", System.Linq.Enumerable.Select(_appearances[(int)PartyControlManager.CharacterSlot.Will], kv => $"{kv.Key}:{kv.Value}"))}]");
+    }
 
     // Captura el snapshot de Will la primera vez que el builder está disponible.
     private void EnsureWillSnapshot(ModularAutoBuilder b)

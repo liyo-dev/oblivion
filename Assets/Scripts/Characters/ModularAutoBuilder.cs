@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+// Debe inicializarse antes que PlayerPresetService (orden -50) para que su
+// caché de partes esté lista cuando PlayerPresetService aplica la apariencia del preset.
+[DefaultExecutionOrder(-60)]
 [DisallowMultipleComponent]
 public class ModularAutoBuilder : MonoBehaviour
 {

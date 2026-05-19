@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [DefaultExecutionOrder(-50)]
@@ -114,6 +115,12 @@ public class PlayerPresetService : MonoBehaviour
             SpawnManager.SetCurrentAnchor(preset.spawnAnchorId);
         }
 
+        // Pre-snapshot de Will ANTES de cualquier cambio en el builder.
+        // Si preset.appearance está corrompido con partes de otro personaje, el snapshot
+        // del prefab sirve como referencia correcta para detectar la corrupción y corregirla.
+        EnsureAppearanceBuilderReference();
+        CharacterAppearanceRegistry.Instance?.SnapshotWillFromBuilderIfNeeded(_appearanceBuilder);
+
         // Sincronizar maná del preset → ManaPool (evita arrancar 50/50 si el preset está en 0/0)
         ApplyManaFromPreset(preset);
 
@@ -176,10 +183,14 @@ public class PlayerPresetService : MonoBehaviour
         if (preset == null) return;
 
         EnsureAppearanceBuilderReference();
-        if (_appearanceBuilder == null) return;
+        if (_appearanceBuilder == null)
+        {
+            Debug.LogError("[PlayerPresetService] ❌ APARIENCIA NO APLICADA: _appearanceBuilder es NULL. El jugador mantendrá la apariencia del prefab.");
+            return;
+        }
 
         var entries = preset.appearance;
-        
+
         // Si el preset no tiene apariencia definida (lista vacía o null),
         // significa que TODAS las partes deben estar desactivadas (reseteo completo)
         if (entries == null || entries.Count == 0)
@@ -187,8 +198,7 @@ public class PlayerPresetService : MonoBehaviour
             Debug.LogWarning($"[PlayerPresetService] ⚠️ Preset '{preset.name}' sin apariencia definida. " +
                 "Desactivando TODAS las partes visuales (reseteo completo). " +
                 "Define la apariencia en el Inspector del preset para control preciso.");
-            
-            // Crear un diccionario con TODAS las categorías en null para desactivar todo
+
             var emptySelection = new Dictionary<PartCategory, string>();
             foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
             {
@@ -198,28 +208,88 @@ public class PlayerPresetService : MonoBehaviour
             return;
         }
 
-        // IMPORTANTE: Cuando aplicamos un preset, debemos asegurar que SOLO las partes
-        // definidas en el preset estén activas. Para eso, creamos un diccionario completo
-        // con todas las categorías en null, y luego sobrescribimos con las del preset.
-        // Esto garantiza que partes no definidas (como Cloak si no está en el preset) se desactiven.
         var selection = new Dictionary<PartCategory, string>();
-        
-        // Inicializar todas las categorías a null (desactivadas)
         foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
         {
             selection[cat] = null;
         }
-
-        // Sobrescribir con las categorías definidas en el preset
         foreach (var entry in entries)
         {
             selection[entry.category] = string.IsNullOrEmpty(entry.partName) ? null : entry.partName;
         }
 
+        var activeSlot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
 
-        // Desactivar todas las categorías antes de aplicar la selección del preset
+        Debug.Log($"[PlayerPresetService] 🎨 ApplyAppearanceFromPreset — preset='{preset.name}' activeSlot={activeSlot} entries=[{string.Join(", ", entries.ConvertAll(e => $"{e.category}:{e.partName}"))}] builder={_appearanceBuilder.gameObject.name}");
+
+        if (activeSlot != PartyControlManager.CharacterSlot.Will)
+        {
+            // Proteger el registry de Will contra datos corrompidos del preset antes de guardarlos.
+            var registry = CharacterAppearanceRegistry.Instance;
+            if (registry != null && registry.HasWillSnapshot && IsSelectionCorrupted(selection, registry))
+            {
+                Debug.LogWarning("[PlayerPresetService] ↩️ preset.appearance corrompido — registry de Will NO se sobreescribe.");
+                return;
+            }
+
+            Debug.Log($"[PlayerPresetService] ↩️ Slot activo es {activeSlot} (no Will): guardando apariencia de Will en registry sin tocar el builder.");
+            CharacterAppearanceRegistry.Instance?.SetAppearanceFromList(
+                PartyControlManager.CharacterSlot.Will, entries);
+            return;
+        }
+
+        // Cuando Will es el activo: detectar si preset.appearance está corrompido con partes de
+        // otro personaje. Si el pre-snapshot existe y la selección contiene ≥2 partes que coinciden
+        // con otro personaje pero difieren del snapshot, usamos el snapshot como fuente de verdad.
+        var reg = CharacterAppearanceRegistry.Instance;
+        if (reg != null && reg.HasWillSnapshot && IsSelectionCorrupted(selection, reg))
+        {
+            Debug.LogWarning("[PlayerPresetService] ⚠️ Corrupción detectada en preset.appearance. Restaurando apariencia de Will desde pre-snapshot del prefab.");
+            selection = reg.GetAppearance(PartyControlManager.CharacterSlot.Will);
+        }
+
         _appearanceBuilder.DeactivateAllCategories();
         _appearanceBuilder.ApplySelection(selection);
+
+        Debug.Log($"[PlayerPresetService] ✅ Apariencia de Will aplicada al builder. Partes activas: [{string.Join(", ", _appearanceBuilder.GetSelection().Select(kv => $"{kv.Key}:{kv.Value}"))}]");
+
+        CharacterAppearanceRegistry.Instance?.CaptureCurrentAppearance(
+            PartyControlManager.CharacterSlot.Will);
+    }
+
+    /// <summary>
+    /// Devuelve true si la selección contiene ≥2 partes de otro personaje (Estela o Liam)
+    /// que además difieren del pre-snapshot de Will, indicando corrupción.
+    /// </summary>
+    private static bool IsSelectionCorrupted(Dictionary<PartCategory, string> selection,
+                                              CharacterAppearanceRegistry registry)
+    {
+        var willSnap  = registry.GetAppearance(PartyControlManager.CharacterSlot.Will);
+        var estelaApp = registry.GetAppearance(PartyControlManager.CharacterSlot.Estela);
+        var liamApp   = registry.GetAppearance(PartyControlManager.CharacterSlot.Liam);
+
+        int corruptCount = 0;
+        foreach (var kv in selection)
+        {
+            if (string.IsNullOrEmpty(kv.Value)) continue;
+
+            bool inOtherChar =
+                (estelaApp.TryGetValue(kv.Key, out var ev) && ev == kv.Value) ||
+                (liamApp.TryGetValue(kv.Key,   out var lv) && lv == kv.Value);
+
+            bool differsFromSnap =
+                !willSnap.TryGetValue(kv.Key, out var sv) || sv != kv.Value;
+
+            if (inOtherChar && differsFromSnap)
+                corruptCount++;
+        }
+
+        if (corruptCount >= 2)
+        {
+            Debug.LogWarning($"[PlayerPresetService] 🔍 {corruptCount} partes de otro personaje detectadas en preset.appearance.");
+            return true;
+        }
+        return false;
     }
 
     public void SnapshotAppearanceToPreset()

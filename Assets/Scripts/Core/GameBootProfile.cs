@@ -610,27 +610,56 @@ public class GameBootProfile : ScriptableObject
 
         if (PlayerService.TryGetComponent<ModularAutoBuilder>(out var builder, includeInactive: true, allowSceneLookup: true))
         {
-            var selection = builder.GetSelection();
-            if (selection != null)
-            {
-                if (p.appearance == null) p.appearance = new List<AppearanceEntry>();
-                else p.appearance.Clear();
+            // Cuando el personaje activo no es Will, el builder muestra la apariencia de ese personaje.
+            // preset.appearance debe guardar SIEMPRE la apariencia de Will para que al cargar
+            // el controller de Will tenga su aspecto correcto, independientemente de quién sea el activo.
+            var registry = CharacterAppearanceRegistry.Instance;
+            var activeSlot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
 
-                foreach (var kv in selection)
+            // preset.appearance siempre debe almacenar la apariencia de Will, no la del personaje activo.
+            bool skipAppearanceUpdate = false;
+            Dictionary<PartCategory, string> selection;
+
+            if (activeSlot != PartyControlManager.CharacterSlot.Will && registry != null)
+            {
+                selection = registry.GetAppearance(PartyControlManager.CharacterSlot.Will);
+                if (selection == null || selection.Count == 0)
                 {
-                    p.appearance.Add(new AppearanceEntry
-                    {
-                        category = kv.Key,
-                        partName = string.IsNullOrEmpty(kv.Value) ? null : kv.Value
-                    });
+                    // Registry sin datos de Will: no actualizar para evitar guardar la apariencia
+                    // del personaje activo (Estela/Liam) como si fuera la de Will.
+                    Debug.LogWarning("[GameBootProfile] ⚠️ Registry sin apariencia de Will — preset.appearance se mantiene sin cambios para evitar corrupción.");
+                    skipAppearanceUpdate = true;
+                    selection = null;
                 }
-                syncedSystems.Add($"Appearance({p.appearance.Count})");
-                Debug.Log($"[GameBootProfile] Apariencia sincronizada: {p.appearance.Count} partes [{string.Join(", ", p.appearance.ConvertAll(a => $"{a.category}:{a.partName}"))}]");
             }
             else
             {
-                Debug.LogWarning("[GameBootProfile] ModularAutoBuilder.GetSelection() devolvió null");
-                p.appearance = new List<AppearanceEntry>();
+                selection = builder.GetSelection();
+            }
+
+            if (!skipAppearanceUpdate)
+            {
+                if (selection != null)
+                {
+                    if (p.appearance == null) p.appearance = new List<AppearanceEntry>();
+                    else p.appearance.Clear();
+
+                    foreach (var kv in selection)
+                    {
+                        p.appearance.Add(new AppearanceEntry
+                        {
+                            category = kv.Key,
+                            partName = string.IsNullOrEmpty(kv.Value) ? null : kv.Value
+                        });
+                    }
+                    syncedSystems.Add($"Appearance({p.appearance.Count})");
+                    Debug.Log($"[GameBootProfile] Apariencia sincronizada: {p.appearance.Count} partes [{string.Join(", ", p.appearance.ConvertAll(a => $"{a.category}:{a.partName}"))}]");
+                }
+                else
+                {
+                    Debug.LogWarning("[GameBootProfile] ModularAutoBuilder.GetSelection() devolvió null");
+                    p.appearance = new List<AppearanceEntry>();
+                }
             }
         }
         else
@@ -680,6 +709,16 @@ public class GameBootProfile : ScriptableObject
         {
             p.partyMemberIds = new List<string>();
             Debug.LogWarning("[GameBootProfile] PlayerParty no disponible - Party guardado vacío");
+        }
+
+        // Guardar el personaje activo al momento de guardar.
+        // CRÍTICO: debe hacerse AQUÍ (antes de guardar) y NO en SyncPartyToPreset(),
+        // porque SyncPartyToPreset corre durante OnProfileReady cuando _activeIndex aún es
+        // el valor por defecto (Will=1), sobreescribiendo el slot real guardado.
+        if (PartyControlManager.Instance != null)
+        {
+            p.activeCharacterSlot = PartyControlManager.Instance.ActiveIndex;
+            syncedSystems.Add($"ActiveSlot({(PartyControlManager.CharacterSlot)p.activeCharacterSlot})");
         }
 
         // Snapshot narrativo eliminado; no se captura

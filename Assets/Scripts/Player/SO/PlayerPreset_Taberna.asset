@@ -55,17 +55,15 @@ MonoBehaviour:
     fly: 0
   appearance:
   - category: 0
-    partName: Body09
+    partName: Body05
   - category: 2
-    partName: Head02_Female
+    partName: Head01_Male
   - category: 3
-    partName: Hair08
+    partName: Hair01
   - category: 4
-    partName: Eye02
+    partName: Eye01
   - category: 5
-    partName: Mouth02
-  - category: 8
-    partName: AC09_Ribbon
+    partName: Mouth01
   unlockedWardrobeIds:
   - Body05
   - Cloak02
@@ -178,8 +176,9 @@ MonoBehaviour:
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN0
   seenLorePopupIds: []
+  activeCharacterSlot: 1
   partyMemberIds:
-  - NPC_InteractiveNarrative_Config_Estela_b17a2d68
+  - Estela
   unlockedTeleportPoints:
   - Woods_Entrance_SavePoint
   - Woods_SavePoint

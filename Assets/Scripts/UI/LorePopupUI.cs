@@ -23,7 +23,6 @@ public class LorePopupUI : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private RectTransform popupRoot;
     [SerializeField] private Image portraitImage;
-    [SerializeField] private TextMeshProUGUI speakerText;
     [SerializeField] private TextMeshProUGUI bodyText;
 
     [Header("Animación")]
@@ -91,6 +90,9 @@ public class LorePopupUI : MonoBehaviour
 
     IEnumerator RunSequence(LorePopupConfig config, Action onClosed)
     {
+        if (config.delay > 0f)
+            yield return new WaitForSecondsRealtime(config.delay);
+
         // Abrir popup con primera entrada
         DisplayEntry(config.entries[0]);
         yield return StartCoroutine(AnimateInRoutine());
@@ -134,14 +136,6 @@ public class LorePopupUI : MonoBehaviour
         {
             portraitImage.sprite = e.portrait;
             portraitImage.enabled = e.portrait != null;
-        }
-
-        if (speakerText != null)
-        {
-            string name = e.speakerName;
-            if (!string.IsNullOrEmpty(e.speakerNameId))
-                name = LocalizationManager.Instance?.Get(e.speakerNameId, e.speakerName) ?? e.speakerName;
-            speakerText.text = name;
         }
 
         if (bodyText != null)

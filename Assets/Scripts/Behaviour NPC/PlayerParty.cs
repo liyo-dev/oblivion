@@ -638,14 +638,19 @@ namespace Game.NPC
                 {
                     Debug.Log("[PlayerParty] ℹ️ No hay miembros de party en el preset para restaurar");
                 }
+                // Ocultar NPCs con hideWhenNotInParty aunque no haya party (ej: nueva partida)
+                HideNonPartyNPCs();
                 return;
             }
             
             Debug.Log($"[PlayerParty] 🔄 Restaurando {preset.partyMemberIds.Count} miembros del party: [{string.Join(", ", preset.partyMemberIds)}]");
-            
+
             // Sistema robusto sin delays: intentar restaurar AHORA
             RestoreMembersFromIds(preset.partyMemberIds);
-            
+
+            // Ocultar NPCs con hideWhenNotInParty que no forman parte del party activo
+            HideNonPartyNPCs();
+
             // Si quedaron pendientes, el Update los manejará automáticamente
             if (_pendingMemberIds.Count > 0)
             {
@@ -653,6 +658,29 @@ namespace Game.NPC
             }
         }
         
+        /// <summary>
+        /// Oculta los renderers de todos los NPCPartyMember que no están en el party activo.
+        /// Usa renderer toggling (no SetActive) para que el NPCRegistry los siga encontrando.
+        /// Se llama al cargar partida para esconder personajes aún no desbloqueados.
+        /// </summary>
+        private void HideNonPartyNPCs()
+        {
+            var allPartyMembers = UnityEngine.Object.FindObjectsByType<NPCPartyMember>(
+                UnityEngine.FindObjectsInactive.Exclude,
+                UnityEngine.FindObjectsSortMode.None);
+
+            foreach (var member in allPartyMembers)
+            {
+                if (member == null) continue;
+                if (!HasMember(member))
+                {
+                    foreach (var r in member.GetComponentsInChildren<Renderer>(true))
+                        r.enabled = false;
+                    Log($"🙈 Ocultando renderers de {member.DisplayName}: no está en el party activo");
+                }
+            }
+        }
+
         /// <summary>
         /// Reintenta restaurar los miembros pendientes.
         /// </summary>
@@ -1074,15 +1102,13 @@ namespace Game.NPC
                 Debug.Log($"[PlayerParty] 📋 Preset encontrado: '{preset.name}', llamando a GetMemberIdsForSave()...");
                 var memberIds = GetMemberIdsForSave(allowPresetFallbackWhenEmpty: false);
                 Debug.Log($"[PlayerParty] 📋 GetMemberIdsForSave() retornó {memberIds.Count} IDs: [{string.Join(", ", memberIds)}]");
-                
+
                 preset.partyMemberIds = memberIds;
-                
-                // ALSO SAVE THE ACTIVE CHARACTER LEADER FOR THE SAVE LOAD
-                if (PartyControlManager.Instance != null)
-                {
-                    preset.activeCharacterSlot = PartyControlManager.Instance.ActiveIndex;
-                }
-                
+
+                // NOTA: activeCharacterSlot NO se actualiza aquí para no sobreescribir
+                // el slot guardado durante el OnProfileReady, antes de que PartyControlManager
+                // lo lea. Se sincroniza en UpdateRuntimePresetFromCurrentState() antes de guardar.
+
                 Debug.Log($"[PlayerParty] ✅ Party sincronizado con preset '{preset.name}': {preset.partyMemberIds.Count} miembros [{string.Join(", ", memberIds)}]");
             }
             catch (System.Exception ex)
@@ -1242,7 +1268,7 @@ namespace Game.NPC
         {
             // 1. Buscar NPC en el registro por ID exacto
             var npcManager = NPCRegistry.Instance?.GetNPCByID(id);
-            
+
             // 2. FALLBACK: Si no se encontró, intentar sin guion bajo inicial (por si fue guardado con nombre de GO)
             if (npcManager == null && id.StartsWith("_"))
             {
@@ -1250,7 +1276,7 @@ namespace Game.NPC
                 Log($"  → Intentando sin guion bajo: '{idSinGuion}'");
                 npcManager = NPCRegistry.Instance?.GetNPCByID(idSinGuion);
             }
-            
+
             // 3. FALLBACK: Buscar por nombre similar en los registrados
             if (npcManager == null)
             {
@@ -1265,7 +1291,7 @@ namespace Game.NPC
                     }
                 }
             }
-            
+
             if (npcManager != null)
             {
                 Log($"✅ NPC encontrado: {npcManager.name}");
@@ -1273,12 +1299,11 @@ namespace Game.NPC
                 if (partyMember != null && !HasMember(partyMember))
                 {
                     Log($"Uniendo {partyMember.DisplayName} al party...");
-                    partyMember.JoinParty(); // Esto llamará a AddMember internamente
+                    partyMember.JoinParty(); // Esto llamará a AddMember internamente (y activará el GO si está inactivo)
                 }
                 else if (partyMember == null)
                 {
                     LogWarning($"NPC {npcManager.name} no tiene componente NPCPartyMember");
-                    // Marcar como pendiente para reintentar
                     _pendingMemberIds.Add(id);
                 }
                 else

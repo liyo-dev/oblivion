@@ -6,12 +6,6 @@ public struct LoreEntry
     [Tooltip("Retrato del personaje. Opcional.")]
     public Sprite portrait;
 
-    [Tooltip("ID de localización del nombre del hablante (ej: 'CHAR_ESTELA'). Si vacío, usa speakerName.")]
-    public string speakerNameId;
-
-    [Tooltip("Nombre del hablante (fallback si speakerNameId está vacío).")]
-    public string speakerName;
-
     [Tooltip("ID de localización del texto (ej: 'LORE_TEMPLE_01'). Si vacío, usa text.")]
     public string textId;
 
@@ -27,6 +21,10 @@ public struct LoreEntry
 [CreateAssetMenu(menuName = "Game/Lore Popup Config", fileName = "LoreCfg_")]
 public class LorePopupConfig : ScriptableObject
 {
-    [Tooltip("Entradas de lore. Cada entrada es una página del popup que el jugador avanza manualmente.")]
+    [Tooltip("Segundos de espera desde que se lanza el evento hasta que aparece el popup.")]
+    [Min(0f)]
+    public float delay = 0f;
+
+    [Tooltip("Entradas de lore. Cada entrada es una página del popup.")]
     public LoreEntry[] entries;
 }
