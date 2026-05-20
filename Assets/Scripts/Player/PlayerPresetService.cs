@@ -191,20 +191,15 @@ public class PlayerPresetService : MonoBehaviour
 
         var entries = preset.appearance;
 
-        // Si el preset no tiene apariencia definida (lista vacía o null),
-        // significa que TODAS las partes deben estar desactivadas (reseteo completo)
+        // Si el preset no tiene apariencia definida (lista vacía o null) y Will es el activo,
+        // no tocar el builder — dejar al jugador con la apariencia actual del prefab.
+        // NUNCA aplicar una selección vacía si hay un personaje visible: haría al jugador invisible.
         if (entries == null || entries.Count == 0)
         {
-            Debug.LogWarning($"[PlayerPresetService] ⚠️ Preset '{preset.name}' sin apariencia definida. " +
-                "Desactivando TODAS las partes visuales (reseteo completo). " +
+            var currentSlot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
+            Debug.LogWarning($"[PlayerPresetService] ⚠️ Preset '{preset.name}' sin apariencia definida (activeSlot={currentSlot}). " +
+                "Se omite la aplicación al builder para evitar invisibilidad. " +
                 "Define la apariencia en el Inspector del preset para control preciso.");
-
-            var emptySelection = new Dictionary<PartCategory, string>();
-            foreach (PartCategory cat in (PartCategory[])Enum.GetValues(typeof(PartCategory)))
-            {
-                emptySelection[cat] = null;
-            }
-            _appearanceBuilder.ApplySelection(emptySelection);
             return;
         }
 
@@ -238,23 +233,34 @@ public class PlayerPresetService : MonoBehaviour
             return;
         }
 
-        // Cuando Will es el activo: detectar si preset.appearance está corrompido con partes de
-        // otro personaje. Si el pre-snapshot existe y la selección contiene ≥2 partes que coinciden
-        // con otro personaje pero difieren del snapshot, usamos el snapshot como fuente de verdad.
+        // Aplicar a través del registry para mantener _currentBuilderSlot sincronizado.
+        // SetAppearanceFromList actualiza _appearances[Will] con los datos del preset,
+        // y ApplyAppearance lo aplica al builder y actualiza _currentBuilderSlot = Will.
         var reg = CharacterAppearanceRegistry.Instance;
-        if (reg != null && reg.HasWillSnapshot && IsSelectionCorrupted(selection, reg))
+        if (reg != null)
         {
-            Debug.LogWarning("[PlayerPresetService] ⚠️ Corrupción detectada en preset.appearance. Restaurando apariencia de Will desde pre-snapshot del prefab.");
-            selection = reg.GetAppearance(PartyControlManager.CharacterSlot.Will);
+            // Detectar corrupción: si el preset contiene partes de otro personaje, usar el
+            // snapshot del registry en lugar de sobreescribirlo con datos corruptos.
+            bool corrupted = reg.HasWillSnapshot && IsSelectionCorrupted(selection, reg);
+            if (corrupted)
+            {
+                Debug.LogWarning("[PlayerPresetService] ⚠️ Corrupción detectada en preset.appearance. Aplicando snapshot existente del registry sin sobreescribir.");
+                reg.ApplyAppearance(PartyControlManager.CharacterSlot.Will);
+            }
+            else
+            {
+                reg.SetAppearanceFromList(PartyControlManager.CharacterSlot.Will, entries);
+                reg.ApplyAppearance(PartyControlManager.CharacterSlot.Will);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerPresetService] CharacterAppearanceRegistry no disponible — aplicando directamente al builder.");
+            _appearanceBuilder.DeactivateAllCategories();
+            _appearanceBuilder.ApplySelection(selection);
         }
 
-        _appearanceBuilder.DeactivateAllCategories();
-        _appearanceBuilder.ApplySelection(selection);
-
         Debug.Log($"[PlayerPresetService] ✅ Apariencia de Will aplicada al builder. Partes activas: [{string.Join(", ", _appearanceBuilder.GetSelection().Select(kv => $"{kv.Key}:{kv.Value}"))}]");
-
-        CharacterAppearanceRegistry.Instance?.CaptureCurrentAppearance(
-            PartyControlManager.CharacterSlot.Will);
     }
 
     /// <summary>
@@ -296,6 +302,16 @@ public class PlayerPresetService : MonoBehaviour
     {
         EnsureAppearanceBuilderReference();
         if (_appearanceBuilder == null) return;
+
+        // preset.appearance siempre almacena la apariencia de Will.
+        // Si el personaje activo no es Will, solo actualizamos el registry del personaje activo
+        // y salimos sin tocar preset.appearance para evitar corromperla con partes de otro personaje.
+        var activeSlot = PartyControlManager.Instance?.ActiveSlot ?? PartyControlManager.CharacterSlot.Will;
+        if (activeSlot != PartyControlManager.CharacterSlot.Will)
+        {
+            CharacterAppearanceRegistry.Instance?.CaptureActiveCharacterAppearance();
+            return;
+        }
 
         if (!GameBootService.IsAvailable)
         {

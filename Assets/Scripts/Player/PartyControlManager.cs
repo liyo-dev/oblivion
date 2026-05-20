@@ -118,8 +118,9 @@ public class PartyControlManager : MonoBehaviour
     #region Character Switching
     private void TrySwitchLeft()
     {
-        if (_switchingLocked) return;
+        if (_switchingLocked) { Debug.LogWarning($"[PartyControlManager] DPad-Left ignorado — switching BLOQUEADO. _activeIndex={_activeIndex}"); return; }
 
+        Debug.Log($"[PartyControlManager] TrySwitchLeft — _activeIndex={_activeIndex}");
         for (int i = _activeIndex - 1; i >= 0; i--)
         {
             if (IsSlotAvailable(i))
@@ -128,12 +129,14 @@ public class PartyControlManager : MonoBehaviour
                 return;
             }
         }
+        Debug.Log($"[PartyControlManager] TrySwitchLeft — no hay slot disponible a la izquierda de {_activeIndex}");
     }
 
     private void TrySwitchRight()
     {
-        if (_switchingLocked) return;
+        if (_switchingLocked) { Debug.LogWarning($"[PartyControlManager] DPad-Right ignorado — switching BLOQUEADO. _activeIndex={_activeIndex}"); return; }
 
+        Debug.Log($"[PartyControlManager] TrySwitchRight — _activeIndex={_activeIndex}");
         for (int i = _activeIndex + 1; i <= 2; i++)
         {
             if (IsSlotAvailable(i))
@@ -142,6 +145,7 @@ public class PartyControlManager : MonoBehaviour
                 return;
             }
         }
+        Debug.Log($"[PartyControlManager] TrySwitchRight — no hay slot disponible a la derecha de {_activeIndex}");
     }
 
     private void SetSwitchingLocked(bool locked)
@@ -163,10 +167,20 @@ public class PartyControlManager : MonoBehaviour
         var from = (CharacterSlot)_activeIndex;
         var to   = (CharacterSlot)newIndex;
 
+        var swapper = ActiveCharacterSwapper.Instance;
+        if (swapper == null)
+        {
+            Debug.LogError($"[PartyControlManager] SwitchToCharacter({from}→{to}) ABORTADO — ActiveCharacterSwapper.Instance es null. _activeIndex NO modificado.");
+            return;
+        }
+        if (!swapper.IsReady)
+        {
+            Debug.LogError($"[PartyControlManager] SwitchToCharacter({from}→{to}) ABORTADO — ActiveCharacterSwapper.IsReady=false. _activeIndex NO modificado.");
+            return;
+        }
+
         _activeIndex = newIndex;
-
-        ActiveCharacterSwapper.Instance?.SwitchCharacter(from, to);
-
+        swapper.SwitchCharacter(from, to);
         OnActiveCharacterChanged?.Invoke(_activeIndex);
     }
     #endregion
@@ -218,7 +232,7 @@ public class PartyControlManager : MonoBehaviour
 
     private void HandleProfileReady()
     {
-        Debug.Log("[PartyControlManager] 🔄 GameBootService.OnProfileReady recibido. Reinicializando estado del party.");
+        Debug.Log($"[PartyControlManager] 🔄 GameBootService.OnProfileReady recibido. _activeIndex={_activeIndex} ({(CharacterSlot)_activeIndex}). Reinicializando estado del party.");
 
         // Cancelar cualquier restauración diferida de una sesión anterior
         PlayerParty.OnPartyChanged -= TryRestoreSavedSlot;

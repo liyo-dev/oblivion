@@ -96,6 +96,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (!_ready || from == to) return;
 
         var registry = CharacterAppearanceRegistry.Instance;
+        Debug.Log($"[ActiveCharacterSwapper] SwitchCharacter {from}→{to} | registry={(object)registry ?? "NULL"} | _ready={_ready}");
 
         // 1. Guardar estado del personaje que se abandona
         registry?.CaptureCurrentAppearance(from);
@@ -216,10 +217,16 @@ public class ActiveCharacterSwapper : MonoBehaviour
         {
             var willAppearance = CharacterAppearanceRegistry.Instance.GetAppearance(PartyControlManager.CharacterSlot.Will);
             var npcBuilder = go.GetComponentInChildren<ModularAutoBuilder>(true);
-            if (npcBuilder != null && willAppearance != null)
+            if (npcBuilder == null)
+            {
+                Debug.LogWarning($"[ActiveCharacterSwapper] willNpcPrefab '{go.name}' sin ModularAutoBuilder — activando partes por nombre como fallback.");
+                ActivateWillPartsByName(go, willAppearance);
+            }
+            else if (willAppearance != null)
             {
                 npcBuilder.DeactivateAllCategories();
                 npcBuilder.ApplySelection(willAppearance);
+                Debug.Log($"[ActiveCharacterSwapper] SpawnWillNpc — apariencia aplicada al NPC ({willAppearance.Count} partes).");
             }
         }
 
@@ -314,6 +321,30 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 agent.isStopped = true;
             }
         }
+    }
+
+    /// Fallback para cuando el willNpcPrefab no tiene ModularAutoBuilder:
+    /// activa los GOs cuyos nombres coincidan con las partes de la apariencia de Will.
+    /// Desactiva todos los demás GOs con Renderer para evitar mezclas visuales.
+    private void ActivateWillPartsByName(GameObject npcRoot, System.Collections.Generic.Dictionary<PartCategory, string> willAppearance)
+    {
+        if (willAppearance == null || willAppearance.Count == 0) return;
+
+        var partNames = new System.Collections.Generic.HashSet<string>(willAppearance.Values);
+        int activated = 0;
+
+        foreach (var t in npcRoot.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.gameObject == npcRoot) continue;
+            var hasRenderer = t.GetComponent<Renderer>() != null;
+            if (!hasRenderer) continue;
+
+            bool shouldBeActive = partNames.Contains(t.gameObject.name);
+            t.gameObject.SetActive(shouldBeActive);
+            if (shouldBeActive) activated++;
+        }
+
+        Debug.Log($"[ActiveCharacterSwapper] ActivateWillPartsByName — {activated}/{partNames.Count} partes activadas en '{npcRoot.name}'.");
     }
 
     /// <summary>

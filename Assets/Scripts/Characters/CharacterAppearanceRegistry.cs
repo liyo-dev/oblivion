@@ -41,14 +41,24 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     private ModularAutoBuilder _builder;
     private bool _willSnapshotTaken;
 
+    // Qué personaje está actualmente aplicado en el builder. null = no sabemos (estado inicial).
+    // Usado para rechazar CaptureCurrentAppearance(Will) cuando el builder muestra a Estela/Liam.
+    private PartyControlManager.CharacterSlot? _currentBuilderSlot;
+
     public bool HasWillSnapshot => _willSnapshotTaken;
 
     private ModularAutoBuilder Builder
     {
         get
         {
-            if (_builder != null) return _builder;
+            // Unity destroyed-object check: a cached component whose GO was destroyed is != null in C# but == null via Unity operator
+            if (_builder != null && _builder.gameObject != null) return _builder;
+            if (_builder != null)
+                Debug.LogWarning("[CharacterAppearanceRegistry] ⚠️ _builder cacheado fue destruido — re-buscando.");
+            _builder = null;
             PlayerService.TryGetComponent(out _builder);
+            if (_builder == null)
+                Debug.LogWarning("[CharacterAppearanceRegistry] ⚠️ Builder es null — PlayerService no encontró ModularAutoBuilder en el player.");
             return _builder;
         }
     }
@@ -70,14 +80,37 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     /// </summary>
     public void ApplyAppearance(PartyControlManager.CharacterSlot slot)
     {
+        Debug.Log($"[CharacterAppearanceRegistry] ApplyAppearance ENTER — slot={slot}, _builder={(object)_builder ?? "null"}, Instance={(object)Instance ?? "null"}");
         var b = Builder;
-        if (b == null) return;
+        if (b == null) { Debug.LogWarning($"[CharacterAppearanceRegistry] ApplyAppearance({slot}) abortado — Builder null."); return; }
 
         EnsureWillSnapshot(b);
-        b.DeactivateAllCategories();
         var app = _appearances[(int)slot];
+
+        // Guardia crítica: no dejar al jugador invisible por datos vacíos/nulos.
+        // Si la apariencia de Will está vacía, el switch aborta SIN deactivar nada.
+        if ((app == null || app.Count == 0) && slot == PartyControlManager.CharacterSlot.Will)
+        {
+            Debug.LogError("[CharacterAppearanceRegistry] ❌ _appearances[Will] vacío — ApplyAppearance abortado para evitar invisibilidad.");
+            return;
+        }
+
         Debug.Log($"[CharacterAppearanceRegistry] ApplyAppearance({slot}) — partes: [{(app != null ? string.Join(", ", System.Linq.Enumerable.Select(app, kv => $"{kv.Key}:{kv.Value}")) : "NULL")}]");
-        b.ApplySelection(app);
+        b.DeactivateAllCategories();
+        b.ApplySelection(app ?? new System.Collections.Generic.Dictionary<PartCategory, string>());
+        _currentBuilderSlot = slot;
+
+        var postSelection = b.GetSelection();
+        Debug.Log($"[CharacterAppearanceRegistry] ApplyAppearance({slot}) COMPLETO — {postSelection.Count} partes activas: [{string.Join(", ", System.Linq.Enumerable.Select(postSelection, kv => $"{kv.Key}:{kv.Value}"))}]");
+
+        // Guardia defensiva: si después de aplicar la selección de Will no quedó ninguna
+        // parte activa (nombres que no existen en el builder), restaurar apariencia inicial.
+        if (slot == PartyControlManager.CharacterSlot.Will && postSelection.Count == 0)
+        {
+            Debug.LogWarning("[CharacterAppearanceRegistry] ⚠️ ApplySelection de Will resultó vacío — restaurando apariencia inicial del prefab.");
+            b.RestoreInitialSelection();
+            _appearances[(int)slot] = b.GetSelection();
+        }
     }
 
     /// <summary>
@@ -89,8 +122,26 @@ public class CharacterAppearanceRegistry : MonoBehaviour
         var b = Builder;
         if (b == null) return;
 
+        // Guardia: el builder está mostrando a otro personaje. Capturar ahora
+        // sobreescribiría _appearances[slot] con la apariencia equivocada.
+        if (_currentBuilderSlot.HasValue && _currentBuilderSlot.Value != slot)
+        {
+            Debug.LogWarning($"[CharacterAppearanceRegistry] ⚠️ CaptureCurrentAppearance({slot}) rechazada — builder muestra {_currentBuilderSlot.Value}. Posible switch duplicado.");
+            return;
+        }
+
         EnsureWillSnapshot(b);
-        _appearances[(int)slot] = b.GetSelection();
+        var selection = b.GetSelection();
+
+        // No sobreescribir la apariencia de Will con un estado vacío.
+        if (slot == PartyControlManager.CharacterSlot.Will && selection.Count == 0)
+        {
+            Debug.LogWarning("[CharacterAppearanceRegistry] ⚠️ Ignorando captura vacía para Will — el builder no tiene partes activas.");
+            return;
+        }
+
+        Debug.Log($"[CharacterAppearanceRegistry] CaptureCurrentAppearance({slot}) — capturando: [{string.Join(", ", System.Linq.Enumerable.Select(selection, kv => $"{kv.Key}:{kv.Value}"))}]");
+        _appearances[(int)slot] = selection;
     }
 
     /// <summary>

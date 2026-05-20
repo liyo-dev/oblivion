@@ -56,6 +56,8 @@ MonoBehaviour:
   appearance:
   - category: 0
     partName: Body05
+  - category: 1
+    partName: Cloak02
   - category: 2
     partName: Head01_Male
   - category: 3
@@ -176,9 +178,9 @@ MonoBehaviour:
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN0
   seenLorePopupIds: []
-  activeCharacterSlot: 1
   partyMemberIds:
-  - Estela
+  - _ESTELA
+  activeCharacterSlot: 1
   unlockedTeleportPoints:
   - Woods_Entrance_SavePoint
   - Woods_SavePoint

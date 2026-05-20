@@ -262,6 +262,7 @@ public class ModularAutoBuilder : MonoBehaviour
 
     public void DeactivateAllCategories()
     {
+        Debug.Log($"[ModularAutoBuilder] DeactivateAllCategories llamado desde:\n{System.Environment.StackTrace}");
         foreach (var list in parts.Values)
             foreach (var go in list)
                 go.SetActive(false);
