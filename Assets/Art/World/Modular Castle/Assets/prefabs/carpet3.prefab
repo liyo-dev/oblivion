@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 469330}
   - component: {fileID: 3320360}
   - component: {fileID: 2383502}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: carpet3
   m_TagString: Untagged
   m_Icon: {fileID: 0}

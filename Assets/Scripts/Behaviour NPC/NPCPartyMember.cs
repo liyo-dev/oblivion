@@ -177,7 +177,8 @@ namespace Game.NPC
             // Si está esperando auto-join, verificar en cada frame hasta que esté listo
             if (autoJoinOnStart && !_isInParty && !_isJoining)
             {
-                if (NPCInitializer.IsNPCReady(_npcManager, out _))
+                var party = PlayerParty.Instance;
+                if (party != null && !party.IsFull && NPCInitializer.IsNPCReady(_npcManager, out _))
                 {
                     JoinParty();
                 }

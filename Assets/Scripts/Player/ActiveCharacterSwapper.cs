@@ -56,6 +56,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
     private bool _ready;
     public bool IsReady => _ready;
 
+    // Temporizador para verificar periódicamente si el Will NPC sigue al jugador
+    private float _willFollowCheckTimer;
+
     #region Lifecycle
     private void Awake()
     {
@@ -83,6 +86,24 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         PartyControlManager.OnFollowModeChanged -= OnFollowModeChanged;
         if (Instance == this) Instance = null;
+    }
+
+    private void Update()
+    {
+        if (_willNpcInstance == null) return;
+
+        _willFollowCheckTimer += Time.deltaTime;
+        if (_willFollowCheckTimer < 0.5f) return;
+        _willFollowCheckTimer = 0f;
+
+        var brain = _willNpcInstance.NPCManager?.Brain;
+        if (brain == null) return;
+        if (_willNpcInstance.NPCManager.Context.IsInCombat || _willNpcInstance.NPCManager.Context.IsInCinematic) return;
+        if (!(PartyControlManager.Instance?.IsPartyFollowing ?? true)) return;
+
+        // Si cayó en Idle (Brain no estaba listo al spawnear, o algún estado lo sacó de Follow), reiniciar seguimiento
+        if (brain.CurrentState?.StateName == "Idle")
+            _willNpcInstance.StartFollowingIgnorePartyCheck();
     }
     #endregion
 
@@ -211,6 +232,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
         var go = Instantiate(willNpcPrefab, pos, rot);
         _willNpcInstance = go.GetComponent<NPCPartyMember>();
         _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
+        _willFollowCheckTimer = 0f;
 
         // ✅ Aplicar la apariencia actual de Will al NPC instanciado
         if (CharacterAppearanceRegistry.Instance != null)
@@ -237,8 +259,18 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
     private System.Collections.IEnumerator ApplyFollowModeToWillNpc()
     {
-        yield return null; // Esperar un frame para que el Brain esté listo
+        // Esperar hasta que el Brain esté inicializado (con timeout de seguridad)
+        float waited = 0f;
+        while (_willNpcInstance != null && _willNpcInstance.NPCManager?.Brain == null)
+        {
+            waited += Time.deltaTime;
+            if (waited > 3f) yield break;
+            yield return null;
+        }
+
         if (_willNpcInstance == null) yield break;
+
+        _willFollowCheckTimer = 0f; // Reiniciar timer para no duplicar la primera verificación
 
         var enemy = GetActiveCombatEnemy();
         if (enemy != null)

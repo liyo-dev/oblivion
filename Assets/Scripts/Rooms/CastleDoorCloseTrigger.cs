@@ -1,14 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// Cierra la puerta del castillo cuando el jugador cruza al interior.
-/// Colocar en el mismo GameObject que CastleDoorController, con un
-/// BoxCollider trigger posicionado en el umbral interior de la puerta.
+/// Cierra las puertas del castillo cuando el jugador cruza al interior.
+/// Colocar un BoxCollider trigger en el umbral interior de las puertas.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class CastleDoorCloseTrigger : MonoBehaviour
 {
-    [Tooltip("Referencia al CastleDoorController que controla la puerta")]
     [SerializeField] private CastleDoorController doorController;
 
     [Tooltip("Segundos de espera antes de cerrar (da tiempo al jugador a cruzar)")]
@@ -33,5 +31,5 @@ public class CastleDoorCloseTrigger : MonoBehaviour
             Close();
     }
 
-    private void Close() => doorController?.CloseDoor();
+    private void Close() => doorController?.CloseDoors();
 }

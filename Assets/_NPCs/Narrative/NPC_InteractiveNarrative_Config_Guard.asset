@@ -184,8 +184,8 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.265
       teleportTransition: {fileID: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
+      sendNarrativeEvent: 1
+      narrativeEventKey: OPEN_THE_DOORS
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0

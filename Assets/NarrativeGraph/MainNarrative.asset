@@ -210,14 +210,14 @@ MonoBehaviour:
     - rid: 1823530463036440737
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: Hay que escapar de la prision
+        displayTitle: 'Hay que escapar de la prision. Evento que lanza Estela '
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 002ddca5-949f-4b0e-8a1a-581b4b85290f
-        position: {x: 1798.4, y: 2338.4}
+        position: {x: 1798.3999, y: 2338.4}
         outputs:
         - b9285f43-9af8-40f2-8674-ef92fbbe0aaa
         eventKey: WE_HAVE_TO_SCAPE
@@ -231,13 +231,13 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
-        position: {x: 2215.2, y: 2338.4}
+        position: {x: 2380, y: 2338.4}
         outputs: []
         questId: ELDRAN_MISSION10
     - rid: 1823530669888241844
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: Hablamos con el Rey
+        displayTitle: Hablamos con el Rey. Evento que lanza el Rey
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -258,7 +258,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
-        position: {x: 2156.8, y: 2811.2}
+        position: {x: 2260, y: 2811.2}
         outputs:
         - 002ddca5-949f-4b0e-8a1a-581b4b85290f
         questId: ELDRAN_MISSION9
@@ -309,7 +309,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 76cc647a-0938-4a59-bb15-896836a33946
-        position: {x: 521.6, y: 2124}
+        position: {x: 521.60004, y: 2124}
         outputs:
         - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
         - 3e012768-5c1f-458f-aaf4-6c713eb76562
@@ -332,7 +332,7 @@ MonoBehaviour:
     - rid: 2337184709046960285
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Se abren las puertas. Evento que se lanza por trigger
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -386,7 +386,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -405.6, y: -407.2}
+        position: {x: -405.59998, y: -407.2}
         outputs:
         - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
@@ -450,7 +450,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 1220.8, y: -355.2}
+        position: {x: 1220.7999, y: -355.2}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         questId: ELDRAN_MISSION3
@@ -588,7 +588,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-        position: {x: 1696.8, y: 1476}
+        position: {x: 1696.7999, y: 1476}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
         questId: ELDRAN_MISSION7
@@ -668,7 +668,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
-        position: {x: 1650.4, y: 392.8}
+        position: {x: 1650.3999, y: 392.8}
         outputs: []
         questId: ELDRAN_MISSION5
         stepConditionIds:

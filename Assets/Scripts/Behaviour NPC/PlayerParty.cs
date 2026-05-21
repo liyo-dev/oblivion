@@ -1022,6 +1022,20 @@ namespace Game.NPC
                     TeleportMemberToPlayer(member, i);
                 }
             }
+
+            // Teleportar el Will NPC si no está en _members (party lleno) pero existe en el mundo
+            var willNpcSwapper = ActiveCharacterSwapper.Instance;
+            var willNpc = willNpcSwapper?.WillNpcInstance;
+            if (willNpc != null && !(willNpc.NPCManager?.IsInCinematic ?? false))
+            {
+                float willDist = Vector3.Distance(willNpc.transform.position, _playerTransform.position);
+                float willThreshold = willNpc.PartyConfig?.distanciaParaTeletransporte ?? 15f;
+                if (willDist > willThreshold)
+                {
+                    Log($"⚡ Will NPC demasiado lejos ({willDist:F1}m > {willThreshold:F1}m), teletransportando...");
+                    willNpcSwapper.TeleportWillNpcToPlayer();
+                }
+            }
         }
 
         private void TeleportMemberToPlayer(NPCPartyMember member, int index)
