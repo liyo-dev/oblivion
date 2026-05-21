@@ -68,7 +68,13 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -Force)",
       "Bash(Select-Object Name, FullName, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
-      "Bash(grep -E \"\\\\.\\(md|txt|pdf|json\\)$\")"
+      "Bash(grep -E \"\\\\.\\(md|txt|pdf|json\\)$\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Filter \"*.cs\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(grep -E \"\\\\.cs$|\\\\.prefab$|\\\\.asset$\")",
+      "Bash(grep -E \"\\\\.cs$|\\\\.prefab$\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Art\" -Recurse -Include \"*.png\",\"*.psd\")",
+      "Bash(Sort-Object FullName)"
     ]
   }
 }

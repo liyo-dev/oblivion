@@ -256,7 +256,7 @@ Material:
     - _ATDistance: 1
     - _AddPrecomputedVelocity: 0
     - _Add_Antipodean_RimLight: 0
-    - _AdditionalLightCutoffPoint: 0.8
+    - _AdditionalLightCutoffPoint: 1
     - _AlbedoAffectEmissive: 0
     - _AlphaClip: 0
     - _AlphaCutoff: 0.5
@@ -448,7 +448,7 @@ Material:
     - _SecondShadeVisible: 1
     - _Set_SystemShadowsToBase: 1
     - _ShadeColor_Step: 0
-    - _ShadowsFloor: 0.25
+    - _ShadowsFloor: 0.5
     - _Smoothness: 1
     - _SmoothnessRemapMax: 1
     - _SmoothnessRemapMin: 0
@@ -495,7 +495,7 @@ Material:
     - _TexWorldScaleEmissive: 1
     - _Thickness: 1
     - _ThicknessMultiplier: 1
-    - _ToonCutoffPoint: 0.2
+    - _ToonCutoffPoint: 0.01
     - _TransmissionEnable: 1
     - _TransmissionMask: 1
     - _TransparentBackfaceEnable: 0
