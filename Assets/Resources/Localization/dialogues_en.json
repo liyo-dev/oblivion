@@ -125,18 +125,6 @@
             "value": "But Liam... Back in the hallway, you mentioned the Path of the Stars. If it's actually real, why do you need us? What do we even gain by going there?"
         },
         {
-            "key": "DG_LIAM_ARRESTO_05",
-            "value": "The Path grants any wish. It is our only shot at a wish that clears your names, restores your freedom, and keeps the King away. And for you, Will... it's the only place in the world where you'll understand your power. Either we rot here as criminals, or you come with me."
-        },
-        {
-            "key": "DG_LIAM_ARRESTO_06",
-            "value": "Ugh... I hate to admit it, but Mr. Know-It-All makes a point. I'm not spending my life running from guards or eating the disgusting slop they serve in this place. Besides, that King is going to hear from me once my name is cleared... How do we get out?"
-        },
-        {
-            "key": "DG_LIAM_ARRESTO_07",
-            "value": "Leave that to me..."
-        },
-        {
             "key": "DLG_AMIGAPEZ_01",
             "value": "Are you looking for my friend? He always hides near the sea."
         },
@@ -385,6 +373,18 @@
             "value": "Count me in!"
         },
         {
+            "key": "DLG_ESTELA_BOSQUE_03",
+            "value": ""
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_04",
+            "value": ""
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_05",
+            "value": ""
+        },
+        {
             "key": "DLG_ESTELA_PRISION_00",
             "value": "Great... now what do we do?"
         },
@@ -555,6 +555,14 @@
         {
             "key": "DLG_LETY_VICKY_ALERT_02",
             "value": "I see, Lety... watch out boy, here comes our dual attack."
+        },
+        {
+            "key": "DLG_LETY_VICKY_ALERT_03",
+            "value": ""
+        },
+        {
+            "key": "DLG_LETY_VICKY_ALERT_04",
+            "value": ""
         },
         {
             "key": "DLG_LETY_VICKY_DEFEATED",
@@ -775,6 +783,34 @@
         {
             "key": "DLG_WOODS_GUARD",
             "value": "Only wizards are allowed into the forbidden forest."
+        },
+        {
+            "key": "LORE_CELDA_1",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_2",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_3",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_4",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_5",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_6",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_7",
+            "value": ""
         },
         {
             "key": "LORE_ESCOLTA_GUARDIA_1",

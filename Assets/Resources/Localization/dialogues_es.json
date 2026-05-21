@@ -373,6 +373,18 @@
             "value": "¡Me apunto!"
         },
         {
+            "key": "DLG_ESTELA_BOSQUE_03",
+            "value": "Por cierto no pensarás ir andando de vuelta ¿no?"
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_04",
+            "value": "En ese punto de guardado ahora puedes usar teletransporte pulsando el boton <sprite name=\"interactable_y\">"
+        },
+        {
+            "key": "DLG_ESTELA_BOSQUE_05",
+            "value": "Y ahora gracias a mi también puedes cambiar de personaje. Pulsa <sprite name=\"interactable_dpad\"> a la derecha y haz el cambio."
+        },
+        {
             "key": "DLG_ESTELA_PRISION_00",
             "value": "Estupendo... y ahora ¿qué hacemos?"
         },
@@ -543,6 +555,14 @@
         {
             "key": "DLG_LETY_VICKY_ALERT_02",
             "value": "Ya veo Lety... atento muchacho a nuestro ataque dual."
+        },
+        {
+            "key": "DLG_LETY_VICKY_ALERT_03",
+            "value": "Por cierto chico, cuando quieras cambiar el foco de tu ataque..."
+        },
+        {
+            "key": "DLG_LETY_VICKY_ALERT_04",
+            "value": "Puedes pulsar <sprite name=\"interactable_rb\"> o <sprite name=\"interactable_lb\">"
         },
         {
             "key": "DLG_LETY_VICKY_DEFEATED",
@@ -765,6 +785,34 @@
             "value": "Solo los magos pueden pasar al bosque prohibido."
         },
         {
+            "key": "LORE_CELDA_1",
+            "value": "¡Tú! ¡Todo esto es por tu culpa! ¡Estaba a punto de comer y tuviste que venir a molestar! Si no hubieras interrumpido, no estaríamos en esta pocilga."
+        },
+        {
+            "key": "LORE_CELDA_2",
+            "value": "Estela, por favor... Tampoco hacía falta destrozar una montaña. Pero es verdad, chico, nos has metido en un buen embrollo."
+        },
+        {
+            "key": "LORE_CELDA_3",
+            "value": "Dejad de llorar por un plato y despertad. El Rey os considera una amenaza. Aunque escapemos, seréis fugitivos para siempre. No os queda un hogar al que volver."
+        },
+        {
+            "key": "LORE_CELDA_4",
+            "value": "Pero Liam... En el pasillo hablaste del Sendero de las Estrellas. Si es real, ¿por qué nos necesitas? ¿Qué ganamos yendo allí?"
+        },
+        {
+            "key": "LORE_CELDA_5",
+            "value": "El Sendero concede cualquier deseo. Es la única oportunidad para limpiar vuestros nombres y recuperar la libertad. Y para ti, Will, el único lugar para comprender tu poder. O nos pudrimos aquí como criminales, o venís conmigo."
+        },
+        {
+            "key": "LORE_CELDA_6",
+            "value": "Agh... Odio admitirlo, pero el sabelotodo tiene razón. No pienso pasarme la vida huyendo de los guardias ni comiendo el rancho asqueroso de este sitio. ¿Cómo salimos?"
+        },
+        {
+            "key": "LORE_CELDA_7",
+            "value": "Dejadme eso a mí..."
+        },
+        {
             "key": "LORE_ESCOLTA_GUARDIA_1",
             "value": "De verdad, ¿por una montaña? Qué exagerados."
         },
@@ -803,34 +851,6 @@
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
             "value": "¿Un cuento de niños?"
-        },
-        {
-            "key": "LORE_CELDA_1",
-            "value": "¡Tú! ¡Todo esto es por tu culpa! ¡Estaba a punto de comer y tuviste que venir a molestar! Si no hubieras interrumpido, no estaríamos en esta pocilga."
-        },
-        {
-            "key": "LORE_CELDA_2",
-            "value": "Estela, por favor... Tampoco hacía falta destrozar una montaña. Pero es verdad, chico, nos has metido en un buen embrollo."
-        },
-        {
-            "key": "LORE_CELDA_3",
-            "value": "Dejad de llorar por un plato y despertad. El Rey os considera una amenaza. Aunque escapemos, seréis fugitivos para siempre. No os queda un hogar al que volver."
-        },
-        {
-            "key": "LORE_CELDA_4",
-            "value": "Pero Liam... En el pasillo hablaste del Sendero de las Estrellas. Si es real, ¿por qué nos necesitas? ¿Qué ganamos yendo allí?"
-        },
-        {
-            "key": "LORE_CELDA_5",
-            "value": "El Sendero concede cualquier deseo. Es la única oportunidad para limpiar vuestros nombres y recuperar la libertad. Y para ti, Will, el único lugar para comprender tu poder. O nos pudrimos aquí como criminales, o venís conmigo."
-        },
-        {
-            "key": "LORE_CELDA_6",
-            "value": "Agh... Odio admitirlo, pero el sabelotodo tiene razón. No pienso pasarme la vida huyendo de los guardias ni comiendo el rancho asqueroso de este sitio. ¿Cómo salimos?"
-        },
-        {
-            "key": "LORE_CELDA_7",
-            "value": "Dejadme eso a mí..."
         }
     ]
 }

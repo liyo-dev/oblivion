@@ -34,3 +34,25 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 8
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ESTELA_BOSQUE_03
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 4
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ESTELA_BOSQUE_04
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 1
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ESTELA_BOSQUE_05
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 1
+  isGroupConversation: 0

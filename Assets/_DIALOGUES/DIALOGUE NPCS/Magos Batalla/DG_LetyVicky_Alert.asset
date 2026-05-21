@@ -19,9 +19,26 @@ MonoBehaviour:
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     forcedShotType: 0
+    emotion: 0
   - speakerNameId: CHAR_LETY_VICKY
     textId: DLG_LETY_VICKY_ALERT_02
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_LETY_VICKY
+    textId: DLG_LETY_VICKY_ALERT_03
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_LETY_VICKY
+    textId: DLG_LETY_VICKY_ALERT_04
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  isGroupConversation: 0

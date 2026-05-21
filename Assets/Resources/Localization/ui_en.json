@@ -89,6 +89,10 @@
             "value": "Settings"
         },
         {
+            "key": "NPC_REQUIRES_WILL",
+            "value": "Only Will can speak with this character"
+        },
+        {
             "key": "Pensamiento",
             "value": "Thought"
         },
@@ -255,10 +259,6 @@
         {
             "key": "WOODS_EXIT_BLOCKED",
             "value": "I should talk to that guard."
-        },
-        {
-            "key": "NPC_REQUIRES_WILL",
-            "value": "Only Will can speak with this character"
         }
     ]
 }
