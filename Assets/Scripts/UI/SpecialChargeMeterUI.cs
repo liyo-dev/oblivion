@@ -1,117 +1,45 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using Game.NPC;
 
-/// <summary>
-/// HUD para los dos medidores de carga de ataques especiales dúo.
-///
-/// Estructura recomendada en el Canvas:
-///   SpecialChargeMeterUI  ← este componente
-///   ├── SlotEstela
-///   │   ├── EstelaIcon         ← Image (retrato de Estela)     → estelaIcon
-///   │   ├── EstelaFillBg       ← Image (fondo de la barra)
-///   │   ├── EstelaFill         ← Image Filled/Horizontal       → estelaFill
-///   │   ├── EstelaGlow         ← Image (brillo cuando listo)   → estelaGlow
-///   │   └── EstelaReady        ← GameObject "¡LISTO!"          → estelaReadyIndicator
-///   └── SlotLiam
-///       ├── LiamIcon           ← Image (retrato de Liam)       → liamIcon
-///       ├── LiamFillBg         ← Image (fondo de la barra)
-///       ├── LiamFill           ← Image Filled/Horizontal       → liamFill
-///       ├── LiamGlow           ← Image (brillo cuando listo)   → liamGlow
-///       └── LiamReady          ← GameObject "¡LISTO!"          → liamReadyIndicator
-/// </summary>
 public class SpecialChargeMeterUI : MonoBehaviour
 {
-    // ── Slot Estela (LT) ───────────────────────────────────────────────────
+    [Header("Slot Estela")]
+    [SerializeField] private Image estelaImage;
+    [SerializeField] private Image estelaGlow;
 
-    [Header("Slot Estela (LT)")]
-    [SerializeField] private Image      estelaFill;
-    [SerializeField] private Image      estelaIcon;
-    [SerializeField] private Image      estelaGlow;
-    [SerializeField] private GameObject estelaReadyIndicator;
+    [Header("Slot Liam")]
+    [SerializeField] private Image liamImage;
+    [SerializeField] private Image liamGlow;
 
-    // ── Slot Liam (RT) ─────────────────────────────────────────────────────
-
-    [Header("Slot Liam (RT)")]
-    [SerializeField] private Image      liamFill;
-    [SerializeField] private Image      liamIcon;
-    [SerializeField] private Image      liamGlow;
-    [SerializeField] private GameObject liamReadyIndicator;
-
-    // ── Colores ────────────────────────────────────────────────────────────
-
-    [Header("Colores de barras")]
-    [SerializeField] private Color emptyColor = new Color(0.25f, 0.25f, 0.7f, 1f);
-    [SerializeField] private Color fullColor  = new Color(0.2f, 0.85f, 1f, 1f);
+    [Header("Colores")]
     [SerializeField] private Color readyColor = new Color(1f, 0.92f, 0.2f, 1f);
+    [SerializeField] private Color idleColor  = new Color(1f, 1f, 1f, 0.35f);
 
-    [Header("Colores de iconos")]
-    [SerializeField] private Color iconAvailableColor   = new Color(1f, 1f, 1f, 1f);
-    [SerializeField] private Color iconUnavailableColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);
-
-    // ── Animación ──────────────────────────────────────────────────────────
-
-    [Header("Animación")]
-    [SerializeField] private float fillAnimSpeed       = 3f;
-    [SerializeField] private float readyPulseDuration  = 0.35f;
-
-    // ── Compañeros ─────────────────────────────────────────────────────────
-
-    [Header("Compañeros")]
-    [SerializeField] private string estelaDisplayName    = "Estela";
-    [SerializeField] private string liamDisplayName      = "Liam";
-    [SerializeField] private float  companionCheckRadius = 10f;
-    [SerializeField] private float  companionCheckInterval = 0.4f;
-
-    // ── Internos ───────────────────────────────────────────────────────────
+    [Header("Animación glow")]
+    [SerializeField] private float pulseSpeed    = 2.5f;
+    [SerializeField] private float glowMinAlpha  = 0.25f;
+    [SerializeField] private float glowMaxAlpha  = 1f;
 
     private DuoSpecialAttackSystem _duo;
-    private SpecialChargeMeter     _estelaM;
-    private SpecialChargeMeter     _liamM;
-
-    private float _estelaTarget, _estelaDisplay;
-    private float _liamTarget,   _liamDisplay;
-    private bool  _estelaWasReady, _liamWasReady;
-
-    private float     _companionTimer;
-    private Coroutine _estelaFlash;
-    private Coroutine _liamFlash;
-
-    // ── Ciclo de vida ──────────────────────────────────────────────────────
+    private SpecialChargeMeter     _estelaM, _liamM;
+    private Coroutine              _estelaRoutine, _liamRoutine;
 
     void OnEnable()
     {
         Connect();
-        RefreshImmediate();
+        RefreshState();
     }
 
     void OnDisable()
     {
         Disconnect();
         StopAllCoroutines();
-        _estelaFlash = _liamFlash = null;
+        _estelaRoutine = _liamRoutine = null;
     }
-
-    void Update()
-    {
-        AnimateFill(ref _estelaDisplay, _estelaTarget, estelaFill, _estelaM);
-        AnimateFill(ref _liamDisplay,   _liamTarget,   liamFill,   _liamM);
-
-        _companionTimer -= Time.deltaTime;
-        if (_companionTimer <= 0f)
-        {
-            _companionTimer = companionCheckInterval;
-            RefreshCompanionSlots();
-        }
-    }
-
-    // ── Conexión ───────────────────────────────────────────────────────────
 
     private void Connect()
     {
-        // Buscar DuoSpecialAttackSystem en el jugador
         var player = PlayerService.Player;
         if (player != null)
             _duo = player.GetComponentInChildren<DuoSpecialAttackSystem>();
@@ -120,7 +48,9 @@ public class SpecialChargeMeterUI : MonoBehaviour
 
         if (_duo == null)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning("[SpecialChargeMeterUI] No se encontró DuoSpecialAttackSystem.");
+#endif
             return;
         }
 
@@ -136,133 +66,72 @@ public class SpecialChargeMeterUI : MonoBehaviour
         if (_estelaM != null) _estelaM.OnChargeUpdated -= OnEstelaCharge;
         if (_liamM   != null) _liamM.OnChargeUpdated   -= OnLiamCharge;
         _estelaM = _liamM = null;
-        _duo     = null;
+        _duo = null;
     }
 
-    private void RefreshImmediate()
+    private void RefreshState()
     {
-        float ep = _estelaM != null ? _estelaM.Normalized : 0f;
-        float lp = _liamM   != null ? _liamM.Normalized   : 0f;
-
-        _estelaDisplay = _estelaTarget = ep;
-        _liamDisplay   = _liamTarget   = lp;
-
-        SetFill(estelaFill, ep);
-        SetFill(liamFill,   lp);
-
-        SetReadyIndicator(estelaReadyIndicator, _estelaM != null && _estelaM.IsFullyCharged);
-        SetReadyIndicator(liamReadyIndicator,   _liamM   != null && _liamM.IsFullyCharged);
-
-        RefreshCompanionSlots();
+        SetReady(estelaImage, estelaGlow, ref _estelaRoutine, _estelaM != null && _estelaM.IsFullyCharged);
+        SetReady(liamImage,   liamGlow,   ref _liamRoutine,   _liamM   != null && _liamM.IsFullyCharged);
     }
 
-    // ── Callbacks de carga ─────────────────────────────────────────────────
+    private void OnEstelaCharge(float _) =>
+        SetReady(estelaImage, estelaGlow, ref _estelaRoutine, _estelaM != null && _estelaM.IsFullyCharged);
 
-    private void OnEstelaCharge(float normalized)
+    private void OnLiamCharge(float _) =>
+        SetReady(liamImage, liamGlow, ref _liamRoutine, _liamM != null && _liamM.IsFullyCharged);
+
+    private void SetReady(Image img, Image glow, ref Coroutine routine, bool ready)
     {
-        _estelaTarget = Mathf.Clamp01(normalized);
-
-        bool ready = _estelaM != null && _estelaM.IsFullyCharged;
-        SetReadyIndicator(estelaReadyIndicator, ready);
-
-        if (ready && !_estelaWasReady)
-            TriggerFlash(estelaFill, ref _estelaFlash);
-
-        _estelaWasReady = ready;
-    }
-
-    private void OnLiamCharge(float normalized)
-    {
-        _liamTarget = Mathf.Clamp01(normalized);
-
-        bool ready = _liamM != null && _liamM.IsFullyCharged;
-        SetReadyIndicator(liamReadyIndicator, ready);
-
-        if (ready && !_liamWasReady)
-            TriggerFlash(liamFill, ref _liamFlash);
-
-        _liamWasReady = ready;
-    }
-
-    // ── Animación de fill ──────────────────────────────────────────────────
-
-    private void AnimateFill(ref float display, float target, Image fill, SpecialChargeMeter meter)
-    {
-        if (Mathf.Approximately(display, target)) return;
-
-        display = Mathf.MoveTowards(display, target, fillAnimSpeed * Time.deltaTime);
-        SetFill(fill, display);
-    }
-
-    private void SetFill(Image fill, float normalized)
-    {
-        if (fill == null) return;
-        fill.fillAmount = normalized;
-        fill.color      = normalized >= 1f ? readyColor : Color.Lerp(emptyColor, fullColor, normalized);
-    }
-
-    // ── Flash de "¡LISTO!" ─────────────────────────────────────────────────
-
-    private void TriggerFlash(Image fill, ref Coroutine slot)
-    {
-        if (!isActiveAndEnabled || fill == null) return;
-        if (slot != null) StopCoroutine(slot);
-        slot = StartCoroutine(Co_Flash(fill));
-    }
-
-    private IEnumerator Co_Flash(Image fill)
-    {
-        for (int i = 0; i < 2; i++)
+        if (routine != null)
         {
-            float half = readyPulseDuration * 0.5f;
-            float t = 0f;
-            while (t < half) { t += Time.deltaTime; fill.color = Color.Lerp(readyColor, Color.white, t / half); yield return null; }
-            t = 0f;
-            while (t < half) { t += Time.deltaTime; fill.color = Color.Lerp(Color.white, readyColor, t / half); yield return null; }
+            StopCoroutine(routine);
+            routine = null;
         }
-        fill.color = readyColor;
+
+        if (img != null)
+            img.color = ready ? readyColor : idleColor;
+
+        if (glow != null)
+        {
+            if (ready)
+                routine = StartCoroutine(Co_GlowPulse(img, glow));
+            else
+                SetAlpha(glow, 0f);
+        }
     }
 
-    // ── Disponibilidad de compañeros ───────────────────────────────────────
-
-    private void SetReadyIndicator(GameObject indicator, bool active)
+    private IEnumerator Co_GlowPulse(Image img, Image glow)
     {
-        if (indicator != null) indicator.SetActive(active);
+        while (true)
+        {
+            float t     = (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
+            float alpha = Mathf.Lerp(glowMinAlpha, glowMaxAlpha, t);
+            SetAlpha(glow, alpha);
+
+            // el icono también pulsa ligeramente en brillo
+            if (img != null)
+            {
+                Color c = readyColor;
+                c.a = Mathf.Lerp(0.75f, 1f, t);
+                img.color = c;
+            }
+
+            yield return null;
+        }
     }
 
-    private void RefreshCompanionSlots()
+    private static void SetAlpha(Image img, float alpha)
     {
-        bool estelaReady = _estelaM != null && _estelaM.IsFullyCharged;
-        bool liamReady   = _liamM   != null && _liamM.IsFullyCharged;
-
-        bool estelaInRange = estelaReady && IsCompanionInRange(estelaDisplayName);
-        bool liamInRange   = liamReady   && IsCompanionInRange(liamDisplayName);
-
-        SetSlotAvailability(estelaIcon, estelaGlow, estelaInRange);
-        SetSlotAvailability(liamIcon,   liamGlow,   liamInRange);
+        Color c = img.color;
+        c.a = alpha;
+        img.color = c;
     }
-
-    private void SetSlotAvailability(Image icon, Image glow, bool available)
-    {
-        if (icon != null) icon.color  = available ? iconAvailableColor : iconUnavailableColor;
-        if (glow != null) glow.enabled = available;
-    }
-
-    private bool IsCompanionInRange(string displayName)
-    {
-        if (string.IsNullOrEmpty(displayName)) return false;
-        var party  = PlayerParty.Instance;
-        if (party == null) return false;
-        var member = party.GetMemberByName(displayName);
-        return member != null && member.GetDistanceToPlayer() <= companionCheckRadius;
-    }
-
-    // ── API pública ────────────────────────────────────────────────────────
 
     public void Reconnect()
     {
         Disconnect();
         Connect();
-        RefreshImmediate();
+        RefreshState();
     }
 }

@@ -178550,10 +178550,10 @@ Transform:
   - {fileID: 1421442284}
   - {fileID: 686506994}
   - {fileID: 1632573766}
-  - {fileID: 1354342444}
   - {fileID: 1130422907}
   - {fileID: 4458598036827527511}
   - {fileID: 912688731}
+  - {fileID: 1354342444}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &838872009
@@ -462153,7 +462153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldPickup
   effects:
   - effectType: 4
-    item: {fileID: 11400000, guid: 662682865ec7dfa46998b328a28305a6, type: 2}
+    item: {fileID: 11400000, guid: 38456767fc43b56458cb082eb87b2e9d, type: 2}
     quantity: 1
     amount: 0
     consumeEvenIfNoChange: 0
@@ -508717,7 +508717,7 @@ Transform:
   m_GameObject: {fileID: 1331040227127336701}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -78.74, y: -0.0015411377, z: 66.82}
+  m_LocalPosition: {x: 61.19, y: 0.34, z: 48.96}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

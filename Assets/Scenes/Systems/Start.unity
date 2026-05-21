@@ -569,7 +569,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 109416900}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9de8d94f64f58a24c99d2b9bb4ed58b8, type: 3}
   m_Name: 
@@ -1269,6 +1269,7 @@ GameObject:
   - component: {fileID: 206708486}
   - component: {fileID: 206708492}
   - component: {fileID: 206708493}
+  - component: {fileID: 206708494}
   m_Layer: 0
   m_Name: PlayerHUD_Canvas
   m_TagString: Untagged
@@ -1440,6 +1441,27 @@ MonoBehaviour:
   panelSlideOffset: 40
   liamDisplayName: Liam
   estelaDisplayName: Estela
+--- !u!114 &206708494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 206708485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29e048f719605a5439c8ce545ba31683, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialChargeMeterUI
+  estelaImage: {fileID: 1283485828}
+  estelaGlow: {fileID: 0}
+  liamImage: {fileID: 668888217}
+  liamGlow: {fileID: 0}
+  readyColor: {r: 1, g: 0.92, b: 0.2, a: 1}
+  idleColor: {r: 1, g: 1, b: 1, a: 0.35}
+  pulseSpeed: 2.5
+  glowMinAlpha: 0.25
+  glowMaxAlpha: 1
 --- !u!1 &222058339
 GameObject:
   m_ObjectHideFlags: 0
@@ -5555,7 +5577,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &751717854
 Transform:
   m_ObjectHideFlags: 0
