@@ -62,7 +62,13 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Directory)",
       "Bash(Get-Content -Path \"Assets\\\\_NPCs\\\\Narrative\\\\NPC_InteractiveNarrative_Config_Estela.asset\" -TotalCount 100)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "PowerShell(Get-ChildItem *)"
+      "PowerShell(Get-ChildItem *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -Directory)",
+      "Bash(xargs ls -lh)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\" -Force)",
+      "Bash(Select-Object Name, FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(grep -E \"\\\\.\\(md|txt|pdf|json\\)$\")"
     ]
   }
 }

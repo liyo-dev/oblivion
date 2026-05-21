@@ -492,7 +492,7 @@ public class MagicProjectile : MonoBehaviour
             if (!col.TryGetComponent<Damageable>(out var d))
                 d = col.GetComponentInParent<Damageable>();
             if (d != null)
-                d.TakeDamage(_cfg.damage);
+                d.TakeDamage(_cfg.damage, _instigator);
         }
 
         // Knockback simple (si hay RB dinámico)

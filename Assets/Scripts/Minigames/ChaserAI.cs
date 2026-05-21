@@ -101,7 +101,8 @@ public class ChaserAI : MonoBehaviour
         if (agent)
         {
             agent.speed = chaseSpeed;
-            agent.isStopped = true;
+            if (agent.isOnNavMesh)
+                agent.isStopped = true;
         }
     }
 

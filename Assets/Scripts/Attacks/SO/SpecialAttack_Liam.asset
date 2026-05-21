@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7ae78e9c7f822d4cb2aa946c1c82558, type: 3}
+  m_Name: SpecialAttack_Liam
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialAttackSO
+  displayName: Ataque Especial
+  companion: 1
+  icon: {fileID: 0}
+  companionMaxDistance: 10
+  playerAnimationTrigger: MagicSpecial
+  companionAnimationTrigger: MagicSpecial
+  vfxPrefab: {fileID: 4262623056482241364, guid: b7001a552767ee943852979358986930, type: 3}
+  castSFXKey: 
+  vfxLifetime: 3
+  damageDelay: 0.4
+  damage: 80
+  aoeRadius: 4
+  knockbackForce: 18
+  shakeCameraOnCast: 1

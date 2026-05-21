@@ -23,12 +23,15 @@ public class Damageable : MonoBehaviour, IDamageable
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
 
-    public event Action<float> OnDamaged; // amount aplicado
-    public event Action       OnDied;
+    public event Action<float>            OnDamaged;   // amount aplicado
+    public event Action<float, GameObject> OnDamagedBy; // amount + instigador (puede ser null)
+    public event Action                    OnDied;
 
     void Awake() => Current = Mathf.Max(1f, maxHealth);
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount) => TakeDamage(amount, null);
+
+    public void TakeDamage(float amount, GameObject instigator)
     {
         if (!IsAlive)
         {
@@ -48,6 +51,7 @@ public class Damageable : MonoBehaviour, IDamageable
         if (debugLogs) Debug.Log($"[Damageable:{name}] -{amount:0.##} -> {Current:0.##}/{Max}");
 
         OnDamaged?.Invoke(amount);
+        OnDamagedBy?.Invoke(amount, instigator);
 
         if (invulnerabilitySeconds > 0f)
             _invulnerableUntil = Time.time + invulnerabilitySeconds;

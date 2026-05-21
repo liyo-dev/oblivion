@@ -88,6 +88,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &381658026435255055
 GameObject:
@@ -318,6 +319,7 @@ SkinnedMeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -816,6 +818,8 @@ GameObject:
   - component: {fileID: 6990857463423798327}
   - component: {fileID: 2687847307543322386}
   - component: {fileID: 1495092821517079582}
+  - component: {fileID: -7875629393453793110}
+  - component: {fileID: -4300026040696661042}
   m_Layer: 7
   m_Name: Mago #2
   m_TagString: Untagged
@@ -1051,8 +1055,8 @@ MonoBehaviour:
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 11400000, guid: 76a4c419fa9b7c0449e00e0c834dbfbf, type: 2}
     questConfig: {fileID: 0}
-    narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
+    partyConfig: {fileID: 0}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -1069,6 +1073,50 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  onJoinedParty:
+    m_PersistentCalls:
+      m_Calls: []
+  onLeftParty:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-7875629393453793110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2924676094345795985}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Damageable
+  maxHealth: 100
+  destroyOnDeath: 1
+  deathVFX: {fileID: 0}
+  deathVFXLifetime: 3
+  invulnerabilitySeconds: 0
+  debugLogs: 0
+--- !u!114 &-4300026040696661042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2924676094345795985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
+  healthOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
+  manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
+  healthChance: 0.35
+  manaChance: 0.2
+  estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
+  liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
+  specialChance: 0.45
+  spawnRadius: 0.4
 --- !u!1 &3195551634104779513
 GameObject:
   m_ObjectHideFlags: 0
@@ -1189,6 +1237,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
@@ -1317,6 +1366,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3894219997245428389
 GameObject:
@@ -1440,6 +1490,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4000783559412845649
 GameObject:
@@ -1848,6 +1899,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &5527316194137223943
 GameObject:
@@ -2002,6 +2054,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &5900311461679135859
 GameObject:
@@ -2513,6 +2566,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &9099842307059325391
 GameObject:

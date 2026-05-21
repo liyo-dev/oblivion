@@ -20,6 +20,8 @@ public class SpecialChargeMeter : MonoBehaviour
     public float CurrentCharge => Mathf.Clamp(currentCharge, 0f, MaxCharge);
     public float Normalized => MaxCharge > 0f ? CurrentCharge / MaxCharge : 0f;
     public bool IsReady => CurrentCharge >= Mathf.Max(chargeRequiredToUse, 0f);
+    // Requerido para los ataques especiales dúo (LT/RT): barra al 100%
+    public bool IsFullyCharged => MaxCharge > 0f && CurrentCharge >= MaxCharge;
 
     /// <summary>
     /// Adds charge and notifies listeners when value increases.
@@ -77,10 +79,14 @@ public class SpecialChargeMeter : MonoBehaviour
         NotifyChanged();
     }
 
+    // Evento C# para suscriptores en código (la UI lo usa sin necesidad de campo público)
+    public event System.Action<float> OnChargeUpdated;
+
     private void NotifyChanged()
     {
         float charge = CurrentCharge;
         onChargeChanged?.Invoke(charge);
         onChargePercentChanged?.Invoke(Normalized);
+        OnChargeUpdated?.Invoke(Normalized);
     }
 }
