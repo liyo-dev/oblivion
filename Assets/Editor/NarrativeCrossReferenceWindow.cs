@@ -547,6 +547,13 @@ public class NarrativeCrossReferenceWindow : EditorWindow
                 {
                     ScanUnlockWardrobeNode(unlockWardNode, graph.name);
                 }
+
+                // PlayDialogueNode → dialogue reference from graph
+                if (node is PlayDialogueNode playDlgNode)
+                {
+                    if (playDlgNode.dialogue != null)
+                        AddDialogueUsage(playDlgNode.dialogue, $"{graph.name} → PlayDialogueNode \"{node.displayTitle}\"");
+                }
             }
         }
     }
