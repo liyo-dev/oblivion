@@ -33,8 +33,8 @@ MonoBehaviour:
   - PICKUP_MainWorld_Coin_01 (18)_-38,5_1,7_34,1
   - PICKUP_MainWorld_Coin_01 (11)_-19,9_1,7_47,1
   - CINEMATIC_SEEN:Cinematic_Taberna
-  - PICKUP_MainWorld_Coin_01 (7)_8,1_0,7_55,0
   - CINEMATIC_SEEN:Cinematic_Mountain
+  - PICKUP_MainWorld_Coin_01 (2)_-3,3_0,6_9,4
   - QUEST_COMPLETED:ELDRAN_MISSION1
   - QUEST_ARCHIVED:ELDRAN_MISSION1
   - QUEST_COMPLETED:ELDRAN_MISSION2
@@ -54,6 +54,7 @@ MonoBehaviour:
   - QUEST_COMPLETED:ELDRAN_MISSION8
   - QUEST_ARCHIVED:ELDRAN_MISSION8
   - QUEST_ACTIVE:ELDRAN_MISSION9
+  - QUEST_STEP_DONE:ELDRAN_MISSION9:0
   abilities:
     swim: 0
     jump: 0
@@ -170,13 +171,16 @@ MonoBehaviour:
       value: 1
     - key: __fork_76cc647a-0938-4a59-bb15-896836a33946_0_node
       type: string
-      value: bc4c26f2-2721-4852-b55f-632f2042e7fd
+      value: a67736f3-a25d-46e1-9f0e-79fb4102b07f
     - key: __quest_0aa8ee51-a44a-44af-9252-2f0b79fb8abf_ELDRAN_MISSION9_started
       type: bool
       value: 1
     - key: __fork_76cc647a-0938-4a59-bb15-896836a33946_2_node
       type: string
       value: __DONE__
+    - key: __event_bc4c26f2-2721-4852-b55f-632f2042e7fd_EVT_ARRESTADOS_OK_received
+      type: bool
+      value: 1
   - graphLabel: Misiones Secundarias
     blackboardData:
     - key: __forked_434108a8-8f50-407a-b807-74d22ff2a5ac
@@ -199,7 +203,7 @@ MonoBehaviour:
       value: 434108a8-8f50-407a-b807-74d22ff2a5ac
   npcPositions:
   - npcId: Eldran
-    position: {x: 1415.2664, y: 92.449875, z: 52.96966}
+    position: {x: 1416.3347, y: 1001.0581, z: 11.502536}
     hasActiveState: 0
     isActive: 1
   - npcId: Oliver

@@ -1010,8 +1010,6 @@ namespace Game.NPC.States
         private bool _startupDone;
         private bool _fetchingPlayer;
         private float _baseSpeed;
-        private UnityEngine.AI.ObstacleAvoidanceType _originalObstacleAvoidanceType;
-        private bool _hasDisabledObstacleAvoidance;
 
         // Segundos que el guardia espera mirando al jugador antes de empezar a caminar.
         private const float STARTUP_WAIT = 1.5f;
@@ -1063,13 +1061,6 @@ namespace Game.NPC.States
             // Primer frame: preparar escolta y esperar STARTUP_WAIT segundos antes de andar
             if (!_initialized)
             {
-                // Desactivar obstacle avoidance local (RVO) para que los party members no bloqueen
-                // al NPC escolta. Los obstáculos estáticos/dinámicos se evitan mediante NavMesh carving
-                // (NavMeshObstacle con Carve=true), no mediante RVO.
-                _originalObstacleAvoidanceType = agent.obstacleAvoidanceType;
-                agent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
-                _hasDisabledObstacleAvoidance = true;
-
                 // Salir de la pose de diálogo/idle (sin activar locomoción todavía)
                 context.Animator?.SetTalking(false);
                 context.Animator?.EndInteraction();
@@ -1211,11 +1202,7 @@ namespace Game.NPC.States
         {
             var agent = context.Agent;
             if (agent != null)
-            {
-                if (_hasDisabledObstacleAvoidance)
-                    agent.obstacleAvoidanceType = _originalObstacleAvoidanceType;
                 Common.NavMeshAgentUtility.HardStop(agent);
-            }
             context.Animator?.ResetMovement();
         }
     }

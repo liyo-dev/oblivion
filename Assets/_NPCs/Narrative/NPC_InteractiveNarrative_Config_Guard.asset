@@ -141,7 +141,7 @@ MonoBehaviour:
       escortResumeDistance: 3
       outOfRangeDialogue: {fileID: 11400000, guid: 87105195ac662d9468082353795d8961, type: 2}
       escortNpcSpeed: 0
-      escortPlayerSpeedMultiplier: 0.265
+      escortPlayerSpeedMultiplier: 0.158
       teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
