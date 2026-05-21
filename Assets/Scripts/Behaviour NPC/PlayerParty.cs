@@ -636,6 +636,13 @@ namespace Game.NPC
                 }
                 else
                 {
+                    // Limpiar pendientes aunque _members esté vacío: si había IDs pendientes de una sesión anterior
+                    // (cargada pero no consumida), el Update los reintentaría en la nueva escena y añadiría NPCs fantasma.
+                    if (_pendingMemberIds.Count > 0)
+                    {
+                        Debug.Log($"[PlayerParty] 🧹 Limpiando {_pendingMemberIds.Count} IDs pendientes residuales (preset vacío)");
+                        _pendingMemberIds.Clear();
+                    }
                     Debug.Log("[PlayerParty] ℹ️ No hay miembros de party en el preset para restaurar");
                 }
                 // Ocultar NPCs con hideWhenNotInParty aunque no haya party (ej: nueva partida)

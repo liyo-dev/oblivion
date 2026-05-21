@@ -967,11 +967,14 @@ public class GameBootProfile : ScriptableObject
         if (QuestManager.Instance != null)
             QuestManager.Instance.ResetAllQuests();
 
-        // Limpiar blackboards de los grafos narrativos para Nueva Partida
+        // Limpiar blackboards de los grafos narrativos para Nueva Partida.
+        // StopAllRunners primero para evitar que runners de la sesión anterior sigan ejecutando
+        // con los blackboards ya borrados, lo que causaba activación de quests en estado inconsistente.
         if (NarrativeGraphHub.Instance != null)
         {
+            NarrativeGraphHub.Instance.StopAllRunners();
             NarrativeGraphHub.Instance.ClearAllBlackboards();
-            Debug.Log("[GameBootProfile] Blackboards narrativos limpiados para Nueva Partida");
+            Debug.Log("[GameBootProfile] Runners detenidos y blackboards narrativos limpiados para Nueva Partida");
         }
 
         // Limpiar snapshots narrativos del preset para forzar inicio desde StartNode
