@@ -19,7 +19,7 @@ public class BattleOrb : MonoBehaviour
     [SerializeField] private float popUpForce          = 5f;
     [SerializeField] private float popHorizontalSpread = 1.5f;
 
-    [Header("Hover en suelo")]
+    [Header("Hover")]
     [SerializeField] private float hoverHeight    = 0.35f;
     [SerializeField] private float hoverAmplitude = 0.1f;
     [SerializeField] private float hoverFrequency = 2.5f;
@@ -31,8 +31,8 @@ public class BattleOrb : MonoBehaviour
     [SerializeField] private float attractAcceleration = 20f;
 
     [Header("Suelo")]
-    [Tooltip("Asigna solo la layer Ground para evitar detectar los colliders del enemigo")]
-    [SerializeField] private LayerMask groundLayers = 1; // Default layer (layer 0)
+    [Tooltip("Layer del suelo. Con -1 detecta cualquier superficie no-trigger")]
+    [SerializeField] private LayerMask groundLayers = ~0;
 
     [Header("Duración")]
     [SerializeField] private float lifetime = 8f;
@@ -50,6 +50,7 @@ public class BattleOrb : MonoBehaviour
     private float     _hoverOffset;
     private float     _hoverStartTime;
     private float     _spawnTime;
+    private float     _spawnY;
     private float     _attractSpeed;
 
     void Awake()
@@ -61,13 +62,14 @@ public class BattleOrb : MonoBehaviour
     void Start()
     {
         _spawnTime   = Time.time;
+        _spawnY      = transform.position.y;
         _hoverOffset = Random.Range(0f, Mathf.PI * 2f);
         _phase       = Phase.Launching;
 
         if (PlayerService.TryGetPlayer(out var player))
             _playerTransform = player.transform;
 
-        DetectGroundY();
+        _groundY = DetectGroundY();
 
         if (_rb != null)
         {
@@ -75,23 +77,26 @@ public class BattleOrb : MonoBehaviour
             _rb.useGravity     = true;
             _rb.linearVelocity = Vector3.zero;
 
-            // Arco con spread horizontal aleatorio
             Vector2 h = Random.insideUnitCircle.normalized * popHorizontalSpread;
             _rb.AddForce(new Vector3(h.x, popUpForce, h.y), ForceMode.Impulse);
-
-            // Spin visual durante el vuelo
             _rb.angularVelocity = Random.insideUnitSphere * 3f;
         }
     }
 
-    void DetectGroundY()
+    // Devuelve el Y donde el orbe debe flotar.
+    // Busca desde arriba para esquivar colliders del enemigo;
+    // solo acepta impactos que estén POR DEBAJO del punto de spawn.
+    float DetectGroundY()
     {
-        // Raycast desde bastante arriba para evitar golpear colliders del propio enemigo
         Vector3 origin = transform.position + Vector3.up * 5f;
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 30f, groundLayers, QueryTriggerInteraction.Ignore))
-            _groundY = hit.point.y + hoverHeight;
-        else
-            _groundY = transform.position.y - 1f + hoverHeight; // Fallback: asume ~1m sobre el suelo
+        {
+            if (hit.point.y < transform.position.y)
+                return hit.point.y + hoverHeight;
+        }
+
+        // Fallback: flotar ligeramente por debajo del spawn (el spawn ya está sobre el suelo)
+        return transform.position.y - 0.15f;
     }
 
     void Update()
@@ -109,7 +114,9 @@ public class BattleOrb : MonoBehaviour
 
     void UpdateLaunching()
     {
-        bool falling    = _rb != null && _rb.linearVelocity.y <= 0f;
+        if (_rb == null) { EnterHovering(); return; }
+
+        bool falling    = _rb.linearVelocity.y <= 0f;
         bool nearGround = transform.position.y <= _groundY + 0.15f;
 
         if (falling && nearGround)
@@ -131,7 +138,10 @@ public class BattleOrb : MonoBehaviour
             _rb.angularVelocity = Vector3.zero;
         }
 
-        transform.position = new Vector3(transform.position.x, _groundY, transform.position.z);
+        // Asegurarse de que el orbe quede visible sobre el suelo
+        float safeY = Mathf.Max(_groundY, _spawnY - 0.2f);
+        transform.position = new Vector3(transform.position.x, safeY, transform.position.z);
+        _groundY = safeY;
     }
 
     void UpdateHovering()
@@ -148,7 +158,7 @@ public class BattleOrb : MonoBehaviour
     void EnterAttracted()
     {
         _phase        = Phase.Attracted;
-        _attractSpeed = 2f; // Arranca lento y acelera → efecto "succión" estilo KH
+        _attractSpeed = 2f;
     }
 
     void UpdateAttracted()

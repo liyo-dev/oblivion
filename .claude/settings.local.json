@@ -74,7 +74,8 @@
       "Bash(grep -E \"\\\\.cs$|\\\\.prefab$|\\\\.asset$\")",
       "Bash(grep -E \"\\\\.cs$|\\\\.prefab$\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Art\" -Recurse -Include \"*.png\",\"*.psd\")",
-      "Bash(Sort-Object FullName)"
+      "Bash(Sort-Object FullName)",
+      "Bash(Get-ChildItem -Path Assets/Scripts -Recurse -Filter *.cs)"
     ]
   }
 }
