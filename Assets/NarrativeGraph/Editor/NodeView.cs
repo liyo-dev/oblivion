@@ -33,7 +33,8 @@ namespace Sendero.Narrative.Editor
             { typeof(StopMusicNode),            new Color(0.28f, 0.36f, 0.65f) },
             { typeof(PlaySfxNode),              new Color(0.35f, 0.60f, 0.78f) },
             { typeof(AdditiveSceneCinematicNode), new Color(0.66f, 0.42f, 0.84f) },
-            { typeof(GraphNoteNode),            new Color(1.00f, 0.91f, 0.56f) }
+            { typeof(GraphNoteNode),            new Color(1.00f, 0.91f, 0.56f) },
+            { typeof(PlayDialogueNode),         new Color(0.20f, 0.70f, 0.82f) }
         };
 
         static readonly Dictionary<Type, Color> ColorCache = new();
@@ -121,6 +122,34 @@ namespace Sendero.Narrative.Editor
         {
             base.SetPosition(newPos);
             Model.position = newPos.position;
+        }
+
+        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            base.BuildContextualMenu(evt);
+
+            // Find the parent graph for Quick Test
+            evt.menu.AppendAction("Quick Test desde aquí", _ =>
+            {
+                // Walk up to find the NarrativeGraphWindow and get the graph
+                var windows = Resources.FindObjectsOfTypeAll<NarrativeGraphWindow>();
+                NarrativeGraph graph = null;
+                foreach (var w in windows)
+                {
+                    var field = typeof(NarrativeGraphWindow).GetField("_graph",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        graph = field.GetValue(w) as NarrativeGraph;
+                        if (graph != null) break;
+                    }
+                }
+
+                if (graph != null)
+                    NarrativeQuickTestWindow.OpenWithNode(graph, Model);
+                else
+                    Debug.LogWarning("[NodeView] No se pudo encontrar el grafo para Quick Test");
+            });
         }
 
         Color ColorForType(NarrativeNode n)
