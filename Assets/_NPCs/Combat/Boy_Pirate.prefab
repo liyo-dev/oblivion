@@ -16551,7 +16551,6 @@ GameObject:
   - component: {fileID: 5820310020371357658}
   - component: {fileID: 3803957872735856074}
   - component: {fileID: 7369555659256803442}
-  - component: {fileID: 696090178092491088}
   m_Layer: 7
   m_Name: Boy_Pirate
   m_TagString: Untagged
@@ -16861,11 +16860,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
   healthOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
   manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  healthChance: 0.35
+  healthChance: 1
   manaChance: 0.2
   estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
   liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  specialChance: 0.45
+  specialChance: 1
   spawnRadius: 0.4
 --- !u!114 &7369555659256803442
 MonoBehaviour:
@@ -16894,26 +16893,6 @@ MonoBehaviour:
   vfxScale: {x: 0.3, y: 0.3, z: 0.3}
   vfxFollowsTarget: 1
   showDebugLogs: 0
---- !u!114 &696090178092491088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7766501778076261952}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  healthOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  healthChance: 0.35
-  manaChance: 0.2
-  estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  specialChance: 0.45
-  spawnRadius: 0.4
 --- !u!1 &7777589608161427968
 GameObject:
   m_ObjectHideFlags: 0
