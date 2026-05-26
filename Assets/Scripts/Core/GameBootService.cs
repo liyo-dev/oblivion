@@ -73,15 +73,14 @@ public class GameBootService : MonoBehaviour
     {
         if (_instance != null) return;
 
+        // Con BeforeSceneLoad no hay escena cargada aún, FindFirstObjectByType siempre retorna null.
+        // NO crear instancia dinámica: carecería del _bootProfileAsset serializado, rompiendo builds.
+        // Start.unity siempre contiene el componente con el perfil asignado; su Awake() lo registra.
         var existing = FindFirstObjectByType<GameBootService>();
         if (existing)
         {
             _instance = existing;
-            return;
         }
-        
-        var go = new GameObject("GameBootService");
-        _instance = go.AddComponent<GameBootService>();
     }
 
 #if UNITY_EDITOR

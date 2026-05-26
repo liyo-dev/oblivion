@@ -288,6 +288,16 @@ public class PlatformElevator : MonoBehaviour
         _raisedPosition = _originalPosition + Vector3.up * raiseHeight;
     }
 
+    /// <summary>
+    /// Eleva sin VFX (para revertir una bajada previa). Usar en onDeactivated de PressurePlate.
+    /// </summary>
+    public void RaiseRevert() => Raise(isReversion: true);
+
+    /// <summary>
+    /// Baja sin VFX (para revertir una subida previa). Usar en onDeactivated de PressurePlate.
+    /// </summary>
+    public void LowerRevert() => Lower(isReversion: true);
+
     public bool IsMoving => _isMoving;
     public bool IsRaised => isRaised;
 

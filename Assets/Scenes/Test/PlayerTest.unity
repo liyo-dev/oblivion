@@ -54087,7 +54087,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98a9c3a8051a4e96aed06c57942099c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PressurePlate
-  onlyPickupObjects: 1
+  onlyPickupObjects: 0
   lockWhenActivated: 0
   minimumMass: 0.1
   freezeObjectOnPlate: 1
@@ -54104,14 +54104,12 @@ MonoBehaviour:
   cameraShakeDuration: 0.5
   activateSfxKey: PressurePlate_Activate
   deactivateSfxKey: PressurePlate_Deactivate
-  platformsToRaise:
-  - {fileID: 0}
-  platformsToLower: []
-  objectsToDeactivate: []
-  deactivateVFX: {fileID: 0}
-  vfxLifetime: 3
-  prefabsToSpawn: []
-  spawnPoints: []
+  onActivated:
+    m_PersistentCalls:
+      m_Calls: []
+  onDeactivated:
+    m_PersistentCalls:
+      m_Calls: []
   isActivated: 0
 --- !u!65 &1920479255
 BoxCollider:

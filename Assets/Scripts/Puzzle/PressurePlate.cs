@@ -1,10 +1,11 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections.Generic;
 using Sendero.Core.Feedback;
 
 /// <summary>
 /// Interruptor de presión que se activa al colocar objetos con Rigidbody encima.
-/// Detecta objetos con PickupObject y activa diferentes acciones (elevar, hundir, desactivar, instanciar).
+/// Lanza eventos onActivated/onDeactivated que los GOs oyentes gestionan.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class PressurePlate : MonoBehaviour
@@ -64,31 +65,13 @@ public class PressurePlate : MonoBehaviour
     [Tooltip("Clave de SFX al desactivar el interruptor")]
     [SerializeField] private string deactivateSfxKey = "PressurePlate_Deactivate";
     
-    [Header("Acciones: Elevar Plataformas")]
-    [Tooltip("Plataformas que se elevarán al activar el interruptor")]
-    [SerializeField] private PlatformElevator[] platformsToRaise;
-    
-    [Header("Acciones: Hundir Plataformas")]
-    [Tooltip("Plataformas que se hundirán al activar el interruptor")]
-    [SerializeField] private PlatformElevator[] platformsToLower;
-    
-    [Header("Acciones: Desactivar GameObjects")]
-    [Tooltip("GameObjects que se desactivarán al activar el interruptor")]
-    [SerializeField] private GameObject[] objectsToDeactivate;
-    
-    [Tooltip("VFX que se instancia al desactivar los objetos")]
-    [SerializeField] private GameObject deactivateVFX;
-    
-    [Tooltip("Tiempo de vida del VFX de desactivación")]
-    [SerializeField] private float vfxLifetime = 3f;
-    
-    [Header("Acciones: Instanciar Recompensas/Enemigos")]
-    [Tooltip("Prefabs que se instanciarán al activar (recompensas, enemigos, etc.)")]
-    [SerializeField] private GameObject[] prefabsToSpawn;
-    
-    [Tooltip("Posiciones donde aparecerán los objetos instanciados")]
-    [SerializeField] private Transform[] spawnPoints;
-    
+    [Header("Eventos")]
+    [Tooltip("Se invoca cuando la placa se activa. Suscribir los GOs que reaccionen (puerta, plataforma, antorcha…)")]
+    public UnityEvent onActivated;
+
+    [Tooltip("Se invoca cuando la placa se desactiva. Suscribir los GOs que reviertan su acción.")]
+    public UnityEvent onDeactivated;
+
     [Header("Estado")]
     [SerializeField] private bool isActivated;
     
@@ -422,11 +405,8 @@ public class PressurePlate : MonoBehaviour
             AudioService.Instance?.PlaySFX(activateSfxKey, worldPosition: transform.position);
         }
         
-        // Ejecutar acciones
-        RaisePlatforms();
-        LowerPlatforms();
-        DeactivateObjects();
-        SpawnObjects();
+        // Notificar a los oyentes
+        onActivated.Invoke();
         
         // Notificar cambio de estado (para PressurePuzzleController y similares)
         SendMessageUpwards("OnPlateStateChanged", this, SendMessageOptions.DontRequireReceiver);
@@ -494,132 +474,14 @@ public class PressurePlate : MonoBehaviour
             AudioService.Instance?.PlaySFX(deactivateSfxKey, worldPosition: transform.position);
         }
         
-        // Revertir acciones (elevar/hundir plataformas)
-        RevertPlatforms();
+        // Notificar a los oyentes
+        onDeactivated.Invoke();
         
         // Notificar cambio de estado (para PressurePuzzleController y similares)
         SendMessageUpwards("OnPlateStateChanged", this, SendMessageOptions.DontRequireReceiver);
         
         // Callback personalizado
         OnDeactivated();
-    }
-
-    /// <summary>
-    /// Eleva las plataformas configuradas
-    /// </summary>
-    private void RaisePlatforms()
-    {
-        if (platformsToRaise == null || platformsToRaise.Length == 0) return;
-        
-        foreach (var platform in platformsToRaise)
-        {
-            if (platform != null)
-            {
-                platform.Raise();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Hunde las plataformas configuradas
-    /// </summary>
-    private void LowerPlatforms()
-    {
-        if (platformsToLower == null || platformsToLower.Length == 0) return;
-        
-        foreach (var platform in platformsToLower)
-        {
-            if (platform != null)
-            {
-                platform.Lower();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Revierte el estado de las plataformas al desactivar
-    /// </summary>
-    private void RevertPlatforms()
-    {
-        // Revertir plataformas que se elevaron (sin VFX, solo shake)
-        if (platformsToRaise != null)
-        {
-            foreach (var platform in platformsToRaise)
-            {
-                if (platform != null)
-                {
-                    platform.Lower(isReversion: true); // Sin VFX
-                }
-            }
-        }
-        
-        // Revertir plataformas que se hundieron (sin VFX, solo shake)
-        if (platformsToLower != null)
-        {
-            foreach (var platform in platformsToLower)
-            {
-                if (platform != null)
-                {
-                    platform.Raise(isReversion: true); // Sin VFX
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Desactiva los GameObjects configurados con VFX
-    /// </summary>
-    private void DeactivateObjects()
-    {
-        if (objectsToDeactivate == null || objectsToDeactivate.Length == 0) return;
-        
-        foreach (var obj in objectsToDeactivate)
-        {
-            if (obj != null && obj.activeInHierarchy)
-            {
-                // Instanciar VFX en la posición del objeto
-                if (deactivateVFX != null)
-                {
-                    var fx = Instantiate(deactivateVFX, obj.transform.position, obj.transform.rotation);
-                    Destroy(fx, vfxLifetime);
-                }
-                
-                // Desactivar el objeto
-                obj.SetActive(false);
-                Debug.Log($"[PressurePlate] 🔥 Desactivado: {obj.name}");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Instancia los prefabs configurados en los spawn points
-    /// </summary>
-    private void SpawnObjects()
-    {
-        if (prefabsToSpawn == null || prefabsToSpawn.Length == 0) return;
-        if (spawnPoints == null || spawnPoints.Length == 0)
-        {
-            Debug.LogWarning($"[PressurePlate] {name} tiene prefabs pero no spawn points configurados");
-            return;
-        }
-        
-        for (int i = 0; i < prefabsToSpawn.Length; i++)
-        {
-            var prefab = prefabsToSpawn[i];
-            if (prefab == null) continue;
-            
-            // Usar el spawn point correspondiente (o el último si hay más prefabs que spawn points)
-            var spawnPoint = spawnPoints[Mathf.Min(i, spawnPoints.Length - 1)];
-            if (spawnPoint == null)
-            {
-                Debug.LogWarning($"[PressurePlate] Spawn point {i} es null");
-                continue;
-            }
-            
-            // Instanciar
-            Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
-            Debug.Log($"[PressurePlate] ✨ Instanciado: {prefab.name} en {spawnPoint.name}");
-        }
     }
 
     /// <summary>
@@ -741,65 +603,6 @@ public class PressurePlate : MonoBehaviour
                 Gizmos.DrawWireSphere(sphere.center, sphere.radius);
             }
         }
-        
-        // Dibujar líneas a las plataformas que se elevan
-        if (platformsToRaise != null)
-        {
-            Gizmos.color = Color.green;
-            foreach (var platform in platformsToRaise)
-            {
-                if (platform != null)
-                {
-                    Gizmos.DrawLine(transform.position, platform.transform.position);
-                    Gizmos.DrawWireSphere(platform.transform.position, 0.5f);
-                }
-            }
-        }
-        
-        // Dibujar líneas a las plataformas que se hunden
-        if (platformsToLower != null)
-        {
-            Gizmos.color = Color.red;
-            foreach (var platform in platformsToLower)
-            {
-                if (platform != null)
-                {
-                    Gizmos.DrawLine(transform.position, platform.transform.position);
-                    Gizmos.DrawWireSphere(platform.transform.position, 0.5f);
-                }
-            }
-        }
-        
-        // Dibujar líneas a los objetos que se desactivan
-        if (objectsToDeactivate != null)
-        {
-            Gizmos.color = Color.magenta;
-            foreach (var obj in objectsToDeactivate)
-            {
-                if (obj != null)
-                {
-                    Gizmos.DrawLine(transform.position, obj.transform.position);
-                    Gizmos.DrawWireCube(obj.transform.position, Vector3.one * 0.3f);
-                }
-            }
-        }
-        
-        // Dibujar spawn points
-        if (spawnPoints != null)
-        {
-            Gizmos.color = Color.cyan;
-            foreach (var spawn in spawnPoints)
-            {
-                if (spawn != null)
-                {
-                    Gizmos.DrawLine(transform.position, spawn.position);
-                    Gizmos.DrawWireSphere(spawn.position, 0.3f);
-                    // Dibujar dirección del spawn
-                    Gizmos.DrawRay(spawn.position, spawn.forward * 0.5f);
-                }
-            }
-        }
     }
     #endif
 }
-

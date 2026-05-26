@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 /// <summary>
 /// Componente para objetos que pueden ser destruidos con elementos mágicos (fuego, hielo, etc.).
@@ -12,21 +13,31 @@ public class Burnable : MonoBehaviour
     [Tooltip("Elementos que pueden destruir este objeto (normalmente solo Fire)")]
     [SerializeField] private MagicElement[] acceptedElements = { MagicElement.Fire };
     
+    [Tooltip("Si es false, no se destruye nada al quemar (usar junto a onBurned / objectsToActivate para control manual)")]
+    [SerializeField] private bool destroyOnBurn = true;
+
     [Tooltip("Si es true, destruye solo los objetos hijos con mesh (útil para enredaderas). Si es false, destruye el objeto completo.")]
     [SerializeField] private bool destroyOnlyChildrenWithMesh = true;
-    
+
     [Tooltip("Si es true, el objeto se destruye inmediatamente. Si es false, se reproduce animación/VFX primero.")]
     [SerializeField] private bool destroyImmediately;
-    
+
     [Tooltip("Tiempo antes de destruir el GameObject si destroyImmediately es false (para dar tiempo a animaciones)")]
     [SerializeField] private float destroyDelay = 2f;
     
     [Header("Objetos en Cadena (opcional para bombas, etc.)")]
     [Tooltip("Lista de objetos Burnable que se quemarán cuando este objeto sea quemado")]
     [SerializeField] private Burnable[] objectsToBurn;
-    
+
     [Tooltip("Delay antes de quemar los objetos en cadena (para efecto visual)")]
     [SerializeField] private float chainBurnDelay = 0.3f;
+
+    [Header("Activar / Desactivar al quemar")]
+    [Tooltip("GameObjects que se activarán cuando este objeto sea quemado")]
+    [SerializeField] private GameObject[] objectsToActivate;
+
+    [Tooltip("GameObjects que se desactivarán cuando este objeto sea quemado")]
+    [SerializeField] private GameObject[] objectsToDeactivate;
     
     [Header("Efectos")]
     [Tooltip("VFX que aparece al quemar (fuego, chispas, etc.)")]
@@ -45,6 +56,10 @@ public class Burnable : MonoBehaviour
     [Tooltip("Trigger que activa la animación de quemado")]
     [SerializeField] private string burnTrigger = "Burn";
     
+    [Header("Eventos")]
+    [Tooltip("Se invoca al quemar. Suscribir GOs que reaccionen (activar/desactivar objetos, abrir puertas, encender antorchas…)")]
+    public UnityEvent onBurned;
+
     [Header("Estado")]
     [Tooltip("Si es true, este objeto ya fue quemado")]
     [SerializeField] private bool isBurned;
@@ -104,22 +119,18 @@ public class Burnable : MonoBehaviour
         }
         
         // Destruir según configuración
-        if (destroyOnlyChildrenWithMesh)
+        if (destroyOnBurn)
         {
-            // Destruir solo los hijos con MeshRenderer (enredaderas visuales)
-            DestroyChildrenWithMesh();
-        }
-        else
-        {
-            // Destruir el objeto completo
-            if (destroyImmediately)
+            if (destroyOnlyChildrenWithMesh)
             {
-                Destroy(gameObject);
+                DestroyChildrenWithMesh();
             }
             else
             {
-                // Dar tiempo a la animación y luego destruir
-                Destroy(gameObject, destroyDelay);
+                if (destroyImmediately)
+                    Destroy(gameObject);
+                else
+                    Destroy(gameObject, destroyDelay);
             }
         }
         
@@ -214,12 +225,17 @@ public class Burnable : MonoBehaviour
     
     /// <summary>
     /// Llamado cuando el objeto es quemado.
-    /// Sobrescribe este método en una clase hija para comportamiento personalizado.
+    /// Sobrescribe en una clase hija para comportamiento personalizado.
     /// </summary>
     protected virtual void OnBurned()
     {
-        // Opcional: disparar evento del sistema
-        // EventBus.Trigger("ObjectBurned", gameObject);
+        foreach (var go in objectsToActivate)
+            if (go != null) go.SetActive(true);
+
+        foreach (var go in objectsToDeactivate)
+            if (go != null) go.SetActive(false);
+
+        onBurned.Invoke();
     }
 
     #if UNITY_EDITOR
