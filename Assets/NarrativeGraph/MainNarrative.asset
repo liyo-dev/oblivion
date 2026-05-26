@@ -67,6 +67,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: LUCHAMOS CON ERIKA
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -81,6 +82,7 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: DESBLOQUEAMOS EL HECHIZO BOLA PRISMA
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -101,6 +103,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: GANAMOS LA BATALLA CON ERIKA
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -115,6 +118,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: SE COMPLETA PASO DE LA MISION 5
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -133,6 +137,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 7.- ELDRAN SE VA A CASA DE WILL
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -151,6 +156,7 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: ESPERO A QUE WILL HABLE CON ELDRAN
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -168,6 +174,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: HAY QUE IR A HABLAR CON ELDRAN
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -182,6 +189,7 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: SE COMPLETA LA MISION 5
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -197,6 +205,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'HAY QUE HABLAR CON ELDRAN '
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -211,6 +220,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'Hay que escapar de la prision. Evento que lanza Estela '
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -225,6 +235,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: MISION 10
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -238,6 +249,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Hablamos con el Rey. Evento que lanza el Rey
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -252,6 +264,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -271,6 +284,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Huye de Estela
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -284,6 +298,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: COMPLETO LA MISION 8
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -302,6 +317,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Termina el dialogo con el guardia. Este evento lo lanza el
+        chapter: Cap. 4
           guardia
         blockSaving: 0
         inputAnchor: 0
@@ -319,6 +335,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Sigue al guardia
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -333,6 +350,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Se abren las puertas. Evento que se lanza por trigger
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -347,6 +365,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -366,6 +385,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 1.- CUANDO LEE LA CARTA
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -380,6 +400,7 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 3.-  HAY QUE BUSCAR LA CAJA BAJO UN ARBOL
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -395,6 +416,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 2.- TIENE QUE HABLAR CON ELDRAN
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -409,6 +431,7 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: SE DESBLOQUEA EL AATAQUE MAGICO Y LA BOLA DE FUEGO
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -429,6 +452,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: '4.- CINEMATICA: APARECE UN DEMONIO'
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -444,6 +468,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 5.- HAY QUE DERROTAR AL DEMONIO
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -458,6 +483,7 @@ MonoBehaviour:
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: '5.1.- ARENA DE BATALLA: DEMONIO'
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -478,6 +504,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: '6.- CINEMATICA: LOS PLANES DEL VILLANO'
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -493,6 +520,7 @@ MonoBehaviour:
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: CAPITULO 1
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -506,6 +534,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 9.1.- HABLO CON VICTORIA
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -520,6 +549,7 @@ MonoBehaviour:
       type: {class: UnlockWardrobeItemNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: RECIBO CAPA DE MAGO
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -535,6 +565,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: APARECE LIAM
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -551,6 +582,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: LIAM INTENTA QUITARSE A ESTELA DEL MEDIO
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -566,6 +598,7 @@ MonoBehaviour:
       type: {class: StartTagMinigameNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: ESTELA FURIOSA
+        chapter: Cap. 3
         blockSaving: 1
         inputAnchor: 0
         outputAnchor: 1
@@ -582,6 +615,7 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: LLEGAMOS A LA TABERNA
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -597,6 +631,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "ESTELA ROMPE UNA MONTA\xD1A"
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -613,6 +648,7 @@ MonoBehaviour:
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "A\xF1ado al inventario"
+        chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -630,6 +666,7 @@ MonoBehaviour:
       type: {class: FocusCameraNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "LA CAMARA ENFOCA A LA MONTA\xD1A"
+        chapter: Cap. 4
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -649,6 +686,7 @@ MonoBehaviour:
       type: {class: ShowLorePopupNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: CONVERSACION MIENTRAS SIGO AL GUARDIA
+        chapter: Cap. 4
         blockSaving: 1
         inputAnchor: 0
         outputAnchor: 1
@@ -662,6 +700,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: COMPLETO LA MISION 5
+        chapter: Cap. 2
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -680,6 +719,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: ENCONTRAMOS A ESTELA
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -694,6 +734,7 @@ MonoBehaviour:
       type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: APARECE ESTELA
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -710,6 +751,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: SALIMOS DEL BOSQUE
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -724,6 +766,7 @@ MonoBehaviour:
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'ARENA DE BATALLA: GOLEM'
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -744,6 +787,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Completamos el paso 0 de la mision 6
+        chapter: Cap. 3
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1

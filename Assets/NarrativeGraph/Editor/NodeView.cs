@@ -37,6 +37,21 @@ namespace Sendero.Narrative.Editor
             { typeof(PlayDialogueNode),         new Color(0.20f, 0.70f, 0.82f) }
         };
 
+        // Paleta de colores para capítulos
+        static readonly Color[] ChapterColors =
+        {
+            new Color(0.20f, 0.60f, 0.95f),  // azul
+            new Color(0.18f, 0.78f, 0.45f),  // verde
+            new Color(0.90f, 0.55f, 0.20f),  // naranja
+            new Color(0.75f, 0.35f, 0.85f),  // púrpura
+            new Color(0.95f, 0.40f, 0.40f),  // rojo
+            new Color(0.25f, 0.75f, 0.75f),  // teal
+            new Color(0.90f, 0.75f, 0.20f),  // amarillo
+            new Color(0.55f, 0.45f, 0.80f),  // lavanda
+        };
+
+        static readonly Dictionary<string, Color> ChapterColorCache = new();
+
         static readonly Dictionary<Type, Color> ColorCache = new();
 
         public NarrativeNode Model;
@@ -44,6 +59,8 @@ namespace Sendero.Narrative.Editor
         public Port Output;
 
         private readonly Label _subtitle;
+        private readonly Label _chapterBadge;
+        private readonly VisualElement _chapterStripe;
 
         public NodeView(NarrativeNode model)
         {
@@ -68,10 +85,21 @@ namespace Sendero.Narrative.Editor
             var defaultSize = isNote ? new Vector2(260, 180) : new Vector2(320, 220);
             SetPosition(new Rect(model.position, defaultSize));
 
+            // Barra lateral de color por capítulo
+            _chapterStripe = new VisualElement();
+            _chapterStripe.AddToClassList("narrative-node__chapter-stripe");
+            mainContainer.Add(_chapterStripe);
+
             _subtitle = new Label();
             _subtitle.AddToClassList("narrative-node__subtitle");
             titleContainer.Add(_subtitle);
             UpdateSubtitle();
+
+            // Badge de capítulo en el título
+            _chapterBadge = new Label();
+            _chapterBadge.AddToClassList("narrative-node__chapter-badge");
+            titleContainer.Add(_chapterBadge);
+            UpdateChapterBadge();
 
             if (!isNote)
             {
@@ -118,6 +146,28 @@ namespace Sendero.Narrative.Editor
             _subtitle.text = string.IsNullOrWhiteSpace(Model.displayTitle) ? "" : Model.displayTitle;
         }
 
+        public void UpdateChapterBadge()
+        {
+            if (_chapterBadge == null || _chapterStripe == null) return;
+
+            var ch = Model.chapter;
+            if (string.IsNullOrWhiteSpace(ch))
+            {
+                _chapterBadge.style.display = DisplayStyle.None;
+                _chapterStripe.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _chapterBadge.text = ch;
+            _chapterBadge.style.display = DisplayStyle.Flex;
+            _chapterStripe.style.display = DisplayStyle.Flex;
+
+            var color = GetChapterColor(ch);
+            _chapterBadge.style.backgroundColor = new StyleColor(new Color(color.r, color.g, color.b, 0.85f));
+            _chapterBadge.style.color = new StyleColor(Color.white);
+            _chapterStripe.style.backgroundColor = new StyleColor(color);
+        }
+
         public override void SetPosition(Rect newPos)
         {
             base.SetPosition(newPos);
@@ -150,6 +200,23 @@ namespace Sendero.Narrative.Editor
                 else
                     Debug.LogWarning("[NodeView] No se pudo encontrar el grafo para Quick Test");
             });
+        }
+
+        static Color GetChapterColor(string chapter)
+        {
+            if (string.IsNullOrWhiteSpace(chapter))
+                return new Color(0.5f, 0.5f, 0.5f);
+
+            if (ChapterColorCache.TryGetValue(chapter, out var cached))
+                return cached;
+
+            int hash = 0;
+            for (int i = 0; i < chapter.Length; i++)
+                hash = (hash * 31) + chapter[i];
+
+            var color = ChapterColors[Mathf.Abs(hash) % ChapterColors.Length];
+            ChapterColorCache[chapter] = color;
+            return color;
         }
 
         Color ColorForType(NarrativeNode n)
