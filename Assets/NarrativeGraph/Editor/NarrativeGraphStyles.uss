@@ -1,28 +1,146 @@
+/* ═══════════════════════════════════════════════════════════════
+   NarrativeGraph — Estilos del editor visual
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Toolbar ─────────────────────────────────────────────────── */
+
+.narrative-toolbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 6px;
+    background-color: #282c34;
+    border-bottom-width: 1px;
+    border-bottom-color: #1a1a1a;
+}
+
+.narrative-toolbar__separator {
+    width: 1px;
+    height: 18px;
+    margin-left: 8px;
+    margin-right: 8px;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.narrative-toolbar__chapter-menu {
+    min-width: 140px;
+    -unity-font-style: bold;
+}
+
+.narrative-toolbar__count {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 6px;
+    -unity-font-style: italic;
+}
+
+.narrative-toolbar__save-btn {
+    margin-left: auto;
+    background-color: #3a7d44;
+    color: white;
+    border-radius: 4px;
+    padding: 3px 12px;
+    border-width: 0;
+}
+
+.narrative-toolbar__save-btn:hover {
+    background-color: #4a9d54;
+}
+
+/* ─── Nodos ───────────────────────────────────────────────────── */
+
 .narrative-node {
     border-radius: 10px;
-    border-width: 1px;
-    border-color: #1a1a1a;
+    border-width: 2px;
+    border-color: rgba(0, 0, 0, 0.45);
     background-color: #2c2f39;
-    box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.35);
     min-width: 280px;
+    transition-duration: 0.2s;
+    transition-property: opacity;
+}
+
+.narrative-node:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.narrative-node:selected {
+    border-color: #5ca0f2;
+    border-width: 2px;
 }
 
 .narrative-node__subtitle {
     font-size: 11px;
-    color: rgba(1, 1, 1, 0.85);
+    color: rgba(255, 255, 255, 0.85);
     white-space: normal;
     margin-left: 6px;
     margin-right: 6px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .narrative-node__title-bar {
     border-radius: 10px 10px 0 0;
-    padding: 6px;
+    padding: 6px 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .narrative-node__extension {
-    padding-bottom: 18px;
+    padding: 6px 8px 14px 8px;
 }
+
+.narrative-node__chapter-field {
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+/* ─── Badge de capítulo ──────────────────────────────────────── */
+
+.narrative-node__chapter-badge {
+    font-size: 9px;
+    -unity-font-style: bold;
+    border-radius: 8px;
+    padding: 1px 8px;
+    margin-left: auto;
+    margin-right: 2px;
+    color: white;
+    background-color: rgba(100, 100, 100, 0.7);
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── Barra lateral de capítulo ──────────────────────────────── */
+
+.narrative-node__chapter-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 10px 0 0 10px;
+    background-color: transparent;
+}
+
+/* ─── Filtro de capítulos: nodos atenuados / activos ─────────── */
+
+.narrative-node--dimmed {
+    opacity: 0.2;
+}
+
+.narrative-node--active-chapter {
+    border-color: rgba(92, 160, 242, 0.5);
+}
+
+/* ─── Aristas atenuadas ──────────────────────────────────────── */
+
+.narrative-edge--dimmed {
+    opacity: 0.12;
+}
+
+/* ─── Puertos ─────────────────────────────────────────────────── */
 
 .narrative-port-dock {
     justify-content: flex-start;
@@ -52,11 +170,18 @@
 .narrative-port {
     width: 18px;
     height: 18px;
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.15);
     border-radius: 50%;
     border-width: 2px;
-    border-color: rgba(0, 0, 0, 0.45);
+    border-color: rgba(255, 255, 255, 0.3);
     margin: 2px;
+    transition-duration: 0.15s;
+    transition-property: background-color, border-color;
+}
+
+.narrative-port:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .narrative-port--top,
@@ -80,4 +205,13 @@
 
 .narrative-port--right {
     justify-content: flex-end;
+}
+
+/* ─── MiniMap ─────────────────────────────────────────────────── */
+
+MiniMap {
+    background-color: rgba(30, 30, 36, 0.85);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
 }

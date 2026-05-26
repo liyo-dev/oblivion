@@ -16,6 +16,11 @@ namespace Sendero.Narrative.Editor
         private readonly Dictionary<string, NodeView> _nodeViews = new();
         private bool _suppressGraphCallbacks;
 
+        private const string AllChaptersLabel = "Todos";
+        private string _activeChapter = AllChaptersLabel;
+        private ToolbarMenu _chapterMenu;
+        private Label _chapterCountLabel;
+
         [MenuItem("Tools/Narrative Graph/Open Editor")]
         public static void OpenWindow()
         {
@@ -35,12 +40,31 @@ namespace Sendero.Narrative.Editor
             rootVisualElement.Add(_view);
 
             var toolbar = new Toolbar();
+            toolbar.AddToClassList("narrative-toolbar");
 
             var objField = new ObjectField("Graph") { objectType = typeof(global::NarrativeGraph) };
             objField.RegisterValueChangedCallback(evt => LoadGraph(evt.newValue as global::NarrativeGraph));
             toolbar.Add(objField);
 
-            var createMenu = new ToolbarMenu { text = "Add Node" };
+            // Separador visual
+            var sep1 = new VisualElement();
+            sep1.AddToClassList("narrative-toolbar__separator");
+            toolbar.Add(sep1);
+
+            // Menú de capítulos
+            _chapterMenu = new ToolbarMenu { text = "Cap: Todos" };
+            _chapterMenu.AddToClassList("narrative-toolbar__chapter-menu");
+            toolbar.Add(_chapterMenu);
+
+            _chapterCountLabel = new Label();
+            _chapterCountLabel.AddToClassList("narrative-toolbar__count");
+            toolbar.Add(_chapterCountLabel);
+
+            var sep2 = new VisualElement();
+            sep2.AddToClassList("narrative-toolbar__separator");
+            toolbar.Add(sep2);
+
+            var createMenu = new ToolbarMenu { text = "Añadir Nodo" };
             var nodeTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(a => { try { return a.GetTypes(); } catch { return Array.Empty<Type>(); } })
                 .Where(t => typeof(NarrativeNode).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
@@ -52,6 +76,7 @@ namespace Sendero.Narrative.Editor
             toolbar.Add(createMenu);
 
             var saveBtn = new Button(Save) { text = "Guardar" };
+            saveBtn.AddToClassList("narrative-toolbar__save-btn");
             toolbar.Add(saveBtn);
 
             rootVisualElement.Add(toolbar);
@@ -80,6 +105,10 @@ namespace Sendero.Narrative.Editor
             var node = (NarrativeNode)Activator.CreateInstance(t);
             node.position = pos ?? Vector2.zero;
 
+            // Asignar capítulo activo al nuevo nodo
+            if (_activeChapter != AllChaptersLabel)
+                node.chapter = _activeChapter;
+
             Undo.RecordObject(_graph, "Add Narrative Node");
             _graph.nodes.Add(node);
             if (string.IsNullOrEmpty(_graph.startNodeGuid)) _graph.startNodeGuid = node.guid;
@@ -97,6 +126,7 @@ namespace Sendero.Narrative.Editor
             if (_graph == null)
             {
                 _suppressGraphCallbacks = false;
+                RebuildChapterMenu();
                 return;
             }
 
@@ -125,6 +155,8 @@ namespace Sendero.Narrative.Editor
 
             _view.FrameAll();
             _suppressGraphCallbacks = false;
+            RebuildChapterMenu();
+            ApplyChapterFilter();
         }
 
         private void DrawNode(NarrativeNode model)
@@ -135,7 +167,7 @@ namespace Sendero.Narrative.Editor
             var idx = _graph.nodes.IndexOf(model);
             var prop = so.FindProperty("nodes").GetArrayElementAtIndex(idx);
 
-            // Campo “Etiqueta” (displayTitle)
+            // Campo "Etiqueta" (displayTitle)
             var titleProp = prop.FindPropertyRelative("displayTitle");
             var titleField = new TextField("Etiqueta");
             titleField.BindProperty(titleProp);
@@ -146,11 +178,28 @@ namespace Sendero.Narrative.Editor
             });
             view.extensionContainer.Add(titleField);
 
-            // Resto de propiedades del nodo (oculta guid/position/outputs)
+            // Campo "Capítulo"
+            var chapterProp = prop.FindPropertyRelative("chapter");
+            if (chapterProp != null)
+            {
+                var chapterField = new TextField("Capítulo");
+                chapterField.AddToClassList("narrative-node__chapter-field");
+                chapterField.BindProperty(chapterProp);
+                chapterField.RegisterValueChangedCallback(_ =>
+                {
+                    view.UpdateChapterBadge();
+                    EditorUtility.SetDirty(_graph);
+                    RebuildChapterMenu();
+                });
+                view.extensionContainer.Add(chapterField);
+            }
+
+            // Resto de propiedades del nodo (oculta guid/position/outputs/chapter)
             foreach (var child in EnumerateDirectChildren(prop))
             {
                 var p = child.propertyPath;
                 if (p.EndsWith(".displayTitle")) continue;
+                if (p.EndsWith(".chapter"))      continue;
                 if (p.EndsWith(".guid"))         continue;
                 if (p.EndsWith(".position"))     continue;
                 if (p.EndsWith(".outputs"))      continue;
@@ -230,6 +279,151 @@ namespace Sendero.Narrative.Editor
             }
         }
 
+        // ─── Capítulos ───────────────────────────────────────────────────
+
+        private List<string> CollectChapters()
+        {
+            var chapters = new List<string>();
+            if (_graph == null) return chapters;
+
+            foreach (var node in _graph.nodes)
+            {
+                if (node == null) continue;
+                var ch = node.chapter;
+                if (!string.IsNullOrWhiteSpace(ch) && !chapters.Contains(ch))
+                    chapters.Add(ch);
+            }
+            chapters.Sort(StringComparer.OrdinalIgnoreCase);
+            return chapters;
+        }
+
+        private void RebuildChapterMenu()
+        {
+            if (_chapterMenu == null) return;
+
+            _chapterMenu.menu.ClearItems();
+
+            _chapterMenu.menu.AppendAction(AllChaptersLabel, _ => SetChapterFilter(AllChaptersLabel),
+                a => _activeChapter == AllChaptersLabel
+                    ? DropdownMenuAction.Status.Checked
+                    : DropdownMenuAction.Status.Normal);
+
+            var chapters = CollectChapters();
+            if (chapters.Count > 0)
+                _chapterMenu.menu.AppendSeparator();
+
+            foreach (var ch in chapters)
+            {
+                var captured = ch;
+                _chapterMenu.menu.AppendAction(captured, _ => SetChapterFilter(captured),
+                    a => _activeChapter == captured
+                        ? DropdownMenuAction.Status.Checked
+                        : DropdownMenuAction.Status.Normal);
+            }
+
+            // Opción para nodos sin capítulo asignado
+            int noChapterCount = 0;
+            if (_graph != null)
+                noChapterCount = _graph.nodes.Count(n => n != null && string.IsNullOrWhiteSpace(n.chapter));
+
+            if (noChapterCount > 0)
+            {
+                _chapterMenu.menu.AppendSeparator();
+                _chapterMenu.menu.AppendAction($"Sin capítulo ({noChapterCount})", _ => SetChapterFilter("__none__"),
+                    a => _activeChapter == "__none__"
+                        ? DropdownMenuAction.Status.Checked
+                        : DropdownMenuAction.Status.Normal);
+            }
+
+            UpdateChapterLabel();
+        }
+
+        private void SetChapterFilter(string chapter)
+        {
+            _activeChapter = chapter;
+            _chapterMenu.text = _activeChapter == AllChaptersLabel
+                ? "Cap: Todos"
+                : _activeChapter == "__none__"
+                    ? "Cap: Sin capítulo"
+                    : $"Cap: {_activeChapter}";
+            ApplyChapterFilter();
+            UpdateChapterLabel();
+        }
+
+        private void UpdateChapterLabel()
+        {
+            if (_chapterCountLabel == null || _graph == null) return;
+
+            int total = _graph.nodes.Count(n => n != null);
+            if (_activeChapter == AllChaptersLabel)
+            {
+                _chapterCountLabel.text = $"{total} nodos";
+            }
+            else
+            {
+                int visible = _graph.nodes.Count(n => n != null && NodeMatchesChapter(n));
+                _chapterCountLabel.text = $"{visible}/{total} nodos";
+            }
+        }
+
+        private bool NodeMatchesChapter(NarrativeNode node)
+        {
+            if (_activeChapter == AllChaptersLabel) return true;
+            if (_activeChapter == "__none__")
+                return string.IsNullOrWhiteSpace(node.chapter);
+            return string.Equals(node.chapter, _activeChapter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ApplyChapterFilter()
+        {
+            bool showAll = _activeChapter == AllChaptersLabel;
+
+            foreach (var kvp in _nodeViews)
+            {
+                var nv = kvp.Value;
+                if (nv?.Model == null) continue;
+
+                bool match = showAll || NodeMatchesChapter(nv.Model);
+                nv.visible = true;
+                nv.SetEnabled(true);
+
+                if (!match)
+                {
+                    nv.AddToClassList("narrative-node--dimmed");
+                    nv.RemoveFromClassList("narrative-node--active-chapter");
+                }
+                else
+                {
+                    nv.RemoveFromClassList("narrative-node--dimmed");
+                    if (!showAll)
+                        nv.AddToClassList("narrative-node--active-chapter");
+                    else
+                        nv.RemoveFromClassList("narrative-node--active-chapter");
+                }
+            }
+
+            // Atenuar aristas que no pertenecen al filtro activo
+            _view.edges.ForEach(edge =>
+            {
+                if (edge?.output?.node is NodeView from && edge?.input?.node is NodeView to)
+                {
+                    bool fromMatch = showAll || (from.Model != null && NodeMatchesChapter(from.Model));
+                    bool toMatch = showAll || (to.Model != null && NodeMatchesChapter(to.Model));
+
+                    if (fromMatch && toMatch)
+                    {
+                        edge.RemoveFromClassList("narrative-edge--dimmed");
+                    }
+                    else
+                    {
+                        edge.AddToClassList("narrative-edge--dimmed");
+                    }
+                }
+            });
+        }
+
+        // ─── Callbacks de aristas y nodos ────────────────────────────────
+
         private void OnEdgeLinked(Edge e)
         {
             if (_suppressGraphCallbacks) return;
@@ -288,6 +482,7 @@ namespace Sendero.Narrative.Editor
 
             EditorUtility.SetDirty(_graph);
             AssetDatabase.SaveAssets();
+            RebuildChapterMenu();
         }
     }
 }

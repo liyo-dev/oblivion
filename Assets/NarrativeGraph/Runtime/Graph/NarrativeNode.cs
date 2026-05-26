@@ -16,6 +16,9 @@ public abstract class NarrativeNode
     // Título visible en la card
     public string displayTitle;
 
+    // Capítulo al que pertenece este nodo (para organización visual en el editor)
+    public string chapter = "";
+
     [Tooltip("Si esta marcado, el jugador NO podra guardar partida mientras esta en este nodo narrativo.")]
     public bool blockSaving = false;
 
