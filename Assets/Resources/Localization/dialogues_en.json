@@ -789,7 +789,15 @@
             "value": ""
         },
         {
-            "key": "LORE_CELDA_2",
+            "key": "LORE_CELDA_10",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_11",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_12",
             "value": ""
         },
         {
@@ -810,6 +818,14 @@
         },
         {
             "key": "LORE_CELDA_7",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_8",
+            "value": ""
+        },
+        {
+            "key": "LORE_CELDA_9",
             "value": ""
         },
         {

@@ -1,18 +1,6 @@
 {
     "texts": [
         {
-            "key": "DG_LIAM_ARRESTO_05",
-            "value": ""
-        },
-        {
-            "key": "DG_LIAM_ARRESTO_06",
-            "value": ""
-        },
-        {
-            "key": "DG_LIAM_ARRESTO_07",
-            "value": ""
-        },
-        {
             "key": "MINIGAME_CAUGHT_MESSAGE",
             "value": "¡Te atraparon!"
         },

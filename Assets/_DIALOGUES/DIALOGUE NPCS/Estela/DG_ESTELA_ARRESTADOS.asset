@@ -20,13 +20,6 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 0
-  - speakerNameId: CHAR_ELDRAN
-    textId: LORE_CELDA_1
-    text: ...
-    portrait: {fileID: 0}
-    isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 0
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_3
     text: ...
@@ -48,7 +41,7 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     forcedShotType: 0
     emotion: 0
-  - speakerNameId: CHAR_ESTELA
+  - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_6
     text: ...
     portrait: {fileID: 0}
@@ -60,6 +53,41 @@ MonoBehaviour:
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_WILL
+    textId: LORE_CELDA_8
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: LORE_CELDA_9
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: LORE_CELDA_10
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: LORE_CELDA_11
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    forcedShotType: 0
+    emotion: 0
+  - speakerNameId: CHAR_ELDRAN
+    textId: LORE_CELDA_12
+    text: ...
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
     forcedShotType: 0
     emotion: 0
   isGroupConversation: 1
