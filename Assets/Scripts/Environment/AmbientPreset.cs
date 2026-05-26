@@ -5,8 +5,8 @@ using DG.Tweening;
 /// Preset de configuración de fog reutilizable.
 /// Crea diferentes presets para bosque, pantano, cueva, etc.
 /// </summary>
-[CreateAssetMenu(fileName = "FogPreset_New", menuName = "Environment/Fog Preset", order = 1)]
-public class FogPreset : ScriptableObject
+[CreateAssetMenu(fileName = "AmbientPreset_New", menuName = "Environment/Ambient Preset", order = 1)]
+public class AmbientPreset : ScriptableObject
 {
     [Header("Fog Settings")]
     [Tooltip("¿Activar fog con este preset?")]
@@ -36,14 +36,22 @@ public class FogPreset : ScriptableObject
     [Tooltip("Ease de la transición")]
     public Ease transitionEase = Ease.InOutSine;
     
+    [Header("Luz Ambiente")]
+    [Tooltip("¿Controlar la luz ambiente con este preset?")]
+    public bool controlAmbientLight = false;
+
+    [Tooltip("Color de la luz ambiente")]
+    public Color ambientLightColor = Color.white;
+
+    [Tooltip("Intensidad de la luz ambiente")]
+    [Range(0f, 2f)]
+    public float ambientLightIntensity = 1f;
+
     [Header("Metadata")]
     [TextArea(2, 4)]
     [Tooltip("Descripción del preset para referencia")]
     public string description = "";
-    
-    /// <summary>
-    /// Aplica este preset inmediatamente (sin transición)
-    /// </summary>
+
     public void ApplyImmediate()
     {
         RenderSettings.fog = enableFog;
@@ -52,28 +60,39 @@ public class FogPreset : ScriptableObject
         RenderSettings.fogMode = fogMode;
         RenderSettings.fogStartDistance = fogStartDistance;
         RenderSettings.fogEndDistance = fogEndDistance;
+
+        if (controlAmbientLight)
+        {
+            RenderSettings.ambientLight = ambientLightColor;
+            RenderSettings.ambientIntensity = ambientLightIntensity;
+        }
     }
-    
-    /// <summary>
-    /// Aplica este preset con transición suave
-    /// </summary>
+
     public Tween ApplyWithTransition()
     {
         RenderSettings.fog = enableFog;
         RenderSettings.fogMode = fogMode;
-        
+
         float startDensity = RenderSettings.fogDensity;
-        Color startColor = RenderSettings.fogColor;
+        Color startFogColor = RenderSettings.fogColor;
         float startFogStart = RenderSettings.fogStartDistance;
         float startFogEnd = RenderSettings.fogEndDistance;
-        
+        Color startAmbient = RenderSettings.ambientLight;
+        float startAmbientI = RenderSettings.ambientIntensity;
+
         return DOTween.To(
             () => 0f,
             t => {
                 RenderSettings.fogDensity = Mathf.Lerp(startDensity, fogDensity, t);
-                RenderSettings.fogColor = Color.Lerp(startColor, fogColor, t);
+                RenderSettings.fogColor = Color.Lerp(startFogColor, fogColor, t);
                 RenderSettings.fogStartDistance = Mathf.Lerp(startFogStart, fogStartDistance, t);
                 RenderSettings.fogEndDistance = Mathf.Lerp(startFogEnd, fogEndDistance, t);
+
+                if (controlAmbientLight)
+                {
+                    RenderSettings.ambientLight = Color.Lerp(startAmbient, ambientLightColor, t);
+                    RenderSettings.ambientIntensity = Mathf.Lerp(startAmbientI, ambientLightIntensity, t);
+                }
             },
             1f,
             transitionDuration
@@ -85,7 +104,7 @@ public class FogPreset : ScriptableObject
     private void PreviewInEditor()
     {
         ApplyImmediate();
-        Debug.Log($"[FogPreset] Preview aplicado: {name}");
+        Debug.Log($"[AmbientPreset] Preview aplicado: {name}");
     }
 #endif
 }

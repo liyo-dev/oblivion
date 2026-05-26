@@ -413,16 +413,16 @@ public sealed class AudioService : MonoBehaviour
         _musicB.loop = true;
         Debug.Log($"[AudioService] 🔄 Loop restaurado en AudioSources de música");
         
-        // PRIORIDAD 1: Si hay una FogZone activa, restaurar su música (no usar el stack)
-        var activeFogZone = FogZone.CurrentActiveZone;
-        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        // PRIORIDAD 1: Si hay una AmbientZone activa, restaurar su música (no usar el stack)
+        var activeAmbientZone = AmbientZone.CurrentActiveZone;
+        if (activeAmbientZone != null && !string.IsNullOrEmpty(activeAmbientZone.MusicZoneId))
         {
-            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            var zoneRule = profile?.GetAmbientZoneRule(activeAmbientZone.MusicZoneId);
             if (zoneRule?.music != null)
             {
-                Debug.Log($"[AudioService] Restaurando música de FogZone '{activeFogZone.MusicZoneId}' después de batalla");
+                Debug.Log($"[AudioService] Restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}' después de batalla");
                 PlayMusic(zoneRule.music, r.fade);
-                // Limpiar el stack porque la FogZone maneja su propia música
+                // Limpiar el stack porque la AmbientZone maneja su propia música
                 if (_musicStack.Count > 0) _musicStack.Pop();
                 _battleActive = false;
                 return;
@@ -527,14 +527,14 @@ public sealed class AudioService : MonoBehaviour
         _musicB.loop = true;
         Debug.Log($"[AudioService] 🔄 Loop restaurado en AudioSources de música después de minijuego");
         
-        // PRIORIDAD 1: Si hay una FogZone activa, restaurar su música
-        var activeFogZone = FogZone.CurrentActiveZone;
-        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        // PRIORIDAD 1: Si hay una AmbientZone activa, restaurar su música
+        var activeAmbientZone = AmbientZone.CurrentActiveZone;
+        if (activeAmbientZone != null && !string.IsNullOrEmpty(activeAmbientZone.MusicZoneId))
         {
-            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            var zoneRule = profile?.GetAmbientZoneRule(activeAmbientZone.MusicZoneId);
             if (zoneRule?.music != null)
             {
-                Debug.Log($"[AudioService] Restaurando música de FogZone '{activeFogZone.MusicZoneId}' después de minijuego");
+                Debug.Log($"[AudioService] Restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}' después de minijuego");
                 PlayMusic(zoneRule.music, r.fade);
                 if (_musicStack.Count > 0) _musicStack.Pop();
                 _minigameActive = false;
@@ -646,13 +646,13 @@ public sealed class AudioService : MonoBehaviour
         _musicA.loop = true;
         _musicB.loop = true;
 
-        var activeFogZone = FogZone.CurrentActiveZone;
-        if (activeFogZone != null && !string.IsNullOrEmpty(activeFogZone.MusicZoneId))
+        var activeAmbientZone = AmbientZone.CurrentActiveZone;
+        if (activeAmbientZone != null && !string.IsNullOrEmpty(activeAmbientZone.MusicZoneId))
         {
-            var zoneRule = profile?.GetAmbientZoneRule(activeFogZone.MusicZoneId);
+            var zoneRule = profile?.GetAmbientZoneRule(activeAmbientZone.MusicZoneId);
             if (zoneRule?.music != null)
             {
-                Debug.Log($"[AudioService] RestoreAfterBattle: restaurando música de FogZone '{activeFogZone.MusicZoneId}'");
+                Debug.Log($"[AudioService] RestoreAfterBattle: restaurando música de AmbientZone '{activeAmbientZone.MusicZoneId}'");
                 PlayMusic(zoneRule.music, fade);
                 if (_musicStack.Count > 0) _musicStack.Pop();
                 _battleActive = false;

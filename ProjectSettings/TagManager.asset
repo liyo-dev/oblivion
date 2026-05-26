@@ -2,33 +2,26 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 3
-  tags:
-  - Enemy
-  - Pickable
-  - PlayerEyes
-  - PortraitCamera
-  - Estela
-  - Boss
-  - Liam
+  serializedVersion: 2
+  tags: []
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - Player
+  - 
   - Water
   - UI
-  - Projectile
-  - Enemy
-  - Interactable
-  - InteractHint
-  - Floor
-  - ProjectileEnemy
-  - PauseUI
-  - Climb
-  - UI_Portrait
-  - Obstacle
-  - Minimap
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
   - 
   - 
   - 
@@ -48,9 +41,6 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: WorldUI
-    uniqueID: 2546536171
-    locked: 0
   m_RenderingLayers:
   - Default
   - Light Layer 1
@@ -60,3 +50,27 @@ TagManager:
   - Light Layer 5
   - Light Layer 6
   - Light Layer 7
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 

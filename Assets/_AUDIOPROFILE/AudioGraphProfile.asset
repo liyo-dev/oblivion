@@ -42,6 +42,10 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: 962ab2ced719b6d49a59008f80d9e59c, type: 3}
     fade: 1
     loop: 1
+  - zoneId: Dungeon
+    music: {fileID: 8300000, guid: b7d879b37c2696b448f8e1a9b249f3bd, type: 3}
+    fade: 1
+    loop: 1
   sceneMusic:
   - sceneName: Prologo
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}

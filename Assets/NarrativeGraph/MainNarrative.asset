@@ -571,7 +571,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
-        position: {x: 1939, y: 1738}
+        position: {x: 1968, y: 1744}
         outputs:
         - 330dfba1-aa17-4afd-9a25-ced60a36d329
         - 32e285b4-6777-4bbc-9a79-3f6c61c16d56

@@ -27084,6 +27084,85 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 488966, guid: 8740c9d2fd0ac9543be178d5c6af89b4, type: 3}
   m_PrefabInstance: {fileID: 179156695}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &179798386
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 179798387}
+  - component: {fileID: 179798389}
+  - component: {fileID: 179798388}
+  m_Layer: 1
+  m_Name: FogZone_Dungeon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &179798387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 179798386}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1493.94, y: 1000, z: 4.21}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1971658791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &179798388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 179798386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce59eb85251e418197e6a9ce7835cfad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FogZone
+  fogPreset: {fileID: 0}
+  enableFog: 0
+  fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  fogDensity: 0.02
+  fogStartDistance: 0
+  fogEndDistance: 100
+  fogMode: 3
+  changeMusic: 1
+  musicZoneId: Dungeon
+  transitionDuration: 1.5
+  transitionEase: 4
+  priority: 0
+  showDebugLogs: 0
+--- !u!65 &179798389
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 179798386}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 134.53125, y: 50, z: 123.2795}
+  m_Center: {x: -7.734375, y: 0, z: 10.060009}
 --- !u!1 &180071624
 GameObject:
   m_ObjectHideFlags: 0
@@ -168181,85 +168260,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 434800, guid: c027052d248566142a6c4d642c614b2d, type: 3}
   m_PrefabInstance: {fileID: 775489898}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &775861896
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 775861897}
-  - component: {fileID: 775861899}
-  - component: {fileID: 775861898}
-  m_Layer: 0
-  m_Name: EventSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &775861897
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 775861896}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1788915190}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &775861898
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 775861896}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
-  m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
-  m_XRTrackingOrigin: {fileID: 0}
-  m_ActionsAsset: {fileID: -944628639613478452, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_PointAction: {fileID: -3575729326886634555, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MoveAction: {fileID: -2690846353137964619, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_SubmitAction: {fileID: -4857292949242138091, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_CancelAction: {fileID: 1577013650251605496, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_LeftClickAction: {fileID: -7977897160081949292, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MiddleClickAction: {fileID: 8981538171461349378, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_RightClickAction: {fileID: 2941200214913115188, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_ScrollWheelAction: {fileID: -6286134650788867106, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDevicePositionAction: {fileID: 4851584977388053012, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDeviceOrientationAction: {fileID: 8930605249725871117, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 2
-  m_CursorLockBehavior: 0
-  m_ScrollDeltaPerTick: 6
---- !u!114 &775861899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 775861896}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
 --- !u!1001 &775888806
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -188327,7 +188327,7 @@ GameObject:
   m_Component:
   - component: {fileID: 838688790}
   m_Layer: 0
-  m_Name: Collectibles
+  m_Name: COLLECTIBLES
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -373899,7 +373899,6 @@ Transform:
   - {fileID: 1948117834}
   - {fileID: 164012870}
   - {fileID: 1166073538}
-  - {fileID: 775861897}
   - {fileID: 1818065750}
   - {fileID: 1100700571}
   - {fileID: 1962881649}
@@ -407611,6 +407610,7 @@ Transform:
   m_Children:
   - {fileID: 762240507}
   - {fileID: 1930051596}
+  - {fileID: 179798387}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1971928872
