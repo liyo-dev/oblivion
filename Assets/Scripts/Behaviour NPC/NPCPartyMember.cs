@@ -185,9 +185,14 @@ namespace Game.NPC
             }
             
             // Si está en el party pero no está siguiendo (Brain no estaba listo), verificar cada 0.5s
+            // No actuar si este NPC está oculto (controlado por el jugador vía character swap)
             if (_isInParty && _npcManager != null && _npcManager.Brain != null && Time.time >= _nextIdleCheck)
             {
                 _nextIdleCheck = Time.time + 0.5f;
+
+                if (ActiveCharacterSwapper.Instance != null && ActiveCharacterSwapper.Instance.HiddenNpc == this)
+                    return;
+
                 var currentState = _npcManager.Brain.CurrentState;
                 if (currentState != null && currentState.StateName == "Idle"
                     && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
@@ -385,8 +390,14 @@ namespace Game.NPC
         internal void OnJoinedParty(PlayerParty party)
         {
             // Asegurar que los renderers están visibles (pueden haber sido ocultados por HideNonPartyNPCs)
-            foreach (var r in GetComponentsInChildren<Renderer>(true))
-                r.enabled = true;
+            // EXCEPTO si este NPC es el oculto (controlado por el jugador vía character swap)
+            bool isHiddenBySwapper = ActiveCharacterSwapper.Instance != null
+                                     && ActiveCharacterSwapper.Instance.HiddenNpc == this;
+            if (!isHiddenBySwapper)
+            {
+                foreach (var r in GetComponentsInChildren<Renderer>(true))
+                    r.enabled = true;
+            }
 
             _party = party;
             _isInParty = true;

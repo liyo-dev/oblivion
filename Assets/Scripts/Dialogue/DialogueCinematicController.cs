@@ -401,11 +401,13 @@ public class DialogueCinematicController : MonoBehaviour
 
             // Asegurar que todos los party members tengan sus renderers activos al inicio
             // (pueden haber quedado desactivados por diálogos previos donde eran currentNPC)
+            // EXCEPTO el NPC oculto (controlado por el jugador vía character swap)
             if (Game.NPC.PlayerParty.HasInstance)
             {
+                var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
                 foreach (var m in Game.NPC.PlayerParty.Instance.Members)
                 {
-                    if (m == null) continue;
+                    if (m == null || m == hiddenNpc) continue;
                     foreach (var r in m.GetComponentsInChildren<Renderer>(true))
                         if (r != null) r.enabled = true;
                 }
