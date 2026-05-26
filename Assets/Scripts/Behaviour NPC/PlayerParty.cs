@@ -365,9 +365,11 @@ namespace Game.NPC
         public void TeleportAllMembersToPlayer()
         {
             if (_playerTransform == null) return;
-            
+
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
             for (int i = 0; i < _members.Count; i++)
             {
+                if (_members[i] == hiddenNpc) continue;
                 TeleportMemberToPlayer(_members[i], i);
             }
         }
@@ -417,10 +419,14 @@ namespace Game.NPC
             int leftCount = 0;
             int rightCount = 0;
             
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
             foreach (var member in _members)
             {
                 if (member == null || !member.IsActiveInParty || member.PartyConfig == null)
                     continue;
+
+                // No posicionar al NPC oculto (controlado por el jugador vía character swap)
+                if (member == hiddenNpc) continue;
                 
                 // Verificar si debe posicionarse durante diálogos
                 if (!member.PartyConfig.posicionarseDuranteDialogos)
@@ -903,11 +909,15 @@ namespace Game.NPC
         private void TeleportFarMembersForCombat()
         {
             const float combatTeleportThreshold = 15f; // Si está más lejos de 15m, teletransportar
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
 
             for (int i = 0; i < _members.Count; i++)
             {
                 var member = _members[i];
                 if (member == null) continue;
+
+                // No operar sobre el NPC oculto (controlado por el jugador vía character swap)
+                if (member == hiddenNpc) continue;
 
                 // No teletransportar miembros en cinemática (escoltas, secuencias, etc.)
                 if (member.NPCManager != null && member.NPCManager.IsInCinematic) continue;
@@ -1010,10 +1020,14 @@ namespace Game.NPC
 
         private void CheckMemberDistances()
         {
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
             for (int i = 0; i < _members.Count; i++)
             {
                 var member = _members[i];
                 if (member == null || !member.IsActiveInParty) continue;
+
+                // No operar sobre el NPC oculto (controlado por el jugador vía character swap)
+                if (member == hiddenNpc) continue;
 
                 // No teletransportar miembros en cinemática (escoltas, secuencias, etc.)
                 if (member.NPCManager != null && member.NPCManager.IsInCinematic) continue;
