@@ -285,6 +285,7 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
             if (dist < 0.01f) continue;
 
             var cfg = h.GetComponentInParent<Targetable>();
+            if (cfg && !cfg.isInActiveCombat) continue;
             float allowedRadius = (cfg && cfg.targetingRadius > 0) ? cfg.targetingRadius : radius;
             if (dist > allowedRadius) continue;
 
