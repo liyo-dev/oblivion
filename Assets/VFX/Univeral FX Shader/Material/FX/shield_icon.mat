@@ -1,0 +1,215 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: shield_icon
+  m_Shader: {fileID: 4800000, guid: 942089c970d2c8c47938d6123a58cd4e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - ENABLE_SHINE
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DissloveTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DissolveTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlowTex:
+        m_Texture: {fileID: 2800000, guid: f7bf3d1c338c1b542be088f9ee47ea3d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskFlowTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskNoiseTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OffsetNoiseTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShineMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShineTex:
+        m_Texture: {fileID: 2800000, guid: 5361be638fe88b64186691fdfc11822f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _UVNoise:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Alpha: 1
+    - _AlphaFactor: 1
+    - _ApplicationMode: 1
+    - _BumpScale: 1
+    - _ColorMask: 15
+    - _ColorSmoothness: 0.1
+    - _ColorThreshold: 0.5
+    - _CullMode: 0
+    - _Cutoff: 0.5
+    - _DetailNormalMapScale: 1
+    - _DissloveAmount: 0.1
+    - _DissloveOutlineStep: 0.1
+    - _DissloveRemapMax: 1
+    - _DissloveRemapMin: 0
+    - _DissolveAmount: 0.1
+    - _DissolveOutlineStep: 0.1
+    - _DissolveRemapMax: 1
+    - _DissolveRemapMin: 0
+    - _DissolveSmoothness: 0.1
+    - _DistortionIntensity: 0.5
+    - _DstBlend: 10
+    - _DualColorsEnabled: 0
+    - _DualColorsState: 0
+    - _GlobalAlpha: 1
+    - _GlossMapScale: 1
+    - _Glossiness: 0.5
+    - _GlossyReflections: 1
+    - _GlowBlinkMaxAlpha: 1
+    - _GlowBlinkMinAlpha: 0.2
+    - _GlowBlinkSpeed: 1
+    - _GlowSpeedX: 0
+    - _GlowSpeedY: 0
+    - _GrayscaleAlphaPower: 1
+    - _InvFade: 1
+    - _MainTexBrightness: 1
+    - _MainTexContrast: 1
+    - _MainTexSpeedX: 0
+    - _MainTexSpeedY: 0
+    - _MaskFlowSmoothness: 0.1
+    - _MaskFlowStrength: 0.5
+    - _MaskNoiseIntensity: 0.25
+    - _MaskRotation: 0
+    - _Metallic: 0
+    - _Mode: 0
+    - _OcclusionStrength: 1
+    - _OffsetAmount: 0
+    - _OffsetPower: 1
+    - _Parallax: 0.02
+    - _RenderingMode: 0
+    - _RimFresnel: 1
+    - _RimIntensity: 1
+    - _RimLightFresnel: 1
+    - _RimLightIntensity: 1
+    - _ScrollSpeedX: 0
+    - _ScrollSpeedY: 0
+    - _ShineDelay: 2
+    - _ShineDirection: 1
+    - _ShineEnabled: 1
+    - _ShineGlobalTime: 0
+    - _ShineIntensity: 0.5
+    - _ShineOffset: 0
+    - _ShineRepeat: 1
+    - _ShineSharpnessLeft: 5
+    - _ShineSharpnessRight: 2
+    - _ShineSpeed: 3
+    - _ShineSyncMode: 0
+    - _ShineTiling: 1
+    - _ShineWaveLength: 1
+    - _ShineWaveOffset: 100
+    - _ShineWaveScale: 0.01
+    - _ShineWaveSpeed: 1
+    - _ShineWidth: 10
+    - _ShineWorldSpace: 0
+    - _SmoothnessTextureChannel: 0
+    - _SoftParticlesFarFadeDistance: 1
+    - _SoftParticlesNearFadeDistance: 0
+    - _SpecularHighlights: 1
+    - _SrcBlend: 5
+    - _UIMode: 0
+    - _UVNoiseBias: 0.6
+    - _UVNoiseIntensity: 0.5
+    - _UVSec: 0
+    - _ZTestMode: 8
+    - _ZWrite: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorA: {r: 1, g: 0, b: 0, a: 1}
+    - _ColorB: {r: 0, g: 0, b: 1, a: 1}
+    - _DissloveOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DissolveOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DistortionSpeed: {r: 0.1, g: 0.1, b: 0, a: 0}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GlowColor: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskFlowSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _MaskNoiseSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _OffsetNoiseOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _OffsetNoiseTiling: {r: 1, g: 1, b: 0, a: 0}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShineColor: {r: 1, g: 0.570091, b: 0, a: 1}
+    - _ShineDirection: {r: 1, g: 1, b: 0, a: 0}
+    - _ShineRotation: {r: 1, g: 1, b: 0, a: 0}
+    - _ShineWaveDirection: {r: 10, g: 0, b: 0, a: 0}
+    - _ShineWorldDirection: {r: 1, g: 0, b: 1, a: 0}
+    - _TintColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _UVNoiseSpeed: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []

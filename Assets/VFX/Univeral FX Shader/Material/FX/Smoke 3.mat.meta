@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2585ad63f615fc14db057f1bd8dd5d85
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Smoke 3.mat
+  uploadId: 829568

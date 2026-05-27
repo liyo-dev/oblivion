@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ce22e0077d86c444a8cc96178468b578
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Script/CameraRotation.cs
+  uploadId: 829568

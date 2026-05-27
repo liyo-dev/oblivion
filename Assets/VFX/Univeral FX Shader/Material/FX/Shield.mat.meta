@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f888391f45e2fe943a75455d1c871ccb
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Shield.mat
+  uploadId: 829568

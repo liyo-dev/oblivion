@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f9ed1a77a9f40734499facda436c3c89
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/shield_icon_ui.mat
+  uploadId: 829568

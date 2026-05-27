@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 81f16d2a3bff2d8449a312e058e46ad9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Frame_Magic_UI.mat
+  uploadId: 829568

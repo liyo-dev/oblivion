@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e24b67f95a3d93f449435136db65312f
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Prefab/FX_FullScreen.prefab
+  uploadId: 829568

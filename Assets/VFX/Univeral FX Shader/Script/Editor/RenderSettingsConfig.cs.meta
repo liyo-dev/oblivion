@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: b68fd7f9e23174e4c962b25ed10a6fc6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Script/Editor/RenderSettingsConfig.cs
+  uploadId: 829568

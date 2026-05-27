@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0fa43caade31539429ecdd5aa8a126da
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Sphere_Element_3 1.mat
+  uploadId: 829568

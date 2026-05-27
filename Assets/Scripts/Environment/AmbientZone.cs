@@ -386,5 +386,115 @@ public class AmbientZone : MonoBehaviour
             $"AmbientZone: {gameObject.name}\n{string.Join(" | ", parts)}\nPrioridad: {priority}"
         );
     }
+
+    [ContextMenu("Crear Niebla de Suelo")]
+    private void CreateGroundMistPS()
+    {
+        if (groundMistPS != null)
+        {
+            UnityEditor.EditorUtility.DisplayDialog("AmbientZone",
+                "Ya hay un Ground Mist PS asignado.\nDesasígnalo primero si quieres crear uno nuevo.", "OK");
+            return;
+        }
+
+        var go = new GameObject("GroundMist_PS");
+        UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Crear Niebla de Suelo");
+        go.transform.SetParent(transform, false);
+        go.transform.localPosition = Vector3.zero;
+
+        var ps = go.AddComponent<ParticleSystem>();
+
+        // Main
+        var main = ps.main;
+        main.loop           = true;
+        main.playOnAwake    = false; // AmbientZone lo gestiona
+        main.startLifetime  = new ParticleSystem.MinMaxCurve(6f, 10f);
+        main.startSpeed     = new ParticleSystem.MinMaxCurve(0f, 0.12f);
+        main.startSize      = new ParticleSystem.MinMaxCurve(3f, 6f);
+        main.startColor     = new ParticleSystem.MinMaxGradient(
+            new Color(1f,    1f,    1f,    1f),
+            new Color(0.85f, 0.88f, 0.93f, 1f)
+        );
+        main.gravityModifier  = -0.005f; // flota levemente hacia arriba
+        main.maxParticles     = 100;
+        main.simulationSpace  = ParticleSystemSimulationSpace.World;
+
+        // Emission
+        var emission = ps.emission;
+        emission.enabled       = true;
+        emission.rateOverTime  = 10f;
+
+        // Shape — caja plana al ras del suelo, escala del BoxCollider si existe
+        var shapeModule = ps.shape;
+        shapeModule.enabled   = true;
+        shapeModule.shapeType = ParticleSystemShapeType.Box;
+        shapeModule.position  = new Vector3(0f, 0.2f, 0f);
+        var boxCol = GetComponent<BoxCollider>();
+        shapeModule.scale = boxCol != null
+            ? new Vector3(boxCol.size.x * 0.85f, 0.3f, boxCol.size.z * 0.85f)
+            : new Vector3(12f, 0.3f, 12f);
+
+        // Color over lifetime — fade in/out suave con opacidad máx ~35%
+        var colorLife = ps.colorOverLifetime;
+        colorLife.enabled = true;
+        var fadeGradient = new Gradient();
+        fadeGradient.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] {
+                new GradientAlphaKey(0f,    0f),
+                new GradientAlphaKey(0.35f, 0.15f),
+                new GradientAlphaKey(0.35f, 0.85f),
+                new GradientAlphaKey(0f,    1f)
+            }
+        );
+        colorLife.color = new ParticleSystem.MinMaxGradient(fadeGradient);
+
+        // Size over lifetime — expansión lenta (hace que la niebla se "disuelva")
+        var sizeLife = ps.sizeOverLifetime;
+        sizeLife.enabled = true;
+        sizeLife.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.85f, 1f, 1.25f));
+
+        // Renderer
+        var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+        psRenderer.renderMode  = ParticleSystemRenderMode.Billboard;
+        psRenderer.sortingOrder = 0;
+
+        // Material — buscar uno ya creado, si no crearlo
+        const string matPath = "Assets/Settings/AmbientPresets/Mat_GroundMist.mat";
+        var mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (mat == null)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                      ?? Shader.Find("Particles/Standard Unlit");
+
+            mat = new Material(shader != null ? shader : Shader.Find("Standard"));
+
+            if (shader != null && shader.name.StartsWith("Universal"))
+            {
+                // Configurar como transparente en URP
+                mat.SetFloat("_Surface", 1f);
+                mat.SetFloat("_Blend",   0f);
+                mat.SetInt("_SrcBlend",  (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend",  (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite",    0);
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.renderQueue = 3000;
+            }
+
+            UnityEditor.AssetDatabase.CreateAsset(mat, matPath);
+            UnityEditor.AssetDatabase.SaveAssets();
+        }
+        psRenderer.material = mat;
+
+        // Enlazar con el componente
+        groundMistPS    = ps;
+        enableGroundMist = true;
+
+        UnityEditor.EditorUtility.SetDirty(this);
+
+        Debug.Log($"[AmbientZone] GroundMist_PS creado en '{gameObject.name}'.\n" +
+                  "Para mejor aspecto: asigna una textura circular y suave (tipo nube/humo) " +
+                  "al material Mat_GroundMist en Assets/Settings/AmbientPresets/.");
+    }
 #endif
 }

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2076fa1fc7a555145b70d921b86c1736
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Glow_Portal_2.mat
+  uploadId: 829568

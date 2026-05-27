@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c08aed3c1e9fb1c4484888546539ea04
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Prefab/WaterFall_2_Realistic.prefab
+  uploadId: 829568

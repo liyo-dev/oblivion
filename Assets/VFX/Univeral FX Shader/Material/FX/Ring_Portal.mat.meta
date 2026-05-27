@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 68a14b8dcb2278240accd435ae7f1bdd
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Material/FX/Ring_Portal.mat
+  uploadId: 829568

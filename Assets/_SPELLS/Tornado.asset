@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Cycloneburst
   kind: 0
   element: 2
-  prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
+  prefab: {fileID: 9089776569402074837, guid: 5f0bf4124c24237459fe6b81670f7ebf, type: 3}
   castDelaySeconds: 0.5
   chargeTime: 0
   chargeStartScale: 0.1

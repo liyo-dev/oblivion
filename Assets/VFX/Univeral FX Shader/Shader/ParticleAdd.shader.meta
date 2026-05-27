@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: d3f306ad4d22e3f4083015825f60b786
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Shader/ParticleAdd.shader
+  uploadId: 829568

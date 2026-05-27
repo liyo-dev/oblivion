@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 064ea2c9d7a79a64ab52dea3679145cc
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 337000
+  packageName: "VFX Creator \u2013 Universal Shader"
+  packageVersion: 1.1
+  assetPath: Assets/Univeral FX Shader/Script/Editor/GameParticleShaderGUI.cs
+  uploadId: 829568

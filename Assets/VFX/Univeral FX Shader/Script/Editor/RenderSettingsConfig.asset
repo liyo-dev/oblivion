@@ -1,0 +1,122 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b68fd7f9e23174e4c962b25ed10a6fc6, type: 3}
+  m_Name: RenderSettingsConfig
+  m_EditorClassIdentifier: 
+  Game3D:
+    Transparent:
+      RenderType: Transparent
+      SrcBlend: 5
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Additive:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    SoftAdditive:
+      RenderType: Transparent
+      SrcBlend: 4
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Blend:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Opaque:
+      RenderType: Opaque
+      SrcBlend: 1
+      DstBlend: 0
+      ZWrite: 1
+      ZTest: 4
+      RenderQueue: 2000
+  UI:
+    Transparent:
+      RenderType: Transparent
+      SrcBlend: 5
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 8
+      RenderQueue: 3000
+    Additive:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 8
+      RenderQueue: 3000
+    SoftAdditive:
+      RenderType: Transparent
+      SrcBlend: 4
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 8
+      RenderQueue: 3000
+    Blend:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 8
+      RenderQueue: 3000
+    Opaque:
+      RenderType: Opaque
+      SrcBlend: 1
+      DstBlend: 0
+      ZWrite: 0
+      ZTest: 8
+      RenderQueue: 3000
+  Sprite2D:
+    Transparent:
+      RenderType: Transparent
+      SrcBlend: 5
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Additive:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    SoftAdditive:
+      RenderType: Transparent
+      SrcBlend: 4
+      DstBlend: 1
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Blend:
+      RenderType: Transparent
+      SrcBlend: 1
+      DstBlend: 10
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 3000
+    Opaque:
+      RenderType: Opaque
+      SrcBlend: 1
+      DstBlend: 0
+      ZWrite: 0
+      ZTest: 4
+      RenderQueue: 2000

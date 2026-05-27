@@ -27096,7 +27096,7 @@ GameObject:
   - component: {fileID: 179798389}
   - component: {fileID: 179798388}
   m_Layer: 1
-  m_Name: FogZone_Dungeon
+  m_Name: Ambient_Dungeon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27129,13 +27129,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce59eb85251e418197e6a9ce7835cfad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
-  fogPreset: {fileID: 0}
+  ambientPreset: {fileID: 11400000, guid: eb46180ec973baa448987547d38e376e, type: 2}
   enableFog: 0
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
   fogEndDistance: 100
   fogMode: 3
+  controlAmbientLight: 0
+  ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
+  ambientLightIntensity: 1
+  enableGroundMist: 0
+  groundMistPS: {fileID: 0}
   changeMusic: 1
   musicZoneId: Dungeon
   transitionDuration: 1.5
@@ -161228,7 +161233,7 @@ GameObject:
   - component: {fileID: 762240506}
   - component: {fileID: 762240505}
   m_Layer: 1
-  m_Name: FogZone_Woods
+  m_Name: Ambient_Woods
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -161246,13 +161251,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce59eb85251e418197e6a9ce7835cfad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
-  fogPreset: {fileID: 11400000, guid: 26d723e6b99bfa54fac9037f9b43322e, type: 2}
+  ambientPreset: {fileID: 11400000, guid: 26d723e6b99bfa54fac9037f9b43322e, type: 2}
   enableFog: 0
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
   fogEndDistance: 100
   fogMode: 3
+  controlAmbientLight: 0
+  ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
+  ambientLightIntensity: 1
+  enableGroundMist: 0
+  groundMistPS: {fileID: 0}
   changeMusic: 1
   musicZoneId: Woods
   transitionDuration: 1.5
@@ -400863,7 +400873,7 @@ GameObject:
   - component: {fileID: 1930051597}
   - component: {fileID: 1930051599}
   m_Layer: 1
-  m_Name: FogZone_Mountains
+  m_Name: Ambient_Mountains
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -400896,13 +400906,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce59eb85251e418197e6a9ce7835cfad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
-  fogPreset: {fileID: 11400000, guid: 4fd61ad9ba2cb16418cb56977804ca15, type: 2}
+  ambientPreset: {fileID: 11400000, guid: 4fd61ad9ba2cb16418cb56977804ca15, type: 2}
   enableFog: 0
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
   fogEndDistance: 100
   fogMode: 3
+  controlAmbientLight: 0
+  ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
+  ambientLightIntensity: 1
+  enableGroundMist: 0
+  groundMistPS: {fileID: 0}
   changeMusic: 1
   musicZoneId: Mountains
   transitionDuration: 1.5
