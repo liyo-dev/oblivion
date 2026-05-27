@@ -17809,6 +17809,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1471309233656388177, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -27139,7 +27143,7 @@ MonoBehaviour:
   controlAmbientLight: 0
   ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
   ambientLightIntensity: 1
-  enableGroundMist: 0
+  enableGroundMist: 1
   groundMistPS: {fileID: 0}
   changeMusic: 1
   musicZoneId: Dungeon
@@ -127936,6 +127940,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1471309233656388177, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -134199,6 +134207,10 @@ PrefabInstance:
     - target: {fileID: 499586, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1471309233656388177, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
+      propertyPath: m_Convex
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -254535,6 +254547,10 @@ PrefabInstance:
     - target: {fileID: 499586, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1471309233656388177, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
+      propertyPath: m_Convex
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -434874,6 +434890,10 @@ PrefabInstance:
     - target: {fileID: 499586, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1471309233656388177, guid: 0b7f3b033306b6d4b956436528383403, type: 3}
+      propertyPath: m_Convex
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
