@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
+using Invector.vCharacterController;
 using UnityEngine;
 
 /// <summary>
 /// Nodo del grafo narrativo que envía un comando a un NPC específico.
 /// Soporta: mover a anchor, reproducir animación, unirse/abandonar equipo,
-/// teletransportarse cerca del jugador y esperar N segundos.
+/// teletransportarse cerca del jugador, escolta, y esperar N segundos.
 /// El NPC se localiza vía NPCGraphBridgeRegistry o NPCRegistry.
 /// El nodo espera a que la acción se complete antes de avanzar.
 /// </summary>
@@ -21,6 +22,8 @@ public sealed class NPCCommandNode : NarrativeNode
         TeleportNearPlayer = 4,
         Wait              = 5,
         SetActive         = 6,
+        MoveNearPlayer    = 7,
+        LeadPlayerToAnchor = 8,
     }
 
     [Header("NPC")]
@@ -58,6 +61,28 @@ public sealed class NPCCommandNode : NarrativeNode
     [Header("SetActive")]
     [Tooltip("Activar (true) o desactivar (false) el GameObject del NPC.")]
     public bool setActiveValue = true;
+
+    [Header("MoveNearPlayer")]
+    [Tooltip("Radio de distancia al jugador al que se acerca el NPC (para MoveNearPlayer).")]
+    [Min(0.5f)]
+    public float nearPlayerRadius = 1.8f;
+
+    [Header("LeadPlayerToAnchor (Escolta)")]
+    [Tooltip("Duración máxima de la escolta en segundos.")]
+    [Min(10f)]
+    public float escortMaxDuration = 120f;
+
+    [Tooltip("Distancia máxima del jugador antes de que el NPC pare a esperarlo.")]
+    [Min(3f)]
+    public float escortMaxPlayerDistance = 8f;
+
+    [Tooltip("Distancia a la que el jugador debe acercarse para reanudar la escolta.")]
+    [Min(1f)]
+    public float escortResumeDistance = 3f;
+
+    [Tooltip("Multiplicador de velocidad del jugador durante la escolta (0.1-1.0).")]
+    [Range(0.1f, 1f)]
+    public float escortPlayerSpeedMultiplier = 0.6f;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
@@ -130,6 +155,14 @@ public sealed class NPCCommandNode : NarrativeNode
 
             case CommandType.SetActive:
                 npcTransform.gameObject.SetActive(setActiveValue);
+                break;
+
+            case CommandType.MoveNearPlayer:
+                yield return DoMoveNearPlayer(npcManager, npcTransform);
+                break;
+
+            case CommandType.LeadPlayerToAnchor:
+                yield return DoLeadPlayerToAnchor(npcManager, npcTransform);
                 break;
         }
 
@@ -260,5 +293,154 @@ public sealed class NPCCommandNode : NarrativeNode
         toPlayer.y = 0f;
         if (toPlayer.sqrMagnitude > 0.01f)
             npcTransform.rotation = Quaternion.LookRotation(toPlayer.normalized);
+    }
+
+    IEnumerator DoMoveNearPlayer(Game.NPC.NPCBehaviourManagerV2 npcManager, Transform npcTransform)
+    {
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+        {
+            Debug.LogWarning($"[NPCCommand] MoveNearPlayer: jugador no encontrado");
+            yield break;
+        }
+
+        Vector3 dirToNpc = npcTransform.position - player.transform.position;
+        dirToNpc.y = 0f;
+        if (dirToNpc.sqrMagnitude < 0.01f)
+            dirToNpc = player.transform.forward;
+
+        Vector3 targetPos = player.transform.position + dirToNpc.normalized * nearPlayerRadius;
+
+        if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+            targetPos = hit.position;
+
+        if (npcManager != null)
+        {
+            if (npcManager.SimpleAnimator != null)
+            {
+                npcManager.SimpleAnimator.AllowManualRotation = false;
+                npcManager.SimpleAnimator.EnableAutoRotation();
+            }
+
+            var moveSeq = new Game.NPC.States.MoveToPositionSequence(
+                npcManager, targetPos, maxMovementDuration, false, 999f, null);
+            npcManager.StartCinematicSequence(moveSeq);
+            while (!moveSeq.IsCompleted) yield return null;
+
+            if (npcManager.SimpleAnimator != null)
+                npcManager.SimpleAnimator.AllowManualRotation = true;
+        }
+        else
+        {
+            npcTransform.position = targetPos;
+        }
+
+        // Mirar al jugador al llegar
+        Vector3 toPlayer = player.transform.position - npcTransform.position;
+        toPlayer.y = 0f;
+        if (toPlayer.sqrMagnitude > 0.01f)
+            npcTransform.rotation = Quaternion.LookRotation(toPlayer.normalized);
+    }
+
+    IEnumerator DoLeadPlayerToAnchor(Game.NPC.NPCBehaviourManagerV2 npcManager, Transform npcTransform)
+    {
+        if (string.IsNullOrWhiteSpace(targetAnchorName))
+        {
+            Debug.LogWarning($"[NPCCommand] LeadPlayerToAnchor sin targetAnchorName → saltando");
+            yield break;
+        }
+
+        var anchor = SpawnAnchor.FindById(targetAnchorName);
+        if (anchor == null)
+        {
+            Debug.LogWarning($"[NPCCommand] LeadPlayerToAnchor: anchor '{targetAnchorName}' no encontrado");
+            yield break;
+        }
+
+        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
+        {
+            Debug.LogWarning($"[NPCCommand] LeadPlayerToAnchor: jugador no encontrado");
+            yield break;
+        }
+
+        if (npcManager == null)
+        {
+            Debug.LogWarning($"[NPCCommand] LeadPlayerToAnchor requiere NPCBehaviourManagerV2");
+            yield break;
+        }
+
+        var agent = npcManager.Agent;
+        if (agent == null || !agent.isOnNavMesh)
+        {
+            if (agent != null && !agent.enabled)
+            {
+                agent.enabled = true;
+                yield return null;
+            }
+            if (agent == null || !agent.isOnNavMesh)
+            {
+                Debug.LogWarning($"[NPCCommand] LeadPlayerToAnchor: NPC sin NavMeshAgent válido");
+                yield break;
+            }
+        }
+
+        Vector3 anchorPos = anchor.transform.position;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[NPCCommand:{guid}] LeadPlayerToAnchor → '{targetAnchorName}' ({anchorPos})");
+#endif
+
+        if (npcManager.SimpleAnimator != null)
+        {
+            npcManager.SimpleAnimator.AllowManualRotation = false;
+            npcManager.SimpleAnimator.EnableAutoRotation();
+            Vector3 dir = anchorPos - npcTransform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+                npcManager.SimpleAnimator.FaceDirection(dir.normalized);
+        }
+
+        var escortSeq = new Game.NPC.States.LeadPlayerToAnchorSequence(
+            anchorPos, player.transform,
+            escortMaxDuration, escortMaxPlayerDistance, escortResumeDistance);
+        npcManager.StartCinematicSequence(escortSeq);
+
+        // Reducir velocidad del jugador si se configuró
+        vThirdPersonController playerCtrl = null;
+        float origFreeWalk = 0f, origFreeRun = 0f, origFreeSprint = 0f;
+        float origStrafeWalk = 0f, origStrafeRun = 0f, origStrafeSprint = 0f;
+        float mult = Mathf.Clamp(escortPlayerSpeedMultiplier, 0.1f, 1f);
+
+        if (mult < 1f && PlayerService.TryGetComponent<vThirdPersonController>(out playerCtrl))
+        {
+            origFreeWalk    = playerCtrl.freeSpeed.walkSpeed;
+            origFreeRun     = playerCtrl.freeSpeed.runningSpeed;
+            origFreeSprint  = playerCtrl.freeSpeed.sprintSpeed;
+            origStrafeWalk  = playerCtrl.strafeSpeed.walkSpeed;
+            origStrafeRun   = playerCtrl.strafeSpeed.runningSpeed;
+            origStrafeSprint = playerCtrl.strafeSpeed.sprintSpeed;
+
+            playerCtrl.freeSpeed.walkSpeed    *= mult;
+            playerCtrl.freeSpeed.runningSpeed *= mult;
+            playerCtrl.freeSpeed.sprintSpeed  *= mult;
+            playerCtrl.strafeSpeed.walkSpeed    *= mult;
+            playerCtrl.strafeSpeed.runningSpeed *= mult;
+            playerCtrl.strafeSpeed.sprintSpeed  *= mult;
+        }
+
+        while (!escortSeq.IsCompleted) yield return null;
+
+        // Restaurar velocidad del jugador
+        if (playerCtrl != null && mult < 1f)
+        {
+            playerCtrl.freeSpeed.walkSpeed    = origFreeWalk;
+            playerCtrl.freeSpeed.runningSpeed = origFreeRun;
+            playerCtrl.freeSpeed.sprintSpeed  = origFreeSprint;
+            playerCtrl.strafeSpeed.walkSpeed    = origStrafeWalk;
+            playerCtrl.strafeSpeed.runningSpeed = origStrafeRun;
+            playerCtrl.strafeSpeed.sprintSpeed  = origStrafeSprint;
+        }
+
+        if (npcManager.SimpleAnimator != null)
+            npcManager.SimpleAnimator.AllowManualRotation = true;
     }
 }
