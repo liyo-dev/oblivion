@@ -384,25 +384,36 @@ namespace Sendero.Narrative.Editor
                 if (nv?.Model == null) continue;
 
                 bool match = showAll || NodeMatchesChapter(nv.Model);
-                nv.visible = true;
-                nv.SetEnabled(true);
 
-                if (!match)
+                if (showAll)
                 {
-                    nv.AddToClassList("narrative-node--dimmed");
+                    // Mostrar todos: quitar todas las clases de filtro
+                    nv.visible = true;
+                    nv.SetEnabled(true);
+                    nv.RemoveFromClassList("narrative-node--dimmed");
+                    nv.RemoveFromClassList("narrative-node--hidden");
                     nv.RemoveFromClassList("narrative-node--active-chapter");
+                }
+                else if (match)
+                {
+                    // Nodo del capítulo activo: visible y resaltado
+                    nv.visible = true;
+                    nv.SetEnabled(true);
+                    nv.RemoveFromClassList("narrative-node--dimmed");
+                    nv.RemoveFromClassList("narrative-node--hidden");
+                    nv.AddToClassList("narrative-node--active-chapter");
                 }
                 else
                 {
+                    // Nodo de otro capítulo: ocultar completamente
+                    nv.visible = false;
+                    nv.RemoveFromClassList("narrative-node--active-chapter");
                     nv.RemoveFromClassList("narrative-node--dimmed");
-                    if (!showAll)
-                        nv.AddToClassList("narrative-node--active-chapter");
-                    else
-                        nv.RemoveFromClassList("narrative-node--active-chapter");
+                    nv.AddToClassList("narrative-node--hidden");
                 }
             }
 
-            // Atenuar aristas que no pertenecen al filtro activo
+            // Ocultar/mostrar aristas según el filtro
             _view.edges.ForEach(edge =>
             {
                 if (edge?.output?.node is NodeView from && edge?.input?.node is NodeView to)
@@ -412,14 +423,65 @@ namespace Sendero.Narrative.Editor
 
                     if (fromMatch && toMatch)
                     {
+                        edge.visible = true;
                         edge.RemoveFromClassList("narrative-edge--dimmed");
+                        edge.RemoveFromClassList("narrative-edge--hidden");
                     }
                     else
                     {
-                        edge.AddToClassList("narrative-edge--dimmed");
+                        edge.visible = false;
+                        edge.AddToClassList("narrative-edge--hidden");
+                        edge.RemoveFromClassList("narrative-edge--dimmed");
                     }
                 }
             });
+
+            // Centrar la vista en los nodos visibles cuando se filtra por capítulo
+            if (!showAll)
+                FrameVisibleNodes();
+        }
+
+        /// <summary>
+        /// Centra la vista del grafo en los nodos que son visibles (del capítulo activo).
+        /// </summary>
+        private void FrameVisibleNodes()
+        {
+            var visibleNodes = new List<NodeView>();
+            foreach (var kvp in _nodeViews)
+            {
+                var nv = kvp.Value;
+                if (nv?.Model != null && nv.visible && NodeMatchesChapter(nv.Model))
+                    visibleNodes.Add(nv);
+            }
+
+            if (visibleNodes.Count == 0) return;
+
+            // Calcular bounding rect de todos los nodos visibles
+            float minX = float.MaxValue, minY = float.MaxValue;
+            float maxX = float.MinValue, maxY = float.MinValue;
+
+            foreach (var nv in visibleNodes)
+            {
+                var rect = nv.GetPosition();
+                if (rect.xMin < minX) minX = rect.xMin;
+                if (rect.yMin < minY) minY = rect.yMin;
+                if (rect.xMax > maxX) maxX = rect.xMax;
+                if (rect.yMax > maxY) maxY = rect.yMax;
+            }
+
+            // Añadir margen alrededor
+            const float margin = 80f;
+            var bounds = new Rect(minX - margin, minY - margin,
+                (maxX - minX) + margin * 2, (maxY - minY) + margin * 2);
+
+            _view.FrameAll();
+
+            // Usar schedule para dar tiempo al layout y luego centrar
+            _view.schedule.Execute(() =>
+            {
+                _view.CalculateFrameTransform(bounds, _view.layout, 0, out var frameTranslation, out var frameScaling);
+                _view.UpdateViewTransform(frameTranslation, new Vector3(frameScaling.x, frameScaling.y, 1f));
+            }).ExecuteLater(50);
         }
 
         // ─── Callbacks de aristas y nodos ────────────────────────────────

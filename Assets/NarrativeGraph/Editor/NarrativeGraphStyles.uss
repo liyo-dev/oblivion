@@ -130,14 +130,22 @@
     opacity: 0.2;
 }
 
+.narrative-node--hidden {
+    display: none;
+}
+
 .narrative-node--active-chapter {
     border-color: rgba(92, 160, 242, 0.5);
 }
 
-/* ─── Aristas atenuadas ──────────────────────────────────────── */
+/* ─── Aristas atenuadas / ocultas ────────────────────────────── */
 
 .narrative-edge--dimmed {
     opacity: 0.12;
+}
+
+.narrative-edge--hidden {
+    display: none;
 }
 
 /* ─── Puertos ─────────────────────────────────────────────────── */
