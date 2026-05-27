@@ -203,6 +203,20 @@ public class PlayerLevitationController : MonoBehaviour
             manaPool.TrySpend(drain);
         }
 
+        // Sin objetivos: seguir buscando mientras el botón esté pulsado
+        if (_currentTargets.Count == 0)
+        {
+            var newTargets = FindTargetsInCone(_activeSpell);
+            if (newTargets.Count > 0)
+            {
+                _currentTargets.AddRange(newTargets);
+                foreach (var t in newTargets)
+                    t.BeginLevitation(this, _activeSpell);
+                FeedbackService.CameraShake(_activeSpell.levitationCaptureShakeIntensity, _activeSpell.levitationCaptureShakeDuration);
+                if (showDebugLogs) Debug.Log($"[Levitation] Objetivo capturado durante hold: {newTargets.Count}");
+            }
+        }
+
         Vector3 holdPos = transform.position + transform.forward * _activeSpell.levitationHoldDistance;
 
         for (int i = _currentTargets.Count - 1; i >= 0; i--)

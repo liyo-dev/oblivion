@@ -44,6 +44,12 @@ public class LevitationTarget : MonoBehaviour
     [Tooltip("Drag del Rigidbody durante levitación para suavizar el movimiento.")]
     [SerializeField] private float levitationDrag = 2f;
 
+    [Header("Rebote en pared (durante levitación)")]
+    [Tooltip("Fuerza del impulso de rebote al chocar contra una pared mientras está levitado.")]
+    [SerializeField] private float wallBounceForce = 8f;
+    [Tooltip("Velocidad mínima de impacto (m/s) para activar el rebote y la animación.")]
+    [Min(0f)] [SerializeField] private float wallBounceMinSpeed = 0.5f;
+
     [Header("VFX")]
     [Tooltip("Prefab del efecto visual sobre el objeto mientras está levitando.")]
     [SerializeField] private GameObject levitationVFXPrefab;
@@ -376,18 +382,39 @@ public class LevitationTarget : MonoBehaviour
             _damageable.OnDamaged -= OnDamagedWhileLevitated;
     }
 
-    // ── Daño por impacto en pared (después del lanzamiento) ──────────────────
+    // ── Daño por impacto en pared ────────────────────────────────────────────
 
     void OnCollisionEnter(Collision collision)
     {
-        if (!_isInFlight || _flightSpell == null) return;
         if (collision.contactCount == 0) return;
 
         ContactPoint contact = collision.GetContact(0);
         if (contact.normal.y > 0.5f) return; // ignorar suelo
 
-        float speed = collision.relativeVelocity.magnitude;
-        if (speed < _flightSpell.levitationImpactMinSpeed) return;
+        // Rebote mientras el jugador mantiene el hechizo pulsado
+        if (_isBeingLevitated)
+        {
+            float speed = collision.relativeVelocity.magnitude;
+            if (speed < wallBounceMinSpeed) return;
+
+            // Empujar fuera de la pared usando la normal del contacto
+            _rigidbody.linearVelocity = contact.normal * wallBounceForce;
+
+            if (_animator != null && _hitStateHash != 0 && !_isPlayingHitReaction)
+            {
+                if (_hitReactionCoroutine != null) StopCoroutine(_hitReactionCoroutine);
+                _hitReactionCoroutine = StartCoroutine(Co_PlayHitReaction());
+            }
+
+            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} rebote en pared → {speed:F1}m/s");
+            return;
+        }
+
+        // Daño por impacto después del lanzamiento
+        if (!_isInFlight || _flightSpell == null) return;
+
+        float impactSpeed = collision.relativeVelocity.magnitude;
+        if (impactSpeed < _flightSpell.levitationImpactMinSpeed) return;
 
         var shield = GetComponent<NPCShieldController>() ?? GetComponentInParent<NPCShieldController>();
         if (shield != null && shield.IsDefending)
@@ -396,12 +423,12 @@ public class LevitationTarget : MonoBehaviour
             return;
         }
 
-        float damage   = _flightSpell.levitationImpactDamage * (speed / _flightSpell.levitationImpactMinSpeed);
-        var   dmg      = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
+        float damage = _flightSpell.levitationImpactDamage * (impactSpeed / _flightSpell.levitationImpactMinSpeed);
+        var   dmg    = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
         if (dmg != null && dmg.IsAlive)
         {
             dmg.TakeDamage(damage);
-            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto pared → {speed:F1}m/s, daño={damage:F0}");
+            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto pared → {impactSpeed:F1}m/s, daño={damage:F0}");
         }
 
         if (impactVFXPrefab != null)
