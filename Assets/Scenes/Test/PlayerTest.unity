@@ -11102,7 +11102,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3140315364509225030, guid: 36924056fa6866d4eab5114387da8e1e, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3140315364509225030, guid: 36924056fa6866d4eab5114387da8e1e, type: 3}
       propertyPath: m_NavMeshLayer
@@ -32770,7 +32770,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8982348545350102038, guid: 2ba66257fd3d5c540842112a926d7e12, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1476930062}
   m_SourcePrefab: {fileID: 100100000, guid: 2ba66257fd3d5c540842112a926d7e12, type: 3}
 --- !u!1001 &1439308338
 PrefabInstance:
@@ -32786,7 +32789,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 961578480728707551, guid: f4c8f5133eba8a3468ab201627819996, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 961578480728707551, guid: f4c8f5133eba8a3468ab201627819996, type: 3}
       propertyPath: m_NavMeshLayer
@@ -33116,6 +33119,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1450884862}
   m_CullTransparentMesh: 1
+--- !u!1 &1476930055 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8982348545350102038, guid: 2ba66257fd3d5c540842112a926d7e12, type: 3}
+  m_PrefabInstance: {fileID: 1432671742}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1476930062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1476930055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48c589b8b5d5453ca5d4f543e87e91cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevitationTarget
+  canBeLevitated: 1
+  pullForceMultiplier: 1
+  pushForceMultiplier: 0
+  levitationAnimState: LevelUp_NoWeapon
+  holdPauseNormalizedTime: 0.5
+  liftSpeed: 3
+  hitAnimState: Hit
+  hitAnimDuration: 0.4
+  disableNavMeshDuringLevitation: 1
+  levitationDrag: 2
+  levitationVFXPrefab: {fileID: 6403252182692130976, guid: 4e12b3c53c0f8ee4da83655d8d2770d5, type: 3}
+  impactVFXPrefab: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
+  impactVFXLifetime: 2
+  vfxOffset: {x: 0, y: 1, z: 0}
+  vfxScale: {x: 1, y: 1, z: 1}
+  vfxFollowsTarget: 1
+  showDebugLogs: 0
 --- !u!1001 &1487270153
 PrefabInstance:
   m_ObjectHideFlags: 0

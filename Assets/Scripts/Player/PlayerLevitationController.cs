@@ -1,14 +1,17 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Invector.vCharacterController;
 using Sendero.Core.Feedback;
 
 /// <summary>
-/// Controlador de levitación del jugador.
-/// Permite al jugador atraer NPCs mientras mantiene presionado el botón de magia,
-/// y repelerlos al soltarlo.
-/// 
-/// Funciona solo con hechizos de tipo MagicKind.Levitation equipados en slots izquierdo o derecho.
+/// Controlador de levitación del jugador (y de Liam como aliado IA).
+///
+/// Flujo:
+///   1. Mantener el botón de magia → agarra los NPCs del cono y los levita (con drenaje de maná).
+///   2. Soltar el botón → los lanza hacia adelante.
+///
+/// Para la IA aliada: llamar TriggerAILevitation(slot, spell).
 /// </summary>
 [DisallowMultipleComponent]
 public class PlayerLevitationController : MonoBehaviour
@@ -19,682 +22,401 @@ public class PlayerLevitationController : MonoBehaviour
     [SerializeField] private ManaPool manaPool;
     [SerializeField] private Animator animator;
     [SerializeField] private PlayerTargeting targeting;
-    
+
     [Header("Configuración de Animación")]
-    [Tooltip("Frame normalizado (0-1) en el que pausar la animación durante hold.")]
+    [Tooltip("Frame normalizado (0-1) en el que pausar la animación durante el hold.")]
     [SerializeField] private float holdPauseNormalizedTime = 0.3f;
-    
+
     [Header("Configuración de Detección")]
     [Tooltip("Offset vertical desde el transform para el origen del cono de detección.")]
     [SerializeField] private float detectionHeightOffset = 1.2f;
-    
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
     [SerializeField] private bool showDebugGizmos = false;
-    
-    // Estado actual de levitación
-    private bool _isLevitating;
+
+    // ── Estado ──────────────────────────────────────────────────────────────
+    private enum LevitationPhase { Idle, Levitating }
+    private LevitationPhase _phase = LevitationPhase.Idle;
+
     private MagicSlot _activeSlot;
     private MagicSpellSO _activeSpell;
-    private List<LevitationTarget> _currentTargets = new List<LevitationTarget>();
-    
-    // Tiempo de inicio de levitación (para efectos y cálculos)
+    private readonly List<LevitationTarget> _currentTargets = new List<LevitationTarget>();
     private float _levitationStartTime;
-    
-    // Layer del Animator para animaciones de magia
-    private int _upperBodyLayerIndex = 1;
-    
-    // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
-    private Collider[] _levitationTargetBuffer = new Collider[16];
-    
-    // Propiedades de reflexión cacheadas para GamepadInputReader
+
+    // Evita re-entrar mientras el botón sigue pulsado
+    private bool _leftButtonWasDown;
+    private bool _rightButtonWasDown;
+
+    // ── Animación ───────────────────────────────────────────────────────────
+    private readonly int _upperBodyLayerIndex = 1;
+    private string _currentMagicStatePath;
+    private int _currentMagicStateHash;
+    private Coroutine _animationCoroutine;
+
+    // ── VFX ─────────────────────────────────────────────────────────────────
+    private GameObject _holdVFXInstance;
+    private readonly List<GameObject> _rangeIndicatorInstances = new List<GameObject>();
+
+    // ── Buffer Physics ───────────────────────────────────────────────────────
+    private readonly Collider[] _levitationTargetBuffer = new Collider[16];
+
+    // ── Reflexión (bug I7 pendiente — sustituir por acceso directo) ──────────
     private static System.Type _gamepadReaderType;
-    private static System.Reflection.PropertyInfo _leftPressedProp;
     private static System.Reflection.PropertyInfo _leftHeldProp;
     private static System.Reflection.PropertyInfo _leftReleasedProp;
-    private static System.Reflection.PropertyInfo _rightPressedProp;
     private static System.Reflection.PropertyInfo _rightHeldProp;
     private static System.Reflection.PropertyInfo _rightReleasedProp;
     private static bool _reflectionInitialized;
-    
-    // Flags para evitar re-iniciar mientras el botón está mantenido
-    private bool _leftButtonWasDown;
-    private bool _rightButtonWasDown;
-    
-    // VFX activos
-    private GameObject _holdVFXInstance;
-    private List<GameObject> _rangeIndicatorInstances = new List<GameObject>();
-    
-    public bool IsLevitating => _isLevitating;
+
+    // ── API pública ──────────────────────────────────────────────────────────
+    public bool IsLevitating => _phase == LevitationPhase.Levitating;
     public MagicSlot ActiveSlot => _activeSlot;
     public IReadOnlyList<LevitationTarget> CurrentTargets => _currentTargets;
-    
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        _gamepadReaderType     = null;
+        _leftHeldProp          = null;
+        _leftReleasedProp      = null;
+        _rightHeldProp         = null;
+        _rightReleasedProp     = null;
+        _reflectionInitialized = false;
+    }
+#endif
+
+    // ────────────────────────────────────────────────────────────────────────
     void Awake()
     {
-        // Auto-buscar componentes si no están asignados
         if (!controller) controller = GetComponentInParent<vThirdPersonController>();
         if (!magicCaster) magicCaster = GetComponentInParent<MagicCaster>();
-        if (!manaPool) manaPool = GetComponentInParent<ManaPool>();
-        if (!animator) animator = GetComponentInParent<Animator>();
-        if (!targeting) targeting = GetComponentInParent<PlayerTargeting>();
-        
+        if (!manaPool)    manaPool    = GetComponentInParent<ManaPool>();
+        if (!animator)    animator    = GetComponentInParent<Animator>();
+        if (!targeting)   targeting   = GetComponentInParent<PlayerTargeting>();
+
         InitializeReflection();
     }
-    
+
     void Start()
     {
-        // Verificar configuración y mostrar advertencias
         if (!magicCaster)
-        {
-            Debug.LogError("[PlayerLevitationController] No se encontró MagicCaster! El sistema de levitación no funcionará.");
-            return;
-        }
-        
-        // Verificar si hay algún hechizo de levitación equipado
-        var leftSpell = magicCaster.GetSpellForSlot(MagicSlot.Left);
-        var rightSpell = magicCaster.GetSpellForSlot(MagicSlot.Right);
-        
-        bool hasLevitationLeft = leftSpell != null && leftSpell.kind == MagicKind.Levitation;
-        bool hasLevitationRight = rightSpell != null && rightSpell.kind == MagicKind.Levitation;
-        
-        if (showDebugLogs)
-        {
-            //Debug.Log($"[PlayerLevitationController] Inicializado:");
-            //Debug.Log($"  - MagicCaster: {(magicCaster ? "OK" : "MISSING")}");
-            //Debug.Log($"  - ManaPool: {(manaPool ? "OK" : "MISSING")}");
-            //Debug.Log($"  - Animator: {(animator ? "OK" : "MISSING")}");
-            //Debug.Log($"  - Left Spell: {(leftSpell ? leftSpell.displayName : "None")} (Levitation: {hasLevitationLeft})");
-            //Debug.Log($"  - Right Spell: {(rightSpell ? rightSpell.displayName : "None")} (Levitation: {hasLevitationRight})");
-            //Debug.Log($"  - Reflexión InputReader: {(_gamepadReaderType != null ? "OK" : "FAILED")}");
-            //Debug.Log($"  - LeftHeldProp: {(_leftHeldProp != null ? "OK" : "MISSING")}");
-            //Debug.Log($"  - RightHeldProp: {(_rightHeldProp != null ? "OK" : "MISSING")}");
-        }
-        
-        // Contar LevitationTargets en la escena
-        var targets = FindObjectsByType<LevitationTarget>(FindObjectsSortMode.None);
-        //if (showDebugLogs) Debug.Log($"[PlayerLevitationController] LevitationTargets en escena: {targets.Length}");
+            Debug.LogError("[PlayerLevitationController] No se encontró MagicCaster.");
     }
-    
-    void InitializeReflection()
-    {
-        if (_reflectionInitialized) return;
-        _reflectionInitialized = true;
-        
-        try
-        {
-            _gamepadReaderType = System.Type.GetType("Core.GamepadInputReader, Assembly-CSharp");
-            if (_gamepadReaderType == null)
-            {
-                Debug.LogError("[PlayerLevitationController] No se pudo encontrar Core.GamepadInputReader.");
-                return;
-            }
-            
-            _leftPressedProp = _gamepadReaderType.GetProperty("AttackMagicLeftPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _leftHeldProp = _gamepadReaderType.GetProperty("AttackMagicLeftHeld", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _leftReleasedProp = _gamepadReaderType.GetProperty("AttackMagicLeftReleased", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _rightPressedProp = _gamepadReaderType.GetProperty("AttackMagicRightPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _rightHeldProp = _gamepadReaderType.GetProperty("AttackMagicRightHeld", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _rightReleasedProp = _gamepadReaderType.GetProperty("AttackMagicRightReleased", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[PlayerLevitationController] Error inicializando reflexión: {ex.Message}");
-        }
-    }
-    
+
     void Update()
     {
-        // Si estamos levitando, actualizar el estado
-        if (_isLevitating)
+        if (_phase == LevitationPhase.Idle)
+            CheckForLevitationStart();
+        else
         {
             UpdateLevitation();
             CheckForRelease();
         }
-        else
-        {
-            // Verificar si hay que iniciar levitación (botón pressed + hechizo de levitación)
-            CheckForLevitationStart();
-        }
     }
-    
-    /// <summary>
-    /// Verifica si el jugador está presionando un botón de magia con un hechizo de levitación equipado.
-    /// </summary>
+
+    // ── Inicio de levitación ─────────────────────────────────────────────────
+
     void CheckForLevitationStart()
     {
         if (!magicCaster) return;
-        
-        bool leftHeld = GetLeftHeld();
+
+        bool leftHeld  = GetLeftHeld();
         bool rightHeld = GetRightHeld();
-        
-        // Trackear estado de botones para evitar re-iniciar
-        if (!leftHeld) _leftButtonWasDown = false;
+
+        if (!leftHeld)  _leftButtonWasDown  = false;
         if (!rightHeld) _rightButtonWasDown = false;
-        
-        // Verificar slot izquierdo (solo si el botón acaba de presionarse)
+
         var leftSpell = magicCaster.GetSpellForSlot(MagicSlot.Left);
-        if (leftSpell != null && leftSpell.kind == MagicKind.Levitation)
+        if (leftSpell != null && leftSpell.kind == MagicKind.Levitation
+            && leftHeld && !_leftButtonWasDown)
         {
-            if (showDebugLogs && leftHeld) Debug.Log($"[Levitation] Botón izquierdo mantenido, leftButtonWasDown={_leftButtonWasDown}");
-            
-            if (leftHeld && !_leftButtonWasDown)
-            {
-                _leftButtonWasDown = true;
-                if (showDebugLogs) Debug.Log($"[Levitation] Intentando iniciar levitación con slot LEFT");
-                if (TryStartLevitation(MagicSlot.Left, leftSpell))
-                    return;
-            }
+            _leftButtonWasDown = true;
+            TryStartLevitation(MagicSlot.Left, leftSpell);
+            return;
         }
-        
-        // Verificar slot derecho (solo si el botón acaba de presionarse)
+
         var rightSpell = magicCaster.GetSpellForSlot(MagicSlot.Right);
-        if (rightSpell != null && rightSpell.kind == MagicKind.Levitation)
+        if (rightSpell != null && rightSpell.kind == MagicKind.Levitation
+            && rightHeld && !_rightButtonWasDown)
         {
-            if (showDebugLogs && rightHeld) Debug.Log($"[Levitation] Botón derecho mantenido, rightButtonWasDown={_rightButtonWasDown}");
-            
-            if (rightHeld && !_rightButtonWasDown)
-            {
-                _rightButtonWasDown = true;
-                if (showDebugLogs) Debug.Log($"[Levitation] Intentando iniciar levitación con slot RIGHT");
-                TryStartLevitation(MagicSlot.Right, rightSpell);
-            }
+            _rightButtonWasDown = true;
+            TryStartLevitation(MagicSlot.Right, rightSpell);
         }
     }
-    
-    /// <summary>
-    /// Intenta iniciar la levitación con el slot y hechizo especificados.
-    /// </summary>
+
     bool TryStartLevitation(MagicSlot slot, MagicSpellSO spell)
     {
-        // Verificar si podemos lanzar el hechizo (maná, cooldown, etc.)
-        if (!magicCaster.CanCastSpell(slot))
-        {
-            if (showDebugLogs) Debug.Log($"[Levitation] No se puede iniciar levitación: CanCastSpell false para slot {slot}");
-            return false;
-        }
-        
-        // Consumir maná
+        if (!magicCaster.CanCastSpell(slot)) return false;
+
         if (manaPool != null && !manaPool.TrySpend(spell.manaCost))
         {
-            if (showDebugLogs) Debug.Log($"[Levitation] Maná insuficiente para {spell.displayName}");
+            if (showDebugLogs) Debug.Log("[Levitation] Maná insuficiente");
             return false;
         }
-        
-        // Encontrar targets válidos en el cono de detección
+
         var targets = FindTargetsInCone(spell);
-        if (targets.Count == 0)
-        {
-            if (showDebugLogs) Debug.Log("[Levitation] No hay targets válidos en el cono de detección");
-            // Aún así iniciamos la levitación para mostrar la animación
-        }
-        
-        // Iniciar levitación
-        _isLevitating = true;
-        _activeSlot = slot;
-        _activeSpell = spell;
-        _currentTargets = targets;
+
+        _phase               = LevitationPhase.Levitating;
+        _activeSlot          = slot;
+        _activeSpell         = spell;
         _levitationStartTime = Time.time;
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] Iniciando levitación con {targets.Count} targets");
-        
-        // Reproducir animación de magia y pausarla
+
+        _currentTargets.Clear();
+        _currentTargets.AddRange(targets);
+
+        foreach (var t in targets)
+            t.BeginLevitation(this, spell);
+
         PlayHoldAnimation(slot);
-        
-        // Notificar a los targets que están siendo levitados
-        foreach (var target in _currentTargets)
-        {
-            target.BeginLevitation(this, spell);
-        }
-        
-        // Instanciar VFX de hold en el jugador
         SpawnHoldVFX(spell);
-        
-        // Instanciar indicadores de rango
         SpawnRangeIndicators(spell);
-        
-        // Camera shake al capturar (solo si capturamos al menos un NPC)
-        if (_currentTargets.Count > 0)
-        {
+
+        if (targets.Count > 0)
             FeedbackService.CameraShake(spell.levitationCaptureShakeIntensity, spell.levitationCaptureShakeDuration);
-        }
-        
-        // Reproducir SFX de cast si está configurado
+
         if (!string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
-        {
             AudioService.Instance.PlaySFX(spell.castSFXKey);
-        }
-        
+
+        if (showDebugLogs) Debug.Log($"[Levitation] Iniciando con {targets.Count} objetivos");
         return true;
     }
-    
-    /// <summary>
-    /// Actualiza la lógica de levitación mientras el botón está presionado.
-    /// </summary>
+
+    // ── Actualización durante el hold ────────────────────────────────────────
+
     void UpdateLevitation()
     {
         if (_activeSpell == null) return;
-        
+
         float elapsed = Time.time - _levitationStartTime;
-        Vector3 playerPos = transform.position;
-        Vector3 playerForward = transform.forward;
-        
-        // Drenar maná después del delay inicial
+
+        // Drenaje de maná tras el delay inicial
         if (elapsed > _activeSpell.levitationDrainDelay && manaPool != null)
         {
-            float manaToDrain = _activeSpell.levitationManaDrainPerSecond * Time.deltaTime;
-            
-            // Verificar si hay suficiente maná
-            if (manaPool.Current < manaToDrain)
+            float drain = _activeSpell.levitationManaDrainPerSecond * Time.deltaTime;
+            if (manaPool.Current < drain)
             {
-                // Sin maná - cancelar levitación (el NPC cae sin repulsión)
-                if (showDebugLogs) Debug.Log("[Levitation] Sin maná - cancelando levitación");
                 CancelLevitationNoMana();
                 return;
             }
-            
-            // Drenar maná
-            manaPool.TrySpend(manaToDrain);
+            manaPool.TrySpend(drain);
         }
-        
-        // Posición objetivo: delante del jugador a cierta distancia
-        float holdDistance = _activeSpell.levitationHoldDistance > 0 ? _activeSpell.levitationHoldDistance : 3f;
-        Vector3 targetHoldPosition = playerPos + playerForward * holdDistance;
-        
-        // Actualizar cada target levitado
+
+        Vector3 holdPos = transform.position + transform.forward * _activeSpell.levitationHoldDistance;
+
         for (int i = _currentTargets.Count - 1; i >= 0; i--)
         {
-            var target = _currentTargets[i];
-            if (target == null || !target.IsBeingLevitated)
+            var t = _currentTargets[i];
+            if (t == null || !t.IsBeingLevitated)
             {
                 _currentTargets.RemoveAt(i);
                 continue;
             }
-            
-            // Pasar la posición objetivo directamente para que el NPC siga al jugador como un globo
-            target.UpdateLevitation(
-                _activeSpell,
-                targetHoldPosition,
-                _activeSpell.levitationPullForce
-            );
+            t.UpdateLevitation(_activeSpell, holdPos, _activeSpell.levitationPullForce);
         }
     }
-    
-    /// <summary>
-    /// Cancela la levitación por falta de maná (el NPC cae sin fuerza de repulsión).
-    /// </summary>
-    void CancelLevitationNoMana()
-    {
-        if (!_isLevitating) return;
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] Cancelando por falta de maná, {_currentTargets.Count} targets");
-        
-        // Los targets caen sin repulsión
-        foreach (var target in _currentTargets)
-        {
-            if (target != null)
-                target.CancelLevitation();
-        }
-        
-        // Destruir VFX
-        DestroyHoldVFX();
-        DestroyRangeIndicators();
-        
-        // Detener la animación del jugador
-        if (_animationCoroutine != null)
-        {
-            StopCoroutine(_animationCoroutine);
-            _animationCoroutine = null;
-        }
-        
-        // Bajar el peso del layer de animación
-        if (animator != null)
-        {
-            StartCoroutine(Co_LowerLayerWeight());
-        }
-        
-        // Resetear estado
-        _isLevitating = false;
-        _activeSpell = null;
-        _currentTargets.Clear();
-    }
-    
-    System.Collections.IEnumerator Co_LowerLayerWeight()
-    {
-        float t = 0f;
-        float duration = 0.22f;
-        float startWeight = animator != null ? animator.GetLayerWeight(_upperBodyLayerIndex) : 0f;
-        
-        while (t < duration && animator != null)
-        {
-            t += Time.deltaTime;
-            animator.SetLayerWeight(_upperBodyLayerIndex, Mathf.Lerp(startWeight, 0f, t / duration));
-            yield return null;
-        }
-        
-        if (animator != null)
-            animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
-    }
-    
-    /// <summary>
-    /// Verifica si el jugador ha soltado el botón para finalizar la levitación.
-    /// </summary>
+
+    // ── Lanzamiento al soltar ────────────────────────────────────────────────
+
     void CheckForRelease()
     {
-        bool released = (_activeSlot == MagicSlot.Left && GetLeftReleased()) ||
-                       (_activeSlot == MagicSlot.Right && GetRightReleased());
-        
-        // También verificar si ya no está presionado (por si se pierde el release)
-        bool stillHeld = (_activeSlot == MagicSlot.Left && GetLeftHeld()) ||
-                        (_activeSlot == MagicSlot.Right && GetRightHeld());
-        
+        bool released  = (_activeSlot == MagicSlot.Left  && GetLeftReleased()) ||
+                         (_activeSlot == MagicSlot.Right && GetRightReleased());
+        bool stillHeld = (_activeSlot == MagicSlot.Left  && GetLeftHeld()) ||
+                         (_activeSlot == MagicSlot.Right && GetRightHeld());
+
         if (released || !stillHeld)
-        {
             EndLevitation();
-        }
     }
-    
-    /// <summary>
-    /// Finaliza la levitación y aplica la repulsión.
-    /// </summary>
+
     void EndLevitation()
     {
-        if (!_isLevitating) return;
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] Finalizando levitación, repeliendo {_currentTargets.Count} targets");
-        
-        // Calcular dirección de repulsión (desde el jugador hacia afuera)
-        Vector3 playerPos = transform.position;
-        Vector3 playerForward = transform.forward;
-        
-        // Camera shake al soltar (más intenso que al capturar)
+        if (_phase != LevitationPhase.Levitating) return;
+
+        Vector3 pushDir = transform.forward;
+        pushDir.y = 0f;
+        if (pushDir.sqrMagnitude < 0.01f) pushDir = Vector3.forward;
+        pushDir.Normalize();
+
         if (_currentTargets.Count > 0 && _activeSpell != null)
-        {
             FeedbackService.CameraShake(_activeSpell.levitationReleaseShakeIntensity, _activeSpell.levitationReleaseShakeDuration);
-        }
-        
-        // Notificar a los targets que la levitación terminó y aplicar repulsión
-        foreach (var target in _currentTargets)
+
+        foreach (var t in _currentTargets)
         {
-            if (target == null) continue;
-            
-            // Dirección: el forward del jugador (hacia donde apunta la cámara/personaje)
-            Vector3 pushDir = playerForward;
-            pushDir.y = 0;
-            if (pushDir.sqrMagnitude < 0.01f)
-                pushDir = Vector3.forward;
-            pushDir = pushDir.normalized;
-            
-            // Instanciar VFX de release en la posición del NPC
-            SpawnReleaseVFX(target.transform.position);
-            
-            target.EndLevitation(_activeSpell, pushDir, _activeSpell.levitationPushForce);
+            if (t == null) continue;
+            SpawnReleaseVFX(t.transform.position);
+            t.EndLevitation(_activeSpell, pushDir, _activeSpell.levitationPushForce);
         }
-        
-        // Destruir VFX del jugador
+
         DestroyHoldVFX();
         DestroyRangeIndicators();
-        
-        // Reproducir la parte final de la animación
         PlayReleaseAnimation();
-        
-        // Resetear estado
-        _isLevitating = false;
+
+        _phase = LevitationPhase.Idle;
+        _activeSpell = null;
+        _currentTargets.Clear();
+
+        if (showDebugLogs) Debug.Log("[Levitation] Lanzamiento ejecutado");
+    }
+
+    void CancelLevitationNoMana()
+    {
+        if (_phase != LevitationPhase.Levitating) return;
+
+        foreach (var t in _currentTargets)
+        {
+            if (t != null) t.CancelLevitation();
+        }
+
+        DestroyHoldVFX();
+        DestroyRangeIndicators();
+        StopHoldAnimationCoroutine();
+        StartCoroutine(Co_LowerLayerWeight());
+
+        _phase = LevitationPhase.Idle;
         _activeSpell = null;
         _currentTargets.Clear();
     }
-    
+
+    // ── API para IA aliada ───────────────────────────────────────────────────
+
     /// <summary>
-    /// Busca targets válidos dentro del cono de detección.
+    /// Ejecuta levitación desde la IA aliada. Si hay objetivos en el cono,
+    /// los levita hasta que se llame EndLevitation (o se agote el maná).
+    /// Devuelve true si se inició con éxito.
     /// </summary>
+    public bool TriggerAILevitation(MagicSlot slot, MagicSpellSO spell)
+    {
+        if (_phase != LevitationPhase.Idle) return false;
+        if (spell == null || spell.kind != MagicKind.Levitation) return false;
+        return TryStartLevitation(slot, spell);
+    }
+
+    /// <summary>
+    /// Fuerza el lanzamiento (para la IA, que decide cuándo soltar).
+    /// </summary>
+    public void AIEndLevitation() => EndLevitation();
+
+    // ── Detección de objetivos ───────────────────────────────────────────────
+
     List<LevitationTarget> FindTargetsInCone(MagicSpellSO spell)
     {
-        var results = new List<LevitationTarget>();
-        
-        Vector3 origin = transform.position + Vector3.up * detectionHeightOffset;
-        Vector3 forward = transform.forward;
-        float range = spell.levitationRange;
+        var results   = new List<LevitationTarget>();
+        Vector3 origin  = transform.position + Vector3.up * detectionHeightOffset;
         float halfAngle = spell.levitationAngle * 0.5f;
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] Buscando targets - Rango: {range}, Ángulo: {spell.levitationAngle}°, Layers: {spell.levitationTargetLayers.value}");
-        
-        // Buscar todos los colliders en el rango
-        int hitCount = Physics.OverlapSphereNonAlloc(origin, range, _levitationTargetBuffer, spell.levitationTargetLayers); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] Encontrados {hitCount} colliders en el rango");
-        
-        for (int i = 0; i < hitCount; i++)
+
+        int count = Physics.OverlapSphereNonAlloc(origin, spell.levitationRange, _levitationTargetBuffer, spell.levitationTargetLayers);
+
+        for (int i = 0; i < count; i++)
         {
-            var col = _levitationTargetBuffer[i];
-            
-            // Verificar si tiene componente LevitationTarget
-            var target = col.GetComponentInParent<LevitationTarget>();
-            if (target == null)
-            {
-                if (showDebugLogs) Debug.Log($"[Levitation] Collider {col.name} no tiene LevitationTarget");
-                continue;
-            }
-            
-            if (!target.CanBeLevitated)
-            {
-                if (showDebugLogs) Debug.Log($"[Levitation] {target.name} no puede ser levitado (CanBeLevitated=false)");
-                continue;
-            }
-            
-            // Verificar ángulo
-            Vector3 toTarget = (target.transform.position - origin);
-            toTarget.y = 0;
-            
-            float angle = Vector3.Angle(forward, toTarget);
-            if (angle > halfAngle)
-            {
-                if (showDebugLogs) Debug.Log($"[Levitation] {target.name} fuera del cono (ángulo: {angle}° > {halfAngle}°)");
-                continue;
-            }
-            
-            // Target válido
+            var target = _levitationTargetBuffer[i].GetComponentInParent<LevitationTarget>();
+            if (target == null || !target.CanBeLevitated) continue;
+
+            Vector3 toTarget = target.transform.position - origin;
+            toTarget.y = 0f;
+            if (Vector3.Angle(transform.forward, toTarget) > halfAngle) continue;
+
             if (!results.Contains(target))
-            {
-                if (showDebugLogs) Debug.Log($"[Levitation] ✓ Target válido encontrado: {target.name}");
                 results.Add(target);
-            }
         }
-        
+
         return results;
     }
-    
-    /// <summary>
-    /// Reproduce la animación de magia y la pausa en el frame de "preparación".
-    /// Usa playback manual para no afectar la locomoción.
-    /// </summary>
+
+    // ── Animación ────────────────────────────────────────────────────────────
+
     void PlayHoldAnimation(MagicSlot slot)
     {
         if (animator == null) return;
-        
-        // Determinar el estado de animación según el slot
+
         _currentMagicStatePath = slot == MagicSlot.Left ? "UpperBody.Magic.MagicLeft" : "UpperBody.Magic.MagicRight";
         _currentMagicStateHash = Animator.StringToHash(_currentMagicStatePath);
-        
-        // Subir el peso del layer superior
+
         animator.SetLayerWeight(_upperBodyLayerIndex, 1f);
-        
-        // Reproducir la animación empezando desde 0
         animator.Play(_currentMagicStatePath, _upperBodyLayerIndex, 0f);
-        
-        // Iniciar corrutina para controlar el playback manualmente
-        if (_animationCoroutine != null) StopCoroutine(_animationCoroutine);
-        _animationCoroutine = StartCoroutine(Co_HoldAnimationPlayback());
     }
-    
-    // Variables para control de animación manual
-    private string _currentMagicStatePath;
-    private int _currentMagicStateHash;
-    private Coroutine _animationCoroutine;
-    private bool _animationPausedAtHold;
-    
-    System.Collections.IEnumerator Co_HoldAnimationPlayback()
-    {
-        if (animator == null) yield break;
-        
-        // Esperar a que entre en el estado
-        int maxWaitFrames = 10;
-        int waited = 0;
-        while (animator != null && waited < maxWaitFrames)
-        {
-            var info = animator.GetCurrentAnimatorStateInfo(_upperBodyLayerIndex);
-            if (info.fullPathHash == _currentMagicStateHash || info.shortNameHash == _currentMagicStateHash)
-                break;
-            waited++;
-            yield return null;
-        }
-        
-        if (animator == null) yield break;
-        
-        // Reproducir hasta el punto de pausa
-        while (animator != null && _isLevitating)
-        {
-            var stateInfo = animator.GetCurrentAnimatorStateInfo(_upperBodyLayerIndex);
-            
-            // Si ya pasamos el punto de pausa, mantener en ese punto
-            if (stateInfo.normalizedTime >= holdPauseNormalizedTime)
-            {
-                // Mantener la animación en el punto de pausa reescribiendo el tiempo
-                animator.Play(_currentMagicStatePath, _upperBodyLayerIndex, holdPauseNormalizedTime);
-                _animationPausedAtHold = true;
-            }
-            
-            yield return null;
-        }
-    }
-    
+
     /// <summary>
-    /// Continúa la animación para la fase de release.
+    /// Mantiene la pose de hold en el upper body sin tocar la velocidad global del Animator.
+    /// Ejecutar en LateUpdate garantiza que el override llega DESPUÉS de que el Animator
+    /// procese sus layers internamente, por lo que el frame renderizado siempre muestra
+    /// holdPauseNormalizedTime sin el jitter que produce hacerlo en un coroutine de Update.
     /// </summary>
-    void PlayReleaseAnimation()
+    void LateUpdate()
     {
-        if (animator == null) return;
-        
-        // Detener la corrutina de hold si está corriendo
+        if (_phase != LevitationPhase.Levitating) return;
+        if (animator == null || string.IsNullOrEmpty(_currentMagicStatePath)) return;
+
+        var info = animator.GetCurrentAnimatorStateInfo(_upperBodyLayerIndex);
+        bool inRightState = info.fullPathHash  == _currentMagicStateHash
+                         || info.shortNameHash == _currentMagicStateHash;
+        if (!inRightState || info.normalizedTime < holdPauseNormalizedTime) return;
+
+        animator.Play(_currentMagicStatePath, _upperBodyLayerIndex, holdPauseNormalizedTime);
+        // Forzar re-evaluación inmediata para este frame (sin avanzar tiempo)
+        animator.Update(0f);
+    }
+
+    void StopHoldAnimationCoroutine()
+    {
         if (_animationCoroutine != null)
         {
             StopCoroutine(_animationCoroutine);
             _animationCoroutine = null;
         }
-        
-        // Continuar la animación desde el punto de pausa hasta el final
+    }
+
+    void PlayReleaseAnimation()
+    {
+        // Al cambiar _phase a Idle, LateUpdate deja de sobreescribir → la animación
+        // continúa desde holdPauseNormalizedTime hacia el final naturalmente.
+        if (animator == null) return;
+
         if (!string.IsNullOrEmpty(_currentMagicStatePath))
-        {
-            // Reproducir desde el punto de pausa - la animación continuará naturalmente
             animator.Play(_currentMagicStatePath, _upperBodyLayerIndex, holdPauseNormalizedTime);
-        }
-        
-        _animationPausedAtHold = false;
-        
-        // Iniciar corrutina para bajar el peso del layer cuando termine
+
         StartCoroutine(Co_WaitAnimationEndAndLowerLayer());
     }
-    
-    System.Collections.IEnumerator Co_WaitAnimationEndAndLowerLayer()
+
+    IEnumerator Co_LowerLayerWeight()
     {
-        if (animator == null) yield break;
-        
-        // Esperar a que la animación termine (desde holdPauseNormalizedTime hasta 1.0)
-        float remainingNormalized = 1f - holdPauseNormalizedTime;
-        
-        // Obtener la duración del clip de animación
-        float clipDuration = 0.5f; // Duración estimada por defecto
-        var stateInfo = animator.GetCurrentAnimatorStateInfo(_upperBodyLayerIndex);
-        if (stateInfo.length > 0)
-            clipDuration = stateInfo.length;
-        
-        float waitTime = clipDuration * remainingNormalized;
-        yield return new WaitForSeconds(waitTime + 0.1f); // +0.1s de margen
-        
-        // Bajar suavemente el peso del layer
-        float t = 0f;
-        float duration = 0.22f;
-        float startWeight = animator != null ? animator.GetLayerWeight(_upperBodyLayerIndex) : 0f;
-        
+        float t = 0f, duration = 0.22f;
+        float start = animator != null ? animator.GetLayerWeight(_upperBodyLayerIndex) : 0f;
+
         while (t < duration && animator != null)
         {
             t += Time.deltaTime;
-            animator.SetLayerWeight(_upperBodyLayerIndex, Mathf.Lerp(startWeight, 0f, t / duration));
+            animator.SetLayerWeight(_upperBodyLayerIndex, Mathf.Lerp(start, 0f, t / duration));
             yield return null;
         }
-        
-        if (animator != null)
-            animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
+
+        if (animator != null) animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
     }
-    
-    // Helpers para leer inputs via reflexión
-    bool GetLeftHeld()
+
+    IEnumerator Co_WaitAnimationEndAndLowerLayer()
     {
-        if (_leftHeldProp == null) return false;
-        return (bool)_leftHeldProp.GetValue(null);
+        if (animator == null) yield break;
+
+        float clipDuration = 0.5f;
+        var stateInfo = animator.GetCurrentAnimatorStateInfo(_upperBodyLayerIndex);
+        if (stateInfo.length > 0) clipDuration = stateInfo.length;
+
+        yield return new WaitForSeconds(clipDuration * (1f - holdPauseNormalizedTime) + 0.1f);
+
+        yield return StartCoroutine(Co_LowerLayerWeight());
     }
-    
-    bool GetLeftReleased()
-    {
-        if (_leftReleasedProp == null) return false;
-        return (bool)_leftReleasedProp.GetValue(null);
-    }
-    
-    bool GetRightHeld()
-    {
-        if (_rightHeldProp == null) return false;
-        return (bool)_rightHeldProp.GetValue(null);
-    }
-    
-    bool GetRightReleased()
-    {
-        if (_rightReleasedProp == null) return false;
-        return (bool)_rightReleasedProp.GetValue(null);
-    }
-    
-    void OnDisable()
-    {
-        // Asegurar que la levitación se cancele si el componente se desactiva
-        if (_isLevitating)
-        {
-            foreach (var target in _currentTargets)
-            {
-                if (target != null)
-                    target.CancelLevitation();
-            }
-            
-            _isLevitating = false;
-            _currentTargets.Clear();
-            
-            // Limpiar VFX
-            DestroyHoldVFX();
-            DestroyRangeIndicators();
-            
-            if (animator != null)
-            {
-                animator.speed = 1f;
-                animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
-            }
-        }
-    }
-    
-    #region VFX Management
-    
-    /// <summary>
-    /// Instancia el VFX de hold en el jugador (manos/cuerpo).
-    /// </summary>
+
+    // ── VFX ─────────────────────────────────────────────────────────────────
+
     void SpawnHoldVFX(MagicSpellSO spell)
     {
         if (spell.levitationHoldVFX == null) return;
-        
         _holdVFXInstance = Instantiate(spell.levitationHoldVFX, transform.position, transform.rotation);
         _holdVFXInstance.transform.SetParent(transform);
-        _holdVFXInstance.transform.localPosition = Vector3.up * 1.2f; // A la altura del pecho
-        
-        if (showDebugLogs) Debug.Log("[Levitation] VFX de hold instanciado");
+        _holdVFXInstance.transform.localPosition = Vector3.up * 1.2f;
     }
-    
-    /// <summary>
-    /// Destruye el VFX de hold del jugador.
-    /// </summary>
+
     void DestroyHoldVFX()
     {
         if (_holdVFXInstance != null)
@@ -703,71 +425,95 @@ public class PlayerLevitationController : MonoBehaviour
             _holdVFXInstance = null;
         }
     }
-    
-    /// <summary>
-    /// Instancia los indicadores de rango (círculos de purpurina) en el cono de detección.
-    /// </summary>
+
     void SpawnRangeIndicators(MagicSpellSO spell)
     {
         if (spell.levitationRangeIndicatorVFX == null) return;
-        
-        DestroyRangeIndicators(); // Limpiar anteriores si los hay
-        
+        DestroyRangeIndicators();
+
         float range = spell.levitationRange;
-        int count = Mathf.Max(1, spell.rangeIndicatorCount);
-        float spacing = range / count;
-        
+        int count   = Mathf.Max(1, spell.rangeIndicatorCount);
+
         for (int i = 0; i < count; i++)
         {
-            float distance = spacing * (i + 1);
-            Vector3 spawnPos = transform.position + transform.forward * distance;
-            spawnPos.y = transform.position.y + 0.1f; // Ligeramente elevado del suelo
-            
-            var indicator = Instantiate(spell.levitationRangeIndicatorVFX, spawnPos, Quaternion.identity);
-            indicator.transform.SetParent(transform); // Seguir al jugador
+            float distance = (range / count) * (i + 1);
+            Vector3 pos    = transform.position + transform.forward * distance;
+            pos.y          = transform.position.y + 0.1f;
+
+            var indicator = Instantiate(spell.levitationRangeIndicatorVFX, pos, Quaternion.identity);
+            indicator.transform.SetParent(transform);
             _rangeIndicatorInstances.Add(indicator);
         }
-        
-        if (showDebugLogs) Debug.Log($"[Levitation] {count} indicadores de rango instanciados");
     }
-    
-    /// <summary>
-    /// Destruye todos los indicadores de rango.
-    /// </summary>
+
     void DestroyRangeIndicators()
     {
-        foreach (var indicator in _rangeIndicatorInstances)
-        {
-            if (indicator != null)
-                Destroy(indicator);
-        }
+        foreach (var v in _rangeIndicatorInstances)
+            if (v != null) Destroy(v);
         _rangeIndicatorInstances.Clear();
     }
-    
-    /// <summary>
-    /// Instancia el VFX de release en la posición especificada (donde está el NPC).
-    /// </summary>
+
     void SpawnReleaseVFX(Vector3 position)
     {
         if (_activeSpell == null || _activeSpell.levitationReleaseVFX == null) return;
-        
         var vfx = Instantiate(_activeSpell.levitationReleaseVFX, position, Quaternion.identity);
-        
-        // Auto-destruir después de un tiempo
-        if (_activeSpell.vfxLifetime > 0)
+        if (_activeSpell.vfxLifetime > 0f) Destroy(vfx, _activeSpell.vfxLifetime);
+    }
+
+    // ── Input (Reflexión — bug I7 pendiente) ─────────────────────────────────
+
+    void InitializeReflection()
+    {
+        if (_reflectionInitialized) return;
+        _reflectionInitialized = true;
+
+        try
         {
-            Destroy(vfx, _activeSpell.vfxLifetime);
+            _gamepadReaderType = System.Type.GetType("Core.GamepadInputReader, Assembly-CSharp");
+            if (_gamepadReaderType == null) return;
+
+            const System.Reflection.BindingFlags f = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static;
+            _leftHeldProp      = _gamepadReaderType.GetProperty("AttackMagicLeftHeld",     f);
+            _leftReleasedProp  = _gamepadReaderType.GetProperty("AttackMagicLeftReleased", f);
+            _rightHeldProp     = _gamepadReaderType.GetProperty("AttackMagicRightHeld",    f);
+            _rightReleasedProp = _gamepadReaderType.GetProperty("AttackMagicRightReleased",f);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[PlayerLevitationController] Error en reflexión: {ex.Message}");
         }
     }
-    
-    #endregion
-    
+
+    bool GetLeftHeld()      => _leftHeldProp      != null && (bool)_leftHeldProp.GetValue(null);
+    bool GetLeftReleased()  => _leftReleasedProp  != null && (bool)_leftReleasedProp.GetValue(null);
+    bool GetRightHeld()     => _rightHeldProp     != null && (bool)_rightHeldProp.GetValue(null);
+    bool GetRightReleased() => _rightReleasedProp != null && (bool)_rightReleasedProp.GetValue(null);
+
+    // ── Ciclo de vida ────────────────────────────────────────────────────────
+
+    void OnDisable()
+    {
+        foreach (var t in _currentTargets)
+            if (t != null) t.CancelLevitation();
+
+        StopHoldAnimationCoroutine();
+        DestroyHoldVFX();
+        DestroyRangeIndicators();
+
+        if (animator != null)
+            animator.SetLayerWeight(_upperBodyLayerIndex, 0f);
+
+        _phase = LevitationPhase.Idle;
+        _currentTargets.Clear();
+        _leftButtonWasDown  = false;
+        _rightButtonWasDown = false;
+    }
+
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
         if (!showDebugGizmos) return;
-        
-        // Dibujar el cono de detección si hay un hechizo de levitación equipado
+
         MagicSpellSO spell = null;
         if (Application.isPlaying && magicCaster != null)
         {
@@ -775,25 +521,17 @@ public class PlayerLevitationController : MonoBehaviour
             if (spell == null || spell.kind != MagicKind.Levitation)
                 spell = magicCaster.GetSpellForSlot(MagicSlot.Right);
         }
-        
         if (spell == null || spell.kind != MagicKind.Levitation) return;
-        
-        Vector3 origin = transform.position + Vector3.up * detectionHeightOffset;
-        float range = spell.levitationRange;
-        float halfAngle = spell.levitationAngle * 0.5f;
-        
-        Gizmos.color = _isLevitating ? Color.magenta : Color.cyan;
-        
-        // Dibujar líneas del cono
-        Vector3 forward = transform.forward * range;
-        Vector3 left = Quaternion.Euler(0, -halfAngle, 0) * forward;
-        Vector3 right = Quaternion.Euler(0, halfAngle, 0) * forward;
-        
-        Gizmos.DrawLine(origin, origin + forward);
-        Gizmos.DrawLine(origin, origin + left);
-        Gizmos.DrawLine(origin, origin + right);
+
+        Vector3 origin    = transform.position + Vector3.up * detectionHeightOffset;
+        float halfAngle   = spell.levitationAngle * 0.5f;
+        Vector3 fwd       = transform.forward * spell.levitationRange;
+
+        Gizmos.color = _phase == LevitationPhase.Levitating ? Color.magenta : Color.cyan;
+        Gizmos.DrawLine(origin, origin + fwd);
+        Gizmos.DrawLine(origin, origin + Quaternion.Euler(0, -halfAngle, 0) * fwd);
+        Gizmos.DrawLine(origin, origin + Quaternion.Euler(0,  halfAngle, 0) * fwd);
         Gizmos.DrawWireSphere(origin, 0.2f);
     }
 #endif
 }
-

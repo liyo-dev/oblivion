@@ -29,8 +29,8 @@ MonoBehaviour:
   autoUnirseACombate: 1
   rangoAsistenciaCombate: 30
   spellLeft: {fileID: 11400000, guid: d19ce172139aa96458ee0113fcd2a775, type: 2}
-  spellRight: {fileID: 0}
-  spellSpecial: {fileID: 11400000, guid: 0686630f8f80a5c4291f775845a499d7, type: 2}
+  spellRight: {fileID: 11400000, guid: 0686630f8f80a5c4291f775845a499d7, type: 2}
+  spellSpecial: {fileID: 0}
   distanciaMinimaAtaque: 2
   distanciaMaximaAtaque: 15
   posicionarseDuranteDialogos: 1

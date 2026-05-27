@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1868797391979623246}
   - component: {fileID: 173569715901972723}
   - component: {fileID: 5763488179732797956}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Particle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4877,7 +4877,7 @@ GameObject:
   - component: {fileID: 6578505267639145501}
   - component: {fileID: 3875684047364729266}
   - component: {fileID: 6900438170431748653}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tornado (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9783,7 +9783,7 @@ GameObject:
   - component: {fileID: 3159555560719509768}
   - component: {fileID: 589161548038860726}
   - component: {fileID: 2188870737188636475}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Fog (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14649,7 +14649,7 @@ GameObject:
   - component: {fileID: 8189319105664750469}
   - component: {fileID: 3316414043751267350}
   - component: {fileID: 3386173671270538978}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tornado (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19565,7 +19565,7 @@ GameObject:
   - component: {fileID: 4514134437925308509}
   - component: {fileID: 6999498920366665530}
   - component: {fileID: 8607788018981406859}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tornado
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24471,7 +24471,7 @@ GameObject:
   - component: {fileID: 4859237807968977240}
   - component: {fileID: 1311652067619034742}
   - component: {fileID: 2258923265987917135}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Fog
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29319,7 +29319,7 @@ GameObject:
   - component: {fileID: 159717105607337316}
   - component: {fileID: 1581281433140216243}
   - component: {fileID: 6475764934638152703}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Flecks_Alpha
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34230,7 +34230,7 @@ GameObject:
   - component: {fileID: 6326799996521169240}
   - component: {fileID: 1925531417877423131}
   - component: {fileID: 6591099492003695783}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39078,7 +39078,7 @@ GameObject:
   - component: {fileID: 3874312047832903933}
   - component: {fileID: 7755605128076357478}
   - component: {fileID: 8282489070773044758}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Particle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43989,7 +43989,7 @@ GameObject:
   - component: {fileID: 5063833507524990170}
   - component: {fileID: 5534709644446475976}
   - component: {fileID: 60264621346166558}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Glow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48837,7 +48837,7 @@ GameObject:
   - component: {fileID: 124866327987222744}
   - component: {fileID: 1025437391103930824}
   - component: {fileID: 1273388990276506975}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cone_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48929,7 +48929,7 @@ GameObject:
   - component: {fileID: 9089776569402074838}
   - component: {fileID: 5514943883178900442}
   - component: {fileID: 6655284332026524622}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tornado
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -53844,7 +53844,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 7.3073435
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6655284332026524622
 MonoBehaviour:
@@ -53858,4 +53858,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0109ffc5d092f246a8bc8e35bf7298c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
-  lifeTimeSeconds: 5
+  lifeTimeSeconds: 0

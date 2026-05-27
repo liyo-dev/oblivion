@@ -16,21 +16,21 @@ MonoBehaviour:
   displayName: Bola Prisma
   kind: 0
   element: 2
-  prefab: {fileID: 5631927496442371602, guid: 6c52ee79710704a4dab242c5ba8e0408, type: 3}
+  prefab: {fileID: 9092016874316776617, guid: bbc5b80cac40a1e4d9abc000bcbdd80e, type: 3}
   castDelaySeconds: 0.5
   chargeTime: 0
   chargeStartScale: 0.1
   followOriginDuringCharge: 1
-  initialSpeed: 3
+  initialSpeed: 10
   useGravity: 0
   maxRange: 40
   lifeTime: 2
   damage: 30
   aoeRadius: 0
-  knockbackForce: 10
+  knockbackForce: 0
   destroyOnHit: 1
   forwardOffset: 0.35
-  positionOffset: {x: 0, y: 0, z: 0}
+  positionOffset: {x: 0, y: 0.5, z: 0}
   visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
   flattenDirection: 1
   useScaleOverride: 0

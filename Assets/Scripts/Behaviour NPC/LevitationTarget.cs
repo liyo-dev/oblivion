@@ -1,368 +1,353 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
-/// Componente que permite a un NPC ser afectado por hechizos de levitación del jugador.
-/// Maneja las animaciones de elevación/voltereta y las fuerzas físicas de atracción/repulsión.
-/// 
-/// Debe añadirse a NPCs que queramos que sean susceptibles a la levitación.
+/// Permite que un GameObject sea afectado por el hechizo de levitación.
+/// Funciona tanto en NPCs/enemigos (con Animator, NavMeshAgent, Damageable)
+/// como en objetos de puzle como cajas (solo Rigidbody necesario).
+///
+/// Comportamiento en NPCs:
+///   - Se levita y mueve con física hacia el punto de agarre.
+///   - Al chocar contra una pared tras el lanzamiento, recibe daño escalado con velocidad.
+///   - Si recibe un proyectil durante la levitación, aplica daño y reproduce animación de impacto.
+///
+/// Comportamiento en objetos (cajas, etc.):
+///   - Solo la física actúa; no hay animación ni daño por colisión.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
 public class LevitationTarget : MonoBehaviour
 {
     [Header("Configuración")]
-    [Tooltip("Si está marcado, este NPC puede ser levitado por el jugador.")]
+    [Tooltip("Si está marcado, este objeto puede ser levitado.")]
     [SerializeField] private bool canBeLevitated = true;
-    [Tooltip("Multiplicador de fuerza de atracción (para ajustar por NPC).")]
+    [Tooltip("Multiplicador de fuerza de atracción (para ajustar por objeto).")]
     [SerializeField] private float pullForceMultiplier = 1f;
-    [Tooltip("Multiplicador de fuerza de repulsión (para ajustar por NPC).")]
+    [Tooltip("Multiplicador de fuerza de repulsión (para ajustar por objeto).")]
     [SerializeField] private float pushForceMultiplier = 1f;
-    
-    [Header("Animación")]
-    [Tooltip("Nombre del estado de animación para la levitación (primera parte: elevarse).")]
+
+    [Header("Animación (solo NPCs)")]
+    [Tooltip("Estado de animación para la levitación (elevarse).")]
     [SerializeField] private string levitationAnimState = "LevelUp_NoWeapon";
     [Tooltip("Tiempo normalizado (0-1) donde pausar la animación durante el hold.")]
     [SerializeField] private float holdPauseNormalizedTime = 0.5f;
     [Tooltip("Velocidad de elevación vertical.")]
     [SerializeField] private float liftSpeed = 3f;
-    
+    [Tooltip("Estado de animación de impacto al recibir daño durante la levitación.")]
+    [SerializeField] private string hitAnimState = "Hit";
+    [Tooltip("Duración mínima (s) de la animación de impacto antes de volver a la pose de levitación.")]
+    [Min(0.1f)] [SerializeField] private float hitAnimDuration = 0.4f;
+
     [Header("Física")]
     [Tooltip("Si está marcado, desactivar NavMeshAgent durante la levitación.")]
     [SerializeField] private bool disableNavMeshDuringLevitation = true;
     [Tooltip("Drag del Rigidbody durante levitación para suavizar el movimiento.")]
     [SerializeField] private float levitationDrag = 2f;
-    
+
     [Header("VFX")]
-    [Tooltip("Prefab del efecto visual que se instancia sobre el NPC mientras está levitando.")]
+    [Tooltip("Prefab del efecto visual sobre el objeto mientras está levitando.")]
     [SerializeField] private GameObject levitationVFXPrefab;
-    [Tooltip("Prefab del efecto visual que se instancia en el punto de impacto al chocar tras ser lanzado.")]
+    [Tooltip("Prefab del efecto visual en el punto de impacto al chocar tras ser lanzado.")]
     [SerializeField] private GameObject impactVFXPrefab;
     [Tooltip("Tiempo en segundos antes de destruir el VFX de impacto (0 = se autodestruye).")]
     [Min(0f)] [SerializeField] private float impactVFXLifetime = 2f;
-    [Tooltip("Offset de posición para el VFX respecto al centro del NPC.")]
+    [Tooltip("Offset de posición para el VFX respecto al centro del objeto.")]
     [SerializeField] private Vector3 vfxOffset = Vector3.up;
-    [Tooltip("Escala del VFX de levitación (útil para ajustar el tamaño según el NPC).")]
+    [Tooltip("Escala del VFX de levitación.")]
     [SerializeField] private Vector3 vfxScale = Vector3.one;
-    [Tooltip("Si está marcado, el VFX seguirá al NPC durante la levitación.")]
+    [Tooltip("Si está marcado, el VFX seguirá al objeto durante la levitación.")]
     [SerializeField] private bool vfxFollowsTarget = true;
-    
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
-    
-    // Referencias
+
+    // ── Referencias ──────────────────────────────────────────────────────────
     private Rigidbody _rigidbody;
     private Animator _animator;
     private UnityEngine.AI.NavMeshAgent _navAgent;
-    
-    // Estado
+    private Damageable _damageable;
+
+    // ── Estado ───────────────────────────────────────────────────────────────
     private bool _isBeingLevitated;
-    private bool _isInFlight;          // true entre EndLevitation y el aterrizaje
+    private bool _isInFlight;
+    private bool _isPlayingHitReaction;
     private PlayerLevitationController _currentLevitator;
     private float _targetHeight;
     private float _originalDrag;
     private bool _wasNavAgentEnabled;
     private bool _wasKinematic;
     private bool _wasRootMotion;
-    private MagicSpellSO _flightSpell; // guardada para OnCollisionEnter
-    
-    // VFX
+    private MagicSpellSO _flightSpell;
+
+    // ── VFX ─────────────────────────────────────────────────────────────────
     private GameObject _currentVFXInstance;
-    
-    // Corrutinas
+
+    // ── Corrutinas ───────────────────────────────────────────────────────────
     private Coroutine _pauseAnimCoroutine;
-    
-    // Animator state hash
+    private Coroutine _hitReactionCoroutine;
+
+    // ── Hashes de Animator ───────────────────────────────────────────────────
     private int _levitationStateHash;
-    
-    public bool CanBeLevitated => canBeLevitated && !_isBeingLevitated;
+    private int _hitStateHash;
+
+    // ── API pública ──────────────────────────────────────────────────────────
+    public bool CanBeLevitated   => canBeLevitated && !_isBeingLevitated;
     public bool IsBeingLevitated => _isBeingLevitated;
 
-    /// <summary>Fired when any NPC starts being levitated (NPC sube al aire).</summary>
     public static event System.Action OnAnyLevitationStarted;
-    /// <summary>Fired when any levitated NPC lands back on the ground.</summary>
     public static event System.Action OnAnyLevitationEnded;
-    
+
+    // ────────────────────────────────────────────────────────────────────────
     void Awake()
     {
-        _rigidbody = GetComponent<Rigidbody>();
-        _animator = GetComponentInChildren<Animator>();
-        _navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        
+        _rigidbody  = GetComponent<Rigidbody>();
+        _animator   = GetComponentInChildren<Animator>();
+        _navAgent   = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        _damageable = GetComponent<Damageable>() ?? GetComponentInParent<Damageable>();
+
         if (!string.IsNullOrEmpty(levitationAnimState))
             _levitationStateHash = Animator.StringToHash(levitationAnimState);
+        if (!string.IsNullOrEmpty(hitAnimState))
+            _hitStateHash = Animator.StringToHash(hitAnimState);
     }
-    
-    /// <summary>
-    /// Llamado por PlayerLevitationController cuando el NPC comienza a ser levitado.
-    /// </summary>
+
+    // ── Inicio de levitación ─────────────────────────────────────────────────
+
     public void BeginLevitation(PlayerLevitationController levitator, MagicSpellSO spell)
     {
         if (_isBeingLevitated || !canBeLevitated) return;
-        
+
         _isBeingLevitated = true;
         _currentLevitator = levitator;
-        
-        // Calcular altura objetivo
-        _targetHeight = transform.position.y + spell.levitationHeight;
-        
+        _targetHeight     = transform.position.y + spell.levitationHeight;
+
         // Configurar física
-        _originalDrag = _rigidbody.linearDamping;
-        _wasKinematic = _rigidbody.isKinematic;
+        _originalDrag          = _rigidbody.linearDamping;
+        _wasKinematic          = _rigidbody.isKinematic;
         _rigidbody.linearDamping = levitationDrag;
         _rigidbody.isKinematic = false;
-        _rigidbody.useGravity = false;
-        
-        // Desactivar NavMeshAgent si existe
+        _rigidbody.useGravity  = false;
+
         if (disableNavMeshDuringLevitation && _navAgent != null)
         {
             _wasNavAgentEnabled = _navAgent.enabled;
-            _navAgent.enabled = false;
-        }
-        
-        // Desactivar root motion para que la física controle el movimiento
-        if (_animator != null)
-        {
-            _wasRootMotion = _animator.applyRootMotion;
-            _animator.applyRootMotion = false;
+            _navAgent.enabled   = false;
         }
 
-        // Iniciar animación de levitación
-        if (_animator != null && _levitationStateHash != 0)
+        if (_animator != null)
         {
-            _animator.Play(_levitationStateHash, 0, 0f);
-            _pauseAnimCoroutine = StartCoroutine(Co_PauseAnimationDuringHold());
+            _wasRootMotion             = _animator.applyRootMotion;
+            _animator.applyRootMotion  = false;
+
+            if (_levitationStateHash != 0)
+            {
+                _animator.Play(_levitationStateHash, 0, 0f);
+                _pauseAnimCoroutine = StartCoroutine(Co_PauseAnimationDuringHold());
+            }
         }
-        
-        // Instanciar VFX de levitación
+
+        // Suscribirse a daño para poder reaccionar durante la levitación
+        if (_damageable != null)
+            _damageable.OnDamaged += OnDamagedWhileLevitated;
+
         SpawnLevitationVFX();
-        
         OnAnyLevitationStarted?.Invoke();
-        if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} comenzando levitación, altura objetivo: {_targetHeight}");
+
+        if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} comenzando levitación");
     }
-    
-    /// <summary>
-    /// Llamado cada frame por PlayerLevitationController mientras el NPC está siendo levitado.
-    /// El NPC sigue la posición objetivo como si estuviera atado con un hilo elástico (como globos).
-    /// </summary>
+
+    // ── Actualización cada frame ─────────────────────────────────────────────
+
     public void UpdateLevitation(MagicSpellSO spell, Vector3 targetPosition, float followSpeed)
     {
         if (!_isBeingLevitated) return;
-        
-        // Calcular la posición objetivo con la altura de levitación
-        Vector3 finalTargetPos = new Vector3(targetPosition.x, _targetHeight, targetPosition.z);
-        
-        // Calcular la distancia al objetivo
-        Vector3 toTarget = finalTargetPos - transform.position;
-        float distance = toTarget.magnitude;
-        
-        // Movimiento elástico: cuanto más lejos, más rápido se mueve (como un hilo elástico)
+
+        Vector3 finalTarget = new Vector3(targetPosition.x, _targetHeight, targetPosition.z);
+        Vector3 toTarget    = finalTarget - transform.position;
+        float   distance    = toTarget.magnitude;
+
         float elasticSpeed = followSpeed * pullForceMultiplier * Mathf.Max(1f, distance * 0.5f);
-        
-        // Usar una combinación de interpolación suave y fuerza para un movimiento fluido tipo "globo"
+
         if (distance > 0.1f)
         {
-            // Mover hacia la posición objetivo con velocidad proporcional a la distancia
-            Vector3 moveDirection = toTarget.normalized;
-            Vector3 targetVelocity = moveDirection * elasticSpeed;
-            
-            // Interpolar la velocidad actual hacia la velocidad objetivo para suavidad
+            Vector3 targetVelocity = toTarget.normalized * elasticSpeed;
             _rigidbody.linearVelocity = Vector3.Lerp(_rigidbody.linearVelocity, targetVelocity, Time.deltaTime * 8f);
         }
         else
         {
-            // Cuando está cerca, reducir velocidad para evitar oscilaciones
             _rigidbody.linearVelocity = Vector3.Lerp(_rigidbody.linearVelocity, Vector3.zero, Time.deltaTime * 5f);
         }
-        
-        // Mantener altura objetivo si está por debajo
-        float currentHeight = transform.position.y;
-        if (currentHeight < _targetHeight - 0.1f)
+
+        float currentY = transform.position.y;
+        if (currentY < _targetHeight - 0.1f)
         {
-            float liftForce = Mathf.Min(liftSpeed * spell.levitationLiftSpeed, (_targetHeight - currentHeight) * 5f);
+            float liftForce = Mathf.Min(liftSpeed * spell.levitationLiftSpeed, (_targetHeight - currentY) * 5f);
             _rigidbody.AddForce(Vector3.up * liftForce, ForceMode.Acceleration);
         }
-        
-        // Actualizar posición del VFX si sigue al target
+
         UpdateVFXPosition();
     }
-    
-    /// <summary>
-    /// Llamado por PlayerLevitationController cuando el jugador suelta el botón.
-    /// Aplica repulsión y continúa la animación de voltereta.
-    /// </summary>
+
+    // ── Fin de levitación (lanzamiento) ──────────────────────────────────────
+
     public void EndLevitation(MagicSpellSO spell, Vector3 pushDirection, float pushForce)
     {
         if (!_isBeingLevitated) return;
-        
-        if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} finalizando levitación, aplicando repulsión");
-        
-        // Detener la corrutina de pausa de animación
+
+        UnsubscribeDamage();
+
         if (_pauseAnimCoroutine != null)
         {
             StopCoroutine(_pauseAnimCoroutine);
             _pauseAnimCoroutine = null;
         }
-        
-        // Destruir el VFX de levitación
-        DestroyLevitationVFX();
-        
-        // Continuar la animación desde el punto de pausa
-        if (_animator != null)
+        if (_hitReactionCoroutine != null)
         {
-            _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
+            StopCoroutine(_hitReactionCoroutine);
+            _hitReactionCoroutine = null;
         }
-        
-        // Guardar referencia al hechizo para el daño de impacto
-        _flightSpell = spell;
-        _isInFlight = true;
 
-        // Configurar física para el lanzamiento:
-        // - Asegurar que no es kinematic (algo pudo haberlo cambiado durante el hold)
-        _rigidbody.isKinematic = false;
-        // - Limpiar la velocidad residual del hold para que el impulso no se vea amortiguado
-        _rigidbody.linearVelocity = Vector3.zero;
-        _rigidbody.angularVelocity = Vector3.zero;
-        // - Sin drag para que salga disparado con toda la fuerza
-        _rigidbody.linearDamping = 0f;
+        DestroyLevitationVFX();
 
-        // Aplicar fuerza de repulsión (disparado hacia afuera como en Stranger Things)
+        if (_animator != null)
+            _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
+
+        _flightSpell    = spell;
+        _isInFlight     = true;
+        _isPlayingHitReaction = false;
+
+        _rigidbody.isKinematic  = false;
+        _rigidbody.linearVelocity   = Vector3.zero;
+        _rigidbody.angularVelocity  = Vector3.zero;
+        _rigidbody.linearDamping     = 0f;
+        _rigidbody.useGravity       = true;
+
         Vector3 push = pushDirection * pushForce * pushForceMultiplier;
-        push.y = pushForce * 0.8f; // componente vertical para el efecto de "lanzamiento hacia arriba"
+        push.y = pushForce * 0.8f;
         _rigidbody.AddForce(push, ForceMode.Impulse);
 
-        // Aplicar torque para la voltereta
         Vector3 torqueAxis = Vector3.Cross(Vector3.up, pushDirection);
         _rigidbody.AddTorque(torqueAxis * pushForce * 4f, ForceMode.Impulse);
 
-        // Habilitar gravedad para que caiga después del impulso
-        _rigidbody.useGravity = true;
-
-        // Iniciar el proceso de finalización
         StartCoroutine(Co_FinishLevitation(spell));
     }
-    
-    /// <summary>
-    /// Cancela la levitación inmediatamente (llamado si el levitador es destruido o desactivado).
-    /// </summary>
+
+    // ── Cancelación inmediata ────────────────────────────────────────────────
+
     public void CancelLevitation()
     {
         if (!_isBeingLevitated) return;
-        
-        if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} levitación cancelada");
-        
+
+        UnsubscribeDamage();
         StopAllCoroutines();
-        _pauseAnimCoroutine = null;
-        
-        // Destruir el VFX de levitación
+        _pauseAnimCoroutine   = null;
+        _hitReactionCoroutine = null;
+        _isPlayingHitReaction = false;
+
         DestroyLevitationVFX();
-        
         RestoreNormalState();
     }
-    
-    /// <summary>
-    /// Corrutina que mantiene la animación pausada en el punto configurado durante el hold.
-    /// Usa playback manual para no afectar otras animaciones del NPC.
-    /// </summary>
-    System.Collections.IEnumerator Co_PauseAnimationDuringHold()
+
+    // ── Daño y reacción de golpe durante la levitación ───────────────────────
+
+    void OnDamagedWhileLevitated(float amount)
+    {
+        if (!_isBeingLevitated || _isPlayingHitReaction) return;
+        if (_animator == null || _hitStateHash == 0) return;
+        if (!_animator.HasState(0, _hitStateHash)) return;
+
+        if (_hitReactionCoroutine != null) StopCoroutine(_hitReactionCoroutine);
+        _hitReactionCoroutine = StartCoroutine(Co_PlayHitReaction());
+    }
+
+    IEnumerator Co_PlayHitReaction()
+    {
+        _isPlayingHitReaction = true;
+        _animator.Play(_hitStateHash, 0, 0f);
+
+        yield return new WaitForSeconds(hitAnimDuration);
+
+        _isPlayingHitReaction = false;
+        _hitReactionCoroutine = null;
+
+        // Si todavía está levitado, volver a la pose de levitación
+        if (_isBeingLevitated && _levitationStateHash != 0)
+            _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
+    }
+
+    // ── Animación de levitación (pausa en hold) ──────────────────────────────
+
+    IEnumerator Co_PauseAnimationDuringHold()
     {
         if (_animator == null) yield break;
-        
-        // Esperar a que entre en el estado
-        int maxWait = 10;
+
         int waited = 0;
-        while (_animator != null && waited < maxWait)
+        while (_animator != null && waited < 10)
         {
-            var info = _animator.GetCurrentAnimatorStateInfo(0);
-            if (info.shortNameHash == _levitationStateHash)
-                break;
+            if (_animator.GetCurrentAnimatorStateInfo(0).shortNameHash == _levitationStateHash) break;
             waited++;
             yield return null;
         }
-        
-        if (_animator == null) yield break;
-        
-        // Reproducir hasta el punto de pausa y mantenerlo
+
         while (_animator != null && _isBeingLevitated)
         {
-            var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-            
-            // Si ya pasamos el punto de pausa, mantener la animación en ese punto
-            if (stateInfo.normalizedTime >= holdPauseNormalizedTime)
+            // Ceder el control si hay una reacción de golpe en curso
+            if (!_isPlayingHitReaction)
             {
-                // Reescribir constantemente el tiempo normalizado para "pausar" sin afectar animator.speed
-                _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
+                var info = _animator.GetCurrentAnimatorStateInfo(0);
+                if (info.normalizedTime >= holdPauseNormalizedTime)
+                    _animator.Play(_levitationStateHash, 0, holdPauseNormalizedTime);
             }
-            
             yield return null;
         }
     }
-    
-    /// <summary>
-    /// Corrutina que finaliza el proceso de levitación después de la repulsión.
-    /// </summary>
-    System.Collections.IEnumerator Co_FinishLevitation(MagicSpellSO spell)
+
+    // ── Aterrizaje y restauración ────────────────────────────────────────────
+
+    IEnumerator Co_FinishLevitation(MagicSpellSO spell)
     {
-        // Esperar brevemente a que el impulso inicial se aplique
         yield return new WaitForSeconds(0.3f);
-        
-        // Esperar a que toque el suelo
-        float timeout = 5f;
-        float elapsed = 0f;
+
+        float timeout = 5f, elapsed = 0f;
         while (elapsed < timeout)
         {
             elapsed += Time.deltaTime;
-            
-            // Verificar si está en el suelo (raycast más largo para detectar mejor)
-            if (Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.5f))
-            {
-                break;
-            }
-            
+            if (Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, 0.5f)) break;
             yield return null;
         }
-        
-        // Pequeña espera adicional
+
         yield return new WaitForSeconds(0.2f);
-        
         RestoreNormalState();
     }
-    
-    /// <summary>
-    /// Restaura el estado normal del NPC después de la levitación.
-    /// </summary>
+
     void RestoreNormalState()
     {
-        _isBeingLevitated = false;
-        _isInFlight = false;
-        _flightSpell = null;
-        _currentLevitator = null;
-        
-        // Restaurar física
+        _isBeingLevitated     = false;
+        _isInFlight           = false;
+        _isPlayingHitReaction = false;
+        _flightSpell          = null;
+        _currentLevitator     = null;
+
         if (_rigidbody != null)
         {
-            _rigidbody.linearDamping = _originalDrag;
-            _rigidbody.isKinematic = _wasKinematic;
-            _rigidbody.useGravity = true;
-            _rigidbody.linearVelocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
-            
-            // Resetear rotación para que el NPC quede de pie
+            _rigidbody.linearDamping    = _originalDrag;
+            _rigidbody.isKinematic  = _wasKinematic;
+            _rigidbody.useGravity   = true;
+            _rigidbody.linearVelocity   = Vector3.zero;
+            _rigidbody.angularVelocity  = Vector3.zero;
+
             Vector3 euler = transform.eulerAngles;
             transform.eulerAngles = new Vector3(0f, euler.y, 0f);
         }
-        
-        // Si el NPC murió durante el vuelo, el NPCCombatLifecycleHandler ya gestiona
-        // la animación de muerte. No resetear el animator ni reactivar el agente.
-        var damageable = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
-        bool isDead = damageable != null && !damageable.IsAlive;
 
-        // Restaurar root motion siempre (necesario aunque esté muerto para no dejar estado corrupto)
+        var damageable = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
+        bool isDead    = damageable != null && !damageable.IsAlive;
+
         if (_animator != null)
             _animator.applyRootMotion = _wasRootMotion;
 
         if (!isDead)
         {
-            // Forzar la vuelta a la animación idle
             if (_animator != null)
             {
                 _animator.Rebind();
@@ -373,128 +358,105 @@ public class LevitationTarget : MonoBehaviour
                     _animator.Play("Locomotion", 0, 0f);
             }
 
-            // Restaurar NavMeshAgent
             if (_navAgent != null && _wasNavAgentEnabled)
             {
-                UnityEngine.AI.NavMeshHit hit;
-                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
                     transform.position = hit.position;
                 _navAgent.enabled = true;
             }
         }
-        
+
         OnAnyLevitationEnded?.Invoke();
         if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} estado normal restaurado");
     }
-    
-    /// <summary>
-    /// Instancia el VFX de levitación sobre el NPC.
-    /// </summary>
-    void SpawnLevitationVFX()
+
+    void UnsubscribeDamage()
     {
-        if (levitationVFXPrefab == null) return;
-        
-        Vector3 spawnPos = transform.position + vfxOffset;
-        _currentVFXInstance = Instantiate(levitationVFXPrefab, spawnPos, Quaternion.identity);
-        
-        // Aplicar escala configurada
-        _currentVFXInstance.transform.localScale = vfxScale;
-        
-        // Si el VFX debe seguir al target, parentearlo
-        if (vfxFollowsTarget)
-        {
-            _currentVFXInstance.transform.SetParent(transform);
-            _currentVFXInstance.transform.localPosition = vfxOffset;
-            // Mantener la escala después de parentear
-            _currentVFXInstance.transform.localScale = vfxScale;
-        }
-        
-        if (showDebugLogs) Debug.Log($"[LevitationTarget] VFX instanciado en {spawnPos} con escala {vfxScale}");
+        if (_damageable != null)
+            _damageable.OnDamaged -= OnDamagedWhileLevitated;
     }
-    
-    /// <summary>
-    /// Actualiza la posición del VFX si no está parenteado.
-    /// </summary>
-    void UpdateVFXPosition()
-    {
-        if (_currentVFXInstance == null || vfxFollowsTarget) return;
-        
-        _currentVFXInstance.transform.position = transform.position + vfxOffset;
-    }
-    
-    /// <summary>
-    /// Destruye el VFX de levitación.
-    /// </summary>
-    void DestroyLevitationVFX()
-    {
-        if (_currentVFXInstance != null)
-        {
-            Destroy(_currentVFXInstance);
-            _currentVFXInstance = null;
-            
-            if (showDebugLogs) Debug.Log($"[LevitationTarget] VFX destruido");
-        }
-    }
-    
+
+    // ── Daño por impacto en pared (después del lanzamiento) ──────────────────
+
     void OnCollisionEnter(Collision collision)
     {
         if (!_isInFlight || _flightSpell == null) return;
         if (collision.contactCount == 0) return;
 
         ContactPoint contact = collision.GetContact(0);
-
-        // Solo paredes: ignorar el suelo (normal apuntando hacia arriba)
-        if (contact.normal.y > 0.5f) return;
+        if (contact.normal.y > 0.5f) return; // ignorar suelo
 
         float speed = collision.relativeVelocity.magnitude;
         if (speed < _flightSpell.levitationImpactMinSpeed) return;
 
-        // Si el NPC está bloqueando, no aplicar daño
         var shield = GetComponent<NPCShieldController>() ?? GetComponentInParent<NPCShieldController>();
         if (shield != null && shield.IsDefending)
         {
-            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto en pared bloqueado por escudo");
+            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto bloqueado por escudo");
             return;
         }
 
-        // Aplicar daño escalado con la velocidad de impacto
-        float damage = _flightSpell.levitationImpactDamage * (speed / _flightSpell.levitationImpactMinSpeed);
-        var damageable = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
-        if (damageable != null && damageable.IsAlive)
+        float damage   = _flightSpell.levitationImpactDamage * (speed / _flightSpell.levitationImpactMinSpeed);
+        var   dmg      = GetComponent<IDamageable>() ?? GetComponentInParent<IDamageable>();
+        if (dmg != null && dmg.IsAlive)
         {
-            damageable.TakeDamage(damage);
-            if (showDebugLogs)
-                Debug.Log($"[LevitationTarget] {name} impacto en pared → velocidad={speed:F1} m/s, daño={damage:F0}");
+            dmg.TakeDamage(damage);
+            if (showDebugLogs) Debug.Log($"[LevitationTarget] {name} impacto pared → {speed:F1}m/s, daño={damage:F0}");
         }
 
-        // VFX de impacto en el punto de contacto, orientado a la normal de la superficie
         if (impactVFXPrefab != null)
         {
-            Quaternion rot = Quaternion.LookRotation(contact.normal);
-            GameObject vfx = Instantiate(impactVFXPrefab, contact.point, rot);
-            if (impactVFXLifetime > 0f)
-                Destroy(vfx, impactVFXLifetime);
+            var vfx = Instantiate(impactVFXPrefab, contact.point, Quaternion.LookRotation(contact.normal));
+            if (impactVFXLifetime > 0f) Destroy(vfx, impactVFXLifetime);
         }
     }
+
+    // ── VFX ─────────────────────────────────────────────────────────────────
+
+    void SpawnLevitationVFX()
+    {
+        if (levitationVFXPrefab == null) return;
+
+        _currentVFXInstance = Instantiate(levitationVFXPrefab, transform.position + vfxOffset, Quaternion.identity);
+        _currentVFXInstance.transform.localScale = vfxScale;
+
+        if (vfxFollowsTarget)
+        {
+            _currentVFXInstance.transform.SetParent(transform);
+            _currentVFXInstance.transform.localPosition = vfxOffset;
+            _currentVFXInstance.transform.localScale     = vfxScale;
+        }
+    }
+
+    void UpdateVFXPosition()
+    {
+        if (_currentVFXInstance == null || vfxFollowsTarget) return;
+        _currentVFXInstance.transform.position = transform.position + vfxOffset;
+    }
+
+    void DestroyLevitationVFX()
+    {
+        if (_currentVFXInstance != null)
+        {
+            Destroy(_currentVFXInstance);
+            _currentVFXInstance = null;
+        }
+    }
+
+    // ── Ciclo de vida ────────────────────────────────────────────────────────
 
     void OnDisable()
     {
-        if (_isBeingLevitated)
-        {
-            CancelLevitation();
-        }
+        if (_isBeingLevitated) CancelLevitation();
     }
-    
+
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        if (_isBeingLevitated)
-        {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(transform.position, 1f);
-            Gizmos.DrawLine(transform.position, new Vector3(transform.position.x, _targetHeight, transform.position.z));
-        }
+        if (!_isBeingLevitated) return;
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireSphere(transform.position, 1f);
+        Gizmos.DrawLine(transform.position, new Vector3(transform.position.x, _targetHeight, transform.position.z));
     }
 #endif
 }
-
