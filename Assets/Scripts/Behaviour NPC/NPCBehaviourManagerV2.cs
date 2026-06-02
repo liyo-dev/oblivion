@@ -21,6 +21,8 @@ namespace Game.NPC
         [Header("FSM Configuration")]
         [SerializeField] private NPCConfiguration configuration = new NPCConfiguration();
         [SerializeField] private bool debugMode = false;
+        [Tooltip("Desactiva el wander para que el NPC se quede estático en su posición inicial.")]
+        [SerializeField] private bool disableWander = false;
         
         [Header("Initial State")]
         [SerializeField] private bool startInIdleState = true;
@@ -107,14 +109,18 @@ namespace Game.NPC
                 _rigidbody.isKinematic = true;
             }
             
-            // 4. Crear Contexto FSM
+            // 4. Aplicar overrides de configuración
+            if (disableWander)
+                configuration.DisableWander();
+
+            // 5. Crear Contexto FSM
             _context = new NPCStateContext(null, transform, _agent, _animator, _unityAnimator, _rigidbody)
             {
                 Config = configuration,
                 DebugMode = debugMode
             };
             
-            // 5. Crear Brain
+            // 6. Crear Brain
             _brain = new NPCBrain(_context);
             _context.Brain = _brain; // Cerrar referencia circular
             

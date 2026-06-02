@@ -6,7 +6,25 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/Systems/Start.unity
+    guid: a7f264b33844ba446a0be38fbb912bc0
+  - enabled: 1
+    path: Assets/Scenes/Systems/MainMenu.unity
+    guid: 5e3c92840a716ca48854baa5cfdc9bba
+  - enabled: 1
+    path: Assets/Scenes/Systems/LoadingScreen.unity
+    guid: 5cb44718191ab514b97c5d316490f097
+  - enabled: 1
+    path: Assets/Scenes/Main World/MainWorld.unity
+    guid: dc950ffe35d587b4cb76b17b86c42275
+  - enabled: 1
+    path: Assets/Scenes/Main World/CandyLand.unity
+    guid: f95ca88fd3371d848bbceaa2f36fad80
+  - enabled: 1
+    path: Assets/Scenes/Cinematics/Prologo.unity
+    guid: c28ba70b11fa8f848a11513362b098cd
+  - enabled: 1
+    path: Assets/Scenes/Cinematics/Cinematic_Intro.unity
+    guid: af34893d73760c1499b677d5dee7bfc3
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

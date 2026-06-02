@@ -99,6 +99,7 @@ public class PartyControlManager : MonoBehaviour
     private void HandleInput(GamepadInputReader.InputEvent evt)
     {
         if (evt.Phase != InputActionPhase.Performed) return;
+        if (Core.PlayerInputManager.Instance != null && Core.PlayerInputManager.Instance.IsInUIMode) return;
 
         switch (evt.Type)
         {

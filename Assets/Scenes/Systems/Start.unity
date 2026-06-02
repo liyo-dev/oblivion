@@ -556,7 +556,7 @@ GameObject:
   - component: {fileID: 109416902}
   - component: {fileID: 109416901}
   m_Layer: 0
-  m_Name: //START_BootLoader
+  m_Name: START_BootLoader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

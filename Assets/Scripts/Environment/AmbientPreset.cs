@@ -15,8 +15,8 @@ public class AmbientPreset : ScriptableObject
     [Tooltip("Color del fog")]
     public Color fogColor = new Color(0.5f, 0.5f, 0.5f, 1f);
     
-    [Tooltip("Densidad del fog (0-0.1). Mayor = más denso")]
-    [Range(0f, 0.1f)]
+    [Tooltip("Densidad del fog (0-1). Mayor = más denso. Para niebla cercana usa Linear con fogEnd bajo.")]
+    [Range(0f, 1f)]
     public float fogDensity = 0.02f;
     
     [Tooltip("Modo del fog")]

@@ -98,6 +98,7 @@ public class DialogueManager : MonoBehaviour
 
     Action _onYes;
     Action _onNo;
+    bool _choicesUIModePushed;
 
     // Typewriter estado
     Coroutine _typeRoutine;
@@ -217,6 +218,14 @@ public class DialogueManager : MonoBehaviour
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)
     {
         if (input.Phase != InputActionPhase.Performed) return;
+
+        // Cancel funciona siempre que haya opciones activas (sin período de gracia)
+        if (input.Type == GamepadInputReader.InputEventType.Cancel)
+        {
+            if (choicesRoot != null && choicesRoot.interactable && _onNo != null)
+                OnNoClicked();
+            return;
+        }
 
         // PROTECCIÓN: Ignorar inputs durante el período de gracia después de abrir el diálogo
         if (Time.unscaledTime - _dialogueOpenedAt < InputGracePeriod)
@@ -554,6 +563,13 @@ public class DialogueManager : MonoBehaviour
 
     void HideChoices(bool restoreGameplay = true)
     {
+        if (_choicesUIModePushed)
+        {
+            Core.PlayerInputManager.Instance?.PopUIMode();
+            GamepadInputReader.PopUiNavigationScope();
+            _choicesUIModePushed = false;
+        }
+
         if (choicesRoot != null)
         {
             choicesRoot.alpha = 0f;
@@ -672,6 +688,14 @@ public class DialogueManager : MonoBehaviour
         else
         {
             Debug.LogWarning($"[DialogueManager] EventSystem or yesButton missing. es={(es!=null)} yes={(yesButton!=null)}");
+        }
+
+        // Activar action map UI para que Navigate (joystick/dpad) y Cancel (B) funcionen
+        if (!_choicesUIModePushed)
+        {
+            Core.PlayerInputManager.Instance?.PushUIMode();
+            GamepadInputReader.PushUiNavigationScope();
+            _choicesUIModePushed = true;
         }
 
         // Habilitar interacción tras un breve retardo para que no se dispare el Submit previo

@@ -47,7 +47,7 @@ public enum SpellId
     Plasmaball,
     LightSpecial,
     Levitation,
-    Verdantbolt,
+    AuraEstelar,
     Cycloneburst
 }
 

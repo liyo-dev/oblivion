@@ -130,7 +130,13 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Smooth rotation
     private Quaternion _targetRotation;
     private float _rotationVelocity;
-    
+
+    // Velocidades del NPC para normalizar InputMagnitude con mapa de dos segmentos:
+    //   agentSpeed == walkSpeed → 0.5 (zona walk del blend tree)
+    //   agentSpeed == runSpeed  → 1.0 (zona run del blend tree)
+    private float _walkSpeed = 1.5f;
+    private float _runSpeed  = 4f;
+
     // ✅ Anti-spam para animaciones de idle
     private float _lastBattleIdleTime = -999f;
     private const float BattleIdleCooldown = 0.5f; // Mínimo 0.5s entre llamadas (antes 0.3s)
@@ -231,7 +237,14 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         _lastPosition = transform.position;
         _targetRotation = transform.rotation;
-        
+
+        var behaviourMgr = GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+        if (behaviourMgr != null && behaviourMgr.Configuration != null)
+        {
+            _walkSpeed = Mathf.Max(0.1f, behaviourMgr.Configuration.walkSpeed);
+            _runSpeed  = Mathf.Max(_walkSpeed + 0.1f, behaviourMgr.Configuration.runSpeed);
+        }
+
         // Bind to interactable if exists
         if (_interactable != null)
         {
@@ -1282,17 +1295,24 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         // Get agent velocity
         float agentSpeed = navAgent.velocity.magnitude;
-        float maxSpeed = navAgent.speed;
-        
+
         // ✅ Threshold más estricto: Si la velocidad es muy baja, considerarlo como parado
         if (agentSpeed < movementThreshold * 0.5f)
         {
             SetMovementSpeed(0f);
             return;
         }
-        
-        // Normalize speed
-        float normalizedSpeed = maxSpeed > 0 ? Mathf.Clamp01(agentSpeed / maxSpeed) : 0f;
+
+        // Mapa de dos segmentos para que el blend tree reciba valores correctos:
+        //   0 m/s        → 0.0  (idle)
+        //   walkSpeed    → 0.5  (zona walk del blend tree)
+        //   runSpeed     → 1.0  (zona run del blend tree)
+        float normalizedSpeed;
+        if (agentSpeed <= _walkSpeed)
+            normalizedSpeed = (agentSpeed / _walkSpeed) * 0.5f;
+        else
+            normalizedSpeed = 0.5f + ((agentSpeed - _walkSpeed) / (_runSpeed - _walkSpeed)) * 0.5f;
+        normalizedSpeed = Mathf.Clamp01(normalizedSpeed);
         
         // Apply to animation
         SetMovementSpeed(normalizedSpeed);

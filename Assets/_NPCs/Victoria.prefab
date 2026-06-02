@@ -1957,6 +1957,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
@@ -2237,7 +2238,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 1
-  m_StaticEditorFlags: 8
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2668279010306465096
 Transform:
@@ -2479,7 +2480,6 @@ MonoBehaviour:
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 0}
-    narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 11400000, guid: dfd094198cdd07f479181a36a54e66af, type: 2}
     partyConfig: {fileID: 0}
     walkSpeed: 1.5
@@ -2495,6 +2495,7 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
+  disableWander: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0

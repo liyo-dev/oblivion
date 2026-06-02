@@ -11405,6 +11405,7 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
+  disableWander: 1
   startInIdleState: 0
   forceKinematicRigidbody: 1
   persistLastPosition: 1

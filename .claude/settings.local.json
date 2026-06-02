@@ -75,7 +75,14 @@
       "Bash(grep -E \"\\\\.cs$|\\\\.prefab$\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Art\" -Recurse -Include \"*.png\",\"*.psd\")",
       "Bash(Sort-Object FullName)",
-      "Bash(Get-ChildItem -Path Assets/Scripts -Recurse -Filter *.cs)"
+      "Bash(Get-ChildItem -Path Assets/Scripts -Recurse -Filter *.cs)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Behaviour NPC\" -Recurse)",
+      "Bash(Select-Object FullName, Name)",
+      "Bash(Format-List)",
+      "Bash(Get-ChildItem -Recurse -Filter \"*.cs\")",
+      "Bash(Select-String \"GamePhase.PauseMenu\")",
+      "Bash(Select-Object -ExpandProperty Path)",
+      "Bash(Get-Unique)"
     ]
   }
 }

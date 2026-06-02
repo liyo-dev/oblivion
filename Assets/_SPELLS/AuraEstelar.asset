@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0abddc14c08b6ee4cba7c1181c8551fb, type: 3}
-  m_Name: VerdantBolt
+  m_Name: AuraEstelar
   m_EditorClassIdentifier: Assembly-CSharp::MagicSpellSO
   spellId: 5
-  displayName: Bola Prisma
+  displayName: Aura Estelar
   kind: 0
   element: 2
   prefab: {fileID: 9092016874316776617, guid: bbc5b80cac40a1e4d9abc000bcbdd80e, type: 3}

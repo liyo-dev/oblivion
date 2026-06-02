@@ -62,12 +62,8 @@ namespace Game.NPC.Common
             errors = "";
             bool isValid = true;
             
-            // Validar Ambient
-            if (HasBehaviour(NPCBehaviourType.Ambient) && ambientConfig == null)
-            {
-                errors += "Behaviour Ambient activado pero no hay ambientConfig asignado.\n";
-                isValid = false;
-            }
+            // Ambient sin config asignada: usa defaults integrados (enableWander=true, radio=6m, etc.)
+            // No es error — es comportamiento intencional para NPCs sin configuración explícita.
             
             // Validar Combat
             if (HasBehaviour(NPCBehaviourType.Combat) && combatConfig == null)
@@ -140,7 +136,9 @@ namespace Game.NPC.Common
         public float wanderRadius => ambientConfig != null ? ambientConfig.wanderRadius : 6f;
         public float minIdleTime => ambientConfig != null ? ambientConfig.minIdleTime : 1.2f;
         public float maxIdleTime => ambientConfig != null ? ambientConfig.maxIdleTime : 3.0f;
-        public bool enableWander => ambientConfig != null && ambientConfig.enableWander;
+        private bool _wanderDisabledOverride;
+        public void DisableWander() => _wanderDisabledOverride = true;
+        public bool enableWander => !_wanderDisabledOverride && (ambientConfig != null ? ambientConfig.enableWander : true);
         public float detectionRadius => combatConfig != null ? combatConfig.detectionRange : 10f;
         public float combatRange => combatConfig != null ? combatConfig.maxAttackDistance : 8f;
         public float meleeRange => combatConfig != null ? combatConfig.minAttackDistance : 2f;

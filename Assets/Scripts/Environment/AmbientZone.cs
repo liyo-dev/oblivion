@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 using DG.Tweening;
 
 /// <summary>
@@ -18,7 +19,7 @@ public class AmbientZone : MonoBehaviour
     [Header("Fog Lejano")]
     [SerializeField] private bool enableFog = true;
     [SerializeField] private Color fogColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-    [Range(0f, 0.1f)]
+    [Range(0f, 1f)]
     [SerializeField] private float fogDensity = 0.02f;
     [SerializeField] private float fogStartDistance = 0f;
     [SerializeField] private float fogEndDistance = 100f;
@@ -35,6 +36,15 @@ public class AmbientZone : MonoBehaviour
     [Tooltip("Particle System de niebla volumétrica a ras de suelo. Debe estar configurado para hacer loop.")]
     [SerializeField] private bool enableGroundMist = false;
     [SerializeField] private ParticleSystem groundMistPS;
+
+    [Header("Niebla de Cámara (Overlay)")]
+    [Tooltip("Overlay de pantalla completa. Úsalo para simular estar dentro de niebla densa: " +
+             "no depende de la distancia a cámara, tapa el entorno inmediato del jugador.")]
+    [SerializeField] private bool enableCameraOverlay = false;
+    [SerializeField] private Color overlayColor = new Color(0.85f, 0.88f, 0.92f, 1f);
+    [Range(0f, 1f)]
+    [Tooltip("Opacidad máxima del overlay (0 = transparente, 1 = completamente opaco).")]
+    [SerializeField] private float overlayMaxAlpha = 0.85f;
 
     [Header("Música")]
     [SerializeField] private bool changeMusic = true;
@@ -65,8 +75,16 @@ public class AmbientZone : MonoBehaviour
     // --- Estado activo ---
     private static AmbientZone _currentActiveZone;
     private static Tween _currentTween;
+    private static Tween _overlayTween;
     private static AudioClip _previousMusic;
     private static bool _wasMusicPlaying;
+
+    // --- Camera overlay ---
+    private static CanvasGroup _fogCanvasGroup;
+    private static Image _fogImage;
+
+    private Transform _playerTransform;
+    private Transform _mistOriginalParent;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -75,8 +93,11 @@ public class AmbientZone : MonoBehaviour
         _defaultsCaptured = false;
         _currentActiveZone = null;
         _currentTween = null;
+        _overlayTween = null;
         _previousMusic = null;
         _wasMusicPlaying = false;
+        _fogCanvasGroup = null;
+        _fogImage = null;
     }
 #endif
 
@@ -113,6 +134,7 @@ public class AmbientZone : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
+        _playerTransform = other.transform;
 
         if (_currentActiveZone != null && _currentActiveZone.priority > priority)
         {
@@ -143,6 +165,7 @@ public class AmbientZone : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
         if (_currentActiveZone != this) return;
+        _playerTransform = null;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (showDebugLogs)
@@ -151,6 +174,7 @@ public class AmbientZone : MonoBehaviour
 
         _currentActiveZone = null;
         StopGroundMist();
+        HideCameraOverlay();
         TransitionToDefaultFog();
         RestorePreviousMusic();
     }
@@ -208,6 +232,7 @@ public class AmbientZone : MonoBehaviour
         ).SetEase(ease).SetUpdate(true);
 
         PlayGroundMist();
+        ShowCameraOverlay();
     }
 
     private void TransitionToDefaultFog()
@@ -250,16 +275,86 @@ public class AmbientZone : MonoBehaviour
         if (!groundMistPS.gameObject.activeSelf)
             groundMistPS.gameObject.SetActive(true);
 
+        if (_playerTransform != null)
+        {
+            _mistOriginalParent = groundMistPS.transform.parent;
+            groundMistPS.transform.SetParent(_playerTransform, false);
+            groundMistPS.transform.localPosition = Vector3.zero;
+        }
+
         if (!groundMistPS.isPlaying)
+        {
+            // prewarm: llena el volumen de partículas inmediatamente en lugar de acumular durante ~8s
+            var main = groundMistPS.main;
+            main.prewarm = true;
             groundMistPS.Play(true);
+        }
     }
 
     private void StopGroundMist()
     {
         if (!enableGroundMist || groundMistPS == null) return;
 
-        // StopEmitting: las partículas ya emitidas se desvanecen solos por su lifetime
+        var restoreParent = _mistOriginalParent != null ? _mistOriginalParent : transform;
+        groundMistPS.transform.SetParent(restoreParent, true);
+        _mistOriginalParent = null;
+
+        // StopEmitting: las partículas ya emitidas se desvanecen solas por su lifetime
         groundMistPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+    }
+
+    // -------------------------------------------------------------------------
+    //  Camera overlay
+    // -------------------------------------------------------------------------
+
+    private static void EnsureFogCanvas()
+    {
+        if (_fogCanvasGroup != null) return;
+
+        var go = new GameObject("[AmbientZone_CameraFog]");
+        Object.DontDestroyOnLoad(go);
+
+        var canvas = go.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 999;
+        go.AddComponent<CanvasScaler>();
+
+        _fogCanvasGroup = go.AddComponent<CanvasGroup>();
+        _fogCanvasGroup.alpha = 0f;
+        _fogCanvasGroup.blocksRaycasts = false;
+        _fogCanvasGroup.interactable = false;
+
+        var imgGo = new GameObject("FogImage");
+        imgGo.transform.SetParent(go.transform, false);
+        _fogImage = imgGo.AddComponent<Image>();
+        _fogImage.raycastTarget = false;
+
+        var rect = _fogImage.rectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+    }
+
+    private void ShowCameraOverlay()
+    {
+        if (!enableCameraOverlay) return;
+
+        EnsureFogCanvas();
+        _fogImage.color = overlayColor;
+
+        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : transitionDuration;
+        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : transitionEase;
+
+        _overlayTween?.Kill();
+        _overlayTween = _fogCanvasGroup.DOFade(overlayMaxAlpha, dur).SetEase(ease).SetUpdate(true);
+    }
+
+    private void HideCameraOverlay()
+    {
+        if (_fogCanvasGroup == null) return;
+
+        _overlayTween?.Kill();
+        _overlayTween = _fogCanvasGroup.DOFade(0f, transitionDuration).SetEase(transitionEase).SetUpdate(true);
     }
 
     // -------------------------------------------------------------------------
@@ -318,7 +413,9 @@ public class AmbientZone : MonoBehaviour
         if (_currentActiveZone == this)
         {
             _currentActiveZone = null;
+            _playerTransform = null;
             StopGroundMist();
+            HideCameraOverlay();
             RestoreDefaultsImmediate();
         }
     }
@@ -326,6 +423,8 @@ public class AmbientZone : MonoBehaviour
     public static void RestoreDefaultsImmediate()
     {
         _currentTween?.Kill();
+        _overlayTween?.Kill();
+        if (_fogCanvasGroup != null) _fogCanvasGroup.alpha = 0f;
         if (!_defaultsCaptured) return;
 
         RenderSettings.fog              = _defaultFogEnabled;
@@ -428,12 +527,13 @@ public class AmbientZone : MonoBehaviour
         emission.enabled      = true;
         emission.rateOverTime = 40f;
 
-        // Shape — caja plana al ras del suelo, cubre toda la zona
+        // Shape — caja que cubre desde el suelo hasta la altura del jugador
+        // La emisión a distintas alturas hace que la niebla sea visible de cerca
         var shapeModule = ps.shape;
         shapeModule.enabled   = true;
         shapeModule.shapeType = ParticleSystemShapeType.Box;
-        shapeModule.position  = new Vector3(0f, 0.15f, 0f);
-        shapeModule.scale     = new Vector3(areaX, 0.1f, areaZ);
+        shapeModule.position  = new Vector3(0f, 0.75f, 0f);
+        shapeModule.scale     = new Vector3(areaX, 1.5f, areaZ);
 
         // Color over lifetime — alpha bajo (0.18 máx): se acumula en capas y da sensación de densidad
         var colorLife = ps.colorOverLifetime;

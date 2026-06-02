@@ -923,7 +923,12 @@ public class DialogueCinematicController : MonoBehaviour
                         Debug.Log($"[DialogueCinematicController] 👥 Speaker '{speakerId}' encontrado en party: {partyMember.name}");
                 }
             }
-            
+
+            // Caso 3.5: En diálogos no grupales, si no hay coincidencia en party, el speaker
+            // es siempre el NPC con el que se inició el diálogo (evita falsos positivos en Caso 4)
+            if (speakerTransform == null && !_isGroupConversation)
+                speakerTransform = currentNPC;
+
             // Caso 4: Buscar por dialogueCharacterId en todos los NPCs de la escena (fallback)
             if (speakerTransform == null)
             {

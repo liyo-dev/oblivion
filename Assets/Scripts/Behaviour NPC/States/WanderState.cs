@@ -33,15 +33,17 @@ namespace Game.NPC.States
             _lastPosition = context.Transform.position;
             
             // 1. Configurar velocidad de paseo (Walk Speed)
-            // Si hay configuración ambiental, usar su velocidad, si no, reducir la velocidad base
             float wanderSpeed = 2.0f; // Valor por defecto seguro
             if (context.Config != null && context.Config.ambientConfig != null)
             {
                 wanderSpeed = context.Config.ambientConfig.walkSpeed;
             }
-            else if (context.Agent != null)
+            else if (context.Config != null)
             {
-                wanderSpeed = context.Agent.speed * 0.5f; // 50% de la velocidad máxima si no hay config
+                // Sin ambientConfig: usar walkSpeed de la configuración base.
+                // Esto garantiza que el normalizador del NPCSimpleAnimator (_walkSpeed) y
+                // la velocidad real del agente coincidan → InputMagnitude llega a 0.5 (zona walk).
+                wanderSpeed = context.Config.walkSpeed;
             }
             
             if (context.Agent != null) context.Agent.speed = wanderSpeed;
@@ -68,12 +70,9 @@ namespace Game.NPC.States
         public override void OnUpdate(NPCStateContext context)
         {
             base.OnUpdate(context);
-            
+
             if (!_hasSetDestination) return;
-            
-            // Actualizar animación (blend tree de locomoción)
-            UpdateMovementAnimation(context);
-            
+
             // Verificar si se atascó contra una pared
             CheckIfStuck(context);
             

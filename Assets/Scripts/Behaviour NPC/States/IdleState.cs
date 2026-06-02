@@ -23,7 +23,11 @@ namespace Game.NPC.States
         {
             base.OnEnter(context);
             StopMovement(context);
-            
+
+            // Resetear el estado de animación a Idle para que el próximo WanderState
+            // siempre dispare TransitionToLocomotion() correctamente.
+            context.Animator?.TransitionToIdle();
+
             // Seguridad: Si viene de combate/muerte, limpiar flags
             if (context.WasDefeatedInCombat && context.Animator != null)
             {
