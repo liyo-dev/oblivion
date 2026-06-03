@@ -168,11 +168,11 @@ namespace Sendero.UI
                 return;
             }
             
-            // Obtener componentes del jugador
-            _healthSystem = player.GetComponent<PlayerHealthSystem>();
-            _manaPool = player.GetComponent<ManaPool>();
-            _magicCaster = player.GetComponent<MagicCaster>();
-            
+            // Obtener componentes del jugador (buscar en hijos para soportar jerarquías anidadas)
+            _healthSystem = player.GetComponentInChildren<PlayerHealthSystem>(true);
+            _manaPool = player.GetComponentInChildren<ManaPool>(true);
+            _magicCaster = player.GetComponentInChildren<MagicCaster>(true);
+
             // Validar componentes críticos
             if (_healthSystem == null)
                 Debug.LogWarning("[PlayerHUDV2] ⚠️ No se encontró PlayerHealthSystem en el jugador");
@@ -180,12 +180,14 @@ namespace Sendero.UI
                 Debug.LogWarning("[PlayerHUDV2] ⚠️ No se encontró ManaPool en el jugador");
             if (_magicCaster == null)
                 Debug.LogWarning("[PlayerHUDV2] ⚠️ No se encontró MagicCaster en el jugador");
-            
+
             // Suscribirse a eventos
             SubscribeToEvents();
-            
+
             // Suscribirse al evento OnPresetApplied para refrescar cuando se carga partida
             PlayerPresetService.OnPresetApplied += OnPresetApplied;
+            // Refrescar iconos de hechizo al cambiar personaje activo
+            PartyControlManager.OnActiveCharacterChanged += OnCharacterSwitched;
             
             // Marcar como inicializado
             _hasStarted = true;
@@ -211,6 +213,7 @@ namespace Sendero.UI
             
             // ✅ Desuscribirse del evento de preset
             PlayerPresetService.OnPresetApplied -= OnPresetApplied;
+            PartyControlManager.OnActiveCharacterChanged -= OnCharacterSwitched;
             
             // Limpiar todos los tweens
             if (healthFillImage != null) healthFillImage.DOKill();
@@ -340,10 +343,10 @@ namespace Sendero.UI
                 // Desuscribir de eventos anteriores
                 UnsubscribeFromEvents();
                 
-                // Obtener nuevas referencias
-                _healthSystem = player.GetComponent<PlayerHealthSystem>();
-                _manaPool = player.GetComponent<ManaPool>();
-                _magicCaster = player.GetComponent<MagicCaster>();
+                // Obtener nuevas referencias (buscar en hijos para soportar jerarquías anidadas)
+                _healthSystem = player.GetComponentInChildren<PlayerHealthSystem>(true);
+                _manaPool = player.GetComponentInChildren<ManaPool>(true);
+                _magicCaster = player.GetComponentInChildren<MagicCaster>(true);
                 
                 // Re-suscribirse a eventos
                 SubscribeToEvents();
@@ -360,10 +363,16 @@ namespace Sendero.UI
             RefreshHealthBar();
             RefreshManaBar();
             RefreshAllMagicSlots();
-            
+
             // Debug.Log($"[PlayerHUDV2] ✅ HUD refrescado completamente tras aplicar preset (Mana: {_manaPool.Current}/{_manaPool.Max})");
         }
-        
+
+        private void OnCharacterSwitched(int _)
+        {
+            if (!_hasStarted || _magicCaster == null) return;
+            RefreshAllMagicSlots();
+        }
+
         #endregion
         
         #region Actualización de Vida

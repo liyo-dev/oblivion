@@ -215,7 +215,15 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     {
         if (_willSnapshotTaken) return;
         if (b == null) return;
-        _appearances[(int)PartyControlManager.CharacterSlot.Will] = b.GetSelection();
+        var sel = b.GetSelection();
+        // No marcar como tomado si la selección está vacía: el builder aún no está listo.
+        // La siguiente llamada (desde EnsureWillSnapshot o ApplyAppearance) podrá reintentar.
+        if (sel.Count == 0)
+        {
+            Debug.LogWarning("[CharacterAppearanceRegistry] ⚠️ SnapshotWillFromBuilderIfNeeded: builder devolvió selección vacía — snapshot diferido.");
+            return;
+        }
+        _appearances[(int)PartyControlManager.CharacterSlot.Will] = sel;
         _willSnapshotTaken = true;
         Debug.Log($"[CharacterAppearanceRegistry] 📸 Pre-snapshot Will tomado: [{string.Join(", ", System.Linq.Enumerable.Select(_appearances[(int)PartyControlManager.CharacterSlot.Will], kv => $"{kv.Key}:{kv.Value}"))}]");
     }
@@ -224,7 +232,9 @@ public class CharacterAppearanceRegistry : MonoBehaviour
     private void EnsureWillSnapshot(ModularAutoBuilder b)
     {
         if (_willSnapshotTaken) return;
-        _appearances[(int)PartyControlManager.CharacterSlot.Will] = b.GetSelection();
+        var sel = b.GetSelection();
+        if (sel.Count == 0) return; // builder no listo aún; no marcar como tomado
+        _appearances[(int)PartyControlManager.CharacterSlot.Will] = sel;
         _willSnapshotTaken = true;
     }
 

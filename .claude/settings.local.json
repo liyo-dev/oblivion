@@ -82,7 +82,8 @@
       "Bash(Get-ChildItem -Recurse -Filter \"*.cs\")",
       "Bash(Select-String \"GamePhase.PauseMenu\")",
       "Bash(Select-Object -ExpandProperty Path)",
-      "Bash(Get-Unique)"
+      "Bash(Get-Unique)",
+      "Bash(Get-ChildItem *)"
     ]
   }
 }

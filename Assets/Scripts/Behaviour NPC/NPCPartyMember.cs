@@ -39,6 +39,7 @@ namespace Game.NPC
         private INPCState _stateBeforeJoining;
         private bool _isJoining; // Flag para evitar joins simultáneos
         private float _nextIdleCheck;
+        private bool _isDeadInBattle; // Muerto durante una batalla, esperando resurrección
         #endregion
 
         #region Events
@@ -111,6 +112,9 @@ namespace Game.NPC
         public string DisplayName => partyConfig?.displayName ??
             (_npcManager?.Configuration?.interactiveNarrativeConfig?.persistenceId ?? gameObject.name);
         
+        /// <summary>True mientras el NPC está "muerto" esperando el fin de batalla.</summary>
+        public bool IsDeadInBattle => _isDeadInBattle;
+
         /// <summary>
         /// Índice en el equipo (para formación)
         /// </summary>
@@ -174,6 +178,8 @@ namespace Game.NPC
         
         void Update()
         {
+            if (_isDeadInBattle) return;
+
             // Si está esperando auto-join, verificar en cada frame hasta que esté listo
             if (autoJoinOnStart && !_isInParty && !_isJoining)
             {
@@ -222,6 +228,29 @@ namespace Game.NPC
             partyConfig = config;
         }
         
+        /// <summary>Congela al NPC en estado de muerte hasta que acabe la batalla.</summary>
+        public void EnterDeathState()
+        {
+            _isDeadInBattle = true;
+            if (_agent != null) { _agent.isStopped = true; _agent.ResetPath(); }
+            if (_npcManager != null)
+            {
+                _npcManager.StopAllCoroutines();
+                _npcManager.Context.IsInCombat = false;
+            }
+            _npcManager?.ForceIdle();
+        }
+
+        /// <summary>Despierta al NPC tras la resurrección al fin de batalla.</summary>
+        public void ExitDeathState()
+        {
+            _isDeadInBattle = false;
+            if (_agent != null) _agent.isStopped = false;
+            _npcManager?.ExitCombat();
+            if (_isInParty && (PartyControlManager.Instance?.IsPartyFollowing ?? true))
+                StartFollowing();
+        }
+
         /// <summary>
         /// Une este NPC al equipo del jugador.
         /// </summary>

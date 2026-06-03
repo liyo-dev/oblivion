@@ -66,4 +66,4 @@ MonoBehaviour:
   castSFXKey: BolaPrisma
   impactSFXKey: Impact1
   slotType: 0
-  attackIcon: {fileID: 21300000, guid: 9f65a57ebd40b074ca258be9bc7ad7dc, type: 3}
+  attackIcon: {fileID: 21300000, guid: 2fe59ab44bbd1454cb275b3591d9be76, type: 3}

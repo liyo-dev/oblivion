@@ -81,6 +81,16 @@ namespace Game.NPC.Modules
         [Range(5f, 50f)]
         public float rangoAsistenciaCombate = 30f;
         
+        [Header("=== STATS DEL PERSONAJE ===")]
+
+        [Tooltip("HP máximo de este compañero en combate.")]
+        [Min(1f)]
+        public float maxHP = 100f;
+
+        [Tooltip("MP máximo de este compañero. 0 = no usa magia.")]
+        [Min(0f)]
+        public float maxMP = 0f;
+
         [Header("=== HECHIZOS DE COMBATE ===")]
         
         [Tooltip("Hechizo principal (mano izquierda)")]

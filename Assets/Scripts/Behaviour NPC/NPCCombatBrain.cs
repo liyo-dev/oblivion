@@ -93,6 +93,7 @@ namespace Game.NPC
         NPCSimpleAnimator _animator;
         Animator _rawAnimator;
         Transform _player;
+        Transform _combatTarget; // Objetivo actual de ataque (jugador o miembro del equipo)
         NPCShieldController _shieldController;
         NPCAlertIconController _alertIconController; // Sistema de iconos visuales (usa prefabs)
         // FSM State
@@ -183,9 +184,10 @@ namespace Game.NPC
             if (_fsmRoutine != null) StopCoroutine(_fsmRoutine);
             
             // Buscar player si no existe
-            if (_ctx.Player == null) 
+            if (_ctx.Player == null)
                  _ctx.Player = PlayerService.PlayerTransform;
             _player = _ctx.Player;
+            _combatTarget = _player;
 
             // Guardar posición inicial para poder volver
             _combatStartPosition = transform.position;
@@ -428,7 +430,10 @@ namespace Game.NPC
                 _currentState = CombatState.SEARCHING;
                 yield break;
             }
-            
+
+            // Elegir el objetivo más cercano: jugador o miembro del equipo
+            ReevaluateTarget();
+
             float dist = Vector3.Distance(transform.position, _player.position);
 
             // ✅ B. Si está demasiado cerca (zona de peligro) → HUIR
@@ -958,7 +963,7 @@ namespace Game.NPC
             }
             
             StopMove(); // Quieto para disparar
-            _animator.FaceTarget(_player.position);
+            _animator.FaceTarget(_combatTarget.position);
 
             // Seleccionar ataque disponible (Prioridad: Special > Right > Left)
             AttackSlot chosenAttack = new AttackSlot();
@@ -1718,6 +1723,37 @@ namespace Game.NPC
             return transform.position + flankDir * 4f;
         }
 
+        /// <summary>
+        /// Selecciona el objetivo de ataque más cercano entre el jugador y los miembros del equipo visibles.
+        /// Se llama cada vez que el cerebro entra en estado EVALUATE.
+        /// </summary>
+        private void ReevaluateTarget()
+        {
+            if (_player == null) return;
+
+            _combatTarget = _player;
+            float bestDist = Vector3.Distance(transform.position, _player.position);
+
+            var party = PlayerParty.Instance;
+            if (party == null || party.MemberCount == 0) return;
+
+            var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
+
+            foreach (var member in party.Members)
+            {
+                if (member == null)                     continue;
+                if (member == hiddenNpc)                continue; // Controlado por el jugador, no tiene cuerpo propio
+                if (member.IsDeadInBattle)              continue; // Muerto, ignorar
+
+                float dist = Vector3.Distance(transform.position, member.transform.position);
+                if (dist < bestDist)
+                {
+                    bestDist      = dist;
+                    _combatTarget = member.transform;
+                }
+            }
+        }
+
         private void SpawnProjectile(int slotIndex)
         {
             // Aquí iría tu lógica de instanciar prefab
@@ -1729,10 +1765,11 @@ namespace Game.NPC
                 var prefab = _ctx.Config.combatConfig.GetSpellPrefab(slotIndex);
                 if (prefab)
                 {
-                     Vector3 spawnPos = transform.position + Vector3.up * 1.5f + transform.forward;
-                     var spell = Instantiate(prefab, spawnPos, Quaternion.LookRotation(_player.position - spawnPos));
-                     if(spell.TryGetComponent<EnemyProjectile>(out var proj)) 
-                         proj.Initialize((_player.position - spawnPos).normalized);
+                     Vector3 spawnPos   = transform.position + Vector3.up * 1.5f + transform.forward;
+                     Vector3 targetPos  = _combatTarget.position + Vector3.up * 1f;
+                     var spell = Instantiate(prefab, spawnPos, Quaternion.LookRotation(targetPos - spawnPos));
+                     if (spell.TryGetComponent<EnemyProjectile>(out var proj))
+                         proj.Initialize((targetPos - spawnPos).normalized);
                 }
             }
         }

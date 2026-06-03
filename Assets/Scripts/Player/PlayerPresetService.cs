@@ -221,7 +221,8 @@ public class PlayerPresetService : MonoBehaviour
         {
             // Proteger el registry de Will contra datos corrompidos del preset antes de guardarlos.
             var registry = CharacterAppearanceRegistry.Instance;
-            if (registry != null && registry.HasWillSnapshot && IsSelectionCorrupted(selection, registry))
+            var snap = registry?.GetAppearance(PartyControlManager.CharacterSlot.Will);
+            if (registry != null && registry.HasWillSnapshot && snap?.Count > 0 && IsSelectionCorrupted(selection, registry))
             {
                 Debug.LogWarning("[PlayerPresetService] ↩️ preset.appearance corrompido — registry de Will NO se sobreescribe.");
                 return;
@@ -241,7 +242,9 @@ public class PlayerPresetService : MonoBehaviour
         {
             // Detectar corrupción: si el preset contiene partes de otro personaje, usar el
             // snapshot del registry en lugar de sobreescribirlo con datos corruptos.
-            bool corrupted = reg.HasWillSnapshot && IsSelectionCorrupted(selection, reg);
+            // Requisito: el snapshot debe ser no-vacío para ser válido como referencia.
+            var willSnap = reg.GetAppearance(PartyControlManager.CharacterSlot.Will);
+            bool corrupted = reg.HasWillSnapshot && willSnap.Count > 0 && IsSelectionCorrupted(selection, reg);
             if (corrupted)
             {
                 Debug.LogWarning("[PlayerPresetService] ⚠️ Corrupción detectada en preset.appearance. Aplicando snapshot existente del registry sin sobreescribir.");

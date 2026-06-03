@@ -98,6 +98,12 @@ public class PlayerHealthSystem : MonoBehaviour
 #pragma warning restore CS0414
     private float _lastNotifiedHealth;
     
+    /// <summary>
+    /// Cuando es true, la muerte del personaje activo NO provoca game over.
+    /// Se activa al controlar a Liam o Estela; el equipo asume el control tras la muerte.
+    /// </summary>
+    public bool IsPartyCharacterMode { get; set; }
+
     // Propiedades públicas usando GameBootProfile
     public bool IsAlive => _currentHp > 0 && !_isDead;
     public bool IsInvulnerable => _isInvulnerable || Time.time < _invulnerableUntil;
@@ -381,6 +387,20 @@ public class PlayerHealthSystem : MonoBehaviour
         UpdateUI();
     }
     
+    /// <summary>
+    /// Inicializa HP y MP directamente sin efectos secundarios ni animaciones.
+    /// Usado al cambiar el personaje activo para reflejar sus stats en la UI.
+    /// </summary>
+    public void InitStats(float newMaxHp, float newCurrentHp)
+    {
+        _maxHp = Mathf.Max(1f, newMaxHp);
+        _currentHp = Mathf.Clamp(newCurrentHp, 0f, _maxHp);
+        _isDead = _currentHp <= 0f;
+        _lastNotifiedHealth = _currentHp;
+        _initialized = true;
+        UpdateUI();
+    }
+
     private void Die()
     {
         if (_isDead) return;
@@ -418,14 +438,17 @@ public class PlayerHealthSystem : MonoBehaviour
             Debug.LogWarning($"[PlayerHealth] Error al reproducir animación/sonido de muerte: {e}");
         }
 
-        // Mostrar pantalla de Game Over (si existe un GameOverManager en la escena)
-        try
+        // Mostrar pantalla de Game Over solo si no es un personaje secundario del equipo
+        if (!IsPartyCharacterMode)
         {
-            GameOverManager.NotifyGameOver();
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"[PlayerHealth] Error notificando GameOver: {e}");
+            try
+            {
+                GameOverManager.NotifyGameOver();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PlayerHealth] Error notificando GameOver: {e}");
+            }
         }
     }
 

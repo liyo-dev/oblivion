@@ -96,6 +96,18 @@ public class Damageable : MonoBehaviour, IDamageable
         Die();
     }
 
+    /// <summary>Revive este objeto con la vida indicada. Reactiva colisionador y Rigidbody si fueron desactivados por Die().</summary>
+    public void Revive(float hp)
+    {
+        enabled = true;
+        _invulnerableUntil = -999f;
+        var col = GetComponent<Collider>();
+        if (col) col.enabled = true;
+        var rb = GetComponent<Rigidbody>();
+        if (rb) { rb.isKinematic = false; rb.detectCollisions = true; }
+        Current = Mathf.Clamp(Mathf.Max(0.1f, hp), 0f, maxHealth);
+    }
+
     void Die()
     {
         Debug.Log($"[Damageable:{name}] 💀💀💀 Die() llamado - Invocando OnDied (suscriptores: {OnDied?.GetInvocationList().Length ?? 0})");

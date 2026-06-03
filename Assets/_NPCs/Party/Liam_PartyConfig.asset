@@ -28,6 +28,8 @@ MonoBehaviour:
   radioVagabundeo: 2
   autoUnirseACombate: 1
   rangoAsistenciaCombate: 30
+  maxHP: 100
+  maxMP: 100
   spellLeft: {fileID: 11400000, guid: d19ce172139aa96458ee0113fcd2a775, type: 2}
   spellRight: {fileID: 11400000, guid: 0686630f8f80a5c4291f775845a499d7, type: 2}
   spellSpecial: {fileID: 0}

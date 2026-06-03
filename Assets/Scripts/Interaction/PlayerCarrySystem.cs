@@ -96,6 +96,7 @@ public class PlayerCarrySystem : MonoBehaviour
                 _animator.SetLayerWeight(animatorLayer, 1f);
         }
 
+        CancelInvoke(nameof(AttachObject));
         Invoke(nameof(AttachObject), attachDelay);
     }
 
@@ -120,7 +121,7 @@ public class PlayerCarrySystem : MonoBehaviour
                 col.enabled = false;
         }
 
-        _carriedObject.transform.SetParent(carryPoint, worldPositionStays:false);
+        _carriedObject.transform.SetParent(carryPoint, worldPositionStays:true);
         _carriedObject.transform.localPosition = Vector3.zero;
         _carriedObject.transform.localRotation = Quaternion.identity;
 
@@ -141,6 +142,7 @@ public class PlayerCarrySystem : MonoBehaviour
         if (_animator != null)
             _animator.CrossFade(throwStateName, transitionDuration, animatorLayer);
 
+        CancelInvoke(nameof(PhysicallyDropObject));
         Invoke(nameof(PhysicallyDropObject), throwAnimationDuration);
     }
 
@@ -219,6 +221,41 @@ public class PlayerCarrySystem : MonoBehaviour
     public bool IsCarrying => _isCarrying;
     public bool IsPickingUp => _isPickingUp;
     public GameObject CarriedObject => _carriedObject;
+
+    void OnDisable()
+    {
+        // Cancelar invokes pendientes para no dejar el ActionManager en un estado sucio
+        // ni los colliders del objeto cargado deshabilitados.
+        CancelInvoke(nameof(AttachObject));
+        CancelInvoke(nameof(PhysicallyDropObject));
+
+        if (_isCarrying || _isPickingUp)
+        {
+            // Restaurar colliders si el objeto sigue en memoria
+            if (_carriedColliders != null)
+            {
+                foreach (var col in _carriedColliders)
+                    if (col != null) col.enabled = true;
+                _carriedColliders = null;
+            }
+            if (_carriedRigidbody != null)
+            {
+                _carriedRigidbody.isKinematic = false;
+                _carriedRigidbody.useGravity  = true;
+            }
+            if (_carriedObject != null)
+                _carriedObject.transform.SetParent(null);
+
+            if (_isCarrying && _actionManager != null)
+                _actionManager.PopMode(ActionMode.Carrying);
+
+            _isCarrying       = false;
+            _isPickingUp      = false;
+            _carriedObject    = null;
+            _carriedRigidbody = null;
+            _carriedPickupObject = null;
+        }
+    }
 
     void OnDrawGizmos()
     {

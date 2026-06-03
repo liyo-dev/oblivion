@@ -121,6 +121,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         // 1. Guardar estado del personaje que se abandona
         registry?.CaptureCurrentAppearance(from);
+        // Guardar HP/MP y sincronizar el Damageable del NPC saliente
+        PartyStatsManager.Instance?.SaveCurrentStats((int)from);
+        PartyStatsManager.Instance?.SyncNpcDamageable((int)from);
         if (from == PartyControlManager.CharacterSlot.Will)
         {
             CaptureWillSpells();
@@ -137,6 +140,8 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         // 4. Cambiar hechizos del player
         ApplySpells(to);
+        // Cargar HP/MP del personaje entrante en PlayerHealthSystem/ManaPool
+        PartyStatsManager.Instance?.LoadStats((int)to);
 
         // 5. Gestionar visibilidad de NPCs de Liam/Estela
         // IMPORTANT: actualizar _hiddenNpc antes de llamar SetNpcVisible para que el guard
@@ -315,17 +320,38 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
     private void ApplySpells(PartyControlManager.CharacterSlot slot)
     {
-        if (magicCaster == null) return;
+        if (magicCaster == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[ActiveCharacterSwapper] ApplySpells({slot}): magicCaster es NULL");
+#endif
+            return;
+        }
 
         if (slot == PartyControlManager.CharacterSlot.Will)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[ActiveCharacterSwapper] ApplySpells(Will): L={_willLeft?.displayName} R={_willRight?.displayName} S={_willSpecial?.displayName}");
+#endif
             magicCaster.SetSpells(_willLeft, _willRight, _willSpecial);
             return;
         }
 
-        var config = GetNpc(slot)?.PartyConfig;
+        var npc = GetNpc(slot);
+        var config = npc?.PartyConfig;
         if (config != null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[ActiveCharacterSwapper] ApplySpells({slot}): L={config.GetSpell(0)?.displayName} R={config.GetSpell(1)?.displayName} S={config.GetSpell(2)?.displayName} — en magicCaster={magicCaster.name} (instanceID={magicCaster.GetInstanceID()})");
+#endif
             magicCaster.SetSpells(config.GetSpell(0), config.GetSpell(1), config.GetSpell(2));
+        }
+        else
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[ActiveCharacterSwapper] ApplySpells({slot}): NPC={npc?.name ?? "null"}, config={config?.name ?? "null"} — hechizos no actualizados");
+#endif
+        }
     }
 
     private void SetNpcVisible(NPCPartyMember npc, bool visible)
@@ -340,6 +366,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
         {
             if (visible)
             {
+                // NPC muerto en batalla: visible pero congelado, sin reiniciar IA
+                if (npc.IsDeadInBattle) { agent.isStopped = true; return; }
+
                 agent.isStopped = false;
                 var enemy = GetActiveCombatEnemy();
                 if (enemy != null)

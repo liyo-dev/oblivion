@@ -90,4 +90,4 @@ MonoBehaviour:
     isPlayerSpeaking: 1
     forcedShotType: 0
     emotion: 0
-  isGroupConversation: 1
+  isGroupConversation: 0

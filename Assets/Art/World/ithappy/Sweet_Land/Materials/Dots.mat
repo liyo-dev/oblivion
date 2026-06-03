@@ -92,7 +92,7 @@ Material:
     - LIGHTMAP_SHADOW_MIXING: 0
     - SHADOWS_SHADOWMASK: 0
     - _AddPrecomputedVelocity: 0
-    - _AdditionalLightCutoffPoint: 0.8
+    - _AdditionalLightCutoffPoint: 1
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Blend: 0
@@ -122,7 +122,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _SHADING_STYLE: 0
-    - _ShadowsFloor: 0.25
+    - _ShadowsFloor: 0.5
     - _Smoothness: 0.05325752
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -131,7 +131,7 @@ Material:
     - _SrcBlendAlpha: 1
     - _StrongRimStrength: 0
     - _Surface: 0
-    - _ToonCutoffPoint: 0.2
+    - _ToonCutoffPoint: 0.01
     - _UVSec: 0
     - _UseEmission: 0
     - _WorkflowMode: 1

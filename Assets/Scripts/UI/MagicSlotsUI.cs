@@ -31,6 +31,7 @@ public class MagicSlotsUI : MonoBehaviour
     // Referencias automáticas
     private MagicCaster _magicCaster;
     private ManaPool _manaPool;
+    private Sprite _defaultSprite;
 
     // UI Elements
     private Canvas _canvas;
@@ -55,7 +56,23 @@ public class MagicSlotsUI : MonoBehaviour
 
     void Awake()
     {
+        _defaultSprite = CreateDefaultSpellIcon();
         CreateSlotsUI();
+        FindPlayerComponents();
+    }
+
+    void OnEnable()
+    {
+        PlayerPresetService.OnPresetApplied += OnPresetApplied;
+    }
+
+    void OnDisable()
+    {
+        PlayerPresetService.OnPresetApplied -= OnPresetApplied;
+    }
+
+    private void OnPresetApplied()
+    {
         FindPlayerComponents();
     }
 
@@ -138,8 +155,7 @@ public class MagicSlotsUI : MonoBehaviour
         slotUI.iconImage = iconGO.AddComponent<Image>();
         slotUI.iconImage.color = availableColor;
         slotUI.iconImage.raycastTarget = false;
-        // Sprite por defecto (círculo simple)
-        slotUI.iconImage.sprite = CreateDefaultSpellIcon();
+        slotUI.iconImage.sprite = _defaultSprite;
 
         // Overlay de cooldown
         var cooldownGO = new GameObject("CooldownOverlay");
@@ -198,26 +214,25 @@ public class MagicSlotsUI : MonoBehaviour
 
     private void FindPlayerComponents()
     {
-        // Buscar componentes en el player
         var player = PlayerService.Player;
         if (player)
         {
-            _magicCaster = player.GetComponent<MagicCaster>() ?? player.GetComponentInParent<MagicCaster>();
-            _manaPool = player.GetComponent<ManaPool>() ?? player.GetComponentInParent<ManaPool>();
+            if (!_magicCaster)
+                _magicCaster = player.GetComponentInChildren<MagicCaster>(true)
+                    ?? player.GetComponent<MagicCaster>();
+            if (!_manaPool)
+                _manaPool = player.GetComponentInChildren<ManaPool>(true)
+                    ?? player.GetComponent<ManaPool>();
         }
 
-        // Si no se encontraron, buscar en este GameObject
-        if (!_magicCaster) _magicCaster = GetComponent<MagicCaster>() ?? GetComponentInParent<MagicCaster>();
-        if (!_manaPool) _manaPool = GetComponent<ManaPool>() ?? GetComponentInParent<ManaPool>();
+        if (!_magicCaster) _magicCaster = ServiceLocator.Get<MagicCaster>(false);
+        if (!_manaPool) _manaPool = ServiceLocator.Get<ManaPool>(false);
     }
 
     private IEnumerator FindComponentsDelayed()
     {
         yield return new WaitForSeconds(1f);
-
-        // Buscar en toda la escena como último recurso
-    if (!_magicCaster) _magicCaster = ServiceLocator.Get<MagicCaster>(false);
-    if (!_manaPool) _manaPool = ServiceLocator.Get<ManaPool>(false);
+        FindPlayerComponents();
 
         if (showDebugInfo)
         {
@@ -226,9 +241,22 @@ public class MagicSlotsUI : MonoBehaviour
         }
     }
 
+    private float _debugLogTimer;
+
     private void UpdateSlotsUI()
     {
-        if (!_magicCaster || !_manaPool) return;
+        if (!_magicCaster || !_manaPool)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _debugLogTimer += Time.deltaTime;
+            if (_debugLogTimer > 3f)
+            {
+                _debugLogTimer = 0f;
+                Debug.LogWarning($"[MagicSlotsUI] UpdateSlotsUI sin referencias: magicCaster={(_magicCaster ? _magicCaster.name : "NULL")}, manaPool={(_manaPool ? "OK" : "NULL")}");
+            }
+#endif
+            return;
+        }
 
         UpdateSlot(_leftSlot);
         UpdateSlot(_rightSlot);
@@ -240,6 +268,17 @@ public class MagicSlotsUI : MonoBehaviour
         if (slot?.slotObject == null) return;
 
         var spell = _magicCaster.GetSpellForSlot(slot.slotType);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (slot == _leftSlot)
+        {
+            _debugLogTimer += Time.deltaTime;
+            if (_debugLogTimer > 3f)
+            {
+                _debugLogTimer = 0f;
+                Debug.Log($"[MagicSlotsUI] SlotLeft spell={spell?.displayName ?? "null"} | magicCaster={_magicCaster.name} (ID={_magicCaster.GetInstanceID()})");
+            }
+        }
+#endif
         bool hasSpell = spell != null;
         bool canCast = _magicCaster.CanCastSpell(slot.slotType);
         bool isOnCooldown = _magicCaster.IsOnCooldown(slot.slotType);
@@ -335,12 +374,8 @@ public class MagicSlotsUI : MonoBehaviour
             }
         }
 
-        // Actualizar icono del hechizo si es posible
-        // TODO: Si tienes iconos específicos para hechizos, asignarlos aquí
-        if (spell.spawnVFX != null)
-        {
-            // Intentar usar algún sprite del VFX si está disponible
-        }
+        // Actualizar icono del hechizo desde attackIcon del SpellSO
+        slot.iconImage.sprite = spell.attackIcon != null ? spell.attackIcon : _defaultSprite;
     }
     
     // Efecto de flash cuando el hechizo está listo después del cooldown

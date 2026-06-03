@@ -66,4 +66,4 @@ MonoBehaviour:
   castSFXKey: LlamaAstral
   impactSFXKey: Impact1
   slotType: 0
-  attackIcon: {fileID: 21300000, guid: 7522bb52d0451d3418f913dd207b577a, type: 3}
+  attackIcon: {fileID: 21300000, guid: 2e669deaf2534d94687bc34177076565, type: 3}

@@ -40,7 +40,7 @@ MonoBehaviour:
   levitationRange: 5
   levitationAngle: 45
   levitationPullForce: 5
-  levitationPushForce: 50
+  levitationPushForce: 10
   levitationHoldDistance: 3
   levitationHeight: 2
   levitationLiftSpeed: 3
@@ -57,6 +57,8 @@ MonoBehaviour:
   levitationCaptureShakeDuration: 0.2
   levitationReleaseShakeIntensity: 0.5
   levitationReleaseShakeDuration: 0.3
+  levitationImpactDamage: 25
+  levitationImpactMinSpeed: 4
   spawnVFX: {fileID: 0}
   impactVFX: {fileID: 0}
   despawnVFX: {fileID: 0}
