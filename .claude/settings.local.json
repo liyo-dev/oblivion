@@ -83,7 +83,9 @@
       "Bash(Select-String \"GamePhase.PauseMenu\")",
       "Bash(Select-Object -ExpandProperty Path)",
       "Bash(Get-Unique)",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Sort-Object)"
     ]
   }
 }

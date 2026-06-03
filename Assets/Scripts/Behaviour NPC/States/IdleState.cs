@@ -99,13 +99,11 @@ namespace Game.NPC.States
             // 3. Interacción
             if (context.IsInteracting) return null; // Quedarse en Idle mientras habla
             
-            // 4. Lógica de Patrulla (Wander)
-            if (context.Config != null && context.Config.enableWander)
+            // 4. Lógica de Patrulla (Wander) - bloqueada si el NPC está anclado por el sistema de party
+            if (context.Config != null && context.Config.enableWander && !context.IsPinnedByParty)
             {
                 if (_idleTimer >= _idleDuration)
                 {
-                    // Si acabamos de llegar a un destino (via MoveToPosition o Wander),
-                    // ya hemos esperado suficiente.
                     return new WanderState();
                 }
             }

@@ -20,10 +20,15 @@ namespace Game.NPC.States
         private float _pathUpdateTimer;
         private float _stateTimer; // Tiempo total en este estado
         private float _idleTimer; // Tiempo que lleva parado
-        
+
         // Estados internos
         private bool _isInitialized;
         private Vector3 _lastPlayerPosition;
+
+        // Wander suave cerca del jugador
+        private bool _isWanderingNearPlayer;
+        private Vector3 _wanderTarget;
+        private const float PLAYER_STATIC_BEFORE_WANDER = 3f;
         
         // Valores por defecto (se usan si no hay config)
         private const float PATH_UPDATE_INTERVAL = 0.1f; // Actualizar path MÁS frecuente (era 0.15)
@@ -54,6 +59,7 @@ namespace Game.NPC.States
             _stateTimer = 0f;
             _idleTimer = 0f;
             _isInitialized = false;
+            _isWanderingNearPlayer = false;
             
             // Guardar posición inicial del jugador
             if (context.Player != null)
@@ -117,11 +123,31 @@ namespace Game.NPC.States
             if (playerIsMoving)
             {
                 _lastPlayerPosition = context.Player.position;
-                _idleTimer = 0f; // Resetear idle timer
+                _idleTimer = 0f;
+                _isWanderingNearPlayer = false; // Cancelar wander si el jugador se mueve
             }
-            
+
+            // Manejar wander activo cerca del jugador ANTES de la lógica de seguimiento
+            if (_isWanderingNearPlayer)
+            {
+                bool reached = !context.Agent.pathPending && context.Agent.remainingDistance < stopDist * 0.5f;
+                if (reached)
+                {
+                    _isWanderingNearPlayer = false;
+                    _idleTimer = 0f; // Esperar antes del próximo wander
+                    context.Agent.isStopped = true;
+                    context.Agent.updatePosition = false;
+                    context.Animator?.SetMovementSpeed(0f);
+                }
+                else
+                {
+                    UpdateMovementAnimation(context);
+                    return;
+                }
+            }
+
             // ===== LÓGICA MEJORADA DE SEGUIMIENTO =====
-            
+
             // 1. Si está MUY CERCA -> PARAR y MIRAR al jugador
             if (distance <= stopDist)
             {
@@ -135,13 +161,20 @@ namespace Game.NPC.States
                 context.Animator?.SetMovementSpeed(0f);
                 
                 _idleTimer += Time.deltaTime;
-                
+
                 // Girar suavemente hacia el jugador cuando está cerca
-                if (_idleTimer > 0.5f) // Esperar medio segundo antes de girar
+                if (_idleTimer > 0.5f)
                 {
                     RotateTowardsPlayer(context);
                 }
-                
+
+                // Wander suave: si el jugador lleva quieto un rato, el NPC se mueve un poco
+                if (_config != null && _config.puedeVagarCerca &&
+                    _idleTimer >= PLAYER_STATIC_BEFORE_WANDER)
+                {
+                    TryStartPartyWander(context, stopDist);
+                }
+
                 return;
             }
             
@@ -262,6 +295,33 @@ namespace Game.NPC.States
         private float GetWalkSpeed()
         {
             return _config?.velocidadCaminando ?? DEFAULT_WALK_SPEED;
+        }
+
+        private void TryStartPartyWander(NPCStateContext context, float stopDist)
+        {
+            if (context.Player == null || context.Agent == null) return;
+
+            float radius = _config.radioVagabundeo;
+            Vector3 randomDir = Random.insideUnitSphere;
+            randomDir.y = 0;
+            if (randomDir.sqrMagnitude < 0.01f) randomDir = Vector3.right;
+            Vector3 candidatePos = context.Player.position + randomDir.normalized * Random.Range(radius * 0.4f, radius);
+
+            if (!NavMesh.SamplePosition(candidatePos, out NavMeshHit hit, radius, NavMesh.AllAreas))
+                return;
+
+            _isWanderingNearPlayer = true;
+            _wanderTarget = hit.position;
+            _idleTimer = 0f;
+
+            if (!context.Agent.updatePosition)
+            {
+                context.Agent.nextPosition = context.Transform.position;
+                context.Agent.updatePosition = true;
+            }
+            context.Agent.isStopped = false;
+            context.Agent.speed = _config.velocidadCaminando;
+            context.Agent.SetDestination(_wanderTarget);
         }
 
         public override void OnExit(NPCStateContext context)

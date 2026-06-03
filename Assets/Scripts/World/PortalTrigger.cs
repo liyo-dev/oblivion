@@ -17,6 +17,14 @@ public class PortalTrigger : MonoBehaviour
     [Tooltip("Desactivar gravedad durante el teletransporte (útil para escaleras/desniveles). Dejar en false para puertas normales.")]
     public bool disableGravityDuringTeleport = false;
 
+    [Header("Condición de ítem (opcional)")]
+    [Tooltip("Si se asigna, el portal solo se activa si el jugador tiene este ítem en el inventario.")]
+    public ItemData requiredItem;
+    [Min(1)]
+    public int requiredItemAmount = 1;
+    [Tooltip("Si está activo, el ítem se consume al entrar al portal.")]
+    public bool consumeItemOnEnter = false;
+
     private bool _pendingUse;
     private bool _waitingForSceneLoad;
 
@@ -90,6 +98,28 @@ public class PortalTrigger : MonoBehaviour
             {
                 Debug.Log($"[PortalTrigger] Flag requerida '{requiredFlag}' no encontrada. Portal bloqueado.");
                 return;
+            }
+        }
+
+        // Verificar ítem requerido
+        if (requiredItem != null)
+        {
+            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
+            {
+                Debug.LogWarning("[PortalTrigger] Inventario no encontrado en el jugador. Portal bloqueado.");
+                return;
+            }
+
+            if (!inventory.HasItem(requiredItem, requiredItemAmount))
+            {
+                Debug.Log($"[PortalTrigger] Ítem requerido '{requiredItem.itemId}' (x{requiredItemAmount}) no encontrado. Portal bloqueado.");
+                return;
+            }
+
+            if (consumeItemOnEnter)
+            {
+                if (!inventory.TryConsume(requiredItem, requiredItemAmount))
+                    Debug.LogWarning($"[PortalTrigger] No se pudo consumir '{requiredItem.itemId}' pese a que el conteo era suficiente.");
             }
         }
 

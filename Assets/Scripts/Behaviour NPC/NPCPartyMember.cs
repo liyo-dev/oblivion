@@ -418,6 +418,10 @@ namespace Game.NPC
         /// </summary>
         internal void OnJoinedParty(PlayerParty party)
         {
+            // Limpiar anclaje al rejoinearse al party
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsPinnedByParty = false;
+
             // Asegurar que los renderers están visibles (pueden haber sido ocultados por HideNonPartyNPCs)
             // EXCEPTO si este NPC es el oculto (controlado por el jugador vía character swap)
             bool isHiddenBySwapper = ActiveCharacterSwapper.Instance != null
@@ -463,8 +467,12 @@ namespace Game.NPC
 
             Log("👋 Abandonó el equipo");
 
-            // Detener seguimiento
-            StopFollowing();
+            // Anclar al NPC: queda fijo donde está, sin vagar hasta que rejoinee el party
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsPinnedByParty = true;
+
+            // Forzar Idle directamente (no restaurar estado anterior que podría ser WanderState)
+            _npcManager?.ForceIdle();
 
             _party = null;
             OnLeft?.Invoke();

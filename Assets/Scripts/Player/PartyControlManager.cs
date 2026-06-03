@@ -208,9 +208,17 @@ public class PartyControlManager : MonoBehaviour
             if (member == null || member == hiddenNpc) continue;
 
             if (_isPartyFollowing)
+            {
+                if (member.NPCManager?.Context != null)
+                    member.NPCManager.Context.IsPinnedByParty = false;
                 member.StartFollowing();
+            }
             else
+            {
                 member.StopFollowing();
+                if (member.NPCManager?.Context != null)
+                    member.NPCManager.Context.IsPinnedByParty = true;
+            }
         }
     }
     #endregion

@@ -27,7 +27,14 @@ namespace Game.NPC.States
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
-            
+
+            // Red de seguridad: si el NPC está anclado por el party, volver a Idle
+            if (context.IsPinnedByParty)
+            {
+                context.Brain.ChangeState(new IdleState());
+                return;
+            }
+
             _hasSetDestination = false;
             _stuckTimer = 0f;
             _lastPosition = context.Transform.position;

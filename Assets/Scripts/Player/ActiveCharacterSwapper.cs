@@ -119,6 +119,11 @@ public class ActiveCharacterSwapper : MonoBehaviour
         var registry = CharacterAppearanceRegistry.Instance;
         Debug.Log($"[ActiveCharacterSwapper] SwitchCharacter {from}→{to} | registry={(object)registry ?? "NULL"} | _ready={_ready}");
 
+        // Capturar posición actual del controller ANTES de teleportar, para anclar NPCs
+        PlayerService.TryGetPlayer(out var playerGO);
+        Vector3 fromPos = playerGO != null ? playerGO.transform.position : Vector3.zero;
+        Quaternion fromRot = playerGO != null ? playerGO.transform.rotation : Quaternion.identity;
+
         // 1. Guardar estado del personaje que se abandona
         registry?.CaptureCurrentAppearance(from);
         // Guardar HP/MP y sincronizar el Damageable del NPC saliente
@@ -148,6 +153,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
         // en OnPlayerEnteredCombat no bloquee al NPC que acaba de ser liberado del control del jugador.
         var prevHidden = _hiddenNpc;
         _hiddenNpc = toNpc;
+        // Devolver el NPC previo exactamente a donde estaba el controller (ej: encima de un botón)
+        if (prevHidden != null)
+            WarpNpcToPosition(prevHidden, fromPos, fromRot);
         SetNpcVisible(prevHidden, true);
         SetNpcVisible(_hiddenNpc, false);
 
@@ -155,11 +163,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
         bool willIsActive = to == PartyControlManager.CharacterSlot.Will;
         if (willIsActive)
         {
+            // Teleportar el controller a donde está el NPC de Will antes de destruirlo
+            if (_willNpcInstance != null)
+                TeleportPlayer(_willNpcInstance.transform.position, _willNpcInstance.transform.rotation);
             DestroyWillNpc();
         }
         else if (_willNpcInstance == null)
         {
-            SpawnWillNpc();
+            // Will spawna exactamente donde estaba el controller (ej: encima de un botón)
+            SpawnWillNpc(fromPos, fromRot);
         }
     }
 
@@ -213,28 +225,27 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (_willNpcInstance == null) return;
 
         if (isFollowing)
+        {
+            if (_willNpcInstance.NPCManager?.Context != null)
+                _willNpcInstance.NPCManager.Context.IsPinnedByParty = false;
             _willNpcInstance.StartFollowingIgnorePartyCheck();
+        }
         else
+        {
             _willNpcInstance.StopFollowing();
+            if (_willNpcInstance.NPCManager?.Context != null)
+                _willNpcInstance.NPCManager.Context.IsPinnedByParty = true;
+        }
     }
 
-    private void SpawnWillNpc()
+    private void SpawnWillNpc(Vector3 spawnPos, Quaternion spawnRot)
     {
         if (willNpcPrefab == null) return;
 
-        PlayerService.TryGetPlayer(out var playerGO);
+        // Buscar posición válida en NavMesh lo más cerca posible de donde estaba el controller
+        Vector3 pos = NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 2f, NavMesh.AllAreas) ? hit.position : spawnPos;
 
-        // Calcular posición detrás del jugador para que Will no aparezca encima del personaje activo
-        Vector3 pos = Vector3.zero;
-        Quaternion rot = Quaternion.identity;
-        if (playerGO != null)
-        {
-            rot = playerGO.transform.rotation;
-            Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
-            pos = NavMesh.SamplePosition(behind, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : playerGO.transform.position;
-        }
-
-        var go = Instantiate(willNpcPrefab, pos, rot);
+        var go = Instantiate(willNpcPrefab, pos, spawnRot);
         _willNpcInstance = go.GetComponent<NPCPartyMember>();
         _willNpcInstance?.SetRuntimeSpells(_willLeft, _willRight, _willSpecial);
         _willFollowCheckTimer = 0f;
@@ -278,10 +289,18 @@ public class ActiveCharacterSwapper : MonoBehaviour
         _willFollowCheckTimer = 0f; // Reiniciar timer para no duplicar la primera verificación
 
         var enemy = GetActiveCombatEnemy();
+        bool partyFollowing = PartyControlManager.Instance?.IsPartyFollowing ?? true;
         if (enemy != null)
             _willNpcInstance.OnPlayerEnteredCombat(enemy);
-        else if (PartyControlManager.Instance?.IsPartyFollowing == true)
+        else if (partyFollowing)
             _willNpcInstance.StartFollowingIgnorePartyCheck();
+        else
+        {
+            // Modo libre: Will se queda anclado donde fue instanciado (p. ej., sobre un botón)
+            _willNpcInstance.StopFollowing();
+            if (_willNpcInstance.NPCManager?.Context != null)
+                _willNpcInstance.NPCManager.Context.IsPinnedByParty = true;
+        }
     }
 
     private void DestroyWillNpc()
@@ -371,10 +390,18 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
                 agent.isStopped = false;
                 var enemy = GetActiveCombatEnemy();
+                bool partyFollowing = PartyControlManager.Instance?.IsPartyFollowing ?? true;
                 if (enemy != null)
                     npc.OnPlayerEnteredCombat(enemy);
-                else
+                else if (partyFollowing)
                     npc.StartFollowing();
+                else
+                {
+                    // Modo libre: el NPC se queda anclado donde fue posicionado (p. ej., sobre un botón)
+                    npc.StopFollowing();
+                    if (npc.NPCManager?.Context != null)
+                        npc.NPCManager.Context.IsPinnedByParty = true;
+                }
             }
             else
             {
@@ -406,6 +433,17 @@ public class ActiveCharacterSwapper : MonoBehaviour
         }
 
         Debug.Log($"[ActiveCharacterSwapper] ActivateWillPartsByName — {activated}/{partNames.Count} partes activadas en '{npcRoot.name}'.");
+    }
+
+    private void WarpNpcToPosition(NPCPartyMember npc, Vector3 pos, Quaternion rot)
+    {
+        if (npc == null) return;
+        var agent = npc.GetComponent<NavMeshAgent>();
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+            agent.Warp(pos);
+        else
+            npc.transform.position = pos;
+        npc.transform.rotation = rot;
     }
 
     /// <summary>

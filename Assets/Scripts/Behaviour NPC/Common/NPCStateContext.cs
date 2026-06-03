@@ -21,6 +21,7 @@ namespace Game.NPC.Common
         public bool IsInCombat { get; set; }
         public bool IsInCinematic { get; set; }
         public bool WasDefeatedInCombat { get; set; } // NPC ha sido derrotado
+        public bool IsPinnedByParty { get; set; }    // NPC anclado al salir del party (no debe vagar)
         public bool DebugMode { get; set; }
         public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent, 
             NPCSimpleAnimator animator, Animator unityAnimator, Rigidbody rigidbody)

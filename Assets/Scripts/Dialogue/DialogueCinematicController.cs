@@ -1108,7 +1108,7 @@ public class DialogueCinematicController : MonoBehaviour
                 appropriateShot = activeProfile.openingShot;
 
             if (appropriateShot != null)
-                ApplyShotWithContext(appropriateShot, false, speaker);
+                ApplyShotWithContext(appropriateShot, false, speaker, forceCut: true);
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -1131,8 +1131,8 @@ public class DialogueCinematicController : MonoBehaviour
             ShowNPC();
             ShowPlayer();
 
-            // Aplicar close-up al speaker
-            ApplyShot(_effectCloseUpShot, speaker);
+            // Aplicar close-up al speaker (siempre corte — los efectos dramáticos deben ser instantáneos)
+            ApplyShot(_effectCloseUpShot, speaker, forceCut: true);
 
             // Calcular parámetros según el tipo de efecto
             float vignetteIntensity;
@@ -1233,18 +1233,18 @@ public class DialogueCinematicController : MonoBehaviour
         /// <summary>
         /// Aplica un plano cinematográfico específico
         /// </summary>
-        private void ApplyShot(CinematicCameraShot shot, Transform target)
+        private void ApplyShot(CinematicCameraShot shot, Transform target, bool forceCut = false)
         {
             if (shot == null || target == null) return;
 
         // Obtener una cámara virtual del pool
         CinemachineCamera vcam = GetPooledCamera();
-        
+
         // Activar el GameObject de la cámara
         vcam.gameObject.SetActive(true);
-        
+
         // Configurar posición y rotación
-        ConfigureCameraForShot(vcam, shot, target);
+        ConfigureCameraForShot(vcam, shot, target, forceCut);
 
         // Activar esta cámara con prioridad alta
         vcam.Priority.Value = 100;
@@ -1266,7 +1266,7 @@ public class DialogueCinematicController : MonoBehaviour
         /// <summary>
         /// Configura una cámara virtual según el plano especificado
         /// </summary>
-        private void ConfigureCameraForShot(CinemachineCamera vcam, CinematicCameraShot shot, Transform target)
+        private void ConfigureCameraForShot(CinemachineCamera vcam, CinematicCameraShot shot, Transform target, bool forceCut = false)
         {
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
@@ -1341,12 +1341,14 @@ public class DialogueCinematicController : MonoBehaviour
                     angleChange = Quaternion.Angle(currentVirtualCamera.transform.rotation, vcam.transform.rotation);
                 }
                 
-                // Si el cambio de ángulo es mayor a 90°, usar corte instantáneo para evitar giro feo
-                if (angleChange > 90f)
+                // Corte instantáneo si: (a) forzado por cambio de speaker, (b) ángulo > 90°
+                if (forceCut || angleChange > 90f)
                 {
-                    dialogueBrain.DefaultBlend.Time = 0f; // Corte instantáneo
+                    dialogueBrain.DefaultBlend.Time = 0f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     if (showDebugInfo)
-                        Debug.Log($"[DialogueCinematicController] Cambio de ángulo grande ({angleChange:F1}°) - usando corte instantáneo");
+                        Debug.Log($"[DialogueCinematicController] Corte instantáneo (forceCut={forceCut}, ángulo={angleChange:F1}°)");
+#endif
                 }
                 else
                 {
@@ -1745,9 +1747,8 @@ public class DialogueCinematicController : MonoBehaviour
     /// </summary>
     private int CalculateNextCutLine()
     {
-        // Valores predefinidos (mismos que en DialogueCinematicProfile)
-        const int baseLines = 2;  // Cambiar cada 2 líneas
-        const int variation = 1;  // Variación de +/- 1 línea
+        const int baseLines = 4; // corte automático cada 4 líneas (antes: 2)
+        const int variation = 1; // variación de +/- 1 → rango 3-5 líneas
         
         int randomVariation = Random.Range(-variation, variation + 1);
         int nextCut = currentLineIndex + baseLines + randomVariation;
@@ -1760,7 +1761,7 @@ public class DialogueCinematicController : MonoBehaviour
     /// <param name="shot">El plano a aplicar</param>
     /// <param name="isOpening">Si es el plano de apertura</param>
     /// <param name="targetOverride">Target específico (Player, NPC, o Party Member). Si es null, usa currentNPC</param>
-    private void ApplyShotWithContext(CinematicCameraShot shot, bool isOpening = false, Transform targetOverride = null)
+    private void ApplyShotWithContext(CinematicCameraShot shot, bool isOpening = false, Transform targetOverride = null, bool forceCut = false)
     {
         if (shot == null) return;
 
@@ -1775,13 +1776,16 @@ public class DialogueCinematicController : MonoBehaviour
         {
             ShowNPC();
             ShowPlayer();
-            ApplyShot(shot, effectiveTarget);
+            ApplyShot(shot, effectiveTarget, forceCut);
             return;
         }
 
-        // Modo individual: ocultar según quién habla
+        // Modo individual: ocultar según quién habla.
+        // OverShoulderPlayer se trata igual que CloseUp: la cámara está detrás del player,
+        // así que ocultar el player evita que su cuerpo tape al NPC (el sujeto).
         bool isCloseUpShot = shot.shotType == DialogueShotType.CloseUpNPC
-                          || shot.shotType == DialogueShotType.MediumNPC;
+                          || shot.shotType == DialogueShotType.MediumNPC
+                          || shot.shotType == DialogueShotType.OverShoulderPlayer;
 
         if (isPlayerOrPartySpeaking)
         {
@@ -1801,7 +1805,7 @@ public class DialogueCinematicController : MonoBehaviour
             ShowPlayer();
         }
 
-        ApplyShot(shot, effectiveTarget);
+        ApplyShot(shot, effectiveTarget, forceCut);
     }
     
     /// <summary>
