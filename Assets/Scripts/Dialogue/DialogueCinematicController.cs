@@ -1,8 +1,10 @@
 using UnityEngine;
 using Unity.Cinemachine;
+using System.Collections;
 using System.Collections.Generic;
-
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using Sendero.Core.Feedback;
 
 /// <summary>
 /// Controlador cinematográfico avanzado para diálogos usando Cinemachine.
@@ -104,6 +106,13 @@ public class DialogueCinematicController : MonoBehaviour
     private Renderer[] playerRenderers;
     private bool[] playerRenderersWereEnabled;
 
+    // Sistema de efectos cinematográficos por línea (CloseUp / Dramatic / Impact)
+    private Volume _effectsVolume;
+    private Vignette _effectsVignette;
+    private ChromaticAberration _effectsChromaticAberration;
+    private Coroutine _effectsCoroutine;
+    private DialogueLineEffect _activeEffect;
+
     void Awake()
     {
         // Debug.Log($"[DialogueCinematicController] ⚡ Awake iniciado en GameObject: {gameObject.name}");
@@ -138,8 +147,9 @@ public class DialogueCinematicController : MonoBehaviour
 
         // Crear cámara dedicada para diálogos (separada de Camera.main)
         CreateDialogueCamera();
-        
-        // Debug.Log($"[DialogueCinematicController] Sistema inicializado - DialogueCamera: {(dialogueCameraObject != null ? "OK" : "NULL")}");
+
+        // Crear Volume global para efectos cinematográficos (viñeta, aberración cromática)
+        CreateEffectsVolume();
     }
 
     /// <summary>
@@ -277,6 +287,28 @@ public class DialogueCinematicController : MonoBehaviour
         // Debug.Log($"[DialogueCinematicController] ✅ Cámara de diálogo creada - GameObject: {dialogueCameraObject.activeSelf}, Camera.enabled: {dialogueCamera.enabled}, Depth: {dialogueCamera.depth}, CullingMask incluye UI: {((dialogueCamera.cullingMask & (1 << LayerMask.NameToLayer("UI"))) != 0)}");
     }
 
+    private void CreateEffectsVolume()
+    {
+        var go = new GameObject("DialogueCinematicEffectsVolume");
+        go.transform.SetParent(transform);
+
+        _effectsVolume = go.AddComponent<Volume>();
+        _effectsVolume.isGlobal = true;
+        _effectsVolume.priority = 200;
+        _effectsVolume.weight = 0f;
+        _effectsVolume.profile = ScriptableObject.CreateInstance<VolumeProfile>();
+
+        _effectsVignette = _effectsVolume.profile.Add<Vignette>();
+        _effectsVignette.active = true;
+        _effectsVignette.intensity.overrideState = true;
+        _effectsVignette.intensity.value = 0f;
+
+        _effectsChromaticAberration = _effectsVolume.profile.Add<ChromaticAberration>();
+        _effectsChromaticAberration.active = true;
+        _effectsChromaticAberration.intensity.overrideState = true;
+        _effectsChromaticAberration.intensity.value = 0f;
+    }
+
     void Start()
     {
         // Inicializar el pool de cámaras
@@ -326,6 +358,10 @@ public class DialogueCinematicController : MonoBehaviour
             cameraPool.Clear();
         }
         
+        // Destruir el VolumeProfile creado en runtime
+        if (_effectsVolume != null && _effectsVolume.profile != null)
+            Destroy(_effectsVolume.profile);
+
         // Limpiar la instancia del Singleton si es esta instancia
         if (Instance == this)
         {
@@ -687,6 +723,24 @@ public class DialogueCinematicController : MonoBehaviour
         ShowPlayer();
         ShowNPC();
         
+        // Limpiar efectos cinematográficos si estaban activos
+        if (_activeEffect != DialogueLineEffect.None)
+        {
+            _activeEffect = DialogueLineEffect.None;
+            if (_effectsCoroutine != null)
+            {
+                StopCoroutine(_effectsCoroutine);
+                _effectsCoroutine = null;
+            }
+        }
+        // Desactivar post-procesado inmediatamente al cerrar diálogo
+        if (_effectsVolume != null)
+        {
+            _effectsVolume.weight = 0f;
+            _effectsVignette.intensity.value = 0f;
+            _effectsChromaticAberration.intensity.value = 0f;
+        }
+
         // Mostrar el HUD con fade suave
         ShowHUD();
 
@@ -860,23 +914,34 @@ public class DialogueCinematicController : MonoBehaviour
 
             currentLineIndex = lineIndex;
 
+            // Resolver speaker para esta línea (necesario en todos los modos)
+            string newSpeakerId = DetermineSpeakerId(currentLine);
+            if (newSpeakerId != currentSpeakerId)
+            {
+                Transform newSpeakerTransform = FindSpeakerTransform(newSpeakerId, currentLine);
+                if (newSpeakerTransform != null)
+                {
+                    currentSpeakerId = newSpeakerId;
+                    currentSpeaker = newSpeakerTransform;
+                }
+            }
+
+            // ── EFECTOS CINEMATOGRÁFICOS (funcionan en cualquier modo) ──
+            if (currentLine.cinematicEffect != DialogueLineEffect.None)
+            {
+                ApplyLineEffect(currentLine.cinematicEffect, currentSpeaker);
+                return;
+            }
+
+            // Si la línea anterior tenía efecto y esta no, restaurar
+            if (_activeEffect != DialogueLineEffect.None)
+                ClearLineEffect();
+
             // ── MODO GRUPAL: cámara estable sin cortes ──
-            // Solo actualizamos quién habla para el breathing suave del lookAt en LateUpdate.
             if (_isGroupConversation)
             {
-                string newSpeakerId = DetermineSpeakerId(currentLine);
-                if (newSpeakerId != currentSpeakerId)
-                {
-                    Transform newSpeakerTransform = FindSpeakerTransform(newSpeakerId, currentLine);
-                    if (newSpeakerTransform != null)
-                    {
-                        currentSpeakerId = newSpeakerId;
-                        currentSpeaker = newSpeakerTransform;
-                    }
-
-                    if (showDebugInfo)
-                        Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{newSpeakerId}' (sin corte de cámara)");
-                }
+                if (showDebugInfo)
+                    Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{newSpeakerId}' (sin corte de cámara)");
                 return;
             }
 
@@ -1046,8 +1111,124 @@ public class DialogueCinematicController : MonoBehaviour
                 ApplyShotWithContext(appropriateShot, false, speaker);
         }
 
-        
+        // ═══════════════════════════════════════════════════════════
+        // EFECTOS CINEMATOGRÁFICOS POR LÍNEA (CloseUp / Dramatic / Impact)
+        // ═══════════════════════════════════════════════════════════
 
+        private static readonly CinematicCameraShot _effectCloseUpShot = new CinematicCameraShot
+        {
+            shotType = DialogueShotType.CloseUpNPC,
+            minimumDuration = 0f
+        };
+
+        private void ApplyLineEffect(DialogueLineEffect effect, Transform speaker)
+        {
+            if (speaker == null) return;
+
+            _activeEffect = effect;
+
+            // Mostrar ambos personajes para que el close-up funcione en cualquier modo
+            ShowNPC();
+            ShowPlayer();
+
+            // Aplicar close-up al speaker
+            ApplyShot(_effectCloseUpShot, speaker);
+
+            // Calcular parámetros según el tipo de efecto
+            float vignetteIntensity;
+            float chromaticIntensity;
+            float shakeIntensity;
+            float shakeDuration;
+            bool doFlash;
+
+            switch (effect)
+            {
+                case DialogueLineEffect.CloseUp:
+                    vignetteIntensity = 0.25f;
+                    chromaticIntensity = 0f;
+                    shakeIntensity = 0f;
+                    shakeDuration = 0f;
+                    doFlash = false;
+                    break;
+                case DialogueLineEffect.Dramatic:
+                    vignetteIntensity = 0.4f;
+                    chromaticIntensity = 0.15f;
+                    shakeIntensity = 0.15f;
+                    shakeDuration = 0.5f;
+                    doFlash = false;
+                    break;
+                case DialogueLineEffect.Impact:
+                    vignetteIntensity = 0.55f;
+                    chromaticIntensity = 0.3f;
+                    shakeIntensity = 0.4f;
+                    shakeDuration = 0.6f;
+                    doFlash = true;
+                    break;
+                default:
+                    return;
+            }
+
+            // Post-procesado (fade in suave)
+            if (_effectsCoroutine != null)
+                StopCoroutine(_effectsCoroutine);
+            _effectsCoroutine = StartCoroutine(FadeEffectsVolume(vignetteIntensity, chromaticIntensity, 0.3f));
+
+            // Shake
+            if (shakeIntensity > 0f && dialogueCamera != null)
+                FeedbackService.CameraShake(dialogueCamera, shakeIntensity, shakeDuration);
+
+            // Flash
+            if (doFlash)
+                FeedbackService.ScreenFlash(Color.white, 0.1f);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] Efecto: {effect} → speaker: {speaker.name}");
+#endif
+        }
+
+        private void ClearLineEffect()
+        {
+            _activeEffect = DialogueLineEffect.None;
+
+            if (_effectsCoroutine != null)
+                StopCoroutine(_effectsCoroutine);
+            _effectsCoroutine = StartCoroutine(FadeEffectsVolume(0f, 0f, 0.4f));
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (showDebugInfo)
+                Debug.Log("[DialogueCinematicController] Efecto limpiado, restaurando plano normal");
+#endif
+        }
+
+        private IEnumerator FadeEffectsVolume(float targetVignette, float targetChromatic, float duration)
+        {
+            if (_effectsVolume == null) yield break;
+
+            float startVignette = _effectsVignette.intensity.value;
+            float startChromatic = _effectsChromaticAberration.intensity.value;
+            float startWeight = _effectsVolume.weight;
+            float targetWeight = (targetVignette > 0f || targetChromatic > 0f) ? 1f : 0f;
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                float smooth = t * t * (3f - 2f * t); // smoothstep
+
+                _effectsVignette.intensity.value = Mathf.Lerp(startVignette, targetVignette, smooth);
+                _effectsChromaticAberration.intensity.value = Mathf.Lerp(startChromatic, targetChromatic, smooth);
+                _effectsVolume.weight = Mathf.Lerp(startWeight, targetWeight, smooth);
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            _effectsVignette.intensity.value = targetVignette;
+            _effectsChromaticAberration.intensity.value = targetChromatic;
+            _effectsVolume.weight = targetWeight;
+            _effectsCoroutine = null;
+        }
 
         /// <summary>
         /// Aplica un plano cinematográfico específico

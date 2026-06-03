@@ -250,8 +250,8 @@ public class DialogueAssetEditor : Editor
             footer += $"  →  {line.speakerNameId}";
         if (line.isPlayerSpeaking)
             footer += "  [Jugador]";
-        if (line.forcedShotType != default)
-            footer += $"  [Plano: {line.forcedShotType}]";
+        if (line.cinematicEffect != DialogueLineEffect.None)
+            footer += $"  [Efecto: {line.cinematicEffect}]";
 
         if (!string.IsNullOrEmpty(footer))
             EditorGUILayout.LabelField(footer, footerStyle);
