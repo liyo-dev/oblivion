@@ -60,6 +60,12 @@ public class DialogueCinematicController : MonoBehaviour
     [Tooltip("Sesgo de la cámara hacia el speaker actual (0 = cámara fija, 1 = cámara centrada en speaker)")]
     [Range(0f, 0.6f)]
     [SerializeField] private float groupSpeakerBias = 0.25f;
+    [Tooltip("Tiempo de suavizado para la interpolación del lookAt grupal (segundos)")]
+    [SerializeField] private float groupLookAtSmoothTime = 0.6f;
+
+    // Interpolación suave del lookAt en modo grupal
+    private Vector3 _groupLookAtTarget;
+    private Vector3 _groupLookAtVelocity;
 
     // ✅ Sistema de tracking de speakers para cambios de cámara
     private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
@@ -331,6 +337,58 @@ public class DialogueCinematicController : MonoBehaviour
                 Debug.LogWarning("[DialogueCinematicController] DialogueCamera se desactivó inesperadamente - reactivando");
             }
         }
+
+        // ── Breathing suave del lookAt en modo grupal ──
+        // Recalcula el centro del grupo e interpola el punto de mira hacia el speaker actual.
+        if (_isGroupConversation && isInCinematicMode && currentPlayer != null)
+        {
+            // Recalcular centro del grupo (los personajes pueden haberse movido ligeramente)
+            Vector3 groupCenter = currentPlayer.position;
+            int count = 1;
+            if (currentNPC != null) { groupCenter += currentNPC.position; count++; }
+            if (Game.NPC.PlayerParty.HasInstance)
+            {
+                foreach (var m in Game.NPC.PlayerParty.Instance.Members)
+                {
+                    if (m != null && m.IsActiveInParty)
+                    { groupCenter += m.transform.position; count++; }
+                }
+            }
+            groupCenter /= count;
+            _cachedGroupCenter = groupCenter;
+
+            // Destino del lookAt: centro del grupo con sesgo suave hacia el speaker
+            Vector3 desiredLookAt = groupCenter + Vector3.up * groupLookAtHeight;
+            if (currentSpeaker != null)
+            {
+                Vector3 toSpeaker = currentSpeaker.position - groupCenter;
+                toSpeaker.y = 0f;
+                if (toSpeaker.sqrMagnitude > 0.01f)
+                    desiredLookAt += toSpeaker * groupSpeakerBias;
+            }
+
+            // Suavizar con SmoothDamp
+            _groupLookAtTarget = Vector3.SmoothDamp(
+                _groupLookAtTarget, desiredLookAt, ref _groupLookAtVelocity, groupLookAtSmoothTime);
+
+            // Actualizar rotación de la cámara virtual activa y su lookAt target
+            if (currentVirtualCamera != null)
+            {
+                Vector3 lookDir = _groupLookAtTarget - currentVirtualCamera.transform.position;
+                if (lookDir.sqrMagnitude > 0.001f)
+                    currentVirtualCamera.transform.rotation = Quaternion.LookRotation(lookDir);
+
+                if (currentVirtualCamera.Target.LookAtTarget != null)
+                    currentVirtualCamera.Target.LookAtTarget.position = _groupLookAtTarget;
+            }
+            // Aplicar también a la cámara de diálogo directamente (por si el Brain ya procesó este frame)
+            if (dialogueCamera != null && dialogueCamera.enabled)
+            {
+                Vector3 lookDir = _groupLookAtTarget - dialogueCamera.transform.position;
+                if (lookDir.sqrMagnitude > 0.001f)
+                    dialogueCamera.transform.rotation = Quaternion.LookRotation(lookDir);
+            }
+        }
     }
 
     /// <summary>
@@ -393,23 +451,69 @@ public class DialogueCinematicController : MonoBehaviour
         // Calcular dirección base de cámara grupal una sola vez (evita saltos al cambiar de speaker)
         if (isGroupConversation && currentNPC != null)
         {
-            Vector3 npcToPlayer = currentPlayer.position - currentNPC.position;
-            npcToPlayer.y = 0f;
-            _groupCamBaseDir = npcToPlayer.sqrMagnitude > 0.01f
-                ? npcToPlayer.normalized
-                : Vector3.back;
+            // Vista 3/4: perpendicular al eje player-NPC combinada con profundidad.
+            // Esto encuadra a todos los participantes mostrando sus caras en lugar de espaldas.
+            Vector3 playerToNpc = currentNPC.position - currentPlayer.position;
+            playerToNpc.y = 0f;
+            if (playerToNpc.sqrMagnitude > 0.01f)
+            {
+                playerToNpc.Normalize();
+                Vector3 perpendicular = Vector3.Cross(Vector3.up, playerToNpc).normalized;
+                _groupCamBaseDir = (perpendicular + playerToNpc * 0.3f).normalized;
+            }
+            else
+            {
+                _groupCamBaseDir = Vector3.back;
+            }
+
+            // Calcular centro del grupo para orientar a los participantes
+            Vector3 initGroupCenter = currentPlayer.position + currentNPC.position;
+            int initCount = 2;
+
+            var hiddenNpc = ActiveCharacterSwapper.Instance != null
+                ? ActiveCharacterSwapper.Instance.HiddenNpc
+                : null;
 
             // Asegurar que todos los party members tengan sus renderers activos al inicio
             // (pueden haber quedado desactivados por diálogos previos donde eran currentNPC)
-            // EXCEPTO el NPC oculto (controlado por el jugador vía character swap)
             if (Game.NPC.PlayerParty.HasInstance)
             {
-                var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
                 foreach (var m in Game.NPC.PlayerParty.Instance.Members)
                 {
                     if (m == null || m == hiddenNpc) continue;
                     foreach (var r in m.GetComponentsInChildren<Renderer>(true))
                         if (r != null) r.enabled = true;
+                    if (m.IsActiveInParty)
+                    { initGroupCenter += m.transform.position; initCount++; }
+                }
+            }
+            initGroupCenter /= initCount;
+            _cachedGroupCenter = initGroupCenter;
+            _groupLookAtTarget = initGroupCenter + Vector3.up * groupLookAtHeight;
+            _groupLookAtVelocity = Vector3.zero;
+
+            // Rotar al NPC para que mire hacia el centro del grupo (evita que esté de espaldas)
+            Vector3 npcToCenter = initGroupCenter - currentNPC.position;
+            npcToCenter.y = 0f;
+            if (npcToCenter.sqrMagnitude > 0.01f)
+                currentNPC.rotation = Quaternion.LookRotation(npcToCenter);
+
+            // Rotar al player hacia el centro del grupo
+            Vector3 playerToCenter = initGroupCenter - currentPlayer.position;
+            playerToCenter.y = 0f;
+            if (playerToCenter.sqrMagnitude > 0.01f)
+                currentPlayer.rotation = Quaternion.LookRotation(playerToCenter);
+
+            // Rotar a los party members para que miren hacia el centro del grupo
+            if (Game.NPC.PlayerParty.HasInstance)
+            {
+                foreach (var m in Game.NPC.PlayerParty.Instance.Members)
+                {
+                    if (m == null || !m.IsActiveInParty || m == hiddenNpc) continue;
+                    Vector3 memberToCenter = initGroupCenter - m.transform.position;
+                    memberToCenter.y = 0f;
+                    if (memberToCenter.sqrMagnitude > 0.01f)
+                        m.transform.rotation = Quaternion.LookRotation(memberToCenter);
                 }
             }
         }
@@ -743,6 +847,28 @@ public class DialogueCinematicController : MonoBehaviour
             if (!isInCinematicMode) return;
 
             currentLineIndex = lineIndex;
+
+            // ── MODO GRUPAL: cámara estable sin cortes ──
+            // Solo actualizamos quién habla para el breathing suave del lookAt en LateUpdate.
+            if (_isGroupConversation)
+            {
+                string newSpeakerId = DetermineSpeakerId(currentLine);
+                if (newSpeakerId != currentSpeakerId)
+                {
+                    Transform newSpeakerTransform = FindSpeakerTransform(newSpeakerId, currentLine);
+                    if (newSpeakerTransform != null)
+                    {
+                        currentSpeakerId = newSpeakerId;
+                        currentSpeaker = newSpeakerTransform;
+                    }
+
+                    if (showDebugInfo)
+                        Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{newSpeakerId}' (sin corte de cámara)");
+                }
+                return;
+            }
+
+            // ── MODO DIÁLOGO 1:1 (sin cambios) ──
 
             // IMPORTANTE: El lineIndex 0 ya tiene el openingShot aplicado desde StartCinematic
             // No debemos cambiar de plano inmediatamente, el opening shot debe mantenerse
@@ -1146,13 +1272,11 @@ public class DialogueCinematicController : MonoBehaviour
             // Calcular posición base según el tipo de plano
             Vector3 position = CalculateCameraPosition(shot, target);
 
-            // En modo grupal: la cámara mira al CENTRO DEL GRUPO a altura de torso (no al speaker)
-            // Esto da un ángulo horizontal suave y encuadra a todos los participantes.
+            // En modo grupal: usar el lookAt interpolado suavemente (breathing hacia el speaker)
             Vector3 lookAtPos;
             if (_isGroupConversation && currentPlayer != null)
             {
-                lookAtPos = _cachedGroupCenter;
-                lookAtPos.y = _cachedGroupCenter.y + groupLookAtHeight;
+                lookAtPos = _groupLookAtTarget;
             }
             else
             {
@@ -1261,17 +1385,10 @@ public class DialogueCinematicController : MonoBehaviour
                 groupCenter /= participantCount;
                 _cachedGroupCenter = groupCenter;
 
-                // Dirección base: fija desde el inicio del diálogo (no salta entre speakers ni al rotar el player)
+                // Dirección base: fija desde el inicio del diálogo.
+                // En modo grupal la posición de la cámara es completamente estable (sin sesgo por speaker).
+                // El efecto de "saber quién habla" se consigue con el breathing del lookAt en LateUpdate.
                 Vector3 baseDir = _groupCamBaseDir;
-
-                // Ligero sesgo hacia la posición opuesta del speaker para ver su cara
-                Vector3 toSpeaker = target.position - groupCenter;
-                toSpeaker.y = 0f;
-                if (toSpeaker.sqrMagnitude > 0.01f)
-                {
-                    // Mover la cámara ligeramente al lado opuesto del speaker para ver su cara
-                    baseDir = Vector3.Lerp(baseDir, -toSpeaker.normalized, groupSpeakerBias).normalized;
-                }
 
                 float rad = groupElevationAngle * Mathf.Deg2Rad;
                 float horizontalDist = groupCameraDistance * Mathf.Cos(rad);
