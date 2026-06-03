@@ -62,10 +62,17 @@ public class DialogueCinematicController : MonoBehaviour
     [SerializeField] private float groupSpeakerBias = 0.25f;
     [Tooltip("Tiempo de suavizado para la interpolación del lookAt grupal (segundos)")]
     [SerializeField] private float groupLookAtSmoothTime = 0.6f;
+    [Tooltip("Distancia mínima libre requerida entre la cámara y el centro del grupo (metros)")]
+    [SerializeField] private float groupMinClearance = 2.5f;
+    [Tooltip("Radio de la esfera usada para detectar obstrucciones cerca de la cámara")]
+    [SerializeField] private float groupCameraProbeRadius = 0.4f;
 
     // Interpolación suave del lookAt en modo grupal
     private Vector3 _groupLookAtTarget;
     private Vector3 _groupLookAtVelocity;
+
+    // Máscara de colisión para obstrucciones de cámara (cacheada en Awake)
+    private int _camObstructionMask;
 
     // ✅ Sistema de tracking de speakers para cambios de cámara
     private string currentSpeakerId;     // ID del speaker actual (speakerNameId o "Player")
@@ -119,6 +126,10 @@ public class DialogueCinematicController : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         // Debug.Log($"[DialogueCinematicController] ✅ Instancia marcada como DontDestroyOnLoad");
+
+        // Cachear máscara de colisión para obstrucciones de cámara grupal
+        // Default (0), Floor (10), Obstacle (15) — geometría estática que puede bloquear la vista
+        _camObstructionMask = (1 << 0) | (1 << 10) | (1 << 15);
 
         // Crear rig para las cámaras de diálogo
         GameObject rigObj = new GameObject("DialogueCinematicRig");
@@ -452,14 +463,15 @@ public class DialogueCinematicController : MonoBehaviour
         if (isGroupConversation && currentNPC != null)
         {
             // Vista 3/4: perpendicular al eje player-NPC combinada con profundidad.
-            // Esto encuadra a todos los participantes mostrando sus caras en lugar de espaldas.
+            // Evaluamos ambos lados (perpendicular y -perpendicular) con raycast para elegir
+            // el que tenga más espacio libre (evita colocar la cámara detrás de paredes/puertas).
             Vector3 playerToNpc = currentNPC.position - currentPlayer.position;
             playerToNpc.y = 0f;
             if (playerToNpc.sqrMagnitude > 0.01f)
             {
                 playerToNpc.Normalize();
                 Vector3 perpendicular = Vector3.Cross(Vector3.up, playerToNpc).normalized;
-                _groupCamBaseDir = (perpendicular + playerToNpc * 0.3f).normalized;
+                _groupCamBaseDir = PickBestGroupCameraDirection(perpendicular, playerToNpc);
             }
             else
             {
@@ -1394,7 +1406,26 @@ public class DialogueCinematicController : MonoBehaviour
                 float horizontalDist = groupCameraDistance * Mathf.Cos(rad);
                 float height         = groupCameraDistance * Mathf.Sin(rad);
 
-                Vector3 groupCamPos = groupCenter + baseDir * horizontalDist;
+                // Punto de origen del raycast: centro del grupo a la altura de las cabezas
+                Vector3 rayOrigin = groupCenter + Vector3.up * groupLookAtHeight;
+                Vector3 horizontalDir = new Vector3(baseDir.x, 0f, baseDir.z).normalized;
+
+                // SphereCast para verificar que no hay obstrucciones entre el grupo y la cámara
+                float usableHorizontalDist = horizontalDist;
+                if (Physics.SphereCast(rayOrigin, groupCameraProbeRadius, horizontalDir,
+                    out RaycastHit hit, horizontalDist, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                {
+                    // Nunca colocar la cámara más allá de la obstrucción
+                    usableHorizontalDist = hit.distance - 0.5f;
+                    if (usableHorizontalDist < groupMinClearance)
+                    {
+                        // Pared demasiado cerca: compensar subiendo la cámara para ver por encima
+                        height = Mathf.Max(height, groupCameraDistance * 0.8f);
+                        usableHorizontalDist = Mathf.Max(usableHorizontalDist, 1.5f);
+                    }
+                }
+
+                Vector3 groupCamPos = groupCenter + baseDir * usableHorizontalDist;
                 groupCamPos.y = groupCenter.y + height;
                 return groupCamPos;
             }
@@ -1628,6 +1659,62 @@ public class DialogueCinematicController : MonoBehaviour
             }
 
             return camPos;
+        }
+
+        /// <summary>
+        /// Evalúa ambos lados perpendiculares al eje player-NPC y devuelve la dirección
+        /// con más espacio libre (raycast). Combina la perpendicular elegida con un sesgo
+        /// de profundidad (0.3 × playerToNpc) para obtener la vista 3/4.
+        /// </summary>
+        private Vector3 PickBestGroupCameraDirection(Vector3 perpendicular, Vector3 playerToNpc)
+        {
+            // Evaluar distancia libre en ambas direcciones perpendiculares
+            Vector3 origin = (currentPlayer.position + currentNPC.position) * 0.5f + Vector3.up * groupLookAtHeight;
+            float probeDistance = groupCameraDistance * 1.2f;
+
+            Vector3 dirA = (perpendicular + playerToNpc * 0.3f).normalized;
+            Vector3 dirB = (-perpendicular + playerToNpc * 0.3f).normalized;
+
+            float freeA = probeDistance;
+            float freeB = probeDistance;
+
+            if (Physics.SphereCast(origin, groupCameraProbeRadius, dirA, out RaycastHit hitA,
+                probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
+            {
+                freeA = hitA.distance;
+            }
+            if (Physics.SphereCast(origin, groupCameraProbeRadius, dirB, out RaycastHit hitB,
+                probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
+            {
+                freeB = hitB.distance;
+            }
+
+            // Si ambas están muy obstruidas, intentar dirección opuesta al NPC (detrás del player)
+            float minRequired = groupCameraDistance * Mathf.Cos(groupElevationAngle * Mathf.Deg2Rad);
+            if (freeA < minRequired && freeB < minRequired)
+            {
+                Vector3 fallback = (-playerToNpc).normalized;
+                float freeFallback = probeDistance;
+                if (Physics.SphereCast(origin, groupCameraProbeRadius, fallback, out RaycastHit hitF,
+                    probeDistance, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                {
+                    freeFallback = hitF.distance;
+                }
+                if (freeFallback > freeA && freeFallback > freeB)
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    if (showDebugInfo)
+                        Debug.Log("[DialogueCinematicController] Grupo: ambos lados obstruidos, usando fallback detrás del player");
+#endif
+                    return fallback;
+                }
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (showDebugInfo)
+                Debug.Log($"[DialogueCinematicController] Grupo: freeA={freeA:F1}m, freeB={freeB:F1}m → eligiendo {(freeA >= freeB ? "A" : "B")}");
+#endif
+            return freeA >= freeB ? dirA : dirB;
         }
 
         /// <summary>
