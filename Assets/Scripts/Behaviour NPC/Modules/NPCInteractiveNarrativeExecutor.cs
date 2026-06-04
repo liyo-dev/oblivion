@@ -79,6 +79,14 @@ namespace Game.NPC.Modules
             _cachedActiveNarrative = null;
         }
 
+        // Usa el persistenceId del manager si está definido; si no, el del config SO (backward compat con presets antiguos)
+        private string GetEffectivePersistenceId()
+        {
+            if (_npcManager != null && !string.IsNullOrEmpty(_npcManager.PersistenceId))
+                return _npcManager.PersistenceId;
+            return _config?.persistenceId;
+        }
+
         private void Awake()
         {
             _npcManager = GetComponent<NPCBehaviourManagerV2>();
@@ -313,7 +321,7 @@ namespace Game.NPC.Modules
             }
             
             // ✅ También verificar si está en la lista de completadas del preset (persistencia)
-            if (_config != null && _config.persistState && !string.IsNullOrEmpty(_npcManager.PersistenceId))
+            if (_config != null && _config.persistState && !string.IsNullOrEmpty(GetEffectivePersistenceId()))
             {
                 var preset = GameBootService.Profile?.runtimePreset;
                 if (preset != null && preset.completedInteractiveNarratives != null)
@@ -381,7 +389,7 @@ namespace Game.NPC.Modules
 
             InitializeAlertIconController();
 
-            if (_config.persistState && !string.IsNullOrEmpty(_npcManager.PersistenceId))
+            if (_config.persistState && !string.IsNullOrEmpty(GetEffectivePersistenceId()))
             {
                 RestoreState();
             }
@@ -1460,15 +1468,16 @@ namespace Game.NPC.Modules
         
         private void SaveState()
         {
-            if (string.IsNullOrEmpty(_npcManager.PersistenceId)) return;
+            string effectiveId = GetEffectivePersistenceId();
+            if (string.IsNullOrEmpty(effectiveId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
             if (preset == null) return;
-            
+
             preset.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
-            
-            if (!preset.completedInteractiveNarratives.Contains(_npcManager.PersistenceId))
+
+            if (!preset.completedInteractiveNarratives.Contains(effectiveId))
             {
-                preset.completedInteractiveNarratives.Add(_npcManager.PersistenceId);
+                preset.completedInteractiveNarratives.Add(effectiveId);
             }
             
             if (_config.conditionalNarratives != null)
@@ -1490,11 +1499,12 @@ namespace Game.NPC.Modules
 
         private void RestoreState()
         {
-            if (string.IsNullOrEmpty(_npcManager.PersistenceId)) return;
+            string effectiveId = GetEffectivePersistenceId();
+            if (string.IsNullOrEmpty(effectiveId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
             if (preset?.completedInteractiveNarratives == null) return;
-            
-            _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_npcManager.PersistenceId);
+
+            _hasBeenUsed = preset.completedInteractiveNarratives.Contains(effectiveId);
             
             if (_config.conditionalNarratives != null)
             {
@@ -1516,7 +1526,7 @@ namespace Game.NPC.Modules
         
         private string GetConditionalNarrativeId(int index)
         {
-            return $"{_npcManager.PersistenceId}_CN{index}";
+            return $"{GetEffectivePersistenceId()}_CN{index}";
         }
 
         public void ResetState(bool restoreFromPreset = true)
