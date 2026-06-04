@@ -113,6 +113,11 @@ public class DialogueCinematicController : MonoBehaviour
     private Coroutine _effectsCoroutine;
     private DialogueLineEffect _activeEffect;
 
+    // Rotación suave del player en modo grupal
+    private Coroutine _playerRotationCoroutine;
+    [Tooltip("Duración de la rotación suave del player hacia el interlocutor en modo grupal")]
+    [SerializeField] private float groupPlayerRotationDuration = 0.35f;
+
     void Awake()
     {
         // Debug.Log($"[DialogueCinematicController] ⚡ Awake iniciado en GameObject: {gameObject.name}");
@@ -723,6 +728,13 @@ public class DialogueCinematicController : MonoBehaviour
         ShowPlayer();
         ShowNPC();
         
+        // Limpiar rotación suave del player si estaba en progreso
+        if (_playerRotationCoroutine != null)
+        {
+            StopCoroutine(_playerRotationCoroutine);
+            _playerRotationCoroutine = null;
+        }
+
         // Limpiar efectos cinematográficos si estaban activos
         if (_activeEffect != DialogueLineEffect.None)
         {
@@ -940,8 +952,11 @@ public class DialogueCinematicController : MonoBehaviour
             // ── MODO GRUPAL: cámara estable sin cortes ──
             if (_isGroupConversation)
             {
+                RotatePlayerInGroup(currentLine);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (showDebugInfo)
                     Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{newSpeakerId}' (sin corte de cámara)");
+#endif
                 return;
             }
 
@@ -1841,6 +1856,45 @@ public class DialogueCinematicController : MonoBehaviour
             if (showDebugInfo)
                 Debug.Log($"[DialogueCinematicController] 👀 {speaker.name} ahora mira hacia {currentNPC.name}");
         }
+    }
+
+    /// <summary>
+    /// En modo grupal, rota suavemente al player para que mire al interlocutor.
+    /// Si el player habla → mira al NPC principal.
+    /// Si otro habla → el player mira al speaker actual.
+    /// </summary>
+    private void RotatePlayerInGroup(DialogueLine line)
+    {
+        if (currentPlayer == null) return;
+
+        Transform lookTarget = line.isPlayerSpeaking ? currentNPC : currentSpeaker;
+        if (lookTarget == null || lookTarget == currentPlayer) return;
+
+        Vector3 dir = lookTarget.position - currentPlayer.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) return;
+
+        Quaternion targetRot = Quaternion.LookRotation(dir);
+
+        if (_playerRotationCoroutine != null)
+            StopCoroutine(_playerRotationCoroutine);
+        _playerRotationCoroutine = StartCoroutine(SmoothRotate(currentPlayer, targetRot, groupPlayerRotationDuration));
+    }
+
+    private IEnumerator SmoothRotate(Transform target, Quaternion endRot, float duration)
+    {
+        Quaternion startRot = target.rotation;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float smooth = t * t * (3f - 2f * t);
+            target.rotation = Quaternion.Slerp(startRot, endRot, smooth);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        target.rotation = endRot;
+        _playerRotationCoroutine = null;
     }
 
     /// <summary>
