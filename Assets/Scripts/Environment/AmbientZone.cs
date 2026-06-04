@@ -4,6 +4,16 @@ using UnityEngine.Serialization;
 using UnityEngine.UI;
 using DG.Tweening;
 
+public enum ZoneCameraMode
+{
+    SoloDistancia,    // Solo ajusta la distancia; sin bloqueo de ángulo
+    Plataformas2D,    // Vista lateral fija (desplazamiento horizontal)
+    TopDown,          // Vista cenital desde arriba
+    Isometrico,       // Ángulo diagonal fijo estilo isométrico/RTS
+    CorredorEstrecho, // Cámara muy cerca (mazmorras, pasillos)
+    PanoramicoLejano, // Cámara muy alejada (exteriores épicos)
+}
+
 /// <summary>
 /// Zona ambiental: controla fog lejano, luz ambiente y niebla de suelo.
 /// Requiere un Collider configurado como trigger.
@@ -58,6 +68,20 @@ public class AmbientZone : MonoBehaviour
     [Header("Prioridad")]
     [SerializeField] private int priority = 0;
 
+    [Header("Cámara")]
+    [Tooltip("Si está activo, la zona anula la configuración de la cámara del jugador al entrar.")]
+    [SerializeField] private bool controlCamera = false;
+    [Tooltip("Preset de cámara. Cada modo ajusta ángulo, altura y restricciones de rotación.")]
+    [SerializeField] private ZoneCameraMode cameraMode = ZoneCameraMode.SoloDistancia;
+    [Tooltip("Ángulo horizontal (grados) al que se fija la cámara en modos bloqueados: Plataformas2D, TopDown, Isométrico. " +
+             "0=Norte, 90=Este, 180=Sur, 270=Oeste.")]
+    [Range(0f, 360f)]
+    [SerializeField] private float cameraHorizontalAngle = 90f;
+    [Tooltip("Distancia cámara-jugador. Arrastra para acercar (izquierda) o alejar (derecha). " +
+             "Por defecto 2.5 = distancia normal de juego.")]
+    [Range(0.5f, 12f)]
+    [SerializeField] private float cameraDistance = 2.5f;
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
 
@@ -83,6 +107,13 @@ public class AmbientZone : MonoBehaviour
     private static CanvasGroup _fogCanvasGroup;
     private static Image _fogImage;
 
+    // --- Cámara ---
+    private struct CameraState { public float distance, height, yMin, yMax; }
+    private static CameraState _defaultCameraState;
+    private static bool _cameraDefaultsCaptured;
+    private static Tween _cameraTween;
+    private static vThirdPersonCamera _cachedCamera;
+
     private Transform _playerTransform;
     private Transform _mistOriginalParent;
 
@@ -98,6 +129,9 @@ public class AmbientZone : MonoBehaviour
         _wasMusicPlaying = false;
         _fogCanvasGroup = null;
         _fogImage = null;
+        _cameraDefaultsCaptured = false;
+        _cameraTween = null;
+        _cachedCamera = null;
     }
 #endif
 
@@ -175,6 +209,7 @@ public class AmbientZone : MonoBehaviour
         _currentActiveZone = null;
         StopGroundMist();
         HideCameraOverlay();
+        RestoreCameraDefaults();
         TransitionToDefaultFog();
         RestorePreviousMusic();
     }
@@ -233,6 +268,7 @@ public class AmbientZone : MonoBehaviour
 
         PlayGroundMist();
         ShowCameraOverlay();
+        ApplyCameraTransition();
     }
 
     private void TransitionToDefaultFog()
@@ -358,6 +394,131 @@ public class AmbientZone : MonoBehaviour
     }
 
     // -------------------------------------------------------------------------
+    //  Cámara
+    // -------------------------------------------------------------------------
+
+    private void ApplyCameraTransition()
+    {
+        var cam = GetOrCacheCamera();
+        if (cam == null) return;
+
+        if (!_cameraDefaultsCaptured)
+        {
+            _defaultCameraState = new CameraState
+            {
+                distance = cam.defaultDistance,
+                height   = cam.height,
+                yMin     = cam.yMinLimit,
+                yMax     = cam.yMaxLimit
+            };
+            _cameraDefaultsCaptured = true;
+        }
+
+        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : transitionDuration;
+        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : transitionEase;
+
+        if (!controlCamera)
+        {
+            DoRestoreCamera(cam, transitionDuration, transitionEase);
+            return;
+        }
+
+        float targetDist   = cameraDistance;
+        float targetHeight = _defaultCameraState.height;
+        float targetYMin, targetYMax;
+        bool  lockRot    = false;
+        float lockMouseX = cameraHorizontalAngle;
+        float lockMouseY = 0f;
+
+        switch (cameraMode)
+        {
+            case ZoneCameraMode.Plataformas2D:
+                targetYMin = 5f;   targetYMax = 15f;
+                lockRot = true;    lockMouseY = 10f;
+                break;
+            case ZoneCameraMode.TopDown:
+                targetYMin = 60f;  targetYMax = 85f;
+                lockRot = true;    lockMouseY = 80f;
+                break;
+            case ZoneCameraMode.Isometrico:
+                targetHeight = 2f;
+                targetYMin = 30f;  targetYMax = 50f;
+                lockRot = true;    lockMouseY = 35f;
+                break;
+            case ZoneCameraMode.CorredorEstrecho:
+                targetHeight = 1.2f;
+                targetYMin = -20f; targetYMax = 60f;
+                break;
+            case ZoneCameraMode.PanoramicoLejano:
+                targetHeight = 2f;
+                targetYMin = -30f; targetYMax = 70f;
+                break;
+            default: // SoloDistancia
+                targetYMin = _defaultCameraState.yMin;
+                targetYMax = _defaultCameraState.yMax;
+                break;
+        }
+
+        cam.yMinLimit = targetYMin;
+        cam.yMaxLimit = targetYMax;
+
+        if (lockRot)
+            cam.SetZoneRotation(lockMouseX, lockMouseY);
+        else
+            cam.ClearZoneRotation();
+
+        _cameraTween?.Kill();
+        float sd = cam.defaultDistance, sh = cam.height;
+        float ed = targetDist,          eh = targetHeight;
+
+        _cameraTween = DOTween.To(
+            () => 0f,
+            t =>
+            {
+                cam.defaultDistance = Mathf.Lerp(sd, ed, t);
+                cam.height          = Mathf.Lerp(sh, eh, t);
+            },
+            1f, dur
+        ).SetEase(ease).SetUpdate(true);
+    }
+
+    private void RestoreCameraDefaults()
+    {
+        if (!controlCamera || !_cameraDefaultsCaptured) return;
+        var cam = GetOrCacheCamera();
+        if (cam == null) return;
+        DoRestoreCamera(cam, transitionDuration, transitionEase);
+    }
+
+    private static void DoRestoreCamera(vThirdPersonCamera cam, float dur, Ease ease)
+    {
+        cam.ClearZoneRotation();
+        cam.yMinLimit = _defaultCameraState.yMin;
+        cam.yMaxLimit = _defaultCameraState.yMax;
+
+        _cameraTween?.Kill();
+        float sd = cam.defaultDistance, sh = cam.height;
+        float ed = _defaultCameraState.distance, eh = _defaultCameraState.height;
+
+        _cameraTween = DOTween.To(
+            () => 0f,
+            t =>
+            {
+                cam.defaultDistance = Mathf.Lerp(sd, ed, t);
+                cam.height          = Mathf.Lerp(sh, eh, t);
+            },
+            1f, dur
+        ).SetEase(ease).SetUpdate(true);
+    }
+
+    private static vThirdPersonCamera GetOrCacheCamera()
+    {
+        if (_cachedCamera != null) return _cachedCamera;
+        _cachedCamera = Object.FindFirstObjectByType<vThirdPersonCamera>();
+        return _cachedCamera;
+    }
+
+    // -------------------------------------------------------------------------
     //  Música
     // -------------------------------------------------------------------------
 
@@ -424,6 +585,7 @@ public class AmbientZone : MonoBehaviour
     {
         _currentTween?.Kill();
         _overlayTween?.Kill();
+        _cameraTween?.Kill();
         if (_fogCanvasGroup != null) _fogCanvasGroup.alpha = 0f;
         if (!_defaultsCaptured) return;
 
@@ -435,6 +597,15 @@ public class AmbientZone : MonoBehaviour
         RenderSettings.fogMode          = _defaultFogMode;
         RenderSettings.ambientLight     = _defaultAmbientColor;
         RenderSettings.ambientIntensity = _defaultAmbientIntensity;
+
+        if (_cameraDefaultsCaptured && _cachedCamera != null)
+        {
+            _cachedCamera.defaultDistance = _defaultCameraState.distance;
+            _cachedCamera.height          = _defaultCameraState.height;
+            _cachedCamera.yMinLimit       = _defaultCameraState.yMin;
+            _cachedCamera.yMaxLimit       = _defaultCameraState.yMax;
+            _cachedCamera.ClearZoneRotation();
+        }
     }
 
     public static void RecaptureDefaults()
@@ -471,12 +642,13 @@ public class AmbientZone : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        string fogInfo   = enableFog ? $"Fog density:{fogDensity}" : "Sin fog";
-        string lightInfo = controlAmbientLight ? $"Luz amb. ×{ambientLightIntensity}" : "";
-        string mistInfo  = enableGroundMist && groundMistPS != null ? "Niebla suelo" : "";
+        string fogInfo    = enableFog ? $"Fog density:{fogDensity}" : "Sin fog";
+        string lightInfo  = controlAmbientLight ? $"Luz amb. ×{ambientLightIntensity}" : "";
+        string mistInfo   = enableGroundMist && groundMistPS != null ? "Niebla suelo" : "";
+        string cameraInfo = controlCamera ? $"Cam:{cameraMode} d:{cameraDistance:F1}" : "";
 
         string[] parts = System.Array.FindAll(
-            new[] { fogInfo, lightInfo, mistInfo },
+            new[] { fogInfo, lightInfo, mistInfo, cameraInfo },
             s => !string.IsNullOrEmpty(s)
         );
 

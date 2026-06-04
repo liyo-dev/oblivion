@@ -90,6 +90,12 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 43ccdaf4e06a1324fa8c6defac11f3fe, type: 3}
   - eventKey: ui_denied
     sfx: {fileID: 8300000, guid: b9bfb56d2cc92cb56b9040e1af715ab4, type: 3}
+  - eventKey: puzzle_done
+    sfx: {fileID: 8300000, guid: c7883abfc4284bb20a731c9cfffe9802, type: 3}
+  - eventKey: Object_Burn
+    sfx: {fileID: 8300000, guid: 5a7837b53ae69456b9164dec1604dead, type: 3}
+  - eventKey: Door_Open
+    sfx: {fileID: 8300000, guid: 35516e4b9e78e6452a3ea26209b1aa61, type: 3}
   additiveCinematics:
   - sceneName: Cinematic_DemonAppears
     music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}

@@ -23,6 +23,10 @@ public class ActivationCounter : MonoBehaviour
     [Tooltip("Si está activo, al completarse se guarda en el preset y se restaura automáticamente al volver a la escena.")]
     [SerializeField] private bool persistOnComplete = false;
 
+    [Header("Audio")]
+    [Tooltip("Clave SFX que se reproduce al completar el puzzle. Vacío = sin sonido.")]
+    [SerializeField] private string puzzleSolvedSfxKey;
+
     [Header("Evento")]
     [Tooltip("Se invoca cuando se alcanza el número requerido de activaciones (también al restaurar desde preset)")]
     public UnityEvent onRequirementMet;
@@ -99,6 +103,8 @@ public class ActivationCounter : MonoBehaviour
             _isComplete = true;
             if (persistOnComplete)
                 SetFlag();
+            if (!string.IsNullOrEmpty(puzzleSolvedSfxKey))
+                AudioService.Instance?.PlaySFX(puzzleSolvedSfxKey, worldPosition: transform.position);
             onRequirementMet.Invoke();
         }
     }

@@ -52,6 +52,11 @@ public class vThirdPersonCamera : MonoBehaviour
     private CameraOcclusionShadowsOnly _occlusionFader;
     public static bool lockCameraForCinematic = false;
 
+    // Override de zona ambiental
+    [HideInInspector] public bool zoneRotationLocked;
+    private float _zoneLockedMouseX;
+    private float _zoneLockedMouseY;
+
     #endregion
 
     void Start() => Init();
@@ -102,6 +107,19 @@ public class vThirdPersonCamera : MonoBehaviour
         _lockTarget = null;
     }
 
+    /// <summary>Bloquea la cámara en el ángulo indicado; la zona ambiental lo llama al entrar.</summary>
+    public void SetZoneRotation(float lockedMouseX, float lockedMouseY)
+    {
+        _zoneLockedMouseX = lockedMouseX;
+        _zoneLockedMouseY = lockedMouseY;
+        zoneRotationLocked = true;
+    }
+
+    public void ClearZoneRotation()
+    {
+        zoneRotationLocked = false;
+    }
+
     public void SetMainTarget(Transform newTarget)
     {
         target = newTarget;
@@ -113,7 +131,7 @@ public class vThirdPersonCamera : MonoBehaviour
 
     public void RotateCamera(float x, float y)
     {
-        if (lockCameraForCinematic || _lockTarget != null) return;
+        if (lockCameraForCinematic || _lockTarget != null || zoneRotationLocked) return;
 
         mouseX += x * xMouseSensitivity;
         mouseY -= y * yMouseSensitivity;
@@ -157,6 +175,11 @@ public class vThirdPersonCamera : MonoBehaviour
         else
         {
             // --- MODO LIBRE ---
+            if (zoneRotationLocked)
+            {
+                mouseX = Mathf.LerpAngle(mouseX, _zoneLockedMouseX, smoothCameraRotation * Time.fixedDeltaTime);
+                mouseY = Mathf.Lerp(mouseY, _zoneLockedMouseY, smoothCameraRotation * Time.fixedDeltaTime);
+            }
             var camDir = (forward * targetLookAt.forward) + (rightOffset * targetLookAt.right);
             camDir = camDir.normalized;
             newRot = Quaternion.Euler(mouseY, mouseX, 0);
