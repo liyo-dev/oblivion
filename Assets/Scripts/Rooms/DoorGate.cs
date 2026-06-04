@@ -20,8 +20,9 @@ public class DoorGate : MonoBehaviour
         if (startsOpen) Open(); else Close();
     }
 
-    public void Open()  => Animate(_openRotation);
-    public void Close() => Animate(_closedRotation);
+    public void Open()        => Animate(_openRotation);
+    public void OpenInstant() { if (_animCoroutine != null) StopCoroutine(_animCoroutine); transform.localRotation = _openRotation; }
+    public void Close()       => Animate(_closedRotation);
 
     private void Animate(Quaternion target)
     {

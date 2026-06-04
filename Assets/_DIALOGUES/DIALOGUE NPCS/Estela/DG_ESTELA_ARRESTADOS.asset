@@ -18,76 +18,76 @@ MonoBehaviour:
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 3
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_3
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 3
   - speakerNameId: CHAR_WILL
     textId: LORE_CELDA_4
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 1
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 2
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_5
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 1
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_6
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 1
   - speakerNameId: CHAR_LIAM
     textId: LORE_CELDA_7
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
+    cinematicEffect: 1
     emotion: 0
   - speakerNameId: CHAR_WILL
     textId: LORE_CELDA_8
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 1
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 3
+    emotion: 1
   - speakerNameId: CHAR_ELDRAN
     textId: LORE_CELDA_9
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
+    cinematicEffect: 1
     emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: LORE_CELDA_10
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
+    cinematicEffect: 1
     emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: LORE_CELDA_11
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
+    cinematicEffect: 1
     emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: LORE_CELDA_12
     text: ...
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
-    emotion: 0
+    cinematicEffect: 1
+    emotion: 1
   isGroupConversation: 0

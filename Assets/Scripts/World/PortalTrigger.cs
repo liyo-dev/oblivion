@@ -101,25 +101,35 @@ public class PortalTrigger : MonoBehaviour
             }
         }
 
-        // Verificar ítem requerido
+        // Verificar ítem requerido.
+        // Si setFlagOnEnter ya está en el preset, el portal fue desbloqueado antes en esta sesión
+        // (o en una sesión guardada) → saltamos el check del ítem para no bloquear al jugador
+        // que ya consumió la llave al abrirlo la primera vez.
         if (requiredItem != null)
         {
-            if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
-            {
-                Debug.LogWarning("[PortalTrigger] Inventario no encontrado en el jugador. Portal bloqueado.");
-                return;
-            }
+            bool alreadyUnlocked = !string.IsNullOrEmpty(setFlagOnEnter)
+                && preset.flags != null
+                && preset.flags.Contains(setFlagOnEnter);
 
-            if (!inventory.HasItem(requiredItem, requiredItemAmount))
+            if (!alreadyUnlocked)
             {
-                Debug.Log($"[PortalTrigger] Ítem requerido '{requiredItem.itemId}' (x{requiredItemAmount}) no encontrado. Portal bloqueado.");
-                return;
-            }
+                if (!PlayerService.TryGetComponent<Inventory>(out var inventory, includeInactive: true, allowSceneLookup: true) || inventory == null)
+                {
+                    Debug.LogWarning("[PortalTrigger] Inventario no encontrado en el jugador. Portal bloqueado.");
+                    return;
+                }
 
-            if (consumeItemOnEnter)
-            {
-                if (!inventory.TryConsume(requiredItem, requiredItemAmount))
-                    Debug.LogWarning($"[PortalTrigger] No se pudo consumir '{requiredItem.itemId}' pese a que el conteo era suficiente.");
+                if (!inventory.HasItem(requiredItem, requiredItemAmount))
+                {
+                    Debug.Log($"[PortalTrigger] Ítem requerido '{requiredItem.itemId}' (x{requiredItemAmount}) no encontrado. Portal bloqueado.");
+                    return;
+                }
+
+                if (consumeItemOnEnter)
+                {
+                    if (!inventory.TryConsume(requiredItem, requiredItemAmount))
+                        Debug.LogWarning($"[PortalTrigger] No se pudo consumir '{requiredItem.itemId}' pese a que el conteo era suficiente.");
+                }
             }
         }
 
