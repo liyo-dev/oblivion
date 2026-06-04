@@ -106,7 +106,7 @@ namespace Game.NPC.Tools
                 if (executor != null)
                 {
                     var config = executor.GetConfiguration();
-                    string id = config?.persistenceId ?? "N/A";
+                    string id = executor.Manager?.PersistenceId ?? "N/A";
                     if (GUILayout.Button($"{executor.name} (ID: {id})"))
                     {
                         Debug.Log($"Selected: {executor.name}");
@@ -163,7 +163,8 @@ namespace Game.NPC.Tools
                         if (config != null)
                         {
                             // Dibujar el rango de detección
-                            Debug.DrawRay(executor.transform.position, Vector3.forward * config.detectionRange, Color.yellow);
+                            float range = executor.Manager?.NarrativeDetectionRange ?? 10f;
+                            Debug.DrawRay(executor.transform.position, Vector3.forward * range, Color.yellow);
                         }
                     }
                 }

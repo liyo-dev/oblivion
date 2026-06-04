@@ -2,8 +2,6 @@ using UnityEngine;
 using Unity.Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 using Sendero.Core.Feedback;
 
 /// <summary>
@@ -107,11 +105,12 @@ public class DialogueCinematicController : MonoBehaviour
     private bool[] playerRenderersWereEnabled;
 
     // Sistema de efectos cinematográficos por línea (CloseUp / Dramatic / Impact)
-    private Volume _effectsVolume;
-    private Vignette _effectsVignette;
-    private ChromaticAberration _effectsChromaticAberration;
     private Coroutine _effectsCoroutine;
     private DialogueLineEffect _activeEffect;
+
+    // Ocultación de party members no-hablantes en modo individual
+    private readonly List<Renderer> _hiddenPartyRenderers = new List<Renderer>();
+    private readonly List<bool> _hiddenPartyRenderersOrigState = new List<bool>();
 
     // Rotación suave del player en modo grupal
     private Coroutine _playerRotationCoroutine;
@@ -153,8 +152,8 @@ public class DialogueCinematicController : MonoBehaviour
         // Crear cámara dedicada para diálogos (separada de Camera.main)
         CreateDialogueCamera();
 
-        // Crear Volume global para efectos cinematográficos (viñeta, aberración cromática)
-        CreateEffectsVolume();
+        // Los efectos cinematográficos (shake, flash) usan FeedbackService directamente
+        // — sin Volume de post-procesado (viñeta/aberración eliminadas por feedback del usuario).
     }
 
     /// <summary>
@@ -292,27 +291,7 @@ public class DialogueCinematicController : MonoBehaviour
         // Debug.Log($"[DialogueCinematicController] ✅ Cámara de diálogo creada - GameObject: {dialogueCameraObject.activeSelf}, Camera.enabled: {dialogueCamera.enabled}, Depth: {dialogueCamera.depth}, CullingMask incluye UI: {((dialogueCamera.cullingMask & (1 << LayerMask.NameToLayer("UI"))) != 0)}");
     }
 
-    private void CreateEffectsVolume()
-    {
-        var go = new GameObject("DialogueCinematicEffectsVolume");
-        go.transform.SetParent(transform);
 
-        _effectsVolume = go.AddComponent<Volume>();
-        _effectsVolume.isGlobal = true;
-        _effectsVolume.priority = 200;
-        _effectsVolume.weight = 0f;
-        _effectsVolume.profile = ScriptableObject.CreateInstance<VolumeProfile>();
-
-        _effectsVignette = _effectsVolume.profile.Add<Vignette>();
-        _effectsVignette.active = true;
-        _effectsVignette.intensity.overrideState = true;
-        _effectsVignette.intensity.value = 0f;
-
-        _effectsChromaticAberration = _effectsVolume.profile.Add<ChromaticAberration>();
-        _effectsChromaticAberration.active = true;
-        _effectsChromaticAberration.intensity.overrideState = true;
-        _effectsChromaticAberration.intensity.value = 0f;
-    }
 
     void Start()
     {
@@ -363,9 +342,7 @@ public class DialogueCinematicController : MonoBehaviour
             cameraPool.Clear();
         }
         
-        // Destruir el VolumeProfile creado en runtime
-        if (_effectsVolume != null && _effectsVolume.profile != null)
-            Destroy(_effectsVolume.profile);
+
 
         // Limpiar la instancia del Singleton si es esta instancia
         if (Instance == this)
@@ -745,13 +722,8 @@ public class DialogueCinematicController : MonoBehaviour
                 _effectsCoroutine = null;
             }
         }
-        // Desactivar post-procesado inmediatamente al cerrar diálogo
-        if (_effectsVolume != null)
-        {
-            _effectsVolume.weight = 0f;
-            _effectsVignette.intensity.value = 0f;
-            _effectsChromaticAberration.intensity.value = 0f;
-        }
+        // Restaurar party members ocultos
+        ShowAllPartyMembers();
 
         // Mostrar el HUD con fade suave
         ShowHUD();
@@ -917,6 +889,57 @@ public class DialogueCinematicController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Oculta los renderers de party members que NO son el speaker actual ni el player ni el NPC principal.
+    /// Evita que personajes cercanos bloqueen la cámara en modo individual.
+    /// </summary>
+    private void HideNonSpeakingPartyMembers(Transform speaker)
+    {
+        // Restaurar los que estaban ocultos antes de ocultar nuevos
+        ShowAllPartyMembers();
+
+        if (!Game.NPC.PlayerParty.HasInstance) return;
+
+        foreach (var m in Game.NPC.PlayerParty.Instance.Members)
+        {
+            if (m == null || !m.IsActiveInParty) continue;
+            // No ocultar al speaker, al player ni al NPC principal
+            if (m.transform == speaker) continue;
+            if (m.transform == currentPlayer) continue;
+            if (m.transform == currentNPC) continue;
+
+            var renderers = m.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers)
+            {
+                if (r == null) continue;
+                _hiddenPartyRenderers.Add(r);
+                _hiddenPartyRenderersOrigState.Add(r.enabled);
+                r.enabled = false;
+            }
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (showDebugInfo && _hiddenPartyRenderers.Count > 0)
+            Debug.Log($"[DialogueCinematicController] Ocultos {_hiddenPartyRenderers.Count} renderers de party members no-hablantes");
+#endif
+    }
+
+    /// <summary>
+    /// Restaura la visibilidad de todos los party members ocultos por HideNonSpeakingPartyMembers.
+    /// </summary>
+    private void ShowAllPartyMembers()
+    {
+        if (_hiddenPartyRenderers.Count == 0) return;
+
+        for (int i = 0; i < _hiddenPartyRenderers.Count; i++)
+        {
+            if (_hiddenPartyRenderers[i] != null)
+                _hiddenPartyRenderers[i].enabled = _hiddenPartyRenderersOrigState[i];
+        }
+        _hiddenPartyRenderers.Clear();
+        _hiddenPartyRenderersOrigState.Clear();
+    }
+
         /// <summary>
         /// Notifica que ha avanzado una línea de diálogo
         /// </summary>
@@ -1055,18 +1078,11 @@ public class DialogueCinematicController : MonoBehaviour
                 {
                     foreach (var m in Game.NPC.PlayerParty.Instance.Members)
                     {
-                        if (m == null) continue;
-                        var config = m.NPCManager?.Configuration?.interactiveNarrativeConfig;
-                        if (config != null)
-                        {
-                            if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
-                                || config.persistenceId == speakerId)
-                            {
-                                speakerTransform = m.transform;
-                                break;
-                            }
-                        }
-                        if (m.gameObject.name == speakerId)
+                        if (m == null || m.NPCManager == null) continue;
+                        var mgr = m.NPCManager;
+                        if ((!string.IsNullOrEmpty(mgr.DialogueCharacterId) && mgr.DialogueCharacterId == speakerId)
+                            || mgr.PersistenceId == speakerId
+                            || m.gameObject.name == speakerId)
                         {
                             speakerTransform = m.transform;
                             break;
@@ -1080,17 +1096,9 @@ public class DialogueCinematicController : MonoBehaviour
                     var allNPCs = GameObject.FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
                     foreach (var npc in allNPCs)
                     {
-                        var config = npc.Configuration?.interactiveNarrativeConfig;
-                        if (config != null)
-                        {
-                            if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
-                                || config.persistenceId == speakerId)
-                            {
-                                speakerTransform = npc.transform;
-                                break;
-                            }
-                        }
-                        if (npc.gameObject.name == speakerId)
+                        if ((!string.IsNullOrEmpty(npc.DialogueCharacterId) && npc.DialogueCharacterId == speakerId)
+                            || npc.PersistenceId == speakerId
+                            || npc.gameObject.name == speakerId)
                         {
                             speakerTransform = npc.transform;
                             break;
@@ -1145,13 +1153,14 @@ public class DialogueCinematicController : MonoBehaviour
             // Mostrar ambos personajes para que el close-up funcione en cualquier modo
             ShowNPC();
             ShowPlayer();
+            // Ocultar party members que no sean el speaker
+            if (!_isGroupConversation)
+                HideNonSpeakingPartyMembers(speaker);
 
             // Aplicar close-up al speaker (siempre corte — los efectos dramáticos deben ser instantáneos)
             ApplyShot(_effectCloseUpShot, speaker, forceCut: true);
 
-            // Calcular parámetros según el tipo de efecto
-            float vignetteIntensity;
-            float chromaticIntensity;
+            // Parámetros: solo shake + flash (sin viñeta ni aberración cromática)
             float shakeIntensity;
             float shakeDuration;
             bool doFlash;
@@ -1159,22 +1168,16 @@ public class DialogueCinematicController : MonoBehaviour
             switch (effect)
             {
                 case DialogueLineEffect.CloseUp:
-                    vignetteIntensity = 0.25f;
-                    chromaticIntensity = 0f;
                     shakeIntensity = 0f;
                     shakeDuration = 0f;
                     doFlash = false;
                     break;
                 case DialogueLineEffect.Dramatic:
-                    vignetteIntensity = 0.4f;
-                    chromaticIntensity = 0.15f;
                     shakeIntensity = 0.15f;
                     shakeDuration = 0.5f;
                     doFlash = false;
                     break;
                 case DialogueLineEffect.Impact:
-                    vignetteIntensity = 0.55f;
-                    chromaticIntensity = 0.3f;
                     shakeIntensity = 0.4f;
                     shakeDuration = 0.6f;
                     doFlash = true;
@@ -1182,11 +1185,6 @@ public class DialogueCinematicController : MonoBehaviour
                 default:
                     return;
             }
-
-            // Post-procesado (fade in suave)
-            if (_effectsCoroutine != null)
-                StopCoroutine(_effectsCoroutine);
-            _effectsCoroutine = StartCoroutine(FadeEffectsVolume(vignetteIntensity, chromaticIntensity, 0.3f));
 
             // Shake
             if (shakeIntensity > 0f && dialogueCamera != null)
@@ -1206,43 +1204,13 @@ public class DialogueCinematicController : MonoBehaviour
         {
             _activeEffect = DialogueLineEffect.None;
 
-            if (_effectsCoroutine != null)
-                StopCoroutine(_effectsCoroutine);
-            _effectsCoroutine = StartCoroutine(FadeEffectsVolume(0f, 0f, 0.4f));
+            // Restaurar party members ocultos por el efecto
+            ShowAllPartyMembers();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (showDebugInfo)
                 Debug.Log("[DialogueCinematicController] Efecto limpiado, restaurando plano normal");
 #endif
-        }
-
-        private IEnumerator FadeEffectsVolume(float targetVignette, float targetChromatic, float duration)
-        {
-            if (_effectsVolume == null) yield break;
-
-            float startVignette = _effectsVignette.intensity.value;
-            float startChromatic = _effectsChromaticAberration.intensity.value;
-            float startWeight = _effectsVolume.weight;
-            float targetWeight = (targetVignette > 0f || targetChromatic > 0f) ? 1f : 0f;
-
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                float t = elapsed / duration;
-                float smooth = t * t * (3f - 2f * t); // smoothstep
-
-                _effectsVignette.intensity.value = Mathf.Lerp(startVignette, targetVignette, smooth);
-                _effectsChromaticAberration.intensity.value = Mathf.Lerp(startChromatic, targetChromatic, smooth);
-                _effectsVolume.weight = Mathf.Lerp(startWeight, targetWeight, smooth);
-
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-
-            _effectsVignette.intensity.value = targetVignette;
-            _effectsChromaticAberration.intensity.value = targetChromatic;
-            _effectsVolume.weight = targetWeight;
-            _effectsCoroutine = null;
         }
 
         /// <summary>
@@ -1801,6 +1769,9 @@ public class DialogueCinematicController : MonoBehaviour
         bool isCloseUpShot = shot.shotType == DialogueShotType.CloseUpNPC
                           || shot.shotType == DialogueShotType.MediumNPC
                           || shot.shotType == DialogueShotType.OverShoulderPlayer;
+
+        // Ocultar party members que no sean el speaker actual para evitar obstrucciones
+        HideNonSpeakingPartyMembers(effectiveTarget);
 
         if (isPlayerOrPartySpeaking)
         {

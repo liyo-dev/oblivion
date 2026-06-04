@@ -516,7 +516,7 @@ namespace Game.NPC.Modules
                 
                 // Verificar si el miembro está en el equipo
                 bool isInParty = party.Members.Any(m => 
-                    m.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId == memberReq.memberId ||
+                    m.NPCManager?.PersistenceId == memberReq.memberId ||
                     m.gameObject.name == memberReq.memberId);
                 
                 Debug.Log($"[NPCQuestConfig] Verificando member '{memberReq.memberId}': {(isInParty ? "✅ EN PARTY" : "❌ NO EN PARTY")}");
