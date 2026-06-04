@@ -454,20 +454,15 @@ namespace Game.NPC
                     targetPosition = hit.position;
                 }
                 
-                // Si el miembro está lejos, teleportarlo directamente para que estén todos en el diálogo
-                const float teleportThreshold = 3f;
-                float distToTarget = Vector3.Distance(member.transform.position, targetPosition);
-                if (distToTarget > teleportThreshold)
-                {
-                    var navAgent = member.NPCManager?.Agent;
-                    if (navAgent != null && navAgent.isOnNavMesh)
-                        navAgent.Warp(targetPosition);
-                    else
-                        member.transform.position = targetPosition;
-                    Log($"  ↳ {member.DisplayName} teleportado a posición de diálogo (distancia era {distToTarget:F1}m > {teleportThreshold}m)");
-                }
+                // Teleportar siempre al inicio del diálogo para que la cámara
+                // los encuentre ya en posición (evita que caminen durante el diálogo)
+                var navAgent = member.NPCManager?.Agent;
+                if (navAgent != null && navAgent.isOnNavMesh)
+                    navAgent.Warp(targetPosition);
+                else
+                    member.transform.position = targetPosition;
 
-                // Enviar al miembro a esa posición
+                // Entrar en estado de diálogo (quieto mirando al NPC)
                 member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
                 
                 string sideName = isLeftSide ? "IZQUIERDA" : "DERECHA";
