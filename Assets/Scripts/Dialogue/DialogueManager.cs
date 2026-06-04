@@ -1009,12 +1009,11 @@ public class DialogueManager : MonoBehaviour
             var party = Game.NPC.PlayerParty.Instance;
             foreach (var member in party.Members)
             {
-                if (member.NPCManager?.Configuration?.interactiveNarrativeConfig == null)
-                    continue;
+                if (member.NPCManager == null) continue;
 
-                var config = member.NPCManager.Configuration.interactiveNarrativeConfig;
-                if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId) ||
-                    config.persistenceId == speakerId ||
+                var mgr = member.NPCManager;
+                if ((!string.IsNullOrEmpty(mgr.DialogueCharacterId) && mgr.DialogueCharacterId == speakerId) ||
+                    mgr.PersistenceId == speakerId ||
                     member.gameObject.name == speakerId)
                 {
                     speakerAnimator = member.GetComponent<NPCSimpleAnimator>();

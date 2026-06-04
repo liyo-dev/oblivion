@@ -57,6 +57,7 @@ namespace Game.NPC.Modules
         
         #region 📢 Public API
         public bool IsExecuting => _isExecuting || (Time.time - _lastExecutionEndTime < POST_EXECUTION_COOLDOWN) || (Time.time < _joinPartyFailedUntil);
+        public NPCBehaviourManagerV2 Manager => _npcManager;
         #endregion
         
         private ConditionalNarrative GetCachedActiveNarrative(bool forceRefresh = false)
@@ -312,7 +313,7 @@ namespace Game.NPC.Modules
             }
             
             // ✅ También verificar si está en la lista de completadas del preset (persistencia)
-            if (_config != null && _config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
+            if (_config != null && _config.persistState && !string.IsNullOrEmpty(_npcManager.PersistenceId))
             {
                 var preset = GameBootService.Profile?.runtimePreset;
                 if (preset != null && preset.completedInteractiveNarratives != null)
@@ -380,7 +381,7 @@ namespace Game.NPC.Modules
 
             InitializeAlertIconController();
 
-            if (_config.persistState && !string.IsNullOrEmpty(_config.persistenceId))
+            if (_config.persistState && !string.IsNullOrEmpty(_npcManager.PersistenceId))
             {
                 RestoreState();
             }
@@ -418,7 +419,7 @@ namespace Game.NPC.Modules
                     }
                 }
                 
-                if (needsIconController || _config.alertIconPrefab != null)
+                if (needsIconController || _npcManager.Configuration.combatConfig?.alertIconPrefab != null)
                 {
                     _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
                 }
@@ -466,7 +467,7 @@ namespace Game.NPC.Modules
             if (_alertIconController == null) InitializeAlertIconController();
             if (_alertIconController == null) return;
 
-            GameObject iconPrefab = narrative.persistentIconPrefab ?? _config?.alertIconPrefab;
+            GameObject iconPrefab = narrative.persistentIconPrefab ?? _npcManager.Configuration.combatConfig?.alertIconPrefab;
 
             if (iconPrefab != null && !_alertIconController.HasPersistentIcon)
             {
@@ -543,7 +544,7 @@ namespace Game.NPC.Modules
                 }
             }
             
-            if (_config.rotateToPlayerOnInteract) yield return RotateToPlayer();
+            if (_npcManager.RotateToPlayerOnInteract) yield return RotateToPlayer();
 
             for (int i = 0; i < chain.Length; i++)
             {
@@ -1345,7 +1346,7 @@ namespace Game.NPC.Modules
                 if (_player != null)
                 {
                     float dist = Vector3.Distance(transform.position, _player.position);
-                    if (dist <= _config.detectionRange)
+                    if (dist <= _npcManager.NarrativeDetectionRange)
                     {
                         _hasDetectedPlayer = true;
                         yield return StartAlertSequence();
@@ -1359,33 +1360,35 @@ namespace Game.NPC.Modules
 
         private IEnumerator StartAlertSequence()
         {
-            GameObject iconPrefab = _config.alertIconPrefab ?? _npcManager.Configuration.combatConfig?.alertIconPrefab;
+            var combatConfig = _npcManager.Configuration.combatConfig;
+            GameObject iconPrefab = combatConfig?.alertIconPrefab;
+            float iconDuration = combatConfig?.alertIconDuration ?? 1f;
 
             if (iconPrefab)
             {
                 if (!_alertIconController) InitializeAlertIconController();
                 if (_alertIconController && !_alertIconController.HasActiveIcon)
                 {
-                    float iconHeight = _config.alertIconHeight > 0 ? _config.alertIconHeight : _npcManager.Configuration.combatConfig?.alertIconHeight ?? 0;
+                    float iconHeight = combatConfig?.alertIconHeight ?? 2.5f;
                     if (iconHeight > 0) _alertIconController.SetIconHeight(iconHeight);
-                    _alertIconController.ShowAlertIcon(iconPrefab, _config.alertIconDuration);
+                    _alertIconController.ShowAlertIcon(iconPrefab, iconDuration);
                 }
             }
 
-            if (_config.walkTowardsPlayerOnAlert && _player != null)
+            if (_npcManager.WalkTowardsPlayerOnAlert && _player != null)
             {
                 var agent = _npcManager.Agent;
                 if (agent && agent.isOnNavMesh)
                 {
                     agent.isStopped = false;
-                    agent.stoppingDistance = _config.stopDistanceFromPlayer;
+                    agent.stoppingDistance = _npcManager.StopDistanceFromPlayer;
                     float t = 0;
-                    
-                    while (t < _config.alertIconDuration)
+
+                    while (t < iconDuration)
                     {
                         agent.SetDestination(_player.position);
                         _npcManager.SimpleAnimator?.SetMovementSpeed(agent.velocity.magnitude / agent.speed);
-                        if (Vector3.Distance(transform.position, _player.position) <= _config.stopDistanceFromPlayer) break;
+                        if (Vector3.Distance(transform.position, _player.position) <= _npcManager.StopDistanceFromPlayer) break;
                         t += Time.deltaTime;
                         yield return null;
                     }
@@ -1395,7 +1398,7 @@ namespace Game.NPC.Modules
             }
             else
             {
-                yield return new WaitForSeconds(_config.alertIconDuration);
+                yield return new WaitForSeconds(iconDuration);
             }
         }
 
@@ -1411,7 +1414,7 @@ namespace Game.NPC.Modules
 
         private void SwitchToEnemyLayer()
         {
-            if (_config.switchToEnemyLayerOnCombat)
+            if (_npcManager.SwitchToEnemyLayerOnCombat)
             {
                 int layer = LayerMask.NameToLayer("Enemy");
                 if (layer != -1) gameObject.layer = layer;
@@ -1420,8 +1423,8 @@ namespace Game.NPC.Modules
         
         private void ApplyInitialLayer()
         {
-            if (_config == null || _config.initialLayer == LayerMode.Custom) return;
-            int layer = LayerMask.NameToLayer(_config.initialLayer.ToString());
+            if (_npcManager == null || _npcManager.InitialLayer == LayerMode.Custom) return;
+            int layer = LayerMask.NameToLayer(_npcManager.InitialLayer.ToString());
             if (layer != -1) gameObject.layer = layer;
         }
 
@@ -1436,7 +1439,7 @@ namespace Game.NPC.Modules
             Quaternion targetRotation = Quaternion.LookRotation(dir.normalized);
             if (Quaternion.Angle(transform.rotation, targetRotation) < 5f) yield break;
             
-            float duration = _config.rotationDuration;
+            float duration = _npcManager.RotationDuration;
             float elapsed = 0f;
             Quaternion startRotation = transform.rotation;
             
@@ -1457,15 +1460,15 @@ namespace Game.NPC.Modules
         
         private void SaveState()
         {
-            if (string.IsNullOrEmpty(_config.persistenceId)) return;
+            if (string.IsNullOrEmpty(_npcManager.PersistenceId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
             if (preset == null) return;
             
             preset.completedInteractiveNarratives ??= new System.Collections.Generic.List<string>();
             
-            if (!preset.completedInteractiveNarratives.Contains(_config.persistenceId))
+            if (!preset.completedInteractiveNarratives.Contains(_npcManager.PersistenceId))
             {
-                preset.completedInteractiveNarratives.Add(_config.persistenceId);
+                preset.completedInteractiveNarratives.Add(_npcManager.PersistenceId);
             }
             
             if (_config.conditionalNarratives != null)
@@ -1487,11 +1490,11 @@ namespace Game.NPC.Modules
 
         private void RestoreState()
         {
-            if (string.IsNullOrEmpty(_config.persistenceId)) return;
+            if (string.IsNullOrEmpty(_npcManager.PersistenceId)) return;
             var preset = GameBootService.Profile?.GetActivePresetResolved();
             if (preset?.completedInteractiveNarratives == null) return;
             
-            _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_config.persistenceId);
+            _hasBeenUsed = preset.completedInteractiveNarratives.Contains(_npcManager.PersistenceId);
             
             if (_config.conditionalNarratives != null)
             {
@@ -1513,7 +1516,7 @@ namespace Game.NPC.Modules
         
         private string GetConditionalNarrativeId(int index)
         {
-            return $"{_config.persistenceId}_CN{index}";
+            return $"{_npcManager.PersistenceId}_CN{index}";
         }
 
         public void ResetState(bool restoreFromPreset = true)

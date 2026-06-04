@@ -110,7 +110,7 @@ namespace Game.NPC
         /// Nombre para mostrar en UI
         /// </summary>
         public string DisplayName => partyConfig?.displayName ??
-            (_npcManager?.Configuration?.interactiveNarrativeConfig?.persistenceId ?? gameObject.name);
+            (_npcManager?.PersistenceId ?? gameObject.name);
         
         /// <summary>True mientras el NPC está "muerto" esperando el fin de batalla.</summary>
         public bool IsDeadInBattle => _isDeadInBattle;

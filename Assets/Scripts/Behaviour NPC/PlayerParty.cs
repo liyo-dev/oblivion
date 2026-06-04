@@ -317,7 +317,7 @@ namespace Game.NPC
         public NPCPartyMember GetMemberByNarrativeId(string narrativeId)
         {
             return _members.FirstOrDefault(m =>
-                m.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId == narrativeId);
+                m.NPCManager?.PersistenceId == narrativeId);
         }
         
         /// <summary>

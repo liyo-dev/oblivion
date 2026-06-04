@@ -1040,18 +1040,11 @@ public class DialogueCinematicController : MonoBehaviour
                 {
                     foreach (var m in Game.NPC.PlayerParty.Instance.Members)
                     {
-                        if (m == null) continue;
-                        var config = m.NPCManager?.Configuration?.interactiveNarrativeConfig;
-                        if (config != null)
-                        {
-                            if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
-                                || config.persistenceId == speakerId)
-                            {
-                                speakerTransform = m.transform;
-                                break;
-                            }
-                        }
-                        if (m.gameObject.name == speakerId)
+                        if (m == null || m.NPCManager == null) continue;
+                        var mgr = m.NPCManager;
+                        if ((!string.IsNullOrEmpty(mgr.DialogueCharacterId) && mgr.DialogueCharacterId == speakerId)
+                            || mgr.PersistenceId == speakerId
+                            || m.gameObject.name == speakerId)
                         {
                             speakerTransform = m.transform;
                             break;
@@ -1065,17 +1058,9 @@ public class DialogueCinematicController : MonoBehaviour
                     var allNPCs = GameObject.FindObjectsByType<Game.NPC.NPCBehaviourManagerV2>(FindObjectsSortMode.None);
                     foreach (var npc in allNPCs)
                     {
-                        var config = npc.Configuration?.interactiveNarrativeConfig;
-                        if (config != null)
-                        {
-                            if ((!string.IsNullOrEmpty(config.dialogueCharacterId) && config.dialogueCharacterId == speakerId)
-                                || config.persistenceId == speakerId)
-                            {
-                                speakerTransform = npc.transform;
-                                break;
-                            }
-                        }
-                        if (npc.gameObject.name == speakerId)
+                        if ((!string.IsNullOrEmpty(npc.DialogueCharacterId) && npc.DialogueCharacterId == speakerId)
+                            || npc.PersistenceId == speakerId
+                            || npc.gameObject.name == speakerId)
                         {
                             speakerTransform = npc.transform;
                             break;

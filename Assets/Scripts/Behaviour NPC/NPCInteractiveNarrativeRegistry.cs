@@ -33,9 +33,11 @@ namespace Game.NPC.Modules
 
             // Registrar por ID si tiene uno configurado
             var config = executor.GetConfiguration();
-            if (config != null && config.persistState && !string.IsNullOrEmpty(config.persistenceId))
+            var mgr = executor.Manager;
+            string pId = mgr != null ? mgr.PersistenceId : null;
+            if (config != null && config.persistState && !string.IsNullOrEmpty(pId))
             {
-                string id = config.persistenceId;
+                string id = pId;
                 
                 if (_byId.TryGetValue(id, out var existing))
                 {
@@ -51,11 +53,10 @@ namespace Game.NPC.Modules
                         else
                         {
                             // IDs iguales en NPCs DISTINTOS: esto sí es un error de configuración.
-                            Debug.LogError($"[NPCInteractiveNarrativeRegistry] ❌ ERROR CRÍTICO: persistenceId DUPLICADO '{id}'\n" +
+                            Debug.LogError($"[NPCInteractiveNarrativeRegistry] ERROR CRÍTICO: persistenceId DUPLICADO '{id}'\n" +
                                            $"  → NPC existente: '{existing.name}'\n" +
                                            $"  → NPC nuevo: '{executor.name}'\n" +
-                                           $"  ⚠️ Esto causa que el guardado de estado de un NPC afecte al otro.\n" +
-                                           $"  🔧 SOLUCIÓN: Asigna un persistenceId ÚNICO a cada NPCInteractiveNarrativeConfig.");
+                                           $"  SOLUCIÓN: Asigna un persistenceId ÚNICO en NPCBehaviourManagerV2.");
                         }
                     }
                     // Si es el mismo executor, solo actualizamos (re-registro)
@@ -86,9 +87,11 @@ namespace Game.NPC.Modules
 
             // Remover del diccionario por ID si existe
             var config = executor.GetConfiguration();
-            if (config != null && config.persistState && !string.IsNullOrEmpty(config.persistenceId))
+            var mgr = executor.Manager;
+            string pId = mgr != null ? mgr.PersistenceId : null;
+            if (config != null && config.persistState && !string.IsNullOrEmpty(pId))
             {
-                string id = config.persistenceId;
+                string id = pId;
                 if (_byId.TryGetValue(id, out var existing) && existing == executor)
                 {
                     _byId.Remove(id);
@@ -212,7 +215,7 @@ namespace Game.NPC.Modules
                 if (executor != null)
                 {
                     var config = executor.GetConfiguration();
-                    string id = config?.persistenceId ?? "SIN ID";
+                    string id = executor.Manager?.PersistenceId ?? "SIN ID";
                     bool hasConfig = config != null;
                     bool persistState = config?.persistState ?? false;
                     

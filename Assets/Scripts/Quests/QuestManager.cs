@@ -854,7 +854,7 @@ public class QuestManager : MonoBehaviour
             
             // Verificar si el miembro está en el equipo
             bool isInParty = party.Members.Any(m => 
-                m.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId == memberReq.memberId ||
+                m.NPCManager?.PersistenceId == memberReq.memberId ||
                 m.gameObject.name == memberReq.memberId);
             
             Debug.Log($"[QuestManager] Buscando miembro '{memberReq.memberId}': {(isInParty ? "✅ ENCONTRADO" : "❌ NO ENCONTRADO")}");
@@ -1132,7 +1132,7 @@ public class QuestManager : MonoBehaviour
         }
         
         // Obtener el ID de persistencia del miembro
-        string persistenceId = member.NPCManager?.Configuration?.interactiveNarrativeConfig?.persistenceId;
+        string persistenceId = member.NPCManager?.PersistenceId;
         string gameObjectName = member.gameObject.name;
         
         Debug.Log($"[QuestManager] 👥 ===== OnPartyMemberJoined DISPARADO =====");

@@ -36,6 +36,40 @@ namespace Game.NPC
         
         // Runtime Data
         [NonSerialized] public Vector3 lastPosition;
+
+        [Header("Identidad NPC")]
+        [Tooltip("ID único para persistencia y registro (ej: 'NPC_InteractiveNarrative_Config_Eldran_cd6ce7a3')")]
+        [SerializeField] private string persistenceId;
+
+        [Tooltip("ID del personaje para diálogos (ej: 'CHAR_ELDRAN'). Se usa para identificar al speaker en diálogos con múltiples participantes.")]
+        [SerializeField] private string dialogueCharacterId;
+
+        [Header("Interacción")]
+        [Tooltip("¿El NPC gira hacia el jugador al interactuar?")]
+        [SerializeField] private bool rotateToPlayerOnInteract = true;
+
+        [Min(0f)]
+        [Tooltip("Duración de la rotación hacia el jugador")]
+        [SerializeField] private float rotationDuration = 0.3f;
+
+        [Header("Layer Management")]
+        [Tooltip("Capa inicial del NPC. Cambiará a 'Enemy' al iniciar combate si switchToEnemyLayerOnCombat está activo.")]
+        [SerializeField] private Modules.LayerMode initialLayer = Modules.LayerMode.Interactable;
+
+        [Tooltip("¿Cambiar automáticamente a la capa 'Enemy' cuando se inicie un combate (acción StartCombat)?")]
+        [SerializeField] private bool switchToEnemyLayerOnCombat = true;
+
+        [Header("Detección Narrativa")]
+        [Tooltip("Rango de detección del jugador para narrativas con autoStartOnDetection=true")]
+        [Min(1f)]
+        [SerializeField] private float narrativeDetectionRange = 10f;
+
+        [Tooltip("¿El NPC camina hacia el jugador durante la alerta narrativa?")]
+        [SerializeField] private bool walkTowardsPlayerOnAlert = true;
+
+        [Tooltip("Distancia mínima para detenerse al acercarse al jugador")]
+        [Min(0.5f)]
+        [SerializeField] private float stopDistanceFromPlayer = 2f;
         #endregion
 
         #region 🔌 Core Components
@@ -73,6 +107,23 @@ namespace Game.NPC
         /// Indica si este NPC es un aliado del jugador (miembro del party).
         /// </summary>
         public bool IsAlly => _cachedPartyMember != null && _cachedPartyMember.IsInParty;
+
+        // Identidad NPC (migrado desde NPCInteractiveNarrativeConfig)
+        public string PersistenceId => persistenceId;
+        public string DialogueCharacterId => dialogueCharacterId;
+
+        // Interacción
+        public bool RotateToPlayerOnInteract => rotateToPlayerOnInteract;
+        public float RotationDuration => rotationDuration;
+
+        // Layer Management
+        public Modules.LayerMode InitialLayer => initialLayer;
+        public bool SwitchToEnemyLayerOnCombat => switchToEnemyLayerOnCombat;
+
+        // Detección Narrativa
+        public float NarrativeDetectionRange => narrativeDetectionRange;
+        public bool WalkTowardsPlayerOnAlert => walkTowardsPlayerOnAlert;
+        public float StopDistanceFromPlayer => stopDistanceFromPlayer;
         #endregion
 
         void Awake()
@@ -555,49 +606,41 @@ namespace Game.NPC
 
         private void RegisterNarrativeIdentity()
         {
-            // Obtener ID para registro (prioridad: interactiveNarrativeConfig > partyConfig > nombre del GO)
-            string registryId = null;
-            
-            // 1. Si tiene InteractiveNarrative, usar su persistenceId
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
+            string registryId = !string.IsNullOrEmpty(persistenceId) ? persistenceId : null;
+
+            if (registryId == null)
             {
-                registryId = !string.IsNullOrEmpty(configuration.interactiveNarrativeConfig.persistenceId) 
-                    ? configuration.interactiveNarrativeConfig.persistenceId 
-                    : gameObject.name;
+                if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) ||
+                    configuration.HasBehaviour(NPCBehaviourType.Companion) ||
+                    GetComponent<NPCPartyMember>() != null)
+                {
+                    registryId = gameObject.name;
+                }
             }
-            // 2. Si tiene Companion/Party, usar nombre del GO
-            else if (configuration.HasBehaviour(NPCBehaviourType.Companion) || GetComponent<NPCPartyMember>() != null)
-            {
-                registryId = gameObject.name;
-            }
-            
-            // Registrar si tenemos un ID
+
             if (!string.IsNullOrEmpty(registryId))
             {
                 NPCRegistry.Instance.RegisterNPC(registryId, null, this);
-                if (debugMode) Debug.Log($"[NPCBehaviourManagerV2] 📝 NPC '{registryId}' registrado en NPCRegistry");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (debugMode) Debug.Log($"[NPCBehaviourManagerV2] NPC '{registryId}' registrado en NPCRegistry");
+#endif
             }
         }
         
         private void UnregisterNarrativeIdentity()
         {
-            // Verificación de seguridad: configuration puede ser null si el objeto se destruye prematuramente
-            if (configuration == null)
-                return;
-            
-            string registryId = null;
-            
-            if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) && configuration.interactiveNarrativeConfig != null)
+            string registryId = !string.IsNullOrEmpty(persistenceId) ? persistenceId : null;
+
+            if (registryId == null && configuration != null)
             {
-                registryId = !string.IsNullOrEmpty(configuration.interactiveNarrativeConfig.persistenceId) 
-                    ? configuration.interactiveNarrativeConfig.persistenceId 
-                    : gameObject.name;
+                if (configuration.HasBehaviour(NPCBehaviourType.InteractiveNarrative) ||
+                    configuration.HasBehaviour(NPCBehaviourType.Companion) ||
+                    GetComponent<NPCPartyMember>() != null)
+                {
+                    registryId = gameObject.name;
+                }
             }
-            else if (configuration.HasBehaviour(NPCBehaviourType.Companion) || GetComponent<NPCPartyMember>() != null)
-            {
-                registryId = gameObject.name;
-            }
-            
+
             if (!string.IsNullOrEmpty(registryId) && Game.NPC.NPCRegistry.HasInstance)
             {
                 NPCRegistry.Instance.UnregisterNPC(registryId, null);
