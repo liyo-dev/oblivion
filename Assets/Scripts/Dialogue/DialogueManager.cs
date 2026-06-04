@@ -377,17 +377,17 @@ public class DialogueManager : MonoBehaviour
     {
         _currentNpc = npc;
         
-        // ✅ CRÍTICO: Iniciar el diálogo PRIMERO para que IsOpen sea true
-        StartDialogue(asset, onFinished);
-        
-        // ✅ Posicionar party members para el diálogo
+        // Posicionar party members ANTES de iniciar la cámara cinematográfica
+        // para que estén en su sitio cuando la cámara capture las posiciones iniciales
         if (Game.NPC.PlayerParty.HasInstance)
         {
             Game.NPC.PlayerParty.Instance.PositionMembersForDialogue(npc);
         }
         
-        // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
-        // NPCSimpleAnimator maneja su propia rotación y animaciones
+        // Iniciar el diálogo (activa cámara cinematográfica y muestra primera línea)
+        StartDialogue(asset, onFinished);
+        
+        // Emitir evento - los NPCs que lo necesiten se suscriben
         OnDialogueStarted?.Invoke(_currentNpc);
         if (verboseLogging) Debug.Log($"[DialogueManager] 📢 OnDialogueStarted emitido para '{_currentNpc?.name ?? "NULL"}'");
     }
