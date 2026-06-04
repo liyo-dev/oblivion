@@ -43,20 +43,30 @@ namespace Game.NPC.States
             
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
-                // Activar movimiento
+                _originalStoppingDistance = context.Agent.stoppingDistance;
+                
+                // Si ya fue teleportado a la posición (por PlayerParty.PositionMembersForDialogue),
+                // quedarse quieto directamente sin intentar navegar
+                float distanceToTarget = Vector3.Distance(context.Transform.position, _targetPosition);
+                if (distanceToTarget <= ARRIVAL_THRESHOLD)
+                {
+                    _hasReachedPosition = true;
+                    context.Agent.isStopped = true;
+                    context.Agent.updatePosition = false;
+                    context.Agent.updateRotation = false;
+                    context.Agent.ResetPath();
+                    context.Animator?.SetMovementSpeed(0f);
+                    RotateTowardsTarget(context);
+                    return;
+                }
+                
+                // Fallback: si por alguna razón no está en posición, navegar
                 context.Agent.isStopped = false;
                 context.Agent.updatePosition = true;
                 context.Agent.updateRotation = true;
                 context.Agent.speed = _partyMember.PartyConfig?.walkSpeed ?? 3.5f;
-                // Forzar stopping distance pequeño para que llegue a la posición exacta del diálogo
-                // (el FollowState deja el valor de distanciaParaPararse que puede ser ~3m)
-                _originalStoppingDistance = context.Agent.stoppingDistance;
                 context.Agent.stoppingDistance = ARRIVAL_THRESHOLD * 0.5f;
-
-                // Establecer destino
                 context.Agent.SetDestination(_targetPosition);
-                
-                Debug.Log($"[DialoguePositionState:{context.Transform.name}] 🎯 Moviéndose a posición de diálogo: {_targetPosition}");
             }
         }
 
