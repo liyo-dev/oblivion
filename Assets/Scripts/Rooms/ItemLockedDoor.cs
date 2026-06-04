@@ -15,8 +15,7 @@ using UnityEngine.Events;
 public class ItemLockedDoor : MonoBehaviour
 {
     [Header("Persistencia")]
-    [Tooltip("ID único de esta puerta. Si está vacío se genera como: {escena}_{nombreObjeto}. " +
-             "Usa un ID manual si el nombre del objeto puede cambiar.")]
+    [Tooltip("Override manual del ID. Si está vacío, se genera automáticamente usando escena+nombre+posición.")]
     [SerializeField] private string persistenceId;
 
     [Header("Ítem requerido")]
@@ -169,6 +168,7 @@ public class ItemLockedDoor : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(persistenceId)) return persistenceId;
         var sceneName = gameObject.scene.IsValid() ? gameObject.scene.name : "Unknown";
-        return $"{sceneName}_{gameObject.name}";
+        var pos = transform.position;
+        return $"{sceneName}_{gameObject.name}_{pos.x:F1}_{pos.y:F1}_{pos.z:F1}";
     }
 }

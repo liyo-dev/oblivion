@@ -478,6 +478,24 @@ SO serializable que contiene todo el estado del jugador:
 
 El profile es la única fuente de verdad para restaurar el estado entre sesiones.
 
+### IDs de persistencia de mundo
+
+Los objetos que persisten estado entre cambios de escena (pickups, puertas, puzzles…) usan un flag string guardado en `preset.flags`. El ID de cada flag se genera **automáticamente** sin necesidad de configuración manual:
+
+```
+{escena}_{nombreObjeto}_{posX:F1}_{posY:F1}_{posZ:F1}
+```
+
+Todos estos scripts exponen un campo override **opcional**. Si está vacío, el ID automático se usa siempre.
+
+| Script | Prefijo del flag | Campo override |
+|--------|-----------------|----------------|
+| `WorldPickup` | `PICKUP_` | `pickupIdOverride` |
+| `ItemLockedDoor` | `DOOR_UNLOCKED_` | `persistenceId` |
+| `ActivationCounter` | `ACTIVATION_COMPLETE_` | `persistenceIdOverride` |
+
+**Regla:** nunca asignar ID manual salvo que el objeto pueda moverse o renombrarse. La posición en mundo (1 decimal) es suficientemente estable para todos los casos normales.
+
 ### Presets de testing
 
 `PlayerPresetSO` es un profile con datos fijos para testing. Se asigna en el inspector de `GameBootService`. Al entrar en PlayMode con un preset, el juego inicializa exactamente ese estado sin tocar el save del jugador.

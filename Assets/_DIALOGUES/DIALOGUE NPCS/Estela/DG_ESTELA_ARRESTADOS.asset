@@ -90,4 +90,4 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     cinematicEffect: 1
     emotion: 1
-  isGroupConversation: 0
+  isGroupConversation: 1

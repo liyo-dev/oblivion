@@ -14334,6 +14334,7 @@ GameObject:
   - component: {fileID: 1187040435340309947}
   - component: {fileID: 9069736355997653958}
   - component: {fileID: 8633260300737531714}
+  - component: {fileID: 1502966510894875531}
   m_Layer: 8
   m_Name: _ESTELA
   m_TagString: Estela
@@ -14626,6 +14627,22 @@ MonoBehaviour:
   updatePathInterval: 0.2
   animator: {fileID: 0}
   runAnimParam: IsRunning
+--- !u!114 &1502966510894875531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
+  _raycastDistance: 2
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0

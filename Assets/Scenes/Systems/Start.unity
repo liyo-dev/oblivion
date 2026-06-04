@@ -7465,6 +7465,10 @@ MonoBehaviour:
   groupLookAtHeight: 1.1
   groupFieldOfView: 65
   groupSpeakerBias: 0.25
+  groupLookAtSmoothTime: 0.6
+  groupMinClearance: 2.5
+  groupCameraProbeRadius: 0.4
+  groupPlayerRotationDuration: 0.35
 --- !u!1 &961376697
 GameObject:
   m_ObjectHideFlags: 0

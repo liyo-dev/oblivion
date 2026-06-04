@@ -7514,6 +7514,7 @@ GameObject:
   - component: {fileID: 1840189453117827499}
   - component: {fileID: 190871426165262911}
   - component: {fileID: 6256429109729949984}
+  - component: {fileID: 4389471102299698973}
   m_Layer: 8
   m_Name: _LIAM
   m_TagString: Liam
@@ -7787,6 +7788,22 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
+--- !u!114 &4389471102299698973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3335879819108417999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
+  _raycastDistance: 2
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!1 &3341901564085152908
 GameObject:
   m_ObjectHideFlags: 0
