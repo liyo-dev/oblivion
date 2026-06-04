@@ -525,6 +525,18 @@
             "value": "Guards! Arrest them."
         },
         {
+            "key": "DLG_KING_08",
+            "value": "[EN] Alto ahí, ¿dónde creeis que vais?"
+        },
+        {
+            "key": "DLG_KING_09",
+            "value": "[EN] Mierda"
+        },
+        {
+            "key": "DLG_KING_10",
+            "value": "[EN] Como no haga algo ahora estoy perdido."
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "Talk to Erika, she usually wears green and should be around the Kingdom."
         },

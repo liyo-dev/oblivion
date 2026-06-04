@@ -9024,6 +9024,7 @@ MonoBehaviour:
   overrideTargetHeightOffset: 1.5
   currentTarget: {fileID: 0}
   _lockTarget: {fileID: 0}
+  zoneRotationLocked: 0
 --- !u!114 &1219957402610385003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12359,6 +12360,7 @@ GameObject:
   - component: {fileID: 5299980531833264534}
   - component: {fileID: 5868854481933487762}
   - component: {fileID: 6573373716571036464}
+  - component: {fileID: 4916995738179263480}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -13065,9 +13067,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
-  emotionProfile: {fileID: 0}
-  originalEyeMesh: {fileID: 0}
-  originalMouthMesh: {fileID: 0}
+  emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  originalEyeMesh: {fileID: 5254754835644330641}
+  originalMouthMesh: {fileID: 206955243820471005}
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
@@ -13134,10 +13136,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
-  _raycastDistance: 2
+  _animator: {fileID: 0}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1024
+  _raycastDistance: 2
+  _descentSpeedThreshold: 0.08
+  _groundProximityThreshold: 0.2
+  _minStepDistance: 0.35
+--- !u!114 &4916995738179263480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
+  emotionProfile: {fileID: 0}
+  originalEyeMesh: {fileID: 0}
+  originalMouthMesh: {fileID: 0}
+  eyePrefix: Eye
+  mouthPrefix: Mouth
+  debugMode: 0
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

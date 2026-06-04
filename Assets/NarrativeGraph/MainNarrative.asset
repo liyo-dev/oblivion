@@ -58,6 +58,8 @@ MonoBehaviour:
   - rid: 1823530669888241845
   - rid: 6571995775456772245
   - rid: 6571995775771344896
+  - rid: 4910061685687976119
+  - rid: 4910061685687976120
   applicableSceneNames:
   - MainWorld
   references:
@@ -234,7 +236,7 @@ MonoBehaviour:
     - rid: 1823530463036440738
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: MISION 10
+        displayTitle: 'MISION 10: Escapar de la mazmorra'
         chapter: Cap. 5
         blockSaving: 0
         inputAnchor: 0
@@ -243,7 +245,8 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
         position: {x: 2380, y: 2338}
-        outputs: []
+        outputs:
+        - 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
         questId: ELDRAN_MISSION10
     - rid: 1823530669888241844
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
@@ -515,6 +518,39 @@ MonoBehaviour:
         - b9aed13d-e410-467b-a7ec-5c3e949debbf
         cinematicSceneName: Cinematic_VillainPlans
         useInternalCinematic: 1
+    - rid: 4910061685687976119
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Encuentran la llave y escapan de la mazmorra
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
+        position: {x: 2838.765, y: 2338}
+        outputs:
+        - e655b45f-02a0-4c0b-ab16-50f4a289f48c
+        eventKey: WE_HAVE_ESCAPE
+    - rid: 4910061685687976120
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo la mision 10
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: e655b45f-02a0-4c0b-ab16-50f4a289f48c
+        position: {x: 3392, y: 2338}
+        outputs: []
+        questId: ELDRAN_MISSION10
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
