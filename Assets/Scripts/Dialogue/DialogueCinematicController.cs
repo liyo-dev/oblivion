@@ -1151,12 +1151,19 @@ public class DialogueCinematicController : MonoBehaviour
 
             _activeEffect = effect;
 
-            // Mostrar ambos personajes para que el close-up funcione en cualquier modo
-            ShowNPC();
-            ShowPlayer();
             // Ocultar party members que no sean el speaker
             if (!_isGroupConversation)
+            {
                 HideNonSpeakingPartyMembers(speaker);
+                // En modo individual, ocultar player y NPC si no son el speaker
+                if (speaker != currentNPC) HideNPC(); else ShowNPC();
+                if (speaker != currentPlayer) HidePlayer(); else ShowPlayer();
+            }
+            else
+            {
+                ShowNPC();
+                ShowPlayer();
+            }
 
             // Aplicar close-up al speaker (siempre corte — los efectos dramáticos deben ser instantáneos)
             ApplyShot(_effectCloseUpShot, speaker, forceCut: true);
@@ -1268,6 +1275,21 @@ public class DialogueCinematicController : MonoBehaviour
                     shot.shotType == DialogueShotType.OverShoulderNPC)
                 {
                     lookAtPos.y -= 0.3f;
+                }
+            }
+
+            // Verificar obstrucción en modo individual: si la cámara no puede ver al target,
+            // acercarla progresivamente hasta que tenga línea de visión
+            if (!_isGroupConversation)
+            {
+                Vector3 targetHead = target.position + Vector3.up * 1.5f;
+                Vector3 toCamera = position - targetHead;
+                float dist = toCamera.magnitude;
+                if (dist > 0.5f && Physics.Raycast(targetHead, toCamera.normalized, out RaycastHit obsHit, dist, _camObstructionMask, QueryTriggerInteraction.Ignore))
+                {
+                    // Hay obstrucción: colocar la cámara justo antes del hit
+                    float safeDist = Mathf.Max(obsHit.distance - 0.3f, 1.0f);
+                    position = targetHead + toCamera.normalized * safeDist;
                 }
             }
 
@@ -1764,32 +1786,34 @@ public class DialogueCinematicController : MonoBehaviour
             return;
         }
 
-        // Modo individual: ocultar según quién habla.
-        // OverShoulderPlayer se trata igual que CloseUp: la cámara está detrás del player,
-        // así que ocultar el player evita que su cuerpo tape al NPC (el sujeto).
-        bool isCloseUpShot = shot.shotType == DialogueShotType.CloseUpNPC
-                          || shot.shotType == DialogueShotType.MediumNPC
-                          || shot.shotType == DialogueShotType.OverShoulderPlayer;
-
-        // Ocultar party members que no sean el speaker actual para evitar obstrucciones
+        // Modo individual: solo el speaker visible.
+        // Ocultar todos los demás personajes para evitar obstrucciones.
         HideNonSpeakingPartyMembers(effectiveTarget);
 
-        if (isPlayerOrPartySpeaking)
+        bool isPartyMemberSpeaking = IsPartyMember(effectiveTarget) && effectiveTarget != currentNPC && effectiveTarget != currentPlayer;
+
+        if (isNPCSpeaking)
+        {
+            ShowNPC();
+            HidePlayer();
+        }
+        else if (isPartyMemberSpeaking)
+        {
+            // Party member habla: ocultar player y NPC, solo se ve al party member
+            HideNPC();
+            HidePlayer();
+            MakeSpeakerLookAtNPC(effectiveTarget);
+        }
+        else if (isPlayerOrPartySpeaking)
         {
             HideNPC();
             ShowPlayer();
             MakeSpeakerLookAtNPC(effectiveTarget);
         }
-        else if (isNPCSpeaking)
-        {
-            ShowNPC();
-            if (isCloseUpShot) HidePlayer();
-            else ShowPlayer();
-        }
         else
         {
             ShowNPC();
-            ShowPlayer();
+            HidePlayer();
         }
 
         ApplyShot(shot, effectiveTarget, forceCut);
