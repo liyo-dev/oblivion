@@ -89,10 +89,13 @@ namespace Game.NPC
                 if (executor != null)
                 {
                     var config = executor.GetConfiguration();
-                    if (config != null && config.persistState && !string.IsNullOrEmpty(config.persistenceId))
+                    var mgr = executor.Manager;
+                    string pId = mgr != null ? mgr.PersistenceId : null;
+
+                    if (config != null && config.persistState && !string.IsNullOrEmpty(pId))
                     {
                         // Limpiar PlayerPrefs (sistema antiguo)
-                        string key = $"NarrativeState_{config.persistenceId}";
+                        string key = $"NarrativeState_{pId}";
                         if (PlayerPrefs.HasKey(key))
                         {
                             PlayerPrefs.DeleteKey(key);
@@ -104,7 +107,7 @@ namespace Game.NPC
                         {
                             for (int i = 0; i < config.conditionalNarratives.Length; i++)
                             {
-                                string narrativeKey = $"NarrativeState_{config.persistenceId}_Conditional_{i}";
+                                string narrativeKey = $"NarrativeState_{pId}_Conditional_{i}";
                                 if (PlayerPrefs.HasKey(narrativeKey))
                                 {
                                     PlayerPrefs.DeleteKey(narrativeKey);
@@ -115,10 +118,10 @@ namespace Game.NPC
                         // CRÍTICO: Limpiar del GameBootService.Profile (donde realmente se lee)
                         if (preset != null && preset.completedInteractiveNarratives != null)
                         {
-                            bool removed = preset.completedInteractiveNarratives.Remove(config.persistenceId);
+                            bool removed = preset.completedInteractiveNarratives.Remove(pId);
                             if (removed)
                             {
-                                Debug.Log($"[NPCNarrativeStateManager] ✅ Removido '{config.persistenceId}' de GameBootService.Profile");
+                                Debug.Log($"[NPCNarrativeStateManager] Removido '{pId}' de GameBootService.Profile");
                             }
                         }
                     }
@@ -146,9 +149,10 @@ namespace Game.NPC
                     var config = executor.GetConfiguration();
                     if (config != null)
                     {
+                        string pId = executor.Manager != null ? executor.Manager.PersistenceId : "N/A";
                         sb.AppendLine($"\n🎭 {executor.name}");
                         sb.AppendLine($"   Persist: {config.persistState}");
-                        sb.AppendLine($"   ID: {config.persistenceId}");
+                        sb.AppendLine($"   ID: {pId}");
                         sb.AppendLine($"   Narrativas: {config.conditionalNarratives?.Length ?? 0}");
                         
                         if (config.conditionalNarratives != null)

@@ -5,36 +5,14 @@ using System.Linq;
 namespace Game.NPC.Modules
 {
     /// <summary>
-    /// Configuración de cadena narrativa interactiva para NPCs.
-    /// Permite encadenar diálogos, movimientos, animaciones, quests, combat, etc.
-    /// Solo usa modo condicional - para narrativa simple sin condiciones, añade una con condición 'None'.
+    /// Configuración narrativa condicional para NPCs.
+    /// Define QUÉ diálogos/narrativas tiene el NPC y bajo qué condiciones se activan.
+    /// Para narrativa simple sin condiciones, añade una con condición 'None'.
     /// 
-    /// COMPORTAMIENTO DE PERSISTENCIA:
-    /// - singleUse = true: La narrativa se ejecuta UNA VEZ por partida. Después de completarse, no se repetirá.
-    /// - persistState = true: El estado 'completado' se guarda en el preset cuando el jugador hace SAVE.
-    /// 
-    /// NUEVA PARTIDA vs CARGAR PARTIDA:
-    /// - Al crear una NUEVA PARTIDA: El preset es limpio, todas las narrativas están disponibles de nuevo.
-    /// - Al CARGAR una partida guardada: Se restaura el estado guardado (narrativas completadas siguen completadas).
-    /// 
-    /// GESTIÓN DE CAPAS (Layer Management):
-    /// - initialLayer: Define la capa del NPC al iniciar. Usa 'Interactable' si autoStartOnPlayerDetection está desactivado.
-    /// - switchToEnemyLayerOnCombat: Cambia automáticamente a la capa 'Enemy' al ejecutar una acción StartCombat.
-    /// - Después de ser derrotado en combate, el NPC vuelve automáticamente a la capa 'Interactable'.
-    /// 
-    /// FLUJO TÍPICO CON COMBATE:
-    /// 1. NPC en capa "Interactable" → Jugador puede interactuar
-    /// 2. Se ejecuta la narrativa (diálogos, animaciones, etc.)
-    /// 3. Al llegar a StartCombat → NPC cambia a capa "Enemy" automáticamente
-    /// 4. Combate ocurre normalmente
-    /// 5. Al ser derrotado → NPC vuelve a capa "Interactable" (diálogo post-derrota)
-    /// 
-    /// EJEMPLO:
-    /// 1. Nueva partida → Narrativa disponible
-    /// 2. Ejecutas la narrativa → Se marca como completada (si singleUse=true)
-    /// 3. Guardas la partida → El estado se guarda en el preset (si persistState=true)
-    /// 4. Cargas esa partida → La narrativa sigue completada
-    /// 5. NUEVA PARTIDA (diferente) → La narrativa vuelve a estar disponible ✅
+    /// NOTA: Los campos de identidad (persistenceId, dialogueCharacterId), comportamiento
+    /// (rotación, layers, detección) se gestionan ahora en NPCBehaviourManagerV2.
+    /// Los campos legacy se mantienen [HideInInspector] para deserialización de .asset existentes.
+    /// Ejecutar Tools → NPC → Migrar NarrativeConfig para copiarlos al MonoBehaviour.
     /// </summary>
     [CreateAssetMenu(fileName = "NPC_InteractiveNarrative_Config", menuName = "NPC/Módulos/Interactive Narrative Config", order = 5)]
     public class NPCInteractiveNarrativeConfig : NPCModuleConfigBase
@@ -49,57 +27,32 @@ namespace Game.NPC.Modules
         [System.NonSerialized]
         private bool _isCacheValid;
 
-        [Header("Persistencia")]
-        [Tooltip("¿Guardar el estado en el preset de la partida? Si es true, el estado de 'completado' se guardará cuando el jugador haga SAVE.")]
+        [Header("Persistencia Narrativa")]
+        [Tooltip("¿Guardar el estado de completado de la narrativa en el preset?")]
         public bool persistState = true;
-
-        [Tooltip("ID único para persistencia (generado automáticamente basado en el nombre del asset).")]
-        public string persistenceId;
-        
-        [Tooltip("ID del personaje para diálogos (ej: 'CHAR_ESTELA'). Se usa para identificar al speaker en diálogos con múltiples participantes y para localización del nombre.")]
-        public string dialogueCharacterId;
-
-        [Header("Comportamiento General")]
-        [Tooltip("¿El NPC gira hacia el jugador al interactuar?")]
-        public bool rotateToPlayerOnInteract = true;
-
-        [Min(0f)]
-        [Tooltip("Duración de la rotación")]
-        public float rotationDuration = 0.3f;
-        
-        [Header("Layer Management")]
-        [Tooltip("Capa inicial del NPC. Cambiará automáticamente a 'Enemy' al iniciar combate si switchToEnemyLayerOnCombat está activo.")]
-        public LayerMode initialLayer = LayerMode.Interactable;
-        
-        [Tooltip("¿Cambiar automáticamente a la capa 'Enemy' cuando se inicie un combate (acción StartCombat)?")]
-        public bool switchToEnemyLayerOnCombat = true;
-
-        [Header("Detección del Jugador")]
-        [Tooltip("Rango de detección del jugador para narrativas con autoStartOnDetection=true")]
-        [Min(1f)]
-        public float detectionRange = 10f;
-
-        [Tooltip("Prefab del icono de alerta que aparece sobre la cabeza (!) al detectar al jugador")]
-        public GameObject alertIconPrefab;
-
-        [Tooltip("Duración del icono de alerta antes de comenzar la narrativa (segundos)")]
-        [Min(0.1f)]
-        public float alertIconDuration = 1f;
-        
-        [Tooltip("Altura del icono de alerta sobre el NPC (Y offset). Ajustar según el tamaño del NPC.\n• NPCs pequeños: 1.5-2.0\n• NPCs normales: 2.5\n• NPCs grandes: 3.0-4.0")]
-        [Range(0.5f, 5f)]
-        public float alertIconHeight = 2.5f;
-
-        [Tooltip("¿El NPC camina hacia el jugador durante la alerta?")]
-        public bool walkTowardsPlayerOnAlert = true;
-
-        [Tooltip("Distancia mínima para detenerse al acercarse al jugador")]
-        [Min(0.5f)]
-        public float stopDistanceFromPlayer = 2f;
 
         [Header("Debug")]
         [Tooltip("⚠️ Solo para DEBUG. Habilitar logs detallados de evaluación de narrativas. DESACTIVAR en producción por rendimiento.")]
         public bool enableDetailedLogs;
+
+        // ════════════════════════════════════════════════════════════════
+        // CAMPOS LEGACY — migrados a NPCBehaviourManagerV2.
+        // Se mantienen [HideInInspector] para que los .asset existentes
+        // sigan deserializando. El Editor migration script los copia
+        // al MonoBehaviour y luego se pueden eliminar.
+        // ════════════════════════════════════════════════════════════════
+        [HideInInspector] public string persistenceId;
+        [HideInInspector] public string dialogueCharacterId;
+        [HideInInspector] public bool rotateToPlayerOnInteract = true;
+        [HideInInspector] public float rotationDuration = 0.3f;
+        [HideInInspector] public LayerMode initialLayer = LayerMode.Interactable;
+        [HideInInspector] public bool switchToEnemyLayerOnCombat = true;
+        [HideInInspector] public float detectionRange = 10f;
+        [HideInInspector] public GameObject alertIconPrefab;
+        [HideInInspector] public float alertIconDuration = 1f;
+        [HideInInspector] public float alertIconHeight = 2.5f;
+        [HideInInspector] public bool walkTowardsPlayerOnAlert = true;
+        [HideInInspector] public float stopDistanceFromPlayer = 2f;
 
 
         public override bool ValidateConfig(out string errorMessage)
@@ -151,14 +104,6 @@ namespace Game.NPC.Modules
                     return false;
                 }
             }
-
-            // Validar configuración de detección (rango compartido)
-            if (detectionRange <= 0f)
-            {
-                errorMessage = "detectionRange debe ser mayor a 0";
-                return false;
-            }
-
 
             return true;
         }
@@ -305,49 +250,7 @@ namespace Game.NPC.Modules
         
         private void OnValidate()
         {
-            // Invalidar caché cuando se modifica en el Inspector
             _isCacheValid = false;
-            
-            // Auto-generar ID de persistencia basado en el nombre del asset si está vacío
-            if (persistState && string.IsNullOrEmpty(persistenceId))
-            {
-                // Usar el nombre del asset como base para el ID único
-                string baseName = name;
-                if (string.IsNullOrEmpty(baseName))
-                {
-                    baseName = "NPC_Narrative";
-                }
-                
-                // Generar un hash corto para garantizar unicidad
-                string shortHash = System.Guid.NewGuid().ToString().Substring(0, 8);
-                persistenceId = $"{baseName}_{shortHash}";
-                
-                #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
-                Debug.Log($"[NPCInteractiveNarrativeConfig] 🆔 Auto-generado persistenceId: '{persistenceId}' para asset '{name}'");
-                #endif
-            }
-        }
-        
-        /// <summary>
-        /// Regenera el ID de persistencia basado en el nombre actual del asset.
-        /// Útil si el asset fue renombrado y quieres sincronizar el ID.
-        /// </summary>
-        public void RegenerateIdFromName()
-        {
-            string baseName = name;
-            if (string.IsNullOrEmpty(baseName))
-            {
-                baseName = "NPC_Narrative";
-            }
-            
-            string shortHash = System.Guid.NewGuid().ToString().Substring(0, 8);
-            persistenceId = $"{baseName}_{shortHash}";
-            
-            #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-            Debug.Log($"[NPCInteractiveNarrativeConfig] 🔄 Regenerado persistenceId: '{persistenceId}' para asset '{name}'");
-            #endif
         }
     }
 
