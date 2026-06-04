@@ -245842,10 +245842,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: _ESTELA
       objectReference: {fileID: 0}
-    - target: {fileID: 7166019036080239782, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 7730161297972038515, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -465.64

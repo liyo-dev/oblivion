@@ -7735,7 +7735,6 @@ MonoBehaviour:
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 0}
-    narrativeConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 11400000, guid: 2cc0b2e577149df4f8a3bc35ba74a5de, type: 2}
     partyConfig: {fileID: 11400000, guid: 275a911f69b78424dbc8e021c3b202a6, type: 2}
     walkSpeed: 1.5
@@ -7751,9 +7750,25 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
+  disableWander: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  persistenceId: 
+  dialogueCharacterId: CHAR_LIAM
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  narrativeDetectionRange: 10
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2
+  onJoinedParty:
+    m_PersistentCalls:
+      m_Calls: []
+  onLeftParty:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &6256429109729949984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15297,6 +15312,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
