@@ -31,6 +31,9 @@ public class ActivationCounter : MonoBehaviour
     [Tooltip("Se invoca cuando se alcanza el número requerido de activaciones (también al restaurar desde preset)")]
     public UnityEvent onRequirementMet;
 
+    [Tooltip("Se invoca al llamar a Reset(). Conectar a ForceReset() de cada PressurePlate para que vuelvan a funcionar.")]
+    public UnityEvent onReset;
+
     [Header("Estado")]
     [SerializeField] private int currentCount;
 
@@ -110,7 +113,25 @@ public class ActivationCounter : MonoBehaviour
     }
 
     /// <summary>
-    /// Reinicia el contador (para puzzles que se puedan resetear).
+    /// Decrementa el contador en 1 cuando una placa se desactiva.
+    /// Conectar a PressurePlate.onDeactivated de cada placa.
+    /// </summary>
+    public void Decrement()
+    {
+        if (_isComplete && lockOnComplete) return;
+
+        if (currentCount > 0) currentCount--;
+        if (currentCount < requiredCount)
+            _isComplete = false;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[ActivationCounter] {name}: decremento → {currentCount}/{requiredCount}");
+#endif
+    }
+
+    /// <summary>
+    /// Reinicia el contador a 0. Invoca onReset para que cada PressurePlate
+    /// llame a ForceReset() y vuelva a responder a ocupantes.
     /// Si lockOnComplete es true y el contador está completo, no hace nada.
     /// </summary>
     public void Reset()
@@ -119,6 +140,7 @@ public class ActivationCounter : MonoBehaviour
 
         currentCount = 0;
         _isComplete = false;
+        onReset.Invoke();
     }
 
     void SetFlag()

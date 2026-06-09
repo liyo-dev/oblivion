@@ -5458,7 +5458,7 @@ GameObject:
   - component: {fileID: 8310206665460091007}
   - component: {fileID: 241518113107647237}
   m_Layer: 7
-  m_Name: Demon
+  m_Name: Demon2
   m_TagString: Boss
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5585,7 +5585,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b6f2293afaf924e9901281974f75ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Damageable
-  maxHealth: 50
+  maxHealth: 500
   destroyOnDeath: 1
   deathVFX: {fileID: 5024009746357069194, guid: ec3f674830402cc45bce805cf6493db7, type: 3}
   deathVFXLifetime: 3

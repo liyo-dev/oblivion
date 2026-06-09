@@ -13,7 +13,10 @@ public class NPCEmotionController : MonoBehaviour
     [Header("Configuración")]
     [Tooltip("Perfil de emociones que define el mapeo emoción -> meshes")]
     [SerializeField] private EmotionProfile emotionProfile;
-    
+
+    [Tooltip("ID del personaje en los diálogos (ej: CHAR_LIAM). Si está vacío, solo reacciona cuando este NPC es el principal del diálogo.")]
+    [SerializeField] private string characterId;
+
     [Header("Estado Original (Antes de Hablar)")]
     [Tooltip("Mesh de ojos que tiene el NPC por defecto (antes de cualquier diálogo)")]
     [SerializeField] private GameObject originalEyeMesh;
@@ -166,15 +169,15 @@ public class NPCEmotionController : MonoBehaviour
     /// </summary>
     private void OnDialogueClosed(Transform npcInvolved)
     {
-        // Solo procesar si este NPC es el involucrado
-        if (npcInvolved != transform)
+        // Restaurar si participamos en este diálogo (como NPC principal o como hablante secundario)
+        if (!_isInDialogue)
             return;
-        
+
         if (debugMode)
             Debug.Log($"[NPCEmotionController:{name}] 📢 OnDialogueClosed - Restaurando estado original");
-        
+
         _isInDialogue = false;
-        
+
         // Restaurar meshes originales
         RestoreOriginalMeshes();
     }
@@ -184,8 +187,10 @@ public class NPCEmotionController : MonoBehaviour
     /// </summary>
     private void OnDialogueLineChanged(DialogueLine line, Transform npcInvolved)
     {
-        // Solo procesar si este NPC es el involucrado
-        if (npcInvolved != transform)
+        // Reaccionar si somos el NPC principal del diálogo O si el speakerNameId coincide con nuestro characterId
+        bool isMainNpc = npcInvolved == transform;
+        bool matchesById = !string.IsNullOrEmpty(characterId) && line.speakerNameId == characterId;
+        if (!isMainNpc && !matchesById)
             return;
         
         // ✅ Si es la primera línea y aún no hemos guardado el estado original, hacerlo ahora

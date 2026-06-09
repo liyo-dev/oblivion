@@ -33,6 +33,22 @@
             "value": "Trapped"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION11_DESC",
+            "value": "[EN] Vuelve por donde has venido y sal del castillo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION11_NAME",
+            "value": "[EN] Sal del castillo"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DESC",
+            "value": "[EN] Usa a todo el equipo para derrotar al demonio."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_NAME",
+            "value": "[EN] Derrota al demonio de nuevo."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Find the fruit crate in the forest and bring it to Eldran"
         },

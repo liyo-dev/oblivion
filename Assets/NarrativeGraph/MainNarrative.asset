@@ -60,6 +60,11 @@ MonoBehaviour:
   - rid: 6571995775771344896
   - rid: 4910061685687976119
   - rid: 4910061685687976120
+  - rid: 4910061783221010550
+  - rid: 4910061783221010552
+  - rid: 4910061783221010744
+  - rid: 4910061783221010745
+  - rid: 4910061783221010746
   applicableSceneNames:
   - MainWorld
   references:
@@ -76,7 +81,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c235d486-6f5e-4a93-8d96-8721b6dad7d3
-        position: {x: 642, y: 844}
+        position: {x: 642.4, y: 844}
         outputs:
         - f5443754-fa40-4852-8b3d-c33d22d23958
         eventKey: ERIKA_FIGHT
@@ -91,7 +96,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f5443754-fa40-4852-8b3d-c33d22d23958
-        position: {x: 1039, y: 844}
+        position: {x: 1039.2, y: 844}
         outputs:
         - c9ca7493-60c5-44db-ae66-9b0e232343e3
         abilityKeysToUnlock: 
@@ -146,7 +151,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9aed13d-e410-467b-a7ec-5c3e949debbf
-        position: {x: 234, y: 88}
+        position: {x: 234.4, y: 88}
         outputs:
         - bc692d5b-b0ca-4095-85fc-2380f374f9d3
         questId: ELDRAN_MISSION3
@@ -165,7 +170,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
-        position: {x: 3, y: 595}
+        position: {x: 3.2, y: 595.2}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
@@ -198,7 +203,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 2caf285b-fdb8-4361-8176-192475b9c678
-        position: {x: 3, y: 874}
+        position: {x: 3.2, y: 874.4}
         outputs:
         - 4010d494-e518-45bb-9852-29a412777758
         questId: ELDRAN_MISSION5
@@ -214,7 +219,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4010d494-e518-45bb-9852-29a412777758
-        position: {x: -44, y: 1098}
+        position: {x: -44, y: 1098.4}
         outputs:
         - d2c6cf0b-557c-41ae-9ccc-069ca97bade9
         questId: ELDRAN_MISSION5_2
@@ -229,7 +234,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 002ddca5-949f-4b0e-8a1a-581b4b85290f
-        position: {x: 1798, y: 2338}
+        position: {x: 1798.4, y: 2338.4}
         outputs:
         - b9285f43-9af8-40f2-8674-ef92fbbe0aaa
         eventKey: WE_HAVE_TO_SCAPE
@@ -244,7 +249,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9285f43-9af8-40f2-8674-ef92fbbe0aaa
-        position: {x: 2380, y: 2338}
+        position: {x: 2380, y: 2338.4}
         outputs:
         - 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
         questId: ELDRAN_MISSION10
@@ -259,7 +264,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a67736f3-a25d-46e1-9f0e-79fb4102b07f
-        position: {x: 1775, y: 2811}
+        position: {x: 1775.2, y: 2811.2}
         outputs:
         - 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
         eventKey: TALK_KING
@@ -274,7 +279,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
-        position: {x: 2260, y: 2811}
+        position: {x: 2260, y: 2811.2}
         outputs:
         - 002ddca5-949f-4b0e-8a1a-581b4b85290f
         questId: ELDRAN_MISSION9
@@ -294,7 +299,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        position: {x: 1516, y: 1878}
+        position: {x: 1516, y: 1878.4}
         outputs: []
         questId: ELDRAN_MISSION8
     - rid: 2337184644940693505
@@ -327,7 +332,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 76cc647a-0938-4a59-bb15-896836a33946
-        position: {x: 522, y: 2124}
+        position: {x: 522.4, y: 2124}
         outputs:
         - 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
         - 3e012768-5c1f-458f-aaf4-6c713eb76562
@@ -344,7 +349,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0aa8ee51-a44a-44af-9252-2f0b79fb8abf
-        position: {x: 1094, y: 2124}
+        position: {x: 1094.4, y: 2124}
         outputs:
         - bc4c26f2-2721-4852-b55f-632f2042e7fd
         questId: ELDRAN_MISSION9
@@ -359,7 +364,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: bc4c26f2-2721-4852-b55f-632f2042e7fd
-        position: {x: 1395, y: 2124}
+        position: {x: 1395.2, y: 2124}
         outputs:
         - f796b6ba-da9e-4ef6-aee9-1507c8effbb9
         eventKey: EVT_ARRESTADOS_OK
@@ -374,7 +379,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f796b6ba-da9e-4ef6-aee9-1507c8effbb9
-        position: {x: 1339, y: 2338}
+        position: {x: 1339.2, y: 2338.4}
         outputs:
         - a67736f3-a25d-46e1-9f0e-79fb4102b07f
         questId: ELDRAN_MISSION9
@@ -394,7 +399,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 78455749-f638-46de-a00c-c00cb1e61e5d
-        position: {x: -249, y: -596}
+        position: {x: -248.8, y: -596}
         outputs:
         - 16d41261-7e42-42bb-b91a-1cab8d52164e
         eventKey: LETTER_START
@@ -409,7 +414,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 14dab578-84ac-40c4-8874-1f724ff76437
-        position: {x: -406, y: -407}
+        position: {x: -405.6, y: -407.2}
         outputs:
         - 64ed2870-8561-471f-bb08-803a726be060
         questId: ELDRAN_MISSION2
@@ -425,7 +430,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 16d41261-7e42-42bb-b91a-1cab8d52164e
-        position: {x: 197, y: -596}
+        position: {x: 196.8, y: -596}
         outputs:
         - 14dab578-84ac-40c4-8874-1f724ff76437
         questId: ELDRAN_MISSION1
@@ -440,7 +445,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 658, y: -355}
+        position: {x: 658.4, y: -355.2}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         abilityKeysToUnlock: 03000000
@@ -461,7 +466,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 222, y: -158}
+        position: {x: 222.4, y: -157.6}
         outputs:
         - d038b916-5571-48b0-a896-7dbc2af3e05c
         cinematicSceneName: Cinematic_DemonAppears
@@ -477,7 +482,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 1221, y: -355}
+        position: {x: 1220.8, y: -355.2}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         questId: ELDRAN_MISSION3
@@ -492,7 +497,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 1308, y: -9}
+        position: {x: 1308, y: -8.8}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -513,7 +518,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 713, y: 88}
+        position: {x: 712.8, y: 88}
         outputs:
         - b9aed13d-e410-467b-a7ec-5c3e949debbf
         cinematicSceneName: Cinematic_VillainPlans
@@ -529,7 +534,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 401d37bd-2e7e-4122-a1a3-5e3e6b974e2e
-        position: {x: 2838.765, y: 2338}
+        position: {x: 2838.4, y: 2338.4}
         outputs:
         - e655b45f-02a0-4c0b-ab16-50f4a289f48c
         eventKey: WE_HAVE_ESCAPE
@@ -544,13 +549,98 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: e655b45f-02a0-4c0b-ab16-50f4a289f48c
-        position: {x: 3392, y: 2338}
-        outputs: []
+        position: {x: 3392, y: 2338.4}
+        outputs:
+        - 34922951-8ef6-4628-b298-f794d4ca2b0d
         questId: ELDRAN_MISSION10
         stepConditionIds: []
         steps: 
         completeQuest: 1
         logWarnings: 1
+    - rid: 4910061783221010550
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Hablan con el Rey y empieza la batalla
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 09f8e60c-0bb3-4421-a891-6c105606aa8c
+        position: {x: 4303.2, y: 2338.4}
+        outputs:
+        - 2dc20208-7599-4675-8ba1-e31d1ae153c4
+        - 14eb1bae-a7b3-4868-9e05-a4844fc17284
+        - 0b7230e0-a392-41f9-a44e-847de6dbbc05
+        eventKey: Battle_Demon_2
+    - rid: 4910061783221010552
+      type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 14eb1bae-a7b3-4868-9e05-a4844fc17284
+        position: {x: 4988, y: 2338.4}
+        outputs: []
+        battleId: Demon_2
+        bossArena: {fileID: 0}
+        useBattleById: 1
+        completeMission: 0
+        missionStringId: 
+        missionId: 0
+        arenaContext: 
+    - rid: 4910061783221010744
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision 11: Salir del castillo'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 34922951-8ef6-4628-b298-f794d4ca2b0d
+        position: {x: 3864, y: 2338.4}
+        outputs:
+        - 09f8e60c-0bb3-4421-a891-6c105606aa8c
+        questId: ELDRAN_MISSION11
+    - rid: 4910061783221010745
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Completo mision 11
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 2dc20208-7599-4675-8ba1-e31d1ae153c4
+        position: {x: 4988, y: 1876.8}
+        outputs: []
+        questId: ELDRAN_MISSION11
+        stepConditionIds: []
+        steps: 
+        completeQuest: 1
+        logWarnings: 0
+    - rid: 4910061783221010746
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision 12: Derrotar al demonio 2'
+        chapter: Cap. 5
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0b7230e0-a392-41f9-a44e-847de6dbbc05
+        position: {x: 4988, y: 2811.2}
+        outputs: []
+        questId: ELDRAN_MISSION12
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -562,7 +652,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 83efb3b4-a261-43b9-b5e2-56c03b1cec4f
-        position: {x: -587, y: -596}
+        position: {x: -587.2, y: -596}
         outputs:
         - 78455749-f638-46de-a00c-c00cb1e61e5d
     - rid: 5623891431555334813
@@ -576,7 +666,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
-        position: {x: 642, y: 595}
+        position: {x: 642.4, y: 595.2}
         outputs:
         - 56879a1a-c46a-4bab-a132-eab0b6cbaead
         eventKey: ADD_CLOAK
@@ -591,7 +681,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 56879a1a-c46a-4bab-a132-eab0b6cbaead
-        position: {x: 1052, y: 441}
+        position: {x: 1052, y: 440.8}
         outputs:
         - 254c563a-5c0e-4f68-8b1b-f16c35246e89
         wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
@@ -624,7 +714,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
-        position: {x: 785, y: 1472}
+        position: {x: 784.8, y: 1472}
         outputs:
         - 77ea1f0f-beb9-448f-92b1-644076d1b57e
         cinematicSceneName: Cinematic_Golem
@@ -640,7 +730,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 931, y: 1804}
+        position: {x: 931.2, y: 1804}
         outputs:
         - d82c3b85-2b54-4889-b43d-702eba5413f1
         minigameId: TAG_MINIGAME_01
@@ -657,7 +747,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-        position: {x: 1697, y: 1476}
+        position: {x: 1696.8, y: 1476}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
         questId: ELDRAN_MISSION7
@@ -673,7 +763,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d82c3b85-2b54-4889-b43d-702eba5413f1
-        position: {x: -187, y: 1893}
+        position: {x: -187.2, y: 1892.8}
         outputs:
         - a11afd55-0efb-465f-b673-7557e1525d58
         - ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
@@ -690,7 +780,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 64ed2870-8561-471f-bb08-803a726be060
-        position: {x: -134, y: -169}
+        position: {x: -133.6, y: -168.8}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
@@ -708,7 +798,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
-        position: {x: -405, y: 2165}
+        position: {x: -404.8, y: 2164.8}
         outputs:
         - 5d259d98-0364-4a7b-93b7-a36bdabcd27f
         focusId: MOUNTAIN_EXPLOSION_EVENT
@@ -728,7 +818,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 1ef1c852-77f4-43f9-accd-6efcfbe2c608
-        position: {x: 852, y: 2338}
+        position: {x: 852, y: 2338.4}
         outputs: []
         config: {fileID: 11400000, guid: e11cff8978d10a940b04f36faede6c91, type: 2}
     - rid: 7908052880146039718
@@ -742,7 +832,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 254c563a-5c0e-4f68-8b1b-f16c35246e89
-        position: {x: 1650, y: 393}
+        position: {x: 1650.4, y: 392.8}
         outputs: []
         questId: ELDRAN_MISSION5
         stepConditionIds:
@@ -761,7 +851,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d2c6cf0b-557c-41ae-9ccc-069ca97bade9
-        position: {x: 384, y: 1098}
+        position: {x: 384, y: 1098.4}
         outputs:
         - c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
         eventKey: ESTELA_FOUND
@@ -776,7 +866,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
-        position: {x: 384, y: 1269}
+        position: {x: 384, y: 1268.8}
         outputs:
         - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
         - 9b63dbf6-fe76-4863-b369-de60261fa436
@@ -793,7 +883,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
-        position: {x: 387, y: 1472}
+        position: {x: 387.2, y: 1472}
         outputs:
         - 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
         eventKey: EXIT_FROM_WOODS_ESTELA
@@ -829,7 +919,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 9b63dbf6-fe76-4863-b369-de60261fa436
-        position: {x: -100, y: 1286}
+        position: {x: -100, y: 1286.4}
         outputs: []
         questId: ELDRAN_MISSION6
         stepConditionIds:

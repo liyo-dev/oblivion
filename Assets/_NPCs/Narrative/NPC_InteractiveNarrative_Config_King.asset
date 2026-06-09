@@ -161,8 +161,8 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
+      sendNarrativeEvent: 1
+      narrativeEventKey: Battle_Demon_2
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1

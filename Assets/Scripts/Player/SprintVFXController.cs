@@ -21,20 +21,24 @@ public class SprintVFXController : MonoBehaviour
     [Tooltip("Retardo antes de activar el VFX para evitar parpadeos en sprints muy cortos")]
     [SerializeField] private float activationDelay = 0.15f;
 
+    [Header("Debug")]
+    [SerializeField] private bool debugLog = false;
+
     private Animator _animator;
+    private Camera _cam;
     private GameObject _vfxInstance;
     private ParticleSystem[] _particles;
     private bool _vfxActive;
     private float _sprintTimer;
 
     // Hashes cacheados de los parámetros del Animator de Invector
-    private static readonly int HashIsSprinting = Animator.StringToHash("IsSprinting");
     private static readonly int HashInputMagnitude = Animator.StringToHash("InputMagnitude");
     private static readonly int HashIsGrounded = Animator.StringToHash("IsGrounded");
 
     void Awake()
     {
         _animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+        _cam = Camera.main;
     }
 
     void OnEnable()
@@ -46,13 +50,13 @@ public class SprintVFXController : MonoBehaviour
             return;
         }
 
-        // Instanciar el VFX como hijo y dejarlo desactivado
         if (hyperdriveVfxPrefab != null && _vfxInstance == null)
         {
             _vfxInstance = Instantiate(hyperdriveVfxPrefab, transform);
             _vfxInstance.transform.localPosition = vfxOffset;
-            _vfxInstance.transform.localRotation = Quaternion.identity;
-            StopVFX();
+            _particles = _vfxInstance.GetComponentsInChildren<ParticleSystem>(true);
+            _vfxInstance.SetActive(false);
+            _vfxActive = false;
         }
     }
 
@@ -69,9 +73,15 @@ public class SprintVFXController : MonoBehaviour
         // InputMagnitude en Invector llega a 1.0f corriendo y a 1.5f en sprint.
         // Si solo se pulsa el botón de sprint sin moverse, puede valer 0.5f.
         // Requerimos > 1.1f para asegurar que realmente se está moviendo a velocidad de sprint.
-        bool shouldShow = _animator.GetBool(HashIsSprinting)
-            && _animator.GetBool(HashIsGrounded)
-            && _animator.GetFloat(HashInputMagnitude) > 1.1f;
+        bool isGrounded = _animator.GetBool(HashIsGrounded);
+        float inputMag  = _animator.GetFloat(HashInputMagnitude);
+        // IsSprinting parpadea frame a frame en Invector — usar solo InputMagnitude
+        bool shouldShow = isGrounded && inputMag > 1.05f;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (debugLog)
+            Debug.Log($"[SprintVFX] IsGrounded={isGrounded} InputMagnitude={inputMag:F2} shouldShow={shouldShow}");
+#endif
 
         if (shouldShow && !_vfxActive)
         {
@@ -87,6 +97,9 @@ public class SprintVFXController : MonoBehaviour
         {
             _sprintTimer = 0f;
         }
+
+        if (_vfxActive && _vfxInstance != null && _cam != null)
+            _vfxInstance.transform.rotation = _cam.transform.rotation;
     }
 
     private void PlayVFX()
@@ -118,5 +131,7 @@ public class SprintVFXController : MonoBehaviour
             foreach (var ps in _particles)
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
+
+        _vfxInstance.SetActive(false);
     }
 }

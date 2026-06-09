@@ -538,9 +538,9 @@ namespace Game.NPC
         internal void OnTeleportedToPlayer()
         {
             Log("⚡ Teletransportado cerca del jugador");
-            
-            // Asegurar que sigue en estado de seguimiento
-            if (_isInParty && _npcManager?.Brain?.CurrentState is not FollowPlayerState)
+
+            if (_isInParty && _npcManager?.Brain?.CurrentState is not FollowPlayerState
+                && (PartyControlManager.Instance?.IsPartyFollowing ?? true))
             {
                 StartFollowing();
             }

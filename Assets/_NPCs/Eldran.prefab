@@ -11460,6 +11460,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  characterId: CHAR_ELDRAN
   originalEyeMesh: {fileID: 8975327509349052620}
   originalMouthMesh: {fileID: 4730294353661995776}
   eyePrefix: Eye

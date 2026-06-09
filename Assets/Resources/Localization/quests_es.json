@@ -33,6 +33,22 @@
             "value": "Atrapados"
         },
         {
+            "key": "QUEST_ELDRAN_MISSION11_DESC",
+            "value": "Vuelve por donde has venido y sal del castillo."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION11_NAME",
+            "value": "Sal del castillo"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DESC",
+            "value": "Usa a todo el equipo para derrotar al demonio."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_NAME",
+            "value": "Derrota al demonio de nuevo."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
         },

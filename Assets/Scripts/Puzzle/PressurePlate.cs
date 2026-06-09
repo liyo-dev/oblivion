@@ -255,6 +255,33 @@ public class PressurePlate : MonoBehaviour
     public void ForceActivate() { if (!isActivated) Activate(); }
     public void ForceDeactivate() { if (isActivated && !lockWhenActivated) TryDeactivate(); }
 
+    /// <summary>
+    /// Llamar desde ActivationCounter.onReset. Resetea el estado interno de la placa
+    /// sin disparar onDeactivated (el contador ya fue reseteado directamente).
+    /// Si hay ocupantes encima en el momento del reset, la placa se reactiva
+    /// inmediatamente para que el contador refleje el estado real.
+    /// </summary>
+    public void ForceReset()
+    {
+        if (_deactivationCoroutine != null)
+        {
+            StopCoroutine(_deactivationCoroutine);
+            _deactivationCoroutine = null;
+        }
+
+        isActivated = false;
+
+        if (plateVisual != null)
+        {
+            _targetPlateLocalPos = _originalPlateLocalPos;
+            _isAnimating = true;
+        }
+
+        bool hasOccupants = (_playerOnPlate && playerActivates) || _partyMembersOnPlate > 0 || _snappedRb != null;
+        if (hasOccupants)
+            Activate();
+    }
+
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {

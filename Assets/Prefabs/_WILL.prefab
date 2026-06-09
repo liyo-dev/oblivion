@@ -13068,6 +13068,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  characterId: CHAR_WILL
   originalEyeMesh: {fileID: 5254754835644330641}
   originalMouthMesh: {fileID: 206955243820471005}
   eyePrefix: Eye
@@ -13096,7 +13097,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00dd1a97300da2549bf6f5d44b24f7d5, type: 3}
   m_Name: 
@@ -13104,6 +13105,7 @@ MonoBehaviour:
   hyperdriveVfxPrefab: {fileID: 5749441552287667129, guid: ee71d8dfb36a7b048aef24b0bc8f9764, type: 3}
   vfxOffset: {x: 0, y: 1, z: 0}
   activationDelay: 0.15
+  debugLog: 0
 --- !u!114 &5868854481933487762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13157,6 +13159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 0}
+  characterId: 
   originalEyeMesh: {fileID: 0}
   originalMouthMesh: {fileID: 0}
   eyePrefix: Eye

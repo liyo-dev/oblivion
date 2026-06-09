@@ -7783,6 +7783,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  characterId: CHAR_LIAM
   originalEyeMesh: {fileID: 4606229293547777999}
   originalMouthMesh: {fileID: 9018453360200977300}
   eyePrefix: Eye
@@ -7800,10 +7801,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
-  _raycastDistance: 2
+  _animator: {fileID: 0}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1024
+  _raycastDistance: 2
+  _descentSpeedThreshold: 0.08
+  _groundProximityThreshold: 0.2
+  _minStepDistance: 0.35
 --- !u!1 &3341901564085152908
 GameObject:
   m_ObjectHideFlags: 0

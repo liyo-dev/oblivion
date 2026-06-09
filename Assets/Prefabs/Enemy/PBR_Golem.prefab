@@ -112,6 +112,8 @@ GameObject:
   - component: {fileID: 6115329083915449752}
   - component: {fileID: 2517759409743794487}
   - component: {fileID: 1035471458805362517}
+  - component: {fileID: 4726417671420510494}
+  - component: {fileID: 1443765776427105792}
   m_Layer: 7
   m_Name: PBR_Golem
   m_TagString: Boss
@@ -339,7 +341,73 @@ MonoBehaviour:
   estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
   liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
   specialChance: 0.45
+  minOrbsPerHit: 1
+  maxOrbsPerHit: 3
   spawnRadius: 0.4
+  spawnHeightMin: 0.3
+  spawnHeightMax: 0.8
+  deathBurstMin: 4
+  deathBurstMax: 8
+  deathHealthWeight: 0.5
+  deathManaWeight: 0.3
+--- !u!54 &4726417671420510494
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939999298480460806}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &1443765776427105792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939999298480460806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48c589b8b5d5453ca5d4f543e87e91cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevitationTarget
+  canBeLevitated: 1
+  pullForceMultiplier: 1
+  pushForceMultiplier: 1
+  levitationAnimState: LevelUp_NoWeapon
+  holdPauseNormalizedTime: 0.5
+  liftSpeed: 3
+  hitAnimState: Hit
+  hitAnimDuration: 0.4
+  disableNavMeshDuringLevitation: 1
+  levitationDrag: 2
+  wallBounceForce: 8
+  wallBounceMinSpeed: 0.5
+  levitationVFXPrefab: {fileID: 0}
+  impactVFXPrefab: {fileID: 0}
+  impactVFXLifetime: 2
+  vfxOffset: {x: 0, y: 1, z: 0}
+  vfxScale: {x: 1, y: 1, z: 1}
+  vfxFollowsTarget: 1
+  showDebugLogs: 0
 --- !u!1 &1151455076570608189
 GameObject:
   m_ObjectHideFlags: 0
