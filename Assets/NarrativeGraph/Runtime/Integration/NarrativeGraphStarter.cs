@@ -147,7 +147,9 @@ public class NarrativeGraphStarter : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NarrativeGraphStarter] 🔄 Restaurando blackboards desde preset '{preset.name}' ({preset.narrativeBlackboards.Count} grafos)");
+#endif
 
         hub.RestoreBlackboards(preset.narrativeBlackboards);
     }

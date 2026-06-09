@@ -34,12 +34,13 @@ public static class NarrativeGraphValidator
             // Para evitar spam en la consola durante el desarrollo normal
             if (Warnings.Count > 0)
             {
-                // Opcional: comentar o usar Log en lugar de LogWarning para reducir severidad visual
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NarrativeGraphValidator] ℹ️ Grafo '{graphName}' tiene {Warnings.Count} advertencia(s):");
                 foreach (var warning in Warnings)
                 {
-                    Debug.Log($"  • {warning}");
+                    Debug.Log($"[NarrativeGraphValidator]   • {warning}");
                 }
+#endif
             }
         }
     }

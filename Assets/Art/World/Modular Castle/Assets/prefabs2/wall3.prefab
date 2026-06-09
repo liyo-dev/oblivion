@@ -111,7 +111,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300046, guid: a7cc7f41ce50a474aa1df610be0b810f, type: 3}
 --- !u!1 &149728
@@ -123,15 +123,15 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 428508}
-  - component: {fileID: 9143244030964810456}
-  - component: {fileID: 6359225494999574598}
+  - component: {fileID: 3058539686100698106}
+  - component: {fileID: 5166203254653212598}
   m_Layer: 0
   m_Name: light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &428508
 Transform:
   m_ObjectHideFlags: 0
@@ -147,7 +147,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 497200}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9143244030964810456
+--- !u!114 &3058539686100698106
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -176,7 +176,7 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!108 &6359225494999574598
+--- !u!108 &5166203254653212598
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -258,7 +258,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &497200
 Transform:
   m_ObjectHideFlags: 0

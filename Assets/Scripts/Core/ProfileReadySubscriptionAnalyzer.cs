@@ -93,8 +93,9 @@ public class ProfileReadySubscriptionAnalyzer : MonoBehaviour
     [ContextMenu("Analizar Suscripciones OnProfileReady")]
     public void AnalyzeAllSystems()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[ProfileReadySubscriptionAnalyzer] 🔍 INICIANDO ANÁLISIS COMPLETO DE SUSCRIPCIONES OnProfileReady...");
-        Debug.Log("================================================================================");
+#endif
         
         var allMonoBehaviours = FindObjectsOfType<MonoBehaviour>(includeInactive: true);
         
@@ -276,7 +277,9 @@ public class ProfileReadySubscriptionAnalyzer : MonoBehaviour
         report.AppendLine("5. Desuscribe en OnDisable() para evitar memory leaks");
         report.AppendLine("════════════════════════════════════════════════════════════════════════════\n");
         
-        Debug.Log(report.ToString());
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[ProfileReadyAnalyzer] {report}");
+#endif
     }
 
     private class SuspiciousSystemInfo
@@ -298,6 +301,8 @@ public class ProfileReadySubscriptionAnalyzer : MonoBehaviour
     private static void RegisterCommand()
     {
         // Registrar comando de consola si hay un sistema de comandos
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[ProfileReadySubscriptionAnalyzer] 💡 Usa [ContextMenu] 'Analizar Suscripciones OnProfileReady' para análisis manual");
+#endif
     }
 }

@@ -537,6 +537,30 @@
             "value": "[EN] Como no haga algo ahora estoy perdido."
         },
         {
+            "key": "DLG_KING_11",
+            "value": "[EN] No me puedo creer lo que acaba de pasar..."
+        },
+        {
+            "key": "DLG_KING_12",
+            "value": "[EN] Es lo que tratabamos de decirte..."
+        },
+        {
+            "key": "DLG_KING_13",
+            "value": "[EN] Disculpad que no os escuché..."
+        },
+        {
+            "key": "DLG_KING_14",
+            "value": "[EN] Creo que a cambio de lo que habéis hecho por mi podemos olvidar el tema de la montaña....Creo que a cambio de lo que habéis hecho por mi podemos olvidar el tema de la montaña...."
+        },
+        {
+            "key": "DLG_KING_15",
+            "value": "[EN]Lo que si os voy a pedir es que no comentéis nada por el Reino de este tema..."
+        },
+        {
+            "key": "DLG_KING_16",
+            "value": "[EN] Tranquilo no diremos nada..."
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "Talk to Erika, she usually wears green and should be around the Kingdom."
         },

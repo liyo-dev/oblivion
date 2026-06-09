@@ -4797,15 +4797,15 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 463098}
-  - component: {fileID: 6705908209579873045}
-  - component: {fileID: 2508565085548492645}
+  - component: {fileID: 5488904029198777895}
+  - component: {fileID: 285708276054419016}
   m_Layer: 0
   m_Name: light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &463098
 Transform:
   m_ObjectHideFlags: 0
@@ -4821,7 +4821,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 420840}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6705908209579873045
+--- !u!114 &5488904029198777895
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4850,7 +4850,7 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!108 &2508565085548492645
+--- !u!108 &285708276054419016
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5211,7 +5211,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300080, guid: a7cc7f41ce50a474aa1df610be0b810f, type: 3}
 --- !u!1 &179322

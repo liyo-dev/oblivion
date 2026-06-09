@@ -55,7 +55,6 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
-        // Debug.Log($"[NarrativeRunner] Iniciando desde nodo: {node.GetType().Name}");
         GoTo(node);
     }
 
@@ -70,14 +69,18 @@ public class NarrativeRunner : MonoBehaviour
 
         // Verificar si hay un nodo guardado en el blackboard
         var savedNodeGuid = Blackboard.Get<string>("__currentNodeGuid", null);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NarrativeRunner] StartFromStartNode() - savedNodeGuid='{savedNodeGuid ?? "NULL"}'");
+#endif
 
         if (!string.IsNullOrEmpty(savedNodeGuid))
         {
             var savedNode = graph.FindNode(savedNodeGuid);
             if (savedNode != null)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NarrativeRunner] ✅ Continuando desde nodo guardado: {savedNode.GetType().Name} (guid={savedNodeGuid})");
+#endif
                 GoTo(savedNode);
                 return;
             }
@@ -88,7 +91,9 @@ public class NarrativeRunner : MonoBehaviour
         }
         else
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] ⚠️ No hay nodo guardado - iniciando desde StartNode");
+#endif
         }
 
         if (string.IsNullOrEmpty(graph.startNodeGuid))
@@ -104,7 +109,6 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
-        // Debug.Log($"[NarrativeRunner] Iniciando desde StartNode: {start.GetType().Name}");
         GoTo(start);
     }
 
@@ -145,11 +149,15 @@ public class NarrativeRunner : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[NarrativeRunner] ▶ GoTo → {_current.GetType().Name} '{_current.displayTitle}' ({_current.guid})");
+#endif
         Blackboard.Set("__currentNodeGuid", _current.guid);
         _current.Enter(_ctx, () =>
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] ✅ Advance desde {_current?.GetType().Name ?? "null"} '{_current?.displayTitle}'");
+#endif
             Advance();
         });
     }
@@ -165,7 +173,9 @@ public class NarrativeRunner : MonoBehaviour
         var outs = _current.outputs;
         if (outs == null || outs.Count == 0)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[Narrative] '{_current.GetType().Name}' no tiene salidas. Flujo detenido.");
+#endif
             // Marcar que no hay nodo actual para evitar re-ejecutar acciones tras cargar partida
             Blackboard.Set("__currentNodeGuid", string.Empty);
             return;
@@ -177,7 +187,9 @@ public class NarrativeRunner : MonoBehaviour
             var nextGuid = outs.FirstOrDefault(g => !string.IsNullOrEmpty(g));
             if (string.IsNullOrEmpty(nextGuid))
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[Narrative] Salida vacía desde '{_current.GetType().Name}'. Flujo detenido.");
+#endif
                 return;
             }
 
@@ -206,7 +218,9 @@ public class NarrativeRunner : MonoBehaviour
         if (Blackboard.Get<bool>(forkKey, false))
         {
             // Fork ya ejecutado en sesión anterior — reanudar ramas en progreso
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' ya ejecutado — reanudando ramas persistidas.");
+#endif
             RelaunchForkBranches(forkGuid, outs);
             return;
         }
@@ -245,7 +259,9 @@ public class NarrativeRunner : MonoBehaviour
 
             if (savedNodeGuid == "__DONE__")
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: completada, omitiendo.");
+#endif
                 continue;
             }
 
@@ -259,7 +275,9 @@ public class NarrativeRunner : MonoBehaviour
                 continue;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] Fork '{forkGuid}' rama {i}: reanudando desde {resumeNode.GetType().Name} ({resumeGuid}).");
+#endif
             StartCoroutine(RunSubGraph(resumeNode, forkGuid, i));
         }
     }
@@ -284,7 +302,9 @@ public class NarrativeRunner : MonoBehaviour
                 var nestedForkKey = $"__forked_{node.guid}";
                 if (Blackboard.Get<bool>(nestedForkKey, false))
                 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[NarrativeRunner] Fork anidado '{node.guid}' en rama {branchIndex} — reanudando subramas sin re-ejecutar nodo.");
+#endif
                     if (track)
                         Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
                     RelaunchForkBranches(node.guid, node.outputs);
@@ -293,12 +313,16 @@ public class NarrativeRunner : MonoBehaviour
             }
 
             bool ready = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NarrativeRunner] ▶ SubGraph[{branchIndex}] → {node.GetType().Name} '{node.displayTitle}' ({node.guid})");
+#endif
             try
             {
                 node.Enter(_ctx, () =>
                 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[NarrativeRunner] ✅ SubGraph[{branchIndex}] completó {node.GetType().Name} '{node.displayTitle}'");
+#endif
                     ready = true;
                 });
             }

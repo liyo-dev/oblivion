@@ -537,6 +537,30 @@
             "value": "Como no haga algo ahora estoy perdido."
         },
         {
+            "key": "DLG_KING_11",
+            "value": "No me puedo creer lo que acaba de pasar..."
+        },
+        {
+            "key": "DLG_KING_12",
+            "value": "Es lo que tratabamos de decirte..."
+        },
+        {
+            "key": "DLG_KING_13",
+            "value": "Disculpad que no os escuché..."
+        },
+        {
+            "key": "DLG_KING_14",
+            "value": "Creo que a cambio de lo que habéis hecho por mi podemos olvidar el tema de la montaña...."
+        },
+        {
+            "key": "DLG_KING_15",
+            "value": "Lo que si os voy a pedir es que no comentéis nada por el Reino de este tema..."
+        },
+        {
+            "key": "DLG_KING_16",
+            "value": "Tranquilo no diremos nada..."
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "¿Quieres que te cuente cómo funcionan los menús?"
         },

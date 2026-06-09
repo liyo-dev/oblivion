@@ -3833,11 +3833,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 {
                     var options = _wardrobe.GetUnlockedOptions(category);
                     hasOptions = options != null && options.Count > 0;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[EquipmentView.UpdateAllRowsUI] Categoría {category}: {options?.Count ?? 0} opciones, hasOptions={hasOptions}");
+#endif
                 }
-                
+
                 bool allowClear = _wardrobe == null ? _builder != null : hasOptions;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[EquipmentView.UpdateAllRowsUI] Categoría {category}: Builder={(_builder != null)}, hasOptions={hasOptions}, allowClear={allowClear}");
+#endif
                 SetInteractable(row, _builder != null || hasOptions, allowClear);
             }
         }

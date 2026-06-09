@@ -113,7 +113,7 @@ public class QuestVisibilityItemUI : MonoBehaviour
         
         EnsureTextHighlight(button);
         
-        Debug.Log($"QuestVisibilityItemUI: Botón '{actionName}' configurado para quest '{_data?.Id}'");
+
     }
 
     void NotifyChange(QuestVisibility visibility)

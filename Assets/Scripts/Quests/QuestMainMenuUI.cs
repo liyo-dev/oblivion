@@ -183,7 +183,7 @@ public class QuestMainMenuUI : MonoBehaviour
             var visibility = NormalizeVisibility(rq.Id, QuestManager.Instance.GetVisibility(rq.Id), persist: true);
             var parent = visibility == QuestVisibility.Hidden && hiddenContentRoot != null ? hiddenContentRoot : visibleContentRoot;
             var item = Instantiate(itemPrefab, parent);
-            Debug.Log($"QuestMainMenuUI: Instantiated item for '{rq.Id}' into {(parent == hiddenContentRoot ? "hidden" : "visible")} parent");
+
             item.Bind(rq, visibility, OnVisibilityChanged);
             var scroll = parent == hiddenContentRoot ? hiddenScrollRect : visibleScrollRect;
             item.ConfigureScrollRect(scroll);

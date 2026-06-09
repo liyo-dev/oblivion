@@ -196,7 +196,9 @@ namespace Game.NPC
                     ShowIcon(newPrefab);
                 }
                 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NPCQuestIconManager:{name}] Estado del icono: {newState}");
+#endif
             }
         }
         
@@ -223,7 +225,9 @@ namespace Game.NPC
             if (_iconController.HasPersistentIcon)
             {
                 _iconController.HideAlertIcon();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NPCQuestIconManager:{name}] Ocultando icono de quest");
+#endif
             }
 
             GetComponent<MinimapMarker>()?.SetVisible(false);
