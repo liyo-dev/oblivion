@@ -142,6 +142,7 @@ namespace Game.NPC.Modules
             {
                 questManager.OnQuestCompleted += OnQuestCompletedHandler;
                 questManager.OnQuestStarted += OnQuestStartedHandler;
+                questManager.OnStepCompleted += OnStepCompletedHandler;
                 _subscribedToQuests = true;
             }
             else
@@ -160,6 +161,7 @@ namespace Game.NPC.Modules
             {
                 questManager.OnQuestCompleted -= OnQuestCompletedHandler;
                 questManager.OnQuestStarted -= OnQuestStartedHandler;
+                questManager.OnStepCompleted -= OnStepCompletedHandler;
             }
             _subscribedToQuests = false;
         }
@@ -185,7 +187,32 @@ namespace Game.NPC.Modules
         {
             CheckAndAutoExecuteQuestNarrative(questId, NarrativeConditionType.QuestStarted);
         }
-        
+
+        /// <summary>
+        /// Llamado cuando se completa un step - verifica narrativas QuestStepCompleted con autoExecute
+        /// </summary>
+        private void OnStepCompletedHandler(string questId, int stepIndex)
+        {
+            if (_config == null || _config.conditionalNarratives == null) return;
+            if (_isExecuting) return;
+
+            foreach (var narrative in _config.conditionalNarratives)
+            {
+                if (narrative == null) continue;
+                if (!narrative.autoExecuteOnQuestConditionMet) continue;
+                if (narrative.condition.conditionType != NarrativeConditionType.QuestStepCompleted) continue;
+                if (narrative.condition.targetQuest == null) continue;
+                if (narrative.condition.targetQuest.questId != questId) continue;
+
+                if (narrative.CanExecute())
+                {
+                    if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] 🎯 Auto-ejecutando narrativa '{narrative.description}' porque step {stepIndex} de quest '{questId}' fue completado");
+                    StartCoroutine(AutoExecuteNarrative(narrative));
+                    return;
+                }
+            }
+        }
+
         /// <summary>
         /// Verifica si hay narrativas con autoExecuteOnQuestConditionMet que deben ejecutarse
         /// </summary>

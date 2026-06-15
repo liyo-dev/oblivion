@@ -28,6 +28,9 @@ MonoBehaviour:
   - battleId: Golem_1
     music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
     fade: 0
+  - battleId: Demon_2
+    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    fade: 0
   minigames:
   - minigameId: TAG_MINIGAME_01
     music: {fileID: 8300000, guid: 7eb1b7c0d589a3b458134ef956f69bb2, type: 3}
@@ -96,6 +99,10 @@ MonoBehaviour:
     sfx: {fileID: 8300000, guid: 5a7837b53ae69456b9164dec1604dead, type: 3}
   - eventKey: Door_Open
     sfx: {fileID: 8300000, guid: 35516e4b9e78e6452a3ea26209b1aa61, type: 3}
+  - eventKey: orbSpawn
+    sfx: {fileID: 8300000, guid: bc199d6e558713e42b289920a0b0135d, type: 3}
+  - eventKey: orbAttract
+    sfx: {fileID: 8300000, guid: 79e20d4314e5328e782a9b6f6b2b71b8, type: 3}
   additiveCinematics:
   - sceneName: Cinematic_DemonAppears
     music: {fileID: 8300000, guid: fe45a7da307add14a9f93158f047bc7c, type: 3}

@@ -1,55 +1,25 @@
 using UnityEngine;
-using Game.NPC;
 
 /// <summary>
-/// Componente para enemigos con Damageable: suelta orbes estilo Kingdom Hearts al recibir dano.
+/// Componente thin de drops de orbes. No necesita configuracion manual:
+/// OrbDropService lo inyecta automaticamente en enemigos (layer Enemy + Damageable).
 ///
-/// Reglas de drops:
-///   - Golpes de CUALQUIERA: tirada de vida/mana/nada (puede soltar multiples orbes)
-///   - Golpes de ESTELA:     tirada adicional de orbe especial de Estela
-///   - Golpes de LIAM:       tirada adicional de orbe especial de Liam
-///
-/// Los orbes salen con un burst radial hacia arriba desde el enemigo.
+/// Para usar un perfil distinto al default (ej: jefes), anadir este componente
+/// al prefab del enemigo y rellenar solo profileId.
+/// Para un punto de spawn preciso, asignar spawnOrigin.
 /// </summary>
 [RequireComponent(typeof(Damageable))]
 public class OrbDropper : MonoBehaviour
 {
-    [Header("Orbes de Vida y Mana (cualquier golpe)")]
-    [SerializeField] private GameObject healthOrbPrefab;
-    [SerializeField] private GameObject manaOrbPrefab;
-    [SerializeField, Range(0f, 1f)] private float healthChance = 0.35f;
-    [SerializeField, Range(0f, 1f)] private float manaChance   = 0.20f;
+    [Tooltip("Vacio = perfil del tag del objeto; si tampoco hay mapeo, usa 'default'")]
+    [SerializeField] private string    _profileId;
+    [Tooltip("Punto de spawn opcional. Si es null usa el offset del perfil")]
+    [SerializeField] private Transform _spawnOrigin;
 
-    [Header("Orbes Especiales de Companeros")]
-    [SerializeField] private GameObject estelaOrbPrefab;
-    [SerializeField] private GameObject liamOrbPrefab;
-    [SerializeField, Range(0f, 1f)] private float specialChance = 0.45f;
+    private Damageable     _damageable;
+    private OrbDropProfile _profile;
 
-    [Header("Burst de multiples orbes")]
-    [Tooltip("Minimo de orbes de vida/mana por golpe (si la tirada sale positiva)")]
-    [SerializeField] private int minOrbsPerHit = 1;
-    [Tooltip("Maximo de orbes de vida/mana por golpe")]
-    [SerializeField] private int maxOrbsPerHit = 3;
-
-    [Header("Spawn")]
-    [SerializeField] private float spawnRadius   = 0.5f;
-    [SerializeField] private float spawnHeightMin = 0.3f;
-    [SerializeField] private float spawnHeightMax = 0.8f;
-
-    [Header("Burst al morir")]
-    [Tooltip("Orbes extra al morir el enemigo")]
-    [SerializeField] private int   deathBurstMin = 4;
-    [SerializeField] private int   deathBurstMax = 8;
-    [Tooltip("Probabilidad de cada tipo en el burst de muerte (vida/mana/especial)")]
-    [SerializeField, Range(0f, 1f)] private float deathHealthWeight  = 0.5f;
-    [SerializeField, Range(0f, 1f)] private float deathManaWeight    = 0.3f;
-
-    private Damageable _damageable;
-
-    void Awake()
-    {
-        _damageable = GetComponent<Damageable>();
-    }
+    void Awake() => _damageable = GetComponent<Damageable>();
 
     void OnEnable()
     {
@@ -63,78 +33,84 @@ public class OrbDropper : MonoBehaviour
         _damageable.OnDied      -= OnDied;
     }
 
+    private OrbDropProfile Profile
+    {
+        get
+        {
+            if (_profile != null) return _profile;
+            ResolveProfile();
+            return _profile;
+        }
+    }
+
+    private void ResolveProfile()
+    {
+        var config = OrbDropService.Instance?.Config;
+        if (config == null) return;
+
+        string id = string.IsNullOrEmpty(_profileId)
+            ? config.GetProfileIdForTag(gameObject.tag)
+            : _profileId;
+
+        _profile = config.GetProfile(id);
+    }
+
     private void OnDamagedBy(float _, GameObject instigator)
     {
-        // Tirada de vida / mana (cualquier golpe)
-        float roll = Random.value;
-        if (roll < healthChance)
-        {
-            int count = Random.Range(minOrbsPerHit, maxOrbsPerHit + 1);
-            for (int i = 0; i < count; i++)
-                SpawnOrb(healthOrbPrefab);
-        }
-        else if (roll < healthChance + manaChance)
-        {
-            int count = Random.Range(minOrbsPerHit, maxOrbsPerHit + 1);
-            for (int i = 0; i < count; i++)
-                SpawnOrb(manaOrbPrefab);
-        }
+        var p = Profile;
+        if (p == null) return;
 
-        // Tirada de orbe especial: solo si el golpe lo dio un companero
-        DuoCompanion? companion = GetCompanionFromInstigator(instigator);
-        if (companion.HasValue && Random.value < specialChance)
-        {
-            var prefab = companion.Value == DuoCompanion.Estela ? estelaOrbPrefab : liamOrbPrefab;
-            SpawnOrb(prefab);
-        }
+        float roll = Random.value;
+        if (roll < p.healthChance)
+            SpawnBurst(p.healthOrbPrefab, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
+        else if (roll < p.healthChance + p.manaChance)
+            SpawnBurst(p.manaOrbPrefab, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
+
+        // Orbes especiales desactivados temporalmente — solo vida y magia por ahora
+        // DuoCompanion? companion = GetCompanionFromInstigator(instigator);
+        // if (companion.HasValue && Random.value < specialChance)
+        // {
+        //     var prefab = companion.Value == DuoCompanion.Estela ? estelaOrbPrefab : liamOrbPrefab;
+        //     SpawnOrb(prefab);
+        // }
     }
 
     private void OnDied()
     {
-        int burstCount = Random.Range(deathBurstMin, deathBurstMax + 1);
-        for (int i = 0; i < burstCount; i++)
+        var p = Profile;
+        if (p == null) return;
+
+        int count = Random.Range(p.deathBurstMin, p.deathBurstMax + 1);
+        for (int i = 0; i < count; i++)
         {
             float roll = Random.value;
-            float totalWeight = deathHealthWeight + deathManaWeight;
-
-            GameObject prefab;
-            if (roll < deathHealthWeight)
-                prefab = healthOrbPrefab;
-            else if (roll < totalWeight)
-                prefab = manaOrbPrefab;
-            else
-            {
-                // Orbe especial aleatorio entre los dos companeros
-                prefab = Random.value < 0.5f ? estelaOrbPrefab : liamOrbPrefab;
-            }
-
-            SpawnOrb(prefab);
+            if (roll < p.deathHealthWeight)
+                SpawnOrb(p.healthOrbPrefab);
+            else if (roll < p.deathHealthWeight + p.deathManaWeight)
+                SpawnOrb(p.manaOrbPrefab);
+            // else: slot de orbe especial, desactivado temporalmente
         }
     }
 
-    private DuoCompanion? GetCompanionFromInstigator(GameObject instigator)
+    private void SpawnBurst(GameObject prefab, int count)
     {
-        if (instigator == null) return null;
-
-        var member = instigator.GetComponentInParent<NPCPartyMember>();
-        if (member == null) return null;
-
-        string name = member.DisplayName;
-        if (name.Equals("Estela", System.StringComparison.OrdinalIgnoreCase)) return DuoCompanion.Estela;
-        if (name.Equals("Liam",   System.StringComparison.OrdinalIgnoreCase)) return DuoCompanion.Liam;
-
-        return null;
+        for (int i = 0; i < count; i++) SpawnOrb(prefab);
     }
 
     private void SpawnOrb(GameObject prefab)
     {
         if (prefab == null) return;
+        var p = Profile;
+        Vector3 origin = _spawnOrigin != null
+            ? _spawnOrigin.position
+            : transform.position + p.spawnCenterOffset;
 
-        // Patron de burst radial: cada orbe sale en una direccion diferente
-        Vector2 circle = Random.insideUnitCircle * spawnRadius;
-        float height = Random.Range(spawnHeightMin, spawnHeightMax);
-        Vector3 offset = new Vector3(circle.x, height, circle.y);
-
-        Instantiate(prefab, transform.position + offset, Quaternion.identity);
+        Vector2 circle = Random.insideUnitCircle * p.spawnRadius;
+        float   h      = Random.Range(p.spawnHeightMin, p.spawnHeightMax);
+        var go = Instantiate(prefab, origin + new Vector3(circle.x, h, circle.y), Quaternion.identity);
+        if (go.TryGetComponent<BattleOrb>(out var orb))
+            orb.SetAudioKeys(p.orbSpawnSFXKey, p.orbAttractSFXKey);
     }
+
+    // private DuoCompanion? GetCompanionFromInstigator(GameObject instigator) { ... }
 }

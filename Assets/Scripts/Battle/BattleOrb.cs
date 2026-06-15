@@ -77,6 +77,15 @@ public class BattleOrb : MonoBehaviour
     [SerializeField] private GameObject pickupVFX;
     [SerializeField] private string     pickupSFXKey;
     [SerializeField] private string     bounceSFXKey;
+    // spawnSFXKey y attractSFXKey se inyectan desde OrbDropper via SetAudioKeys()
+    private string _spawnSFXKey;
+    private string _attractSFXKey;
+
+    public void SetAudioKeys(string spawn, string attract)
+    {
+        _spawnSFXKey   = spawn;
+        _attractSFXKey = attract;
+    }
 
     // --- Fases internas ---
     private enum Phase { Launching, Bouncing, Hovering, Attracted }
@@ -96,12 +105,20 @@ public class BattleOrb : MonoBehaviour
     private Light         _glowLight;
     private TrailRenderer _trail;
     private float         _pulseOffset;
+    private LayerMask     _groundMask;
+
+    // Capas que nunca son suelo (enemigos, proyectiles, jugador)
+    private static readonly int[] _nonGroundLayers = { 3, 6, 7, 11 };
 
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         GetComponent<Collider>().isTrigger = true;
         _baseScale = transform.localScale;
+
+        _groundMask = groundLayers;
+        foreach (int layer in _nonGroundLayers)
+            _groundMask &= ~(1 << layer);
     }
 
     void Start()
@@ -127,11 +144,14 @@ public class BattleOrb : MonoBehaviour
 
             Vector2 h = Random.insideUnitCircle.normalized * popHorizontalSpread;
             float upForce = popUpForce + Random.Range(-1f, 1f);
-            _rb.AddForce(new Vector3(h.x, upForce, h.y), ForceMode.Impulse);
+            _rb.AddForce(new Vector3(h.x, upForce, h.y), ForceMode.VelocityChange);
             _rb.angularVelocity = Random.insideUnitSphere * 5f;
         }
 
         SetupProceduralVisuals();
+
+        if (!string.IsNullOrEmpty(_spawnSFXKey) && AudioService.Instance != null)
+            AudioService.Instance.PlaySFX(_spawnSFXKey, 1f, transform.position);
     }
 
     // --- Efectos visuales procedurales ---
@@ -193,7 +213,7 @@ public class BattleOrb : MonoBehaviour
     float DetectGroundY()
     {
         Vector3 origin = transform.position + Vector3.up * 5f;
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 30f, groundLayers, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 30f, _groundMask, QueryTriggerInteraction.Ignore))
         {
             if (hit.point.y < transform.position.y)
                 return hit.point.y;
@@ -313,10 +333,10 @@ public class BattleOrb : MonoBehaviour
 
         if (_rb != null)
         {
-            _rb.useGravity      = false;
-            _rb.isKinematic     = true;
             _rb.linearVelocity  = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
+            _rb.useGravity      = false;
+            _rb.isKinematic     = true;
         }
 
         float safeY = Mathf.Max(_groundY + hoverHeight, _spawnY - 0.2f);
@@ -341,12 +361,14 @@ public class BattleOrb : MonoBehaviour
         _phase        = Phase.Attracted;
         _attractSpeed = 3f;
 
-        // Activar trail durante atraccion
         if (_trail != null)
         {
             _trail.Clear();
             _trail.enabled = true;
         }
+
+        if (!string.IsNullOrEmpty(_attractSFXKey) && AudioService.Instance != null)
+            AudioService.Instance.PlaySFX(_attractSFXKey, 1f, transform.position);
     }
 
     void UpdateAttracted()

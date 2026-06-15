@@ -7958,6 +7958,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1035811561}
   m_CullTransparentMesh: 1
+--- !u!1 &1060315180
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1060315182}
+  - component: {fileID: 1060315181}
+  m_Layer: 0
+  m_Name: OrbDropService
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1060315181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060315180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0886151e3fc8dc14c9e40cee30ee7d89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropService
+  _config: {fileID: 11400000, guid: ccd9d56d14b3d024a93348e56ca9b1a9, type: 2}
+--- !u!4 &1060315182
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060315180}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1066137595
 GameObject:
   m_ObjectHideFlags: 0
@@ -9949,6 +9994,23 @@ MonoBehaviour:
     title: Magia
     description: "Ahora puedes usar hechizos m\xE1gicos."
     icon: {fileID: 21300000, guid: 7d1df244eda8f3a4d96a08ff6ad27fcb, type: 3}
+  spellPresentations:
+  - spellId: 3
+    title: "Corraz\xF3n Estelar"
+    description: 
+    icon: {fileID: 21300000, guid: 7bb9669c2b0c9ef4c86aced248b8b3d7, type: 3}
+  - spellId: 2
+    title: Bola Prisma
+    description: 
+    icon: {fileID: 21300000, guid: 9f65a57ebd40b074ca258be9bc7ad7dc, type: 3}
+  - spellId: 1
+    title: Llama Astral
+    description: 
+    icon: {fileID: 21300000, guid: 7522bb52d0451d3418f913dd207b577a, type: 3}
+  - spellId: 4
+    title: "Levitaci\xF3n"
+    description: 
+    icon: {fileID: 21300000, guid: 1704c7cdd1802f0448577afeeb7f2a03, type: 3}
   slideOffscreenX: 450
   animInDuration: 0.45
   animOutDuration: 0.3
@@ -25499,3 +25561,4 @@ SceneRoots:
   - {fileID: 872388927}
   - {fileID: 1952488295}
   - {fileID: 1894362556}
+  - {fileID: 1060315182}

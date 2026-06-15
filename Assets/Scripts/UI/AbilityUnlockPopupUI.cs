@@ -22,6 +22,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     [Header("Datos")]
     [SerializeField] private List<AbilityPresentation> abilityPresentations = new();
     [SerializeField] private List<AbilityPresentationForKey> abilityKeyPresentations = new();
+    [SerializeField] private List<SpellPresentation> spellPresentations = new();
 
     [Header("Animación")]
     [SerializeField] private float slideOffscreenX = 450f;
@@ -31,6 +32,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private AbilityId? _pendingAbility;
     private AbilityKey? _pendingAbilityKey;
+    private SpellId? _pendingSpell;
     private readonly HashSet<string> _shownFlags = new();
     private bool _flagsLoaded;
     private Coroutine _autoDismissCoroutine;
@@ -40,6 +42,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
+    const string SpellFlagPrefix = "SPELL_POPUP_ID:";
 
     void Awake()
     {
@@ -52,6 +55,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         GameBootService.OnProfileReady += HandleProfileReadyForSuppression;
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
+        UnlockService.OnSpellUnlocked += HandleSpellUnlocked;
         ReloadShownFlags();
     }
 
@@ -60,6 +64,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         GameBootService.OnProfileReady -= HandleProfileReadyForSuppression;
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
+        UnlockService.OnSpellUnlocked -= HandleSpellUnlocked;
     }
 
     void OnDestroy()
@@ -92,6 +97,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (_suppressPopupDuringInit) return;
         _pendingAbility = ability;
         _pendingAbilityKey = null;
+        _pendingSpell = null;
         ShowPopup();
     }
 
@@ -100,6 +106,16 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (_suppressPopupDuringInit) return;
         _pendingAbilityKey = key;
         _pendingAbility = null;
+        _pendingSpell = null;
+        ShowPopup();
+    }
+
+    private void HandleSpellUnlocked(SpellId spell)
+    {
+        if (_suppressPopupDuringInit) return;
+        _pendingSpell = spell;
+        _pendingAbility = null;
+        _pendingAbilityKey = null;
         ShowPopup();
     }
 
@@ -107,7 +123,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void ShowPopup()
     {
-        if (_pendingAbility == null && _pendingAbilityKey == null) return;
+        if (_pendingAbility == null && _pendingAbilityKey == null && _pendingSpell == null) return;
         ReloadShownFlags();
 
         if (_pendingAbility != null)
@@ -121,9 +137,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             MarkFlag(GetAbilityFlag(_pendingAbility.Value));
             SetTexts(p.title, p.description, p.icon);
         }
-        else
+        else if (_pendingAbilityKey != null)
         {
-            if (_pendingAbilityKey == null) return;
             if (HasSeenFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value)))
             {
                 _pendingAbilityKey = null;
@@ -131,6 +146,17 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             }
             var p = AbilityPresentationKeyLookup.Resolve(_pendingAbilityKey.Value, abilityKeyPresentations);
             MarkFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value));
+            SetTexts(p.title, p.description, p.icon);
+        }
+        else
+        {
+            if (HasSeenFlag(GetSpellFlag(_pendingSpell.Value)))
+            {
+                _pendingSpell = null;
+                return;
+            }
+            var p = SpellPresentationLookup.Resolve(_pendingSpell.Value, spellPresentations);
+            MarkFlag(GetSpellFlag(_pendingSpell.Value));
             SetTexts(p.title, p.description, p.icon);
         }
 
@@ -179,6 +205,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         _isShowing = false;
         _pendingAbility = null;
         _pendingAbilityKey = null;
+        _pendingSpell = null;
 
         if (_autoDismissCoroutine != null) { StopCoroutine(_autoDismissCoroutine); _autoDismissCoroutine = null; }
 
@@ -205,7 +232,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
             {
                 var flag = flags[i];
                 if (string.IsNullOrEmpty(flag)) continue;
-                if (flag.StartsWith(AbilityFlagPrefix) || flag.StartsWith(AbilityKeyFlagPrefix))
+                if (flag.StartsWith(AbilityFlagPrefix) || flag.StartsWith(AbilityKeyFlagPrefix) || flag.StartsWith(SpellFlagPrefix))
                     _shownFlags.Add(flag);
             }
         }
@@ -214,6 +241,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     string GetAbilityFlag(AbilityId id) => $"{AbilityFlagPrefix}{id}";
     string GetAbilityKeyFlag(AbilityKey key) => $"{AbilityKeyFlagPrefix}{key}";
+    string GetSpellFlag(SpellId id) => $"{SpellFlagPrefix}{id}";
 
     bool HasSeenFlag(string flag)
     {

@@ -677,7 +677,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 147be1ec-b620-47f5-97c4-b883a77e5bbd
-        position: {x: 6258, y: 2336}
+        position: {x: 6295.03, y: 2334}
         outputs:
         - 80334d37-669d-4beb-9529-1c14f1f9ef60
         abilityKeysToUnlock: 
@@ -698,7 +698,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 20c65042-0cec-420d-90da-5d7f9c202fd2
-        position: {x: 5758, y: 2336}
+        position: {x: 5799, y: 2334}
         outputs:
         - 147be1ec-b620-47f5-97c4-b883a77e5bbd
         eventKey: CORAZON_ESTELAR
@@ -713,7 +713,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 80334d37-669d-4beb-9529-1c14f1f9ef60
-        position: {x: 6765, y: 2338}
+        position: {x: 6736.3853, y: 2334}
         outputs: []
         questId: ELDRAN_MISSION12
         stepConditionIds:

@@ -12,8 +12,9 @@ namespace Game.NPC.Modules
         QuestNotStarted = 1, // La quest no ha sido iniciada
         QuestStarted    = 2, // La quest ha sido iniciada
         QuestCompleted  = 3, // La quest ha sido completada
-        QuestActive     = 4, // La quest está activa (iniciada pero no completada)
-        Custom          = 5  // Condición custom (delegate/función)
+        QuestActive        = 4, // La quest está activa (iniciada pero no completada)
+        Custom             = 5, // Condición custom (delegate/función)
+        QuestStepCompleted = 6  // Un step concreto de la quest está completado
     }
     
     /// <summary>
@@ -30,6 +31,10 @@ namespace Game.NPC.Modules
         [Tooltip("Quest a verificar (si conditionType requiere quest)")]
         public QuestData targetQuest;
         
+        [Header("Quest Step Condition")]
+        [Tooltip("conditionId del step a verificar (ej: 'hablar_con_eldran'). Usado cuando conditionType = QuestStepCompleted")]
+        public string targetStepConditionId = "";
+
         [Header("Custom Event Condition")]
         [Tooltip("Clave del evento custom a escuchar (ej: EVT_MOUNTAIN). Usado cuando conditionType = Custom")]
         public string customEventKey = "";
@@ -91,6 +96,10 @@ namespace Game.NPC.Modules
                     result = EvaluateQuestActive();
                     break;
                 
+                case NarrativeConditionType.QuestStepCompleted:
+                    result = EvaluateQuestStepCompleted();
+                    break;
+
                 case NarrativeConditionType.Custom:
                     // Para custom, verificamos si el evento fue recibido
                     result = _customEventReceived;
@@ -216,6 +225,46 @@ namespace Game.NPC.Modules
             return result;
         }
         
+        private bool EvaluateQuestStepCompleted()
+        {
+            if (targetQuest == null)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NarrativeCondition] QuestStepCompleted: targetQuest es null");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(targetStepConditionId))
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NarrativeCondition] QuestStepCompleted: targetStepConditionId está vacío");
+                return false;
+            }
+
+            var questManager = GetQuestManager();
+            if (questManager == null)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NarrativeCondition] QuestManager no disponible");
+                return false;
+            }
+
+            int idx = questManager.FindStepIndexByConditionId(targetQuest.questId, targetStepConditionId);
+            if (idx < 0)
+            {
+                if (debugMode)
+                    Debug.LogWarning($"[NarrativeCondition] QuestStepCompleted: step '{targetStepConditionId}' no encontrado en '{targetQuest.questId}'");
+                return false;
+            }
+
+            bool result = questManager.IsStepCompleted(targetQuest.questId, idx);
+
+            if (debugMode)
+                Debug.Log($"[NarrativeCondition] QuestStepCompleted('{targetQuest.questId}', step='{targetStepConditionId}', idx={idx}) = {result}");
+
+            return result;
+        }
+
         /// <summary>
         /// Obtiene una descripción legible de la condición
         /// </summary>
@@ -246,9 +295,14 @@ namespace Game.NPC.Modules
                         ? $"Quest '{targetQuest.questId}' activa" 
                         : "Quest activa (sin quest)";
                 
+                case NarrativeConditionType.QuestStepCompleted:
+                    if (targetQuest != null && !string.IsNullOrEmpty(targetStepConditionId))
+                        return $"Step '{targetStepConditionId}' de '{targetQuest.questId}' completado";
+                    return "Step completado (sin configurar)";
+
                 case NarrativeConditionType.Custom:
-                    return !string.IsNullOrEmpty(customEventKey) 
-                        ? $"Evento '{customEventKey}'" 
+                    return !string.IsNullOrEmpty(customEventKey)
+                        ? $"Evento '{customEventKey}'"
                         : "Evento custom (sin clave)";
                 
                 default:

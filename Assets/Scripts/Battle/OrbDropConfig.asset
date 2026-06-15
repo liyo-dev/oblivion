@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d5aba97f2ec2f947a537d0bd0a02805, type: 3}
+  m_Name: OrbDropConfig
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropConfig
+  _defaultProfile:
+    id: default
+    healthOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
+    manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
+    healthChance: 0.853
+    manaChance: 0.85
+    minOrbsPerHit: 1
+    maxOrbsPerHit: 3
+    deathBurstMin: 4
+    deathBurstMax: 8
+    deathHealthWeight: 0.5
+    deathManaWeight: 0.3
+    orbSpawnSFXKey: orbSpawn
+    orbAttractSFXKey: orbAttract
+    spawnCenterOffset: {x: 0, y: 1.5, z: 0}
+    spawnRadius: 0.5
+    spawnHeightMin: 0.3
+    spawnHeightMax: 0.8
+  _profiles: []
+  _tagMappings: []

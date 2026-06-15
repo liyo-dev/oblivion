@@ -903,6 +903,10 @@
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
             "value": "¿Un cuento de niños?"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DESC_02",
+            "value": "Habla con el Rey."
         }
     ]
 }

@@ -903,6 +903,10 @@
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
             "value": "A children's fairy tale?"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION12_DESC_02",
+            "value": "[EN] Habla con el Rey."
         }
     ]
 }

@@ -5,8 +5,8 @@ using UnityEngine;
 public static class UnlockService
 {
     public static event System.Action<AbilityId> OnAbilityUnlocked;
-    // New event for the boolean-based abilities (PlayerAbilities -> AbilityKey)
     public static event System.Action<AbilityKey> OnAbilityUnlockedKey;
+    public static event System.Action<SpellId> OnSpellUnlocked;
 
     /// Intenta obtener el preset activo (runtime) del GameBootProfile.
     public static PlayerPresetSO GetActivePreset()
@@ -166,12 +166,14 @@ public static class UnlockService
 
         bool changed = false;
         bool isNewUnlock = false;
-        
+
         if (!preset.unlockedSpells.Contains(spell))
         {
             preset.unlockedSpells.Add(spell);
             changed = true;
             isNewUnlock = true;
+            if (spell != SpellId.None)
+                OnSpellUnlocked?.Invoke(spell);
         }
 
         // Solo asignar a un slot vacío si es la PRIMERA VEZ que se desbloquea

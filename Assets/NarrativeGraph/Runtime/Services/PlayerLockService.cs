@@ -34,6 +34,8 @@ public class PlayerLockService : MonoBehaviour
     Rigidbody _rb;
     MonoBehaviour _movementScript;
     bool _movementScriptWasEnabled;
+    Invector.vCharacterController.vThirdPersonMotor _lockedMotor;
+    bool _motorWasLocked;
 
     public bool IsLocked => _owners.Count > 0;
 
@@ -51,6 +53,7 @@ public class PlayerLockService : MonoBehaviour
 
         Debug.LogWarning($"[PlayerLockService] 🚨 FORCE UNLOCK - Limpiando {_owners.Count} locks forzadamente");
         _owners.Clear();
+        _lockedMotor = null; // evitar restaurar lockMovement al estado bloqueado
         ReleaseHardLock();
     }
 
@@ -123,23 +126,37 @@ public class PlayerLockService : MonoBehaviour
             // _rb.isKinematic = true; // ❌ ESTO CAUSA LOS WARNINGS
         }
 
-        // Buscar específicamente los scripts de movimiento del jugador (Invector)
-        _movementScript = player.GetComponents<MonoBehaviour>()
-            .FirstOrDefault(m => m != null && m.enabled && m != this && !(m is PlayerActionManager) && (
-                m.GetType().Name == "vThirdPersonController" || // ✅ NOMBRE CORRECTO CON 'v'
-                m.GetType().Name == "vThirdPersonInput" ||      // ✅ NOMBRE CORRECTO CON 'v'
-                m.GetType().Name == "ThirdPersonController" ||   // Fallback sin 'v'
-                m.GetType().Name == "ThirdPersonInput"           // Fallback sin 'v'
-            ));
-        if (_movementScript != null)
+        // Bloquear movimiento sin deshabilitar el controller completo.
+        // Deshabilitar vThirdPersonController para UpdateMotor() que gestiona
+        // CheckGround() y ControlMaterialPhysics(). Sin esto el CapsuleCollider
+        // queda con slippyPhysics (fricción 0) y el player cae a través del suelo.
+        _lockedMotor = player.GetComponent<Invector.vCharacterController.vThirdPersonMotor>();
+        if (_lockedMotor != null)
         {
-            _movementScriptWasEnabled = _movementScript.enabled;
-            _movementScript.enabled = false;
-            Debug.Log($"[PlayerLockService] Script de movimiento '{_movementScript.GetType().Name}' DESHABILITADO");
+            _motorWasLocked = _lockedMotor.lockMovement;
+            _lockedMotor.lockMovement = true;
+            Debug.Log("[PlayerLockService] lockMovement=true en vThirdPersonMotor");
         }
         else
         {
-            Debug.LogWarning("[PlayerLockService] No se encontró script de movimiento del jugador (vThirdPersonController/vThirdPersonInput)");
+            // Fallback: deshabilitar el script si no se encuentra vThirdPersonMotor
+            _movementScript = player.GetComponents<MonoBehaviour>()
+                .FirstOrDefault(m => m != null && m.enabled && m != this && !(m is PlayerActionManager) && (
+                    m.GetType().Name == "vThirdPersonController" ||
+                    m.GetType().Name == "vThirdPersonInput" ||
+                    m.GetType().Name == "ThirdPersonController" ||
+                    m.GetType().Name == "ThirdPersonInput"
+                ));
+            if (_movementScript != null)
+            {
+                _movementScriptWasEnabled = _movementScript.enabled;
+                _movementScript.enabled = false;
+                Debug.Log($"[PlayerLockService] Fallback: script '{_movementScript.GetType().Name}' DESHABILITADO");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerLockService] No se encontró vThirdPersonMotor ni script de movimiento");
+            }
         }
     }
 
@@ -162,7 +179,13 @@ public class PlayerLockService : MonoBehaviour
         // }
         _rb = null;
 
-        if (_movementScript != null)
+        if (_lockedMotor != null)
+        {
+            _lockedMotor.lockMovement = _motorWasLocked;
+            Debug.Log("[PlayerLockService] lockMovement restaurado en vThirdPersonMotor");
+            _lockedMotor = null;
+        }
+        else if (_movementScript != null)
         {
             _movementScript.enabled = _movementScriptWasEnabled;
             Debug.Log($"[PlayerLockService] Script de movimiento '{_movementScript.GetType().Name}' RESTAURADO");
