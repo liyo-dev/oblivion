@@ -71,7 +71,7 @@ public class NarrativeCrossReferenceWindow : EditorWindow
     private bool _hasScanned;
     private string _scanStatus = "";
 
-    [MenuItem("Tools/Narrativa/Cross-Reference")]
+    [MenuItem("El Sendero/Narrativa/Cross-Reference")]
     public static void ShowWindow()
     {
         var w = GetWindow<NarrativeCrossReferenceWindow>("Narrative Cross-Reference");

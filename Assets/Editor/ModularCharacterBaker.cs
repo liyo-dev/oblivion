@@ -4,7 +4,7 @@ using UnityEditor;
 
 public static class ModularCharacterBaker
 {
-    [MenuItem("Tools/Modular Characters/Bake Selected As Clean Prefab")]
+    [MenuItem("El Sendero/Personajes/Bake Selected As Clean Prefab")]
     public static void BakeSelected()
     {
         var src = Selection.activeGameObject;

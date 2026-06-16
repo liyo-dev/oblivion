@@ -178,35 +178,30 @@ public static class UnlockService
 
         // Solo asignar a un slot vacío si es la PRIMERA VEZ que se desbloquea
         // Si ya estaba desbloqueado (carga de partida), respetar la configuración del usuario
-        if (assignToEmptySlot && isNewUnlock)
+        if (assignToEmptySlot && isNewUnlock && spell != SpellId.None)
         {
-            // Si es Special y el slot está vacío, asignarlo ahí; si no, usar Left/Right vacíos
-            if (spell == SpellId.None)
+            // Usar el slotType del SO para decidir el slot destino
+            bool preferSpecial = false;
+            if (PlayerService.TryGetComponent<PlayerPresetService>(out var pps, includeInactive: false, allowSceneLookup: true))
             {
-                // nada
+                var library = pps?.SpellLibrary;
+                if (library != null && library.TryGet(spell, out var spellSO))
+                    preferSpecial = spellSO.slotType == SpellSlotType.SpecialOnly;
+            }
+
+            if (preferSpecial)
+            {
+                if (preset.specialSpellId == SpellId.None)
+                { preset.specialSpellId = spell; changed = true; }
             }
             else
             {
-                // Regla simple: si Special está vacío y parece ser de tipo Special (heurística por nombre)
-                bool looksSpecial = spell.ToString().ToLowerInvariant().Contains("special");
-                if (looksSpecial)
-                {
-                    if (preset.specialSpellId == SpellId.None)
-                    {
-                        preset.specialSpellId = spell; changed = true;
-                    }
-                }
-                else
-                {
-                    if (preset.leftSpellId == SpellId.None)
-                    {
-                        preset.leftSpellId = spell; changed = true;
-                    }
-                    else if (preset.rightSpellId == SpellId.None)
-                    {
-                        preset.rightSpellId = spell; changed = true;
-                    }
-                }
+                if (preset.leftSpellId == SpellId.None)
+                { preset.leftSpellId = spell; changed = true; }
+                else if (preset.rightSpellId == SpellId.None)
+                { preset.rightSpellId = spell; changed = true; }
+                else if (preset.specialSpellId == SpellId.None)
+                { preset.specialSpellId = spell; changed = true; }
             }
         }
 

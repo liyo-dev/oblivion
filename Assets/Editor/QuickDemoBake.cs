@@ -11,7 +11,7 @@ public class QuickDemoBake : EditorWindow
     private static LightingSettings originalSettings;
     private static bool settingsModified = false;
     
-    [MenuItem("Tools/Lighting/🚀 Quick Demo Bake (5-15 min)")]
+    [MenuItem("El Sendero/Lighting/🚀 Quick Demo Bake (5-15 min)")]
     public static void StartQuickBake()
     {
         if (!EditorUtility.DisplayDialog(
@@ -57,7 +57,7 @@ public class QuickDemoBake : EditorWindow
         EditorApplication.Beep();
     }
     
-    [MenuItem("Tools/Lighting/⚡ Ultra Quick Bake (1-5 min)")]
+    [MenuItem("El Sendero/Lighting/⚡ Ultra Quick Bake (1-5 min)")]
     public static void StartUltraQuickBake()
     {
         if (!EditorUtility.DisplayDialog(
@@ -86,7 +86,7 @@ public class QuickDemoBake : EditorWindow
         EditorApplication.Beep();
     }
     
-    [MenuItem("Tools/Lighting/📊 Medium Quality Bake (30-60 min)")]
+    [MenuItem("El Sendero/Lighting/📊 Medium Quality Bake (30-60 min)")]
     public static void StartMediumBake()
     {
         if (!EditorUtility.DisplayDialog(
@@ -232,7 +232,7 @@ public class QuickDemoBake : EditorWindow
         return settings;
     }
     
-    [MenuItem("Tools/Lighting/🔄 Restore Production Settings")]
+    [MenuItem("El Sendero/Lighting/🔄 Restore Production Settings")]
     public static void RestoreProductionSettings()
     {
         var settings = GetOrCreateLightingSettings();
@@ -261,7 +261,7 @@ public class QuickDemoBake : EditorWindow
         Debug.Log("⚠️ Recuerda: El próximo bake tardará horas");
     }
     
-    [MenuItem("Tools/Lighting/❌ Cancel Current Bake")]
+    [MenuItem("El Sendero/Lighting/❌ Cancel Current Bake")]
     public static void CancelBake()
     {
         if (Lightmapping.isRunning)
@@ -275,7 +275,7 @@ public class QuickDemoBake : EditorWindow
         }
     }
     
-    [MenuItem("Tools/Lighting/📈 Show Bake Progress")]
+    [MenuItem("El Sendero/Lighting/📈 Show Bake Progress")]
     public static void ShowProgress()
     {
         if (Lightmapping.isRunning)
@@ -293,7 +293,7 @@ public class QuickDemoBake : EditorWindow
         }
     }
     
-    [MenuItem("Tools/Lighting/🗑️ Clear Baked Data")]
+    [MenuItem("El Sendero/Lighting/🗑️ Clear Baked Data")]
     public static void ClearBakedData()
     {
         if (EditorUtility.DisplayDialog(

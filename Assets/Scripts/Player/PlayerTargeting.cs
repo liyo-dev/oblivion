@@ -54,6 +54,8 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     private bool _markerVisible;
     private bool _hiddenByDialogue;
     private readonly List<Material> _runtimeMarkerMaterials = new();
+    // Centro local del collider del target actual, cacheado para evitar bounds.center en LateUpdate
+    private Vector3 _cachedTargetLocalCenter = Vector3.up;
 
     void Awake()
     {
@@ -312,13 +314,24 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
     void OnTargetChanged(Transform newT)
     {
         if (verboseLogging) Debug.Log($"[PlayerTargeting] OnTargetChanged: {(newT ? newT.name : "NULL")}");
-        
+
         if (_currentTargetDamageable != null) _currentTargetDamageable.OnDied -= OnCurrentTargetDied;
-        
+
         if (newT != null)
         {
             _currentTargetDamageable = newT.GetComponentInParent<Damageable>();
             if (_currentTargetDamageable != null) _currentTargetDamageable.OnDied += OnCurrentTargetDied;
+
+            // Cachear el centro local del collider una sola vez para no leer bounds.center cada frame.
+            // bounds.center se actualiza en FixedUpdate y causa temblor si se lee en LateUpdate.
+            var col = newT.GetComponentInParent<Collider>();
+            _cachedTargetLocalCenter = col
+                ? newT.InverseTransformPoint(col.bounds.center)
+                : Vector3.up;
+        }
+        else
+        {
+            _cachedTargetLocalCenter = Vector3.up;
         }
         
         if (!_marker) return;
@@ -364,7 +377,9 @@ public class PlayerTargeting : MonoBehaviour, ITargetProvider
         if (!_marker.gameObject.activeSelf)
             _marker.gameObject.SetActive(true);
 
-        Vector3 pos = GetTargetCenter(CurrentTarget) + markerOffset;
+        // Usar el centro local cacheado con TransformPoint para seguir al transform interpolado,
+        // en lugar de bounds.center que salta al ritmo de FixedUpdate y causa temblor.
+        Vector3 pos = CurrentTarget.TransformPoint(_cachedTargetLocalCenter) + markerOffset;
         _marker.position = pos;
         
         // DEBUG: Verificar posición del marcador

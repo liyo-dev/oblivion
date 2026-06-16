@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Dialogue", fileName = "DG_")]
+[CreateAssetMenu(menuName = "El Sendero/Diálogos/Dialogue", fileName = "DG_")]
 public class DialogueAsset : ScriptableObject
 {
     public DialogueLine[] lines;

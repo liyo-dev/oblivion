@@ -11,7 +11,7 @@ public class ProfileReadyDiagnosticsEditor : EditorWindow
     private float _lastRefreshTime;
     private const float REFRESH_INTERVAL = 1f;
 
-    [MenuItem("Tools/Sendero/Profile Ready Diagnostics")]
+    [MenuItem("El Sendero/Debug/Profile Ready Diagnostics")]
     public static void ShowWindow()
     {
         var window = GetWindow<ProfileReadyDiagnosticsEditor>("Profile Ready Diagnostics");

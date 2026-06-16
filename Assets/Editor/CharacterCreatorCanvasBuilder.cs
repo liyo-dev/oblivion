@@ -11,7 +11,7 @@ public static class CharacterCreatorCanvasBuilder
     };
     static readonly string[] RightCats = { "OHS","Shield","Bow" };
 
-    [MenuItem("Tools/Modular Characters/Create Character Creator Canvas (Designer Only)")]
+    [MenuItem("El Sendero/Personajes/Create Character Creator Canvas (Designer Only)")]
     public static void CreateCanvas()
     {
         var builder = Object.FindFirstObjectByType<ModularAutoBuilder>();

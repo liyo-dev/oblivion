@@ -70,6 +70,10 @@ namespace Game.NPC
         [Tooltip("Distancia mínima para detenerse al acercarse al jugador")]
         [Min(0.5f)]
         [SerializeField] private float stopDistanceFromPlayer = 2f;
+
+        [Tooltip("Icono que aparece sobre el NPC al detectar al jugador (para narrativas sin combate). " +
+                 "Se usa cuando el chain entry tiene 'Show Alert Icon' activo pero no tiene su propio prefab asignado.")]
+        [SerializeField] private GameObject narrativeAlertIconPrefab;
         #endregion
 
         #region 🔌 Core Components
@@ -124,6 +128,7 @@ namespace Game.NPC
         public float NarrativeDetectionRange => narrativeDetectionRange;
         public bool WalkTowardsPlayerOnAlert => walkTowardsPlayerOnAlert;
         public float StopDistanceFromPlayer => stopDistanceFromPlayer;
+        public GameObject NarrativeAlertIconPrefab => narrativeAlertIconPrefab;
         #endregion
 
         void Awake()

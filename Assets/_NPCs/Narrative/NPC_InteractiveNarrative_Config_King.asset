@@ -51,9 +51,9 @@ MonoBehaviour:
       defeatEventKey: 
       sendDefeatEventBeforeDeath: 0
       waitDuration: 0
-      showAlertIcon: 0
-      alertIconPrefab: {fileID: 0}
-      alertIconDuration: 0
+      showAlertIcon: 1
+      alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+      alertIconDuration: 1
       alertIconOffset: {x: 0, y: 0, z: 0}
       escortMaxDuration: 0
       escortMaxPlayerDistance: 0
@@ -109,6 +109,7 @@ MonoBehaviour:
     singleUse: 1
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
@@ -152,9 +153,9 @@ MonoBehaviour:
       defeatEventKey: 
       sendDefeatEventBeforeDeath: 0
       waitDuration: 0
-      showAlertIcon: 0
-      alertIconPrefab: {fileID: 0}
-      alertIconDuration: 0
+      showAlertIcon: 1
+      alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+      alertIconDuration: 1
       alertIconOffset: {x: 0, y: 0, z: 0}
       escortMaxDuration: 0
       escortMaxPlayerDistance: 0
@@ -169,6 +170,7 @@ MonoBehaviour:
     singleUse: 1
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 1
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -212,9 +214,9 @@ MonoBehaviour:
       defeatEventKey: 
       sendDefeatEventBeforeDeath: 0
       waitDuration: 0
-      showAlertIcon: 0
-      alertIconPrefab: {fileID: 0}
-      alertIconDuration: 0
+      showAlertIcon: 1
+      alertIconPrefab: {fileID: 6303534759802428624, guid: 8754cf18218ab1b4c8c7c227f1e9ad68, type: 3}
+      alertIconDuration: 1
       alertIconOffset: {x: 0, y: 0, z: 0}
       escortMaxDuration: 0
       escortMaxPlayerDistance: 0
@@ -224,17 +226,18 @@ MonoBehaviour:
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
       sendNarrativeEvent: 1
-      narrativeEventKey: Battle_Demon_2
+      narrativeEventKey: CORAZON_ESTELAR
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
-    sendNarrativeEvent: 1
-    narrativeEventKey: CORAZON_ESTELAR
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
     debugMode: 0
   persistState: 1
   enableDetailedLogs: 0

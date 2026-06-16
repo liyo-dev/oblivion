@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Wardrobe Item", fileName = "WardrobeItem_01")]
+[CreateAssetMenu(menuName = "El Sendero/Juego/Wardrobe Item", fileName = "WardrobeItem_01")]
 public class WardrobeItemSO : ScriptableObject
 {
     [SerializeField] private string wardrobeId;

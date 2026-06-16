@@ -17,8 +17,8 @@ MonoBehaviour:
   kind: 1
   element: 3
   prefab: {fileID: 4286403840095254974, guid: 5edca020d53f45944bdc3324c46214d0, type: 3}
-  castDelaySeconds: 0
-  chargeTime: 0.5
+  castDelaySeconds: 0.5
+  chargeTime: 0
   chargeStartScale: 0.1
   followOriginDuringCharge: 0
   initialSpeed: 10

@@ -15,7 +15,7 @@ namespace Game.NPC.Modules
     /// Configuración para NPCs que pueden unirse al equipo del jugador (Party).
     /// Define cómo se comporta el NPC cuando es compañero.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewPartyConfig", menuName = "NPC/Party Config", order = 100)]
+    [CreateAssetMenu(fileName = "NewPartyConfig", menuName = "El Sendero/NPCs/Party Config", order = 100)]
     public class NPCPartyConfig : NPCModuleConfigBase
     {
         [Header("=== INFORMACIÓN DEL COMPAÑERO ===")]

@@ -25,40 +25,52 @@ public class SceneBoundUI : MonoBehaviour
         Instances[instanceKey] = this;
 
         if (detachFromParent && transform.parent != null)
-        {
             transform.SetParent(null, worldPositionStays: false);
-        }
 
         if (persistAcrossScenes)
-        {
             DontDestroyOnLoad(gameObject);
-        }
 
         SceneManager.activeSceneChanged += OnActiveSceneChanged;
-        ApplySceneState(SceneManager.GetActiveScene().name);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
+        ApplySceneState();
     }
 
     private void OnDestroy()
     {
         if (Instances.TryGetValue(instanceKey, out var existing) && existing == this)
-        {
             Instances.Remove(instanceKey);
-        }
 
         SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneUnloaded -= OnSceneUnloaded;
     }
 
-    private void OnActiveSceneChanged(Scene _, Scene newScene)
-    {
-        ApplySceneState(newScene.name);
-    }
+    private void OnActiveSceneChanged(Scene _, Scene newScene) => ApplySceneState();
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode) => ApplySceneState();
+    private void OnSceneUnloaded(Scene scene) => ApplySceneState();
 
-    private void ApplySceneState(string sceneName)
+    private void ApplySceneState()
     {
-        var allowed = allowedScenes.Count == 0 ? allowWhenListEmpty : allowedScenes.Contains(sceneName);
-        if (gameObject.activeSelf != allowed)
+        bool allowed;
+        if (allowedScenes.Count == 0)
         {
-            gameObject.SetActive(allowed);
+            allowed = allowWhenListEmpty;
         }
+        else
+        {
+            allowed = false;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                if (allowedScenes.Contains(SceneManager.GetSceneAt(i).name))
+                {
+                    allowed = true;
+                    break;
+                }
+            }
+        }
+
+        if (gameObject.activeSelf != allowed)
+            gameObject.SetActive(allowed);
     }
 }

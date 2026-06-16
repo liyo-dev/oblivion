@@ -13,7 +13,7 @@ namespace Game.NPC.EditorTools
     /// </summary>
     public static class MigrateNarrativeConfigToBehaviourManager
     {
-        [MenuItem("Tools/NPC/Migrar NarrativeConfig → BehaviourManager")]
+        [MenuItem("El Sendero/NPCs/Migrar NarrativeConfig → BehaviourManager")]
         public static void RunMigration()
         {
             if (!EditorUtility.DisplayDialog(

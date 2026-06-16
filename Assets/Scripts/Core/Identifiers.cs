@@ -45,7 +45,7 @@ public enum SpellId
     None,
     Fireball,
     Plasmaball,
-    LightSpecial,
+    CorazonEstelar,
     Levitation,
     AuraEstelar,
     Cycloneburst

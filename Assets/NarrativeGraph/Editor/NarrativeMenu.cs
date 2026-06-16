@@ -6,7 +6,7 @@ namespace Sendero.Narrative.Editor
 {
     public static class NarrativeMenu
     {
-        [MenuItem("Tools/Narrative Graph/New Graph")]
+        [MenuItem("El Sendero/Narrativa/Nuevo Grafo")]
         public static void CreateGraph()
         {
             var g = ScriptableObject.CreateInstance<GraphAsset>();

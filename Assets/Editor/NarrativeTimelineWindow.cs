@@ -153,7 +153,7 @@ public class NarrativeTimelineWindow : EditorWindow
 
     // ─── Menu ───
 
-    [MenuItem("Tools/Narrativa/Narrative Timeline")]
+    [MenuItem("El Sendero/Narrativa/Narrative Timeline")]
     public static void ShowWindow()
     {
         var w = GetWindow<NarrativeTimelineWindow>("Narrative Timeline");

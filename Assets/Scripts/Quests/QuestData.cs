@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Quest", fileName = "Q_NewQuest")]
+[CreateAssetMenu(menuName = "El Sendero/Juego/Quest", fileName = "Q_NewQuest")]
 public class QuestData : ScriptableObject
 {
     public string questId;

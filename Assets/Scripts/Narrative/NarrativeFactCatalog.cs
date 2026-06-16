@@ -14,7 +14,7 @@ using UnityEngine;
 ///
 /// Crear: Assets → Create → Narrative → Fact Catalog
 /// </summary>
-[CreateAssetMenu(menuName = "Narrative/Fact Catalog", fileName = "NarrativeFactCatalog")]
+[CreateAssetMenu(menuName = "El Sendero/Narrativa/Fact Catalog", fileName = "NarrativeFactCatalog")]
 public class NarrativeFactCatalog : ScriptableObject
 {
     public enum FactCategory

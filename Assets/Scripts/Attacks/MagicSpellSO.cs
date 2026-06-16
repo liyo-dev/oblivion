@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Magic/Spell", fileName = "NewMagicSpell")]
+[CreateAssetMenu(menuName = "El Sendero/Magia/Spell", fileName = "NewMagicSpell")]
 public class MagicSpellSO : ScriptableObject
 {
     [Header("Identidad")]

@@ -49,6 +49,14 @@
             "value": "Derrota al demonio de nuevo."
         },
         {
+            "key": "QUEST_ELDRAN_MISSION13_DESC",
+            "value": "Reúnete con Eldran en las afueras del Reino. "
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION13_NAME",
+            "value": "Nos vemos fuera."
+        },
+        {
             "key": "QUEST_ELDRAN_MISSION2_DESC",
             "value": "Encuentra la caja de frutas en el bosque y llévasela a Eldran"
         },

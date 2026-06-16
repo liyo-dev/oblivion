@@ -101,6 +101,7 @@ public class BattleOrb : MonoBehaviour
     private float         _attractSpeed;
     private int           _bounceCount;
     private bool          _wasGoingUp;
+    private bool          _justBounced;
     private Vector3       _baseScale;
     private Light         _glowLight;
     private TrailRenderer _trail;
@@ -291,13 +292,19 @@ public class BattleOrb : MonoBehaviour
         float posY = transform.position.y;
         float velY = _rb.linearVelocity.y;
 
-        // Detectar contacto con el suelo (posicion cerca de groundY y cayendo)
+        // Actualizar groundY mientras cae para corregir deteccion inicial erronea
+        // (ej: colisionador del enemigo interpuesto en el raycast de Start)
+        if (velY < -0.5f)
+            _groundY = RaycastGroundY();
+
         bool nearGround = posY <= _groundY + hoverHeight + 0.1f;
         bool falling    = velY <= 0f;
 
-        if (nearGround && falling)
+        // _justBounced evita contar multiples rebotes en el mismo contacto frame a frame
+        if (nearGround && falling && !_justBounced)
         {
             _bounceCount++;
+            _justBounced = true;
 
             if (_bounceCount >= maxBounces || Mathf.Abs(velY) < minBounceSpeed)
             {
@@ -321,9 +328,21 @@ public class BattleOrb : MonoBehaviour
             PlayBounceSFX();
         }
 
+        // Listo para detectar el siguiente rebote cuando sube con velocidad suficiente
+        if (velY > 0.5f)
+            _justBounced = false;
+
         // Timeout de seguridad
         if (Time.time - _spawnTime > 4f)
             EnterHovering();
+    }
+
+    float RaycastGroundY()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.3f;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 25f, _groundMask, QueryTriggerInteraction.Ignore))
+            return hit.point.y;
+        return _groundY;
     }
 
     void EnterHovering()

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Narrative/Graph", fileName = "NarrativeGraph")]
+[CreateAssetMenu(menuName = "El Sendero/Narrativa/Graph", fileName = "NarrativeGraph")]
 public class NarrativeGraph : ScriptableObject
 {
     public string startNodeGuid;

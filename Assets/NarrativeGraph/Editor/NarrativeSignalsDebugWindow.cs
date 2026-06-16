@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public class NarrativeSignalsDebugWindow : EditorWindow
 {
-    [MenuItem("Window/Narrativa/Signal Monitor")]
+    [MenuItem("El Sendero/Narrativa/Signal Monitor")]
     static void Open() => GetWindow<NarrativeSignalsDebugWindow>("Signal Monitor");
 
     // ── Colores por estado ────────────────────────────────────────

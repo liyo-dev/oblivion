@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Spell Library", fileName = "SpellLibrary")]
+[CreateAssetMenu(menuName = "El Sendero/Magia/Spell Library", fileName = "SpellLibrary")]
 public class SpellLibrarySO : ScriptableObject
 {
     [Tooltip("Lista de hechizos disponibles. El SpellId se lee automáticamente del SO.")]

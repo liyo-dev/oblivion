@@ -69,6 +69,7 @@ MonoBehaviour:
   - rid: 4910061783221010764
   - rid: 4910061783221010765
   - rid: 4910061783221010770
+  - rid: 4910061957291442300
   applicableSceneNames:
   - MainWorld
   references:
@@ -677,7 +678,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 147be1ec-b620-47f5-97c4-b883a77e5bbd
-        position: {x: 6295.03, y: 2334}
+        position: {x: 6295, y: 2334}
         outputs:
         - 80334d37-669d-4beb-9529-1c14f1f9ef60
         abilityKeysToUnlock: 
@@ -713,14 +714,29 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 80334d37-669d-4beb-9529-1c14f1f9ef60
-        position: {x: 6736.3853, y: 2334}
-        outputs: []
+        position: {x: 6736, y: 2334}
+        outputs:
+        - ded62503-d1aa-4965-8ee8-28fd375f470d
         questId: ELDRAN_MISSION12
         stepConditionIds:
         - QUEST_ELDRAN_MISSION12_STEP_01
         steps: 
-        completeQuest: 0
+        completeQuest: 1
         logWarnings: 1
+    - rid: 4910061957291442300
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision  13: Renirse con eldran'
+        chapter: "Cap\xECptulo 5"
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: ded62503-d1aa-4965-8ee8-28fd375f470d
+        position: {x: 7274, y: 2334}
+        outputs: []
+        questId: ELDRAN_MISSION13
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

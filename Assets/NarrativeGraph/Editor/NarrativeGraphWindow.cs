@@ -21,7 +21,7 @@ namespace Sendero.Narrative.Editor
         private ToolbarMenu _chapterMenu;
         private Label _chapterCountLabel;
 
-        [MenuItem("Tools/Narrative Graph/Open Editor")]
+        [MenuItem("El Sendero/Narrativa/Abrir Editor")]
         public static void OpenWindow()
         {
             var w = GetWindow<NarrativeGraphWindow>();

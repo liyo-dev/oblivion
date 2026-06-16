@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Item", fileName = "IT_NewItem")]
+[CreateAssetMenu(menuName = "El Sendero/Juego/Item", fileName = "IT_NewItem")]
 public class ItemData : ScriptableObject
 {
     public enum ItemUsageKind

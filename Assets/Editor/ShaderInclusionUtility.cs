@@ -11,13 +11,13 @@ public class ShaderInclusionUtility : EditorWindow
     private const string OCCLUSION_SHADER_PATH = "Assets/Resources/Shaders/CameraOcclusionPaint.shader";
     private const string OCCLUSION_SHADER_NAME = "Custom/CameraOcclusionPaint";
     
-    [MenuItem("Tools/Sendero/Fix Shader Inclusion")]
+    [MenuItem("El Sendero/Shaders/Fix Shader Inclusion")]
     public static void ShowWindow()
     {
         GetWindow<ShaderInclusionUtility>("Shader Inclusion Fix");
     }
     
-    [MenuItem("Tools/Sendero/Add Occlusion Shader to Always Included")]
+    [MenuItem("El Sendero/Shaders/Add Occlusion Shader to Always Included")]
     public static void AddOcclusionShaderToAlwaysIncluded()
     {
         var shader = Shader.Find(OCCLUSION_SHADER_NAME);

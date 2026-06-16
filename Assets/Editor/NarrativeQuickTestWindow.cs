@@ -40,7 +40,7 @@ public class NarrativeQuickTestWindow : EditorWindow
 
     private const string QuickTestPresetPath = "Assets/Editor/QuickTestPreset_Temp.asset";
 
-    [MenuItem("Tools/Narrativa/Quick Test from Node")]
+    [MenuItem("El Sendero/Narrativa/Quick Test from Node")]
     public static void ShowWindow()
     {
         var w = GetWindow<NarrativeQuickTestWindow>();

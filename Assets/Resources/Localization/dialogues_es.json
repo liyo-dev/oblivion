@@ -561,6 +561,18 @@
             "value": "Tranquilo no diremos nada..."
         },
         {
+            "key": "DLG_KING_17",
+            "value": "No se preocupe su majestad. Nos encargaremos de averiguar qué está pasando."
+        },
+        {
+            "key": "DLG_KING_18",
+            "value": "Aceptad este hechizo como muestra de agradecimiento."
+        },
+        {
+            "key": "DLG_KING_19",
+            "value": "Chicos os espero en las afueras del Reino. Reunios conmigo cuando estéis preparados. "
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "¿Quieres que te cuente cómo funcionan los menús?"
         },

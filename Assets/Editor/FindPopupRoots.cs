@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class FindPopupRoots
 {
-    [MenuItem("Tools/Debug/Find AbilityPopup popupRoot Assignments")]
+    [MenuItem("El Sendero/Debug/Find AbilityPopup popupRoot Assignments")]
     public static void Find()
     {
         var popups = ServiceLocator.GetAll<AbilityUnlockPopupUI>();

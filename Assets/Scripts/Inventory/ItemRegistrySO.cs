@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Item Registry", fileName = "ItemRegistry")]
+[CreateAssetMenu(menuName = "El Sendero/Juego/Item Registry", fileName = "ItemRegistry")]
 public class ItemRegistrySO : ScriptableObject
 {
     private static ItemRegistrySO _cachedInstance;

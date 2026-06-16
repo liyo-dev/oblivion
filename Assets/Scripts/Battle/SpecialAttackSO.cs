@@ -6,7 +6,7 @@ public enum DuoCompanion { Estela, Liam }
 /// Define un ataque especial dúo entre Will y un compañero.
 /// Asignar uno a LT (Estela) y otro a RT (Liam) en DuoSpecialAttackSystem.
 /// </summary>
-[CreateAssetMenu(fileName = "SpecialAttack_", menuName = "Battle/Duo Special Attack")]
+[CreateAssetMenu(fileName = "SpecialAttack_", menuName = "El Sendero/Batalla/Duo Special Attack")]
 public class SpecialAttackSO : ScriptableObject
 {
     [Header("Identidad")]

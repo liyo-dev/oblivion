@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "NewCinematicSequence", menuName = "Cinematics/Sequence")]
+[CreateAssetMenu(fileName = "NewCinematicSequence", menuName = "El Sendero/Cinematics/Sequence")]
 public class CinematicSequence : ScriptableObject
 {
     [Tooltip("Velocidad global de la cámara (multiplicador). 1 = normal")]

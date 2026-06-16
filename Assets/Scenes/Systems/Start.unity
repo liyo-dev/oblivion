@@ -2354,6 +2354,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c20a10b5b9e7bb94b831fbfe2bf46b33, type: 2}
   - {fileID: 11400000, guid: 762a730854c413a4fa3687fda1bae893, type: 2}
   - {fileID: 11400000, guid: 57d454c036d6610489c32c731f171c3e, type: 2}
+  - {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
   - {fileID: 11400000, guid: 9fb084e325631df429d6365395b71d5a, type: 2}
   - {fileID: 11400000, guid: a23098449c6bdba469bc3be0eb8c7f3f, type: 2}
   - {fileID: 11400000, guid: 4c559fe0081150c48931b642667f068f, type: 2}
@@ -9965,8 +9966,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a98ec84083359c243bb9d404312521f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityUnlockPopupUI
-  popupRoot: {fileID: 1454978122}
-  popupCanvasGroup: {fileID: 0}
+  popupRoot: {fileID: 1580032195}
+  popupCanvasGroup: {fileID: 1580032198}
   abilityTitleText: {fileID: 831323751}
   abilityDescriptionText: {fileID: 2087203956}
   abilityIcon: {fileID: 508922218}
@@ -9996,7 +9997,7 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 7d1df244eda8f3a4d96a08ff6ad27fcb, type: 3}
   spellPresentations:
   - spellId: 3
-    title: "Corraz\xF3n Estelar"
+    title: "Coraz\xF3n Estelar"
     description: 
     icon: {fileID: 21300000, guid: 7bb9669c2b0c9ef4c86aced248b8b3d7, type: 3}
   - spellId: 2

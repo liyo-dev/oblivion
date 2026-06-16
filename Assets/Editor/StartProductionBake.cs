@@ -7,7 +7,7 @@ using UnityEditor.SceneManagement;
 /// </summary>
 public class StartProductionBake : EditorWindow
 {
-    [MenuItem("Tools/Lighting/Start Production Bake")]
+    [MenuItem("El Sendero/Lighting/Start Production Bake")]
     public static void StartBaking()
     {
         if (!EditorUtility.DisplayDialog(
@@ -51,7 +51,7 @@ public class StartProductionBake : EditorWindow
         EditorApplication.Beep();
     }
 
-    [MenuItem("Tools/Lighting/Cancel Baking")]
+    [MenuItem("El Sendero/Lighting/Cancel Baking")]
     public static void CancelBaking()
     {
         if (Lightmapping.isRunning)
@@ -65,7 +65,7 @@ public class StartProductionBake : EditorWindow
         }
     }
 
-    [MenuItem("Tools/Lighting/Show Baking Progress")]
+    [MenuItem("El Sendero/Lighting/Show Baking Progress")]
     public static void ShowProgress()
     {
         if (Lightmapping.isRunning)

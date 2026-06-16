@@ -17,7 +17,7 @@ public static class SpellPresentationLookup
     {
         { SpellId.Fireball,     new SpellPresentation { spellId = SpellId.Fireball,     title = "Bola de fuego",  description = "Proyectil ardiente que abrasa a los enemigos." } },
         { SpellId.Plasmaball,   new SpellPresentation { spellId = SpellId.Plasmaball,   title = "Plasmaball",     description = "Orbe de energía pura de alto impacto." } },
-        { SpellId.LightSpecial, new SpellPresentation { spellId = SpellId.LightSpecial, title = "Luz especial",   description = "Destello de luz cegador de gran potencia." } },
+        { SpellId.CorazonEstelar, new SpellPresentation { spellId = SpellId.CorazonEstelar, title = "Corazón Estelar", description = "Un haz de energía estelar pura." } },
         { SpellId.Levitation,   new SpellPresentation { spellId = SpellId.Levitation,   title = "Levitación",     description = "Permite flotar sobre el terreno." } },
         { SpellId.AuraEstelar,  new SpellPresentation { spellId = SpellId.AuraEstelar,  title = "Aura Estelar",   description = "Rodéate de un aura de energía estelar." } },
         { SpellId.Cycloneburst, new SpellPresentation { spellId = SpellId.Cycloneburst, title = "Ciclón",         description = "Explosión de viento devastadora en área." } },

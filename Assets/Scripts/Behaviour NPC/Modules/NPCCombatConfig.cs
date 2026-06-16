@@ -36,7 +36,7 @@ namespace Game.NPC.Modules
     /// Configuración de combate para NPCs
     /// Última actualización: 28/12/2024 - Agregado fieldOfView
     /// </summary>
-    [CreateAssetMenu(fileName = "NPC_Combat_Config", menuName = "NPC/Módulos/Combat Config", order = 2)]
+    [CreateAssetMenu(fileName = "NPC_Combat_Config", menuName = "El Sendero/NPCs/Módulos/Combat Config", order = 2)]
     public class NPCCombatConfig : NPCModuleConfigBase
     {
         [Header("Combat Stats")]

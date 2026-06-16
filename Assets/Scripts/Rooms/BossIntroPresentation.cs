@@ -31,6 +31,8 @@ public class BossIntroPresentation : MonoBehaviour
     [SerializeField] private float cameraFadeDuration = 0.3f;
     [Tooltip("Color del fade (negro por defecto)")]
     [SerializeField] private Color fadeColor = Color.black;
+    [Tooltip("Activa si el boss está en interior: fuerza fondo negro en su cámara (evita el azul del skybox)")]
+    [SerializeField] private bool isIndoor = false;
 
     [Header("Audio")]
     [SerializeField] private AudioClip bossRoarClip;
@@ -64,6 +66,11 @@ public class BossIntroPresentation : MonoBehaviour
         yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
         
         // 2. Cambiar a la cámara del boss (ahora invisible porque la pantalla está negra)
+        if (isIndoor)
+        {
+            bossCamera.clearFlags = CameraClearFlags.SolidColor;
+            bossCamera.backgroundColor = Color.black;
+        }
         _mainCamera.gameObject.SetActive(false);
         bossCamera.gameObject.SetActive(true);
         

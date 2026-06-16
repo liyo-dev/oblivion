@@ -5,7 +5,7 @@ namespace Game.NPC.Modules
     /// <summary>
     /// Configuración para NPCs controlados por el grafo narrativo
     /// </summary>
-    [CreateAssetMenu(fileName = "NPC_Narrative_Config", menuName = "NPC/Módulos/Narrative Config", order = 3)]
+    [CreateAssetMenu(fileName = "NPC_Narrative_Config", menuName = "El Sendero/NPCs/Módulos/Narrative Config", order = 3)]
     public class NPCNarrativeConfig : NPCModuleConfigBase
     {
         [Header("Narrative Graph")]

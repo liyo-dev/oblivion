@@ -48,7 +48,7 @@ public class NPCNarrativeCardWindow : EditorWindow
         public string context;
     }
 
-    [MenuItem("Tools/Narrativa/NPC Narrative Card")]
+    [MenuItem("El Sendero/Narrativa/NPC Narrative Card")]
     public static void ShowWindow()
     {
         var w = GetWindow<NPCNarrativeCardWindow>();

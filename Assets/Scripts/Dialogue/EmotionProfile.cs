@@ -6,7 +6,7 @@ using UnityEngine;
 /// ScriptableObject que define cómo se mapean las emociones a meshes de ojos y boca.
 /// Diseñado para personajes que usan GameObjects intercambiables (Eye01, Eye02, Mouth01, etc.)
 /// </summary>
-[CreateAssetMenu(fileName = "NewEmotionProfile", menuName = "Dialogue/Emotion Profile")]
+[CreateAssetMenu(fileName = "NewEmotionProfile", menuName = "El Sendero/Diálogos/Emotion Profile")]
 public class EmotionProfile : ScriptableObject
 {
     [Header("Configuración General")]

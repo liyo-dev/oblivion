@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Ambient/Schedule")]
+[CreateAssetMenu(menuName = "El Sendero/IA/Ambient Schedule")]
 public class AmbientSchedule : ScriptableObject
 {
     [System.Serializable]

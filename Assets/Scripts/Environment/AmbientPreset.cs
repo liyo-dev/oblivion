@@ -5,7 +5,7 @@ using DG.Tweening;
 /// Preset de configuración de fog reutilizable.
 /// Crea diferentes presets para bosque, pantano, cueva, etc.
 /// </summary>
-[CreateAssetMenu(fileName = "AmbientPreset_New", menuName = "Environment/Ambient Preset", order = 1)]
+[CreateAssetMenu(fileName = "AmbientPreset_New", menuName = "El Sendero/Entorno/Ambient Preset", order = 1)]
 public class AmbientPreset : ScriptableObject
 {
     [Header("Fog Settings")]

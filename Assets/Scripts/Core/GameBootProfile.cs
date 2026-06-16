@@ -10,7 +10,7 @@ public enum SaveRequestContext
     Auto
 }
 
-[CreateAssetMenu(fileName = "GameBootProfile", menuName = "Game/Boot Profile")]
+[CreateAssetMenu(fileName = "GameBootProfile", menuName = "El Sendero/Core/Boot Profile")]
 public class GameBootProfile : ScriptableObject
 {
     [Header("Arranque")]

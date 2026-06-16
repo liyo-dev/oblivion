@@ -34,7 +34,11 @@ namespace Game.NPC.Modules
         
         [Tooltip("¿Ejecutar automáticamente cuando se cumpla la condición? Aplica a:\n- Quests: cuando se complete/inicie una quest\n- Eventos Custom: cuando se emita el evento especificado (ej: EVT_MOUNTAIN)")]
         public bool autoExecuteOnQuestConditionMet = false;
-        
+
+        [Tooltip("¿Congelar al jugador (modo cinemático) en el momento exacto en que el NPC le detecta? " +
+                 "Solo aplica con autoStartOnDetection = true. El movimiento se bloquea antes de que el NPC se acerque.")]
+        public bool freezePlayerOnDetection = false;
+
         [Header("Estado Post-Narrativa")]
         [Tooltip("¿Qué hace el NPC después de completar ESTA narrativa? Solo aplica si es singleUse=true.")]
         public PostNarrativeState postNarrativeState = PostNarrativeState.None;

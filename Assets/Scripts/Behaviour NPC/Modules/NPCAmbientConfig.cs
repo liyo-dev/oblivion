@@ -5,7 +5,7 @@ namespace Game.NPC.Modules
     /// <summary>
     /// Configuración de comportamiento ambiental (Idle/Wander)
     /// </summary>
-    [CreateAssetMenu(fileName = "NPC_Ambient_Config", menuName = "NPC/Módulos/Ambient Config", order = 1)]
+    [CreateAssetMenu(fileName = "NPC_Ambient_Config", menuName = "El Sendero/NPCs/Módulos/Ambient Config", order = 1)]
     public class NPCAmbientConfig : NPCModuleConfigBase
     {
         [Header("Wander Settings")]

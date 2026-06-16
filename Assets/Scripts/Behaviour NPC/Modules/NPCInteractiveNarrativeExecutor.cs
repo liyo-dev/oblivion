@@ -48,7 +48,10 @@ namespace Game.NPC.Modules
         
         private bool _profileReady = false;
         private bool _detectPlayerRoutineStarted = false;
-        
+        private bool _playerFrozenByDetection = false;
+        private bool _wasTriggeredByDetection = false;
+        private bool _chainWasTriggeredByDetection = false;
+
         private static readonly WaitForSeconds _waitHalfSecond = new WaitForSeconds(0.5f);
         private static readonly WaitForSeconds _waitPointTwo = new WaitForSeconds(0.2f);
         private static readonly WaitForSeconds _waitPointOne = new WaitForSeconds(0.1f);
@@ -454,7 +457,28 @@ namespace Game.NPC.Modules
                     }
                 }
                 
-                if (needsIconController || _npcManager.Configuration.combatConfig?.alertIconPrefab != null)
+                // También necesita controlador si hay narrativas con showAlertIcon en sus chain entries
+                if (!needsIconController && _config.conditionalNarratives != null)
+                {
+                    foreach (var narrative in _config.conditionalNarratives)
+                    {
+                        if (narrative?.narrativeChain == null) continue;
+                        foreach (var entry in narrative.narrativeChain)
+                        {
+                            if (entry != null && entry.showAlertIcon)
+                            {
+                                needsIconController = true;
+                                break;
+                            }
+                        }
+                        if (needsIconController) break;
+                    }
+                }
+
+                if (needsIconController
+                    || _npcManager.Configuration.combatConfig?.alertIconPrefab != null
+                    || _npcManager.NarrativeAlertIconPrefab != null
+                    || _config.alertIconPrefab != null)
                 {
                     _alertIconController = gameObject.AddComponent<NPCAlertIconController>();
                 }
@@ -555,7 +579,9 @@ namespace Game.NPC.Modules
         {
             _isExecuting = true;
             _currentActionIndex = 0;
-            
+            _chainWasTriggeredByDetection = _wasTriggeredByDetection;
+            _wasTriggeredByDetection = false;
+
             HidePersistentIconIfActive();
 
             if (_npcManager?.SimpleAnimator != null)
@@ -615,6 +641,12 @@ namespace Game.NPC.Modules
                 _npcManager.SimpleAnimator.AllowManualRotation = false;
             }
 
+            if (_playerFrozenByDetection && global::Core.PlayerInputManager.Instance != null)
+            {
+                global::Core.PlayerInputManager.Instance.PopUIMode();
+                _playerFrozenByDetection = false;
+            }
+
             _isExecuting = false;
             _lastExecutionEndTime = Time.time;
             if (verboseLogging) Debug.Log($"[NarrativeExecutor:{name}] ⏱️ Narrativa finalizada - Cooldown activo hasta {_lastExecutionEndTime + POST_EXECUTION_COOLDOWN:F2}s");
@@ -622,6 +654,30 @@ namespace Game.NPC.Modules
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)
         {
+            // Mostrar icono de alerta antes de la acción si está configurado.
+            // Si la detección ya mostró este icono (primer entry de un chain autoStart),
+            // no lo duplicamos.
+            if (entry.showAlertIcon)
+            {
+                bool alreadyShownAtDetection = _chainWasTriggeredByDetection && _currentActionIndex == 0;
+                if (!alreadyShownAtDetection)
+                {
+                    var iconPrefab = entry.alertIconPrefab != null ? entry.alertIconPrefab
+                                   : _npcManager.NarrativeAlertIconPrefab != null ? _npcManager.NarrativeAlertIconPrefab
+                                   : _config.alertIconPrefab;
+                    if (iconPrefab != null)
+                    {
+                        if (!_alertIconController) InitializeAlertIconController();
+                        if (_alertIconController != null && !_alertIconController.HasActiveIcon)
+                        {
+                            _alertIconController.SetIconOffset(entry.alertIconOffset);
+                            _alertIconController.ShowAlertIcon(iconPrefab, entry.alertIconDuration);
+                        }
+                        yield return new WaitForSeconds(entry.alertIconDuration);
+                    }
+                }
+            }
+
             switch (entry.actionType)
             {
                 case NarrativeActionType.Dialogue:       yield return ExecuteDialogue(entry); break;
@@ -699,12 +755,30 @@ namespace Game.NPC.Modules
                 _npcManager.StartCinematicSequence(moveSeq);
                 while (!moveSeq.IsCompleted) yield return null;
             }
-            
+
             // ✅ FIX: Restaurar AllowManualRotation después del movimiento
             // por si hay más acciones narrativas que necesiten control manual
             if (_npcManager?.SimpleAnimator != null)
             {
                 _npcManager.SimpleAnimator.AllowManualRotation = true;
+            }
+
+            if (entry.disappearOnArrival)
+            {
+                var tm = TransitionManager.Instance();
+                if (entry.disappearTransition != null && tm != null)
+                {
+                    tm.Transition(entry.disappearTransition, 0f);
+                    float coverTime = entry.disappearTransition.autoAdjustTransitionTime
+                        ? entry.disappearTransition.transitionTime / entry.disappearTransition.transitionSpeed
+                        : entry.disappearTransition.transitionTime;
+                    yield return new WaitForSecondsRealtime(coverTime);
+                }
+                var agent = _npcManager.Agent;
+                if (agent != null && agent.isOnNavMesh)
+                    agent.Warp(targetPos);
+                else
+                    transform.position = targetPos;
             }
         }
 
@@ -1384,7 +1458,15 @@ namespace Game.NPC.Modules
                     if (dist <= _npcManager.NarrativeDetectionRange)
                     {
                         _hasDetectedPlayer = true;
-                        yield return StartAlertSequence();
+
+                        if (activeNarrative.freezePlayerOnDetection && global::Core.PlayerInputManager.Instance != null)
+                        {
+                            global::Core.PlayerInputManager.Instance.PushUIMode();
+                            _playerFrozenByDetection = true;
+                        }
+
+                        yield return StartAlertSequence(activeNarrative);
+                        _wasTriggeredByDetection = true;
                         TryExecuteNarrative();
                         _hasDetectedPlayer = false;
                     }
@@ -1393,11 +1475,29 @@ namespace Game.NPC.Modules
             }
         }
 
-        private IEnumerator StartAlertSequence()
+        private IEnumerator StartAlertSequence(ConditionalNarrative narrative = null)
         {
             var combatConfig = _npcManager.Configuration.combatConfig;
             GameObject iconPrefab = combatConfig?.alertIconPrefab;
             float iconDuration = combatConfig?.alertIconDuration ?? 1f;
+
+            // Para NPCs sin combatConfig: buscar icono en las chain entries, en el manager o en el config SO
+            if (iconPrefab == null && narrative?.narrativeChain != null)
+            {
+                foreach (var chainEntry in narrative.narrativeChain)
+                {
+                    if (chainEntry == null || !chainEntry.showAlertIcon) continue;
+                    iconPrefab = chainEntry.alertIconPrefab;
+                    if (iconPrefab == null) iconPrefab = _npcManager.NarrativeAlertIconPrefab;
+                    if (iconPrefab == null) iconPrefab = _config.alertIconPrefab;
+                    if (iconPrefab != null)
+                    {
+                        iconDuration = chainEntry.alertIconDuration;
+                        break;
+                    }
+                }
+            }
+
 
             if (iconPrefab)
             {

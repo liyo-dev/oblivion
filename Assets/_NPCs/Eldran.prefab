@@ -11386,11 +11386,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 68
+    behaviourType: 196
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
-    interactiveNarrativeConfig: {fileID: 0}
+    interactiveNarrativeConfig: {fileID: 11400000, guid: dd8d3737eec6b0048b6d88122a46a7a2, type: 2}
     partyConfig: {fileID: 11400000, guid: f6b5cb3e960bb514bab91b9e915b7b48, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
@@ -11418,6 +11418,7 @@ MonoBehaviour:
   narrativeDetectionRange: 10
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
+  narrativeAlertIconPrefab: {fileID: 0}
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []

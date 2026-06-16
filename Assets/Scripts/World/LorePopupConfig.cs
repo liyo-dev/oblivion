@@ -18,7 +18,7 @@ public struct LoreEntry
     public float duration;
 }
 
-[CreateAssetMenu(menuName = "Game/Lore Popup Config", fileName = "LoreCfg_")]
+[CreateAssetMenu(menuName = "El Sendero/Juego/Lore Popup Config", fileName = "LoreCfg_")]
 public class LorePopupConfig : ScriptableObject
 {
     [Tooltip("Segundos de espera desde que se lanza el evento hasta que aparece el popup.")]

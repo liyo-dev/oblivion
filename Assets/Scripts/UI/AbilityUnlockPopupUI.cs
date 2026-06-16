@@ -37,8 +37,6 @@ public class AbilityUnlockPopupUI : MonoBehaviour
     private bool _flagsLoaded;
     private Coroutine _autoDismissCoroutine;
     private bool _isShowing;
-    private bool _suppressPopupDuringInit;
-    private const float InitSuppressionDuration = 2f;
 
     const string AbilityFlagPrefix = "ABILITY_POPUP_ID:";
     const string AbilityKeyFlagPrefix = "ABILITY_POPUP_KEY:";
@@ -52,7 +50,8 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void OnEnable()
     {
-        GameBootService.OnProfileReady += HandleProfileReadyForSuppression;
+        ProfileReadyDiagnostics.RegisterSubscriber(nameof(AbilityUnlockPopupUI));
+        GameBootService.OnProfileReady += HandleProfileReady;
         UnlockService.OnAbilityUnlocked += HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey += HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked += HandleSpellUnlocked;
@@ -61,7 +60,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     void OnDisable()
     {
-        GameBootService.OnProfileReady -= HandleProfileReadyForSuppression;
+        GameBootService.OnProfileReady -= HandleProfileReady;
         UnlockService.OnAbilityUnlocked -= HandleAbilityUnlocked;
         UnlockService.OnAbilityUnlockedKey -= HandleAbilityUnlockedKey;
         UnlockService.OnSpellUnlocked -= HandleSpellUnlocked;
@@ -73,28 +72,19 @@ public class AbilityUnlockPopupUI : MonoBehaviour
         if (popupCanvasGroup != null) popupCanvasGroup.DOKill();
     }
 
-    // ── Supresión al cargar preset ─────────────────────────────────────────────
+    // ── Recarga de flags al cambiar de preset ──────────────────────────────────
 
-    private void HandleProfileReadyForSuppression()
+    private void HandleProfileReady()
     {
-        _suppressPopupDuringInit = true;
         _flagsLoaded = false;
         ReloadShownFlags();
-        if (gameObject.activeInHierarchy)
-            StartCoroutine(ClearSuppressionAfterDelay());
-    }
-
-    private IEnumerator ClearSuppressionAfterDelay()
-    {
-        yield return new WaitForSeconds(InitSuppressionDuration);
-        _suppressPopupDuringInit = false;
     }
 
     // ── Handlers de desbloqueo ─────────────────────────────────────────────────
 
     private void HandleAbilityUnlocked(AbilityId ability)
     {
-        if (_suppressPopupDuringInit) return;
+        GameLog.Log("AbilityUnlockPopupUI", $"Evento recibido: AbilityUnlocked({ability})");
         _pendingAbility = ability;
         _pendingAbilityKey = null;
         _pendingSpell = null;
@@ -103,7 +93,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void HandleAbilityUnlockedKey(AbilityKey key)
     {
-        if (_suppressPopupDuringInit) return;
+        GameLog.Log("AbilityUnlockPopupUI", $"Evento recibido: AbilityUnlockedKey({key})");
         _pendingAbilityKey = key;
         _pendingAbility = null;
         _pendingSpell = null;
@@ -112,7 +102,7 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void HandleSpellUnlocked(SpellId spell)
     {
-        if (_suppressPopupDuringInit) return;
+        GameLog.Log("AbilityUnlockPopupUI", $"Evento recibido: SpellUnlocked({spell})");
         _pendingSpell = spell;
         _pendingAbility = null;
         _pendingAbilityKey = null;
@@ -128,35 +118,41 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
         if (_pendingAbility != null)
         {
-            if (HasSeenFlag(GetAbilityFlag(_pendingAbility.Value)))
+            string flag = GetAbilityFlag(_pendingAbility.Value);
+            if (HasSeenFlag(flag))
             {
+                GameLog.Log("AbilityUnlockPopupUI", $"Ya mostrado ({flag}), saltando.");
                 _pendingAbility = null;
                 return;
             }
             var p = AbilityPresentationLookup.Resolve(_pendingAbility.Value, abilityPresentations);
-            MarkFlag(GetAbilityFlag(_pendingAbility.Value));
+            MarkFlag(flag);
             SetTexts(p.title, p.description, p.icon);
         }
         else if (_pendingAbilityKey != null)
         {
-            if (HasSeenFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value)))
+            string flag = GetAbilityKeyFlag(_pendingAbilityKey.Value);
+            if (HasSeenFlag(flag))
             {
+                GameLog.Log("AbilityUnlockPopupUI", $"Ya mostrado ({flag}), saltando.");
                 _pendingAbilityKey = null;
                 return;
             }
             var p = AbilityPresentationKeyLookup.Resolve(_pendingAbilityKey.Value, abilityKeyPresentations);
-            MarkFlag(GetAbilityKeyFlag(_pendingAbilityKey.Value));
+            MarkFlag(flag);
             SetTexts(p.title, p.description, p.icon);
         }
         else
         {
-            if (HasSeenFlag(GetSpellFlag(_pendingSpell.Value)))
+            string flag = GetSpellFlag(_pendingSpell.Value);
+            if (HasSeenFlag(flag))
             {
+                GameLog.Log("AbilityUnlockPopupUI", $"Ya mostrado ({flag}), saltando.");
                 _pendingSpell = null;
                 return;
             }
             var p = SpellPresentationLookup.Resolve(_pendingSpell.Value, spellPresentations);
-            MarkFlag(GetSpellFlag(_pendingSpell.Value));
+            MarkFlag(flag);
             SetTexts(p.title, p.description, p.icon);
         }
 
@@ -172,7 +168,13 @@ public class AbilityUnlockPopupUI : MonoBehaviour
 
     private void AnimateIn()
     {
-        if (popupRoot == null) return;
+        if (popupRoot == null)
+        {
+            GameLog.Error("AbilityUnlockPopupUI", "popupRoot es null — asignar en el Inspector.");
+            return;
+        }
+
+        GameLog.Log("AbilityUnlockPopupUI", $"AnimateIn — root activo: {gameObject.activeInHierarchy}, popupRoot activo: {popupRoot.gameObject.activeInHierarchy}");
 
         if (_autoDismissCoroutine != null) StopCoroutine(_autoDismissCoroutine);
         popupRoot.DOKill();

@@ -561,6 +561,18 @@
             "value": "[EN] Tranquilo no diremos nada..."
         },
         {
+            "key": "DLG_KING_17",
+            "value": "[EN] No se preocupe su majestad. Nos encargaremos de averiguar qué está pasando."
+        },
+        {
+            "key": "DLG_KING_18",
+            "value": "[EN] Aceptad este hechizo como muestra de agradecimiento."
+        },
+        {
+            "key": "DLG_KING_19",
+            "value": "[EN] Chicos os espero en las afueras del Reino. Reunios conmigo cuando estéis preparados. "
+        },
+        {
             "key": "DLG_LEONARDO_01",
             "value": "Talk to Erika, she usually wears green and should be around the Kingdom."
         },

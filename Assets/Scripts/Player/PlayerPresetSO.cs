@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName="Game/Player Preset", fileName="PlayerPreset_Default")]
+[CreateAssetMenu(menuName="El Sendero/Juego/Player Preset", fileName="PlayerPreset_Default")]
 public class PlayerPresetSO : ScriptableObject
 {
     [Header("Spawn")]

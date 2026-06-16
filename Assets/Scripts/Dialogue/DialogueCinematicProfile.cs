@@ -5,7 +5,7 @@ using UnityEngine;
 /// Define qué planos usar y cuándo cambiar de cámara.
 /// Simplificado para mostrar solo lo esencial.
 /// </summary>
-[CreateAssetMenu(menuName = "Dialogue/Cinematic Profile", fileName = "DialogueCinematicProfile")]
+[CreateAssetMenu(menuName = "El Sendero/Diálogos/Cinematic Profile", fileName = "DialogueCinematicProfile")]
 public class DialogueCinematicProfile : ScriptableObject
 {
     [Header("Planos del Diálogo")]

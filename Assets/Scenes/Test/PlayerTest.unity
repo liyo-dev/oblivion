@@ -54168,21 +54168,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98a9c3a8051a4e96aed06c57942099c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PressurePlate
-  onlyPickupObjects: 0
-  lockWhenActivated: 0
-  minimumMass: 0.1
-  freezeObjectOnPlate: 1
-  parentObjectToPlate: 0
-  detectPlayer: 1
-  playerCanActivate: 1
   playerTag: Player
-  playerStepSfxKey: PressurePlate_PlayerStep
-  playerSinkAmount: 1
+  validObjectTags:
+  - Throwable
+  playerActivates: 1
+  lockWhenActivated: 0
+  snapObjectToPlate: 1
+  snapHeightOffset: 0.05
+  plateVisual: {fileID: 977365400}
   sinkAmount: 2
   animationSpeed: 2
-  plateVisual: {fileID: 977365400}
-  cameraShakeIntensity: 0.3
-  cameraShakeDuration: 0.5
+  activateVfxPrefab: {fileID: 0}
+  deactivateVfxPrefab: {fileID: 0}
   activateSfxKey: PressurePlate_Activate
   deactivateSfxKey: PressurePlate_Deactivate
   onActivated:
@@ -54191,8 +54188,6 @@ MonoBehaviour:
   onDeactivated:
     m_PersistentCalls:
       m_Calls: []
-  activateVfx: {fileID: 0}
-  deactivateVfx: {fileID: 0}
   isActivated: 0
 --- !u!65 &1920479255
 BoxCollider:

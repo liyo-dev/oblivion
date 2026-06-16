@@ -69,4 +69,11 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     cinematicEffect: 1
     emotion: 6
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_KING_19
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    cinematicEffect: 1
+    emotion: 0
   isGroupConversation: 0

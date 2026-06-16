@@ -12,9 +12,9 @@ namespace Game.NPC.Modules
     /// NOTA: Los campos de identidad (persistenceId, dialogueCharacterId), comportamiento
     /// (rotación, layers, detección) se gestionan ahora en NPCBehaviourManagerV2.
     /// Los campos legacy se mantienen [HideInInspector] para deserialización de .asset existentes.
-    /// Ejecutar Tools → NPC → Migrar NarrativeConfig para copiarlos al MonoBehaviour.
+    /// Ejecutar El Sendero → NPCs → Migrar NarrativeConfig para copiarlos al MonoBehaviour.
     /// </summary>
-    [CreateAssetMenu(fileName = "NPC_InteractiveNarrative_Config", menuName = "NPC/Módulos/Interactive Narrative Config", order = 5)]
+    [CreateAssetMenu(fileName = "NPC_InteractiveNarrative_Config", menuName = "El Sendero/NPCs/Módulos/Interactive Narrative Config", order = 5)]
     public class NPCInteractiveNarrativeConfig : NPCModuleConfigBase
     {
         [Header("Narrativas Condicionales")]

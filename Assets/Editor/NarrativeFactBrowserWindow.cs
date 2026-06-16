@@ -100,7 +100,7 @@ public class NarrativeFactBrowserWindow : EditorWindow
 
     // ─── Menu ───
 
-    [MenuItem("Tools/Narrativa/Fact Browser")]
+    [MenuItem("El Sendero/Narrativa/Fact Browser")]
     public static void ShowWindow()
     {
         var w = GetWindow<NarrativeFactBrowserWindow>("Fact Browser");

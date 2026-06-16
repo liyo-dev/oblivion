@@ -13,7 +13,7 @@ public class NavMeshFloorOnlySetup : EditorWindow
     private string floorLayerName = "Floor";
     private bool markStaticObjects = true;
 
-    [MenuItem("Tools/NavMesh/Setup Floor-Only NavMesh")]
+    [MenuItem("El Sendero/Mundo/Setup Floor-Only NavMesh")]
     public static void ShowWindow()
     {
         GetWindow<NavMeshFloorOnlySetup>("NavMesh Floor Setup");

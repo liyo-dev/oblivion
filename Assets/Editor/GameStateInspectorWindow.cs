@@ -30,7 +30,7 @@ public class GameStateInspectorWindow : EditorWindow
     private double _lastRefresh;
     private const double RefreshInterval = 0.5;
 
-    [MenuItem("Tools/Narrativa/Game State Inspector")]
+    [MenuItem("El Sendero/Narrativa/Game State Inspector")]
     public static void ShowWindow()
     {
         var w = GetWindow<GameStateInspectorWindow>();

@@ -7,7 +7,7 @@ namespace Game.NPC.Modules
     /// Configuración de misiones para NPCs.
     /// Aquí se configura la cadena de misiones (Quest Chain) que ofrece el NPC.
     /// </summary>
-    [CreateAssetMenu(fileName = "NPC_Quest_Config", menuName = "NPC/Módulos/Quest Config", order = 4)]
+    [CreateAssetMenu(fileName = "NPC_Quest_Config", menuName = "El Sendero/NPCs/Módulos/Quest Config", order = 4)]
     public class NPCQuestConfig : NPCModuleConfigBase
     {
         [Header("Quest Chain")]

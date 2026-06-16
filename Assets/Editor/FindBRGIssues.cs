@@ -22,7 +22,7 @@ public static class FindBRGIssues
         "CityManager"
     };
 
-    [MenuItem("Tools/Diagnostics/Scan scene for BRG / Instancing culprits")]
+    [MenuItem("El Sendero/Debug/Scan scene for BRG / Instancing culprits")]
     public static void Scan()
     {
         int findings = 0;
@@ -108,7 +108,7 @@ public static class FindBRGIssues
             Debug.Log($"<b>[Scan]</b> He encontrado <b>{findings}</b> elemento(s). Haz clic en cada mensaje para seleccionar el objeto implicado.");
     }
 
-    [MenuItem("Tools/Diagnostics/Quick Fix (disable Instancing/Occlusion in scene)")]
+    [MenuItem("El Sendero/Debug/Quick Fix (disable Instancing/Occlusion in scene)")]
     public static void QuickFix()
     {
         int changes = 0;

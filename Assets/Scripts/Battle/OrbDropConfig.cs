@@ -6,7 +6,7 @@ using UnityEngine;
 /// Para asignar un perfil distinto al default, anadir un componente OrbDropper
 /// al prefab del enemigo y rellenar solo el campo profileId.
 /// </summary>
-[CreateAssetMenu(menuName = "El Sendero/Battle/OrbDropConfig", fileName = "OrbDropConfig")]
+[CreateAssetMenu(menuName = "El Sendero/Batalla/OrbDropConfig", fileName = "OrbDropConfig")]
 public class OrbDropConfig : ScriptableObject
 {
     [SerializeField] private OrbDropProfile   _defaultProfile  = new();

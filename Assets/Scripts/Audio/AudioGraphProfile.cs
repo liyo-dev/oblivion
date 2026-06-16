@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName="Audio/Audio Graph Profile")]
+[CreateAssetMenu(menuName="El Sendero/Audio/Audio Graph Profile")]
 public class AudioGraphProfile : ScriptableObject
 {
     [Serializable] public class SceneMusic { public string sceneName; public AudioClip music; }

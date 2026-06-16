@@ -4,7 +4,7 @@
 /// Configuración global para las colisiones entre proyectiles del jugador y enemigos.
 /// Crea un asset de este tipo en Project > Create > Game > Projectile Collision Settings
 /// </summary>
-[CreateAssetMenu(menuName = "Game/Projectile Collision Settings", fileName = "ProjectileCollisionSettings")]
+[CreateAssetMenu(menuName = "El Sendero/Ataques/Projectile Collision Settings", fileName = "ProjectileCollisionSettings")]
 public class ProjectileCollisionSettingsSO : ScriptableObject
 {
     [Header("VFX de Colisión")]
