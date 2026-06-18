@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &89725043321746284
 GameObject:
@@ -202,20 +202,22 @@ MonoBehaviour:
   rockPrefab: {fileID: 1375754531036840, guid: 71497ec4178769a4c8cdb38563f01fc0, type: 3}
   rockHandPoint: {fileID: 7123563488054886675}
   rockHandPointLeft: {fileID: 3411324387237086588}
-  rockSpeed: 20
+  rockSpeed: 30
   rockPickupVFX: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
   phase2HealthThreshold: 0.8
-  rockRainCount: 15
-  rockRainRadius: 10
+  rockRainCount: 150
+  rockRainRadius: 15
   rockRainHeight: 15
-  rockRainSpeed: 12
+  rockRainSpeed: 20
   rockRainInterval: 0.15
-  rockWarningVFX: {fileID: 0}
+  rockRainAoeRadius: 3
+  rockRainAoeDamage: 25
+  rockWarningVFX: {fileID: 4236288790194385793, guid: 4dfcf0e52c48e0c41bf1d3df088e501d, type: 3}
   phase3HealthThreshold: 0.5
   jumpHeight: 8
   jumpDuration: 1.2
   shockwaveRadius: 10
-  shockwaveDamage: 30
+  shockwaveDamage: 50
   shockwaveKnockback: 15
   shockwaveVFX: {fileID: 6526302276393259002, guid: f9d9793366789ae48a7e1b0692763acc, type: 3}
   landingDustVFX: {fileID: 4994997792314849709, guid: 3dd50886582244645be87adb42aa8528, type: 3}
@@ -227,10 +229,10 @@ MonoBehaviour:
   chargeSpeed: 18
   chargeAnimationSpeedMultiplier: 1.8
   chargeMinDistance: 5
-  punchDamage: 25
+  punchDamage: 50
   punchRadius: 3
   punchKnockback: 12
-  punchImpactVFX: {fileID: 0}
+  punchImpactVFX: {fileID: 1758473627833946668, guid: 9b21333b068a5084ba09535839bee3c8, type: 3}
   chargeCooldown: 10
   chargeOnPhaseChangeChance: 0.7
   walkSpeed: 2.5
@@ -380,6 +382,20 @@ MonoBehaviour:
   vfxScale: {x: 1, y: 1, z: 1}
   vfxFollowsTarget: 1
   showDebugLogs: 0
+--- !u!114 &7148564349786104097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939999298480460806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
+  _profileId: 
+  _spawnOrigin: {fileID: 0}
 --- !u!1 &1151455076570608189
 GameObject:
   m_ObjectHideFlags: 0
@@ -1173,17 +1189,3 @@ Transform:
   - {fileID: 2630829243180136960}
   m_Father: {fileID: 665725385770646655}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7148564349786104097
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 939999298480460806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  _profileId: 
-  _spawnOrigin: {fileID: 0}

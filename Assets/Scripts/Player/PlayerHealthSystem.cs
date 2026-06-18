@@ -200,10 +200,10 @@ public class PlayerHealthSystem : MonoBehaviour
     /// <summary>
     /// Aplica daño al jugador
     /// </summary>
-    public bool TakeDamage(float damageAmount)
+    public bool TakeDamage(float damageAmount, bool ignoreInvulnerability = false)
     {
         if (!IsAlive || damageAmount <= 0f || godMode) return false;
-        if (IsInvulnerable) return false;
+        if (IsInvulnerable && !ignoreInvulnerability) return false;
         
         float oldHealth = _currentHp;
         _currentHp = Mathf.Max(0f, oldHealth - damageAmount);

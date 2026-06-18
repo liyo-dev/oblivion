@@ -31,6 +31,12 @@ public class EnemyProjectile : MonoBehaviour
     private Collider[] _playerDetectionBuffer = new Collider[8];
     private int _playerLayerMask;
 
+    // AoE al impactar (configurado en tiempo de ejecución para lluvia de rocas)
+    private bool _dealAoEOnImpact;
+    private float _aoeRadius;
+    private float _aoeDamage;
+    private bool _bypassInvulnerabilityOnHit;
+
     void Awake()
     {
         // ✅ Configurar el collider - NO forzamos isTrigger para permitir OnCollisionEnter con el player
@@ -94,6 +100,46 @@ public class EnemyProjectile : MonoBehaviour
     public float GetDamage()
     {
         return baseDamage;
+    }
+
+    /// <summary>
+    /// Activa el daño de área al aterrizar. Usado para rocas de lluvia del Golem.
+    /// El AoE ignora iframes pero respeta el escudo del jugador.
+    /// </summary>
+    public void ConfigureAoE(float radius, float aoeDmg)
+    {
+        _dealAoEOnImpact = true;
+        _aoeRadius = radius;
+        _aoeDamage = aoeDmg;
+        _bypassInvulnerabilityOnHit = true;
+    }
+
+    private void ApplyAoEImpact()
+    {
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, _aoeRadius, _playerDetectionBuffer, _playerLayerMask);
+        for (int i = 0; i < hitCount; i++)
+        {
+            var hit = _playerDetectionBuffer[i];
+
+            var shield = hit.GetComponentInParent<PlayerShieldController>();
+            if (shield != null && shield.IsDefending)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log("[EnemyProjectile] 🛡️ AoE de lluvia bloqueado por escudo");
+#endif
+                continue;
+            }
+
+            var playerHealth = hit.GetComponent<PlayerHealthSystem>() ?? hit.GetComponentInParent<PlayerHealthSystem>();
+            if (playerHealth != null)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[EnemyProjectile] 💥 AoE lluvia: {_aoeDamage} daño (ignora iframes)");
+#endif
+                playerHealth.TakeDamage(_aoeDamage, ignoreInvulnerability: true);
+                return;
+            }
+        }
     }
 
     // Permite registrar VFX asociados al proyectil para que se destruyan cuando este desaparezca
@@ -160,7 +206,7 @@ public class EnemyProjectile : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[EnemyProjectile] 🎯 Impacto JUGADOR por proximidad: {damage} daño");
 #endif
-                    playerHealth.TakeDamage(damage);
+                    playerHealth.TakeDamage(damage, _bypassInvulnerabilityOnHit);
                     DestroyProjectile();
                     return;
                 }
@@ -299,17 +345,21 @@ public class EnemyProjectile : MonoBehaviour
             {
                 return;
             }
-            
+
             hasHit = true;
+            if (_dealAoEOnImpact)
+                ApplyAoEImpact();
             Debug.Log($"[EnemyProjectile] 💥 Impacto contra objeto Default: {other.gameObject.name}");
             DestroyProjectile();
             return;
         }
-        
+
         // ✅ Cualquier otra colisión con objetos no-trigger
         if (!other.isTrigger)
         {
             hasHit = true;
+            if (_dealAoEOnImpact)
+                ApplyAoEImpact();
             Debug.Log($"[EnemyProjectile] 💥 Impacto contra: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
             DestroyProjectile();
         }
@@ -332,7 +382,7 @@ public class EnemyProjectile : MonoBehaviour
                            ?? target.GetComponentInParent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
-            playerHealth.TakeDamage(damage);
+            playerHealth.TakeDamage(damage, _bypassInvulnerabilityOnHit);
             return;
         }
 

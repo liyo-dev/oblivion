@@ -54,6 +54,10 @@ public class GolemBossAI : MonoBehaviour
     [SerializeField] private float rockRainSpeed = 12f;
     [Tooltip("Tiempo entre cada roca de la lluvia")]
     [SerializeField] private float rockRainInterval = 0.15f;
+    [Tooltip("Radio del AoE al aterrizar cada roca (obliga a usar escudo)")]
+    [SerializeField] private float rockRainAoeRadius = 3f;
+    [Tooltip("Daño del AoE al aterrizar (ignora iframes, bloqueado por escudo)")]
+    [SerializeField] private float rockRainAoeDamage = 15f;
     [Tooltip("VFX de advertencia en el suelo antes de que caiga la roca")]
     [SerializeField] private GameObject rockWarningVFX;
     
@@ -863,16 +867,21 @@ public class GolemBossAI : MonoBehaviour
     private void SpawnFallingRock(Vector3 spawnPos, Vector3 targetPos)
     {
         if (!rockPrefab) return;
-        
+
         // TODO: Usar un sistema de pooling
         GameObject rock = Instantiate(rockPrefab, spawnPos, Quaternion.identity);
         rock.transform.localScale = rockPrefab.transform.localScale * 0.8f; // Rocas un poco más pequeñas
-        
+
         // Dirección hacia abajo (con ligera variación)
         Vector3 direction = (targetPos - spawnPos).normalized;
-        
+
         SetupRockProjectile(rock, direction, rockRainSpeed);
-        
+
+        // AoE al aterrizar: ignora iframes pero el escudo lo bloquea
+        var proj = rock.GetComponent<EnemyProjectile>();
+        if (proj != null)
+            proj.ConfigureAoE(rockRainAoeRadius, rockRainAoeDamage);
+
         Destroy(rock, 5f);
     }
     

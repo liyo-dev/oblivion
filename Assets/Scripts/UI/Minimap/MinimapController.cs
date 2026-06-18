@@ -167,7 +167,7 @@ public class MinimapController : MonoBehaviour
 
     void OnMenuClosed(MenuKind kind)
     {
-        _hiddenByMenu = !MenuManager.AnyOpen();
+        _hiddenByMenu = MenuManager.AnyOpen();
         RefreshMinimapVisibility();
     }
 
