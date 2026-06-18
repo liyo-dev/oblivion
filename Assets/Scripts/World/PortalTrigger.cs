@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using Invector.vCharacterController;
 using UnityEngine.AI;
@@ -25,20 +26,34 @@ public class PortalTrigger : MonoBehaviour
     [Tooltip("Si está activo, el ítem se consume al entrar al portal.")]
     public bool consumeItemOnEnter = false;
 
+    [Header("Eventos")]
+    [Tooltip("Se dispara cuando el portal se desbloquea por primera vez (p.ej. al usar la llave).")]
+    public UnityEvent OnPortalUnlocked;
+    [Tooltip("Se dispara al cargar partida si el portal ya estaba desbloqueado. Útil para restaurar visualmente el estado abierto.")]
+    public UnityEvent OnPortalUnlockedRestored;
+
     private bool _pendingUse;
     private bool _waitingForSceneLoad;
+    private bool _restoredUnlocked;
 
     void Reset(){ GetComponent<Collider>().isTrigger = true; }
 
     void OnEnable()
     {
         GameBootService.OnProfileReady += HandleProfileReady;
+        PlayerPresetService.OnPresetApplied += OnPresetApplied;
         ProfileReadyDiagnostics.RegisterSubscriber(nameof(PortalTrigger));
+
+        if (GameBootService.IsAvailable)
+            HandleProfileReady();
+        else if (PlayerPresetService.HasAppliedPreset)
+            OnPresetApplied();
     }
 
     void OnDisable()
     {
         GameBootService.OnProfileReady -= HandleProfileReady;
+        PlayerPresetService.OnPresetApplied -= OnPresetApplied;
     }
 
     private void HandleProfileReady()
@@ -47,11 +62,27 @@ public class PortalTrigger : MonoBehaviour
         {
             var player = PlayerService.Player;
             if (player != null)
-            {
                 ProcessPortal(player);
-            }
             _pendingUse = false;
         }
+
+        RestoreUnlockedStateIfNeeded();
+    }
+
+    private void OnPresetApplied()
+    {
+        RestoreUnlockedStateIfNeeded();
+    }
+
+    private void RestoreUnlockedStateIfNeeded()
+    {
+        if (_restoredUnlocked || string.IsNullOrEmpty(setFlagOnEnter)) return;
+
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset?.flags == null || !preset.flags.Contains(setFlagOnEnter)) return;
+
+        _restoredUnlocked = true;
+        OnPortalUnlockedRestored?.Invoke();
     }
 
     void OnTriggerEnter(Collider other)
@@ -138,11 +169,15 @@ public class PortalTrigger : MonoBehaviour
         {
             if (preset.flags == null)
                 preset.flags = new System.Collections.Generic.List<string>();
-            
+
             if (!preset.flags.Contains(setFlagOnEnter))
             {
                 preset.flags.Add(setFlagOnEnter);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[PortalTrigger] Flag '{setFlagOnEnter}' establecida");
+#endif
+                _restoredUnlocked = true;
+                OnPortalUnlocked?.Invoke();
             }
         }
 

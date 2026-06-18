@@ -23,6 +23,10 @@ public class PlayerShieldController : MonoBehaviour
     [Header("Colisiones a bloquear")]
     [SerializeField] private string[] blockLayerNames = { "Enemy", "ProjectileEnemy" };
 
+    [Header("Coste de magia")]
+    [Tooltip("Maná por segundo que consume mantener el escudo activo. 0 = gratuito.")]
+    [SerializeField] private float manaPerSecond = 10f;
+
     private PlayerControls _controls;
     private bool _ownsControls;
     private Animator _animator;
@@ -32,6 +36,7 @@ public class PlayerShieldController : MonoBehaviour
     private int _playerLayer;
     private float _originalUpperBodyWeight;
     private MagicCaster _magicCaster;
+    private ManaPool _manaPool;
 
     public bool IsDefending => _isDefending;
 
@@ -43,6 +48,7 @@ public class PlayerShieldController : MonoBehaviour
         CacheUpperBodyWeight();
         CacheBlockedLayers();
         _magicCaster = GetComponentInParent<MagicCaster>();
+        _manaPool = GetComponentInParent<ManaPool>();
     }
 
     void OnEnable()
@@ -90,6 +96,16 @@ public class PlayerShieldController : MonoBehaviour
             return;
         }
 
+        // Drenar maná mientras el escudo está activo; desactivar si se agota
+        if (_isDefending && _manaPool != null && manaPerSecond > 0f)
+        {
+            if (!_manaPool.TrySpend(manaPerSecond * Time.deltaTime))
+            {
+                StopDefending();
+                return;
+            }
+        }
+
         EvaluateDefenseState();
     }
 
@@ -99,7 +115,8 @@ public class PlayerShieldController : MonoBehaviour
         float rt = _controls.GamePlay.RT.ReadValue<float>();
         bool wantsDefense = lt >= triggerThreshold && rt >= triggerThreshold;
 
-        if (wantsDefense)
+        bool hasMana = _manaPool == null || manaPerSecond <= 0f || _manaPool.Current > 0f;
+        if (wantsDefense && hasMana)
             StartDefending();
         else
             StopDefending();

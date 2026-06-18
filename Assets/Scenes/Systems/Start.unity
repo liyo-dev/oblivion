@@ -7282,7 +7282,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &933947325
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10015,7 +10015,7 @@ MonoBehaviour:
   slideOffscreenX: 450
   animInDuration: 0.45
   animOutDuration: 0.3
-  displayDuration: 3.5
+  displayDuration: 5
 --- !u!114 &1454978124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13403,8 +13403,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c86224d37783ba4eafb862457a09e67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartyStatsManager
-  liamDisplayName: Liam
-  estelaDisplayName: Estela
 --- !u!4 &1894362556
 Transform:
   m_ObjectHideFlags: 0

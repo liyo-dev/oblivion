@@ -34,8 +34,35 @@ public class ImpDemonAI : MonoBehaviour
     [SerializeField] private float undergroundCooldown = 15f;
 
     [Header("Fases")]
-    [SerializeField] private float phase2HealthPercent = 0.66f; // 66%
-    [SerializeField] private float phase3HealthPercent = 0.33f; // 33%
+    [SerializeField] private float phase2HealthPercent = 0.66f;
+    [SerializeField] private float phase3HealthPercent = 0.33f;
+
+    [Header("Segunda Aparición")]
+    [Tooltip("Actívalo en el prefab/instancia del segundo encuentro. No afecta al primero.")]
+    public bool isSecondEncounter = false;
+    [Tooltip("Multiplicador de cooldowns (0.65 = 35% más rápido).")]
+    [SerializeField] private float secondCooldownMultiplier = 0.65f;
+    [Tooltip("La fase berserk se activa antes (50% en lugar del 33%).")]
+    [SerializeField] private float phase3HealthPercentSecond = 0.50f;
+
+    [Header("  · Dash (2ª aparición)")]
+    [SerializeField] private float dashDamage = 25f;
+    [SerializeField] private float dashSpeed = 22f;
+    [SerializeField] private float dashDuration = 0.35f;
+    [SerializeField] private float dashCooldown = 7f;
+
+    [Header("  · Lluvia de ataques (2ª aparición)")]
+    [Tooltip("Prefab con un quad/decal semitransparente que hace de sombra de aviso.")]
+    [SerializeField] private GameObject rainShadowPrefab;
+    [Tooltip("Efecto de explosión/impacto que aparece tras el aviso.")]
+    [SerializeField] private GameObject rainImpactPrefab;
+    [SerializeField] private int rainCount = 8;
+    [SerializeField] private float rainRadius = 7f;
+    [Tooltip("Tiempo que las sombras permanecen en el suelo antes del impacto.")]
+    [SerializeField] private float rainWarningDuration = 1.5f;
+    [SerializeField] private float rainImpactRadius = 1.8f;
+    [SerializeField] private float rainDamage = 20f;
+    [SerializeField] private float rainCooldown = 22f;
 
     [Header("DEBUG")]
     [SerializeField] private bool debugLogAnimator = false;
@@ -47,7 +74,7 @@ public class ImpDemonAI : MonoBehaviour
     // Estado interno
     private enum BossPhase { Phase1, Phase2, Phase3 }
     private enum BossState { Idle, Chasing, Attacking, CastingSpell, Underground, TakingDamage, Dead }
-    
+
     private BossPhase currentPhase = BossPhase.Phase1;
     private BossState currentState = BossState.Idle;
     private float lastSlashTime = -999f;
@@ -55,30 +82,37 @@ public class ImpDemonAI : MonoBehaviour
     private float lastProjectileTime = -999f;
     private float lastSpellTime = -999f;
     private float lastUndergroundTime = -999f;
+    private float lastDashTime = -999f;
+    private float lastRainTime = -999f;
     private bool isAttacking = false;
     private bool hasSpawned = false;
     private bool isDead = false;
     private bool _registeredInCombat = false;
 
-    // Buffer estático para evitar allocations en OverlapSphereNonAlloc
-    private static Collider[] _overlapBuffer = new Collider[16];
+    // Cooldowns efectivos calculados en Awake
+    private float _effSlashCooldown;
+    private float _effStabCooldown;
+    private float _effProjectileCooldown;
+    private float _effSpellCooldown;
+    private float _effUndergroundCooldown;
 
-    // Hash de animaciones para optimización
-    private static readonly int AnimIdle = Animator.StringToHash("Idle");
-    private static readonly int AnimFlyForward = Animator.StringToHash("Fly Forward");
-    private static readonly int AnimSlashAttack = Animator.StringToHash("Slash Attack");
-    private static readonly int AnimStabAttack = Animator.StringToHash("Stab Attack");
+    private static readonly Collider[] _overlapBuffer = new Collider[16];
+    private float _targetRefreshTimer;
+
+    // Hashes de animaciones
+    private static readonly int AnimIdle            = Animator.StringToHash("Idle");
+    private static readonly int AnimFlyForward      = Animator.StringToHash("Fly Forward");
+    private static readonly int AnimSlashAttack     = Animator.StringToHash("Slash Attack");
+    private static readonly int AnimStabAttack      = Animator.StringToHash("Stab Attack");
     private static readonly int AnimProjectileAttack = Animator.StringToHash("Projectile Attack");
-    private static readonly int AnimCastSpell = Animator.StringToHash("Cast Spell");
-    private static readonly int AnimUnderground = Animator.StringToHash("Underground");
-    private static readonly int AnimTakeDamage = Animator.StringToHash("Take Damage");
-    private static readonly int AnimDie = Animator.StringToHash("Die");
-    private static readonly int AnimSpawn = Animator.StringToHash("Spawn");
+    private static readonly int AnimCastSpell       = Animator.StringToHash("Cast Spell");
+    private static readonly int AnimUnderground     = Animator.StringToHash("Underground");
+    private static readonly int AnimTakeDamage      = Animator.StringToHash("Take Damage");
+    private static readonly int AnimDie             = Animator.StringToHash("Die");
+    private static readonly int AnimSpawn           = Animator.StringToHash("Spawn");
 
-    // Mapa para mostrar nombres legibles en logs cuando falte un estado
     private static readonly System.Collections.Generic.Dictionary<int, string> AnimNameMap;
 
-    // Cache que mapea el hash lógico (usado en el script) al clip/state real y su capa
     private struct AnimInfo { public int layer; public int clipHash; }
     private System.Collections.Generic.Dictionary<int, AnimInfo> _animLookup;
 
@@ -86,43 +120,41 @@ public class ImpDemonAI : MonoBehaviour
     {
         AnimNameMap = new System.Collections.Generic.Dictionary<int, string>
         {
-            { AnimIdle, "Idle" },
-            { AnimFlyForward, "Fly Forward" },
-            { AnimSlashAttack, "Slash Attack" },
-            { AnimStabAttack, "Stab Attack" },
+            { AnimIdle,             "Idle" },
+            { AnimFlyForward,       "Fly Forward" },
+            { AnimSlashAttack,      "Slash Attack" },
+            { AnimStabAttack,       "Stab Attack" },
             { AnimProjectileAttack, "Projectile Attack" },
-            { AnimCastSpell, "Cast Spell" },
-            { AnimUnderground, "Underground" },
-            { AnimTakeDamage, "Take Damage" },
-            { AnimDie, "Die" },
-            { AnimSpawn, "Spawn" }
+            { AnimCastSpell,        "Cast Spell" },
+            { AnimUnderground,      "Underground" },
+            { AnimTakeDamage,       "Take Damage" },
+            { AnimDie,              "Die" },
+            { AnimSpawn,            "Spawn" }
         };
     }
 
     void Awake()
     {
-        if (!animator) animator = GetComponent<Animator>();
+        if (!animator)  animator  = GetComponent<Animator>();
         if (!damageable) damageable = GetComponent<Damageable>();
-        if (!agent) agent = GetComponent<NavMeshAgent>();
-        
-        // IMPORTANTE: Usar PlayerService.Player en lugar de FindGameObjectWithTag
-        // Ver: DayNightCycle.cs línea 339-341, AdditiveSceneCinematic.cs línea 469
-        if (!player && PlayerService.Player != null)
-        {
-            player = PlayerService.Player.transform;
-        }
+        if (!agent)     agent     = GetComponent<NavMeshAgent>();
 
-        // Construir cache de animaciones (intento de detectar estados con sufijos como 'Idle 0')
+        if (!player && PlayerService.Player != null)
+            player = PlayerService.Player.transform;
+
+        float m = isSecondEncounter ? secondCooldownMultiplier : 1f;
+        _effSlashCooldown       = slashCooldown       * m;
+        _effStabCooldown        = stabCooldown        * m;
+        _effProjectileCooldown  = projectileCooldown  * m;
+        _effSpellCooldown       = spellCooldown       * m;
+        _effUndergroundCooldown = undergroundCooldown * m;
+
         BuildAnimatorLookup();
 
-        // Si se pide depuración, volcar información del Animator para ayudar a mapear estados
         if (debugLogAnimator)
-        {
             LogAnimatorSetup();
-        }
     }
 
-    // Construye un lookup que mapea cada animHash usado por el script al clipHash y la capa donde existe
     private void BuildAnimatorLookup()
     {
         _animLookup = new System.Collections.Generic.Dictionary<int, AnimInfo>();
@@ -137,7 +169,6 @@ public class ImpDemonAI : MonoBehaviour
             string baseName = kv.Value;
             AnimInfo info = new AnimInfo { layer = -1, clipHash = animHash };
 
-            // 1) Si el estado existe por su hash directo, usarlo
             for (int l = 0; l < layers; l++)
             {
                 if (animator.HasState(l, animHash))
@@ -150,14 +181,12 @@ public class ImpDemonAI : MonoBehaviour
 
             if (info.layer == -1 && clips != null)
             {
-                // 2) Buscar un clip cuyo nombre contenga el baseName (p.e. 'Idle' -> 'Idle 0')
                 foreach (var clip in clips)
                 {
                     if (clip == null) continue;
                     if (clip.name.IndexOf(baseName, System.StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         int clipHash = Animator.StringToHash(clip.name);
-                        // comprobar en qué capa existe ese estado (si existe)
                         for (int l = 0; l < layers; l++)
                         {
                             if (animator.HasState(l, clipHash))
@@ -204,7 +233,6 @@ public class ImpDemonAI : MonoBehaviour
             }
         }
 
-        // Mapear cada animación usada en AnimNameMap a la capa detectada (si hay)
         Debug.Log("[ImpDemonAI] Mapeo de animaciones usadas:");
         foreach (var kv in AnimNameMap)
         {
@@ -214,7 +242,7 @@ public class ImpDemonAI : MonoBehaviour
             if (layer >= 0)
                 Debug.Log($" - '{animLabel}' -> encontrada en capa {layer}");
             else
-                Debug.Log($" - '{animLabel}' -> NO encontrada (buscar clips que contengan '{animLabel}'...)");
+                Debug.Log($" - '{animLabel}' -> NO encontrada");
 
             if (controller != null)
             {
@@ -225,9 +253,7 @@ public class ImpDemonAI : MonoBehaviour
                     {
                         if (c == null) continue;
                         if (c.name.IndexOf(animLabel, System.StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
                             Debug.Log($"    Clip coincidente: {c.name}");
-                        }
                     }
                 }
             }
@@ -239,10 +265,9 @@ public class ImpDemonAI : MonoBehaviour
         if (damageable)
         {
             damageable.OnDamaged += OnDamageTaken;
-            damageable.OnDied += OnDeath;
+            damageable.OnDied    += OnDeath;
         }
 
-        // Iniciar con animación de spawn
         StartCoroutine(SpawnSequence());
     }
 
@@ -251,7 +276,7 @@ public class ImpDemonAI : MonoBehaviour
         if (damageable)
         {
             damageable.OnDamaged -= OnDamageTaken;
-            damageable.OnDied -= OnDeath;
+            damageable.OnDied    -= OnDeath;
         }
 
         UnregisterFromCombatRegistry();
@@ -260,7 +285,17 @@ public class ImpDemonAI : MonoBehaviour
     void Update()
     {
         SyncCombatRegistryState();
-        if (!hasSpawned || isDead || !player || !canStartCombat) return;
+        if (!hasSpawned || isDead || !canStartCombat) return;
+
+        _targetRefreshTimer += Time.deltaTime;
+        if (_targetRefreshTimer >= 0.5f)
+        {
+            _targetRefreshTimer = 0f;
+            var playerTransform = CombatTargetProvider.GetNearestTarget(transform.position);
+            if (playerTransform != null) player = playerTransform;
+        }
+
+        if (!player) return;
 
         UpdatePhase();
         UpdateBehavior();
@@ -295,23 +330,17 @@ public class ImpDemonAI : MonoBehaviour
     private IEnumerator SpawnSequence()
     {
         currentState = BossState.Idle;
-        
-        // Solo detener el agent si está activo y en el NavMesh
+
         if (agent && agent.isOnNavMesh)
-        {
             agent.isStopped = true;
-        }
-        
+
         PlayAnimation(AnimSpawn);
-        yield return new WaitForSeconds(2f); // Duración aproximada de la animación de spawn
-        
+        yield return new WaitForSeconds(2f);
+
         hasSpawned = true;
-        
-        // Solo reactivar el agent si está en el NavMesh
+
         if (agent && agent.isOnNavMesh)
-        {
             agent.isStopped = false;
-        }
     }
 
     private void UpdatePhase()
@@ -319,10 +348,10 @@ public class ImpDemonAI : MonoBehaviour
         if (!damageable) return;
 
         float healthPercent = damageable.Current / damageable.Max;
+        float p3Threshold = isSecondEncounter ? phase3HealthPercentSecond : phase3HealthPercent;
 
-        BossPhase newPhase = currentPhase;
-
-        if (healthPercent <= phase3HealthPercent)
+        BossPhase newPhase;
+        if (healthPercent <= p3Threshold)
             newPhase = BossPhase.Phase3;
         else if (healthPercent <= phase2HealthPercent)
             newPhase = BossPhase.Phase2;
@@ -338,18 +367,17 @@ public class ImpDemonAI : MonoBehaviour
 
     private void OnPhaseChanged()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[ImpDemonAI] Cambiando a {currentPhase}");
-        
+#endif
         switch (currentPhase)
         {
             case BossPhase.Phase2:
-                // Fase 2: más agresivo, permite proyectiles
                 if (agent) agent.speed *= 1.2f;
                 StartCoroutine(PhaseTransitionEffect());
                 break;
-            
+
             case BossPhase.Phase3:
-                // Fase 3: modo berserk
                 if (agent) agent.speed *= 1.3f;
                 StartCoroutine(PhaseTransitionEffect());
                 break;
@@ -363,12 +391,9 @@ public class ImpDemonAI : MonoBehaviour
         if (agent && agent.isOnNavMesh) agent.isStopped = true;
 
         PlayAnimation(AnimCastSpell);
-        
-        // Efecto visual de transición
+
         if (spellEffectPrefab && projectileSpawnPoint)
-        {
             Instantiate(spellEffectPrefab, projectileSpawnPoint.position, Quaternion.identity);
-        }
 
         yield return new WaitForSeconds(1.5f);
 
@@ -382,7 +407,6 @@ public class ImpDemonAI : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Fuera de rango de detección
         if (distanceToPlayer > detectionRange)
         {
             currentState = BossState.Idle;
@@ -391,60 +415,55 @@ public class ImpDemonAI : MonoBehaviour
             return;
         }
 
-        // Mirar hacia el jugador
         LookAtPlayer();
 
-        // Decidir acción según fase y distancia
         if (distanceToPlayer <= attackRange)
         {
-            // Rango de ataque cuerpo a cuerpo
             if (agent && agent.isOnNavMesh) agent.isStopped = true;
             DecideMeleeAttack();
         }
         else if (distanceToPlayer <= projectileRange && currentPhase != BossPhase.Phase1)
         {
-            // Rango de proyectiles (solo fase 2 y 3)
             if (agent && agent.isOnNavMesh) agent.isStopped = true;
             DecideRangedAttack();
         }
         else
         {
-            // Perseguir al jugador
             currentState = BossState.Chasing;
             if (agent && agent.isOnNavMesh)
             {
                 agent.isStopped = false;
                 agent.SetDestination(player.position);
-                
-                // ✅ NUEVO: Rotar hacia la dirección de movimiento mientras persigue
-                // Esto evita que el Imp camine de lado cuando el camino no es directo
+
                 if (agent.velocity.sqrMagnitude > 0.1f)
-                {
                     LookAtDirection(agent.velocity.normalized);
-                }
                 else
-                {
                     LookAtPlayer();
-                }
             }
             PlayAnimation(AnimFlyForward);
         }
 
-        // Ataques especiales de fase 3
         if (currentPhase == BossPhase.Phase3)
-        {
             TrySpecialAttacks();
-        }
+
+        if (isSecondEncounter)
+            TrySecondEncounterAttacks();
     }
 
     private void DecideMeleeAttack()
     {
-        bool canSlash = Time.time >= lastSlashTime + slashCooldown;
-        bool canStab = Time.time >= lastStabTime + stabCooldown;
+        bool canSlash = Time.time >= lastSlashTime + _effSlashCooldown;
+        bool canStab  = Time.time >= lastStabTime  + _effStabCooldown;
+
+        // En segunda aparición, combo melee cuando ambos están disponibles (60% de probabilidad)
+        if (isSecondEncounter && canSlash && canStab && Random.value > 0.4f)
+        {
+            StartCoroutine(MeleeCombo());
+            return;
+        }
 
         if (canSlash && canStab)
         {
-            // Elegir aleatoriamente
             if (Random.value > 0.5f)
                 StartCoroutine(SlashAttack());
             else
@@ -466,31 +485,42 @@ public class ImpDemonAI : MonoBehaviour
 
     private void DecideRangedAttack()
     {
-        bool canProjectile = Time.time >= lastProjectileTime + projectileCooldown;
-        bool canSpell = Time.time >= lastSpellTime + spellCooldown && currentPhase == BossPhase.Phase3;
+        bool canProjectile = Time.time >= lastProjectileTime + _effProjectileCooldown;
+        bool canSpell      = Time.time >= lastSpellTime      + _effSpellCooldown && currentPhase == BossPhase.Phase3;
 
         if (canSpell && Random.value > 0.7f)
-        {
             StartCoroutine(CastSpellAttack());
-        }
         else if (canProjectile)
-        {
             StartCoroutine(ProjectileAttack());
-        }
         else
-        {
             PlayAnimation(AnimIdle);
-        }
     }
 
     private void TrySpecialAttacks()
     {
-        bool canUnderground = Time.time >= lastUndergroundTime + undergroundCooldown;
-        
+        bool canUnderground = Time.time >= lastUndergroundTime + _effUndergroundCooldown;
+
         if (canUnderground && Random.value > 0.9f)
-        {
             StartCoroutine(UndergroundAttack());
+    }
+
+    // Segunda aparición: dash y lluvia de ataques
+    private void TrySecondEncounterAttacks()
+    {
+        if (isAttacking) return;
+
+        bool canRain = Time.time >= lastRainTime + rainCooldown && currentPhase != BossPhase.Phase1;
+        bool canDash = Time.time >= lastDashTime + dashCooldown;
+
+        // La lluvia tiene prioridad si está disponible (28% de probabilidad por frame cuando el cooldown lo permite)
+        if (canRain && Random.value > 0.72f)
+        {
+            StartCoroutine(RainAttack());
+            return;
         }
+
+        if (canDash && Random.value > 0.75f)
+            StartCoroutine(DashAttack());
     }
 
     // ========== ATAQUES ==========
@@ -502,15 +532,12 @@ public class ImpDemonAI : MonoBehaviour
         lastSlashTime = Time.time;
 
         PlayAnimation(AnimSlashAttack);
-        yield return new WaitForSeconds(0.5f); // Momento del impacto
+        yield return new WaitForSeconds(0.5f);
 
-        // Aplicar daño si el jugador está en rango
-        if (Vector3.Distance(transform.position, player.position) <= attackRange)
-        {
+        if (player && Vector3.Distance(transform.position, player.position) <= attackRange)
             DamagePlayer(slashDamage);
-        }
 
-        yield return new WaitForSeconds(0.5f); // Recuperación
+        yield return new WaitForSeconds(0.5f);
         isAttacking = false;
     }
 
@@ -521,18 +548,40 @@ public class ImpDemonAI : MonoBehaviour
         lastStabTime = Time.time;
 
         PlayAnimation(AnimStabAttack);
-        yield return new WaitForSeconds(0.6f); // Momento del impacto
+        yield return new WaitForSeconds(0.6f);
 
-        // Aplicar daño si el jugador está en rango
-        if (Vector3.Distance(transform.position, player.position) <= attackRange)
-        {
+        if (player && Vector3.Distance(transform.position, player.position) <= attackRange)
             DamagePlayer(stabDamage);
-        }
 
-        yield return new WaitForSeconds(0.4f); // Recuperación
+        yield return new WaitForSeconds(0.4f);
         isAttacking = false;
     }
 
+    // Slash + Stab encadenados sin pausa completa entre ellos (solo 2ª aparición)
+    private IEnumerator MeleeCombo()
+    {
+        isAttacking = true;
+        currentState = BossState.Attacking;
+        lastSlashTime = Time.time;
+        lastStabTime  = Time.time;
+
+        PlayAnimation(AnimSlashAttack);
+        yield return new WaitForSeconds(0.5f);
+        if (player && Vector3.Distance(transform.position, player.position) <= attackRange)
+            DamagePlayer(slashDamage);
+
+        yield return new WaitForSeconds(0.15f);
+
+        PlayAnimation(AnimStabAttack);
+        yield return new WaitForSeconds(0.5f);
+        if (player && Vector3.Distance(transform.position, player.position) <= attackRange)
+            DamagePlayer(stabDamage);
+
+        yield return new WaitForSeconds(0.35f);
+        isAttacking = false;
+    }
+
+    // En 2ª aparición (Fase 2+): triple proyectil en abanico con 2-3 rondas seguidas
     private IEnumerator ProjectileAttack()
     {
         isAttacking = true;
@@ -540,17 +589,31 @@ public class ImpDemonAI : MonoBehaviour
         lastProjectileTime = Time.time;
 
         PlayAnimation(AnimProjectileAttack);
-        yield return new WaitForSeconds(0.5f); // Momento de lanzamiento
+        yield return new WaitForSeconds(0.5f);
 
-        // Lanzar proyectil
-        if (projectilePrefab && projectileSpawnPoint)
+        if (projectilePrefab && projectileSpawnPoint && player)
         {
-            Vector3 direction = (player.position - projectileSpawnPoint.position).normalized;
-            GameObject projectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.LookRotation(direction));
-            
-            // Configurar el proyectil (asumiendo que tiene un componente para daño)
-            var proj = projectile.GetComponent<EnemyProjectile>();
-            if (proj) proj.Initialize(direction, projectileDamage);
+            bool triple = isSecondEncounter && currentPhase != BossPhase.Phase1;
+            int count = triple ? 3 : 1;
+            float spreadAngle = 20f;
+            int volleys = triple ? Random.Range(2, 4) : 1;
+
+            for (int v = 0; v < volleys; v++)
+            {
+                if (v > 0) yield return new WaitForSeconds(0.65f);
+
+                Vector3 aimPos = player.position + Vector3.up * 1f;
+                for (int i = 0; i < count; i++)
+                {
+                    float angle = count == 1 ? 0f : Mathf.Lerp(-spreadAngle, spreadAngle, i / (float)(count - 1));
+                    Vector3 baseDir = (aimPos - projectileSpawnPoint.position).normalized;
+                    Vector3 direction = Quaternion.Euler(0f, angle, 0f) * baseDir;
+
+                    GameObject projectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.LookRotation(direction));
+                    var proj = projectile.GetComponent<EnemyProjectile>();
+                    if (proj) proj.Initialize(direction, projectileDamage);
+                }
+            }
         }
 
         yield return new WaitForSeconds(0.5f);
@@ -564,24 +627,18 @@ public class ImpDemonAI : MonoBehaviour
         lastSpellTime = Time.time;
 
         PlayAnimation(AnimCastSpell);
-        yield return new WaitForSeconds(1f); // Casteo del hechizo
+        yield return new WaitForSeconds(1f);
 
-        // Crear efecto de hechizo
         if (spellEffectPrefab && player)
         {
-            // Invocar efecto en la posición del jugador
             Instantiate(spellEffectPrefab, player.position, Quaternion.identity);
-            
-            // Daño en área (usar versión non-alloc para reducir GC)
+
             int hitCount = Physics.OverlapSphereNonAlloc(player.position, 5f, _overlapBuffer, playerLayer);
             for (int i = 0; i < hitCount; i++)
             {
-                var hit = _overlapBuffer[i];
-                var dmg = hit.GetComponent<IDamageable>();
+                var dmg = _overlapBuffer[i].GetComponent<IDamageable>();
                 if (dmg != null && dmg.IsAlive)
-                {
                     dmg.TakeDamage(projectileDamage * 1.5f);
-                }
             }
         }
 
@@ -589,6 +646,7 @@ public class ImpDemonAI : MonoBehaviour
         isAttacking = false;
     }
 
+    // En 2ª aparición: teleporta detrás del jugador en lugar de posición aleatoria
     private IEnumerator UndergroundAttack()
     {
         isAttacking = true;
@@ -598,30 +656,183 @@ public class ImpDemonAI : MonoBehaviour
         PlayAnimation(AnimUnderground);
         if (agent && agent.isOnNavMesh) agent.isStopped = true;
 
-        yield return new WaitForSeconds(1f); // Tiempo bajo tierra
+        yield return new WaitForSeconds(1f);
 
-        // Teletransportar cerca del jugador
-        Vector3 newPosition = player.position + (Random.insideUnitSphere * 3f);
-        newPosition.y = transform.position.y; // Mantener altura
-        
-        if (NavMesh.SamplePosition(newPosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+        if (player)
         {
-            transform.position = hit.position;
+            Vector3 newPosition;
+            if (isSecondEncounter)
+                newPosition = player.position - player.forward * 2f;
+            else
+                newPosition = player.position + (Random.insideUnitSphere * 3f);
+
+            newPosition.y = transform.position.y;
+
+            if (NavMesh.SamplePosition(newPosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                transform.position = hit.position;
         }
 
-        // Reaparecer con ataque
         PlayAnimation(AnimSpawn);
         yield return new WaitForSeconds(0.5f);
 
-        // Ataque sorpresa
-        if (Vector3.Distance(transform.position, player.position) <= attackRange * 1.5f)
-        {
+        if (player && Vector3.Distance(transform.position, player.position) <= attackRange * 1.5f)
             DamagePlayer(stabDamage * 1.5f);
-        }
 
         yield return new WaitForSeconds(0.5f);
         if (agent && agent.isOnNavMesh) agent.isStopped = false;
         isAttacking = false;
+    }
+
+    // Dash: embestida rápida hacia el jugador con breve telegrafía (solo 2ª aparición)
+    private IEnumerator DashAttack()
+    {
+        isAttacking = true;
+        currentState = BossState.Attacking;
+        lastDashTime = Time.time;
+
+        if (agent && agent.isOnNavMesh) agent.isStopped = true;
+
+        // Telegrafía breve
+        PlayAnimation(AnimSlashAttack);
+        yield return new WaitForSeconds(0.25f);
+
+        if (!player) { isAttacking = false; yield break; }
+
+        float originalSpeed = agent ? agent.speed : dashSpeed;
+        if (agent)
+        {
+            agent.speed = dashSpeed;
+            agent.isStopped = false;
+            agent.SetDestination(player.position);
+        }
+
+        float elapsed = 0f;
+        bool hasDealtDamage = false;
+
+        while (elapsed < dashDuration)
+        {
+            elapsed += Time.deltaTime;
+
+            if (!hasDealtDamage && player && Vector3.Distance(transform.position, player.position) <= attackRange)
+            {
+                DamagePlayer(dashDamage);
+                hasDealtDamage = true;
+            }
+
+            yield return null;
+        }
+
+        if (agent)
+        {
+            agent.speed = originalSpeed;
+            if (agent.isOnNavMesh) agent.isStopped = false;
+        }
+
+        yield return new WaitForSeconds(0.3f);
+        isAttacking = false;
+    }
+
+    // Lluvia de ataques: dos olas de sombras escalonadas (solo 2ª aparición)
+    private IEnumerator RainAttack()
+    {
+        isAttacking = true;
+        currentState = BossState.CastingSpell;
+        lastRainTime = Time.time;
+
+        if (agent && agent.isOnNavMesh) agent.isStopped = true;
+
+        PlayAnimation(AnimCastSpell);
+        yield return new WaitForSeconds(0.5f);
+
+        // Ola 1: amplia, sigue al jugador mientras avisa
+        Vector3 center = player ? player.position : transform.position;
+        yield return StartCoroutine(SpawnRainWave(center, rainCount, rainRadius, rainWarningDuration, trackPlayer: true));
+
+        yield return new WaitForSeconds(0.35f);
+
+        // Ola 2: más concentrada en donde el jugador se refugió, sin seguimiento
+        center = player ? player.position : transform.position;
+        int wave2Count = rainCount / 2 + 2;
+        yield return StartCoroutine(SpawnRainWave(center, wave2Count, rainRadius * 0.55f, rainWarningDuration * 0.6f, trackPlayer: false));
+
+        yield return new WaitForSeconds(0.5f);
+        if (agent && agent.isOnNavMesh) agent.isStopped = false;
+        isAttacking = false;
+    }
+
+    // Genera una oleada de sombras que crecen, luego impactan
+    private IEnumerator SpawnRainWave(Vector3 center, int count, float radius, float warningDuration, bool trackPlayer)
+    {
+        Vector3[] positions = new Vector3[count];
+        Transform[] shadowTrans = new Transform[count];
+        GameObject[] shadowGOs = new GameObject[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 rand2D = Random.insideUnitCircle * radius;
+            Vector3 candidate = center + new Vector3(rand2D.x, 0f, rand2D.y);
+
+            if (NavMesh.SamplePosition(candidate, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
+                positions[i] = navHit.position;
+            else
+                positions[i] = candidate;
+
+            if (rainShadowPrefab)
+            {
+                // Rotación forzada para que el quad quede plano en el suelo
+                Quaternion rot = Quaternion.Euler(90f, Random.Range(0f, 360f), 0f);
+                shadowGOs[i] = Instantiate(rainShadowPrefab, positions[i], rot);
+                shadowTrans[i] = shadowGOs[i].transform;
+                shadowTrans[i].localScale = Vector3.zero;
+            }
+        }
+
+        float elapsed = 0f;
+        while (elapsed < warningDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / warningDuration);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (shadowTrans[i])
+                    shadowTrans[i].localScale = Vector3.one * t;
+            }
+
+            if (trackPlayer && player)
+            {
+                Vector3 newCenter = player.position;
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 offset = positions[i] - center;
+                    positions[i] = newCenter + offset;
+                    if (shadowTrans[i])
+                        shadowTrans[i].position = positions[i];
+                }
+                center = newCenter;
+            }
+
+            yield return null;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            if (shadowGOs[i]) Destroy(shadowGOs[i]);
+
+            if (rainImpactPrefab)
+                Instantiate(rainImpactPrefab, positions[i], Quaternion.identity);
+
+            DamagePlayerInRadius(positions[i], rainImpactRadius, rainDamage);
+
+            yield return new WaitForSeconds(0.08f);
+        }
+    }
+
+    private void DamagePlayerInRadius(Vector3 center, float radius, float damage)
+    {
+        if (!player) return;
+        if (Vector3.Distance(center, player.position) <= radius)
+            DamagePlayer(damage);
     }
 
     // ========== UTILIDADES ==========
@@ -629,53 +840,39 @@ public class ImpDemonAI : MonoBehaviour
     private void DamagePlayer(float damage)
     {
         if (!player) return;
-        
-        // Intentar primero con PlayerHealthSystem (sistema específico del jugador)
+
         var playerHealth = player.GetComponent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[ImpDemonAI] Infligió {damage} de daño al jugador (PlayerHealthSystem)");
             return;
         }
-        
-        // Si no tiene PlayerHealthSystem, intentar con IDamageable
+
         var playerDamageable = player.GetComponent<IDamageable>();
         if (playerDamageable != null && playerDamageable.IsAlive)
-        {
             playerDamageable.TakeDamage(damage);
-            Debug.Log($"[ImpDemonAI] Infligió {damage} de daño al jugador (IDamageable)");
-            return;
-        }
-        
-        Debug.LogWarning("[ImpDemonAI] El jugador no tiene un sistema de salud compatible!");
     }
 
     private void LookAtPlayer()
     {
         if (!player) return;
-        
+
         Vector3 direction = (player.position - transform.position).normalized;
-        direction.y = 0; // Solo rotación horizontal
-        
+        direction.y = 0;
+
         if (direction != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
     }
-    
-    /// <summary>
-    /// Rota hacia una dirección específica (útil para rotar hacia la dirección de movimiento)
-    /// </summary>
+
     private void LookAtDirection(Vector3 direction)
     {
-        direction.y = 0; // Solo rotación horizontal
-        
+        direction.y = 0;
         if (direction.sqrMagnitude > 0.01f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
-            // Usar velocidad de rotación más alta (x1.5) durante el movimiento
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 7.5f);
         }
     }
@@ -684,7 +881,6 @@ public class ImpDemonAI : MonoBehaviour
     {
         if (!animator) return;
 
-        // Intentar reproducir usando el lookup construido en Awake
         if (_animLookup != null && _animLookup.TryGetValue(animHash, out var info) && info.layer >= 0)
         {
             try
@@ -694,19 +890,14 @@ public class ImpDemonAI : MonoBehaviour
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning($"[ImpDemonAI] Error al reproducir animación mapeada hash={animHash} -> clipHash={info.clipHash} en capa={info.layer}: {ex.Message}");
+                Debug.LogWarning($"[ImpDemonAI] Error al reproducir animación mapeada hash={animHash}: {ex.Message}");
             }
         }
 
-        // Comprueba qué capa contiene el estado antes de reproducir (fallback)
         int layerIndex = AnimatorLayerContainingState(animHash);
         if (layerIndex >= 0)
         {
-            try
-            {
-                // Específicamente reproducir en la capa donde existe el estado
-                animator.Play(animHash, layerIndex, 0f);
-            }
+            try { animator.Play(animHash, layerIndex, 0f); }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[ImpDemonAI] Error al reproducir animación hash={animHash} en capa={layerIndex}: {ex.Message}");
@@ -714,23 +905,13 @@ public class ImpDemonAI : MonoBehaviour
             return;
         }
 
-        // Si no existe el estado, avisar y reproducir Idle si está disponible
         string animName = AnimNameMap.TryGetValue(animHash, out var n) ? n : animHash.ToString();
-        Debug.LogWarning($"[ImpDemonAI] Animator.GotoState: State could not be found -> '{animName}'. Reproduciendo 'Idle' como fallback.");
+        Debug.LogWarning($"[ImpDemonAI] Estado '{animName}' no encontrado. Reproduciendo Idle como fallback.");
         int idleLayer = AnimatorLayerContainingState(AnimIdle);
         if (idleLayer >= 0)
-        {
             animator.Play(AnimIdle, idleLayer, 0f);
-        }
-        else
-        {
-            // Información adicional para facilitar depuración
-            string ctrlName = animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "<null>";
-            Debug.LogWarning($"[ImpDemonAI] Estado '{animName}' no encontrado en Animator Controller '{ctrlName}'. Capas disponibles: {animator.layerCount}. Comprueba los nombres de los estados y las máquinas de estado anidadas (usa ruta completa si es necesario).");
-        }
     }
 
-    // Devuelve la capa que contiene el estado proporcionado o -1 si no existe
     private int AnimatorLayerContainingState(int animHash)
     {
         if (animator == null || animator.runtimeAnimatorController == null) return -1;
@@ -740,12 +921,11 @@ public class ImpDemonAI : MonoBehaviour
             if (animator.HasState(i, animHash)) return i;
         }
 
-        // Si no se encuentra por hash exacto, intentar buscar por nombre base usando los animationClips
         string baseName = AnimNameMap.TryGetValue(animHash, out var n) ? n : null;
         if (string.IsNullOrEmpty(baseName)) return -1;
 
         var clips = animator.runtimeAnimatorController.animationClips;
-        if (clips != null && clips.Length > 0)
+        if (clips != null)
         {
             foreach (var clip in clips)
             {
@@ -764,11 +944,9 @@ public class ImpDemonAI : MonoBehaviour
         return -1;
     }
 
-
     private void OnDamageTaken(float amount)
     {
         if (isAttacking || isDead) return;
-        
         StartCoroutine(TakeDamageSequence());
     }
 
@@ -776,24 +954,22 @@ public class ImpDemonAI : MonoBehaviour
     {
         currentState = BossState.TakingDamage;
         bool wasAttacking = isAttacking;
-        
+
         PlayAnimation(AnimTakeDamage);
         yield return new WaitForSeconds(0.3f);
-        
+
         if (!wasAttacking)
-        {
             currentState = BossState.Idle;
-        }
     }
 
     private void OnDeath()
     {
         if (isDead) return;
-        
+
         isDead = true;
         currentState = BossState.Dead;
         UnregisterFromCombatRegistry();
-        
+
         if (agent && agent.isOnNavMesh)
         {
             agent.isStopped = true;
@@ -802,31 +978,33 @@ public class ImpDemonAI : MonoBehaviour
 
         StopAllCoroutines();
         PlayAnimation(AnimDie);
-        
-        // Desactivar colisiones
+
         var colliders = GetComponentsInChildren<Collider>();
         foreach (var col in colliders)
-        {
             col.enabled = false;
-        }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log("[ImpDemonAI] Boss derrotado!");
+#endif
     }
 
     // ========== DEBUG ==========
 
     void OnDrawGizmosSelected()
     {
-        // Rango de detección
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // Rango de ataque cuerpo a cuerpo
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
 
-        // Rango de proyectiles
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, projectileRange);
+
+        if (isSecondEncounter)
+        {
+            Gizmos.color = new Color(1f, 0.4f, 0f, 0.5f); // naranja semitransparente
+            Gizmos.DrawWireSphere(transform.position, rainRadius);
+        }
     }
 }

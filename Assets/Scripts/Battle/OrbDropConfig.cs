@@ -44,6 +44,12 @@ public class OrbDropProfile
     public GameObject healthOrbPrefab;
     public GameObject manaOrbPrefab;
 
+    [Header("Cantidades por orbe")]
+    [Tooltip("HP que restaura un orbe de vida")]
+    public float healthOrbAmount = 15f;
+    [Tooltip("MP que restaura un orbe de maná")]
+    public float manaOrbAmount   = 20f;
+
     [Header("Por golpe recibido")]
     [Range(0f, 1f)] public float healthChance    = 0.35f;
     [Range(0f, 1f)] public float manaChance      = 0.20f;

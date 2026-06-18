@@ -62,17 +62,9 @@ public class OrbDropper : MonoBehaviour
 
         float roll = Random.value;
         if (roll < p.healthChance)
-            SpawnBurst(p.healthOrbPrefab, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
+            SpawnBurst(p.healthOrbPrefab, OrbType.Health, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
         else if (roll < p.healthChance + p.manaChance)
-            SpawnBurst(p.manaOrbPrefab, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
-
-        // Orbes especiales desactivados temporalmente — solo vida y magia por ahora
-        // DuoCompanion? companion = GetCompanionFromInstigator(instigator);
-        // if (companion.HasValue && Random.value < specialChance)
-        // {
-        //     var prefab = companion.Value == DuoCompanion.Estela ? estelaOrbPrefab : liamOrbPrefab;
-        //     SpawnOrb(prefab);
-        // }
+            SpawnBurst(p.manaOrbPrefab, OrbType.Mana, Random.Range(p.minOrbsPerHit, p.maxOrbsPerHit + 1));
     }
 
     private void OnDied()
@@ -85,19 +77,18 @@ public class OrbDropper : MonoBehaviour
         {
             float roll = Random.value;
             if (roll < p.deathHealthWeight)
-                SpawnOrb(p.healthOrbPrefab);
+                SpawnOrb(p.healthOrbPrefab, OrbType.Health);
             else if (roll < p.deathHealthWeight + p.deathManaWeight)
-                SpawnOrb(p.manaOrbPrefab);
-            // else: slot de orbe especial, desactivado temporalmente
+                SpawnOrb(p.manaOrbPrefab, OrbType.Mana);
         }
     }
 
-    private void SpawnBurst(GameObject prefab, int count)
+    private void SpawnBurst(GameObject prefab, OrbType type, int count)
     {
-        for (int i = 0; i < count; i++) SpawnOrb(prefab);
+        for (int i = 0; i < count; i++) SpawnOrb(prefab, type);
     }
 
-    private void SpawnOrb(GameObject prefab)
+    private void SpawnOrb(GameObject prefab, OrbType orbType)
     {
         if (prefab == null) return;
         var p = Profile;
@@ -108,8 +99,25 @@ public class OrbDropper : MonoBehaviour
         Vector2 circle = Random.insideUnitCircle * p.spawnRadius;
         float   h      = Random.Range(p.spawnHeightMin, p.spawnHeightMax);
         var go = Instantiate(prefab, origin + new Vector3(circle.x, h, circle.y), Quaternion.identity);
-        if (go.TryGetComponent<BattleOrb>(out var orb))
-            orb.SetAudioKeys(p.orbSpawnSFXKey, p.orbAttractSFXKey);
+
+        if (!go.TryGetComponent<BattleOrb>(out var orb))
+        {
+            // El prefab es arte puro: inyectar componentes de lógica en runtime
+            if (!go.TryGetComponent<Collider>(out _))
+            {
+                var col = go.AddComponent<SphereCollider>();
+                col.radius    = 0.3f;
+                col.isTrigger = true;
+            }
+            if (!go.TryGetComponent<Rigidbody>(out _))
+                go.AddComponent<Rigidbody>();
+
+            orb = go.AddComponent<BattleOrb>();
+            float amount = orbType == OrbType.Health ? p.healthOrbAmount : p.manaOrbAmount;
+            orb.Configure(orbType, amount);
+        }
+
+        orb.SetAudioKeys(p.orbSpawnSFXKey, p.orbAttractSFXKey);
     }
 
     // private DuoCompanion? GetCompanionFromInstigator(GameObject instigator) { ... }

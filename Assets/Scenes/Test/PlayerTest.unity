@@ -10304,7 +10304,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &219270366
 Transform:
   m_ObjectHideFlags: 0
@@ -10645,7 +10645,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5572779666037620316, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5572779666037620316, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
       propertyPath: m_TagString
@@ -11063,6 +11063,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: _ESTELA
       objectReference: {fileID: 0}
+    - target: {fileID: 6741617104233437454, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7166019036080239782, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -11175,7 +11179,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3140315364509225030, guid: 36924056fa6866d4eab5114387da8e1e, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3140315364509225030, guid: 36924056fa6866d4eab5114387da8e1e, type: 3}
       propertyPath: m_NavMeshLayer
@@ -11267,6 +11271,10 @@ PrefabInstance:
     - target: {fileID: 3903978137244161971, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
       propertyPath: m_Name
       value: Comerciante
+      objectReference: {fileID: 0}
+    - target: {fileID: 3903978137244161971, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3903978137244161971, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
       propertyPath: m_NavMeshLayer
@@ -32862,7 +32870,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 961578480728707551, guid: f4c8f5133eba8a3468ab201627819996, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 961578480728707551, guid: f4c8f5133eba8a3468ab201627819996, type: 3}
       propertyPath: m_NavMeshLayer
@@ -33106,6 +33114,10 @@ PrefabInstance:
     - target: {fileID: 3335879819108417999, guid: de7b566c44b3b6949964c333227535b2, type: 3}
       propertyPath: m_Name
       value: _LIAM
+      objectReference: {fileID: 0}
+    - target: {fileID: 3335879819108417999, guid: de7b566c44b3b6949964c333227535b2, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -48492,7 +48504,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5572779666037620316, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5572779666037973628, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
       propertyPath: m_LocalPosition.x
@@ -55019,6 +55031,10 @@ PrefabInstance:
     - target: {fileID: 7766501778076261952, guid: 5118f931c03a5874cbda28b2a3df997f, type: 3}
       propertyPath: m_Name
       value: Boy_Pirate
+      objectReference: {fileID: 0}
+    - target: {fileID: 7766501778076261952, guid: 5118f931c03a5874cbda28b2a3df997f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

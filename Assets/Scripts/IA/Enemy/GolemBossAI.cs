@@ -163,6 +163,7 @@ public class GolemBossAI : MonoBehaviour
     private bool _isDead;
     private bool _registeredInCombat;
     private Coroutine _aiRoutine;
+    private float _targetRefreshTimer;
     
     // Sistema de fases
     private int _currentPhase = 1;
@@ -249,11 +250,15 @@ public class GolemBossAI : MonoBehaviour
     {
         if (!_hasSpawned || _isDead) return;
         
-        // Buscar jugador si no lo tenemos (esto puede quedar en Update por si el jugador cambia)
-        if (!player && PlayerService.Player != null)
+        // Reevaluar objetivo más cercano cada 0.5s (jugador o compañero NPC)
+        _targetRefreshTimer += Time.deltaTime;
+        if (_targetRefreshTimer >= 0.5f)
         {
-            player = PlayerService.Player.transform;
+            _targetRefreshTimer = 0f;
+            var nearest = CombatTargetProvider.GetNearestTarget(transform.position);
+            if (nearest != null) player = nearest;
         }
+
         if (!player) return;
 
         float distance = Vector3.Distance(transform.position, player.position);

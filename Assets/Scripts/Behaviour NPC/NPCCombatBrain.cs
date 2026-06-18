@@ -1743,7 +1743,6 @@ namespace Game.NPC
             {
                 if (member == null)                     continue;
                 if (member == hiddenNpc)                continue; // Controlado por el jugador, no tiene cuerpo propio
-                if (member.IsDeadInBattle)              continue; // Muerto, ignorar
 
                 float dist = Vector3.Distance(transform.position, member.transform.position);
                 if (dist < bestDist)

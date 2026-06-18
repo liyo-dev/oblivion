@@ -64,6 +64,10 @@ namespace Game.NPC.States
         private Damageable _currentTargetDamageable;
         private Transform _damageableCachedFor;
 
+        // Escudo
+        private NPCShieldController _shieldController;
+        private float _nextShieldTime;
+
         /// <summary>
         /// Constructor que permite pasar un target inicial (desde OnPlayerEnteredCombat)
         /// </summary>
@@ -88,6 +92,21 @@ namespace Game.NPC.States
             context.IsInCombat = true;
             
             _partyMember = context.Transform.GetComponent<NPCPartyMember>();
+
+            var partyConfig = _partyMember?.PartyConfig;
+            if (partyConfig != null && partyConfig.useShield)
+            {
+                _shieldController = context.Transform.GetComponent<NPCShieldController>();
+                if (_shieldController == null)
+                    _shieldController = context.Transform.gameObject.AddComponent<NPCShieldController>();
+                _shieldController.ConfigureShield(partyConfig.shieldPrefab, partyConfig.shieldMinDuration, partyConfig.shieldMaxDuration);
+                _shieldController.ConfigureBlockLayers("ProjectileEnemy", "EnemyProjectile");
+                _nextShieldTime = Time.time + Random.Range(4f, 8f);
+            }
+            else
+            {
+                _shieldController = null;
+            }
             _lastAttackTime = -DEFAULT_ATTACK_COOLDOWN; // Puede atacar inmediatamente
             _attackCooldown = DEFAULT_ATTACK_COOLDOWN;
             _noEnemyTimer = 0f;
@@ -249,7 +268,14 @@ namespace Game.NPC.States
             
             // ¡Tenemos target! Resetear timer y combatir
             _noEnemyTimer = 0f;
-            
+
+            // ===== ESCUDO PERIÓDICO =====
+            if (_shieldController != null && !_shieldController.IsDefending && Time.time >= _nextShieldTime && !_isCasting)
+            {
+                _shieldController.StartDefending();
+                _nextShieldTime = Time.time + Random.Range(6f, 12f);
+            }
+
             // ===== SISTEMA DE CASTING CON DELAY =====
             if (_isCasting)
             {
@@ -425,6 +451,9 @@ namespace Game.NPC.States
             _isCasting = false;
             _pendingSpell = null;
             _castTimer = 0f;
+
+            _shieldController?.StopDefending();
+            _shieldController = null;
 
             StopMovement(context);
             if (context.DebugMode) Debug.Log($"[AllyCombatState:{context.Transform.name}] 🏳️ Saliendo de combate");

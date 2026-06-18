@@ -67,6 +67,11 @@ public class MinimapController : MonoBehaviour
         MenuManager.MenuClosed                  -= OnMenuClosed;
     }
 
+    void Start()
+    {
+        RefreshMinimapVisibility();
+    }
+
     void SetupCamera()
     {
         if (minimapCamera == null) return;

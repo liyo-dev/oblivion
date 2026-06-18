@@ -53,6 +53,7 @@ public class Spider1AI : MonoBehaviour
     private bool isAttacking = false;
     private bool isDead = false;
     private float originalSpeed;
+    private float _targetRefreshTimer;
 
     // Hash de animaciones
     private static readonly int AnimIdle = Animator.StringToHash("Idle");
@@ -127,7 +128,18 @@ public class Spider1AI : MonoBehaviour
 
     void Update()
     {
-        if (isDead || !player) return;
+        if (isDead) return;
+
+        // Reevaluar objetivo más cercano cada 0.5s (jugador o compañero NPC)
+        _targetRefreshTimer += Time.deltaTime;
+        if (_targetRefreshTimer >= 0.5f)
+        {
+            _targetRefreshTimer = 0f;
+            var nearest = CombatTargetProvider.GetNearestTarget(transform.position);
+            if (nearest != null) player = nearest;
+        }
+
+        if (!player) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 

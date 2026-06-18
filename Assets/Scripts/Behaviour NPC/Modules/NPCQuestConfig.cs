@@ -132,21 +132,18 @@ namespace Game.NPC.Modules
             var qm = QuestManager.Instance;
             if (qm == null || questChain == null || questChain.Length == 0)
                 return QuestIconState.None;
-            
-            // Verificar si todas las quests están completadas
+
             if (hideIconWhenAllCompleted && AreAllQuestsCompleted())
                 return QuestIconState.None;
-            
+
             // Buscar quest activa
             foreach (var entry in questChain)
             {
                 if (entry?.questData == null) continue;
-                
+
                 var state = qm.GetState(entry.questData.questId);
-                
                 if (state == QuestState.Active)
                 {
-                    // Verificar si todos los pasos están completos (lista para entregar)
                     if (qm.AreAllStepsCompleted(entry.questData.questId))
                     {
                         if (showIconWhenQuestReadyToTurnIn)
@@ -160,12 +157,12 @@ namespace Game.NPC.Modules
                     return QuestIconState.None;
                 }
             }
-            
+
             // Si no hay quest activa, verificar si hay alguna disponible para iniciar
             var first = GetFirstInactiveQuest();
             if (first != null && showIconWhenQuestAvailable)
                 return QuestIconState.Available;
-            
+
             return QuestIconState.None;
         }
         

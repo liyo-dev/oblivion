@@ -30,6 +30,10 @@ MonoBehaviour:
   rangoAsistenciaCombate: 30
   maxHP: 100
   maxMP: 100
+  useShield: 1
+  shieldPrefab: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+  shieldMinDuration: 2
+  shieldMaxDuration: 4
   spellLeft: {fileID: 11400000, guid: 60af2fbe1683a7648bad32993e434d75, type: 2}
   spellRight: {fileID: 11400000, guid: f4fc5e380ac486947b74e825bf2f0835, type: 2}
   spellSpecial: {fileID: 0}

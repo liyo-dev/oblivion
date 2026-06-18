@@ -680,7 +680,7 @@ namespace Game.NPC
             foreach (var member in allPartyMembers)
             {
                 if (member == null) continue;
-                if (!HasMember(member))
+                if (!HasMember(member) && member.HideWhenNotInParty)
                 {
                     foreach (var r in member.GetComponentsInChildren<Renderer>(true))
                         r.enabled = false;

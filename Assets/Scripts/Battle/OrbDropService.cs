@@ -20,6 +20,7 @@ public class OrbDropService : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(gameObject);
         _enemyLayer = LayerMask.NameToLayer("Enemy");
         SceneManager.sceneLoaded += OnSceneLoaded;
     }

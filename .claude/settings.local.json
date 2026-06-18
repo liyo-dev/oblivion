@@ -85,7 +85,12 @@
       "Bash(Get-Unique)",
       "Bash(Get-ChildItem *)",
       "Bash(Select-Object -ExpandProperty Name)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(dir /s /b Assets\\\\Scripts\\\\*DemonProjectile*)",
+      "Bash(dir /s /b Assets\\\\*DemonProjectile*)",
+      "Bash(findstr /n \"Layer_\" ProjectSettings/TagManager.asset)",
+      "Bash(awk '/fileID: 1060315182/{found=1} found && /m_Father/{print; exit}' Assets/Scenes/Systems/Start.unity)",
+      "Bash(grep \"\\\\.prefab$\")"
     ]
   }
 }

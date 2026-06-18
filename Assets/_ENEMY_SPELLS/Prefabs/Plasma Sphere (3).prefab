@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6737439253471308566}
   - component: {fileID: 1083230456761046327}
   - component: {fileID: 2699354955047182372}
-  m_Layer: 6
+  m_Layer: 11
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -89,6 +89,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &2699354955047182372
 SphereCollider:
@@ -203,6 +204,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &1937892233989869475
 SphereCollider:
@@ -266,7 +268,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectile
   speed: 12
   lifetime: 5
-  baseDamage: 10
+  baseDamage: 30
   hitEffectPrefab: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   usePhysicsMovement: 0
   spawnSFXKey: PlasmaSphere

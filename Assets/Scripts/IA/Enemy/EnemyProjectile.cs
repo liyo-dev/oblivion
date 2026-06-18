@@ -24,11 +24,12 @@ public class EnemyProjectile : MonoBehaviour
     private float damage;
     private bool initialized = false;
     private bool hasHit = false;
+    private float _spawnTime;
     private Rigidbody rb;
     private System.Collections.Generic.List<GameObject> _attachedVfx;
     
-    // ✅ OPTIMIZACIÓN FASE 2: Buffer reutilizable para Physics queries
     private Collider[] _playerDetectionBuffer = new Collider[8];
+    private int _playerLayerMask;
 
     void Awake()
     {
@@ -43,6 +44,8 @@ public class EnemyProjectile : MonoBehaviour
         }
 
         // Configurar el rigidbody para movimiento suave
+        _playerLayerMask = LayerMask.GetMask("Player");
+
         rb = GetComponent<Rigidbody>();
         if (rb)
         {
@@ -65,7 +68,8 @@ public class EnemyProjectile : MonoBehaviour
         Debug.Log($"[EnemyProjectile] Initialize llamado: dmg={dmg}, baseDamage={baseDamage}");
         damage = dmg > 0f ? dmg : baseDamage;
         initialized = true;
-        
+        _spawnTime = Time.time;
+
         Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño (dmg pasado: {dmg}, baseDamage: {baseDamage})");
         
         // 🔊 Reproducir SFX de spawn
@@ -120,45 +124,60 @@ public class EnemyProjectile : MonoBehaviour
     }
     
     /// <summary>
-    /// Detecta si el proyectil está cerca del player usando OverlapSphere.
-    /// Esto es necesario porque CharacterController no dispara OnTriggerEnter de forma confiable.
+    /// Detecta si el proyectil está cerca del player o aliados por distancia directa.
+    /// Necesario porque CharacterController no dispara OnTriggerEnter de forma confiable.
+    /// También respeta el escudo del jugador y detecta compañeros de party.
     /// </summary>
     private void CheckPlayerProximity()
     {
         if (hasHit) return;
-        
-        // Radio de detección del proyectil
+
         float detectionRadius = 0.8f;
-        int playerLayer = LayerMask.GetMask("Player");
-        
-        // Buscar player en el radio
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _playerDetectionBuffer, playerLayer); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
-        
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _playerDetectionBuffer, _playerLayerMask);
+
         if (hitCount > 0)
         {
             for (int i = 0; i < hitCount; i++)
             {
                 var hit = _playerDetectionBuffer[i];
-                
-                // Verificar que sea el player
+
                 var playerHealth = hit.GetComponent<PlayerHealthSystem>() ?? hit.GetComponentInParent<PlayerHealthSystem>();
                 if (playerHealth != null)
                 {
+                    // Respetar escudo: si el jugador está defendiendo, bloquear sin dañar
+                    var shield = hit.GetComponentInParent<PlayerShieldController>();
+                    if (shield != null && shield.IsDefending)
+                    {
+                        hasHit = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        Debug.Log("[EnemyProjectile] 🛡️ Bloqueado por escudo (proximity)");
+#endif
+                        DestroyProjectile();
+                        return;
+                    }
+
                     hasHit = true;
-                    Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR detectado por proximidad! Aplicando {damage} de daño");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.Log($"[EnemyProjectile] 🎯 Impacto JUGADOR por proximidad: {damage} daño");
+#endif
                     playerHealth.TakeDamage(damage);
                     DestroyProjectile();
                     return;
                 }
-                
-                // También buscar por tag como fallback
+
                 Transform checkTransform = hit.transform;
-                for (int j = 0; j < 5 && checkTransform != null; j++) // ✅ FIX: Cambiado 'i' por 'j' para evitar conflicto
+                for (int j = 0; j < 5 && checkTransform != null; j++)
                 {
                     if (checkTransform.CompareTag("Player"))
                     {
+                        var shield = checkTransform.GetComponentInChildren<PlayerShieldController>();
+                        if (shield != null && shield.IsDefending)
+                        {
+                            hasHit = true;
+                            DestroyProjectile();
+                            return;
+                        }
                         hasHit = true;
-                        Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (tag) por proximidad!");
                         ApplyDamage(checkTransform.gameObject);
                         DestroyProjectile();
                         return;
@@ -167,33 +186,41 @@ public class EnemyProjectile : MonoBehaviour
                 }
             }
         }
+
     }
 
     // ✅ OnTriggerEnter: PRINCIPAL - Para colisiones con triggers (jugador, obstáculos)
     void OnTriggerEnter(Collider other)
     {
         if (hasHit) return;
+        // Grace period: ignorar colisiones inmediatas al spawnear (evita explotar dentro del lanzador)
+        if (Time.time - _spawnTime < 0.15f) return;
         
         // 🔍 DEBUG: Log de TODAS las colisiones
         Debug.Log($"[EnemyProjectile] OnTriggerEnter: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.tag})");
         
-        // Ignorar enemigos (el proyectil es de enemigos, no debe dañarlos)
-        if (other.CompareTag("Enemy") || other.gameObject.layer == LayerMask.NameToLayer("Enemy") ||
-            other.gameObject.layer == LayerMask.NameToLayer("Boss")) 
+        // Ignorar enemigos y el boss (proyectil de enemy no debe dañar a otros enemies)
+        // Nota: "Boss" es un Tag, no un Layer → usar CompareTag, no LayerMask
+        if (other.CompareTag("Enemy") || other.CompareTag("Boss") ||
+            other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
         {
             return;
         }
-        
-        // ✅ Ignorar el arena del boss (layer TransparentFX)
+
+        // Ignorar el arena del boss (layer TransparentFX)
         if (other.gameObject.layer == LayerMask.NameToLayer("TransparentFX"))
         {
-            Debug.Log($"[EnemyProjectile] ⚠️ Ignorando colisión con arena: {other.gameObject.name}");
             return;
         }
-        
-        // ✅ Ignorar otros proyectiles enemigos
+
+        // Ignorar layers que no deben detener el proyectil
         if (other.gameObject.layer == LayerMask.NameToLayer("EnemyProjectile") ||
-            other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy"))
+            other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy") ||
+            other.gameObject.layer == LayerMask.NameToLayer("Interactable") ||
+            other.gameObject.layer == LayerMask.NameToLayer("InteractHint") ||
+            other.gameObject.layer == LayerMask.NameToLayer("Minimap") ||
+            other.gameObject.layer == LayerMask.NameToLayer("UI") ||
+            other.gameObject.layer == LayerMask.NameToLayer("PauseUI"))
         {
             return;
         }
@@ -248,6 +275,11 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
+        // Aliados NPC del party: el proyectil los atraviesa sin dañarlos (solo el player recibe daño)
+        var partyMember = other.GetComponentInParent<Game.NPC.NPCPartyMember>();
+        if (partyMember != null && partyMember.IsInParty)
+            return;
+
         // ✅ Colisión con proyectiles del jugador (layer "Projectile")
         if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
         {
@@ -287,30 +319,28 @@ public class EnemyProjectile : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         if (hasHit) return;
-        
+        if (Time.time - _spawnTime < 0.15f) return;
+
         Collider other = collision.collider;
-        
-        // Redirigir a la lógica principal
         OnTriggerEnter(other);
     }
 
     private void ApplyDamage(GameObject target)
     {
-        // Intentar primero con PlayerHealthSystem
-        var playerHealth = target.GetComponent<PlayerHealthSystem>();
+        // GetComponentInParent como fallback por si el collider que recibió el hit es un hijo del root
+        var playerHealth = target.GetComponent<PlayerHealthSystem>()
+                           ?? target.GetComponentInParent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (PlayerHealthSystem)");
             return;
         }
 
-        // Si no tiene PlayerHealthSystem, intentar con IDamageable
-        var damageable = target.GetComponent<IDamageable>();
+        var damageable = target.GetComponent<IDamageable>()
+                         ?? target.GetComponentInParent<IDamageable>();
         if (damageable != null && damageable.IsAlive)
         {
             damageable.TakeDamage(damage);
-            Debug.Log($"[EnemyProjectile] Daño aplicado: {damage} (IDamageable)");
             return;
         }
 

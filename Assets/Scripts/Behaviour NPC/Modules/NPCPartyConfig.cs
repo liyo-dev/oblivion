@@ -91,6 +91,22 @@ namespace Game.NPC.Modules
         [Min(0f)]
         public float maxMP = 0f;
 
+        [Header("=== ESCUDO ===")]
+
+        [Tooltip("¿Este compañero puede usar el escudo durante el combate?")]
+        public bool useShield = false;
+
+        [Tooltip("Prefab visual del escudo. Si es null, se usa el escudo por defecto del proyecto.")]
+        public GameObject shieldPrefab;
+
+        [Tooltip("Duración mínima del escudo (segundos)")]
+        [Min(0f)]
+        public float shieldMinDuration = 2f;
+
+        [Tooltip("Duración máxima del escudo (segundos)")]
+        [Min(0f)]
+        public float shieldMaxDuration = 4f;
+
         [Header("=== HECHIZOS DE COMBATE ===")]
         
         [Tooltip("Hechizo principal (mano izquierda)")]

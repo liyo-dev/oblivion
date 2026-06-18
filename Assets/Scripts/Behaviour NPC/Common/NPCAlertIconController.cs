@@ -363,6 +363,14 @@ namespace Game.NPC.Common
         }
         
         /// <summary>
+        /// Establece la escala del icono (multiplica sobre la escala del prefab)
+        /// </summary>
+        public void SetIconScale(float scale)
+        {
+            iconScale = Mathf.Max(0.01f, scale);
+        }
+
+        /// <summary>
         /// Establece directamente la altura del icono (valor Y desde los pies del NPC)
         /// </summary>
         public void SetIconHeight(float height)
@@ -403,8 +411,9 @@ namespace Game.NPC.Common
                 return;
             }
             
-            // No mostrar si ya hay un icono activo del mismo prefab
-            if (_currentIconInstance != null && _currentIconInstance.name.Contains(iconPrefab.name))
+            // No mostrar si ya hay un icono activo del mismo prefab (no oculto)
+            // Si está ocultándose (_isHiding=true), cancelamos el ocultado y recreamos
+            if (_currentIconInstance != null && !_isHiding && _currentIconInstance.name.Contains(iconPrefab.name))
             {
                 return;
             }

@@ -87,6 +87,17 @@ public class BattleOrb : MonoBehaviour
         _attractSFXKey = attract;
     }
 
+    /// Llamar antes de Start() cuando el componente se añade en runtime.
+    public void Configure(OrbType orbType, float amount)
+    {
+        type = orbType;
+        switch (orbType)
+        {
+            case OrbType.Health: healthAmount = amount; break;
+            case OrbType.Mana:   manaAmount   = amount; break;
+        }
+    }
+
     // --- Fases internas ---
     private enum Phase { Launching, Bouncing, Hovering, Attracted }
 

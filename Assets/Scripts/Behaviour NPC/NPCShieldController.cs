@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -46,6 +45,16 @@ public class NPCShieldController : MonoBehaviour
         shieldPrefab = prefab != null ? prefab : shieldPrefab;
         minDefendDuration = Mathf.Max(0f, minDuration);
         maxDefendDuration = Mathf.Max(minDefendDuration, maxDuration);
+    }
+
+    /// <summary>
+    /// Permite configurar las capas bloqueadas desde código en runtime.
+    /// Llamar antes de StartDefending para que el detector use las capas correctas.
+    /// </summary>
+    public void ConfigureBlockLayers(params string[] layerNames)
+    {
+        blockLayerNames = layerNames;
+        CacheBlockedLayers();
     }
 
     void Awake()
@@ -274,19 +283,14 @@ public class NPCShieldController : MonoBehaviour
     {
         private NPCShieldController _owner;
         private HashSet<int> _blockedLayers;
-        private int _projectileLayer;
-        private int _playerProjectileLayer;
 
         public void Initialize(NPCShieldController owner, HashSet<int> blockedLayers)
         {
             _owner = owner;
             _blockedLayers = blockedLayers;
-            
-            // Resolver capas en runtime
-            _projectileLayer = LayerMask.NameToLayer("Projectile");
-            _playerProjectileLayer = LayerMask.NameToLayer("PlayerProjectile");
-            
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NPCShieldHitDetector] ✅ Inicializado - Bloqueando {_blockedLayers.Count} capas");
+#endif
         }
 
         void OnTriggerEnter(Collider other)
@@ -309,15 +313,11 @@ public class NPCShieldController : MonoBehaviour
 
             if (_blockedLayers.Contains(layer))
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[NPCShieldHitDetector] 🛡️ Bloqueado proyectil: {go.name} (layer {layer})");
-                
+#endif
                 _owner.OnShieldHit();
-
-                // Destruir proyectiles del player
-                if (IsPlayerProjectile(go))
-                {
-                    SafeDestroy(go);
-                }
+                SafeDestroy(go);
             }
         }
 
@@ -326,23 +326,12 @@ public class NPCShieldController : MonoBehaviour
             return col.attachedRigidbody ? col.attachedRigidbody.gameObject : col.gameObject;
         }
 
-        private bool IsPlayerProjectile(GameObject go)
-        {
-            if (go == null) return false;
-
-            // Verificar component conocido de proyectiles del player
-            if (go.GetComponentInParent<MagicProjectile>() != null) return true;
-
-            // Verificar capas comunes de proyectiles del player
-            if (go.layer == _projectileLayer || go.layer == _playerProjectileLayer) return true;
-
-            return false;
-        }
-
         private static void SafeDestroy(GameObject go)
         {
             if (!go) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[NPCShieldHitDetector] 💥 Destruyendo proyectil: {go.name}");
+#endif
             Object.Destroy(go);
         }
     }

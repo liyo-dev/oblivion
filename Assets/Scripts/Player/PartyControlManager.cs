@@ -156,8 +156,6 @@ public class PartyControlManager : MonoBehaviour
 
     private bool IsSlotAvailable(int index)
     {
-        // Un personaje muerto en batalla no puede ser seleccionado
-        if (PartyStatsManager.Instance?.IsDead(index) == true) return false;
         if (index == (int)CharacterSlot.Will) return true;
         string name = index == (int)CharacterSlot.Liam ? liamDisplayName : estelaDisplayName;
         return PlayerParty.Instance?.GetMemberByName(name) != null;

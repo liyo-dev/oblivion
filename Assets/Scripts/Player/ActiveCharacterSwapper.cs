@@ -126,9 +126,6 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         // 1. Guardar estado del personaje que se abandona
         registry?.CaptureCurrentAppearance(from);
-        // Guardar HP/MP y sincronizar el Damageable del NPC saliente
-        PartyStatsManager.Instance?.SaveCurrentStats((int)from);
-        PartyStatsManager.Instance?.SyncNpcDamageable((int)from);
         if (from == PartyControlManager.CharacterSlot.Will)
         {
             CaptureWillSpells();
@@ -145,8 +142,6 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         // 4. Cambiar hechizos del player
         ApplySpells(to);
-        // Cargar HP/MP del personaje entrante en PlayerHealthSystem/ManaPool
-        PartyStatsManager.Instance?.LoadStats((int)to);
 
         // 5. Gestionar visibilidad de NPCs de Liam/Estela
         // IMPORTANT: actualizar _hiddenNpc antes de llamar SetNpcVisible para que el guard
@@ -385,9 +380,6 @@ public class ActiveCharacterSwapper : MonoBehaviour
         {
             if (visible)
             {
-                // NPC muerto en batalla: visible pero congelado, sin reiniciar IA
-                if (npc.IsDeadInBattle) { agent.isStopped = true; return; }
-
                 agent.isStopped = false;
                 var enemy = GetActiveCombatEnemy();
                 bool partyFollowing = PartyControlManager.Instance?.IsPartyFollowing ?? true;
