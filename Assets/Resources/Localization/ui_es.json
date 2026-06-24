@@ -13,6 +13,14 @@
             "value": "Sí"
         },
         {
+            "key": "CONFIRM_MAINMENU_QUIT",
+            "value": "¿Salir al menú principal? El progreso no guardado se perderá."
+        },
+        {
+            "key": "CONFIRM_MINIGAME_ABORT",
+            "value": "¿Salir del minijuego? El nivel se reiniciará."
+        },
+        {
             "key": "Dialogue_Continue",
             "value": "Continuar"
         },

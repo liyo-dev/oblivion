@@ -4,8 +4,7 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Nodo que inicia el minijuego "Pilla Pilla" (Tag) y espera a que el jugador gane para avanzar.
-/// - Busca el TagMinigameController por minigameId en las escenas cargadas.
-/// - Se suscribe al evento de victoria para continuar el grafo narrativo.
+/// El rollback narrativo (nodo al que volver si se aborta) se configura en el TagMinigameController.
 /// </summary>
 [Serializable]
 public sealed class StartTagMinigameNode : NarrativeNode
@@ -22,8 +21,10 @@ public sealed class StartTagMinigameNode : NarrativeNode
 
     // Estado interno
     private Action _onWinCallback;
+    private Action _onAbortCallback;
     private INarrativeSignals _subscribedSignals;
     private string _eventKey;
+    private string _abortKey;
 
     public override void Enter(NarrativeContext ctx, Action onReadyToAdvance)
     {
@@ -35,7 +36,6 @@ public sealed class StartTagMinigameNode : NarrativeNode
             return;
         }
 
-        // Buscar el controlador del minijuego
         TagMinigameController controller = FindMinigameController();
 
         if (controller == null)
@@ -45,43 +45,40 @@ public sealed class StartTagMinigameNode : NarrativeNode
             return;
         }
 
-        // Si el minijuego ya fue completado en una sesión anterior, avanzar sin bloquearse
         if (controller.IsAlreadyCompleted())
         {
-            Debug.Log($"[StartTagMinigameNode] Minijuego '{minigameId}' ya completado → avanzando sin reiniciar.");
+            Debug.Log($"[StartTagMinigameNode] Minijuego '{minigameId}' ya completado → avanzando.");
             onReadyToAdvance?.Invoke();
             return;
         }
 
-        // Activar si es necesario
         if (activateOnStart && !controller.gameObject.activeInHierarchy)
-        {
             controller.gameObject.SetActive(true);
-        }
 
-        // Configurar evento de victoria
         _eventKey = $"MINIGAME_{minigameId}_WON";
         _onWinCallback = () =>
         {
             Debug.Log($"[StartTagMinigameNode] Minijuego '{minigameId}' ganado. Avanzando en el grafo.");
-            
-            // Desactivar si se configuró así
             if (deactivateOnEnd && controller != null)
-            {
                 controller.gameObject.SetActive(false);
-            }
-
-            // Desuscribirse y avanzar
             SafeUnsubscribe();
             onReadyToAdvance?.Invoke();
         };
 
-        // Suscribirse al evento de victoria
+        // El abort lo gestiona el controller (rollback + señal). Aquí solo limpiamos suscripciones.
+        _abortKey = $"MINIGAME_ABORTED:{minigameId}";
+        _onAbortCallback = () =>
+        {
+            Debug.Log($"[StartTagMinigameNode] Minijuego '{minigameId}' abortado.");
+            SafeUnsubscribe();
+        };
+
         try
         {
             signals.OnCustom(_eventKey, _onWinCallback);
+            signals.OnCustom(_abortKey, _onAbortCallback);
             _subscribedSignals = signals;
-            Debug.Log($"[StartTagMinigameNode] Suscrito a '{_eventKey}'. Iniciando minijuego...");
+            Debug.Log($"[StartTagMinigameNode] Suscrito a '{_eventKey}' y '{_abortKey}'. Iniciando minijuego...");
         }
         catch (Exception ex)
         {
@@ -90,7 +87,6 @@ public sealed class StartTagMinigameNode : NarrativeNode
             return;
         }
 
-        // Iniciar el minijuego
         controller.StartMinigame();
     }
 
@@ -101,11 +97,14 @@ public sealed class StartTagMinigameNode : NarrativeNode
 
     private void SafeUnsubscribe()
     {
-        if (_subscribedSignals != null && _onWinCallback != null && !string.IsNullOrEmpty(_eventKey))
+        if (_subscribedSignals != null)
         {
             try
             {
-                _subscribedSignals.OffCustom(_eventKey, _onWinCallback);
+                if (_onWinCallback != null && !string.IsNullOrEmpty(_eventKey))
+                    _subscribedSignals.OffCustom(_eventKey, _onWinCallback);
+                if (_onAbortCallback != null && !string.IsNullOrEmpty(_abortKey))
+                    _subscribedSignals.OffCustom(_abortKey, _onAbortCallback);
             }
             catch (Exception ex)
             {
@@ -114,12 +113,12 @@ public sealed class StartTagMinigameNode : NarrativeNode
         }
 
         _subscribedSignals = null;
-        _onWinCallback = null;
+        _onWinCallback     = null;
+        _onAbortCallback   = null;
     }
 
     private TagMinigameController FindMinigameController()
     {
-        // Buscar por ID en todas las escenas cargadas (incluye objetos inactivos)
         if (!string.IsNullOrEmpty(minigameId))
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -133,15 +132,13 @@ public sealed class StartTagMinigameNode : NarrativeNode
                     foreach (var ctrl in controllers)
                     {
                         if (ctrl.MinigameId == minigameId)
-                        {
                             return ctrl;
-                        }
                     }
                 }
             }
         }
 
-        Debug.LogError($"[StartTagMinigameNode] No se encontró TagMinigameController con minigameId='{minigameId}' en ninguna escena cargada.");
+        Debug.LogError($"[StartTagMinigameNode] No se encontró TagMinigameController con minigameId='{minigameId}'.");
         return null;
     }
 }

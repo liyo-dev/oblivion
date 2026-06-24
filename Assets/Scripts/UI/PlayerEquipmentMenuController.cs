@@ -370,6 +370,9 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
         }
 
+        // Durante el minijuego el Start se usa para abortar — no abrir el menú
+        if (TagMinigameController.IsAnyMinigameActive) return;
+
         // Detectar botón Start para abrir/cerrar el menú usando GamepadInputReader
         if (GamepadInputReader.StartPressed)
         {
@@ -397,7 +400,18 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             if (IsYButtonPressed())
             {
                 GamepadInputReader.PlayUISound("UI_Cancel");
-                OnQuitToMainMenu();
+                var popup = ConfirmationPopupUI.Instance;
+                if (popup != null)
+                {
+                    string msg = LocalizationManager.Instance != null
+                        ? LocalizationManager.Instance.Get("CONFIRM_MAINMENU_QUIT", "¿Salir al menú principal?")
+                        : "¿Salir al menú principal?";
+                    popup.Show(msg, onConfirm: OnQuitToMainMenu);
+                }
+                else
+                {
+                    OnQuitToMainMenu();
+                }
             }
             
             // LB (Left Bumper) para pestaña anterior
@@ -506,6 +520,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             return;
 
         if (!pressed) return;
+        if (TagMinigameController.IsAnyMinigameActive) return;
 
         if (_isOpen)
         {
@@ -578,9 +593,15 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OpenMenu()
     {
+        if (TagMinigameController.IsAnyMinigameActive)
+        {
+            Debug.LogWarning("[PlayerEquipmentMenu] OpenMenu() bloqueado — minijuego activo");
+            return;
+        }
+
         // Reproducir sonido de apertura de menú
         GamepadInputReader.PlayUISound("UI_Submit");
-        
+
         Debug.Log("[PlayerEquipmentMenu] OpenMenu() llamado");
         
         // Verificación temprana: Â¿tenemos Canvas?

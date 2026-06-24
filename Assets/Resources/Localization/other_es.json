@@ -21,6 +21,18 @@
             "value": "¡CORRE!"
         },
         {
+            "key": "MINIGAME_TAG_EXIT_HINT",
+            "value": "<sprite name=\"start\"> Salir"
+        },
+        {
+            "key": "MINIGAME_TAG_INSTRUCTION",
+            "value": "¡Estela está enfadada!\nEvita que te atrape durante el tiempo indicado.\n\nPulsa <sprite name=\"interactable_Joystick\"> para sprintar.\n\nAcércate a la gente del Reino y pulsa el botón que aparezca sobre ellos para protegerlos.\n\nPulsa <sprite name=\"interactable_A\"> para comenzar"
+        },
+        {
+            "key": "MINIGAME_TAG_START_PROMPT",
+            "value": "Pulsa <sprite name=\"interactable_A\"> para comenzar"
+        },
+        {
             "key": "MINIGAME_TASK",
             "value": " Pulsa <sprite name=\"interactable_Joystick\">  para sprintar y protege a la gente del Reino."
         },

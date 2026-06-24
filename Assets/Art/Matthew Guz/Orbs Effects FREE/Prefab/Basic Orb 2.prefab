@@ -4894,14 +4894,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43e357514078bd145bb5cd2d9f16ed26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleOrb
-  type: 2
+  type: 0
   chargeFor: 0
   healthAmount: 15
   manaAmount: 20
   chargeAmount: 1
+  popUpForce: 7
+  popHorizontalSpread: 2
+  maxBounces: 3
+  bounciness: 0.55
+  minBounceSpeed: 0.8
+  hoverHeight: 0.35
+  hoverAmplitude: 0.08
+  hoverFrequency: 3
+  minHoverTime: 0.25
   attractRadius: 5
-  attractSpeed: 8
-  popForce: 4
+  attractMaxSpeed: 16
+  attractAcceleration: 28
+  spinSpeed: 360
+  wobbleSpeed: 120
+  pulseAmplitude: 0.12
+  pulseFrequency: 4
+  enableGlow: 1
+  glowRange: 1.5
+  glowIntensity: 1.2
+  glowPulseSpeed: 3
+  glowColorOverride: {r: 0, g: 0, b: 0, a: 0}
+  enableTrail: 1
+  trailTime: 0.25
+  trailStartWidth: 0.15
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
   lifetime: 8
   pickupVFX: {fileID: 0}
   pickupSFXKey: 
+  bounceSFXKey: 

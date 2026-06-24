@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 4064334960189254}
   - component: {fileID: 33546315007907412}
   - component: {fileID: 23234832734738174}
-  - component: {fileID: 95073031519216586}
   - component: {fileID: 300647482501349201}
   - component: {fileID: 3826508587830983965}
   - component: {fileID: 4899808808636555450}
@@ -94,28 +93,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!95 &95073031519216586
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375754531036840}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 95965ef6457481f488a1ab90243909eb, type: 3}
-  m_Controller: {fileID: 0}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!135 &300647482501349201
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -135,7 +112,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 119.32504
+  m_Radius: 170
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &3826508587830983965
 Rigidbody:
@@ -178,7 +155,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectile
   speed: 15
   lifetime: 5
-  baseDamage: 20
+  baseDamage: 50
   hitEffectPrefab: {fileID: 1845955007268882, guid: 67a684e320da6e7439421a07e3fa265c, type: 3}
   usePhysicsMovement: 0
   spawnSFXKey: 

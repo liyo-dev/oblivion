@@ -13,6 +13,14 @@
             "value": "Yes"
         },
         {
+            "key": "CONFIRM_MAINMENU_QUIT",
+            "value": "Quit to main menu? Unsaved progress will be lost."
+        },
+        {
+            "key": "CONFIRM_MINIGAME_ABORT",
+            "value": "Exit the minigame? The level will restart."
+        },
+        {
             "key": "Dialogue_Continue",
             "value": "Continue"
         },

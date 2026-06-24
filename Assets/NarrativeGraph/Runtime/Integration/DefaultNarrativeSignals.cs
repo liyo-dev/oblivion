@@ -188,6 +188,13 @@ public class DefaultNarrativeSignals : MonoBehaviour, INarrativeSignals
         }
     }
 
+    public void UnraiseCustom(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+        _raised.Remove(key);
+        _pending.Remove(key);
+    }
+
     public void ResetState()
     {
         ResetState(preservePending: false);

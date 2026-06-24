@@ -17,4 +17,7 @@ public class NarrativeGraph : ScriptableObject
 
     public NarrativeNode FindNode(string guid)
         => nodes.Find(n => n != null && n.guid == guid);
+
+    public NarrativeNode FindNodeByTitle(string title)
+        => nodes.Find(n => n != null && n.displayTitle == title);
 }

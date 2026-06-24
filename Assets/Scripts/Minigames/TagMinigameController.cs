@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
@@ -111,6 +112,16 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI countdownText;
     [SerializeField] private TextMeshProUGUI messageText;
     [SerializeField] private TextMeshProUGUI objectiveText;
+    [Tooltip("Texto pequeño que muestra el hint de salida durante el minijuego (ej: '· Start: Salir').")]
+    [SerializeField] private TextMeshProUGUI exitHintText;
+
+    [Header("UI — Pantalla de Instrucciones")]
+    [Tooltip("Panel que muestra las instrucciones antes de empezar. Puede ser null (se salta la pantalla de instrucciones).")]
+    [SerializeField] private GameObject instructionPanel;
+    [Tooltip("Texto donde se muestran las instrucciones del minijuego.")]
+    [SerializeField] private TextMeshProUGUI instructionText;
+    [Tooltip("Texto del prompt para comenzar (ej: '— Pulsa [A] para empezar —').")]
+    [SerializeField] private TextMeshProUGUI startPromptText;
 
     [Header("Objetivo: Proteger NPCs")]
     [SerializeField] private ProtectNpcTarget[] protectTargets;
@@ -159,6 +170,12 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private float playerCastLayerFadeOut = 0.22f;
 
     [Header("Mensajes (claves de traducción)")]
+    [Tooltip("Clave de traducción del hint de salida durante el juego (ej: '· Start: Salir').")]
+    [SerializeField] private string exitHintMessage = "MINIGAME_TAG_EXIT_HINT";
+    [Tooltip("Clave de traducción con las instrucciones del minijuego (mostrado antes de comenzar).")]
+    [SerializeField] private string instructionMessage = "MINIGAME_TAG_INSTRUCTION";
+    [Tooltip("Clave de traducción del prompt de inicio (ej: '— Pulsa [A] para empezar —').")]
+    [SerializeField] private string startPromptMessage = "MINIGAME_TAG_START_PROMPT";
     [SerializeField] private string startMessage = "MINIGAME_TAG_START";
     [SerializeField] private string caughtMessage = "MINIGAME_TAG_CAUGHT";
     [SerializeField] private string winMessage = "MINIGAME_TAG_WIN";
@@ -172,15 +189,31 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private string objectiveFormat = "MINIGAME_TAG_OBJECTIVE";
     [SerializeField] private string timeFailedMessage = "MINIGAME_TAG_TIMEOUT";
 
+    [Header("UI — Pantalla de Instrucciones (Botón Salir)")]
+    [Tooltip("Botón para abandonar el minijuego desde la pantalla de instrucciones.")]
+    [SerializeField] private UnityEngine.UI.Button exitButton;
+
     [Header("Eventos")]
     public UnityEvent OnMinigameStarted;
     public UnityEvent OnMinigameWon;
     public UnityEvent OnMinigameLost;
     public UnityEvent OnPlayerCaught;
+    public UnityEvent OnMinigameAborted;
+
+    // Flag global que bloquea el menú de pausa mientras cualquier instancia del minijuego está activa
+    public static bool IsAnyMinigameActive { get; private set; }
+    // Instancia que activó el flag — solo ella puede desactivarlo
+    private static TagMinigameController _activeMinigameInstance;
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { IsAnyMinigameActive = false; _activeMinigameInstance = null; }
+#endif
 
     // Estado interno
     private float remainingTime;
     private bool isRunning = false;
+    private bool _waitingForStart = false;
     private bool _waitingForKingdomExit = false; // NPCs protegidos, esperando que el jugador salga del reino
     private bool isCountingDown = false;
     private Transform player;
@@ -244,6 +277,11 @@ public class TagMinigameController : MonoBehaviour
 
     // Para integración con sistema narrativo
     public string MinigameId => minigameId;
+
+    // Nombre de la escena donde se ejecuta el minijuego (capturado antes de hacerse persistente)
+    private string _minigameSceneName;
+    // Guard para no mostrar el popup de confirmación de salida más de una vez
+    private bool _isWaitingForAbortConfirmation;
     
     /// <summary>
     /// Resuelve las referencias del NPC perseguidor si no están asignadas directamente.
@@ -567,6 +605,8 @@ public class TagMinigameController : MonoBehaviour
 
     private void EnableMinigameActionRestrictions()
     {
+        IsAnyMinigameActive = true;
+        _activeMinigameInstance = this;
         CachePlayerRuntimeReferences();
         if (_playerActionManager == null) return;
 
@@ -586,6 +626,12 @@ public class TagMinigameController : MonoBehaviour
 
     private void DisableMinigameActionRestrictions()
     {
+        if (_activeMinigameInstance == this)
+        {
+            IsAnyMinigameActive = false;
+            _activeMinigameInstance = null;
+        }
+
         if (_modeOwnerActionManager != null && _playerMinigameModeApplied)
         {
             _modeOwnerActionManager.PopMode(ActionMode.Minigame);
@@ -710,6 +756,7 @@ public class TagMinigameController : MonoBehaviour
     void Awake()
     {
         if (uiContainer) uiContainer.SetActive(false);
+        if (instructionPanel) instructionPanel.SetActive(false);
         EnsureObjectiveTextReference();
         UpdateObjectiveUI();
     }
@@ -1409,6 +1456,14 @@ public class TagMinigameController : MonoBehaviour
 
     void Update()
     {
+        if (!isRunning && !isCountingDown) return;
+
+        if (GamepadInputReader.StartPressed)
+        {
+            AbortMinigame();
+            return;
+        }
+
         if (!isRunning) return;
 
         remainingTime -= Time.deltaTime;
@@ -1524,7 +1579,7 @@ public class TagMinigameController : MonoBehaviour
 
     public void StartMinigame()
     {
-        if (isRunning || isCountingDown)
+        if (isRunning || isCountingDown || _waitingForStart)
         {
             Debug.LogWarning("[TagMinigame] Ya está en ejecución.");
             return;
@@ -1561,6 +1616,7 @@ public class TagMinigameController : MonoBehaviour
         Debug.Log($"[TagMinigame] angerVFXPrefab: {(angerVFXPrefab != null ? "✅" : "❌")}");
         Debug.Log($"[TagMinigame] =================================");
 
+        _minigameSceneName = gameObject.scene.name;
         Debug.Log($"[TagMinigame] Iniciando minijuego '{minigameId}'...");
         catchCount = 0;
         protectedCount = 0;
@@ -1598,7 +1654,162 @@ public class TagMinigameController : MonoBehaviour
             chaser.SetStartPosition(chaserPos, chaserRot);
         }
 
-        StartCoroutine(StartWithCountdown());
+        StartCoroutine(ShowInstructionsThenStart());
+    }
+
+    private IEnumerator ShowInstructionsThenStart()
+    {
+        if (instructionPanel == null)
+        {
+            yield return StartCoroutine(StartWithCountdown());
+            yield break;
+        }
+
+        _waitingForStart = true;
+        bool userAborted = false;
+
+        // Activar el modo Minigame ya desde las instrucciones para que el menú de pausa no se abra con Start
+        EnableMinigameActionRestrictions();
+
+        // Bloquear movimiento mientras se leen las instrucciones
+        bool instructionMoveLocked = false;
+        if (_modeOwnerActionManager != null)
+        {
+            _modeOwnerActionManager.PushMode(ActionMode.Inventory);
+            instructionMoveLocked = true;
+        }
+
+        // Si el panel es hijo de un objeto desactivado (ej: uiContainer), activar el padre
+        // y limpiar los textos de juego para que no se vean durante las instrucciones
+        bool uiContainerWasActive = uiContainer != null && uiContainer.activeSelf;
+        if (uiContainer && !instructionPanel.activeInHierarchy)
+        {
+            uiContainer.SetActive(true);
+            if (timerText) timerText.text = "";
+            if (countdownText) countdownText.text = "";
+            if (messageText) messageText.text = "";
+            if (objectiveText) objectiveText.text = "";
+        }
+
+        instructionPanel.SetActive(true);
+        if (instructionText)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[TagMinigame] instructionText — spriteAsset: {(instructionText.spriteAsset != null ? instructionText.spriteAsset.name : "null (hereda de font/TMP_Settings)")} | fontSize: {instructionText.fontSize} | autoSize: {instructionText.enableAutoSizing} (min:{instructionText.fontSizeMin} max:{instructionText.fontSizeMax})");
+#endif
+            instructionText.text = Loc(instructionMessage);
+        }
+        if (startPromptText) startPromptText.text = string.Empty;
+
+        // Conectar el botón de salir si existe
+        if (exitButton) exitButton.onClick.AddListener(() => RequestAbortWithConfirmation(() => userAborted = true));
+
+        // Un frame de gracia para que el input que abrió el diálogo no cuente
+        yield return null;
+
+        while (!GamepadInputReader.JumpPressed && !GamepadInputReader.SubmitPressed && !userAborted)
+        {
+            if (GamepadInputReader.StartPressed)
+                RequestAbortWithConfirmation(() => userAborted = true);
+            yield return null;
+        }
+
+        if (exitButton) exitButton.onClick.RemoveAllListeners();
+        instructionPanel.SetActive(false);
+        if (!uiContainerWasActive && uiContainer) uiContainer.SetActive(false);
+
+        // Restaurar movimiento al salir de las instrucciones
+        if (instructionMoveLocked && _modeOwnerActionManager != null)
+            _modeOwnerActionManager.PopMode(ActionMode.Inventory);
+
+        if (userAborted)
+        {
+            DoAbort();
+            yield break;
+        }
+
+        _waitingForStart = false;
+        yield return StartCoroutine(StartWithCountdown());
+    }
+
+    public void AbortMinigame()
+    {
+        bool wasActive = _waitingForStart || isRunning || isCountingDown;
+        if (!wasActive) return;
+
+        RequestAbortWithConfirmation(DoAbort);
+    }
+
+    private void RequestAbortWithConfirmation(System.Action onConfirmed)
+    {
+        if (_isWaitingForAbortConfirmation) return;
+        _isWaitingForAbortConfirmation = true;
+
+        var popup = ConfirmationPopupUI.Instance;
+        if (popup != null)
+        {
+            popup.Show(
+                Loc("CONFIRM_MINIGAME_ABORT"),
+                onConfirm: () => { _isWaitingForAbortConfirmation = false; onConfirmed?.Invoke(); },
+                onCancel:  () => { _isWaitingForAbortConfirmation = false; }
+            );
+        }
+        else
+        {
+            Debug.LogWarning("[TagMinigame] ConfirmationPopupUI.Instance es null — ConfirmationPopupUI no está en la escena Start.unity. Abortando sin confirmación.");
+            _isWaitingForAbortConfirmation = false;
+            onConfirmed?.Invoke();
+        }
+    }
+
+    private void DoAbort()
+    {
+        StopMinigame();
+
+        var signals = DefaultNarrativeSignals.Instance;
+        if (signals != null)
+            signals.RaiseCustom($"MINIGAME_ABORTED:{minigameId}", name);
+
+        OnMinigameAborted?.Invoke();
+
+        if (GameBootService.IsPresetOverrideActive)
+            GameBootService.ReloadTestPreset();
+        else
+        {
+            var bootProfile = GameBootService.Profile;
+            var saveSystem = GameBootService.SaveSystem;
+            if (bootProfile != null && saveSystem != null)
+                bootProfile.LoadProfile(saveSystem);
+        }
+        Time.timeScale = 1f;
+        SceneTransitionLoader.Load(_minigameSceneName);
+    }
+
+    // Resetea el estado en memoria al último guardado y recarga la escena.
+    // Se llama cuando el jugador pierde (atrapado o tiempo agotado).
+    // Usa SceneTransitionLoader.Load (igual que DoAbort) para que el ciclo de boot
+    // completo se ejecute y PlayerParty restaure el party desde el preset con los
+    // NPCs nuevos ya en escena — el reload aditivo de ConfirmationPopupUI disparaba
+    // OnProfileReady antes de que los nuevos NPCs existieran, dejando a Estela fuera del party.
+    private void ReloadSceneFromLastSave()
+    {
+        string sceneName = _minigameSceneName;
+        StopMinigame();
+
+        if (GameBootService.IsPresetOverrideActive)
+        {
+            GameBootService.ReloadTestPreset();
+        }
+        else
+        {
+            var bootProfile = GameBootService.Profile;
+            var saveSystem = GameBootService.SaveSystem;
+            if (bootProfile != null && saveSystem != null)
+                bootProfile.LoadProfile(saveSystem);
+        }
+
+        Time.timeScale = 1f;
+        SceneTransitionLoader.Load(sceneName);
     }
 
     private IEnumerator StartWithCountdown(bool isRestart = false)
@@ -1644,6 +1855,7 @@ public class TagMinigameController : MonoBehaviour
 
         if (uiContainer) uiContainer.SetActive(true);
         if (timerText) timerText.text = FormatTime(duration);
+        if (exitHintText) exitHintText.text = Loc(exitHintMessage);
         UpdateObjectiveUI();
 
         InitializeProtectionTargetsForRound(clearShields: true);
@@ -2106,7 +2318,10 @@ public class TagMinigameController : MonoBehaviour
         StopAllCoroutines();
         isRunning = false;
         isCountingDown = false;
+        _waitingForStart = false;
+        _isWaitingForAbortConfirmation = false;
         isTeleporting = false;
+        if (instructionPanel) instructionPanel.SetActive(false);
 
         if (requiresWill)
             WillOnlyMomentManager.Instance?.ExitMoment(minigameId);
@@ -2118,6 +2333,7 @@ public class TagMinigameController : MonoBehaviour
         ReleaseIntroCameraLock();
         if (uiContainer) uiContainer.SetActive(false);
         if (countdownText) countdownText.text = string.Empty;
+        if (exitHintText) exitHintText.text = string.Empty;
 
         HideAllProtectionIcons();
         RestoreTargetNpcSystemsAfterMinigame();
@@ -2165,26 +2381,14 @@ public class TagMinigameController : MonoBehaviour
     {
         isRunning = false;
         isTeleporting = false;
-        
-        // Detener la persecución mientras se reinicia
+
         if (chaser) chaser.StopChasing();
         HideAllProtectionIcons();
 
         yield return new WaitForSeconds(1.5f);
 
-        // ✅ Reiniciar posiciones
-        ResetPositions();
-        
-        // ✅ Rehabilitar temporalmente el comportamiento del NPC para la cuenta atrás
-        EnableNPCBehaviour();
-
-        yield return new WaitForSeconds(0.5f);
-        
-        // ✅ REINICIAR COMPLETAMENTE: Comenzar de nuevo con cuenta atrás y tiempo completo
-        Debug.Log($"[TagMinigame] 🔄 Reiniciando minijuego completo (atrapado #{catchCount})");
-        
-        // Iniciar la cuenta atrás de nuevo (esto también reinicia el tiempo)
-        StartCoroutine(StartWithCountdown(isRestart: true));
+        Debug.Log($"[TagMinigame] 🔄 Reiniciando desde el último guardado (atrapado #{catchCount})");
+        ReloadSceneFromLastSave();
     }
 
     private void LoseByTimeout()
@@ -2208,13 +2412,8 @@ public class TagMinigameController : MonoBehaviour
 
         yield return new WaitForSeconds(1.5f);
 
-        ResetPositions();
-        EnableNPCBehaviour();
-
-        yield return new WaitForSeconds(0.5f);
-
-        Debug.Log("[TagMinigame] 🔄 Reiniciando minijuego tras quedarse sin tiempo");
-        StartCoroutine(StartWithCountdown(isRestart: true));
+        Debug.Log("[TagMinigame] 🔄 Reiniciando desde el último guardado (tiempo agotado)");
+        ReloadSceneFromLastSave();
     }
 
     private void ResetPositions()

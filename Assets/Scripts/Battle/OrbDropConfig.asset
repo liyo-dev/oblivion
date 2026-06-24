@@ -16,7 +16,9 @@ MonoBehaviour:
     id: default
     healthOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
     manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-    healthChance: 0.35
+    healthOrbAmount: 15
+    manaOrbAmount: 20
+    healthChance: 0.186
     manaChance: 0.25
     minOrbsPerHit: 1
     maxOrbsPerHit: 3

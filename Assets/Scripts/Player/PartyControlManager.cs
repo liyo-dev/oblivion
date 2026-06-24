@@ -83,6 +83,9 @@ public class PartyControlManager : MonoBehaviour
         GamepadInputReader.OnInput += HandleInput;
         GameBootService.OnProfileReady += HandleProfileReady;
         WillOnlyMomentManager.OnSwitchLockChanged += SetSwitchingLocked;
+        // Sincronizar estado inicial por si EnterMoment fue llamado antes de Start
+        if (WillOnlyMomentManager.Instance != null)
+            _switchingLocked = WillOnlyMomentManager.Instance.IsSwitchingLocked;
     }
 
     private void OnDestroy()
@@ -235,7 +238,14 @@ public class PartyControlManager : MonoBehaviour
     /// </summary>
     public void ForceSwitch(CharacterSlot slot)
     {
-        SwitchToCharacter((int)slot);
+        int newIndex = (int)slot;
+        if (newIndex == _activeIndex)
+        {
+            // Ya en este personaje: refrescar listeners sin hacer swap visual
+            OnActiveCharacterChanged?.Invoke(_activeIndex);
+            return;
+        }
+        SwitchToCharacter(newIndex);
     }
     #endregion
 

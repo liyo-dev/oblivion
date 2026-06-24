@@ -44,6 +44,13 @@ namespace Game.NPC.Modules
         [Tooltip("Lista de miembros del equipo requeridos para completar pasos de la quest.")]
         public PartyMemberRequirement[] requiredPartyMembers = System.Array.Empty<PartyMemberRequirement>();
 
+        [Header("Personaje Requerido")]
+        [Tooltip("Personaje activo necesario para ofrecer y completar esta quest. Any = cualquiera.")]
+        public QuestRequiredCharacter requiredCharacter = QuestRequiredCharacter.Any;
+
+        [Tooltip("Diálogo cuando el personaje activo no es el requerido. Si es null, el NPC no reacciona.")]
+        public DialogueAsset dlgWrongCharacter;
+
         [Header("Diálogos")]
         [Tooltip("Diálogo antes de aceptar la quest.")]
         public DialogueAsset dlgBefore;
@@ -75,6 +82,18 @@ namespace Game.NPC.Modules
         public QuestPostAction postAction = new QuestPostAction();
     }
     
+    /// <summary>
+    /// Personaje activo requerido para ofrecer/completar una quest.
+    /// Los valores numéricos coinciden con PartyControlManager.CharacterSlot.
+    /// </summary>
+    public enum QuestRequiredCharacter
+    {
+        Any    = -1,
+        Liam   =  0,
+        Will   =  1,
+        Estela =  2,
+    }
+
     /// <summary>
     /// Tipos de acciones que puede ejecutar el NPC al completar una quest
     /// </summary>

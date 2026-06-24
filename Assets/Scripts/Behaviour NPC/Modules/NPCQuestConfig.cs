@@ -279,6 +279,12 @@ namespace Game.NPC.Modules
                 var firstState = qm.GetState(first.questData.questId);
                 if (firstState == QuestState.Inactive)
                 {
+                    if (!IsRequiredCharacterActive(first))
+                    {
+                        PlayDialogue(first.dlgWrongCharacter, context);
+                        return true;
+                    }
+
                     // Si tiene dlgBefore, reproducir diálogo primero y luego iniciar quest
                     if (first.dlgBefore != null)
                     {
@@ -311,6 +317,12 @@ namespace Game.NPC.Modules
             switch (state)
             {
                 case QuestState.Active:
+                    if (!IsRequiredCharacterActive(entry))
+                    {
+                        PlayDialogue(entry.dlgWrongCharacter, context);
+                        return;
+                    }
+
                     // ✅ Verificar si el jugador tiene los items requeridos en inventario
                     // Esto marca automáticamente los pasos correspondientes como completados
                     CheckAndMarkInventoryRequirements(qm, entry, questId);
@@ -728,6 +740,14 @@ namespace Game.NPC.Modules
             // (se iniciará desde otro lugar: grafo narrativo, etc.)
         }
 
+
+        private bool IsRequiredCharacterActive(QuestChainEntry entry)
+        {
+            if (entry.requiredCharacter == QuestRequiredCharacter.Any) return true;
+            var manager = PartyControlManager.Instance;
+            if (manager == null) return true;
+            return (int)manager.ActiveSlot == (int)entry.requiredCharacter;
+        }
 
         private void PlayDialogue(DialogueAsset dialogue, Common.NPCStateContext context)
         {

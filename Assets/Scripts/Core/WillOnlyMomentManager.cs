@@ -108,7 +108,7 @@ public class WillOnlyMomentManager : MonoBehaviour
     {
         var manager = PartyControlManager.Instance;
         if (manager == null) return;
-        if (manager.ActiveSlot == PartyControlManager.CharacterSlot.Will) return;
+        // Llamar siempre para que ForceSwitch refresque OnActiveCharacterChanged aunque Will ya sea activo
         manager.ForceSwitch(PartyControlManager.CharacterSlot.Will);
     }
     #endregion
