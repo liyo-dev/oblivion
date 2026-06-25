@@ -67,11 +67,11 @@ MonoBehaviour:
   - QUEST_ARCHIVED:ELDRAN_MISSION12
   - QUEST_ACTIVE:ELDRAN_MISSION13
   abilities:
-    swim: 0
-    jump: 0
+    swim: 1
+    jump: 1
     climb: 0
     magic: 1
-    fly: 0
+    fly: 1
   appearance:
   - category: 0
     partName: Body05
@@ -285,6 +285,8 @@ MonoBehaviour:
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68_CN1
   - NPC_InteractiveNarrative_Config_King_aebe753a_CN1
   - NPC_InteractiveNarrative_Config_King_aebe753a_CN2
+  - NPC_Eldran
+  - NPC_Eldran_CN0
   seenLorePopupIds: []
   partyMemberIds:
   - _LIAM

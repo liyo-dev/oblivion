@@ -582,6 +582,10 @@ namespace Game.NPC.Modules
             _chainWasTriggeredByDetection = _wasTriggeredByDetection;
             _wasTriggeredByDetection = false;
 
+            // Bloquear wander/idle durante toda la ejecución narrativa
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsInteracting = true;
+
             HidePersistentIconIfActive();
 
             if (_npcManager?.SimpleAnimator != null)
@@ -646,6 +650,9 @@ namespace Game.NPC.Modules
                 global::Core.PlayerInputManager.Instance.PopUIMode();
                 _playerFrozenByDetection = false;
             }
+
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsInteracting = false;
 
             _isExecuting = false;
             _lastExecutionEndTime = Time.time;
@@ -1632,7 +1639,7 @@ namespace Game.NPC.Modules
             if (preset?.completedInteractiveNarratives == null) return;
 
             _hasBeenUsed = preset.completedInteractiveNarratives.Contains(effectiveId);
-            
+
             if (_config.conditionalNarratives != null)
             {
                 for (int i = 0; i < _config.conditionalNarratives.Length; i++)
@@ -1645,6 +1652,28 @@ namespace Game.NPC.Modules
                         if (preset.completedInteractiveNarratives.Contains(narrativeId))
                         {
                             narrative.MarkAsExecuted();
+                        }
+                    }
+                }
+
+                // Catch-up para saves anteriores sin persistenceId guardado:
+                // si la condición es QuestStarted y la quest ya está Completed,
+                // la narrativa singleUse definitivamente ya se ejecutó.
+                var qm = QuestManager.Instance;
+                if (qm != null)
+                {
+                    for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                    {
+                        var narrative = _config.conditionalNarratives[i];
+                        if (narrative == null || !narrative.singleUse || narrative.HasBeenExecuted) continue;
+                        if (narrative.condition.conditionType != NarrativeConditionType.QuestStarted) continue;
+                        if (narrative.condition.targetQuest == null) continue;
+
+                        if (qm.GetState(narrative.condition.targetQuest.questId) == QuestState.Completed)
+                        {
+                            narrative.MarkAsExecuted();
+                            if (verboseLogging)
+                                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Catch-up: narrativa '{narrative.description}' marcada como ejecutada (quest completada)");
                         }
                     }
                 }
@@ -1661,6 +1690,10 @@ namespace Game.NPC.Modules
             _hasBeenUsed = false;
             _hasDetectedPlayer = false;
             _isExecuting = false;
+            _lastExecutionEndTime = -999f;
+
+            if (_npcManager?.Context != null)
+                _npcManager.Context.IsInteracting = false;
             
             if (_config?.conditionalNarratives != null)
             {

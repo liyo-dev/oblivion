@@ -11409,7 +11409,7 @@ MonoBehaviour:
   startInIdleState: 0
   forceKinematicRigidbody: 1
   persistLastPosition: 1
-  persistenceId: 
+  persistenceId: NPC_Eldran
   dialogueCharacterId: CHAR_ELDRAN
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3

@@ -36,7 +36,7 @@ MonoBehaviour:
   useScaleOverride: 0
   scaleOverride: {x: 1, y: 1, z: 1}
   manaCost: 10
-  cooldown: 0
+  cooldown: 0.3
   levitationRange: 10
   levitationAngle: 45
   levitationPullForce: 5

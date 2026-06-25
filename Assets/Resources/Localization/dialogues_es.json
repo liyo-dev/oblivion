@@ -197,6 +197,50 @@
             "value": "¿Has leido la carta que te dejé en la mesita?"
         },
         {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01",
+            "value": "Bueno ya podemos continuar por donde lo dejamos."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_02",
+            "value": "Entonces Liam, ¿que es lo que hay que hacer para ir al Sendero?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_03",
+            "value": "Pues para abrir el portal necesitamos un antiguo libro de hechizos..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_04",
+            "value": "Pero desconozco su ubicación."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_05",
+            "value": "Quizás un amigo mio pueda echarnos una mano."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_06",
+            "value": "Ademas vive cerca. Justo en el pueblo de al lado."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_07",
+            "value": "¿Entonces buscamos al vegestorio, encontramos el libro y abrimos el portal?"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_08",
+            "value": "Si algo así Estela...."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_09",
+            "value": "Tened cuidado. Yo estaré por el Reino como siempre..."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_10",
+            "value": "Aquí se separan nuestros caminos. Will espero que puedas encontrar en el Sendero respuestas."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_11",
+            "value": "¿Vamos o que? "
+        },
+        {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
             "value": "La caja debe estar cerca de un árbol."
         },

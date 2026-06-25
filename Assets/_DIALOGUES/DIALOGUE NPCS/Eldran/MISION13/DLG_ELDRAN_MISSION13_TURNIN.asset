@@ -14,30 +14,80 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION6_TURNIN_01
+    textId: DLG_ELDRAN_MISSION13_TURNIN_01
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
+    cinematicEffect: 1
     emotion: 1
-  - speakerNameId: CHAR_ESTELA
-    textId: DLG_ELDRAN_MISSION6_TURNIN_02
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION13_TURNIN_02
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 1
-  - speakerNameId: CHAR_WILL
-    textId: DLG_ELDRAN_MISSION6_TURNIN_03
+    cinematicEffect: 1
+    emotion: 6
+  - speakerNameId: CHAR_LIAM
+    textId: DLG_ELDRAN_MISSION13_TURNIN_03
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 1
-    forcedShotType: 0
-    emotion: 8
-  - speakerNameId: CHAR_ELDRAN
-    textId: DLG_ELDRAN_MISSION6_TURNIN_04
+    cinematicEffect: 1
+    emotion: 6
+  - speakerNameId: CHAR_LIAM
+    textId: DLG_ELDRAN_MISSION13_TURNIN_04
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 6
+    cinematicEffect: 1
+    emotion: 2
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION13_TURNIN_05
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    cinematicEffect: 1
+    emotion: 4
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION13_TURNIN_06
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    cinematicEffect: 1
+    emotion: 1
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ELDRAN_MISSION13_TURNIN_07
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    cinematicEffect: 1
+    emotion: 7
+  - speakerNameId: CHAR_WILL
+    textId: DLG_ELDRAN_MISSION13_TURNIN_08
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 8
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION13_TURNIN_09
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 2
+  - speakerNameId: CHAR_ELDRAN
+    textId: DLG_ELDRAN_MISSION13_TURNIN_10
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 0
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ELDRAN_MISSION13_TURNIN_11
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 1
+  isGroupConversation: 0

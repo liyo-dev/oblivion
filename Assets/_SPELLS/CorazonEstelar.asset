@@ -25,7 +25,7 @@ MonoBehaviour:
   useGravity: 0
   maxRange: 40
   lifeTime: 2
-  damage: 50
+  damage: 100
   aoeRadius: 0
   knockbackForce: 25
   destroyOnHit: 1
@@ -36,7 +36,7 @@ MonoBehaviour:
   useScaleOverride: 0
   scaleOverride: {x: 1, y: 1, z: 1}
   manaCost: 25
-  cooldown: 0
+  cooldown: 0.3
   levitationRange: 10
   levitationAngle: 45
   levitationPullForce: 5

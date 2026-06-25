@@ -197,6 +197,50 @@
             "value": "Have you read the letter I left you on the nightstand?"
         },
         {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_02",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_03",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_04",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_05",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_06",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_07",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_08",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_09",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_10",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_11",
+            "value": ""
+        },
+        {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
             "value": "The crate should be near a tree."
         },

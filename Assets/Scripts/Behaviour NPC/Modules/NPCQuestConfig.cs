@@ -260,16 +260,19 @@ namespace Game.NPC.Modules
             }
 
             // Buscar quest activa en la cadena (de atrás hacia adelante)
+            Debug.Log($"[NPCQuestConfig.ProcessInteraction] Escaneando cadena ({questChain.Length} entradas) de atrás hacia adelante:");
             for (int i = questChain.Length - 1; i >= 0; i--)
             {
                 var entry = questChain[i];
-                if (entry?.questData == null) continue;
+                if (entry?.questData == null) { Debug.Log($"  [{i}] questData NULL - skip"); continue; }
 
                 var questId = entry.questData.questId;
                 var state = qm.GetState(questId);
+                Debug.Log($"  [{i}] quest={questId} estado={state}");
 
                 if (state == QuestState.Active || state == QuestState.Completed)
                 {
+                    Debug.Log($"[NPCQuestConfig.ProcessInteraction] → Seleccionada entrada [{i}] quest={questId} estado={state}");
                     HandleQuestState(qm, entry, questId, state, context);
                     return true;
                 }

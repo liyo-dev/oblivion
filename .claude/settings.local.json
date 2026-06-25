@@ -95,7 +95,8 @@
       "Bash(Select-Object Filename, LineNumber, Line)",
       "Bash(findstr -i sendero)",
       "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs\")",
-      "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs.meta\")"
+      "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs.meta\")",
+      "Bash(python -c ' *)"
     ]
   }
 }
