@@ -14335,6 +14335,7 @@ GameObject:
   - component: {fileID: 9069736355997653958}
   - component: {fileID: 8633260300737531714}
   - component: {fileID: 1502966510894875531}
+  - component: {fileID: 2189284623597346863}
   m_Layer: 8
   m_Name: _ESTELA
   m_TagString: Estela
@@ -14584,6 +14585,7 @@ MonoBehaviour:
   narrativeDetectionRange: 10
   walkTowardsPlayerOnAlert: 1
   stopDistanceFromPlayer: 2
+  narrativeAlertIconPrefab: {fileID: 0}
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []
@@ -14603,6 +14605,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  characterId: 
   originalEyeMesh: {fileID: 128730223979561917}
   originalMouthMesh: {fileID: 2900549033386391491}
   eyePrefix: Eye
@@ -14639,10 +14642,40 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3eeeb28580644a4fb443fda6a34f28c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Player.FootstepHandler
-  _raycastDistance: 2
+  _animator: {fileID: 0}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1024
+  _raycastDistance: 2
+  _descentSpeedThreshold: 0.08
+  _groundProximityThreshold: 0.2
+  _minStepDistance: 0.35
+--- !u!114 &2189284623597346863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700cd0237e2f4235aeb8c8fc6b886f84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCShieldController
+  shieldPrefab: {fileID: 0}
+  shieldAnchor: {fileID: 0}
+  shieldOffset: {x: 0, y: 0, z: 0}
+  defendAnimation: Defend_NoWeapon
+  defendHitAnimation: DefendHit_NoWeapon
+  upperBodyLayer: 1
+  upperBodyTransitionDuration: 0.1
+  hitFeedbackDuration: 0.3
+  blockLayerNames:
+  - Projectile
+  - ProjectilePlayer
+  - MagicProjectile
+  minDefendDuration: 2
+  maxDefendDuration: 5
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0

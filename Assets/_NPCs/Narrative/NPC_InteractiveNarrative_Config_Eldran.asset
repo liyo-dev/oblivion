@@ -106,7 +106,7 @@ MonoBehaviour:
       sendNarrativeEvent: 1
       narrativeEventKey: OPEN_THE_DOORS
       sendEventOnStart: 0
-    singleUse: 0
+    singleUse: 1
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1
     freezePlayerOnDetection: 0

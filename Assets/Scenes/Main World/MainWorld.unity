@@ -26224,7 +26224,7 @@ GameObject:
   - component: {fileID: 170915387}
   - component: {fileID: 170915388}
   m_Layer: 0
-  m_Name: CastleDoorController
+  m_Name: CLOSE_THE_DOORS
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -26266,7 +26266,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1140811526}
+  m_Father: {fileID: 1264578752}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &170915387
 BoxCollider:
@@ -26303,6 +26303,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CastleDoorCloseTrigger
   doorController: {fileID: 170915385}
   delay: 0.5
+  blockingQuest: {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
 --- !u!1 &172410008
 GameObject:
   m_ObjectHideFlags: 0
@@ -72904,11 +72905,6 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 408920, guid: fb3f840c826314847ba67aaf7e4aef4e, type: 3}
   m_PrefabInstance: {fileID: 345673927}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &345919038 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6741617104233437454, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
-  m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &347398899
 PrefabInstance:
@@ -247508,17 +247504,14 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6741617104233437454, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1964060398}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
 --- !u!114 &1100700570 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8633260300737531714, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
   m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345919038}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71502e3d469043c39b0240edd3c4f296, type: 3}
@@ -257895,7 +257888,6 @@ Transform:
   - {fileID: 6210138198852852807}
   - {fileID: 627425525}
   - {fileID: 676960706}
-  - {fileID: 170915386}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1141121526
@@ -277796,6 +277788,7 @@ Transform:
   - {fileID: 606554266}
   - {fileID: 565930110}
   - {fileID: 898581059}
+  - {fileID: 170915386}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1267060446
@@ -389023,33 +389016,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1788915190}
     m_Modifications:
-    - target: {fileID: 206955243820471005, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2052766923886183289, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3714833892687663537, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4909843728885285984, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_Name
       value: _WILL
-      objectReference: {fileID: 0}
-    - target: {fileID: 5254754835644330641, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5299980531833264534, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5868854481933487762, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -389090,14 +389059,6 @@ PrefabInstance:
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7612423805484779947, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8872017054573630166, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -415968,38 +415929,12 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1187040435340309947, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
   m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345919038}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
---- !u!114 &1964060398
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345919038}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700cd0237e2f4235aeb8c8fc6b886f84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCShieldController
-  shieldPrefab: {fileID: 0}
-  shieldAnchor: {fileID: 0}
-  shieldOffset: {x: 0, y: 0, z: 0}
-  defendAnimation: Defend_NoWeapon
-  defendHitAnimation: DefendHit_NoWeapon
-  upperBodyLayer: 1
-  upperBodyTransitionDuration: 0.1
-  hitFeedbackDuration: 0.3
-  blockLayerNames:
-  - Projectile
-  - ProjectilePlayer
-  - MagicProjectile
-  minDefendDuration: 2
-  maxDefendDuration: 5
 --- !u!1001 &1964136322
 PrefabInstance:
   m_ObjectHideFlags: 0

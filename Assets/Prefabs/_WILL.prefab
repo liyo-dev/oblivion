@@ -12538,6 +12538,7 @@ MonoBehaviour:
   groundMinDistance: 0.25
   groundMaxDistance: 0.5
   slopeLimit: 75
+  lockMovement: 0
   physicalAttackStates:
   - Attack1
   - Attack2
@@ -13005,6 +13006,7 @@ MonoBehaviour:
   blockLayerNames:
   - Enemy
   - ProjectileEnemy
+  manaPerSecond: 10
 --- !u!114 &1750471286796519853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13097,7 +13099,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00dd1a97300da2549bf6f5d44b24f7d5, type: 3}
   m_Name: 
@@ -13113,7 +13115,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4951141271202639922}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 34fba07050c9cec4ab8a24994f574e26, type: 3}
   m_Name: 
