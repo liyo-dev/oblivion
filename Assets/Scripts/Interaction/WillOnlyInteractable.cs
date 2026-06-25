@@ -35,7 +35,14 @@ public class WillOnlyInteractable : MonoBehaviour
     private void Start()
     {
         if (showPersistentIcon && willIndicatorIconPrefab != null)
-            SetupPersistentIcon();
+            StartCoroutine(SetupPersistentIconDeferred());
+    }
+
+    private void Update()
+    {
+        if (!showPersistentIcon || willIndicatorIconPrefab == null) return;
+        if (_iconController != null && !_iconController.HasPersistentIcon)
+            _iconController.ShowPersistentIcon(willIndicatorIconPrefab);
     }
 
     #endregion
@@ -62,11 +69,28 @@ public class WillOnlyInteractable : MonoBehaviour
     // ────────────────────────────────────────────────────────────────────────
     #region Internals
 
+    private System.Collections.IEnumerator SetupPersistentIconDeferred()
+    {
+        yield return null; // esperar un frame para que todos los Start() hayan corrido
+        SetupPersistentIcon();
+    }
+
     private void SetupPersistentIcon()
     {
-        _iconController = GetComponent<NPCAlertIconController>()
-            ?? GetComponentInParent<NPCAlertIconController>()
-            ?? gameObject.AddComponent<NPCAlertIconController>();
+        if (_iconController == null)
+        {
+            // Usar un hijo dedicado para no compartir el NPCAlertIconController del raíz
+            // con otros sistemas (NPCInteractiveNarrativeExecutor, AlertState, etc.)
+            const string childName = "_WillIconController";
+            var iconChild = transform.Find(childName);
+            if (iconChild == null)
+            {
+                iconChild = new GameObject(childName).transform;
+                iconChild.SetParent(transform, false);
+            }
+            _iconController = iconChild.GetComponent<NPCAlertIconController>()
+                ?? iconChild.gameObject.AddComponent<NPCAlertIconController>();
+        }
 
         _iconController.ShowPersistentIcon(willIndicatorIconPrefab);
     }

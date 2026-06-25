@@ -234,7 +234,20 @@ namespace Game.NPC.Modules
         [Min(0f)]
         [Tooltip("Coste de maná del hechizo 3")]
         public float spell3ManaCost = 45f;
-        
+
+        [Header("Spell Damage")]
+        [Min(0f)]
+        [Tooltip("Daño del hechizo 1")]
+        public float spell1Damage = 10f;
+
+        [Min(0f)]
+        [Tooltip("Daño del hechizo 2")]
+        public float spell2Damage = 20f;
+
+        [Min(0f)]
+        [Tooltip("Daño del hechizo 3 (especial)")]
+        public float spell3Damage = 35f;
+
         [Range(0f, 1f)]
         [Tooltip("Umbral de maná bajo para priorizar cobertura/defensa")]
         public float lowManaRetreatThreshold = 0.25f;
@@ -412,6 +425,17 @@ namespace Game.NPC.Modules
         /// <summary>
         /// Obtiene el coste de maná de un hechizo por su índice (0-2)
         /// </summary>
+        public float GetSpellDamage(int spellIndex)
+        {
+            return spellIndex switch
+            {
+                0 => spell1Damage,
+                1 => spell2Damage,
+                2 => spell3Damage,
+                _ => 0f
+            };
+        }
+
         public float GetSpellManaCost(int spellIndex)
         {
             return spellIndex switch

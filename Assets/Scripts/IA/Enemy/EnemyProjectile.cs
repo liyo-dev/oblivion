@@ -10,7 +10,6 @@ public class EnemyProjectile : MonoBehaviour
     [Header("Configuración")]
     [SerializeField] private float speed = 15f;
     [SerializeField] private float lifetime = 5f;
-    [SerializeField] private float baseDamage = 10f; // Daño base configurado en el prefab
     [SerializeField] private GameObject hitEffectPrefab;
     [SerializeField] private bool usePhysicsMovement = true; // Usar Rigidbody para movimiento suave
     
@@ -41,15 +40,8 @@ public class EnemyProjectile : MonoBehaviour
     {
         // ✅ Configurar el collider - NO forzamos isTrigger para permitir OnCollisionEnter con el player
         var col = GetComponent<SphereCollider>();
-        if (col)
-        {
-            // Usar la configuración del prefab (puede ser trigger o no)
-            // Si es trigger: OnTriggerEnter con otros triggers
-            // Si NO es trigger: OnCollisionEnter con otros colliders
-            col.radius = 0.5f;
-        }
+        if (col) col.radius = 0.5f;
 
-        // Configurar el rigidbody para movimiento suave
         _playerLayerMask = LayerMask.GetMask("Player");
 
         rb = GetComponent<Rigidbody>();
@@ -64,19 +56,18 @@ public class EnemyProjectile : MonoBehaviour
             rb.freezeRotation = true;
         }
         
-        Debug.Log($"[EnemyProjectile] Awake - Collider isTrigger: {col?.isTrigger}, Layer: {LayerMask.LayerToName(gameObject.layer)}");
     }
 
-    public void Initialize(Vector3 dir, float dmg = -1f)
+    public void Initialize(Vector3 dir, float dmg)
     {
         direction = dir.normalized;
-        // Si no se pasa daño, usar el baseDamage del prefab
-        Debug.Log($"[EnemyProjectile] Initialize llamado: dmg={dmg}, baseDamage={baseDamage}");
-        damage = dmg > 0f ? dmg : baseDamage;
+        damage = dmg;
         initialized = true;
         _spawnTime = Time.time;
 
-        Debug.Log($"[EnemyProjectile] Inicializado con {damage} de daño (dmg pasado: {dmg}, baseDamage: {baseDamage})");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[EnemyProjectile] Inicializado — daño: {damage}, velocidad: {speed}");
+#endif
         
         // 🔊 Reproducir SFX de spawn
         if (!string.IsNullOrEmpty(spawnSFXKey))
@@ -94,14 +85,6 @@ public class EnemyProjectile : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
     
-    /// <summary>
-    /// Obtiene el daño configurado del proyectil (baseDamage del prefab)
-    /// </summary>
-    public float GetDamage()
-    {
-        return baseDamage;
-    }
-
     /// <summary>
     /// Activa el daño de área al aterrizar. Usado para rocas de lluvia del Golem.
     /// El AoE ignora iframes pero respeta el escudo del jugador.
@@ -242,9 +225,6 @@ public class EnemyProjectile : MonoBehaviour
         // Grace period: ignorar colisiones inmediatas al spawnear (evita explotar dentro del lanzador)
         if (Time.time - _spawnTime < 0.15f) return;
         
-        // 🔍 DEBUG: Log de TODAS las colisiones
-        Debug.Log($"[EnemyProjectile] OnTriggerEnter: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.tag})");
-        
         // Ignorar enemigos y el boss (proyectil de enemy no debe dañar a otros enemies)
         // Nota: "Boss" es un Tag, no un Layer → usar CompareTag, no LayerMask
         if (other.CompareTag("Enemy") || other.CompareTag("Boss") ||
@@ -275,48 +255,40 @@ public class EnemyProjectile : MonoBehaviour
         if (other.GetComponent<PlayerShieldController.ShieldMarker>() != null)
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 🛡️ Bloqueado por escudo del jugador");
             DestroyProjectile();
             return;
         }
 
-        // ✅ PRIORIDAD 2: Aplicar daño si es el jugador (buscar en toda la jerarquía)
-        // Primero verificar por layer "Player"
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (layer Player)! Aplicando {damage} de daño");
             ApplyDamage(other.gameObject);
             DestroyProjectile();
             return;
         }
-        
-        // Buscar por tag en jerarquía
+
         Transform checkTransform = other.transform;
         for (int i = 0; i < 5; i++)
         {
             if (checkTransform.CompareTag("Player"))
             {
                 hasHit = true;
-                Debug.Log($"[EnemyProjectile] 🎯 Impacto contra JUGADOR (tag)! Aplicando {damage} de daño");
                 ApplyDamage(checkTransform.gameObject);
                 DestroyProjectile();
                 return;
             }
-            
+
             if (checkTransform.parent != null)
                 checkTransform = checkTransform.parent;
             else
                 break;
         }
 
-        // Buscar PlayerHealthSystem en jerarquía
         var playerHealth = other.GetComponentInParent<PlayerHealthSystem>();
         if (playerHealth != null)
         {
             hasHit = true;
             playerHealth.TakeDamage(damage);
-            Debug.Log($"[EnemyProjectile] ✅ Daño aplicado al jugador via PlayerHealthSystem: {damage}");
             DestroyProjectile();
             return;
         }
@@ -330,37 +302,23 @@ public class EnemyProjectile : MonoBehaviour
         if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
         {
             hasHit = true;
-            Debug.Log($"[EnemyProjectile] 💥 Colisión con proyectil del jugador!");
-            Vector3 collisionPoint = other.ClosestPoint(transform.position);
-            ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, collisionPoint);
+            ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, other.ClosestPoint(transform.position));
             return;
         }
-        
-        // ✅ PRIORIDAD 3: Detectar colisión con layer Default (entorno/obstáculos)
-        // Solo destruir si es un objeto sólido del escenario (no trigger)
+
         if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
         {
-            // Ignorar triggers del entorno (zonas de eventos, etc)
-            if (other.isTrigger)
-            {
-                return;
-            }
-
+            if (other.isTrigger) return;
             hasHit = true;
-            if (_dealAoEOnImpact)
-                ApplyAoEImpact();
-            Debug.Log($"[EnemyProjectile] 💥 Impacto contra objeto Default: {other.gameObject.name}");
+            if (_dealAoEOnImpact) ApplyAoEImpact();
             DestroyProjectile();
             return;
         }
 
-        // ✅ Cualquier otra colisión con objetos no-trigger
         if (!other.isTrigger)
         {
             hasHit = true;
-            if (_dealAoEOnImpact)
-                ApplyAoEImpact();
-            Debug.Log($"[EnemyProjectile] 💥 Impacto contra: {other.gameObject.name} (Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
+            if (_dealAoEOnImpact) ApplyAoEImpact();
             DestroyProjectile();
         }
     }

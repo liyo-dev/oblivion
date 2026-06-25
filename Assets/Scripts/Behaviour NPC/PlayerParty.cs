@@ -276,6 +276,20 @@ namespace Game.NPC
         }
 
         /// <summary>
+        /// Ruta de salida silenciosa usada cuando el GO se destruye por cambio de escena.
+        /// No llama SyncPartyToPreset() para preservar partyMemberIds intactos y permitir restore.
+        /// </summary>
+        internal void RemoveMemberFromDestroy(NPCPartyMember member)
+        {
+            if (member == null || !_members.Contains(member)) return;
+            _members.Remove(member);
+            // SyncPartyToPreset() intencionalmente OMITIDO: el preset debe conservar los IDs
+            // para que OnSceneLoaded() pueda restaurar el party en la nueva escena.
+            OnMemberLeft?.Invoke(member);
+            OnPartyChanged?.Invoke(_members);
+        }
+
+        /// <summary>
         /// Remueve un NPC del equipo del jugador.
         /// </summary>
         /// <returns>True si se removió exitosamente</returns>
@@ -797,8 +811,15 @@ namespace Game.NPC
                     var partyMember = npcManager.GetComponent<NPCPartyMember>();
                     if (partyMember != null && !HasMember(partyMember))
                     {
-                        Log($"✅ Reintento exitoso: {partyMember.DisplayName} encontrado y unido al party");
-                        partyMember.JoinParty();
+                        bool joined = partyMember.JoinParty();
+                        if (joined)
+                            Log($"✅ Reintento exitoso: {partyMember.DisplayName} unido al party");
+                        else
+                        {
+                            // JoinParty puede fallar si el NavMesh aún no está listo; reintentar
+                            LogWarning($"  ⚠️ JoinParty() falló para {partyMember.DisplayName} - sigue pendiente");
+                            stillPending.Add(id);
+                        }
                     }
                     else if (partyMember == null)
                     {
@@ -841,19 +862,31 @@ namespace Game.NPC
         /// </summary>
         public void OnSceneLoaded()
         {
-            // ✅ CRÍTICO: Limpiar miembros null (destruidos al cambiar de escena)
-            // Esto ocurre cuando sales al menú principal y vuelves a cargar
+            // Limpiar referencias nulas por si algún miembro no usó RemoveMemberFromDestroy
             var nullCount = _members.RemoveAll(m => m == null);
             if (nullCount > 0)
-            {
                 Log($"🧹 Limpiados {nullCount} miembros null tras cambio de escena");
-            }
-            
-            if (_pendingMemberIds.Count > 0)
+
+            // Si no quedan miembros activos ni pendientes, recuperar IDs desde el preset.
+            // Cubre el caso donde el cambio de escena destruyó todos los GOs del party:
+            // RemoveMemberFromDestroy preservó el preset intacto, así que los IDs siguen ahí.
+            if (_members.Count == 0 && _pendingMemberIds.Count == 0)
             {
-                Log($"🔄 Nueva escena cargada, reintentando restaurar {_pendingMemberIds.Count} miembros pendientes...");
-                // Los reintentos se manejan automáticamente en Update()
+                var preset = GameBootService.Profile?.GetActivePresetResolved();
+                if (preset?.partyMemberIds != null && preset.partyMemberIds.Count > 0)
+                {
+                    foreach (var id in preset.partyMemberIds)
+                    {
+                        if (!_pendingMemberIds.Contains(id))
+                            _pendingMemberIds.Add(id);
+                    }
+                    if (_pendingMemberIds.Count > 0)
+                        Log($"⏳ {_pendingMemberIds.Count} IDs recuperados del preset para restaurar en nueva escena");
+                }
             }
+
+            if (_pendingMemberIds.Count > 0)
+                Log($"🔄 Nueva escena cargada — {_pendingMemberIds.Count} miembros pendientes, Update() los reintentará");
         }
 
         /// <summary>
@@ -1329,7 +1362,13 @@ namespace Game.NPC
                 if (partyMember != null && !HasMember(partyMember))
                 {
                     Log($"Uniendo {partyMember.DisplayName} al party...");
-                    partyMember.JoinParty(); // Esto llamará a AddMember internamente (y activará el GO si está inactivo)
+                    bool joined = partyMember.JoinParty();
+                    if (!joined)
+                    {
+                        // JoinParty falla si NavMesh no está listo o party lleno; marcar pendiente para retry
+                        LogWarning($"JoinParty() falló para {partyMember.DisplayName} - marcado como pendiente");
+                        _pendingMemberIds.Add(id);
+                    }
                 }
                 else if (partyMember == null)
                 {

@@ -1768,7 +1768,7 @@ namespace Game.NPC
                      Vector3 targetPos  = _combatTarget.position + Vector3.up * 1f;
                      var spell = Instantiate(prefab, spawnPos, Quaternion.LookRotation(targetPos - spawnPos));
                      if (spell.TryGetComponent<EnemyProjectile>(out var proj))
-                         proj.Initialize((targetPos - spawnPos).normalized);
+                         proj.Initialize((targetPos - spawnPos).normalized, _ctx.Config.combatConfig.GetSpellDamage(slotIndex));
                 }
             }
         }

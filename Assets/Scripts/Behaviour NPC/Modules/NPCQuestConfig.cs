@@ -158,9 +158,12 @@ namespace Game.NPC.Modules
                 }
             }
 
-            // Si no hay quest activa, verificar si hay alguna disponible para iniciar
+            // Si no hay quest activa, verificar si hay alguna disponible para iniciar.
+            // Solo mostrar icono si el NPC puede ofrecerla él mismo (dlgBefore != null).
+            // Si dlgBefore es null, la quest la inicia un agente externo (grafo narrativo)
+            // y no debe aparecer el icono de "disponible" antes de que empiece.
             var first = GetFirstInactiveQuest();
-            if (first != null && showIconWhenQuestAvailable)
+            if (first != null && first.dlgBefore != null && showIconWhenQuestAvailable)
                 return QuestIconState.Available;
 
             return QuestIconState.None;

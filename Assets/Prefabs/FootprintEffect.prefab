@@ -128,3 +128,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FootprintEffect
   _renderer: {fileID: 3525984345017348931}
   _duration: 1.5
+  _emissionMultiplier: 1

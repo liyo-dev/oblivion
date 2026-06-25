@@ -5639,7 +5639,7 @@ MonoBehaviour:
   rainRadius: 7
   rainWarningDuration: 1.5
   rainImpactRadius: 1.8
-  rainDamage: 20
+  rainDamage: 40
   rainCooldown: 22
   debugLogAnimator: 0
   canStartCombat: 0

@@ -209,7 +209,14 @@ namespace Game.NPC
         {
             if (_isInParty)
             {
-                LeaveParty();
+                // No llamar LeaveParty() al destruirse por cambio de escena:
+                // LeaveParty() → SyncPartyToPreset() vaciaría partyMemberIds uno a uno
+                // mientras Unity destruye todos los GOs, corrompiendo el preset para el restore.
+                // Usamos una ruta silenciosa que preserva el preset intacto.
+                _isInParty = false;
+                var partyRef = _party;
+                _party = null;
+                partyRef?.RemoveMemberFromDestroy(this);
             }
         }
         #endregion

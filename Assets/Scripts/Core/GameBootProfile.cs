@@ -111,6 +111,7 @@ public class GameBootProfile : ScriptableObject
                 {
                     npcId = npc.npcId,
                     position = npc.position,
+                    rotation = npc.rotation,
                     hasActiveState = npc.hasActiveState,
                     isActive = npc.isActive
                 });
@@ -221,6 +222,7 @@ public class GameBootProfile : ScriptableObject
                 {
                     npcId = e.npcId,
                     position = e.position,
+                    rotation = e.rotation,
                     hasActiveState = e.hasActiveState,
                     isActive = e.isActive
                 });
@@ -367,6 +369,7 @@ public class GameBootProfile : ScriptableObject
                 {
                     npcId = e.npcId,
                     position = e.position,
+                    rotation = e.rotation,
                     hasActiveState = e.hasActiveState,
                     isActive = e.isActive
                 });
@@ -415,6 +418,7 @@ public class GameBootProfile : ScriptableObject
                     {
                         npcId = e.npcId,
                         position = e.position,
+                        rotation = e.rotation,
                         hasActiveState = e.hasActiveState,
                         isActive = e.isActive
                     });
@@ -774,6 +778,7 @@ public class GameBootProfile : ScriptableObject
                     if (Vector3.Distance(existing.position, position) > 0.01f)
                     {
                         existing.position = position;
+                        existing.rotation = npc.transform.rotation;
                         preset.npcPositions[existingIndex] = existing;
                         Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition/transform: {position}");
                       }
@@ -795,6 +800,7 @@ public class GameBootProfile : ScriptableObject
             {
                 npcId = npcId,
                 position = npcPosition,
+                rotation = npc.transform.rotation,
                 hasActiveState = false,
                 isActive = true
             };
@@ -856,7 +862,7 @@ public class GameBootProfile : ScriptableObject
 
             try
             {
-                // Si tiene NavMeshAgent, usar Warp para evitar fsica/paths
+                // Si tiene NavMeshAgent, usar Warp para evitar física/paths
                 var agent = npc.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (agent != null && agent.isOnNavMesh)
                 {
@@ -865,6 +871,14 @@ public class GameBootProfile : ScriptableObject
                 else
                 {
                     npc.transform.position = pos;
+                }
+
+                // Restaurar rotación si se guardó (identity indica que no había rotación persistida)
+                if (entry.rotation != Quaternion.identity)
+                {
+                    npc.transform.rotation = entry.rotation;
+                    if (agent != null && agent.isOnNavMesh)
+                        agent.nextPosition = npc.transform.position;
                 }
 
                 // Aplicar estado activo si se guardó

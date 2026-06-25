@@ -51,6 +51,7 @@ public class PlayerPresetSO : ScriptableObject
     {
         public string npcId;        // normalizado: nombre del GameObject
         public Vector3 position;    // última posición persistida
+        public Quaternion rotation; // última rotación persistida (Quaternion.identity = sin persistir)
         public bool hasActiveState; // si se ha guardado explícitamente el estado activo
         public bool isActive;       // si el NPC debe estar activo o no (solo válido si hasActiveState=true)
     }

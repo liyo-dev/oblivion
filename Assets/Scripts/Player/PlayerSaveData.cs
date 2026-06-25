@@ -49,6 +49,7 @@ public class PlayerSaveData
     {
         public string npcId;
         public Vector3 position;
+        public Quaternion rotation;
         public bool hasActiveState;
         public bool isActive;
     }

@@ -610,7 +610,11 @@ public class ImpDemonAI : MonoBehaviour
                     Vector3 direction = Quaternion.Euler(0f, angle, 0f) * baseDir;
 
                     GameObject projectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.LookRotation(direction));
-                    var proj = projectile.GetComponent<EnemyProjectile>();
+                    var proj = projectile.GetComponent<EnemyProjectile>()
+                               ?? projectile.GetComponentInChildren<EnemyProjectile>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    if (!proj) Debug.LogError($"[ImpDemonAI] El prefab '{projectilePrefab.name}' no tiene componente EnemyProjectile en la raíz ni en hijos.");
+#endif
                     if (proj) proj.Initialize(direction, projectileDamage);
                 }
             }

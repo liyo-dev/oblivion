@@ -29,6 +29,8 @@ public class ConfirmationPopupUI : MonoBehaviour
     private Action _onCancel;
     private bool _isShown;
     private float _savedTimeScale;
+    private bool _confirmSelected = true;
+    private Coroutine _blinkRoutine;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -62,10 +64,11 @@ public class ConfirmationPopupUI : MonoBehaviour
         if (cancelButton)  { cancelButton.onClick.RemoveAllListeners();  cancelButton.onClick.AddListener(Cancel);  }
 
         _isShown = true;
+        _confirmSelected = true;
         if (panel) panel.SetActive(true);
 
-        // Forzar selección del botón confirmar para que el estado Selected sea visible
-        if (confirmButton) EventSystem.current?.SetSelectedGameObject(confirmButton.gameObject);
+        SelectButton(_confirmSelected);
+        StartBlink();
     }
 
     void Update()
@@ -76,19 +79,75 @@ public class ConfirmationPopupUI : MonoBehaviour
         var gp = Gamepad.current;
         if (gp != null)
         {
-            if (gp.buttonSouth.wasPressedThisFrame) { Confirm(); return; }
-            if (gp.buttonEast.wasPressedThisFrame)  { Cancel();  return; }
+            if (gp.buttonSouth.wasPressedThisFrame)  { Confirm(); return; }
+            if (gp.buttonEast.wasPressedThisFrame)   { Cancel();  return; }
+            if (gp.dpad.left.wasPressedThisFrame || gp.leftStick.left.wasPressedThisFrame)
+                ToggleSelection();
+            if (gp.dpad.right.wasPressedThisFrame || gp.leftStick.right.wasPressedThisFrame)
+                ToggleSelection();
         }
         var kb = Keyboard.current;
         if (kb != null)
         {
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) { Confirm(); return; }
             if (kb.escapeKey.wasPressedThisFrame) { Cancel(); return; }
+            if (kb.leftArrowKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame || kb.tabKey.wasPressedThisFrame)
+                ToggleSelection();
         }
 #else
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) { Confirm(); return; }
         if (Input.GetKeyDown(KeyCode.Escape)) { Cancel(); return; }
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.Tab))
+            ToggleSelection();
 #endif
+    }
+
+    void ToggleSelection()
+    {
+        _confirmSelected = !_confirmSelected;
+        SelectButton(_confirmSelected);
+        StopBlink();
+        StartBlink();
+    }
+
+    void SelectButton(bool confirm)
+    {
+        var target = confirm ? confirmButton : cancelButton;
+        if (target) EventSystem.current?.SetSelectedGameObject(target.gameObject);
+    }
+
+    void StartBlink()
+    {
+        if (_blinkRoutine != null) StopCoroutine(_blinkRoutine);
+        _blinkRoutine = StartCoroutine(BlinkSelected());
+    }
+
+    void StopBlink()
+    {
+        if (_blinkRoutine != null) { StopCoroutine(_blinkRoutine); _blinkRoutine = null; }
+        ResetButtonScale(confirmButton);
+        ResetButtonScale(cancelButton);
+    }
+
+    void ResetButtonScale(Button btn)
+    {
+        if (btn) btn.transform.localScale = Vector3.one;
+    }
+
+    System.Collections.IEnumerator BlinkSelected()
+    {
+        float t = 0f;
+        const float speed = 4f;
+        const float amplitude = 0.07f;
+        var btn = _confirmSelected ? confirmButton : cancelButton;
+        while (_isShown && btn != null)
+        {
+            t += Time.unscaledDeltaTime * speed;
+            float s = 1f + Mathf.Sin(t) * amplitude;
+            btn.transform.localScale = new Vector3(s, s, 1f);
+            yield return null;
+        }
+        if (btn) btn.transform.localScale = Vector3.one;
     }
 
     void Confirm()
@@ -110,6 +169,7 @@ public class ConfirmationPopupUI : MonoBehaviour
     void Hide()
     {
         _isShown = false;
+        StopBlink();
         Time.timeScale = _savedTimeScale;
         if (panel) panel.SetActive(false);
         if (confirmButton) confirmButton.onClick.RemoveAllListeners();

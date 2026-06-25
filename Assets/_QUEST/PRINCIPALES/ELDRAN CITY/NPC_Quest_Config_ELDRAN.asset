@@ -407,6 +407,54 @@ MonoBehaviour:
           m_Calls: []
       chainNextQuestAfterAction: 0
       chainDelay: 0.5
+  - questData: {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
+    completionMode: 1
+    autoDetectItemDelivery: 0
+    itemDeliveryStepIndex: 1
+    itemTag: 
+    ignoreFovForItem: 0
+    overrideDetectionRadius: 0
+    requiredItems: []
+    requiredWardrobeItems: []
+    requiredPartyMembers: []
+    requiredCharacter: -1
+    dlgWrongCharacter: {fileID: 0}
+    dlgBefore: {fileID: 0}
+    dlgInProgress: {fileID: 0}
+    dlgTurnIn: {fileID: 11400000, guid: 59945f74fd500de48852ad9460cddbe2, type: 2}
+    dlgCompleted: {fileID: 0}
+    onQuestCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+    onOfferDialogueStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onOfferDialogueFinished:
+      m_PersistentCalls:
+        m_Calls: []
+    onPostActionCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+    postAction:
+      actionType: 0
+      dialogueBeforeAction: {fileID: 0}
+      maxDialogueDistance: 30
+      targetAnchorName: House_FrontDoor
+      targetTransform: {fileID: 0}
+      maxMovementDuration: 15
+      walkDisplayDuration: 3
+      turnAroundOnArrival: 0
+      combatTarget: {fileID: 0}
+      dialogueToPlay: {fileID: 0}
+      delayBeforeAction: 0
+      transitionSettings: {fileID: 0}
+      useTransition: 1
+      transitionDelay: 0
+      customAction:
+        m_PersistentCalls:
+          m_Calls: []
+      chainNextQuestAfterAction: 0
+      chainDelay: 0.5
   enableItemDetection: 1
   detectionRadius: 3
   detectionAngle: 90

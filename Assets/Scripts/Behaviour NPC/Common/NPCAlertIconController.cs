@@ -210,7 +210,7 @@ namespace Game.NPC.Common
         private IEnumerator RestoreIconAfterDialogueDelay()
         {
             // Esperar el delay configurado para que la cámara vuelva a su posición normal
-            yield return new WaitForSeconds(restoreAfterDialogueDelay);
+            yield return new WaitForSecondsRealtime(restoreAfterDialogueDelay);
 
             _restoreAfterDialogueCoroutine = null;
 
@@ -553,17 +553,18 @@ namespace Game.NPC.Common
             Sequence showSeq = DOTween.Sequence();
             showSeq.Append(iconTransform.DOScale(_targetScale, showAnimDuration).SetEase(Ease.OutBack));
             showSeq.Join(iconTransform.DOMove(targetPos, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.SetUpdate(true);
             showSeq.SetId(this);
             _currentTween = showSeq;
-            
-            yield return new WaitForSeconds(showAnimDuration);
-            
+
+            yield return new WaitForSecondsRealtime(showAnimDuration);
+
             _isShowing = false;
-            
+
             // Loop de actualización durante la duración
             float elapsed = 0f;
             float remainingDuration = duration - showAnimDuration;
-            float baseTime = Time.time;
+            float baseTime = Time.unscaledTime;
             
             while (elapsed < remainingDuration)
             {
@@ -578,20 +579,20 @@ namespace Game.NPC.Common
                     // Aplicar bounce si está activado
                     if (animateBounce)
                     {
-                        float bounce = Mathf.Sin((Time.time - baseTime) * bounceSpeed) * bounceAmplitude;
+                        float bounce = Mathf.Sin((Time.unscaledTime - baseTime) * bounceSpeed) * bounceAmplitude;
                         newTargetPos.y += bounce;
                     }
-                    
+
                     _currentIconInstance.transform.position = newTargetPos;
-                    
+
                     // Mantener billboard hacia cámara
                     ApplyBillboard(_currentIconInstance.transform);
                 }
-                
-                elapsed += Time.deltaTime;
+
+                elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
-            
+
             // Terminar con animación de ocultado
             HideAlertIcon();
         }
@@ -644,35 +645,36 @@ namespace Game.NPC.Common
             var iconTransform = _currentIconInstance.transform;
             
             DOTween.Kill(this);
-            
+
             Sequence showSeq = DOTween.Sequence();
             showSeq.Append(iconTransform.DOScale(_targetScale, showAnimDuration).SetEase(Ease.OutBack));
             showSeq.Join(iconTransform.DOMove(targetPos, showAnimDuration).SetEase(Ease.OutBack));
+            showSeq.SetUpdate(true);
             showSeq.SetId(this);
             _currentTween = showSeq;
-            
-            yield return new WaitForSeconds(showAnimDuration);
-            
+
+            yield return new WaitForSecondsRealtime(showAnimDuration);
+
             _isShowing = false;
-            float baseTime = Time.time;
-            
+            float baseTime = Time.unscaledTime;
+
             // Loop de actualización infinito (hasta que se llame HideAlertIcon)
             while (_currentIconInstance != null && !_isHiding)
             {
                 if (!_hiddenDuringDialogue)
                 {
                     Vector3 newTargetPos = GetIconWorldPosition();
-                    
+
                     if (animateBounce)
                     {
-                        float bounce = Mathf.Sin((Time.time - baseTime) * bounceSpeed) * bounceAmplitude;
+                        float bounce = Mathf.Sin((Time.unscaledTime - baseTime) * bounceSpeed) * bounceAmplitude;
                         newTargetPos.y += bounce;
                     }
-                    
+
                     _currentIconInstance.transform.position = newTargetPos;
                     ApplyBillboard(_currentIconInstance.transform);
                 }
-                
+
                 yield return null;
             }
         }
