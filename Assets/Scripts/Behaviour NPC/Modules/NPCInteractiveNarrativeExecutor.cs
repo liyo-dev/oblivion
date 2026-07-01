@@ -1208,14 +1208,14 @@ namespace Game.NPC.Modules
             
             SpawnAnchor anchor = targetAnchor ?? FindNearbySpawnAnchor(targetPos);
             
-            if (anchor != null)
+            if (anchor != null && !entry.turnAroundOnArrival)
             {
-                Quaternion targetRotation = anchor.faceDoor ? Quaternion.LookRotation(-anchor.transform.forward, Vector3.up) : Quaternion.LookRotation(anchor.transform.forward, Vector3.up);
-                transform.rotation = targetRotation;
+                transform.rotation = Quaternion.LookRotation(anchor.transform.forward, Vector3.up);
             }
             else if (entry.turnAroundOnArrival)
             {
-                transform.rotation *= Quaternion.Euler(0, 180, 0);
+                // turnAroundOnArrival tiene prioridad: girar hacia el jugador
+                _npcManager?.SimpleAnimator?.FacePlayerInstantly();
             }
         }
         

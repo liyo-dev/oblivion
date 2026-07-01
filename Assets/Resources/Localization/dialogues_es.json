@@ -198,11 +198,19 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_01",
-            "value": "Bueno ya podemos continuar por donde lo dejamos."
+            "value": "Bueno, ya podemos respirar tranquilos... Aunque hay que admitir que ha sido una coincidencia muy conveniente"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01_02",
+            "value": "Demasiado conveniente, si me preguntas a mí. Ese demonio atacó justo a tiempo para salvarnos el cuello. Casi parecía amaestrado."
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01_03",
+            "value": "E-el Reino está bajo ataque, era cuestión de tiempo que llegaran al castillo. Lo importante es que ahora somos libres y el Rey confía en nosotros."
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_02",
-            "value": "Entonces Liam, ¿que es lo que hay que hacer para ir al Sendero?"
+            "value": "Liam tiene razón, hemos tenido suerte, aprovechémosla. Entonces Liam, ¿qué es lo que hay que hacer para ir al Sendero?"
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_03",
@@ -238,7 +246,11 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_11",
-            "value": "¿Vamos o que? "
+            "value": "¿Vamos o que? ¡Que comience la operación Avestruz 2.0!"
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_12",
+            "value": "Lo confirmo. Es tonta."
         },
         {
             "key": "DLG_ELDRAN_MISSION2_INPROGRESS_01",
@@ -470,7 +482,15 @@
         },
         {
             "key": "DLG_ESTELA_PRISION_10",
-            "value": "Entonces iniciamos la operación ¡Avestruz!"
+            "value": "Vale, vale... Entonces iniciamos la operación ¡Avestruz! Yo me encargo de lo técnico, vosotros cubridme."
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_11",
+            "value": "¿Por qué avestruz?"
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_12",
+            "value": "Esta niña es tonta"
         },
         {
             "key": "DLG_GUARD_01",

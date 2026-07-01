@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -25,7 +25,7 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 2
+    cinematicEffect: 0
     emotion: 3
   - speakerNameId: CHAR_KING
     textId: DLG_KING_13

@@ -377,68 +377,48 @@ namespace Game.NPC.States
         #region Arrival Handling
         
         /// <summary>
-        /// Maneja la llegada al destino: busca SpawnAnchor cercano y ajusta orientación
+        /// Maneja la llegada al destino: ajusta orientación según turnAroundOnArrival o SpawnAnchor
         /// </summary>
         private void HandleArrival(Common.NPCStateContext context)
         {
-            // ✅ CRÍTICO: Detener el NavMeshAgent ANTES de aplicar orientación
-            // Esto evita que SyncWithNavMeshAgent sobrescriba la rotación en el siguiente frame
+            // Detener el NavMeshAgent ANTES de aplicar orientación para evitar que
+            // SyncWithNavMeshAgent sobrescriba la rotación en el siguiente frame
             if (context.Agent != null)
             {
                 Common.NavMeshAgentUtility.HardStop(context.Agent);
                 context.Log("[CinematicSequence] ✅ NavMeshAgent detenido completamente");
             }
-            
-            // Resetear animación de movimiento a 0
+
             if (context.Animator != null)
             {
                 context.Animator.ResetMovement();
             }
-            
-            // ✅ MEJORA: Usar el anchor explícito si está disponible, si no buscar cercano
-            SpawnAnchor anchor = _targetAnchor ?? FindNearbySpawnAnchor(_targetPosition);
-            
-            if (anchor != null)
-            {
-                context.Log($"[CinematicSequence] Usando SpawnAnchor '{anchor.anchorId}' para orientación");
-                ApplySpawnAnchorOrientation(context, anchor);
-            }
-            else if (_turnAroundOnArrival)
+
+            // turnAroundOnArrival tiene prioridad sobre la orientación del anchor
+            if (_turnAroundOnArrival)
             {
                 ApplyFallbackOrientation(context);
+            }
+            else
+            {
+                SpawnAnchor anchor = _targetAnchor ?? FindNearbySpawnAnchor(_targetPosition);
+                if (anchor != null)
+                {
+                    context.Log($"[CinematicSequence] Usando SpawnAnchor '{anchor.anchorId}' para orientación");
+                    ApplySpawnAnchorOrientation(context, anchor);
+                }
             }
         }
         
         /// <summary>
-        /// Aplica la orientación definida por un SpawnAnchor
+        /// Aplica la orientación definida por un SpawnAnchor (el NPC mira en la dirección del eje Z del anchor)
         /// </summary>
         private void ApplySpawnAnchorOrientation(Common.NPCStateContext context, SpawnAnchor anchor)
         {
-            Quaternion targetRotation;
-            Vector3 direction;
-            
-            // CONVENCIÓN: El SpawnAnchor se coloca con el eje Z (forward) apuntando
-            // hacia donde quieres que mire el personaje POR DEFECTO
-            if (anchor.faceDoor)
-            {
-                // faceDoor = true → Invertir la dirección (mirar al lado contrario)
-                // Usamos -forward para dar la vuelta 180°
-                direction = -anchor.transform.forward;
-                targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado en dirección INVERTIDA (faceDoor=true, usando -forward)");
-            }
-            else
-            {
-                // faceDoor = false (por defecto) → Usar la dirección del anchor tal cual
-                // El NPC mira en la dirección del eje Z del anchor
-                direction = anchor.transform.forward;
-                targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-                context.Log($"[CinematicSequence] Orientado en dirección del anchor (faceDoor=false, usando forward)");
-            }
-            
-            context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': faceDoor={anchor.faceDoor}");
-            context.Log($"[CinematicSequence] Anchor forward: {anchor.transform.forward}");
-            context.Log($"[CinematicSequence] Direction applied: {direction}");
+            Vector3 direction = anchor.transform.forward;
+            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+
+            context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': forward={anchor.transform.forward}");
             context.Log($"[CinematicSequence] Target rotation (euler): {targetRotation.eulerAngles}");
             
             // ✅ NUEVO: Aplicar POSICIÓN exacta del anchor (el NavMesh puede no permitir llegar exactamente)
@@ -491,13 +471,19 @@ namespace Game.NPC.States
         {
             var newRotation = context.Transform.rotation * Quaternion.Euler(0, TURN_AROUND_ANGLE, 0);
             context.Transform.rotation = newRotation;
-            context.Log("[CinematicSequence] Girado 180° (sin SpawnAnchor)");
-            
-            // ✅ FIX: Sincronizar con NPCSimpleAnimator
+            context.Log("[CinematicSequence] Girado 180°");
+
             if (context.Animator != null)
             {
+                // DisableAutoRotation impide que SyncWithNavMeshAgent/ApplySmoothRotation
+                // en el LateUpdate del mismo frame sobreescriban la rotación aplicada.
+                context.Animator.DisableAutoRotation();
+
                 Vector3 forward = newRotation * Vector3.forward;
                 context.Animator.FaceDirection(forward);
+
+                if (_owner != null)
+                    _owner.StartCoroutine(ReenableAutoRotationNextFrame(context.Animator));
             }
         }
         

@@ -30,7 +30,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION10_NAME",
-            "value": "Atrapados"
+            "value": "Operación Avestruz"
         },
         {
             "key": "QUEST_ELDRAN_MISSION11_DESC",
@@ -55,6 +55,14 @@
         {
             "key": "QUEST_ELDRAN_MISSION13_NAME",
             "value": "Nos vemos fuera."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION14_DESC",
+            "value": "Busca al amigo de Eldran en el pueblo de al lado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION14_NAME",
+            "value": "Operación Avestruz 2.0"
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_DESC",

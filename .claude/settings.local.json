@@ -96,7 +96,8 @@
       "Bash(findstr -i sendero)",
       "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs\")",
       "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs.meta\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(grep *)"
     ]
   }
 }

@@ -202,23 +202,49 @@ public class PartyControlManager : MonoBehaviour
         var party = PlayerParty.Instance;
         if (party == null) return;
 
-        var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
+        var swapper = ActiveCharacterSwapper.Instance;
+        var hiddenNpc = swapper?.HiddenNpc;
 
-        foreach (var member in party.Members)
+        if (_isPartyFollowing)
         {
-            if (member == null || member == hiddenNpc) continue;
-
-            if (_isPartyFollowing)
+            // Quitar el anclaje antes de teletransportar para que OnTeleportedToPlayer arranque el seguimiento
+            foreach (var member in party.Members)
             {
+                if (member == null || member == hiddenNpc) continue;
                 if (member.NPCManager?.Context != null)
                     member.NPCManager.Context.IsPinnedByParty = false;
-                member.StartFollowing();
             }
-            else
+
+            // Teletransportar a todos al personaje activo
+            party.TeleportAllMembersToPlayer();
+
+            // Will NPC fuera del party (instanciado al cambiar de personaje)
+            var willNpc = swapper?.WillNpcInstance;
+            if (willNpc != null && willNpc != hiddenNpc)
             {
+                if (willNpc.NPCManager?.Context != null)
+                    willNpc.NPCManager.Context.IsPinnedByParty = false;
+                swapper.TeleportWillNpcToPlayer();
+                willNpc.StartFollowingIgnorePartyCheck();
+            }
+        }
+        else
+        {
+            foreach (var member in party.Members)
+            {
+                if (member == null || member == hiddenNpc) continue;
                 member.StopFollowing();
                 if (member.NPCManager?.Context != null)
                     member.NPCManager.Context.IsPinnedByParty = true;
+            }
+
+            // Will NPC fuera del party
+            var willNpc = swapper?.WillNpcInstance;
+            if (willNpc != null && willNpc != hiddenNpc)
+            {
+                willNpc.StopFollowing();
+                if (willNpc.NPCManager?.Context != null)
+                    willNpc.NPCManager.Context.IsPinnedByParty = true;
             }
         }
     }

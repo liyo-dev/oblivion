@@ -429,61 +429,79 @@ namespace Game.NPC
             // Right = Vector3.Cross(up, forward) → la derecha cuando miras hacia adelante
             Vector3 playerRight = Vector3.Cross(Vector3.up, playerForward).normalized;
             
-            // Contadores para distribuir múltiples NPCs en el mismo lado
-            int leftCount = 0;
-            int rightCount = 0;
-            
+            // Recopilar miembros que deben posicionarse
             var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
+            var membersToPosition = new List<NPCPartyMember>();
             foreach (var member in _members)
             {
-                if (member == null || !member.IsActiveInParty || member.PartyConfig == null)
-                    continue;
-
-                // No posicionar al NPC oculto (controlado por el jugador vía character swap)
+                if (member == null || !member.IsActiveInParty || member.PartyConfig == null) continue;
                 if (member == hiddenNpc) continue;
-                
-                // Verificar si debe posicionarse durante diálogos
                 if (!member.PartyConfig.posicionarseDuranteDialogos)
                 {
                     Log($"  ↳ {member.DisplayName}: posicionamiento desactivado");
                     continue;
                 }
-                
-                // Determinar el lado y calcular posición
-                bool isLeftSide = member.PartyConfig.ladoPreferidoDialogo == Modules.DialoguePositionSide.Left;
-                int sideCount = isLeftSide ? leftCount++ : rightCount++;
-                
-                // Calcular offset escalonado si hay múltiples NPCs en el mismo lado
-                float lateralDistance = member.PartyConfig.distanciaLateralDialogo + (sideCount * 0.5f);
-                float forwardOffset = member.PartyConfig.offsetDelanteDialogo - (sideCount * 0.3f);
-                
-                // Calcular posición objetivo
-                Vector3 lateralOffset = playerRight * lateralDistance * (isLeftSide ? -1f : 1f);
-                Vector3 forwardOffsetVec = playerForward * forwardOffset;
-                Vector3 targetPosition = _playerTransform.position + lateralOffset + forwardOffsetVec;
-                
-                // Validar en NavMesh
-                if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
-                {
-                    targetPosition = hit.position;
-                }
-                
-                // Teleportar siempre al inicio del diálogo para que la cámara
-                // los encuentre ya en posición (evita que caminen durante el diálogo)
-                var navAgent = member.NPCManager?.Agent;
-                if (navAgent != null && navAgent.isOnNavMesh)
-                    navAgent.Warp(targetPosition);
-                else
-                    member.transform.position = targetPosition;
+                membersToPosition.Add(member);
+            }
 
-                // Entrar en estado de diálogo (quieto mirando al NPC)
-                member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
-                
-                string sideName = isLeftSide ? "IZQUIERDA" : "DERECHA";
-                Log($"  ↳ {member.DisplayName} → {sideName} (distancia: {lateralDistance:F1}m, offset: {forwardOffset:F1}m)");
+            int n = membersToPosition.Count;
+            if (n == 0) return;
+
+            // Distribuir en DOS arcos laterales (derecha e izquierda del player),
+            // evitando la zona θ≈70°-110° (directamente detrás del player).
+            // Cuando la cámara enfoca a un party member usa la dirección hacia el NPC;
+            // si el member está detrás del player, esa línea pasa por el player → lo tapa.
+            // Con members a los lados, la línea cámara→member pasa a ≥1m del player.
+            //
+            // θ=0°   → derecha pura (perpendicular al eje player-NPC)
+            // θ=90°  → directamente detrás del player  ← ZONA PELIGROSA, evitar
+            // θ=180° → izquierda pura
+            //
+            // Arco derecho:  θ ∈ [15°, 50°]  → derecha-adelante a derecha-atrás
+            // Arco izquierdo: θ ∈ [130°, 165°] → izquierda-atrás a izquierda-adelante
+            const float radius    = 2.5f;
+            const float rightMin  = 15f, rightMax  = 50f;
+            const float leftMin   = 130f, leftMax  = 165f;
+
+            int rightCount = (n + 1) / 2;   // ceil(n/2)
+            int leftCount  = n / 2;          // floor(n/2)
+
+            for (int i = 0; i < rightCount; i++)
+            {
+                float t        = rightCount == 1 ? 0.5f : (float)i / (rightCount - 1);
+                float thetaDeg = Mathf.Lerp(rightMin, rightMax, t);
+                float thetaRad = thetaDeg * Mathf.Deg2Rad;
+                Vector3 offset = playerRight * Mathf.Cos(thetaRad) - playerForward * Mathf.Sin(thetaRad);
+                PlaceMemberInDialogueFormation(membersToPosition[i], offset, radius, npcTarget, thetaDeg);
+            }
+
+            for (int i = 0; i < leftCount; i++)
+            {
+                float t        = leftCount == 1 ? 0.5f : (float)i / (leftCount - 1);
+                float thetaDeg = Mathf.Lerp(leftMin, leftMax, t);
+                float thetaRad = thetaDeg * Mathf.Deg2Rad;
+                Vector3 offset = playerRight * Mathf.Cos(thetaRad) - playerForward * Mathf.Sin(thetaRad);
+                PlaceMemberInDialogueFormation(membersToPosition[rightCount + i], offset, radius, npcTarget, thetaDeg);
             }
         }
         
+        private void PlaceMemberInDialogueFormation(NPCPartyMember member, Vector3 dirOffset, float radius, Transform npcTarget, float thetaDeg)
+        {
+            Vector3 targetPosition = _playerTransform.position + dirOffset * radius;
+
+            if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                targetPosition = hit.position;
+
+            var navAgent = member.NPCManager?.Agent;
+            if (navAgent != null && navAgent.isOnNavMesh)
+                navAgent.Warp(targetPosition);
+            else
+                member.transform.position = targetPosition;
+
+            member.MoveToDialoguePosition(targetPosition, member.PartyConfig.tiempoMaximoMovimientoDialogo, npcTarget);
+            Log($"  ↳ {member.DisplayName} → arco θ={thetaDeg:F0}° (radio: {radius:F1}m)");
+        }
+
         /// <summary>
         /// Libera a los party members del posicionamiento de diálogo y vuelven a seguir normalmente.
         /// </summary>
@@ -1060,6 +1078,9 @@ namespace Game.NPC
                 // No teletransportar miembros en cinemática (escoltas, secuencias, etc.)
                 if (member.NPCManager != null && member.NPCManager.IsInCinematic) continue;
 
+                // En modo Libre (IsPinnedByParty) el personaje puede ir donde quiera — sin auto-teleport
+                if (member.NPCManager?.Context?.IsPinnedByParty == true) continue;
+
                 float distance = Vector3.Distance(member.transform.position, _playerTransform.position);
 
                 // Usar distancia del config del miembro (o 15f por defecto, más agresivo que antes)
@@ -1077,6 +1098,9 @@ namespace Game.NPC
             var willNpc = willNpcSwapper?.WillNpcInstance;
             if (willNpc != null && !(willNpc.NPCManager?.IsInCinematic ?? false))
             {
+                // En modo Libre, Will NPC tampoco se teletransporta
+                if (willNpc.NPCManager?.Context?.IsPinnedByParty == true) return;
+
                 float willDist = Vector3.Distance(willNpc.transform.position, _playerTransform.position);
                 float willThreshold = willNpc.PartyConfig?.distanciaParaTeletransporte ?? 15f;
                 if (willDist > willThreshold)

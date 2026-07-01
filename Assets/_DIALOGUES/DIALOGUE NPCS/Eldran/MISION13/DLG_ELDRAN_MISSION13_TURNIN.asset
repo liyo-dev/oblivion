@@ -20,6 +20,20 @@ MonoBehaviour:
     isPlayerSpeaking: 0
     cinematicEffect: 1
     emotion: 1
+  - speakerNameId: CHAR_ESTELA
+    textId: DLG_ELDRAN_MISSION13_TURNIN_01_02
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 4
+  - speakerNameId: CHAR_LIAM
+    textId: DLG_ELDRAN_MISSION13_TURNIN_01_03
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 5
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION13_TURNIN_02
     text: 
@@ -90,4 +104,11 @@ MonoBehaviour:
     isPlayerSpeaking: 1
     cinematicEffect: 1
     emotion: 1
+  - speakerNameId: CHAR_LIAM
+    textId: DLG_ELDRAN_MISSION13_TURNIN_12
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    cinematicEffect: 1
+    emotion: 8
   isGroupConversation: 0

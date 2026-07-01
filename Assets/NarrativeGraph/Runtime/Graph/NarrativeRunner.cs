@@ -282,6 +282,17 @@ public class NarrativeRunner : MonoBehaviour
         }
     }
 
+    bool AreAllBranchesDone(string nestedForkGuid, List<string> branchStartGuids)
+    {
+        for (int i = 0; i < branchStartGuids.Count; i++)
+        {
+            if (string.IsNullOrEmpty(branchStartGuids[i])) continue;
+            if (Blackboard.Get<string>($"__fork_{nestedForkGuid}_{i}_node", null) != "__DONE__")
+                return false;
+        }
+        return true;
+    }
+
     /// <summary>
     /// Ejecuta una rama de nodos secuencialmente a partir de 'start'.
     /// Rastrea el progreso en el blackboard para permitir guardar y reanudar.
@@ -308,6 +319,9 @@ public class NarrativeRunner : MonoBehaviour
                     if (track)
                         Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", node.guid);
                     RelaunchForkBranches(node.guid, node.outputs);
+                    // Si todas las subramas del fork anidado ya estaban completas, marcar esta rama como completa
+                    if (track && AreAllBranchesDone(node.guid, node.outputs))
+                        Blackboard.Set($"__fork_{forkGuid}_{branchIndex}_node", "__DONE__");
                     yield break;
                 }
             }

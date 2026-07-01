@@ -950,15 +950,16 @@ public class DialogueCinematicController : MonoBehaviour
 
             currentLineIndex = lineIndex;
 
-            // Resolver speaker para esta línea (necesario en todos los modos)
-            string newSpeakerId = DetermineSpeakerId(currentLine);
-            if (newSpeakerId != currentSpeakerId)
+            // Pre-resolver el Transform del speaker para que currentSpeaker esté listo antes de
+            // los efectos y del breathing grupal. NO actualizar currentSpeakerId aquí:
+            // CheckAndAdjustCameraForSpeaker lo necesita intacto para detectar cambios en 1:1.
             {
-                Transform newSpeakerTransform = FindSpeakerTransform(newSpeakerId, currentLine);
-                if (newSpeakerTransform != null)
+                string preSpeakerId = DetermineSpeakerId(currentLine);
+                if (preSpeakerId != currentSpeakerId)
                 {
-                    currentSpeakerId = newSpeakerId;
-                    currentSpeaker = newSpeakerTransform;
+                    Transform preSpeakerTransform = FindSpeakerTransform(preSpeakerId, currentLine);
+                    if (preSpeakerTransform != null)
+                        currentSpeaker = preSpeakerTransform;
                 }
             }
 
@@ -979,7 +980,7 @@ public class DialogueCinematicController : MonoBehaviour
                 RotatePlayerInGroup(currentLine);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (showDebugInfo)
-                    Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{newSpeakerId}' (sin corte de cámara)");
+                    Debug.Log($"[DialogueCinematicController] Grupo: speaker → '{currentSpeakerId}' (sin corte de cámara)");
 #endif
                 return;
             }
@@ -1120,6 +1121,16 @@ public class DialogueCinematicController : MonoBehaviour
         
         private void ApplyShotForSpeaker(Transform speaker, DialogueLine line, int lineIndex, int totalLines)
         {
+            // En modo 1:1, si habla un party member ocultamos el resto para evitar que
+            // aparezcan en medio del encuadre. Al volver al NPC/player los restauramos.
+            if (!_isGroupConversation)
+            {
+                if (IsPartyMember(speaker))
+                    HideNonSpeakingPartyMembers(speaker);
+                else
+                    ShowAllPartyMembers();
+            }
+
             CinematicCameraShot appropriateShot = null;
 
             if (activeProfile != null && activeProfile.npcShots != null && activeProfile.npcShots.Length > 0)
@@ -1136,7 +1147,7 @@ public class DialogueCinematicController : MonoBehaviour
         }
 
         // ═══════════════════════════════════════════════════════════
-        // EFECTOS CINEMATOGRÁFICOS POR LÍNEA (CloseUp / Dramatic / Impact)
+        // EFECTOS CINEMATOGRÁFICOS POR LÍNEA
         // ═══════════════════════════════════════════════════════════
 
         private static readonly CinematicCameraShot _effectCloseUpShot = new CinematicCameraShot
@@ -1147,57 +1158,20 @@ public class DialogueCinematicController : MonoBehaviour
 
         private void ApplyLineEffect(DialogueLineEffect effect, Transform speaker)
         {
-            if (speaker == null) return;
+            if (speaker == null || effect != DialogueLineEffect.CloseUp) return;
 
             _activeEffect = effect;
 
-            // Mostrar ambos personajes para que el close-up funcione en cualquier modo
             ShowNPC();
             ShowPlayer();
-            // Ocultar party members que no sean el speaker
             if (!_isGroupConversation)
                 HideNonSpeakingPartyMembers(speaker);
 
-            // Aplicar close-up al speaker (siempre corte — los efectos dramáticos deben ser instantáneos)
             ApplyShot(_effectCloseUpShot, speaker, forceCut: true);
-
-            // Parámetros: solo shake + flash (sin viñeta ni aberración cromática)
-            float shakeIntensity;
-            float shakeDuration;
-            bool doFlash;
-
-            switch (effect)
-            {
-                case DialogueLineEffect.CloseUp:
-                    shakeIntensity = 0f;
-                    shakeDuration = 0f;
-                    doFlash = false;
-                    break;
-                case DialogueLineEffect.Dramatic:
-                    shakeIntensity = 0.15f;
-                    shakeDuration = 0.5f;
-                    doFlash = false;
-                    break;
-                case DialogueLineEffect.Impact:
-                    shakeIntensity = 0.4f;
-                    shakeDuration = 0.6f;
-                    doFlash = true;
-                    break;
-                default:
-                    return;
-            }
-
-            // Shake
-            if (shakeIntensity > 0f && dialogueCamera != null)
-                FeedbackService.CameraShake(dialogueCamera, shakeIntensity, shakeDuration);
-
-            // Flash
-            if (doFlash)
-                FeedbackService.ScreenFlash(Color.white, 0.1f);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (showDebugInfo)
-                Debug.Log($"[DialogueCinematicController] Efecto: {effect} → speaker: {speaker.name}");
+                Debug.Log($"[DialogueCinematicController] Efecto CloseUp → speaker: {speaker.name}");
 #endif
         }
 
@@ -1839,7 +1813,9 @@ public class DialogueCinematicController : MonoBehaviour
     {
         if (currentPlayer == null) return;
 
-        Transform lookTarget = line.isPlayerSpeaking ? currentNPC : currentSpeaker;
+        // El player siempre mira al NPC externo, no al speaker activo.
+        // Perseguir al speaker produce un giro brusco cada vez que cambia quien habla.
+        Transform lookTarget = currentNPC;
         if (lookTarget == null || lookTarget == currentPlayer) return;
 
         Vector3 dir = lookTarget.position - currentPlayer.position;

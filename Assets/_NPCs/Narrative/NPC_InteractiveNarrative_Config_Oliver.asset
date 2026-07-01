@@ -20,6 +20,8 @@ MonoBehaviour:
     condition:
       conditionType: 0
       targetQuest: {fileID: 0}
+      targetStepConditionId: 
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 0
@@ -34,6 +36,8 @@ MonoBehaviour:
       moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -51,6 +55,13 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 2
       alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -66,6 +77,8 @@ MonoBehaviour:
       moveTeamMembers: 0
       maxMovementDuration: 3
       turnAroundOnArrival: 1
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -83,11 +96,20 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 2
       alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 1
+    autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -100,6 +122,8 @@ MonoBehaviour:
     condition:
       conditionType: 0
       targetQuest: {fileID: 0}
+      targetStepConditionId: 
+      customEventKey: 
       debugMode: 0
     narrativeChain:
     - actionType: 0
@@ -114,6 +138,8 @@ MonoBehaviour:
       moveTeamMembers: 1
       maxMovementDuration: 0
       turnAroundOnArrival: 0
+      nearPlayerRadius: 1.8
+      lookAtPlayerOnArrival: 1
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -131,11 +157,20 @@ MonoBehaviour:
       alertIconPrefab: {fileID: 0}
       alertIconDuration: 2
       alertIconOffset: {x: 0, y: 2.5, z: 0}
+      escortMaxDuration: 120
+      escortMaxPlayerDistance: 8
+      escortResumeDistance: 3
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.6
+      teleportTransition: {fileID: 0}
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
     singleUse: 0
     autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 0
+    freezePlayerOnDetection: 0
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
@@ -144,7 +179,9 @@ MonoBehaviour:
     narrativeEventKey: 
     debugMode: 0
   persistState: 1
+  enableDetailedLogs: 0
   persistenceId: oliver-narrative-b8a7c6d5-unique
+  dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

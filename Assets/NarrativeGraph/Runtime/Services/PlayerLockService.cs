@@ -36,6 +36,7 @@ public class PlayerLockService : MonoBehaviour
     bool _movementScriptWasEnabled;
     Invector.vCharacterController.vThirdPersonMotor _lockedMotor;
     bool _motorWasLocked;
+    Invector.vCharacterController.vThirdPersonInput _suppressedInput;
 
     public bool IsLocked => _owners.Count > 0;
 
@@ -158,6 +159,11 @@ public class PlayerLockService : MonoBehaviour
                 Debug.LogWarning("[PlayerLockService] No se encontró vThirdPersonMotor ni script de movimiento");
             }
         }
+
+        // Pone cc.input a cero de inmediato y bloquea jump/sprint en vThirdPersonInput
+        _suppressedInput = player.GetComponent<Invector.vCharacterController.vThirdPersonInput>();
+        if (_suppressedInput != null)
+            _suppressedInput.SuppressMoveInput = true;
     }
 
     void ReleaseHardLock()
@@ -191,6 +197,14 @@ public class PlayerLockService : MonoBehaviour
             Debug.Log($"[PlayerLockService] Script de movimiento '{_movementScript.GetType().Name}' RESTAURADO");
         }
         _movementScript = null;
+
+        // Restaurar SuppressMoveInput y añadir gracia para evitar salto al cerrar UI
+        if (_suppressedInput != null)
+        {
+            _suppressedInput.SuppressMoveInput = false;
+            _suppressedInput = null;
+        }
+        Core.GamepadInputReader.IgnoreJumpButton(0.3f);
     }
 
 

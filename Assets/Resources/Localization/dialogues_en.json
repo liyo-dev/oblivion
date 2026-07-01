@@ -201,6 +201,14 @@
             "value": ""
         },
         {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01_02",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_01_03",
+            "value": ""
+        },
+        {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_02",
             "value": ""
         },
@@ -238,6 +246,10 @@
         },
         {
             "key": "DLG_ELDRAN_MISSION13_TURNIN_11",
+            "value": ""
+        },
+        {
+            "key": "DLG_ELDRAN_MISSION13_TURNIN_12",
             "value": ""
         },
         {
@@ -471,6 +483,14 @@
         {
             "key": "DLG_ESTELA_PRISION_10",
             "value": "So we start operation Ostrich!"
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_11",
+            "value": ""
+        },
+        {
+            "key": "DLG_ESTELA_PRISION_12",
+            "value": ""
         },
         {
             "key": "DLG_GUARD_01",

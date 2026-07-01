@@ -70,6 +70,8 @@ MonoBehaviour:
   - rid: 4910061783221010765
   - rid: 4910061783221010770
   - rid: 4910061957291442300
+  - rid: 4910062183143178472
+  - rid: 4910062183143178473
   applicableSceneNames:
   - MainWorld
   references:
@@ -735,8 +737,39 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: ded62503-d1aa-4965-8ee8-28fd375f470d
         position: {x: 7274, y: 2334}
-        outputs: []
+        outputs:
+        - 683b23e6-c1ac-40d0-91eb-1dde84f1526d
         questId: ELDRAN_MISSION13
+    - rid: 4910062183143178472
+      type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Espero a completar la mision 13
+        chapter: "Cap\xECptulo 6"
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
+        position: {x: 7579, y: 4127}
+        outputs:
+        - 18293a97-824e-4a42-b35b-a28365fd1601
+        questId: ELDRAN_MISSION13
+        debugLogs: 0
+    - rid: 4910062183143178473
+      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 'Mision  14: Buscar al amigo de Eldran'
+        chapter: "Cap\xECptulo 6"
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 18293a97-824e-4a42-b35b-a28365fd1601
+        position: {x: 7055, y: 4118}
+        outputs: []
+        questId: ELDRAN_MISSION14
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

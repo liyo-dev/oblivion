@@ -8,9 +8,7 @@ using UnityEngine.Serialization;
 public enum DialogueLineEffect
 {
     None,
-    CloseUp,
-    Dramatic,
-    Impact
+    CloseUp
 }
 
 [System.Serializable]

@@ -10,6 +10,9 @@ using UnityEngine.InputSystem;
 /// está en un SavePoint y el sistema de teletransporte está disponible.
 /// Añadir a un SavePoint junto con el trigger.
 /// </summary>
+// Ejecutar antes que vThirdPersonInput (orden 0) para que PushUIMode desactive
+// GamePlay antes de que Invector lea AttackMagicSpecialPressed en el mismo frame.
+[DefaultExecutionOrder(-50)]
 [RequireComponent(typeof(Collider))]
 public class SavePointTeleportTrigger : MonoBehaviour
 {
