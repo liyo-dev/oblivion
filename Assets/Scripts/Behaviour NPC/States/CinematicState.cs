@@ -243,6 +243,7 @@ namespace Game.NPC.States
             if (_timer >= _maxDuration)
             {
                 context.LogWarning($"[CinematicSequence] Timeout alcanzado ({_maxDuration}s)");
+                HandleArrival(context);
                 CleanupAndComplete(context);
                 return;
             }
@@ -407,6 +408,16 @@ namespace Game.NPC.States
                     context.Log($"[CinematicSequence] Usando SpawnAnchor '{anchor.anchorId}' para orientación");
                     ApplySpawnAnchorOrientation(context, anchor);
                 }
+                else
+                {
+                    // ✅ Diagnóstico: si esto aparece, el NPC llegó sin encontrar ningún SpawnAnchor
+                    // (ni el explícito por nombre ni uno cercano), así que mantiene la rotación que
+                    // tenía al terminar de caminar. Revisar: anchorId, si el anchor está activo/registrado
+                    // en AnchorRegistry, y si _targetPosition coincide con la posición real del anchor.
+                    context.LogWarning($"[CinematicSequence] ⚠️ No se encontró SpawnAnchor en destino {_targetPosition} " +
+                        $"(targetAnchor explícito: {(_targetAnchor != null ? _targetAnchor.anchorId : "null")}). " +
+                        "El NPC mantiene su rotación de movimiento actual.");
+                }
             }
         }
         
@@ -415,10 +426,12 @@ namespace Game.NPC.States
         /// </summary>
         private void ApplySpawnAnchorOrientation(Common.NPCStateContext context, SpawnAnchor anchor)
         {
-            Vector3 direction = anchor.transform.forward;
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+            // ✅ Única fuente de verdad para la rotación de un SpawnAnchor: SpawnAnchor.GetCharacterRotation().
+            // Antes este método recalculaba la rotación a mano (Quaternion.LookRotation(anchor.transform.forward, ...)),
+            // duplicando la lógica y además ignorando el flag 'faceDoor' del anchor.
+            Quaternion targetRotation = anchor.GetCharacterRotation();
 
-            context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': forward={anchor.transform.forward}");
+            context.Log($"[CinematicSequence] SpawnAnchor '{anchor.anchorId}': forward={anchor.transform.forward}, faceDoor={anchor.faceDoor}");
             context.Log($"[CinematicSequence] Target rotation (euler): {targetRotation.eulerAngles}");
             
             // ✅ NUEVO: Aplicar POSICIÓN exacta del anchor (el NavMesh puede no permitir llegar exactamente)

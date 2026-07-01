@@ -75,7 +75,7 @@ MonoBehaviour:
       disappearOnArrival: 0
       disappearTransition: {fileID: 0}
       moveTeamMembers: 0
-      maxMovementDuration: 3
+      maxMovementDuration: 2
       turnAroundOnArrival: 1
       nearPlayerRadius: 1.8
       lookAtPlayerOnArrival: 1
@@ -116,7 +116,7 @@ MonoBehaviour:
     persistentIconPrefab: {fileID: 0}
     sendNarrativeEvent: 0
     narrativeEventKey: 
-    debugMode: 0
+    debugMode: 1
   - description: 
     priority: 0
     condition:
@@ -179,7 +179,7 @@ MonoBehaviour:
     narrativeEventKey: 
     debugMode: 0
   persistState: 1
-  enableDetailedLogs: 0
+  enableDetailedLogs: 1
   persistenceId: oliver-narrative-b8a7c6d5-unique
   dialogueCharacterId: 
   rotateToPlayerOnInteract: 1

@@ -282237,6 +282237,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6426971119197185592, guid: a47e2e89197be0e4dae09edb870e0ee5, type: 3}
+      propertyPath: debugMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6426971119197185592, guid: a47e2e89197be0e4dae09edb870e0ee5, type: 3}
       propertyPath: disableWander
       value: 1
       objectReference: {fileID: 0}

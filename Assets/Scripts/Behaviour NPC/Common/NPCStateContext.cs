@@ -37,8 +37,8 @@ namespace Game.NPC.Common
         }
         public void Log(string message)
         {
-            //if (DebugMode)
-            //    Debug.Log($"[NPC:{Transform.name}] {message}");
+            if (DebugMode)
+                Debug.Log($"[NPC:{Transform.name}] {message}");
         }
         public void LogWarning(string message)
         {
