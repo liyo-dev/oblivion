@@ -34,7 +34,11 @@ namespace Sendero.Narrative.Editor
             { typeof(PlaySfxNode),              new Color(0.35f, 0.60f, 0.78f) },
             { typeof(AdditiveSceneCinematicNode), new Color(0.66f, 0.42f, 0.84f) },
             { typeof(GraphNoteNode),            new Color(1.00f, 0.91f, 0.56f) },
-            { typeof(PlayDialogueNode),         new Color(0.20f, 0.70f, 0.82f) }
+            { typeof(PlayDialogueNode),         new Color(0.20f, 0.70f, 0.82f) },
+            { typeof(WaitNPCInteractionNode),   new Color(0.85f, 0.55f, 0.10f) },
+            { typeof(NPCCommandNode),           new Color(0.75f, 0.42f, 0.15f) },
+            { typeof(StartCombatNode),          new Color(0.85f, 0.20f, 0.20f) },
+            { typeof(TeleportPlayerNode),       new Color(0.45f, 0.30f, 0.80f) }
         };
 
         // Paleta de colores para capítulos

@@ -195,7 +195,7 @@ public class Interactable : MonoBehaviour
             return;
         }
         
-        // ✅ PRIORIDAD: Si hay un NPCInteractiveNarrativeExecutor con narrativas condicionales,
+        // PRIORIDAD 1: Si hay un NPCInteractiveNarrativeExecutor con narrativas condicionales,
         // delegar a él en lugar de ejecutar el diálogo por defecto
         var narrativeExecutor = GetComponent<Game.NPC.Modules.NPCInteractiveNarrativeExecutor>();
         if (narrativeExecutor != null)
@@ -203,22 +203,33 @@ public class Interactable : MonoBehaviour
             var config = narrativeExecutor.GetConfiguration();
             if (config != null && config.HasAvailableNarrative())
             {
-                Debug.Log($"[Interactable:{name}] 🎭 Delegando a NPCInteractiveNarrativeExecutor (tiene narrativas condicionales disponibles)");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[Interactable:{name}] Delegando a NPCInteractiveNarrativeExecutor (tiene narrativas condicionales disponibles)");
+#endif
                 bool success = narrativeExecutor.TryExecuteNarrative();
                 if (success)
                 {
-                    Debug.Log($"[Interactable:{name}] ✅ Narrativa condicional ejecutada exitosamente");
-                    return; // ✅ Salir - no ejecutar el diálogo por defecto
+                    return;
                 }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 else
                 {
-                    Debug.LogWarning($"[Interactable:{name}] ⚠️ TryExecuteNarrative() falló, usando diálogo por defecto");
+                    Debug.LogWarning($"[Interactable:{name}] TryExecuteNarrative() falló, continuando con otros mecanismos");
                 }
+#endif
             }
-            else
-            {
-                Debug.Log($"[Interactable:{name}] ℹ️ NPCInteractiveNarrativeExecutor existe pero no hay narrativas disponibles, usando diálogo por defecto");
-            }
+        }
+
+        // PRIORIDAD 2: Si tiene NPCGraphBridge, emitir evento de interacción al grafo narrativo.
+        // El grafo decide qué hacer (diálogo, quest, etc.) desde sus nodos.
+        var graphBridge = GetComponent<Game.NPC.NPCGraphBridge>();
+        if (graphBridge != null)
+        {
+            graphBridge.EmitInteraction();
+            // No retornamos aquí: el evento es asíncrono (el grafo lo procesa cuando llegue
+            // al WaitNPCInteractionNode correspondiente). Si además hay diálogo por defecto,
+            // se ejecuta normalmente. Si el NPC está completamente gestionado por el grafo,
+            // no tendrá diálogo asignado en el Interactable y simplemente no pasará nada más.
         }
         
         // Si no hay NPCInteractiveNarrativeExecutor o no tiene narrativas disponibles,

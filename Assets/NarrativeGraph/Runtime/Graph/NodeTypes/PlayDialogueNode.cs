@@ -4,10 +4,9 @@ using UnityEngine;
 
 /// <summary>
 /// Nodo que reproduce un diálogo directamente desde el grafo narrativo.
-/// Permite centralizar el control de diálogos sin tener que asignarlos
-/// en los módulos de los NPCs.
-/// Si se indica un npcId, busca el NPC en el NPCRegistry para usar
-/// la cámara cinematográfica y las animaciones de diálogo.
+/// El sistema de diálogos (DialogueManager) gestiona internamente la cámara,
+/// los speakers y las animaciones, por lo que este nodo solo necesita
+/// el asset de diálogo.
 /// </summary>
 [Serializable]
 public sealed class PlayDialogueNode : NarrativeNode
@@ -15,11 +14,6 @@ public sealed class PlayDialogueNode : NarrativeNode
     [Header("Diálogo")]
     [Tooltip("El asset de diálogo a reproducir")]
     public DialogueAsset dialogue;
-
-    [Header("NPC (opcional)")]
-    [Tooltip("ID narrativo del NPC interlocutor (para cámara y animaciones). " +
-             "Si está vacío, el diálogo se muestra sin cámara cinematográfica.")]
-    public string npcId;
 
     [Header("One-shot (opcional)")]
     [Tooltip("Si se establece, este diálogo solo se reproducirá una vez. " +
@@ -41,7 +35,9 @@ public sealed class PlayDialogueNode : NarrativeNode
         {
             if (ctx.Blackboard.Get<bool>(OneShotKey, false))
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"[PlayDialogueNode] Diálogo ya reproducido (flag: {oneShotFlag}) → saltando");
+#endif
                 onReadyToAdvance?.Invoke();
                 return;
             }
@@ -59,31 +55,8 @@ public sealed class PlayDialogueNode : NarrativeNode
 
     private IEnumerator PlayAndAdvance(NarrativeContext ctx, Action onReadyToAdvance)
     {
-        Transform npcTransform = null;
-
-        if (!string.IsNullOrEmpty(npcId) && Game.NPC.NPCRegistry.HasInstance)
-        {
-            var npcManager = Game.NPC.NPCRegistry.Instance.GetNPCByID(npcId);
-            if (npcManager != null)
-            {
-                npcTransform = npcManager.transform;
-            }
-            else
-            {
-                Debug.LogWarning($"[PlayDialogueNode] NPC con ID '{npcId}' no encontrado en NPCRegistry");
-            }
-        }
-
         bool completed = false;
-
-        if (npcTransform != null)
-        {
-            DialogueManager.Instance.StartDialogue(dialogue, npcTransform, () => completed = true);
-        }
-        else
-        {
-            DialogueManager.Instance.StartDialogue(dialogue, () => completed = true);
-        }
+        DialogueManager.Instance.StartDialogue(dialogue, () => completed = true);
 
         while (!completed)
             yield return null;
