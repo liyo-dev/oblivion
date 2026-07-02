@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 339f96974e841554e98a97b47f63f440, type: 3}
+  m_Name: Q_FUEGO_FATUO1
+  m_EditorClassIdentifier: Assembly-CSharp::QuestData
+  questId: FUEGOFATUO_1
+  displayNameId: FUEGOFATUO_NAME
+  displayName: FUEGOFATUO_NAME
+  descriptionId: FUEGOFATUO_DESC
+  description: 
+  steps:
+  - descriptionId: FUEGOFATUO_DESC_01
+    description: Buscar provisiones con Estela
+    conditionId: FUEGOFATUO_01
+  - descriptionId: FUEGOFATUO_DESC_02
+    description: Inspeccionar el terreno con Will y Liam
+    conditionId: FUEGOFATUO_02

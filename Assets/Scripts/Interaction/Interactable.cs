@@ -44,6 +44,7 @@ public class Interactable : MonoBehaviour
     bool used, enabledForUse;
     NPCBehaviourManagerV2 _npcManager;
     NPCPartyMember _partyMember;
+    Game.NPC.CompanionFollowPrompt _followPrompt;
     bool _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
@@ -141,9 +142,16 @@ public class Interactable : MonoBehaviour
             return false;
         if (singleUse && used)
             return false;
-        // Los NPCs en el equipo no deben ser interactuables (sin botón A ni acción).
+        // Los NPCs en el equipo no deben ser interactuables (sin botón A ni acción),
+        // excepto cuando tienen el prompt "Sígueme"/"Dejar de seguir" visible.
         if (_partyMember != null && _partyMember.IsInParty)
-            return false;
+        {
+            // Lazy-init: CompanionFollowPrompt se añade dinámicamente y puede no existir en Awake.
+            if (_followPrompt == null)
+                _followPrompt = GetComponent<Game.NPC.CompanionFollowPrompt>();
+            if (_followPrompt == null || !_followPrompt.IsShowingPrompt)
+                return false;
+        }
 
         // Bloqueo central: durante combate/diálogo/cinemática no permitir nuevas interacciones
         if (IsInteractionBlockedByCurrentState(interactor))
@@ -187,6 +195,11 @@ public class Interactable : MonoBehaviour
         }
 
         OnInteract?.Invoke(interactor);
+
+        // Si el NPC es miembro del equipo, la interacción fue manejada por CompanionFollowPrompt.
+        // No continuar (sin diálogo ni narrativa).
+        if (_partyMember != null && _partyMember.IsInParty)
+            return;
 
         // Modo HandOffToTarget: delegar al NPCBehaviourManagerV2 si existe
         if (mode == InteractableMode.HandOffToTarget && _npcManager != null)

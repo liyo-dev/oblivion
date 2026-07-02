@@ -39,6 +39,8 @@ MonoBehaviour:
   spellSpecial: {fileID: 0}
   distanciaMinimaAtaque: 2
   distanciaMaximaAtaque: 15
+  followPromptIconPrefab: {fileID: 3815242607192837001, guid: b4f7a2c3d8e19054f6a3b2c1d0e78f45, type: 3}
+  stopFollowIconPrefab: {fileID: 4920183650491827001, guid: c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7, type: 3}
   posicionarseDuranteDialogos: 1
   ladoPreferidoDialogo: 0
   distanciaLateralDialogo: 1.5

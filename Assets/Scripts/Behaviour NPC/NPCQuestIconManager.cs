@@ -158,14 +158,15 @@ namespace Game.NPC
 
             if (isExecuting || _isInDialogue || isInCombat || isTooFar)
             {
-                // Forzar ocultar icono mientras ejecuta, está en diálogo, combate o fuera de rango
+                // Forzar ocultar SOLO el icono de cabeza. El minimapa es independiente de la distancia.
                 if (!_iconForcedHidden)
                 {
                     _iconForcedHidden = true;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"[NPCQuestIconManager:{name}] Forzando ocultar — executing={isExecuting}, diálogo={_isInDialogue}, combate={isInCombat}, lejano={isTooFar}");
+                    Debug.Log($"[NPCQuestIconManager:{name}] Forzando ocultar cabeza — executing={isExecuting}, diálogo={_isInDialogue}, combate={isInCombat}, lejano={isTooFar}");
 #endif
-                    HideIcon();
+                    if (_iconController != null && _iconController.HasPersistentIcon)
+                        _iconController.HideAlertIcon();
                 }
             }
             else if (_iconForcedHidden)
@@ -231,12 +232,43 @@ namespace Game.NPC
             return false;
         }
         
+        // Controla la visibilidad en minimapa de forma independiente al icono de cabeza:
+        // - Solo muestra si la quest está activa (InProgress o ReadyToTurnIn)
+        // - No tiene en cuenta la distancia al jugador
+        private void UpdateMinimapState()
+        {
+            if (_questConfig == null) return;
+
+            var state = _questConfig.GetCurrentIconState();
+            bool showInMinimap = state == NPCQuestConfig.QuestIconState.InProgress
+                              || state == NPCQuestConfig.QuestIconState.ReadyToTurnIn;
+
+            if (showInMinimap)
+            {
+                var marker = GetComponent<MinimapMarker>() ?? gameObject.AddComponent<MinimapMarker>();
+                var prefab = _questConfig.GetCurrentIconPrefab();
+                if (prefab != null)
+                {
+                    var sr = prefab.GetComponentInChildren<SpriteRenderer>();
+                    marker.SetIcon(sr != null ? sr.sprite : null, Color.white);
+                }
+                marker.SetVisible(true);
+            }
+            else
+            {
+                GetComponent<MinimapMarker>()?.SetVisible(false);
+            }
+        }
+
         public void UpdateIconState()
         {
             if (_questConfig == null || _iconController == null) return;
 
-            // Cuando el icono está forzado oculto, el bloque else-if de Update() resetea
-            // la caché y re-evalúa al despejar la condición.
+            // El minimapa se actualiza siempre, independiente de forced-hidden o distancia.
+            UpdateMinimapState();
+
+            // Cuando el icono de cabeza está forzado oculto, el bloque else-if de Update()
+            // resetea la caché y re-evalúa al despejar la condición.
             if (_iconForcedHidden) return;
 
             var newState = _questConfig.GetCurrentIconState();
@@ -274,14 +306,7 @@ namespace Game.NPC
             _iconController.SetIconOffset(_questConfig.questIconOffset);
             _iconController.SetIconScale(questIconScale);
             _iconController.ShowPersistentIcon(prefab);
-
-            // Actualizar marcador de minimapa con el sprite del prefab
-            var sr = prefab.GetComponentInChildren<SpriteRenderer>();
-            Sprite markerSprite = sr != null ? sr.sprite : null;
-
-            var marker = GetComponent<MinimapMarker>() ?? gameObject.AddComponent<MinimapMarker>();
-            marker.SetIcon(markerSprite, Color.white);
-            marker.SetVisible(true);
+            // El minimapa lo gestiona UpdateMinimapState()
         }
 
         private void HideIcon()
@@ -295,8 +320,7 @@ namespace Game.NPC
                 Debug.Log($"[NPCQuestIconManager:{name}] Ocultando icono de quest");
 #endif
             }
-
-            GetComponent<MinimapMarker>()?.SetVisible(false);
+            // El minimapa lo gestiona UpdateMinimapState()
         }
         
         [ContextMenu("Force Update Icon")]

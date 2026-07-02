@@ -128,6 +128,16 @@ namespace Game.NPC.Modules
         [Range(5f, 30f)]
         public float distanciaMaximaAtaque = 15f;
         
+        [Header("=== PROMPT SÍGUEME ===")]
+
+        [Tooltip("Prefab Canvas world-space que se muestra sobre la cabeza cuando el jugador se acerca " +
+                 "y el equipo está disuelto. Asignar 'Canvas Sigueme.prefab'. Dejar vacío para no mostrar prompt.")]
+        public GameObject followPromptIconPrefab;
+
+        [Tooltip("Prefab Canvas world-space que se muestra cuando este NPC ya está siguiendo al jugador. " +
+                 "Asignar 'Canvas Dejar De Seguir.prefab'.")]
+        public GameObject stopFollowIconPrefab;
+
         [Header("=== POSICIONAMIENTO EN DIÁLOGOS ===")]
         
         [Tooltip("¿Se posiciona automáticamente al lado del player durante diálogos?")]

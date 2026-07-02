@@ -493,6 +493,54 @@
             "value": "Esta niña es tonta"
         },
         {
+            "key": "DLG_FUEGO_FATUO_01",
+            "value": "¡Por favor, ayudadme!"
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_02",
+            "value": "¿Qué ocurre? Tranquilícese."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_03",
+            "value": "Resulta que es imposible cruzar al otro lado para llegar al pueblo de noche..."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_04",
+            "value": "Aparece un ser extraño, y cuando crees que ya vas a llegar de pronto vuelves a estar en la entrada."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_05",
+            "value": "Hay mucha gente que trabaja de dia y tiene que volver a sus casas y estan atrapados."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_06",
+            "value": "Nosotros justo ibamos hacia alli. "
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_07",
+            "value": "No se preocupe le ayudaremos con lo del ser extraño."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_08",
+            "value": "Muchas gracias! Venid a verme si lo conseguis, os daré algo a cambio..."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_09",
+            "value": "Bueno, como hay que esperar a la noche, ¿que os parece si voy a por provisiones?"
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_10",
+            "value": "Will que te parece si tu y yo inspeccionamos el camino para que cuando sea de noche sepamos como es"
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_11",
+            "value": "Perfecto. Estela nos vemos en un rato aqui en la entrada."
+        },
+        {
+            "key": "DLG_FUEGO_FATUO_12",
+            "value": "Will cuando se disuelva el equipo ahora podras acercarte a Estela o a mi y pedirnos que te sigamos."
+        },
+        {
             "key": "DLG_GUARD_01",
             "value": "Alto ahí... ¿os creeis que podeis ir destruyendo montañas como si nada?"
         },

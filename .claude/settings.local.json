@@ -97,7 +97,11 @@
       "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs\")",
       "Bash(Remove-Item \"Assets/Editor/ConfirmationPopupBuilder.cs.meta\")",
       "Bash(python -c ' *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(findstr /s /m \"NPCPartyMember\" \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\*.unity\")",
+      "Bash(findstr /s /m \"NPCPartyMember\" \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\*.prefab\")",
+      "Bash(findstr /s /r \"2725cccf54e8439d92b339a62d5d9ba3\" \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\*\")",
+      "Bash(findstr *)"
     ]
   }
 }

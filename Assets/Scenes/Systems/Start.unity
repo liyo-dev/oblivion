@@ -2695,6 +2695,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a23098449c6bdba469bc3be0eb8c7f3f, type: 2}
   - {fileID: 11400000, guid: 4c559fe0081150c48931b642667f068f, type: 2}
   - {fileID: 11400000, guid: b178523d91c8f6e46bde4691055b0dbe, type: 2}
+  - {fileID: 11400000, guid: 9055869cd1c85944295c56851354b5e5, type: 2}
 --- !u!4 &297154811
 Transform:
   m_ObjectHideFlags: 0
@@ -6211,7 +6212,7 @@ GameObject:
   - component: {fileID: 751717854}
   - component: {fileID: 751717855}
   m_Layer: 0
-  m_Name: Dedication
+  m_Name: START_Dedication
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -26555,6 +26556,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 109416902}
+  - {fileID: 751717854}
   - {fileID: 1348715578}
   - {fileID: 825809375}
   - {fileID: 1932988362}
@@ -26581,7 +26583,6 @@ SceneRoots:
   - {fileID: 206708491}
   - {fileID: 287315781}
   - {fileID: 1454978122}
-  - {fileID: 751717854}
   - {fileID: 872388927}
   - {fileID: 1952488295}
   - {fileID: 1894362556}

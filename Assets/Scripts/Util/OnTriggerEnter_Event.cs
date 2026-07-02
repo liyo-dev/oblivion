@@ -15,14 +15,25 @@ namespace Director
         private bool m_IsTriggerEnter;
         private bool isEnabled;
 
+        [Header("Requisito de misión")]
+        [Tooltip("Si se asigna, el trigger solo se activa cuando esta misión esté en curso o completada.")]
+        [SerializeField] private QuestData requiredQuest;
+
         private void Start()
         {
             isEnabled = true;
         }
 
+        private bool IsQuestRequirementMet()
+        {
+            if (requiredQuest == null) return true;
+            if (QuestManager.Instance == null) return false;
+            return QuestManager.Instance.GetState(requiredQuest.questId) != QuestState.Inactive;
+        }
+
         private void OnTriggerEnter(Collider collision)
         {
-            if (collision.CompareTag(ElementToCompare) && isEnabled)
+            if (collision.CompareTag(ElementToCompare) && isEnabled && IsQuestRequirementMet())
             {
                 if (DestroyElement) { Destroy(gameObject); }
                 if (OneTimeEvent) m_IsTriggerEnter = true;

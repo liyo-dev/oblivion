@@ -335,6 +335,15 @@ namespace Game.NPC
                     partyMember.SetConfig(configuration.partyConfig);
                     if (debugMode) Debug.Log($"[NPCManager] 🤝 NPCPartyMember añadido para {name}");
                 }
+
+                // Prompt "Sígueme": se muestra cuando el jugador se acerca y el equipo está disuelto
+                if (!GetComponent<CompanionFollowPrompt>() &&
+                    configuration.partyConfig.followPromptIconPrefab != null)
+                {
+                    var prompt = gameObject.AddComponent<CompanionFollowPrompt>();
+                    prompt.SetFollowIcon(configuration.partyConfig.followPromptIconPrefab);
+                    prompt.SetStopFollowIcon(configuration.partyConfig.stopFollowIconPrefab);
+                }
             }
 
             // Cachear componentes frecuentemente usados
