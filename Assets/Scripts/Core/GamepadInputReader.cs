@@ -966,7 +966,14 @@ namespace Core
         }
     }
 
-    public static Vector2 Move => Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
+    public static Vector2 Move
+    {
+        get
+        {
+            if (IsGameplaySuppressed()) return Vector2.zero;
+            return Controls != null ? Controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
+        }
+    }
     public static Vector2 CameraLook => Controls != null ? Controls.GamePlay.CameraLook.ReadValue<Vector2>() : Vector2.zero;
     
     /// <summary>

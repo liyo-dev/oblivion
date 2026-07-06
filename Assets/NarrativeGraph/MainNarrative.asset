@@ -72,8 +72,6 @@ MonoBehaviour:
   - rid: 4910061957291442300
   - rid: 4910062183143178472
   - rid: 4910062183143178473
-  - rid: 5290829092219519106
-  - rid: 5290829092219519107
   applicableSceneNames:
   - MainWorld
   references:
@@ -770,38 +768,8 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
         position: {x: 7055, y: 4118}
-        outputs:
-        - e3938b84-8508-4bab-9583-9eb2fac80947
-        questId: ELDRAN_MISSION14
-    - rid: 5290829092219519106
-      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        chapter: "Cap\xECptulo 6"
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: e3938b84-8508-4bab-9583-9eb2fac80947
-        position: {x: 6674, y: 4127}
-        outputs:
-        - eb892d6e-19c0-43ae-990e-943e5929384c
-        eventKey: FUEGOFATUO_01
-    - rid: 5290829092219519107
-      type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: 
-        chapter: "Cap\xECptulo 6"
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: eb892d6e-19c0-43ae-990e-943e5929384c
-        position: {x: 6258, y: 4127}
         outputs: []
-        questId: FUEGOFATUO_1
+        questId: ELDRAN_MISSION14
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

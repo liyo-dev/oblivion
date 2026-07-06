@@ -65,47 +65,6 @@ MonoBehaviour:
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
-    - actionType: 0
-      dialogue: {fileID: 11400000, guid: f67070d425dcfa347a4200db4902261f, type: 2}
-      targetAnchorName: 
-      targetTransform: {fileID: 0}
-      moveToRandomPoint: 0
-      randomMoveMinRadius: 0
-      randomMoveMaxRadius: 0
-      disappearOnArrival: 0
-      disappearTransition: {fileID: 0}
-      moveTeamMembers: 0
-      maxMovementDuration: 0
-      turnAroundOnArrival: 0
-      nearPlayerRadius: 0
-      lookAtPlayerOnArrival: 0
-      waitForPlayer: 0
-      maxPlayerDistance: 0
-      resumePlayerDistance: 0
-      animationTrigger: 
-      animationClip: {fileID: 0}
-      animationDuration: 0
-      questToStart: {fileID: 0}
-      combatConfig: {fileID: 0}
-      combatTarget: {fileID: 0}
-      sendEventOnDefeat: 0
-      defeatEventKey: 
-      sendDefeatEventBeforeDeath: 0
-      waitDuration: 0
-      showAlertIcon: 0
-      alertIconPrefab: {fileID: 0}
-      alertIconDuration: 0
-      alertIconOffset: {x: 0, y: 0, z: 0}
-      escortMaxDuration: 0
-      escortMaxPlayerDistance: 0
-      escortResumeDistance: 0
-      outOfRangeDialogue: {fileID: 0}
-      escortNpcSpeed: 0
-      escortPlayerSpeedMultiplier: 0.1
-      teleportTransition: {fileID: 0}
-      sendNarrativeEvent: 0
-      narrativeEventKey: 
-      sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1

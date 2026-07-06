@@ -183,13 +183,13 @@ MonoBehaviour:
     condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 30160d52506ee7c46b1dcdafe9667f87, type: 2}
-      targetStepConditionId: 
-      customEventKey: 
+      targetStepConditionId:
+      customEventKey:
       debugMode: 0
     narrativeChain:
     - actionType: 0
       dialogue: {fileID: 11400000, guid: b69b87b2aebf17f45bfb21cdbb889eda, type: 2}
-      targetAnchorName: 
+      targetAnchorName:
       targetTransform: {fileID: 0}
       moveToRandomPoint: 0
       randomMoveMinRadius: 5
@@ -204,14 +204,14 @@ MonoBehaviour:
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
-      animationTrigger: 
+      animationTrigger:
       animationClip: {fileID: 0}
       animationDuration: 0
       questToStart: {fileID: 0}
       combatConfig: {fileID: 0}
       combatTarget: {fileID: 0}
       sendEventOnDefeat: 0
-      defeatEventKey: 
+      defeatEventKey:
       sendDefeatEventBeforeDeath: 0
       waitDuration: 0
       showAlertIcon: 0
@@ -230,7 +230,7 @@ MonoBehaviour:
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0
-    autoExecuteOnQuestConditionMet: 1
+    autoExecuteOnQuestConditionMet: 0
     freezePlayerOnDetection: 0
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}

@@ -160,10 +160,15 @@ public class PlayerLockService : MonoBehaviour
             }
         }
 
-        // Pone cc.input a cero de inmediato y bloquea jump/sprint en vThirdPersonInput
+        // Pone cc.input a cero de inmediato y bloquea jump/sprint en vThirdPersonInput.
+        // Llamar MoveInput() explícitamente para zerear cc.input en este frame sin esperar al
+        // próximo Update() — evita que un FixedUpdate intermedio aplique movimiento residual.
         _suppressedInput = player.GetComponent<Invector.vCharacterController.vThirdPersonInput>();
         if (_suppressedInput != null)
+        {
             _suppressedInput.SuppressMoveInput = true;
+            _suppressedInput.MoveInput();
+        }
     }
 
     void ReleaseHardLock()

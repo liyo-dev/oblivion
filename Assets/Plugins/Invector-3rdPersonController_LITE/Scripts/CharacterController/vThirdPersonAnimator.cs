@@ -22,17 +22,23 @@ namespace Invector.vCharacterController
             animator.SetBool(vAnimatorParameters.IsGrounded, isGrounded);
             animator.SetFloat(vAnimatorParameters.GroundDistance, groundDistance);
 
+            // Cuando lockMovement está activo el motor no llama a SetAnimatorMoveSpeed(),
+            // por lo que verticalSpeed/horizontalSpeed/inputMagnitude mantienen el valor
+            // del último frame en movimiento. Forzamos 0 para que la animación de caminar
+            // se detenga correctamente al interactuar con NPCs, puntos de guardado, etc.
+            bool forceZeroMotion = lockMovement || stopMove;
+
             if (isStrafing)
             {
-                animator.SetFloat(vAnimatorParameters.InputHorizontal, stopMove ? 0 : horizontalSpeed, strafeSpeed.animationSmooth, Time.deltaTime);
-                animator.SetFloat(vAnimatorParameters.InputVertical, stopMove ? 0 : verticalSpeed, strafeSpeed.animationSmooth, Time.deltaTime);
+                animator.SetFloat(vAnimatorParameters.InputHorizontal, forceZeroMotion ? 0 : horizontalSpeed, strafeSpeed.animationSmooth, Time.deltaTime);
+                animator.SetFloat(vAnimatorParameters.InputVertical, forceZeroMotion ? 0 : verticalSpeed, strafeSpeed.animationSmooth, Time.deltaTime);
             }
             else
             {
-                animator.SetFloat(vAnimatorParameters.InputVertical, stopMove ? 0 : verticalSpeed, freeSpeed.animationSmooth, Time.deltaTime);
+                animator.SetFloat(vAnimatorParameters.InputVertical, forceZeroMotion ? 0 : verticalSpeed, freeSpeed.animationSmooth, Time.deltaTime);
             }
 
-            animator.SetFloat(vAnimatorParameters.InputMagnitude, stopMove ? 0f : inputMagnitude, isStrafing ? strafeSpeed.animationSmooth : freeSpeed.animationSmooth, Time.deltaTime);
+            animator.SetFloat(vAnimatorParameters.InputMagnitude, forceZeroMotion ? 0f : inputMagnitude, isStrafing ? strafeSpeed.animationSmooth : freeSpeed.animationSmooth, Time.deltaTime);
         }
 
         public virtual void SetAnimatorMoveSpeed(vMovementSpeed speed)

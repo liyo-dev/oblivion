@@ -33,8 +33,6 @@ namespace Game.NPC.Modules
         private bool _hasBeenUsed;
         private bool _hasDetectedPlayer;
         private int _currentActionIndex = -1;
-        private bool _isManagingMinimapMarker;
-        
         private float _lastExecutionEndTime = -999f;
         private const float POST_EXECUTION_COOLDOWN = 0.5f;
         
@@ -531,14 +529,6 @@ namespace Game.NPC.Modules
             if (iconPrefab != null && !_alertIconController.HasPersistentIcon)
             {
                 _alertIconController.ShowPersistentIcon(iconPrefab);
-
-                // Actualizar marcador de minimapa si este executor es el que muestra el icono
-                // (si NPCQuestIconManager ya gestiona el marcador, se salta gracias al guard HasPersistentIcon)
-                var sr = iconPrefab.GetComponentInChildren<SpriteRenderer>();
-                var marker = GetComponent<MinimapMarker>() ?? gameObject.AddComponent<MinimapMarker>();
-                marker.SetIcon(sr != null ? sr.sprite : null, Color.white);
-                marker.SetVisible(true);
-                _isManagingMinimapMarker = true;
             }
         }
 
@@ -549,11 +539,6 @@ namespace Game.NPC.Modules
                 _alertIconController.HideAlertIcon();
             }
 
-            if (_isManagingMinimapMarker)
-            {
-                GetComponent<MinimapMarker>()?.SetVisible(false);
-                _isManagingMinimapMarker = false;
-            }
         }
 
         // =================================================================================

@@ -72440,12 +72440,8 @@ PrefabInstance:
     m_TransformParent: {fileID: 659279963}
     m_Modifications:
     - target: {fileID: 3687838035589215408, guid: 098c6df959df83548a9e1d1952092ccb, type: 3}
-      propertyPath: disableWander
+      propertyPath: persistLastPosition
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3687838035589215408, guid: 098c6df959df83548a9e1d1952092ccb, type: 3}
-      propertyPath: dialogueCharacterId
-      value: CHAR_SOFIA
       objectReference: {fileID: 0}
     - target: {fileID: 6941739730369371496, guid: 098c6df959df83548a9e1d1952092ccb, type: 3}
       propertyPath: m_Name

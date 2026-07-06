@@ -343,7 +343,7 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
             catch { }
         }
 
-        // NUEVO: Resetear visuales de daño al entrar en modo Cinematic
+        // Resetear visuales de daño y detener movimiento al entrar en modo Cinematic
         if (top == ActionMode.Cinematic)
         {
             var healthSystem = GetComponent<PlayerHealthSystem>();
@@ -353,6 +353,24 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 #if UNITY_EDITOR
                 if (debugLogs) Debug.Log("[PlayerActionManager] Visuales de daño reseteados (modo Cinematic)");
 #endif
+            }
+
+            // Zeroa los parámetros de movimiento del Animator inmediatamente.
+            // ControlLocomotionType() queda bloqueado por lockMovement=true y nunca llama a
+            // SetAnimatorMoveSpeed(), por lo que InputMagnitude quedaría con el valor del
+            // frame anterior y la animación de caminar seguiría reproduciéndose.
+            if (_anim != null)
+            {
+                try
+                {
+                    _anim.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, 0f);
+                    _anim.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputHorizontal, 0f);
+                    _anim.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputVertical, 0f);
+#if UNITY_EDITOR
+                    if (debugLogs) Debug.Log("[PlayerActionManager] InputMagnitude/H/V reseteados a 0 (modo Cinematic)");
+#endif
+                }
+                catch { }
             }
         }
 
