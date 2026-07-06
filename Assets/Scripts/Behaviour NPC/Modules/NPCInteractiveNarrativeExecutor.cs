@@ -689,6 +689,7 @@ namespace Game.NPC.Modules
                 case NarrativeActionType.LeaveParty:    yield return ExecuteLeaveParty(); break;
                 case NarrativeActionType.CheckPartyMembers: yield return ExecuteCheckPartyMembers(); break;
                 case NarrativeActionType.TeleportPlayer:    yield return ExecuteTeleportPlayer(entry); break;
+                case NarrativeActionType.ScreenFade:        yield return ExecuteScreenFade(entry); break;
             }
         }
 
@@ -861,7 +862,9 @@ namespace Game.NPC.Modules
             Vector3 toPlayer = player.transform.position - transform.position;
             toPlayer.y = 0f;
             Vector3 offsetDir = toPlayer.sqrMagnitude > 0.01f ? toPlayer.normalized : -transform.forward;
-            Vector3 desiredPos = player.transform.position - offsetDir * entry.nearPlayerRadius;
+            Vector3 desiredPos = entry.teleportNearPlayerRadius > 0f
+                ? player.transform.position - offsetDir * entry.teleportNearPlayerRadius
+                : player.transform.position;
 
             Vector3 targetPos = desiredPos;
             if (UnityEngine.AI.NavMesh.SamplePosition(desiredPos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
@@ -1399,6 +1402,30 @@ namespace Game.NPC.Modules
             questManager.ForceCheckPartyMembersForActiveQuests();
             
             yield return null;
+        }
+
+        private IEnumerator ExecuteScreenFade(NarrativeChainEntry entry)
+        {
+            if (entry.screenFadeTransition != null)
+            {
+                var tm = TransitionManager.Instance();
+                if (tm != null)
+                {
+                    tm.Transition(entry.screenFadeTransition, 0f);
+                    float duration = entry.screenFadeTransition.autoAdjustTransitionTime
+                        ? entry.screenFadeTransition.transitionTime / entry.screenFadeTransition.transitionSpeed
+                        : entry.screenFadeTransition.transitionTime;
+                    yield return new WaitForSecondsRealtime(duration);
+                }
+                yield break;
+            }
+
+            if (entry.fadeDuration <= 0f)
+            {
+                FeedbackService.SetScreenFadeImmediate(entry.fadeIn ? entry.fadeColor : Color.clear);
+                yield break;
+            }
+            yield return FeedbackService.ScreenFadeAsync(entry.fadeColor, entry.fadeDuration, entry.fadeIn);
         }
 
         private IEnumerator HandlePostNarrativeState(ConditionalNarrative narrativeData)

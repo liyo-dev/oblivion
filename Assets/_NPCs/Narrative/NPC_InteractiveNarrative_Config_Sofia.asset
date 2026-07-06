@@ -24,7 +24,7 @@ MonoBehaviour:
       customEventKey: FUEGO_FATUO
       debugMode: 0
     narrativeChain:
-    - actionType: 11
+    - actionType: 14
       dialogue: {fileID: 0}
       targetAnchorName: 
       targetTransform: {fileID: 0}
@@ -38,6 +38,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -62,6 +63,99 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0
       teleportTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 11
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 2
+      lookAtPlayerOnArrival: 1
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.1
+      teleportTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 14
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 0
+      lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.1
+      teleportTransition: {fileID: 0}
+      fadeIn: 0
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0

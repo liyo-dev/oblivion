@@ -31,6 +31,7 @@ namespace Game.NPC.Modules
         TeleportNearPlayer = 11, // Aparece al lado del jugador instantáneamente
         // 12 era ShowSpeechBubble — eliminado. NO reutilizar el 12.
         TeleportPlayer     = 13, // Teletransporta al jugador a un anchor/Transform con transición
+        ScreenFade         = 14, // Fundir pantalla a negro (fadeIn=true) o quitar el negro (fadeIn=false)
     }
 
     /// <summary>
@@ -89,6 +90,11 @@ namespace Game.NPC.Modules
 
         [Tooltip("¿Mirar hacia el jugador al llegar?")]
         public bool lookAtPlayerOnArrival = true;
+
+        [Header("Teleport Near Player")]
+        [Tooltip("Distancia al jugador a la que el NPC aparecerá instantáneamente (si actionType = TeleportNearPlayer). 0 = posición exacta del jugador.")]
+        [Min(0f)]
+        public float teleportNearPlayerRadius = 1.8f;
 
         [Header("Follow Player (Movement)")]
         [Tooltip("¿El NPC debe esperar al jugador si se aleja? (útil para 'sígueme')")]
@@ -184,6 +190,17 @@ namespace Game.NPC.Modules
         [Header("Teleport Player")]
         [Tooltip("Transición de pantalla para cubrir y descubrir el teletransporte del jugador")]
         public TransitionSettings teleportTransition;
+
+        [Header("Screen Fade")]
+        [Tooltip("Transición de EasyTransition a usar. Si está asignada, ignora fadeIn/fadeColor/fadeDuration y usa esta transición.")]
+        public TransitionSettings screenFadeTransition;
+        [Tooltip("true = fundir a negro (pantalla se cubre). false = quitar el negro (pantalla visible). Ignorado si screenFadeTransition está asignada.")]
+        public bool fadeIn = true;
+        [Tooltip("Color del fundido. Ignorado si screenFadeTransition está asignada.")]
+        public Color fadeColor = Color.black;
+        [Tooltip("Duración del fundido en segundos (0 = instantáneo). Ignorado si screenFadeTransition está asignada.")]
+        [Min(0f)]
+        public float fadeDuration = 0.5f;
 
         [Header("Narrative Event (Evento al Grafo)")]
         [Tooltip("¿Enviar evento al grafo narrativo al completar esta acción?")]
