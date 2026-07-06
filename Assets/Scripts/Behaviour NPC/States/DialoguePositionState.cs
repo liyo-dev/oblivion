@@ -56,6 +56,7 @@ namespace Game.NPC.States
                     context.Agent.updateRotation = false;
                     context.Agent.ResetPath();
                     context.Animator?.SetMovementSpeed(0f);
+                    context.Animator?.DisableAutoRotation();
                     RotateTowardsTarget(context);
                     return;
                 }
@@ -93,10 +94,11 @@ namespace Game.NPC.States
                 context.Agent.updateRotation = false; // ✅ Desactivar rotación automática del agent
                 context.Agent.ResetPath();
                 context.Animator?.SetMovementSpeed(0f);
-                
+                context.Animator?.DisableAutoRotation();
+
                 // ✅ Girar hacia el NPC con quien el player está hablando (rotación inicial)
                 RotateTowardsTarget(context);
-                
+
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ✅ Llegó a posición de diálogo");
             }
             // Si tarda demasiado, teletransportar
@@ -120,12 +122,13 @@ namespace Game.NPC.States
                 context.Agent.updateRotation = false; // ✅ Desactivar rotación automática del agent
                 context.Agent.ResetPath();
                 context.Animator?.SetMovementSpeed(0f);
-                
+                context.Animator?.DisableAutoRotation();
+
                 _hasReachedPosition = true;
-                
+
                 // ✅ Girar hacia el NPC (rotación inicial)
                 RotateTowardsTarget(context);
-                
+
                 Debug.Log($"[DialoguePositionState:{context.Transform.name}] ⚡ Teletransportado a posición de diálogo (tardó {_elapsedTime:F1}s)");
             }
             // Actualizar animación mientras se mueve
@@ -201,6 +204,7 @@ namespace Game.NPC.States
         public override void OnExit(NPCStateContext context)
         {
             context.Animator?.EndInteraction();
+            context.Animator?.EnableAutoRotation();
 
             if (context.Agent != null && context.Agent.isOnNavMesh)
             {
@@ -208,7 +212,7 @@ namespace Game.NPC.States
                 context.Agent.updateRotation = true;
                 context.Agent.stoppingDistance = _originalStoppingDistance;
             }
-            
+
             base.OnExit(context);
         }
 

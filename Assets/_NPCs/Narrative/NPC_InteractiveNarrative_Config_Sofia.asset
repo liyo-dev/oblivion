@@ -73,8 +73,8 @@ MonoBehaviour:
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
     persistentIconPrefab: {fileID: 0}
-    sendNarrativeEvent: 1
-    narrativeEventKey: FUEGOFATUO_01
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
     debugMode: 0
   persistState: 1
   enableDetailedLogs: 0

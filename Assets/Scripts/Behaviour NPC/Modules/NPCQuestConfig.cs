@@ -27,6 +27,10 @@ namespace Game.NPC.Modules
         [Min(0.05f)]
         [Tooltip("Intervalo de escaneo de ítems")]
         public float detectionInterval = 0.33f;
+        [Header("Auto-Detection")]
+        [Tooltip("¿Iniciar la quest automáticamente cuando el jugador entre en el radio de detección del NPC?")]
+        public bool autoStartOnDetection = false;
+
         [Header("Behavior")]
         [Min(0f)]
         [Tooltip("Velocidad de rotación hacia el jugador (grados por segundo) - Ahora manejado por DialogueManager")]
@@ -268,8 +272,6 @@ namespace Game.NPC.Modules
 
                 var questId = entry.questData.questId;
                 var state = qm.GetState(questId);
-                Debug.Log($"  [{i}] quest={questId} estado={state}");
-
                 if (state == QuestState.Active || state == QuestState.Completed)
                 {
                     Debug.Log($"[NPCQuestConfig.ProcessInteraction] → Seleccionada entrada [{i}] quest={questId} estado={state}");

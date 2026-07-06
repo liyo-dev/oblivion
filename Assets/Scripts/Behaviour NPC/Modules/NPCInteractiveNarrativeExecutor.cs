@@ -496,7 +496,11 @@ namespace Game.NPC.Modules
                 else
                 {
                     bool hasNarrative = GetCachedActiveNarrative() != null;
-                    if (_interactable.enabled != hasNarrative) _interactable.enabled = hasNarrative;
+                    bool hasQuestModule = _npcManager?.Configuration != null &&
+                                         _npcManager.Configuration.HasBehaviour(NPCBehaviourType.Quest) &&
+                                         _npcManager.Configuration.questConfig != null;
+                    bool shouldBeEnabled = hasNarrative || hasQuestModule;
+                    if (_interactable.enabled != shouldBeEnabled) _interactable.enabled = shouldBeEnabled;
                 }
             }
 
@@ -1434,14 +1438,15 @@ namespace Game.NPC.Modules
             while (true)
             {
                 var activeNarrative = GetCachedActiveNarrative(false);
-                // ✅ FIX: Usar IsExecuting (propiedad) en lugar de _isExecuting (campo)
-                // IsExecuting incluye el cooldown de JoinParty fallido
-                if (activeNarrative == null || !activeNarrative.autoStartOnDetection || _hasDetectedPlayer || IsExecuting)
+                bool hasNarrativeToDetect = activeNarrative != null && activeNarrative.autoStartOnDetection && !_hasDetectedPlayer && !IsExecuting;
+                bool hasQuestToDetect = !_hasDetectedPlayer && !IsExecuting && ShouldAutoDetectForQuest();
+
+                if (!hasNarrativeToDetect && !hasQuestToDetect)
                 {
                     yield return _waitHalfSecond;
                     continue;
                 }
-                
+
                 if (PlayerService.TryGetPlayer(out var p, false)) _player = p.transform;
 
                 if (_player != null)
@@ -1451,20 +1456,57 @@ namespace Game.NPC.Modules
                     {
                         _hasDetectedPlayer = true;
 
-                        if (activeNarrative.freezePlayerOnDetection && global::Core.PlayerInputManager.Instance != null)
+                        if (hasNarrativeToDetect)
                         {
-                            global::Core.PlayerInputManager.Instance.PushUIMode();
-                            _playerFrozenByDetection = true;
+                            if (activeNarrative.freezePlayerOnDetection && global::Core.PlayerInputManager.Instance != null)
+                            {
+                                global::Core.PlayerInputManager.Instance.PushUIMode();
+                                _playerFrozenByDetection = true;
+                            }
+                            yield return StartAlertSequence(activeNarrative);
+                            _wasTriggeredByDetection = true;
+                            TryExecuteNarrative();
+                            _hasDetectedPlayer = false;
                         }
-
-                        yield return StartAlertSequence(activeNarrative);
-                        _wasTriggeredByDetection = true;
-                        TryExecuteNarrative();
-                        _hasDetectedPlayer = false;
+                        else if (hasQuestToDetect)
+                        {
+                            var questConfig = _npcManager.Configuration.questConfig;
+                            questConfig.ProcessInteraction(_player.gameObject, _npcManager.Context);
+                            // Esperar a que el diálogo abra y cierre antes de permitir re-detección.
+                            // Sin esto el loop re-dispara mientras la quest sigue Inactive.
+                            yield return _waitPointTwo;
+                            var dm = DialogueManager.Instance;
+                            if (dm != null && dm.IsOpen)
+                            {
+                                while (dm.IsOpen) yield return _waitHalfSecond;
+                                yield return _waitPointTwo;
+                            }
+                            _hasDetectedPlayer = false;
+                        }
                     }
                 }
                 yield return _waitPointTwo;
             }
+        }
+
+        private bool ShouldAutoDetectForQuest()
+        {
+            if (_npcManager?.Configuration == null) return false;
+            if (!_npcManager.Configuration.HasBehaviour(NPCBehaviourType.Quest)) return false;
+            var questConfig = _npcManager.Configuration.questConfig;
+            if (questConfig == null || !questConfig.autoStartOnDetection) return false;
+            if (DialogueManager.Instance != null && DialogueManager.Instance.IsOpen) return false;
+
+            var qm = QuestManager.Instance;
+            if (qm == null) return false;
+
+            foreach (var entry in questConfig.questChain)
+            {
+                if (entry?.questData == null) continue;
+                if (qm.GetState(entry.questData.questId) == QuestState.Inactive && entry.dlgBefore != null)
+                    return true;
+            }
+            return false;
         }
 
         private IEnumerator StartAlertSequence(ConditionalNarrative narrative = null)

@@ -70,6 +70,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   detectionInterval: 0.33
+  autoStartOnDetection: 1
   rotationSpeed: 360
   questIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   questIconOffset: {x: 0, y: 2.5, z: 0}
