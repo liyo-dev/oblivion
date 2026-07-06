@@ -274,6 +274,7 @@ public class TagMinigameController : MonoBehaviour
     private readonly List<SuspendedBehaviourState> _suspendedTargetNpcSystems = new List<SuspendedBehaviourState>();
     private bool _targetNpcSystemsSuspended;
     private bool _loggedMissingProtectionConfig;
+    private Coroutine _clearMessageCoroutine;
 
     // Para integración con sistema narrativo
     public string MinigameId => minigameId;
@@ -2541,7 +2542,7 @@ public class TagMinigameController : MonoBehaviour
 
         if (messageText)
         {
-            StopCoroutine(nameof(ClearMessageAfter));
+            if (_clearMessageCoroutine != null) { StopCoroutine(_clearMessageCoroutine); _clearMessageCoroutine = null; }
             messageText.text = Loc(escapeMessage);
         }
 
@@ -2679,9 +2680,9 @@ public class TagMinigameController : MonoBehaviour
     {
         if (messageText)
         {
-            StopCoroutine(nameof(ClearMessageAfter));
+            if (_clearMessageCoroutine != null) { StopCoroutine(_clearMessageCoroutine); _clearMessageCoroutine = null; }
             messageText.text = msg;
-            StartCoroutine(ClearMessageAfter(messageDuration));
+            _clearMessageCoroutine = StartCoroutine(ClearMessageAfter(messageDuration));
         }
     }
 
@@ -2689,6 +2690,7 @@ public class TagMinigameController : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         if (messageText) messageText.text = "";
+        _clearMessageCoroutine = null;
     }
 
     private string FormatTime(float time)

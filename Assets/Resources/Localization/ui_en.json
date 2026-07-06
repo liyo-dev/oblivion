@@ -261,6 +261,18 @@
             "value": "Back to menu"
         },
         {
+            "key": "WAIT_FOR_DAY",
+            "value": ""
+        },
+        {
+            "key": "WAIT_FOR_DAY_QUEST",
+            "value": ""
+        },
+        {
+            "key": "WAIT_FOR_NIGHT",
+            "value": ""
+        },
+        {
             "key": "WATER_ENTER_NEEDS",
             "value": "Before entering the water, you need:"
         },

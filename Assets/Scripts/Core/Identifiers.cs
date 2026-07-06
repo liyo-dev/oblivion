@@ -189,15 +189,6 @@ public enum RoomKind
     Boss
 }
 
-/// <summary>Modos de requerimiento para desbloqueos de salida.</summary>
-public enum RequirementMode
-{
-    AnyQuestStartedOrCompleted,
-    AnyQuestStarted,
-    SpecificQuestsStarted,
-    SpecificQuestsCompleted
-}
-
 // Localization / UI
 /// <summary>Identificadores de texto usados por el sistema de localización/UI.</summary>
 public enum UITextId

@@ -2,20 +2,19 @@ using UnityEngine;
 
 /// <summary>
 /// Cierra las puertas del castillo cuando el jugador cruza al interior.
-/// Colocar un BoxCollider trigger en el umbral interior de las puertas.
-/// Si la misión asociada está completada, el trigger se ignora y las puertas permanecen abiertas.
+/// Si el requisito de quest configurado se cumple, el trigger se ignora y las puertas permanecen abiertas.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class CastleDoorCloseTrigger : MonoBehaviour
 {
     [SerializeField] private CastleDoorController doorController;
 
-    [Tooltip("Segundos de espera antes de cerrar (da tiempo al jugador a cruzar)")]
+    [Tooltip("Segundos de espera antes de cerrar (da tiempo al jugador a cruzar).")]
     [SerializeField] private float delay = 0.5f;
 
     [Header("Bloqueo por misión")]
-    [Tooltip("Si esta misión está activa o completada, el trigger no cerrará las puertas.")]
-    [SerializeField] private QuestData blockingQuest;
+    [Tooltip("Si el requisito se cumple, el trigger NO cerrará las puertas.")]
+    [SerializeField] private QuestRequirement questGate;
 
     private Collider _col;
 
@@ -32,7 +31,7 @@ public class CastleDoorCloseTrigger : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-        if (IsQuestCompleted()) return;
+        if (questGate.IsConfigured && questGate.IsSatisfied()) return;
 
         if (delay > 0f)
             Invoke(nameof(Close), delay);
@@ -42,13 +41,7 @@ public class CastleDoorCloseTrigger : MonoBehaviour
 
     private void Close()
     {
-        if (IsQuestCompleted()) return;
+        if (questGate.IsConfigured && questGate.IsSatisfied()) return;
         doorController?.CloseDoors();
-    }
-
-    private bool IsQuestCompleted()
-    {
-        if (blockingQuest == null || QuestManager.Instance == null) return false;
-        return QuestManager.Instance.GetState(blockingQuest.questId) != QuestState.Inactive;
     }
 }

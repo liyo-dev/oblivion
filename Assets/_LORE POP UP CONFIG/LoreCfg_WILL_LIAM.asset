@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6acc03efce17b4479f2b4b3403f4d68, type: 3}
+  m_Name: LoreCfg_WILL_LIAM
+  m_EditorClassIdentifier: Assembly-CSharp::LorePopupConfig
+  delay: 5
+  entries:
+  - portrait: {fileID: 21300000, guid: 9a5897eb50f15fe4bb903bfaa72c9e17, type: 3}
+    textId: LORE_ESCOLTA_GUARDIA_2
+    text: 
+    duration: 4
+  - portrait: {fileID: 21300000, guid: 0be5b49dc8e6b94449177b4bdc51dac6, type: 3}
+    textId: LORE_ESCOLTA_GUARDIA_3
+    text: 
+    duration: 4

@@ -261,6 +261,18 @@
             "value": "Volver al menu"
         },
         {
+            "key": "WAIT_FOR_DAY",
+            "value": "¿Descansar y esperar a que amanezca?"
+        },
+        {
+            "key": "WAIT_FOR_DAY_QUEST",
+            "value": "Debe ser de día para inspeccionar esta zona."
+        },
+        {
+            "key": "WAIT_FOR_NIGHT",
+            "value": "¿Descansar y esperar a que anochezca?"
+        },
+        {
             "key": "WATER_ENTER_NEEDS",
             "value": "Antes de entrar al agua, necesitas: "
         },

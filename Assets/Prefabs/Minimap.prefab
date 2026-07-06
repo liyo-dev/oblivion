@@ -560,8 +560,8 @@ MonoBehaviour:
   minimapRect: {fileID: 7030632747183013954}
   iconsParent: {fileID: 5735481276857657246}
   defaultMarkerSprite: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
-  markerSizeInside: 24
-  markerSizeEdge: 18
+  markerSizeInside: 36
+  markerSizeEdge: 28
   edgePadding: 12
   edgeAlpha: 0.85
 --- !u!1 &8643496874181828197

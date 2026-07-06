@@ -72,6 +72,9 @@ MonoBehaviour:
   - rid: 4910061957291442300
   - rid: 4910062183143178472
   - rid: 4910062183143178473
+  - rid: 5290829092219519135
+  - rid: 5290829092219519136
+  - rid: 5290829092219519137
   applicableSceneNames:
   - MainWorld
   references:
@@ -177,7 +180,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 10559b15-8995-40fa-bb17-eb2f5dd42b6d
-        position: {x: 3, y: 595}
+        position: {x: 3, y: 594}
         outputs:
         - 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
         - c235d486-6f5e-4a93-8d96-8721b6dad7d3
@@ -271,7 +274,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a67736f3-a25d-46e1-9f0e-79fb4102b07f
-        position: {x: 1775, y: 2811}
+        position: {x: 1775, y: 2810}
         outputs:
         - 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
         eventKey: TALK_KING
@@ -286,7 +289,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 8159a7ce-ad83-4f49-ad41-dc270ad3abe2
-        position: {x: 2260, y: 2811}
+        position: {x: 2260, y: 2810}
         outputs:
         - 002ddca5-949f-4b0e-8a1a-581b4b85290f
         questId: ELDRAN_MISSION9
@@ -504,7 +507,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 1308, y: -9}
+        position: {x: 1308, y: -10}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
         battleId: Demon_1
@@ -646,7 +649,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0b7230e0-a392-41f9-a44e-847de6dbbc05
-        position: {x: 4988, y: 2811}
+        position: {x: 4988, y: 2810}
         outputs: []
         questId: ELDRAN_MISSION12
     - rid: 4910061783221010763
@@ -751,7 +754,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
-        position: {x: 7579, y: 4127}
+        position: {x: 7579, y: 4126}
         outputs:
         - 18293a97-824e-4a42-b35b-a28365fd1601
         questId: ELDRAN_MISSION13
@@ -768,8 +771,58 @@ MonoBehaviour:
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
         position: {x: 7055, y: 4118}
-        outputs: []
+        outputs:
+        - 5174be77-fb15-4c62-a78f-628406a93537
         questId: ELDRAN_MISSION14
+    - rid: 5290829092219519135
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Espero a que entren en la zona a inspeccionar
+        chapter: "Cap\xECptulo 6"
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 5174be77-fb15-4c62-a78f-628406a93537
+        position: {x: 6515, y: 4118}
+        outputs:
+        - 48ab005c-2705-439a-a06f-c14d558d9700
+        eventKey: EVT_WILL_LIAM
+    - rid: 5290829092219519136
+      type: {class: ShowLorePopupNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Will y Liam hablan sobre el pasado de Will
+        chapter: "Cap\xECptulo 6"
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 48ab005c-2705-439a-a06f-c14d558d9700
+        position: {x: 5977, y: 4116}
+        outputs:
+        - eb2ae8e6-c475-41f9-920f-d86ac850f82a
+        config: {fileID: 11400000, guid: ff88c3c7406cf83459916cd5472cc9ad, type: 2}
+    - rid: 5290829092219519137
+      type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: "Completo el paso de la misi\xF3n de inspeccionar"
+        chapter: "Cap\xECptulo 6"
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
+        position: {x: 5446, y: 4116}
+        outputs: []
+        questId: 
+        stepConditionIds:
+        - FUEGOFATUO_DESC_02
+        steps: 
+        completeQuest: 0
+        logWarnings: 1
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -795,7 +848,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 4eed0901-c1cb-4e89-9d72-9ab6a6c57307
-        position: {x: 642, y: 595}
+        position: {x: 642, y: 594}
         outputs:
         - 56879a1a-c46a-4bab-a132-eab0b6cbaead
         eventKey: ADD_CLOAK
@@ -909,7 +962,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 64ed2870-8561-471f-bb08-803a726be060
-        position: {x: -134, y: -169}
+        position: {x: -134, y: -170}
         outputs:
         - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
         item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}

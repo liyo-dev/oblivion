@@ -26759,7 +26759,7 @@ GameObject:
   - component: {fileID: 170915387}
   - component: {fileID: 170915388}
   m_Layer: 0
-  m_Name: CLOSE_THE_DOORS
+  m_Name: CLOSE_THE_DOORS_TRIGGER
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -26838,7 +26838,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CastleDoorCloseTrigger
   doorController: {fileID: 170915385}
   delay: 0.5
-  blockingQuest: {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
+  questGate:
+    mode: 2
+    quest: {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
+    questId: 
 --- !u!1 &172410008
 GameObject:
   m_ObjectHideFlags: 0
@@ -59250,19 +59253,19 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 667342847}
+    m_TransformParent: {fileID: 2088577420}
     m_Modifications:
     - target: {fileID: 207803241408765001, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -173.1
+      value: 70.67
       objectReference: {fileID: 0}
     - target: {fileID: 207803241408765001, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.18232574
+      value: -0.01
       objectReference: {fileID: 0}
     - target: {fileID: 207803241408765001, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 409.6
+      value: 124.81
       objectReference: {fileID: 0}
     - target: {fileID: 207803241408765001, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -59296,17 +59299,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Fire01
       objectReference: {fileID: 0}
-    - target: {fileID: 696249653265975027, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
-      propertyPath: m_IsActive
+    - target: {fileID: 2060486766232069528, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
+      propertyPath: m_SizeDelta.x
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 696249653265975027, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
-      propertyPath: m_NavMeshLayer
+    - target: {fileID: 2060486766232069528, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
+      propertyPath: m_SizeDelta.y
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 696249653265975027, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 12
+    - target: {fileID: 2060486766232069528, guid: 32910ca222235d940bdd4a787982eb9f, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -69981,6 +69984,7 @@ Transform:
   - {fileID: 1809752141}
   - {fileID: 411460480}
   - {fileID: 1419071516}
+  - {fileID: 349253475}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &321541245
@@ -74041,6 +74045,79 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 348492494}
   m_Mesh: {fileID: 4300000, guid: 00d8b4ec77d2b0c459d736d00cf230f3, type: 3}
+--- !u!1 &349253472
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 349253475}
+  - component: {fileID: 349253474}
+  - component: {fileID: 349253473}
+  m_Layer: 0
+  m_Name: DayOnlyInspectionTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &349253473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 349253472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a961a5fc15d4ed44bb3de92e4bdb6076, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DayOnlyInspectionTrigger
+  narrativeEventKey: EVT_WILL_LIAM
+  questRequirement:
+    mode: 1
+    quest: {fileID: 11400000, guid: 9055869cd1c85944295c56851354b5e5, type: 2}
+    questId: 
+  blockedNightMessageKey: WAIT_FOR_DAY_QUEST
+  disableAfterUse: 1
+--- !u!65 &349253474
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 349253472}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 12.651337, y: 21.653225, z: 77.164406}
+  m_Center: {x: -55.225784, y: -2.1161847, z: -4.9301186}
+--- !u!4 &349253475
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 349253472}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 251.3, y: 0, z: 124}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 321063509}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &351941688 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 103322, guid: a2073cef316e9fa4fb5cf28c0ec623b8, type: 3}
@@ -89702,7 +89779,7 @@ MonoBehaviour:
   requirementMode: 2
   requiredQuestIds: []
   requiredQuestRefs:
-  - {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+  - {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
   blockedMessageKey: WOODS_EXIT_BLOCKED
   messageSpeaker: 
   messageCooldown: 1.5
@@ -139208,7 +139285,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 907335653}
-  - {fileID: 285544014}
   - {fileID: 1652046925}
   - {fileID: 247704141}
   m_Father: {fileID: 2081552600}
@@ -151099,10 +151175,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecab3294caa74b28af4942dee862924f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomExitBlocker
-  requirementMode: 3
+  requirementMode: 0
   requiredQuestIds: []
-  requiredQuestRefs:
-  - {fileID: 11400000, guid: 9fb084e325631df429d6365395b71d5a, type: 2}
+  requiredQuestRefs: []
   blockedMessageKey: "Q_NI\xD1OPEZ"
   messageSpeaker: 
   messageCooldown: 1.5
@@ -315542,7 +315617,7 @@ MonoBehaviour:
   requirementMode: 2
   requiredQuestIds: []
   requiredQuestRefs:
-  - {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+  - {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
   blockedMessageKey: WOODS_EXIT_BLOCKED
   messageSpeaker: 
   messageCooldown: 1.5
@@ -375851,9 +375926,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecab3294caa74b28af4942dee862924f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomExitBlocker
-  requirementMode: 0
+  requirementMode: 1
   requiredQuestIds: []
-  requiredQuestRefs: []
+  requiredQuestRefs:
+  - {fileID: 11400000, guid: f303fe8b3b068ee40ba1ef80159cb530, type: 2}
   blockedMessageKey: ROOM_EXIT_BLOCKED
   messageSpeaker: 
   messageCooldown: 1.5
@@ -389347,7 +389423,7 @@ MonoBehaviour:
   requirementMode: 2
   requiredQuestIds: []
   requiredQuestRefs:
-  - {fileID: 11400000, guid: 740669d31322f9d438fc7c222d12e4e7, type: 2}
+  - {fileID: 11400000, guid: 7d0e915779019d248bc0bb8276a55585, type: 2}
   blockedMessageKey: WOODS_EXIT_BLOCKED
   messageSpeaker: 
   messageCooldown: 1.5
@@ -390897,7 +390973,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2052766923886183289, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3714833892687663537, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_IsActive
@@ -446509,6 +446585,38 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 454320, guid: 8c2b62e7246b8be418a40cb56f42685a, type: 3}
   m_PrefabInstance: {fileID: 2086426920}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2088577419
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2088577420}
+  m_Layer: 0
+  m_Name: DAY NIGHT CHANGE
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2088577420
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088577419}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 285544014}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2088664232
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -591260,3 +591368,4 @@ SceneRoots:
   - {fileID: 552742657}
   - {fileID: 1971658791}
   - {fileID: 1264578752}
+  - {fileID: 2088577420}
