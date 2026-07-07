@@ -843,7 +843,7 @@ public class QuestManager : MonoBehaviour
     {
         int stepsCompleted = 0;
         Debug.Log($"[QuestManager] 🔍 CheckPartyMembersForQuest para quest '{rq.Id}': {requiredMembers.Length} requisitos, {party.Members.Count} miembros en el equipo");
-        
+
         foreach (var memberReq in requiredMembers)
         {
             if (string.IsNullOrEmpty(memberReq.memberId))
@@ -851,11 +851,9 @@ public class QuestManager : MonoBehaviour
                 Debug.LogWarning($"[QuestManager] ⚠️ PartyMemberRequirement con memberId vacío en quest '{rq.Id}'");
                 continue;
             }
-            
+
             // Verificar si el miembro está en el equipo
-            bool isInParty = party.Members.Any(m => 
-                m.NPCManager?.PersistenceId == memberReq.memberId ||
-                m.gameObject.name == memberReq.memberId);
+            bool isInParty = party.Members.Any(m => IsPartyMemberMatch(m, memberReq.memberId));
             
             Debug.Log($"[QuestManager] Buscando miembro '{memberReq.memberId}': {(isInParty ? "✅ ENCONTRADO" : "❌ NO ENCONTRADO")}");
             
@@ -1123,6 +1121,62 @@ public class QuestManager : MonoBehaviour
 
     #region Party Member Detection
 
+    private const string NarrativeIdPrefix = "NPC_InteractiveNarrative_Config_";
+
+    /// <summary>
+    /// Extrae el nombre base de un ID con formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;".
+    /// Si el ID no sigue ese patrón devuelve null.
+    /// </summary>
+    private static string ExtractNarrativeBaseName(string id)
+    {
+        if (string.IsNullOrEmpty(id) || !id.StartsWith(NarrativeIdPrefix, System.StringComparison.Ordinal))
+            return null;
+        string withoutPrefix = id.Substring(NarrativeIdPrefix.Length);
+        int lastUnderscore   = withoutPrefix.LastIndexOf('_');
+        return lastUnderscore > 0 ? withoutPrefix.Substring(0, lastUnderscore) : withoutPrefix;
+    }
+
+    /// <summary>
+    /// Compara un miembro del party con un memberId tolerando los distintos formatos de ID.
+    /// Los IDs pueden ser:
+    ///   - El PersistenceId completo del NPCBehaviourManagerV2 en el GO ("NPC_InteractiveNarrative_Config_Estela_b17a2d68")
+    ///   - El nombre del GameObject ("Estela")
+    ///   - El DisplayName del partyMember ("Estela")
+    ///
+    /// Cuando el memberId sigue el formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;",
+    /// también se extrae el nombre base y se compara con el nombre del GO y el DisplayName.
+    /// </summary>
+    private static bool IsPartyMemberMatch(Game.NPC.NPCPartyMember member, string memberId)
+    {
+        if (member == null || string.IsNullOrEmpty(memberId)) return false;
+
+        string persistenceId = member.NPCManager?.PersistenceId ?? "";
+        string goName        = member.gameObject.name;
+        string displayName   = member.DisplayName ?? "";
+
+        // 1. Coincidencia exacta con persistenceId o nombre del GO
+        if (persistenceId == memberId || goName == memberId) return true;
+
+        // 2. Coincidencia con DisplayName (ej: "Estela")
+        if (!string.IsNullOrEmpty(displayName) && displayName == memberId) return true;
+
+        // 3. El memberId sigue el patrón largo: extraer nombre base y comparar con goName/displayName
+        string memberIdBase = ExtractNarrativeBaseName(memberId);
+        if (memberIdBase != null)
+        {
+            if (string.Equals(goName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(displayName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        // 4. El persistenceId sigue el patrón largo y el memberId es el nombre corto
+        string persistenceBase = ExtractNarrativeBaseName(persistenceId);
+        if (persistenceBase != null &&
+            string.Equals(memberId, persistenceBase, System.StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
     private void OnPartyMemberJoined(Game.NPC.NPCPartyMember member)
     {
         if (member == null) 
@@ -1162,17 +1216,11 @@ public class QuestManager : MonoBehaviour
                 var memberReq = questEntry.requiredPartyMembers[i];
                 Debug.Log($"[QuestManager] 👥 [{i}] Requisito memberId='{memberReq.memberId}', stepIndex={memberReq.stepIndex}, stepConditionId='{memberReq.stepConditionId}'");
                 
-                // ✅ FIX: Comparar tanto con persistenceId como con gameObject.name
-                bool matches = false;
-                if (!string.IsNullOrEmpty(persistenceId) && memberReq.memberId == persistenceId)
+                // Comparar con distintos formatos posibles del ID
+                bool matches = IsPartyMemberMatch(member, memberReq.memberId);
+                if (matches)
                 {
-                    matches = true;
-                    Debug.Log($"[QuestManager] 👥 ✅ Match encontrado por persistenceId: '{persistenceId}' == '{memberReq.memberId}'");
-                }
-                else if (memberReq.memberId == gameObjectName)
-                {
-                    matches = true;
-                    Debug.Log($"[QuestManager] 👥 ✅ Match encontrado por gameObject.name: '{gameObjectName}' == '{memberReq.memberId}'");
+                    Debug.Log($"[QuestManager] 👥 ✅ Match encontrado para '{memberReq.memberId}' (persistenceId='{persistenceId}' / gameObject='{gameObjectName}')");
                 }
                 else
                 {

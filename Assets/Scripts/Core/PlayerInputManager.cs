@@ -167,6 +167,27 @@ namespace Core
 #endif
         }
 
+        /// <summary>
+        /// Fuerza el reseteo del modo de input a Gameplay independientemente del contador.
+        /// Útil cuando el stack queda desbalanceado por un error en el flujo de cierre de un menú.
+        /// Llamar solo como último recurso desde sistemas de recuperación de emergencia.
+        /// </summary>
+        public void ForceRestoreGameplayMode()
+        {
+            if (_uiModeRefCount > 0)
+            {
+                Debug.LogWarning($"[PlayerInputManager] ForceRestoreGameplayMode: resetando refCount {_uiModeRefCount} → 0. " +
+                                  "Algún PushUIMode no tuvo su PopUIMode correspondiente.");
+            }
+            _uiModeRefCount = 0;
+            _isInUIMode = false;
+            if (_controls != null)
+            {
+                _controls.UI.Disable();
+                _controls.GamePlay.Enable();
+            }
+        }
+
         void OnEnable()
         {
             EnableControls();

@@ -258,6 +258,21 @@ namespace Core
         _gameplaySuppressionOwners.Remove(owner);
     }
 
+    /// <summary>
+    /// Limpia forzosamente todos los propietarios de supresión de gameplay.
+    /// Usar solo en recuperaciones de emergencia cuando los inputs quedaron bloqueados
+    /// de forma permanente por un owner que nunca llamó PopGameplaySuppression.
+    /// </summary>
+    public static void ForceRestoreGameplaySuppression()
+    {
+        if (_gameplaySuppressionOwners.Count > 0)
+        {
+            Debug.LogWarning($"[GamepadInputReader] ForceRestoreGameplaySuppression: eliminando {_gameplaySuppressionOwners.Count} " +
+                              "owners de supresión que no hicieron Pop. Los controles de gameplay se restauran.");
+            _gameplaySuppressionOwners.Clear();
+        }
+    }
+
     public static void PushUiNavigationScope()
     {
         _uiNavigationScopeCount = Mathf.Max(0, _uiNavigationScopeCount) + 1;

@@ -1711,8 +1711,8 @@ namespace Game.NPC.Modules
                 }
 
                 // Catch-up para saves anteriores sin persistenceId guardado:
-                // si la condición es QuestStarted y la quest ya está Completed,
-                // la narrativa singleUse definitivamente ya se ejecutó.
+                // si la condición es QuestStarted y la quest ya está Active o Completed,
+                // la narrativa singleUse se ejecutó cuando la quest arrancó.
                 var qm = QuestManager.Instance;
                 if (qm != null)
                 {
@@ -1723,11 +1723,12 @@ namespace Game.NPC.Modules
                         if (narrative.condition.conditionType != NarrativeConditionType.QuestStarted) continue;
                         if (narrative.condition.targetQuest == null) continue;
 
-                        if (qm.GetState(narrative.condition.targetQuest.questId) == QuestState.Completed)
+                        var questState = qm.GetState(narrative.condition.targetQuest.questId);
+                        if (questState == QuestState.Completed || questState == QuestState.Active)
                         {
                             narrative.MarkAsExecuted();
                             if (verboseLogging)
-                                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Catch-up: narrativa '{narrative.description}' marcada como ejecutada (quest completada)");
+                                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Catch-up: narrativa '{narrative.description}' marcada como ejecutada (quest {questState})");
                         }
                     }
                 }

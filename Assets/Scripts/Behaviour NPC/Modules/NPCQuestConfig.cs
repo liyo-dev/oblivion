@@ -531,11 +531,9 @@ namespace Game.NPC.Modules
                     continue;
                 }
                 
-                // Verificar si el miembro está en el equipo
-                bool isInParty = party.Members.Any(m => 
-                    m.NPCManager?.PersistenceId == memberReq.memberId ||
-                    m.gameObject.name == memberReq.memberId);
-                
+                // Verificar si el miembro está en el equipo (comparación robusta con distintos formatos de ID)
+                bool isInParty = party.Members.Any(m => IsPartyMemberMatch(m, memberReq.memberId));
+
                 Debug.Log($"[NPCQuestConfig] Verificando member '{memberReq.memberId}': {(isInParty ? "✅ EN PARTY" : "❌ NO EN PARTY")}");
                 
                 if (!isInParty) continue;
@@ -830,9 +828,66 @@ namespace Game.NPC.Modules
         private void StopTalkingAnimation(Common.NPCStateContext context)
         {
             if (context?.Animator == null) return;
-            
+
             // Desactivar la animación de hablar
             context.Animator.SetTalking(false);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Utilidades de comparación de IDs de party member
+        // ─────────────────────────────────────────────────────────────────────
+
+        private const string NarrativeIdPrefix = "NPC_InteractiveNarrative_Config_";
+
+        /// <summary>
+        /// Extrae el nombre base de un ID con formato "NPC_InteractiveNarrative_Config_&lt;Nombre&gt;_&lt;hash&gt;".
+        /// Devuelve null si el ID no sigue ese patrón.
+        /// </summary>
+        private static string ExtractNarrativeBaseName(string id)
+        {
+            if (string.IsNullOrEmpty(id) || !id.StartsWith(NarrativeIdPrefix, System.StringComparison.Ordinal))
+                return null;
+            string withoutPrefix = id.Substring(NarrativeIdPrefix.Length);
+            int lastUnderscore   = withoutPrefix.LastIndexOf('_');
+            return lastUnderscore > 0 ? withoutPrefix.Substring(0, lastUnderscore) : withoutPrefix;
+        }
+
+        /// <summary>
+        /// Compara un miembro del party con un memberId tolerando los distintos formatos de ID:
+        ///   - PersistenceId completo ("NPC_InteractiveNarrative_Config_Estela_b17a2d68")
+        ///   - Nombre del GameObject ("Estela")
+        ///   - DisplayName del partyMember ("Estela")
+        ///   - Nombre base extraído del ID largo cuando el GO usa el nombre corto (o viceversa)
+        /// </summary>
+        private static bool IsPartyMemberMatch(Game.NPC.NPCPartyMember member, string memberId)
+        {
+            if (member == null || string.IsNullOrEmpty(memberId)) return false;
+
+            string persistenceId = member.NPCManager?.PersistenceId ?? "";
+            string goName        = member.gameObject.name;
+            string displayName   = member.DisplayName ?? "";
+
+            // 1. Coincidencia exacta con persistenceId o nombre del GO
+            if (persistenceId == memberId || goName == memberId) return true;
+
+            // 2. Coincidencia con DisplayName
+            if (!string.IsNullOrEmpty(displayName) && displayName == memberId) return true;
+
+            // 3. El memberId sigue el patrón largo: extraer nombre base y comparar
+            string memberIdBase = ExtractNarrativeBaseName(memberId);
+            if (memberIdBase != null)
+            {
+                if (string.Equals(goName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(displayName, memberIdBase, System.StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            // 4. El persistenceId sigue el patrón largo y el memberId es el nombre corto
+            string persistenceBase = ExtractNarrativeBaseName(persistenceId);
+            if (persistenceBase != null &&
+                string.Equals(memberId, persistenceBase, System.StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
         }
     }
 }

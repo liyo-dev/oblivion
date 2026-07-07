@@ -150,6 +150,9 @@ MonoBehaviour:
   - victoria-narrative-f5e4d3c2-unique_CN1
   - erika-narrative-a7b3c2d1-unique
   - erika-narrative-a7b3c2d1-unique_CN1
+  - NPC_Eldran
+  - NPC_Eldran_CN0
+  - NPC_Eldran_CN1
   seenLorePopupIds: []
   partyMemberIds: []
   unlockedTeleportPoints:

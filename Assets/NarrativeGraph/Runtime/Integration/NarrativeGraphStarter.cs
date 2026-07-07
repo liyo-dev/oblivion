@@ -34,6 +34,11 @@ public class NarrativeGraphStarter : MonoBehaviour
     /// </summary>
     private System.Collections.IEnumerator WaitForHubAndStart()
     {
+        // Esperar al menos un frame para que Start() de todos los componentes se complete.
+        // Esto garantiza que NPCInteractiveNarrativeExecutor.Start() → RestoreState() corra
+        // antes de que el runner empiece a ejecutar StartQuestNode y dispare OnQuestStarted.
+        yield return null;
+
         // Esperar hasta que el Hub esté disponible
         while (NarrativeGraphHub.Instance == null)
         {

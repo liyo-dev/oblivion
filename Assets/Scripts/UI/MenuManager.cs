@@ -181,4 +181,36 @@ public static class MenuManager
     {
         s_open.Clear();
     }
+
+    /// <summary>
+    /// Recuperación de emergencia completa: limpia el estado de MenuManager, GameState de menús,
+    /// el contador de UI mode en PlayerInputManager, y el stack de modos del PlayerActionManager.
+    /// Llamar solo cuando el jugador queda con los controles bloqueados de forma permanente.
+    /// </summary>
+    public static void ForceFullRecovery()
+    {
+        Debug.LogWarning("[MenuManager] ForceFullRecovery: limpiando estado completo de menus y input.");
+
+        // 1. Limpiar el registro de menús abiertos
+        s_open.Clear();
+
+        // 2. Limpiar GameState de fases de menú que pudieran haber quedado activas
+        // Usamos ForceRemove para limpiar independientemente del contador de referencias.
+        GameState.ForceRemove(GamePhase.Inventory);
+        GameState.ForceRemove(GamePhase.Equipment);
+        GameState.ForceRemove(GamePhase.Shop);
+        GameState.ForceRemove(GamePhase.QuestMenu);
+
+        // 3. Restaurar modo gameplay en PlayerInputManager (fuerza reset del contador)
+        if (Core.PlayerInputManager.Instance != null)
+            Core.PlayerInputManager.Instance.ForceRestoreGameplayMode();
+
+        // 4. Restaurar GamepadInputReader: limpiar supresiones de gameplay huérfanas
+        Core.GamepadInputReader.ForceRestoreGameplaySuppression();
+
+        // 5. Restaurar timeScale por si algún menú pausó el tiempo
+        Time.timeScale = 1f;
+
+        Debug.LogWarning("[MenuManager] ForceFullRecovery completado.");
+    }
 }

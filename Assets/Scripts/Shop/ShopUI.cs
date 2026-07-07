@@ -119,6 +119,26 @@ public class ShopUI : MonoBehaviour
             shopController.OnStockChanged -= RefreshUI;
 
         GamepadInputReader.OnInput -= HandleGamepadInput;
+
+        // IMPORTANTE: si el objeto se desactiva o destruye con la tienda abierta, limpiar el
+        // estado de bloqueo de input inmediatamente. El Invoke retardado de RestoreGameplayInputs
+        // nunca se ejecutará si el GameObject muere antes, dejando _gameplaySuppressionOwners
+        // con esta referencia y los inputs de gameplay bloqueados para siempre.
+        if (_isOpen)
+        {
+            CancelInvoke(nameof(RestoreGameplayInputs));
+            RestoreGameplayInputsImmediate();
+            GameState.Pop(GamePhase.Shop);
+            Time.timeScale = 1f;
+            MenuManager.Close(MenuKind.Shop);
+            _isOpen = false;
+        }
+    }
+
+    private void RestoreGameplayInputsImmediate()
+    {
+        GamepadInputReader.PopUiNavigationScope();
+        GamepadInputReader.PopGameplaySuppression(this);
     }
 
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)

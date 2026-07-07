@@ -50,6 +50,19 @@ public static class GameState
 
     public static bool Is(GamePhase phase) => _stack.ContainsKey(phase);
 
+    /// <summary>
+    /// Elimina forzosamente una fase del stack independientemente del contador.
+    /// Usar solo en recuperaciones de emergencia cuando el stack quedó desbalanceado.
+    /// </summary>
+    public static void ForceRemove(GamePhase phase)
+    {
+        if (_stack.ContainsKey(phase))
+        {
+            _stack.Remove(phase);
+            OnChanged?.Invoke();
+        }
+    }
+
     public static bool IsAny(params GamePhase[] phases)
     {
         for (int i = 0; i < phases.Length; i++)

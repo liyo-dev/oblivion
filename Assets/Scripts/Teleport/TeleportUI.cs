@@ -86,6 +86,30 @@ public class TeleportUI : MonoBehaviour
     {
         GamepadInputReader.OnInput -= HandleGamepadInput;
         TeleportRegistry.OnRegistryChanged -= RefreshList;
+
+        // IMPORTANTE: si el objeto se desactiva o destruye con la UI abierta, liberar el
+        // PushUIMode para que el contador de PlayerInputManager no quede desbalanceado.
+        if (_isOpen)
+        {
+            _fadeTween?.Kill();
+            if (_hasPushedInventory)
+            {
+                GameState.Pop(GamePhase.Inventory);
+                _hasPushedInventory = false;
+            }
+            if (Core.PlayerInputManager.Instance != null)
+                Core.PlayerInputManager.Instance.PopUIMode();
+            if (_hasBlockedMovement)
+            {
+                if (PlayerService.TryGetComponent<Invector.vCharacterController.vThirdPersonInput>(out var tpi))
+                {
+                    tpi.enabled = false;
+                    tpi.enabled = true;
+                }
+                _hasBlockedMovement = false;
+            }
+            _isOpen = false;
+        }
     }
     
     private void HandleGamepadInput(GamepadInputReader.InputEvent input)

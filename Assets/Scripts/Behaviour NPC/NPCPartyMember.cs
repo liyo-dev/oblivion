@@ -198,7 +198,8 @@ namespace Game.NPC
                 var currentState = _npcManager.Brain.CurrentState;
                 if (currentState != null && currentState.StateName == "Idle"
                     && !_npcManager.Context.IsInCombat && !_npcManager.Context.IsInCinematic
-                    && (PartyControlManager.Instance?.IsPartyFollowing ?? true))
+                    && (PartyControlManager.Instance?.IsPartyFollowing ?? true)
+                    && GetDistanceToPlayer() <= 40f)
                 {
                     StartFollowing();
                 }

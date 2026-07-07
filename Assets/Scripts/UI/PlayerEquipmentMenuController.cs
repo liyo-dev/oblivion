@@ -347,6 +347,27 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void OnDestroy()
     {
+        // IMPORTANTE: limpiar todo el estado de bloqueo de input antes de destruir el objeto.
+        // Si el objeto se destruye con el menú abierto (p.ej. cambio de escena), el PopMode
+        // y MenuManager.Close nunca se llamarían desde CloseMenu(), dejando el stack de modos
+        // y el MenuManager en estado corrupto para siempre.
+        if (_isOpen)
+        {
+            // Limpiar ActionMode sin depender de _actionManager (puede ya estar destruido)
+            if (_actionModeActive && _actionManager != null)
+            {
+                _actionManager.PopMode(ActionMode.Inventory);
+                _actionModeActive = false;
+            }
+            // Restaurar GameState
+            if (GameState.Is(GamePhase.Inventory)) GameState.Pop(GamePhase.Inventory);
+            if (GameState.Is(GamePhase.Equipment)) GameState.Pop(GamePhase.Equipment);
+            // Limpiar registro de MenuManager
+            MenuManager.Close(MenuKind.Equipment);
+            // Restaurar timeScale
+            Time.timeScale = _savedTimeScale;
+            _isOpen = false;
+        }
         ExitUiInputScope();
         ApplyPlayerPreviewSorting(false);
         _inventoryView?.Dispose();
