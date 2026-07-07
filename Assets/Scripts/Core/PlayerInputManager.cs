@@ -1,6 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.SceneManagement;
 
 namespace Core
 {
@@ -40,6 +43,8 @@ namespace Core
         private bool _ownsControlsInstance;
         private bool _isInUIMode;
         private int _uiModeRefCount;
+        private EventSystem _persistentEventSystem;
+        private EventSystem _connectedEventSystem;
 
         /// <summary>Acceso único al asset de acciones de gameplay.</summary>
         public PlayerControls Controls => _controls;
@@ -61,6 +66,7 @@ namespace Core
 
             InitializeControls();
             ServiceLocator.Register(this);
+            SceneManager.sceneLoaded += OnSceneLoaded;
 
 #if UNITY_EDITOR
             if (debugLogs)
@@ -188,6 +194,89 @@ namespace Core
             }
         }
 
+        void Start()
+        {
+            ConnectToEventSystemModule();
+            PersistEventSystem();
+        }
+
+        // Hace el EventSystem de Start.unity DontDestroyOnLoad para que sobreviva
+        // la carga no-aditiva hacia MainMenu → MainWorld. Sin esto, MainWorld queda
+        // sin EventSystem y la navegación por teclado/gamepad en menús no funciona.
+        private void PersistEventSystem()
+        {
+            var es = EventSystem.current;
+            if (es == null) return;
+
+            // Solo persistir si es root (DontDestroyOnLoad requiere root)
+            if (es.transform.parent != null) return;
+
+            // Evitar llamar DontDestroyOnLoad dos veces en la misma instancia
+            if (_persistentEventSystem == es) return;
+
+            _persistentEventSystem = es;
+            DontDestroyOnLoad(es.gameObject);
+
+#if UNITY_EDITOR
+            if (debugLogs)
+                Debug.Log("[PlayerInputManager] EventSystem marcado como DontDestroyOnLoad");
+#endif
+        }
+
+        /// <summary>
+        /// Reasigna el actionsAsset del InputSystemUIInputModule al asset de controles activo.
+        /// Necesario porque el EventSystem puede tener referencias rotas si el .inputactions
+        /// fue renombrado o movido (el GUID serializado en la escena ya no existe).
+        /// </summary>
+        private void ConnectToEventSystemModule()
+        {
+            var es = EventSystem.current;
+            if (es == null)
+            {
+#if UNITY_EDITOR
+                if (debugLogs)
+                    Debug.LogWarning("[PlayerInputManager] EventSystem no encontrado en Start() — navegación UI podría no funcionar");
+#endif
+                return;
+            }
+
+            var uiModule = es.GetComponent<InputSystemUIInputModule>();
+            if (uiModule == null) return;
+
+            // Deshabilitar antes de reasignar para evitar callbacks durante la transición
+            uiModule.enabled = false;
+
+            // Reconectar el asset
+            uiModule.actionsAsset = _controls.asset;
+
+            // Las referencias individuales serializadas apuntan al GUID del asset eliminado y tienen
+            // prioridad sobre actionsAsset. Hay que reasignarlas explícitamente con el asset activo.
+            var ui = _controls.UI;
+            uiModule.move                    = InputActionReference.Create(ui.Navigate);
+            uiModule.submit                  = InputActionReference.Create(ui.Submit);
+            uiModule.cancel                  = InputActionReference.Create(ui.Cancel);
+            uiModule.point                   = InputActionReference.Create(ui.Point);
+            uiModule.leftClick               = InputActionReference.Create(ui.Click);
+            uiModule.middleClick             = InputActionReference.Create(ui.MiddleClick);
+            uiModule.rightClick              = InputActionReference.Create(ui.RightClick);
+            uiModule.scrollWheel             = InputActionReference.Create(ui.ScrollWheel);
+            uiModule.trackedDevicePosition    = InputActionReference.Create(ui.TrackedDevicePosition);
+            uiModule.trackedDeviceOrientation = InputActionReference.Create(ui.TrackedDeviceOrientation);
+
+            // Rehabilitar para que el módulo enlace los nuevos bindings
+            uiModule.enabled = true;
+
+            // Restaurar el estado correcto: el módulo puede haber habilitado action maps
+            EnableControls();
+
+            _connectedEventSystem = es;
+
+#if UNITY_EDITOR
+            if (debugLogs)
+                Debug.Log("[PlayerInputManager] InputSystemUIInputModule reconectado con referencias explícitas");
+#endif
+        }
+
         void OnEnable()
         {
             EnableControls();
@@ -224,11 +313,32 @@ namespace Core
         {
             if (Instance == this)
             {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
                 ServiceLocator.Unregister(this);
                 Instance = null;
             }
 
             DisposeControls();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Si la nueva escena no tiene EventSystem propio (ej: MainWorld), EventSystem.current
+            // queda null cuando el EventSystem de la escena anterior se destruye. Reactivamos el
+            // persistente para que se re-registre como current.
+            if (EventSystem.current == null && _persistentEventSystem != null)
+            {
+                _persistentEventSystem.gameObject.SetActive(false);
+                _persistentEventSystem.gameObject.SetActive(true);
+            }
+
+            // Solo reconectar el módulo si el EventSystem ha cambiado (ej: nueva escena no-aditiva).
+            // Reconectar innecesariamente en cargas aditivas (cinemáticas) deshabilita el UIInputModule
+            // brevemente y puede interrumpir el input de gameplay.
+            if (EventSystem.current != null && EventSystem.current != _connectedEventSystem)
+            {
+                ConnectToEventSystemModule();
+            }
         }
 
         private void DisposeControls()

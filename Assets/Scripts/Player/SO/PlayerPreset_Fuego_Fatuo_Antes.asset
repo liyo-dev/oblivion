@@ -258,11 +258,6 @@ MonoBehaviour:
       type: string
       value: 434108a8-8f50-407a-b807-74d22ff2a5ac
   npcPositions:
-  - npcId: Eldran
-    position: {x: -91.5, y: 0.0983849, z: 110.3}
-    rotation: {x: 0, y: 0, z: 0, w: 0}
-    hasActiveState: 0
-    isActive: 1
   - npcId: Oliver
     position: {x: -31.48, y: 1.224823, z: 26.09}
     rotation: {x: 0, y: 0, z: 0, w: 0}

@@ -124,6 +124,7 @@ public class MainMenuController : MonoBehaviour
     void OnEnable()
     {
         GameState.Push(GamePhase.MainMenu);
+        Core.PlayerInputManager.Instance?.PushUIMode();
 
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();
@@ -172,6 +173,7 @@ public class MainMenuController : MonoBehaviour
 
     void OnDisable()
     {
+        Core.PlayerInputManager.Instance?.PopUIMode();
         GameState.Pop(GamePhase.MainMenu);
         
         // Asegurar que los sonidos de UI estén habilitados al salir

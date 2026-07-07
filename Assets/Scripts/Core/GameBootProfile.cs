@@ -841,7 +841,10 @@ public class GameBootProfile : ScriptableObject
 
         var npcs = ServiceLocator.GetAll<NPCBehaviourManagerV2>();
         if (npcs == null || npcs.Count == 0)
+        {
+            Debug.LogWarning($"[GameBootProfile] ApplyNpcPositionsToScene: no se encontraron NPCBehaviourManagerV2 en escena. Las posiciones no se aplicarán.");
             return;
+        }
 
         var map = new Dictionary<string, PlayerPresetSO.NpcPosEntry>(preset.npcPositions.Count);
         foreach (var e in preset.npcPositions)
@@ -850,12 +853,14 @@ public class GameBootProfile : ScriptableObject
                 map[e.npcId] = e;
         }
 
+        var matched = new System.Collections.Generic.HashSet<string>();
         foreach (var npc in npcs)
         {
             if (npc == null) continue;
             var id = npc.gameObject.name;
             if (string.IsNullOrEmpty(id)) continue;
             if (!map.TryGetValue(id, out var entry)) continue;
+            matched.Add(id);
 
             var pos = entry.position;
             if (pos == default) continue;
@@ -896,6 +901,12 @@ public class GameBootProfile : ScriptableObject
             {
                 Debug.LogWarning($"[GameBootProfile] No se pudo reposicionar NPC '{id}': {ex.Message}");
             }
+        }
+
+        foreach (var key in map.Keys)
+        {
+            if (!matched.Contains(key))
+                Debug.LogWarning($"[GameBootProfile] npcId '{key}' en preset no encontrado en escena — ¿NPC renombrado?");
         }
     }
 

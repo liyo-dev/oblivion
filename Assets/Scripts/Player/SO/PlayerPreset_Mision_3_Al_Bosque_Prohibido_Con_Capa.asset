@@ -136,7 +136,7 @@ MonoBehaviour:
       type: string
       value: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
   npcPositions:
-  - npcId: Eldran
+  - npcId: _ELDRAN
     position: {x: -39.945, y: 1.224823, z: 26.09}
     hasActiveState: 0
     isActive: 1

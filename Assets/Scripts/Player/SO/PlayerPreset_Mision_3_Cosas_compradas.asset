@@ -137,7 +137,7 @@ MonoBehaviour:
     position: {x: -31.48, y: 1.224823, z: 26.09}
     hasActiveState: 0
     isActive: 1
-  - npcId: Eldran
+  - npcId: _ELDRAN
     position: {x: -39.945, y: 1.224823, z: 26.09}
     hasActiveState: 0
     isActive: 1
