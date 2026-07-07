@@ -375,6 +375,11 @@ public class ActiveCharacterSwapper : MonoBehaviour
         foreach (var r in npc.GetComponentsInChildren<Renderer>(true))
             r.enabled = visible;
 
+        // Cuando el NPC está oculto, desactivar sus colliders para que los proyectiles enemigos
+        // no choquen físicamente con el NPC y puedan alcanzar el CharacterController del jugador.
+        foreach (var col in npc.GetComponentsInChildren<Collider>(true))
+            col.enabled = visible;
+
         var agent = npc.GetComponent<NavMeshAgent>();
         if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
         {

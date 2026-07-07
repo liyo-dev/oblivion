@@ -204,16 +204,28 @@ namespace Game.Cinematics
             if (playOnStart) Play();
         }
 
+        private void OnDisable()
+        {
+            // Restaurar estado global si la cinemática fue interrumpida externamente (ej. StopCoroutine sin Destroy)
+            if (!IsAnyCinematicPlaying) return;
+            CleanupGraphs(true);
+            Time.timeScale = 1f;
+            IsAnyCinematicPlaying = false;
+            vThirdPersonCamera.lockCameraForCinematic = false;
+            if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
+                EnvironmentController.Instance.EndCinematicOverride();
+        }
+
         private void OnDestroy()
         {
             CleanupGraphs(true); // Forzar limpieza total al destruir
-            Time.timeScale = 1f; 
+            Time.timeScale = 1f;
             if (IsAnyCinematicPlaying) IsAnyCinematicPlaying = false;
-            
+
             // Asegurar que liberamos la cámara
             if (vThirdPersonCamera.lockCameraForCinematic)
                 vThirdPersonCamera.lockCameraForCinematic = false;
-            
+
             // Liberar el override cinemático si estaba activo (evita que el entorno quede en estado incorrecto)
             if (EnvironmentController.Instance != null && EnvironmentController.Instance.IsCinematicOverrideActive)
             {

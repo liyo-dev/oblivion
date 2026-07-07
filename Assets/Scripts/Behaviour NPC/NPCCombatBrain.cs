@@ -139,6 +139,7 @@ namespace Game.NPC
         private Collider[] _projectileBuffer = new Collider[16];
         private Collider[] _coverBuffer = new Collider[32];
         private Collider[] _obstacleBuffer = new Collider[32];
+        private RaycastHit[] _raycastBuffer = new RaycastHit[32];
         
         // ✅ OPTIMIZACIÓN: NavMeshPath reutilizable (evita allocations en MoveTo)
         private NavMeshPath _reusablePath;
@@ -1850,24 +1851,26 @@ namespace Game.NPC
             Vector3 direction = targetPos - origin;
             float distance = direction.magnitude;
 
-            RaycastHit[] hits = Physics.RaycastAll(origin, direction.normalized, distance, ~0, QueryTriggerInteraction.Ignore);
-            if (hits.Length > 0)
+            int hitCount = Physics.RaycastNonAlloc(origin, direction.normalized, _raycastBuffer, distance, ~0, QueryTriggerInteraction.Ignore);
+            if (hitCount > 0)
             {
-                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-                for (int i = 0; i < hits.Length; i++)
+                System.Array.Sort(_raycastBuffer, 0, hitCount, RaycastHitDistanceComparer.Instance);
+                for (int i = 0; i < hitCount; i++)
                 {
-                    var hit = hits[i];
+                    var hit = _raycastBuffer[i];
                     if (hit.collider == null) continue;
                     if (ShouldIgnoreVisionHit(hit.collider)) continue;
-                    
+
                     if (hit.collider.CompareTag("Player"))
                     {
                         Debug.DrawRay(origin, direction, Color.green);
                         return true;
                     }
-                    
+
                     Debug.DrawRay(origin, direction.normalized * hit.distance, Color.red);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Visión bloqueada por: {hit.collider.gameObject.name} (Tag: {hit.collider.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
+#endif
                     return false;
                 }
             }
@@ -1892,28 +1895,32 @@ namespace Game.NPC
             Vector3 direction = (targetPos - spawnPos).normalized;
             float distance = Vector3.Distance(spawnPos, targetPos);
             
-            RaycastHit[] hits = Physics.RaycastAll(spawnPos, direction, distance, ~0, QueryTriggerInteraction.Ignore);
-            if (hits.Length > 0)
+            int hitCount = Physics.RaycastNonAlloc(spawnPos, direction, _raycastBuffer, distance, ~0, QueryTriggerInteraction.Ignore);
+            if (hitCount > 0)
             {
-                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-                for (int i = 0; i < hits.Length; i++)
+                System.Array.Sort(_raycastBuffer, 0, hitCount, RaycastHitDistanceComparer.Instance);
+                for (int i = 0; i < hitCount; i++)
                 {
-                    var hit = hits[i];
+                    var hit = _raycastBuffer[i];
                     if (hit.collider == null) continue;
                     if (ShouldIgnoreVisionHit(hit.collider)) continue;
                     if (hit.collider.CompareTag("Player")) break;
-                    
+
                     float distToObstacle = hit.distance;
                     if (distToObstacle < 2f)
                     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🚫 Línea de fuego bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m - MUY CERCA");
+#endif
                         Debug.DrawLine(spawnPos, hit.point, Color.red, 0.5f);
                         return false;
                     }
-                    
+
                     if (distToObstacle < distance * 0.5f)
                     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                         Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ Línea de fuego parcialmente bloqueada por {hit.collider.gameObject.name} a {distToObstacle:F1}m");
+#endif
                         Debug.DrawLine(spawnPos, hit.point, Color.yellow, 0.5f);
                         return false;
                     }
@@ -2600,7 +2607,7 @@ namespace Game.NPC
             Gizmos.DrawWireSphere(transform.position, settings.minSafeDistance);
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, settings.maxDistance);
-            
+
             // Visualizar radio de búsqueda
             if (_currentState == CombatState.SEARCHING)
             {
@@ -2608,5 +2615,12 @@ namespace Game.NPC
                 Gizmos.DrawWireSphere(_lastKnownPlayerPosition, settings.searchMovementRadius);
             }
         }
+    }
+
+    // Comparador singleton para ordenar RaycastHit[] sin allocar lambdas
+    internal sealed class RaycastHitDistanceComparer : System.Collections.Generic.IComparer<RaycastHit>
+    {
+        public static readonly RaycastHitDistanceComparer Instance = new RaycastHitDistanceComparer();
+        public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
     }
 }

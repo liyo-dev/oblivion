@@ -11,6 +11,8 @@ public class Inventory : MonoBehaviour
     private readonly Dictionary<string, int> _bag = new();
     // Mapa itemId -> ItemData para UI y eventos
     private readonly Dictionary<string, ItemData> _definitions = new();
+    // Caché de búsqueda exhaustiva en Resources — se inicializa una sola vez (I17)
+    private static ItemData[] _allItemsCache;
 
     public struct Entry
     {
@@ -23,6 +25,11 @@ public class Inventory : MonoBehaviour
 
     // Event fired when items are explicitly added: (itemData, addedAmount, newTotal)
     public event System.Action<ItemData, int, int> OnItemAdded;
+
+#if UNITY_EDITOR
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { _allItemsCache = null; }
+#endif
 
     void Awake()
     {
@@ -324,9 +331,10 @@ public class Inventory : MonoBehaviour
             return directLoad;
         }
         
-        // Intentar buscar en todas las carpetas de Resources
-        var allItems = Resources.LoadAll<ItemData>("");
-        foreach (var item in allItems)
+        // Intentar buscar en todas las carpetas de Resources (cacheado para evitar recargas repetidas)
+        if (_allItemsCache == null)
+            _allItemsCache = Resources.LoadAll<ItemData>("");
+        foreach (var item in _allItemsCache)
         {
             if (item != null && item.itemId == itemId)
             {

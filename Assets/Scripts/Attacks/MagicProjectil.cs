@@ -57,6 +57,11 @@ public class MagicProjectile : MonoBehaviour
 
     // Throttle proximity check to ~20/sec to avoid per-frame OverlapSphere per projectile
     private float _nextProximityCheck;
+    // Fallback mask cuando hitLayers no está configurado — cacheado para evitar GetMask con strings en Update
+    private LayerMask _fallbackSearchMask;
+    // Guard I16: evita doble daño cuando CheckEnemyProximity y OnTriggerEnter golpean el mismo collider en el mismo frame
+    private Collider _lastDamagedCollider;
+    private int _lastDamagedFrame;
     
     [Header("Lifetime (optional)")]
     [Tooltip("If > 0, overrides the spell lifetime and this projectile will auto-despawn after these seconds.")]
@@ -65,6 +70,7 @@ public class MagicProjectile : MonoBehaviour
     // ==== Ciclo de vida ========================================================
     void Awake()
     {
+        _fallbackSearchMask = LayerMask.GetMask("Enemy", "Boss");
         _rb = GetComponent<Rigidbody>();
 
         // Si no hay Rigidbody, añadimos uno cinemático para que las colisiones funcionen.
@@ -251,10 +257,7 @@ public class MagicProjectile : MonoBehaviour
         // Buscar enemigos en el radio usando hitLayers configurado
         LayerMask searchMask = _cfg.hitLayers;
         if (searchMask.value == 0)
-        {
-            // Si no hay hitLayers configurado, usar Enemy y Boss por defecto
-            searchMask = LayerMask.GetMask("Enemy", "Boss");
-        }
+            searchMask = _fallbackSearchMask;
         
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _targetSearchBuffer, searchMask); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
         
@@ -276,7 +279,11 @@ public class MagicProjectile : MonoBehaviour
                 var damageable = hit.GetComponent<Damageable>() ?? hit.GetComponentInParent<Damageable>();
                 if (damageable != null)
                 {
+                    // Guard I16: evitar doble daño si OnTriggerEnter ya golpeó este collider este frame
+                    if (!TryMarkHit(hit)) continue;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"[MagicProjectile] 🎯 IMPACTO por PROXIMIDAD contra ENEMIGO: {hit.gameObject.name}!");
+#endif
                     ApplyDamageAndKnockback(hit, transform.position);
                     SpawnImpactEffects(transform.position);
                     if (_cfg.destroyOnHit) End(true);
@@ -330,19 +337,10 @@ public class MagicProjectile : MonoBehaviour
                                        otherLayer == 1 ||
                                        otherLayer == 2; // IgnoreRaycast layer
         bool isOtherProjectile = layerName == "Projectile"; // Ignorar colisión con otros proyectiles aliados
-        bool isEnemyProjectile = layerName == "ProjectileEnemy" || layerName == "EnemyProjectile";
-        
-        bool shouldIgnore = isBattleArena || isTransparentOrIgnored || isOtherProjectile || isEnemyProjectile;
-            
-        if (shouldIgnore)
-        {
-            // Solo log si es arena (los otros son muy frecuentes)
-            if (isBattleArena)
-            {
-                // Debug.Log($"[MagicProjectile] ⚠️ Ignorando arena: {objectName}");
-            }
-            return;
-        }
+
+        bool shouldIgnore = isBattleArena || isTransparentOrIgnored || isOtherProjectile;
+
+        if (shouldIgnore) return;
 
         // Escudo NPC activo: bloquear antes de cualquier lógica de daño.
         if (TryHandleNpcShieldBlock(other, hitPoint))
@@ -354,9 +352,11 @@ public class MagicProjectile : MonoBehaviour
         // ✅ PRIORIDAD 1: Detectar colisión con proyectiles enemigos (layer "ProjectileEnemy" o "EnemyProjectile")
         if (layerName == "ProjectileEnemy" || layerName == "EnemyProjectile")
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[MagicProjectile] 💥 Colisión con proyectil enemigo detectada!");
+#endif
             ProjectileCollisionHandler.HandleCollision(gameObject, other.gameObject, hitPoint);
-            return; // El handler se encarga de destruir ambos proyectiles
+            return;
         }
 
         // ✅ PRIORIDAD 2: Detectar colisión con layer Enemy o Boss directamente
@@ -367,10 +367,12 @@ public class MagicProjectile : MonoBehaviour
         
         if (isEnemy)
         {
+            // Guard I16: evitar doble daño si CheckEnemyProximity ya golpeó este collider este frame
+            if (!TryMarkHit(other)) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[MagicProjectile] 🎯 IMPACTO CONTRA ENEMIGO: {other.gameObject.name}!");
-
+#endif
             ApplyDamageAndKnockback(other, hitPoint);
-            
             SpawnImpactEffects(hitPoint);
             if (_cfg.destroyOnHit) End(true);
             return;
@@ -399,9 +401,10 @@ public class MagicProjectile : MonoBehaviour
             {
                 return; // No dañarse a sí mismo
             }
-            
-            // ✅ Aplicar daño al Damageable encontrado
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[MagicProjectile] 🎯 Impacto contra {other.gameObject.name} - Aplicando {_cfg.damage} de daño via Damageable");
+#endif
             
             if (_cfg.aoeRadius > 0f)
             {
@@ -539,7 +542,9 @@ public class MagicProjectile : MonoBehaviour
         shieldController.OnShieldHit();
         SpawnImpactEffects(hitPoint);
         End(true);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"[MagicProjectile] 🛡️ Bloqueado por escudo NPC: {shieldController.gameObject.name}");
+#endif
         return true;
     }
 
@@ -596,7 +601,17 @@ public class MagicProjectile : MonoBehaviour
     }
     
     // ==== Helpers ==============================================================
-    
+
+    // Guard I16: devuelve false si este collider ya fue marcado como dañado en el frame actual
+    private bool TryMarkHit(Collider col)
+    {
+        if (_lastDamagedCollider == col && _lastDamagedFrame == Time.frameCount)
+            return false;
+        _lastDamagedCollider = col;
+        _lastDamagedFrame = Time.frameCount;
+        return true;
+    }
+
     /// <summary>
     /// CompareTag seguro que no lanza excepción si el tag no existe.
     /// </summary>

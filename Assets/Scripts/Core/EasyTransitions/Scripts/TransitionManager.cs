@@ -59,6 +59,10 @@ namespace EasyTransition
             return instance;
         }
 
+        public bool IsRunning => runningTransition;
+
+        public void ForceResetTransition() => runningTransition = false;
+
         /// <summary>
         /// Starts a transition without loading a new level.
         /// </summary>
@@ -66,9 +70,14 @@ namespace EasyTransition
         /// <param name="startDelay">The delay before the transition starts.</param>
         public void Transition(TransitionSettings transition, float startDelay)
         {
-            if (transition == null || runningTransition)
+            if (transition == null)
             {
                 Debug.LogError("You have to assing a transition.");
+                return;
+            }
+            if (runningTransition)
+            {
+                Debug.LogWarning("[TransitionManager] Transition already running — ignoring new request.");
                 return;
             }
 

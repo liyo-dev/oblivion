@@ -579,19 +579,38 @@ public class AdditiveSceneCinematic : MonoBehaviour
 
     // =========================== PlayAndBlock ===========================
 
-    // Added: método público que permite reproducir la cinemática y esperar hasta que finalice
+    // Reproduce la cinemática y bloquea hasta que finalice o se detecte salida anticipada.
     public IEnumerator PlayAndBlock()
     {
         bool finished = false;
         Action cb = () => finished = true;
         OnCinematicFinished += cb;
 
-        // Iniciar la reproducción (Play() es IEnumerator y se encarga de cargar la escena y disparar la lógica de reproducción)
         StartCoroutine(Play());
 
-        // Esperar hasta que TryInvokeSkipLikeActions invoque OnCinematicFinished
-        yield return new WaitUntil(() => finished);
+        // Esperar un frame para que Play() arranque o salga por las rutas de guardia anticipada
+        yield return null;
 
+        // Si Play() salió sin iniciar nada (nombre vacío, ya en curso, etc.) y OnCinematicFinished
+        // no se disparó, no bloquear indefinidamente.
+        if (!finished && !isPlaying && !IsAnyAdditiveCinematicPlaying)
+        {
+            OnCinematicFinished -= cb;
+            yield break;
+        }
+
+        // Timeout de seguridad: 120s cubre cualquier cinemática razonable
+        float elapsed = 0f;
+        while (!finished && elapsed < 120f)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!finished)
+            Debug.LogWarning("[AdditiveSceneCinematic] PlayAndBlock: timeout alcanzado — OnCinematicFinished no se disparó.");
+#endif
         OnCinematicFinished -= cb;
     }
 }

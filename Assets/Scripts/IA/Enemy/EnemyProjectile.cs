@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Proyectil disparado por el boss demonio
@@ -29,6 +30,24 @@ public class EnemyProjectile : MonoBehaviour
     
     private Collider[] _playerDetectionBuffer = new Collider[8];
     private int _playerLayerMask;
+    private float _nextProximityCheck;
+
+    // Pool estático para VFX de impacto — evita GC spikes cuando muchos proyectiles mueren a la vez
+    private static readonly Dictionary<int, Stack<GameObject>> _hitFxPool = new Dictionary<int, Stack<GameObject>>(4);
+
+    // Layers cacheados en Awake para evitar string lookups en OnTriggerEnter
+    private int _enemyLayer;
+    private int _transparentFXLayer;
+    private int _enemyProjectileLayer;
+    private int _projectileEnemyLayer;
+    private int _interactableLayer;
+    private int _interactHintLayer;
+    private int _minimapLayer;
+    private int _uiLayer;
+    private int _pauseUILayer;
+    private int _playerLayer;
+    private int _projectileLayer;
+    private int _defaultLayer;
 
     // AoE al impactar (configurado en tiempo de ejecución para lluvia de rocas)
     private bool _dealAoEOnImpact;
@@ -44,6 +63,20 @@ public class EnemyProjectile : MonoBehaviour
 
         _playerLayerMask = LayerMask.GetMask("Player");
 
+        // Cachear layers para evitar string lookups en OnTriggerEnter (por frame con muchos proyectiles)
+        _enemyLayer          = LayerMask.NameToLayer("Enemy");
+        _transparentFXLayer  = LayerMask.NameToLayer("TransparentFX");
+        _enemyProjectileLayer = LayerMask.NameToLayer("EnemyProjectile");
+        _projectileEnemyLayer = LayerMask.NameToLayer("ProjectileEnemy");
+        _interactableLayer   = LayerMask.NameToLayer("Interactable");
+        _interactHintLayer   = LayerMask.NameToLayer("InteractHint");
+        _minimapLayer        = LayerMask.NameToLayer("Minimap");
+        _uiLayer             = LayerMask.NameToLayer("UI");
+        _pauseUILayer        = LayerMask.NameToLayer("PauseUI");
+        _playerLayer         = LayerMask.NameToLayer("Player");
+        _projectileLayer     = LayerMask.NameToLayer("Projectile");
+        _defaultLayer        = LayerMask.NameToLayer("Default");
+
         rb = GetComponent<Rigidbody>();
         if (rb)
         {
@@ -55,7 +88,7 @@ public class EnemyProjectile : MonoBehaviour
             rb.angularDamping = 0f;
             rb.freezeRotation = true;
         }
-        
+
     }
 
     public void Initialize(Vector3 dir, float dmg)
@@ -141,15 +174,20 @@ public class EnemyProjectile : MonoBehaviour
     {
         // ✅ Usar SOLO física para movimiento (detección de colisiones garantizada)
         if (!initialized || hasHit) return;
-        
+
         // Mantener la velocidad constante
         if (rb)
         {
             rb.linearVelocity = direction * speed;
         }
-        
-        // ✅ Detección activa del player - CharacterController no dispara OnTriggerEnter correctamente
-        CheckPlayerProximity();
+
+        // ✅ Detección activa del player throttleada a 20/seg para reducir OverlapSphere por proyectil.
+        // CharacterController no dispara OnTriggerEnter de forma confiable, de ahí el fallback.
+        if (Time.time >= _nextProximityCheck)
+        {
+            _nextProximityCheck = Time.time + 0.05f;
+            CheckPlayerProximity();
+        }
     }
     
     /// <summary>
@@ -227,26 +265,19 @@ public class EnemyProjectile : MonoBehaviour
         
         // Ignorar enemigos y el boss (proyectil de enemy no debe dañar a otros enemies)
         // Nota: "Boss" es un Tag, no un Layer → usar CompareTag, no LayerMask
-        if (other.CompareTag("Enemy") || other.CompareTag("Boss") ||
-            other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
-        {
+        int otherLayer = other.gameObject.layer;
+        if (other.CompareTag("Enemy") || other.CompareTag("Boss") || otherLayer == _enemyLayer)
             return;
-        }
 
         // Ignorar el arena del boss (layer TransparentFX)
-        if (other.gameObject.layer == LayerMask.NameToLayer("TransparentFX"))
-        {
+        if (otherLayer == _transparentFXLayer)
             return;
-        }
 
         // Ignorar layers que no deben detener el proyectil
-        if (other.gameObject.layer == LayerMask.NameToLayer("EnemyProjectile") ||
-            other.gameObject.layer == LayerMask.NameToLayer("ProjectileEnemy") ||
-            other.gameObject.layer == LayerMask.NameToLayer("Interactable") ||
-            other.gameObject.layer == LayerMask.NameToLayer("InteractHint") ||
-            other.gameObject.layer == LayerMask.NameToLayer("Minimap") ||
-            other.gameObject.layer == LayerMask.NameToLayer("UI") ||
-            other.gameObject.layer == LayerMask.NameToLayer("PauseUI"))
+        if (otherLayer == _enemyProjectileLayer || otherLayer == _projectileEnemyLayer ||
+            otherLayer == _interactableLayer    || otherLayer == _interactHintLayer    ||
+            otherLayer == _minimapLayer         || otherLayer == _uiLayer              ||
+            otherLayer == _pauseUILayer)
         {
             return;
         }
@@ -259,7 +290,7 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        if (otherLayer == _playerLayer)
         {
             hasHit = true;
             ApplyDamage(other.gameObject);
@@ -299,14 +330,14 @@ public class EnemyProjectile : MonoBehaviour
             return;
 
         // ✅ Colisión con proyectiles del jugador (layer "Projectile")
-        if (other.gameObject.layer == LayerMask.NameToLayer("Projectile"))
+        if (otherLayer == _projectileLayer)
         {
             hasHit = true;
             ProjectileCollisionHandler.HandleCollision(other.gameObject, gameObject, other.ClosestPoint(transform.position));
             return;
         }
 
-        if (other.gameObject.layer == LayerMask.NameToLayer("Default"))
+        if (otherLayer == _defaultLayer)
         {
             if (other.isTrigger) return;
             hasHit = true;
@@ -376,11 +407,8 @@ public class EnemyProjectile : MonoBehaviour
             }
         }
 
-        // Efecto visual de impacto
-        if (hitEffectPrefab)
-        {
-            Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
-        }
+        // Efecto visual de impacto (pooled para evitar GC spikes con múltiples proyectiles)
+        SpawnHitEffect();
         
         // 🔊 Reproducir SFX de impacto/explosión
         if (!string.IsNullOrEmpty(impactSFXKey))
@@ -403,6 +431,61 @@ public class EnemyProjectile : MonoBehaviour
                 _attachedVfx.RemoveAt(i);
                 if (go == null) continue;
                 try { Destroy(go); } catch { }
+            }
+        }
+    }
+
+    private void SpawnHitEffect()
+    {
+        if (!hitEffectPrefab) return;
+
+        int id = hitEffectPrefab.GetInstanceID();
+        if (!_hitFxPool.TryGetValue(id, out var stack))
+            _hitFxPool[id] = stack = new Stack<GameObject>(8);
+
+        GameObject fx;
+        if (stack.Count > 0 && (fx = stack.Pop()) != null)
+        {
+            fx.transform.SetPositionAndRotation(transform.position, Quaternion.identity);
+            fx.SetActive(true);
+        }
+        else
+        {
+            fx = Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
+        }
+
+        var returner = fx.GetComponent<HitFxAutoReturn>();
+        if (returner == null) returner = fx.AddComponent<HitFxAutoReturn>();
+        returner.Init(id, 2f);
+    }
+
+    // Devuelve el VFX de impacto al pool estático tras reproducirse
+    private sealed class HitFxAutoReturn : MonoBehaviour
+    {
+        private int _poolKey;
+
+        public void Init(int key, float delay)
+        {
+            _poolKey = key;
+            CancelInvoke(nameof(ReturnToPool));
+            Invoke(nameof(ReturnToPool), delay);
+        }
+
+        private void ReturnToPool()
+        {
+            if (!_hitFxPool.TryGetValue(_poolKey, out var stack))
+            {
+                Destroy(gameObject);
+                return;
+            }
+            if (stack.Count < 8)
+            {
+                gameObject.SetActive(false);
+                stack.Push(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
             }
         }
     }

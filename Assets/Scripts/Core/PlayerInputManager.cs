@@ -43,6 +43,7 @@ namespace Core
         private bool _ownsControlsInstance;
         private bool _isInUIMode;
         private int _uiModeRefCount;
+        private bool _pendingControlsUpdate;
         private EventSystem _persistentEventSystem;
         private EventSystem _connectedEventSystem;
 
@@ -120,9 +121,9 @@ namespace Core
             if (_uiModeRefCount == 1) // Primera llamada
             {
                 _isInUIMode = true;
-                
-                _controls.GamePlay.Disable();
-                _controls.UI.Enable();
+                // Diferir Enable/Disable al final del update de input para no
+                // reconstruir el InputActionState durante un callback activo.
+                ScheduleEnableControls();
 
 #if UNITY_EDITOR
                 if (debugLogs)
@@ -157,8 +158,9 @@ namespace Core
             if (_uiModeRefCount == 0) // Última llamada
             {
                 _isInUIMode = false;
-                _controls.UI.Disable();
-                _controls.GamePlay.Enable();
+                // Diferir Enable/Disable al final del update de input para no
+                // reconstruir el InputActionState durante un callback activo.
+                ScheduleEnableControls();
 
 #if UNITY_EDITOR
                 if (debugLogs)
@@ -299,6 +301,22 @@ namespace Core
             }
         }
 
+        // Evita reconstruir el InputActionState en mitad de un callback de input
+        // (ej: Submit → PopUIMode → UI.Disable → IndexOutOfRangeException en el siguiente callback).
+        private void ScheduleEnableControls()
+        {
+            if (_pendingControlsUpdate) return;
+            _pendingControlsUpdate = true;
+            InputSystem.onAfterUpdate += ApplyPendingControlsUpdate;
+        }
+
+        private void ApplyPendingControlsUpdate()
+        {
+            InputSystem.onAfterUpdate -= ApplyPendingControlsUpdate;
+            _pendingControlsUpdate = false;
+            EnableControls();
+        }
+
         void OnDisable()
         {
             DisableControls();
@@ -318,6 +336,12 @@ namespace Core
                 Instance = null;
             }
 
+            if (_pendingControlsUpdate)
+            {
+                InputSystem.onAfterUpdate -= ApplyPendingControlsUpdate;
+                _pendingControlsUpdate = false;
+            }
+
             DisposeControls();
         }
 
@@ -333,12 +357,20 @@ namespace Core
             }
 
             // Solo reconectar el módulo si el EventSystem ha cambiado (ej: nueva escena no-aditiva).
-            // Reconectar innecesariamente en cargas aditivas (cinemáticas) deshabilita el UIInputModule
-            // brevemente y puede interrumpir el input de gameplay.
+            // Diferir al siguiente frame: OnSceneLoaded puede disparar en mitad de un callback de
+            // Submit (botón que carga la escena), y ConnectToEventSystemModule hace enabled=false/true
+            // en el UIInputModule, lo que reconstruye el InputActionState y causa IndexOutOfRangeException.
             if (EventSystem.current != null && EventSystem.current != _connectedEventSystem)
             {
-                ConnectToEventSystemModule();
+                StartCoroutine(ReconnectEventSystemNextFrame());
             }
+        }
+
+        private System.Collections.IEnumerator ReconnectEventSystemNextFrame()
+        {
+            yield return null;
+            if (EventSystem.current != null && EventSystem.current != _connectedEventSystem)
+                ConnectToEventSystemModule();
         }
 
         private void DisposeControls()

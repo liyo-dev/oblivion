@@ -1411,6 +1411,21 @@ namespace Game.NPC.Modules
                 var tm = TransitionManager.Instance();
                 if (tm != null)
                 {
+                    // Esperar a que termine cualquier transición en curso (timeout 3s)
+                    float waited = 0f;
+                    while (tm.IsRunning && waited < 3f)
+                    {
+                        waited += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+                    if (tm.IsRunning)
+                    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        Debug.LogWarning($"[NarrativeExecutor:{name}] TransitionManager seguía ocupado tras 3s — forzando reset.");
+#endif
+                        tm.ForceResetTransition();
+                    }
+
                     tm.Transition(entry.screenFadeTransition, 0f);
                     float duration = entry.screenFadeTransition.autoAdjustTransitionTime
                         ? entry.screenFadeTransition.transitionTime / entry.screenFadeTransition.transitionSpeed

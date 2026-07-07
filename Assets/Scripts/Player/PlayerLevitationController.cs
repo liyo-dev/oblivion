@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Invector.vCharacterController;
 using Sendero.Core.Feedback;
+using Core;
 
 /// <summary>
 /// Controlador de levitación del jugador (y de Liam como aliado IA).
@@ -61,31 +62,11 @@ public class PlayerLevitationController : MonoBehaviour
     // ── Buffer Physics ───────────────────────────────────────────────────────
     private readonly Collider[] _levitationTargetBuffer = new Collider[16];
 
-    // ── Reflexión (bug I7 pendiente — sustituir por acceso directo) ──────────
-    private static System.Type _gamepadReaderType;
-    private static System.Reflection.PropertyInfo _leftHeldProp;
-    private static System.Reflection.PropertyInfo _leftReleasedProp;
-    private static System.Reflection.PropertyInfo _rightHeldProp;
-    private static System.Reflection.PropertyInfo _rightReleasedProp;
-    private static bool _reflectionInitialized;
 
     // ── API pública ──────────────────────────────────────────────────────────
     public bool IsLevitating => _phase == LevitationPhase.Levitating;
     public MagicSlot ActiveSlot => _activeSlot;
     public IReadOnlyList<LevitationTarget> CurrentTargets => _currentTargets;
-
-#if UNITY_EDITOR
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics()
-    {
-        _gamepadReaderType     = null;
-        _leftHeldProp          = null;
-        _leftReleasedProp      = null;
-        _rightHeldProp         = null;
-        _rightReleasedProp     = null;
-        _reflectionInitialized = false;
-    }
-#endif
 
     // ────────────────────────────────────────────────────────────────────────
     void Awake()
@@ -95,8 +76,6 @@ public class PlayerLevitationController : MonoBehaviour
         if (!manaPool)    manaPool    = GetComponentInParent<ManaPool>();
         if (!animator)    animator    = GetComponentInParent<Animator>();
         if (!targeting)   targeting   = GetComponentInParent<PlayerTargeting>();
-
-        InitializeReflection();
     }
 
     void Start()
@@ -474,34 +453,12 @@ public class PlayerLevitationController : MonoBehaviour
         if (_activeSpell.vfxLifetime > 0f) Destroy(vfx, _activeSpell.vfxLifetime);
     }
 
-    // ── Input (Reflexión — bug I7 pendiente) ─────────────────────────────────
+    // ── Input ────────────────────────────────────────────────────────────────
 
-    void InitializeReflection()
-    {
-        if (_reflectionInitialized) return;
-        _reflectionInitialized = true;
-
-        try
-        {
-            _gamepadReaderType = System.Type.GetType("Core.GamepadInputReader, Assembly-CSharp");
-            if (_gamepadReaderType == null) return;
-
-            const System.Reflection.BindingFlags f = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static;
-            _leftHeldProp      = _gamepadReaderType.GetProperty("AttackMagicLeftHeld",     f);
-            _leftReleasedProp  = _gamepadReaderType.GetProperty("AttackMagicLeftReleased", f);
-            _rightHeldProp     = _gamepadReaderType.GetProperty("AttackMagicRightHeld",    f);
-            _rightReleasedProp = _gamepadReaderType.GetProperty("AttackMagicRightReleased",f);
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[PlayerLevitationController] Error en reflexión: {ex.Message}");
-        }
-    }
-
-    bool GetLeftHeld()      => _leftHeldProp      != null && (bool)_leftHeldProp.GetValue(null);
-    bool GetLeftReleased()  => _leftReleasedProp  != null && (bool)_leftReleasedProp.GetValue(null);
-    bool GetRightHeld()     => _rightHeldProp     != null && (bool)_rightHeldProp.GetValue(null);
-    bool GetRightReleased() => _rightReleasedProp != null && (bool)_rightReleasedProp.GetValue(null);
+    bool GetLeftHeld()      => GamepadInputReader.AttackMagicLeftHeld;
+    bool GetLeftReleased()  => GamepadInputReader.AttackMagicLeftReleased;
+    bool GetRightHeld()     => GamepadInputReader.AttackMagicRightHeld;
+    bool GetRightReleased() => GamepadInputReader.AttackMagicRightReleased;
 
     // ── Ciclo de vida ────────────────────────────────────────────────────────
 
