@@ -9122,7 +9122,7 @@ MonoBehaviour:
   maxLockDistance: 30
   visualResyncInterval: 0.1
   shoulderSwitchDebounce: 0.12
-  showDebugLogs: 1
+  showDebugLogs: 0
 --- !u!1 &3700031740071713348
 GameObject:
   m_ObjectHideFlags: 0

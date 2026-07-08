@@ -106,7 +106,9 @@
       "Bash(python -c \"import json; data=json.load\\(open\\('Assets/Scripts/Core/PlayerControls.inputactions'\\)\\); [print\\(m['name'], ':', [\\(a['name'], a.get\\('bindings', []\\)\\) for a in m.get\\('actions', []\\)]\\) for m in data.get\\('maps', []\\)]\")",
       "Bash(python3 -c ' *)",
       "Bash(Select-Object FullName, PSIsContainer)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Height Fog\\\\URP \\(Universal Render RP package required\\)\" -Recurse -File | ForEach-Object { $_.FullName })"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Height Fog\\\\URP \\(Universal Render RP package required\\)\" -Recurse -File | ForEach-Object { $_.FullName })",
+      "Bash(dir \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Kevin Iglesias\" /s /b)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Kevin Iglesias\" -Recurse -File | Where-Object { $_.Extension -in \".fbx\",\".anim\",\".controller\",\".overrideController\" } | Select-Object -ExpandProperty FullName | Sort-Object)"
     ]
   }
 }
