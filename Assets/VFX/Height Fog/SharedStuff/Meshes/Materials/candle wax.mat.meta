@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 3d7f28142c90f5849819474aff3ba86d
+timeCreated: 1529304480
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/SharedStuff/Meshes/Materials/candle wax.mat
+  uploadId: 377424

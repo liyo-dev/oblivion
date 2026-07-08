@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cc31bcfe6d18a644d946ca25061cf34c
+timeCreated: 1525959358
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Scenes/Ice.unity
+  uploadId: 377424

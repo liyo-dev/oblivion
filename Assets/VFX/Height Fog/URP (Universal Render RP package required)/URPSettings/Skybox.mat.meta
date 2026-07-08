@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ebd02d6d5bbef6845baa8d475a0dbd30
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/URPSettings/Skybox.mat
+  uploadId: 377424

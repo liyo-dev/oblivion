@@ -12574,7 +12574,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5deb9ff5611cb9d4596d397ac57ee8c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::Invector.vCharacterController.vThirdPersonInput
-  actionValidatorSource: {fileID: 0}
+  actionValidatorSource: {fileID: 8092544119751004760}
   cc: {fileID: 0}
   tpCamera: {fileID: 0}
   cameraMain: {fileID: 0}

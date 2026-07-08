@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: c16c1ba4393897944a5d42055792866f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/Examples/Materials/Ice_rock
+    1.mat
+  uploadId: 377424

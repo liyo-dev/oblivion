@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b183bc9c374f0ed4292091246b99ce9d
+timeCreated: 1525959358
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Scenes/Wax.unity
+  uploadId: 377424

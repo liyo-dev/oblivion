@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 31685f9964ccbfa4fa7a988774da4265
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/URPSettings/PostProcessProfile.asset
+  uploadId: 377424

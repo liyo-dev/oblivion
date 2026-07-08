@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f0898356e173a8f4fa9e75c741f1b834
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/Editor/HeightFogGUI-LWRP.cs
+  uploadId: 377424

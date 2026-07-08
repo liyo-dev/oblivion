@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8ef534255af689c4399bc900ec1e780b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/Examples/Materials/Water_plane.mat
+  uploadId: 377424

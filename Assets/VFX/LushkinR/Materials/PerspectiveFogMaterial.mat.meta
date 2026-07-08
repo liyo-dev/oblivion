@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 386ab7cd10e9af247b99f7d02c51d511
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 175935
+  packageName: URP Vertical Fog
+  packageVersion: 1.2
+  assetPath: Assets/LushkinR/Materials/PerspectiveFogMaterial.mat
+  uploadId: 498688

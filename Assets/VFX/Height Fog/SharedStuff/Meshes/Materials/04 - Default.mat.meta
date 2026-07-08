@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: dac01e59e5dbc204281fb9544d64f9e1
+timeCreated: 1529304480
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/SharedStuff/Meshes/Materials/04 - Default.mat
+  uploadId: 377424

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 3da359268264e0d4db38c1ce951c30ca
+guid: da2ed2e1aae1da34684fe894590efa54
 labels:
 - Animation
 ModelImporter:
@@ -18,8 +18,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -970,8 +968,8 @@ ModelImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 326043
-  packageName: Human Spellcasting Animations FREE
-  packageVersion: 1.0
-  assetPath: Assets/Kevin Iglesias/Human Animations/Animations/Female/Idles/HumanF@Idle02-Idle01.fbx
-  uploadId: 771492
+  productId: 157744
+  packageName: Human Basic Motions
+  packageVersion: 2.5.1
+  assetPath: Assets/Plugins/Kevin Iglesias/Human Animations/Animations/Female/Idles/HumanF@Idle02-Idle01.fbx
+  uploadId: 908876

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b6fcef650e2ded54d8d6ac767b27eb47
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/SharedStuff/Animations/CameraRotator_candle.anim
+  uploadId: 377424

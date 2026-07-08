@@ -152,9 +152,13 @@ namespace Game.NPC
                 }
                 else
                 {
-                    // "Sígueme" solo si ningún otro compañero está siguiendo activamente
-                    bool isAvailable = !_partyMember.IsInParty ||
-                                       (_partyMember.IsInParty && _npcManager?.Context?.IsPinnedByParty == true);
+                    // "Sígueme" solo si: el equipo está completo (todos los compañeros unidos),
+                    // el jugador ha separado el equipo (modo Libre) y este miembro fue detenido.
+                    bool fullParty = (_playerParty?.MemberCount ?? 0) >= 2;
+                    bool isAvailable = fullParty &&
+                                       partyInLibreMode &&
+                                       _partyMember.IsInParty &&
+                                       _npcManager?.Context?.IsPinnedByParty == true;
 
                     if (isAvailable && !AnyOtherMemberActivelyFollowing())
                         desired = PromptMode.Follow;

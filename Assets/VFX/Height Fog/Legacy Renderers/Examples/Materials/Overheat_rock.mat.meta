@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 064da0941a15052499948e794a311c1a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Materials/Overheat_rock.mat
+  uploadId: 377424

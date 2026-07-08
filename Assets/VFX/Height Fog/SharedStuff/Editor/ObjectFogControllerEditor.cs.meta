@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a08323947bca5194e93c9fdf9f3bb7c1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/SharedStuff/Editor/ObjectFogControllerEditor.cs
+  uploadId: 377424

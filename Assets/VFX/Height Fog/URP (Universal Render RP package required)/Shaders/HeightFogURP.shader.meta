@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 3d7c3e4a8a6466a4d9e09a6d594daca1
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/Shaders/HeightFogURP.shader
+  uploadId: 377424

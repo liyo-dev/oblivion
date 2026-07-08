@@ -121,9 +121,12 @@ namespace Core
             if (_uiModeRefCount == 1) // Primera llamada
             {
                 _isInUIMode = true;
-                // Diferir Enable/Disable al final del update de input para no
-                // reconstruir el InputActionState durante un callback activo.
-                ScheduleEnableControls();
+                // Habilitar UI inmediatamente: es seguro llamar UI.Enable() dentro de un callback
+                // de GamePlay porque modifica un mapa distinto y no reconstruye el estado activo.
+                // GamePlay.Disable() se difiere para evitar IndexOutOfRangeException si PushUIMode
+                // se invoca desde un callback de Interact (que pertenece al mapa GamePlay).
+                _controls?.UI.Enable();
+                ScheduleEnableControls(); // aplicará también GamePlay.Disable() de forma diferida
 
 #if UNITY_EDITOR
                 if (debugLogs)
@@ -158,9 +161,12 @@ namespace Core
             if (_uiModeRefCount == 0) // Última llamada
             {
                 _isInUIMode = false;
-                // Diferir Enable/Disable al final del update de input para no
-                // reconstruir el InputActionState durante un callback activo.
-                ScheduleEnableControls();
+                // Rehabilitar GamePlay inmediatamente: es seguro llamar GamePlay.Enable() dentro
+                // de un callback de UI porque modifica un mapa distinto y no reconstruye el estado activo.
+                // UI.Disable() se difiere para evitar IndexOutOfRangeException si PopUIMode
+                // se invoca desde un callback de Submit (que pertenece al mapa UI).
+                _controls?.GamePlay.Enable();
+                ScheduleEnableControls(); // aplicará también UI.Disable() de forma diferida
 
 #if UNITY_EDITOR
                 if (debugLogs)

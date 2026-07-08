@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 5a1405ce32c0b534ebf969b4706c9285
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Shaders/HeightFog.shader
+  uploadId: 377424

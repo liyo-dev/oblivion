@@ -8,8 +8,8 @@ NativeFormatImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 316370
-  packageName: RPG Tiny Hero World Bundle PBR
-  packageVersion: 1.0
-  assetPath: Assets/Art/Characters/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/URPsettings/ForwardRenderer.asset
-  uploadId: 747111
+  productId: 175935
+  packageName: URP Vertical Fog
+  packageVersion: 1.2
+  assetPath: Assets/Art/World/RPG Tiny Fantasy World 01 PBR/RPGTinyHeroWorldBundlePBR/RPGTinyHeroWavePBR/Scene/URPsettings/ForwardRenderer.asset
+  uploadId: 498688

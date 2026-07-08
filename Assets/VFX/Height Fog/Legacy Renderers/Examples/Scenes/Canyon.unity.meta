@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4f69a5c71e1d8b0419104b43f2c8122b
+timeCreated: 1525959358
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Scenes/Canyon.unity
+  uploadId: 377424

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 61cec959547e295429107a0b34f0b202
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Materials/Simple_Cube_2.mat
+  uploadId: 377424

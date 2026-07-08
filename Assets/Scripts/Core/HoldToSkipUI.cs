@@ -120,10 +120,13 @@ public class HoldToSkipUI : MonoBehaviour
             if (submitAction != null)
             {
                 holdAction = submitAction;
-                if (!holdAction.enabled) holdAction.Enable();
+                // Habilitar individualmente para garantizar que la acción responde
+                // aunque el mapa UI esté en transición (la habilitación de mapa es inmediata
+                // desde PushUIMode pero el Disable de GamePlay es diferido).
+                holdAction.Enable();
                 holdAction.started  += OnHoldStarted;
                 holdAction.canceled += OnHoldCanceled;
-                
+
                 Debug.Log($"[HoldToSkipUI] ✅ Usando UI/Submit desde PlayerInputManager - Enabled: {holdAction.enabled}");
                 return true;
             }

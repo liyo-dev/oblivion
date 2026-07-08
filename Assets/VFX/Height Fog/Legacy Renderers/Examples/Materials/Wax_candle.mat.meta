@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a99d2b12e5f841545a081768c1d39a34
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Materials/Wax_candle.mat
+  uploadId: 377424

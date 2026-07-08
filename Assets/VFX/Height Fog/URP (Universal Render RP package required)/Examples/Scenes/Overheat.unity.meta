@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c4e952997db1a1b46914442c692893aa
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/URP (Universal Render RP package required)/Examples/Scenes/Overheat.unity
+  uploadId: 377424

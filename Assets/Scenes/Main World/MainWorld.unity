@@ -27986,29 +27986,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
   ambientPreset: {fileID: 11400000, guid: eb46180ec973baa448987547d38e376e, type: 2}
-  enableFog: 0
+  enableFog: 1
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
   fogEndDistance: 100
   fogMode: 3
-  controlAmbientLight: 1
+  controlAmbientLight: 0
   ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
-  ambientLightIntensity: 0.7
-  enableGroundMist: 1
+  ambientLightIntensity: 1
+  enableGroundMist: 0
   groundMistPS: {fileID: 0}
   enableCameraOverlay: 0
   overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
   overlayMaxAlpha: 0.85
   changeMusic: 1
-  musicZoneId: Dungeon
+  musicZoneId: 
   transitionDuration: 1.5
   transitionEase: 4
   priority: 0
-  controlCamera: 1
-  cameraMode: 2
+  controlCamera: 0
+  cameraMode: 0
   cameraHorizontalAngle: 90
-  cameraDistance: 6
+  cameraDistance: 2.5
   showDebugLogs: 0
 --- !u!65 &179798389
 BoxCollider:
@@ -153219,7 +153219,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 82ae2569bef29944db0d4cf17be3b814, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 471e22222992cc342bade2dfbc7be75b, type: 2}
   m_BuildHeightMesh: 0
 --- !u!4 &718759156
 Transform:
@@ -164206,7 +164206,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
   ambientPreset: {fileID: 11400000, guid: 26d723e6b99bfa54fac9037f9b43322e, type: 2}
-  enableFog: 0
+  enableFog: 1
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
@@ -164215,13 +164215,13 @@ MonoBehaviour:
   controlAmbientLight: 0
   ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
   ambientLightIntensity: 1
-  enableGroundMist: 1
-  groundMistPS: {fileID: 864090224}
+  enableGroundMist: 0
+  groundMistPS: {fileID: 0}
   enableCameraOverlay: 0
   overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
-  overlayMaxAlpha: 0.2
+  overlayMaxAlpha: 0.85
   changeMusic: 1
-  musicZoneId: Woods
+  musicZoneId: 
   transitionDuration: 1.5
   transitionEase: 4
   priority: 0
@@ -391287,25 +391287,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1788915190}
     m_Modifications:
-    - target: {fileID: 206955243820471005, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2052766923886183289, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3714833892687663537, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4909843728885285984, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_Name
       value: _WILL
-      objectReference: {fileID: 0}
-    - target: {fileID: 5254754835644330641, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -391346,14 +391330,6 @@ PrefabInstance:
     - target: {fileID: 6673899346828621514, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7612423805484779947, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8872017054573630166, guid: 392e26f6a7263c241a8673d723f24f9a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -413365,7 +413341,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogZone
   ambientPreset: {fileID: 11400000, guid: 4fd61ad9ba2cb16418cb56977804ca15, type: 2}
-  enableFog: 0
+  enableFog: 1
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   fogDensity: 0.02
   fogStartDistance: 0
@@ -413380,7 +413356,7 @@ MonoBehaviour:
   overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
   overlayMaxAlpha: 0.85
   changeMusic: 1
-  musicZoneId: Mountains
+  musicZoneId: 
   transitionDuration: 1.5
   transitionEase: 4
   priority: 0

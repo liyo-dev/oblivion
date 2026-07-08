@@ -6,3 +6,10 @@ NativeFormatImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 175935
+  packageName: URP Vertical Fog
+  packageVersion: 1.2
+  assetPath: Assets/Settings/SampleSceneProfile.asset
+  uploadId: 498688

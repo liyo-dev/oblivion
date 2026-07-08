@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: b2679f870b7bb124dbef598d6947bdea
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 157744
+  packageName: Human Basic Motions
+  packageVersion: 2.5.1
+  assetPath: Assets/Plugins/Kevin Iglesias/Human Animations/Unity Demo Scenes/Human
+    Basic Motions/Shaders/HumanBasicMotionsScene.shader
+  uploadId: 908876

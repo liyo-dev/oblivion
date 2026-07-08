@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5a01159d1f521e947b73033c135846d6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/SharedStuff/PostProcessingStack2Presets/Canyon_non_emissive.asset
+  uploadId: 377424

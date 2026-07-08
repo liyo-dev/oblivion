@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f2d8e11a57c48454f9cb80c9375fb75c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Materials/Water_depth.mat
+  uploadId: 377424

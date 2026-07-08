@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d796195484135344b98a9ac2ebf04480
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118960
+  packageName: Height Fog
+  packageVersion: 3.0
+  assetPath: Assets/Height Fog/Legacy Renderers/Examples/Materials/Canyon_ground_emissive.mat
+  uploadId: 377424

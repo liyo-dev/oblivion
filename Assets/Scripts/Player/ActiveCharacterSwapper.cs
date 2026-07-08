@@ -237,6 +237,19 @@ public class ActiveCharacterSwapper : MonoBehaviour
     {
         if (willNpcPrefab == null) return;
 
+        // En combate activo: spawnear junto al jugador para que Will pueda atacar de inmediato
+        // en vez de desde la posición previa del controller (puede estar a > 30m, lo que fuerza
+        // AllyCombatState a modo FollowingPlayer en lugar de atacar).
+        if (GetActiveCombatEnemy() != null && PlayerService.TryGetPlayer(out var playerGO))
+        {
+            Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
+            if (NavMesh.SamplePosition(behind, out NavMeshHit combatHit, 3f, NavMesh.AllAreas))
+                spawnPos = combatHit.position;
+            else
+                spawnPos = playerGO.transform.position;
+            spawnRot = playerGO.transform.rotation;
+        }
+
         // Buscar posición válida en NavMesh lo más cerca posible de donde estaba el controller
         Vector3 pos = NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 2f, NavMesh.AllAreas) ? hit.position : spawnPos;
 
@@ -404,6 +417,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
             {
                 agent.ResetPath();
                 agent.isStopped = true;
+                // AllyCombatState.OnUpdate llama a agent.isStopped = false en cada frame
+                // de movimiento y sigue disparando aunque el NPC sea invisible. Salir del
+                // estado de combate aquí evita el "atacante invisible".
+                var npcMgr = npc.NPCManager;
+                if (npcMgr != null && npcMgr.Context.IsInCombat)
+                {
+                    npcMgr.ExitCombat();
+                    npcMgr.ForceIdle();
+                }
             }
         }
     }

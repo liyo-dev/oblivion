@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d847b876476d3d6468f5dfcd34266f96
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 175935
+  packageName: URP Vertical Fog
+  packageVersion: 1.2
+  assetPath: Assets/LushkinR/Settings/UniversalRP-MediumQuality.asset
+  uploadId: 498688
