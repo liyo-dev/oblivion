@@ -6,81 +6,36 @@ using DG.Tweening;
 
 public enum ZoneCameraMode
 {
-    SoloDistancia,    // Solo ajusta la distancia; sin bloqueo de ángulo
-    Plataformas2D,    // Vista lateral fija (desplazamiento horizontal)
-    TopDown,          // Vista cenital desde arriba
-    Isometrico,       // Ángulo diagonal fijo estilo isométrico/RTS
-    CorredorEstrecho, // Cámara muy cerca (mazmorras, pasillos)
-    PanoramicoLejano, // Cámara muy alejada (exteriores épicos)
+    SoloDistancia,
+    Plataformas2D,
+    TopDown,
+    Isometrico,
+    CorredorEstrecho,
+    PanoramicoLejano,
 }
 
 /// <summary>
-/// Zona ambiental: controla fog lejano, luz ambiente y niebla de suelo.
+/// Zona ambiental: aplica un AmbientPreset al entrar y lo revierte al salir.
 /// Requiere un Collider configurado como trigger.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class AmbientZone : MonoBehaviour
 {
-    [Header("Preset (Opcional)")]
-    [Tooltip("Si se asigna, sus valores anulan toda configuración manual de fog y luz.")]
+    [Header("Preset")]
+    [Tooltip("Preset con toda la configuración ambiental de la zona.")]
     [FormerlySerializedAs("ambientPreset")]
     [SerializeField] private AmbientPreset ambientPreset;
 
-    [Header("Fog Lejano")]
-    [SerializeField] private bool enableFog = true;
-    [SerializeField] private Color fogColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-    [Range(0f, 1f)]
-    [SerializeField] private float fogDensity = 0.02f;
-    [SerializeField] private float fogStartDistance = 0f;
-    [SerializeField] private float fogEndDistance = 100f;
-    [SerializeField] private FogMode fogMode = FogMode.ExponentialSquared;
-
-    [Header("Luz Ambiente")]
-    [Tooltip("Si está activo sobreescribe el color e intensidad de la luz ambiente de la escena.")]
-    [SerializeField] private bool controlAmbientLight = false;
-    [SerializeField] private Color ambientLightColor = Color.white;
-    [Range(0f, 2f)]
-    [SerializeField] private float ambientLightIntensity = 1f;
-
     [Header("Niebla de Suelo")]
     [Tooltip("Particle System de niebla volumétrica a ras de suelo. Debe estar configurado para hacer loop.")]
-    [SerializeField] private bool enableGroundMist = false;
     [SerializeField] private ParticleSystem groundMistPS;
 
-    [Header("Niebla de Cámara (Overlay)")]
-    [Tooltip("Overlay de pantalla completa. Úsalo para simular estar dentro de niebla densa: " +
-             "no depende de la distancia a cámara, tapa el entorno inmediato del jugador.")]
-    [SerializeField] private bool enableCameraOverlay = false;
-    [SerializeField] private Color overlayColor = new Color(0.85f, 0.88f, 0.92f, 1f);
-    [Range(0f, 1f)]
-    [Tooltip("Opacidad máxima del overlay (0 = transparente, 1 = completamente opaco).")]
-    [SerializeField] private float overlayMaxAlpha = 0.85f;
-
-    [Header("Música")]
-    [SerializeField] private bool changeMusic = true;
-    [Tooltip("Debe coincidir con el 'Zone Id' en AudioGraphProfile → Ambient Zones.")]
-    [SerializeField] private string musicZoneId = "";
-
-    [Header("Transición")]
-    [SerializeField] private float transitionDuration = 1.5f;
-    [SerializeField] private Ease transitionEase = Ease.InOutSine;
+    [Header("Niebla de Pies")]
+    [Tooltip("GameObject (plano con shader) que cubre los pies del jugador. Se activa al entrar en la zona.")]
+    [SerializeField] private GameObject footFogObject;
 
     [Header("Prioridad")]
     [SerializeField] private int priority = 0;
-
-    [Header("Cámara")]
-    [Tooltip("Si está activo, la zona anula la configuración de la cámara del jugador al entrar.")]
-    [SerializeField] private bool controlCamera = false;
-    [Tooltip("Preset de cámara. Cada modo ajusta ángulo, altura y restricciones de rotación.")]
-    [SerializeField] private ZoneCameraMode cameraMode = ZoneCameraMode.SoloDistancia;
-    [Tooltip("Ángulo horizontal (grados) al que se fija la cámara en modos bloqueados: Plataformas2D, TopDown, Isométrico. " +
-             "0=Norte, 90=Este, 180=Sur, 270=Oeste.")]
-    [Range(0f, 360f)]
-    [SerializeField] private float cameraHorizontalAngle = 90f;
-    [Tooltip("Distancia cámara-jugador. Arrastra para acercar (izquierda) o alejar (derecha). " +
-             "Por defecto 2.5 = distancia normal de juego.")]
-    [Range(0.5f, 12f)]
-    [SerializeField] private float cameraDistance = 2.5f;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
@@ -136,7 +91,7 @@ public class AmbientZone : MonoBehaviour
 #endif
 
     public static AmbientZone CurrentActiveZone => _currentActiveZone;
-    public string MusicZoneId => musicZoneId;
+    public string MusicZoneId => ambientPreset != null ? ambientPreset.musicZoneId : "";
 
     private void Awake()
     {
@@ -154,13 +109,13 @@ public class AmbientZone : MonoBehaviour
     {
         if (_defaultsCaptured) return;
 
-        _defaultFogEnabled     = RenderSettings.fog;
-        _defaultFogColor       = RenderSettings.fogColor;
-        _defaultFogDensity     = RenderSettings.fogDensity;
-        _defaultFogStart       = RenderSettings.fogStartDistance;
-        _defaultFogEnd         = RenderSettings.fogEndDistance;
-        _defaultFogMode        = RenderSettings.fogMode;
-        _defaultAmbientColor   = RenderSettings.ambientLight;
+        _defaultFogEnabled       = RenderSettings.fog;
+        _defaultFogColor         = RenderSettings.fogColor;
+        _defaultFogDensity       = RenderSettings.fogDensity;
+        _defaultFogStart         = RenderSettings.fogStartDistance;
+        _defaultFogEnd           = RenderSettings.fogEndDistance;
+        _defaultFogMode          = RenderSettings.fogMode;
+        _defaultAmbientColor     = RenderSettings.ambientLight;
         _defaultAmbientIntensity = RenderSettings.ambientIntensity;
         _defaultsCaptured = true;
     }
@@ -208,6 +163,7 @@ public class AmbientZone : MonoBehaviour
 
         _currentActiveZone = null;
         StopGroundMist();
+        StopFootFog();
         HideCameraOverlay();
         RestoreCameraDefaults();
         TransitionToDefaultFog();
@@ -220,53 +176,47 @@ public class AmbientZone : MonoBehaviour
 
     private void ApplyZoneTransition()
     {
+        if (ambientPreset == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[AmbientZone] '{gameObject.name}' no tiene AmbientPreset asignado.");
+#endif
+            PlayGroundMist();
+            PlayFootFog();
+            return;
+        }
+
         _currentTween?.Kill();
 
-        // Resolver valores: preset > manual
-        bool   targetEnableFog      = ambientPreset != null ? ambientPreset.enableFog          : enableFog;
-        Color  targetFogColor       = ambientPreset != null ? ambientPreset.fogColor            : fogColor;
-        float  targetDensity        = ambientPreset != null ? ambientPreset.fogDensity          : fogDensity;
-        FogMode targetFogMode       = ambientPreset != null ? ambientPreset.fogMode             : fogMode;
-        float  targetFogStart       = ambientPreset != null ? ambientPreset.fogStartDistance    : fogStartDistance;
-        float  targetFogEnd         = ambientPreset != null ? ambientPreset.fogEndDistance      : fogEndDistance;
-        float  duration             = ambientPreset != null ? ambientPreset.transitionDuration  : transitionDuration;
-        Ease   ease                 = ambientPreset != null ? ambientPreset.transitionEase      : transitionEase;
-        bool   targetControlLight   = ambientPreset != null ? ambientPreset.controlAmbientLight : controlAmbientLight;
+        Color targetAmbient  = ambientPreset.controlAmbientLight ? ambientPreset.ambientLightColor     : _defaultAmbientColor;
+        float targetAmbientI = ambientPreset.controlAmbientLight ? ambientPreset.ambientLightIntensity : _defaultAmbientIntensity;
 
-        // Si la zona no controla la luz, el target es el default de la escena
-        // → al entrar en zona B sin luz, la luz de zona A se restaura automáticamente
-        Color targetAmbient  = targetControlLight
-            ? (ambientPreset != null ? ambientPreset.ambientLightColor     : ambientLightColor)
-            : _defaultAmbientColor;
-        float targetAmbientI = targetControlLight
-            ? (ambientPreset != null ? ambientPreset.ambientLightIntensity : ambientLightIntensity)
-            : _defaultAmbientIntensity;
+        RenderSettings.fog     = ambientPreset.enableFog;
+        RenderSettings.fogMode = ambientPreset.fogMode;
 
-        RenderSettings.fog     = targetEnableFog;
-        RenderSettings.fogMode = targetFogMode;
-
-        float startDensity   = RenderSettings.fogDensity;
-        Color startFogColor  = RenderSettings.fogColor;
-        float startFogStart  = RenderSettings.fogStartDistance;
-        float startFogEnd    = RenderSettings.fogEndDistance;
-        Color startAmbient   = RenderSettings.ambientLight;
-        float startAmbientI  = RenderSettings.ambientIntensity;
+        float startDensity  = RenderSettings.fogDensity;
+        Color startFogColor = RenderSettings.fogColor;
+        float startFogStart = RenderSettings.fogStartDistance;
+        float startFogEnd   = RenderSettings.fogEndDistance;
+        Color startAmbient  = RenderSettings.ambientLight;
+        float startAmbientI = RenderSettings.ambientIntensity;
 
         _currentTween = DOTween.To(
             () => 0f,
             t => {
-                RenderSettings.fogDensity        = Mathf.Lerp(startDensity,  targetDensity,  t);
-                RenderSettings.fogColor          = Color.Lerp(startFogColor, targetFogColor, t);
-                RenderSettings.fogStartDistance  = Mathf.Lerp(startFogStart, targetFogStart, t);
-                RenderSettings.fogEndDistance    = Mathf.Lerp(startFogEnd,   targetFogEnd,   t);
-                RenderSettings.ambientLight      = Color.Lerp(startAmbient,  targetAmbient,  t);
-                RenderSettings.ambientIntensity  = Mathf.Lerp(startAmbientI, targetAmbientI, t);
+                RenderSettings.fogDensity       = Mathf.Lerp(startDensity,  ambientPreset.fogDensity,       t);
+                RenderSettings.fogColor         = Color.Lerp(startFogColor, ambientPreset.fogColor,         t);
+                RenderSettings.fogStartDistance = Mathf.Lerp(startFogStart, ambientPreset.fogStartDistance, t);
+                RenderSettings.fogEndDistance   = Mathf.Lerp(startFogEnd,   ambientPreset.fogEndDistance,   t);
+                RenderSettings.ambientLight     = Color.Lerp(startAmbient,  targetAmbient,                  t);
+                RenderSettings.ambientIntensity = Mathf.Lerp(startAmbientI, targetAmbientI,                 t);
             },
             1f,
-            duration
-        ).SetEase(ease).SetUpdate(true);
+            ambientPreset.transitionDuration
+        ).SetEase(ambientPreset.transitionEase).SetUpdate(true);
 
         PlayGroundMist();
+        PlayFootFog();
         ShowCameraOverlay();
         ApplyCameraTransition();
     }
@@ -274,6 +224,9 @@ public class AmbientZone : MonoBehaviour
     private void TransitionToDefaultFog()
     {
         _currentTween?.Kill();
+
+        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : 1.5f;
+        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : Ease.InOutSine;
 
         float startDensity  = RenderSettings.fogDensity;
         Color startFogColor = RenderSettings.fogColor;
@@ -293,8 +246,8 @@ public class AmbientZone : MonoBehaviour
                 RenderSettings.ambientIntensity = Mathf.Lerp(startAmbientI, _defaultAmbientIntensity, t);
             },
             1f,
-            transitionDuration
-        ).SetEase(transitionEase).SetUpdate(true).OnComplete(() => {
+            dur
+        ).SetEase(ease).SetUpdate(true).OnComplete(() => {
             RenderSettings.fog     = _defaultFogEnabled;
             RenderSettings.fogMode = _defaultFogMode;
         });
@@ -306,7 +259,7 @@ public class AmbientZone : MonoBehaviour
 
     private void PlayGroundMist()
     {
-        if (!enableGroundMist || groundMistPS == null) return;
+        if (groundMistPS == null) return;
 
         if (!groundMistPS.gameObject.activeSelf)
             groundMistPS.gameObject.SetActive(true);
@@ -329,7 +282,7 @@ public class AmbientZone : MonoBehaviour
 
     private void StopGroundMist()
     {
-        if (!enableGroundMist || groundMistPS == null) return;
+        if (groundMistPS == null) return;
 
         var restoreParent = _mistOriginalParent != null ? _mistOriginalParent : transform;
         groundMistPS.transform.SetParent(restoreParent, true);
@@ -337,6 +290,24 @@ public class AmbientZone : MonoBehaviour
 
         // StopEmitting: las partículas ya emitidas se desvanecen solas por su lifetime
         groundMistPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+    }
+
+    // -------------------------------------------------------------------------
+    //  Niebla de pies
+    // -------------------------------------------------------------------------
+
+    private void PlayFootFog()
+    {
+        if (footFogObject == null) return;
+        if (!footFogObject.activeSelf)
+            footFogObject.SetActive(true);
+    }
+
+    private void StopFootFog()
+    {
+        if (footFogObject == null) return;
+        if (footFogObject.activeSelf)
+            footFogObject.SetActive(false);
     }
 
     // -------------------------------------------------------------------------
@@ -373,24 +344,26 @@ public class AmbientZone : MonoBehaviour
 
     private void ShowCameraOverlay()
     {
-        if (!enableCameraOverlay) return;
+        if (ambientPreset == null || !ambientPreset.enableCameraOverlay) return;
 
         EnsureFogCanvas();
-        _fogImage.color = overlayColor;
-
-        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : transitionDuration;
-        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : transitionEase;
+        _fogImage.color = ambientPreset.overlayColor;
 
         _overlayTween?.Kill();
-        _overlayTween = _fogCanvasGroup.DOFade(overlayMaxAlpha, dur).SetEase(ease).SetUpdate(true);
+        _overlayTween = _fogCanvasGroup
+            .DOFade(ambientPreset.overlayMaxAlpha, ambientPreset.transitionDuration)
+            .SetEase(ambientPreset.transitionEase).SetUpdate(true);
     }
 
     private void HideCameraOverlay()
     {
         if (_fogCanvasGroup == null) return;
 
+        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : 1.5f;
+        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : Ease.InOutSine;
+
         _overlayTween?.Kill();
-        _overlayTween = _fogCanvasGroup.DOFade(0f, transitionDuration).SetEase(transitionEase).SetUpdate(true);
+        _overlayTween = _fogCanvasGroup.DOFade(0f, dur).SetEase(ease).SetUpdate(true);
     }
 
     // -------------------------------------------------------------------------
@@ -399,6 +372,8 @@ public class AmbientZone : MonoBehaviour
 
     private void ApplyCameraTransition()
     {
+        if (ambientPreset == null || !ambientPreset.controlCamera) return;
+
         var cam = GetOrCacheCamera();
         if (cam == null) return;
 
@@ -414,23 +389,14 @@ public class AmbientZone : MonoBehaviour
             _cameraDefaultsCaptured = true;
         }
 
-        float dur  = ambientPreset != null ? ambientPreset.transitionDuration : transitionDuration;
-        Ease  ease = ambientPreset != null ? ambientPreset.transitionEase      : transitionEase;
-
-        if (!controlCamera)
-        {
-            DoRestoreCamera(cam, transitionDuration, transitionEase);
-            return;
-        }
-
-        float targetDist   = cameraDistance;
+        float targetDist   = ambientPreset.cameraDistance;
         float targetHeight = _defaultCameraState.height;
         float targetYMin, targetYMax;
         bool  lockRot    = false;
-        float lockMouseX = cameraHorizontalAngle;
+        float lockMouseX = ambientPreset.cameraHorizontalAngle;
         float lockMouseY = 0f;
 
-        switch (cameraMode)
+        switch (ambientPreset.cameraMode)
         {
             case ZoneCameraMode.Plataformas2D:
                 targetYMin = 5f;   targetYMax = 15f;
@@ -478,16 +444,16 @@ public class AmbientZone : MonoBehaviour
                 cam.defaultDistance = Mathf.Lerp(sd, ed, t);
                 cam.height          = Mathf.Lerp(sh, eh, t);
             },
-            1f, dur
-        ).SetEase(ease).SetUpdate(true);
+            1f, ambientPreset.transitionDuration
+        ).SetEase(ambientPreset.transitionEase).SetUpdate(true);
     }
 
     private void RestoreCameraDefaults()
     {
-        if (!controlCamera || !_cameraDefaultsCaptured) return;
+        if (ambientPreset == null || !ambientPreset.controlCamera || !_cameraDefaultsCaptured) return;
         var cam = GetOrCacheCamera();
         if (cam == null) return;
-        DoRestoreCamera(cam, transitionDuration, transitionEase);
+        DoRestoreCamera(cam, ambientPreset.transitionDuration, ambientPreset.transitionEase);
     }
 
     private static void DoRestoreCamera(vThirdPersonCamera cam, float dur, Ease ease)
@@ -524,17 +490,17 @@ public class AmbientZone : MonoBehaviour
 
     private void TransitionToZoneMusic()
     {
-        if (!changeMusic || string.IsNullOrEmpty(musicZoneId)) return;
+        if (ambientPreset == null || !ambientPreset.changeMusic || string.IsNullOrEmpty(ambientPreset.musicZoneId)) return;
 
         var audioService = AudioService.Instance;
         if (audioService == null) return;
 
-        _previousMusic    = audioService.CurrentMusicClip;
-        _wasMusicPlaying  = _previousMusic != null;
+        _previousMusic   = audioService.CurrentMusicClip;
+        _wasMusicPlaying = _previousMusic != null;
 
         if (audioService.profile == null) return;
 
-        var rule = audioService.profile.GetAmbientZoneRule(musicZoneId);
+        var rule = audioService.profile.GetAmbientZoneRule(ambientPreset.musicZoneId);
         if (rule?.music != null)
         {
             audioService.PlayMusic(rule.music, rule.fade);
@@ -542,19 +508,19 @@ public class AmbientZone : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         else if (showDebugLogs)
         {
-            Debug.LogWarning($"[AmbientZone] No se encontró música para musicZoneId '{musicZoneId}'");
+            Debug.LogWarning($"[AmbientZone] No se encontró música para musicZoneId '{ambientPreset.musicZoneId}'");
         }
 #endif
     }
 
     private void RestorePreviousMusic()
     {
-        if (!changeMusic) return;
+        if (ambientPreset == null || !ambientPreset.changeMusic) return;
 
         var audioService = AudioService.Instance;
         if (audioService == null) return;
 
-        float fade = audioService.profile?.GetAmbientZoneRule(musicZoneId)?.fade ?? 1.5f;
+        float fade = audioService.profile?.GetAmbientZoneRule(ambientPreset.musicZoneId)?.fade ?? 1.5f;
 
         if (_wasMusicPlaying && _previousMusic != null)
             audioService.PlayMusic(_previousMusic, fade);
@@ -576,6 +542,7 @@ public class AmbientZone : MonoBehaviour
             _currentActiveZone = null;
             _playerTransform = null;
             StopGroundMist();
+            StopFootFog();
             HideCameraOverlay();
             RestoreDefaultsImmediate();
         }
@@ -624,7 +591,9 @@ public class AmbientZone : MonoBehaviour
         var col = GetComponent<Collider>();
         if (col == null) return;
 
-        Color gizmoColor = enableFog ? fogColor : (controlAmbientLight ? ambientLightColor : Color.gray);
+        Color gizmoColor = ambientPreset != null && ambientPreset.enableFog
+            ? ambientPreset.fogColor
+            : Color.gray;
         Gizmos.color = new Color(gizmoColor.r, gizmoColor.g, gizmoColor.b, 0.25f);
 
         if (col is BoxCollider box)
@@ -642,13 +611,12 @@ public class AmbientZone : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        string fogInfo    = enableFog ? $"Fog density:{fogDensity}" : "Sin fog";
-        string lightInfo  = controlAmbientLight ? $"Luz amb. ×{ambientLightIntensity}" : "";
-        string mistInfo   = enableGroundMist && groundMistPS != null ? "Niebla suelo" : "";
-        string cameraInfo = controlCamera ? $"Cam:{cameraMode} d:{cameraDistance:F1}" : "";
+        string presetInfo = ambientPreset != null ? ambientPreset.name : "Sin preset";
+        string mistInfo   = groundMistPS  != null ? "Niebla suelo"    : "";
+        string footInfo   = footFogObject != null ? "Niebla pies"     : "";
 
         string[] parts = System.Array.FindAll(
-            new[] { fogInfo, lightInfo, mistInfo, cameraInfo },
+            new[] { presetInfo, mistInfo, footInfo },
             s => !string.IsNullOrEmpty(s)
         );
 
@@ -679,12 +647,11 @@ public class AmbientZone : MonoBehaviour
         float areaX = boxCol != null ? boxCol.size.x : 12f;
         float areaZ = boxCol != null ? boxCol.size.z : 12f;
 
-        // Main — partículas grandes, quietas, alpha bajo individual (se suma al solaparse)
         var main = ps.main;
         main.loop            = true;
         main.playOnAwake     = false;
         main.startLifetime   = new ParticleSystem.MinMaxCurve(5f, 8f);
-        main.startSpeed      = 0f;      // completamente inmóviles
+        main.startSpeed      = 0f;
         main.startSize       = new ParticleSystem.MinMaxCurve(areaX * 0.4f, areaX * 0.7f);
         main.startColor      = new ParticleSystem.MinMaxGradient(
             new Color(1f, 1f, 1f, 1f),
@@ -694,20 +661,16 @@ public class AmbientZone : MonoBehaviour
         main.maxParticles    = 250;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
 
-        // Emission — alta tasa para que cubra toda el área sin huecos
         var emission = ps.emission;
         emission.enabled      = true;
         emission.rateOverTime = 40f;
 
-        // Shape — caja que cubre desde el suelo hasta la altura del jugador
-        // La emisión a distintas alturas hace que la niebla sea visible de cerca
         var shapeModule = ps.shape;
         shapeModule.enabled   = true;
         shapeModule.shapeType = ParticleSystemShapeType.Box;
         shapeModule.position  = new Vector3(0f, 0.75f, 0f);
         shapeModule.scale     = new Vector3(areaX, 1.5f, areaZ);
 
-        // Color over lifetime — alpha bajo (0.18 máx): se acumula en capas y da sensación de densidad
         var colorLife = ps.colorOverLifetime;
         colorLife.enabled = true;
         var fadeGradient = new Gradient();
@@ -722,29 +685,22 @@ public class AmbientZone : MonoBehaviour
         );
         colorLife.color = new ParticleSystem.MinMaxGradient(fadeGradient);
 
-        // Size over lifetime — crecen muy levemente para disimular el reciclaje
         var sizeLife = ps.sizeOverLifetime;
         sizeLife.enabled = true;
         sizeLife.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 1.1f));
 
-        // Noise — movimiento imperceptible para que no parezca estático
         var noise = ps.noise;
-        noise.enabled   = true;
-        noise.strength  = 0.08f;
-        noise.frequency = 0.3f;
+        noise.enabled     = true;
+        noise.strength    = 0.08f;
+        noise.frequency   = 0.3f;
         noise.scrollSpeed = 0.05f;
-        noise.quality   = ParticleSystemNoiseQuality.Medium;
+        noise.quality     = ParticleSystemNoiseQuality.Medium;
 
-        // Renderer — asigna tu material aquí
         var psRenderer = go.GetComponent<ParticleSystemRenderer>();
         psRenderer.renderMode   = ParticleSystemRenderMode.Billboard;
         psRenderer.sortingOrder = 0;
-        // Material: asígnalo manualmente desde el Inspector
 
-        // Enlazar con el componente
-        groundMistPS     = ps;
-        enableGroundMist = true;
-
+        groundMistPS = ps;
         UnityEditor.EditorUtility.SetDirty(this);
 
         Debug.Log($"[AmbientZone] GroundMist_PS creado en '{gameObject.name}'. " +

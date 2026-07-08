@@ -18,9 +18,18 @@ MonoBehaviour:
   fogMode: 3
   fogStartDistance: 0
   fogEndDistance: 100
-  transitionDuration: 1.5
-  transitionEase: 4
   controlAmbientLight: 1
   ambientLightColor: {r: 0.9433962, g: 0.66602594, b: 0.23584905, a: 1}
   ambientLightIntensity: 0.5
+  enableCameraOverlay: 0
+  overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
+  overlayMaxAlpha: 0.85
+  changeMusic: 1
+  musicZoneId: Dungeon
+  controlCamera: 0
+  cameraMode: 0
+  cameraHorizontalAngle: 90
+  cameraDistance: 2.5
+  transitionDuration: 1.5
+  transitionEase: 4
   description: 

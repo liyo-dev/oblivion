@@ -14,10 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FogPreset
   enableFog: 1
   fogColor: {r: 0.5339979, g: 0.8941537, b: 0.9056604, a: 1}
-  fogDensity: 0.0283
-  fogMode: 3
+  fogDensity: 0.05
+  fogMode: 2
   fogStartDistance: 0
   fogEndDistance: 100
+  controlAmbientLight: 0
+  ambientLightColor: {r: 1, g: 1, b: 1, a: 1}
+  ambientLightIntensity: 1
+  enableCameraOverlay: 0
+  overlayColor: {r: 0.85, g: 0.88, b: 0.92, a: 1}
+  overlayMaxAlpha: 0.85
+  changeMusic: 1
+  musicZoneId: Mountains
+  controlCamera: 0
+  cameraMode: 0
+  cameraHorizontalAngle: 90
+  cameraDistance: 2.5
   transitionDuration: 1.5
   transitionEase: 4
   description: 
