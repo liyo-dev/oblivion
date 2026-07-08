@@ -40,31 +40,38 @@ namespace Game.NPC.States
 
         // --- Seguimiento especial (vuelo, nado, escalada, plataformas sin NavMesh) ---
         private PlayerActionManager _playerActionManager;
+        private Animator _playerAnimator;
         private bool _inSpecialFollow;
+
+        // _lastSpecialMode: modo actual (puede ser Default durante transiciones)
+        // _exitMode: último modo SIGNIFICATIVO (Flying/Swimming/Climbing), usado para cleanup al salir
+        // Esto evita que una transición transitoria por Default borre el contexto de vuelo/nado/escalada
         private ActionMode _lastSpecialMode = ActionMode.Default;
+        private ActionMode _exitMode        = ActionMode.Default;
+
         private bool _storedGravity;
         private bool _gravityStored;
         private float _storedAnimSpeed = 1f;
         private bool _animSpeedStored;
 
-        private const float SPECIAL_FOLLOW_SPEED = 8f;
+        private const float SPECIAL_FOLLOW_SPEED    = 8f;
         private const float SPECIAL_FOLLOW_STOP_DIST = 1.5f;
-        private const float OFF_NAVMESH_THRESHOLD = 1.5f;
-        private const float WARP_SEARCH_RADIUS = 10f;
+        private const float OFF_NAVMESH_THRESHOLD   = 1.5f;
+        private const float WARP_SEARCH_RADIUS      = 12f;
 
         // Hashes de estados y parámetros (compartidos con el animator del jugador)
-        private static readonly int HashFlyIdle      = Animator.StringToHash("fly_idle");
-        private static readonly int HashFlyDive      = Animator.StringToHash("fly_dive");
-        private static readonly int HashFlyLanding   = Animator.StringToHash("Landing");
-        private static readonly int HashLocomotion   = Animator.StringToHash("Free Locomotion");
-        private static readonly int HashSwimFloat    = Animator.StringToHash("Swimming_Floating_NoWeapon");
-        private static readonly int HashClimbUp      = Animator.StringToHash("ClimbUp_RM_NoWeapon");
-        private static readonly int HashClimbDown    = Animator.StringToHash("ClimbDown_RM_NoWeapon");
-        private static readonly int HashClimbIdle    = Animator.StringToHash("ClimbIdle_RM_NoWeapon");
-        private static readonly int HashIsFlying     = Animator.StringToHash("isFlying");
-        private static readonly int HashIsGrounded   = Animator.StringToHash("IsGrounded");
-        private static readonly int HashGroundDist   = Animator.StringToHash("GroundDistance");
-        private static readonly int HashInputMag     = Animator.StringToHash("InputMagnitude");
+        private static readonly int HashFlyIdle    = Animator.StringToHash("fly_idle");
+        private static readonly int HashFlyDive    = Animator.StringToHash("fly_dive");
+        private static readonly int HashFlyLanding = Animator.StringToHash("Landing");
+        private static readonly int HashLocomotion = Animator.StringToHash("Free Locomotion");
+        private static readonly int HashSwimFloat  = Animator.StringToHash("Swimming_Floating_NoWeapon");
+        private static readonly int HashClimbUp    = Animator.StringToHash("ClimbUp_RM_NoWeapon");
+        private static readonly int HashClimbDown  = Animator.StringToHash("ClimbDown_RM_NoWeapon");
+        private static readonly int HashClimbIdle  = Animator.StringToHash("ClimbIdle_RM_NoWeapon");
+        private static readonly int HashIsFlying   = Animator.StringToHash("isFlying");
+        private static readonly int HashIsGrounded = Animator.StringToHash("IsGrounded");
+        private static readonly int HashGroundDist = Animator.StringToHash("GroundDistance");
+        private static readonly int HashInputMag   = Animator.StringToHash("InputMagnitude");
 
         private readonly bool _skipPartyCheck;
 
@@ -83,20 +90,22 @@ namespace Game.NPC.States
             Debug.Log($"[FollowPlayerState] {context.Transform.name} entró en FollowPlayerState");
 #endif
 
-            _pathUpdateTimer = 0f;
-            _stateTimer = 0f;
-            _idleTimer = 0f;
-            _isInitialized = false;
+            _pathUpdateTimer   = 0f;
+            _stateTimer        = 0f;
+            _idleTimer         = 0f;
+            _isInitialized     = false;
             _isWanderingNearPlayer = false;
-            _inSpecialFollow = false;
-            _lastSpecialMode = ActionMode.Default;
-            _gravityStored = false;
-            _animSpeedStored = false;
+            _inSpecialFollow   = false;
+            _lastSpecialMode   = ActionMode.Default;
+            _exitMode          = ActionMode.Default;
+            _gravityStored     = false;
+            _animSpeedStored   = false;
 
             if (context.Player != null)
             {
                 _lastPlayerPosition = context.Player.position;
                 _playerActionManager = context.Player.GetComponent<PlayerActionManager>();
+                _playerAnimator = context.Player.GetComponent<Animator>();
             }
 
             if (context.Agent != null)
@@ -105,7 +114,6 @@ namespace Game.NPC.States
                 context.Agent.updatePosition = false;
                 context.Agent.updateRotation = false;
                 context.Agent.speed = GetWalkSpeed();
-
                 if (context.Agent.isOnNavMesh)
                     context.Agent.ResetPath();
             }
@@ -122,11 +130,11 @@ namespace Game.NPC.States
             _stateTimer += Time.deltaTime;
 
             // --- MODO ESPECIAL: vuelo, nado, escalada, o jugador fuera del NavMesh ---
-            ActionMode playerMode = _playerActionManager?.Top ?? ActionMode.Default;
-            bool needsSpecialFollow = playerMode == ActionMode.Flying
-                                   || playerMode == ActionMode.Swimming
-                                   || playerMode == ActionMode.Climbing
-                                   || IsPlayerOffNavMesh(context);
+            ActionMode playerMode     = _playerActionManager?.Top ?? ActionMode.Default;
+            bool needsSpecialFollow   = playerMode == ActionMode.Flying
+                                     || playerMode == ActionMode.Swimming
+                                     || playerMode == ActionMode.Climbing
+                                     || IsPlayerOffNavMesh(context);
 
             if (needsSpecialFollow)
             {
@@ -136,7 +144,10 @@ namespace Game.NPC.States
 
             // Salir del modo especial si el jugador volvió al suelo
             if (_inSpecialFollow)
+            {
                 ExitSpecialFollow(context);
+                return;
+            }
 
             // --- SEGUIMIENTO NORMAL POR NAVMESH ---
             if (context.Agent == null || !context.Agent.isOnNavMesh) return;
@@ -154,8 +165,7 @@ namespace Game.NPC.States
                 _lastPlayerPosition = context.Player.position;
             }
 
-            float distance = Vector3.Distance(context.Transform.position, context.Player.position);
-
+            float distance  = Vector3.Distance(context.Transform.position, context.Player.position);
             float stopDist  = _config?.distanciaParaPararse ?? DEFAULT_STOP_DISTANCE;
             float runDist   = _config?.distanciaParaCorrer  ?? DEFAULT_RUN_DISTANCE;
             float walkSpeed = _config?.velocidadCaminando   ?? DEFAULT_WALK_SPEED;
@@ -207,7 +217,6 @@ namespace Game.NPC.States
                 {
                     TryStartPartyWander(context, stopDist);
                 }
-
                 return;
             }
 
@@ -217,7 +226,6 @@ namespace Game.NPC.States
                 {
                     if (context.Agent.isOnNavMesh)
                         context.Agent.nextPosition = context.Transform.position;
-
                     context.Agent.updatePosition = true;
                     context.Agent.updateRotation = false;
                 }
@@ -260,7 +268,7 @@ namespace Game.NPC.States
         {
             bool modeChanged = playerMode != _lastSpecialMode;
 
-            // Primera entrada o cambio de modo: configurar física y animación
+            // Primera entrada o cambio de modo
             if (!_inSpecialFollow || modeChanged)
             {
                 if (!_inSpecialFollow)
@@ -287,7 +295,6 @@ namespace Game.NPC.States
                     }
                 }
 
-                // Reproducir animación de entrada al modo
                 OnSpecialModeEnter(context, playerMode);
                 _lastSpecialMode = playerMode;
             }
@@ -297,14 +304,12 @@ namespace Game.NPC.States
             Vector3 currentPos = context.Transform.position;
             Vector3 delta      = targetPos - currentPos;
             float   dist       = delta.magnitude;
-
-            bool isMoving = dist > SPECIAL_FOLLOW_STOP_DIST * 0.5f;
+            bool    isMoving   = dist > SPECIAL_FOLLOW_STOP_DIST * 0.5f;
 
             if (isMoving)
             {
                 float speed = dist > SPECIAL_FOLLOW_STOP_DIST * 3f
-                    ? SPECIAL_FOLLOW_SPEED * 1.5f
-                    : SPECIAL_FOLLOW_SPEED;
+                    ? SPECIAL_FOLLOW_SPEED * 1.5f : SPECIAL_FOLLOW_SPEED;
 
                 context.Transform.position = currentPos + delta.normalized * Mathf.Min(speed * Time.deltaTime, dist);
 
@@ -322,42 +327,51 @@ namespace Game.NPC.States
                 RotateTowardsPlayer(context);
             }
 
-            // Actualizar animación según modo y movimiento
             UpdateSpecialModeAnimation(context, playerMode, delta, isMoving);
         }
 
-        /// <summary>Animación de entrada cuando se activa un modo especial.</summary>
+        /// <summary>
+        /// Animación de entrada al activar un modo especial.
+        /// Solo Flying/Swimming/Climbing actualizan _exitMode (modo "significativo").
+        /// Las transiciones transitorias por Default no sobreescriben _exitMode,
+        /// así ExitSpecialFollow sabe siempre de qué modo real salimos.
+        /// </summary>
         private void OnSpecialModeEnter(NPCStateContext context, ActionMode mode)
         {
             Animator anim = context.UnityAnimator;
-            if (anim == null) return;
+
+            // Si salimos del modo vuelo hacia cualquier otro, limpiar isFlying inmediatamente
+            // para que no quede el personaje en fly_idle durante la transición transitoria
+            if (_lastSpecialMode == ActionMode.Flying && mode != ActionMode.Flying)
+                TrySetBool(anim, HashIsFlying, false);
 
             switch (mode)
             {
                 case ActionMode.Flying:
+                    _exitMode = mode;
                     TrySetBool(anim, HashIsFlying, true);
                     TryPlay(anim, HashFlyIdle, 0);
                     break;
 
                 case ActionMode.Swimming:
+                    _exitMode = mode;
                     TryPlay(anim, HashSwimFloat, 0);
-                    // Forzar grounded para evitar que el animator entre en estados de caída
                     TrySetBool(anim, HashIsGrounded, true);
                     TrySetFloat(anim, HashGroundDist, 0f);
                     break;
 
                 case ActionMode.Climbing:
-                    // Guardar velocidad original para pausar/restaurar
-                    if (!_animSpeedStored)
+                    _exitMode = mode;
+                    if (!_animSpeedStored && anim != null)
                     {
                         _storedAnimSpeed = anim.speed;
                         _animSpeedStored = true;
                     }
                     TryPlay(anim, HashClimbIdle, 0);
-                    anim.speed = 0f;
+                    if (anim != null) anim.speed = 0f;
                     break;
 
-                // Plataforma sin NavMesh: sin cambio de animación
+                // Default (plataforma sin NavMesh): no cambiar animación ni _exitMode
             }
         }
 
@@ -371,29 +385,20 @@ namespace Game.NPC.States
             switch (mode)
             {
                 case ActionMode.Flying:
-                    // fly_dive si se está moviendo, fly_idle si está quieto
-                    if (isMoving)
-                        TryPlay(anim, HashFlyDive, 0);
-                    else
-                        TryPlay(anim, HashFlyIdle, 0);
+                    TryPlay(anim, isMoving ? HashFlyDive : HashFlyIdle, 0);
                     break;
 
                 case ActionMode.Swimming:
-                    // Mantener siempre la animación de nado y parámetros grounded
                     TrySetBool(anim, HashIsGrounded, true);
                     TrySetFloat(anim, HashGroundDist, 0f);
                     TrySetFloat(anim, HashInputMag, isMoving ? 0.5f : 0f);
                     break;
 
                 case ActionMode.Climbing:
-                    // Subir, bajar o quieto según delta Y
                     if (Mathf.Abs(delta.y) > 0.05f)
                     {
                         anim.speed = 1f;
-                        if (delta.y > 0f)
-                            TryCrossFade(anim, HashClimbUp, 0.05f, 0);
-                        else
-                            TryCrossFade(anim, HashClimbDown, 0.05f, 0);
+                        TryCrossFade(anim, delta.y > 0f ? HashClimbUp : HashClimbDown, 0.05f, 0);
                     }
                     else
                     {
@@ -403,47 +408,62 @@ namespace Game.NPC.States
                     break;
 
                 default:
-                    // Plataforma sin NavMesh: locomoción normal
-                    float animSpeed = Mathf.Clamp01(delta.magnitude / 3f);
-                    context.Animator?.SetMovementSpeed(animSpeed);
+                    // Plataforma/salto sin NavMesh: locomoción normal + replicar estado aéreo del jugador
+                    context.Animator?.SetMovementSpeed(Mathf.Clamp01(delta.magnitude / 3f));
+                    if (_playerAnimator != null && anim != null)
+                    {
+                        bool playerGrounded = _playerAnimator.GetBool(HashIsGrounded);
+                        float playerGroundDist = _playerAnimator.GetFloat(HashGroundDist);
+                        TrySetBool(anim, HashIsGrounded, playerGrounded);
+                        TrySetFloat(anim, HashGroundDist, playerGroundDist);
+                    }
                     break;
             }
         }
 
-        /// <summary>Sale del modo especial: restaura física, animator y vuelve al NavMesh.</summary>
+        /// <summary>
+        /// Sale del modo especial: restaura física y animator, snappea al NavMesh.
+        /// Usa _exitMode (último modo significativo) para saber qué animación de salida reproducir.
+        /// </summary>
         private void ExitSpecialFollow(NPCStateContext context)
         {
-            Animator anim = context.UnityAnimator;
-            ActionMode exitingMode = _lastSpecialMode;
+            Animator anim         = context.UnityAnimator;
+            ActionMode exitingMode = _exitMode;   // último modo significativo (Flying/Swimming/Climbing/Default)
 
-            _inSpecialFollow  = false;
-            _lastSpecialMode  = ActionMode.Default;
+            _inSpecialFollow = false;
+            _lastSpecialMode = ActionMode.Default;
+            _exitMode        = ActionMode.Default;
 
-            // Restaurar velocidad de animator (escalada la pausa)
+            // Restaurar velocidad del animator (escalada la pausa)
             if (_animSpeedStored && anim != null)
             {
                 anim.speed = _storedAnimSpeed;
                 _animSpeedStored = false;
             }
 
-            // Animación de salida
+            // Siempre limpiar isFlying al salir para que no quede el personaje en fly_idle
+            TrySetBool(anim, HashIsFlying, false);
+
+            // Animación de salida según el modo real del que venimos
             if (anim != null)
             {
                 switch (exitingMode)
                 {
                     case ActionMode.Flying:
-                        TrySetBool(anim, HashIsFlying, false);
-                        // Landing si tiene el estado, si no Free Locomotion
+                        // Landing si existe, si no Free Locomotion
                         if (!TryCrossFade(anim, HashFlyLanding, 0.08f, 0))
                             TryCrossFade(anim, HashLocomotion, 0.1f, 0);
                         break;
 
                     case ActionMode.Swimming:
+                    case ActionMode.Climbing:
                         TryCrossFade(anim, HashLocomotion, 0.1f, 0);
                         break;
 
-                    case ActionMode.Climbing:
-                        TryCrossFade(anim, HashLocomotion, 0.1f, 0);
+                    default:
+                        // Plataforma/salto: restaurar estado grounded para no quedar en mid-air
+                        TrySetBool(anim, HashIsGrounded, true);
+                        TrySetFloat(anim, HashGroundDist, 0f);
                         break;
                 }
             }
@@ -452,26 +472,31 @@ namespace Game.NPC.States
             if (context.Rigidbody != null && _gravityStored)
             {
                 context.Rigidbody.useGravity = _storedGravity;
-                var vel = context.Rigidbody.linearVelocity;
-                vel.y = 0f;
-                context.Rigidbody.linearVelocity = vel;
+                context.Rigidbody.linearVelocity = Vector3.zero;
                 _gravityStored = false;
             }
 
-            // Devolver control al NavMeshAgent
+            // Snap al NavMesh y devolver control al agent
             if (context.Agent != null && context.Agent.isActiveAndEnabled)
             {
-                if (context.Agent.isOnNavMesh)
+                // Activar updatePosition ANTES del Warp para que éste actualice el transform
+                context.Agent.updatePosition = true;
+
+                if (!context.Agent.isOnNavMesh)
+                {
+                    if (NavMesh.SamplePosition(context.Transform.position, out NavMeshHit hit, WARP_SEARCH_RADIUS, NavMesh.AllAreas))
+                    {
+                        // Mover el transform directamente además del Warp como garantía extra
+                        context.Transform.position = hit.position;
+                        context.Agent.Warp(hit.position);
+                    }
+                }
+                else
                 {
                     context.Agent.nextPosition = context.Transform.position;
                 }
-                else if (NavMesh.SamplePosition(context.Transform.position, out NavMeshHit hit, WARP_SEARCH_RADIUS, NavMesh.AllAreas))
-                {
-                    context.Agent.Warp(hit.position);
-                }
 
                 context.Agent.isStopped = true;
-                context.Agent.updatePosition = true;
                 context.Agent.updateRotation = false;
             }
         }
@@ -482,7 +507,6 @@ namespace Game.NPC.States
 
         /// <summary>
         /// Posición de formación en 3D: detrás del jugador en XZ, misma Y.
-        /// Offset lateral por índice de party para que no se apilen.
         /// idx 0: centro  idx 1: +0.8m  idx 2: -0.8m  idx 3: +1.6m …
         /// </summary>
         private Vector3 GetFormationTarget3D(NPCStateContext context)
@@ -511,12 +535,9 @@ namespace Game.NPC.States
             if (anim == null) return;
             try
             {
-                if (anim.HasState(layer, stateHash))
-                {
-                    var cur = anim.GetCurrentAnimatorStateInfo(layer);
-                    if (cur.shortNameHash != stateHash)
-                        anim.Play(stateHash, layer);
-                }
+                if (anim.HasState(layer, stateHash) &&
+                    anim.GetCurrentAnimatorStateInfo(layer).shortNameHash != stateHash)
+                    anim.Play(stateHash, layer);
             }
             catch { }
         }
@@ -528,7 +549,6 @@ namespace Game.NPC.States
             try
             {
                 if (!anim.HasState(layer, stateHash)) return false;
-                // Solo hacer crossfade si no estamos ya en ese estado
                 if (anim.GetCurrentAnimatorStateInfo(layer).shortNameHash != stateHash)
                     anim.CrossFade(stateHash, duration, layer);
                 return true;
@@ -556,10 +576,8 @@ namespace Game.NPC.States
         private void RotateTowardsPlayer(NPCStateContext context)
         {
             if (context.Player == null) return;
-
             Vector3 dir = context.Player.position - context.Transform.position;
             dir.y = 0;
-
             if (dir.sqrMagnitude > 0.01f)
             {
                 float angle = Vector3.Angle(context.Transform.forward, dir.normalized);
@@ -571,17 +589,9 @@ namespace Game.NPC.States
         private void UpdateDestination(NPCStateContext context, float followDist)
         {
             bool preferBehind = _config?.quedarseDetras ?? true;
-
-            Vector3 targetPos;
-            if (preferBehind)
-            {
-                targetPos = context.Player.position + (-context.Player.forward * (followDist * 0.7f));
-            }
-            else
-            {
-                Vector3 dir = (context.Transform.position - context.Player.position).normalized;
-                targetPos = context.Player.position + dir * followDist;
-            }
+            Vector3 targetPos = preferBehind
+                ? context.Player.position + (-context.Player.forward * (followDist * 0.7f))
+                : context.Player.position + (context.Transform.position - context.Player.position).normalized * followDist;
 
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 3f, NavMesh.AllAreas))
             {
@@ -599,18 +609,15 @@ namespace Game.NPC.States
         private void TryStartPartyWander(NPCStateContext context, float stopDist)
         {
             if (context.Player == null || context.Agent == null) return;
-
             float radius = _config.radioVagabundeo;
             Vector3 randomDir = Random.insideUnitSphere; randomDir.y = 0;
             if (randomDir.sqrMagnitude < 0.01f) randomDir = Vector3.right;
             Vector3 candidate = context.Player.position + randomDir.normalized * Random.Range(radius * 0.4f, radius);
-
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, radius, NavMesh.AllAreas)) return;
 
             _isWanderingNearPlayer = true;
             _wanderTarget = hit.position;
             _idleTimer = 0f;
-
             if (!context.Agent.updatePosition)
             {
                 context.Agent.nextPosition = context.Transform.position;
@@ -627,38 +634,34 @@ namespace Game.NPC.States
             {
                 _inSpecialFollow = false;
 
-                // Restaurar velocidad del animator (escalada)
                 if (_animSpeedStored && context.UnityAnimator != null)
                 {
                     context.UnityAnimator.speed = _storedAnimSpeed;
                     _animSpeedStored = false;
                 }
 
-                // Limpiar flag de vuelo
+                // Siempre limpiar isFlying al salir del estado
                 TrySetBool(context.UnityAnimator, HashIsFlying, false);
 
-                // Restaurar gravedad
                 if (context.Rigidbody != null && _gravityStored)
                 {
                     context.Rigidbody.useGravity = _storedGravity;
-                    var vel = context.Rigidbody.linearVelocity;
-                    vel.y = 0f;
-                    context.Rigidbody.linearVelocity = vel;
+                    context.Rigidbody.linearVelocity = Vector3.zero;
                     _gravityStored = false;
                 }
             }
 
             if (context.Agent != null && context.Agent.isActiveAndEnabled)
             {
-                context.Agent.isStopped = true;
-                if (!context.Agent.updatePosition)
-                {
-                    if (context.Agent.isOnNavMesh)
-                        context.Agent.nextPosition = context.Transform.position;
-                    else if (NavMesh.SamplePosition(context.Transform.position, out NavMeshHit hit, WARP_SEARCH_RADIUS, NavMesh.AllAreas))
-                        context.Agent.Warp(hit.position);
-                }
                 context.Agent.updatePosition = true;
+                context.Agent.isStopped = true;
+                if (context.Agent.isOnNavMesh)
+                    context.Agent.nextPosition = context.Transform.position;
+                else if (NavMesh.SamplePosition(context.Transform.position, out NavMeshHit hit, WARP_SEARCH_RADIUS, NavMesh.AllAreas))
+                {
+                    context.Transform.position = hit.position;
+                    context.Agent.Warp(hit.position);
+                }
                 context.Agent.updateRotation = false;
             }
 
@@ -671,7 +674,6 @@ namespace Game.NPC.States
             if (context.IsInCombat) return new AllyCombatState();
             if (!_skipPartyCheck && _partyMember != null && !_partyMember.IsInParty)
                 return new IdleState();
-
             return null;
         }
     }
