@@ -1,3 +1,4 @@
+using Core;
 using Invector.vCharacterController;
 using System;
 using System.Reflection;
@@ -8,7 +9,7 @@ using UnityEngine.InputSystem;
 /// Controla el modo de vuelo del jugador (tipo Dragon Ball): doble salto para entrar,
 /// joystick izquierdo para direccionarse y mantener pulsado salto para descender/salir.
 /// </summary>
-[DefaultExecutionOrder(180)]
+[DefaultExecutionOrder(-50)]
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerFlyingController : MonoBehaviour
@@ -45,6 +46,8 @@ public class PlayerFlyingController : MonoBehaviour
     private Invector.vCharacterController.vThirdPersonInput _inputController;
     private FieldInfo _lockMovementField;
     private FieldInfo _lockRotationField;
+    private FieldInfo _isJumpingField;
+    private FieldInfo _jumpCounterField;
     private PlayerActionManager _actionManager;
     private Core.PlayerInputManager _inputManager;
     private CapsuleCollider _capsule;
@@ -345,6 +348,11 @@ public class PlayerFlyingController : MonoBehaviour
         _isBoosting = false;
         _justEnteredFlight = true;
         _jumpHeld = false; // evitar que el primer frame se considere dive por mantener salto
+        if (_inputController != null)
+            _inputController.CancelPendingJump();
+        GamepadInputReader.IgnoreJumpButton(0.3f);
+        if (_controller != null)
+            _controller.suppressAirMovement = true;
         if (_actionManager != null)
             _actionManager.PushMode(ActionMode.Flying);
         if (_inputController != null)
@@ -418,8 +426,14 @@ public class PlayerFlyingController : MonoBehaviour
         bool wasFlying = _isFlying;
         _isFlying = false;
         _currentPlanarSpeed = 0f;
-        _currentPitch = 0f; // Reset pitch on exit
+        _currentPitch = 0f;
         _isBoosting = false;
+        _flightArmed = false;
+        _pendingEnterFlight = false;
+        _flightArmUntil = -1f;
+        if (_inputController != null)
+            _inputController.CancelPendingJump();
+        GamepadInputReader.IgnoreJumpButton(0.2f);
 
         if (wasFlying && _actionManager != null)
             _actionManager.PopMode(ActionMode.Flying);
@@ -441,8 +455,11 @@ public class PlayerFlyingController : MonoBehaviour
         if (_rigidbody != null)
         {
             var vel = _rigidbody.linearVelocity;
-            vel.y = 0f;
+            // Presión mínima hacia abajo para clavar el personaje al suelo sin rebotar;
+            // si ya cae más rápido (aterrizaje duro) se respeta esa velocidad.
+            vel.y = Mathf.Min(vel.y, -0.5f);
             _rigidbody.linearVelocity = vel;
+            _rigidbody.angularVelocity = Vector3.zero;
             if (_gravityStored)
                 _rigidbody.useGravity = _storedUseGravity;
         }
@@ -455,6 +472,9 @@ public class PlayerFlyingController : MonoBehaviour
                 _controller.extraGravity = _cachedExtraGravity;
                 _extraGravitySuspended = false;
             }
+            _controller.suppressAirMovement = false;
+            _isJumpingField?.SetValue(_controller, false);
+            _jumpCounterField?.SetValue(_controller, 0f);
             _controller.enabled = _controllerWasEnabled;
         }
 
@@ -687,6 +707,8 @@ public class PlayerFlyingController : MonoBehaviour
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy;
         _lockMovementField = type.GetField("lockMovement", flags);
         _lockRotationField = type.GetField("lockRotation", flags);
+        _isJumpingField = type.GetField("isJumping", flags);
+        _jumpCounterField = type.GetField("jumpCounter", flags);
     }
 
     private void SetControllerLocks(bool value)

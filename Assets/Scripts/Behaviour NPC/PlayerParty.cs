@@ -76,6 +76,7 @@ namespace Game.NPC
         #region State
         private readonly List<NPCPartyMember> _members = new();
         private Transform _playerTransform;
+        private PlayerActionManager _playerActionManager;
         private bool _isInitialized;
         
         // ✅ OPTIMIZACIÓN FASE 1: Timer para throttling de verificación de distancias
@@ -628,6 +629,13 @@ namespace Game.NPC
         {
             _playerTransform = null;
             _isInitialized = false;
+            // Desubscribir cambios de modo si teníamos referencia
+            try
+            {
+                if (_playerActionManager != null)
+                    _playerActionManager.OnTopModeChanged -= OnPlayerTopModeChanged;
+            }
+            catch { }
         }
 
         private void ResolvePlayerReference()
@@ -637,6 +645,22 @@ namespace Game.NPC
                 _playerTransform = player.transform;
                 _isInitialized = true;
                 Log("Referencia al jugador establecida");
+                // Subscribir a cambios de modo del player para orquestar al party
+                try
+                {
+                    var pam = player.GetComponent<PlayerActionManager>();
+                    if (pam != null && _playerActionManager != pam)
+                    {
+                        // Desubscribir previa si existía
+                        if (_playerActionManager != null)
+                            _playerActionManager.OnTopModeChanged -= OnPlayerTopModeChanged;
+
+                        _playerActionManager = pam;
+                        _playerActionManager.OnTopModeChanged += OnPlayerTopModeChanged;
+                        Log("Subscribed to PlayerActionManager.OnTopModeChanged");
+                    }
+                }
+                catch { }
             }
         }
 
@@ -1129,6 +1153,69 @@ namespace Game.NPC
             }
             
             member.OnTeleportedToPlayer();
+        }
+
+        // -----------------------------------------------------------------
+        // Manejo de escalada: preparación y notificaciones para los party members
+        // -----------------------------------------------------------------
+        private void OnPlayerTopModeChanged(ActionMode mode)
+        {
+            if (mode == ActionMode.Climbing)
+            {
+                // El PlayerClimbingController también llamará NotifyPlayerClimbStarted
+                // pero escuchamos el cambio de modo como medida de seguridad.
+                NotifyPlayerClimbStarted(_playerTransform != null ? _playerTransform.position : Vector3.zero);
+            }
+            else
+            {
+                // Si salimos de Climbing limpiar estado de preparación
+                NotifyPlayerClimbStopped(_playerTransform != null ? _playerTransform.position : Vector3.zero);
+            }
+        }
+
+        /// <summary>
+        /// Llamado por PlayerClimbingController al iniciarse la escalada.
+        /// Posiciona a los companions en la base de la pared y los marca como esperando.
+        /// </summary>
+        public void NotifyPlayerClimbStarted(Vector3 basePosition)
+        {
+            // No mover a los NPCs cuando el player inicia la escalada.
+            // Los NPCs permanecerán donde están. Al finalizar la escalada,
+            // se teletransportarán cerca del jugador para reanudar el seguimiento.
+            Log($"🔔 NotifyPlayerClimbStarted en {basePosition} (no se moviliza a los miembros)");
+        }
+
+        /// <summary>
+        /// Llamado cuando la escalada termina (player suelta o finaliza).
+        /// Limpia banderas de espera y libera a los companions para seguir.
+        /// </summary>
+        public void NotifyPlayerClimbStopped(Vector3 stopPosition)
+        {
+            Log($"🔔 NotifyPlayerClimbStopped en {stopPosition} - teleportando miembros al jugador");
+            // Teletransportar todos los miembros cerca del jugador cuando el player termine de escalar
+            TeleportAllMembersToPlayer();
+        }
+
+        /// <summary>
+        /// Variante de GetFormationPosition que usa un centro arbitrario en lugar de la posición del player.
+        /// Útil para posicionar los companions en la base de una escalada.
+        /// </summary>
+        public Vector3 GetFormationPositionAt(Vector3 centerPosition, int memberIndex)
+        {
+            // Reutiliza la lógica de formación pero centrada en centerPosition
+            float angle = CalculateFormationAngle(memberIndex);
+            float distance = CalculateFormationDistance(memberIndex);
+
+            Vector3 forward = (_playerTransform != null) ? _playerTransform.forward : Vector3.forward;
+            Vector3 right = (_playerTransform != null) ? _playerTransform.right : Vector3.right;
+            Vector3 offset = Quaternion.Euler(0, angle, 0) * (-forward * distance);
+            Vector3 targetPos = centerPosition + offset;
+
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+            {
+                return hit.position;
+            }
+            return targetPos;
         }
 
         private float CalculateFormationAngle(int index)

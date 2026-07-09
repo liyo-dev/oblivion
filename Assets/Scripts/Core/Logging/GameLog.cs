@@ -31,14 +31,26 @@ public static class GameLog
     static void Install()
     {
         var current = Debug.unityLogger.logHandler;
+        // Protegemos contra escenarios extraños donde el logHandler pueda ser null
+        // o donde otro GameLogHandler ya esté instalado.
         if (current is GameLogHandler existing)
         {
             _handler = existing;
             return;
         }
-        _handler = new GameLogHandler(current);
-        Debug.unityLogger.logHandler = _handler;
-        _handler.LoadFromPrefs();
+
+        try
+        {
+            _handler = new GameLogHandler(current);
+            Debug.unityLogger.logHandler = _handler;
+            _handler.LoadFromPrefs();
+        }
+        catch (Exception)
+        {
+            // Si por alguna razón no podemos instalar el handler, no bloqueamos el editor/play.
+            // Dejamos el handler en null y continuamos.
+            _handler = null;
+        }
     }
 
     // ── API para código nuevo ─────────────────────────────────────────────────
@@ -152,7 +164,21 @@ public sealed class GameLogHandler : ILogHandler
     }
 
     public void LogException(Exception exception, UnityEngine.Object context)
-        => _upstream.LogException(exception, context);
+    {
+        try
+        {
+#if UNITY_EDITOR
+            // UnityEditor.Graphs lanza NullReferenceException propias al refrescar el
+            // Animator window en Play. Son bugs internos del editor, no del juego.
+            if (exception?.StackTrace?.Contains("UnityEditor.Graphs") == true) return;
+#endif
+            _upstream?.LogException(exception, context);
+        }
+        catch
+        {
+            // Intencionalmente silencioso: evita recursión con el propio logHandler.
+        }
+    }
 
     public void SetTag(string tag, bool enabled)   => _tags[tag] = enabled;
     public void RegisterTag(string tag)            { if (!_tags.ContainsKey(tag)) _tags[tag] = true; }

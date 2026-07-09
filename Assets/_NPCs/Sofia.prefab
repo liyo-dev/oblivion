@@ -17452,6 +17452,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -17530,7 +17531,7 @@ MonoBehaviour:
   disableWander: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
-  persistLastPosition: 0
+  persistLastPosition: 1
   persistenceId: 
   dialogueCharacterId: CHAR_SOFIA
   rotateToPlayerOnInteract: 1

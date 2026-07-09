@@ -118,7 +118,7 @@ MonoBehaviour:
       sendEventOnStart: 0
     singleUse: 1
     autoStartOnDetection: 0
-    autoExecuteOnQuestConditionMet: 0
+    autoExecuteOnQuestConditionMet: 1
     freezePlayerOnDetection: 1
     lockPlayerAfterChain: 1
     lockPlayerMaxDuration: 8

@@ -1740,25 +1740,28 @@ namespace Game.NPC.Modules
                     }
                 }
 
-                // Catch-up para saves anteriores sin persistenceId guardado:
-                // si la condición es QuestStarted y la quest ya está Active o Completed,
-                // la narrativa singleUse se ejecutó cuando la quest arrancó.
-                var qm = QuestManager.Instance;
-                if (qm != null)
+                // Catch-up para saves anteriores sin tracking per-narrativa (_CNn):
+                // Solo aplica cuando el NPC ya fue usado antes (_hasBeenUsed=true).
+                // Sin ese guarda, marcaríamos como ejecutadas narrativas aún pendientes en partidas nuevas.
+                if (_hasBeenUsed)
                 {
-                    for (int i = 0; i < _config.conditionalNarratives.Length; i++)
+                    var qm = QuestManager.Instance;
+                    if (qm != null)
                     {
-                        var narrative = _config.conditionalNarratives[i];
-                        if (narrative == null || !narrative.singleUse || narrative.HasBeenExecuted) continue;
-                        if (narrative.condition.conditionType != NarrativeConditionType.QuestStarted) continue;
-                        if (narrative.condition.targetQuest == null) continue;
-
-                        var questState = qm.GetState(narrative.condition.targetQuest.questId);
-                        if (questState == QuestState.Completed || questState == QuestState.Active)
+                        for (int i = 0; i < _config.conditionalNarratives.Length; i++)
                         {
-                            narrative.MarkAsExecuted();
-                            if (verboseLogging)
-                                Debug.Log($"[NarrativeExecutor:{name}] 🔄 Catch-up: narrativa '{narrative.description}' marcada como ejecutada (quest {questState})");
+                            var narrative = _config.conditionalNarratives[i];
+                            if (narrative == null || !narrative.singleUse || narrative.HasBeenExecuted) continue;
+                            if (narrative.condition.conditionType != NarrativeConditionType.QuestStarted) continue;
+                            if (narrative.condition.targetQuest == null) continue;
+
+                            var questState = qm.GetState(narrative.condition.targetQuest.questId);
+                            if (questState == QuestState.Completed || questState == QuestState.Active)
+                            {
+                                narrative.MarkAsExecuted();
+                                if (verboseLogging)
+                                    Debug.Log($"[NarrativeExecutor:{name}] 🔄 Catch-up: narrativa '{narrative.description}' marcada como ejecutada (quest {questState})");
+                            }
                         }
                     }
                 }

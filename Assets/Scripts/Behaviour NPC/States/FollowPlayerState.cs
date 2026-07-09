@@ -131,10 +131,13 @@ namespace Game.NPC.States
 
             // --- MODO ESPECIAL: vuelo, nado, escalada, o jugador fuera del NavMesh ---
             ActionMode playerMode     = _playerActionManager?.Top ?? ActionMode.Default;
-            bool needsSpecialFollow   = playerMode == ActionMode.Flying
-                                     || playerMode == ActionMode.Swimming
-                                     || playerMode == ActionMode.Climbing
-                                     || IsPlayerOffNavMesh(context);
+            // Nota: NO incluir Climbing aquí — los companions no entrarán en special follow
+            // durante la escalada del jugador; permanecerán en su lugar y serán teletransportados
+            // al terminar la escalada. Además, si el jugador está fuera del NavMesh pero está en
+            // modo Climbing, NO debemos entrar en special follow: el caso Climbing lo ignoramos.
+            bool needsSpecialFollow = playerMode == ActionMode.Flying
+                                   || playerMode == ActionMode.Swimming
+                                   || (IsPlayerOffNavMesh(context) && playerMode != ActionMode.Climbing);
 
             if (needsSpecialFollow)
             {
@@ -301,7 +304,32 @@ namespace Game.NPC.States
             }
 
             // Calcular posición objetivo y mover
-            Vector3 targetPos  = GetFormationTarget3D(context);
+            // Si el party member está en preparación para trepar, usamos la Y de la base
+            // de escalada y fijamos la posición objetivo en la base hasta que esté listo.
+            Vector3 targetPos;
+            if (_partyMember != null && _partyMember.IsWaitingForClimb)
+            {
+                // Recalcular la posición de formación pero manteniendo la Y de la base
+                Vector3 formation = GetFormationTarget3D(context);
+                var baseY = _partyMember.ClimbBasePosition.y;
+                targetPos = new Vector3(formation.x, baseY, formation.z);
+
+                // Si estamos lo bastante cerca del slot horizontalmente, confirmar inicio de trepa
+                float horizDist = Vector3.Distance(new Vector3(context.Transform.position.x, 0f, context.Transform.position.z),
+                                                   new Vector3(targetPos.x, 0f, targetPos.z));
+                const float READY_TO_CLIMB_DISTANCE = 0.8f;
+                if (horizDist <= READY_TO_CLIMB_DISTANCE)
+                {
+                    // Liberar la preparación para que el NPC comience a seguir la Y del player
+                    try { _partyMember.CancelClimbPreparation(); } catch { }
+                    // Re-evaluar targetPos: ahora usar la posición normal (incluyendo Y del jugador)
+                    targetPos = GetFormationTarget3D(context);
+                }
+            }
+            else
+            {
+                targetPos  = GetFormationTarget3D(context);
+            }
             Vector3 currentPos = context.Transform.position;
             Vector3 delta      = targetPos - currentPos;
             float   dist       = delta.magnitude;
@@ -340,6 +368,11 @@ namespace Game.NPC.States
         private void OnSpecialModeEnter(NPCStateContext context, ActionMode mode)
         {
             Animator anim = context.UnityAnimator;
+
+            // Seguridad adicional: ignorar explícitamente Climbing para evitar que
+            // NPCs repliquen la animación de trepa aunque llegue aquí por algún camino raro.
+            if (mode == ActionMode.Climbing)
+                return;
 
             // Si salimos del modo vuelo hacia cualquier otro, limpiar isFlying inmediatamente
             // para que no quede el personaje en fly_idle durante la transición transitoria
@@ -382,6 +415,9 @@ namespace Game.NPC.States
         {
             Animator anim = context.UnityAnimator;
             if (anim == null) return;
+
+            // Seguridad adicional: no ejecutar la rama de Climbing — el party no debe trepar.
+            if (mode == ActionMode.Climbing) return;
 
             switch (mode)
             {

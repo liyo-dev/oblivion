@@ -112,6 +112,11 @@ namespace Invector.vCharacterController
         internal RaycastHit groundHit;                      // raycast to hit the ground 
         public bool lockMovement = false;                   // lock the movement of the controller (not the animation)
         internal bool lockRotation = false;                 // lock the rotation of the controller (not the animation)
+        /// <summary>
+        /// Bloquea ControlJumpBehaviour y AirControl. Activar durante vuelo u otros modos
+        /// que controlen el rigidbody directamente para evitar interferencias del motor.
+        /// </summary>
+        public bool suppressAirMovement = false;
         internal bool _isStrafing;                          // internally used to set the strafe movement                
         internal Transform rotateTarget;                    // used as a generic reference for the camera.transform
         internal Vector3 input;                             // generate raw input for the controller
@@ -300,7 +305,7 @@ namespace Invector.vCharacterController
 
         protected virtual void ControlJumpBehaviour()
         {
-            if (!isJumping) return;
+            if (suppressAirMovement || !isJumping) return;
 
             jumpCounter -= Time.deltaTime;
             if (jumpCounter <= 0)
@@ -338,7 +343,7 @@ namespace Invector.vCharacterController
 
         public virtual void AirControl()
         {
-            if ((isGrounded && !isJumping)) return;
+            if (suppressAirMovement || (isGrounded && !isJumping)) return;
             if (transform.position.y > heightReached) heightReached = transform.position.y;
             inputSmooth = Vector3.Lerp(inputSmooth, input, airSmooth * Time.deltaTime);
 

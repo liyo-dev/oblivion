@@ -352,5 +352,11 @@ namespace Invector.vCharacterController
         private bool CanJump()   => GetValidator()?.CanJump() ?? true;
         private bool CanSprint() => GetValidator()?.CanSprint() ?? true;
         private bool CanMagic()  => GetValidator()?.CanCastMagic() ?? true;
+
+        /// <summary>
+        /// Cancela el salto pendiente en cola. Llamar al salir del vuelo para evitar
+        /// que el salto que activó el vuelo se ejecute automáticamente al aterrizar.
+        /// </summary>
+        public void CancelPendingJump() => jumpPressed = false;
     }
 }

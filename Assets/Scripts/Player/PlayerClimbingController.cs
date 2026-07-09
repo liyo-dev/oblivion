@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Invector.vCharacterController;
 using Core;
+using Game.NPC;
 
 /// <summary>
 /// Control básico de escalada: detecta paredes en una capa concreta y bloquea el movimiento normal
@@ -26,6 +27,10 @@ public class PlayerClimbingController : MonoBehaviour
     [SerializeField] private float reattachDelay = 0.35f;
     [SerializeField, Tooltip("Tiempo de gracia sin contacto antes de soltar la pared.")]
     private float loseGripGrace = 0.2f;
+    [SerializeField, Tooltip("Impulso hacia arriba al salir de la escalada (VelocityChange)")]
+    private float launchUpImpulse = 6f;
+    [SerializeField, Tooltip("Impulso hacia delante al salir de la escalada (VelocityChange)")]
+    private float launchForwardImpulse = 3f;
 
     [Header("Animación")]
     [SerializeField] private string climbUpState = "ClimbUp_RM_NoWeapon";
@@ -118,6 +123,16 @@ public class PlayerClimbingController : MonoBehaviour
 
             MaintainAttachment(hit);
             HandleClimbMovement();
+
+            // Permitir al jugador salir de la escalada con el botón Interact (A)
+            try
+            {
+                if (_controls != null && _controls.GamePlay.Interact.triggered)
+                {
+                    LaunchOffClimb();
+                }
+            }
+            catch { }
             return;
         }
 
@@ -242,7 +257,17 @@ public class PlayerClimbingController : MonoBehaviour
             _controller.enabled = false;
         }
 
-        PlayClimb(1f);
+        PlayClimb(1f, true);
+
+        // Notificar al sistema de party que el player ha iniciado una escalada.
+        // Usamos la posición actual como "base" de la escalada para que los NPCs
+        // puedan posicionarse en la base de la pared y esperar espacio.
+        try
+        {
+            if (PlayerParty.HasInstance)
+                PlayerParty.Instance.NotifyPlayerClimbStarted(transform.position);
+        }
+        catch { }
 
         if (debugLogs)
             Debug.Log("[PlayerClimbingController] Enter Climb");
@@ -252,8 +277,12 @@ public class PlayerClimbingController : MonoBehaviour
     {
         Vector2 move = _controls != null ? _controls.GamePlay.Move.ReadValue<Vector2>() : Vector2.zero;
         float vertical = Mathf.Clamp(move.y, -1f, 1f);
+        // Usar SOLO el eje vertical para determinar si mostrar la animación de escalada
+        // Evita que pequeñas desviaciones horizontales en el stick activen el loop.
+        bool hasMovementInput = Mathf.Abs(vertical) > MinInputToAnimate;
 
-        PlayClimb(vertical);
+        // Reproducir animación SOLO mientras haya input vertical
+        PlayClimb(vertical, hasMovementInput);
 
         Vector3 motion = Vector3.up * vertical * climbSpeed * Time.deltaTime;
         transform.position += motion;
@@ -269,7 +298,7 @@ public class PlayerClimbingController : MonoBehaviour
             try
             {
                 _animator.SetBool(Invector.vCharacterController.vAnimatorParameters.IsGrounded, true);
-                _animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, Mathf.Abs(vertical));
+                _animator.SetFloat(Invector.vCharacterController.vAnimatorParameters.InputMagnitude, hasMovementInput ? 1f : 0f);
             }
             catch { }
         }
@@ -293,13 +322,13 @@ public class PlayerClimbingController : MonoBehaviour
         }
     }
 
-    private void PlayClimb(float vertical)
+    private void PlayClimb(float vertical, bool hasMovementInput)
     {
         if (_animator == null)
             return;
 
         string state;
-        if (Mathf.Abs(vertical) <= MinInputToAnimate)
+        if (!hasMovementInput || Mathf.Abs(vertical) <= MinInputToAnimate)
             state = climbIdleState;
         else
             state = vertical > 0f ? climbUpState : climbDownState;
@@ -330,8 +359,8 @@ public class PlayerClimbingController : MonoBehaviour
 
         var current = _animator.GetCurrentAnimatorStateInfo(climbAnimatorLayer);
 
-        // Si estamos casi quietos, usamos el último estado válido y pausamos la animación
-        if (Mathf.Abs(vertical) <= MinInputToAnimate)
+        // Si no hay input de movimiento, usamos el último estado válido y pausamos la animación
+        if (!hasMovementInput || Mathf.Abs(vertical) <= MinInputToAnimate)
         {
             int targetHash = _lastClimbStateHash >= 0 ? _lastClimbStateHash : hash;
             if (current.shortNameHash != targetHash)
@@ -376,7 +405,67 @@ public class PlayerClimbingController : MonoBehaviour
         if (_animator != null)
             _animator.speed = _originalAnimatorSpeed;
 
+        // Notificar al party que la escalada terminó (descenso o soltado).
+        try
+        {
+            if (PlayerParty.HasInstance)
+                PlayerParty.Instance.NotifyPlayerClimbStopped(transform.position);
+        }
+        catch { }
+
         if (debugLogs)
             Debug.Log("[PlayerClimbingController] Exit Climb");
+    }
+
+    /// <summary>
+    /// Salir de la escalada impulsando al jugador hacia arriba y hacia delante.
+    /// Llamado al pulsar Interact (A) mientras se escala.
+    /// </summary>
+    private void LaunchOffClimb()
+    {
+        // Valores ajustables (tweak si es necesario)
+        // Valores tomados desde campos serializables
+        float upImpulse = launchUpImpulse;
+        float forwardImpulse = launchForwardImpulse;
+
+        // Evitar que el mismo botón A se interprete como salto/activador de vuelo
+        // justo después de abandonar la pared. Esto delega en PlayerActionManager
+        // para activar el cooldown que también llama a GamepadInputReader.IgnoreJumpButton.
+        try
+        {
+            if (_actionManager != null)
+                _actionManager.SetInteractCooldown();
+        }
+        catch { }
+
+        // Además pedir al controlador de vuelo que cancele cualquier arming/pending
+        // para evitar que un doble-press previo active vuelo por estar armado.
+        try
+        {
+            var fly = GetComponent<PlayerFlyingController>();
+            if (fly != null) fly.CancelFlightArming();
+        }
+        catch { }
+
+        // Salir del modo escalada primero para restaurar control/rigidbody
+        ExitClimb(force: false);
+
+        if (_rigidbody != null)
+        {
+            // Normalizar componente vertical para evitar acumulación de velocidad
+            // que pueda convertir el impulso en vuelo no deseado.
+            try
+            {
+                // Usar linearVelocity para evitar API obsoleta en esta versión de Unity
+                Vector3 v = _rigidbody.linearVelocity;
+                v.y = 0f; // eliminar velocidad vertical previa
+                _rigidbody.linearVelocity = v;
+            }
+            catch { }
+
+            // Aplicar impulso directo (VelocityChange para evitar depender de masa)
+            Vector3 impulse = transform.up * upImpulse + transform.forward * forwardImpulse;
+            try { _rigidbody.AddForce(impulse, ForceMode.VelocityChange); } catch { }
+        }
     }
 }

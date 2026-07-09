@@ -40,6 +40,9 @@ namespace Game.NPC
         private bool _isJoining; // Flag para evitar joins simultáneos
         private float _nextIdleCheck;
         private Damageable _damageable;
+        // --- Preparación para escalada ---
+        private bool _waitingForClimb = false;
+        private Vector3 _climbBasePosition = Vector3.zero;
         #endregion
 
         #region Events
@@ -128,6 +131,16 @@ namespace Game.NPC
                 return -1;
             }
         }
+
+        /// <summary>
+        /// Indica si este miembro está en modo "preparado para trepar" (esperando espacio en la base).
+        /// </summary>
+        public bool IsWaitingForClimb => _waitingForClimb;
+
+        /// <summary>
+        /// Posición base donde se espera que el miembro comience la escalada.
+        /// </summary>
+        public Vector3 ClimbBasePosition => _climbBasePosition;
         #endregion
 
         #region Unity Lifecycle
@@ -524,6 +537,43 @@ namespace Game.NPC
                 && (PartyControlManager.Instance?.IsPartyFollowing ?? true))
             {
                 StartFollowing();
+            }
+        }
+
+        /// <summary>
+        /// Marca a este NPC como "preparado para trepar". Se llama desde PlayerParty
+        /// cuando el player inicia una escalada. El NPC se moverá a la posición base
+        /// y esperará hasta que haya espacio para empezar a subir.
+        /// </summary>
+        public void PrepareForClimb(Vector3 basePosition)
+        {
+            _climbBasePosition = basePosition;
+            _waitingForClimb = true;
+            Log($"Preparado para trepar (base: {_climbBasePosition})");
+            // Si estamos ya siguiendo, cambiamos a FollowPlayerState para que el state
+            // especial de Follow maneje el movimiento 3D hacia la formación en la base.
+            if (_npcManager?.Brain != null)
+            {
+                _npcManager.Brain.ChangeState(new Game.NPC.States.FollowPlayerState(this));
+            }
+        }
+
+        /// <summary>
+        /// Cancela la preparación para la escalada (p.ej. player abandonó la escalada).
+        /// </summary>
+        public void CancelClimbPreparation()
+        {
+            if (!_waitingForClimb) return;
+            _waitingForClimb = false;
+            _climbBasePosition = Vector3.zero;
+            Log("Cancelada preparación de escalada");
+            // Volver a seguir normalmente si corresponde
+            if (_isInParty && _npcManager?.Brain != null)
+            {
+                if (PartyControlManager.Instance?.IsPartyFollowing ?? true)
+                    StartFollowing();
+                else
+                    _npcManager.ForceIdle();
             }
         }
         #endregion
