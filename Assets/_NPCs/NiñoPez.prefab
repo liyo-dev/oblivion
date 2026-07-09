@@ -1127,6 +1127,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: -1748431125
@@ -1509,6 +1510,14 @@ MonoBehaviour:
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle02_NoWeapon
+  - Idle03_NoWeapon
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   searchingState: SenseSomethingSearching_NoWeapon
@@ -1545,6 +1554,7 @@ MonoBehaviour:
     questConfig: {fileID: 11400000, guid: ad398b65ae38d9e43afc38ea0ae7c4e8, type: 2}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
+    socialConfig: {fileID: 11400000, guid: 61b50d806b49b414daa9cbdbb18ab17a, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -1558,9 +1568,20 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
+  disableWander: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  persistenceId: 
+  dialogueCharacterId: CHAR_NIÑOPEZ
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  narrativeDetectionRange: 10
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2
+  narrativeAlertIconPrefab: {fileID: 0}
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []

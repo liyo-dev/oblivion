@@ -15,4 +15,9 @@ MonoBehaviour:
   lines:
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION1_BEFORE_01
+    text: 
     portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    cinematicEffect: 1
+    emotion: 0
+  isGroupConversation: 0

@@ -11294,6 +11294,14 @@ MonoBehaviour:
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle02_NoWeapon
+  - Idle03_NoWeapon
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   searchingState: SenseSomethingSearching_NoWeapon
@@ -11392,6 +11400,7 @@ MonoBehaviour:
     questConfig: {fileID: 11400000, guid: 6c1a618f693edb04eb63686e7afc43f4, type: 2}
     interactiveNarrativeConfig: {fileID: 11400000, guid: dd8d3737eec6b0048b6d88122a46a7a2, type: 2}
     partyConfig: {fileID: 11400000, guid: f6b5cb3e960bb514bab91b9e915b7b48, type: 2}
+    socialConfig: {fileID: 11400000, guid: bb71621cccc8f2f41946688170f291dd, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -11461,7 +11470,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
-  characterId: CHAR_ELDRAN
   originalEyeMesh: {fileID: 8975327509349052620}
   originalMouthMesh: {fileID: 4730294353661995776}
   eyePrefix: Eye

@@ -312,6 +312,18 @@ public class PlayerFlyingController : MonoBehaviour
 
     private void OnJumpCanceled(InputAction.CallbackContext ctx) => _jumpHeld = false;
 
+    /// <summary>
+    /// Cancela cualquier estado de "doble salto armado" sin salir del vuelo activo.
+    /// Llamar al iniciar interacciones que bloquean el vuelo (sentarse, diálogos, etc.)
+    /// </summary>
+    public void CancelFlightArming()
+    {
+        _pendingEnterFlight = false;
+        _flightArmed = false;
+        _flightArmUntil = -1f;
+        _jumpHeld = false;
+    }
+
     private bool CanEnterFlight()
     {
         if (_actionManager != null && !_actionManager.CanFly())

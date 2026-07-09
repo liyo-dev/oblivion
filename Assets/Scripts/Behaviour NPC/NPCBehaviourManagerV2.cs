@@ -564,6 +564,30 @@ namespace Game.NPC
         }
 
         // =================================================================================
+        // 🗣️ SOCIAL ENCOUNTER API
+        // =================================================================================
+
+        /// <summary>
+        /// Llamado por otro NPC que quiere iniciar un encuentro social con este.
+        /// Devuelve true si se acepta; en ese caso el NPC entra directamente en NPCSocialEncounterState.
+        /// </summary>
+        public bool TryAcceptSocialEncounter(Transform initiator, NPCRelationType relation)
+        {
+            if (_context == null) return false;
+            if (_context.IsInCombat || _context.IsInCinematic || _context.IsInteracting) return false;
+            if (_context.WasDefeatedInCombat) return false;
+            if (_brain.CurrentState is States.NPCSocialEncounterState) return false;
+
+            float cooldown = configuration.socialConfig?.socialCooldown ?? 30f;
+            if (Time.time - _context.LastSocialEncounterTime < cooldown) return false;
+
+            _context.PendingSocialPartner  = initiator;
+            _context.PendingSocialRelation = relation;
+            _brain.ChangeState(new States.NPCSocialEncounterState());
+            return true;
+        }
+
+        // =================================================================================
         // 🎬 CINEMATICS & MOVEMENT API
         // =================================================================================
 

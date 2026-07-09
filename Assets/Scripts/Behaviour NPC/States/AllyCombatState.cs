@@ -68,6 +68,9 @@ namespace Game.NPC.States
         private NPCShieldController _shieldController;
         private float _nextShieldTime;
 
+        // Indica si la salida del combate fue una victoria (no cinemática ni timeout)
+        private bool _exitingAsVictory;
+
         /// <summary>
         /// Constructor que permite pasar un target inicial (desde OnPlayerEnteredCombat)
         /// </summary>
@@ -442,6 +445,10 @@ namespace Game.NPC.States
         {
             context.IsInCombat = false;
             context.Animator?.SetBattleMode(false);
+
+            if (_exitingAsVictory && !context.IsInCinematic)
+                context.Animator?.PlayVictoryCelebration(UnityEngine.Random.Range(0f, 0.8f));
+
             _currentTarget = null;
             _forcedTarget = null;
             _hasLoggedSearch = false;
@@ -465,16 +472,20 @@ namespace Game.NPC.States
             // 1. Cinemática
             if (context.IsInCinematic) return new CinematicState();
             
-            // 2. Si no hay enemigos por mucho tiempo, volver a seguir
+            // 2. Si no hay enemigos por mucho tiempo, volver a seguir (victoria)
             if (_noEnemyTimer > NO_ENEMY_TIMEOUT)
             {
                 if (context.DebugMode) Debug.Log($"[AllyCombatState:{context.Transform.name}] ⏰ Timeout sin enemigos, volviendo a seguir al jugador.");
+                _exitingAsVictory = true;
                 return new FollowPlayerState(_partyMember);
             }
 
-            // 3. Si ya no está en combate (forzado externamente)
+            // 3. Si ya no está en combate (forzado externamente, también es victoria)
             if (!context.IsInCombat)
+            {
+                _exitingAsVictory = true;
                 return new FollowPlayerState(_partyMember);
+            }
             
             return null;
         }

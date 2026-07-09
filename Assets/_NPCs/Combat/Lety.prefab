@@ -771,6 +771,7 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  dialogueCharacterId: CHAR_LETY_VICKY
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []

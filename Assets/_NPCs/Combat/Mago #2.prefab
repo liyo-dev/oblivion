@@ -1073,6 +1073,7 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  dialogueCharacterId: CHAR_MAGO
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []

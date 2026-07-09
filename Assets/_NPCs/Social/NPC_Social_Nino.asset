@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9792f6671cfa8242ad25f0bbee58869, type: 3}
+  m_Name: NPC_Social_Nino
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCSocialConfig
+  moduleName: "Ni\xF1o Pez"
+  description: 
+  npcId: npc_nino_pez
+  personality:
+    sociability: 0.7
+    friendliness: 0.8
+    energy: 0.9
+  relationships: []
+  socialDetectionRange: 5
+  socialCooldown: 20
+  worldPointSearchRange: 22

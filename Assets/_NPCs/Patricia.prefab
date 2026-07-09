@@ -1218,8 +1218,9 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  persistentIdOverride: 
+  persistentIdOverride:
   includeSceneInPersistentId: 1
+  dialogueCharacterId: CHAR_PATRICIA
   dialogue: {fileID: 11400000, guid: 09d75e7556d2c364bbb2d874429a1a79, type: 2}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}

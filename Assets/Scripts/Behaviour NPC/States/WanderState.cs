@@ -6,7 +6,8 @@ namespace Game.NPC.States
 {
     /// <summary>
     /// Estado de Wander - El NPC camina aleatoriamente dentro de un radio.
-    /// Incluye detección de jugador con Raycast (Línea de visión).
+    /// Incluye detección de jugador con Raycast, encuentros sociales con otros NPCs
+    /// y la posibilidad de dirigirse a un NPCWorldPoint para realizar una actividad.
     /// </summary>
     public class WanderState : NPCStateBase
     {
@@ -16,61 +17,67 @@ namespace Game.NPC.States
         private float _stuckTimer;
         private Vector3 _lastPosition;
         private bool _hasSetDestination;
-        
-        // Detección
+
+        // Detección de jugador
         private float _playerDetectionTimer;
         private const float PLAYER_DETECTION_INTERVAL = 0.2f;
-        
-        // Cache para optimización
-        private Collider[] _collidersBuffer = new Collider[1]; 
+
+        // Encuentros sociales
+        private float _socialScanTimer;
+        private const float SOCIAL_SCAN_INTERVAL = 3f;
+        private readonly Collider[] _socialBuffer = new Collider[8];
+        private static readonly int NpcLayerMask = LayerMask.GetMask("Interactable", "Default");
+
+        // Punto de actividad elegido al entrar en el estado
+        private NPCWorldPoint _pendingWorldPoint;
 
         public override void OnEnter(NPCStateContext context)
         {
             base.OnEnter(context);
 
-            // Red de seguridad: si el NPC está anclado por el party, volver a Idle
             if (context.IsPinnedByParty)
             {
                 context.Brain.ChangeState(new IdleState());
                 return;
             }
 
-            _hasSetDestination = false;
-            _stuckTimer = 0f;
-            _lastPosition = context.Transform.position;
-            
-            // 1. Configurar velocidad de paseo (Walk Speed)
-            float wanderSpeed = 2.0f; // Valor por defecto seguro
-            if (context.Config != null && context.Config.ambientConfig != null)
-            {
+            _hasSetDestination  = false;
+            _stuckTimer         = 0f;
+            _lastPosition       = context.Transform.position;
+            _socialScanTimer    = 0f;
+            _pendingWorldPoint  = null;
+
+            float wanderSpeed = 2.0f;
+            if (context.Config?.ambientConfig != null)
                 wanderSpeed = context.Config.ambientConfig.walkSpeed;
-            }
             else if (context.Config != null)
-            {
-                // Sin ambientConfig: usar walkSpeed de la configuración base.
-                // Esto garantiza que el normalizador del NPCSimpleAnimator (_walkSpeed) y
-                // la velocidad real del agente coincidan → InputMagnitude llega a 0.5 (zona walk).
                 wanderSpeed = context.Config.walkSpeed;
-            }
-            
+
             if (context.Agent != null) context.Agent.speed = wanderSpeed;
 
-            // 2. Buscar punto
-            if (!TryFindWanderPoint(context, out _targetPosition))
+            // Con cierta probabilidad (energía baja → prefiere actividades), buscar NPCWorldPoint
+            var socialConfig = context.Config?.socialConfig;
+            float energy = socialConfig?.personality.energy ?? 0.5f;
+            float searchRange = socialConfig?.worldPointSearchRange ?? 20f;
+            if (UnityEngine.Random.value > energy &&
+                NPCWorldPoint.TryFindAny(context.Transform.position, searchRange, out var wp))
             {
-                // Si falla (ej: NavMesh no bakeado o área inaccesible), volver a idle
+                _pendingWorldPoint = wp;
+                _targetPosition    = wp.InteractionPosition;
+            }
+            else if (!TryFindWanderPoint(context, out _targetPosition))
+            {
                 context.LogWarning($"[{StateName}] No se encontró punto válido. Volviendo a Idle.");
                 context.Brain.ChangeState(new IdleState());
                 return;
             }
-            
-            // 3. Moverse
+
             if (!SetDestination(context, _targetPosition))
             {
                 context.Brain.ChangeState(new IdleState());
                 return;
             }
-            
+
             _hasSetDestination = true;
         }
         
@@ -80,52 +87,60 @@ namespace Game.NPC.States
 
             if (!_hasSetDestination) return;
 
-            // Verificar si se atascó contra una pared
             CheckIfStuck(context);
-            
-            // Detección de jugador (Sensor visual)
+
             _playerDetectionTimer += Time.deltaTime;
             if (_playerDetectionTimer >= PLAYER_DETECTION_INTERVAL)
             {
                 _playerDetectionTimer = 0f;
                 CheckPlayerDetection(context);
             }
+
+            _socialScanTimer += Time.deltaTime;
+            if (_socialScanTimer >= SOCIAL_SCAN_INTERVAL)
+            {
+                _socialScanTimer = 0f;
+                CheckSocialEncounter(context);
+            }
         }
         
         public override INPCState CheckTransitions(NPCStateContext context)
         {
-            // 1. Prioridades Altas (Cinemática / Combate Forzado / Muerte)
-            if (context.IsInCinematic) return new CinematicState();
-            if (context.IsInCombat) return new CombatState();
-            if (context.WasDefeatedInCombat) return new DeadState();
-            
-            // 2. Interacción
-            if (context.IsInteracting) return new IdleState();
-            
-            // 3. Fallos de Navegación
-            if (!_hasSetDestination) return null; // Ya se manejó en OnEnter
-            
+            if (context.IsInCinematic)        return new CinematicState();
+            if (context.IsInCombat)           return new CombatState();
+            if (context.WasDefeatedInCombat)  return new DeadState();
+            if (context.IsInteracting)        return new IdleState();
+
+            // Encuentro social iniciado por otro NPC mientras vagamos
+            if (context.PendingSocialPartner != null)
+                return new NPCSocialEncounterState();
+
+            if (!_hasSetDestination) return null;
+
             if (IsPathBlocked(context))
             {
                 context.Log($"[{StateName}] Camino bloqueado/inválido.");
+                _pendingWorldPoint = null;
                 return new IdleState();
             }
-            
+
             if (HasStalled(context))
             {
                 context.Log($"[{StateName}] NPC atascado físicamente.");
+                _pendingWorldPoint = null;
                 return new IdleState();
             }
-            
-            // 4. Éxito
+
             if (HasReachedDestination(context))
             {
-                // Al llegar, activamos el flag para que el IdleState sepa que acabamos de llegar
-                // y decida cuánto tiempo esperar antes de volver a Wander.
-                context.HasReachedDestination = true; 
+                // Si el destino era un NPCWorldPoint, ocuparlo y realizar la actividad
+                if (_pendingWorldPoint != null && !_pendingWorldPoint.IsOccupied)
+                    return new WalkToActivityState(_pendingWorldPoint, alreadyAtPoint: true);
+
+                context.HasReachedDestination = true;
                 return new IdleState();
             }
-            
+
             return null;
         }
         
@@ -257,6 +272,54 @@ namespace Game.NPC.States
             
             // Forzar cambio de estado inmediato
             context.Brain.ChangeState(alertStateDefault);
+        }
+
+        /// <summary>
+        /// Busca NPCs cercanos con los que iniciar un encuentro social, ponderado por personalidad.
+        /// </summary>
+        private void CheckSocialEncounter(NPCStateContext context)
+        {
+            var socialConfig = context.Config?.socialConfig;
+            if (socialConfig == null) return;
+
+            // Comprobar cooldown
+            if (Time.time - context.LastSocialEncounterTime < socialConfig.socialCooldown) return;
+
+            // El dado de sociabilidad: alta sociabilidad → mayor probabilidad de iniciar
+            if (UnityEngine.Random.value > socialConfig.personality.sociability) return;
+
+            float range = socialConfig.socialDetectionRange;
+            int count = Physics.OverlapSphereNonAlloc(
+                context.Transform.position, range, _socialBuffer, NpcLayerMask);
+
+            for (int i = 0; i < count; i++)
+            {
+                var col = _socialBuffer[i];
+                if (col == null) continue;
+
+                Transform root = col.transform.root;
+                if (root == context.Transform.root) continue; // ignorar a sí mismo
+
+                var partnerManager = root.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+                if (partnerManager == null) continue;
+
+                // Determinar la relación con este NPC
+                string partnerId = partnerManager.Configuration?.socialConfig?.npcId;
+                NPCRelationType relation = socialConfig.GetRelationshipWith(partnerId);
+
+                // Los enemigos no tienen encuentros sociales amistosos (omitir si se quiere)
+                if (relation == NPCRelationType.Enemy) continue;
+
+                // Intentar que el otro NPC acepte el encuentro
+                if (partnerManager.TryAcceptSocialEncounter(context.Transform, relation))
+                {
+                    // El partner aceptó: yo también entro en el encuentro
+                    context.PendingSocialPartner  = root;
+                    context.PendingSocialRelation = relation;
+                    context.Brain?.ChangeState(new NPCSocialEncounterState());
+                    return;
+                }
+            }
         }
     }
 }

@@ -39,6 +39,13 @@ namespace Game.NPC.Modules
                  "Solo aplica con autoStartOnDetection = true. El movimiento se bloquea antes de que el NPC se acerque.")]
         public bool freezePlayerOnDetection = false;
 
+        [Tooltip("¿Bloquear al jugador al terminar la cadena narrativa hasta que la detección dispare? " +
+                 "Usar cuando la cadena acaba (ej: TeleportNearPlayer) y la quest/narrativa siguiente necesita que el jugador no se escape antes de que el NPC le detecte.")]
+        public bool lockPlayerAfterChain = false;
+
+        [Tooltip("Segundos máximos de bloqueo post-cadena como failsafe. Si la detección no dispara en este tiempo, el jugador se desbloquea automáticamente.")]
+        public float lockPlayerMaxDuration = 8f;
+
         [Header("Estado Post-Narrativa")]
         [Tooltip("¿Qué hace el NPC después de completar ESTA narrativa? Solo aplica si es singleUse=true.")]
         public PostNarrativeState postNarrativeState = PostNarrativeState.None;

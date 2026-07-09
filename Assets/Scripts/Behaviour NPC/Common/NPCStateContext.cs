@@ -23,7 +23,13 @@ namespace Game.NPC.Common
         public bool WasDefeatedInCombat { get; set; } // NPC ha sido derrotado
         public bool IsPinnedByParty { get; set; }    // NPC anclado al salir del party (no debe vagar)
         public bool DebugMode { get; set; }
-        public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent, 
+
+        // Social
+        public Transform PendingSocialPartner { get; set; }
+        public NPCRelationType PendingSocialRelation { get; set; }
+        public float LastSocialEncounterTime { get; set; }
+
+        public NPCStateContext(NPCBrain brain, Transform transform, NavMeshAgent agent,
             NPCSimpleAnimator animator, Animator unityAnimator, Rigidbody rigidbody)
         {
             Brain = brain;
@@ -34,6 +40,7 @@ namespace Game.NPC.Common
             Rigidbody = rigidbody;
             LastKnownPosition = transform.position;
             LastKnownRotation = transform.rotation;
+            LastSocialEncounterTime = float.NegativeInfinity;
         }
         public void Log(string message)
         {

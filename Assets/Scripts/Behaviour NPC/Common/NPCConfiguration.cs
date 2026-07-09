@@ -28,6 +28,9 @@ namespace Game.NPC.Common
         
         [Tooltip("Config de compañero (seguir al jugador, formar equipo)")]
         public NPCPartyConfig partyConfig;
+
+        [Tooltip("Config social (personalidad, relaciones, encuentros entre NPCs)")]
+        public NPCSocialConfig socialConfig;
         [Header("Configuración Base (Común a todos)")]
         [Min(0f)]
         [Tooltip("Velocidad de caminata del NPC (m/s). Usado cuando el NPC se mueve normalmente.")]

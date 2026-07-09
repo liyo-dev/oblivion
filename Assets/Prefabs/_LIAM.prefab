@@ -7640,6 +7640,14 @@ MonoBehaviour:
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle02_NoWeapon
+  - Idle03_NoWeapon
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   searchingState: SenseSomethingSearching_NoWeapon
@@ -7738,6 +7746,7 @@ MonoBehaviour:
     questConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 11400000, guid: 2cc0b2e577149df4f8a3bc35ba74a5de, type: 2}
     partyConfig: {fileID: 11400000, guid: 275a911f69b78424dbc8e021c3b202a6, type: 2}
+    socialConfig: {fileID: 11400000, guid: e47cccb532b393845b2c510109c3b00b, type: 2}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -7784,7 +7793,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
-  characterId: CHAR_LIAM
   originalEyeMesh: {fileID: 4606229293547777999}
   originalMouthMesh: {fileID: 9018453360200977300}
   eyePrefix: Eye

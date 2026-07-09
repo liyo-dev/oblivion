@@ -14,9 +14,6 @@ public class NPCEmotionController : MonoBehaviour
     [Tooltip("Perfil de emociones que define el mapeo emoción -> meshes")]
     [SerializeField] private EmotionProfile emotionProfile;
 
-    [Tooltip("ID del personaje en los diálogos (ej: CHAR_LIAM). Si está vacío, solo reacciona cuando este NPC es el principal del diálogo.")]
-    [SerializeField] private string characterId;
-
     [Header("Estado Original (Antes de Hablar)")]
     [Tooltip("Mesh de ojos que tiene el NPC por defecto (antes de cualquier diálogo)")]
     [SerializeField] private GameObject originalEyeMesh;
@@ -36,9 +33,12 @@ public class NPCEmotionController : MonoBehaviour
     
     #region Private Fields
     
+    private NPCSimpleAnimator _npcAnimator;
+    private Game.NPC.NPCBehaviourManagerV2 _npcManager;
+
     // Cache de GameObjects de ojos indexados por nombre
     private Dictionary<string, GameObject> _eyeMeshes = new Dictionary<string, GameObject>();
-    
+
     // Cache de GameObjects de boca indexados por nombre
     private Dictionary<string, GameObject> _mouthMeshes = new Dictionary<string, GameObject>();
     
@@ -58,7 +58,8 @@ public class NPCEmotionController : MonoBehaviour
     
     void Awake()
     {
-        // Buscar y cachear todos los meshes de ojos y boca
+        _npcAnimator = GetComponent<NPCSimpleAnimator>();
+        _npcManager = GetComponent<Game.NPC.NPCBehaviourManagerV2>();
         CacheFacialMeshes();
     }
     
@@ -187,9 +188,9 @@ public class NPCEmotionController : MonoBehaviour
     /// </summary>
     private void OnDialogueLineChanged(DialogueLine line, Transform npcInvolved)
     {
-        // Reaccionar si somos el NPC principal del diálogo O si el speakerNameId coincide con nuestro characterId
         bool isMainNpc = npcInvolved == transform;
-        bool matchesById = !string.IsNullOrEmpty(characterId) && line.speakerNameId == characterId;
+        string effectiveId = _npcManager?.DialogueCharacterId;
+        bool matchesById = !string.IsNullOrEmpty(effectiveId) && line.speakerNameId == effectiveId;
         if (!isMainNpc && !matchesById)
             return;
         
@@ -203,14 +204,13 @@ public class NPCEmotionController : MonoBehaviour
             SaveOriginalMeshes();
         }
         
-        // Si la emoción es None, no cambiar nada
-        if (line.emotion == NPCEmotion.None)
-            return;
-        
         if (debugMode)
             Debug.Log($"[NPCEmotionController:{name}] 📢 OnDialogueLineChanged - Emoción: {line.emotion}");
-        
-        SetEmotion(line.emotion);
+
+        // La cara cambia si hay emoción explícita; None mantiene la expresión actual
+        // La animación corporal (Talk01/02/03, Angry, Cheer, etc.) la gestiona DialogueManager directamente
+        if (line.emotion != NPCEmotion.None)
+            SetEmotion(line.emotion);
     }
     
     #endregion

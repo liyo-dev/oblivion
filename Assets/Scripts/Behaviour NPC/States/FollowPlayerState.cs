@@ -290,7 +290,8 @@ namespace Game.NPC.States
                     {
                         _storedGravity = context.Rigidbody.useGravity;
                         context.Rigidbody.useGravity = false;
-                        context.Rigidbody.linearVelocity = Vector3.zero;
+                        if (!context.Rigidbody.isKinematic)
+                            context.Rigidbody.linearVelocity = Vector3.zero;
                         _gravityStored = true;
                     }
                 }
@@ -472,7 +473,8 @@ namespace Game.NPC.States
             if (context.Rigidbody != null && _gravityStored)
             {
                 context.Rigidbody.useGravity = _storedGravity;
-                context.Rigidbody.linearVelocity = Vector3.zero;
+                if (!context.Rigidbody.isKinematic)
+                    context.Rigidbody.linearVelocity = Vector3.zero;
                 _gravityStored = false;
             }
 

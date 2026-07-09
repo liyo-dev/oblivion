@@ -107,7 +107,7 @@ public class DialogueCinematicController : MonoBehaviour
 
     // Sistema de efectos cinematográficos por línea (CloseUp / Dramatic / Impact)
     private Coroutine _effectsCoroutine;
-    private DialogueLineEffect _activeEffect;
+    private bool _effectActive;
 
     // Ocultación de party members no-hablantes en modo individual
     private readonly List<Renderer> _hiddenPartyRenderers = new List<Renderer>();
@@ -714,9 +714,9 @@ public class DialogueCinematicController : MonoBehaviour
         }
 
         // Limpiar efectos cinematográficos si estaban activos
-        if (_activeEffect != DialogueLineEffect.None)
+        if (_effectActive)
         {
-            _activeEffect = DialogueLineEffect.None;
+            _effectActive = false;
             if (_effectsCoroutine != null)
             {
                 StopCoroutine(_effectsCoroutine);
@@ -963,16 +963,9 @@ public class DialogueCinematicController : MonoBehaviour
                 }
             }
 
-            // ── EFECTOS CINEMATOGRÁFICOS (funcionan en cualquier modo) ──
-            if (currentLine.cinematicEffect != DialogueLineEffect.None)
-            {
-                ApplyLineEffect(currentLine.cinematicEffect, currentSpeaker);
-                return;
-            }
-
-            // Si la línea anterior tenía efecto y esta no, restaurar
-            if (_activeEffect != DialogueLineEffect.None)
-                ClearLineEffect();
+            // ── EFECTOS CINEMATOGRÁFICOS (CloseUp siempre activo) ──
+            ApplyLineEffect(currentSpeaker);
+            return;
 
             // ── MODO GRUPAL: cámara estable sin cortes ──
             if (_isGroupConversation)
@@ -1156,16 +1149,40 @@ public class DialogueCinematicController : MonoBehaviour
             minimumDuration = 0f
         };
 
-        private void ApplyLineEffect(DialogueLineEffect effect, Transform speaker)
+        private void ApplyLineEffect(Transform speaker)
         {
-            if (speaker == null || effect != DialogueLineEffect.CloseUp) return;
+            if (speaker == null) return;
 
-            _activeEffect = effect;
+            _effectActive = true;
 
-            ShowNPC();
-            ShowPlayer();
-            if (!_isGroupConversation)
+            if (_isGroupConversation)
+            {
+                ShowNPC();
+                ShowPlayer();
+            }
+            else
+            {
+                bool speakerIsPlayerOrParty = (speaker == currentPlayer) || IsPartyMember(speaker);
+
+                if (speakerIsPlayerOrParty)
+                {
+                    HideNPC();
+                    ShowPlayer();
+                    MakeSpeakerLookAtNPC(speaker);
+                }
+                else if (speaker == currentNPC)
+                {
+                    ShowNPC();
+                    HidePlayer();
+                }
+                else
+                {
+                    ShowNPC();
+                    ShowPlayer();
+                }
+
                 HideNonSpeakingPartyMembers(speaker);
+            }
 
             ApplyShot(_effectCloseUpShot, speaker, forceCut: true);
 
@@ -1177,7 +1194,7 @@ public class DialogueCinematicController : MonoBehaviour
 
         private void ClearLineEffect()
         {
-            _activeEffect = DialogueLineEffect.None;
+            _effectActive = false;
 
             // Restaurar party members ocultos por el efecto
             ShowAllPartyMembers();

@@ -6,7 +6,8 @@ public enum PickupEffectType
     ManaRestore,
     HealthRestore,
     SpecialCharge,
-    AddToInventory // Añade el item al inventario del jugador (para items de historia/quest)
+    AddToInventory, // Añade el item al inventario del jugador (para items de historia/quest)
+    UnlockWardrobeItem
 }
 
 /// <summary>

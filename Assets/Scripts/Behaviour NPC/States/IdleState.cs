@@ -24,28 +24,40 @@ namespace Game.NPC.States
             base.OnEnter(context);
             StopMovement(context);
 
-            // Resetear el estado de animación a Idle para que el próximo WanderState
-            // siempre dispare TransitionToLocomotion() correctamente.
-            context.Animator?.TransitionToIdle();
-
             // Seguridad: Si viene de combate/muerte, limpiar flags
             if (context.WasDefeatedInCombat && context.Animator != null)
-            {
                 context.Animator.SetBattleMode(false);
-            }
-            
-            // Configurar tiempo de espera aleatorio
-            if (context.Config != null)
+
+            var ambientActivity = context.Config?.ambientConfig?.ambientActivity ?? NPCAmbientActivity.None;
+
+            if (ambientActivity != NPCAmbientActivity.None)
             {
-                _idleDuration = Random.Range(context.Config.minIdleTime, context.Config.maxIdleTime);
+                // NPC con actividad fija: no vaga, permanece en la actividad indefinidamente
+                context.Animator?.PlayAmbientActivity(ambientActivity);
+                _idleDuration = float.MaxValue;
             }
             else
             {
-                _idleDuration = 2f; // Fallback
+                // Resetear el estado de animación a Idle para que el próximo WanderState
+                // siempre dispare TransitionToLocomotion() correctamente.
+                context.Animator?.TransitionToIdle();
+
+                _idleDuration = context.Config != null
+                    ? Random.Range(context.Config.minIdleTime, context.Config.maxIdleTime)
+                    : 2f;
             }
-            
+
             _idleTimer = 0f;
             _playerDetectionTimer = 0f;
+        }
+
+        public override void OnExit(NPCStateContext context)
+        {
+            var ambientActivity = context.Config?.ambientConfig?.ambientActivity ?? NPCAmbientActivity.None;
+            if (ambientActivity != NPCAmbientActivity.None)
+                context.Animator?.StopAmbientActivity(ambientActivity);
+
+            base.OnExit(context);
         }
         
         public override void OnUpdate(NPCStateContext context)

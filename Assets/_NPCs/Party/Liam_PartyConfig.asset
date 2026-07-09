@@ -21,7 +21,7 @@ MonoBehaviour:
   velocidadCaminando: 5
   velocidadCorriendo: 10
   quedarseDetras: 1
-  offsetLateral: {x: 1, y: 1}
+  offsetLateral: {x: 2, y: 1}
   tiempoIdleMinimo: 1
   tiempoIdleMaximo: 3
   puedeVagarCerca: 0

@@ -33,6 +33,10 @@ namespace Game.NPC.Modules
         [Tooltip("Velocidad mínima de animación")]
         public float minAnimSpeed = 0.25f;
         
+        [Header("Actividad Ambiental")]
+        [Tooltip("Actividad que realiza el NPC mientras está parado. Requiere enableWander = false.")]
+        public NPCAmbientActivity ambientActivity = NPCAmbientActivity.None;
+
         public override bool ValidateConfig(out string errorMessage)
         {
             errorMessage = "";

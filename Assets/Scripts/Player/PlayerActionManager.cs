@@ -220,6 +220,20 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Fly);
         _blockedByMode[ActionMode.Minigame].Add(PlayerAbility.Climb);
 
+        // GARANTIZAR bloqueos para UsingWorldPoint (sentarse, comer, dormir, etc.)
+        if (!_blockedByMode.ContainsKey(ActionMode.UsingWorldPoint))
+            _blockedByMode[ActionMode.UsingWorldPoint] = new HashSet<PlayerAbility>();
+
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Move);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Jump);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Sprint);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Magic);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Interact);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Carry);
+        _blockedByMode[ActionMode.UsingWorldPoint].Add(PlayerAbility.Fly);
+
 #if UNITY_EDITOR
         if (debugLogs) Debug.Log($"[PlayerActionManager] Inicializado con {rules?.Length ?? 0} reglas");
 #endif
@@ -611,6 +625,10 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
 
     bool ShouldLockMovement(ActionMode mode)
     {
+        // UsingWorldPoint bloquea el motor directamente en PlayerAmbientActivityHandler
+        // para que el mapa de input GamePlay no se deshabilite y la cámara siga disponible
+        if (mode == ActionMode.UsingWorldPoint) return false;
+
         if (_blockedByMode.TryGetValue(mode, out var blocked) && blocked.Contains(PlayerAbility.Move))
             return true;
 

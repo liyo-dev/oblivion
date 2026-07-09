@@ -50,6 +50,7 @@ public class PlayerPickupCollector : MonoBehaviour
             PickupEffectType.HealthRestore => ApplyHealth(effect),
             PickupEffectType.SpecialCharge => ApplySpecialCharge(effect),
             PickupEffectType.AddToInventory => ApplyAddToInventory(effect),
+            PickupEffectType.UnlockWardrobeItem => ApplyUnlockWardrobeItem(effect),
             _ => false
         };
 
@@ -158,10 +159,58 @@ public class PlayerPickupCollector : MonoBehaviour
         int quantity = effect.GetQuantityOrDefault();
         if (quantity <= 0) return false;
 
-        // Añadir el item al inventario (para items de historia/quest como botas, llaves, etc.)
+        // Añadir al inventario (esto disparará el popup de CollectiblePopupQueue vía OnItemAdded)
         inventory.Add(effect.item, quantity);
         Debug.Log($"[PlayerPickupCollector] ✅ Item añadido al inventario: {effect.item.displayName} x{quantity}");
+
+        // Si el ItemData aporta una referencia a un WardrobeItemSO, desbloquearlo
+        // tras un frame para asegurar que el popup de recogida se muestre primero.
+        if (effect.item.wardrobeUnlock != null)
+        {
+            // Iniciar corrutina ligera para retrasar el desbloqueo una frame
+            StartCoroutine(DelayedUnlockWardrobe(effect.item.wardrobeUnlock));
+        }
+
         return true;
+    }
+
+    // Delay smallo para asegurar orden: primero popup de recogida (inventory.Add -> OnItemAdded),
+    // luego intentar desbloquear en el wardrobe para que la UX muestre primero el popup de "has cogido".
+    private System.Collections.IEnumerator DelayedUnlockWardrobe(WardrobeItemSO wardrobeItem)
+    {
+        // Esperar un frame para dejar que CollectiblePopupQueue procese el OnItemAdded
+        yield return null;
+
+        if (wardrobeItem == null) yield break;
+
+        // Intentar desbloquear; WardrobeService gestionará si ya estaba desbloqueado y mostrará su propio popup si procede.
+        WardrobeService.UnlockWardrobeItem(wardrobeItem, logWarnings: true);
+    }
+    
+    private bool ApplyUnlockWardrobeItem(PickupEffect effect)
+    {
+        if (effect.item == null || effect.item.wardrobeUnlock == null)
+        {
+            if (logWarnings) Debug.LogWarning("[PlayerPickupCollector] UnlockWardrobeItem pickup has no ItemData or WardrobeItemSO assigned.");
+            return false;
+        }
+
+        var wardrobeItem = effect.item.wardrobeUnlock;
+
+        // Intentar desbloquear el item en el WardrobeService. Esto añadirá el item al wardrobe
+        // y mostrará el popup correspondiente (CollectiblePopupQueue) cuando proceda.
+        bool unlocked = WardrobeService.UnlockWardrobeItem(wardrobeItem, logWarnings: true);
+
+        // Actualizar la apariencia activa del personaje para reflejar el nuevo item (si procede)
+        var activeCharacter = PartyControlManager.Instance.ActiveSlot;
+        CharacterAppearanceRegistry.Instance.UpdatePart(activeCharacter, wardrobeItem.Category, wardrobeItem.PartName);
+
+        if (unlocked)
+            Debug.Log($"[PlayerPickupCollector] ✅ Item de equipo '{effect.item.displayName}' desbloqueado y añadido al wardrobe.");
+        else if (logWarnings)
+            Debug.Log($"[PlayerPickupCollector] Item de equipo '{effect.item.displayName}' ya estaba desbloqueado o no pudo añadirse.");
+
+        return unlocked;
     }
 
     private void LogMissingComponent(string componentName)
@@ -253,4 +302,3 @@ public class PlayerPickupCollector : MonoBehaviour
         Debug.Log($"[PlayerPickupCollector] Animación de poción completada - flag limpiado");
     }
 }
-

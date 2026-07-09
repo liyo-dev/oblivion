@@ -12361,6 +12361,8 @@ GameObject:
   - component: {fileID: 5868854481933487762}
   - component: {fileID: 6573373716571036464}
   - component: {fileID: 4916995738179263480}
+  - component: {fileID: 1307908492277444293}
+  - component: {fileID: 3717333352082569263}
   m_Layer: 3
   m_Name: vBasicController_MaleCharacterPBR
   m_TagString: Player
@@ -13167,6 +13169,34 @@ MonoBehaviour:
   eyePrefix: Eye
   mouthPrefix: Mouth
   debugMode: 0
+--- !u!114 &1307908492277444293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92a49f78322f324da06903355092b32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDialogueAnimator
+  animator: {fileID: 6005525575959977289}
+  blendTime: 0.1
+  debugMode: 0
+--- !u!114 &3717333352082569263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951141271202639922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e34cb219ff1d4e848b0c9092561f7a06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAmbientActivityHandler
+  cancelAction: {fileID: -4604816535962114212, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
 --- !u!1 &4956991213707944661
 GameObject:
   m_ObjectHideFlags: 0

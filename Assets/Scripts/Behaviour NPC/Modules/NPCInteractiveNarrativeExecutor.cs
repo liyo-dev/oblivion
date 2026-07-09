@@ -49,6 +49,8 @@ namespace Game.NPC.Modules
         private bool _playerFrozenByDetection = false;
         private bool _wasTriggeredByDetection = false;
         private bool _chainWasTriggeredByDetection = false;
+        private bool _playerLockedByPostChain = false;
+        private Coroutine _postChainUnlockTimeout = null;
 
         private static readonly WaitForSeconds _waitHalfSecond = new WaitForSeconds(0.5f);
         private static readonly WaitForSeconds _waitPointTwo = new WaitForSeconds(0.2f);
@@ -638,6 +640,17 @@ namespace Game.NPC.Modules
             {
                 global::Core.PlayerInputManager.Instance.PopUIMode();
                 _playerFrozenByDetection = false;
+            }
+
+            if (narrativeData != null && narrativeData.lockPlayerAfterChain && !_playerLockedByPostChain
+                && global::Core.PlayerInputManager.Instance != null)
+            {
+                global::Core.PlayerInputManager.Instance.PushUIMode();
+                _playerLockedByPostChain = true;
+                _postChainUnlockTimeout = StartCoroutine(PostChainUnlockTimeout(narrativeData.lockPlayerMaxDuration));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[NarrativeExecutor:{name}] 🔒 Player bloqueado post-cadena (máx {narrativeData.lockPlayerMaxDuration}s)");
+#endif
             }
 
             if (_npcManager?.Context != null)
@@ -1500,6 +1513,7 @@ namespace Game.NPC.Modules
 
                         if (hasNarrativeToDetect)
                         {
+                            if (_playerLockedByPostChain) ReleasePostChainLock();
                             if (activeNarrative.freezePlayerOnDetection && global::Core.PlayerInputManager.Instance != null)
                             {
                                 global::Core.PlayerInputManager.Instance.PushUIMode();
@@ -1512,6 +1526,7 @@ namespace Game.NPC.Modules
                         }
                         else if (hasQuestToDetect)
                         {
+                            if (_playerLockedByPostChain) ReleasePostChainLock();
                             var questConfig = _npcManager.Configuration.questConfig;
                             questConfig.ProcessInteraction(_player.gameObject, _npcManager.Context);
                             // Esperar a que el diálogo abra y cierre antes de permitir re-detección.
@@ -1755,12 +1770,42 @@ namespace Game.NPC.Modules
             return $"{GetEffectivePersistenceId()}_CN{index}";
         }
 
+        private void ReleasePostChainLock()
+        {
+            if (!_playerLockedByPostChain) return;
+            if (_postChainUnlockTimeout != null)
+            {
+                StopCoroutine(_postChainUnlockTimeout);
+                _postChainUnlockTimeout = null;
+            }
+            if (global::Core.PlayerInputManager.Instance != null)
+                global::Core.PlayerInputManager.Instance.PopUIMode();
+            _playerLockedByPostChain = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[NarrativeExecutor:{name}] 🔓 Player desbloqueado (lock post-cadena liberado)");
+#endif
+        }
+
+        private IEnumerator PostChainUnlockTimeout(float duration)
+        {
+            yield return new WaitForSeconds(duration);
+            if (_playerLockedByPostChain)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning($"[NarrativeExecutor:{name}] ⚠️ Timeout post-cadena ({duration}s) alcanzado — desbloqueando player por failsafe");
+#endif
+                ReleasePostChainLock();
+            }
+        }
+
         public void ResetState(bool restoreFromPreset = true)
         {
             _hasBeenUsed = false;
             _hasDetectedPlayer = false;
             _isExecuting = false;
             _lastExecutionEndTime = -999f;
+
+            if (_playerLockedByPostChain) ReleasePostChainLock();
 
             if (_npcManager?.Context != null)
                 _npcManager.Context.IsInteracting = false;

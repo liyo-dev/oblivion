@@ -98,7 +98,8 @@ public enum ActionMode
     Flying,
     Climbing,
     Combat,
-    Minigame
+    Minigame,
+    UsingWorldPoint
 }
 
 /// <summary>Habilidades básicas que puede usar el jugador.</summary>
@@ -123,7 +124,8 @@ public enum InteractableMode
 {
     OpenDialogue,
     OpenDialogueWithOptions,
-    HandOffToTarget
+    HandOffToTarget,
+    UseWorldPoint
 }
 
 /// <summary>Cómo seleccionar una sesión: por campo, automáticamente por GameObject, o por nombre de tipo.</summary>

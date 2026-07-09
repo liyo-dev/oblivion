@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
   m_Name: PlayerPreset_Arrestados_Despues_Demonio2
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
-  spawnAnchorId: Woods_Entrance_SavePoint
+  spawnAnchorId: RestaurantEldran
   level: 1
   maxHP: 100
   currentHP: 100
@@ -69,7 +69,7 @@ MonoBehaviour:
   abilities:
     swim: 1
     jump: 1
-    climb: 0
+    climb: 1
     magic: 1
     fly: 1
   appearance:

@@ -63,6 +63,22 @@ public class NPCSimpleAnimator : MonoBehaviour
     [Header("Interaction")]
     [SerializeField] private string interactState = "InteractWithPeople_NoWeapon";
     [SerializeField] private string greetingState = "Greeting01_NoWeapon";
+
+    [Header("Saludo al inicio de diálogo")]
+    [Tooltip("Si está activo, reproduce una animación de saludo al iniciar un diálogo")]
+    [SerializeField] private bool playGreetingOnDialogueStart = false;
+    [Tooltip("Animación de saludo (ej: HandWave01, Reverence01, HeadNod01)")]
+    [SerializeField] private string greetingDialogueState = "HandWave01";
+
+    [Header("Idle Variations")]
+    [Tooltip("Activar variaciones de idle aleatorias cuando el NPC está parado")]
+    [SerializeField] private bool enableIdleVariations = true;
+    [Tooltip("Estados de idle variante (deben existir en el Animator Controller)")]
+    [SerializeField] private string[] idleVariationStates = { "Idle02_NoWeapon", "Idle03_NoWeapon" };
+    [Tooltip("Tiempo mínimo en segundos entre variaciones")]
+    [SerializeField, Range(3f, 60f)] private float minIdleVariationInterval = 8f;
+    [Tooltip("Tiempo máximo en segundos entre variaciones")]
+    [SerializeField, Range(5f, 120f)] private float maxIdleVariationInterval = 20f;
     
     [Header("Combat Animations")]
     [SerializeField] private string challengingState = "Challenging_NoWeapon";
@@ -113,6 +129,20 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     // Animator parameters
     private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
+
+    // Mapeo emoción → animación corporal
+    private static readonly Dictionary<NPCEmotion, string> EmotionBodyAnimMap = new Dictionary<NPCEmotion, string>
+    {
+        { NPCEmotion.Happy,     "Cheer01"    },
+        { NPCEmotion.Angry,     "Angry01"    },
+        { NPCEmotion.Sad,       "Cry01"      },
+        { NPCEmotion.Scared,    "Fear01"     },
+        { NPCEmotion.Thinking,  "Question01" },
+        { NPCEmotion.Surprised, "Question02" },
+        { NPCEmotion.Smirk,     "Laugh01"    },
+        { NPCEmotion.Tired,     "Talk02"     },
+    };
+    private static readonly string[] NeutralTalkAnims = { "Talk01", "Talk02", "Talk03" };
     
     // References
     private Transform _player;
@@ -122,6 +152,12 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Coroutines
     private Coroutine _oneShotCoroutine;
     private Coroutine _rotationCoroutine;
+    private Coroutine _idleVariationCoroutine;
+    private Coroutine _activityCoroutine;
+    private Coroutine _victoryCelebrationCoroutine;
+
+    // Índice de ciclo de Talk para variedad (Neutral)
+    private int _lastTalkIndex = -1;
     
     // Caches
     private AnimatorStateCache _stateCache;
@@ -409,10 +445,13 @@ public class NPCSimpleAnimator : MonoBehaviour
         }
         
         _isInBattle = enable;
-        
+
+        if (enable)
+            StopIdleVariations();
+
         if (animator == null)
             return;
-        
+
         // Set upper body layer weight
         if (upperBodyLayer > 0 && upperBodyLayer < animator.layerCount)
         {
@@ -592,7 +631,9 @@ public class NPCSimpleAnimator : MonoBehaviour
     {
         if (_isInteracting)
             return;
-        
+
+        StopIdleVariations();
+
         _isInteracting = true;
         _currentState = AnimationState.Interacting;
         
@@ -792,6 +833,7 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!string.IsNullOrEmpty(dieState))
         {
             _currentState = AnimationState.Dead;
+            StopIdleVariations();
             
             Debug.Log($"[NPCAnimator:{gameObject.name}] 🎬 Reproduciendo animación de muerte: {dieState}");
             
@@ -1040,7 +1082,16 @@ public class NPCSimpleAnimator : MonoBehaviour
         
         // Rotar instantáneamente hacia el jugador y desactivar rotación automática
         FacePlayerInstantly();
-        
+
+        // Saludo opcional antes de que BeginInteraction fije la animación
+        if (playGreetingOnDialogueStart && !string.IsNullOrEmpty(greetingDialogueState))
+        {
+            PlayOneShot(greetingDialogueState, 0, () =>
+            {
+                if (_isInteracting) CrossFadeToState(interactState, 0.15f);
+            });
+        }
+
         // Iniciar la corrutina de seguimiento continuo
         _dialogueLookAtCoroutine = StartCoroutine(KeepLookingAtPlayerDuringDialogue());
     }
@@ -1225,8 +1276,215 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     #endregion
     
+    #region Public API - Social & Emotions
+
+    /// <summary>
+    /// Reproduce una animación corporal acorde a la emoción del NPC durante el diálogo.
+    /// Las emociones Neutral/None rotan entre Talk01/02/03 para variedad.
+    /// Solo actúa si el NPC está en estado Interacting.
+    /// </summary>
+    public void PlayBodyEmotion(NPCEmotion emotion)
+    {
+        if (!_isInteracting || _currentState == AnimationState.Dead)
+            return;
+
+        string stateName;
+        if (emotion == NPCEmotion.None || emotion == NPCEmotion.Neutral)
+        {
+            _lastTalkIndex = (_lastTalkIndex + 1) % NeutralTalkAnims.Length;
+            stateName = NeutralTalkAnims[_lastTalkIndex];
+        }
+        else if (EmotionBodyAnimMap.TryGetValue(emotion, out string mapped))
+        {
+            stateName = mapped;
+        }
+        else
+        {
+            stateName = NeutralTalkAnims[0];
+        }
+
+        PlayOneShot(stateName, 0, () =>
+        {
+            if (_isInteracting && _currentState != AnimationState.Dead)
+                CrossFadeToState(interactState, 0.15f);
+        });
+    }
+
+    /// <summary>
+    /// Reproduce un gesto social como one-shot (para uso desde sistemas narrativos/quest).
+    /// Disponible siempre, no requiere que el NPC esté en interacción.
+    /// </summary>
+    public void PlaySocialGesture(string stateName, Action onComplete = null)
+    {
+        if (string.IsNullOrEmpty(stateName) || _currentState == AnimationState.Dead)
+            return;
+
+        PlayOneShot(stateName, 0, onComplete);
+    }
+
+    /// <summary>
+    /// Celebración de victoria aleatoria (Cheer01, Cheer02, HandClap01).
+    /// Permite delay para escalonar la celebración entre varios aliados.
+    /// </summary>
+    public void PlayVictoryCelebration(float delay = 0f)
+    {
+        if (_currentState == AnimationState.Dead)
+            return;
+
+        if (_victoryCelebrationCoroutine != null)
+            StopCoroutine(_victoryCelebrationCoroutine);
+
+        _victoryCelebrationCoroutine = StartCoroutine(VictoryCelebrationRoutine(delay));
+    }
+
+    private IEnumerator VictoryCelebrationRoutine(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        if (_currentState == AnimationState.Dead || _isInBattle)
+            yield break;
+
+        string[] options = { "Cheer01", "Cheer02", "HandClap01" };
+        string chosen = options[UnityEngine.Random.Range(0, options.Length)];
+
+        PlayOneShot(chosen, 0, () =>
+        {
+            if (!_isInBattle && !_isInteracting && _currentState != AnimationState.Dead)
+                TransitionToIdle();
+        });
+
+        _victoryCelebrationCoroutine = null;
+    }
+
+    #endregion
+
+    #region Public API - Ambient Activity
+
+    /// <summary>
+    /// Inicia una actividad ambiental (sentarse, comer, beber, dormir).
+    /// Reproduce Begin → Loop. El NPC permanece en el Loop hasta que se llame StopAmbientActivity.
+    /// </summary>
+    public void PlayAmbientActivity(NPCAmbientActivity activity, NPCWorldPoint worldPoint = null)
+    {
+        if (activity == NPCAmbientActivity.None || _currentState == AnimationState.Dead)
+            return;
+
+        StopIdleVariations();
+
+        if (_activityCoroutine != null)
+            StopCoroutine(_activityCoroutine);
+
+        _activityCoroutine = StartCoroutine(AmbientActivityRoutine(activity, worldPoint));
+    }
+
+    /// <summary>
+    /// Para la actividad ambiental activa. La animación de salida (Exit) se aplica si existe;
+    /// luego el animator vuelve a idle normal.
+    /// </summary>
+    public void StopAmbientActivity(NPCAmbientActivity activity, NPCWorldPoint worldPoint = null)
+    {
+        if (_activityCoroutine != null)
+        {
+            StopCoroutine(_activityCoroutine);
+            _activityCoroutine = null;
+        }
+
+        // Devolver el prop a su posición original antes de volver al idle
+        worldPoint?.DetachProp();
+
+        string exitState = GetActivityExitState(activity);
+        if (!string.IsNullOrEmpty(exitState) && animator != null && animator.HasState(0, Animator.StringToHash(exitState)))
+        {
+            PlayOneShot(exitState, 0, () => TransitionToIdle());
+        }
+        else
+        {
+            TransitionToIdle();
+        }
+    }
+
+    private IEnumerator AmbientActivityRoutine(NPCAmbientActivity activity, NPCWorldPoint worldPoint)
+    {
+        // Adjuntar prop a la mano derecha si el worldPoint tiene uno
+        worldPoint?.AttachPropToOccupant(animator);
+
+        string beginState = GetActivityBeginState(activity);
+        string loopState  = GetActivityLoopState(activity);
+
+        // Animación de inicio (one-shot)
+        if (!string.IsNullOrEmpty(beginState) && animator != null && animator.HasState(0, Animator.StringToHash(beginState)))
+        {
+            CrossFadeToState(beginState, 0.2f);
+            float clipLen = GetClipLength(beginState);
+            yield return new WaitForSeconds(Mathf.Max(0.1f, clipLen));
+        }
+
+        // Loop hasta que se interrumpa externamente
+        if (!string.IsNullOrEmpty(loopState) && animator != null && animator.HasState(0, Animator.StringToHash(loopState)))
+        {
+            CrossFadeToState(loopState, 0.15f);
+        }
+
+        _activityCoroutine = null;
+    }
+
+    private static string GetActivityBeginState(NPCAmbientActivity activity)
+    {
+        return activity switch
+        {
+            // Sentarse — pendiente de importar los clips (nombres reservados)
+            NPCAmbientActivity.SitGround  => "SitGround_Begin",
+            NPCAmbientActivity.SitLow     => "SitLow_Begin",
+            NPCAmbientActivity.SitMedium  => "SitMedium_Begin",
+            NPCAmbientActivity.SitHigh    => "SitHigh_Begin",
+            // Comer — pendiente de importar los clips
+            NPCAmbientActivity.Eat        => "Eat_Begin",
+            // Beber: usa DrinkPotion_NoWeapon como one-shot y luego idle
+            NPCAmbientActivity.Drink      => "DrinkPotion_NoWeapon",
+            // Dormir: sin transición de entrada, va directo al loop
+            NPCAmbientActivity.Sleep      => string.Empty,
+            _                             => string.Empty
+        };
+    }
+
+    private static string GetActivityLoopState(NPCAmbientActivity activity)
+    {
+        return activity switch
+        {
+            // Sentarse — pendiente de importar los clips
+            NPCAmbientActivity.SitGround  => "SitGround_Loop",
+            NPCAmbientActivity.SitLow     => "SitLow_Loop",
+            NPCAmbientActivity.SitMedium  => "SitMedium_Loop",
+            NPCAmbientActivity.SitHigh    => "SitHigh_Loop",
+            // Comer — pendiente
+            NPCAmbientActivity.Eat        => "Eat_Loop",
+            // Beber: el one-shot ya es la animación completa, sin loop
+            NPCAmbientActivity.Drink      => string.Empty,
+            // Dormir: loop real del personaje durmiendo
+            NPCAmbientActivity.Sleep      => "Sleeping_NoWeapon",
+            _                             => string.Empty
+        };
+    }
+
+    private static string GetActivityExitState(NPCAmbientActivity activity)
+    {
+        return activity switch
+        {
+            // Sentarse — pendiente de importar los clips
+            NPCAmbientActivity.SitGround  => "SitGround_Exit",
+            NPCAmbientActivity.SitLow     => "SitLow_Exit",
+            NPCAmbientActivity.SitMedium  => "SitMedium_Exit",
+            NPCAmbientActivity.SitHigh    => "SitHigh_Exit",
+            // Dormir, comer y beber: sin animación de salida, vuelven directo a idle
+            _                             => string.Empty
+        };
+    }
+
+    #endregion
+
     #region Public API - Utility
-    
+
     /// <summary>
     /// Establece el override de interacción (estado custom)
     /// </summary>
@@ -1268,6 +1526,57 @@ public class NPCSimpleAnimator : MonoBehaviour
     
     #endregion
     
+    #region Private Methods - Idle Variations
+
+    private void StartIdleVariations()
+    {
+        if (!enableIdleVariations || idleVariationStates == null || idleVariationStates.Length == 0)
+            return;
+        if (_isInBattle || _isInteracting || _currentState == AnimationState.Dead)
+            return;
+
+        StopIdleVariations();
+        _idleVariationCoroutine = StartCoroutine(IdleVariationLoop());
+    }
+
+    private void StopIdleVariations()
+    {
+        if (_idleVariationCoroutine == null)
+            return;
+
+        StopCoroutine(_idleVariationCoroutine);
+        _idleVariationCoroutine = null;
+    }
+
+    private IEnumerator IdleVariationLoop()
+    {
+        while (true)
+        {
+            float wait = UnityEngine.Random.Range(minIdleVariationInterval, maxIdleVariationInterval);
+            yield return new WaitForSeconds(wait);
+
+            // Guardas: solo si seguimos en Idle puro
+            if (_currentState != AnimationState.Idle || _isInBattle || _isInteracting)
+                continue;
+
+            if (idleVariationStates.Length == 0)
+                continue;
+
+            string variation = idleVariationStates[UnityEngine.Random.Range(0, idleVariationStates.Length)];
+
+            if (string.IsNullOrEmpty(variation) || animator == null || !animator.HasState(0, Animator.StringToHash(variation)))
+                continue;
+
+            PlayOneShot(variation, 0, () =>
+            {
+                if (_currentState != AnimationState.Dead && !_isInBattle && !_isInteracting)
+                    CrossFadeToState(idleNormalState, 0.2f);
+            });
+        }
+    }
+
+    #endregion
+
     #region Private Methods - Core
     
     private void UpdateActualSpeed()
@@ -1400,6 +1709,8 @@ public class NPCSimpleAnimator : MonoBehaviour
         {
             CrossFadeToState(targetIdle, 0.2f);
         }
+
+        StartIdleVariations();
     }
     
     /// <summary>

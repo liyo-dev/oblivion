@@ -1895,8 +1895,9 @@ MonoBehaviour:
   hideHintAtStart: 1
   singleUse: 0
   initiallyEnabled: 1
-  persistentIdOverride: 
+  persistentIdOverride:
   includeSceneInPersistentId: 1
+  dialogueCharacterId: CHAR_LEONARDO
   dialogue: {fileID: 11400000, guid: f48aaf6ecc6281e4bb72c128c2e97a8d, type: 2}
   yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
   noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}

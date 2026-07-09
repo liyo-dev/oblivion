@@ -26,6 +26,7 @@ public class Interactable : MonoBehaviour
     [SerializeField] private bool includeSceneInPersistentId = true;
 
     [Header("Abrir diálogo")]
+    [SerializeField] private string dialogueCharacterId;
     [SerializeField] private DialogueAsset dialogue;
     [SerializeField] private DialogueAsset yesOption;
     [SerializeField] private DialogueAsset noOption;
@@ -45,6 +46,7 @@ public class Interactable : MonoBehaviour
     NPCBehaviourManagerV2 _npcManager;
     NPCPartyMember _partyMember;
     Game.NPC.CompanionFollowPrompt _followPrompt;
+    NPCWorldPoint _worldPoint;
     bool _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
@@ -63,6 +65,7 @@ public class Interactable : MonoBehaviour
         }
         _npcManager = GetComponent<NPCBehaviourManagerV2>();
         _partyMember = GetComponent<NPCPartyMember>() ?? GetComponentInParent<NPCPartyMember>();
+        _worldPoint = GetComponent<NPCWorldPoint>();
     }
 
     void OnEnable()
@@ -161,7 +164,19 @@ public class Interactable : MonoBehaviour
         var narrativeExecutor = GetComponent<Game.NPC.Modules.NPCInteractiveNarrativeExecutor>();
         if (narrativeExecutor != null && narrativeExecutor.IsExecuting)
             return false;
-        
+
+        // No mostrar el hint si el NPCWorldPoint ya está ocupado (por otro NPC o por el propio player)
+        if (_worldPoint != null && _worldPoint.IsOccupied)
+            return false;
+
+        // Comprobar proximidad al punto de interacción exacto (evita activar desde lejos)
+        if (_worldPoint != null && interactor != null)
+        {
+            float dist = Vector3.Distance(interactor.transform.position, _worldPoint.InteractionPosition);
+            if (dist > _worldPoint.requiredProximity)
+                return false;
+        }
+
         return true;
     }
 
@@ -243,6 +258,9 @@ public class Interactable : MonoBehaviour
                 break;
             case InteractableMode.OpenDialogueWithOptions:
                 StartDialogueWithOptions();
+                break;
+            case InteractableMode.UseWorldPoint:
+                StartWorldPointActivity(interactor);
                 break;
         }
     }
@@ -463,6 +481,40 @@ public class Interactable : MonoBehaviour
         }
     }
 
+    void StartWorldPointActivity(GameObject interactor)
+    {
+        if (_worldPoint == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[Interactable:{name}] UseWorldPoint configurado pero no hay NPCWorldPoint en este objeto.");
+#endif
+            return;
+        }
+
+        var handler = interactor != null
+            ? interactor.GetComponent<PlayerAmbientActivityHandler>()
+              ?? interactor.GetComponentInParent<PlayerAmbientActivityHandler>()
+            : null;
+
+        if (handler == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[Interactable:{name}] No se encontró PlayerAmbientActivityHandler en el interactor.");
+#endif
+            return;
+        }
+
+        if (!_worldPoint.TryOccupy(interactor.transform))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[Interactable:{name}] NPCWorldPoint ya ocupado — no se puede iniciar actividad.");
+#endif
+            return;
+        }
+
+        handler.StartActivity(_worldPoint);
+    }
+
     void AfterUse()
     {
         if (singleUse && !used)
@@ -480,6 +532,7 @@ public class Interactable : MonoBehaviour
         if (!enable) SetHintVisible(false);
     }
 
+    public string DialogueCharacterId => dialogueCharacterId;
     public void SetDialogue(DialogueAsset asset) => dialogue = asset;
     public void SetMode(InteractableMode newMode) => mode = newMode;
 

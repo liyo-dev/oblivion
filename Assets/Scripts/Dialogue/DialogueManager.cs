@@ -109,6 +109,11 @@ public class DialogueManager : MonoBehaviour
     private Transform _currentNpc;
     private NPCSimpleAnimator _activeDialogueSpeakerAnimator;
     private bool _activeDialogueSpeakerIsPlayer;
+    // Caché del NPCSimpleAnimator del jugador activo (se reutiliza por línea sin GetComponent extra)
+    private NPCSimpleAnimator _playerDialogueAnimator;
+    // ID de personaje del NPC principal para matching en ActivateSpeakerTalkAnimation
+    // Se obtiene de NPCBehaviourManagerV2.dialogueCharacterId o de Interactable.dialogueCharacterId
+    private string _currentNpcDialogueCharacterId;
     
     // Protección contra input inmediato al abrir diálogo
     private float _dialogueOpenedAt = -999f;
@@ -306,6 +311,10 @@ public class DialogueManager : MonoBehaviour
         _onEnd = onFinished;
         _index = -1;
 
+        // Cachear el NPCSimpleAnimator del jugador para animaciones corporales durante el diálogo
+        if (PlayerService.TryGetPlayer(out var pGo, allowSceneLookup: true) && pGo != null)
+            _playerDialogueAnimator = pGo.GetComponent<NPCSimpleAnimator>();
+
         // Marcar el momento en que se abre el diálogo para ignorar inputs inmediatos
         _dialogueOpenedAt = Time.unscaledTime;
         if (verboseLogging) Debug.Log($"[DialogueManager] 🕐 Diálogo abierto en t={_dialogueOpenedAt:F3} - período de gracia activo");
@@ -376,7 +385,16 @@ public class DialogueManager : MonoBehaviour
     public void StartDialogue(DialogueAsset asset, Transform npc, Action onFinished = null)
     {
         _currentNpc = npc;
-        
+        if (npc != null)
+        {
+            var npcMgr = npc.GetComponent<Game.NPC.NPCBehaviourManagerV2>();
+            _currentNpcDialogueCharacterId = npcMgr != null
+                ? npcMgr.DialogueCharacterId
+                : npc.GetComponent<Interactable>()?.DialogueCharacterId;
+        }
+        else
+            _currentNpcDialogueCharacterId = null;
+
         // Posicionar party members ANTES de iniciar la cámara cinematográfica
         // para que estén en su sitio cuando la cámara capture las posiciones iniciales
         if (Game.NPC.PlayerParty.HasInstance)
@@ -518,6 +536,8 @@ public class DialogueManager : MonoBehaviour
 
         // ✅ Finalizar visuales del speaker activo (sea player, NPC o party member)
         ClearActiveSpeakerAnimations();
+        _playerDialogueAnimator = null;
+        _currentNpcDialogueCharacterId = null;
 
         // ✅ Emitir evento - los NPCs que lo necesiten se suscriben
         // NPCSimpleAnimator maneja su propia rotación y animaciones
@@ -979,12 +999,14 @@ public class DialogueManager : MonoBehaviour
             if (_activeDialogueSpeakerIsPlayer && _activeDialogueSpeakerAnimator == null)
             {
                 SetPlayerTalkingAnimation(true);
+                _playerDialogueAnimator?.PlayBodyEmotion(line.emotion);
                 return;
             }
 
             ClearActiveSpeakerAnimations();
             SetPlayerTalkingAnimation(true);
             ActivatePlayerInteractionAnimation(true);
+            _playerDialogueAnimator?.PlayBodyEmotion(line.emotion);
             _activeDialogueSpeakerIsPlayer = true;
             if (verboseLogging) Debug.Log("[DialogueManager] 🗣️ Player speaker activado");
             return;
@@ -993,10 +1015,13 @@ public class DialogueManager : MonoBehaviour
         NPCSimpleAnimator speakerAnimator = null;
         string speakerDebugName = speakerId;
 
-        // Caso 1: NPC principal
-        if (speakerId == "MainNPC" || (_currentNpc != null && _currentNpc.name == speakerId))
+        // Caso 1: NPC principal (matching por nombre de GO, por dialogueCharacterId, o por "MainNPC" genérico)
+        if (_currentNpc != null)
         {
-            if (_currentNpc != null)
+            bool isMainNpc = speakerId == "MainNPC"
+                || _currentNpc.name == speakerId
+                || (!string.IsNullOrEmpty(_currentNpcDialogueCharacterId) && _currentNpcDialogueCharacterId == speakerId);
+            if (isMainNpc)
             {
                 speakerAnimator = _currentNpc.GetComponent<NPCSimpleAnimator>();
                 speakerDebugName = _currentNpc.name;
@@ -1041,16 +1066,18 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
-        // Si sigue hablando el mismo speaker, evitar re-disparar animaciones cada línea
+        // Si sigue hablando el mismo speaker, no re-disparar BeginInteraction pero sí actualizar la emoción
         if (!_activeDialogueSpeakerIsPlayer && _activeDialogueSpeakerAnimator == speakerAnimator)
         {
             speakerAnimator.SetTalking(true);
+            speakerAnimator.PlayBodyEmotion(line.emotion);
             return;
         }
 
         ClearActiveSpeakerAnimations();
         speakerAnimator.BeginInteraction();
         speakerAnimator.SetTalking(true);
+        speakerAnimator.PlayBodyEmotion(line.emotion);
         _activeDialogueSpeakerAnimator = speakerAnimator;
         if (verboseLogging) Debug.Log($"[DialogueManager] 🗣️ Speaker '{speakerDebugName}' activado");
     }

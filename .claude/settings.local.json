@@ -108,7 +108,12 @@
       "Bash(Select-Object FullName, PSIsContainer)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Height Fog\\\\URP \\(Universal Render RP package required\\)\" -Recurse -File | ForEach-Object { $_.FullName })",
       "Bash(dir \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Kevin Iglesias\" /s /b)",
-      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Kevin Iglesias\" -Recurse -File | Where-Object { $_.Extension -in \".fbx\",\".anim\",\".controller\",\".overrideController\" } | Select-Object -ExpandProperty FullName | Sort-Object)"
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Kevin Iglesias\" -Recurse -File | Where-Object { $_.Extension -in \".fbx\",\".anim\",\".controller\",\".overrideController\" } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Bash(Get-Content \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Art\\\\Characters\\\\Animator\\\\NPC_NoWeapon.controller\")",
+      "Bash(Select-String -Pattern \"Talk|Cheer|Angry|Laugh|Pain|m_Name\")",
+      "Bash(Select-Object -First 80)",
+      "Bash(perl -i -0777 -pe 's/  persistLastDistance: 0\\\\n  onJoinedParty:/  persistLastDistance: 0\\\\n  dialogueCharacterId: CHAR_LETY_VICKY\\\\n  onJoinedParty:/g' \"Lety.prefab\")",
+      "Bash(which perl *)"
     ]
   }
 }
