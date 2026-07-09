@@ -15,6 +15,7 @@ namespace Game.NPC.States
         private readonly bool _alreadyAtPoint;
 
         private bool _occupied;
+        private bool _autoRotationDisabled;
         private float _occupationTimer;
         private float _occupationDuration;
 
@@ -28,8 +29,9 @@ namespace Game.NPC.States
         {
             base.OnEnter(context);
 
-            _occupied        = false;
-            _occupationTimer = 0f;
+            _occupied              = false;
+            _autoRotationDisabled  = false;
+            _occupationTimer       = 0f;
 
             if (_worldPoint == null || _worldPoint.IsOccupied)
             {
@@ -78,6 +80,13 @@ namespace Game.NPC.States
                     context.Animator?.StopAmbientActivity(_worldPoint.activityType, _worldPoint);
             }
 
+            // Restaurar rotación automática si fue desactivada al ocupar el punto
+            if (_autoRotationDisabled)
+            {
+                context.Animator?.EnableAutoRotation();
+                _autoRotationDisabled = false;
+            }
+
             base.OnExit(context);
         }
 
@@ -118,7 +127,19 @@ namespace Game.NPC.States
             StopMovement(context);
 
             if (_worldPoint.overrideFacing)
+            {
                 context.Transform.rotation = _worldPoint.InteractionRotation;
+                // Desactivar la rotación automática de NPCSimpleAnimator para que ApplySmoothRotation
+                // (LateUpdate) no sobreescriba la orientación del punto con el _targetRotation antiguo
+                context.Animator?.DisableAutoRotation();
+                _autoRotationDisabled = true;
+            }
+
+            // Snap exacto al punto de sentarse (igual que PlayerAmbientActivityHandler.SnapToSeat)
+            if (context.Agent != null && context.Agent.enabled && context.Agent.isOnNavMesh)
+                context.Agent.Warp(_worldPoint.InteractionPosition);
+            else
+                context.Transform.position = _worldPoint.InteractionPosition;
 
             context.Animator?.PlayAmbientActivity(_worldPoint.activityType, _worldPoint);
         }

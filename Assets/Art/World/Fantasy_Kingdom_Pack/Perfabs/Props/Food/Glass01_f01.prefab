@@ -128,9 +128,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCWorldPoint
   activityType: 6
-  interactionPoint: {fileID: 448800}
+  interactionPoint: {fileID: 0}
   overrideFacing: 0
   requiredProximity: 1.5
+  prop: {fileID: 448800}
+  propHandOffset: {x: 0, y: 0, z: 0}
+  propHandRotation: {x: 0, y: 0, z: 0}
   minOccupationDuration: 15
   maxOccupationDuration: 90
 --- !u!114 &861756146208832007
@@ -153,6 +156,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}

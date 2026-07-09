@@ -12525,13 +12525,13 @@ MonoBehaviour:
   jumpTakeoffBoost: 1.5
   minJumpTakeoffSpeed: 3.5
   jumpSustainMultiplier: 0.65
-  useSoraStyleJump: 1
-  soraAscentGravityMultiplier: 0.7
-  soraApexGravityMultiplier: 0.3
-  soraFallGravityMultiplier: 1.55
-  soraApexVelocityThreshold: 0.9
+  useActionRPGJump: 1
+  ascentGravityMultiplier: 0.7
+  apexGravityMultiplier: 0.3
+  fallGravityMultiplier: 1.55
+  apexVelocityThreshold: 0.9
   airSpeed: 5
-  airSmooth: 6
+  airSmooth: 16
   extraGravity: -20
   limitFallVelocity: -15
   groundLayer:

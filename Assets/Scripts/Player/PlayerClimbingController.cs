@@ -60,7 +60,6 @@ public class PlayerClimbingController : MonoBehaviour
     private bool _controllerWasEnabled = true;
     private RaycastHit _lastHit;
     private string _lastMissingStateWarn;
-    private int _lastClimbStateHash = -1;
     private float _originalAnimatorSpeed = 1f;
 
     private const float MinInputToAnimate = 0.1f;
@@ -327,14 +326,12 @@ public class PlayerClimbingController : MonoBehaviour
         if (_animator == null)
             return;
 
-        string state;
-        if (!hasMovementInput || Mathf.Abs(vertical) <= MinInputToAnimate)
-            state = climbIdleState;
-        else
-            state = vertical > 0f ? climbUpState : climbDownState;
-
-        if (string.IsNullOrEmpty(state))
+        if (!hasMovementInput)
+        {
+            // Congelar el animator en el frame actual, sin CrossFade
+            _animator.speed = 0f;
             return;
+        }
 
         if (climbAnimatorLayer < 0 || climbAnimatorLayer >= _animator.layerCount)
         {
@@ -346,38 +343,31 @@ public class PlayerClimbingController : MonoBehaviour
             return;
         }
 
-        int hash = Animator.StringToHash(state);
+        // Restaurar velocidad antes del CrossFade para que la transición avance desde el inicio
+        _animator.speed = 1f;
+
+        string targetState = vertical > 0f ? climbUpState : climbDownState;
+        if (string.IsNullOrEmpty(targetState))
+            return;
+
+        int hash = Animator.StringToHash(targetState);
         if (!_animator.HasState(climbAnimatorLayer, hash))
         {
-            if (debugLogs && _lastMissingStateWarn != state)
+            if (debugLogs && _lastMissingStateWarn != targetState)
             {
-                Debug.LogWarning("[PlayerClimbingController] Estado de animación no encontrado: " + state + " en capa " + climbAnimatorLayer);
-                _lastMissingStateWarn = state;
+                Debug.LogWarning("[PlayerClimbingController] Estado de animación no encontrado: " + targetState + " en capa " + climbAnimatorLayer);
+                _lastMissingStateWarn = targetState;
             }
             return;
         }
 
+        // Evitar reiniciar CrossFade si ya estamos en ese estado o ya hay una transición hacia él
         var current = _animator.GetCurrentAnimatorStateInfo(climbAnimatorLayer);
-
-        // Si no hay input de movimiento, usamos el último estado válido y pausamos la animación
-        if (!hasMovementInput || Mathf.Abs(vertical) <= MinInputToAnimate)
-        {
-            int targetHash = _lastClimbStateHash >= 0 ? _lastClimbStateHash : hash;
-            if (current.shortNameHash != targetHash)
-            {
-                _animator.CrossFade(targetHash, 0.05f, climbAnimatorLayer);
-            }
-            _lastClimbStateHash = targetHash;
-            _animator.speed = 0f;
+        var next = _animator.GetNextAnimatorStateInfo(climbAnimatorLayer);
+        if (current.shortNameHash == hash || next.shortNameHash == hash)
             return;
-        }
 
-        // Con movimiento, reproducimos up/down y aseguramos velocidad normal
-        if (current.shortNameHash != hash)
-            _animator.CrossFade(hash, 0.05f, climbAnimatorLayer);
-
-        _lastClimbStateHash = hash;
-        _animator.speed = 1f;
+        _animator.CrossFade(hash, 0.05f, climbAnimatorLayer);
     }
 
     private void ExitClimb(bool force = false)

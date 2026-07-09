@@ -42,16 +42,16 @@ namespace Invector.vCharacterController
         [Range(0f, 20f)] public float minJumpTakeoffSpeed = 7.6f;
         [Tooltip("Multiplicador para el empuje de salto mantenido. 1 = comportamiento clásico, menor valor = salto menos 'lunar'.")]
         [Range(0f, 1f)] public float jumpSustainMultiplier = 0.06f;
-        [Tooltip("Activa un perfil de salto estilo action-RPG (inspirado en Sora/KH).")]
-        public bool useSoraStyleJump = true;
+        [Tooltip("Activa un perfil de salto action-RPG con gravedad diferenciada por fase.")]
+        public bool useActionRPGJump = true;
         [Tooltip("Gravedad mientras asciende (1 = normal, <1 más flotante).")]
-        [Range(0.1f, 4f)] public float soraAscentGravityMultiplier = 1.9f;
+        [Range(0.1f, 4f)] public float ascentGravityMultiplier = 1.9f;
         [Tooltip("Gravedad cerca del ápice (hang time).")]
-        [Range(0.05f, 4f)] public float soraApexGravityMultiplier = 2.8f;
+        [Range(0.05f, 4f)] public float apexGravityMultiplier = 2.8f;
         [Tooltip("Gravedad al caer (1 = normal, >1 caída más firme).")]
-        [Range(0.5f, 6f)] public float soraFallGravityMultiplier = 3.8f;
+        [Range(0.5f, 6f)] public float fallGravityMultiplier = 3.8f;
         [Tooltip("Umbral de velocidad vertical para considerar que está en ápice.")]
-        [Range(0.01f, 2f)] public float soraApexVelocityThreshold = 0.06f;
+        [Range(0.01f, 2f)] public float apexVelocityThreshold = 0.06f;
 
         [Tooltip("Speed that the character will move while airborne")]
         public float airSpeed = 5f;
@@ -250,7 +250,8 @@ namespace Invector.vCharacterController
                 return;
             }
 
-            _rigidbody.linearVelocity = targetVelocity;
+            if (!_rigidbody.isKinematic)
+                _rigidbody.linearVelocity = targetVelocity;
         }
 
         public virtual void CheckSlopeLimit()
@@ -317,10 +318,10 @@ namespace Invector.vCharacterController
             // Aplicamos un empuje decreciente según el tiempo restante de salto.
             if (jumpHeight > 0f)
             {
-                float timer = useSoraStyleJump ? Mathf.Max(0.0001f, Mathf.Min(jumpTimer, 0.14f)) : Mathf.Max(0.0001f, jumpTimer);
+                float timer = useActionRPGJump ? Mathf.Max(0.0001f, Mathf.Min(jumpTimer, 0.14f)) : Mathf.Max(0.0001f, jumpTimer);
                 float normalizedJumpTime = Mathf.Clamp01(jumpCounter / timer);
-                float sustainMultiplier = useSoraStyleJump ? Mathf.Min(jumpSustainMultiplier, 0.08f) : jumpSustainMultiplier;
-                float sustainFactor = useSoraStyleJump
+                float sustainMultiplier = useActionRPGJump ? Mathf.Min(jumpSustainMultiplier, 0.08f) : jumpSustainMultiplier;
+                float sustainFactor = useActionRPGJump
                     ? (normalizedJumpTime * normalizedJumpTime * normalizedJumpTime * normalizedJumpTime) * sustainMultiplier
                     : normalizedJumpTime * sustainMultiplier;
                 float targetUpSpeed = jumpHeight * sustainFactor;
@@ -423,9 +424,9 @@ namespace Invector.vCharacterController
                     verticalVelocity = _rigidbody.linearVelocity.y;
 
                     float gravityMultiplier = 1f;
-                    if (useSoraStyleJump)
+                    if (useActionRPGJump)
                     {
-                        gravityMultiplier = GetSoraJumpGravityMultiplier(verticalVelocity);
+                        gravityMultiplier = GetJumpGravityMultiplier(verticalVelocity);
                     }
                     else if (isJumping)
                     {
@@ -435,20 +436,20 @@ namespace Invector.vCharacterController
                     if (gravityMultiplier > 0f)
                         _rigidbody.AddForce(transform.up * (extraGravity * gravityMultiplier * Time.deltaTime), ForceMode.VelocityChange);
                 }
-                else if (!isJumping || useSoraStyleJump)
+                else if (!isJumping || useActionRPGJump)
                 {
-                    float nearGroundMultiplier = useSoraStyleJump ? 2.2f : 2f;
+                    float nearGroundMultiplier = useActionRPGJump ? 2.2f : 2f;
                     _rigidbody.AddForce(transform.up * (extraGravity * nearGroundMultiplier * Time.deltaTime), ForceMode.VelocityChange);
                 }
             }
         }
 
-        protected virtual float GetSoraJumpGravityMultiplier(float currentVerticalVelocity)
+        protected virtual float GetJumpGravityMultiplier(float currentVerticalVelocity)
         {
-            float apexThreshold = Mathf.Min(soraApexVelocityThreshold, 0.08f);
-            float ascent = Mathf.Max(soraAscentGravityMultiplier, 1.8f);
-            float apex = Mathf.Max(soraApexGravityMultiplier, 2.6f);
-            float fall = Mathf.Max(soraFallGravityMultiplier, 3.4f);
+            float apexThreshold = Mathf.Min(apexVelocityThreshold, 0.08f);
+            float ascent = Mathf.Max(ascentGravityMultiplier, 1.8f);
+            float apex = Mathf.Max(apexGravityMultiplier, 2.6f);
+            float fall = Mathf.Max(fallGravityMultiplier, 3.4f);
 
             if (currentVerticalVelocity > apexThreshold)
                 return ascent;

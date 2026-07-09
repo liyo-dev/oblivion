@@ -39,6 +39,7 @@ public class HoldToSkipUI : MonoBehaviour
     private float targetAlpha;
     private bool completed;
     private InputAction fallback;   // por si no asignas nada
+    private bool _pushedUIMode;     // rastrea si nosotros activamos el modo UI
 
     public enum SkipAction
     {
@@ -76,7 +77,14 @@ public class HoldToSkipUI : MonoBehaviour
 
     void OnEnable()
     {
-        // Intentar configurar input, con retry si falla
+        // El mapa UI está deshabilitado por defecto (PlayerInputManager inicia en modo Gameplay).
+        // Las escenas cinemáticas standalone (ej. Prologo) no llaman PushUIMode externamente,
+        // así que lo hacemos aquí para que Controls.UI.Submit pueda recibir input.
+        if (Core.PlayerInputManager.Instance != null)
+        {
+            Core.PlayerInputManager.Instance.PushUIMode();
+            _pushedUIMode = true;
+        }
         StartCoroutine(InitializeInputWithRetry());
         ResetHold();
     }
@@ -169,22 +177,27 @@ public class HoldToSkipUI : MonoBehaviour
 
     void OnDisable()
     {
-        // Detener corrutinas de retry si están corriendo
         StopAllCoroutines();
-        
+
         if (holdAction != null)
         {
             holdAction.started  -= OnHoldStarted;
             holdAction.canceled -= OnHoldCanceled;
         }
-        
+
         if (fallback != null)
         {
             fallback.Disable();
             fallback.Dispose();
             fallback = null;
         }
-        
+
+        if (_pushedUIMode && Core.PlayerInputManager.Instance != null)
+        {
+            Core.PlayerInputManager.Instance.PopUIMode();
+            _pushedUIMode = false;
+        }
+
         holdAction = null;
         ResetHold();
     }

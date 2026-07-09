@@ -26,10 +26,10 @@ MonoBehaviour:
   overlayMaxAlpha: 0.85
   changeMusic: 1
   musicZoneId: Dungeon
-  controlCamera: 0
-  cameraMode: 0
+  controlCamera: 1
+  cameraMode: 2
   cameraHorizontalAngle: 90
-  cameraDistance: 2.5
+  cameraDistance: 6
   transitionDuration: 1.5
   transitionEase: 4
   description: 

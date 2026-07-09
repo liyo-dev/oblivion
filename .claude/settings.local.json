@@ -113,7 +113,9 @@
       "Bash(Select-String -Pattern \"Talk|Cheer|Angry|Laugh|Pain|m_Name\")",
       "Bash(Select-Object -First 80)",
       "Bash(perl -i -0777 -pe 's/  persistLastDistance: 0\\\\n  onJoinedParty:/  persistLastDistance: 0\\\\n  dialogueCharacterId: CHAR_LETY_VICKY\\\\n  onJoinedParty:/g' \"Lety.prefab\")",
-      "Bash(which perl *)"
+      "Bash(which perl *)",
+      "Bash(python *)",
+      "Bash(PowerShell *)"
     ]
   }
 }

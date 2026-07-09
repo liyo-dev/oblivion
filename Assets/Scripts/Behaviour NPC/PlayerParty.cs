@@ -385,6 +385,8 @@ namespace Game.NPC
             for (int i = 0; i < _members.Count; i++)
             {
                 if (_members[i] == hiddenNpc) continue;
+                // En modo libre, solo se teletransportan los que están siguiendo activamente
+                if (_members[i].NPCManager?.Context?.IsPinnedByParty == true) continue;
                 TeleportMemberToPlayer(_members[i], i);
             }
         }

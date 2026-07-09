@@ -3,7 +3,7 @@ using UnityEngine;
 public enum OrbType { Health, Mana, SpecialCharge }
 
 /// <summary>
-/// Orbe de combate estilo Kingdom Hearts.
+/// Orbe de combate.
 /// Fases: Launch (impulso hacia arriba) -> Bounce (rebotes contra el suelo) ->
 ///        Hover (flotar con sine wave) -> Attracted (vuela hacia el jugador).
 /// Efectos visuales procedurales: rotacion, escala pulsante, glow con Light.
@@ -416,7 +416,6 @@ public class BattleOrb : MonoBehaviour
         }
 
         // Curva suave: los orbes no van en linea recta, suben ligeramente y curvan
-        // Efecto de "swoosh" similar a KH
         Vector3 moveDir = dir.normalized;
         float distFactor = Mathf.Clamp01(dist / attractRadius);
         float liftAmount = distFactor * 0.5f;

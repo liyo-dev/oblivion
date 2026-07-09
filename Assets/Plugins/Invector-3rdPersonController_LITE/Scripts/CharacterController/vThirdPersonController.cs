@@ -182,8 +182,8 @@ namespace Invector.vCharacterController
             if (_rigidbody != null)
             {
                 var vel = _rigidbody.linearVelocity;
-                float soraMinImpulse = useSoraStyleJump ? 7.6f : 0f;
-                float baseJumpImpulse = Mathf.Max(jumpHeight * jumpTakeoffBoost, minJumpTakeoffSpeed, soraMinImpulse);
+                float actionRPGMinImpulse = useActionRPGJump ? 7.6f : 0f;
+                float baseJumpImpulse = Mathf.Max(jumpHeight * jumpTakeoffBoost, minJumpTakeoffSpeed, actionRPGMinImpulse);
 
                 // Si llega con velocidad negativa por pendiente/step, limpiamos antes del despegue.
                 if (vel.y < 0f)
@@ -204,8 +204,8 @@ namespace Invector.vCharacterController
             if (jumpSfx != null)
                 PlaySFX(jumpSfx);
 
-            if (input.sqrMagnitude < 0.1f) animator.CrossFadeInFixedTime("Jump", 0.1f, 0);
-            else                            animator.CrossFadeInFixedTime("JumpMove", 0.2f, 0);
+            if (input.sqrMagnitude < 0.1f) animator.CrossFadeInFixedTime("Jump", 0.05f, 0);
+            else                            animator.CrossFadeInFixedTime("JumpMove", 0.07f, 0);
         }
 
         private void ApplyMove(Vector3 dir)
