@@ -124,7 +124,16 @@ public class MainMenuController : MonoBehaviour
     void OnEnable()
     {
         GameState.Push(GamePhase.MainMenu);
-        Core.PlayerInputManager.Instance?.PushUIMode();
+
+        // Resetear cualquier UIMode residual del gameplay anterior antes de entrar al menú.
+        // Sistemas como NPCInteractiveNarrativeExecutor o DialogueManager pueden dejar el
+        // contador desbalanceado si el jugador muere mientras interactúan con algo.
+        var pim = Core.PlayerInputManager.Instance;
+        if (pim != null)
+        {
+            pim.ForceRestoreGameplayMode();
+            pim.PushUIMode();
+        }
 
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();

@@ -859,6 +859,37 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 101784, guid: 4811bbad6a878994580a7805bd58225a, type: 3}
   m_PrefabInstance: {fileID: 607139039}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4991171
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4991172}
+  m_Layer: 0
+  m_Name: Water - Blocker en el GO del agua
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4991172
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4991171}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 321063509}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &5729494
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -69805,6 +69836,7 @@ Transform:
   - {fileID: 411460480}
   - {fileID: 1419071516}
   - {fileID: 349253475}
+  - {fileID: 4991172}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &321541245
@@ -74100,8 +74132,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 12.651337, y: 21.653225, z: 77.164406}
-  m_Center: {x: -55.225784, y: -2.1161847, z: -4.9301186}
+  m_Size: {x: 22.572952, y: 21.653225, z: 77.164406}
+  m_Center: {x: -60.186592, y: -2.1161842, z: -4.9301186}
 --- !u!4 &349253475
 Transform:
   m_ObjectHideFlags: 0
@@ -151950,9 +151982,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecab3294caa74b28af4942dee862924f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomExitBlocker
-  requirementMode: 0
+  requirementMode: 3
   requiredQuestIds: []
-  requiredQuestRefs: []
+  requiredQuestRefs:
+  - {fileID: 11400000, guid: 9fb084e325631df429d6365395b71d5a, type: 2}
   blockedMessageKey: "Q_NI\xD1OPEZ"
   messageSpeaker: 
   messageCooldown: 1.5
@@ -378960,7 +378993,6 @@ MonoBehaviour:
   uiContainer: {fileID: 61417103}
   timerText: {fileID: 361946605}
   countdownText: {fileID: 1785320599}
-  messageText: {fileID: 1785320599}
   objectiveText: {fileID: 712693309}
   exitHintText: {fileID: 1572990265}
   instructionPanel: {fileID: 54352916}

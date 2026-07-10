@@ -179,6 +179,9 @@ public class GameOverManager : MonoBehaviour
         _isGameOverActive = true;
         Debug.Log("[GameOverManager] 💀 Iniciando secuencia de Game Over cinematográfica");
 
+        // 0. Cerrar cualquier diálogo activo para limpiar el estado de UIMode antes de la transición
+        DialogueManager.Instance?.Close();
+
         // 1. Flash rojo de muerte (via FeedbackService)
         if (enableDeathFlash)
         {

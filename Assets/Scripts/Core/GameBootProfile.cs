@@ -774,14 +774,15 @@ public class GameBootProfile : ScriptableObject
                     var existingIndex = existingEntries[npcId];
                     var existing = preset.npcPositions[existingIndex];
 
-                    // Solo actualizar si lastPosition es diferente (por si hubo cambios posteriores)
+                    // Solo actualizar posición si lastPosition es diferente (por si hubo cambios posteriores)
                     if (Vector3.Distance(existing.position, position) > 0.01f)
                     {
                         existing.position = position;
-                        existing.rotation = npc.transform.rotation;
-                        preset.npcPositions[existingIndex] = existing;
                         Debug.Log($"[GameBootProfile] Actualizada posición de NPC '{npcId}' desde lastPosition/transform: {position}");
-                      }
+                    }
+                    // Siempre actualizar la rotación para capturar turnAroundOnArrival y otros giros
+                    existing.rotation = npc.transform.rotation;
+                    preset.npcPositions[existingIndex] = existing;
                 }
                 // Si la posición sigue siendo default, mantener la entrada del preset sin cambios
                 continue;

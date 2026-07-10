@@ -110,7 +110,6 @@ public class TagMinigameController : MonoBehaviour
     [SerializeField] private GameObject uiContainer;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI countdownText;
-    [SerializeField] private TextMeshProUGUI messageText;
     [SerializeField] private TextMeshProUGUI objectiveText;
     [Tooltip("Texto pequeño que muestra el hint de salida durante el minijuego (ej: '· Start: Salir').")]
     [SerializeField] private TextMeshProUGUI exitHintText;
@@ -274,7 +273,6 @@ public class TagMinigameController : MonoBehaviour
     private readonly List<SuspendedBehaviourState> _suspendedTargetNpcSystems = new List<SuspendedBehaviourState>();
     private bool _targetNpcSystemsSuspended;
     private bool _loggedMissingProtectionConfig;
-    private Coroutine _clearMessageCoroutine;
 
     // Para integración con sistema narrativo
     public string MinigameId => minigameId;
@@ -1289,10 +1287,7 @@ public class TagMinigameController : MonoBehaviour
         SpawnShieldForTarget(target);
         UpdateObjectiveUI();
 
-        int required = RequiredProtectCount;
-        ShowMessage(string.Format(Loc(protectNpcMessageFormat), Mathf.Min(protectedCount, required), required), 1.4f);
-
-        if (HasProtectionObjectiveConfigured && protectedCount >= required)
+        if (HasProtectionObjectiveConfigured && protectedCount >= RequiredProtectCount)
         {
             if (showEscapeCountdown)
                 StartCoroutine(WaitForKingdomExit());
@@ -1389,6 +1384,8 @@ public class TagMinigameController : MonoBehaviour
     {
         EnsureObjectiveTextReference();
         if (objectiveText == null) return;
+
+        if (_waitingForKingdomExit) return;
 
         if (!HasProtectionObjectiveConfigured)
         {
@@ -1688,7 +1685,6 @@ public class TagMinigameController : MonoBehaviour
             uiContainer.SetActive(true);
             if (timerText) timerText.text = "";
             if (countdownText) countdownText.text = "";
-            if (messageText) messageText.text = "";
             if (objectiveText) objectiveText.text = "";
         }
 
@@ -1895,7 +1891,6 @@ public class TagMinigameController : MonoBehaviour
         // Restaurar el timer en su posición al terminar la cuenta atrás
         if (timerText) timerText.text = FormatTime(duration);
         if (countdownText) countdownText.text = "";
-        ShowMessage(Loc(startMessage), 1.5f);
         
         // ✅ Los efectos de enfado (cara roja, VFX) se mantienen durante TODO el minijuego
         // Solo se desactivan cuando termina (en WinMinigame, StopMinigame, o si te atrapan)
@@ -2373,7 +2368,6 @@ public class TagMinigameController : MonoBehaviour
         FeedbackService.ScreenFlash(caughtFlashColor, caughtFlashDuration);
         ReleaseIntroCameraLock();
         OnPlayerCaught?.Invoke();
-        ShowMessage(Loc(caughtMessage), 2f);
 
         StartCoroutine(RestartAfterCaught());
     }
@@ -2401,7 +2395,6 @@ public class TagMinigameController : MonoBehaviour
 
         if (chaser) chaser.StopChasing();
 
-        ShowMessage(Loc(timeFailedMessage), 2f);
         OnMinigameLost?.Invoke();
 
         StartCoroutine(RestartAfterTimeout());
@@ -2491,7 +2484,6 @@ public class TagMinigameController : MonoBehaviour
         if (chaser) chaser.StopChasing();
         ReleaseIntroCameraLock();
 
-        ShowMessage(Loc(winMessage), 3f);
         HideAllProtectionIcons();
         RestoreTargetNpcSystemsAfterMinigame();
         if (clearShieldsOnWin)
@@ -2540,12 +2532,8 @@ public class TagMinigameController : MonoBehaviour
     {
         _waitingForKingdomExit = true;
 
-        if (messageText)
-        {
-            if (_clearMessageCoroutine != null) { StopCoroutine(_clearMessageCoroutine); _clearMessageCoroutine = null; }
-            messageText.text = Loc(escapeMessage);
-            messageText.enabled = true;
-        }
+        if (objectiveText)
+            objectiveText.text = Loc(escapeMessage);
 
         float blinkTimer = 0f;
         bool visible = true;
@@ -2556,12 +2544,12 @@ public class TagMinigameController : MonoBehaviour
             {
                 blinkTimer = 0f;
                 visible = !visible;
-                if (messageText) messageText.enabled = visible;
+                if (objectiveText) objectiveText.enabled = visible;
             }
             yield return null;
         }
 
-        if (messageText) messageText.enabled = true;
+        if (objectiveText) objectiveText.enabled = true;
     }
 
     /// <summary>
@@ -2577,13 +2565,8 @@ public class TagMinigameController : MonoBehaviour
 
     private IEnumerator EscapeCountdownAfterWin()
     {
-        // Esperar a que termine el mensaje de victoria (igual que la duración pasada a ShowMessage)
         yield return new WaitForSeconds(3f);
 
-        // Mostrar mensaje de huida
-        if (messageText) messageText.text = Loc(escapeMessage);
-
-        // Cuenta atrás en el timerText
         float countdown = Mathf.Max(1f, escapeCountdownDuration);
         while (countdown > 0f)
         {
@@ -2592,9 +2575,8 @@ public class TagMinigameController : MonoBehaviour
             countdown -= 1f;
         }
 
-        if (timerText)    timerText.text    = "";
-        if (messageText)  messageText.text  = "";
-        if (uiContainer)  uiContainer.SetActive(false);
+        if (timerText)   timerText.text   = "";
+        if (uiContainer) uiContainer.SetActive(false);
     }
 
     /// <summary>
@@ -2686,23 +2668,6 @@ public class TagMinigameController : MonoBehaviour
         {
             timerText.text = FormatTime(remainingTime);
         }
-    }
-
-    private void ShowMessage(string msg, float messageDuration)
-    {
-        if (messageText)
-        {
-            if (_clearMessageCoroutine != null) { StopCoroutine(_clearMessageCoroutine); _clearMessageCoroutine = null; }
-            messageText.text = msg;
-            _clearMessageCoroutine = StartCoroutine(ClearMessageAfter(messageDuration));
-        }
-    }
-
-    private IEnumerator ClearMessageAfter(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        if (messageText) messageText.text = "";
-        _clearMessageCoroutine = null;
     }
 
     private string FormatTime(float time)

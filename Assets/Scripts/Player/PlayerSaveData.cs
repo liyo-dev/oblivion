@@ -153,6 +153,7 @@ public class PlayerSaveData
                 {
                     npcId = e.npcId,
                     position = e.position,
+                    rotation = e.rotation,
                     hasActiveState = e.hasActiveState,
                     isActive = e.isActive
                 });

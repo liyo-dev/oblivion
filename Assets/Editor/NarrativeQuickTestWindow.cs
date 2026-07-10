@@ -438,6 +438,7 @@ public class NarrativeQuickTestWindow : EditorWindow
                 {
                     npcId = npc.npcId,
                     position = npc.position,
+                    rotation = npc.rotation,
                     hasActiveState = npc.hasActiveState,
                     isActive = npc.isActive
                 });

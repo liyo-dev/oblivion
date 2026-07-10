@@ -86,11 +86,26 @@ public class PlayerFlyingController : MonoBehaviour
     [SerializeField] private float trailSpeedThreshold = 1.5f;
     [SerializeField] private GameObject boostVfxPrefab;
     [SerializeField] private GameObject landingVfxPrefab;
+    [Header("Vuelo - Movimiento visual")]
+    [Tooltip("Amplitud (metros) del movimiento vertical oscilante mientras el jugador está en vuelo.")]
+    [SerializeField] private float flightBobAmplitude = 0.18f;
+    [Tooltip("Frecuencia (Hz) del movimiento oscilante mientras el jugador está en vuelo.")]
+    [SerializeField] private float flightBobFrequency = 1.2f;
+    [Header("Vuelo - Partículas de pies")]
+    [Tooltip("Prefab (ParticleSystem) que se instanciará en los pies mientras el jugador vuela.")]
+    [SerializeField] private GameObject footVfxPrefab;
+    [Tooltip("Transform donde colocar las partículas de pies. Si es null, se usan las coordenadas del jugador.")]
+    [SerializeField] private Transform feetAttach;
 
     private GameObject _trailInstance;
     private ParticleSystem _trailPs;
     private GameObject _boostInstance;
     private ParticleSystem _boostPs;
+    // Instancia y sistema de partículas de los pies
+    private GameObject _footVfxInstance;
+    private ParticleSystem _footVfxPs;
+    // Estado interno para evitar llamadas repetidas
+    private bool _footVfxActive = false;
 
     void Awake()
     {
@@ -371,6 +386,7 @@ public class PlayerFlyingController : MonoBehaviour
         CacheCameraTransform();
         PlayFlightState(flyIdleState);
         SpawnTrailIfNeeded();
+        SpawnFootVfxIfNeeded();
 
         // Ensure flight animator layer has full weight so flight states take precedence
         if (_animator != null && locomotionLayerIndex >= 0 && locomotionLayerIndex < _animator.layerCount)
@@ -451,6 +467,7 @@ public class PlayerFlyingController : MonoBehaviour
         }
         PlayLandingVfx();
         StopFlightVfx();
+        StopFootVfx();
 
         if (_rigidbody != null)
         {
@@ -527,13 +544,23 @@ public class PlayerFlyingController : MonoBehaviour
         if (_jumpHeld)
             verticalInput -= descendSpeed;
 
+        // Añadir control vertical del jugador
         desired += Vector3.up * verticalInput;
+
+        // Añadir un pequeño bob oscilante para simular flotación cuando está en vuelo.
+        // Usamos Time.fixedTime para coherencia con FixedUpdate.
+        if (_isFlying && (Mathf.Abs(flightBobAmplitude) > 0.0001f && Mathf.Abs(flightBobFrequency) > 0.0001f))
+        {
+            float bob = Mathf.Sin(Time.fixedTime * (2f * Mathf.PI * flightBobFrequency)) * flightBobAmplitude;
+            desired += Vector3.up * bob;
+        }
 
         Vector3 current = _rigidbody.linearVelocity;
         Vector3 target = Vector3.Lerp(current, desired, acceleration * Time.fixedDeltaTime);
         _rigidbody.linearVelocity = target;
         _currentPlanarSpeed = planar.magnitude * horizontalSpeed * speedMul;
         UpdateFlightVfx();
+        UpdateFootVfxState();
 
         Vector3 faceDir = planar;
         if (faceDir.sqrMagnitude < 0.1f && Mathf.Abs(verticalInput) > 0.5f)
@@ -676,6 +703,45 @@ public class PlayerFlyingController : MonoBehaviour
             if (_boostPs != null) _boostPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             _boostInstance.SetActive(false);
         }
+    }
+
+    // --- Gestión de VFX de pies ---
+    void SpawnFootVfxIfNeeded()
+    {
+        if (_footVfxInstance != null || footVfxPrefab == null) return;
+        var parent = feetAttach != null ? feetAttach : vfxAttach != null ? vfxAttach : transform;
+        _footVfxInstance = Instantiate(footVfxPrefab, parent);
+        _footVfxPs = _footVfxInstance.GetComponent<ParticleSystem>();
+        // Inicialmente desactivadas hasta que el vuelo esté activo
+        _footVfxInstance.SetActive(false);
+    }
+
+    void UpdateFootVfxState()
+    {
+        if (_footVfxInstance == null) return;
+
+        bool shouldBeActive = _isFlying;
+
+        if (shouldBeActive && !_footVfxActive)
+        {
+            _footVfxInstance.SetActive(true);
+            if (_footVfxPs != null && !_footVfxPs.isPlaying) _footVfxPs.Play();
+            _footVfxActive = true;
+        }
+        else if (!shouldBeActive && _footVfxActive)
+        {
+            if (_footVfxPs != null) _footVfxPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            _footVfxInstance.SetActive(false);
+            _footVfxActive = false;
+        }
+    }
+
+    void StopFootVfx()
+    {
+        if (_footVfxInstance == null) return;
+        if (_footVfxPs != null) _footVfxPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        _footVfxInstance.SetActive(false);
+        _footVfxActive = false;
     }
 
     void PlayLandingVfx()

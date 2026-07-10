@@ -101,8 +101,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (_willNpcInstance.NPCManager.Context.IsInCombat || _willNpcInstance.NPCManager.Context.IsInCinematic) return;
         if (!(PartyControlManager.Instance?.IsPartyFollowing ?? true)) return;
 
-        // Si cayó en Idle (Brain no estaba listo al spawnear, o algún estado lo sacó de Follow), reiniciar seguimiento
-        if (brain.CurrentState?.StateName == "Idle")
+        // Si cayó en Idle y NO está anclado, reiniciar seguimiento
+        if (brain.CurrentState?.StateName == "Idle"
+            && !(_willNpcInstance.NPCManager?.Context?.IsPinnedByParty ?? false))
             _willNpcInstance.StartFollowingIgnorePartyCheck();
     }
     #endregion
@@ -154,6 +155,26 @@ public class ActiveCharacterSwapper : MonoBehaviour
         SetNpcVisible(prevHidden, true);
         SetNpcVisible(_hiddenNpc, false);
 
+        // 5b. Desvincular compañeros del personaje que se abandona.
+        // Un NPC que se unió mientras jugábamos como 'from' (Liam/Estela, no Will) es
+        // compañero de ese personaje concreto. Al cambiar de personaje debe quedarse
+        // junto al NPC prevHidden (están en la misma posición), no seguir al nuevo.
+        // Excepción: si ese NPC es el toNpc (pasa a ser el personaje activo), se mantiene.
+        {
+            var party = Game.NPC.PlayerParty.Instance;
+            if (party != null && from != PartyControlManager.CharacterSlot.Will)
+            {
+                var toDetach = new System.Collections.Generic.List<Game.NPC.NPCPartyMember>();
+                foreach (var member in party.Members)
+                {
+                    if (member == null || member == toNpc) continue;
+                    if (member._joinedForSlot == from) toDetach.Add(member);
+                }
+                foreach (var member in toDetach)
+                    party.RemoveMember(member);
+            }
+        }
+
         // 6. NPC de Will: instanciar al alejarse de Will, destruir al volver
         bool willIsActive = to == PartyControlManager.CharacterSlot.Will;
         if (willIsActive)
@@ -196,6 +217,8 @@ public class ActiveCharacterSwapper : MonoBehaviour
     public void TeleportWillNpcToPlayer()
     {
         if (_willNpcInstance == null) return;
+        // No teletransportar si el NPC de Will está anclado (equipo disuelto o modo libre)
+        if (_willNpcInstance.NPCManager?.Context?.IsPinnedByParty == true) return;
         if (!PlayerService.TryGetPlayer(out var playerGO)) return;
 
         Vector3 behind = playerGO.transform.position - playerGO.transform.forward * 1.5f;
@@ -298,13 +321,14 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         var enemy = GetActiveCombatEnemy();
         bool partyFollowing = PartyControlManager.Instance?.IsPartyFollowing ?? true;
+        bool partyEmpty = PlayerParty.HasInstance && PlayerParty.Instance.IsEmpty;
         if (enemy != null)
             _willNpcInstance.OnPlayerEnteredCombat(enemy);
-        else if (partyFollowing)
+        else if (partyFollowing && !partyEmpty)
             _willNpcInstance.StartFollowingIgnorePartyCheck();
         else
         {
-            // Modo libre: Will se queda anclado donde fue instanciado (p. ej., sobre un botón)
+            // Modo libre o equipo disuelto: Will se queda anclado donde fue instanciado
             _willNpcInstance.StopFollowing();
             if (_willNpcInstance.NPCManager?.Context != null)
                 _willNpcInstance.NPCManager.Context.IsPinnedByParty = true;
@@ -404,7 +428,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
                 if (enemy != null)
                     npc.OnPlayerEnteredCombat(enemy);
                 else if (partyFollowing)
-                    npc.StartFollowing();
+                    npc.StartFollowingIgnorePartyCheck();
                 else
                 {
                     // Modo libre: el NPC se queda anclado donde fue posicionado (p. ej., sobre un botón)

@@ -124,12 +124,20 @@ namespace Game.NPC.Modules
         {
             NPCInteractiveNarrativeRegistry.Unregister(this);
             GameBootService.OnProfileReady -= HandleProfileReady;
-            
+
             // Desuscribirse de eventos de quest
             UnsubscribeFromQuestEvents();
-            
+
             // Desuscribirse de eventos custom
             UnsubscribeFromCustomEvents();
+
+            // Limpiar cualquier UIMode que quedara activo si el NPC se destruye mientras interactuaba
+            if (_playerFrozenByDetection && global::Core.PlayerInputManager.Instance != null)
+            {
+                global::Core.PlayerInputManager.Instance.PopUIMode();
+                _playerFrozenByDetection = false;
+            }
+            ReleasePostChainLock();
         }
         
         #region Quest Auto-Execute

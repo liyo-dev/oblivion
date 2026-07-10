@@ -599,6 +599,7 @@ public class PlayerPresetSOEditor : UnityEditor.Editor
             {
                 npcId = npc.npcId,
                 position = npc.position,
+                rotation = npc.rotation,
                 hasActiveState = npc.hasActiveState,
                 isActive = npc.isActive
             });

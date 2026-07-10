@@ -11703,85 +11703,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4174475833387898759, guid: fb3be2ed7c6178d409f93fd247a7e19f, type: 3}
   m_PrefabInstance: {fileID: 631319496}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &677261289
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 677261290}
-  - component: {fileID: 677261292}
-  - component: {fileID: 677261291}
-  m_Layer: 0
-  m_Name: EventSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &677261290
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 677261289}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1007275570}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &677261291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 677261289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
-  m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
-  m_XRTrackingOrigin: {fileID: 0}
-  m_ActionsAsset: {fileID: -944628639613478452, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_PointAction: {fileID: -3575729326886634555, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MoveAction: {fileID: -2690846353137964619, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_SubmitAction: {fileID: -4857292949242138091, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_CancelAction: {fileID: 1577013650251605496, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_LeftClickAction: {fileID: -7977897160081949292, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_MiddleClickAction: {fileID: 8981538171461349378, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_RightClickAction: {fileID: 2941200214913115188, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_ScrollWheelAction: {fileID: -6286134650788867106, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDevicePositionAction: {fileID: 4851584977388053012, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_TrackedDeviceOrientationAction: {fileID: 8930605249725871117, guid: fc9f9f1bd7ce1874fb152afa8758ce88, type: 3}
-  m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 2
-  m_CursorLockBehavior: 0
-  m_ScrollDeltaPerTick: 6
---- !u!114 &677261292
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 677261289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
 --- !u!4 &761563302 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5572779666037973628, guid: bb5565890ab04a0419894e9d8455e118, type: 3}
@@ -17273,7 +17194,6 @@ Transform:
   - {fileID: 1448444572}
   - {fileID: 618640933}
   - {fileID: 1173026584}
-  - {fileID: 677261290}
   - {fileID: 228835811}
   - {fileID: 431918322}
   - {fileID: 1449678189}
@@ -33630,6 +33550,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 11400000, guid: d37a298bae2f40047978b9524f7fd669, type: 2}
   yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
   noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}
@@ -43605,6 +43526,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 11400000, guid: d37a298bae2f40047978b9524f7fd669, type: 2}
   yesOption: {fileID: 11400000, guid: 893e5eb91f75c2445bcd4ca4bad32fe9, type: 2}
   noOption: {fileID: 11400000, guid: 987eb1a8d60d8e34e85f3ff7476919b4, type: 2}

@@ -43,6 +43,8 @@ namespace Game.NPC
         // --- Preparación para escalada ---
         private bool _waitingForClimb = false;
         private Vector3 _climbBasePosition = Vector3.zero;
+        // Slot activo cuando este NPC se unió al party; null = unión mientras Will era activo (miembro compartido)
+        internal PartyControlManager.CharacterSlot? _joinedForSlot;
         #endregion
 
         #region Events
@@ -278,7 +280,15 @@ namespace Game.NPC
             }
             
             _isJoining = true;
-            
+
+            // Registrar el personaje activo en el momento del join.
+            // Will (slot 1) se trata como "miembro compartido" (null) para que siga al jugador
+            // aunque cambie de personaje. Liam/Estela marcan al NPC como compañero de ese personaje.
+            var activeSlot = PartyControlManager.Instance?.ActiveSlot;
+            _joinedForSlot = (activeSlot.HasValue && activeSlot.Value != PartyControlManager.CharacterSlot.Will)
+                ? activeSlot
+                : null;
+
             _party = PlayerParty.Instance;
             if (_party == null)
             {
@@ -458,6 +468,7 @@ namespace Game.NPC
         {
             _isInParty = false;
             _isJoining = false;
+            _joinedForSlot = null;
 
             Log("👋 Abandonó el equipo");
 

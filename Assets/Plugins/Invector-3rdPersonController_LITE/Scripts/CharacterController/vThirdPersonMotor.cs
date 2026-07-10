@@ -357,37 +357,49 @@ namespace Invector.vCharacterController
                 return;
             }
 
-            moveDirection.y = 0;
-            moveDirection.x = Mathf.Clamp(moveDirection.x, -1f, 1f);
-            moveDirection.z = Mathf.Clamp(moveDirection.z, -1f, 1f);
+            Vector3 currentVel   = _rigidbody.linearVelocity;
+            Vector3 currentHoriz = new Vector3(currentVel.x, 0f, currentVel.z);
+            var     currentY     = currentVel.y;
+            float   safeY        = float.IsNaN(currentY) || float.IsInfinity(currentY) ? 0f : currentY;
 
-            Vector3 targetPosition = _rigidbody.position + (moveDirection * airSpeed) * Time.deltaTime;
-
-            if (!IsFiniteVector(targetPosition) || !IsFiniteVector(transform.position))
+            if (input.magnitude > 0.01f)
             {
-                Debug.LogWarning("[vThirdPersonMotor] Invalid positions in AirControl. Skipping velocity update.");
-                return;
-            }
+                // Dirección desde input crudo + cámara, sin filtro extra.
+                Vector3 desiredDir;
+                if (rotateTarget != null && !rotateByWorld)
+                {
+                    var right = rotateTarget.right; right.y = 0f;
+                    var fwd   = Quaternion.AngleAxis(-90f, Vector3.up) * right;
+                    desiredDir = (input.x * right) + (input.z * fwd);
+                }
+                else
+                {
+                    desiredDir = new Vector3(input.x, 0f, input.z);
+                }
+                if (desiredDir.sqrMagnitude > 1f) desiredDir.Normalize();
 
-            // Protección: evitar división por cero en Time.deltaTime
-            if (Time.deltaTime <= Mathf.Epsilon)
+                // Redirigir la inercia: conservar la velocidad horizontal actual si supera airSpeed.
+                // Así saltar en sprint mantiene la velocidad y basta girar el stick para
+                // redirigirla sin perder impulso.
+                float horizSpeed  = Mathf.Max(currentHoriz.magnitude, airSpeed);
+                Vector3 targetHoriz = desiredDir * horizSpeed;
+
+                if (!IsFiniteVector(targetHoriz)) return;
+
+                moveDirection   = desiredDir;
+                moveDirection.x = Mathf.Clamp(moveDirection.x, -1f, 1f);
+                moveDirection.z = Mathf.Clamp(moveDirection.z, -1f, 1f);
+
+                _rigidbody.linearVelocity = new Vector3(targetHoriz.x, safeY, targetHoriz.z);
+            }
+            else
             {
-                Debug.LogWarning("[vThirdPersonMotor] DeltaTime ~ 0 in AirControl when computing targetVelocity. Skipping velocity update.");
-                return;
+                // Sin input: frenar horizontal suavemente y desvanecer moveDirection.
+                moveDirection = Vector3.Lerp(moveDirection, Vector3.zero, airSmooth * Time.deltaTime);
+                Vector3 newHoriz = Vector3.Lerp(currentHoriz, Vector3.zero, airSmooth * Time.deltaTime);
+                if (!IsFiniteVector(newHoriz)) return;
+                _rigidbody.linearVelocity = new Vector3(newHoriz.x, safeY, newHoriz.z);
             }
-
-            Vector3 targetVelocity = (targetPosition - transform.position) / Time.deltaTime;
-            // preserve vertical velocity if finite
-            var currentY = _rigidbody.linearVelocity.y;
-            targetVelocity.y = float.IsNaN(currentY) || float.IsInfinity(currentY) ? 0f : currentY;
-
-            if (!IsFiniteVector(targetVelocity) || !IsFiniteVector(_rigidbody.linearVelocity))
-            {
-                Debug.LogWarning("[vThirdPersonMotor] Invalid velocity values in AirControl. Skipping velocity update.");
-                return;
-            }
-
-            _rigidbody.linearVelocity = Vector3.Lerp(_rigidbody.linearVelocity, targetVelocity, airSmooth * Time.deltaTime);
         }
 
         protected virtual bool jumpFwdCondition
