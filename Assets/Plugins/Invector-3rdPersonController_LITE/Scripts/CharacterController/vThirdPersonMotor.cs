@@ -57,6 +57,8 @@ namespace Invector.vCharacterController
         public float airSpeed = 5f;
         [Tooltip("Smoothness of the direction while airborne")]
         public float airSmooth = 6f;
+        [Tooltip("Velocidad de rotación mientras está en el aire (debe ser mayor que rotationSpeed para giros rápidos)")]
+        public float airRotationSpeed = 30f;
         [Tooltip("Apply extra gravity when the character is not grounded")]
         public float extraGravity = -10f;
         [HideInInspector]
@@ -288,7 +290,8 @@ namespace Invector.vCharacterController
 
         public virtual void RotateToDirection(Vector3 direction)
         {
-            RotateToDirection(direction, isStrafing ? strafeSpeed.rotationSpeed : freeSpeed.rotationSpeed);
+            float speed = !isGrounded ? airRotationSpeed : (isStrafing ? strafeSpeed.rotationSpeed : freeSpeed.rotationSpeed);
+            RotateToDirection(direction, speed);
         }
 
         public virtual void RotateToDirection(Vector3 direction, float rotationSpeed)

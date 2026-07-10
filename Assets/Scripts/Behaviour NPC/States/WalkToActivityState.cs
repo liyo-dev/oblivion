@@ -16,6 +16,7 @@ namespace Game.NPC.States
 
         private bool _occupied;
         private bool _autoRotationDisabled;
+        private bool _agentPositionDisabled;
         private float _occupationTimer;
         private float _occupationDuration;
 
@@ -31,6 +32,7 @@ namespace Game.NPC.States
 
             _occupied              = false;
             _autoRotationDisabled  = false;
+            _agentPositionDisabled = false;
             _occupationTimer       = 0f;
 
             if (_worldPoint == null || _worldPoint.IsOccupied)
@@ -78,6 +80,14 @@ namespace Game.NPC.States
                 _worldPoint?.Release(context.Transform);
                 if (_worldPoint != null)
                     context.Animator?.StopAmbientActivity(_worldPoint.activityType, _worldPoint);
+            }
+
+            // Restaurar control de posición del NavMeshAgent
+            if (_agentPositionDisabled && context.Agent != null && context.Agent.enabled)
+            {
+                context.Agent.nextPosition   = context.Transform.position;
+                context.Agent.updatePosition = true;
+                _agentPositionDisabled = false;
             }
 
             // Restaurar rotación automática si fue desactivada al ocupar el punto
@@ -135,11 +145,16 @@ namespace Game.NPC.States
                 _autoRotationDisabled = true;
             }
 
-            // Snap exacto al punto de sentarse (igual que PlayerAmbientActivityHandler.SnapToSeat)
-            if (context.Agent != null && context.Agent.enabled && context.Agent.isOnNavMesh)
-                context.Agent.Warp(_worldPoint.InteractionPosition);
-            else
-                context.Transform.position = _worldPoint.InteractionPosition;
+            // Asignación directa de posición, igual que PlayerAmbientActivityHandler.SnapToSeat.
+            // NO usar Warp(): proyecta al NavMesh más cercano y puede desviar la altura del asiento.
+            // Desactivar updatePosition para que el agente no sobreescriba el transform cada frame.
+            if (context.Agent != null && context.Agent.enabled)
+            {
+                context.Agent.updatePosition = false;
+                context.Agent.nextPosition   = _worldPoint.InteractionPosition;
+                _agentPositionDisabled = true;
+            }
+            context.Transform.position = _worldPoint.InteractionPosition;
 
             context.Animator?.PlayAmbientActivity(_worldPoint.activityType, _worldPoint);
         }

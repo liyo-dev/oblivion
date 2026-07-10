@@ -11936,6 +11936,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 434800, guid: c027052d248566142a6c4d642c614b2d, type: 3}
   m_PrefabInstance: {fileID: 72144916}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &72307331 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7770552252693826820, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
+  m_PrefabInstance: {fileID: 1620204595}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &72646960
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -106486,7 +106491,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9091734439753928547, guid: 7c5203c6842c1184db2ce618207f3165, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1887886218}
   m_SourcePrefab: {fileID: 100100000, guid: 7c5203c6842c1184db2ce618207f3165, type: 3}
 --- !u!4 &489417975 stripped
 Transform:
@@ -147887,13 +147895,38 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 356326472222561346, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 681803599}
   m_SourcePrefab: {fileID: 100100000, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
 --- !u!4 &681803597 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5760757089802404095, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
   m_PrefabInstance: {fileID: 681803596}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &681803598 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 356326472222561346, guid: 9c92e9c7d089b7543a958d440cd821d3, type: 3}
+  m_PrefabInstance: {fileID: 681803596}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &681803599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 681803598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION2
+  stepIndex: 0
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1001 &681831867
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -251351,14 +251384,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6741617104233437454, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1964060399}
   m_SourcePrefab: {fileID: 100100000, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
 --- !u!114 &1100700570 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8633260300737531714, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
   m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1113847807}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71502e3d469043c39b0240edd3c4f296, type: 3}
@@ -257658,6 +257694,11 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 473706, guid: c221e37ad15f8f14580e546f625060d2, type: 3}
   m_PrefabInstance: {fileID: 1113349722}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1113847807 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6741617104233437454, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
+  m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1114752819
 PrefabInstance:
@@ -324621,7 +324662,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3903978137244161971, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1491500766}
   m_SourcePrefab: {fileID: 100100000, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
 --- !u!4 &1451098029 stripped
 Transform:
@@ -331134,6 +331178,28 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: b1d30d063294e1e45813a476abf306f7, type: 3}
+--- !u!1 &1491500759 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3903978137244161971, guid: 0ff5e06def68a3f4a8d0af2de074b73d, type: 3}
+  m_PrefabInstance: {fileID: 1451098028}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1491500766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1491500759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION5
+  stepIndex: 1
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1001 &1491947444
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -357595,32 +357661,40 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6743273565896207114, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
-      propertyPath: disableWander
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 7770552252693826820, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
       propertyPath: m_Name
       value: Erika
       objectReference: {fileID: 0}
-    - target: {fileID: 7770552252693826820, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
-      propertyPath: m_NavMeshLayer
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7770552252693826820, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7770552252693826820, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1620204608}
   m_SourcePrefab: {fileID: 100100000, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
 --- !u!4 &1620204596 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2121512956809328837, guid: d4af2660e8bc7534a897eda24b2b1169, type: 3}
   m_PrefabInstance: {fileID: 1620204595}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1620204608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72307331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION5
+  stepIndex: 2
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5bf8f3bf532c80346828033774657889, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &1621345264
 GameObject:
   m_ObjectHideFlags: 0
@@ -406951,6 +407025,28 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 410648, guid: 2d030894652722545a21bb9ead87a807, type: 3}
   m_PrefabInstance: {fileID: 1887446069}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1887886209 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9091734439753928547, guid: 7c5203c6842c1184db2ce618207f3165, type: 3}
+  m_PrefabInstance: {fileID: 489417974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1887886218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1887886209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION5
+  stepIndex: 0
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1001 &1888525598
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -422333,12 +422429,29 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1187040435340309947, guid: a75e3ceddb1bc844683082087c61b2d5, type: 3}
   m_PrefabInstance: {fileID: 1100700569}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1113847807}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4570c82eab064b569061d181e5b35d01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
+--- !u!114 &1964060399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1113847807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION6
+  stepIndex: 0
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1001 &1964136322
 PrefabInstance:
   m_ObjectHideFlags: 0
