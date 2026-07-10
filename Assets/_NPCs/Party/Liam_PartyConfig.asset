@@ -46,3 +46,5 @@ MonoBehaviour:
   distanciaLateralDialogo: 1.5
   offsetDelanteDialogo: -0.3
   tiempoMaximoMovimientoDialogo: 2
+  footVfxPrefab: {fileID: 4033412786151888123, guid: 9861333859a526c4fb6c99da1752e3d4, type: 3}
+  flightFormationSpread: 1.5

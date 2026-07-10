@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using EasyTransition;
 using DG.Tweening;
 using Sendero.Core.Feedback;
+using Core;
 
 /// <summary>
 /// Gestiona el Game Over con feedback visual cinematográfico:
@@ -178,9 +179,17 @@ public class GameOverManager : MonoBehaviour
     {
         _isGameOverActive = true;
         Debug.Log("[GameOverManager] 💀 Iniciando secuencia de Game Over cinematográfica");
-
-        // 0. Cerrar cualquier diálogo activo para limpiar el estado de UIMode antes de la transición
+        
+        // DialogueManager.Close() hace Pop de UIMode y de ActionMode.Cinematic si estaban activos.
         DialogueManager.Instance?.Close();
+        // Fases de GameState que pueden quedar huérfanas si el jugador murió durante un Interactable,
+        // un teleport o cualquier otra secuencia que no llegó a hacer su Pop normal.
+        GameState.ForceRemove(GamePhase.Dialogue);
+        GameState.ForceRemove(GamePhase.SavePrompt);
+        GameState.ForceRemove(GamePhase.Cutscene);
+        GameState.ForceRemove(GamePhase.GameOver);
+        // Limpiar suppressors de GamepadInputReader (ej. QuestMenuManager que no llegó a cerrar).
+        GamepadInputReader.ForceRestoreGameplaySuppression();
 
         // 1. Flash rojo de muerte (via FeedbackService)
         if (enableDeathFlash)

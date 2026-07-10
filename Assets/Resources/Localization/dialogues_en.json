@@ -113,6 +113,14 @@
             "value": "Will"
         },
         {
+            "key": "DG_AMIGOELDRAN_BEFORE",
+            "value": ""
+        },
+        {
+            "key": "DG_AMIGOELDRAN_TURNIN",
+            "value": ""
+        },
+        {
             "key": "DG_LIAM_ARRESTO_01",
             "value": "You! This is all your fault! I was about to take the perfect bite of my food and you just had to come and ruin it! If you hadn't interrupted, we wouldn't be locked up in this dump."
         },
@@ -127,6 +135,58 @@
         {
             "key": "DG_LIAM_ARRESTO_04",
             "value": "But Liam... Back in the hallway, you mentioned the Path of the Stars. If it's actually real, why do you need us? What do we even gain by going there?"
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_01",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_02",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_03",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_04",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_05",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_06",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_07",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_08",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_09",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_10",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_11",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_12",
+            "value": ""
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_13",
+            "value": ""
         },
         {
             "key": "DLG_AMIGAPEZ_01",
@@ -1031,6 +1091,18 @@
         {
             "key": "LORE_ESCOLTA_GUARDIA_9",
             "value": "A children's fairy tale?"
+        },
+        {
+            "key": "LORE_WILL_LIAM_01",
+            "value": ""
+        },
+        {
+            "key": "LORE_WILL_LIAM_02",
+            "value": ""
+        },
+        {
+            "key": "LORE_WILL_LIAM_03",
+            "value": ""
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_DESC_02",

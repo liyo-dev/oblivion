@@ -12532,6 +12532,7 @@ MonoBehaviour:
   apexVelocityThreshold: 0.9
   airSpeed: 5
   airSmooth: 16
+  airRotationSpeed: 30
   extraGravity: -20
   limitFallVelocity: -15
   groundLayer:
@@ -12541,6 +12542,7 @@ MonoBehaviour:
   groundMaxDistance: 0.5
   slopeLimit: 75
   lockMovement: 0
+  suppressAirMovement: 0
   physicalAttackStates:
   - Attack1
   - Attack2
@@ -12856,6 +12858,8 @@ MonoBehaviour:
   stickToWallSpeed: 10
   reattachDelay: 0.35
   loseGripGrace: 0.2
+  launchUpImpulse: 6
+  launchForwardImpulse: 3
   climbUpState: ClimbUp_RM_NoWeapon
   climbDownState: ClimbDown_RM_NoWeapon
   climbIdleState: ClimbIdle_RM_NoWeapon
@@ -12983,6 +12987,11 @@ MonoBehaviour:
   trailSpeedThreshold: 1
   boostVfxPrefab: {fileID: 0}
   landingVfxPrefab: {fileID: 0}
+  flightBobAmplitude: 0.18
+  flightBobFrequency: 1.2
+  visualRoot: {fileID: 4449231942035717181}
+  footVfxPrefab: {fileID: 4033412786151888123, guid: 9861333859a526c4fb6c99da1752e3d4, type: 3}
+  feetAttach: {fileID: 4420504159218681614}
 --- !u!114 &7151600841813711728
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13072,7 +13081,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
-  characterId: CHAR_WILL
   originalEyeMesh: {fileID: 5254754835644330641}
   originalMouthMesh: {fileID: 206955243820471005}
   eyePrefix: Eye
@@ -13163,7 +13171,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
   emotionProfile: {fileID: 0}
-  characterId: 
   originalEyeMesh: {fileID: 0}
   originalMouthMesh: {fileID: 0}
   eyePrefix: Eye

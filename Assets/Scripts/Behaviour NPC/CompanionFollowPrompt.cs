@@ -38,6 +38,31 @@ namespace Game.NPC
 
         public bool IsShowingPrompt => _currentMode != PromptMode.None;
 
+        /// <summary>
+        /// Devuelve true si este NPC está en un estado válido para mostrar "Sígueme" o "Dejar de seguir"
+        /// (sin depender del estado del icono visible, para evitar dependencia circular con Interactable.CanInteract).
+        /// </summary>
+        public bool CanShowFollowPrompt()
+        {
+            if (_partyMember == null) return false;
+            if (_npcManager?.Context != null &&
+                (_npcManager.Context.IsInCinematic || _npcManager.Context.IsInCombat))
+                return false;
+
+            bool partyInLibreMode = !(PartyControlManager.Instance?.IsPartyFollowing ?? true);
+            if (!partyInLibreMode || !_partyMember.IsInParty) return false;
+
+            bool isActivelyFollowing = _npcManager?.Context?.IsPinnedByParty == false;
+            if (isActivelyFollowing) return true;
+
+            var party = _playerParty ?? PlayerParty.Instance;
+            bool fullParty = (party?.MemberCount ?? 0) >= 2;
+            if (!fullParty) return false;
+
+            bool isPinned = _npcManager?.Context?.IsPinnedByParty == true;
+            return isPinned && !AnyOtherMemberActivelyFollowing();
+        }
+
         public void SetFollowIcon(GameObject iconPrefab)     => _followIconPrefab = iconPrefab;
         public void SetStopFollowIcon(GameObject iconPrefab) => _stopFollowIconPrefab = iconPrefab;
 
@@ -164,6 +189,11 @@ namespace Game.NPC
                         desired = PromptMode.Follow;
                 }
             }
+
+            // Solo mostrar el icono si este NPC es el interactable enfocado (tiene la "A" visible).
+            // Así "Sígueme" nunca aparece en NPCs que no tienen el botón A activo.
+            if (desired != PromptMode.None && (_interactable == null || !_interactable.IsHintVisible))
+                desired = PromptMode.None;
 
             if (desired != _currentMode)
                 ApplyMode(desired);

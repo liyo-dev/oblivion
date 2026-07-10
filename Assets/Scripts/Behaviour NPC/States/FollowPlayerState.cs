@@ -53,6 +53,9 @@ namespace Game.NPC.States
         private bool _gravityStored;
         private float _storedAnimSpeed = 1f;
         private bool _animSpeedStored;
+        private int _npcFlightLayerIndex = 0;
+        private GameObject _footVfxInstance;
+        private ParticleSystem _footVfxPs;
 
         private const float SPECIAL_FOLLOW_SPEED    = 8f;
         private const float SPECIAL_FOLLOW_STOP_DIST = 1.5f;
@@ -98,8 +101,11 @@ namespace Game.NPC.States
             _inSpecialFollow   = false;
             _lastSpecialMode   = ActionMode.Default;
             _exitMode          = ActionMode.Default;
-            _gravityStored     = false;
-            _animSpeedStored   = false;
+            _gravityStored       = false;
+            _animSpeedStored     = false;
+            _npcFlightLayerIndex = DetectFlightLayer(context.UnityAnimator);
+            _footVfxInstance     = null;
+            _footVfxPs           = null;
 
             if (context.Player != null)
             {
@@ -377,14 +383,18 @@ namespace Game.NPC.States
             // Si salimos del modo vuelo hacia cualquier otro, limpiar isFlying inmediatamente
             // para que no quede el personaje en fly_idle durante la transición transitoria
             if (_lastSpecialMode == ActionMode.Flying && mode != ActionMode.Flying)
+            {
                 TrySetBool(anim, HashIsFlying, false);
+                StopFootVfx();
+            }
 
             switch (mode)
             {
                 case ActionMode.Flying:
                     _exitMode = mode;
                     TrySetBool(anim, HashIsFlying, true);
-                    TryPlay(anim, HashFlyIdle, 0);
+                    TryPlay(anim, HashFlyIdle, _npcFlightLayerIndex);
+                    SpawnFootVfx(context);
                     break;
 
                 case ActionMode.Swimming:
@@ -405,7 +415,14 @@ namespace Game.NPC.States
                     if (anim != null) anim.speed = 0f;
                     break;
 
-                // Default (plataforma sin NavMesh): no cambiar animación ni _exitMode
+                // Default (plataforma sin NavMesh / salto): espejamos el estado aéreo inmediatamente
+                default:
+                    if (_playerAnimator != null && anim != null)
+                    {
+                        TrySetBool(anim, HashIsGrounded, _playerAnimator.GetBool(HashIsGrounded));
+                        TrySetFloat(anim, HashGroundDist, _playerAnimator.GetFloat(HashGroundDist));
+                    }
+                    break;
             }
         }
 
@@ -422,7 +439,7 @@ namespace Game.NPC.States
             switch (mode)
             {
                 case ActionMode.Flying:
-                    TryPlay(anim, isMoving ? HashFlyDive : HashFlyIdle, 0);
+                    TryPlay(anim, isMoving ? HashFlyDive : HashFlyIdle, _npcFlightLayerIndex);
                     break;
 
                 case ActionMode.Swimming:
@@ -487,9 +504,11 @@ namespace Game.NPC.States
                 switch (exitingMode)
                 {
                     case ActionMode.Flying:
-                        // Landing si existe, si no Free Locomotion
-                        if (!TryCrossFade(anim, HashFlyLanding, 0.08f, 0))
-                            TryCrossFade(anim, HashLocomotion, 0.1f, 0);
+                        TrySetBool(anim, HashIsGrounded, true);
+                        TrySetFloat(anim, HashGroundDist, 0f);
+                        StopFootVfx();
+                        if (!TryCrossFade(anim, HashFlyLanding, 0.08f, _npcFlightLayerIndex))
+                            TryCrossFade(anim, HashLocomotion, 0.1f, _npcFlightLayerIndex);
                         break;
 
                     case ActionMode.Swimming:
@@ -553,8 +572,9 @@ namespace Game.NPC.States
             Vector3 behind   = -context.Player.forward * (followDist * 0.8f);
 
             int   partyIdx = _partyMember?.PartyIndex ?? 0;
+            float spread   = _config?.flightFormationSpread ?? 1.5f;
             float lateral  = partyIdx == 0 ? 0f
-                : (partyIdx % 2 == 1 ? 1f : -1f) * 0.8f * Mathf.Ceil(partyIdx * 0.5f);
+                : (partyIdx % 2 == 1 ? 1f : -1f) * spread * Mathf.Ceil(partyIdx * 0.5f);
             Vector3 side = context.Player.right * lateral;
 
             return new Vector3(
@@ -567,6 +587,41 @@ namespace Game.NPC.States
         // =========================================================================
         // HELPERS ANIMATOR (acceso seguro al Animator raw)
         // =========================================================================
+
+        /// <summary>
+        /// Detecta el layer del animator del NPC que contiene los estados de vuelo.
+        /// Equivalente a PlayerFlyingController.DetectFlightLayer para evitar hardcodear layer 0.
+        /// </summary>
+        private static int DetectFlightLayer(Animator anim)
+        {
+            if (anim == null) return 0;
+            int hash = Animator.StringToHash("fly_idle");
+            for (int i = 0; i < anim.layerCount; i++)
+            {
+                try { if (anim.HasState(i, hash)) return i; }
+                catch { }
+            }
+            return 0;
+        }
+
+        private void SpawnFootVfx(NPCStateContext context)
+        {
+            var prefab = _config?.footVfxPrefab;
+            if (prefab == null || _footVfxInstance != null) return;
+            _footVfxInstance = Object.Instantiate(prefab, context.Transform);
+            _footVfxPs = _footVfxInstance.GetComponent<ParticleSystem>();
+            _footVfxInstance.SetActive(true);
+            if (_footVfxPs != null && !_footVfxPs.isPlaying) _footVfxPs.Play();
+        }
+
+        private void StopFootVfx()
+        {
+            if (_footVfxInstance == null) return;
+            if (_footVfxPs != null) _footVfxPs.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            Object.Destroy(_footVfxInstance);
+            _footVfxInstance = null;
+            _footVfxPs = null;
+        }
 
         private static void TryPlay(Animator anim, int stateHash, int layer)
         {
@@ -680,6 +735,7 @@ namespace Game.NPC.States
 
                 // Siempre limpiar isFlying al salir del estado
                 TrySetBool(context.UnityAnimator, HashIsFlying, false);
+                StopFootVfx();
 
                 if (context.Rigidbody != null && _gravityStored)
                 {

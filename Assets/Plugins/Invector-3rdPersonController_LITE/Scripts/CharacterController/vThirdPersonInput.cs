@@ -120,6 +120,7 @@ namespace Invector.vCharacterController
             cc.UpdateMotor();
             cc.ControlLocomotionType();
             cc.ControlRotationType();
+            cc.AirVelocity();
         }
 
         protected virtual void Update()

@@ -48,6 +48,8 @@ public class Interactable : MonoBehaviour
     Game.NPC.CompanionFollowPrompt _followPrompt;
     NPCWorldPoint _worldPoint;
     bool _hintVisible;
+
+    public bool IsHintVisible => _hintVisible;
     Tweener _hintTween;
     Vector3 _hintOriginalScale;
 
@@ -82,6 +84,11 @@ public class Interactable : MonoBehaviour
     {
         GameBootService.OnProfileReady -= RestoreSingleUseStateFromPreset;
         PlayerPresetService.OnPresetApplied -= HandlePresetApplied;
+
+        // Si el jugador murió o la escena se descargó mientras un diálogo estaba activo,
+        // limpiar las fases que este Interactable pudo haber empujado sin hacer Pop.
+        if (GameState.Is(GamePhase.Dialogue)) GameState.Pop(GamePhase.Dialogue);
+        if (GameState.Is(GamePhase.SavePrompt)) GameState.Pop(GamePhase.SavePrompt);
     }
 
     void HandlePresetApplied()
@@ -146,13 +153,15 @@ public class Interactable : MonoBehaviour
         if (singleUse && used)
             return false;
         // Los NPCs en el equipo no deben ser interactuables (sin botón A ni acción),
-        // excepto cuando tienen el prompt "Sígueme"/"Dejar de seguir" visible.
+        // excepto cuando están en estado "Sígueme"/"Dejar de seguir".
+        // Usamos CanShowFollowPrompt() en lugar de IsShowingPrompt para evitar dependencia circular:
+        // IsShowingPrompt depende de IsHintVisible, que a su vez depende de CanInteract().
         if (_partyMember != null && _partyMember.IsInParty)
         {
             // Lazy-init: CompanionFollowPrompt se añade dinámicamente y puede no existir en Awake.
             if (_followPrompt == null)
                 _followPrompt = GetComponent<Game.NPC.CompanionFollowPrompt>();
-            if (_followPrompt == null || !_followPrompt.IsShowingPrompt)
+            if (_followPrompt == null || !_followPrompt.CanShowFollowPrompt())
                 return false;
         }
 

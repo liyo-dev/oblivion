@@ -9,6 +9,18 @@
             "value": "Protege a la gente del Reino de la furia de Estela."
         },
         {
+            "key": "FUEGOFATUO_DESC_01",
+            "value": "Buscar provisiones con Estela"
+        },
+        {
+            "key": "FUEGOFATUO_DESC_02",
+            "value": "Inspeccionar el terreno con Will y Liam"
+        },
+        {
+            "key": "FUEGOFATUO_NAME",
+            "value": "Algo ocurre en el bosque de noche"
+        },
+        {
             "key": "Q_NIÑOPEZ",
             "value": "Antes de entrar al agua necesitas ayudar al niño pez."
         },
@@ -63,6 +75,18 @@
         {
             "key": "QUEST_ELDRAN_MISSION14_NAME",
             "value": "Operación Avestruz 2.0"
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_DESC",
+            "value": "Encuentra el templo olvidado."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_DESC_01",
+            "value": "Encuentra el libro de hechizos prohibidos."
+        },
+        {
+            "key": "QUEST_ELDRAN_MISSION15_NAME",
+            "value": "El Templo Olvidado"
         },
         {
             "key": "QUEST_ELDRAN_MISSION2_DESC",

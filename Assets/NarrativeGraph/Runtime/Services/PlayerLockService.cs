@@ -29,6 +29,7 @@ public class PlayerLockService : MonoBehaviour
 
     readonly HashSet<object> _owners = new HashSet<object>();
 
+    bool _hardLockActive; // true solo si ApplyHardLock() hizo PushUIMode — para parear el Pop exacto
     CharacterController _charController;
     bool _charControllerWasEnabled;
     Rigidbody _rb;
@@ -104,7 +105,10 @@ public class PlayerLockService : MonoBehaviour
 
         // Cambiar a modo UI usando el sistema centralizado
         if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+        {
             pim.PushUIMode();
+            _hardLockActive = true;
+        }
 
         _charController = player.GetComponent<CharacterController>();
         if (_charController != null)
@@ -173,9 +177,13 @@ public class PlayerLockService : MonoBehaviour
 
     void ReleaseHardLock()
     {
-        // Restaurar modo Gameplay usando el sistema centralizado
-        if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
-            pim.PopUIMode();
+        // Restaurar modo Gameplay usando el sistema centralizado — solo si PushUIMode fue emitido
+        if (_hardLockActive)
+        {
+            if (ServiceLocator.TryGet(out Core.PlayerInputManager pim))
+                pim.PopUIMode();
+            _hardLockActive = false;
+        }
 
         if (_charController != null)
         {

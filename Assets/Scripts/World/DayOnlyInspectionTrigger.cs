@@ -26,6 +26,7 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
     [SerializeField] private bool disableAfterUse = true;
 
     private bool _used;
+    private bool _lockAcquired;
     private DayNightCycle _dayNightCycle;
 
     void Awake()
@@ -33,6 +34,20 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
         var col = GetComponent<Collider>();
         if (!col.isTrigger) col.isTrigger = true;
         _dayNightCycle = Object.FindFirstObjectByType<DayNightCycle>();
+    }
+
+    void OnDisable()
+    {
+        if (_lockAcquired && PlayerLockService.HasInstance)
+        {
+            PlayerLockService.Instance.Release(this);
+            _lockAcquired = false;
+        }
+    }
+
+    void OnDestroy()
+    {
+        OnDisable();
     }
 
     void OnTriggerEnter(Collider other)
@@ -61,6 +76,9 @@ public class DayOnlyInspectionTrigger : MonoBehaviour
         }
 
         _used = true;
+
+        PlayerLockService.Instance.Acquire(this);
+        _lockAcquired = true;
 
         if (!string.IsNullOrEmpty(narrativeEventKey))
         {

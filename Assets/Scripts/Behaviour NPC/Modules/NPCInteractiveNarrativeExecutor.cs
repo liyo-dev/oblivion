@@ -671,30 +671,6 @@ namespace Game.NPC.Modules
 
         private IEnumerator ExecuteAction(NarrativeChainEntry entry)
         {
-            // Mostrar icono de alerta antes de la acción si está configurado.
-            // Si la detección ya mostró este icono (primer entry de un chain autoStart),
-            // no lo duplicamos.
-            if (entry.showAlertIcon)
-            {
-                bool alreadyShownAtDetection = _chainWasTriggeredByDetection && _currentActionIndex == 0;
-                if (!alreadyShownAtDetection)
-                {
-                    var iconPrefab = entry.alertIconPrefab != null ? entry.alertIconPrefab
-                                   : _npcManager.NarrativeAlertIconPrefab != null ? _npcManager.NarrativeAlertIconPrefab
-                                   : _config.alertIconPrefab;
-                    if (iconPrefab != null)
-                    {
-                        if (!_alertIconController) InitializeAlertIconController();
-                        if (_alertIconController != null && !_alertIconController.HasActiveIcon)
-                        {
-                            _alertIconController.SetIconOffset(entry.alertIconOffset);
-                            _alertIconController.ShowAlertIcon(iconPrefab, entry.alertIconDuration);
-                        }
-                        yield return new WaitForSeconds(entry.alertIconDuration);
-                    }
-                }
-            }
-
             switch (entry.actionType)
             {
                 case NarrativeActionType.Dialogue:       yield return ExecuteDialogue(entry); break;
@@ -1577,37 +1553,7 @@ namespace Game.NPC.Modules
         private IEnumerator StartAlertSequence(ConditionalNarrative narrative = null)
         {
             var combatConfig = _npcManager.Configuration.combatConfig;
-            GameObject iconPrefab = combatConfig?.alertIconPrefab;
-            float iconDuration = combatConfig?.alertIconDuration ?? 1f;
-
-            // Para NPCs sin combatConfig: buscar icono en las chain entries, en el manager o en el config SO
-            if (iconPrefab == null && narrative?.narrativeChain != null)
-            {
-                foreach (var chainEntry in narrative.narrativeChain)
-                {
-                    if (chainEntry == null || !chainEntry.showAlertIcon) continue;
-                    iconPrefab = chainEntry.alertIconPrefab;
-                    if (iconPrefab == null) iconPrefab = _npcManager.NarrativeAlertIconPrefab;
-                    if (iconPrefab == null) iconPrefab = _config.alertIconPrefab;
-                    if (iconPrefab != null)
-                    {
-                        iconDuration = chainEntry.alertIconDuration;
-                        break;
-                    }
-                }
-            }
-
-
-            if (iconPrefab)
-            {
-                if (!_alertIconController) InitializeAlertIconController();
-                if (_alertIconController && !_alertIconController.HasActiveIcon)
-                {
-                    float iconHeight = combatConfig?.alertIconHeight ?? 2.5f;
-                    if (iconHeight > 0) _alertIconController.SetIconHeight(iconHeight);
-                    _alertIconController.ShowAlertIcon(iconPrefab, iconDuration);
-                }
-            }
+            float alertDuration = combatConfig?.alertIconDuration ?? 1f;
 
             if (_npcManager.WalkTowardsPlayerOnAlert && _player != null)
             {
@@ -1618,7 +1564,7 @@ namespace Game.NPC.Modules
                     agent.stoppingDistance = _npcManager.StopDistanceFromPlayer;
                     float t = 0;
 
-                    while (t < iconDuration)
+                    while (t < alertDuration)
                     {
                         agent.SetDestination(_player.position);
                         _npcManager.SimpleAnimator?.SetMovementSpeed(agent.velocity.magnitude / agent.speed);
@@ -1632,7 +1578,7 @@ namespace Game.NPC.Modules
             }
             else
             {
-                yield return new WaitForSeconds(iconDuration);
+                yield return new WaitForSeconds(alertDuration);
             }
         }
 

@@ -281,14 +281,6 @@ namespace Game.NPC
             
             _isJoining = true;
 
-            // Registrar el personaje activo en el momento del join.
-            // Will (slot 1) se trata como "miembro compartido" (null) para que siga al jugador
-            // aunque cambie de personaje. Liam/Estela marcan al NPC como compañero de ese personaje.
-            var activeSlot = PartyControlManager.Instance?.ActiveSlot;
-            _joinedForSlot = (activeSlot.HasValue && activeSlot.Value != PartyControlManager.CharacterSlot.Will)
-                ? activeSlot
-                : null;
-
             _party = PlayerParty.Instance;
             if (_party == null)
             {
@@ -422,6 +414,13 @@ namespace Game.NPC
         /// </summary>
         internal void OnJoinedParty(PlayerParty party)
         {
+            // Registrar el slot activo en el momento del join.
+            // Will (slot 1) → null (miembro compartido). Liam/Estela → ese slot específico.
+            var activeSlot = PartyControlManager.Instance?.ActiveSlot;
+            _joinedForSlot = (activeSlot.HasValue && activeSlot.Value != PartyControlManager.CharacterSlot.Will)
+                ? activeSlot
+                : null;
+
             // Limpiar anclaje al rejoinearse al party
             if (_npcManager?.Context != null)
                 _npcManager.Context.IsPinnedByParty = false;

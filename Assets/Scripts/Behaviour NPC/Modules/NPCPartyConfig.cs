@@ -158,6 +158,15 @@ namespace Game.NPC.Modules
         [Range(1f, 5f)]
         public float tiempoMaximoMovimientoDialogo = 2f;
 
+        [Header("=== VUELO ===")]
+
+        [Tooltip("Prefab de partículas que aparece en los pies del compañero mientras vuela (igual que el efecto del jugador).")]
+        public GameObject footVfxPrefab;
+
+        [Tooltip("Separación lateral entre miembros en la formación aérea (metros). Aumenta si van demasiado juntos.")]
+        [Range(0.5f, 4f)]
+        public float flightFormationSpread = 1.5f;
+
         // ============ PROPIEDADES DE COMPATIBILIDAD (para que el código existente siga funcionando) ============
         
         // Seguimiento

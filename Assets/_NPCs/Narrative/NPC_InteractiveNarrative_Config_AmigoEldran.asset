@@ -1,0 +1,145 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 146d79b75d3ee84469ee73ac1fc77974, type: 3}
+  m_Name: NPC_InteractiveNarrative_Config_AmigoEldran
+  m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.Modules.NPCInteractiveNarrativeConfig
+  moduleName: 
+  description: 
+  conditionalNarratives:
+  - description: 
+    priority: 0
+    condition:
+      conditionType: 3
+      targetQuest: {fileID: 11400000, guid: 30160d52506ee7c46b1dcdafe9667f87, type: 2}
+      targetStepConditionId: 
+      customEventKey: 
+      debugMode: 0
+    narrativeChain:
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: 5de9da79af5777f4f8917bb0a4049219, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 0
+      lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 3
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 0
+      fadeColor: {r: 0, g: 0, b: 0, a: 0}
+      fadeDuration: 0
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 3
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 0
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 0
+      lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 0
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 3
+      questToStart: {fileID: 11400000, guid: 28e99fb9b62c71b458293af7d8a749a3, type: 2}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 0
+      fadeColor: {r: 0, g: 0, b: 0, a: 0}
+      fadeDuration: 0
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 1
+    freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 0
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
+  persistState: 1
+  enableDetailedLogs: 0
+  persistenceId: 
+  dialogueCharacterId: 
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  detectionRange: 10
+  alertIconPrefab: {fileID: 0}
+  alertIconDuration: 1
+  alertIconHeight: 2.5
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2

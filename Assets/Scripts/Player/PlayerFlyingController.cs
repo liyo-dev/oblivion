@@ -78,6 +78,7 @@ public class PlayerFlyingController : MonoBehaviour
     private float _flightArmedExpires = -1f;
     private bool _justEnteredFlight;
     private float _currentPitch = 0f;
+    private bool _isPhysicsBobbingIdle;
     [SerializeField] private float flightArmedDuration = 2f;
 
     [Header("FX Vuelo")]
@@ -86,12 +87,16 @@ public class PlayerFlyingController : MonoBehaviour
     [SerializeField] private float trailSpeedThreshold = 1.5f;
     [SerializeField] private GameObject boostVfxPrefab;
     [SerializeField] private GameObject landingVfxPrefab;
-    [Header("Vuelo - Movimiento visual")]
-    [Tooltip("Amplitud (metros) del movimiento vertical oscilante mientras el jugador está en vuelo.")]
-    [SerializeField] private float flightBobAmplitude = 0.18f;
-    [Tooltip("Frecuencia (Hz) del movimiento oscilante mientras el jugador está en vuelo.")]
-    [SerializeField] private float flightBobFrequency = 1.2f;
-    [Header("Vuelo - Partículas de pies")]
+     [Header("Vuelo - Movimiento visual")]
+     [Tooltip("Amplitud (metros) del movimiento vertical oscilante mientras el jugador está en vuelo.")]
+     [SerializeField] private float flightBobAmplitude = 0.8f;
+     [Tooltip("Frecuencia (Hz) del movimiento oscilante mientras el jugador está en vuelo.")]
+     [SerializeField] private float flightBobFrequency = 1.8f;
+     [Tooltip("Transform raíz que contiene la malla/visual del personaje. Si se asigna, el bobbing se aplicará a la visual.")]
+     [SerializeField] private Transform visualRoot;
+     private float _visualRootBaseY;
+     private bool _visualRootHasBase = false;
+     [Header("Vuelo - Partículas de pies")]
     [Tooltip("Prefab (ParticleSystem) que se instanciará en los pies mientras el jugador vuela.")]
     [SerializeField] private GameObject footVfxPrefab;
     [Tooltip("Transform donde colocar las partículas de pies. Si es null, se usan las coordenadas del jugador.")]
@@ -251,13 +256,45 @@ public class PlayerFlyingController : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
-    {
-        if (_isFlying)
-            ApplyFlightMovement();
-    }
+     void FixedUpdate()
+     {
+         if (_isFlying)
+             ApplyFlightMovement();
+     }
 
-    private void OnMovePerformed(InputAction.CallbackContext ctx) => _moveInput = ctx.ReadValue<Vector2>();
+     void LateUpdate()
+     {
+         // Aplicar bobbing visual si visualRoot existe y estamos volando
+         if (visualRoot == null || !_isFlying)
+             return;
+
+         // Capturar la posición base la primera vez
+         if (!_visualRootHasBase)
+         {
+             _visualRootBaseY = visualRoot.localPosition.y;
+             _visualRootHasBase = true;
+         }
+
+         if (Mathf.Abs(flightBobAmplitude) > 0.0001f && Mathf.Abs(flightBobFrequency) > 0.0001f)
+         {
+             float bob = Mathf.Sin(Time.time * (2f * Mathf.PI * flightBobFrequency)) * flightBobAmplitude;
+             Vector3 lp = visualRoot.localPosition;
+             lp.y = _visualRootBaseY + bob;
+             visualRoot.localPosition = lp;
+         }
+         else if (_visualRootHasBase)
+         {
+             // Si no hay movimiento, restablecer a la posición base
+             Vector3 lp = visualRoot.localPosition;
+             if (Mathf.Abs(lp.y - _visualRootBaseY) > 0.0001f)
+             {
+                 lp.y = _visualRootBaseY;
+                 visualRoot.localPosition = lp;
+             }
+         }
+     }
+
+     private void OnMovePerformed(InputAction.CallbackContext ctx) => _moveInput = ctx.ReadValue<Vector2>();
     private void OnMoveCanceled(InputAction.CallbackContext ctx) => _moveInput = Vector2.zero;
     private void OnCameraPerformed(InputAction.CallbackContext ctx) => _cameraInput = PlayerSettings.ApplyLookInversion(ctx.ReadValue<Vector2>(), true);
     private void OnCameraCanceled(InputAction.CallbackContext ctx) => _cameraInput = Vector2.zero;
@@ -353,13 +390,14 @@ public class PlayerFlyingController : MonoBehaviour
         return true;
     }
 
-    private void EnterFlight()
-    {
-        if (_isFlying)
-            return;
+     private void EnterFlight()
+     {
+         if (_isFlying)
+             return;
 
-        _isFlying = true;
-        _flightArmUntil = -1f;
+         _isFlying = true;
+         _visualRootHasBase = false; // Resetear bobbing visual para que capture la posición base
+         _flightArmUntil = -1f;
         _isBoosting = false;
         _justEnteredFlight = true;
         _jumpHeld = false; // evitar que el primer frame se considere dive por mantener salto
@@ -469,6 +507,15 @@ public class PlayerFlyingController : MonoBehaviour
         StopFlightVfx();
         StopFootVfx();
 
+        // Restaurar posición local del visual root si se desplazó por bobbing
+        if (visualRoot != null && _visualRootHasBase)
+        {
+            Vector3 lp = visualRoot.localPosition;
+            lp.y = _visualRootBaseY;
+            visualRoot.localPosition = lp;
+        }
+        _visualRootHasBase = false;
+
         if (_rigidbody != null)
         {
             var vel = _rigidbody.linearVelocity;
@@ -544,19 +591,23 @@ public class PlayerFlyingController : MonoBehaviour
         if (_jumpHeld)
             verticalInput -= descendSpeed;
 
-        // Añadir control vertical del jugador
-        desired += Vector3.up * verticalInput;
+        bool isIdleHover = planar.sqrMagnitude < 0.01f && !_jumpHeld && Mathf.Abs(verticalInput) < 0.1f;
 
-        // Añadir un pequeño bob oscilante para simular flotación cuando está en vuelo.
-        // Usamos Time.fixedTime para coherencia con FixedUpdate.
-        if (_isFlying && (Mathf.Abs(flightBobAmplitude) > 0.0001f && Mathf.Abs(flightBobFrequency) > 0.0001f))
+         // Añadir control vertical del jugador
+         desired += Vector3.up * verticalInput;
+
+         Vector3 current = _rigidbody.linearVelocity;
+        Vector3 target = Vector3.Lerp(current, desired, acceleration * Time.fixedDeltaTime);
+
+        // Bobbing físico: solo cuando está quieto y no hay visualRoot (evita doble efecto)
+        _isPhysicsBobbingIdle = isIdleHover && visualRoot == null
+            && Mathf.Abs(flightBobAmplitude) > 0.0001f && flightBobFrequency > 0.0001f;
+        if (_isPhysicsBobbingIdle)
         {
-            float bob = Mathf.Sin(Time.fixedTime * (2f * Mathf.PI * flightBobFrequency)) * flightBobAmplitude;
-            desired += Vector3.up * bob;
+            float omega = 2f * Mathf.PI * flightBobFrequency;
+            target.y = Mathf.Cos(Time.time * omega) * flightBobAmplitude * omega;
         }
 
-        Vector3 current = _rigidbody.linearVelocity;
-        Vector3 target = Vector3.Lerp(current, desired, acceleration * Time.fixedDeltaTime);
         _rigidbody.linearVelocity = target;
         _currentPlanarSpeed = planar.magnitude * horizontalSpeed * speedMul;
         UpdateFlightVfx();
@@ -587,7 +638,8 @@ public class PlayerFlyingController : MonoBehaviour
             return;
 
         float verticalVel = _rigidbody != null ? _rigidbody.linearVelocity.y : 0f;
-        bool diving = verticalVel < -0.5f || _jumpHeld;
+        // Excluir el bobbing físico del chequeo de dive para no disparar la anim de picado sin input
+        bool diving = (!_isPhysicsBobbingIdle && verticalVel < -0.5f) || _jumpHeld;
         // Consider joystick (left stick) movement as input to switch to dive state.
         bool stickMoved = _moveInput.sqrMagnitude > 0.01f; // small deadzone
 

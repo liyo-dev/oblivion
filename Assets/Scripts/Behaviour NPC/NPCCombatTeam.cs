@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Game.NPC.Modules;
-using Game.NPC.Common;
 
 namespace Game.NPC
 {
@@ -51,7 +50,6 @@ namespace Game.NPC
     private NPCBehaviourManagerV2 _leaderManager;
     private bool _isTeamInCombat;
     private bool _isRegrouping;
-    private bool _alertIconsShown; // ✅ FIX: Flag para evitar mostrar iconos múltiples veces
     private int _defeatedCount;
     private List<NPCBehaviourManagerV2> _allMembers = new List<NPCBehaviourManagerV2>(); // Líder + compañeros
     private Transform _currentTarget; // ✅ FIX: Referencia al jugador para calcular formación
@@ -165,9 +163,7 @@ namespace Game.NPC
     /// </summary>
     public void OnPlayerDetected(Transform player)
     {
-        // ✅ FIX: Usar _alertIconsShown como guard adicional para evitar bucles
-        // _isRegrouping se pone false muy rápido, necesitamos un flag persistente
-        if (_isTeamInCombat || _isRegrouping || _alertIconsShown) return;
+        if (_isTeamInCombat || _isRegrouping) return;
 
         // Bloqueo global: si ya hay un combate activo y ningún miembro de este equipo
         // está en combate todavía, no iniciar un segundo combate paralelo.
@@ -186,9 +182,6 @@ namespace Game.NPC
             Debug.Log($"[NPCCombatTeam] {name}: ¡Jugador detectado! Iniciando reagrupación del equipo...");
         }
         
-        // ✅ Mostrar iconos de alerta en TODOS los miembros
-        ShowTeamAlertIcons();
-        
         StartCoroutine(Co_RegroupAndStartCombat(player));
     }
 
@@ -204,36 +197,6 @@ namespace Game.NPC
         }
 
         return false;
-    }
-    
-    /// <summary>
-    /// Muestra el icono de alerta en todos los miembros del equipo.
-    /// </summary>
-    public void ShowTeamAlertIcons()
-    {
-        // ✅ FIX: Evitar mostrar iconos múltiples veces
-        if (_alertIconsShown) return;
-        _alertIconsShown = true;
-        
-        foreach (var member in _allMembers)
-        {
-            if (member == null || !member.gameObject.activeInHierarchy) continue;
-            
-            var config = member.Configuration?.combatConfig;
-            if (config != null && config.alertIconPrefab != null)
-            {
-                var iconController = member.GetComponent<NPCAlertIconController>();
-                if (iconController == null) iconController = member.gameObject.AddComponent<NPCAlertIconController>();
-                
-                // Configurar altura del icono (desde los pies del NPC)
-                if (config.alertIconHeight > 0)
-                {
-                    iconController.SetIconHeight(config.alertIconHeight);
-                }
-                
-                iconController.ShowAlertIcon(config.alertIconPrefab, config.alertIconDuration);
-            }
-        }
     }
     
     /// <summary>
@@ -291,8 +254,7 @@ namespace Game.NPC
         _defeatedCount = 0;
         _isTeamInCombat = false;
         _isRegrouping = false;
-        _alertIconsShown = false; // ✅ FIX: Resetear flag de iconos
-        
+
         // ✅ FIX: Resetear el flag de notificación en todos los miembros
         foreach (var member in _allMembers)
         {

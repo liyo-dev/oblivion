@@ -125,15 +125,27 @@ public class MainMenuController : MonoBehaviour
     {
         GameState.Push(GamePhase.MainMenu);
 
-        // Resetear cualquier UIMode residual del gameplay anterior antes de entrar al menú.
-        // Sistemas como NPCInteractiveNarrativeExecutor o DialogueManager pueden dejar el
-        // contador desbalanceado si el jugador muere mientras interactúan con algo.
+        // Forzar modo UI de forma síncrona: cancela cualquier actualización diferida pendiente
+        // que pudiera venir del gameplay anterior y deja refCount=1 para el PopUIMode de OnDisable.
         var pim = Core.PlayerInputManager.Instance;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[MainMenu-Debug] OnEnable — pim={pim != null}, GameState.MainMenu={GameState.Is(GamePhase.MainMenu)}");
+#endif
         if (pim != null)
         {
-            pim.ForceRestoreGameplayMode();
-            pim.PushUIMode();
+            pim.ForceSyncEnterUIMode();
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        else
+        {
+            Debug.LogError("[MainMenu-Debug] ❌ PlayerInputManager.Instance es NULL — controles UI no se activarán");
+        }
+        // Log estado del EventSystem
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        var uiMod = es != null ? es.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() : null;
+        Debug.Log($"[MainMenu-Debug] EventSystem={es?.name ?? "NULL"}, UIInputModule={uiMod != null}, " +
+                  $"UIInputModule.enabled={uiMod?.enabled}, rootGroup.blocksRaycasts={rootGroup?.blocksRaycasts}");
+#endif
 
         _isLoading = false; // reset por si vuelves al menú
         UpdateContinueVisibility();

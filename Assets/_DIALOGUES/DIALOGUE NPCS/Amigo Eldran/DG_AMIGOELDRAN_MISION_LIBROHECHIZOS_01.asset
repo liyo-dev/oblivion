@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10d8708fd0f936346bad26dff04672db, type: 3}
+  m_Name: DG_AMIGOELDRAN_MISION_LIBROHECHIZOS_01
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
+  lines:
+  - speakerNameId: CHAR_WILL
+    textId: DG_LIBROHECHIZOS_01
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 1
+    emotion: 6
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_02
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIBROHECHIZOS_03
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 6
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_04
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 5
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_05
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 5
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIBROHECHIZOS_06
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 0
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_07
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIBROHECHIZOS_08
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_09
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_10
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: 
+    textId: DG_LIBROHECHIZOS_10
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 4
+  - speakerNameId: CHAR_ESTELA
+    textId: DG_LIBROHECHIZOS_11
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 1
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIBROHECHIZOS_12
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 1
+  - speakerNameId: CHAR_ESTELA
+    textId: DG_LIBROHECHIZOS_13
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 1
+  isGroupConversation: 0

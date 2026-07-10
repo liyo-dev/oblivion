@@ -14781,7 +14781,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7852296466559311785
 Transform:
   m_ObjectHideFlags: 0
@@ -17568,7 +17568,7 @@ GameObject:
   - component: {fileID: 5754641635668119669}
   - component: {fileID: 8978651127361507927}
   m_Layer: 8
-  m_Name: MC01 (1) 4
+  m_Name: Amigo Eldran
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -17751,7 +17751,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 2
   hint: {fileID: 845606262275924752}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
@@ -17759,6 +17759,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -17814,11 +17815,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.NPC.NPCBehaviourManagerV2
   configuration:
-    behaviourType: 1
+    behaviourType: 133
     ambientConfig: {fileID: 0}
     combatConfig: {fileID: 0}
-    questConfig: {fileID: 0}
-    interactiveNarrativeConfig: {fileID: 0}
+    questConfig: {fileID: 11400000, guid: 7d466de1b48f0454da5165758580520f, type: 2}
+    interactiveNarrativeConfig: {fileID: 11400000, guid: 18f0bd8a77a6dea49a05e2d4f0d77faf, type: 2}
     partyConfig: {fileID: 0}
     socialConfig: {fileID: 11400000, guid: 918f6044a0ad3ea4db2053701bd1678b, type: 2}
     walkSpeed: 1.5
@@ -17834,7 +17835,7 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
-  disableWander: 0
+  disableWander: 1
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0

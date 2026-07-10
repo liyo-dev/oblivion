@@ -357,6 +357,43 @@ namespace Invector.vCharacterController
                 return;
             }
 
+            // Solo calcula moveDirection para que ControlRotationType rote el cuerpo.
+            // La velocidad la aplica AirVelocity() DESPUÉS de la rotación, así siempre
+            // coinciden dirección del cuerpo y dirección del movimiento.
+            if (input.magnitude > 0.01f)
+            {
+                if (rotateTarget != null && !rotateByWorld)
+                {
+                    var right = rotateTarget.right; right.y = 0f;
+                    var fwd   = Quaternion.AngleAxis(-90f, Vector3.up) * right;
+                    moveDirection = (input.x * right) + (input.z * fwd);
+                }
+                else
+                {
+                    moveDirection = new Vector3(input.x, 0f, input.z);
+                }
+                if (moveDirection.sqrMagnitude > 1f) moveDirection.Normalize();
+                moveDirection.x = Mathf.Clamp(moveDirection.x, -1f, 1f);
+                moveDirection.z = Mathf.Clamp(moveDirection.z, -1f, 1f);
+            }
+            else
+            {
+                moveDirection = Vector3.Lerp(moveDirection, Vector3.zero, airSmooth * Time.deltaTime);
+            }
+        }
+
+        /// <summary>
+        /// Aplica la velocidad horizontal en el aire siguiendo el transform.forward actual del personaje,
+        /// que ya fue rotado por ControlRotationType en este mismo frame. Así velocidad y cuerpo
+        /// siempre apuntan en la misma dirección: es imposible que el personaje mire hacia atrás
+        /// mientras se mueve hacia delante o viceversa.
+        /// Debe llamarse desde FixedUpdate DESPUÉS de ControlRotationType.
+        /// </summary>
+        public virtual void AirVelocity()
+        {
+            if (suppressAirMovement || (isGrounded && !isJumping)) return;
+            if (jumpWithRigidbodyForce) return;
+
             Vector3 currentVel   = _rigidbody.linearVelocity;
             Vector3 currentHoriz = new Vector3(currentVel.x, 0f, currentVel.z);
             var     currentY     = currentVel.y;
@@ -364,38 +401,21 @@ namespace Invector.vCharacterController
 
             if (input.magnitude > 0.01f)
             {
-                // Dirección desde input crudo + cámara, sin filtro extra.
-                Vector3 desiredDir;
-                if (rotateTarget != null && !rotateByWorld)
-                {
-                    var right = rotateTarget.right; right.y = 0f;
-                    var fwd   = Quaternion.AngleAxis(-90f, Vector3.up) * right;
-                    desiredDir = (input.x * right) + (input.z * fwd);
-                }
-                else
-                {
-                    desiredDir = new Vector3(input.x, 0f, input.z);
-                }
-                if (desiredDir.sqrMagnitude > 1f) desiredDir.Normalize();
+                // Velocidad = dirección donde mira el personaje AHORA (tras la rotación de este frame).
+                // Conserva la velocidad horizontal actual si supera airSpeed para mantener inercia del salto.
+                Vector3 facingDir = transform.forward; facingDir.y = 0f;
+                if (facingDir.sqrMagnitude < 0.001f) return;
+                facingDir.Normalize();
 
-                // Redirigir la inercia: conservar la velocidad horizontal actual si supera airSpeed.
-                // Así saltar en sprint mantiene la velocidad y basta girar el stick para
-                // redirigirla sin perder impulso.
-                float horizSpeed  = Mathf.Max(currentHoriz.magnitude, airSpeed);
-                Vector3 targetHoriz = desiredDir * horizSpeed;
-
+                float   horizSpeed  = Mathf.Max(currentHoriz.magnitude, airSpeed);
+                Vector3 targetHoriz = facingDir * horizSpeed;
                 if (!IsFiniteVector(targetHoriz)) return;
-
-                moveDirection   = desiredDir;
-                moveDirection.x = Mathf.Clamp(moveDirection.x, -1f, 1f);
-                moveDirection.z = Mathf.Clamp(moveDirection.z, -1f, 1f);
 
                 _rigidbody.linearVelocity = new Vector3(targetHoriz.x, safeY, targetHoriz.z);
             }
             else
             {
-                // Sin input: frenar horizontal suavemente y desvanecer moveDirection.
-                moveDirection = Vector3.Lerp(moveDirection, Vector3.zero, airSmooth * Time.deltaTime);
+                // Sin input: frenar suavemente pero sin forzar a cero bruscamente.
                 Vector3 newHoriz = Vector3.Lerp(currentHoriz, Vector3.zero, airSmooth * Time.deltaTime);
                 if (!IsFiniteVector(newHoriz)) return;
                 _rigidbody.linearVelocity = new Vector3(newHoriz.x, safeY, newHoriz.z);

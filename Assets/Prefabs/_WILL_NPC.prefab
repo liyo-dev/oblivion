@@ -15988,7 +15988,7 @@ Animator:
   m_GameObject: {fileID: 6699691312287338962}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 0308cf4e83cf517488b60af58b290fe0, type: 3}
-  m_Controller: {fileID: 9100000, guid: c97a4fa773338a04180ee1b124aecf96, type: 2}
+  m_Controller: {fileID: 9100000, guid: cbd1db45c75e5b948a5befe9ecb80421, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -16123,6 +16123,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -16202,7 +16203,7 @@ MonoBehaviour:
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
-  persistenceId:
+  persistenceId: 
   dialogueCharacterId: CHAR_WILL
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3

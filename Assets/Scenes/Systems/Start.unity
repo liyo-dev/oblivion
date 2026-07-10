@@ -365,20 +365,20 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 47256262}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.19607843}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.84313726}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -733101101, guid: 45ec47be1501fee48a8d4baaf7d6b4fe, type: 3}
+  m_Sprite: {fileID: 21300000, guid: da3d851bb4cd99648b273490cd127032, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2691,6 +2691,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 57d454c036d6610489c32c731f171c3e, type: 2}
   - {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
   - {fileID: 11400000, guid: 30160d52506ee7c46b1dcdafe9667f87, type: 2}
+  - {fileID: 11400000, guid: 28e99fb9b62c71b458293af7d8a749a3, type: 2}
   - {fileID: 11400000, guid: 9fb084e325631df429d6365395b71d5a, type: 2}
   - {fileID: 11400000, guid: a23098449c6bdba469bc3be0eb8c7f3f, type: 2}
   - {fileID: 11400000, guid: 4c559fe0081150c48931b642667f068f, type: 2}

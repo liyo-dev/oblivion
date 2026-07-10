@@ -17,7 +17,6 @@ namespace Game.NPC.States
         private readonly bool _skipDialogue; // ✅ FIX: Para miembros no-líderes de equipos
         
         // Estado Interno
-        private NPCAlertIconController _iconController;
         private float _timer;
         private bool _waitingForDialogue;
         private bool _hasPlayedChallenge;
@@ -47,9 +46,8 @@ namespace Game.NPC.States
 
             context.Log("[AlertState] ⚠️ INICIANDO ALERTA");
 
-            // 1. Audio & Icono
+            // 1. Audio
             TriggerAlertMusic(context);
-            ShowAlertIcon(context);
 
             // 2. Detenerse y Girar
             StopMovement(context);
@@ -153,7 +151,6 @@ namespace Game.NPC.States
 
         public override void OnExit(NPCStateContext context)
         {
-            if (_iconController) _iconController.HideAlertIcon();
             context.Log("[AlertState] Fin de alerta.");
         }
 
@@ -243,36 +240,6 @@ namespace Game.NPC.States
             }
         }
 
-
-        private void ShowAlertIcon(NPCStateContext context)
-        {
-            _iconController = context.Transform.GetComponent<NPCAlertIconController>();
-            if (!_iconController) _iconController = context.Transform.gameObject.AddComponent<NPCAlertIconController>();
-
-            // ✅ FIX: No mostrar icono si ya hay uno activo (por ejemplo, mostrado por NPCCombatTeam)
-            if (_iconController.HasActiveIcon)
-            {
-                context.Log("[AlertState] Icono ya activo, no duplicando");
-                return;
-            }
-
-            var config = context.Config?.combatConfig;
-            if (config != null)
-            {
-                var prefab = config.alertIconPrefab;
-                
-                // Configurar la altura del icono (desde los pies del NPC)
-                if (config.alertIconHeight > 0)
-                {
-                    _iconController.SetIconHeight(config.alertIconHeight);
-                }
-                
-                if (prefab)
-                {
-                    _iconController.ShowAlertIcon(prefab, _alertDuration);
-                }
-            }
-        }
 
         private void TriggerAlertMusic(NPCStateContext context)
         {

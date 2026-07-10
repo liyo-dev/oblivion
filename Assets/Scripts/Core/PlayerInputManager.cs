@@ -167,6 +167,9 @@ namespace Core
                 // se invoca desde un callback de Submit (que pertenece al mapa UI).
                 _controls?.GamePlay.Enable();
                 ScheduleEnableControls(); // aplicará también UI.Disable() de forma diferida
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[PIM-Debug] PopUIMode → refCount=0, STACK:\n{System.Environment.StackTrace}");
+#endif
 
 #if UNITY_EDITOR
                 if (debugLogs)
@@ -200,6 +203,42 @@ namespace Core
                 _controls.UI.Disable();
                 _controls.GamePlay.Enable();
             }
+        }
+
+        /// <summary>
+        /// Fuerza el modo UI de forma SÍNCRONA, cancelando cualquier actualización diferida pendiente.
+        /// Seguro de llamar desde OnEnable de escenas de menú (no desde callbacks de input).
+        /// Deja refCount = 1 para que OnDisable pueda hacer PopUIMode normalmente.
+        /// </summary>
+        public void ForceSyncEnterUIMode()
+        {
+            // Cancelar la actualización diferida pendiente para que no revierta el modo UI
+            if (_pendingControlsUpdate)
+            {
+                InputSystem.onAfterUpdate -= ApplyPendingControlsUpdate;
+                _pendingControlsUpdate = false;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            bool uiWasEnabled   = _controls?.UI.enabled   ?? false;
+            bool gpWasEnabled   = _controls?.GamePlay.enabled ?? false;
+            Debug.Log($"[PIM-Debug] ForceSyncEnterUIMode ANTES — refCount={_uiModeRefCount}, isInUIMode={_isInUIMode}, " +
+                      $"UI.enabled={uiWasEnabled}, GamePlay.enabled={gpWasEnabled}");
+#endif
+
+            _uiModeRefCount = 1;
+            _isInUIMode = true;
+
+            if (_controls != null)
+            {
+                _controls.GamePlay.Disable();
+                _controls.UI.Enable();
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PIM-Debug] ForceSyncEnterUIMode DESPUÉS — refCount={_uiModeRefCount}, isInUIMode={_isInUIMode}, " +
+                      $"UI.enabled={_controls?.UI.enabled}, GamePlay.enabled={_controls?.GamePlay.enabled}");
+#endif
         }
 
         void Start()
@@ -279,9 +318,9 @@ namespace Core
 
             _connectedEventSystem = es;
 
-#if UNITY_EDITOR
-            if (debugLogs)
-                Debug.Log("[PlayerInputManager] InputSystemUIInputModule reconectado con referencias explícitas");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PIM-Debug] ConnectToEventSystemModule OK — ES='{es.name}', " +
+                      $"UI.enabled={_controls?.UI.enabled}, GamePlay.enabled={_controls?.GamePlay.enabled}");
 #endif
         }
 
@@ -294,6 +333,9 @@ namespace Core
         {
             if (_controls == null) return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PIM-Debug] EnableControls — isInUIMode={_isInUIMode}, refCount={_uiModeRefCount}");
+#endif
             // Restaurar el modo correcto según el estado
             if (_isInUIMode)
             {
@@ -320,6 +362,9 @@ namespace Core
         {
             InputSystem.onAfterUpdate -= ApplyPendingControlsUpdate;
             _pendingControlsUpdate = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PIM-Debug] ApplyPendingControlsUpdate disparado — isInUIMode={_isInUIMode}, refCount={_uiModeRefCount}");
+#endif
             EnableControls();
         }
 
@@ -353,6 +398,12 @@ namespace Core
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"[PIM-Debug] OnSceneLoaded '{scene.name}' — isInUIMode={_isInUIMode}, refCount={_uiModeRefCount}, " +
+                      $"UI.enabled={_controls?.UI.enabled}, GamePlay.enabled={_controls?.GamePlay.enabled}, " +
+                      $"EventSystem.current={EventSystem.current?.name ?? "NULL"}, " +
+                      $"_connectedES={_connectedEventSystem?.name ?? "NULL"}");
+#endif
             // Si la nueva escena no tiene EventSystem propio (ej: MainWorld), EventSystem.current
             // queda null cuando el EventSystem de la escena anterior se destruye. Reactivamos el
             // persistente para que se re-registre como current.
@@ -368,6 +419,9 @@ namespace Core
             // en el UIInputModule, lo que reconstruye el InputActionState y causa IndexOutOfRangeException.
             if (EventSystem.current != null && EventSystem.current != _connectedEventSystem)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.Log($"[PIM-Debug] OnSceneLoaded → ReconnectEventSystemNextFrame (ES cambió a '{EventSystem.current.name}')");
+#endif
                 StartCoroutine(ReconnectEventSystemNextFrame());
             }
         }

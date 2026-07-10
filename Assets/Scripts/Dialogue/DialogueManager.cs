@@ -498,11 +498,24 @@ public class DialogueManager : MonoBehaviour
 
     public void Close()
     {
-        if (!IsOpen) return;
-
         StopTypewriter();
-
         HideChoices();
+
+        if (!IsOpen)
+        {
+            // ShowWithChoices puede haber activado group.blocksRaycasts sin pasar por StartDialogue
+            // (no establece _current), así que IsOpen es false pero la UI puede estar visible.
+            // Limpiar siempre para no bloquear raycasts en la siguiente escena.
+            if (group != null)
+            {
+                group.alpha = 0f;
+                group.blocksRaycasts = false;
+                group.interactable = false;
+            }
+            ActivateDialogueMode(false);
+            if (submitHint != null) submitHint.SetActive(false);
+            return;
+        }
 
         _current = null;
         _onEnd?.Invoke();

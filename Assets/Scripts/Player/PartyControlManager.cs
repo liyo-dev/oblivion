@@ -218,14 +218,22 @@ public class PartyControlManager : MonoBehaviour
             // Teletransportar a todos al personaje activo
             party.TeleportAllMembersToPlayer();
 
-            // Will NPC fuera del party (instanciado al cambiar de personaje)
+            // Will NPC fuera del party: solo seguir si hay compañeros activos (excluyendo el NPC oculto)
             var willNpc = swapper?.WillNpcInstance;
             if (willNpc != null && willNpc != hiddenNpc)
             {
-                if (willNpc.NPCManager?.Context != null)
-                    willNpc.NPCManager.Context.IsPinnedByParty = false;
-                swapper.TeleportWillNpcToPlayer();
-                willNpc.StartFollowingIgnorePartyCheck();
+                bool hasNonHiddenMember = false;
+                foreach (var member in party.Members)
+                {
+                    if (member != null && member != hiddenNpc) { hasNonHiddenMember = true; break; }
+                }
+                if (hasNonHiddenMember)
+                {
+                    if (willNpc.NPCManager?.Context != null)
+                        willNpc.NPCManager.Context.IsPinnedByParty = false;
+                    swapper.TeleportWillNpcToPlayer();
+                    willNpc.StartFollowingIgnorePartyCheck();
+                }
             }
         }
         else

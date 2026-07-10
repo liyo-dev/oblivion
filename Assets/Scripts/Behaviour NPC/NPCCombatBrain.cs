@@ -95,7 +95,6 @@ namespace Game.NPC
         Transform _player;
         Transform _combatTarget; // Objetivo actual de ataque (jugador o miembro del equipo)
         NPCShieldController _shieldController;
-        NPCAlertIconController _alertIconController; // Sistema de iconos visuales (usa prefabs)
         // FSM State
         public enum CombatState { EVALUATE, REPOSITION, ATTACK, DEFENSE, SEARCHING, HIDING_TO_RECHARGE }
         [SerializeField, ReadOnly] private CombatState _currentState; // Visible debug
@@ -160,13 +159,6 @@ namespace Game.NPC
             _animator = _ctx.Animator;
             _rawAnimator = _ctx.UnityAnimator;
             _shieldController = GetComponent<NPCShieldController>();
-            
-            // Buscar componente de iconos visuales si existe
-            _alertIconController = _manager.GetComponent<NPCAlertIconController>();
-            if (_alertIconController == null)
-            {
-                Debug.LogWarning($"[CombatBrain:{_manager.name}] ⚠️ NPCAlertIconController no encontrado - Los iconos visuales no se mostrarán");
-            }
 
             // Configurar NavMesh para movimiento fluido
             _agent.updateRotation = false; // Controlamos la rotación manualmente para encarar al player
@@ -200,12 +192,6 @@ namespace Game.NPC
             _currentMana = _maxMana;
             _lastManaSpendTime = -999f;
             NotifyManaChanged();
-
-            // ✅ Mostrar icono de admiración - ¡Te vi!
-            if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-            {
-                _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-            }
 
             _animator.SetBattleMode(true);
             _isActive = true;
@@ -263,12 +249,6 @@ namespace Game.NPC
                 {
                     _animator.PlaySenseSomething();
                     Debug.Log($"[CombatBrain:{gameObject.name}] 🎬 Reproduciendo animación SenseSomethingStart_NoWeapon");
-                }
-                
-                // Mostrar icono de admiración
-                if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                {
-                    _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
                 }
                 
                 // Decidir reacción según situación
@@ -780,12 +760,7 @@ namespace Game.NPC
             if (!_hasLineOfSight)
             {
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❌ Perdió visión del jugador tras reposicionarse - BUSCANDO");
-                
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
-                
+
                 if (_animator != null)
                 {
                     _animator.PlaySearching();
@@ -1257,12 +1232,7 @@ namespace Game.NPC
             {
                 // 🎭 EMBOSCADA: Siempre mostrar interrogación para engañar
                 Debug.Log($"[CombatBrain:{gameObject.name}] 🎭 Llegó a cobertura (EMBOSCADA) - Fingiendo búsqueda");
-                
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
-                
+
                 if (_animator != null)
                 {
                     _animator.PlaySearching();
@@ -1272,12 +1242,7 @@ namespace Game.NPC
             {
                 // 🔍 PERDIÓ VISIÓN REAL: Mostrar interrogación porque realmente no sabe dónde está el player
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❓ Llegó a cobertura sin visión del player - Búsqueda real");
-                
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
-                
+
                 if (_animator != null)
                 {
                     _animator.PlaySearching();
@@ -1345,12 +1310,6 @@ namespace Game.NPC
                             {
                                 Debug.Log($"[CombatBrain:{gameObject.name}] ⚡ Interrumpiendo recarga para contraatacar");
                                 
-                                // Mostrar alerta
-                                if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                                {
-                                    _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                                }
-                                
                                 if (_animator != null)
                                 {
                                     _animator.PlaySenseSomething();
@@ -1382,12 +1341,6 @@ namespace Game.NPC
                     if (distToPlayer <= ambushTriggerDistance)
                     {
                         Debug.Log($"[CombatBrain:{gameObject.name}] 🎯 ¡EMBOSCADA ACTIVADA! Player a {distToPlayer:F1}m - ¡ATAQUE SORPRESA!");
-                        
-                        // Mostrar admiración + alerta
-                        if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                        {
-                            _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                        }
                         
                         // Animación de alerta
                         if (_animator != null)
@@ -1481,35 +1434,20 @@ namespace Game.NPC
                     // ✅ Player está DONDE SE ESPERABA (posición A)
                     Debug.Log($"[CombatBrain:{gameObject.name}] 👀 ¡Player visible en posición esperada! - Atacar directamente");
                     
-                    // Mostrar admiración
-                    if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                    {
-                        _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                    }
-                    
                     // Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
                     {
                         _animator.PlaySenseSomething();
                     }
-                    
+
                     yield return new WaitForSeconds(0.8f);
-                    
+
                     _currentState = CombatState.EVALUATE;
                 }
                 else
                 {
                     // ⚠️ Player se MOVIÓ de donde estaba (posición diferente)
                     Debug.Log($"[CombatBrain:{gameObject.name}] ⚠️ ¡Player se movió! Era posición A, ahora está en B ({distanceFromExpected:F1}m lejos)");
-                    
-                    // Mostrar admiración (sorpresa)
-                    // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
-                    /*
-                    if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                    {
-                        _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                    }
-                    */
                     
                     // Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
@@ -1527,12 +1465,6 @@ namespace Game.NPC
                 // 🎯 NO VE AL PLAYER - ¡AQUÍ SALE LA INTERROGACIÓN!
                 // Escenario: Salió del árbol, player NO está en posición A
                 Debug.Log($"[CombatBrain:{gameObject.name}] ❓ ¡Player NO está donde se esperaba! - Mostrando interrogación y entrando en búsqueda");
-                
-                // 🎯 MOSTRAR INTERROGACIÓN (perdida real)
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
                 
                 // Reproducir animación de búsqueda
                 if (_animator != null)
@@ -2030,12 +1962,6 @@ namespace Game.NPC
             
             if (showQuestionMark)
             {
-                // ✅ Mostrar icono de interrogación INICIAL
-                if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                {
-                    _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                }
-                
                 // ✅ Reproducir animación de búsqueda INICIAL
                 if (_animator != null)
                 {
@@ -2065,12 +1991,6 @@ namespace Game.NPC
                 if (_hasLineOfSight)
                 {
                     Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡JUGADOR ENCONTRADO! - Mostrando alerta");
-                    
-                    // ✅ Ocultar interrogación y mostrar admiración
-                    if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                    {
-                        _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                    }
                     
                     // ✅ Reproducir animación SenseSomethingStart_NoWeapon
                     if (_animator != null)
@@ -2136,12 +2056,6 @@ namespace Game.NPC
                             {
                                 Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado durante movimiento!");
                                 
-                                // Mostrar admiración
-                                if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                                {
-                                    _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                                }
-                                
                                 // Reproducir animación SenseSomethingStart_NoWeapon
                                 if (_animator != null)
                                 {
@@ -2181,11 +2095,6 @@ namespace Game.NPC
                         
                         if (showQuestionMark)
                         {
-                            if (_alertIconController != null && _config != null && _config.questionIconPrefab != null)
-                            {
-                                _alertIconController.ShowQuestion(_config.questionIconPrefab, _config.alertIconDuration);
-                            }
-                            
                             // Reproducir animación de búsqueda
                             if (_animator != null)
                             {
@@ -2205,14 +2114,6 @@ namespace Game.NPC
                         if (_hasLineOfSight)
                         {
                             Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado mientras miraba alrededor!");
-                            
-                            // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
-                            /*
-                            if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                            {
-                                _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                            }
-                            */
                             
                             // Reproducir animación SenseSomethingStart_NoWeapon
                             if (_animator != null)
@@ -2252,12 +2153,6 @@ namespace Game.NPC
             // ✅ BÚSQUEDA AGOTADA - No encontró al jugador después de todos los intentos
             Debug.Log($"[CombatBrain:{gameObject.name}] 😞 Búsqueda agotada - {searchAttempts} intentos completados sin éxito");
             
-            // Ocultar icono de interrogación
-            if (_alertIconController != null)
-            {
-                _alertIconController.HideAlertIcon();
-            }
-            
             // ✅ DECISIÓN POST-BÚSQUEDA: ¿Volver al origen o abandonar?
             if (settings.returnToOriginAfterSearch)
             {
@@ -2272,14 +2167,6 @@ namespace Game.NPC
                     if (_hasLineOfSight)
                     {
                         Debug.Log($"[CombatBrain:{gameObject.name}] ✅ ¡Jugador encontrado en el camino de regreso!");
-                        
-                        // ⚠️ DESACTIVADO: Iconos de exclamación durante combate
-                        /*
-                        if (_alertIconController != null && _config != null && _config.exclamationIconPrefab != null)
-                        {
-                            _alertIconController.ShowExclamation(_config.exclamationIconPrefab, _config.alertIconDuration);
-                        }
-                        */
                         
                         // Reproducir animación SenseSomethingStart_NoWeapon
                         if (_animator != null)
