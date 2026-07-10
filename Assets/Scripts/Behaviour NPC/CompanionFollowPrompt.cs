@@ -115,7 +115,11 @@ namespace Game.NPC
                 _interactable.OnInteract.RemoveListener(OnPlayerInteracted);
         }
 
-        private void OnLeftParty()  => _nextCheck = 0f;
+        private void OnLeftParty()
+        {
+            HidePrompt();
+            _nextCheck = 0f;
+        }
         private void OnJoinedParty() => HidePrompt();
 
         private void OnPlayerInteracted(GameObject _)

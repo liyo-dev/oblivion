@@ -84,7 +84,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 2
       lookAtPlayerOnArrival: 1
-      teleportNearPlayerRadius: 1.8
+      teleportNearPlayerRadius: 5
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -131,7 +131,7 @@ MonoBehaviour:
     debugMode: 0
   persistState: 1
   enableDetailedLogs: 0
-  persistenceId: 
+  persistenceId: SOFIA_FUEGO_FATUO
   dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3

@@ -43,6 +43,54 @@
         {
             "key": "MINIGAME_WIN",
             "value": "¡Escapaste!"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_01",
+            "value": "Sin dinero… Sin dinero… ¡Sin un maldito cobre!"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_02",
+            "value": "Bueno… tampoco es robar del todo. Es más bien… redistribuir los recursos."
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_03",
+            "value": "Solo tengo que pillar algo de cada puesto sin que me vean. Fácil. Soy invisible cuando quiero."
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_NEXT",
+            "value": "Pulsa <sprite name=\"interactable_A\"> para continuar"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_START",
+            "value": "Pulsa <sprite name=\"interactable_A\"> para ver instrucciones"
+        },
+        {
+            "key": "FORAGE_INSTRUCTION",
+            "value": "Acércate a cada puesto y pulsa <sprite name=\"interactable_A\"> para coger algo.\n\n¡Ojo! Si hay alguien mirando, tendrás que esperar.\n\nEstela se mueve muy despacio. No llames la atención."
+        },
+        {
+            "key": "FORAGE_START_PROMPT",
+            "value": "Pulsa <sprite name=\"interactable_A\"> para empezar"
+        },
+        {
+            "key": "FORAGE_COUNTER",
+            "value": "Provisiones: {0}/{1}"
+        },
+        {
+            "key": "FORAGE_CAUGHT",
+            "value": "¡Casi me pillan!"
+        },
+        {
+            "key": "FORAGE_WIN",
+            "value": "¡Hecho! Nadie me ha visto... creo."
+        },
+        {
+            "key": "FORAGE_LOSE",
+            "value": "¡Me han pillado!"
+        },
+        {
+            "key": "FORAGE_NPC_NEARBY",
+            "value": "Espera... hay alguien mirando."
         }
     ]
 }

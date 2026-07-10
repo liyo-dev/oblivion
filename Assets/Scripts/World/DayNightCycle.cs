@@ -279,25 +279,26 @@ public class DayNightCycle : MonoBehaviour
 
         _currentIndex = index;
         var settings = timeSettings[index];
-        CurrentTimeOfDay = settings.timeOfDay;
         _currentDuration = Mathf.Max(1f, settings.duration);
         _timeElapsed = 0f;
 
         if (immediate || !useSmoothTransitions || !Application.isPlaying)
+        {
+            CurrentTimeOfDay = settings.timeOfDay;
             ApplySettingsImmediate(settings);
+            if (invokeEvents)
+            {
+                onTimeOfDayChanged?.Invoke(settings.timeOfDay);
+                TimeOfDayChanged?.Invoke(settings.timeOfDay);
+            }
+        }
         else
-            _transitionCoroutine = StartCoroutine(TransitionToSettings(settings));
+            _transitionCoroutine = StartCoroutine(TransitionToSettings(settings, invokeEvents));
 
         if (settings.forceRain)
             StartRain(rainLastsWholePeriod ? settings.duration : (float?)null);
         else if (IsRaining)
             StopRain();
-
-        if (invokeEvents)
-        {
-            onTimeOfDayChanged?.Invoke(settings.timeOfDay);
-            TimeOfDayChanged?.Invoke(settings.timeOfDay);
-        }
     }
 
     void ApplySettingsImmediate(TimeOfDaySettings settings)
@@ -325,7 +326,7 @@ public class DayNightCycle : MonoBehaviour
         }
     }
 
-    IEnumerator TransitionToSettings(TimeOfDaySettings target)
+    IEnumerator TransitionToSettings(TimeOfDaySettings target, bool invokeEvents)
     {
         _isTransitioning = true;
 
@@ -374,8 +375,15 @@ public class DayNightCycle : MonoBehaviour
             yield return null;
         }
 
-        // Asegurar valores exactos al finalizar
+        // Asegurar valores exactos al finalizar y actualizar el estado lógico cuando la visual ya coincide
         ApplySettingsImmediate(target);
+        CurrentTimeOfDay = target.timeOfDay;
+
+        if (invokeEvents)
+        {
+            onTimeOfDayChanged?.Invoke(target.timeOfDay);
+            TimeOfDayChanged?.Invoke(target.timeOfDay);
+        }
 
         _isTransitioning = false;
         _transitionCoroutine = null;

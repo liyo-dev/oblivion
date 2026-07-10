@@ -770,7 +770,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 18293a97-824e-4a42-b35b-a28365fd1601
-        position: {x: 7055, y: 4118}
+        position: {x: 7081.84, y: 4118}
         outputs:
         - 5174be77-fb15-4c62-a78f-628406a93537
         questId: ELDRAN_MISSION14

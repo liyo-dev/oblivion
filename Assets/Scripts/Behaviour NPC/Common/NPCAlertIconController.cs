@@ -180,6 +180,7 @@ namespace Game.NPC.Common
                 // Ocultar con animación rápida pero NO destruir
                 _currentIconInstance.transform.DOScale(Vector3.zero, 0.1f)
                     .SetEase(Ease.InBack)
+                    .SetUpdate(true)
                     .SetId(this);
                     
                 if (showDebugLogs) Debug.Log($"[NPCAlertIcon:{name}] 🔇 Ocultando icono durante diálogo");
@@ -476,6 +477,7 @@ namespace Game.NPC.Common
             Sequence hideSeq = DOTween.Sequence();
             hideSeq.Append(iconTransform.DOScale(Vector3.zero, hideAnimDuration).SetEase(Ease.InBack));
             hideSeq.Join(iconTransform.DOMove(targetPos, hideAnimDuration).SetEase(Ease.InQuad));
+            hideSeq.SetUpdate(true);
             hideSeq.OnComplete(() =>
             {
                 if (instanceToHide != null)

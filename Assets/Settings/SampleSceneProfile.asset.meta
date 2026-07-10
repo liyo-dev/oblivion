@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 10fc4df2da32a41aaa32d77bc913491c
+guid: a6560a915ef98420e9faacc1c7438823
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 0
@@ -8,8 +8,8 @@ NativeFormatImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 175935
-  packageName: URP Vertical Fog
-  packageVersion: 1.2
+  productId: 258146
+  packageName: 3D Ground Platforms | Platform Terrain Set | Floating Islandas
+  packageVersion: 1.0
   assetPath: Assets/Settings/SampleSceneProfile.asset
-  uploadId: 498688
+  uploadId: 690881

@@ -180,8 +180,8 @@ MonoBehaviour:
     debugMode: 0
   persistState: 1
   enableDetailedLogs: 0
-  persistenceId: 
-  dialogueCharacterId: 
+  persistenceId: ELDRAN_MAIN_NARRATIVE
+  dialogueCharacterId:
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0
