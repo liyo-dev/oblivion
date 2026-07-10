@@ -2544,12 +2544,24 @@ public class TagMinigameController : MonoBehaviour
         {
             if (_clearMessageCoroutine != null) { StopCoroutine(_clearMessageCoroutine); _clearMessageCoroutine = null; }
             messageText.text = Loc(escapeMessage);
+            messageText.enabled = true;
         }
 
-        // Usamos el mismo timer principal (remainingTime) — no hay countdown separado.
-        // El Update() detectará cuando remainingTime <= 0 y llamará LoseByTimeout().
+        float blinkTimer = 0f;
+        bool visible = true;
         while (_waitingForKingdomExit && remainingTime > 0f)
+        {
+            blinkTimer += Time.deltaTime;
+            if (blinkTimer >= 0.5f)
+            {
+                blinkTimer = 0f;
+                visible = !visible;
+                if (messageText) messageText.enabled = visible;
+            }
             yield return null;
+        }
+
+        if (messageText) messageText.enabled = true;
     }
 
     /// <summary>

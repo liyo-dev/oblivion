@@ -9,6 +9,10 @@
             "value": "¡Sal del Reino!"
         },
         {
+            "key": "MINIGAME_TAG_ESCAPE",
+            "value": "¡Sal del Reino!"
+        },
+        {
             "key": "MINIGAME_OBJECTIVE_FORMAT",
             "value": "Protegidos: {0}/{1}"
         },

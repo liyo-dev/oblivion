@@ -124,9 +124,9 @@ MonoBehaviour:
       randomMoveMinRadius: 5
       randomMoveMaxRadius: 15
       disappearOnArrival: 0
-      disappearTransition: {fileID: 0}
+      disappearTransition: {fileID: 11400000, guid: 013263c83b6a84c4d95beaa8bd163ac8, type: 2}
       moveTeamMembers: 0
-      maxMovementDuration: 2
+      maxMovementDuration: 1
       turnAroundOnArrival: 1
       nearPlayerRadius: 1.8
       lookAtPlayerOnArrival: 1
@@ -166,6 +166,8 @@ MonoBehaviour:
     autoStartOnDetection: 1
     autoExecuteOnQuestConditionMet: 0
     freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -232,6 +234,8 @@ MonoBehaviour:
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 0
     freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 1
