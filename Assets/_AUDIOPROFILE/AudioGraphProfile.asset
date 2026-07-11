@@ -53,7 +53,7 @@ MonoBehaviour:
   - sceneName: Prologo
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
   - sceneName: MainMenu
-    music: {fileID: 8300000, guid: 8d3aa4ce63a9cac4bbdd2c221914caa2, type: 3}
+    music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
   - sceneName: Cinematic_Intro
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   - sceneName: MainWorld

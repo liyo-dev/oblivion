@@ -189,6 +189,27 @@ public class ActiveCharacterSwapper : MonoBehaviour
             // Will spawna exactamente donde estaba el controller (ej: encima de un botón)
             SpawnWillNpc(fromPos, fromRot);
         }
+        else
+        {
+            // Will ya estaba instanciado (cambio Liam↔Estela): colocar a Will donde estaba
+            // el personaje que se abandona. En combate activo se respeta la posición actual
+            // para no interrumpir la IA de combate.
+            var activeCombatEnemy = GetActiveCombatEnemy();
+            if (activeCombatEnemy == null)
+            {
+                // Buscar posición válida en NavMesh (radio amplio para cubrir vuelo/natación)
+                Vector3 willPos = fromPos;
+                if (NavMesh.SamplePosition(fromPos, out NavMeshHit willHit, 30f, NavMesh.AllAreas))
+                    willPos = willHit.position;
+                WarpNpcToPosition(_willNpcInstance, willPos, fromRot);
+            }
+            else if (!(_willNpcInstance.NPCManager?.Context?.IsInCombat ?? false))
+            {
+                // Hay combate activo pero Will no está participando (perdió el target, etc.)
+                // Re-notificarle para que entre en AllyCombatState.
+                _willNpcInstance.OnPlayerEnteredCombat(activeCombatEnemy);
+            }
+        }
     }
 
     /// <summary>
@@ -311,12 +332,15 @@ public class ActiveCharacterSwapper : MonoBehaviour
             }
         }
 
-        // Aplicar modo de seguimiento actual una vez que el NPC esté inicializado
+        // Aplicar modo de seguimiento actual una vez que el NPC esté inicializado.
+        // Capturar si había combate AL SPAWNEAR; el corrutina puede correr frames después,
+        // momento en que el registro ya puede haberse vaciado por timing.
+        bool hadCombatEnemyAtSpawn = GetActiveCombatEnemy() != null;
         if (_willNpcInstance != null)
-            StartCoroutine(ApplyFollowModeToWillNpc());
+            StartCoroutine(ApplyFollowModeToWillNpc(hadCombatEnemyAtSpawn));
     }
 
-    private System.Collections.IEnumerator ApplyFollowModeToWillNpc()
+    private System.Collections.IEnumerator ApplyFollowModeToWillNpc(bool spawnedDuringCombat = false)
     {
         // Esperar hasta que el Brain esté inicializado (con timeout de seguridad)
         float waited = 0f;
@@ -344,9 +368,21 @@ public class ActiveCharacterSwapper : MonoBehaviour
             }
         }
         if (enemy != null)
+        {
             _willNpcInstance.OnPlayerEnteredCombat(enemy);
+        }
+        else if (spawnedDuringCombat)
+        {
+            // Había combate al spawnear pero el registro quedó vacío durante la espera del Brain
+            // (el enemigo perdió al jugador al teletransportarse o timing de registro).
+            // Entrar en AllyCombatState con target nulo: el estado encontrará enemigos cercanos
+            // vía FindNearestEnemy o saldrá por timeout si ya no quedan enemigos.
+            _willNpcInstance.OnPlayerEnteredCombat(null);
+        }
         else if (partyFollowing && hasNonHiddenMember)
+        {
             _willNpcInstance.StartFollowingIgnorePartyCheck();
+        }
         else
         {
             // Modo libre, equipo disuelto o jugando en solitario: Will se queda anclado

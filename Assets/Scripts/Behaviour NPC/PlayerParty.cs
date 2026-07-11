@@ -1092,6 +1092,9 @@ namespace Game.NPC
 
         private void CheckMemberDistances()
         {
+            // No teletransportar mientras el jugador vuela: el destino estará fuera del NavMesh
+            if (_playerActionManager != null && _playerActionManager.Top == ActionMode.Flying) return;
+
             var hiddenNpc = ActiveCharacterSwapper.Instance?.HiddenNpc;
             for (int i = 0; i < _members.Count; i++)
             {
@@ -1140,10 +1143,13 @@ namespace Game.NPC
         private void TeleportMemberToPlayer(NPCPartyMember member, int index)
         {
             if (_playerTransform == null || member == null) return;
-            
+
             Vector3 targetPos = GetFormationPosition(index);
-            
-            // Usar Warp del NavMeshAgent si existe
+
+            // Buscar posición válida en el NavMesh antes de hacer Warp
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                targetPos = hit.position;
+
             var agent = member.GetComponent<NavMeshAgent>();
             if (agent != null && agent.isOnNavMesh)
             {
@@ -1153,7 +1159,7 @@ namespace Game.NPC
             {
                 member.transform.position = targetPos;
             }
-            
+
             member.OnTeleportedToPlayer();
         }
 
