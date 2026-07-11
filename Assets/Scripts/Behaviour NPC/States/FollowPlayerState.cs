@@ -748,9 +748,11 @@ namespace Game.NPC.States
             if (context.Agent != null && context.Agent.isActiveAndEnabled)
             {
                 context.Agent.updatePosition = true;
-                context.Agent.isStopped = true;
                 if (context.Agent.isOnNavMesh)
+                {
+                    context.Agent.isStopped = true;
                     context.Agent.nextPosition = context.Transform.position;
+                }
                 else if (NavMesh.SamplePosition(context.Transform.position, out NavMeshHit hit, WARP_SEARCH_RADIUS, NavMesh.AllAreas))
                 {
                     context.Transform.position = hit.position;

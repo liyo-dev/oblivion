@@ -112,6 +112,9 @@ public class PlayerFlyingController : MonoBehaviour
     // Estado interno para evitar llamadas repetidas
     private bool _footVfxActive = false;
 
+    public bool IsFlying => _isFlying;
+    public bool IsBoosting => _isBoosting;
+
     void Awake()
     {
         _animator = GetComponent<Animator>();

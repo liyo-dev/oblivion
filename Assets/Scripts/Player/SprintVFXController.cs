@@ -1,21 +1,18 @@
 using UnityEngine;
 
 /// <summary>
-/// Activa un VFX de "hyperdrive" (sensación de velocidad) mientras el jugador está en sprint.
-/// Colocar en el mismo GameObject que el Animator del jugador.
-/// Asignar el prefab vfx_Hyperdrive_01 en el inspector.
-///
-/// Lee los parámetros del Animator de Invector (IsSprinting, InputMagnitude, IsGrounded)
-/// para evitar depender de propiedades internal del motor.
+/// Activa un VFX de "hyperdrive" (sensación de velocidad) mientras el jugador corre en sprint
+/// o vuela acelerando. El VFX se instancia como hijo de la cámara para que el efecto se vea
+/// correctamente en espacio de pantalla.
 /// </summary>
 public class SprintVFXController : MonoBehaviour
 {
     [Header("VFX")]
-    [Tooltip("Prefab del efecto de velocidad (se instancia como hijo del jugador)")]
+    [Tooltip("Prefab del efecto de velocidad (se instancia como hijo de la cámara)")]
     [SerializeField] private GameObject hyperdriveVfxPrefab;
 
-    [Tooltip("Offset local respecto al jugador donde se posiciona el VFX")]
-    [SerializeField] private Vector3 vfxOffset = new Vector3(0f, 1f, 0f);
+    [Tooltip("Offset local respecto a la cámara donde se posiciona el VFX")]
+    [SerializeField] private Vector3 vfxOffset = new Vector3(0f, 0f, 0f);
 
     [Header("Timing")]
     [Tooltip("Retardo antes de activar el VFX para evitar parpadeos en sprints muy cortos")]
@@ -26,6 +23,7 @@ public class SprintVFXController : MonoBehaviour
 
     private Animator _animator;
     private Camera _cam;
+    private PlayerFlyingController _flyingController;
     private GameObject _vfxInstance;
     private ParticleSystem[] _particles;
     private bool _vfxActive;
@@ -39,6 +37,7 @@ public class SprintVFXController : MonoBehaviour
     {
         _animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
         _cam = Camera.main;
+        _flyingController = GetComponent<PlayerFlyingController>();
     }
 
     void OnEnable()
@@ -52,8 +51,11 @@ public class SprintVFXController : MonoBehaviour
 
         if (hyperdriveVfxPrefab != null && _vfxInstance == null)
         {
-            _vfxInstance = Instantiate(hyperdriveVfxPrefab, transform);
+            var parent = _cam != null ? _cam.transform : transform;
+            _vfxInstance = Instantiate(hyperdriveVfxPrefab, parent);
             _vfxInstance.transform.localPosition = vfxOffset;
+            _vfxInstance.transform.localRotation = Quaternion.identity;
+            _vfxInstance.transform.localScale = Vector3.one;
             _particles = _vfxInstance.GetComponentsInChildren<ParticleSystem>(true);
             _vfxInstance.SetActive(false);
             _vfxActive = false;
@@ -71,16 +73,15 @@ public class SprintVFXController : MonoBehaviour
         if (_animator == null) return;
 
         // InputMagnitude en Invector llega a 1.0f corriendo y a 1.5f en sprint.
-        // Si solo se pulsa el botón de sprint sin moverse, puede valer 0.5f.
-        // Requerimos > 1.1f para asegurar que realmente se está moviendo a velocidad de sprint.
         bool isGrounded = _animator.GetBool(HashIsGrounded);
         float inputMag  = _animator.GetFloat(HashInputMagnitude);
-        // IsSprinting parpadea frame a frame en Invector — usar solo InputMagnitude
-        bool shouldShow = isGrounded && inputMag > 1.05f;
+        bool isSprintRunning = isGrounded && inputMag > 1.05f;
+        bool isFlyingBoost = _flyingController != null && _flyingController.IsFlying && _flyingController.IsBoosting;
+        bool shouldShow = isSprintRunning || isFlyingBoost;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (debugLog)
-            Debug.Log($"[SprintVFX] IsGrounded={isGrounded} InputMagnitude={inputMag:F2} shouldShow={shouldShow}");
+            Debug.Log($"[SprintVFX] IsGrounded={isGrounded} InputMag={inputMag:F2} FlyBoost={isFlyingBoost} shouldShow={shouldShow}");
 #endif
 
         if (shouldShow && !_vfxActive)
@@ -97,9 +98,6 @@ public class SprintVFXController : MonoBehaviour
         {
             _sprintTimer = 0f;
         }
-
-        if (_vfxActive && _vfxInstance != null && _cam != null)
-            _vfxInstance.transform.rotation = _cam.transform.rotation;
     }
 
     private void PlayVFX()
