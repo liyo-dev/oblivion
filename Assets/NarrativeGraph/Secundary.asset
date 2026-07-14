@@ -34,6 +34,8 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Encuentro la caracola
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -48,6 +50,8 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "Coraz\xF3n Estelar"
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -66,6 +70,8 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Recibo Algas
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -79,6 +85,8 @@ MonoBehaviour:
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "A\xF1ado Algas al Inventario"
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -94,6 +102,8 @@ MonoBehaviour:
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: MISIONES CAPITULO 1
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -109,6 +119,8 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "Misi\xF3n buscar botas Rudolfo"
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -123,6 +135,8 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Desbloqueo el Salto
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -141,6 +155,8 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "Espero a completar la misi\xF3n"
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -155,6 +171,8 @@ MonoBehaviour:
       type: {class: UnlockAbilitiesNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Desbloqueo la habilidad de nadar
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -174,6 +192,8 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: El mareo de Roberto
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
@@ -188,6 +208,8 @@ MonoBehaviour:
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Nos da 5 pociones de magia
+        chapter: 
+        blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0

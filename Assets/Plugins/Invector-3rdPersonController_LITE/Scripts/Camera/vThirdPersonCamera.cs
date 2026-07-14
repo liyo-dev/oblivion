@@ -129,6 +129,16 @@ public class vThirdPersonCamera : MonoBehaviour
         Init();
     }
 
+    /// <summary>Fuerza los ángulos de órbita de la cámara (mouseX = horizontal, mouseY = vertical).
+    /// Usar antes de re-habilitar la cámara tras una cinemática para evitar que aparezca detrás de una pared.</summary>
+    public void SetAngles(float mouseXVal, float mouseYVal)
+    {
+        mouseX = mouseXVal;
+        mouseY = vExtensions.ClampAngle(mouseYVal, yMinLimit, yMaxLimit);
+        if (targetLookAt != null)
+            targetLookAt.rotation = Quaternion.Euler(mouseY, mouseX, 0);
+    }
+
     public void RotateCamera(float x, float y)
     {
         if (lockCameraForCinematic || _lockTarget != null || zoneRotationLocked) return;

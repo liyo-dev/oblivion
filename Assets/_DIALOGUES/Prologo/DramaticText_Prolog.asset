@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcee71a4a66e72d469df9ee68f6b57de, type: 3}
+  m_Name: DramaticText_Prolog
+  m_EditorClassIdentifier: Assembly-CSharp::DramaticPhraseConfig
+  phrases:
+  - text: "Rend\xEDos ante m\xED"
+    textId: 
+    style: 1
+    background: 2
+    entryAnim: 0
+    exitAnim: 0
+    duration: 3
+    voiceClip: {fileID: 0}
+    waitForAudio: 0
+    positionOffset: {x: 0, y: 0}
+    useMovement: 1
+    moveTo: {x: 0, y: 150}
+  - text: Deja en paz a mi pueblo...
+    textId: 
+    style: 0
+    background: 2
+    entryAnim: 1
+    exitAnim: 0
+    duration: 4
+    voiceClip: {fileID: 0}
+    waitForAudio: 0
+    positionOffset: {x: 0, y: 0}
+    useMovement: 1
+    moveTo: {x: -300, y: -100}
+  - text: "Will, \xA1DESPIERTA!"
+    textId: 
+    style: 2
+    background: 0
+    entryAnim: 0
+    exitAnim: 2
+    duration: 2.5
+    voiceClip: {fileID: 0}
+    waitForAudio: 0
+    positionOffset: {x: 0, y: 0}
+    useMovement: 1
+    moveTo: {x: 200, y: 50}
+  pauseBetween: 0.15

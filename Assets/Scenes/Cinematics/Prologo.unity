@@ -438,11 +438,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb0c4d98849e4043a6585b887c95820, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LoadScene
-  sceneName: Cinematic_Intro
+  sceneName: MainWorld
   loadOnStart: 0
   loadingOverlayScene: LoadingScreen
   fadeOverride: {fileID: 11400000, guid: 013263c83b6a84c4d95beaa8bd163ac8, type: 2}
   fadeDelay: 0
+  suppressNextSceneMusic: 1
 --- !u!4 &542845231
 Transform:
   m_ObjectHideFlags: 0

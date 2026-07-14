@@ -14336,6 +14336,7 @@ GameObject:
   - component: {fileID: 8633260300737531714}
   - component: {fileID: 1502966510894875531}
   - component: {fileID: 2189284623597346863}
+  - component: {fileID: 4060681882113047802}
   m_Layer: 8
   m_Name: _ESTELA
   m_TagString: Estela
@@ -14506,6 +14507,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -14684,6 +14686,23 @@ MonoBehaviour:
   - MagicProjectile
   minDefendDuration: 2
   maxDefendDuration: 5
+--- !u!114 &4060681882113047802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6741617104233437454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afeed46f44267e241ac19e3dcd512930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestObjectiveMarker
+  questId: ELDRAN_MISSION6
+  stepIndex: 0
+  showAfterStep: -1
+  icon: {fileID: 21300000, guid: 5fff0fe396af4674595e4938a11bd7a3, type: 3}
+  color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &6762110793360784662
 GameObject:
   m_ObjectHideFlags: 0

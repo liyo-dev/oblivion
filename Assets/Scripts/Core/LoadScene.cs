@@ -15,6 +15,11 @@ public class LoadScene : MonoBehaviour
     public EasyTransition.TransitionSettings fadeOverride;
     [Min(0f)] public float fadeDelay = 0f;
 
+    [Header("Audio")]
+    [Tooltip("Si true, suprime el arranque automático de música de la escena destino. " +
+             "Úsalo cuando esa escena tiene un DramaticTextNode que restaura la música al terminar.")]
+    public bool suppressNextSceneMusic = false;
+
     void Start()
     {
         if (loadOnStart && !string.IsNullOrEmpty(sceneName))
@@ -29,6 +34,9 @@ public class LoadScene : MonoBehaviour
             Debug.LogWarning("[LoadScene] No scene name specified!");
             return;
         }
+
+        if (suppressNextSceneMusic)
+            AudioService.MuteNextBaseSceneMusic = true;
 
         bool useOverlay = !string.IsNullOrEmpty(loadingOverlayScene);
 

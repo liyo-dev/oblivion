@@ -28,6 +28,10 @@ MonoBehaviour:
       stepConditionId: 
       stepIndex: 0
       consumeOnComplete: 1
+    requiredWardrobeItems: []
+    requiredPartyMembers: []
+    requiredCharacter: -1
+    dlgWrongCharacter: {fileID: 0}
     dlgBefore: {fileID: 11400000, guid: 609dba3ed6c65cd419426a928bcabebc, type: 2}
     dlgInProgress: {fileID: 11400000, guid: 9d918d2744a90d846885875933551c02, type: 2}
     dlgTurnIn: {fileID: 11400000, guid: 7c00c038583553e408f119b20825c282, type: 2}
@@ -47,6 +51,7 @@ MonoBehaviour:
     postAction:
       actionType: 0
       dialogueBeforeAction: {fileID: 0}
+      maxDialogueDistance: 30
       targetAnchorName: 
       targetTransform: {fileID: 0}
       maxMovementDuration: 0
@@ -61,6 +66,8 @@ MonoBehaviour:
       customAction:
         m_PersistentCalls:
           m_Calls: []
+      chainNextQuestAfterAction: 0
+      chainDelay: 0.5
   enableItemDetection: 1
   detectionRadius: 3
   detectionAngle: 90
@@ -68,11 +75,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   detectionInterval: 0.33
+  autoStartOnDetection: 0
   rotationSpeed: 360
-  questIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
+  questIconPrefab: {fileID: 6303534759802428624, guid: 07a0b7801b6ad424eae696bee0e938ff, type: 3}
   questIconOffset: {x: 0, y: 2.5, z: 0}
   showIconWhenQuestAvailable: 1
   showIconWhenQuestInProgress: 1
   showIconWhenQuestReadyToTurnIn: 1
-  turnInIconPrefab: {fileID: 0}
+  turnInIconPrefab: {fileID: 6303534759802428624, guid: e3166847a7c81b443bdbe623a681ae52, type: 3}
   hideIconWhenAllCompleted: 1

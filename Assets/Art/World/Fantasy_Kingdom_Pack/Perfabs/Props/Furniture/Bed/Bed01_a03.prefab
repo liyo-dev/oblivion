@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 65386842399853726}
   - component: {fileID: 7929617992411032918}
   - component: {fileID: 8516445717234495141}
+  - component: {fileID: 7784020332866428045}
   m_Layer: 8
   m_Name: Bed01_a03
   m_TagString: Untagged
@@ -36,6 +37,9 @@ Transform:
   m_Children:
   - {fileID: 399368997477190766}
   - {fileID: 203020830509951505}
+  - {fileID: 1846220991582729171}
+  - {fileID: 1041254996337363729}
+  - {fileID: 5661880240781306111}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &33225448495509406
@@ -132,6 +136,9 @@ MonoBehaviour:
   interactionPoint: {fileID: 203020830509951505}
   overrideFacing: 1
   requiredProximity: 1.5
+  prop: {fileID: 0}
+  propHandOffset: {x: 0, y: 0, z: 0}
+  propHandRotation: {x: 0, y: 0, z: 0}
   minOccupationDuration: 15
   maxOccupationDuration: 90
 --- !u!114 &8516445717234495141
@@ -175,6 +182,89 @@ MonoBehaviour:
   OnConsumed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7784020332866428045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1212279657770944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67f6c59a49ab45cb80d225cf31436f5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SleepTrigger
+  player: {fileID: 0}
+  sleepAnimationState: Sleeping_NoWeapon
+  bedPosition: {fileID: 203020830509951505}
+  sleepCameraAnchor: {fileID: 5661880240781306111}
+  cameraTransitionSpeed: 2
+  wakeUpPosition: {fileID: 1041254996337363729}
+  wakeUpCameraAnchor: {fileID: 1846220991582729171}
+  sleepOnStart: 1
+  wakeNarrativeEvent: will_wake_up
+--- !u!1 &3499212695039656221
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5661880240781306111}
+  m_Layer: 8
+  m_Name: Sleep Camera Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5661880240781306111
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3499212695039656221}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.00000006332995, y: 0.70710677, z: -0.70710677, w: 0.00000006332995}
+  m_LocalPosition: {x: -1, y: 5.33, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4429195976566410}
+  m_LocalEulerAnglesHint: {x: 90, y: 170, z: -10}
+--- !u!1 &3861155738467301201
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1846220991582729171}
+  m_Layer: 8
+  m_Name: Wake Up Camera Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1846220991582729171
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3861155738467301201}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.11, y: 0.76, z: 4.11}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4429195976566410}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4574521742693201437
 GameObject:
   m_ObjectHideFlags: 0
@@ -304,6 +394,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3a4d86f7cded664aa88409892248c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BillboardUI
+--- !u!1 &6161405970544899211
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1041254996337363729}
+  m_Layer: 8
+  m_Name: 'Wake Up Position '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1041254996337363729
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6161405970544899211}
+  serializedVersion: 2
+  m_LocalRotation: {x: 7.1054274e-15, y: -0.6364753, z: 0.000000027821244, w: 0.77129704}
+  m_LocalPosition: {x: -1.56, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4429195976566410}
+  m_LocalEulerAnglesHint: {x: 0, y: -79.059, z: 0}
 --- !u!1 &6774643107201393765
 GameObject:
   m_ObjectHideFlags: 0

@@ -120,7 +120,19 @@
       "Bash(awk 'NR>=15376 && NR<=15415')",
       "Bash(awk 'NR>=7455 && NR<=7520')",
       "Bash(awk '/m_Name: LoadScene/,/^---/' \"Assets/Scenes/Cinematics/Prologo.unity\")",
-      "Bash(awk -F\"&\" '{print NR\": \"$2}')"
+      "Bash(awk -F\"&\" '{print NR\": \"$2}')",
+      "Bash(Move-Item *)",
+      "PowerShell(Move-Item *)",
+      "Bash(awk 'NR>=35 && NR<=55')",
+      "Bash(sed -n '942,965p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\Systems\\\\Start.unity\")",
+      "Bash(sed -n '1192,1215p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\Systems\\\\Start.unity\")",
+      "Bash(sed -n '6680,6710p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\Systems\\\\Start.unity\")",
+      "Bash(sed -n '1556,1568p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\Systems\\\\Start.unity\")",
+      "Bash(sed -n '14296,14310p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scenes\\\\Systems\\\\Start.unity\")",
+      "Bash(dir \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Invector-3rdPersonController_LITE\\\\Scripts\\\\CharacterController\" /b)",
+      "Bash(dir Assets\\\\Art /s /b)",
+      "Bash(dir Assets\\\\Plugins /s /b)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Recurse -File | Where-Object { $_.Name -match \"bubble|speech|comic|bocadillo|dialog|balloon|chat|talk\" } | Select-Object -ExpandProperty FullName | Select-Object -First 30)"
     ]
   }
 }
