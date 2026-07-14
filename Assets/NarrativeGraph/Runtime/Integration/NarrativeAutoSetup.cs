@@ -105,14 +105,25 @@ public class NarrativeAutoSetup : MonoBehaviour
 
         _signals?.ResetState(preservePending);
         _questService?.ResetState();
-        
+
         if (_runner != null)
         {
             if (clearBlackboard)
             {
                 _runner.Blackboard?.Clear();
+
+                // Los runners del NarrativeGraphHub son independientes del runner de NarrativeAutoSetup.
+                // Sus blackboards persisten en memoria entre partidas y contienen __currentNodeGuid
+                // de la sesión anterior. Sin esta limpieza, StartFromStartNode() salta al nodo
+                // incorrecto en la nueva partida.
+                var hub = NarrativeGraphHub.Instance;
+                if (hub != null)
+                {
+                    hub.StopAllRunners();
+                    hub.ClearAllBlackboards();
+                }
             }
-            
+
             if (restartGraph)
             {
                 _runner.StartFromStartNode();

@@ -77,6 +77,10 @@ public sealed class AudioService : MonoBehaviour
 
     // Recuerdo qué clip pidió la última escena base (no aditiva)
     AudioClip _lastRequestedSceneClip;
+
+    // Cuando se sabe que una escena aditiva con música propia va a cargarse justo después,
+    // se activa este flag para que OnSceneLoaded(Single) registre el clip pero no lo reproduzca.
+    public static bool MuteNextBaseSceneMusic;
     
     // --- Footstep alternation ---
     int _footstepIndex = 0;
@@ -281,6 +285,9 @@ public sealed class AudioService : MonoBehaviour
 
         // Escena base (no aditiva): elige la primera coincidencia
         _lastRequestedSceneClip = null;
+        bool suppressMusic = MuteNextBaseSceneMusic;
+        MuteNextBaseSceneMusic = false; // consumir siempre, haya o no coincidencia
+
         for (int i = 0; i < profile.sceneMusic.Count; i++)
         {
             var r = profile.sceneMusic[i];
@@ -290,8 +297,7 @@ public sealed class AudioService : MonoBehaviour
                 scene.name.IndexOf(r.sceneName, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _lastRequestedSceneClip = r.music;
-                if (GetCurrentMusicClip() != r.music) PlayMusic(r.music);
-                // si ya suena el mismo, fast-path evita reinicio
+                if (!suppressMusic && GetCurrentMusicClip() != r.music) PlayMusic(r.music);
                 return;
             }
         }
@@ -333,12 +339,17 @@ public sealed class AudioService : MonoBehaviour
             yield break;
         }
 
-        // Si no hay continuidad, restaurar lo que sonaba antes de la cinemática
+        // Si no hay continuidad, restaurar lo que sonaba antes de la cinemática.
+        // Si el stack guardó null (nada sonaba cuando cargó la escena aditiva), usar _lastRequestedSceneClip.
         if (_musicStack.Count > 0)
         {
             var prev = _musicStack.Pop();
-            if (prev.clip != null) PlayMusic(prev.clip, fade);
-            else StopMusic(fade);
+            if (prev.clip != null)
+                PlayMusic(prev.clip, fade);
+            else if (_lastRequestedSceneClip != null)
+                PlayMusic(_lastRequestedSceneClip, fade);
+            else
+                StopMusic(fade);
         }
 
         // Salvaguarda adicional (opcional): si la cinemática define una escena base a restaurar

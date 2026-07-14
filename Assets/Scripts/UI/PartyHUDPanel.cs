@@ -67,6 +67,9 @@ namespace Sendero.UI
             PlayerParty.OnPartyChanged += OnPartyChanged;
             PartyControlManager.OnActiveCharacterChanged += OnActiveCharacterChanged;
             PartyControlManager.OnFollowModeChanged += OnFollowModeChanged;
+            // El HUD es persistente (Start.unity): al re-activarse necesita refrescar
+            // el estado del party, ya que Start() solo se ejecuta una vez.
+            if (_portraits != null) Refresh();
         }
 
         private void OnDisable()

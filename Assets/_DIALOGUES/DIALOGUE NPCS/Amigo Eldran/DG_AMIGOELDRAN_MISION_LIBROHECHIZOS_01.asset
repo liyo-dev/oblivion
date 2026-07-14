@@ -97,4 +97,22 @@ MonoBehaviour:
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     emotion: 1
+  - speakerNameId: CHAR_WILL
+    textId: DG_LIBROHECHIZOS_14
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 3
+  - speakerNameId: CHAR_ESTELA
+    textId: DG_LIBROHECHIZOS_15
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 3
+  - speakerNameId: CHAR_LIAM
+    textId: DG_LIBROHECHIZOS_16
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 3
   isGroupConversation: 0

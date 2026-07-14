@@ -134,3 +134,9 @@ MonoBehaviour:
     duckTo: 0
     fade: 1
     restoreBaseSceneName: 
+  - sceneName: MainMenu
+    music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
+    duckInsteadOfReplace: 0
+    duckTo: 0
+    fade: 1
+    restoreBaseSceneName: 

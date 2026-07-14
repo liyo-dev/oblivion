@@ -1,6 +1,54 @@
 {
     "texts": [
         {
+            "key": "FORAGE_CAUGHT",
+            "value": "They almost caught me!"
+        },
+        {
+            "key": "FORAGE_COUNTER",
+            "value": "Supplies: {0}/{1}"
+        },
+        {
+            "key": "FORAGE_INSTRUCTION",
+            "value": "Approach each stall and press <sprite name=\"interactable_A\"> to grab something.\n\nWatch out! If someone is nearby, you'll have to wait.\n\nEstela moves very slowly. Don't draw attention."
+        },
+        {
+            "key": "FORAGE_LOSE",
+            "value": "I got caught!"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_01",
+            "value": "No money… No money… Not a single coin!"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_02",
+            "value": "Well… it's not really stealing. It's more like… redistributing resources."
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_03",
+            "value": "I just need to grab something from each stall without being seen. Easy. I'm invisible when I want to be."
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_NEXT",
+            "value": "Press <sprite name=\"interactable_A\"> to continue"
+        },
+        {
+            "key": "FORAGE_MONOLOGUE_START",
+            "value": "Press <sprite name=\"interactable_A\"> to see instructions"
+        },
+        {
+            "key": "FORAGE_NPC_NEARBY",
+            "value": "Wait… someone is watching."
+        },
+        {
+            "key": "FORAGE_START_PROMPT",
+            "value": "Press <sprite name=\"interactable_A\"> to start"
+        },
+        {
+            "key": "FORAGE_WIN",
+            "value": "Done! No one saw me… I think."
+        },
+        {
             "key": "MINIGAME_CAUGHT_MESSAGE",
             "value": "You got caught!"
         },
@@ -43,54 +91,6 @@
         {
             "key": "MINIGAME_WIN",
             "value": "You escaped!"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_01",
-            "value": "No money… No money… Not a single coin!"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_02",
-            "value": "Well… it's not really stealing. It's more like… redistributing resources."
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_03",
-            "value": "I just need to grab something from each stall without being seen. Easy. I'm invisible when I want to be."
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_NEXT",
-            "value": "Press <sprite name=\"interactable_A\"> to continue"
-        },
-        {
-            "key": "FORAGE_MONOLOGUE_START",
-            "value": "Press <sprite name=\"interactable_A\"> to see instructions"
-        },
-        {
-            "key": "FORAGE_INSTRUCTION",
-            "value": "Approach each stall and press <sprite name=\"interactable_A\"> to grab something.\n\nWatch out! If someone is nearby, you'll have to wait.\n\nEstela moves very slowly. Don't draw attention."
-        },
-        {
-            "key": "FORAGE_START_PROMPT",
-            "value": "Press <sprite name=\"interactable_A\"> to start"
-        },
-        {
-            "key": "FORAGE_COUNTER",
-            "value": "Supplies: {0}/{1}"
-        },
-        {
-            "key": "FORAGE_CAUGHT",
-            "value": "They almost caught me!"
-        },
-        {
-            "key": "FORAGE_WIN",
-            "value": "Done! No one saw me… I think."
-        },
-        {
-            "key": "FORAGE_LOSE",
-            "value": "I got caught!"
-        },
-        {
-            "key": "FORAGE_NPC_NEARBY",
-            "value": "Wait… someone is watching."
         }
     ]
 }

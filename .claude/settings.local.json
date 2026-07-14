@@ -115,7 +115,12 @@
       "Bash(perl -i -0777 -pe 's/  persistLastDistance: 0\\\\n  onJoinedParty:/  persistLastDistance: 0\\\\n  dialogueCharacterId: CHAR_LETY_VICKY\\\\n  onJoinedParty:/g' \"Lety.prefab\")",
       "Bash(which perl *)",
       "Bash(python *)",
-      "Bash(PowerShell *)"
+      "Bash(PowerShell *)",
+      "Bash(awk 'NR>=8855 && NR<=8935')",
+      "Bash(awk 'NR>=15376 && NR<=15415')",
+      "Bash(awk 'NR>=7455 && NR<=7520')",
+      "Bash(awk '/m_Name: LoadScene/,/^---/' \"Assets/Scenes/Cinematics/Prologo.unity\")",
+      "Bash(awk -F\"&\" '{print NR\": \"$2}')"
     ]
   }
 }

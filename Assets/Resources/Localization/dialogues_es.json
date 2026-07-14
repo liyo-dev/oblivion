@@ -170,7 +170,7 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_09",
-            "value": "A ver lo unico que se es que es custodiado por un guardian. Al final del camino Rocoso hay un templo..."
+            "value": "A ver lo unico que se es que es custodiado por un guardian. Al final del camino Rocoso hay unas Ruinas..."
         },
         {
             "key": "DG_LIBROHECHIZOS_10",
@@ -186,7 +186,19 @@
         },
         {
             "key": "DG_LIBROHECHIZOS_13",
-            "value": "Eso es ¿bueno o malo?"
+            "value": "¿Qué dices Liam? ¿Que te apetece comerte una bola de fuego?"
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_14",
+            "value": "No empecéis otra vez...."
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_15",
+            "value": "A empezado él."
+        },
+        {
+            "key": "DG_LIBROHECHIZOS_16",
+            "value": "Mi mi mi mi..."
         },
         {
             "key": "DLG_AMIGAPEZ_01",

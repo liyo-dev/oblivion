@@ -469,7 +469,13 @@ public class GameBootService : MonoBehaviour
         {
             _profile.NewGameReset(_saveSystem);
         }
-        
+
+        // Reset explícito del party para garantizar estado limpio en nueva partida,
+        // independientemente del flujo de OnProfileReady. Evita que _pendingMemberIds
+        // o _members residuales de la sesión anterior persistan en la nueva partida.
+        if (Game.NPC.PlayerParty.HasInstance)
+            Game.NPC.PlayerParty.Instance.ResetForNewGame();
+
         // Forzar re-inicialización de sistemas
         OnProfileReady?.Invoke();
     }
