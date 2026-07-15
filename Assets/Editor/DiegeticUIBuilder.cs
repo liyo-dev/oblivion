@@ -19,11 +19,15 @@ public static class DiegeticUIBuilder
     [MenuItem("El Sendero/Crear Prefabs UI/SpeechBubbleUI")]
     static void BuildSpeechBubble() => CreateSpeechBubbleUI();
 
+    [MenuItem("El Sendero/Crear Prefabs UI/PanicInputUI")]
+    static void BuildPanicInput() => CreatePanicInputUI();
+
     [MenuItem("El Sendero/Crear Prefabs UI/Todos")]
     static void BuildAll()
     {
         CreateTutorialPromptUI();
         CreateSpeechBubbleUI();
+        CreatePanicInputUI();
     }
 
     // ── TutorialPromptUI ──────────────────────────────────────────────────
@@ -166,6 +170,103 @@ public static class DiegeticUIBuilder
         so.ApplyModifiedProperties();
 
         SavePrefab(root, $"{PrefabPath}/SpeechBubbleUI.prefab");
+    }
+
+    // ── PanicInputUI ──────────────────────────────────────────────────────
+
+    static void CreatePanicInputUI()
+    {
+        // Raíz — centrada horizontalmente, a 1/3 de altura desde abajo
+        var root = MakeRT("PanicInputUI");
+        var rootRT = root.GetComponent<RectTransform>();
+        rootRT.anchorMin        = new Vector2(0.5f, 0.5f);
+        rootRT.anchorMax        = new Vector2(0.5f, 0.5f);
+        rootRT.pivot            = new Vector2(0.5f, 0.5f);
+        rootRT.anchoredPosition = new Vector2(0f, -180f);
+        rootRT.sizeDelta        = new Vector2(160f, 190f);
+
+        var cg = root.AddComponent<CanvasGroup>();
+        cg.alpha          = 0f;
+        cg.blocksRaycasts = false;
+        cg.interactable   = false;
+
+        // Fondo semitransparente redondeado
+        var bg = Child(root, "Background");
+        Stretch(bg);
+        var bgImg = bg.AddComponent<Image>();
+        bgImg.color         = new Color(0f, 0f, 0f, 0.55f);
+        bgImg.raycastTarget = false;
+
+        // Layout vertical: icono arriba, barra abajo
+        var vlg = root.AddComponent<VerticalLayoutGroup>();
+        vlg.childAlignment        = TextAnchor.MiddleCenter;
+        vlg.padding               = new RectOffset(16, 16, 20, 20);
+        vlg.spacing               = 14f;
+        vlg.childForceExpandWidth  = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childControlWidth      = true;
+        vlg.childControlHeight     = true;
+
+        // ── Icono del botón (X / Square / A según plataforma) ────────────
+        var iconGO = Child(root, "ButtonIcon");
+        var iconLE = iconGO.AddComponent<LayoutElement>();
+        iconLE.preferredHeight = 100f;
+        iconLE.flexibleWidth   = 1f;
+        var iconImg = iconGO.AddComponent<Image>();
+        iconImg.color           = Color.white;
+        iconImg.preserveAspect  = true;
+        iconImg.raycastTarget   = false;
+        // Sprite asignar manualmente en Inspector después de generar el prefab
+
+        // ── Barra de progreso (mash counter) ─────────────────────────────
+        var sliderGO = Child(root, "ProgressBar");
+        var sliderLE = sliderGO.AddComponent<LayoutElement>();
+        sliderLE.preferredHeight = 18f;
+        sliderLE.flexibleWidth   = 1f;
+        var slider = sliderGO.AddComponent<Slider>();
+        slider.direction  = Slider.Direction.LeftToRight;
+        slider.minValue   = 0f;
+        slider.maxValue   = 1f;
+        slider.value      = 0f;
+        slider.interactable = false;
+
+        // Fondo de la barra
+        var sliderBgGO = Child(sliderGO, "Background");
+        Stretch(sliderBgGO);
+        var sliderBgImg = sliderBgGO.AddComponent<Image>();
+        sliderBgImg.color         = new Color(0.15f, 0.15f, 0.15f, 0.9f);
+        sliderBgImg.raycastTarget = false;
+
+        // Fill area + fill
+        var fillAreaGO = Child(sliderGO, "Fill Area");
+        var fillAreaRT = fillAreaGO.GetComponent<RectTransform>();
+        fillAreaRT.anchorMin  = new Vector2(0f, 0f);
+        fillAreaRT.anchorMax  = new Vector2(1f, 1f);
+        fillAreaRT.offsetMin  = Vector2.zero;
+        fillAreaRT.offsetMax  = Vector2.zero;
+
+        var fillGO = Child(fillAreaGO, "Fill");
+        var fillRT = fillGO.GetComponent<RectTransform>();
+        fillRT.anchorMin  = new Vector2(0f, 0f);
+        fillRT.anchorMax  = new Vector2(0f, 1f);
+        fillRT.offsetMin  = Vector2.zero;
+        fillRT.offsetMax  = Vector2.zero;
+        var fillImg = fillGO.AddComponent<Image>();
+        fillImg.color         = new Color(1f, 0.45f, 0.08f, 1f); // naranja cálido
+        fillImg.raycastTarget = false;
+
+        slider.fillRect     = fillRT;
+        slider.targetGraphic = sliderBgImg;
+
+        // ── Conectar el componente PanicInputUI ───────────────────────────
+        var script = root.AddComponent<PanicInputUI>();
+        var so = new SerializedObject(script);
+        so.FindProperty("_rootGroup")  .objectReferenceValue = cg;
+        so.FindProperty("_buttonIcon") .objectReferenceValue = iconImg;
+        so.FindProperty("_progressBar").objectReferenceValue = slider;
+        so.ApplyModifiedProperties();
+
+        SavePrefab(root, $"{PrefabPath}/PanicInputUI.prefab");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -216,10 +216,23 @@ public class MainMenuController : MonoBehaviour
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
 
-        bool hasSave = saveSystem && saveSystem.HasSave();
+        bool isTestMode = GameBootService.IsPresetOverrideActive;
 
-        if (continueRow) continueRow.SetActive(hasSave);
-        if (continueButton) continueButton.interactable = hasSave;
+        if (isTestMode)
+        {
+            // Modo test: el bootPreset actúa como partida cargada → solo Continuar.
+            // Nueva Partida se oculta porque no tiene sentido resetear el preset de prueba.
+            if (continueRow) continueRow.SetActive(true);
+            if (continueButton) continueButton.interactable = true;
+            if (newGameButton) newGameButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            bool hasSave = saveSystem && saveSystem.HasSave();
+            if (continueRow) continueRow.SetActive(hasSave);
+            if (continueButton) continueButton.interactable = hasSave;
+            if (newGameButton) newGameButton.gameObject.SetActive(true);
+        }
     }
 
     void AutoSelectFirstIfNeeded()
@@ -629,7 +642,8 @@ public class MainMenuController : MonoBehaviour
             continueButton.interactable = false;
         }
 
-        if (newGameButton)
+        // Solo manipular newGameButton si está visible (en modo test está oculto)
+        if (newGameButton && newGameButton.gameObject.activeInHierarchy)
         {
             _armSnapshotNewInteractable = newGameButton.interactable;
             newGameButton.interactable = false;
@@ -648,7 +662,8 @@ public class MainMenuController : MonoBehaviour
         if (continueButton)
             continueButton.interactable = _armSnapshotContinueInteractable;
 
-        if (newGameButton)
+        // Solo restaurar newGameButton si está visible
+        if (newGameButton && newGameButton.gameObject.activeInHierarchy)
             newGameButton.interactable = _armSnapshotNewInteractable;
 
         _armSnapshotValid = false;

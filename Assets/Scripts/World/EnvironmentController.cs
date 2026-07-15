@@ -52,6 +52,8 @@ public class EnvironmentController : MonoBehaviour
     private bool _cinematicOverrideActive;
     private EnvironmentMode _preCinematicMode;
     private AnchorEnvironment _preCinematicInterior;
+    // true cuando ApplyInterior fue bloqueado por cinemática activa: reintentar al terminar
+    private bool _cinematicReapplyPending;
     
     /// <summary>
     /// Indica si actualmente hay un override cinemático activo
@@ -72,6 +74,8 @@ public class EnvironmentController : MonoBehaviour
     {
         if (Instance && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        // Garantizar que Update() corra aunque el componente esté desactivado en escena
+        enabled = true;
         DontDestroyOnLoad(gameObject);
 
         SceneManager.activeSceneChanged += (_, _) => OnSceneChanged();
@@ -81,6 +85,7 @@ public class EnvironmentController : MonoBehaviour
     void OnSceneChanged()
     {
         _cam = null; _appliedCam = null;
+        _cinematicReapplyPending = false;
         // no invalidamos el snapshot: si estabas en interior, lo necesitamos para volver a exterior
         _needReapply = (_mode != EnvironmentMode.Unknown); // re-aplicar el modo actual cuando haya cámara
     }
@@ -89,6 +94,14 @@ public class EnvironmentController : MonoBehaviour
     {
         var camNow = ResolveCamera();
         if (camNow != _appliedCam) _needReapply = true;
+
+        // Re-aplicar configuración de cámara si quedó pendiente porque había cinemática activa
+        if (_cinematicReapplyPending)
+        {
+            bool stillCinematic = (DialogueCinematicController.Instance != null && DialogueCinematicController.Instance.IsInCinematicMode)
+                               || Game.Cinematics.SimpleCinematicDirector.IsAnyCinematicPlaying;
+            if (!stillCinematic) { _needReapply = true; _cinematicReapplyPending = false; }
+        }
 
         if (_needReapply && camNow != null)
         {
@@ -269,7 +282,17 @@ public class EnvironmentController : MonoBehaviour
     // === implementación ===
     void Reapply(Camera cam)
     {
-        if (_mode == EnvironmentMode.Interior) ApplyInteriorTo(cam, _currentInterior, reapply:true);
+        if (_mode == EnvironmentMode.Interior)
+        {
+            // _currentInterior puede haber sido destruida al descargar la escena anterior.
+            // Si está destruida, resetear a Unknown para que WorldBootstrap re-aplique.
+            if (!_currentInterior)
+            {
+                _mode = EnvironmentMode.Unknown;
+                return;
+            }
+            ApplyInteriorTo(cam, _currentInterior, reapply:true);
+        }
         else if (_mode == EnvironmentMode.Exterior) ApplyExteriorTo(cam);
     }
     
@@ -492,11 +515,14 @@ public class EnvironmentController : MonoBehaviour
         
         if (isCinematicActive)
         {
-            // Si hay cinemática, solo aplicamos lógica de luces y objetos, pero NO tocamos la cámara
-            // Debug.Log("[EnvironmentController] Cinemática activa - Saltando configuración de cámara para evitar conflictos.");
+            // Si hay cinemática, solo aplicamos lógica de luces y objetos, pero NO tocamos la cámara.
+            // Marcamos para re-aplicar en cuanto la cinemática termine (ver Update).
+            _cinematicReapplyPending = true;
         }
         else
         {
+            _cinematicReapplyPending = false;
+
             // Lógica normal de cámara
             if (env && env.useSolidColorBackground)
             {
@@ -509,7 +535,7 @@ public class EnvironmentController : MonoBehaviour
                 cam.clearFlags = CameraClearFlags.Skybox;
                 RenderSettings.skybox = (env && env.interiorSkyboxOverride) ? env.interiorSkyboxOverride : null;
             }
-            
+
             // Ajustar far clip plane de la cámara
             if (env && env.adjustCameraClipping)
             {

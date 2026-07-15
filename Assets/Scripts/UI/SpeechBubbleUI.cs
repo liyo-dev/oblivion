@@ -45,8 +45,10 @@ public class SpeechBubbleUI : MonoBehaviour
     bool _isShowing;
     Coroutine _autoHideRoutine;
 
-    // Caché de Animators: evita GetComponentInChildren repetido por el mismo objetivo
+    // Caché de componentes de animación: evita GetComponentInChildren repetido
     readonly Dictionary<Transform, Animator> _animatorCache = new();
+    readonly Dictionary<Transform, NPCSimpleAnimator> _npcAnimCache = new();
+    readonly Dictionary<Transform, PlayerDialogueAnimator> _playerAnimCache = new();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -125,11 +127,25 @@ public class SpeechBubbleUI : MonoBehaviour
             if (sprite != null) _bubbleImage.sprite = sprite;
         }
 
-        // Animación del personaje (llamada puntual, no en Update)
+        // Animación del personaje: preferir el wrapper de alto nivel para respetar el state machine
         if (!string.IsNullOrEmpty(animTrigger) && target != null)
         {
-            var anim = GetCachedAnimator(target);
-            if (anim != null) anim.Play(animTrigger);
+            var npcAnim = GetCachedNPCAnimator(target);
+            if (npcAnim != null)
+            {
+                npcAnim.PlaySocialGesture(animTrigger);
+            }
+            else
+            {
+                var playerAnim = GetCachedPlayerAnimator(target);
+                if (playerAnim != null)
+                    playerAnim.PlayGesture(animTrigger);
+                else
+                {
+                    var anim = GetCachedAnimator(target);
+                    if (anim != null) anim.Play(animTrigger);
+                }
+            }
         }
 
         // Pop-in: escala desde 0 con rebote + fade
@@ -180,5 +196,25 @@ public class SpeechBubbleUI : MonoBehaviour
             _animatorCache[target] = anim;
         }
         return anim;
+    }
+
+    NPCSimpleAnimator GetCachedNPCAnimator(Transform target)
+    {
+        if (!_npcAnimCache.TryGetValue(target, out NPCSimpleAnimator npcAnim))
+        {
+            npcAnim = target.GetComponentInChildren<NPCSimpleAnimator>();
+            _npcAnimCache[target] = npcAnim;
+        }
+        return npcAnim;
+    }
+
+    PlayerDialogueAnimator GetCachedPlayerAnimator(Transform target)
+    {
+        if (!_playerAnimCache.TryGetValue(target, out PlayerDialogueAnimator playerAnim))
+        {
+            playerAnim = target.GetComponentInChildren<PlayerDialogueAnimator>();
+            _playerAnimCache[target] = playerAnim;
+        }
+        return playerAnim;
     }
 }

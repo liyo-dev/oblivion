@@ -33,7 +33,7 @@ public class EnemyProjectile : MonoBehaviour
     private float _nextProximityCheck;
 
     // Pool estático para VFX de impacto — evita GC spikes cuando muchos proyectiles mueren a la vez
-    private static readonly Dictionary<int, Stack<GameObject>> _hitFxPool = new Dictionary<int, Stack<GameObject>>(4);
+    private static readonly Dictionary<EntityId, Stack<GameObject>> _hitFxPool = new Dictionary<EntityId, Stack<GameObject>>(4);
 
     // Layers cacheados en Awake para evitar string lookups en OnTriggerEnter
     private int _enemyLayer;
@@ -439,7 +439,7 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (!hitEffectPrefab) return;
 
-        int id = hitEffectPrefab.GetInstanceID();
+        EntityId id = hitEffectPrefab.GetEntityId();
         if (!_hitFxPool.TryGetValue(id, out var stack))
             _hitFxPool[id] = stack = new Stack<GameObject>(8);
 
@@ -462,9 +462,9 @@ public class EnemyProjectile : MonoBehaviour
     // Devuelve el VFX de impacto al pool estático tras reproducirse
     private sealed class HitFxAutoReturn : MonoBehaviour
     {
-        private int _poolKey;
+        private EntityId _poolKey;
 
-        public void Init(int key, float delay)
+        public void Init(EntityId key, float delay)
         {
             _poolKey = key;
             CancelInvoke(nameof(ReturnToPool));

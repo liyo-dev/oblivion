@@ -275,7 +275,7 @@ public class MagicSlotsUI : MonoBehaviour
             if (_debugLogTimer > 3f)
             {
                 _debugLogTimer = 0f;
-                Debug.Log($"[MagicSlotsUI] SlotLeft spell={spell?.displayName ?? "null"} | magicCaster={_magicCaster.name} (ID={_magicCaster.GetInstanceID()})");
+                Debug.Log($"[MagicSlotsUI] SlotLeft spell={spell?.displayName ?? "null"} | magicCaster={_magicCaster.name} (ID={_magicCaster.GetEntityId()})");
             }
         }
 #endif

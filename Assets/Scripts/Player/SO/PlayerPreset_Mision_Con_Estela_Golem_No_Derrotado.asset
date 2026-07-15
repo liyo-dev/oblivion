@@ -24,6 +24,7 @@ MonoBehaviour:
   rightSpellId: 2
   specialSpellId: 0
   flags:
+  - SLEEP_DONE:PrologueBed
   - CINEMATIC_SEEN:Cinematic_DemonAppears
   - CINEMATIC_SEEN:Cinematic_VillainPlans
   - PICKUP_MainWorld_Chest01_10,2_0,0_14,2

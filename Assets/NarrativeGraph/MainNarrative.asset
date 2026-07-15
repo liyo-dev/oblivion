@@ -18,7 +18,6 @@ MonoBehaviour:
   - rid: 4128268622357594632
   - rid: 4128268622357594945
   - rid: 4128268641526088178
-  - rid: 4128268641526088494
   - rid: 4128268641526088533
   - rid: 4128268648164098057
   - rid: 4128268764951085534
@@ -79,6 +78,10 @@ MonoBehaviour:
   - rid: 5290829367972724959
   - rid: 5290829367972724960
   - rid: 5290829367972725004
+  - rid: 5290829367972725077
+  - rid: 5290829367972725078
+  - rid: 5290829396811448504
+  - rid: 5290829396811448506
   applicableSceneNames:
   - MainWorld
   references:
@@ -165,7 +168,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9aed13d-e410-467b-a7ec-5c3e949debbf
-        position: {x: 4132, y: -598}
+        position: {x: 4351, y: -598}
         outputs:
         - bc692d5b-b0ca-4095-85fc-2380f374f9d3
         questId: ELDRAN_MISSION3
@@ -459,7 +462,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: d038b916-5571-48b0-a896-7dbc2af3e05c
-        position: {x: 2182, y: -596}
+        position: {x: 2401, y: -596}
         outputs:
         - da331290-6f7e-4aa3-937d-83cb066bbfe7
         abilityKeysToUnlock: 03000000
@@ -469,22 +472,6 @@ MonoBehaviour:
         oneShotFlag: 
         applyPresetAfterUnlock: 1
         saveAfterUnlock: 0
-    - rid: 4128268641526088494
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: '4.- CINEMATICA: APARECE UN DEMONIO'
-        chapter: Cap. 1
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 0ea51c1c-d2be-4275-8427-ff3e5ece0072
-        position: {x: 1699, y: -596}
-        outputs:
-        - d038b916-5571-48b0-a896-7dbc2af3e05c
-        cinematicSceneName: Cinematic_DemonAppears
-        useInternalCinematic: 1
     - rid: 4128268641526088533
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
@@ -496,7 +483,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: da331290-6f7e-4aa3-937d-83cb066bbfe7
-        position: {x: 2714, y: -596}
+        position: {x: 2933, y: -596}
         outputs:
         - 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
         questId: ELDRAN_MISSION3
@@ -511,9 +498,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 3180, y: -589}
+        position: {x: 3399, y: -589}
         outputs:
         - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
+        - 0197871b-3255-4009-8ced-d02b8d6176c8
         battleId: Demon_1
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
         useBattleById: 1
@@ -532,7 +520,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 3657, y: -589}
+        position: {x: 3876, y: -589}
         outputs:
         - b9aed13d-e410-467b-a7ec-5c3e949debbf
         cinematicSceneName: Cinematic_VillainPlans
@@ -736,7 +724,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'Mision  13: Renirse con eldran'
-        chapter: "Cap\xECptulo 5"
+        chapter: Cap. 5
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -751,7 +739,7 @@ MonoBehaviour:
       type: {class: WaitQuestCompleteNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Espero a completar la mision 13
-        chapter: "Cap\xECptulo 6"
+        chapter: Cap. 6
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -767,7 +755,7 @@ MonoBehaviour:
       type: {class: StartQuestNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: 'Mision  14: Buscar al amigo de Eldran'
-        chapter: "Cap\xECptulo 6"
+        chapter: Cap. 6
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -782,7 +770,7 @@ MonoBehaviour:
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Espero a que entren en la zona a inspeccionar
-        chapter: "Cap\xECptulo 6"
+        chapter: Cap. 6
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -797,7 +785,7 @@ MonoBehaviour:
       type: {class: ShowLorePopupNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: Will y Liam hablan sobre el pasado de Will
-        chapter: "Cap\xECptulo 6"
+        chapter: Cap. 6
         blockSaving: 1
         inputAnchor: 0
         outputAnchor: 1
@@ -812,7 +800,7 @@ MonoBehaviour:
       type: {class: CompleteQuestStepsNode, ns: , asm: Assembly-CSharp}
       data:
         displayTitle: "Completo el paso de la misi\xF3n de inspeccionar"
-        chapter: "Cap\xECptulo 6"
+        chapter: Cap. 6
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
@@ -895,12 +883,72 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 0decf071-45b8-40e6-8d60-d1fcce1643e4
-        position: {x: 985.5, y: -997}
+        position: {x: 986, y: -997}
         outputs: []
         action: 0
         text: "Usa el Joystick para mover a Will. Inspecciona la habitaci\xF3n."
         textId: 
         icon: {fileID: 21300000, guid: d8f997a4962ba6043a531732f1e8777a, type: 3}
+    - rid: 5290829367972725077
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0c0af6c1-722a-426a-9528-0565bba2ca06
+        position: {x: 1700, y: -596}
+        outputs:
+        - c262d6ef-64b3-4bad-8119-d8217b5bee6d
+        - 9958f726-fded-4988-b74e-a7675ae1429d
+        eventKey: AWAKEN_START
+    - rid: 5290829367972725078
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: c262d6ef-64b3-4bad-8119-d8217b5bee6d
+        position: {x: 2064, y: -596}
+        outputs:
+        - d038b916-5571-48b0-a896-7dbc2af3e05c
+        eventKey: AWAKEN_DONE
+    - rid: 5290829396811448504
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 9958f726-fded-4988-b74e-a7675ae1429d
+        position: {x: 2064, y: -370}
+        outputs:
+        - 0c0af6c1-722a-426a-9528-0565bba2ca06
+        eventKey: AWAKEN_FAILED
+    - rid: 5290829396811448506
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 1
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 0197871b-3255-4009-8ced-d02b8d6176c8
+        position: {x: 3878, y: -839}
+        outputs: []
+        eventKey: AWAKEN_COMBAT_END
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1043,7 +1091,7 @@ MonoBehaviour:
         guid: 64ed2870-8561-471f-bb08-803a726be060
         position: {x: 1273, y: -596}
         outputs:
-        - 0ea51c1c-d2be-4275-8427-ff3e5ece0072
+        - 0c0af6c1-722a-426a-9528-0565bba2ca06
         item: {fileID: 11400000, guid: 25c804f6289cb4945a3a9761b8e94e96, type: 2}
         amount: 20
         logWarnings: 0

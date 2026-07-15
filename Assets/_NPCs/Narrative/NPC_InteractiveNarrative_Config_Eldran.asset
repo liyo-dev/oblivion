@@ -18,6 +18,120 @@ MonoBehaviour:
   - description: 
     priority: 0
     condition:
+      conditionType: 5
+      targetQuest: {fileID: 0}
+      targetStepConditionId: 
+      customEventKey: AWAKEN_DONE
+      debugMode: 0
+    narrativeChain:
+    - actionType: 5
+      dialogue: {fileID: 0}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 2
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 0
+      lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 4
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.1
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    - actionType: 0
+      dialogue: {fileID: 11400000, guid: fc006cfe3d8917946b9367890bce59ea, type: 2}
+      targetAnchorName: 
+      targetTransform: {fileID: 0}
+      moveToRandomPoint: 0
+      randomMoveMinRadius: 0
+      randomMoveMaxRadius: 0
+      disappearOnArrival: 0
+      disappearTransition: {fileID: 0}
+      moveTeamMembers: 0
+      maxMovementDuration: 2
+      turnAroundOnArrival: 0
+      nearPlayerRadius: 0
+      lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
+      waitForPlayer: 0
+      maxPlayerDistance: 0
+      resumePlayerDistance: 0
+      animationTrigger: 
+      animationClip: {fileID: 0}
+      animationDuration: 0
+      questToStart: {fileID: 0}
+      combatConfig: {fileID: 0}
+      combatTarget: {fileID: 0}
+      sendEventOnDefeat: 0
+      defeatEventKey: 
+      sendDefeatEventBeforeDeath: 0
+      waitDuration: 0
+      showAlertIcon: 0
+      alertIconPrefab: {fileID: 0}
+      alertIconDuration: 0
+      alertIconOffset: {x: 0, y: 0, z: 0}
+      escortMaxDuration: 0
+      escortMaxPlayerDistance: 0
+      escortResumeDistance: 0
+      outOfRangeDialogue: {fileID: 0}
+      escortNpcSpeed: 0
+      escortPlayerSpeedMultiplier: 0.1
+      teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
+      sendNarrativeEvent: 0
+      narrativeEventKey: 
+      sendEventOnStart: 0
+    singleUse: 1
+    autoStartOnDetection: 0
+    autoExecuteOnQuestConditionMet: 1
+    freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
+    postNarrativeState: 0
+    postNarrativeAmbientConfig: {fileID: 0}
+    showPersistentIcon: 0
+    persistentIconPrefab: {fileID: 0}
+    sendNarrativeEvent: 0
+    narrativeEventKey: 
+    debugMode: 0
+  - description: 
+    priority: 0
+    condition:
       conditionType: 2
       targetQuest: {fileID: 11400000, guid: 377ab5627f62012499bd1487236ec285, type: 2}
       targetStepConditionId: 
@@ -38,6 +152,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -62,6 +177,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -79,6 +198,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -103,6 +223,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 1
       narrativeEventKey: OPEN_THE_DOORS
       sendEventOnStart: 0
@@ -110,6 +234,8 @@ MonoBehaviour:
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1
     freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -140,6 +266,7 @@ MonoBehaviour:
       turnAroundOnArrival: 0
       nearPlayerRadius: 0
       lookAtPlayerOnArrival: 0
+      teleportNearPlayerRadius: 1.8
       waitForPlayer: 0
       maxPlayerDistance: 0
       resumePlayerDistance: 0
@@ -164,6 +291,10 @@ MonoBehaviour:
       escortNpcSpeed: 0
       escortPlayerSpeedMultiplier: 0.1
       teleportTransition: {fileID: 0}
+      screenFadeTransition: {fileID: 0}
+      fadeIn: 1
+      fadeColor: {r: 0, g: 0, b: 0, a: 1}
+      fadeDuration: 0.5
       sendNarrativeEvent: 0
       narrativeEventKey: 
       sendEventOnStart: 0
@@ -171,6 +302,8 @@ MonoBehaviour:
     autoStartOnDetection: 0
     autoExecuteOnQuestConditionMet: 1
     freezePlayerOnDetection: 0
+    lockPlayerAfterChain: 0
+    lockPlayerMaxDuration: 8
     postNarrativeState: 0
     postNarrativeAmbientConfig: {fileID: 0}
     showPersistentIcon: 0
@@ -181,7 +314,7 @@ MonoBehaviour:
   persistState: 1
   enableDetailedLogs: 0
   persistenceId: ELDRAN_MAIN_NARRATIVE
-  dialogueCharacterId:
+  dialogueCharacterId: 
   rotateToPlayerOnInteract: 1
   rotationDuration: 0.3
   initialLayer: 0

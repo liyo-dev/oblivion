@@ -132,7 +132,15 @@
       "Bash(dir \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Plugins\\\\Invector-3rdPersonController_LITE\\\\Scripts\\\\CharacterController\" /b)",
       "Bash(dir Assets\\\\Art /s /b)",
       "Bash(dir Assets\\\\Plugins /s /b)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Recurse -File | Where-Object { $_.Name -match \"bubble|speech|comic|bocadillo|dialog|balloon|chat|talk\" } | Select-Object -ExpandProperty FullName | Select-Object -First 30)"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\" -Recurse -File | Where-Object { $_.Name -match \"bubble|speech|comic|bocadillo|dialog|balloon|chat|talk\" } | Select-Object -ExpandProperty FullName | Select-Object -First 30)",
+      "PowerShell(Test-Path *)",
+      "Bash(awk '/guid: 538cb4381bd54487ac832adf7fbb0906/{found=1; start=NR-5} found && NR>=start && NR<=start+30{print NR\": \"$0} NR>start+30{found=0}' \"Assets/Prefabs/_WILL.prefab\")",
+      "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Caja_Entregada.asset\")",
+      "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Tras_Leer_La_Carta.asset\")",
+      "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Golem_derrotado.asset\")",
+      "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Mision_3_Antes_De_Conseguir_Cosas.asset\")",
+      "Bash(sed -n '24,32p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Taberna.asset\")",
+      "Bash(sed -n '24,30p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Test.asset\")"
     ]
   }
 }

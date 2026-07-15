@@ -31,6 +31,12 @@ public class SleepTrigger : MonoBehaviour
     [Tooltip("Evento que se dispara al despertar. Compatible con WaitCustomEventNode.")]
     public string wakeNarrativeEvent = "";
 
+    [Header("Uso único")]
+    [Tooltip("Si true, este trigger solo puede activarse una vez. El flag se guarda en el preset.")]
+    public bool playOnlyOnce = false;
+    [Tooltip("ID único para recordar si este trigger ya se ejecutó (requerido con playOnlyOnce).")]
+    public string persistenceId = "";
+
     private bool isSleeping = false;
     private float _sleepStartTime = -999f;
 
@@ -56,6 +62,7 @@ public class SleepTrigger : MonoBehaviour
     void Start()
     {
         if (!sleepOnStart) return;
+        if (playOnlyOnce && AlreadyPlayed()) return;
         StartCoroutine(ForceSleepNextFrame());
     }
 
@@ -103,6 +110,7 @@ public class SleepTrigger : MonoBehaviour
         if (!gameObject.activeInHierarchy) return;
         if (isSleeping) return;
         if (!other.CompareTag("Player")) return;
+        if (playOnlyOnce && AlreadyPlayed()) return;
 
         var playerGO = other.GetComponentInParent<CharacterController>()?.gameObject ?? other.gameObject;
         player = playerGO;
@@ -166,6 +174,9 @@ public class SleepTrigger : MonoBehaviour
 
         if (!string.IsNullOrEmpty(wakeNarrativeEvent))
             DefaultNarrativeSignals.Instance?.RaiseCustom(wakeNarrativeEvent, name);
+
+        if (playOnlyOnce)
+            MarkAsPlayed();
     }
 
     void HandleGamepadInput(GamepadInputReader.InputEvent input)
@@ -181,6 +192,31 @@ public class SleepTrigger : MonoBehaviour
         if (Time.time - _sleepStartTime < 1f) return;
 
         WakeUp();
+    }
+
+    // --- Uso único ---
+
+    private string FlagKey() => $"SLEEP_DONE:{persistenceId}";
+
+    private bool AlreadyPlayed()
+    {
+        if (string.IsNullOrEmpty(persistenceId))
+        {
+            Debug.LogWarning($"[SleepTrigger] '{name}' tiene playOnlyOnce=true pero persistenceId está vacío. El trigger no se desactivará.", this);
+            return false;
+        }
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        return preset?.flags != null && preset.flags.Contains(FlagKey());
+    }
+
+    private void MarkAsPlayed()
+    {
+        if (string.IsNullOrEmpty(persistenceId)) return;
+        var preset = GameBootService.Profile?.GetActivePresetResolved();
+        if (preset == null) return;
+        preset.flags ??= new System.Collections.Generic.List<string>();
+        if (!preset.flags.Contains(FlagKey()))
+            preset.flags.Add(FlagKey());
     }
 
     // --- Cámara ---

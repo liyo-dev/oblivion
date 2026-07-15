@@ -54,7 +54,43 @@
         },
         {
             "id": "EVT_08",
-            "text": "Eldran shouts: 'Will! Use your magic, press <sprite name=\"interactable_x\"> and defeat the demon!'"
+            "text": "Will! Use your magic, press <sprite name=\"interactable_x\"> and defeat the demon!"
+        },
+        {
+            "id": "EVT_AWAKEN_01",
+            "text": "Will, watch out!"
+        },
+        {
+            "id": "EVT_AWAKEN_02",
+            "text": "...!"
+        },
+        {
+            "id": "EVT_AWAKEN_03",
+            "text": "Take that!"
+        },
+        {
+            "id": "EVT_AWAKEN_04",
+            "text": "No... this can't be!"
+        },
+        {
+            "id": "EVT_AWAKEN_05",
+            "text": "What... what was that?"
+        },
+        {
+            "id": "EVT_AWAKEN_06",
+            "text": ""
+        },
+        {
+            "id": "EVT_ELDRAN_CHEER_01",
+            "text": "That's it, Will! You've got this!"
+        },
+        {
+            "id": "EVT_ELDRAN_CHEER_02",
+            "text": "Come on, boy! I know you can do it!"
+        },
+        {
+            "id": "EVT_ELDRAN_CHEER_03",
+            "text": "Don't give up! Finish it once and for all!"
         },
         {
             "id": "EVT_ESTELA_01",

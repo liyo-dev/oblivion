@@ -41,7 +41,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 19e6376b-e48c-41d5-bf3a-aa9beef62892
-        position: {x: 1548, y: -259}
+        position: {x: 1307.4417, y: -310}
         outputs:
         - 1a1603a0-9b04-479e-a110-442a4dcf20c0
         questId: "Q_NI\xD1OPEZ_CARACOLA"
@@ -57,7 +57,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 1a1603a0-9b04-479e-a110-442a4dcf20c0
-        position: {x: 1969, y: -259}
+        position: {x: 1702.9979, y: -310}
         outputs: []
         abilityKeysToUnlock: 
         abilitiesToUnlock: 
@@ -77,7 +77,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 099fe10e-98f2-475b-ae44-0f435002ee2c
-        position: {x: -509, y: -103}
+        position: {x: 399, y: -678}
         outputs:
         - a5b0ec64-4604-458f-baa2-4363bad5d765
         eventKey: ALGAS_INVENTORY
@@ -92,7 +92,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: a5b0ec64-4604-458f-baa2-4363bad5d765
-        position: {x: -949, y: -103}
+        position: {x: 770, y: -678}
         outputs: []
         item: {fileID: 11400000, guid: bb3bcf64887e34149b4ee8bb86b1a155, type: 2}
         amount: 1
@@ -109,7 +109,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 434108a8-8f50-407a-b807-74d22ff2a5ac
-        position: {x: -160, y: -103}
+        position: {x: -498.69543, y: 44}
         outputs:
         - 099fe10e-98f2-475b-ae44-0f435002ee2c
         - 00079bce-e03b-4fa9-bf56-051f0f3b427c
@@ -126,7 +126,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
-        position: {x: 262, y: 100}
+        position: {x: 399, y: 220}
         outputs:
         - f01dc9e7-de62-484e-8166-01c99735cb97
         questId: Q_RUDOLFO
@@ -142,7 +142,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f01dc9e7-de62-484e-8166-01c99735cb97
-        position: {x: 706, y: 100}
+        position: {x: 871.0001, y: 220.27925}
         outputs: []
         abilityKeysToUnlock: 01000000
         abilitiesToUnlock: 
@@ -162,7 +162,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
-        position: {x: 399, y: -259}
+        position: {x: 399, y: -309.88733}
         outputs:
         - 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
         questId: "Q_NI\xD1OPEZ"
@@ -178,7 +178,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 98f9b923-1d1f-443b-9cf7-cfcfd55dc1ea
-        position: {x: 1095, y: -259}
+        position: {x: 870.63306, y: -310}
         outputs:
         - 19e6376b-e48c-41d5-bf3a-aa9beef62892
         abilityKeysToUnlock: 00000000
@@ -199,7 +199,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 00079bce-e03b-4fa9-bf56-051f0f3b427c
-        position: {x: -252, y: 495}
+        position: {x: 398.99976, y: 785.9998}
         outputs:
         - b3cc61c7-023e-47cc-865a-06c7e4c93ab5
         questId: ROBERTO_MISION1
@@ -215,7 +215,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b3cc61c7-023e-47cc-865a-06c7e4c93ab5
-        position: {x: 226, y: 495}
+        position: {x: 870.99963, y: 786.00006}
         outputs: []
         item: {fileID: 11400000, guid: e420f009517398f4aa2f67aed445c278, type: 2}
         amount: 5

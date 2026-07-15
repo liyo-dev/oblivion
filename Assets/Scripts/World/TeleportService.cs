@@ -92,6 +92,17 @@ public class TeleportService : MonoBehaviour
         var sa = SpawnManager.GetAnchor(anchorId);
         if (!sa)
         {
+            // Fallback: el anchor puede estar en una zona inactiva (zoneRoot desactivado)
+            // y nunca ha llamado OnEnable para registrarse en AnchorRegistry.
+            // Esta búsqueda es costosa pero solo ocurre al iniciar partida, nunca en Update.
+            var all = FindObjectsByType<SpawnAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var candidate in all)
+            {
+                if (candidate.anchorId == anchorId) { sa = candidate; break; }
+            }
+        }
+        if (!sa)
+        {
             Debug.LogWarning($"[TeleportService] Anchor '{anchorId}' no encontrado.");
             return;
         }
@@ -109,7 +120,7 @@ public class TeleportService : MonoBehaviour
         }
 
         // Sincronizar anchor actual (SpawnManager y runtimePreset) si conocemos su id
-        var sa = anchor.GetComponentInParent<SpawnAnchor>();
+        var sa = anchor.GetComponentInParent<SpawnAnchor>(includeInactive: true);
         if (sa && !string.IsNullOrEmpty(sa.anchorId))
         {
             SpawnManager.SetCurrentAnchor(sa.anchorId);
@@ -258,7 +269,8 @@ public class TeleportService : MonoBehaviour
         if (!ec) return;
 
         AnchorEnvironment env = null;
-        if (anchor) env = anchor.GetComponentInParent<AnchorEnvironment>();
+        // includeInactive:true porque el anchor puede estar en una zona todavía inactiva
+        if (anchor) env = anchor.GetComponentInParent<AnchorEnvironment>(includeInactive: true);
 
         if (env && env.isInterior) ec.ApplyInterior(env);
         else                       ec.ApplyExterior();

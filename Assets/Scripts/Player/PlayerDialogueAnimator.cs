@@ -90,6 +90,30 @@ public class PlayerDialogueAnimator : MonoBehaviour
 
     #region Animation
 
+    /// <summary>
+    /// Reproduce un gesto por nombre de estado. Uso desde sistemas externos (ej: ShowSpeechBubbleNode).
+    /// </summary>
+    public void PlayGesture(string stateName)
+    {
+        if (animator == null || string.IsNullOrEmpty(stateName))
+            return;
+
+        int stateHash = Animator.StringToHash(stateName);
+        if (!animator.HasState(0, stateHash))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (debugMode)
+                Debug.LogWarning($"[PlayerDialogueAnimator] Estado '{stateName}' no encontrado en el Animator.");
+#endif
+            return;
+        }
+
+        if (_gestureCoroutine != null)
+            StopCoroutine(_gestureCoroutine);
+
+        _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName));
+    }
+
     private void PlayBodyEmotion(NPCEmotion emotion)
     {
         if (animator == null)

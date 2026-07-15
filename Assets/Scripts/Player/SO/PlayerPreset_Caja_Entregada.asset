@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc82f4ca07df3ef42ac99a6a3f3dd3af, type: 3}
+  m_Name: PlayerPreset_Caja_Entregada
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerPresetSO
+  spawnAnchorId: House_FrontDoor
+  level: 1
+  maxHP: 100
+  currentHP: 100
+  maxMP: 0
+  currentMP: 0
+  unlockedAbilities: 
+  unlockedSpells: 
+  leftSpellId: 0
+  rightSpellId: 0
+  specialSpellId: 0
+  flags:
+  - SLEEP_DONE:PrologueBed
+  - QUEST_COMPLETED:ELDRAN_MISSION1
+  - QUEST_ARCHIVED:ELDRAN_MISSION1
+  - QUEST_ACTIVE:ELDRAN_MISSION2
+  - QUEST_STEP_DONE:ELDRAN_MISSION2:0
+  abilities:
+    swim: 0
+    jump: 0
+    climb: 0
+    magic: 0
+    fly: 0
+  appearance:
+  - category: 0
+    partName: Body05
+  - category: 2
+    partName: Head01_Male
+  - category: 3
+    partName: Hair01
+  - category: 4
+    partName: Eye01
+  - category: 5
+    partName: Mouth01
+  unlockedWardrobeIds:
+  - Body05
+  inventoryItems: []
+  defeatedBossIds: []
+  narrativeBlackboards:
+  - graphLabel: Historia Principal
+    blackboardData:
+    - key: __forked_83efb3b4-a261-43b9-b5e2-56c03b1cec4f
+      type: bool
+      value: 1
+    - key: __fork_83efb3b4-a261-43b9-b5e2-56c03b1cec4f_0_node
+      type: string
+      value: 14dab578-84ac-40c4-8874-1f724ff76437
+    - key: __fork_83efb3b4-a261-43b9-b5e2-56c03b1cec4f_1_node
+      type: string
+      value: __DONE__
+    - key: __event_78455749-f638-46de-a00c-c00cb1e61e5d_LETTER_START_received
+      type: bool
+      value: 1
+    - key: __quest_16d41261-7e42-42bb-b91a-1cab8d52164e_ELDRAN_MISSION1_started
+      type: bool
+      value: 1
+  - graphLabel: Misiones Secundarias
+    blackboardData:
+    - key: __forked_434108a8-8f50-407a-b807-74d22ff2a5ac
+      type: bool
+      value: 1
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_0_node
+      type: string
+      value: 099fe10e-98f2-475b-ae44-0f435002ee2c
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_1_node
+      type: string
+      value: 00079bce-e03b-4fa9-bf56-051f0f3b427c
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_2_node
+      type: string
+      value: 29625f69-6406-4f2c-a5b7-4f2351d2a8d1
+    - key: __fork_434108a8-8f50-407a-b807-74d22ff2a5ac_3_node
+      type: string
+      value: fa24c4e1-e60f-4788-b4c0-a6d276e5cddb
+  npcPositions:
+  - npcId: Sofia
+    position: {x: 403.56, y: 0.14147949, z: 160.89}
+    rotation: {x: -0, y: 1, z: -0, w: 0}
+    hasActiveState: 0
+    isActive: 1
+  - npcId: Oliver
+    position: {x: -32.1, y: 1.224823, z: 26.31}
+    rotation: {x: -0, y: -0.71708274, z: -0, w: 0.6969881}
+    hasActiveState: 0
+    isActive: 1
+  - npcId: _ELDRAN
+    position: {x: -5.0975237, y: 0.13344732, z: 102.391884}
+    rotation: {x: -0, y: 0.39348564, z: -0, w: 0.9193308}
+    hasActiveState: 0
+    isActive: 1
+  consumedInteractableIds:
+  - MainWorld:Carta_1231,6_1000,8_3,4
+  completedInteractiveNarratives:
+  - oliver-narrative-b8a7c6d5-unique
+  - oliver-narrative-b8a7c6d5-unique_CN0
+  seenLorePopupIds: []
+  partyMemberIds: []
+  activeCharacterSlot: 1
+  unlockedTeleportPoints: []

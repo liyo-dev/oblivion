@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &6398932720686010
 GameObject:
@@ -5626,6 +5626,21 @@ MonoBehaviour:
   undergroundCooldown: 15
   phase2HealthPercent: 0.66
   phase3HealthPercent: 0.33
+  isSecondEncounter: 0
+  secondCooldownMultiplier: 0.65
+  phase3HealthPercentSecond: 0.5
+  dashDamage: 25
+  dashSpeed: 22
+  dashDuration: 0.35
+  dashCooldown: 7
+  rainShadowPrefab: {fileID: 0}
+  rainImpactPrefab: {fileID: 0}
+  rainCount: 8
+  rainRadius: 7
+  rainWarningDuration: 1.5
+  rainImpactRadius: 1.8
+  rainDamage: 20
+  rainCooldown: 22
   debugLogAnimator: 0
   canStartCombat: 0
 --- !u!114 &6837251540150738088
@@ -5700,6 +5715,20 @@ MonoBehaviour:
   vfxScale: {x: 1, y: 1, z: 1}
   vfxFollowsTarget: 1
   showDebugLogs: 0
+--- !u!114 &329523459173621930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2543156170968106335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
+  _profileId: 
+  _spawnOrigin: {fileID: 0}
 --- !u!1 &3024701460706714017
 GameObject:
   m_ObjectHideFlags: 0
@@ -7464,17 +7493,3 @@ Transform:
   - {fileID: 6169292123661852790}
   m_Father: {fileID: 9174846601099342368}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &329523459173621930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2543156170968106335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  _profileId: 
-  _spawnOrigin: {fileID: 0}

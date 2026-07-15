@@ -59,6 +59,6 @@ public class InteractableToNarrativeEvent : MonoBehaviour
         }
 
         _signals.RaiseCustom(eventKey, name);
-        Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{_signals.GetInstanceID()}");
+        Debug.Log($"[InteractableToNarrativeEvent] Emite '{eventKey}' → signals #{_signals.GetEntityId()}");
     }
 }

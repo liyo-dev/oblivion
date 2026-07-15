@@ -64,10 +64,32 @@ public class AudioGraphProfile : ScriptableObject
         public string restoreBaseSceneName;
     }
 
+    [Serializable]
+    public class SequenceRule
+    {
+        [Tooltip("ID de la secuencia de gameplay (debe coincidir con el campo sequenceMusicId del StarAwakeningSequencer u otro orquestador)")]
+        public string sequenceId;
+        public AudioClip music;
+        [Min(0f)] public float fadeIn  = 0.5f;
+        [Min(0f)] public float fadeOut = 0.8f;
+    }
+
     public List<SceneMusic> sceneMusic = new();
     public List<EventSfx>   eventSfx   = new();
     public List<AdditiveCinematicRule> additiveCinematics = new();
+    public List<SequenceRule> sequences = new();
     
+    public SequenceRule GetSequenceRule(string sequenceId)
+    {
+        if (string.IsNullOrEmpty(sequenceId)) return null;
+        foreach (var rule in sequences)
+        {
+            if (string.Equals(rule.sequenceId, sequenceId, StringComparison.OrdinalIgnoreCase))
+                return rule;
+        }
+        return null;
+    }
+
     /// <summary>
     /// Busca la regla de música para una zona de ambiente específica
     /// </summary>

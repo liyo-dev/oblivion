@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -18,62 +18,53 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 5
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_KING_12
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 0
     emotion: 3
   - speakerNameId: CHAR_KING
     textId: DLG_KING_13
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 2
   - speakerNameId: CHAR_KING
     textId: DLG_KING_14
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 1
   - speakerNameId: CHAR_KING
     textId: DLG_KING_15
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 6
   - speakerNameId: CHAR_ESTELA
     textId: DLG_KING_16
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_KING_17
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 6
   - speakerNameId: CHAR_KING
     textId: DLG_KING_18
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_KING_19
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
     emotion: 0
   isGroupConversation: 0

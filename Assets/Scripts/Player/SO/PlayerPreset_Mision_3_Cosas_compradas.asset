@@ -24,6 +24,7 @@ MonoBehaviour:
   rightSpellId: 2
   specialSpellId: 0
   flags:
+  - SLEEP_DONE:PrologueBed
   - PICKUP_MainWorld_Coin_01 (20)_-32,6_1,7_22,3
   - PICKUP_MainWorld_Coin_01 (4)_-3,5_0,7_22,8
   - CINEMATIC_SEEN:Cinematic_DemonAppears

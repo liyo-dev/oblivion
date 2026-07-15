@@ -450,7 +450,7 @@ public class ActiveCharacterSwapper : MonoBehaviour
         if (config != null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"[ActiveCharacterSwapper] ApplySpells({slot}): L={config.GetSpell(0)?.displayName} R={config.GetSpell(1)?.displayName} S={config.GetSpell(2)?.displayName} — en magicCaster={magicCaster.name} (instanceID={magicCaster.GetInstanceID()})");
+            Debug.Log($"[ActiveCharacterSwapper] ApplySpells({slot}): L={config.GetSpell(0)?.displayName} R={config.GetSpell(1)?.displayName} S={config.GetSpell(2)?.displayName} — en magicCaster={magicCaster.name} (instanceID={magicCaster.GetEntityId()})");
 #endif
             magicCaster.SetSpells(config.GetSpell(0), config.GetSpell(1), config.GetSpell(2));
         }

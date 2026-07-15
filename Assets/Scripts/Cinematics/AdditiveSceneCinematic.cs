@@ -122,15 +122,9 @@ public class AdditiveSceneCinematic : MonoBehaviour
         // Determinar ID único
         string id = GetSinglePlayId();
 
-        // Preparar destino oficial de salida (no mueve, solo estado) salvo que ignoremos SpawnManager
-        if (!useLastPlayerPositionOnExit && setAsCurrentAnchor && !string.IsNullOrEmpty(exitAnchorId))
-        {
-            SafeSetCurrentAnchor(exitAnchorId);
-            if (showDebugLogs)
-                Debug.Log($"[AdditiveSceneCinematic] CurrentAnchor preparado: '{exitAnchorId}'.");
-        }
-
         // Si es solo una vez y ya se vio, finalizar sin reproducir
+        // IMPORTANTE: no sobreescribir anchor ni teletransportar — el sistema de boot (WorldBootstrap)
+        // se encarga del posicionamiento del jugador cuando se carga desde preset/save.
         if (playOnlyOnce && IsCinematicSeen(id))
         {
             if (showDebugLogs)
@@ -142,15 +136,16 @@ public class AdditiveSceneCinematic : MonoBehaviour
             if (toDisableDuringCinematic != null)
                 foreach (var go in toDisableDuringCinematic) if (go) go.SetActive(true);
 
-            if (useLastPlayerPositionOnExit && hasSavedPlayerTransform)
-            {
-                RestorePlayerTransformIfPossible();
-            }
-            else
-            {
-                SafeTeleportToCurrent();
-            }
             yield break;
+        }
+
+        // Preparar destino oficial de salida (no mueve, solo estado) salvo que ignoremos SpawnManager
+        // Solo se aplica cuando la cinemática SÍ va a reproducirse
+        if (!useLastPlayerPositionOnExit && setAsCurrentAnchor && !string.IsNullOrEmpty(exitAnchorId))
+        {
+            SafeSetCurrentAnchor(exitAnchorId);
+            if (showDebugLogs)
+                Debug.Log($"[AdditiveSceneCinematic] CurrentAnchor preparado: '{exitAnchorId}'.");
         }
 
         // Guardar posición/rotación actual del jugador si así se desea (solo si vamos a reproducir)

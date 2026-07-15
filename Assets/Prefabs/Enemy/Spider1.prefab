@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &5572779666037620288
 GameObject:
@@ -625,6 +625,20 @@ MonoBehaviour:
   vfxScale: {x: 1, y: 1, z: 1}
   vfxFollowsTarget: 1
   showDebugLogs: 0
+--- !u!114 &3934879012085031816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5572779666037620316}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
+  _profileId: 
+  _spawnOrigin: {fileID: 0}
 --- !u!1 &5572779666037620318
 GameObject:
   m_ObjectHideFlags: 0
@@ -656,17 +670,3 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5572779666037973626}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3934879012085031816
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5572779666037620316}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  _profileId: 
-  _spawnOrigin: {fileID: 0}

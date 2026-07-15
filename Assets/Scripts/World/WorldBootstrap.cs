@@ -100,7 +100,7 @@ public class WorldBootstrap : MonoBehaviour
         if (bootProfile.ShouldBootFromPreset())
         {
             bootProfile.EnsureRuntimePresetFromTemplate(bootProfile.bootPreset);
-            
+
             // ✅ El anchor ya fue establecido por SpawnManager.HandleProfileReady()
             var anchor = bootProfile.GetStartAnchorOrDefault();
             Debug.Log($"[WorldBootstrap] 📍 Modo PRESET - Anchor desde profile: '{anchor}', CurrentAnchorId: '{SpawnManager.CurrentAnchorId}'");
@@ -114,7 +114,7 @@ public class WorldBootstrap : MonoBehaviour
                 {
                     qm.RestoreFromProfileFlags(testPreset.flags);
                 }
-                
+
                 // ✅ CRÍTICO: Aplicar posiciones de NPCs AQUÍ (cuando MainWorld ya está cargada)
                 // GameBootService.ApplyPresetAsLoadedGame() se ejecuta ANTES de que MainWorld cargue
                 // En ese momento los NPCs no existen, por lo que NO se pueden posicionar
@@ -123,7 +123,11 @@ public class WorldBootstrap : MonoBehaviour
                 bootProfile.ApplyNpcPositionsToScene(testPreset);
             }
 
+            // Aplicar entorno del anchor de spawn antes de esperar al jugador
+            // Así el skybox/interior es correcto desde el primer frame visible
+            ApplySpawnEnvironmentNow(anchor);
             StartCoroutine(WaitForPlayerAndTeleport(anchor));
+            StartCoroutine(EnsureEnvironmentAfterCinematic(anchor));
             // Debug.Log("[WorldBootstrap] Iniciado en modo PRESET (testing)");
             return;
         }
@@ -157,9 +161,54 @@ public class WorldBootstrap : MonoBehaviour
 
         // 3) Colocar jugador
         SpawnManager.SetCurrentAnchor(anchorId);
+        // Aplicar entorno del anchor de spawn antes de esperar al jugador
+        ApplySpawnEnvironmentNow(anchorId);
         StartCoroutine(WaitForPlayerAndTeleport(anchorId));
+        StartCoroutine(EnsureEnvironmentAfterCinematic(anchorId));
     }
 
+    private void ApplySpawnEnvironmentNow(string anchorId)
+    {
+        if (string.IsNullOrEmpty(anchorId)) return;
+        var ec = EnvironmentController.Instance;
+        if (ec == null) return;
+
+        SpawnAnchor anchor = AnchorRegistry.Get(anchorId);
+        if (anchor == null)
+        {
+            var all = FindObjectsByType<SpawnAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var candidate in all)
+            {
+                if (candidate.anchorId == anchorId) { anchor = candidate; break; }
+            }
+        }
+
+        if (anchor == null) { ec.ApplyExterior(); return; }
+
+        var env = anchor.GetComponentInParent<AnchorEnvironment>(includeInactive: true);
+        if (env != null && env.isInterior) ec.ApplyInterior(env);
+        else ec.ApplyExterior();
+    }
+
+
+    // Si hay una cinemática aditiva en curso al cargar (ej: prólogo), su Unload() llama
+    // SafeTeleportToCurrent() con el anchor de salida (exterior), lo que puede sobreescribir
+    // el entorno interior del anchor guardado. Esta corrutina re-aplica el entorno correcto
+    // un frame después de que la cinemática termine, mientras el fade-out aún cubre la pantalla.
+    private System.Collections.IEnumerator EnsureEnvironmentAfterCinematic(string anchorId)
+    {
+        yield return null; // esperar a que AdditiveSceneCinematic.Start() inicialice su flag
+
+        if (!AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying) yield break;
+
+        while (AdditiveSceneCinematic.IsAnyAdditiveCinematicPlaying)
+            yield return null;
+
+        // Un frame extra para que SafeTeleportToCurrent() complete su ApplyExterior()
+        yield return null;
+
+        ApplySpawnEnvironmentNow(anchorId);
+    }
 
     private System.Collections.IEnumerator WaitForPlayerAndTeleport(string anchorId)
     {
@@ -167,10 +216,10 @@ public class WorldBootstrap : MonoBehaviour
         int maxAttempts = 100;
         int attempts = 0;
 
-        // Buscar al jugador usando PlayerService
+        // Buscar al jugador usando PlayerService (con scene lookup para encontrarlo si empieza inactivo)
         while (player == null && attempts < maxAttempts)
         {
-            player = PlayerService.Player;
+            PlayerService.TryGetPlayer(out player, allowSceneLookup: true);
             if (player == null)
             {
                 yield return new WaitForSeconds(0.05f);

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioGraphProfile
   battles:
   - battleId: Demon_1
-    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    music: {fileID: 8300000, guid: 07cc773f0bc0bdc4c81aa750fc13c0f0, type: 3}
     fade: 0
   - battleId: Npc_Battle
     music: {fileID: 8300000, guid: 316cecf77c02820419a4df496695d01f, type: 3}
@@ -26,10 +26,10 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: 5470781b602096348900f3a6c00ac749, type: 3}
     fade: 0
   - battleId: Golem_1
-    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    music: {fileID: 8300000, guid: 07cc773f0bc0bdc4c81aa750fc13c0f0, type: 3}
     fade: 0
   - battleId: Demon_2
-    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    music: {fileID: 8300000, guid: 07cc773f0bc0bdc4c81aa750fc13c0f0, type: 3}
     fade: 0
   minigames:
   - minigameId: TAG_MINIGAME_01
@@ -140,3 +140,8 @@ MonoBehaviour:
     duckTo: 0
     fade: 1
     restoreBaseSceneName: 
+  sequences:
+  - sequenceId: AWAKEN
+    music: {fileID: 8300000, guid: a6d965cd64d1ef040986deabe19c2107, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5

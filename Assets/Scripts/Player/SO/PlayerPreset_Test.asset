@@ -23,7 +23,8 @@ MonoBehaviour:
   leftSpellId: 1
   rightSpellId: 2
   specialSpellId: 3
-  flags: []
+  flags:
+  - SLEEP_DONE:PrologueBed
   abilities:
     swim: 1
     jump: 1

@@ -69,7 +69,12 @@ namespace CiroContinisio.ToonShader.Editor
             EditorGUI.indentLevel++;
         
             string[] options = {"Skin or Textiles", "Hair or Metal"};
-            _shadingStyle = (ShadingStyle)materialEditor.PopupShaderProperty(FindProperty("_SHADING_STYLE", properties), new GUIContent("Material"), options);
+            MaterialProperty shadingStyleProp = FindProperty("_SHADING_STYLE", properties);
+            EditorGUI.BeginChangeCheck();
+            int shadingIndex = EditorGUILayout.Popup(new GUIContent("Material"), (int)shadingStyleProp.floatValue, options);
+            if (EditorGUI.EndChangeCheck())
+                shadingStyleProp.floatValue = (float)shadingIndex;
+            _shadingStyle = (ShadingStyle)shadingIndex;
         
             switch (_shadingStyle)
             {
