@@ -19,6 +19,10 @@ public class SleepTrigger : MonoBehaviour
     [Tooltip("Velocidad de transición de la cámara al dormir/despertar.")]
     public float cameraTransitionSpeed = 2f;
 
+    [Header("Expresión facial")]
+    [Tooltip("Expresión de la cara mientras duerme. None mantiene la expresión actual.")]
+    public NPCEmotion sleepEmotion = NPCEmotion.Tired;
+
     [Header("Despertar")]
     [Tooltip("Posición en el suelo donde Will se coloca al despertar (pie de la cama). Sin esto, permanece en bedPosition.")]
     public Transform wakeUpPosition;
@@ -42,6 +46,7 @@ public class SleepTrigger : MonoBehaviour
 
     private Animator playerAnimator;
     private PlayerActionManager playerActionManager;
+    private NPCEmotionController _playerEmotion;
 
     private vThirdPersonCamera _tpsCamera;
     private Camera _mainCamera;
@@ -121,6 +126,7 @@ public class SleepTrigger : MonoBehaviour
     {
         playerAnimator      = playerGO.GetComponent<Animator>();
         playerActionManager = playerGO.GetComponent<PlayerActionManager>();
+        _playerEmotion      = playerGO.GetComponentInChildren<NPCEmotionController>();
 
         // PushMode PRIMERO: PlayerLockService capturará CC=true y lockMovement=false como estado previo,
         // y los bloqueará. Si hacemos push después de bloquearlos manualmente, capturaría el estado
@@ -135,6 +141,9 @@ public class SleepTrigger : MonoBehaviour
         }
 
         if (playerAnimator != null) playerAnimator.Play(sleepAnimationState);
+
+        if (sleepEmotion != NPCEmotion.None)
+            _playerEmotion?.SetEmotion(sleepEmotion);
 
         MoveCameraToSleepAnchor();
 
@@ -161,6 +170,8 @@ public class SleepTrigger : MonoBehaviour
             player.transform.position = wakeUpPosition.position;
             player.transform.rotation = wakeUpPosition.rotation;
         }
+
+        _playerEmotion?.ForceReset();
 
         // PopMode → PlayerLockService.Release → ReleaseHardLock:
         // restaura CC=true, lockMovement=false, SuppressMoveInput=false, PopUIMode, IgnoreJumpButton

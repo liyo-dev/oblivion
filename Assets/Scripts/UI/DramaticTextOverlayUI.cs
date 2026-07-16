@@ -151,8 +151,10 @@ public class DramaticTextOverlayUI : MonoBehaviour
             bool currentFullBlack = current.background == DramaticTextBackground.FullBlack;
 
             // Si venimos de FullBlack y la actual también lo es, no hacer fade de entrada.
-            // Si la actual es FullBlack y la siguiente también, no hacer fade de salida.
-            bool skipEntry = prevFullBlack && currentFullBlack;
+            // KingdomHearts tiene su propia gestión de visibilidad (vértices en alpha=0),
+            // por eso nunca salta aunque la pantalla ya esté en negro.
+            bool skipEntry = prevFullBlack && currentFullBlack
+                             && current.entryAnim != DramaticEntryAnimation.KingdomHearts;
             bool skipExit  = currentFullBlack && nextFullBlack;
 
             yield return ShowPhrase(current, skipEntry, skipExit);
