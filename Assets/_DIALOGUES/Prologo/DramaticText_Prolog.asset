@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DramaticPhraseConfig
   phrases:
   - text: "Rend\xEDos ante m\xED"
-    textId: 
+    textId:
     style: 1
     background: 2
-    entryAnim: 0
+    entryAnim: 6
     exitAnim: 0
     duration: 3
     voiceClip: {fileID: 0}
@@ -26,10 +26,10 @@ MonoBehaviour:
     useMovement: 1
     moveTo: {x: 0, y: 0}
   - text: Deja en paz a mi pueblo...
-    textId: 
+    textId:
     style: 0
     background: 2
-    entryAnim: 1
+    entryAnim: 6
     exitAnim: 0
     duration: 4
     voiceClip: {fileID: 0}
@@ -38,10 +38,10 @@ MonoBehaviour:
     useMovement: 1
     moveTo: {x: 0, y: 0}
   - text: "Will, \xA1DESPIERTA!"
-    textId: 
+    textId:
     style: 2
     background: 0
-    entryAnim: 0
+    entryAnim: 6
     exitAnim: 2
     duration: 2.5
     voiceClip: {fileID: 0}

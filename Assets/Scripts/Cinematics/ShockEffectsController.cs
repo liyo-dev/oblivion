@@ -24,8 +24,9 @@ public class ShockEffectsController : MonoBehaviour
 
     void Awake()
     {
-        _audioSource = gameObject.AddComponent<AudioSource>();
-        _audioSource.spatialBlend = 0f; // 2D
+        if (!TryGetComponent(out _audioSource))
+            _audioSource = gameObject.AddComponent<AudioSource>();
+        _audioSource.spatialBlend = 0f;
         _audioSource.playOnAwake  = false;
 
         if (shockVolume != null)
@@ -36,6 +37,21 @@ public class ShockEffectsController : MonoBehaviour
     {
         if (_activeRoutine != null) StopCoroutine(_activeRoutine);
         _activeRoutine = StartCoroutine(Co_Shock());
+    }
+
+    /// Pone el volumen al peso indicado y lo mantiene fijo (sin fade automático).
+    /// Llamar HoldAt(1f) justo después de la explosión para que el efecto dure mientras conviene.
+    public void HoldAt(float weight = 1f)
+    {
+        if (_activeRoutine != null) { StopCoroutine(_activeRoutine); _activeRoutine = null; }
+        SetVolumeWeight(weight);
+    }
+
+    /// Reproduce solo el pitido (tinnitus) sin tocar el volumen de post-proceso.
+    public void PlayTinnitus()
+    {
+        if (tinnitusClip != null)
+            _audioSource.PlayOneShot(tinnitusClip, tinnitusVolume);
     }
 
     public void ForceEnd()

@@ -22,7 +22,8 @@ public enum DramaticEntryAnimation
     TypeWriter,     // Carácter a carácter
     Instant,        // Sin animación
     SlideFromLeft,  // Entra deslizándose desde el borde izquierdo
-    SlideFromRight  // Entra deslizándose desde el borde derecho
+    SlideFromRight, // Entra deslizándose desde el borde derecho
+    KingdomHearts   // Letra a letra: fade+escala por carácter, zoom suave del contenedor
 }
 
 public enum DramaticExitAnimation

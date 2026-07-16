@@ -57,6 +57,9 @@ public class MagicProjectile : MonoBehaviour
 
     // Throttle proximity check to ~20/sec to avoid per-frame OverlapSphere per projectile
     private float _nextProximityCheck;
+    // Grace period: ignora TODAS las colisiones los primeros N segundos tras el spawn
+    // para evitar explosión inmediata si el punto de spawn está cerca de geometría
+    private float _spawnGraceEnd;
     // Fallback mask cuando hitLayers no está configurado — cacheado para evitar GetMask con strings en Update
     private LayerMask _fallbackSearchMask;
     // Guard I16: evita doble daño cuando CheckEnemyProximity y OnTriggerEnter golpean el mismo collider en el mismo frame
@@ -112,6 +115,10 @@ public class MagicProjectile : MonoBehaviour
     {
         _spawnPos  = transform.position;
         _spawnTime = Time.time;
+
+        // Grace period: evitar detonación en el frame de spawn (proximity + triggers + collisions)
+        _spawnGraceEnd      = Time.time + 0.25f;
+        _nextProximityCheck = _spawnGraceEnd;
 
         // Si el propio componente define un TTL, usarlo ya desde OnEnable
         _ttlScheduled = false;
@@ -297,6 +304,7 @@ public class MagicProjectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (Time.time < _spawnGraceEnd) return;
         Vector3 hitPoint = transform.position;
         
         // ClosestPoint solo funciona con Box, Sphere, Capsule y Mesh convexo
@@ -310,7 +318,10 @@ public class MagicProjectile : MonoBehaviour
     }
 
     void OnCollisionEnter(Collision c)
-        => ResolveHit(c.collider, c.GetContact(0).point);
+    {
+        if (Time.time < _spawnGraceEnd) return;
+        ResolveHit(c.collider, c.GetContact(0).point);
+    }
 
     void OnParticleCollision(GameObject other)
     {

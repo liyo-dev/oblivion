@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
 
-/// Proyectil enemigo para secuencias scripted que ignora Time.timeScale.
-/// Se mueve con unscaledDeltaTime para mantener su velocidad durante slow-motion.
+/// Proyectil enemigo para secuencias scripted.
+/// Se mueve con Time.deltaTime, respetando Time.timeScale, para sincronizarse
+/// con el fireball del jugador durante el slow-motion.
 [DisallowMultipleComponent]
 public class SlowMotionFireProjectile : MonoBehaviour
 {
@@ -16,10 +17,24 @@ public class SlowMotionFireProjectile : MonoBehaviour
 
     private Transform _target;
     private bool _ended;
+    private bool _paused;
     private float _spawnUnscaledTime;
+    private Collider _col;
+    private readonly Collider[] _overlapBuffer = new Collider[8];
 
-    // Offset vertical para apuntar al centro del personaje en lugar de los pies
-    private const float AimHeightOffset = 0.9f;
+    [Tooltip("Offset vertical sobre la posición del target (ajustar si el proyectil apunta demasiado bajo)")]
+    [SerializeField] private float aimHeightOffset = 0.9f;
+
+    void Awake()
+    {
+        _col = GetComponent<Collider>();
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity  = false;
+        }
+    }
 
     public void Launch(Transform target)
     {
@@ -28,9 +43,31 @@ public class SlowMotionFireProjectile : MonoBehaviour
 
         if (_target != null)
         {
-            Vector3 aimPos = _target.position + Vector3.up * AimHeightOffset;
+            Vector3 aimPos = _target.position + Vector3.up * aimHeightOffset;
             transform.LookAt(aimPos);
         }
+    }
+
+    /// Congela el proyectil en el aire; útil durante el panic input.
+    public void Pause()
+    {
+        _paused = true;
+        // Deshabilitar collider para que el fireball de Will no lo detone al spawnear cerca
+        if (_col) _col.enabled = false;
+    }
+
+    /// Reanuda el movimiento tras un Pause(). Reactiva el collider un frame después
+    /// para dar tiempo a que los dos proyectiles se separen antes de poder colisionar.
+    public void Resume()
+    {
+        _paused = false;
+        StartCoroutine(ReenableCollider());
+    }
+
+    private System.Collections.IEnumerator ReenableCollider()
+    {
+        yield return null;
+        if (!_ended && _col) _col.enabled = true;
     }
 
     /// Llamado por el sequencer cuando quiere forzar la colisión desde código
@@ -42,7 +79,7 @@ public class SlowMotionFireProjectile : MonoBehaviour
 
     void Update()
     {
-        if (_ended) return;
+        if (_ended || _paused) return;
 
         if (Time.unscaledTime - _spawnUnscaledTime > maxLifetimeSeconds)
         {
@@ -52,17 +89,23 @@ public class SlowMotionFireProjectile : MonoBehaviour
 
         if (_target != null)
         {
-            Vector3 aimPos = _target.position + Vector3.up * AimHeightOffset;
-            Vector3 dir = (aimPos - transform.position).normalized;
-            if (dir.sqrMagnitude > 0.001f)
+            Vector3 aimPos = _target.position + Vector3.up * aimHeightOffset;
+            Vector3 toTarget = aimPos - transform.position;
+            if (toTarget.sqrMagnitude > 0.001f)
             {
-                Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);
+                Vector3 dir = toTarget.normalized;
                 transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation, targetRot, turnSpeedDegPerSec * Time.unscaledDeltaTime);
+                    transform.rotation,
+                    Quaternion.LookRotation(dir, Vector3.up),
+                    turnSpeedDegPerSec * Time.deltaTime);
+                transform.position += dir * speed * Time.deltaTime;
             }
         }
+        else
+        {
+            transform.position += transform.forward * speed * Time.deltaTime;
+        }
 
-        transform.position += transform.forward * speed * Time.unscaledDeltaTime;
     }
 
     void OnTriggerEnter(Collider other)

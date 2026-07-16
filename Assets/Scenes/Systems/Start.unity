@@ -2532,17 +2532,17 @@ MonoBehaviour:
   _semiBlackColor: {r: 0, g: 0, b: 0, a: 0.65}
   _stylePresets:
   - style: 0
-    textColor: {r: 0.8, g: 0.8, b: 0.8, a: 0}
-    fontSize: 52
+    textColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    fontSize: 72
     fontStyle: 0
     scaleUpFrom: 0.6
-    entryDuration: 0.8
+    entryDuration: 0.5
     exitDuration: 0.6
     entryFromOffset: {x: 0, y: -30}
     drift: {x: 0, y: 0.25}
   - style: 1
-    textColor: {r: 0.6666667, g: 0.06666667, b: 0.06666667, a: 0}
-    fontSize: 68
+    textColor: {r: 0.6666667, g: 0.06666667, b: 0.06666667, a: 1}
+    fontSize: 80
     fontStyle: 1
     scaleUpFrom: 0.2
     entryDuration: 0.35
@@ -2550,8 +2550,8 @@ MonoBehaviour:
     entryFromOffset: {x: -30, y: -60}
     drift: {x: 0, y: 0.25}
   - style: 2
-    textColor: {r: 1, g: 1, b: 1, a: 0}
-    fontSize: 72
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    fontSize: 90
     fontStyle: 1
     scaleUpFrom: 0.1
     entryDuration: 0.25
@@ -2559,8 +2559,8 @@ MonoBehaviour:
     entryFromOffset: {x: 0, y: 0}
     drift: {x: 0, y: 0}
   - style: 3
-    textColor: {r: 1, g: 0.84313726, b: 0, a: 0}
-    fontSize: 64
+    textColor: {r: 1, g: 0.84313726, b: 0, a: 1}
+    fontSize: 80
     fontStyle: 1
     scaleUpFrom: 0.3
     entryDuration: 0.5
@@ -2569,6 +2569,10 @@ MonoBehaviour:
     drift: {x: 0, y: 0}
   _typewriterSpeed: 28
   _slideOffscreenX: 1500
+  _khRevealSpeed: 10
+  _khOffsetY: 22
+  _khCharScaleFrom: 1.35
+  _khContainerZoom: 1.06
 --- !u!1 &275104448
 GameObject:
   m_ObjectHideFlags: 0

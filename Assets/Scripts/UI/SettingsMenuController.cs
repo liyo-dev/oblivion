@@ -273,12 +273,12 @@ public class SettingsMenuController : MonoBehaviour
         _openedAt = Time.unscaledTime;
     }
 
-    public void Close()
+    public void Close(bool silent = false)
     {
-        // Solo reproducir sonido si el menú estaba visible
+        // Solo reproducir sonido si el menú estaba visible y no es un cierre silencioso
         bool wasVisible = root && root.activeSelf;
-        
-        if (wasVisible && AudioService.Instance != null)
+
+        if (!silent && wasVisible && AudioService.Instance != null)
         {
             AudioService.Instance.PlaySFX("UI_Cancel", 1f);
         }

@@ -57,6 +57,16 @@ public class DramaticTextOverlayUI : MonoBehaviour
     [Tooltip("Distancia en píxeles UI fuera de pantalla para las animaciones SlideFrom/SlideTo.")]
     [SerializeField] float _slideOffscreenX = 1500f;
 
+    [Header("Kingdom Hearts Style")]
+    [Tooltip("Caracteres por segundo en la animación KingdomHearts (independiente de TypeWriter).")]
+    [SerializeField] float _khRevealSpeed = 10f;
+    [Tooltip("Píxeles de desplazamiento vertical inicial por carácter (caen hacia su posición final).")]
+    [SerializeField] float _khOffsetY = 22f;
+    [Tooltip("Escala inicial de cada carácter individual (se reduce hasta 1.0 al aparecer).")]
+    [Range(1f, 2.5f)] [SerializeField] float _khCharScaleFrom = 1.35f;
+    [Tooltip("Escala inicial del contenedor completo (zoom suave hacia 1.0 mientras aparecen las letras).")]
+    [Range(1f, 1.5f)] [SerializeField] float _khContainerZoom = 1.06f;
+
     bool _isPlaying;
     Coroutine _playRoutine;
 
@@ -301,6 +311,10 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 yield return _textContainer.DOAnchorPos(basePos, preset.entryDuration)
                     .SetEase(Ease.OutQuart).SetUpdate(true).WaitForCompletion();
                 break;
+
+            case DramaticEntryAnimation.KingdomHearts:
+                yield return KingdomHeartsRoutine(text, preset, basePos);
+                break;
         }
     }
 
@@ -352,6 +366,87 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
         _rootGroup.blocksRaycasts = false;
     }
+
+    // ── Kingdom Hearts ────────────────────────────────────────────────────
+
+    IEnumerator KingdomHeartsRoutine(string text, DramaticStylePreset preset, Vector2 basePos)
+    {
+        // El color real se bake en los vértices; el label queda en blanco para no teñir.
+        _label.color = Color.white;
+        _label.text = text;
+        _label.ForceMeshUpdate();
+
+        _textContainer.anchoredPosition = basePos;
+        _textContainer.localScale = Vector3.one * _khContainerZoom;
+        _rootGroup.alpha = 1f;
+        _rootGroup.blocksRaycasts = true;
+
+        var textInfo = _label.textInfo;
+        int charCount = textInfo.characterCount;
+        if (charCount == 0) yield break;
+
+        // Caché de posiciones originales de vértices por material
+        int matCount = textInfo.materialCount;
+        var originalVerts = new Vector3[matCount][];
+        for (int m = 0; m < matCount; m++)
+            originalVerts[m] = (Vector3[])textInfo.meshInfo[m].vertices.Clone();
+
+        Color32 targetCol = preset.textColor;
+        float delayPerChar = 1f / Mathf.Max(_khRevealSpeed, 1f);
+        float letterAnim   = Mathf.Max(preset.entryDuration, 0.05f);
+        float totalDuration = charCount * delayPerChar + letterAnim;
+
+        // Zoom suave del contenedor mientras aparecen las letras
+        _textContainer.DOScale(Vector3.one, totalDuration)
+            .SetEase(Ease.OutCubic).SetUpdate(true);
+
+        float elapsed = 0f;
+        bool done = false;
+
+        while (!done)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            done = elapsed >= totalDuration;
+            float t_global = Mathf.Min(elapsed, totalDuration);
+
+            for (int i = 0; i < charCount; i++)
+            {
+                var charInfo = textInfo.characterInfo[i];
+                if (!charInfo.isVisible) continue;
+
+                int matIdx = charInfo.materialReferenceIndex;
+                int vIdx   = charInfo.vertexIndex;
+
+                float t    = Mathf.Clamp01((t_global - i * delayPerChar) / letterAnim);
+                float ease = KhEaseOutQuart(t);
+                byte  alpha = (byte)(ease * targetCol.a);
+
+                // Color con alpha animado
+                Color32 col = new Color32(targetCol.r, targetCol.g, targetCol.b, alpha);
+                var colors = textInfo.meshInfo[matIdx].colors32;
+                colors[vIdx + 0] = col;
+                colors[vIdx + 1] = col;
+                colors[vIdx + 2] = col;
+                colors[vIdx + 3] = col;
+
+                // Escala y offset Y por carácter, alrededor de su centro
+                var  verts = textInfo.meshInfo[matIdx].vertices;
+                var  origV = originalVerts[matIdx];
+                Vector3 center = (origV[vIdx] + origV[vIdx+1] + origV[vIdx+2] + origV[vIdx+3]) * 0.25f;
+                float   scale  = Mathf.Lerp(_khCharScaleFrom, 1f, ease);
+                float   ofsY   = Mathf.Lerp(_khOffsetY, 0f, ease);
+                Vector3 yOfs   = new Vector3(0f, ofsY, 0f);
+
+                for (int k = 0; k < 4; k++)
+                    verts[vIdx + k] = center + (origV[vIdx + k] - center) * scale + yOfs;
+            }
+
+            _label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32 | TMP_VertexDataUpdateFlags.Vertices);
+            yield return null;
+        }
+    }
+
+    static float KhEaseOutQuart(float t) => 1f - Mathf.Pow(1f - t, 4f);
 
     // ── TypeWriter ────────────────────────────────────────────────────────
 

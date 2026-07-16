@@ -124,11 +124,11 @@ public class PanicInputUI : MonoBehaviour
         root.transform.SetParent(canvas.transform, false);
 
         var rt = root.GetComponent<RectTransform>();
-        rt.anchorMin        = new Vector2(0.5f, 0.35f);
-        rt.anchorMax        = new Vector2(0.5f, 0.35f);
+        rt.anchorMin        = new Vector2(0.5f, 0.5f);
+        rt.anchorMax        = new Vector2(0.5f, 0.5f);
         rt.pivot            = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = Vector2.zero;
-        rt.sizeDelta        = new Vector2(140f, 160f);
+        rt.anchoredPosition = new Vector2(0f, 0f);
+        rt.sizeDelta        = new Vector2(1000f, 1000f);
 
         var cg = root.AddComponent<CanvasGroup>();
 
@@ -142,8 +142,8 @@ public class PanicInputUI : MonoBehaviour
         var iconGO = new GameObject("ButtonIcon", typeof(RectTransform));
         iconGO.transform.SetParent(root.transform, false);
         var iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin  = new Vector2(0.1f, 0.28f);
-        iconRT.anchorMax  = new Vector2(0.9f, 0.92f);
+        iconRT.anchorMin  = new Vector2(0.05f, 0.18f);
+        iconRT.anchorMax  = new Vector2(0.95f, 0.98f);
         iconRT.offsetMin  = iconRT.offsetMax = Vector2.zero;
         var iconImg = iconGO.AddComponent<Image>();
         iconImg.preserveAspect = true;

@@ -41,10 +41,24 @@ public class EldranCombatCheerController : MonoBehaviour
             _npcAnim  = eldranTransform.GetComponentInChildren<NPCSimpleAnimator>();
             _animator = eldranTransform.GetComponentInChildren<Animator>();
         }
+    }
 
+    void OnEnable()
+    {
         var signals = DefaultNarrativeSignals.EnsureInstance();
         signals.OnCustom(startSignal, StartCheering);
         signals.OnCustom(stopSignal,  StopCheering);
+    }
+
+    void OnDisable()
+    {
+        StopCheering();
+        var signals = DefaultNarrativeSignals.Instance;
+        if (signals != null)
+        {
+            signals.OffCustom(startSignal, StartCheering);
+            signals.OffCustom(stopSignal,  StopCheering);
+        }
     }
 
     void OnDestroy() => StopCheering();

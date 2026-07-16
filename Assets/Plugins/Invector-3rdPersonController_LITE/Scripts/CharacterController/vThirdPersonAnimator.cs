@@ -26,7 +26,18 @@ namespace Invector.vCharacterController
             // por lo que verticalSpeed/horizontalSpeed/inputMagnitude mantienen el valor
             // del último frame en movimiento. Forzamos 0 para que la animación de caminar
             // se detenga correctamente al interactuar con NPCs, puntos de guardado, etc.
+            // También cubrimos el caso en que el jugador choca contra un obstáculo físico
+            // (ej: el modelo sólido de la hoguera) que no está en groundLayer: en ese caso
+            // stopMove no se activa, pero la velocidad horizontal del rigidbody sí cae a 0.
             bool forceZeroMotion = lockMovement || stopMove;
+            if (!forceZeroMotion && isGrounded && inputMagnitude > 0.3f &&
+                _rigidbody != null && !_rigidbody.isKinematic)
+            {
+                float hVelSqr = _rigidbody.linearVelocity.x * _rigidbody.linearVelocity.x +
+                                _rigidbody.linearVelocity.z * _rigidbody.linearVelocity.z;
+                if (hVelSqr < 0.01f) // < ~0.1 m/s horizontal → bloqueado contra pared
+                    forceZeroMotion = true;
+            }
 
             if (isStrafing)
             {

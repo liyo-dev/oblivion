@@ -95,7 +95,7 @@ public class MainMenuController : MonoBehaviour
             settingsMenu = GetComponentInChildren<SettingsMenuController>(true);
 
         if (settingsMenu)
-            settingsMenu.Close();
+            settingsMenu.Close(silent: true);
 
         WireButton(continueButton, OnClickContinue, "CONTINUE");
         WireButton(newGameButton, OnClickNewGame, "NEW GAME");

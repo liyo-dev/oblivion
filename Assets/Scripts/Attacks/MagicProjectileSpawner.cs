@@ -147,19 +147,31 @@ public class MagicProjectileSpawner : MonoBehaviour
         StartCoroutine(Co_SpawnAfterDelay(spell, origin));
     }
 
-    public void SpawnNow(MagicSpellSO spell, Transform originOverride = null, bool playSFX = true)
+    /// Disparo cinemático: ignora maná, cooldowns y ActionManager.
+    /// Usa el hechizo del slot si está equipado; si no, usa <paramref name="fallbackSpell"/>.
+    /// <paramref name="directionOverride"/> permite forzar una dirección exacta ignorando el sistema de targeting.
+    /// Devuelve el GameObject del proyectil spawneado (puede ser null si el hechizo no tiene prefab).
+    /// Llamar desde secuenciadores de cinemáticas — nunca desde gameplay normal.
+    public GameObject SpawnForCinematic(MagicSlot slot, MagicSpellSO fallbackSpell, Transform originOverride = null, Vector3? directionOverride = null)
     {
-        if (!spell || !spell.prefab) return;
+        var (slotSpell, slotOrigin) = GetSpellAndOrigin(slot);
+        MagicSpellSO spell  = (slotSpell != null && slotSpell.prefab != null) ? slotSpell : fallbackSpell;
+        Transform    origin = originOverride != null ? originOverride : slotOrigin;
+
+        if (spell == null || spell.prefab == null) return null;
+        return SpawnNow(spell, origin, directionOverride: directionOverride);
+    }
+
+    public GameObject SpawnNow(MagicSpellSO spell, Transform originOverride = null, bool playSFX = true, Vector3? directionOverride = null)
+    {
+        if (!spell || !spell.prefab) return null;
 
         Transform origin = originOverride ? originOverride : transform;
-        
-        // Reproducir SFX solo si se solicita (para llamadas directas que no pasan por Co_SpawnAfterDelay)
-        if (playSFX && !string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
-        {
-            AudioService.Instance.PlaySFX(spell.castSFXKey);
-        }
 
-        LaunchProjectile(spell, origin, null);
+        if (playSFX && !string.IsNullOrEmpty(spell.castSFXKey) && AudioService.Instance != null)
+            AudioService.Instance.PlaySFX(spell.castSFXKey);
+
+        return LaunchProjectile(spell, origin, directionOverride);
     }
 
     private IEnumerator Co_SpawnWithCharge(MagicSpellSO spell, Transform originOverride)
@@ -303,9 +315,9 @@ public class MagicProjectileSpawner : MonoBehaviour
         }
     }
 
-    private void LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)
+    private GameObject LaunchProjectile(MagicSpellSO spell, Transform origin, Vector3? directionOverride)
     {
-        if (!spell || !spell.prefab) return;
+        if (!spell || !spell.prefab) return null;
 
         // === Dirección: si hay targeting activo, usa la dirección de APUNTADO ===
         Vector3 baseForward = transform.forward;
@@ -393,10 +405,12 @@ public class MagicProjectileSpawner : MonoBehaviour
             rb.isKinematic = false;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.constraints = RigidbodyConstraints.FreezeRotation; // Evitar giros al colisionar
+            rb.constraints = RigidbodyConstraints.FreezeRotation;
             rb.angularVelocity = Vector3.zero;
             rb.linearVelocity = dir * Mathf.Max(0f, spell.initialSpeed);
         }
+
+        return go;
     }
 
     // === Setters para servicios ===============================================

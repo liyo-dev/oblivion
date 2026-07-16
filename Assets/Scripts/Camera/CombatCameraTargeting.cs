@@ -17,6 +17,9 @@ public class CombatCameraTargeting : MonoBehaviour
     [SerializeField] private float visualResyncInterval = 0.1f;
     [SerializeField] private float shoulderSwitchDebounce = 0.12f;
     
+    [Header("Ángulo frontal para marcador")]
+    [SerializeField] private float facingAngleForMarker = 140f;
+
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
     
@@ -197,7 +200,7 @@ public class CombatCameraTargeting : MonoBehaviour
             thirdPersonCamera.SetLockTarget(newTarget.transform);
         }
 
-        if (syncWithProjectileTargeting && playerTargeting != null && !_isInDialogue)
+        if (syncWithProjectileTargeting && playerTargeting != null && !_isInDialogue && IsFacingTarget())
         {
             playerTargeting.SetManualTarget(newTarget.transform);
             playerTargeting.ForceVisualRefresh();
@@ -307,14 +310,25 @@ public class CombatCameraTargeting : MonoBehaviour
 
         if (syncWithProjectileTargeting && playerTargeting != null)
         {
-            if (!playerTargeting.IsManualTargetActive || playerTargeting.CurrentTarget != currentTarget.transform)
+            if (IsFacingTarget())
             {
-                playerTargeting.SetManualTarget(currentTarget.transform);
-                Log($"🔁 Resync marcador -> {currentTarget.name}");
+                if (!playerTargeting.IsManualTargetActive || playerTargeting.CurrentTarget != currentTarget.transform)
+                {
+                    playerTargeting.SetManualTarget(currentTarget.transform);
+                    Log($"🔁 Resync marcador -> {currentTarget.name}");
+                }
+                else if (Time.frameCount % 30 == 0)
+                {
+                    playerTargeting.ForceVisualRefresh();
+                }
             }
-            else if (Time.frameCount % 30 == 0)
+            else
             {
-                playerTargeting.ForceVisualRefresh();
+                if (playerTargeting.IsManualTargetActive)
+                {
+                    playerTargeting.ClearManualTarget();
+                    Log($"↩️ Enemigo fuera de ángulo frontal, ocultando marcador");
+                }
             }
         }
     }
@@ -335,6 +349,17 @@ public class CombatCameraTargeting : MonoBehaviour
         // Forzar re-lock inmediato en el siguiente Update si seguimos en combate
         _lastAutoLockAttempt = 0f;
         Log("🪄 Levitación terminada → restaurando lock de cámara");
+    }
+
+    private bool IsFacingTarget()
+    {
+        if (playerTransform == null || currentTarget == null) return false;
+        Vector3 toTarget = currentTarget.transform.position - playerTransform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.001f) return true;
+        Vector3 fwd = playerTransform.forward;
+        fwd.y = 0f;
+        return Vector3.Angle(fwd, toTarget.normalized) <= facingAngleForMarker * 0.5f;
     }
 
     private void Log(string message)

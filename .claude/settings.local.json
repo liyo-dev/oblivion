@@ -140,7 +140,8 @@
       "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Golem_derrotado.asset\")",
       "Bash(sed -n '24,35p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Mision_3_Antes_De_Conseguir_Cosas.asset\")",
       "Bash(sed -n '24,32p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Taberna.asset\")",
-      "Bash(sed -n '24,30p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Test.asset\")"
+      "Bash(sed -n '24,30p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Test.asset\")",
+      "Bash(Select-String *)"
     ]
   }
 }
