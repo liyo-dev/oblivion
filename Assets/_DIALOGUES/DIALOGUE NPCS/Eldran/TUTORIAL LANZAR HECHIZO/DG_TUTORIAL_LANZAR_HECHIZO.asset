@@ -14,9 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueAsset
   lines:
   - speakerNameId: CHAR_ELDRAN
-    textId: EVT_08
+    textId: EVT_09
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
     emotion: 5
+  - speakerNameId: CHAR_ELDRAN
+    textId: EVT_10
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 6
+  - speakerNameId: CHAR_ELDRAN
+    textId: EVT_11
+    text: 
+    portrait: {fileID: 0}
+    isPlayerSpeaking: 0
+    emotion: 1
   isGroupConversation: 0

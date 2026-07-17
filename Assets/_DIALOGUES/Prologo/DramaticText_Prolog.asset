@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DramaticPhraseConfig
   phrases:
   - text: "Rend\xEDos ante m\xED"
-    textId:
+    textId: 
     style: 1
     background: 2
     entryAnim: 6
@@ -26,7 +26,7 @@ MonoBehaviour:
     useMovement: 1
     moveTo: {x: 0, y: 0}
   - text: Deja en paz a mi pueblo...
-    textId:
+    textId: 
     style: 0
     background: 2
     entryAnim: 6
@@ -38,11 +38,11 @@ MonoBehaviour:
     useMovement: 1
     moveTo: {x: 0, y: 0}
   - text: "Will, \xA1DESPIERTA!"
-    textId:
+    textId: 
     style: 2
-    background: 0
+    background: 2
     entryAnim: 6
-    exitAnim: 2
+    exitAnim: 0
     duration: 2.5
     voiceClip: {fileID: 0}
     waitForAudio: 0
@@ -50,3 +50,4 @@ MonoBehaviour:
     useMovement: 1
     moveTo: {x: 0, y: 0}
   pauseBetween: 0.15
+  dreamMode: 1

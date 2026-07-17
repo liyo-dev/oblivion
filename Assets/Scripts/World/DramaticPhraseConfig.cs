@@ -12,7 +12,8 @@ public enum DramaticTextBackground
 {
     None,
     SemiBlack,  // Alpha ~0.65
-    FullBlack   // Alpha 1.0
+    FullBlack,  // Alpha 1.0
+    Dream       // Azul índigo profundo con pulso suave — para secuencias de sueño
 }
 
 public enum DramaticEntryAnimation
@@ -86,4 +87,7 @@ public class DramaticPhraseConfig : ScriptableObject
     [Tooltip("Pausa entre frases consecutivas (segundos).")]
     [Min(0f)]
     public float pauseBetween = 0.15f;
+
+    [Tooltip("Si true, activa el overlay de chispas flotantes (modo sueño) durante toda la secuencia.")]
+    public bool dreamMode = false;
 }

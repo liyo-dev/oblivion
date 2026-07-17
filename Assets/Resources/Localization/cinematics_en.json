@@ -57,6 +57,18 @@
             "text": "Will! Use your magic, press <sprite name=\"interactable_x\"> and defeat the demon!"
         },
         {
+            "id": "EVT_09",
+            "text": "[EN] ¡Qué interesante!"
+        },
+        {
+            "id": "EVT_10",
+            "text": ""
+        },
+        {
+            "id": "EVT_11",
+            "text": ""
+        },
+        {
             "id": "EVT_AWAKEN_01",
             "text": "Will, watch out!"
         },
@@ -135,6 +147,18 @@
         {
             "id": "EVT_GOLEM_END_06",
             "text": "Liam: The Golem has failed. If I want the boy to reach the end, I'll have to guide him myself."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_01",
+            "text": "So… that's the pure-hearted boy who will open the Path."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_02",
+            "text": "I'm glad that demon managed to awaken his magic."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_03",
+            "text": "Ha… ha ha…"
         },
         {
             "id": "EVT_MOUNTAIN_01",

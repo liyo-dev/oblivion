@@ -6239,7 +6239,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1068635598608718835
 Transform:
   m_ObjectHideFlags: 0
@@ -6755,7 +6755,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &946192570507664711
 Transform:
   m_ObjectHideFlags: 0
@@ -7685,6 +7685,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -10016,7 +10017,7 @@ SkinnedMeshRenderer:
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
   m_SkinnedMotionVectors: 1
-  m_Mesh: {fileID: 7029899391725227403, guid: 075789f0f3fa9414f90d335ae163f413, type: 3}
+  m_Mesh: {fileID: 3939683732407723490, guid: 075789f0f3fa9414f90d335ae163f413, type: 3}
   m_Bones:
   - {fileID: 5273314544415236876}
   - {fileID: 8017969645369904910}
@@ -16938,7 +16939,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &4962351642743054606
 Transform:
   m_ObjectHideFlags: 0
@@ -19851,7 +19852,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &440221718864026983
 Transform:
   m_ObjectHideFlags: 0

@@ -14,30 +14,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EmotionProfile
   transitionDuration: 0.1
   emotions:
-  - emotion: 0
+  - emotion: 1
     eyeMeshName: Eye07
     mouthMeshName: Mouth09
-  - emotion: 1
+    bodyAnimStateName: Victory_NoWeapon
+  - emotion: 2
     eyeMeshName: Eye10
     mouthMeshName: Mouth01
-  - emotion: 2
+    bodyAnimStateName: Cry01
+  - emotion: 3
     eyeMeshName: Eye03
     mouthMeshName: Mouth05
-  - emotion: 3
+    bodyAnimStateName: Angry01
+  - emotion: 0
     eyeMeshName: Eye05
     mouthMeshName: Mouth07
+    bodyAnimStateName: Idle02
   - emotion: 4
     eyeMeshName: Eye05
     mouthMeshName: Mouth12
+    bodyAnimStateName: SenseSomethingStart_NoWeapon
   - emotion: 5
     eyeMeshName: Eye10
     mouthMeshName: Mouth05
-  - emotion: 6
+    bodyAnimStateName: Fear01
+  - emotion: 7
     eyeMeshName: Eye09
     mouthMeshName: Mouth12
-  - emotion: 7
+    bodyAnimStateName: 
+  - emotion: 8
     eyeMeshName: Eye07
     mouthMeshName: Mouth10
-  - emotion: 8
-    eyeMeshName: Eye09
-    mouthMeshName: Mouth09
+    bodyAnimStateName: HeadNod01
+  neutralBodyAnims:
+  - Talk01
+  - Talk02
+  - Talk03

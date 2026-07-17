@@ -16,9 +16,8 @@ public class EmotionProfileEditor : Editor
         // Header
         EditorGUILayout.LabelField("Sistema de Emociones para NPCs", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Configura qué meshes de ojos y boca se activan para cada emoción.\n" +
-            "Los personajes tienen múltiples GameObjects (Eye01, Eye02, Mouth01, etc.)\n" +
-            "y este perfil define cuál activar según la emoción.",
+            "Configura qué meshes de ojos/boca se activan para cada emoción y qué animación corporal reproduce el jugador.\n" +
+            "Body Anim State Name → nombre exacto del estado en el Animator Controller del jugador (ej: 'Cheer01').",
             MessageType.Info
         );
         
@@ -39,16 +38,17 @@ public class EmotionProfileEditor : Editor
             
             profile.emotions = new EmotionMeshData[]
             {
-                new EmotionMeshData { emotion = NPCEmotion.Neutral, eyeMeshName = "Eye01", mouthMeshName = "Mouth01" },
-                new EmotionMeshData { emotion = NPCEmotion.Happy, eyeMeshName = "Eye03", mouthMeshName = "Mouth03" },
-                new EmotionMeshData { emotion = NPCEmotion.Sad, eyeMeshName = "Eye02", mouthMeshName = "Mouth02" },
-                new EmotionMeshData { emotion = NPCEmotion.Angry, eyeMeshName = "Eye04", mouthMeshName = "Mouth04" },
-                new EmotionMeshData { emotion = NPCEmotion.Surprised, eyeMeshName = "Eye05", mouthMeshName = "Mouth05" },
-                new EmotionMeshData { emotion = NPCEmotion.Scared, eyeMeshName = "Eye06", mouthMeshName = "Mouth06" },
-                new EmotionMeshData { emotion = NPCEmotion.Thinking, eyeMeshName = "Eye07", mouthMeshName = "Mouth07" },
-                new EmotionMeshData { emotion = NPCEmotion.Tired, eyeMeshName = "Eye08", mouthMeshName = "Mouth08" },
-                new EmotionMeshData { emotion = NPCEmotion.Smirk, eyeMeshName = "Eye09", mouthMeshName = "Mouth09" }
+                new EmotionMeshData { emotion = NPCEmotion.Neutral,   eyeMeshName = "Eye01", mouthMeshName = "Mouth01", bodyAnimStateName = "" },
+                new EmotionMeshData { emotion = NPCEmotion.Happy,     eyeMeshName = "Eye03", mouthMeshName = "Mouth03", bodyAnimStateName = "Cheer01" },
+                new EmotionMeshData { emotion = NPCEmotion.Sad,       eyeMeshName = "Eye02", mouthMeshName = "Mouth02", bodyAnimStateName = "Cry01" },
+                new EmotionMeshData { emotion = NPCEmotion.Angry,     eyeMeshName = "Eye04", mouthMeshName = "Mouth04", bodyAnimStateName = "Angry01" },
+                new EmotionMeshData { emotion = NPCEmotion.Surprised, eyeMeshName = "Eye05", mouthMeshName = "Mouth05", bodyAnimStateName = "Question02" },
+                new EmotionMeshData { emotion = NPCEmotion.Scared,    eyeMeshName = "Eye06", mouthMeshName = "Mouth06", bodyAnimStateName = "Fear01" },
+                new EmotionMeshData { emotion = NPCEmotion.Thinking,  eyeMeshName = "Eye07", mouthMeshName = "Mouth07", bodyAnimStateName = "Question01" },
+                new EmotionMeshData { emotion = NPCEmotion.Tired,     eyeMeshName = "Eye08", mouthMeshName = "Mouth08", bodyAnimStateName = "Talk02" },
+                new EmotionMeshData { emotion = NPCEmotion.Smirk,     eyeMeshName = "Eye09", mouthMeshName = "Mouth09", bodyAnimStateName = "Laugh01" },
             };
+            profile.neutralBodyAnims = new[] { "Talk01", "Talk02", "Talk03" };
             
             EditorUtility.SetDirty(profile);
         }
@@ -59,32 +59,38 @@ public class EmotionProfileEditor : Editor
         EditorGUILayout.LabelField("Mapeo de Emociones", EditorStyles.boldLabel);
         
         var emotionsProperty = serializedObject.FindProperty("emotions");
-        
+
         for (int i = 0; i < emotionsProperty.arraySize; i++)
         {
             var element = emotionsProperty.GetArrayElementAtIndex(i);
-            var emotionProp = element.FindPropertyRelative("emotion");
-            var eyeProp = element.FindPropertyRelative("eyeMeshName");
-            var mouthProp = element.FindPropertyRelative("mouthMeshName");
-            
-            NPCEmotion emotion = (NPCEmotion)emotionProp.enumValueIndex;
+            var emotionProp  = element.FindPropertyRelative("emotion");
+            var eyeProp      = element.FindPropertyRelative("eyeMeshName");
+            var mouthProp    = element.FindPropertyRelative("mouthMeshName");
+            var bodyAnimProp = element.FindPropertyRelative("bodyAnimStateName");
+
+            NPCEmotion emotion = (NPCEmotion)emotionProp.intValue;
             string label = GetEmotionLabel(emotion);
-            
+
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            
+
             element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, label, true);
-            
+
             if (element.isExpanded)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(emotionProp, new GUIContent("Emoción"));
-                EditorGUILayout.PropertyField(eyeProp, new GUIContent("👁 Mesh Ojos"));
-                EditorGUILayout.PropertyField(mouthProp, new GUIContent("👄 Mesh Boca"));
+                EditorGUILayout.PropertyField(emotionProp,  new GUIContent("Emoción"));
+                EditorGUILayout.PropertyField(eyeProp,      new GUIContent("👁 Mesh Ojos"));
+                EditorGUILayout.PropertyField(mouthProp,    new GUIContent("👄 Mesh Boca"));
+                EditorGUILayout.PropertyField(bodyAnimProp, new GUIContent("🏃 Anim Corporal (jugador)"));
                 EditorGUI.indentLevel--;
             }
-            
+
             EditorGUILayout.EndVertical();
         }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Animaciones Neutras (jugador)", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("neutralBodyAnims"), new GUIContent("🗣 Anims Neutral"), true);
         
         EditorGUILayout.Space();
         

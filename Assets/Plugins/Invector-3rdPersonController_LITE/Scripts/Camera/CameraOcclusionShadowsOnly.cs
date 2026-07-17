@@ -5,148 +5,121 @@ using UnityEngine;
 public class CameraOcclusionShadowsOnly : MonoBehaviour
 {
     [Header("Detección")]
-    [SerializeField] private LayerMask obstructionMask = ~0;   // capas que pueden tapar
-    [SerializeField] private float checkRadius = 0.15f;        // radio del spherecast
-    [SerializeField] private float releaseDelay = 0.2f;        // histéresis al soltar
+    [SerializeField] private LayerMask obstructionMask = ~0;
+    [Tooltip("Radio del SphereCast. 0.2 cubre obstáculos finos sin falsas detecciones.")]
+    [SerializeField] private float checkRadius = 0.2f;
+    [Tooltip("Histéresis al liberar la oclusión (segundos).")]
+    [SerializeField] private float releaseDelay = 0.06f;
+    [Tooltip("Margen en metros antes del jugador. Hits dentro de esta distancia al jugador NO se ocluden, evitando que un edificio desaparezca sólo porque el jugador está tocando su pared.")]
+    [SerializeField] private float playerProximityMargin = 0.8f;
 
-    [Header("Efecto de pintada")]
+    [Header("Dissolve")]
     [SerializeField] private Shader occlusionShader;
-    [SerializeField, Range(0f, 1f)] private float revealAmount = 0.9f; // cuánto se "come" la pintada
-    [SerializeField, Range(0f, 1f)] private float minimumAlpha = 0.15f; // nunca desaparecer del todo
-    [SerializeField] private float fadeInSpeed = 6f;                    // velocidad al aplicar
-    [SerializeField] private float fadeOutSpeed = 3f;                   // velocidad al restaurar
-    [SerializeField] private float noiseScale = 5f;                     // deformación de la salpicadura
-    [SerializeField] private float edgeWidth = 0.2f;                    // borde suave de la salpicadura
+    [Tooltip("Fracción de superficie que se disuelve en oclusión máxima. 0.45 = estilo ghost translúcido.")]
+    [SerializeField, Range(0f, 1f)] private float revealAmount = 0.45f;
+    [Tooltip("Alpha mínimo de la superficie que queda visible. 0.3 permite ver el player detrás.")]
+    [SerializeField, Range(0f, 1f)] private float minimumAlpha = 0.30f;
+    [Tooltip("Frecuencia del ruido de dissolve. 18 da un punteado fino típico de juegos AAA.")]
+    [SerializeField] private float noiseScale = 18f;
+    [Tooltip("Anchura de la zona de transición del borde. Valores bajos = borde más nítido.")]
+    [SerializeField] private float edgeWidth = 0.07f;
+
+    [Header("Borde luminoso")]
+    [Tooltip("Color del glow en el borde del dissolve.")]
+    [SerializeField] private Color edgeColor = new Color(0.55f, 0.82f, 1f, 1f);
+    [Tooltip("Intensidad del glow (multiplica el color del borde).")]
+    [SerializeField] private float edgeGlow = 3.0f;
+
+    [Header("Transición")]
+    [Tooltip("Velocidad de aparición del efecto (respuesta inmediata al bloqueo).")]
+    [SerializeField] private float fadeInSpeed = 14f;
+    [Tooltip("Velocidad de restauración al liberar el bloqueo.")]
+    [SerializeField] private float fadeOutSpeed = 8f;
 
     [Header("Debug")]
     [SerializeField] private bool debugRays = false;
 
+    // ─── Estado interno ────────────────────────────────────────────────────────
+
     private class Entry
     {
-        public Renderer Renderer;
+        public Renderer  Renderer;
         public Material[] OriginalMaterials;
         public Material[] PaintedMaterials;
-        public float LastSeen;
-        public float Progress; // 0 = normal, 1 = pintado
+        public float     LastSeen;
+        public float     Progress; // 0 = normal, 1 = pintado
     }
 
-    private readonly Dictionary<Renderer, Entry> _active = new();
-    private readonly List<Renderer> _toRestore = new(32);
-    private bool _shaderMissing; // Flag para evitar spam de errores
-    private static bool _loggedShaderLoadAttempt; // Solo loguear una vez
-    
-    /// <summary>
-    /// Carga el shader de oclusión usando múltiples estrategias de fallback.
-    /// En builds, algunos métodos de carga pueden fallar, por lo que probamos varios.
-    /// </summary>
+    private readonly Dictionary<Renderer, Entry> _active   = new();
+    private readonly List<Renderer>              _toRestore = new(32);
+    private bool _shaderMissing;
+    private static bool _loggedShaderLoadAttempt;
+
+    // ─── Carga de shader ──────────────────────────────────────────────────────
+
     private Shader LoadOcclusionShader()
     {
         Shader shader;
-        
-        // Log de diagnóstico (solo una vez)
+
         if (!_loggedShaderLoadAttempt)
         {
             _loggedShaderLoadAttempt = true;
-            Debug.Log("[CameraOcclusionShadowsOnly] Intentando cargar shader de oclusión...");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log("[CameraOcclusionShadowsOnly] Cargando shader de oclusión...");
+#endif
         }
-        
-        // 1. Si ya está asignado en el inspector, usarlo
-        if (occlusionShader != null)
-        {
-            Debug.Log($"[CameraOcclusionShadowsOnly] Usando shader asignado en inspector: {occlusionShader.name}");
-            return occlusionShader;
-        }
-        
-        // 2. Cargar directamente desde Resources (más confiable en builds)
+
+        if (occlusionShader != null) return occlusionShader;
+
         shader = Resources.Load<Shader>("Shaders/CameraOcclusionPaint");
-        if (shader != null)
-        {
-            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado desde Resources: {shader.name}");
-            return shader;
-        }
-        
-        // 3. NUEVO: Cargar desde el material de respaldo (garantiza inclusión en build)
-        var backupMaterial = Resources.Load<Material>("Shaders/CameraOcclusionPaint_Backup");
-        if (backupMaterial != null && backupMaterial.shader != null)
-        {
-            shader = backupMaterial.shader;
-            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado desde material de respaldo: {shader.name}");
-            return shader;
-        }
-        
-        // 4. Usar Shader.Find (funciona si el shader está en Always Included Shaders)
+        if (shader != null) return shader;
+
+        var backupMat = Resources.Load<Material>("Shaders/CameraOcclusionPaint_Backup");
+        if (backupMat != null && backupMat.shader != null) return backupMat.shader;
+
         shader = Shader.Find("Custom/CameraOcclusionPaint");
-        if (shader != null)
-        {
-            Debug.Log($"[CameraOcclusionShadowsOnly] Shader encontrado con Shader.Find: {shader.name}");
-            return shader;
-        }
-        
-        // 5. Fallback: shader URP Unlit con transparencia (similar pero más simple)
+        if (shader != null) return shader;
+
         shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader != null)
-        {
-            Debug.LogWarning($"[CameraOcclusionShadowsOnly] Usando fallback URP/Unlit - efecto visual será diferente");
-            return shader;
-        }
-        
-        // 6. Último fallback: shader Standard
-        shader = Shader.Find("Standard");
-        if (shader != null)
-        {
-            Debug.LogWarning($"[CameraOcclusionShadowsOnly] Usando fallback Standard - efecto visual será diferente");
-            return shader;
-        }
-        
-        // No se encontró ningún shader
-        Debug.LogError("[CameraOcclusionShadowsOnly] No se pudo cargar ningún shader. Soluciones:\n" +
-                       "1. Ir a Edit > Project Settings > Graphics\n" +
-                       "2. En 'Always Included Shaders', agregar 'Custom/CameraOcclusionPaint'\n" +
-                       "3. O asignar el shader directamente en el componente CameraOcclusionShadowsOnly");
-        
+        if (shader != null) { Debug.LogWarning("[CameraOcclusionShadowsOnly] Usando fallback URP/Unlit."); return shader; }
+
+        Debug.LogError("[CameraOcclusionShadowsOnly] No se pudo cargar ningún shader.\n" +
+                       "Añade 'Custom/CameraOcclusionPaint' a Edit > Project Settings > Graphics > Always Included Shaders.");
         return null;
     }
 
-    /// <summary>Llama cada frame con los puntos cámara→objetivo.</summary>
+    // ─── API pública ──────────────────────────────────────────────────────────
+
+    /// <summary>Llamado cada frame por vThirdPersonCamera con los puntos cámara → objetivo.</summary>
     public void Process(Vector3 from, Vector3 to)
     {
         float now = Time.time;
-        Vector3 dir = (to - from);
+        Vector3 dir = to - from;
         float dist = dir.magnitude;
         if (dist < 0.0001f) return;
 
-        // Intentar obtener el shader si no está asignado
         if (!occlusionShader)
         {
             occlusionShader = LoadOcclusionShader();
-            
-            // Si aún no hay shader, desactivar el sistema
-            if (!occlusionShader)
-            {
-                if (!_shaderMissing)
-                {
-                    Debug.LogWarning("[CameraOcclusionShadowsOnly] No se encontró shader de oclusión. Sistema desactivado. Ver: Project Settings > Graphics > Always Included Shaders");
-                    _shaderMissing = true;
-                }
-                return;
-            }
-            
-            // Verificar que el shader está soportado
-            if (!occlusionShader.isSupported)
-            {
-                Debug.LogError($"[CameraOcclusionShadowsOnly] Shader '{occlusionShader.name}' no está soportado en esta plataforma");
-                _shaderMissing = true;
-                occlusionShader = null;
-                return;
-            }
-            
-            Debug.Log($"[CameraOcclusionShadowsOnly] Shader cargado exitosamente: {occlusionShader.name}");
+            if (!occlusionShader) { _shaderMissing = true; return; }
+            if (!occlusionShader.isSupported) { _shaderMissing = true; occlusionShader = null; return; }
         }
+        if (_shaderMissing) return;
 
         if (debugRays) Debug.DrawLine(from, to, Color.magenta, 0f, false);
 
-        dir /= dist; // Normalizar dirección
-        var hits = Physics.SphereCastAll(from, checkRadius, dir, dist, obstructionMask, QueryTriggerInteraction.Ignore);
+        dir /= dist;
+
+        // Solo consideramos obstáculos que estén MÁS CERCA de la cámara que (dist - margen).
+        // Evita que un edificio que el jugador está tocando desaparezca aunque no bloquee la vista.
+        float maxOcclusionDist = dist - playerProximityMargin;
+        if (maxOcclusionDist <= 0f)
+        {
+            UpdateEntries(now);
+            return;
+        }
+
+        var hits = Physics.SphereCastAll(from, checkRadius, dir, maxOcclusionDist, obstructionMask, QueryTriggerInteraction.Ignore);
 
         for (int i = 0; i < hits.Length; i++)
         {
@@ -160,6 +133,23 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         UpdateEntries(now);
     }
 
+    public void RestoreAll()
+    {
+        foreach (var entry in _active.Values)
+            RestoreEntry(entry);
+        _active.Clear();
+    }
+
+    // Setters para configurar desde vThirdPersonCamera o desde código externo
+    public void SetMask(LayerMask m)                => obstructionMask = m;
+    public void SetRadius(float r)                  => checkRadius = Mathf.Max(0f, r);
+    public void SetReleaseDelay(float d)            => releaseDelay = Mathf.Max(0f, d);
+    public void SetPlayerProximityMargin(float m)   => playerProximityMargin = Mathf.Max(0f, m);
+
+    // ─── Lógica interna ───────────────────────────────────────────────────────
+
+    void OnDisable() => RestoreAll();
+
     private void UpdateEntries(float now)
     {
         _toRestore.Clear();
@@ -168,8 +158,8 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
         {
             var entry = kvp.Value;
             bool shouldOcclude = now - entry.LastSeen <= releaseDelay;
-            float speed = shouldOcclude ? fadeInSpeed : fadeOutSpeed;
             float target = shouldOcclude ? 1f : 0f;
+            float speed  = shouldOcclude ? fadeInSpeed : fadeOutSpeed;
 
             entry.Progress = Mathf.MoveTowards(entry.Progress, target, speed * Time.deltaTime);
 
@@ -195,9 +185,9 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
 
         var entry = new Entry
         {
-            Renderer = renderer,
+            Renderer         = renderer,
             OriginalMaterials = renderer.sharedMaterials,
-            PaintedMaterials = BuildPaintedMaterials(renderer)
+            PaintedMaterials  = BuildPaintedMaterials(renderer)
         };
 
         _active[renderer] = entry;
@@ -207,7 +197,7 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     private Material[] BuildPaintedMaterials(Renderer renderer)
     {
         var originalMats = renderer.sharedMaterials;
-        var painted = new Material[originalMats.Length];
+        var painted      = new Material[originalMats.Length];
 
         for (int i = 0; i < originalMats.Length; i++)
         {
@@ -216,15 +206,17 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
 
             if (src)
             {
-                if (src.HasProperty("_BaseMap")) dst.SetTexture("_BaseMap", src.GetTexture("_BaseMap"));
-                else if (src.HasProperty("_MainTex")) dst.SetTexture("_BaseMap", src.GetTexture("_MainTex"));
+                if      (src.HasProperty("_BaseMap"))  dst.SetTexture("_BaseMap", src.GetTexture("_BaseMap"));
+                else if (src.HasProperty("_MainTex"))  dst.SetTexture("_BaseMap", src.GetTexture("_MainTex"));
 
-                if (src.HasProperty("_BaseColor")) dst.SetColor("_BaseColor", src.GetColor("_BaseColor"));
-                else if (src.HasProperty("_Color")) dst.SetColor("_BaseColor", src.GetColor("_Color"));
+                if      (src.HasProperty("_BaseColor")) dst.SetColor("_BaseColor", src.GetColor("_BaseColor"));
+                else if (src.HasProperty("_Color"))     dst.SetColor("_BaseColor", src.GetColor("_Color"));
             }
 
             dst.SetFloat("_NoiseScale", noiseScale);
-            dst.SetFloat("_EdgeWidth", edgeWidth);
+            dst.SetFloat("_EdgeWidth",  edgeWidth);
+            dst.SetColor("_EdgeColor",  edgeColor);
+            dst.SetFloat("_EdgeGlow",   edgeGlow);
             painted[i] = dst;
         }
 
@@ -235,22 +227,21 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
     {
         if (!entry.Renderer) return;
 
-        float reveal = Mathf.Lerp(0f, revealAmount, progress);
+        float reveal    = Mathf.Lerp(0f, revealAmount,  progress);
         float holdAlpha = Mathf.Lerp(1f, minimumAlpha, progress);
 
-        var mats = progress > 0f ? entry.PaintedMaterials : entry.OriginalMaterials;
-        entry.Renderer.sharedMaterials = mats;
+        entry.Renderer.sharedMaterials = progress > 0f ? entry.PaintedMaterials : entry.OriginalMaterials;
 
         if (progress > 0f)
         {
-            for (int i = 0; i < mats.Length; i++)
+            for (int i = 0; i < entry.PaintedMaterials.Length; i++)
             {
-                var m = mats[i];
+                var m = entry.PaintedMaterials[i];
                 if (!m) continue;
                 m.SetFloat("_Reveal", reveal);
-                var color = m.GetColor("_BaseColor");
-                color.a = holdAlpha;
-                m.SetColor("_BaseColor", color);
+                var c = m.GetColor("_BaseColor");
+                c.a = holdAlpha;
+                m.SetColor("_BaseColor", c);
             }
         }
     }
@@ -261,19 +252,4 @@ public class CameraOcclusionShadowsOnly : MonoBehaviour
             entry.Renderer.sharedMaterials = entry.OriginalMaterials;
         entry.Progress = 0f;
     }
-
-    /// <summary>Restaura todo inmediatamente (p.ej. OnDisable).</summary>
-    public void RestoreAll()
-    {
-        foreach (var entry in _active.Values)
-            RestoreEntry(entry);
-        _active.Clear();
-    }
-
-    void OnDisable() => RestoreAll();
-
-    // Exponer setters si lo quieres tocar desde otro script
-    public void SetMask(LayerMask m) => obstructionMask = m;
-    public void SetRadius(float r) => checkRadius = Mathf.Max(0f, r);
-    public void SetReleaseDelay(float d) => releaseDelay = Mathf.Max(0f, d);
 }

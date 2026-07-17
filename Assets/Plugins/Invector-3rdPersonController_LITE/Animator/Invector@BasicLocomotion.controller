@@ -1023,6 +1023,32 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 1
+--- !u!1102 &-2718202801720253648
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Dizzy_NoWeapon 0
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 1827226128182048838, guid: 0348e9a0fd52ee041ae328f2396f3050, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-2681521069978347969
 AnimatorState:
   serializedVersion: 6
@@ -14207,6 +14233,12 @@ AnimatorStateMachine:
   - serializedVersion: 1
     m_State: {fileID: 2022654470752857131}
     m_Position: {x: 650, y: 1180, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 7906282873621067851}
+    m_Position: {x: 230, y: 800, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -2718202801720253648}
+    m_Position: {x: 230, y: 870, z: 0}
   m_ChildStateMachines:
   - serializedVersion: 1
     m_StateMachine: {fileID: 1107986396892164804}
@@ -14224,8 +14256,6 @@ AnimatorStateMachine:
   - {fileID: 1101826494369673154}
   m_EntryTransitions: []
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
   - first: {fileID: 1107957787379878506}
     second: []
   - first: {fileID: 7997849948313872893}
@@ -20042,8 +20072,6 @@ AnimatorStateMachine:
   m_AnyStateTransitions: []
   m_EntryTransitions: []
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
   - first: {fileID: 1107083846440545748}
     second:
     - {fileID: 1109027562227170228}
@@ -20124,8 +20152,6 @@ AnimatorStateMachine:
   - {fileID: 1101630114329016218}
   m_EntryTransitions: []
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
   - first: {fileID: 1107006311954203734}
     second: []
   - first: {fileID: 1107444483346391506}
@@ -20266,9 +20292,7 @@ AnimatorStateMachine:
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
-  m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
+  m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
   m_AnyStatePosition: {x: 48, y: 168, z: 0}
   m_EntryPosition: {x: 50, y: 120, z: 0}
@@ -20299,10 +20323,7 @@ AnimatorStateMachine:
   - {fileID: 1109759645979449164}
   - {fileID: 1109200329528482774}
   - {fileID: 1109924006477998572}
-  m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second:
-    - {fileID: 1109988632836330776}
+  m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
   m_AnyStatePosition: {x: 108, y: 240, z: 0}
   m_EntryPosition: {x: 108, y: 192, z: 0}
@@ -20325,9 +20346,7 @@ AnimatorStateMachine:
   m_AnyStateTransitions: []
   m_EntryTransitions:
   - {fileID: 1109541181118512178}
-  m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
+  m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
   m_AnyStatePosition: {x: 48, y: 168, z: 0}
   m_EntryPosition: {x: 50, y: 120, z: 0}
@@ -20594,9 +20613,6 @@ AnimatorStateMachine:
   - {fileID: 1109618518866697304}
   - {fileID: 1109570367703917398}
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second:
-    - {fileID: 1109792761638606406}
   - first: {fileID: 1107232568357287390}
     second:
     - {fileID: 1109366517967127882}
@@ -20656,8 +20672,6 @@ AnimatorStateMachine:
   m_AnyStateTransitions: []
   m_EntryTransitions: []
   m_StateMachineTransitions:
-  - first: {fileID: 0}
-    second: []
   - first: {fileID: 1107317655660455606}
     second:
     - {fileID: 1109702216339247894}
@@ -22505,6 +22519,32 @@ AnimatorState:
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
   m_Motion: {fileID: 1827226128182048838, guid: 8283fadf2c89507469495f30db8680db, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &7906282873621067851
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SenseSomethingStart_NoWeapon
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 1827226128182048838, guid: 149e0d80258a7de43964dbd258be49dc, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

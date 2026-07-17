@@ -18,19 +18,17 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
     emotion: 1
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_TURNIN_02
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 1
+    emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_TURNIN_03
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 1
+    emotion: 0
+  isGroupConversation: 0

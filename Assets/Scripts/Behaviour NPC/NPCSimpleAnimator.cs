@@ -130,19 +130,7 @@ public class NPCSimpleAnimator : MonoBehaviour
     // Animator parameters
     private static readonly int InputMagnitudeHash = Animator.StringToHash("InputMagnitude");
 
-    // Mapeo emoción → animación corporal
-    private static readonly Dictionary<NPCEmotion, string> EmotionBodyAnimMap = new Dictionary<NPCEmotion, string>
-    {
-        { NPCEmotion.Happy,     "Cheer01"    },
-        { NPCEmotion.Angry,     "Angry01"    },
-        { NPCEmotion.Sad,       "Cry01"      },
-        { NPCEmotion.Scared,    "Fear01"     },
-        { NPCEmotion.Thinking,  "Question01" },
-        { NPCEmotion.Surprised, "Question02" },
-        { NPCEmotion.Smirk,     "Laugh01"    },
-        { NPCEmotion.Tired,     "Talk02"     },
-    };
-    private static readonly string[] NeutralTalkAnims = { "Talk01", "Talk02", "Talk03" };
+    private EmotionProfile _emotionProfile;
     
     // References
     private Transform _player;
@@ -247,6 +235,9 @@ public class NPCSimpleAnimator : MonoBehaviour
             navAgent = GetComponent<NavMeshAgent>();
         
         _interactable = GetComponent<Interactable>();
+        var emotionController = GetComponent<NPCEmotionController>();
+        if (emotionController != null)
+            _emotionProfile = emotionController.EmotionProfile;
         
         // Initialize
         if (animator != null)
@@ -1288,26 +1279,34 @@ public class NPCSimpleAnimator : MonoBehaviour
         if (!_isInteracting || _currentState == AnimationState.Dead)
             return;
 
-        string stateName;
-        if (emotion == NPCEmotion.None || emotion == NPCEmotion.Neutral)
-        {
-            _lastTalkIndex = (_lastTalkIndex + 1) % NeutralTalkAnims.Length;
-            stateName = NeutralTalkAnims[_lastTalkIndex];
-        }
-        else if (EmotionBodyAnimMap.TryGetValue(emotion, out string mapped))
-        {
-            stateName = mapped;
-        }
-        else
-        {
-            stateName = NeutralTalkAnims[0];
-        }
-
+        string stateName = ResolveBodyAnimStateName(emotion);
         PlayOneShot(stateName, 0, () =>
         {
             if (_isInteracting && _currentState != AnimationState.Dead)
                 CrossFadeToState(interactState, 0.15f);
         });
+    }
+
+    private string ResolveBodyAnimStateName(NPCEmotion emotion)
+    {
+        string[] neutralAnims = (_emotionProfile != null && _emotionProfile.neutralBodyAnims is { Length: > 0 })
+            ? _emotionProfile.neutralBodyAnims
+            : new[] { "Talk01", "Talk02", "Talk03" };
+
+        if (emotion == NPCEmotion.None || emotion == NPCEmotion.Neutral)
+        {
+            _lastTalkIndex = (_lastTalkIndex + 1) % neutralAnims.Length;
+            return neutralAnims[_lastTalkIndex];
+        }
+
+        if (_emotionProfile != null)
+        {
+            var data = _emotionProfile.GetEmotionData(emotion);
+            if (!string.IsNullOrEmpty(data.bodyAnimStateName))
+                return data.bodyAnimStateName;
+        }
+
+        return neutralAnims[0];
     }
 
     /// <summary>

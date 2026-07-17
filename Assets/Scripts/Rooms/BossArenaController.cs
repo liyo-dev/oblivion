@@ -120,6 +120,7 @@ public class BossArenaController : MonoBehaviour
     bool _profileReady = false; // ✅ Flag para rastrear si el perfil está listo
     EnemyMarker _activeBossMarker;
     Damageable _activeBossDamageable;
+    BossHealthBar _activeBossHealthBar;
 
     public void SetStartBarrierOnPlayerEnter(bool value)
     {
@@ -435,6 +436,8 @@ public class BossArenaController : MonoBehaviour
             _activeBossDamageable.OnDied += HandleBossDamageableDied;
         }
 
+        _activeBossHealthBar = boss.GetComponent<BossHealthBar>();
+
         // Iniciar presentación o colocar directamente en el suelo
         if (bossIntroPresentation != null)
         {
@@ -446,6 +449,7 @@ public class BossArenaController : MonoBehaviour
             Debug.Log($"[BossArenaController] ⚠️ No hay BossIntroPresentation asignado para '{boss.name}'. Colocando boss directamente.");
             PlaceBossOnFloor(boss);
             EnableBossCombat(boss);
+            _activeBossHealthBar?.Show();
         }
     }
 
@@ -471,12 +475,15 @@ public class BossArenaController : MonoBehaviour
         // Después de la presentación:
         // 1. Desactivar la cámara del boss
         bossCamera.gameObject.SetActive(false);
-        
+
         // 2. Colocar en el suelo
         PlaceBossOnFloor(boss);
-        
+
         // 3. Activar combate del boss
         EnableBossCombat(boss);
+
+        // 4. Mostrar barra de vida del boss con DOTween
+        _activeBossHealthBar?.Show();
     }
 
     private void EnableBossCombat(GameObject boss)

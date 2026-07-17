@@ -62,6 +62,11 @@ public class StarAwakeningSequencer : MonoBehaviour
     [SerializeField] private Sprite                 panicButtonSprite;
     [SerializeField] private ShockEffectsController shockEffects;
 
+    [Header("Señales narrativas")]
+    [SerializeField] private string signalIn      = "AWAKEN_START";
+    [SerializeField] private string signalOutDone = "AWAKEN_DONE";
+    [SerializeField] private string signalOutFail = "AWAKEN_FAILED";
+
     [Header("Timings")]
     [SerializeField] private float preDialogueDuration      = 2f;
     [SerializeField] private float willTurnDuration         = 0.4f;
@@ -76,6 +81,10 @@ public class StarAwakeningSequencer : MonoBehaviour
     [SerializeField] private float timeReturnDuration       = 0.9f;
     [Tooltip("Tiempo en negro antes de que suene el pitido y arranque el combate")]
     [SerializeField] private float blackScreenDuration      = 1.2f;
+    [Tooltip("Segundos de tiempo escalado entre que arranca la animación de lanzamiento de Will " +
+             "y el spawn del proyectil. Usar tiempo escalado hace que se mantenga sincronizado " +
+             "con la animación también en cámara lenta. Debe coincidir con el frame de release de MagicRight.")]
+    [SerializeField] private float castAnimDelay            = 0.3f;
 
     [Header("SpeechBubble — claves de localización")]
     [SerializeField] private string keyCompanionAlert = "EVT_AWAKEN_01";
@@ -131,7 +140,7 @@ public class StarAwakeningSequencer : MonoBehaviour
         var helperGO = new GameObject("__CollisionPoint") { hideFlags = HideFlags.HideAndDontSave };
         _collisionPointHelper = helperGO.transform;
 
-        DefaultNarrativeSignals.EnsureInstance().OnCustom("AWAKEN_START",
+        DefaultNarrativeSignals.EnsureInstance().OnCustom(signalIn,
             () => StartCoroutine(Co_Sequence()));
     }
 
@@ -291,7 +300,7 @@ public class StarAwakeningSequencer : MonoBehaviour
 
         if (playerSpawner != null) playerSpawner.enabled = true;
         actionManager.PopMode(ActionMode.Cinematic);
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom("AWAKEN_DONE");
+        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalOutDone);
     }
 
     // ── Fases auxiliares ──────────────────────────────────────────────────────
@@ -358,7 +367,10 @@ public class StarAwakeningSequencer : MonoBehaviour
             willAnimator.Play(castAnimState, willUpperBodyLayer);
         }
 
-        yield return null;
+        if (castAnimDelay > 0f)
+            yield return new WaitForSeconds(castAnimDelay);
+        else
+            yield return null;
 
         Transform castOrigin = willCastOrigin != null ? willCastOrigin : willTransform;
         Vector3 castDir = willTransform.forward;
@@ -440,7 +452,7 @@ public class StarAwakeningSequencer : MonoBehaviour
         yield return new WaitForSecondsRealtime(holdOnBlackDuration);
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeFromBlackDuration, fadeIn: false);
 
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom("AWAKEN_FAILED");
+        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalOutFail);
     }
 
     private IEnumerator Co_ReturnTime()
@@ -559,6 +571,6 @@ public class StarAwakeningSequencer : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     [ContextMenu("Simular secuencia")]
     void SimulateSequence() =>
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom("AWAKEN_START");
+        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalIn);
 #endif
 }

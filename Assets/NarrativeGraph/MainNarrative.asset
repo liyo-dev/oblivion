@@ -20,7 +20,6 @@ MonoBehaviour:
   - rid: 4128268641526088178
   - rid: 4128268641526088533
   - rid: 4128268648164098057
-  - rid: 4128268764951085534
   - rid: 5623891259268006347
   - rid: 5623891431555334813
   - rid: 5623891444353466616
@@ -81,7 +80,8 @@ MonoBehaviour:
   - rid: 5290829367972725077
   - rid: 5290829367972725078
   - rid: 5290829396811448504
-  - rid: 5290829396811448506
+  - rid: 5290829413007229288
+  - rid: 5290829413007229292
   applicableSceneNames:
   - MainWorld
   references:
@@ -168,7 +168,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: b9aed13d-e410-467b-a7ec-5c3e949debbf
-        position: {x: 4351, y: -598}
+        position: {x: 4783, y: -598}
         outputs:
         - bc692d5b-b0ca-4095-85fc-2380f374f9d3
         questId: ELDRAN_MISSION3
@@ -498,10 +498,9 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 898a9f62-7f3f-4c4d-9262-7b9dfa054d93
-        position: {x: 3399, y: -589}
+        position: {x: 3410, y: -598}
         outputs:
-        - 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        - 0197871b-3255-4009-8ced-d02b8d6176c8
+        - 18aa49d4-a672-4844-bac4-2840003a4232
         battleId: Demon_1
         bossArena: {fileID: 7011547886733809324, guid: 769f5ac03b30de34483ebc089acc4ef7, type: 3}
         useBattleById: 1
@@ -509,22 +508,6 @@ MonoBehaviour:
         missionStringId: 
         missionId: 0
         arenaContext: 
-    - rid: 4128268764951085534
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: '6.- CINEMATICA: LOS PLANES DEL VILLANO'
-        chapter: Cap. 1
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 285e332f-0b03-4bb8-b4cd-2b0727bad10f
-        position: {x: 3876, y: -589}
-        outputs:
-        - b9aed13d-e410-467b-a7ec-5c3e949debbf
-        cinematicSceneName: Cinematic_VillainPlans
-        useInternalCinematic: 1
     - rid: 4910061685687976119
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
@@ -935,20 +918,36 @@ MonoBehaviour:
         outputs:
         - 0c0af6c1-722a-426a-9528-0565bba2ca06
         eventKey: AWAKEN_FAILED
-    - rid: 5290829396811448506
+    - rid: 5290829413007229288
       type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
       data:
-        displayTitle: 
+        displayTitle: Los planes de Liam
+        chapter: Cap. 1
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 18aa49d4-a672-4844-bac4-2840003a4232
+        position: {x: 3909, y: -598}
+        outputs:
+        - 6313acc2-8288-4d53-bc62-770a2a36f1be
+        eventKey: LIAM_CRYSTAL_START
+    - rid: 5290829413007229292
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Esperoa a la secuencia
         chapter: Cap. 1
         blockSaving: 0
         inputAnchor: 0
         outputAnchor: 1
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 0197871b-3255-4009-8ced-d02b8d6176c8
-        position: {x: 3878, y: -839}
-        outputs: []
-        eventKey: AWAKEN_COMBAT_END
+        guid: 6313acc2-8288-4d53-bc62-770a2a36f1be
+        position: {x: 4339, y: -598}
+        outputs:
+        - b9aed13d-e410-467b-a7ec-5c3e949debbf
+        eventKey: LIAM_CRYSTAL_DONE
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

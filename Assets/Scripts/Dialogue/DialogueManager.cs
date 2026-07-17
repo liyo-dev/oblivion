@@ -38,6 +38,12 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bodyText;
     [SerializeField] private Image portraitImage;
 
+    [Header("Modo Sueño (opcional)")]
+    [Tooltip("Fondo nebulosa de colores para el panel de diálogo. Hijo del canvas de diálogo, por debajo del panel.")]
+    [SerializeField] private DreamBackgroundController _dreamBackground;
+    [Tooltip("Chispas flotantes para el panel de diálogo. Hijo del canvas de diálogo, por encima del panel.")]
+    [SerializeField] private DreamSparkleOverlay _dreamSparkles;
+
     [Header("Typewriter")]
     [SerializeField] private bool useTypewriter = true;
     [Tooltip("Caracteres por segundo cuando useTypewriter está activo")] 
@@ -331,7 +337,10 @@ public class DialogueManager : MonoBehaviour
         {
             Debug.LogError("[DialogueManager] ❌ CanvasGroup es NULL - el diálogo no se mostrará");
         }
-        
+
+        _dreamBackground?.StartDream();
+        _dreamSparkles?.StartSparkles();
+
         // NO mostrar el submitHint al inicio - se mostrará cuando termine de escribir la primera línea
         if (submitHint != null)
             submitHint.SetActive(false);
@@ -530,6 +539,9 @@ public class DialogueManager : MonoBehaviour
             group.interactable = false;
         }
 
+        _dreamBackground?.StopDream();
+        _dreamSparkles?.StopSparkles();
+
         // Desactivar sistema cinematográfico
         if (useCinematicCamera && DialogueCinematicController.Instance != null)
         {
@@ -577,16 +589,20 @@ public class DialogueManager : MonoBehaviour
     public void FinalizeChoiceNoFollowUp()
     {
         if (pauseGameWhileOpen) Time.timeScale = 1f;
-        
+
         // NUEVO: Desactivar modo DialogueActive
         ActivateDialogueMode(false);
-        
+
         if (group != null)
         {
             group.alpha = 0f;
             group.blocksRaycasts = false;
             group.interactable = false;
         }
+
+        _dreamBackground?.StopDream();
+        _dreamSparkles?.StopSparkles();
+
         if (submitHint != null)
             submitHint.SetActive(false);
 

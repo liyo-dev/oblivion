@@ -18,33 +18,29 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
     emotion: 1
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_OFFER_02
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
     emotion: 6
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_OFFER_03
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
     emotion: 2
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_OFFER_04
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 1
+    emotion: 0
   - speakerNameId: CHAR_ELDRAN
     textId: DLG_ELDRAN_MISSION2_OFFER_05
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    forcedShotType: 0
-    emotion: 1
+    emotion: 0
+  isGroupConversation: 0

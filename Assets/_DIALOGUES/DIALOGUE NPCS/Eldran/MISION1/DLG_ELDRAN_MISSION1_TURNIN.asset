@@ -18,6 +18,5 @@ MonoBehaviour:
     text: 
     portrait: {fileID: 0}
     isPlayerSpeaking: 0
-    cinematicEffect: 1
-    emotion: 1
+    emotion: 0
   isGroupConversation: 0

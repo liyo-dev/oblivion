@@ -1886,6 +1886,7 @@ public class DialogueCinematicController : MonoBehaviour
     /// </summary>
     private void HideHUD()
     {
+        MenuManager.RegisterOpen(MenuKind.Dialog);
         var hud = Sendero.UI.PlayerHUDV2.Instance;
         if (hud != null)
         {
@@ -1900,6 +1901,7 @@ public class DialogueCinematicController : MonoBehaviour
     /// </summary>
     private void ShowHUD()
     {
+        MenuManager.Close(MenuKind.Dialog);
         var hud = Sendero.UI.PlayerHUDV2.Instance;
         if (hud != null)
         {

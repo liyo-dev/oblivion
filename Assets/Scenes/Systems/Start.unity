@@ -346,11 +346,14 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 993124783}
+  - {fileID: 90825583}
   - {fileID: 1676841572}
   - {fileID: 794523449}
   - {fileID: 822553939}
   - {fileID: 1549242723}
   - {fileID: 1749223130}
+  - {fileID: 1389356914}
   m_Father: {fileID: 621423747}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
@@ -365,7 +368,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 47256262}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -834,6 +837,97 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &90825582
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 90825583}
+  - component: {fileID: 90825586}
+  - component: {fileID: 90825585}
+  - component: {fileID: 90825584}
+  m_Layer: 5
+  m_Name: DialogueTextBackdropUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &90825583
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90825582}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 47256263}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -50}
+  m_SizeDelta: {x: 992, y: 250}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &90825584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90825582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93c38ccbee79c1e498833b8c975e2f37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueTextBackdropUI
+  _color: {r: 0.02, g: 0.04, b: 0.15, a: 0.82}
+  _softH: 0.22
+  _softV: 0.55
+--- !u!114 &90825585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90825582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &90825586
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90825582}
+  m_CullTransparentMesh: 1
 --- !u!1 &97851985
 GameObject:
   m_ObjectHideFlags: 0
@@ -965,6 +1059,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!114 &114623700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1560,6 +1655,7 @@ MonoBehaviour:
   allowWhenListEmpty: 1
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &189022246
 GameObject:
   m_ObjectHideFlags: 0
@@ -1751,6 +1847,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!114 &206708488
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2485,6 +2582,8 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 72613956}
+  - {fileID: 1115623166}
+  - {fileID: 1590734617}
   - {fileID: 483795014}
   m_Father: {fileID: 1818632615}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2569,6 +2668,11 @@ MonoBehaviour:
     drift: {x: 0, y: 0}
   _typewriterSpeed: 28
   _slideOffscreenX: 1500
+  _dreamSparkles: {fileID: 1590734618}
+  _dreamBackground: {fileID: 1115623167}
+  _dreamGradientLeft: {r: 0.68, g: 0.88, b: 1, a: 1}
+  _dreamGradientRight: {r: 1, g: 0.94, b: 0.62, a: 1}
+  _dreamShimmerIntensity: 0.65
   _khRevealSpeed: 10
   _khOffsetY: 22
   _khCharScaleFrom: 1.35
@@ -2808,6 +2912,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &289486042
 GameObject:
   m_ObjectHideFlags: 0
@@ -5415,6 +5520,7 @@ GameObject:
   - component: {fileID: 621423745}
   - component: {fileID: 621423744}
   - component: {fileID: 621423748}
+  - component: {fileID: 621423749}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -5518,6 +5624,24 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &621423749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621423743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBoundUI
+  uniqueId: DialogueManager
+  allowedScenes: []
+  allowWhenListEmpty: 1
+  persistAcrossScenes: 1
+  detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &633953595
 GameObject:
   m_ObjectHideFlags: 0
@@ -6324,6 +6448,7 @@ GameObject:
   m_Component:
   - component: {fileID: 718689574}
   - component: {fileID: 718689575}
+  - component: {fileID: 718689576}
   m_Layer: 0
   m_Name: LorePopup
   m_TagString: Untagged
@@ -6368,6 +6493,24 @@ MonoBehaviour:
   easeIn: 27
   slideInFromOffset: {x: 0, y: -40}
   crossFadeDuration: 0.2
+--- !u!114 &718689576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 718689573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBoundUI
+  uniqueId: LorePopup
+  allowedScenes: []
+  allowWhenListEmpty: 1
+  persistAcrossScenes: 1
+  detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &718997811
 GameObject:
   m_ObjectHideFlags: 0
@@ -7194,7 +7337,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 031e363ec4ff86047ad6395e39be1714, type: 2}
   m_sharedMaterial: {fileID: 7998175490944755781, guid: 031e363ec4ff86047ad6395e39be1714, type: 2}
@@ -8100,6 +8243,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &872533021
 GameObject:
   m_ObjectHideFlags: 0
@@ -9042,6 +9186,88 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: 'Cabello: --'
+--- !u!1 &993124782
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 993124783}
+  - component: {fileID: 993124784}
+  - component: {fileID: 993124785}
+  - component: {fileID: 993124786}
+  m_Layer: 5
+  m_Name: DreamBackground
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &993124783
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 993124782}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 47256263}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -50}
+  m_SizeDelta: {x: 992, y: 250}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &993124784
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 993124782}
+  m_CullTransparentMesh: 1
+--- !u!114 &993124785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 993124782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 708f5effa10fe9c4da08b7bceec1e60b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamBackgroundController
+  _blobCount: 5
+  _sizeMin: 200
+  _sizeMax: 560
+  _alphaMin: 0.2
+  _alphaMax: 0.4
+  _pulseSpeedMin: 3.5
+  _pulseSpeedMax: 8
+  _driftFraction: 0.35
+  _driftSpeedMin: 5
+  _driftSpeedMax: 13
+--- !u!114 &993124786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 993124782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &996394058
 GameObject:
   m_ObjectHideFlags: 0
@@ -9374,6 +9600,8 @@ MonoBehaviour:
   nameText: {fileID: 1676841573}
   bodyText: {fileID: 794523450}
   portraitImage: {fileID: 822553940}
+  _dreamBackground: {fileID: 993124785}
+  _dreamSparkles: {fileID: 1389356915}
   useTypewriter: 1
   charsPerSecond: 35
   allowSkipCurrentLine: 1
@@ -9624,6 +9852,73 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1100723052}
+  m_CullTransparentMesh: 1
+--- !u!1 &1115623165
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1115623166}
+  - component: {fileID: 1115623168}
+  - component: {fileID: 1115623167}
+  m_Layer: 5
+  m_Name: DreamBackground
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1115623166
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115623165}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 273142768}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1115623167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115623165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 708f5effa10fe9c4da08b7bceec1e60b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamBackgroundController
+  _blobCount: 5
+  _sizeMin: 200
+  _sizeMax: 560
+  _alphaMin: 0.2
+  _alphaMax: 0.4
+  _pulseSpeedMin: 3.5
+  _pulseSpeedMax: 8
+  _driftFraction: 0.35
+  _driftSpeedMin: 5
+  _driftSpeedMax: 13
+--- !u!222 &1115623168
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115623165}
   m_CullTransparentMesh: 1
 --- !u!1 &1116174985
 GameObject:
@@ -10868,6 +11163,89 @@ MonoBehaviour:
   teleportStartSfx: {fileID: 0}
   teleportEndSfx: {fileID: 0}
   teleportUI: {fileID: 0}
+--- !u!1 &1389356913
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1389356914}
+  - component: {fileID: 1389356916}
+  - component: {fileID: 1389356915}
+  - component: {fileID: 1389356917}
+  m_Layer: 5
+  m_Name: DreamSparkles
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1389356914
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1389356913}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 47256263}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1389356915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1389356913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d729c5c8d804774d8538edbc41fa121, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamSparkleOverlay
+  _poolSize: 18
+  _spawnMin: 0.12
+  _spawnMax: 0.45
+  _lifetimeMin: 1.6
+  _lifetimeMax: 3.8
+  _driftY: 85
+  _driftXMax: 22
+  _sizeMin: 5
+  _sizeMax: 20
+  _colorA: {r: 1, g: 0.95, b: 0.7, a: 0.88}
+  _colorB: {r: 0.55, g: 0.82, b: 1, a: 0.88}
+--- !u!222 &1389356916
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1389356913}
+  m_CullTransparentMesh: 1
+--- !u!114 &1389356917
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1389356913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &1391983626
 GameObject:
   m_ObjectHideFlags: 0
@@ -10914,6 +11292,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1406461266}
   - component: {fileID: 1406461265}
+  - component: {fileID: 1406461267}
   m_Layer: 0
   m_Name: ConfirmationPopupUI
   m_TagString: Untagged
@@ -10955,6 +11334,24 @@ Transform:
   - {fileID: 748921334}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1406461267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1406461264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBoundUI
+  uniqueId: ConfirmationPopupUI
+  allowedScenes: []
+  allowWhenListEmpty: 1
+  persistAcrossScenes: 1
+  detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &1432934067
 GameObject:
   m_ObjectHideFlags: 0
@@ -11423,6 +11820,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!114 &1454978125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12501,6 +12899,74 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &1590734616
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1590734617}
+  - component: {fileID: 1590734619}
+  - component: {fileID: 1590734618}
+  m_Layer: 5
+  m_Name: DreamSparkles
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1590734617
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1590734616}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 273142768}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1590734618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1590734616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d729c5c8d804774d8538edbc41fa121, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamSparkleOverlay
+  _poolSize: 16
+  _spawnMin: 0.15
+  _spawnMax: 0.5
+  _lifetimeMin: 1.8
+  _lifetimeMax: 3.5
+  _driftY: 90
+  _driftXMax: 22
+  _sizeMin: 6
+  _sizeMax: 22
+  _colorA: {r: 1, g: 0.95, b: 0.72, a: 0.85}
+  _colorB: {r: 0.58, g: 0.84, b: 1, a: 0.85}
+--- !u!222 &1590734619
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1590734616}
+  m_CullTransparentMesh: 1
 --- !u!1 &1614702850
 GameObject:
   m_ObjectHideFlags: 0
@@ -13567,6 +14033,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!114 &1699594925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14306,6 +14773,7 @@ MonoBehaviour:
   allowWhenListEmpty: 1
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &1745447932
 GameObject:
   m_ObjectHideFlags: 0
@@ -14833,6 +15301,7 @@ GameObject:
   - component: {fileID: 1818632614}
   - component: {fileID: 1818632613}
   - component: {fileID: 1818632612}
+  - component: {fileID: 1818632616}
   m_Layer: 5
   m_Name: DramaticTextOverlayUI
   m_TagString: Untagged
@@ -14924,6 +15393,24 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &1818632616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1818632611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ddf1d89c5d1424394b10a4d03b48a6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBoundUI
+  uniqueId: DramaticTextOverlayUI
+  allowedScenes: []
+  allowWhenListEmpty: 1
+  persistAcrossScenes: 1
+  detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!1 &1864494307
 GameObject:
   m_ObjectHideFlags: 0
@@ -23657,6 +24144,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!114 &6045157560421566120
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28030,6 +28518,7 @@ MonoBehaviour:
   allowWhenListEmpty: 0
   persistAcrossScenes: 1
   detachFromParent: 1
+  excludeFromBossIntroHide: 0
 --- !u!224 &9167354916732093906
 RectTransform:
   m_ObjectHideFlags: 0

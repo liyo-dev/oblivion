@@ -350,6 +350,11 @@ public class NPCEmotionController : MonoBehaviour
     #region Public API
     
     /// <summary>
+    /// Expone el perfil de emociones para que otros componentes (NPCSimpleAnimator) puedan leerlo.
+    /// </summary>
+    public EmotionProfile EmotionProfile => emotionProfile;
+
+    /// <summary>
     /// Obtiene la emoción actual del NPC.
     /// </summary>
     public NPCEmotion CurrentEmotion => _currentEmotion;

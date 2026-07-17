@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
 
 public class SceneBoundUI : MonoBehaviour
 {
@@ -9,9 +10,78 @@ public class SceneBoundUI : MonoBehaviour
     [SerializeField] private bool allowWhenListEmpty = true;
     [SerializeField] private bool persistAcrossScenes = true;
     [SerializeField] private bool detachFromParent = true;
+    [Tooltip("Si true, no se oculta durante la intro de boss (ej: DramaticTextOverlayUI).")]
+    [SerializeField] private bool excludeFromBossIntroHide = false;
 
     private static readonly Dictionary<string, SceneBoundUI> Instances = new();
+    private static bool _bossIntroActive = false;
     private string instanceKey;
+
+    #if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        Instances.Clear();
+        _bossIntroActive = false;
+    }
+    #endif
+
+    // ── API de boss intro ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Oculta con DOTween todos los elementos UI activos con SceneBoundUI.
+    /// Llamar al inicio de la intro de un boss para limpiar la pantalla.
+    /// </summary>
+    public static void BeginBossIntro(float fadeDuration = 0.3f)
+    {
+        _bossIntroActive = true;
+        foreach (var inst in Instances.Values)
+        {
+            if (inst == null || !inst.gameObject.activeSelf) continue;
+            if (inst.excludeFromBossIntroHide) continue;
+            var cg = inst.GetOrAddCanvasGroup();
+            cg.DOKill();
+            cg.DOFade(0f, fadeDuration).SetUpdate(true);
+        }
+    }
+
+    /// <summary>
+    /// Restaura con DOTween los elementos UI que corresponden a la escena actual.
+    /// Llamar al finalizar la intro del boss.
+    /// </summary>
+    public static void EndBossIntro(float fadeDuration = 0.35f)
+    {
+        _bossIntroActive = false;
+        foreach (var inst in Instances.Values)
+        {
+            if (inst == null) continue;
+            bool allowed = inst.IsAllowedInCurrentScene();
+            if (!allowed) { inst.gameObject.SetActive(false); continue; }
+            inst.gameObject.SetActive(true);
+            var cg = inst.GetOrAddCanvasGroup();
+            cg.DOKill();
+            cg.DOFade(1f, fadeDuration).SetUpdate(true);
+        }
+    }
+
+    /// <summary>Marca este SceneBoundUI para no ser ocultado durante la intro de boss.</summary>
+    public void ExcludeFromBossIntro() => excludeFromBossIntroHide = true;
+
+    private CanvasGroup GetOrAddCanvasGroup()
+    {
+        var cg = GetComponent<CanvasGroup>();
+        if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+        return cg;
+    }
+
+    private bool IsAllowedInCurrentScene()
+    {
+        if (allowedScenes.Count == 0) return allowWhenListEmpty;
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+            if (allowedScenes.Contains(SceneManager.GetSceneAt(i).name))
+                return true;
+        return false;
+    }
 
     private void Awake()
     {
@@ -52,24 +122,10 @@ public class SceneBoundUI : MonoBehaviour
 
     private void ApplySceneState()
     {
-        bool allowed;
-        if (allowedScenes.Count == 0)
-        {
-            allowed = allowWhenListEmpty;
-        }
-        else
-        {
-            allowed = false;
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                if (allowedScenes.Contains(SceneManager.GetSceneAt(i).name))
-                {
-                    allowed = true;
-                    break;
-                }
-            }
-        }
+        // Durante la intro de un boss, el estado lo controla BeginBossIntro/EndBossIntro
+        if (_bossIntroActive) return;
 
+        bool allowed = IsAllowedInCurrentScene();
         if (gameObject.activeSelf != allowed)
             gameObject.SetActive(allowed);
     }

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +14,9 @@ public class PlayerDialogueAnimator : MonoBehaviour
     [Tooltip("Animator del personaje jugador")]
     [SerializeField] private Animator animator;
 
+    [Tooltip("Perfil de emociones compartido con los NPCs — define cara y animación corporal")]
+    [SerializeField] private EmotionProfile emotionProfile;
+
     [Tooltip("Tiempo de blend al entrar en un gesto")]
     [SerializeField, Range(0f, 0.3f)] private float blendTime = 0.1f;
 
@@ -24,21 +26,6 @@ public class PlayerDialogueAnimator : MonoBehaviour
     // Estado
     private Coroutine _gestureCoroutine;
     private int _lastTalkIndex = -1;
-
-    // Mapeo emoción → estado del animator (deben existir en Invector@BasicLocomotion)
-    private static readonly Dictionary<NPCEmotion, string> EmotionBodyAnimMap = new Dictionary<NPCEmotion, string>
-    {
-        { NPCEmotion.Happy,     "Cheer01"    },
-        { NPCEmotion.Angry,     "Angry01"    },
-        { NPCEmotion.Sad,       "Cry01"      },
-        { NPCEmotion.Scared,    "Fear01"     },
-        { NPCEmotion.Thinking,  "Question01" },
-        { NPCEmotion.Surprised, "Question02" },
-        { NPCEmotion.Smirk,     "Laugh01"    },
-        { NPCEmotion.Tired,     "Talk02"     },
-    };
-
-    private static readonly string[] NeutralTalkAnims = { "Talk01", "Talk02", "Talk03" };
 
     #region Unity Lifecycle
 
@@ -119,20 +106,7 @@ public class PlayerDialogueAnimator : MonoBehaviour
         if (animator == null)
             return;
 
-        string stateName;
-        if (emotion == NPCEmotion.None || emotion == NPCEmotion.Neutral)
-        {
-            _lastTalkIndex = (_lastTalkIndex + 1) % NeutralTalkAnims.Length;
-            stateName = NeutralTalkAnims[_lastTalkIndex];
-        }
-        else if (EmotionBodyAnimMap.TryGetValue(emotion, out string mapped))
-        {
-            stateName = mapped;
-        }
-        else
-        {
-            stateName = NeutralTalkAnims[0];
-        }
+        string stateName = ResolveStateName(emotion);
 
         int stateHash = Animator.StringToHash(stateName);
         if (!animator.HasState(0, stateHash))
@@ -148,6 +122,28 @@ public class PlayerDialogueAnimator : MonoBehaviour
             StopCoroutine(_gestureCoroutine);
 
         _gestureCoroutine = StartCoroutine(PlayGestureCoroutine(stateHash, stateName));
+    }
+
+    private string ResolveStateName(NPCEmotion emotion)
+    {
+        string[] neutralAnims = (emotionProfile != null && emotionProfile.neutralBodyAnims is { Length: > 0 })
+            ? emotionProfile.neutralBodyAnims
+            : new[] { "Talk01", "Talk02", "Talk03" };
+
+        if (emotion == NPCEmotion.None || emotion == NPCEmotion.Neutral)
+        {
+            _lastTalkIndex = (_lastTalkIndex + 1) % neutralAnims.Length;
+            return neutralAnims[_lastTalkIndex];
+        }
+
+        if (emotionProfile != null)
+        {
+            var data = emotionProfile.GetEmotionData(emotion);
+            if (!string.IsNullOrEmpty(data.bodyAnimStateName))
+                return data.bodyAnimStateName;
+        }
+
+        return neutralAnims[0];
     }
 
     private IEnumerator PlayGestureCoroutine(int stateHash, string stateName)

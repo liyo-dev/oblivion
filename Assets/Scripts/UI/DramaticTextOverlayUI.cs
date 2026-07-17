@@ -57,6 +57,19 @@ public class DramaticTextOverlayUI : MonoBehaviour
     [Tooltip("Distancia en píxeles UI fuera de pantalla para las animaciones SlideFrom/SlideTo.")]
     [SerializeField] float _slideOffscreenX = 1500f;
 
+    [Header("Modo Sueño")]
+    [Tooltip("Overlay de chispas flotantes para secuencias con dreamMode = true.")]
+    [SerializeField] DreamSparkleOverlay _dreamSparkles;
+    [Tooltip("Fondo nebulosa (blobs de color) para secuencias con dreamMode = true.")]
+    [SerializeField] DreamBackgroundController _dreamBackground;
+    [Header("Sueño — degradado y shimmer")]
+    [Tooltip("Color izquierdo del degradado en modo sueño.")]
+    [SerializeField] Color _dreamGradientLeft  = new Color(0.68f, 0.88f, 1.00f, 1f);
+    [Tooltip("Color derecho del degradado en modo sueño.")]
+    [SerializeField] Color _dreamGradientRight = new Color(1.00f, 0.94f, 0.62f, 1f);
+    [Tooltip("Intensidad máxima del destello shimmer (0=sin shimmer, 1=blanco puro).")]
+    [Range(0f, 1f)] [SerializeField] float _dreamShimmerIntensity = 0.65f;
+
     [Header("Kingdom Hearts Style")]
     [Tooltip("Caracteres por segundo en la animación KingdomHearts (independiente de TypeWriter).")]
     [SerializeField] float _khRevealSpeed = 10f;
@@ -67,8 +80,13 @@ public class DramaticTextOverlayUI : MonoBehaviour
     [Tooltip("Escala inicial del contenedor completo (zoom suave hacia 1.0 mientras aparecen las letras).")]
     [Range(1f, 1.5f)] [SerializeField] float _khContainerZoom = 1.06f;
 
-    bool _isPlaying;
+    static readonly Color _dreamBgDark  = new Color(0.03f, 0.05f, 0.16f, 1f);
+    static readonly Color _dreamBgLight = new Color(0.06f, 0.09f, 0.24f, 1f);
+
+    bool      _isPlaying;
+    bool      _dreamModeActive;
     Coroutine _playRoutine;
+    Tween     _bgPulseTween;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -77,6 +95,10 @@ public class DramaticTextOverlayUI : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(transform.root.gameObject);
+
+        // El canvas que nos contiene tiene SceneBoundUI; excluirlo para que BeginBossIntro
+        // no lo tape cuando mostramos el nombre del boss con animación KingdomHearts.
+        GetComponentInParent<SceneBoundUI>(true)?.ExcludeFromBossIntro();
 
         if (_rootGroup == null)
             Debug.LogError("[DramaticTextOverlayUI] ❌ _rootGroup no asignado en el Inspector.", this);
@@ -98,6 +120,7 @@ public class DramaticTextOverlayUI : MonoBehaviour
         if (Instance == this)
         {
             Instance = null;
+            _bgPulseTween?.Kill();
             _rootGroup?.DOKill();
             _textContainer?.DOKill();
         }
@@ -118,6 +141,7 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
         gameObject.SetActive(true); // debe estar activo antes de StartCoroutine
         if (_playRoutine != null) StopCoroutine(_playRoutine);
+        if (config.dreamMode) _dreamSparkles?.StartSparkles();
         _playRoutine = StartCoroutine(RunSequence(config, onComplete));
     }
 
@@ -129,6 +153,11 @@ public class DramaticTextOverlayUI : MonoBehaviour
             StopCoroutine(_playRoutine);
             _playRoutine = null;
         }
+        _dreamModeActive = false;
+        _dreamSparkles?.StopSparkles();
+        _dreamBackground?.StopDream();
+        _bgPulseTween?.Kill();
+        _bgPulseTween = null;
         DOTween.Kill(_rootGroup);
         DOTween.Kill(_textContainer);
         _rootGroup.alpha = 0f;
@@ -142,6 +171,8 @@ public class DramaticTextOverlayUI : MonoBehaviour
     IEnumerator RunSequence(DramaticPhraseConfig config, Action onComplete)
     {
         _isPlaying = true;
+        _dreamModeActive = config.dreamMode;
+        if (config.dreamMode) _dreamBackground?.StartDream();
 
         for (int i = 0; i < config.phrases.Length; i++)
         {
@@ -163,6 +194,11 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 yield return new WaitForSecondsRealtime(config.pauseBetween);
         }
 
+        _dreamModeActive = false;
+        _dreamSparkles?.StopSparkles();
+        _dreamBackground?.StopDream();
+        _bgPulseTween?.Kill();
+        _bgPulseTween = null;
         gameObject.SetActive(false);
         _isPlaying = false;
         _playRoutine = null;
@@ -237,7 +273,14 @@ public class DramaticTextOverlayUI : MonoBehaviour
             _textContainer.DOAnchorPos(holdTarget, holdDuration)
                 .SetEase(Ease.InOutSine).SetUpdate(true);
 
+        // Degradado + shimmer en modo sueño (corre concurrente con el hold)
+        Coroutine dreamFx = null;
+        if (_dreamModeActive)
+            dreamFx = StartCoroutine(Co_DreamTextEffect(holdDuration, preset.textColor.a));
+
         yield return new WaitForSecondsRealtime(holdDuration);
+
+        if (dreamFx != null) { StopCoroutine(dreamFx); dreamFx = null; }
 
         if (!skipExit)
             yield return ExitAnimation(phrase.exitAnim, preset, basePos);
@@ -450,6 +493,59 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
     static float KhEaseOutQuart(float t) => 1f - Mathf.Pow(1f - t, 4f);
 
+    // ── Boss Name ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Muestra el nombre de un boss con animación KingdomHearts y degradado personalizado.
+    /// No activa chispas ni fondo nebulosa — pensado para usarse sobre la cámara del boss.
+    /// </summary>
+    public void PlayBossName(string bossName, Color gradLeft, Color gradRight,
+                              float duration, Action onComplete)
+    {
+        if (string.IsNullOrEmpty(bossName)) { onComplete?.Invoke(); return; }
+        gameObject.SetActive(true);
+        if (_playRoutine != null) StopCoroutine(_playRoutine);
+        _playRoutine = StartCoroutine(Co_BossName(bossName, gradLeft, gradRight, duration, onComplete));
+    }
+
+    IEnumerator Co_BossName(string name, Color gradLeft, Color gradRight,
+                             float duration, Action onComplete)
+    {
+        _isPlaying = true;
+        _dreamModeActive = false;
+
+        Color origLeft  = _dreamGradientLeft;
+        Color origRight = _dreamGradientRight;
+        _dreamGradientLeft  = gradLeft;
+        _dreamGradientRight = gradRight;
+        _dreamModeActive = true; // habilita Co_DreamTextEffect pero sin arrancar sparkles/nebula
+
+        DramaticStylePreset preset = GetPreset(DramaticTextStyle.Epic);
+        SetBackground(DramaticTextBackground.None);
+
+        _label.color     = preset.textColor;
+        _label.fontSize  = preset.fontSize;
+        _label.fontStyle = preset.fontStyle;
+        _textContainer.anchoredPosition = Vector2.zero;
+
+        yield return EntryAnimation(DramaticEntryAnimation.KingdomHearts, name, preset, Vector2.zero);
+
+        float hold = Mathf.Max(duration, 0.1f);
+        Coroutine gradFx = StartCoroutine(Co_DreamTextEffect(hold, preset.textColor.a));
+        yield return new WaitForSecondsRealtime(hold);
+        if (gradFx != null) { StopCoroutine(gradFx); gradFx = null; }
+
+        yield return ExitAnimation(DramaticExitAnimation.FadeOut, preset, Vector2.zero);
+
+        _dreamGradientLeft  = origLeft;
+        _dreamGradientRight = origRight;
+        _dreamModeActive    = false;
+        gameObject.SetActive(false);
+        _isPlaying   = false;
+        _playRoutine = null;
+        onComplete?.Invoke();
+    }
+
     // ── TypeWriter ────────────────────────────────────────────────────────
 
     IEnumerator TypewriterRoutine(string text)
@@ -475,6 +571,10 @@ public class DramaticTextOverlayUI : MonoBehaviour
 
     void SetBackground(DramaticTextBackground bg)
     {
+        // Siempre matar el pulso anterior antes de cambiar de fondo
+        _bgPulseTween?.Kill();
+        _bgPulseTween = null;
+
         if (_background == null) return;
         switch (bg)
         {
@@ -486,6 +586,15 @@ public class DramaticTextOverlayUI : MonoBehaviour
                 break;
             case DramaticTextBackground.FullBlack:
                 _background.color = Color.black;
+                break;
+            case DramaticTextBackground.Dream:
+                _background.color = _dreamBgDark;
+                // Pulso suave: el azul "respira" entre oscuro y ligeramente más brillante
+                _bgPulseTween = _background
+                    .DOColor(_dreamBgLight, 3.2f)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetUpdate(true);
                 break;
         }
     }
@@ -527,5 +636,108 @@ public class DramaticTextOverlayUI : MonoBehaviour
         if (!string.IsNullOrEmpty(phrase.textId))
             return LocalizationManager.Instance?.Get(phrase.textId, phrase.text) ?? phrase.text;
         return phrase.text;
+    }
+
+    // ── Modo Sueño — degradado + shimmer ─────────────────────────────────────
+
+    /// Aplica un degradado horizontal al texto y, tras una breve pausa, lanza un
+    /// destello (shimmer) que viaja de izquierda a derecha. Corre concurrente con el hold.
+    IEnumerator Co_DreamTextEffect(float holdDuration, float baseAlpha)
+    {
+        if (_label == null || holdDuration < 0.35f) yield break;
+
+        _label.ForceMeshUpdate();
+        var info  = _label.textInfo;
+        int count = info.characterCount;
+        if (count == 0) yield break;
+
+        // Calcular rango X de los caracteres visibles
+        float minX = float.MaxValue, maxX = float.MinValue;
+        for (int i = 0; i < count; i++)
+        {
+            var ci = info.characterInfo[i];
+            if (!ci.isVisible) continue;
+            int vi   = ci.vertexIndex;
+            var verts = info.meshInfo[ci.materialReferenceIndex].vertices;
+            float cx = (verts[vi].x + verts[vi + 2].x) * 0.5f;
+            if (cx < minX) minX = cx;
+            if (cx > maxX) maxX = cx;
+        }
+        float xRange = Mathf.Max(maxX - minX, 0.001f);
+
+        // Hacer que TMP no sobreescriba los vértices coloreados manualmente
+        Color leftCol  = _dreamGradientLeft;  leftCol.a  = baseAlpha;
+        Color rightCol = _dreamGradientRight; rightCol.a = baseAlpha;
+        _label.color = Color.white;
+
+        // Paso 1: degradado base inmediato
+        ApplyDreamGradient(info, count, minX, xRange, leftCol, rightCol);
+        _label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+
+        // Paso 2: shimmer sweep
+        float shimmerDelay    = Mathf.Min(0.35f, holdDuration * 0.12f);
+        float shimmerDuration = Mathf.Clamp(holdDuration * 0.38f, 0.55f, 1.5f);
+        float bandHalf        = xRange * 0.22f;
+        float travelStart     = minX - bandHalf;
+        float travelEnd       = maxX + bandHalf;
+
+        yield return new WaitForSecondsRealtime(shimmerDelay);
+
+        float elapsed = 0f;
+        while (elapsed < shimmerDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t      = elapsed / shimmerDuration;
+            float shimX  = Mathf.Lerp(travelStart, travelEnd, t);
+
+            for (int i = 0; i < count; i++)
+            {
+                var ci  = info.characterInfo[i];
+                if (!ci.isVisible) continue;
+                int vi  = ci.vertexIndex;
+                int mat = ci.materialReferenceIndex;
+                var verts  = info.meshInfo[mat].vertices;
+                var colors = info.meshInfo[mat].colors32;
+
+                float cx    = (verts[vi].x + verts[vi + 2].x) * 0.5f;
+                float gradT = (cx - minX) / xRange;
+                Color baseC = Color.Lerp(leftCol, rightCol, gradT);
+
+                float dist  = Mathf.Abs(cx - shimX);
+                float shine = Mathf.Clamp01(1f - dist / bandHalf);
+                shine = shine * shine * (3f - 2f * shine); // smoothstep
+
+                Color32 finalC = Color.Lerp(baseC, Color.white, shine * _dreamShimmerIntensity);
+                finalC.a = (byte)(baseAlpha * 255);
+                colors[vi]   = finalC; colors[vi + 1] = finalC;
+                colors[vi + 2] = finalC; colors[vi + 3] = finalC;
+            }
+            _label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+            yield return null;
+        }
+
+        // Restaurar degradado limpio
+        ApplyDreamGradient(info, count, minX, xRange, leftCol, rightCol);
+        _label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+    }
+
+    void ApplyDreamGradient(TMP_TextInfo info, int count, float minX, float xRange,
+                             Color leftCol, Color rightCol)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            var ci  = info.characterInfo[i];
+            if (!ci.isVisible) continue;
+            int vi  = ci.vertexIndex;
+            int mat = ci.materialReferenceIndex;
+            var verts  = info.meshInfo[mat].vertices;
+            var colors = info.meshInfo[mat].colors32;
+
+            float cx    = (verts[vi].x + verts[vi + 2].x) * 0.5f;
+            float t     = (cx - minX) / xRange;
+            Color32 col = Color.Lerp(leftCol, rightCol, t);
+            colors[vi]   = col; colors[vi + 1] = col;
+            colors[vi + 2] = col; colors[vi + 3] = col;
+        }
     }
 }

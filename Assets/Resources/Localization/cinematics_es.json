@@ -57,6 +57,18 @@
             "text": "¡Will! Usa tu magia, presiona <sprite name=\"interactable_x\"> y derrota al demonio."
         },
         {
+            "id": "EVT_09",
+            "text": "¡Qué interesante!"
+        },
+        {
+            "id": "EVT_10",
+            "text": "El ataque del demonio ha despertado tu magia."
+        },
+        {
+            "id": "EVT_11",
+            "text": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrota al demonio."
+        },
+        {
             "id": "EVT_AWAKEN_01",
             "text": "¡Will, cuidado!"
         },
@@ -135,6 +147,18 @@
         {
             "id": "EVT_GOLEM_END_06",
             "text": "Liam: El Golem ha fallado. Si quiero que el chico llegue al final, tendré que guiarlo yo mismo."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_01",
+            "text": "Y ese es el chico de corazón puro que abrirá el Sendero."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_02",
+            "text": "Me alegra que ese demonio haya despertado su magia."
+        },
+        {
+            "id": "EVT_LIAM_CRYSTAL_03",
+            "text": "Ja… ja, ja…"
         },
         {
             "id": "EVT_MOUNTAIN_01",
