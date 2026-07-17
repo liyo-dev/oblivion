@@ -142,7 +142,14 @@
       "Bash(sed -n '24,32p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Taberna.asset\")",
       "Bash(sed -n '24,30p' \"C:\\\\Users\\\\luarb\\\\dev\\\\unity\\\\ElSenderoDeLasEstrellas\\\\Assets\\\\Scripts\\\\Player\\\\SO\\\\PlayerPreset_Test.asset\")",
       "Bash(Select-String *)",
-      "Bash(dir *)"
+      "Bash(dir *)",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs '-I{}' python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(jq --version)",
+      "Bash(node *)"
     ]
   }
 }

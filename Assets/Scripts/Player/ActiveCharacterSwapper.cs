@@ -265,21 +265,9 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         if (isFollowing)
         {
-            bool hasNonHiddenMember = false;
-            if (PlayerParty.HasInstance)
-            {
-                foreach (var m in PlayerParty.Instance.Members)
-                {
-                    if (m != null && m != _hiddenNpc) { hasNonHiddenMember = true; break; }
-                }
-            }
-            if (hasNonHiddenMember)
-            {
-                if (_willNpcInstance.NPCManager?.Context != null)
-                    _willNpcInstance.NPCManager.Context.IsPinnedByParty = false;
-                _willNpcInstance.StartFollowingIgnorePartyCheck();
-            }
-            // Si no hay compañeros activos, Will se queda anclado aunque se active el modo seguir
+            if (_willNpcInstance.NPCManager?.Context != null)
+                _willNpcInstance.NPCManager.Context.IsPinnedByParty = false;
+            _willNpcInstance.StartFollowingIgnorePartyCheck();
         }
         else
         {
@@ -357,16 +345,6 @@ public class ActiveCharacterSwapper : MonoBehaviour
 
         var enemy = GetActiveCombatEnemy();
         bool partyFollowing = PartyControlManager.Instance?.IsPartyFollowing ?? true;
-        // Will sigue solo si hay compañeros activos distintos al NPC oculto (personaje activo).
-        // Si el único miembro del party es el propio personaje que el jugador controla, Will se ancla.
-        bool hasNonHiddenMember = false;
-        if (PlayerParty.HasInstance)
-        {
-            foreach (var m in PlayerParty.Instance.Members)
-            {
-                if (m != null && m != _hiddenNpc) { hasNonHiddenMember = true; break; }
-            }
-        }
         if (enemy != null)
         {
             _willNpcInstance.OnPlayerEnteredCombat(enemy);
@@ -379,13 +357,13 @@ public class ActiveCharacterSwapper : MonoBehaviour
             // vía FindNearestEnemy o saldrá por timeout si ya no quedan enemigos.
             _willNpcInstance.OnPlayerEnteredCombat(null);
         }
-        else if (partyFollowing && hasNonHiddenMember)
+        else if (partyFollowing)
         {
             _willNpcInstance.StartFollowingIgnorePartyCheck();
         }
         else
         {
-            // Modo libre, equipo disuelto o jugando en solitario: Will se queda anclado
+            // Modo libre: Will se queda anclado donde está
             _willNpcInstance.StopFollowing();
             if (_willNpcInstance.NPCManager?.Context != null)
                 _willNpcInstance.NPCManager.Context.IsPinnedByParty = true;
