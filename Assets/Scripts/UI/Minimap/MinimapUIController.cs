@@ -194,4 +194,20 @@ public class MinimapUIController : MonoBehaviour
         if (minimapRect != null)
             _radius = minimapRect.rect.width * 0.5f;
     }
+
+#if UNITY_EDITOR
+    public struct DebugEntry
+    {
+        public MinimapMarker marker;
+        public bool          hasUIIcon;
+    }
+
+    public System.Collections.Generic.List<DebugEntry> Editor_GetEntries()
+    {
+        var result = new System.Collections.Generic.List<DebugEntry>(_entries.Count);
+        foreach (var e in _entries)
+            result.Add(new DebugEntry { marker = e.marker, hasUIIcon = e.icon != null });
+        return result;
+    }
+#endif
 }

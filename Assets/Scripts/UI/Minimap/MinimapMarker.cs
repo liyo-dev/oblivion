@@ -56,4 +56,9 @@ public class MinimapMarker : MonoBehaviour
         if (visible)
             MinimapUIController.Instance?.Register(this);
     }
+
+#if UNITY_EDITOR
+    // Solo para herramientas de editor — distingue el flag interno del estado del GO
+    public bool Editor_InternalVisible => _visible;
+#endif
 }
