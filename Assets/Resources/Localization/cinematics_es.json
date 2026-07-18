@@ -117,6 +117,74 @@
             "text": "Con un guiño pícaro y una sonrisa de satisfacción, Estela contempló su obra. No quedó ni una sola araña en pie."
         },
         {
+            "id": "EVT_ESTELA_APP_01",
+            "text": "ESTELA: ¡Fuera de mi camino!"
+        },
+        {
+            "id": "EVT_ESTELA_APP_02",
+            "text": "ESTELA: ¿Arañas? Qué decepción."
+        },
+        {
+            "id": "EVT_ESTELA_APP_03",
+            "text": "ESTELA: ¡Esta es para vosotras!"
+        },
+        {
+            "id": "EVT_ESTELA_APP_04",
+            "text": "ESTELA: No sabéis con quién os habéis metido."
+        },
+        {
+            "id": "EVT_ESTELA_APP_05",
+            "text": "ESTELA: ¡Ahí va la última!"
+        },
+        {
+            "id": "EVT_W1_ARANAS_ATACAD",
+            "text": "¡Arañas, atacad!"
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_1",
+            "text": "Esta por fea."
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_2",
+            "text": "¿Oh no te lo esperabas?"
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_3",
+            "text": "Pobrecita."
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_4",
+            "text": "Sois taaaan aburridas..."
+        },
+        {
+            "id": "EVT_ESTELA_PANCOMI",
+            "text": "Que es ¡Pan comido!"
+        },
+        {
+            "id": "EVT_W1_PANCOMI",
+            "text": "¿Pan comido? A ver si te resulta tan fácil nuestra técnica..."
+        },
+        {
+            "id": "EVT_W2_AMENAZA",
+            "text": "Venga, danos todo lo que llevas y no te haremos daño."
+        },
+        {
+            "id": "EVT_ESTELA_DRAMATIC",
+            "text": "Oh nooo, por favor... ¡que alguien me ayude!\n...estos dos pedazos de hombres tan fuertes y musculosos...\n...van a robar a una pequeña princesita como yo..."
+        },
+        {
+            "id": "EVT_W1_PRINCEFEA",
+            "text": "¿Princesita? Dirás princefea, ¿no?"
+        },
+        {
+            "id": "EVT_WILL_MADREMIA",
+            "text": "Madre mía..."
+        },
+        {
+            "id": "EVT_ESTELA_ESO_ERA",
+            "text": "...¿Eso era todo?"
+        },
+        {
             "id": "EVT_GOLEM_01",
             "text": "LIAM: Esa estúpida va a arruinar mis planes..."
         },

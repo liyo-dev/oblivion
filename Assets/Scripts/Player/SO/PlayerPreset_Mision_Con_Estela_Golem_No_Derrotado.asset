@@ -154,10 +154,12 @@ MonoBehaviour:
   npcPositions:
   - npcId: _ELDRAN
     position: {x: -39.945, y: 1.224823, z: 26.09}
+    rotation: {x: 0, y: 0, z: 0, w: 0}
     hasActiveState: 0
     isActive: 1
   - npcId: Oliver
     position: {x: -31.48, y: 1.224823, z: 26.09}
+    rotation: {x: 0, y: 0, z: 0, w: 0}
     hasActiveState: 0
     isActive: 1
   consumedInteractableIds:
@@ -174,6 +176,7 @@ MonoBehaviour:
   seenLorePopupIds: []
   partyMemberIds:
   - NPC_InteractiveNarrative_Config_Estela_b17a2d68
+  activeCharacterSlot: 1
   unlockedTeleportPoints:
   - Woods_Entrance_SavePoint
   - Woods_SavePoint

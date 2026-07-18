@@ -149,11 +149,7 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         if (!string.IsNullOrEmpty(exitState) && HasState(exitState))
             StartCoroutine(PlayExitAndUnlock(exitState));
         else
-        {
-            transform.position = _preSnapPosition;
-            RestoreCC();
-            _actionManager?.PopMode(ActionMode.UsingWorldPoint);
-        }
+            StartCoroutine(ReturnToGroundAndUnlock());
     }
 
     // ── Internals ────────────────────────────────────────────────────────────────
@@ -255,8 +251,20 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         CrossFade(exitState, 0.2f);
         yield return null;
         yield return new WaitForSeconds(Mathf.Max(0.1f, GetClipLength(exitState)));
-        // Volver a la posición de pie original antes de reactivar el CC
-        // (evita que el player quede flotando en la altura del asiento)
+        yield return ReturnToGroundAndUnlock();
+    }
+
+    // Vuelve suavemente a la posición de pie para que la cámara no dé un golpe seco
+    // al teleportar a Will de la altura del asiento al suelo.
+    private IEnumerator ReturnToGroundAndUnlock()
+    {
+        const float duration = 0.12f;
+        var startPos = transform.position;
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            transform.position = Vector3.Lerp(startPos, _preSnapPosition, t / duration);
+            yield return null;
+        }
         transform.position = _preSnapPosition;
         RestoreCC();
         _actionManager?.PopMode(ActionMode.UsingWorldPoint);

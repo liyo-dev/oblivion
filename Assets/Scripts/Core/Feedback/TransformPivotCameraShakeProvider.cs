@@ -9,6 +9,17 @@
     /// </summary>
     public class TransformPivotCameraShakeProvider : ICameraShakeProvider
     {
+        private class ActiveShake
+        {
+            public MonoBehaviour Runner;
+            public Coroutine     Coroutine;
+            public Transform     Pivot;
+            public Vector3       OriginalLocalPos;
+        }
+
+        private readonly System.Collections.Generic.List<ActiveShake> _active =
+            new System.Collections.Generic.List<ActiveShake>();
+
         public void Shake(MonoBehaviour runner, float intensity, float duration)
         {
             Shake(runner, Camera.main, intensity, duration);
@@ -17,32 +28,54 @@
         public void Shake(MonoBehaviour runner, Camera targetCamera, float intensity, float duration)
         {
             if (!runner || !targetCamera || intensity <= 0f || duration <= 0f) return;
-            runner.StartCoroutine(Co_Shake(targetCamera, intensity, duration));
+            var pivot = EnsurePivot(targetCamera.transform);
+            if (!pivot) return;
+            var entry = new ActiveShake
+            {
+                Runner          = runner,
+                Pivot           = pivot,
+                OriginalLocalPos = pivot.localPosition,
+            };
+            entry.Coroutine = runner.StartCoroutine(Co_Shake(entry, intensity, duration));
+            _active.Add(entry);
         }
 
-        private IEnumerator Co_Shake(Camera targetCamera, float intensity, float duration)
+        public void CancelAll()
         {
-            if (!targetCamera) yield break;
+            foreach (var s in _active)
+            {
+                if (s.Runner && s.Coroutine != null)
+                    s.Runner.StopCoroutine(s.Coroutine);
+                if (s.Pivot)
+                    s.Pivot.localPosition = s.OriginalLocalPos;
+            }
+            _active.Clear();
+        }
 
-            var pivot = EnsurePivot(targetCamera.transform);
-            if (!pivot) yield break;
-
-            Vector3 originalLocalPos = pivot.localPosition;
+        private IEnumerator Co_Shake(ActiveShake entry, float intensity, float duration)
+        {
             float elapsed = 0f;
 
             while (elapsed < duration)
             {
-                if (!pivot) yield break; // Seguridad por si se destruye el objeto
+                if (!entry.Pivot) yield break;
 
                 float x = Random.Range(-1f, 1f) * intensity;
                 float y = Random.Range(-1f, 1f) * intensity;
-                pivot.localPosition = originalLocalPos + new Vector3(x, y, 0f);
+                entry.Pivot.localPosition = entry.OriginalLocalPos + new Vector3(x, y, 0f);
 
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            if (pivot) pivot.localPosition = originalLocalPos;
+            if (entry.Pivot) entry.Pivot.localPosition = entry.OriginalLocalPos;
+            RemoveEntry(entry.Coroutine);
+        }
+
+        private void RemoveEntry(Coroutine c)
+        {
+            for (int i = _active.Count - 1; i >= 0; i--)
+                if (_active[i].Coroutine == c) { _active.RemoveAt(i); return; }
         }
 
         private Transform EnsurePivot(Transform camT)

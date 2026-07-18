@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Sendero.Core.Feedback;
+using Sendero.UI;
 
 /// Orquestador de la secuencia de Liam mirando la bola de cristal.
 /// Revela que el demonio fue cosa suya y que Will es el chico de corazón puro.
@@ -12,6 +13,8 @@ public class LiamCrystalBallSequencer : MonoBehaviour
 {
     [Header("Personajes")]
     [SerializeField] private Transform liamTransform;
+    [Tooltip("Transform del jugador para que la cámara de visión lo siga.")]
+    [SerializeField] private Transform playerTransform;
 
     [Header("Cámara — driver y planos")]
     [SerializeField] private CinematicCameraDriver cinematicCamera;
@@ -62,6 +65,16 @@ public class LiamCrystalBallSequencer : MonoBehaviour
     [Tooltip("Duración del dolly back al plano wide (0 = sin dolly)")]
     [SerializeField] private float wideShotBlendTime    = 1.2f;
 
+    [Header("Bola de cristal — visión del jugador")]
+    [Tooltip("Cámara secundaria que sigue al jugador y renderiza a un RT. Asígnale el Target Texture en el Inspector.")]
+    [SerializeField] private CrystalBallVisionCamera crystalVisionCamera;
+    [Tooltip("Renderer de la bola de cristal. Su material debe tener Emission ON y _EmissionMap = el mismo RT que usa crystalVisionCamera.")]
+    [SerializeField] private Renderer crystalBallRenderer;
+    [Tooltip("Color HDR de la emisión al mostrar la visión (controla brillo y tinte mágico).")]
+    [SerializeField] private Color visionEmissionColor = new Color(0.15f, 1f, 0.45f, 1f);
+    [SerializeField] private float visionFadeIn  = 0.8f;
+    [SerializeField] private float visionFadeOut = 0.5f;
+
     [Header("Efectos atmosféricos")]
     [Tooltip("Color del overlay persistente que oscurece la escena durante la cinemática. Alpha controla intensidad.")]
     [SerializeField] private Color evilOverlayColor   = new Color(0.08f, 0f, 0.04f, 0.38f);
@@ -77,16 +90,29 @@ public class LiamCrystalBallSequencer : MonoBehaviour
     private NPCEmotionController _liamEmotion;
     private Image _evilOverlayImg;
 
+    private MaterialPropertyBlock _mpb;
+    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+
     void Awake()
     {
         if (liamTransform != null)
             _liamEmotion = liamTransform.GetComponentInChildren<NPCEmotionController>();
 
+        if (crystalBallRenderer != null)
+            _mpb = new MaterialPropertyBlock();
+
         DefaultNarrativeSignals.EnsureInstance().OnCustom(signalIn,
             () => StartCoroutine(Co_Sequence()));
     }
 
-    void OnDestroy() => DestroyEvilOverlay();
+    void OnDestroy()
+    {
+        FeedbackService.CancelAllShakes();
+        DestroyEvilOverlay();
+        crystalVisionCamera?.Deactivate();
+        if (crystalBallRenderer != null)
+            crystalBallRenderer.SetPropertyBlock(null);
+    }
 
     private string Loc(string key) => LocalizationManager.Instance != null
         ? LocalizationManager.Instance.Get(key, key)
@@ -99,6 +125,7 @@ public class LiamCrystalBallSequencer : MonoBehaviour
         var musicRule = audioProfile?.GetSequenceRule(sequenceMusicId);
 
         actionManager.PushMode(ActionMode.Cinematic);
+        PlayerHUDV2.Instance?.HideHUD();
         cinematicCamera.Activate();
 
         EnvironmentController.Instance?.BeginCinematicOverride();
@@ -114,16 +141,18 @@ public class LiamCrystalBallSequencer : MonoBehaviour
             AudioService.Instance.PlayMusic(musicRule.music, musicRule.fadeIn);
 
         // FASE 1: Plano detalle bola de cristal — imagen de Will brillando dentro
-        // Arrancamos el overlay oscuro y el shake ambiental en paralelo con el plano
+        // Arrancamos el overlay oscuro, la visión del jugador y el shake en paralelo
         cinematicCamera.Cut(camShotCrystalBall);
         StartCoroutine(Co_FadeInEvilOverlay());
+        StartCoroutine(Co_ShowCrystalVision());
         float shakeTotal = holdOnCrystalBall + line1Duration + line2Duration + line3Duration
                          + holdAfterLaugh + wideShotBlendTime;
         FeedbackService.CameraShake(cameraShakeAmbient, shakeTotal);
         yield return new WaitForSeconds(holdOnCrystalBall);
 
-        // FASE 2: Plano medio Liam — frase 1
+        // FASE 2: Plano medio Liam — la visión se apaga en paralelo (ya no está en frame)
         cinematicCamera.Cut(camShotLiamMedium);
+        StartCoroutine(Co_HideCrystalVision());
 
         if (emotionLine1 != NPCEmotion.None)
             _liamEmotion?.SetEmotion(emotionLine1);
@@ -191,7 +220,9 @@ public class LiamCrystalBallSequencer : MonoBehaviour
         }
 
         // Restaurar cámara y modo de juego mientras la pantalla sigue en negro
+        FeedbackService.CancelAllShakes();
         cinematicCamera.Deactivate();
+        PlayerHUDV2.Instance?.ShowHUD();
         actionManager.PopMode(ActionMode.Cinematic);
         EnvironmentController.Instance?.EndCinematicOverride();
 
@@ -240,6 +271,48 @@ public class LiamCrystalBallSequencer : MonoBehaviour
         if (_evilOverlayImg == null) return;
         Destroy(_evilOverlayImg.transform.parent.gameObject);
         _evilOverlayImg = null;
+    }
+
+    // ── Visión del jugador en la bola de cristal ──────────────────────────────
+
+    private IEnumerator Co_ShowCrystalVision()
+    {
+        if (crystalVisionCamera == null || crystalBallRenderer == null || _mpb == null)
+            yield break;
+
+        crystalVisionCamera.Activate(playerTransform);
+
+        float elapsed = 0f;
+        while (elapsed < visionFadeIn)
+        {
+            elapsed += Time.deltaTime;
+            _mpb.SetColor(EmissionColorId,
+                Color.Lerp(Color.black, visionEmissionColor, elapsed / visionFadeIn));
+            crystalBallRenderer.SetPropertyBlock(_mpb);
+            yield return null;
+        }
+        _mpb.SetColor(EmissionColorId, visionEmissionColor);
+        crystalBallRenderer.SetPropertyBlock(_mpb);
+    }
+
+    private IEnumerator Co_HideCrystalVision()
+    {
+        if (crystalBallRenderer == null || _mpb == null) yield break;
+
+        crystalBallRenderer.GetPropertyBlock(_mpb);
+        Color startColor = _mpb.GetColor(EmissionColorId);
+
+        float elapsed = 0f;
+        while (elapsed < visionFadeOut)
+        {
+            elapsed += Time.deltaTime;
+            _mpb.SetColor(EmissionColorId,
+                Color.Lerp(startColor, Color.black, elapsed / visionFadeOut));
+            crystalBallRenderer.SetPropertyBlock(_mpb);
+            yield return null;
+        }
+        crystalBallRenderer.SetPropertyBlock(null);
+        crystalVisionCamera?.Deactivate();
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

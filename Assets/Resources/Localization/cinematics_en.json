@@ -117,6 +117,74 @@
             "text": "With a mischievous wink and a satisfied grin, Estela looked upon her work. Not a single spider was left standing."
         },
         {
+            "id": "EVT_ESTELA_APP_01",
+            "text": "ESTELA: Out of my way!"
+        },
+        {
+            "id": "EVT_ESTELA_APP_02",
+            "text": "ESTELA: Spiders? How disappointing."
+        },
+        {
+            "id": "EVT_ESTELA_APP_03",
+            "text": "ESTELA: Take that!"
+        },
+        {
+            "id": "EVT_ESTELA_APP_04",
+            "text": "ESTELA: You have no idea who you're dealing with."
+        },
+        {
+            "id": "EVT_ESTELA_APP_05",
+            "text": "ESTELA: There goes the last one!"
+        },
+        {
+            "id": "EVT_W1_ARANAS_ATACAD",
+            "text": "Spiders, attack!"
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_1",
+            "text": ""
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_2",
+            "text": ""
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_3",
+            "text": ""
+        },
+        {
+            "id": "EVT_ESTELA_ARAÑA_4",
+            "text": ""
+        },
+        {
+            "id": "EVT_ESTELA_PANCOMI",
+            "text": "Piece of cake!"
+        },
+        {
+            "id": "EVT_W1_PANCOMI",
+            "text": "Piece of cake? Let's see if our technique is that easy to handle..."
+        },
+        {
+            "id": "EVT_W2_AMENAZA",
+            "text": "Hand over everything you've got and we won't hurt you."
+        },
+        {
+            "id": "EVT_ESTELA_DRAMATIC",
+            "text": "Oh nooo, please... someone help me!\n...these two big strong muscular warriors...\n...are going to rob a helpless little princess like me..."
+        },
+        {
+            "id": "EVT_W1_PRINCEFEA",
+            "text": "Little princess? More like little ugly, don't you think?"
+        },
+        {
+            "id": "EVT_WILL_MADREMIA",
+            "text": "Good grief..."
+        },
+        {
+            "id": "EVT_ESTELA_ESO_ERA",
+            "text": "...Was that it?"
+        },
+        {
             "id": "EVT_GOLEM_01",
             "text": "LIAM: That fool is going to ruin my plans..."
         },

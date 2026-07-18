@@ -34,7 +34,6 @@ MonoBehaviour:
   - rid: 857240411820786341
   - rid: 7908052880146039718
   - rid: 7908053084941582561
-  - rid: 7908053084941582562
   - rid: 7908053087356977375
   - rid: 7908053087356977389
   - rid: 7908053087356977390
@@ -82,6 +81,8 @@ MonoBehaviour:
   - rid: 5290829396811448504
   - rid: 5290829413007229288
   - rid: 5290829413007229292
+  - rid: 5290829413007229358
+  - rid: 5290829461467955200
   applicableSceneNames:
   - MainWorld
   references:
@@ -948,6 +949,37 @@ MonoBehaviour:
         outputs:
         - b9aed13d-e410-467b-a7ec-5c3e949debbf
         eventKey: LIAM_CRYSTAL_DONE
+    - rid: 5290829413007229358
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: APARECE ESTELA
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 12cec8e5-bfe4-4da6-bbf5-c023794a348c
+        position: {x: 733, y: 573}
+        outputs:
+        - cc48048a-059f-48ae-86a7-b1e76decc181
+        eventKey: ESTELA_APPEARS_START
+    - rid: 5290829461467955200
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: APARECE ESTELA
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: cc48048a-059f-48ae-86a7-b1e76decc181
+        position: {x: 259, y: 573}
+        outputs:
+        - 9b63dbf6-fe76-4863-b369-de60261fa436
+        - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
+        eventKey: ESTELA_APPEARS_DONE
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1161,25 +1193,8 @@ MonoBehaviour:
         guid: d2c6cf0b-557c-41ae-9ccc-069ca97bade9
         position: {x: 1223, y: 573}
         outputs:
-        - c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
+        - 12cec8e5-bfe4-4da6-bbf5-c023794a348c
         eventKey: ESTELA_FOUND
-    - rid: 7908053084941582562
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: APARECE ESTELA
-        chapter: Cap. 3
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: c102ae27-75e4-4be7-8d7b-fc8cd51d7f28
-        position: {x: 785, y: 573}
-        outputs:
-        - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
-        - 9b63dbf6-fe76-4863-b369-de60261fa436
-        cinematicSceneName: Cinematic_EstelaAppears
-        useInternalCinematic: 1
     - rid: 7908053087356977375
       type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
       data:

@@ -149,7 +149,8 @@
       "Bash(xargs '-I{}' python3 -c ' *)",
       "Bash(python3 *)",
       "Bash(jq --version)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(xargs -I {} cat \"{}\")"
     ]
   }
 }

@@ -81,6 +81,45 @@ public class DialogueCameraController : MonoBehaviour
     }
 
     /// <summary>
+    /// Enfoca la cámara en el NPC mientras se mueve. Si hay una transición de vuelta en curso,
+    /// la cancela y retoma el seguimiento. Llama a EndDialogueCamera() cuando el NPC llegue a destino.
+    /// </summary>
+    public void FocusOnNPC(Transform npcTransform)
+    {
+        if (!enableDialogueCamera || npcTransform == null) return;
+
+        // Cancelar transición de vuelta si estaba en curso
+        if (transitionCoroutine != null)
+        {
+            StopCoroutine(transitionCoroutine);
+            transitionCoroutine = null;
+        }
+
+        currentNPC = npcTransform;
+
+        if (isInDialogueMode) return; // Ya activa: solo actualizar referencia al NPC
+
+        // Activar desde cero (misma init que StartDialogueCamera)
+        GameObject playerObj = PlayerService.Player;
+        if (playerObj == null) return;
+        player = playerObj.transform;
+
+        if (thirdPersonCamera == null)
+            thirdPersonCamera = ServiceLocator.Get<vThirdPersonCamera>(false);
+        if (mainCamera == null && thirdPersonCamera != null)
+            mainCamera = thirdPersonCamera.GetComponent<Camera>();
+
+        wasLocked = thirdPersonCamera != null && thirdPersonCamera.lockCamera;
+        if (thirdPersonCamera != null)
+            thirdPersonCamera.lockCamera = true;
+
+        isInDialogueMode = true;
+
+        if (showDebugLogs)
+            Debug.Log($"[DialogueCameraController] Enfocando NPC en movimiento: {npcTransform.name}");
+    }
+
+    /// <summary>
     /// Inicia el modo de cámara de diálogo mostrando al player de perfil mirando al NPC
     /// </summary>
     public void StartDialogueCamera(Transform npcTransform)

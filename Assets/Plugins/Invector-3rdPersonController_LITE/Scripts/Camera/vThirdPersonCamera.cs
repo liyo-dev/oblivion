@@ -57,9 +57,26 @@ public class vThirdPersonCamera : MonoBehaviour
     private float _zoneLockedMouseX;
     private float _zoneLockedMouseY;
 
+    // Suavizado de posición al re-activar tras cinemáticas/sueño
+    private bool _doSmoothSnap;
+    private Vector3 _snapVelocity;
+    private bool _wasCinematicLocked;
+    private const float SnapSmoothTime = 0.15f;
+
     #endregion
 
     void Start() => Init();
+
+    void OnEnable()
+    {
+        // Si ya estaba inicializado (re-activación tras dormir u otra desactivación),
+        // activar suavizado para no dar el golpe seco de posición.
+        if (targetLookAt != null)
+        {
+            _doSmoothSnap = true;
+            _snapVelocity = Vector3.zero;
+        }
+    }
 
     public void Init()
     {
@@ -73,7 +90,7 @@ public class vThirdPersonCamera : MonoBehaviour
             targetLookAt = new GameObject("targetLookAt").transform;
             targetLookAt.hideFlags = HideFlags.HideInHierarchy;
         }
-        
+
         mouseY = currentTarget.eulerAngles.x;
         mouseX = currentTarget.eulerAngles.y;
         distance = defaultDistance;
@@ -83,11 +100,32 @@ public class vThirdPersonCamera : MonoBehaviour
         if (_occlusionFader == null) _occlusionFader = gameObject.AddComponent<CameraOcclusionShadowsOnly>();
         _occlusionFader.SetMask(obstructionMask);
         _occlusionFader.SetRadius(obstructionCheckRadius);
+
+        // Cambio de target implica teleport de cámara; no suavizar.
+        _doSmoothSnap = false;
     }
 
     void FixedUpdate()
     {
-        if (target == null || lockCameraForCinematic) return;
+        if (target == null) return;
+
+        if (lockCameraForCinematic)
+        {
+            _wasCinematicLocked = true;
+            return;
+        }
+
+        // Detectar salida de bloqueo cinematic para aplicar suavizado
+        if (_wasCinematicLocked)
+        {
+            _wasCinematicLocked = false;
+            if (targetLookAt != null)
+            {
+                _doSmoothSnap = true;
+                _snapVelocity = Vector3.zero;
+            }
+        }
+
         CameraMovement();
     }
 
@@ -204,7 +242,17 @@ public class vThirdPersonCamera : MonoBehaviour
         finalCamDir = finalCamDir.normalized;
         
         Vector3 camPos = current_cPos + (finalCamDir * distance);
-        transform.position = camPos;
+
+        if (_doSmoothSnap)
+        {
+            var p = Vector3.SmoothDamp(transform.position, camPos, ref _snapVelocity, SnapSmoothTime, float.MaxValue, Time.fixedDeltaTime);
+            if ((p - camPos).sqrMagnitude < 0.0001f) { _doSmoothSnap = false; p = camPos; }
+            transform.position = p;
+        }
+        else
+        {
+            transform.position = camPos;
+        }
         
         // Mirar siempre al pivote
         var lookPoint = current_cPos + targetLookAt.forward * 2f;

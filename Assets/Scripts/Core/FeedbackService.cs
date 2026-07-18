@@ -41,6 +41,8 @@
             EnsureCameraShakeProvider().Shake(inst, targetCamera, intensity, duration);
         }
 
+        public static void CancelAllShakes() => _cameraShakeProvider?.CancelAll();
+
         public static void SetCameraShakeProvider(ICameraShakeProvider provider) => _cameraShakeProvider = provider;
 
         // Screen Flash

@@ -739,6 +739,10 @@ namespace Game.NPC.Modules
                 }
             }
 
+            // Enfocar cámara en el NPC durante el movimiento: evita que la cámara se quede mirando
+            // al jugador bloqueado mientras el NPC se aleja y parece que el juego se ha pillado.
+            DialogueCameraController.Instance?.FocusOnNPC(transform);
+
             if (entry.waitForPlayer)
             {
                 yield return ExecuteMoveWithPlayerFollow(entry, targetPos, targetAnchor);
@@ -774,6 +778,9 @@ namespace Game.NPC.Modules
                 else
                     transform.position = targetPos;
             }
+
+            // Liberar enfoque de cámara tras completar el movimiento/desaparición
+            DialogueCameraController.Instance?.EndDialogueCamera();
         }
 
         /// <summary>

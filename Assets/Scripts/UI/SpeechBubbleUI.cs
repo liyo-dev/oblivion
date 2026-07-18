@@ -36,6 +36,12 @@ public class SpeechBubbleUI : MonoBehaviour
     [SerializeField] float _popInDuration   = 0.35f;
     [SerializeField] float _popOutDuration  = 0.18f;
 
+    [Header("Tamaño")]
+    [Tooltip("Ancho mínimo del bocadillo en píxeles de canvas. Aumenta si el texto se corta por los lados.")]
+    [SerializeField] float _bubbleMinWidth = 380f;
+    [Tooltip("Margen interno horizontal del texto (izquierda y derecha).")]
+    [SerializeField] float _labelHorizontalMargin = 24f;
+
     [Header("Posición")]
     [SerializeField] Vector3 _worldOffset = new Vector3(0f, 2.2f, 0f);
 
@@ -120,6 +126,18 @@ public class SpeechBubbleUI : MonoBehaviour
         _target = target;
         _isShowing = true;
         _label.text = text;
+
+        // Margen horizontal para que el texto no roque los bordes del bocadillo
+        _label.margin = new Vector4(_labelHorizontalMargin, _label.margin.y,
+                                    _labelHorizontalMargin, _label.margin.w);
+
+        // Ancho mínimo: si el bocadillo es más pequeño que _bubbleMinWidth lo forzamos
+        if (_bubbleMinWidth > 0f && _bubbleRect != null)
+        {
+            Vector2 sd = _bubbleRect.sizeDelta;
+            if (sd.x < _bubbleMinWidth)
+                _bubbleRect.sizeDelta = new Vector2(_bubbleMinWidth, sd.y);
+        }
 
         if (_bubbleImage != null)
         {

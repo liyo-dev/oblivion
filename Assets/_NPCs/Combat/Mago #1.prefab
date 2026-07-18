@@ -3780,11 +3780,12 @@ GameObject:
   - component: {fileID: 6105877552975183288}
   - component: {fileID: -4756144414930936388}
   - component: {fileID: -5137382633302247270}
+  - component: {fileID: 3565470341345223568}
   m_Layer: 7
   m_Name: Mago #1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
+  m_NavMeshLayer: 1
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &4859754474785264818
@@ -3905,6 +3906,14 @@ MonoBehaviour:
   minRotationAngle: 5
   interactState: InteractWithPeople_NoWeapon
   greetingState: Greeting01_NoWeapon
+  playGreetingOnDialogueStart: 0
+  greetingDialogueState: HandWave01
+  enableIdleVariations: 1
+  idleVariationStates:
+  - Idle02_NoWeapon
+  - Idle03_NoWeapon
+  minIdleVariationInterval: 8
+  maxIdleVariationInterval: 20
   challengingState: Challenging_NoWeapon
   senseSomethingState: SenseSomethingStart_NoWeapon
   searchingState: SenseSomethingSearching_NoWeapon
@@ -3934,7 +3943,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b687a38d9c603ef4ea2c981103c66173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  mode: 0
+  mode: 2
   hint: {fileID: 4053614378330038311}
   hideHintAtStart: 1
   hintAnimDuration: 0.25
@@ -3942,6 +3951,7 @@ MonoBehaviour:
   initiallyEnabled: 1
   persistentIdOverride: 
   includeSceneInPersistentId: 1
+  dialogueCharacterId: 
   dialogue: {fileID: 0}
   yesOption: {fileID: 0}
   noOption: {fileID: 0}
@@ -4003,6 +4013,7 @@ MonoBehaviour:
     questConfig: {fileID: 0}
     interactiveNarrativeConfig: {fileID: 0}
     partyConfig: {fileID: 0}
+    socialConfig: {fileID: 0}
     walkSpeed: 1.5
     runSpeed: 4
     rotationSpeed: 180
@@ -4016,10 +4027,20 @@ MonoBehaviour:
     useKinematicRigidbody: 1
     rigidbodyConstraints: 112
   debugMode: 0
+  disableWander: 0
   startInIdleState: 1
   forceKinematicRigidbody: 1
   persistLastPosition: 0
+  persistenceId: 
   dialogueCharacterId: CHAR_MAGO
+  rotateToPlayerOnInteract: 1
+  rotationDuration: 0.3
+  initialLayer: 0
+  switchToEnemyLayerOnCombat: 1
+  narrativeDetectionRange: 10
+  walkTowardsPlayerOnAlert: 1
+  stopDistanceFromPlayer: 2
+  narrativeAlertIconPrefab: {fileID: 0}
   onJoinedParty:
     m_PersistentCalls:
       m_Calls: []
@@ -4070,14 +4091,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fd846acda22bfd41bb1c016673b9e6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbDropper
-  healthOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  manaOrbPrefab: {fileID: 720135145037961379, guid: 5714829a3d11d394c8f7dba269972167, type: 3}
-  healthChance: 0.35
-  manaChance: 0.2
-  estelaOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  liamOrbPrefab: {fileID: 7011574980652007753, guid: d5e45887b593fd449bb7e2b65a451fb4, type: 3}
-  specialChance: 0.45
-  spawnRadius: 0.4
+  _profileId: 
+  _spawnOrigin: {fileID: 0}
+--- !u!114 &3565470341345223568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5548616624286035447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da121c18fee445abbd93a480699e2e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCEmotionController
+  emotionProfile: {fileID: 11400000, guid: 16d5ab4386c36fb4794a8154b6410158, type: 2}
+  originalEyeMesh: {fileID: 8586940447274397697}
+  originalMouthMesh: {fileID: 7978970903872725331}
+  eyePrefix: Eye
+  mouthPrefix: Mouth
+  debugMode: 0
 --- !u!1 &5598328228044207702
 GameObject:
   m_ObjectHideFlags: 0
