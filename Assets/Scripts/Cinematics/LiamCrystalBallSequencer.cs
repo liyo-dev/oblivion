@@ -62,6 +62,18 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     [SerializeField] private float visionFadeIn  = 0.8f;
     [SerializeField] private float visionFadeOut = 0.5f;
 
+    [Header("Bola de cristal — pulso mágico")]
+    [Tooltip("Ciclos de pulso por segundo mientras la visión está activa.")]
+    [SerializeField] private float pulseFrequency   = 1.1f;
+    [Tooltip("Escala mínima del brillo en el valle del pulso (0..1).")]
+    [SerializeField, Range(0f, 1f)] private float pulseMinScale = 0.55f;
+    [Tooltip("Cuánto mezcla el shimmer hacia visionShimmerColor (0 = sin shimmer de color).")]
+    [SerializeField, Range(0f, 1f)] private float colorShimmerAmount = 0.35f;
+    [Tooltip("Color secundario del shimmer. Se mezcla con visionEmissionColor al ritmo del pulso.")]
+    [SerializeField] private Color visionShimmerColor = new Color(0.05f, 0.55f, 1f, 1f);
+    [Tooltip("Sistema de partículas sobre la bola (opcional). Se activa con la visión.")]
+    [SerializeField] private ParticleSystem crystalBallParticles;
+
     [Header("Efectos atmosféricos")]
     [Tooltip("Color del overlay persistente que oscurece la escena durante la cinemática. Alpha controla intensidad.")]
     [SerializeField] private Color evilOverlayColor   = new Color(0.08f, 0f, 0.04f, 0.38f);
@@ -76,6 +88,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     private MaterialPropertyBlock _mpb;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+    private bool _visionPulsing;
 
     protected override void Awake()
     {
@@ -91,8 +104,10 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        _visionPulsing = false;
         DestroyEvilOverlay();
         crystalVisionCamera?.Deactivate();
+        crystalBallParticles?.Stop();
         if (crystalBallRenderer != null)
             crystalBallRenderer.SetPropertyBlock(null);
     }
@@ -243,11 +258,35 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         }
         _mpb.SetColor(EmissionColorId, visionEmissionColor);
         crystalBallRenderer.SetPropertyBlock(_mpb);
+
+        crystalBallParticles?.Play();
+        StartCoroutine(Co_PulseCrystalVision());
+    }
+
+    private IEnumerator Co_PulseCrystalVision()
+    {
+        _visionPulsing = true;
+        while (_visionPulsing)
+        {
+            float t = (Mathf.Sin(Time.time * pulseFrequency * Mathf.PI * 2f) + 1f) * 0.5f;
+            float scale = Mathf.Lerp(pulseMinScale, 1f, t);
+            Color emissive = colorShimmerAmount > 0f
+                ? Color.Lerp(visionEmissionColor, visionShimmerColor, t * colorShimmerAmount)
+                : visionEmissionColor;
+            _mpb.SetColor(EmissionColorId, emissive * scale);
+            crystalBallRenderer.SetPropertyBlock(_mpb);
+            yield return null;
+        }
     }
 
     private IEnumerator Co_HideCrystalVision()
     {
         if (crystalBallRenderer == null || _mpb == null) yield break;
+
+        _visionPulsing = false;
+        yield return null; // deja que el loop de pulso salga antes de leer el color
+
+        crystalBallParticles?.Stop();
 
         crystalBallRenderer.GetPropertyBlock(_mpb);
         Color startColor = _mpb.GetColor(EmissionColorId);
