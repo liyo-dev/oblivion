@@ -2,22 +2,20 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Sendero.Core.Feedback;
-using Sendero.UI;
 
 /// Orquestador de la secuencia de Liam mirando la bola de cristal.
 /// Revela que el demonio fue cosa suya y que Will es el chico de corazón puro.
 /// Señal de entrada: "LIAM_CRYSTAL_START".
 /// Señal de salida:  "LIAM_CRYSTAL_DONE".
 [DisallowMultipleComponent]
-public class LiamCrystalBallSequencer : MonoBehaviour
+public class LiamCrystalBallSequencer : CinematicSequencerBase
 {
     [Header("Personajes")]
     [SerializeField] private Transform liamTransform;
     [Tooltip("Transform del jugador para que la cámara de visión lo siga.")]
     [SerializeField] private Transform playerTransform;
 
-    [Header("Cámara — driver y planos")]
-    [SerializeField] private CinematicCameraDriver cinematicCamera;
+    [Header("Cámara — planos")]
     [Tooltip("Plano detalle de la bola de cristal con Will visible dentro")]
     [SerializeField] private Transform camShotCrystalBall;
     [Tooltip("Plano medio de Liam inclinado sobre la bola, cara en penumbra")]
@@ -27,19 +25,8 @@ public class LiamCrystalBallSequencer : MonoBehaviour
     [Tooltip("Plano wide opcional: dolly back que revela el interior oscuro al final")]
     [SerializeField] private Transform camShotWide;
 
-    [Header("Música")]
-    [SerializeField] private AudioGraphProfile audioProfile;
-    [SerializeField] private string sequenceMusicId = "LIAM_CRYSTAL";
-
     [Header("Entorno — interior House1")]
     [SerializeField] private AnchorEnvironment anchorEnvironment;
-
-    [Header("Gameplay")]
-    [SerializeField] private PlayerActionManager actionManager;
-
-    [Header("Señales narrativas")]
-    [SerializeField] private string signalIn  = "LIAM_CRYSTAL_START";
-    [SerializeField] private string signalOut = "LIAM_CRYSTAL_DONE";
 
     [Header("SpeechBubble — claves de localización")]
     [SerializeField] private string keyLine1 = "EVT_LIAM_CRYSTAL_01";
@@ -84,75 +71,52 @@ public class LiamCrystalBallSequencer : MonoBehaviour
     [SerializeField] private Color evilFlashColor     = new Color(0.7f, 0f, 0.05f, 0.10f);
     [Tooltip("Duración del fade-out de cada pulso siniestro.")]
     [SerializeField] private float evilFlashDuration  = 2.5f;
-    [Tooltip("Intensidad del shake ambiental continuo durante la secuencia.")]
-    [SerializeField] private float cameraShakeAmbient = 0.018f;
-
     private NPCEmotionController _liamEmotion;
     private Image _evilOverlayImg;
 
     private MaterialPropertyBlock _mpb;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
-    void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (liamTransform != null)
             _liamEmotion = liamTransform.GetComponentInChildren<NPCEmotionController>();
 
         if (crystalBallRenderer != null)
             _mpb = new MaterialPropertyBlock();
-
-        DefaultNarrativeSignals.EnsureInstance().OnCustom(signalIn,
-            () => StartCoroutine(Co_Sequence()));
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
-        FeedbackService.CancelAllShakes();
+        base.OnDestroy();
         DestroyEvilOverlay();
         crystalVisionCamera?.Deactivate();
         if (crystalBallRenderer != null)
             crystalBallRenderer.SetPropertyBlock(null);
     }
 
-    private string Loc(string key) => LocalizationManager.Instance != null
-        ? LocalizationManager.Instance.Get(key, key)
-        : key;
-
     // ── Secuencia principal ───────────────────────────────────────────────────
 
-    private IEnumerator Co_Sequence()
+    protected override IEnumerator Co_Sequence()
     {
-        var musicRule = audioProfile?.GetSequenceRule(sequenceMusicId);
-
-        actionManager.PushMode(ActionMode.Cinematic);
-        PlayerHUDV2.Instance?.HideHUD();
-        cinematicCamera.Activate();
-
+        BeginCinematic();
         EnvironmentController.Instance?.BeginCinematicOverride();
 
-        // Fade de entrada — venimos de otro contexto; que la pantalla abra en el interior de Liam
-        yield return FeedbackService.ScreenFadeAsync(Color.black, fadeInDuration, fadeIn: false);
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
 
-        // Pantalla en negro: aplicar entorno de interior (sin skybox, fondo negro)
         EnvironmentController.Instance?.ApplyInteriorForCinematic(env: anchorEnvironment);
-
-        // Música ambiental de la escena de Liam
-        if (musicRule?.music != null && AudioService.Instance != null)
-            AudioService.Instance.PlayMusic(musicRule.music, musicRule.fadeIn);
+        PlaySequenceMusic();
 
         // FASE 1: Plano detalle bola de cristal — imagen de Will brillando dentro
-        // Arrancamos el overlay oscuro, la visión del jugador y el shake en paralelo
-        cinematicCamera.Cut(camShotCrystalBall);
+        _cinematicCamera.Cut(camShotCrystalBall);
         StartCoroutine(Co_FadeInEvilOverlay());
         StartCoroutine(Co_ShowCrystalVision());
-        float shakeTotal = holdOnCrystalBall + line1Duration + line2Duration + line3Duration
-                         + holdAfterLaugh + wideShotBlendTime;
-        FeedbackService.CameraShake(cameraShakeAmbient, shakeTotal);
         yield return new WaitForSeconds(holdOnCrystalBall);
 
-        // FASE 2: Plano medio Liam — la visión se apaga en paralelo (ya no está en frame)
-        cinematicCamera.Cut(camShotLiamMedium);
-        StartCoroutine(Co_HideCrystalVision());
+        // FASE 2: Plano medio Liam — la visión sigue activa en la bola de cristal
+        _cinematicCamera.Cut(camShotLiamMedium);
 
         if (emotionLine1 != NPCEmotion.None)
             _liamEmotion?.SetEmotion(emotionLine1);
@@ -184,7 +148,7 @@ public class LiamCrystalBallSequencer : MonoBehaviour
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
 
         // FASE 4: Primer plano del rostro — frase 3 (la risa)
-        cinematicCamera.Cut(camShotLiamFace);
+        _cinematicCamera.Cut(camShotLiamFace);
 
         if (emotionLine3 != NPCEmotion.None)
             _liamEmotion?.SetEmotion(emotionLine3);
@@ -199,37 +163,23 @@ public class LiamCrystalBallSequencer : MonoBehaviour
 
         // FASE 5: Dolly back al wide (opcional) — revela el interior oscuro antes del fade
         if (camShotWide != null)
-        {
-            yield return cinematicCamera.MoveTo(camShotWide, wideShotBlendTime);
-        }
+            yield return _cinematicCamera.MoveTo(camShotWide, wideShotBlendTime);
 
         yield return new WaitForSeconds(holdAfterLaugh);
 
-        // Destruir overlay antes del fade a negro para que no compita con él
+        // Apagar la visión de la bola al final, junto con el overlay
+        StartCoroutine(Co_HideCrystalVision());
         DestroyEvilOverlay();
 
-        // Fade a negro
-        yield return FeedbackService.ScreenFadeAsync(Color.black, fadeOutDuration, fadeIn: true);
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeOutDuration, fadeIn: true);
 
-        // Restaurar música de gameplay; si no hay regla de escena, detener limpiamente
-        if (AudioService.Instance != null)
-        {
-            float fadeDur = musicRule?.fadeOut ?? 0.8f;
-            if (!AudioService.Instance.RestoreSceneMusic(fadeDur))
-                AudioService.Instance.StopMusic(fadeDur);
-        }
-
-        // Restaurar cámara y modo de juego mientras la pantalla sigue en negro
-        FeedbackService.CancelAllShakes();
-        cinematicCamera.Deactivate();
-        PlayerHUDV2.Instance?.ShowHUD();
-        actionManager.PopMode(ActionMode.Cinematic);
+        RestoreMusic();
+        EndCinematic();
         EnvironmentController.Instance?.EndCinematicOverride();
 
-        // Abrir pantalla de vuelta para revelar el gameplay
-        yield return FeedbackService.ScreenFadeAsync(Color.black, fadeInDuration, fadeIn: false);
+        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
 
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalOut);
+        RaiseSignalOut();
     }
 
     // ── Overlay tenebroso ─────────────────────────────────────────────────────
@@ -315,9 +265,4 @@ public class LiamCrystalBallSequencer : MonoBehaviour
         crystalVisionCamera?.Deactivate();
     }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    [ContextMenu("Simular secuencia")]
-    void SimulateSequence() =>
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalIn);
-#endif
 }

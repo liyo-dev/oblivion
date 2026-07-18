@@ -2,19 +2,19 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Sendero.Core.Feedback;
-using Sendero.UI;
 
 /// Orquestador de la secuencia completa del primer encuentro con Estela:
-///   1. Estela elimina las arañas que los guerreros le han lanzado.
-///   2. Los guerreros la amenazan y le piden todo lo que lleva.
-///   3. Estela hace el numerito de princesita asustada.
-///   4. Los guerreros se burlan ("princefea"). Estela pierde los papeles.
-///   5. Ráfaga de proyectiles. Los guerreros salen por patas.
-///   6. Estela, sola, los mira irse. "¿Eso era todo?"
+///   1. Guerrero ordena a las arañas atacar.
+///   2. Estela elimina las arañas.
+///   3. Los guerreros la amenazan y le piden todo lo que lleva.
+///   4. Estela hace el numerito de princesita asustada.
+///   5. Los guerreros se burlan ("princefea"). Estela pierde los papeles.
+///   6. Ráfaga de proyectiles. Los guerreros salen por patas.
+///   7. Will aplaude. Estela hace la reverencia. "¿Eso era todo?"
 /// Señal de entrada: "ESTELA_APPEARS_START".
 /// Señal de salida:  "ESTELA_APPEARS_DONE".
 [DisallowMultipleComponent]
-public class EstelaAppearsSequencer : MonoBehaviour
+public class EstelaAppearsSequencer : CinematicSequencerBase
 {
     [Header("Personaje — Estela")]
     [SerializeField] private Transform _estelaTransform;
@@ -43,8 +43,7 @@ public class EstelaAppearsSequencer : MonoBehaviour
     [SerializeField] private float _fleeSpeed   = 5f;
     [SerializeField] private float _fleeTimeout = 3.5f;
 
-    [Header("Cámara — driver y planos")]
-    [SerializeField] private CinematicCameraDriver _cinematicCamera;
+    [Header("Cámara — planos")]
     [Tooltip("Plano wide del bosque para la entrada")]
     [SerializeField] private Transform _shotWide;
     [Tooltip("Plano medio de Estela")]
@@ -53,17 +52,6 @@ public class EstelaAppearsSequencer : MonoBehaviour
     [SerializeField] private Transform _shotWarriors;
     [Tooltip("Plano de cada araña (se corta a él justo después de que Estela dispara)")]
     [SerializeField] private Transform[] _shotPerSpider;
-
-    [Header("Música")]
-    [SerializeField] private AudioGraphProfile _audioProfile;
-    [SerializeField] private string _sequenceMusicId = "ESTELA_APPEARS";
-
-    [Header("Gameplay")]
-    [SerializeField] private PlayerActionManager _actionManager;
-
-    [Header("Señales narrativas")]
-    [SerializeField] private string _signalIn  = "ESTELA_APPEARS_START";
-    [SerializeField] private string _signalOut = "ESTELA_APPEARS_DONE";
 
     // ── Fase 0: Orden de ataque ───────────────────────────────────────────────
 
@@ -151,7 +139,6 @@ public class EstelaAppearsSequencer : MonoBehaviour
     // ── Timings generales ─────────────────────────────────────────────────────
 
     [Header("Timings")]
-    [SerializeField] private float _fadeInDuration       = 0.4f;
     [Tooltip("Pausa desde que Estela se gira hasta que dispara (arañas)")]
     [SerializeField] private float _aimDelay             = 0.4f;
     [Tooltip("Delay desde el disparo hasta que aparece el bocadillo")]
@@ -162,7 +149,6 @@ public class EstelaAppearsSequencer : MonoBehaviour
     [Tooltip("Pausa entre las arañas y la entrada de los guerreros")]
     [SerializeField] private float _pauseBeforeWarriors  = 0.8f;
     [SerializeField] private float _holdAfterVictory     = 1.2f;
-    [SerializeField] private float _fadeOutDuration      = 0.5f;
 
     // ── Cache privado ─────────────────────────────────────────────────────────
 
@@ -177,8 +163,10 @@ public class EstelaAppearsSequencer : MonoBehaviour
     private int _enemyHitLayers;
     private int _enemyCollisionLayers;
 
-    void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (_estelaTransform != null)
         {
             _estelaEmotion    = _estelaTransform.GetComponentInChildren<NPCEmotionController>();
@@ -200,36 +188,24 @@ public class EstelaAppearsSequencer : MonoBehaviour
 
         _enemyHitLayers       = LayerMask.GetMask("Enemy", "Boss");
         _enemyCollisionLayers = LayerMask.GetMask("Enemy", "Boss", "Default");
-
-        DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn,
-            () => StartCoroutine(Co_Sequence()));
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
-        FeedbackService.CancelAllShakes();
+        base.OnDestroy();
     }
-
-    private string Loc(string key) => LocalizationManager.Instance != null
-        ? LocalizationManager.Instance.Get(key, key)
-        : key;
 
     // ══════════════════════════════════════════════════════════════════════════
     // Secuencia principal
     // ══════════════════════════════════════════════════════════════════════════
 
-    private IEnumerator Co_Sequence()
+    protected override IEnumerator Co_Sequence()
     {
-        var musicRule = _audioProfile?.GetSequenceRule(_sequenceMusicId);
-
-        _actionManager.PushMode(ActionMode.Cinematic);
-        PlayerHUDV2.Instance?.HideHUD();
-        _cinematicCamera.Activate();
+        BeginCinematic();
 
         yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
 
-        if (musicRule?.music != null && AudioService.Instance != null)
-            AudioService.Instance.PlayMusic(musicRule.music, musicRule.fadeIn);
+        PlaySequenceMusic();
 
         // ── Fase 0: Guerrero da la orden de ataque ────────────────────────────
         _cinematicCamera.Cut(_shotWarriors);
@@ -282,21 +258,12 @@ public class EstelaAppearsSequencer : MonoBehaviour
         // Fade a negro y restaurar
         yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeOutDuration, fadeIn: true);
 
-        if (AudioService.Instance != null)
-        {
-            float fadeDur = musicRule?.fadeOut ?? 0.8f;
-            if (!AudioService.Instance.RestoreSceneMusic(fadeDur))
-                AudioService.Instance.StopMusic(fadeDur);
-        }
-
-        FeedbackService.CancelAllShakes();
-        _cinematicCamera.Deactivate();
-        PlayerHUDV2.Instance?.ShowHUD();
-        _actionManager.PopMode(ActionMode.Cinematic);
+        RestoreMusic();
+        EndCinematic();
 
         yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
 
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(_signalOut);
+        RaiseSignalOut();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -623,43 +590,4 @@ public class EstelaAppearsSequencer : MonoBehaviour
         }
     }
 
-    // loopAnim: si true, re-dispara el animTrigger en cada página para mantener la animación activa
-    private IEnumerator ShowBubblePaged(Transform target, string text, float durationPerPage,
-        string animTrigger = null, bool loopAnim = false)
-    {
-        string[] pages = text.Split('\n');
-        for (int i = 0; i < pages.Length; i++)
-        {
-            string page = pages[i].Trim();
-            if (string.IsNullOrEmpty(page)) continue;
-            bool done = false;
-            string triggerThisPage = (i == 0 || loopAnim) ? animTrigger : null;
-            SpeechBubbleUI.Instance.Show(target, page, durationPerPage, () => done = true, triggerThisPage);
-            yield return new WaitUntil(() => done);
-        }
-    }
-
-    private static void FaceTarget(Transform from, Transform to)
-    {
-        if (from == null || to == null) return;
-        Vector3 dir = to.position - from.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.001f)
-            from.rotation = Quaternion.LookRotation(dir);
-    }
-
-    private static void FaceAway(Transform from, Transform away)
-    {
-        if (from == null || away == null) return;
-        Vector3 dir = from.position - away.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.001f)
-            from.rotation = Quaternion.LookRotation(dir);
-    }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    [ContextMenu("Simular secuencia")]
-    void SimulateSequence() =>
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(_signalIn);
-#endif
 }

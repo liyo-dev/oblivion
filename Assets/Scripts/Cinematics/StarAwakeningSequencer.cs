@@ -7,7 +7,7 @@ using Sendero.Core.Feedback;
 /// Señal de salida (éxito): "AWAKEN_DONE"  → arranca el combate.
 /// Señal de salida (fallo): "AWAKEN_FAILED" → grafo vuelve al diálogo con Eldran.
 [DisallowMultipleComponent]
-public class StarAwakeningSequencer : MonoBehaviour
+public class StarAwakeningSequencer : CinematicSequencerBase
 {
     [Header("Personajes")]
     [SerializeField] private Transform       willTransform;
@@ -39,12 +39,7 @@ public class StarAwakeningSequencer : MonoBehaviour
     [SerializeField] private float projectileSpawnDistance = 0f;
     [SerializeField] private GameObject explosionVFX;
 
-    [Header("Música")]
-    [SerializeField] private AudioGraphProfile audioProfile;
-    [SerializeField] private string sequenceMusicId = "AWAKEN";
-
-    [Header("Cámara — driver y planos")]
-    [SerializeField] private CinematicCameraDriver cinematicCamera;
+    [Header("Cámara — planos")]
     [Tooltip("Primer plano de Eldran — EVT_AWAKEN_01")]
     [SerializeField] private Transform camShotEldran;
     [Tooltip("Perfil de Will girando hacia el proyectil — EVT_AWAKEN_02")]
@@ -62,8 +57,7 @@ public class StarAwakeningSequencer : MonoBehaviour
     [SerializeField] private Sprite                 panicButtonSprite;
     [SerializeField] private ShockEffectsController shockEffects;
 
-    [Header("Señales narrativas")]
-    [SerializeField] private string signalIn      = "AWAKEN_START";
+    [Header("Señales narrativas — salidas")]
     [SerializeField] private string signalOutDone = "AWAKEN_DONE";
     [SerializeField] private string signalOutFail = "AWAKEN_FAILED";
 
@@ -115,9 +109,10 @@ public class StarAwakeningSequencer : MonoBehaviour
     private NPCEmotionController     _companionEmotion;
     private NPCEmotionController     _willEmotion;
 
-    void Awake()
+    protected override void Awake()
     {
-        // Garantizar que willTransform apunta al Player real (tag "Player")
+        base.Awake();
+
         if (willTransform == null || !willTransform.CompareTag("Player"))
         {
             var playerGO = GameObject.FindWithTag("Player");
@@ -139,17 +134,11 @@ public class StarAwakeningSequencer : MonoBehaviour
 
         var helperGO = new GameObject("__CollisionPoint") { hideFlags = HideFlags.HideAndDontSave };
         _collisionPointHelper = helperGO.transform;
-
-        DefaultNarrativeSignals.EnsureInstance().OnCustom(signalIn,
-            () => StartCoroutine(Co_Sequence()));
     }
 
-    private string Loc(string key) => LocalizationManager.Instance != null
-        ? LocalizationManager.Instance.Get(key, key)
-        : key;
-
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         Cleanup();
         if (_collisionPointHelper != null)
             Destroy(_collisionPointHelper.gameObject);
@@ -157,16 +146,13 @@ public class StarAwakeningSequencer : MonoBehaviour
 
     // ── Secuencia principal ───────────────────────────────────────────────────
 
-    private IEnumerator Co_Sequence()
+    protected override IEnumerator Co_Sequence()
     {
         _collisionTriggered = false;
         _panicSuccess       = false;
         _sequenceFailed     = false;
 
-        var musicRule = audioProfile?.GetSequenceRule(sequenceMusicId);
-
-        actionManager.PushMode(ActionMode.Cinematic);
-        cinematicCamera.Activate();
+        BeginCinematic();
 
         // FASE 0: Música + primer plano de Eldran con temblor (EVT_AWAKEN_01)
         // Will mira a Eldran mientras Eldran lanza la advertencia
@@ -212,7 +198,7 @@ public class StarAwakeningSequencer : MonoBehaviour
         _activeProjectile.OnHitByPlayerFireball += OnPhysicsCollision;
 
         // Corte mientras la pantalla está negra: Will de perfil, listo para ver el giro
-        cinematicCamera.Cut(camShotWillProfile);
+        _cinematicCamera.Cut(camShotWillProfile);
 
         yield return new WaitForSecondsRealtime(holdOnBlackDuration);
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeFromBlackDuration, fadeIn: false);
@@ -233,13 +219,13 @@ public class StarAwakeningSequencer : MonoBehaviour
 
         // Barrido suave de Will al proyectil; la cámara sube/barre para mostrarlo
         if (camShotProjectile != null)
-            yield return cinematicCamera.MoveTo(camShotProjectile, projectileRevealDuration * 0.4f);
+            yield return _cinematicCamera.MoveTo(camShotProjectile, projectileRevealDuration * 0.4f);
 
         yield return new WaitForSecondsRealtime(projectileRevealDuration * 0.6f);
 
         // FASE 3: Encuadre two-shot — proyectil acercándose, Will preparado
         // El proyectil sigue moviéndose en cámara lenta para que el jugador lo vea venir
-        cinematicCamera.Cut(camShotTwoShot);
+        _cinematicCamera.Cut(camShotTwoShot);
 
         if (companionTransform != null)
             StartCoroutine(Co_EldranHintDelayed(0.3f));
@@ -268,7 +254,7 @@ public class StarAwakeningSequencer : MonoBehaviour
 
         // FASE 5: Primer plano de Will tras la explosión (el volumen sigue activo — blur dramático)
         if (camShotWillFinal != null)
-            cinematicCamera.Cut(camShotWillFinal);
+            _cinematicCamera.Cut(camShotWillFinal);
 
         if (faceWillAfter != NPCEmotion.None)
             _willEmotion?.SetEmotion(faceWillAfter);
@@ -287,20 +273,18 @@ public class StarAwakeningSequencer : MonoBehaviour
         // En negro: pitido y espera antes de arrancar el combate
         shockEffects.PlayTinnitus();
         if (AudioService.Instance != null)
-            AudioService.Instance.StopMusic(musicRule?.fadeOut ?? 0.5f);
+            AudioService.Instance.StopMusic(MusicRule?.fadeOut ?? 0.5f);
 
         yield return new WaitForSecondsRealtime(blackScreenDuration);
 
         // Limpiar y transición al combate
         shockEffects.ForceEnd();
-        cinematicCamera.Deactivate();
-
         if (willAnimator != null)
             willAnimator.SetLayerWeight(willUpperBodyLayer, 0f);
 
         if (playerSpawner != null) playerSpawner.enabled = true;
-        actionManager.PopMode(ActionMode.Cinematic);
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalOutDone);
+        EndCinematic();
+        RaiseSignal(signalOutDone);
     }
 
     // ── Fases auxiliares ──────────────────────────────────────────────────────
@@ -309,11 +293,8 @@ public class StarAwakeningSequencer : MonoBehaviour
     {
         if (companionTransform == null) yield break;
 
-        var musicRule = audioProfile?.GetSequenceRule(sequenceMusicId);
-        if (musicRule?.music != null && AudioService.Instance != null)
-            AudioService.Instance.PlayMusic(musicRule.music, musicRule.fadeIn);
-
-        cinematicCamera.Cut(camShotEldran);
+        PlaySequenceMusic();
+        _cinematicCamera.Cut(camShotEldran);
         FeedbackService.CameraShake(0.06f, preDialogueDuration);
 
         if (faceCompanionAlert != NPCEmotion.None)
@@ -429,8 +410,6 @@ public class StarAwakeningSequencer : MonoBehaviour
     {
         if (playerSpawner != null) playerSpawner.enabled = true;
 
-        var musicRule = audioProfile?.GetSequenceRule(sequenceMusicId);
-
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeToBlackDuration, fadeIn: true);
 
         if (_activeProjectile != null)
@@ -440,19 +419,17 @@ public class StarAwakeningSequencer : MonoBehaviour
             _activeProjectile = null;
         }
 
-        cinematicCamera.Deactivate();
         Time.timeScale = 1f;
-
         if (AudioService.Instance != null)
-            AudioService.Instance.StopMusic(musicRule?.fadeOut ?? 0.5f);
+            AudioService.Instance.StopMusic(MusicRule?.fadeOut ?? 0.5f);
 
         _sequenceFailed = true;
-        actionManager.PopMode(ActionMode.Cinematic);
+        EndCinematic();
 
         yield return new WaitForSecondsRealtime(holdOnBlackDuration);
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeFromBlackDuration, fadeIn: false);
 
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalOutFail);
+        RaiseSignal(signalOutFail);
     }
 
     private IEnumerator Co_ReturnTime()
@@ -535,14 +512,6 @@ public class StarAwakeningSequencer : MonoBehaviour
         }
     }
 
-    private static void FaceTarget(Transform character, Vector3 worldPos)
-    {
-        Vector3 dir = worldPos - character.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.001f)
-            character.rotation = Quaternion.LookRotation(dir, Vector3.up);
-    }
-
     private void CleanupPanicCallbacks()
     {
         panicInputDetector.OnSuccess -= OnPanicSuccess;
@@ -552,7 +521,7 @@ public class StarAwakeningSequencer : MonoBehaviour
     private void Cleanup()
     {
         Time.timeScale = 1f;
-        cinematicCamera?.Deactivate();
+        _cinematicCamera?.Deactivate();
         if (playerSpawner != null) playerSpawner.enabled = true;
         _companionEmotion?.ForceReset();
         _willEmotion?.ForceReset();
@@ -568,9 +537,4 @@ public class StarAwakeningSequencer : MonoBehaviour
         CleanupPanicCallbacks();
     }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    [ContextMenu("Simular secuencia")]
-    void SimulateSequence() =>
-        DefaultNarrativeSignals.EnsureInstance().RaiseCustom(signalIn);
-#endif
 }
