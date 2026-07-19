@@ -61,8 +61,48 @@ public class StarAwakeningSequencer : CinematicSequencerBase
     [SerializeField] private string signalOutDone = "AWAKEN_DONE";
     [SerializeField] private string signalOutFail = "AWAKEN_FAILED";
 
-    [Header("Timings")]
-    [SerializeField] private float preDialogueDuration      = 2f;
+    // ── Fase 0 — Eldran avisa ─────────────────────────────────────────────────
+
+    [Header("Fase 0 — Eldran avisa")]
+    [SerializeField] private string     keyCompanionAlert  = "EVT_AWAKEN_01";
+    [SerializeField] private NPCEmotion faceCompanionAlert = NPCEmotion.Scared;
+    [SerializeField] private string     animCompanionAlert = "Question01";
+    [SerializeField] private float      preDialogueDuration = 2f;
+
+    // ── Fase 1 — Will reacciona al proyectil ─────────────────────────────────
+
+    [Header("Fase 1 — Will reacciona al proyectil")]
+    [SerializeField] private string     keyWillSurprise    = "EVT_AWAKEN_02";
+    [SerializeField] private NPCEmotion faceWillSurprise   = NPCEmotion.Surprised;
+    [SerializeField] private string     animWillSurprise   = "Fear01";
+    [SerializeField] private float      willSurpriseDuration = 1.2f;
+
+    // ── Fase 2 — Hint de Eldran + Panic input ────────────────────────────────
+
+    [Header("Fase 2 — Hint de Eldran + Panic input")]
+    [SerializeField] private string     keyEldranHint  = "EVT_08";
+    [SerializeField] private NPCEmotion faceEldranHint = NPCEmotion.Happy;
+    [SerializeField] private string     animEldranHint = "Cheer01";
+
+    // ── Fase 3 — Will contraataca (éxito) ────────────────────────────────────
+
+    [Header("Fase 3 — Will contraataca (éxito)")]
+    [SerializeField] private string     keyWillSuccess    = "EVT_AWAKEN_03";
+    [SerializeField] private NPCEmotion faceWillSuccess   = NPCEmotion.Happy;
+    [SerializeField] private string     animWillSuccess   = "Cheer01";
+    [SerializeField] private float      willSuccessDuration = 1.5f;
+
+    // ── Fase 4 — Aftermath ───────────────────────────────────────────────────
+
+    [Header("Fase 4 — Aftermath")]
+    [SerializeField] private string     keyWillAfter    = "EVT_AWAKEN_05";
+    [SerializeField] private NPCEmotion faceWillAfter   = NPCEmotion.Thinking;
+    [SerializeField] private string     animWillAfter   = "Question01";
+    [SerializeField] private float      willAfterDuration = 2.5f;
+
+    // ── Timings generales ─────────────────────────────────────────────────────
+
+    [Header("Timings generales")]
     [SerializeField] private float willTurnDuration         = 0.4f;
     [SerializeField] private float willReactionDuration     = 0.6f;
     [SerializeField] private float projectileRevealDuration = 1.2f;
@@ -80,26 +120,8 @@ public class StarAwakeningSequencer : CinematicSequencerBase
              "con la animación también en cámara lenta. Debe coincidir con el frame de release de MagicRight.")]
     [SerializeField] private float castAnimDelay            = 0.3f;
 
-    [Header("SpeechBubble — claves de localización")]
-    [SerializeField] private string keyCompanionAlert = "EVT_AWAKEN_01";
-    [SerializeField] private string keyWillSurprise   = "EVT_AWAKEN_02";
-    [SerializeField] private string keyWillSuccess    = "EVT_AWAKEN_03";
-    [SerializeField] private string keyWillAfter      = "EVT_AWAKEN_05";
-    [SerializeField] private string keyEldranHint     = "EVT_08";
+    // ── Estado ────────────────────────────────────────────────────────────────
 
-    [Header("SpeechBubble — animaciones y caras")]
-    [SerializeField] private string     animCompanionAlert  = "Question01";
-    [SerializeField] private NPCEmotion faceCompanionAlert  = NPCEmotion.Scared;
-    [SerializeField] private string     animWillSurprise    = "Fear01";
-    [SerializeField] private NPCEmotion faceWillSurprise    = NPCEmotion.Surprised;
-    [SerializeField] private string     animEldranHint      = "Cheer01";
-    [SerializeField] private NPCEmotion faceEldranHint      = NPCEmotion.Happy;
-    [SerializeField] private string     animWillSuccess     = "Cheer01";
-    [SerializeField] private NPCEmotion faceWillSuccess     = NPCEmotion.Happy;
-    [SerializeField] private string     animWillAfter       = "Question01";
-    [SerializeField] private NPCEmotion faceWillAfter       = NPCEmotion.Thinking;
-
-    // Estado
     private SlowMotionFireProjectile _activeProjectile;
     private bool                     _collisionTriggered;
     private bool                     _panicSuccess;
@@ -152,16 +174,15 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         _panicSuccess       = false;
         _sequenceFailed     = false;
 
-        yield return Co_BeginCinematicWithTransition();
+        yield return Co_BeginCinematicWithTransition(camShotEldran);
 
-        // FASE 0: Música + primer plano de Eldran con temblor (EVT_AWAKEN_01)
-        // Will mira a Eldran mientras Eldran lanza la advertencia
+        // ── Fase 0: Música + Eldran lanza la advertencia ──────────────────────
         if (willTransform != null && companionTransform != null)
             FaceTarget(willTransform, companionTransform.position);
 
         yield return Co_PreDialogue();
 
-        // FASE 1: Slow-motion + spawn proyectil
+        // ── Fase 1: Slow-motion + spawn proyectil + Will reacciona ────────────
         Time.timeScale = slowMotionScale;
 
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeToBlackDuration, fadeIn: true);
@@ -205,7 +226,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         FeedbackService.CameraShake(0.08f, 0.25f);
 
-        // FASE 2: Will se gira hacia el proyectil — la cámara lo captura de perfil (EVT_AWAKEN_02)
+        // Will se gira hacia el proyectil (EVT_AWAKEN_02)
         StartCoroutine(Co_TurnTowards(willTransform, _activeProjectile.transform.position, willTurnDuration));
         yield return new WaitForSecondsRealtime(willTurnDuration * 0.5f);
 
@@ -213,25 +234,21 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             _willEmotion?.SetEmotion(faceWillSurprise);
 
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillSurprise),
-            duration: 1.2f, emphasis: true, animTrigger: animWillSurprise);
+            duration: willSurpriseDuration, emphasis: true, animTrigger: animWillSurprise);
 
         yield return new WaitForSecondsRealtime(willReactionDuration);
 
-        // Barrido suave de Will al proyectil; la cámara sube/barre para mostrarlo
         if (camShotProjectile != null)
             yield return _cinematicCamera.MoveTo(camShotProjectile, projectileRevealDuration * 0.4f);
 
         yield return new WaitForSecondsRealtime(projectileRevealDuration * 0.6f);
 
-        // FASE 3: Encuadre two-shot — proyectil acercándose, Will preparado
-        // El proyectil sigue moviéndose en cámara lenta para que el jugador lo vea venir
+        // ── Fase 2: Two-shot + hint de Eldran + Panic input ───────────────────
         _cinematicCamera.Cut(camShotTwoShot);
 
         if (companionTransform != null)
             StartCoroutine(Co_EldranHintDelayed(0.3f));
 
-        // Deshabilitar el spawner para que los botones del panic input no lancen proyectiles reales
-        // (el botón X del panic input es el mismo que el de magia)
         if (playerSpawner != null) playerSpawner.enabled = false;
 
         if (panicInputUI == null)
@@ -241,18 +258,17 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         panicInputDetector.OnFailure += OnPanicFailure;
         panicInputDetector.StartListening();
 
-        // Espera: jugador completa el panic input o falla
         yield return new WaitUntil(() => _collisionTriggered || _sequenceFailed);
         if (_sequenceFailed) yield break;
 
-        // FASE 4: Explosión — volumen de shock al máximo, shake y vuelta del tiempo
+        // ── Fase 3 (éxito): Explosión + vuelta del tiempo ────────────────────
         shockEffects.HoldAt(1f);
         FeedbackService.CameraShake(0.35f, 0.5f);
         FeedbackService.ScreenFlash(new Color(1f, 0.6f, 0.2f, 1f), 0.25f);
 
         yield return Co_ReturnTime();
 
-        // FASE 5: Primer plano de Will tras la explosión (el volumen sigue activo — blur dramático)
+        // ── Fase 4: Aftermath — primer plano de Will ──────────────────────────
         if (camShotWillFinal != null)
             _cinematicCamera.Cut(camShotWillFinal);
 
@@ -261,23 +277,20 @@ public class StarAwakeningSequencer : CinematicSequencerBase
 
         bool willAfterDone = false;
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillAfter),
-            duration: 2.5f,
+            duration: willAfterDuration,
             onComplete: () => willAfterDone = true,
             animTrigger: animWillAfter);
 
         yield return new WaitUntil(() => willAfterDone);
 
-        // Fade a negro con el efecto de volumen todavía activo
         yield return FeedbackService.ScreenFadeAsync(Color.black, fadeToBlackDuration, fadeIn: true);
 
-        // En negro: pitido y espera antes de arrancar el combate
         shockEffects.PlayTinnitus();
         if (AudioService.Instance != null)
             AudioService.Instance.StopMusic(MusicRule?.fadeOut ?? 0.5f);
 
         yield return new WaitForSecondsRealtime(blackScreenDuration);
 
-        // Limpiar y transición al combate
         shockEffects.ForceEnd();
         if (willAnimator != null)
             willAnimator.SetLayerWeight(willUpperBodyLayer, 0f);
@@ -287,14 +300,15 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         RaiseSignal(signalOutDone);
     }
 
-    // ── Fases auxiliares ──────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Fases auxiliares
+    // ══════════════════════════════════════════════════════════════════════════
 
     private IEnumerator Co_PreDialogue()
     {
         if (companionTransform == null) yield break;
 
         PlaySequenceMusic();
-        _cinematicCamera.Cut(camShotEldran);
         FeedbackService.CameraShake(0.06f, preDialogueDuration);
 
         if (faceCompanionAlert != NPCEmotion.None)
@@ -337,7 +351,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             _willEmotion?.SetEmotion(faceWillSuccess);
 
         SpeechBubbleUI.Instance.Show(willTransform, Loc(keyWillSuccess),
-            duration: 1.5f, emphasis: true, animTrigger: animWillSuccess);
+            duration: willSuccessDuration, emphasis: true, animTrigger: animWillSuccess);
 
         if (_activeProjectile != null)
             FaceTarget(willTransform, _activeProjectile.transform.position);
@@ -359,7 +373,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         if (_activeProjectile != null)
         {
             Vector3 toProjectile = _activeProjectile.transform.position - castOrigin.position;
-            toProjectile.y = 0f; // horizontal: evita que el fireball suba hacia el proyectil
+            toProjectile.y = 0f;
             if (toProjectile.sqrMagnitude > 0.001f)
             {
                 castDir = toProjectile.normalized;
@@ -377,10 +391,6 @@ public class StarAwakeningSequencer : CinematicSequencerBase
             fireballRb.linearVelocity = castDir * spd;
         }
 
-        // Esperar a que los dos proyectiles choquen (por proximidad).
-        // El proyectil enemigo sigue moviéndose hacia Will y el fireball hacia él,
-        // así que se acercan el uno al otro. El umbral de 1.5 m es generoso para
-        // compensar que en cámara lenta la física no actualiza tan fino.
         float elapsed = 0f;
         while (elapsed < collisionWaitUnscaled && !_collisionTriggered)
         {
@@ -445,7 +455,6 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         Time.timeScale = 1f;
     }
 
-    /// Giro suave de un personaje hacia una posición en el plano horizontal.
     private static IEnumerator Co_TurnTowards(Transform character, Vector3 targetPos, float duration)
     {
         Vector3 dir = targetPos - character.position;
@@ -465,7 +474,9 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         character.rotation = targetRot;
     }
 
-    // ── Callbacks ─────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Callbacks
+    // ══════════════════════════════════════════════════════════════════════════
 
     private void OnPanicSuccess()
     {
@@ -489,7 +500,9 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         TriggerExplosion();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Helpers
+    // ══════════════════════════════════════════════════════════════════════════
 
     private void TriggerExplosion()
     {
@@ -506,7 +519,6 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         if (_activeProjectile != null)
         {
             _activeProjectile.OnHitByPlayerFireball -= OnPhysicsCollision;
-            // ForceCollide dispara el collisionVFX del propio proyectil y lo destruye
             _activeProjectile.ForceCollide();
             _activeProjectile = null;
         }
@@ -536,5 +548,4 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         panicInputDetector?.StopListening();
         CleanupPanicCallbacks();
     }
-
 }

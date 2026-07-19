@@ -265,11 +265,12 @@ public class NPCEmotionController : MonoBehaviour
         // Desactivar todos los meshes de este tipo
         foreach (var kvp in meshCache)
         {
+            if (kvp.Value == null) continue;
             bool shouldBeActive = kvp.Key == meshName;
             if (kvp.Value.activeSelf != shouldBeActive)
             {
                 kvp.Value.SetActive(shouldBeActive);
-                
+
                 if (debugMode && shouldBeActive)
                     Debug.Log($"[NPCEmotionController:{name}] ✅ Activado {meshType}: {kvp.Key}");
             }

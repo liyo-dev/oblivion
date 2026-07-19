@@ -218,11 +218,51 @@
         },
         {
             "id": "EVT_MOUNTAIN_01",
-            "text": "ESTELA: ¡Nadie me interrumpe mientras como!"
+            "text": "¡Nadie me interrumpe mientras como!"
         },
         {
             "id": "EVT_MOUNTAIN_02",
-            "text": "ESTELA: ¡Así que comete esta!"
+            "text": "¡Así que cómete esta!"
+        },
+        {
+            "id": "EVT_TAB_ELDRAN_01",
+            "text": "Hay que averiguar quién invocó ese demonio y por qué os ha buscado a vosotros."
+        },
+        {
+            "id": "EVT_TAB_WILL_01",
+            "text": "Y también qué tiene que ver con mi magia..."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_01",
+            "text": "Sí, sí, muy revelador. ¿Y cuándo traen la comida?"
+        },
+        {
+            "id": "EVT_TAB_ESTELA_02",
+            "text": "Eso... no he sido yo."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_03",
+            "text": "¡AL FIN!"
+        },
+        {
+            "id": "EVT_TAB_WILL_02",
+            "text": "Estela... ¿de verdad comes así?"
+        },
+        {
+            "id": "EVT_TAB_ELDRAN_02",
+            "text": "Creo que he perdido el apetito."
+        },
+        {
+            "id": "EVT_TAB_LIAM_01",
+            "text": "Disculpad que os interrumpa... tengo información que podría interesaros."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_RAGE",
+            "text": "¡NADIE me interrumpe cuando estoy comiendo!"
+        },
+        {
+            "id": "EVT_TAB_WILL_03",
+            "text": "¡¿QUÉ?!"
         },
         {
             "id": "EVT_TABERNA_01",
@@ -262,7 +302,7 @@
         },
         {
             "id": "EVT_TABERNA_10",
-            "text": "ELDRAN: ¡Corred! Huid de Estela hasta que se le pase el enfado."
+            "text": "¡Corred! Huid de Estela hasta que se le pase el enfado."
         },
         {
             "id": "EVT_W1_ARANAS_ATACAD",

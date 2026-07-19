@@ -86,6 +86,16 @@
             var root = EnsureFadeRoot();
             if (root?.Image != null) root.Image.color = color;
         }
+
+        /// Devuelve true si el overlay de fade está actualmente a opacidad completa (pantalla cubierta).
+        public static bool IsScreenFaded
+        {
+            get
+            {
+                var root = _fadeRoot;
+                return root?.Image != null && root.Image.color.a >= 0.99f;
+            }
+        }
         
         private static System.Collections.IEnumerator Co_ScreenFade(Color color, float duration, bool fadeIn)
         {

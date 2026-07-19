@@ -201,12 +201,11 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        yield return Co_BeginCinematicWithTransition();
+        yield return Co_BeginCinematicWithTransition(_shotWarriors);
 
         PlaySequenceMusic();
 
         // ── Fase 0: Guerrero da la orden de ataque ────────────────────────────
-        _cinematicCamera.Cut(_shotWarriors);
         FaceTarget(_warrior1Transform, _estelaTransform);
         FaceTarget(_warrior2Transform, _estelaTransform);
         _warrior1Emotion?.SetEmotion(_attackOrderEmotion);

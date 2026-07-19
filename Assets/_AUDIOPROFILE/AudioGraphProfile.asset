@@ -54,8 +54,6 @@ MonoBehaviour:
     music: {fileID: 8300000, guid: 1eb98af82fcbff840af600ecbacb0f9c, type: 3}
   - sceneName: MainMenu
     music: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
-  - sceneName: Cinematic_Intro
-    music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   - sceneName: MainWorld
     music: {fileID: 8300000, guid: ad3ca9176615a184287a1335238a3c7a, type: 3}
   eventSfx:
@@ -151,5 +149,13 @@ MonoBehaviour:
     fadeOut: 0.5
   - sequenceId: ESTELA_APPEARS
     music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5
+  - sequenceId: TABERNA
+    music: {fileID: 8300000, guid: 3016e07caab81b34486bedfdbbd140d6, type: 3}
+    fadeIn: 0.5
+    fadeOut: 0.5
+  - sequenceId: COMER
+    music: {fileID: 8300000, guid: f1b6b495ea9afd54ca743f778e2c2e4a, type: 3}
     fadeIn: 0.5
     fadeOut: 0.5

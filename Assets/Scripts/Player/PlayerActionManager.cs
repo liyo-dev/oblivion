@@ -122,13 +122,18 @@ public class PlayerActionManager : MonoBehaviour, IActionValidator
         if (!_blockedByMode.ContainsKey(ActionMode.Default))
             _blockedByMode[ActionMode.Default] = new HashSet<PlayerAbility>();
 
-        // GARANTIZAR bloqueo de interacción durante cinemática/diálogo
+        // GARANTIZAR bloqueo total de input durante cinemática/diálogo
         if (!_blockedByMode.ContainsKey(ActionMode.Cinematic))
             _blockedByMode[ActionMode.Cinematic] = new HashSet<PlayerAbility>();
         _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Interact);
         _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Jump);
         _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Sprint);
         _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Move);
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Attack);
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Roll);
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Magic);
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Carry);
+        _blockedByMode[ActionMode.Cinematic].Add(PlayerAbility.Aim);
 
         // GARANTIZAR bloqueos críticos para modo Carrying (independiente del Inspector)
         if (!_blockedByMode.ContainsKey(ActionMode.Carrying))

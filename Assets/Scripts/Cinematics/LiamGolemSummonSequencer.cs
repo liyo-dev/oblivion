@@ -25,35 +25,6 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     [SerializeField] private GameObject _magicCircleVFXPrefab;
     [Tooltip("Prefab del aura corporal de Liam (se instancia bajo _liamTransform)")]
     [SerializeField] private GameObject _bodyAuraVFXPrefab;
-    [Tooltip("Segundos de pausa tras la primera frase antes de que aparezca el VFX")]
-    [SerializeField] private float _vfxAppearDelay = 0.6f;
-
-    [Header("Líneas de diálogo — claves de localización")]
-    [Tooltip("'Esta estúpida va a arruinar mis planes...' (EVT_GOLEM_01 ya existente)")]
-    [SerializeField] private string _keyLine1 = "EVT_GOLEM_01";
-    [Tooltip("'Veremos si este gólem es suficiente...' (plano general)")]
-    [SerializeField] private string _keyLine2 = "EVT_LIAM_GOLEM_01";
-    [Tooltip("'Si no... tendré que intervenir yo mismo.' (primer plano)")]
-    [SerializeField] private string _keyLine3 = "EVT_LIAM_GOLEM_02";
-
-    [Header("Emociones y animaciones")]
-    [SerializeField] private NPCEmotion _emotionLine1 = NPCEmotion.Angry;
-    [SerializeField] private NPCEmotion _emotionLine2 = NPCEmotion.Happy;
-    [SerializeField] private NPCEmotion _emotionLine3 = NPCEmotion.Thinking;
-    [SerializeField] private string _animLine1 = "Angry01";
-    [SerializeField] private string _animLine2 = "Smug01";
-    [SerializeField] private string _animLine3 = "Thinking01";
-
-    [Header("Timings")]
-    [SerializeField] private float _line1Duration = 3.5f;
-    [SerializeField] private float _line2Duration = 4.0f;
-    [SerializeField] private float _line3Duration = 3.0f;
-    [SerializeField] private float _holdAfterEnd  = 1.2f;
-
-    [Header("Flash de conjuración")]
-    [Tooltip("Color del flash de pantalla cuando aparece el círculo mágico (alpha bajo para sutileza)")]
-    [SerializeField] private Color _summonFlashColor  = new Color(0.5f, 0f, 0.8f, 0.15f);
-    [SerializeField] private float _summonFlashFadeOut = 2.0f;
 
     [Header("Bola de cristal — visión del jugador y Estela")]
     [Tooltip("Transform del jugador para que la cámara de visión lo siga.")]
@@ -76,6 +47,40 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
     [SerializeField] private Color _visionShimmerColor = new Color(0.05f, 0.55f, 1f, 1f);
     [Tooltip("Sistema de partículas sobre la bola (opcional). Se activa con la visión.")]
     [SerializeField] private ParticleSystem _crystalBallParticles;
+
+    [Header("Flash de conjuración")]
+    [Tooltip("Color del flash de pantalla cuando aparece el círculo mágico (alpha bajo para sutileza)")]
+    [SerializeField] private Color _summonFlashColor   = new Color(0.5f, 0f, 0.8f, 0.15f);
+    [SerializeField] private float _summonFlashFadeOut = 2.0f;
+
+    // ── Fase 1 — Liam ve a Estela en la bola de cristal ──────────────────────
+
+    [Header("Fase 1 — Liam ve a Estela en la bola de cristal")]
+    [SerializeField] private string     _keyLine1      = "EVT_GOLEM_01";
+    [SerializeField] private NPCEmotion _emotionLine1  = NPCEmotion.Angry;
+    [SerializeField] private string     _animLine1     = "Angry01";
+    [SerializeField] private float      _line1Duration = 3.5f;
+    [Tooltip("Pausa de tensión tras la primera frase, antes de que aparezca el VFX")]
+    [SerializeField] private float      _vfxAppearDelay = 0.6f;
+
+    // ── Fase 2 — Conjuración del gólem ───────────────────────────────────────
+
+    [Header("Fase 2 — Conjuración del gólem")]
+    [SerializeField] private string     _keyLine2      = "EVT_LIAM_GOLEM_01";
+    [SerializeField] private NPCEmotion _emotionLine2  = NPCEmotion.Happy;
+    [SerializeField] private string     _animLine2     = "Smug01";
+    [SerializeField] private float      _line2Duration = 4.0f;
+
+    // ── Fase 3 — Amenaza personal ─────────────────────────────────────────────
+
+    [Header("Fase 3 — Amenaza personal de Liam")]
+    [SerializeField] private string     _keyLine3      = "EVT_LIAM_GOLEM_02";
+    [SerializeField] private NPCEmotion _emotionLine3  = NPCEmotion.Thinking;
+    [SerializeField] private string     _animLine3     = "Thinking01";
+    [SerializeField] private float      _line3Duration = 3.0f;
+    [SerializeField] private float      _holdAfterEnd  = 1.2f;
+
+    // ── Cache ─────────────────────────────────────────────────────────────────
 
     private NPCEmotionController _liamEmotion;
     private ParticleSystem _magicCircleVFX;
@@ -108,12 +113,11 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        yield return Co_BeginCinematicWithTransition();
+        yield return Co_BeginCinematicWithTransition(_shotCrystalBall);
 
         PlaySequenceMusic();
 
-        // FASE 1: Plano bola de cristal — Liam ve a Estela unirse a Will
-        _cinematicCamera.Cut(_shotCrystalBall);
+        // ── Fase 1: Plano bola de cristal — Liam ve a Estela unirse a Will ────
         StartCoroutine(Co_ShowCrystalVision());
         _liamEmotion?.SetEmotion(_emotionLine1);
 
@@ -127,10 +131,9 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         // Apagar la visión antes de cortar al plano de la conjuración
         yield return StartCoroutine(Co_HideCrystalVision());
 
-        // Pausa de tensión antes de la conjuración
         yield return new WaitForSeconds(_vfxAppearDelay);
 
-        // FASE 2: Plano general — aparece el círculo mágico + aura corporal
+        // ── Fase 2: Plano general — aparece el círculo mágico + aura corporal ─
         _cinematicCamera.Cut(_shotWide);
 
         SpawnVFX();
@@ -147,7 +150,7 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
             animTrigger: _animLine2);
         yield return new WaitUntil(() => line2Done);
 
-        // FASE 3: Primer plano — amenaza personal de Liam
+        // ── Fase 3: Primer plano — amenaza personal de Liam ──────────────────
         _cinematicCamera.Cut(_shotLiamFace);
         _liamEmotion?.SetEmotion(_emotionLine3);
 
@@ -162,12 +165,14 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
 
         DestroyVFX();
 
-        yield return Co_EndCinematicWithTransition(RestoreMusic);
+        yield return Co_EndCinematicStayBlack(RestoreMusic);
 
         RaiseSignalOut();
     }
 
-    // ── Visión del jugador y Estela en la bola de cristal ────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Visión del jugador y Estela en la bola de cristal
+    // ══════════════════════════════════════════════════════════════════════════
 
     private IEnumerator Co_ShowCrystalVision()
     {
@@ -233,7 +238,9 @@ public class LiamGolemSummonSequencer : CinematicSequencerBase
         _crystalVisionCamera?.Deactivate();
     }
 
-    // ── VFX ──────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // VFX
+    // ══════════════════════════════════════════════════════════════════════════
 
     private void SpawnVFX()
     {

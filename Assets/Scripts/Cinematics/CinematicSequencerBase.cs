@@ -44,19 +44,26 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     [Tooltip("Transición al salir: cubre la cinemática, el corte de cámara ocurre en el cut point, luego revela el gameplay.")]
     [SerializeField] private TransitionSettings _exitTransition;
 
+    [Header("Entorno")]
+    [Tooltip("Asignar si la cinemática ocurre en un interior. Activa/desactiva el skybox sólido automáticamente.")]
+    [SerializeField] private AnchorEnvironment _interiorAnchor;
+
     protected AudioGraphProfile.SequenceRule MusicRule { get; private set; }
+
+    private Action _signalInHandler;
 
     // ── Ciclo de vida Unity ───────────────────────────────────────────────────
 
     protected virtual void Awake()
     {
-        DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn,
-            () => StartCoroutine(Co_Sequence()));
+        _signalInHandler = () => StartCoroutine(Co_Sequence());
+        DefaultNarrativeSignals.EnsureInstance().OnCustom(_signalIn, _signalInHandler);
     }
 
     protected virtual void OnDestroy()
     {
         FeedbackService.CancelAllShakes();
+        DefaultNarrativeSignals.Instance?.OffCustom(_signalIn, _signalInHandler);
     }
 
     // ── Punto de entrada de la subclase ──────────────────────────────────────
@@ -65,13 +72,18 @@ public abstract class CinematicSequencerBase : MonoBehaviour
 
     // ── Ciclo de vida de la cinemática ────────────────────────────────────────
 
-    /// Prepara el estado inicial: bloquea input, oculta HUD y activa la cámara cinemática.
-    /// Resuelve también la regla de música para que PlaySequenceMusic() funcione.
+    /// Bloquea el input del jugador y oculta el HUD. Debe llamarse ANTES de la transición de entrada.
+    private void LockCinematic()
+    {
+        _actionManager.PushMode(ActionMode.Cinematic);
+        PlayerHUDV2.Instance?.HideHUD();
+    }
+
+    /// Activa la cámara cinemática y prepara la regla de música. Se llama en el cut point de la transición.
     protected void BeginCinematic()
     {
         MusicRule = _audioProfile?.GetSequenceRule(_sequenceMusicId);
-        _actionManager.PushMode(ActionMode.Cinematic);
-        PlayerHUDV2.Instance?.HideHUD();
+        if (_interiorAnchor != null) EnvironmentController.Instance?.BeginCinematicOverride();
         _cinematicCamera.Activate();
     }
 
@@ -82,6 +94,7 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         _cinematicCamera.Deactivate();
         PlayerHUDV2.Instance?.ShowHUD();
         _actionManager.PopMode(ActionMode.Cinematic);
+        if (_interiorAnchor != null) EnvironmentController.Instance?.EndCinematicOverride();
     }
 
     // ── Transiciones ─────────────────────────────────────────────────────────
@@ -89,12 +102,40 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     /// Cubre la pantalla, llama a BeginCinematic() en el cut point y revela la cinemática.
     /// additionalOnCut: acciones extra que deben ocurrir junto con BeginCinematic (mismo frame, pantalla cubierta).
     protected IEnumerator Co_BeginCinematicWithTransition(Action additionalOnCut = null)
-        => Co_Transition(_entryTransition, () => { BeginCinematic(); additionalOnCut?.Invoke(); });
+    {
+        LockCinematic();
+        yield return Co_Transition(_entryTransition, () => { BeginCinematic(); additionalOnCut?.Invoke(); });
+        if (_interiorAnchor != null) EnvironmentController.Instance?.ApplyInteriorForCinematic(env: _interiorAnchor);
+    }
+
+    /// Igual que el anterior pero corta al plano inicial durante el blackout,
+    /// de modo que la cámara ya está en posición cuando la transición revela la escena.
+    protected IEnumerator Co_BeginCinematicWithTransition(Transform initialShot, Action additionalOnCut = null)
+    {
+        LockCinematic();
+        yield return Co_Transition(_entryTransition, () =>
+        {
+            BeginCinematic();
+            if (initialShot != null) _cinematicCamera.Cut(initialShot);
+            additionalOnCut?.Invoke();
+        });
+        if (_interiorAnchor != null) EnvironmentController.Instance?.ApplyInteriorForCinematic(env: _interiorAnchor);
+    }
 
     /// Cubre la pantalla, llama a EndCinematic() en el cut point y revela el gameplay.
     /// additionalOnCut: acciones extra que deben ocurrir junto con EndCinematic (mismo frame, pantalla cubierta).
     protected IEnumerator Co_EndCinematicWithTransition(Action additionalOnCut = null)
         => Co_Transition(_exitTransition, () => { additionalOnCut?.Invoke(); EndCinematic(); });
+
+    /// Cubre la pantalla con negro y llama a EndCinematic(), pero NO revela después.
+    /// Usar cuando el sistema siguiente (ej: BossIntroPresentation) maneja su propia revelación,
+    /// para evitar el parpadeo de la cámara del jugador entre la secuencia y la intro del boss.
+    protected IEnumerator Co_EndCinematicStayBlack(Action additionalOnCut = null, float fadeDuration = 0.3f)
+    {
+        yield return FeedbackService.ScreenFadeAsync(Color.black, fadeDuration, fadeIn: true);
+        additionalOnCut?.Invoke();
+        EndCinematic();
+    }
 
     /// Ejecuta una transición via TransitionManager. onCutPoint se llama cuando la pantalla está cubierta.
     /// Si settings es null, llama onCutPoint de inmediato sin animación.
@@ -136,6 +177,13 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     {
         if (MusicRule?.music != null && AudioService.Instance != null)
             AudioService.Instance.PlayMusic(MusicRule.music, MusicRule.fadeIn);
+    }
+
+    protected void PlaySequenceMusic(string sequenceId)
+    {
+        var rule = _audioProfile?.GetSequenceRule(sequenceId);
+        if (rule?.music != null && AudioService.Instance != null)
+            AudioService.Instance.PlayMusic(rule.music, rule.fadeIn);
     }
 
     protected void RestoreMusic()

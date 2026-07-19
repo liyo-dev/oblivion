@@ -37,10 +37,8 @@ MonoBehaviour:
   - rid: 7908053087356977375
   - rid: 7908053087356977389
   - rid: 7908053087356977390
-  - rid: 5669070048355942570
   - rid: 5669070227972817055
   - rid: 5669070227972817138
-  - rid: 5669070231065591993
   - rid: 5669070411734712530
   - rid: 2337184644940693504
   - rid: 2337184644940693505
@@ -84,6 +82,10 @@ MonoBehaviour:
   - rid: 5290829461467955200
   - rid: 5290829478486606002
   - rid: 5290829478486606003
+  - rid: 5290829503207047168
+  - rid: 5290829503207047169
+  - rid: 5290829507170140161
+  - rid: 5290829507170140162
   applicableSceneNames:
   - MainWorld
   references:
@@ -318,7 +320,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        position: {x: 2268, y: 1008}
+        position: {x: 2665, y: 1023}
         outputs: []
         questId: ELDRAN_MISSION8
     - rid: 2337184644940693505
@@ -1011,6 +1013,67 @@ MonoBehaviour:
         outputs:
         - 77ea1f0f-beb9-448f-92b1-644076d1b57e
         eventKey: LIAM_GOLEM_SUMMON_DONE
+    - rid: 5290829503207047168
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: Secuencia en la taberna
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 8cf1a17a-e104-4601-9f6c-026445f7c7c1
+        position: {x: 1804, y: 1098}
+        outputs:
+        - 4c69f740-5707-48ae-b4da-dc5b6021ce84
+        eventKey: TABERNA_START
+    - rid: 5290829503207047169
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 4c69f740-5707-48ae-b4da-dc5b6021ce84
+        position: {x: 2261, y: 1101}
+        outputs:
+        - 32e285b4-6777-4bbc-9a79-3f6c61c16d56
+        - 330dfba1-aa17-4afd-9a25-ced60a36d329
+        eventKey: TABERNA_DONE
+    - rid: 5290829507170140161
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: 
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: be4fba54-f747-49cd-b3b9-aa309948d700
+        position: {x: 3436, y: 1790}
+        outputs:
+        - ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
+        eventKey: MOUNTAIN_DONE
+    - rid: 5290829507170140162
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: 
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: cbae3ae8-7b91-4e24-8268-2f4268abcf62
+        position: {x: 3776, y: 1790}
+        outputs:
+        - be4fba54-f747-49cd-b3b9-aa309948d700
+        eventKey: MOUNTAIN_START
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1057,23 +1120,6 @@ MonoBehaviour:
         - 254c563a-5c0e-4f68-8b1b-f16c35246e89
         wardrobeItem: {fileID: 11400000, guid: 7367f9d40af192b45aac491cf7b33acf, type: 2}
         logWarnings: 1
-    - rid: 5669070048355942570
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: APARECE LIAM
-        chapter: Cap. 3
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
-        position: {x: 1851, y: 1101}
-        outputs:
-        - 330dfba1-aa17-4afd-9a25-ced60a36d329
-        - 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        cinematicSceneName: Cinematic_Taberna
-        useInternalCinematic: 1
     - rid: 5669070227972817055
       type: {class: StartTagMinigameNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1085,9 +1131,10 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 2268, y: 1227}
+        position: {x: 2665, y: 1242}
         outputs:
-        - d82c3b85-2b54-4889-b43d-702eba5413f1
+        - 9e591b44-387a-444a-abbc-78cf60c03c2b
+        - cbae3ae8-7b91-4e24-8268-2f4268abcf62
         minigameId: TAG_MINIGAME_01
         activateOnStart: 1
         deactivateOnEnd: 0
@@ -1104,26 +1151,9 @@ MonoBehaviour:
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
         position: {x: 1342, y: 1101}
         outputs:
-        - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
+        - 8cf1a17a-e104-4601-9f6c-026445f7c7c1
         questId: ELDRAN_MISSION7
         debugLogs: 0
-    - rid: 5669070231065591993
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: "ESTELA ROMPE UNA MONTA\xD1A"
-        chapter: Cap. 4
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: d82c3b85-2b54-4889-b43d-702eba5413f1
-        position: {x: 3454, y: 1790}
-        outputs:
-        - a11afd55-0efb-465f-b673-7557e1525d58
-        - ed4f13e9-032c-41a0-b47c-b21af5e5bb2a
-        cinematicSceneName: Cinematic_Mountain
-        useInternalCinematic: 1
     - rid: 5669070411734712530
       type: {class: GiveInventoryItemNode, ns: , asm: Assembly-CSharp}
       data:

@@ -47,7 +47,7 @@ public class CrystalBallVisionCamera : MonoBehaviour
 
     public void Deactivate()
     {
-        _cam.enabled = false;
+        if (_cam != null) _cam.enabled = false;
         _target = null;
         _secondaryTarget = null;
     }

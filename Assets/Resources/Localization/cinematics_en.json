@@ -218,11 +218,51 @@
         },
         {
             "id": "EVT_MOUNTAIN_01",
-            "text": "ESTELA: Nobody interrupts me while I'm eating!"
+            "text": "Nobody interrupts me while I'm eating!"
         },
         {
             "id": "EVT_MOUNTAIN_02",
-            "text": "ESTELA: So take this!"
+            "text": "So take this!"
+        },
+        {
+            "id": "EVT_TAB_ELDRAN_01",
+            "text": "We need to find out who summoned that demon and why they're after you."
+        },
+        {
+            "id": "EVT_TAB_WILL_01",
+            "text": "And what it has to do with my magic..."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_01",
+            "text": "Yes, yes, very insightful. And when is the food coming?"
+        },
+        {
+            "id": "EVT_TAB_ESTELA_02",
+            "text": "That... wasn't me."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_03",
+            "text": "FINALLY!"
+        },
+        {
+            "id": "EVT_TAB_WILL_02",
+            "text": "Estela... do you really eat like that?"
+        },
+        {
+            "id": "EVT_TAB_ELDRAN_02",
+            "text": "I think I've lost my appetite."
+        },
+        {
+            "id": "EVT_TAB_LIAM_01",
+            "text": "Pardon the interruption... I have information that might interest you."
+        },
+        {
+            "id": "EVT_TAB_ESTELA_RAGE",
+            "text": "NOBODY interrupts me when I'm eating!"
+        },
+        {
+            "id": "EVT_TAB_WILL_03",
+            "text": "WHAT?!"
         },
         {
             "id": "EVT_TABERNA_01",
@@ -262,7 +302,7 @@
         },
         {
             "id": "EVT_TABERNA_10",
-            "text": "ELDRAN: Run! Flee from Estela until her anger blows over!"
+            "text": "Run! Flee from Estela until her anger blows over!"
         },
         {
             "id": "EVT_W1_ARANAS_ATACAD",

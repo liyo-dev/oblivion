@@ -74,8 +74,9 @@ public class BossIntroPresentation : MonoBehaviour
         // Ocultar toda la UI persistente (SceneBoundUI) con fade
         SceneBoundUI.BeginBossIntro(0.25f);
 
-        // 1. Fade a negro
-        yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
+        // 1. Fade a negro (se salta si la pantalla ya está cubierta, ej: venimos de una cinemática)
+        if (!FeedbackService.IsScreenFaded)
+            yield return FeedbackService.ScreenFadeAsync(fadeColor, cameraFadeDuration, fadeIn: true);
 
         // 2. Cambiar a cámara del boss
         if (isIndoor)

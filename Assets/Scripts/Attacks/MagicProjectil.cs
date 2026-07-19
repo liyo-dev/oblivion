@@ -51,18 +51,12 @@ public class MagicProjectile : MonoBehaviour
     Vector3 _spawnPos;
     float   _spawnTime;
     
-    // Buffers reutilizables para Physics queries
-    private Collider[] _targetSearchBuffer = new Collider[16];
+    // Buffer reutilizable para AOE
     private Collider[] _aoeHitBuffer = new Collider[32];
 
-    // Throttle proximity check to ~20/sec to avoid per-frame OverlapSphere per projectile
-    private float _nextProximityCheck;
-    // Grace period: ignora TODAS las colisiones los primeros N segundos tras el spawn
-    // para evitar explosión inmediata si el punto de spawn está cerca de geometría
+    // Grace period: ignora colisiones los primeros N segundos tras el spawn
     private float _spawnGraceEnd;
-    // Fallback mask cuando hitLayers no está configurado — cacheado para evitar GetMask con strings en Update
-    private LayerMask _fallbackSearchMask;
-    // Guard I16: evita doble daño cuando CheckEnemyProximity y OnTriggerEnter golpean el mismo collider en el mismo frame
+    // Guard I16: evita doble daño en el mismo frame
     private Collider _lastDamagedCollider;
     private int _lastDamagedFrame;
     
@@ -73,7 +67,6 @@ public class MagicProjectile : MonoBehaviour
     // ==== Ciclo de vida ========================================================
     void Awake()
     {
-        _fallbackSearchMask = LayerMask.GetMask("Enemy", "Boss");
         _rb = GetComponent<Rigidbody>();
 
         // Si no hay Rigidbody, añadimos uno cinemático para que las colisiones funcionen.
@@ -85,10 +78,10 @@ public class MagicProjectile : MonoBehaviour
             _rb.useGravity = false;
         }
         
-        // ✅ NOTA: NO forzamos isTrigger aquí - dejamos la configuración del prefab
-        // El prefab debe decidir si es trigger o no según el tipo de proyectil
-        // Los proyectiles de aliados deben tener collider NO-trigger para colisionar con enemigos trigger
-        
+        // Proyectil atraviesa geometría: todos los colliders son trigger.
+        // Solo explota por código (OnTriggerEnter) cuando detecta capas de interés.
+        foreach (var c in GetComponentsInChildren<Collider>(true)) c.isTrigger = true;
+
         // Configurar Rigidbody para detección continua
         if (_rb != null)
         {
@@ -116,9 +109,8 @@ public class MagicProjectile : MonoBehaviour
         _spawnPos  = transform.position;
         _spawnTime = Time.time;
 
-        // Grace period: evitar detonación en el frame de spawn (proximity + triggers + collisions)
-        _spawnGraceEnd      = Time.time + 0.25f;
-        _nextProximityCheck = _spawnGraceEnd;
+        // Grace period mínimo: solo evitar auto-detonación en el propio spawner
+        _spawnGraceEnd = Time.time + 0.05f;
 
         // Si el propio componente define un TTL, usarlo ya desde OnEnable
         _ttlScheduled = false;
@@ -240,66 +232,8 @@ public class MagicProjectile : MonoBehaviour
             float sqr = (transform.position - _spawnPos).sqrMagnitude;
             if (sqr >= _cfg.maxRange * _cfg.maxRange) End(false);
         }
-        
-        // Fallback enemy detection throttled to 20/sec (OverlapSphere is expensive per-projectile per-frame)
-        if (Time.time >= _nextProximityCheck)
-        {
-            _nextProximityCheck = Time.time + 0.05f;
-            CheckEnemyProximity();
-        }
     }
     
-    /// <summary>
-    /// Detecta enemigos cercanos usando OverlapSphere como fallback.
-    /// Esto es necesario porque las colisiones entre layers pueden no funcionar
-    /// si la Physics Matrix no está configurada correctamente.
-    /// </summary>
-    private void CheckEnemyProximity()
-    {
-        if (_ended) return;
-        
-        // Radio de detección del proyectil
-        float detectionRadius = 1.2f;
-        
-        // Buscar enemigos en el radio usando hitLayers configurado
-        LayerMask searchMask = _cfg.hitLayers;
-        if (searchMask.value == 0)
-            searchMask = _fallbackSearchMask;
-        
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _targetSearchBuffer, searchMask); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
-        
-        if (hitCount > 0)
-        {
-            for (int i = 0; i < hitCount; i++)
-            {
-                var hit = _targetSearchBuffer[i];
-                
-                // Ignorar si es el instigador
-                if (_instigator != null && hit.transform.IsChildOf(_instigator.transform))
-                    continue;
-
-                // Escudo NPC activo: bloquea impacto y evita daño.
-                if (TryHandleNpcShieldBlock(hit, transform.position))
-                    return;
-                
-                // Buscar Damageable
-                var damageable = hit.GetComponent<Damageable>() ?? hit.GetComponentInParent<Damageable>();
-                if (damageable != null)
-                {
-                    // Guard I16: evitar doble daño si OnTriggerEnter ya golpeó este collider este frame
-                    if (!TryMarkHit(hit)) continue;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"[MagicProjectile] 🎯 IMPACTO por PROXIMIDAD contra ENEMIGO: {hit.gameObject.name}!");
-#endif
-                    ApplyDamageAndKnockback(hit, transform.position);
-                    SpawnImpactEffects(transform.position);
-                    if (_cfg.destroyOnHit) End(true);
-                    return;
-                }
-            }
-        }
-    }
-
     // ==== Colisiones ===========================================================
 
     void OnTriggerEnter(Collider other)
@@ -378,7 +312,6 @@ public class MagicProjectile : MonoBehaviour
         
         if (isEnemy)
         {
-            // Guard I16: evitar doble daño si CheckEnemyProximity ya golpeó este collider este frame
             if (!TryMarkHit(other)) return;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"[MagicProjectile] 🎯 IMPACTO CONTRA ENEMIGO: {other.gameObject.name}!");
@@ -441,33 +374,8 @@ public class MagicProjectile : MonoBehaviour
             return;
         }
 
-        // ✅ PRIORIDAD 5: Verificar colisión por layers (para objetos sin Damageable)
-        bool shouldCollide = (_cfg.collisionLayers.value & (1 << otherLayer)) != 0;
-        
-        if (!shouldCollide) return; // No colisionar con esta capa
-
-        // Verificar si esta capa recibe daño (fallback para objetos con Damageable en capas específicas)
-        bool shouldDamage = (_cfg.hitLayers.value & (1 << otherLayer)) != 0;
-
-        if (shouldDamage)
-        {
-            // AOE o impacto directo
-            if (_cfg.aoeRadius > 0f)
-            {
-                int aoeCount = Physics.OverlapSphereNonAlloc(hitPoint, _cfg.aoeRadius, _aoeHitBuffer, _cfg.hitLayers, QueryTriggerInteraction.Ignore); // ✅ OPTIMIZACIÓN FASE 2: NonAlloc
-                for (int i = 0; i < aoeCount; i++)
-                {
-                    ApplyDamageAndKnockback(_aoeHitBuffer[i], hitPoint);
-                }
-            }
-            else
-            {
-                ApplyDamageAndKnockback(other, hitPoint);
-            }
-        }
-
-        SpawnImpactEffects(hitPoint);
-        if (_cfg.destroyOnHit) End(true);
+        // El proyectil usa isTrigger y atraviesa geometría.
+        // Si llegamos aquí, el objeto no es un objetivo de interés → ignorar.
     }
     
     /// <summary>

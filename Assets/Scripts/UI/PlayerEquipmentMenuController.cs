@@ -134,6 +134,12 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     [SerializeField] private GameObject abilitiesRoot;
     [SerializeField] private AbilityEntryReferences abilityEntries = new();
 
+    [Header("Efecto sueño")]
+    [Tooltip("Blobs nebulosa que aparecen al abrir el inventario (opcional).")]
+    [SerializeField] private DreamBackgroundController dreamBackground;
+    [Tooltip("Chispas flotantes al abrir el inventario (opcional).")]
+    [SerializeField] private DreamSparkleOverlay dreamSparkles;
+
     [Header("Selección inicial")]
     [SerializeField] private GameObject initialSelectionOverride;
 
@@ -696,6 +702,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
         Debug.Log("[PlayerEquipmentMenu] Configurando canvas y pestañas...");
         SetCanvasState(true);
+        dreamBackground?.StartDream();
+        dreamSparkles?.StartSparkles();
 
         // Cachear colores originales de HP/MP si no se han cacheado aún
         if (!_hpColorCached && hpText != null)
@@ -750,6 +758,8 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         if (_mpColorCached && mpText != null)
             mpText.color = _mpOriginalColor;
         
+        dreamBackground?.StopDream();
+        dreamSparkles?.StopSparkles();
         SetCanvasState(false);
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;

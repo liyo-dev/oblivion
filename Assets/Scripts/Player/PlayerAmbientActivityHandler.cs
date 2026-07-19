@@ -127,6 +127,22 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     }
 
     /// <summary>
+    /// Detiene la actividad de forma inmediata y síncrona, sin animación de salida ni lerp de posición.
+    /// Usar desde cinemáticas que restauran la posición manualmente (ej: TabernaSequencer).
+    /// </summary>
+    public void ForceStopActivityImmediate()
+    {
+        if (_currentWorldPoint == null) return;
+        if (_activityCoroutine != null) { StopCoroutine(_activityCoroutine); _activityCoroutine = null; }
+        var leaving = _currentWorldPoint;
+        _currentWorldPoint = null;
+        leaving.Release(transform);
+        leaving.DetachProp();
+        RestoreCC();
+        _actionManager?.PopMode(ActionMode.UsingWorldPoint);
+    }
+
+    /// <summary>
     /// El jugador abandona la actividad (vía botón B o interrupción externa).
     /// </summary>
     public void StopActivity()
@@ -212,7 +228,11 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         Core.GamepadInputReader.IgnoreJumpButton(0.3f);
     }
 
-    private void OnCancel(InputAction.CallbackContext ctx) => StopActivity();
+    private void OnCancel(InputAction.CallbackContext ctx)
+    {
+        if (_actionManager != null && _actionManager.IsInMode(ActionMode.Cinematic)) return;
+        StopActivity();
+    }
 
     private IEnumerator ActivityRoutine(NPCAmbientActivity activity)
     {

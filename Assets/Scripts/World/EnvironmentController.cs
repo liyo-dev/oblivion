@@ -159,7 +159,13 @@ public class EnvironmentController : MonoBehaviour
         _cinematicOverrideActive = true;
         _preCinematicMode = _mode;
         _preCinematicInterior = _currentInterior;
-        
+
+        // Capturar snapshot del exterior ahora si no existe todavía.
+        // Sin esto, ForceApplyExteriorTo no puede restaurar el skybox cuando el jugador
+        // nunca entró en un interior antes de la cinemática (_hasSnapshot sería false).
+        if (!_hasSnapshot && _mode != EnvironmentMode.Interior)
+            CaptureExteriorSnapshot();
+
         Debug.Log($"[EnvironmentController] 🎬 Cinematic Override INICIADO - Modo guardado: {_preCinematicMode}");
     }
     

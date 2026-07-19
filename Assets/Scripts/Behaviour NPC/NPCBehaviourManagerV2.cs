@@ -200,7 +200,9 @@ namespace Game.NPC
                 ApplyLastPositionIfNeeded();
             }
 
-            if (startInIdleState)
+            // Solo inicializar a Idle si ningún sistema externo ya asignó un estado
+            // (ej: ActiveCharacterSwapper puede poner al Will NPC en AllyCombatState antes de que Start() corra)
+            if (startInIdleState && _brain.CurrentState == null)
             {
                 _brain.ChangeState(new States.IdleState());
             }

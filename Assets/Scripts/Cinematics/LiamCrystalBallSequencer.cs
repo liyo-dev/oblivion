@@ -25,33 +25,6 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
     [Tooltip("Plano wide opcional: dolly back que revela el interior oscuro al final")]
     [SerializeField] private Transform camShotWide;
 
-    [Header("Entorno — interior House1")]
-    [SerializeField] private AnchorEnvironment anchorEnvironment;
-
-    [Header("SpeechBubble — claves de localización")]
-    [SerializeField] private string keyLine1 = "EVT_LIAM_CRYSTAL_01";
-    [SerializeField] private string keyLine2 = "EVT_LIAM_CRYSTAL_02";
-    [SerializeField] private string keyLine3 = "EVT_LIAM_CRYSTAL_03";
-
-    [Header("SpeechBubble — emociones")]
-    [SerializeField] private NPCEmotion emotionLine1 = NPCEmotion.Thinking;
-    [SerializeField] private NPCEmotion emotionLine2 = NPCEmotion.Happy;
-    [SerializeField] private NPCEmotion emotionLine3 = NPCEmotion.Happy;
-    [SerializeField] private string animLine1 = "Thinking01";
-    [SerializeField] private string animLine2 = "Smug01";
-    [SerializeField] private string animLine3 = "Laugh01";
-
-    [Header("Timings")]
-    [SerializeField] private float fadeInDuration       = 0.4f;
-    [SerializeField] private float holdOnCrystalBall    = 1.2f;
-    [SerializeField] private float line1Duration        = 3.0f;
-    [SerializeField] private float line2Duration        = 3.2f;
-    [SerializeField] private float line3Duration        = 2.8f;
-    [SerializeField] private float holdAfterLaugh       = 1.0f;
-    [SerializeField] private float fadeOutDuration      = 0.5f;
-    [Tooltip("Duración del dolly back al plano wide (0 = sin dolly)")]
-    [SerializeField] private float wideShotBlendTime    = 1.2f;
-
     [Header("Bola de cristal — visión del jugador")]
     [Tooltip("Cámara secundaria que sigue al jugador y renderiza a un RT. Asígnale el Target Texture en el Inspector.")]
     [SerializeField] private CrystalBallVisionCamera crystalVisionCamera;
@@ -76,16 +49,56 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     [Header("Efectos atmosféricos")]
     [Tooltip("Color del overlay persistente que oscurece la escena durante la cinemática. Alpha controla intensidad.")]
-    [SerializeField] private Color evilOverlayColor   = new Color(0.08f, 0f, 0.04f, 0.38f);
+    [SerializeField] private Color evilOverlayColor  = new Color(0.08f, 0f, 0.04f, 0.38f);
     [Tooltip("Tiempo de fade-in del overlay oscuro (ocurre durante el plano de la bola de cristal).")]
-    [SerializeField] private float overlayFadeIn      = 0.6f;
+    [SerializeField] private float overlayFadeIn     = 0.6f;
     [Tooltip("Color del pulso siniestro que aparece entre frases. Alpha bajo para sutileza.")]
-    [SerializeField] private Color evilFlashColor     = new Color(0.7f, 0f, 0.05f, 0.10f);
+    [SerializeField] private Color evilFlashColor    = new Color(0.7f, 0f, 0.05f, 0.10f);
     [Tooltip("Duración del fade-out de cada pulso siniestro.")]
-    [SerializeField] private float evilFlashDuration  = 2.5f;
+    [SerializeField] private float evilFlashDuration = 2.5f;
+
+    // ── Fase 1 — Bola de cristal: visión de Will ─────────────────────────────
+
+    [Header("Fase 1 — Bola de cristal")]
+    [SerializeField] private float holdOnCrystalBall = 1.2f;
+
+    // ── Fase 2 — Primera revelación ───────────────────────────────────────────
+
+    [Header("Fase 2 — Primera revelación")]
+    [SerializeField] private string     keyLine1      = "EVT_LIAM_CRYSTAL_01";
+    [SerializeField] private NPCEmotion emotionLine1  = NPCEmotion.Thinking;
+    [SerializeField] private string     animLine1     = "Thinking01";
+    [SerializeField] private float      line1Duration = 3.0f;
+
+    // ── Fase 3 — Segunda revelación ───────────────────────────────────────────
+
+    [Header("Fase 3 — Segunda revelación")]
+    [SerializeField] private string     keyLine2      = "EVT_LIAM_CRYSTAL_02";
+    [SerializeField] private NPCEmotion emotionLine2  = NPCEmotion.Happy;
+    [SerializeField] private string     animLine2     = "Smug01";
+    [SerializeField] private float      line2Duration = 3.2f;
+
+    // ── Fase 4 — Risa final ───────────────────────────────────────────────────
+
+    [Header("Fase 4 — Risa final")]
+    [SerializeField] private string     keyLine3      = "EVT_LIAM_CRYSTAL_03";
+    [SerializeField] private NPCEmotion emotionLine3  = NPCEmotion.Happy;
+    [SerializeField] private string     animLine3     = "Laugh01";
+    [SerializeField] private float      line3Duration = 2.8f;
+    [SerializeField] private float      holdAfterLaugh = 1.0f;
+
+    // ── Timings generales ─────────────────────────────────────────────────────
+
+    [Header("Timings generales")]
+    [SerializeField] private float fadeInDuration    = 0.4f;
+    [SerializeField] private float fadeOutDuration   = 0.5f;
+    [Tooltip("Duración del dolly back al plano wide (0 = sin dolly)")]
+    [SerializeField] private float wideShotBlendTime = 1.2f;
+
+    // ── Cache ─────────────────────────────────────────────────────────────────
+
     private NPCEmotionController _liamEmotion;
     private Image _evilOverlayImg;
-
     private MaterialPropertyBlock _mpb;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
     private bool _visionPulsing;
@@ -116,18 +129,15 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        yield return Co_BeginCinematicWithTransition(() => EnvironmentController.Instance?.BeginCinematicOverride());
-
-        EnvironmentController.Instance?.ApplyInteriorForCinematic(env: anchorEnvironment);
+        yield return Co_BeginCinematicWithTransition(camShotCrystalBall);
         PlaySequenceMusic();
 
-        // FASE 1: Plano detalle bola de cristal — imagen de Will brillando dentro
-        _cinematicCamera.Cut(camShotCrystalBall);
+        // ── Fase 1: Bola de cristal — imagen de Will brillando dentro ─────────
         StartCoroutine(Co_FadeInEvilOverlay());
         StartCoroutine(Co_ShowCrystalVision());
         yield return new WaitForSeconds(holdOnCrystalBall);
 
-        // FASE 2: Plano medio Liam — la visión sigue activa en la bola de cristal
+        // ── Fase 2: Plano medio Liam — primera revelación ─────────────────────
         _cinematicCamera.Cut(camShotLiamMedium);
 
         if (emotionLine1 != NPCEmotion.None)
@@ -138,13 +148,11 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
             duration: line1Duration,
             onComplete: () => line1Done = true,
             animTrigger: animLine1);
-
         yield return new WaitUntil(() => line1Done);
 
-        // Pulso siniestro entre frases — atmósfera de amenaza
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
 
-        // FASE 3: Mismo plano medio — frase 2
+        // ── Fase 3: Mismo plano — segunda revelación ──────────────────────────
         if (emotionLine2 != NPCEmotion.None)
             _liamEmotion?.SetEmotion(emotionLine2);
 
@@ -153,13 +161,11 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
             duration: line2Duration,
             onComplete: () => line2Done = true,
             animTrigger: animLine2);
-
         yield return new WaitUntil(() => line2Done);
 
-        // Pulso siniestro antes de la risa — escalada de tensión
         FeedbackService.ScreenFlash(evilFlashColor, evilFlashDuration);
 
-        // FASE 4: Primer plano del rostro — frase 3 (la risa)
+        // ── Fase 4: Primer plano del rostro — risa final ──────────────────────
         _cinematicCamera.Cut(camShotLiamFace);
 
         if (emotionLine3 != NPCEmotion.None)
@@ -170,29 +176,25 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
             duration: line3Duration,
             onComplete: () => line3Done = true,
             animTrigger: animLine3);
-
         yield return new WaitUntil(() => line3Done);
 
-        // FASE 5: Dolly back al wide (opcional) — revela el interior oscuro antes del fade
+        // ── Fase 5: Dolly back al wide — revela el interior oscuro ───────────
         if (camShotWide != null)
             yield return _cinematicCamera.MoveTo(camShotWide, wideShotBlendTime);
 
         yield return new WaitForSeconds(holdAfterLaugh);
 
-        // Apagar la visión de la bola al final, junto con el overlay
         StartCoroutine(Co_HideCrystalVision());
         DestroyEvilOverlay();
 
-        yield return Co_EndCinematicWithTransition(() =>
-        {
-            RestoreMusic();
-            EnvironmentController.Instance?.EndCinematicOverride();
-        });
+        yield return Co_EndCinematicWithTransition(RestoreMusic);
 
         RaiseSignalOut();
     }
 
-    // ── Overlay tenebroso ─────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Overlay tenebroso
+    // ══════════════════════════════════════════════════════════════════════════
 
     private IEnumerator Co_FadeInEvilOverlay()
     {
@@ -233,7 +235,9 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         _evilOverlayImg = null;
     }
 
-    // ── Visión del jugador en la bola de cristal ──────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // Visión del jugador en la bola de cristal
+    // ══════════════════════════════════════════════════════════════════════════
 
     private IEnumerator Co_ShowCrystalVision()
     {
@@ -298,5 +302,4 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         crystalBallRenderer.SetPropertyBlock(null);
         crystalVisionCamera?.Deactivate();
     }
-
 }
