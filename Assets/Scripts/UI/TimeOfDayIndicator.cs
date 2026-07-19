@@ -36,11 +36,15 @@ namespace Sendero.UI
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            TeleportHintUI.OnHintShown  += OnTeleportHintShown;
+            TeleportHintUI.OnHintHidden += OnTeleportHintHidden;
         }
 
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            TeleportHintUI.OnHintShown  -= OnTeleportHintShown;
+            TeleportHintUI.OnHintHidden -= OnTeleportHintHidden;
             UnsubscribeFromCycle();
         }
 
@@ -103,6 +107,20 @@ namespace Sendero.UI
             if (iconImage == null) return;
             iconImage.sprite  = sprite;
             iconImage.enabled = sprite != null;
+        }
+
+        private void OnTeleportHintShown()
+        {
+            if (iconImage != null) iconImage.enabled = false;
+        }
+
+        private void OnTeleportHintHidden()
+        {
+            // Restaurar el sprite que corresponde al período actual (o lluvia)
+            if (_dayNight != null && _dayNight.IsRaining)
+                ApplySprite(rainSprite);
+            else
+                ApplySprite(SpriteForPeriod(_currentPeriod));
         }
 
 #if UNITY_EDITOR

@@ -16,6 +16,8 @@ public class TeleportHintUI : MonoBehaviour
     static void ResetStatics()
     {
         Instance = null;
+        OnHintShown = null;
+        OnHintHidden = null;
     }
     #endif
     
@@ -33,10 +35,13 @@ public class TeleportHintUI : MonoBehaviour
     [SerializeField] private string hintLocKey = "TELEPORT_HINT";
     [SerializeField] private string hintFallback = "Teletransporte";
     
+    public static event System.Action OnHintShown;
+    public static event System.Action OnHintHidden;
+
     private Tween _fadeTween;
     private bool _isVisible;
     private int _activeRequestCount;
-    
+
     public bool IsVisible => _isVisible;
     
     private void Awake()
@@ -170,9 +175,10 @@ public class TeleportHintUI : MonoBehaviour
         }
         
         if (_isVisible) return;
-        
+
         _isVisible = true;
-        
+        OnHintShown?.Invoke();
+
         UpdateHintText();
         
         if (hintRoot != null)
@@ -194,9 +200,10 @@ public class TeleportHintUI : MonoBehaviour
     private void Hide()
     {
         if (!_isVisible) return;
-        
+
         _isVisible = false;
-        
+        OnHintHidden?.Invoke();
+
         _fadeTween?.Kill();
         
         if (canvasGroup != null)

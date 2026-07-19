@@ -152,7 +152,7 @@ public class StarAwakeningSequencer : CinematicSequencerBase
         _panicSuccess       = false;
         _sequenceFailed     = false;
 
-        BeginCinematic();
+        yield return Co_BeginCinematicWithTransition();
 
         // FASE 0: Música + primer plano de Eldran con temblor (EVT_AWAKEN_01)
         // Will mira a Eldran mientras Eldran lanza la advertencia

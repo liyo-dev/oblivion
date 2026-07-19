@@ -137,10 +137,6 @@
             "text": "ESTELA: There goes the last one!"
         },
         {
-            "id": "EVT_W1_ARANAS_ATACAD",
-            "text": "Spiders, attack!"
-        },
-        {
             "id": "EVT_ESTELA_ARAÑA_1",
             "text": ""
         },
@@ -157,36 +153,20 @@
             "text": ""
         },
         {
-            "id": "EVT_ESTELA_PANCOMI",
-            "text": "Piece of cake!"
-        },
-        {
-            "id": "EVT_W1_PANCOMI",
-            "text": "Piece of cake? Let's see if our technique is that easy to handle..."
-        },
-        {
-            "id": "EVT_W2_AMENAZA",
-            "text": "Hand over everything you've got and we won't hurt you."
-        },
-        {
             "id": "EVT_ESTELA_DRAMATIC",
             "text": "Oh nooo, please... someone help me!\n...these two big strong muscular warriors...\n...are going to rob a helpless little princess like me..."
-        },
-        {
-            "id": "EVT_W1_PRINCEFEA",
-            "text": "Little princess? More like little ugly, don't you think?"
-        },
-        {
-            "id": "EVT_WILL_MADREMIA",
-            "text": "Good grief..."
         },
         {
             "id": "EVT_ESTELA_ESO_ERA",
             "text": "...Was that it?"
         },
         {
+            "id": "EVT_ESTELA_PANCOMI",
+            "text": "Piece of cake!"
+        },
+        {
             "id": "EVT_GOLEM_01",
-            "text": "LIAM: That fool is going to ruin my plans..."
+            "text": "That fool is going to ruin my plans..."
         },
         {
             "id": "EVT_GOLEM_02",
@@ -227,6 +207,14 @@
         {
             "id": "EVT_LIAM_CRYSTAL_03",
             "text": "Ha… ha ha…"
+        },
+        {
+            "id": "EVT_LIAM_GOLEM_01",
+            "text": "Let's see if this golem is enough..."
+        },
+        {
+            "id": "EVT_LIAM_GOLEM_02",
+            "text": "If not... I'll have to step in myself."
         },
         {
             "id": "EVT_MOUNTAIN_01",
@@ -275,6 +263,26 @@
         {
             "id": "EVT_TABERNA_10",
             "text": "ELDRAN: Run! Flee from Estela until her anger blows over!"
+        },
+        {
+            "id": "EVT_W1_ARANAS_ATACAD",
+            "text": "Spiders, attack!"
+        },
+        {
+            "id": "EVT_W1_PANCOMI",
+            "text": "Piece of cake? Let's see if our technique is that easy to handle..."
+        },
+        {
+            "id": "EVT_W1_PRINCEFEA",
+            "text": "Little princess? More like little ugly, don't you think?"
+        },
+        {
+            "id": "EVT_W2_AMENAZA",
+            "text": "Hand over everything you've got and we won't hurt you."
+        },
+        {
+            "id": "EVT_WILL_MADREMIA",
+            "text": "Good grief..."
         }
     ]
 }

@@ -38,7 +38,6 @@ MonoBehaviour:
   - rid: 7908053087356977389
   - rid: 7908053087356977390
   - rid: 5669070048355942570
-  - rid: 5669070214590627987
   - rid: 5669070227972817055
   - rid: 5669070227972817138
   - rid: 5669070231065591993
@@ -83,6 +82,8 @@ MonoBehaviour:
   - rid: 5290829413007229292
   - rid: 5290829413007229358
   - rid: 5290829461467955200
+  - rid: 5290829478486606002
+  - rid: 5290829478486606003
   applicableSceneNames:
   - MainWorld
   references:
@@ -317,7 +318,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 32e285b4-6777-4bbc-9a79-3f6c61c16d56
-        position: {x: 1893, y: 917}
+        position: {x: 2268, y: 1008}
         outputs: []
         questId: ELDRAN_MISSION8
     - rid: 2337184644940693505
@@ -980,6 +981,36 @@ MonoBehaviour:
         - 9b63dbf6-fe76-4863-b369-de60261fa436
         - 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
         eventKey: ESTELA_APPEARS_DONE
+    - rid: 5290829478486606002
+      type: {class: RaiseCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: LIAM AMENAZADO POR ESTELA
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 50153f49-4559-423e-a10a-c46889243b7c
+        position: {x: 29, y: 1101}
+        outputs:
+        - 37b2e82d-2a52-4e04-9142-06290c781a77
+        eventKey: LIAM_GOLEM_SUMMON_START
+    - rid: 5290829478486606003
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 3
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: 37b2e82d-2a52-4e04-9142-06290c781a77
+        position: {x: 514, y: 1101}
+        outputs:
+        - 77ea1f0f-beb9-448f-92b1-644076d1b57e
+        eventKey: LIAM_GOLEM_SUMMON_DONE
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:
@@ -1037,27 +1068,11 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: f9bdc8eb-8f72-4c09-a1ab-706e82adc757
-        position: {x: 1474, y: 1101}
+        position: {x: 1851, y: 1101}
         outputs:
         - 330dfba1-aa17-4afd-9a25-ced60a36d329
         - 32e285b4-6777-4bbc-9a79-3f6c61c16d56
         cinematicSceneName: Cinematic_Taberna
-        useInternalCinematic: 1
-    - rid: 5669070214590627987
-      type: {class: PlayCinematicNode, ns: , asm: Assembly-CSharp}
-      data:
-        displayTitle: LIAM INTENTA QUITARSE A ESTELA DEL MEDIO
-        chapter: Cap. 3
-        blockSaving: 0
-        inputAnchor: 0
-        outputAnchor: 1
-        overrideNodeColor: 0
-        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
-        guid: 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
-        position: {x: 47, y: 1101}
-        outputs:
-        - 77ea1f0f-beb9-448f-92b1-644076d1b57e
-        cinematicSceneName: Cinematic_Golem
         useInternalCinematic: 1
     - rid: 5669070227972817055
       type: {class: StartTagMinigameNode, ns: , asm: Assembly-CSharp}
@@ -1070,7 +1085,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 330dfba1-aa17-4afd-9a25-ced60a36d329
-        position: {x: 1893, y: 1136}
+        position: {x: 2268, y: 1227}
         outputs:
         - d82c3b85-2b54-4889-b43d-702eba5413f1
         minigameId: TAG_MINIGAME_01
@@ -1087,7 +1102,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
-        position: {x: 981, y: 1101}
+        position: {x: 1342, y: 1101}
         outputs:
         - f9bdc8eb-8f72-4c09-a1ab-706e82adc757
         questId: ELDRAN_MISSION7
@@ -1158,7 +1173,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 1ef1c852-77f4-43f9-accd-6efcfbe2c608
-        position: {x: 1386, y: 1569}
+        position: {x: 1359, y: 1564}
         outputs: []
         config: {fileID: 11400000, guid: e11cff8978d10a940b04f36faede6c91, type: 2}
     - rid: 7908052880146039718
@@ -1208,7 +1223,7 @@ MonoBehaviour:
         guid: 1db8d4ab-1b78-48f8-961e-9e0668aacf6e
         position: {x: -406, y: 1101}
         outputs:
-        - 34b9b74f-4de8-4f1b-bcfd-80e83bebb66d
+        - 50153f49-4559-423e-a10a-c46889243b7c
         eventKey: EXIT_FROM_WOODS_ESTELA
     - rid: 7908053087356977389
       type: {class: StartBattleNode, ns: , asm: Assembly-CSharp}
@@ -1221,7 +1236,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: 77ea1f0f-beb9-448f-92b1-644076d1b57e
-        position: {x: 540, y: 1101}
+        position: {x: 897, y: 1101}
         outputs:
         - 7805ae8b-67ae-4dbb-8de2-c4dc8a2fa368
         battleId: Golem_1

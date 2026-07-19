@@ -201,9 +201,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        BeginCinematic();
-
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
+        yield return Co_BeginCinematicWithTransition();
 
         PlaySequenceMusic();
 
@@ -255,13 +253,7 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
 
         yield return new WaitForSeconds(_holdAfterVictory);
 
-        // Fade a negro y restaurar
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeOutDuration, fadeIn: true);
-
-        RestoreMusic();
-        EndCinematic();
-
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
+        yield return Co_EndCinematicWithTransition(RestoreMusic);
 
         RaiseSignalOut();
     }

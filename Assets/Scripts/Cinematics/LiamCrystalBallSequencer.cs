@@ -116,10 +116,7 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
 
     protected override IEnumerator Co_Sequence()
     {
-        BeginCinematic();
-        EnvironmentController.Instance?.BeginCinematicOverride();
-
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
+        yield return Co_BeginCinematicWithTransition(() => EnvironmentController.Instance?.BeginCinematicOverride());
 
         EnvironmentController.Instance?.ApplyInteriorForCinematic(env: anchorEnvironment);
         PlaySequenceMusic();
@@ -186,13 +183,11 @@ public class LiamCrystalBallSequencer : CinematicSequencerBase
         StartCoroutine(Co_HideCrystalVision());
         DestroyEvilOverlay();
 
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeOutDuration, fadeIn: true);
-
-        RestoreMusic();
-        EndCinematic();
-        EnvironmentController.Instance?.EndCinematicOverride();
-
-        yield return FeedbackService.ScreenFadeAsync(Color.black, _fadeInDuration, fadeIn: false);
+        yield return Co_EndCinematicWithTransition(() =>
+        {
+            RestoreMusic();
+            EnvironmentController.Instance?.EndCinematicOverride();
+        });
 
         RaiseSignalOut();
     }

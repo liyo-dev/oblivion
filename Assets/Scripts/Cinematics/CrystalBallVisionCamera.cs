@@ -16,6 +16,7 @@ public class CrystalBallVisionCamera : MonoBehaviour
 
     private Camera _cam;
     private Transform _target;
+    private Transform _secondaryTarget;
 
     void Awake()
     {
@@ -23,14 +24,23 @@ public class CrystalBallVisionCamera : MonoBehaviour
         _cam.enabled = false;
     }
 
-    /// Activa la cámara posicionándola instantáneamente detrás del jugador.
+    /// Activa la cámara siguiendo a un único objetivo (jugador).
     public void Activate(Transform playerTransform)
     {
-        _target = playerTransform;
+        Activate(playerTransform, null);
+    }
+
+    /// Activa la cámara siguiendo el punto medio entre dos objetivos (jugador + Estela).
+    public void Activate(Transform primaryTransform, Transform secondaryTransform)
+    {
+        _target = primaryTransform;
+        _secondaryTarget = secondaryTransform;
+
         if (_target != null)
         {
-            transform.position = _target.position + _target.TransformDirection(followOffset);
-            transform.LookAt(_target.position + Vector3.up * lookAtHeight);
+            var pivot = GetPivot();
+            transform.position = pivot + _target.TransformDirection(followOffset);
+            transform.LookAt(pivot + Vector3.up * lookAtHeight);
         }
         _cam.enabled = true;
     }
@@ -39,13 +49,23 @@ public class CrystalBallVisionCamera : MonoBehaviour
     {
         _cam.enabled = false;
         _target = null;
+        _secondaryTarget = null;
     }
 
     void LateUpdate()
     {
         if (!_cam.enabled || _target == null) return;
-        var desired = _target.position + _target.TransformDirection(followOffset);
+        var pivot   = GetPivot();
+        var desired = pivot + _target.TransformDirection(followOffset);
         transform.position = Vector3.Lerp(transform.position, desired, followSpeed * Time.deltaTime);
-        transform.LookAt(_target.position + Vector3.up * lookAtHeight);
+        transform.LookAt(pivot + Vector3.up * lookAtHeight);
+    }
+
+    // Punto medio entre los dos objetivos (o la posición del primario si no hay secundario).
+    private Vector3 GetPivot()
+    {
+        if (_secondaryTarget != null)
+            return (_target.position + _secondaryTarget.position) * 0.5f;
+        return _target.position;
     }
 }

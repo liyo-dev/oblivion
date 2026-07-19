@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
+using EasyTransition;
 using Sendero.Core.Feedback;
 using Sendero.UI;
 
@@ -10,7 +12,7 @@ using Sendero.UI;
 ///
 /// Subclases deben:
 ///   1. Implementar Co_Sequence() con la lógica específica.
-///   2. Llamar BeginCinematic() al inicio y EndCinematic() al cierre.
+///   2. Abrir con Co_BeginCinematicWithTransition() y cerrar con Co_EndCinematicWithTransition().
 ///   3. Usar PlaySequenceMusic() / RestoreMusic() para el audio.
 ///   4. Emitir la señal de salida con RaiseSignalOut() o RaiseSignal(string).
 [DisallowMultipleComponent]
@@ -36,11 +38,11 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     [FormerlySerializedAs("sequenceMusicId")]
     [SerializeField] private string _sequenceMusicId;
 
-    [Header("Fades")]
-    [FormerlySerializedAs("fadeInDuration")]
-    [SerializeField] protected float _fadeInDuration  = 0.4f;
-    [FormerlySerializedAs("fadeOutDuration")]
-    [SerializeField] protected float _fadeOutDuration = 0.5f;
+    [Header("Transición")]
+    [Tooltip("Transición al entrar: cubre el gameplay, el corte de cámara ocurre en el cut point, luego revela la cinemática.")]
+    [SerializeField] private TransitionSettings _entryTransition;
+    [Tooltip("Transición al salir: cubre la cinemática, el corte de cámara ocurre en el cut point, luego revela el gameplay.")]
+    [SerializeField] private TransitionSettings _exitTransition;
 
     protected AudioGraphProfile.SequenceRule MusicRule { get; private set; }
 
@@ -80,6 +82,52 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         _cinematicCamera.Deactivate();
         PlayerHUDV2.Instance?.ShowHUD();
         _actionManager.PopMode(ActionMode.Cinematic);
+    }
+
+    // ── Transiciones ─────────────────────────────────────────────────────────
+
+    /// Cubre la pantalla, llama a BeginCinematic() en el cut point y revela la cinemática.
+    /// additionalOnCut: acciones extra que deben ocurrir junto con BeginCinematic (mismo frame, pantalla cubierta).
+    protected IEnumerator Co_BeginCinematicWithTransition(Action additionalOnCut = null)
+        => Co_Transition(_entryTransition, () => { BeginCinematic(); additionalOnCut?.Invoke(); });
+
+    /// Cubre la pantalla, llama a EndCinematic() en el cut point y revela el gameplay.
+    /// additionalOnCut: acciones extra que deben ocurrir junto con EndCinematic (mismo frame, pantalla cubierta).
+    protected IEnumerator Co_EndCinematicWithTransition(Action additionalOnCut = null)
+        => Co_Transition(_exitTransition, () => { additionalOnCut?.Invoke(); EndCinematic(); });
+
+    /// Ejecuta una transición via TransitionManager. onCutPoint se llama cuando la pantalla está cubierta.
+    /// Si settings es null, llama onCutPoint de inmediato sin animación.
+    private IEnumerator Co_Transition(TransitionSettings settings, Action onCutPoint)
+    {
+        var tm = TransitionManager.Instance();
+        if (settings == null || tm == null)
+        {
+            onCutPoint?.Invoke();
+            yield break;
+        }
+
+        bool done = false;
+
+        UnityEngine.Events.UnityAction cutHandler = null;
+        UnityEngine.Events.UnityAction endHandler = null;
+
+        cutHandler = () =>
+        {
+            tm.onTransitionCutPointReached -= cutHandler;
+            onCutPoint?.Invoke();
+        };
+        endHandler = () =>
+        {
+            tm.onTransitionEnd -= endHandler;
+            done = true;
+        };
+
+        tm.onTransitionCutPointReached += cutHandler;
+        tm.onTransitionEnd += endHandler;
+        tm.Transition(settings, 0f);
+
+        yield return new WaitUntil(() => done);
     }
 
     // ── Música ────────────────────────────────────────────────────────────────

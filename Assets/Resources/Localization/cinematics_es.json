@@ -66,7 +66,7 @@
         },
         {
             "id": "EVT_11",
-            "text": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrota al demonio."
+            "text": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> y derrota al."
         },
         {
             "id": "EVT_AWAKEN_01",
@@ -137,10 +137,6 @@
             "text": "ESTELA: ¡Ahí va la última!"
         },
         {
-            "id": "EVT_W1_ARANAS_ATACAD",
-            "text": "¡Arañas, atacad!"
-        },
-        {
             "id": "EVT_ESTELA_ARAÑA_1",
             "text": "Esta por fea."
         },
@@ -157,36 +153,20 @@
             "text": "Sois taaaan aburridas..."
         },
         {
-            "id": "EVT_ESTELA_PANCOMI",
-            "text": "Que es ¡Pan comido!"
-        },
-        {
-            "id": "EVT_W1_PANCOMI",
-            "text": "¿Pan comido? A ver si te resulta tan fácil nuestra técnica..."
-        },
-        {
-            "id": "EVT_W2_AMENAZA",
-            "text": "Venga, danos todo lo que llevas y no te haremos daño."
-        },
-        {
             "id": "EVT_ESTELA_DRAMATIC",
             "text": "Oh nooo, por favor... ¡que alguien me ayude!\n...estos dos pedazos de hombres tan fuertes y musculosos...\n...van a robar a una pequeña princesita como yo..."
-        },
-        {
-            "id": "EVT_W1_PRINCEFEA",
-            "text": "¿Princesita? Dirás princefea, ¿no?"
-        },
-        {
-            "id": "EVT_WILL_MADREMIA",
-            "text": "Madre mía..."
         },
         {
             "id": "EVT_ESTELA_ESO_ERA",
             "text": "...¿Eso era todo?"
         },
         {
+            "id": "EVT_ESTELA_PANCOMI",
+            "text": "Que es ¡Pan comido!"
+        },
+        {
             "id": "EVT_GOLEM_01",
-            "text": "LIAM: Esa estúpida va a arruinar mis planes..."
+            "text": "Esa estúpida va a arruinar mis planes..."
         },
         {
             "id": "EVT_GOLEM_02",
@@ -227,6 +207,14 @@
         {
             "id": "EVT_LIAM_CRYSTAL_03",
             "text": "Ja… ja, ja…"
+        },
+        {
+            "id": "EVT_LIAM_GOLEM_01",
+            "text": "Veremos si este gólem es suficiente..."
+        },
+        {
+            "id": "EVT_LIAM_GOLEM_02",
+            "text": "Si no... tendré que intervenir yo mismo."
         },
         {
             "id": "EVT_MOUNTAIN_01",
@@ -275,6 +263,26 @@
         {
             "id": "EVT_TABERNA_10",
             "text": "ELDRAN: ¡Corred! Huid de Estela hasta que se le pase el enfado."
+        },
+        {
+            "id": "EVT_W1_ARANAS_ATACAD",
+            "text": "¡Arañas, atacad!"
+        },
+        {
+            "id": "EVT_W1_PANCOMI",
+            "text": "¿Pan comido? A ver si te resulta tan fácil nuestra técnica..."
+        },
+        {
+            "id": "EVT_W1_PRINCEFEA",
+            "text": "¿Princesita? Dirás princefea, ¿no?"
+        },
+        {
+            "id": "EVT_W2_AMENAZA",
+            "text": "Venga, danos todo lo que llevas y no te haremos daño."
+        },
+        {
+            "id": "EVT_WILL_MADREMIA",
+            "text": "Madre mía..."
         }
     ]
 }

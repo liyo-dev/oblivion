@@ -16,6 +16,7 @@ public class SceneBoundUI : MonoBehaviour
     private static readonly Dictionary<string, SceneBoundUI> Instances = new();
     private static bool _bossIntroActive = false;
     private string instanceKey;
+    private float _preBossAlpha = -1f;
 
     #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -40,6 +41,7 @@ public class SceneBoundUI : MonoBehaviour
             if (inst == null || !inst.gameObject.activeSelf) continue;
             if (inst.excludeFromBossIntroHide) continue;
             var cg = inst.GetOrAddCanvasGroup();
+            inst._preBossAlpha = cg.alpha;
             cg.DOKill();
             cg.DOFade(0f, fadeDuration).SetUpdate(true);
         }
@@ -60,7 +62,9 @@ public class SceneBoundUI : MonoBehaviour
             inst.gameObject.SetActive(true);
             var cg = inst.GetOrAddCanvasGroup();
             cg.DOKill();
-            cg.DOFade(1f, fadeDuration).SetUpdate(true);
+            float targetAlpha = inst._preBossAlpha >= 0f ? inst._preBossAlpha : 1f;
+            cg.DOFade(targetAlpha, fadeDuration).SetUpdate(true);
+            inst._preBossAlpha = -1f;
         }
     }
 

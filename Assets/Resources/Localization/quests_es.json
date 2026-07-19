@@ -58,7 +58,7 @@
         },
         {
             "key": "QUEST_ELDRAN_MISSION12_NAME",
-            "value": "Derrota al demonio de nuevo."
+            "value": "¡Will! Usala contra el demonio, presiona <sprite name=\"interactable_x\"> para derrotarle."
         },
         {
             "key": "QUEST_ELDRAN_MISSION13_DESC",
