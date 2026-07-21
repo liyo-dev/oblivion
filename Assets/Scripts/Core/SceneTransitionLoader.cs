@@ -202,11 +202,13 @@ public static class SceneTransitionLoader
         }
 
         // 6) Fade-out suave desde negro (revela la escena)
-        if (hasOverlay && PostLoadFadeDuration > 0f)
+        // Se activa si hubo overlay, o si la pantalla ya estaba en negro al iniciar la carga
+        // (p.ej. el minijuego hace fade a negro antes de llamar a Load).
+        if ((hasOverlay || FeedbackService.IsScreenFaded) && PostLoadFadeDuration > 0f)
         {
             // Pequeña pausa para que la escena se estabilice
             yield return new WaitForSecondsRealtime(0.15f);
-            
+
             // Fade-out desde negro (revela la escena)
             yield return EnsureRunner().StartCoroutine(
                 FeedbackService.ScreenFadeAsync(PostLoadFadeColor, PostLoadFadeDuration, fadeIn: false));

@@ -2380,7 +2380,9 @@ public class TagMinigameController : MonoBehaviour
         if (chaser) chaser.StopChasing();
         HideAllProtectionIcons();
 
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(1f);
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
         Debug.Log($"[TagMinigame] 🔄 Reiniciando desde el último guardado (atrapado #{catchCount})");
         ReloadSceneFromLastSave();
@@ -2404,7 +2406,9 @@ public class TagMinigameController : MonoBehaviour
     {
         HideAllProtectionIcons();
 
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(1f);
+
+        yield return FeedbackService.ScreenFadeAsync(Color.black, 0.5f, fadeIn: true);
 
         Debug.Log("[TagMinigame] 🔄 Reiniciando desde el último guardado (tiempo agotado)");
         ReloadSceneFromLastSave();
