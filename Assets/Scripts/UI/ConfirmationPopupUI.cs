@@ -25,12 +25,17 @@ public class ConfirmationPopupUI : MonoBehaviour
     [SerializeField] private Button cancelButton;
     [SerializeField] private TextMeshProUGUI cancelLabel;
 
+    [Header("Input")]
+    [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de aceptar input de confirmar/cancelar. Evita que la misma pulsación que abrió el popup (p.ej. botón Sur del gamepad) lo confirme instantáneamente en el mismo frame.")]
+    private float inputGracePeriod = 0.15f;
+
     private Action _onConfirm;
     private Action _onCancel;
     private bool _isShown;
     private float _savedTimeScale;
     private bool _confirmSelected = true;
     private Coroutine _blinkRoutine;
+    private float _shownAt;
 
 #if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -65,6 +70,7 @@ public class ConfirmationPopupUI : MonoBehaviour
 
         _isShown = true;
         _confirmSelected = true;
+        _shownAt = Time.unscaledTime;
         if (panel) panel.SetActive(true);
 
         SelectButton(_confirmSelected);
@@ -74,6 +80,11 @@ public class ConfirmationPopupUI : MonoBehaviour
     void Update()
     {
         if (!_isShown) return;
+
+        // Ignorar input mientras dure el periodo de gracia: evita que la misma pulsación que
+        // abrió el popup (p.ej. botón Sur del gamepad usado para pulsar "Nueva Partida") se lea
+        // de nuevo aquí en el mismo frame y confirme el popup antes de que el jugador lo vea.
+        if (Time.unscaledTime - _shownAt < inputGracePeriod) return;
 
 #if ENABLE_INPUT_SYSTEM
         var gp = Gamepad.current;

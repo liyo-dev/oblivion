@@ -2,7 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[DefaultExecutionOrder(-1000)]
+// FIX INC-023: antes compartía -1000 con GameBootService (Core/GameBootService.cs). Con el mismo
+// orden, Unity no garantiza cuál Awake() corre primero — si GameBootService ganaba la carrera,
+// el primer teletransporte/spawn de la partida podía leer nombres/textos ANTES de que
+// LocalizationManager hubiera cargado sus catálogos, cayendo al fallback (texto en inglés).
+// Debe ejecutarse estrictamente antes que GameBootService.
+[DefaultExecutionOrder(-2000)]
 public class LocalizationManager : MonoBehaviour
 {
     public static LocalizationManager Instance { get; private set; }

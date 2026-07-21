@@ -81,6 +81,14 @@ public class DialogueManager : MonoBehaviour
     private DialogueAsset _current;
     private int _index = -1;
     private Action _onEnd;
+
+    // FIX: al leer objetos sin cámara cinemática (cartas, save points, etc.) el HUD no se
+    // ocultaba porque ese hide/show solo estaba conectado a los controladores cinemáticos
+    // (DialogueCinematicController / SimpleCinematicDirector / CinematicSequencerBase), y este
+    // camino de diálogo "no-NPC" nunca pasa por ninguno de ellos. Se ocupa aquí, de forma
+    // acotada, para no interferir con el HUD hide/show ya gestionado por esos sistemas
+    // cuando sí hay un NPC real con cámara cinemática.
+    private bool _hudHiddenForNonCinematicDialogue;
     public bool IsOpen => _current != null;
 
     // Expose a few internal state values to allow external callers
@@ -378,6 +386,12 @@ public class DialogueManager : MonoBehaviour
             if (_currentNpc != null && !isActualNPC)
             {
                 if (verboseLogging) Debug.Log($"[DialogueManager] 💬 Diálogo con objeto interactivo '{_currentNpc.name}' (no NPC) - cámaras cinematográficas desactivadas");
+
+                // FIX: sin cámara cinemática ningún sistema oculta el HUD por su cuenta.
+                // Ocultarlo aquí (cartas, save points, etc.) y recordar que fuimos nosotros
+                // quienes lo ocultamos, para restaurarlo en Close().
+                _hudHiddenForNonCinematicDialogue = true;
+                Sendero.UI.PlayerHUDV2.Instance?.HideHUD();
             }
             else
             {
@@ -523,6 +537,11 @@ public class DialogueManager : MonoBehaviour
             }
             ActivateDialogueMode(false);
             if (submitHint != null) submitHint.SetActive(false);
+            if (_hudHiddenForNonCinematicDialogue)
+            {
+                _hudHiddenForNonCinematicDialogue = false;
+                Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
+            }
             return;
         }
 
@@ -552,7 +571,14 @@ public class DialogueManager : MonoBehaviour
             // Fallback al sistema antiguo
             DialogueCameraController.Instance.EndDialogueCamera();
         }
-        
+
+        // Restaurar el HUD si lo ocultamos nosotros mismos (diálogo sin cámara cinemática)
+        if (_hudHiddenForNonCinematicDialogue)
+        {
+            _hudHiddenForNonCinematicDialogue = false;
+            Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
+        }
+
         // ✅ Liberar posicionamiento de party members
         if (Game.NPC.PlayerParty.HasInstance)
         {

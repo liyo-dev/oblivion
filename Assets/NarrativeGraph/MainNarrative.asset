@@ -86,6 +86,8 @@ MonoBehaviour:
   - rid: 5290829503207047169
   - rid: 5290829507170140161
   - rid: 5290829507170140162
+  - rid: 5290829545210380694
+  - rid: 5290829545210380695
   applicableSceneNames:
   - MainWorld
   references:
@@ -735,7 +737,7 @@ MonoBehaviour:
         guid: 683b23e6-c1ac-40d0-91eb-1dde84f1526d
         position: {x: 4670, y: 4386}
         outputs:
-        - 18293a97-824e-4a42-b35b-a28365fd1601
+        - fcfea66e-ac34-4cd3-a935-2b5b29ede241
         questId: ELDRAN_MISSION13
         debugLogs: 0
     - rid: 4910062183143178473
@@ -794,7 +796,7 @@ MonoBehaviour:
         overrideNodeColor: 0
         nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
         guid: eb2ae8e6-c475-41f9-920f-d86ac850f82a
-        position: {x: 2537, y: 4376}
+        position: {x: 2541, y: 4378}
         outputs: []
         questId: 
         stepConditionIds:
@@ -1074,6 +1076,45 @@ MonoBehaviour:
         outputs:
         - be4fba54-f747-49cd-b3b9-aa309948d700
         eventKey: MOUNTAIN_START
+    - rid: 5290829545210380694
+      type: {class: KingdomExitTransitionNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 1
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: df22acf4-8d6f-49f3-874f-bb5e18c301a2
+        position: {x: 3942, y: 4694}
+        outputs: []
+        landscapeFocusId: ReinoExit_LandscapeShot
+        ambienceFadeOutSeconds: 0.4
+        silenceDuration: 0.75
+        mainThemeClip: {fileID: 8300000, guid: 785493ca564adeb44bb1c68fa22f00ab, type: 3}
+        musicFadeInSeconds: 6
+        logoSprite: {fileID: 21300000, guid: 22f4a42f5e03f5b4e9909e1169840e1b, type: 3}
+        subtitle: 
+        logoDelayAfterMusicStart: 0.5
+        logoFadeInSeconds: 1.75
+        logoHoldSeconds: 3.5
+        logoFadeOutSeconds: 1.25
+    - rid: 5290829545210380695
+      type: {class: WaitCustomEventNode, ns: , asm: Assembly-CSharp}
+      data:
+        displayTitle: 
+        chapter: Cap. 6
+        blockSaving: 0
+        inputAnchor: 0
+        outputAnchor: 1
+        overrideNodeColor: 0
+        nodeColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+        guid: fcfea66e-ac34-4cd3-a935-2b5b29ede241
+        position: {x: 4355, y: 4694}
+        outputs:
+        - df22acf4-8d6f-49f3-874f-bb5e18c301a2
+        eventKey: EVT_REINO_EXIT_BOUNDARY
     - rid: 5623891259268006347
       type: {class: StartNode, ns: , asm: Assembly-CSharp}
       data:

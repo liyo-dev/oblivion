@@ -114,6 +114,12 @@ public class GolemBossAI : MonoBehaviour
     [Tooltip("Offset de rotación Y si el modelo está orientado incorrectamente (0, 90, 180, -90)")]
     [SerializeField] private float modelRotationOffset = 0f;
     
+    [Header("🚧 Contención del Área de Batalla")]
+    [Tooltip("FIX INC-024: distancia máxima que el Golem puede alejarse de su posición de inicio (spawn) antes de que se le fuerce a volver, en lugar de seguir persiguiendo al jugador fuera del arena.")]
+    [SerializeField] private float maxLeashDistance = 20f;
+    [Tooltip("Al volver por el leash, distancia a la que se considera que ya está 'en casa' y puede retomar el combate normal.")]
+    [SerializeField] private float leashReturnThreshold = 2f;
+
     [Header("💥 Daño por Contacto/Colisión")]
     [Tooltip("¿Activar daño por contacto cuando el jugador choca con el Golem?")]
     [SerializeField] private bool enableContactDamage = true;
@@ -177,6 +183,10 @@ public class GolemBossAI : MonoBehaviour
     // Posición original para el salto
     private Vector3 _jumpStartPos;
     private Vector3 _jumpTargetPos;
+
+    // FIX INC-024: posición de origen (spawn) usada como ancla del leash del área de batalla
+    private Vector3 _homePosition;
+    private bool _isReturningHome;
     
     // ✅ OPTIMIZACIÓN FASE 1: Buffers reutilizables para Physics queries (evita allocations)
     private Collider[] _punchHitBuffer = new Collider[16];
@@ -222,6 +232,7 @@ public class GolemBossAI : MonoBehaviour
         }
 
         _hasSpawned = true;
+        _homePosition = transform.position; // FIX INC-024: ancla del leash
         _currentState = BossState.Idle;
         PlayAnim(ANIM_IDLE);
         
@@ -327,6 +338,15 @@ public class GolemBossAI : MonoBehaviour
     private void UpdateBehavior(float distance)
     {
         if (_isAttacking) return;
+
+        // FIX INC-024: si el Golem se ha alejado demasiado de su punto de spawn (ej: persiguiendo
+        // al jugador por un hueco del área), forzarlo a volver en lugar de seguir saliendo del arena.
+        float distanceFromHome = Vector3.Distance(transform.position, _homePosition);
+        if (_isReturningHome || distanceFromHome > maxLeashDistance)
+        {
+            ReturnToLeash(distanceFromHome);
+            return;
+        }
 
         // Verificar cambio de fase
         CheckPhaseTransition();
@@ -503,6 +523,40 @@ public class GolemBossAI : MonoBehaviour
     #endregion 
 
     #region Movimiento
+
+    /// <summary>
+    /// FIX INC-024: hace que el Golem camine de vuelta a su posición de spawn cuando se ha alejado
+    /// más de <see cref="maxLeashDistance"/>. Ignora al jugador hasta llegar a <see cref="leashReturnThreshold"/>.
+    /// </summary>
+    private void ReturnToLeash(float distanceFromHome)
+    {
+        if (!agent || !agent.isOnNavMesh) return;
+
+        if (distanceFromHome <= leashReturnThreshold)
+        {
+            // Ya está en casa: reanudar comportamiento normal
+            _isReturningHome = false;
+            SetIdle();
+            return;
+        }
+
+        if (!_isReturningHome)
+        {
+            _isReturningHome = true;
+            Log("🚧 Fuera del área de batalla — el Golem regresa a su posición de origen.");
+            Debug.Log($"[GolemBossAI] 🚧 Leash superado ({distanceFromHome:F1}m > {maxLeashDistance}m) — volviendo a {_homePosition}");
+        }
+
+        if (_currentState != BossState.Walking)
+        {
+            _currentState = BossState.Walking;
+            PlayAnim(ANIM_WALK);
+        }
+
+        agent.speed = walkSpeed;
+        agent.isStopped = false;
+        agent.SetDestination(_homePosition);
+    }
 
     private void ChasePlayer()
     {

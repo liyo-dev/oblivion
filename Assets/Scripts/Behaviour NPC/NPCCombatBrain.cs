@@ -977,6 +977,10 @@ namespace Game.NPC
                 SetCooldownForSlot(chosenAttack.slotIndex, chosenAttack.cooldown);
                 
                 // Ejecutar Animación
+                // FIX INC-021: si el peso de la capa upperBodyLayer está a 0 (valor por defecto de
+                // Mecanim para capas adicionales), Play() selecciona el estado pero no se ve nada —
+                // el NPC "dispara sin animación" porque la capa no aporta nada a la pose final.
+                _rawAnimator.SetLayerWeight(settings.upperBodyLayer, 1f);
                 _rawAnimator.Play(chosenAttack.animationState, settings.upperBodyLayer);
                 
                 // Disparar Proyectil (Si no es por evento de animación)

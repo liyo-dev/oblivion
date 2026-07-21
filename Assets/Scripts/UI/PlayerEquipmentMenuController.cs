@@ -169,32 +169,33 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     InventoryView _inventoryView;
     SpellView _spellView;
     EquipmentView _equipmentView;
-    [Header("Cámara de equipamiento")]
-    [SerializeField] private float equipmentCameraDistance = 3f;
-    [SerializeField] private float equipmentCameraHeight = 1.7f;
-    [SerializeField] private Vector3 equipmentCameraLookOffset = new Vector3(0f, 1.4f, 0f);
-    [SerializeField] private float equipmentCameraHorizontalOffset = -1.2f;
+    [Header("Cámara de equipamiento - órbita de Will")]
     [SerializeField] private float previewOrbitSpeed = 120f;
-    [SerializeField, Tooltip("Transform de referencia para centrar la cámara (busca 'PortraitAnchor' automáticamente si es null)")]
-    private Transform portraitAnchor;
-    [SerializeField, Tooltip("Componente que gestiona el cambio temporal de layers para aislar al player del mundo")]
-    private PortraitLayerSwapSRP portraitLayerSwap;
-    [Header("Equipamiento - Visibilidad del jugador")]
-    [SerializeField] private bool bringPlayerInFrontOfUi = true;
-    [SerializeField] private int playerPreviewSortingOrder = 5000;
     [SerializeField, Min(0f), Tooltip("Tiempo mínimo tras abrir antes de permitir el cierre (para evitar rebotes de input).")]
     private float closeInputGracePeriod = 0.3f;
-    
-    // Referencia a la cámara de retrato, encontrada automáticamente en el player
-    Camera _equipmentPreviewCamera;
-    
+
+    [Header("Cámara de equipamiento - desplazamiento de la cámara principal")]
+    [SerializeField, Tooltip("Cámara principal en tercera persona (Invector). Se busca automáticamente vía ServiceLocator si es null.")]
+    private vThirdPersonCamera mainThirdPersonCamera;
+    [SerializeField, Range(0.5f, 1f), Tooltip("Fracción horizontal de pantalla donde debe quedar centrado Will (0.5 = centro, 0.75 = centro de la mitad derecha).")]
+    private float equipmentMenuTargetScreenX = 0.75f;
+    [SerializeField, Tooltip("Altura aproximada (en metros, desde los pies) del punto al que mira la cámara nivelada. Debe rondar la altura del pecho/cara de Will para que no se vea desde arriba ni desde abajo.")]
+    private float equipmentMenuCameraLookHeight = 1.6f;
+    [SerializeField, Min(0f), Tooltip("Duración de la transición de la cámara principal al abrir/cerrar el menú.")]
+    private float equipmentMenuCameraTransitionDuration = 0.4f;
+
+    // Cámara principal desplazada temporalmente mientras el menú está abierto
+    Camera _mainCamera;
+    Vector3 _mainCameraOriginalPosition;
+    Quaternion _mainCameraOriginalRotation;
+    bool _mainCameraOffsetActive;
+    Tween _mainCameraTween;
+
     bool _equipmentCameraActive;
     Transform _playerPreviewTarget;
     Quaternion _storedPlayerRotation;
-    Vector3 _previewBaseForward = Vector3.forward;
+    float _previewBaseYaw; // Yaw hacia el que Will mira por defecto (mirando a la cámara desplazada)
     float _previewPlayerYaw;
-    Vector3 _fixedAnchorPosition; // Posición fija del anchor para que no se mueva cuando el player rota
-    Vector3 _fixedCameraPosition; // Posición fija de la cámara
     bool _wasInOrbitMode; // Rastrear si estuvimos en modo orbit en el frame anterior
     PlayerActionManager _actionManager;
     bool _actionModeActive;
@@ -212,8 +213,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
     static readonly int AnimHash_InputMagnitude = Animator.StringToHash("InputMagnitude");
     static readonly int AnimHash_Speed = Animator.StringToHash("Speed");
     static readonly int AnimHash_VerticalVelocity = Animator.StringToHash("VerticalVelocity");
-
-    readonly Dictionary<Renderer, RendererSortState> _playerRendererSortCache = new();
 
     bool _isOpen;
     int _activeTab;
@@ -375,7 +374,21 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             _isOpen = false;
         }
         ExitUiInputScope();
-        ApplyPlayerPreviewSorting(false);
+        // Si la cámara principal quedó desplazada (p.ej. el objeto se destruye con el menú
+        // abierto por un cambio de escena), restaurarla de forma inmediata para no dejar al
+        // jugador con la cámara desplazada y el vThirdPersonCamera deshabilitado para siempre.
+        if (_mainCameraOffsetActive)
+        {
+            _mainCameraTween?.Kill();
+            if (_mainCamera != null)
+            {
+                _mainCamera.transform.position = _mainCameraOriginalPosition;
+                _mainCamera.transform.rotation = _mainCameraOriginalRotation;
+            }
+            if (mainThirdPersonCamera != null)
+                mainThirdPersonCamera.enabled = true;
+            _mainCameraOffsetActive = false;
+        }
         _inventoryView?.Dispose();
         _equipmentView?.Dispose();
         if (_instance == this)
@@ -705,6 +718,11 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         dreamBackground?.StartDream();
         dreamSparkles?.StartSparkles();
 
+        // Ocultar el HUD y el icono de estado del tiempo mientras el menú está abierto
+        // (ahora se ve el mundo real detrás de Will, así que estorbarían en pantalla).
+        Sendero.UI.PlayerHUDV2.Instance?.HideHUD();
+        Sendero.UI.TimeOfDayIndicator.Instance?.Hide();
+
         // Cachear colores originales de HP/MP si no se han cacheado aún
         if (!_hpColorCached && hpText != null)
         {
@@ -761,6 +779,10 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         dreamBackground?.StopDream();
         dreamSparkles?.StopSparkles();
         SetCanvasState(false);
+
+        // Restaurar el HUD y el icono de estado del tiempo al cerrar el menú
+        Sendero.UI.PlayerHUDV2.Instance?.ShowHUD();
+        Sendero.UI.TimeOfDayIndicator.Instance?.Show();
         _spellView?.CancelSlotSelection(true);
         Time.timeScale = _savedTimeScale;
         
@@ -771,9 +793,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             Debug.Log("[PlayerEquipmentMenu] Animator restaurado a su UpdateMode original");
         }
         
-        // Resetear posiciones fijas para que se recalculen la próxima vez
-        _fixedCameraPosition = Vector3.zero;
-        _fixedAnchorPosition = Vector3.zero;
+        // Resetear estado de órbita para que se recalcule la próxima vez
         _wasInOrbitMode = false;
         
         _isOpen = false;
@@ -939,133 +959,61 @@ public class PlayerEquipmentMenuController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!_equipmentCameraActive || _equipmentPreviewCamera == null) return;
-        
+        if (!_equipmentCameraActive || _playerPreviewTarget == null) return;
+
         // Solo permitir órbita en la pestaña de Equipamiento (index 2)
         bool allowOrbit = _activeTab == 2;
-        
-        // Si salimos del modo orbit, resetear las posiciones fijas
+
         if (_wasInOrbitMode && !allowOrbit)
         {
-            _fixedCameraPosition = Vector3.zero;
-            _fixedAnchorPosition = Vector3.zero;
-            
-            // Forzar recalculo inmediato de la cámara para evitar que el personaje se vea cortado
-            UpdateEquipmentCamera(allowOrbit);
+            // Salir de órbita: resetear yaw y volver a mirar hacia la cámara
+            _previewPlayerYaw = 0f;
+            ApplyPreviewFacingRotation();
         }
         _wasInOrbitMode = allowOrbit;
-        
-        UpdateEquipmentCamera(allowOrbit);
-    }
 
-    void UpdateEquipmentCamera(bool allowOrbit)
-    {
-        if (_playerPreviewTarget == null)
-        {
-            if (!TrySetupPreviewTarget())
-                return;
-        }
-
-        if (allowOrbit) 
+        if (allowOrbit)
         {
             // Leer directamente del hardware para evitar restricciones de supresión
             float rotateInput = GamepadInputReader.CameraLookRaw.x;
-            
+
             if (Mathf.Abs(rotateInput) > 0.01f)
             {
                 _previewPlayerYaw += rotateInput * previewOrbitSpeed * Time.unscaledDeltaTime;
             }
-            
-            // Rotar al player sobre sí mismo
-            // Inicia mirando hacia la cámara (180Â°) y gira según el input del joystick
-            _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f - _previewPlayerYaw, 0f);
+
+            // Rotar a Will sobre sí mismo: parte mirando hacia la cámara desplazada
+            // y gira según el input del joystick para inspeccionar el equipo puesto.
+            _playerPreviewTarget.rotation = Quaternion.Euler(0f, _previewBaseYaw - _previewPlayerYaw, 0f);
         }
-        else
+        else if (!_isUsingItem)
         {
-            // En modo normal, resetear el yaw del player y restaurar su rotación inicial
+            // En el resto de pestañas, resetear el yaw y mantener a Will mirando a la cámara
             _previewPlayerYaw = 0f;
-            
-            // Restaurar la rotación del player para que mire hacia la cámara (180Â°)
-            // MODIFICADO: Solo si no se está usando un item para evitar conflictos con la animación
-            if (_playerPreviewTarget != null && !_isUsingItem)
-            {
-                _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f, 0f);
-            }
+            ApplyPreviewFacingRotation();
         }
-        
-        if (allowOrbit)
-        {
-            // Modo ORBIT: La cámara está COMPLETAMENTE FIJA
-            // Usamos las posiciones guardadas del último frame sin orbit
-            
-            // Si aún no tenemos posiciones fijas guardadas, usar las actuales
-            if (_fixedCameraPosition == Vector3.zero)
-            {
-                _fixedCameraPosition = _equipmentPreviewCamera.transform.position;
-                Transform anchorPoint = portraitAnchor != null ? portraitAnchor : _playerPreviewTarget;
-                _fixedAnchorPosition = anchorPoint.position + equipmentCameraLookOffset;
-            }
-            
-            _equipmentPreviewCamera.transform.position = _fixedCameraPosition;
-            _equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation(
-                (_fixedAnchorPosition - _fixedCameraPosition).normalized, 
-                Vector3.up
-            );
-        }
-        else
-        {
-            // Modo NORMAL: La cámara puede orbitar (usado en otros tabs)
-            Transform anchorPoint = portraitAnchor != null ? portraitAnchor : _playerPreviewTarget;
-            
-            var cameraForward = _previewBaseForward;
-            if (cameraForward.sqrMagnitude < 0.001f) cameraForward = Vector3.forward;
-            cameraForward = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
-            
-            var rotatedForward = Quaternion.Euler(0f, _previewPlayerYaw, 0f) * cameraForward;
-            rotatedForward = Vector3.ProjectOnPlane(rotatedForward, Vector3.up).normalized;
-            Vector3 cameraRight = Vector3.Cross(Vector3.up, rotatedForward).normalized;
+    }
 
-            Vector3 anchorPos = anchorPoint.position + equipmentCameraLookOffset;
-            Vector3 cameraPos = anchorPos
-                                - rotatedForward * equipmentCameraDistance
-                                + Vector3.up * equipmentCameraHeight
-                                - cameraRight * equipmentCameraHorizontalOffset;
-
-            _equipmentPreviewCamera.transform.position = cameraPos;
-            _equipmentPreviewCamera.transform.rotation = Quaternion.LookRotation((anchorPos - cameraPos).normalized, Vector3.up);
-            
-            // Guardar las posiciones para cuando cambiemos a modo orbit
-            _fixedCameraPosition = cameraPos;
-            _fixedAnchorPosition = anchorPos;
-        }
+    /// <summary>
+    /// Orienta a Will hacia la posición actual de la cámara principal (desplazada para el menú),
+    /// usando el yaw base calculado al abrir el menú.
+    /// </summary>
+    void ApplyPreviewFacingRotation()
+    {
+        if (_playerPreviewTarget == null) return;
+        _playerPreviewTarget.rotation = Quaternion.Euler(0f, _previewBaseYaw, 0f);
     }
 
     bool TrySetupPreviewTarget()
     {
         if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true))
         {
-            if (_equipmentPreviewCamera != null)
-                _equipmentPreviewCamera.enabled = false;
             return false;
         }
 
         _playerPreviewTarget = player.transform;
         _storedPlayerRotation = _playerPreviewTarget.rotation;
-        
-        // Buscar automáticamente el PortraitAnchor si no está asignado
-        if (portraitAnchor == null)
-        {
-            portraitAnchor = _playerPreviewTarget.Find("PortraitAnchor");
-            if (portraitAnchor != null)
-            {
-                Debug.Log($"[PlayerEquipmentMenuController] PortraitAnchor encontrado automáticamente: {portraitAnchor.name}");
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró 'PortraitAnchor' como hijo del player. Se usará el transform raíz.");
-            }
-        }
-        
+
         // Buscar el Animator del player para poder mantener sus animaciones activas en el menú
         if (_playerAnimator == null)
         {
@@ -1079,7 +1027,7 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró Animator en el player. Las animaciones no funcionarán en el menú.");
             }
         }
-        
+
         // Forzar al Animator a ir a idle (detener animaciones de movimiento)
         if (_playerAnimator != null)
         {
@@ -1087,75 +1035,155 @@ public class PlayerEquipmentMenuController : MonoBehaviour
             TrySetAnimatorFloat(AnimHash_InputMagnitude, 0f);
             TrySetAnimatorFloat(AnimHash_Speed, 0f);
             TrySetAnimatorFloat(AnimHash_VerticalVelocity, 0f);
-            
+
             Debug.Log("[PlayerEquipmentMenuController] Animator forzado a idle");
         }
-        
-        // Usar Vector3.forward FIJO para que la cámara siempre esté en la misma posición relativa
-        _previewBaseForward = Vector3.forward;
+
         _previewPlayerYaw = 0f;
-        
-        // Rotar al player para que mire HACIA la cámara inicial (180Â° en Y)
-        _playerPreviewTarget.rotation = Quaternion.Euler(0f, 180f, 0f);
-        
-        if (_equipmentPreviewCamera != null)
-        {
-            _equipmentPreviewCamera.enabled = true;
-        }
-        
+        // La rotación final hacia la cámara se aplica en ApplyEquipmentMenuCameraOffset(),
+        // una vez calculada la posición desplazada de la cámara principal.
+
         return true;
     }
 
     void SetEquipmentCameraActive(bool value)
     {
-        // Si no hay cámara encontrada, buscarla en el player
-        if (_equipmentPreviewCamera == null)
-        {
-            _equipmentPreviewCamera = FindPortraitCameraInPlayer();
-            if (_equipmentPreviewCamera == null)
-            {
-                Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró la cámara de retrato en el player. Asegúrate de que existe y tiene el tag 'PortraitCamera' o se llama 'PortraitCamera'.");
-                return;
-            }
-        }
-        
         if (_equipmentCameraActive == value) return;
-        
+
         _equipmentCameraActive = value;
-        _equipmentPreviewCamera.gameObject.SetActive(value);
-        
+
         if (_equipmentCameraActive)
         {
             // IMPORTANTE: Forzar reset del preview target para garantizar posicionamiento consistente
-            // Esto asegura que _previewBaseForward y _previewPlayerYaw se recalculen desde cero
+            // Esto asegura que _previewPlayerYaw se recalcule desde cero
             _playerPreviewTarget = null;
-            TrySetupPreviewTarget();
-            ApplyPlayerPreviewSorting(true);
-            
-            // Activar el sistema de cambio de layers
-            if (portraitLayerSwap != null && _playerPreviewTarget != null)
-            {
-                portraitLayerSwap.Setup(_equipmentPreviewCamera, _playerPreviewTarget);
-                portraitLayerSwap.enabled = true;
-            }
+            if (TrySetupPreviewTarget())
+                ApplyEquipmentMenuCameraOffset();
         }
         else
         {
-            // Desactivar y limpiar el sistema de cambio de layers
-            if (portraitLayerSwap != null)
-            {
-                portraitLayerSwap.Cleanup();
-                portraitLayerSwap.enabled = false;
-            }
-            
-            ApplyPlayerPreviewSorting(false);
-            
             if (_playerPreviewTarget != null)
                 _playerPreviewTarget.rotation = _storedPlayerRotation;
-            
+
             _playerPreviewTarget = null;
-            _equipmentPreviewCamera.enabled = false;
+            RestoreEquipmentMenuCamera();
         }
+    }
+
+    void EnsureMainCameraRefs()
+    {
+        if (mainThirdPersonCamera == null)
+            mainThirdPersonCamera = ServiceLocator.Get<vThirdPersonCamera>(false);
+        if (mainThirdPersonCamera != null && _mainCamera == null)
+            _mainCamera = mainThirdPersonCamera.GetComponent<Camera>();
+    }
+
+    /// <summary>
+    /// Desplaza lateralmente la cámara principal (Invector) para dejar a Will centrado en la mitad
+    /// derecha de la pantalla mientras el menú de equipamiento está abierto. Desactiva el seguimiento
+    /// normal de la cámara mientras dure el desplazamiento y restaura su posición exacta al cerrar.
+    /// </summary>
+    void ApplyEquipmentMenuCameraOffset()
+    {
+        EnsureMainCameraRefs();
+        if (mainThirdPersonCamera == null || _mainCamera == null)
+        {
+            Debug.LogWarning("[PlayerEquipmentMenuController] No se encontró la cámara principal (vThirdPersonCamera). No se puede desplazar para el menú de equipamiento.");
+            return;
+        }
+        if (_mainCameraOffsetActive) return;
+
+        Transform camT = _mainCamera.transform;
+        _mainCameraOriginalPosition = camT.position;
+        _mainCameraOriginalRotation = camT.rotation;
+
+        Vector3 targetWorldPos = _playerPreviewTarget != null ? _playerPreviewTarget.position : camT.position + camT.forward * 3f;
+        Vector3 lookPoint = targetWorldPos + Vector3.up * equipmentMenuCameraLookHeight;
+
+        // Nivelar la cámara: conservar el yaw horizontal original pero eliminar cualquier
+        // inclinación (pitch/roll) para que Will se vea recto en vez de "desde arriba".
+        Vector3 flatForward = Vector3.ProjectOnPlane(camT.forward, Vector3.up);
+        if (flatForward.sqrMagnitude < 0.001f)
+            flatForward = Vector3.ProjectOnPlane(targetWorldPos - _mainCameraOriginalPosition, Vector3.up);
+        if (flatForward.sqrMagnitude < 0.001f)
+            flatForward = Vector3.forward;
+        flatForward.Normalize();
+
+        Quaternion levelRotation = Quaternion.LookRotation(flatForward, Vector3.up);
+        Vector3 rightDir = levelRotation * Vector3.right;
+
+        // Posición nivelada: mismo desplazamiento horizontal (X/Z) que la cámara original respecto
+        // a Will, pero a la altura del punto de mira, ya sin inclinación.
+        Vector3 levelPosition = new Vector3(_mainCameraOriginalPosition.x, lookPoint.y, _mainCameraOriginalPosition.z);
+
+        Vector3 toTarget = lookPoint - levelPosition;
+        float depth = Vector3.Dot(toTarget, flatForward);
+        if (depth < 0.1f) depth = 3f; // Fallback de seguridad si el cálculo da un valor degenerado
+
+        float halfWidthAtDepth = Mathf.Tan(_mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * depth * _mainCamera.aspect;
+        float xOld = Vector3.Dot(toTarget, rightDir);
+        float xDesired = (equipmentMenuTargetScreenX - 0.5f) * 2f * halfWidthAtDepth;
+        float lateralShift = xDesired - xOld;
+
+        Vector3 targetPos = levelPosition - rightDir * lateralShift;
+
+        mainThirdPersonCamera.enabled = false;
+        _mainCameraOffsetActive = true;
+
+        _mainCameraTween?.Kill();
+        var seq = DOTween.Sequence().SetUpdate(true);
+        seq.Join(camT.DOMove(targetPos, equipmentMenuCameraTransitionDuration).SetEase(Ease.OutCubic));
+        seq.Join(camT.DORotateQuaternion(levelRotation, equipmentMenuCameraTransitionDuration).SetEase(Ease.OutCubic));
+        _mainCameraTween = seq;
+
+        // Orientar a Will hacia la nueva posición de la cámara para que quede mirando de frente
+        if (_playerPreviewTarget != null)
+        {
+            Vector3 dirToCamera = targetPos - _playerPreviewTarget.position;
+            dirToCamera.y = 0f;
+            if (dirToCamera.sqrMagnitude > 0.001f)
+            {
+                Quaternion faceRot = Quaternion.LookRotation(dirToCamera.normalized);
+                _previewBaseYaw = faceRot.eulerAngles.y;
+                _playerPreviewTarget.rotation = faceRot;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Devuelve la cámara principal a su posición/rotación previas al abrir el menú de equipamiento
+    /// y reactiva su seguimiento normal al terminar la transición.
+    /// </summary>
+    void RestoreEquipmentMenuCamera()
+    {
+        if (!_mainCameraOffsetActive) return;
+
+        _mainCameraTween?.Kill();
+
+        if (_mainCamera == null)
+        {
+            _mainCameraOffsetActive = false;
+            if (mainThirdPersonCamera != null)
+                mainThirdPersonCamera.enabled = true;
+            return;
+        }
+
+        Transform camT = _mainCamera.transform;
+        Vector3 savedPos = _mainCameraOriginalPosition;
+        Quaternion savedRot = _mainCameraOriginalRotation;
+
+        var seq = DOTween.Sequence().SetUpdate(true);
+        seq.Join(camT.DOMove(savedPos, equipmentMenuCameraTransitionDuration).SetEase(Ease.OutCubic));
+        seq.Join(camT.DORotateQuaternion(savedRot, equipmentMenuCameraTransitionDuration).SetEase(Ease.OutCubic));
+        seq.OnComplete(() =>
+        {
+            camT.position = savedPos;
+            camT.rotation = savedRot;
+            if (mainThirdPersonCamera != null)
+                mainThirdPersonCamera.enabled = true;
+            _mainCameraOffsetActive = false;
+        });
+        _mainCameraTween = seq;
     }
 
     void MaintainAnimatorIdle()
@@ -1224,114 +1252,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
                 return;
             }
         }
-    }
-
-    /// <summary>
-    /// Busca la cámara de retrato dentro del player usando el ServiceLocator.
-    /// Primero intenta por tag "PortraitCamera", luego por nombre.
-    /// </summary>
-    Camera FindPortraitCameraInPlayer()
-    {
-        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || player == null)
-        {
-            return null;
-        }
-
-        // Buscar todas las cámaras en el player y sus hijos
-        var cameras = player.GetComponentsInChildren<Camera>(true);
-        
-        // Si no se encuentran en los hijos, buscar en hermanos (mismo padre)
-        if (cameras.Length == 0 && player.transform.parent != null)
-        {
-            // Debug.Log("[PlayerEquipmentMenuController] No se encontraron cámaras en hijos del player, buscando en hermanos...");
-            cameras = player.transform.parent.GetComponentsInChildren<Camera>(true);
-        }
-        
-        // Debug.Log($"[PlayerEquipmentMenuController] Total de cámaras encontradas: {cameras.Length}");
-        
-        // 1. Intentar por tag "PortraitCamera"
-        foreach (var cam in cameras)
-        {
-            if (cam.CompareTag("PortraitCamera"))
-            {
-                // Debug.Log($"[PlayerEquipmentMenuController] Cámara de retrato encontrada por tag: {cam.name}");
-                return cam;
-            }
-        }
-        
-        // 2. Intentar por nombre que contenga "Portrait"
-        foreach (var cam in cameras)
-        {
-            if (cam.name.Contains("Portrait", StringComparison.OrdinalIgnoreCase))
-            {
-                // Debug.Log($"[PlayerEquipmentMenuController] Cámara de retrato encontrada por nombre: {cam.name}");
-                return cam;
-            }
-        }
-        
-        // 3. Si no hay ninguna, mostrar advertencia con las cámaras disponibles
-        if (cameras.Length > 0)
-        {
-            Debug.LogWarning($"[PlayerEquipmentMenuController] Se encontraron {cameras.Length} cámara(s), pero ninguna tiene tag 'PortraitCamera' o nombre 'Portrait'. Cámaras disponibles: {string.Join(", ", System.Array.ConvertAll(cameras, c => c.name))}");
-        }
-        else
-        {
-            Debug.LogWarning("[PlayerEquipmentMenuController] No se encontraron cámaras en ningún lugar.");
-        }
-        
-        return null;
-    }
-
-    void ApplyPlayerPreviewSorting(bool bringToFront)
-    {
-        if (!bringPlayerInFrontOfUi)
-            return;
-
-        if (!PlayerService.TryGetPlayer(out var player, allowSceneLookup: true) || player == null)
-        {
-            if (!bringToFront)
-                _playerRendererSortCache.Clear();
-            return;
-        }
-
-        if (bringToFront)
-        {
-            _playerRendererSortCache.Clear();
-            var renderers = player.GetComponentsInChildren<Renderer>(true);
-            int uiLayerId = ResolveUiSortingLayer();
-            foreach (var renderer in renderers)
-            {
-                if (renderer == null) continue;
-                _playerRendererSortCache[renderer] = new RendererSortState
-                {
-                    order = renderer.sortingOrder,
-                    layer = renderer.sortingLayerID
-                };
-                renderer.sortingOrder = playerPreviewSortingOrder;
-                if (uiLayerId >= 0)
-                    renderer.sortingLayerID = uiLayerId;
-            }
-        }
-        else
-        {
-            foreach (var kvp in _playerRendererSortCache)
-            {
-                if (kvp.Key == null) continue;
-                kvp.Key.sortingOrder = kvp.Value.order;
-                kvp.Key.sortingLayerID = kvp.Value.layer;
-            }
-            _playerRendererSortCache.Clear();
-        }
-    }
-
-    int ResolveUiSortingLayer()
-    {
-        foreach (var layer in SortingLayer.layers)
-        {
-            if (string.Equals(layer.name, "UI", StringComparison.OrdinalIgnoreCase))
-                return layer.id;
-        }
-        return -1;
     }
 
     // Scope simple para gestionar el cambio UI/Gameplay usando PlayerInputManager centralizado
@@ -1729,12 +1649,6 @@ public class PlayerEquipmentMenuController : MonoBehaviour
         var activeScene = SceneManager.GetActiveScene();
         return activeScene.IsValid() &&
                string.Equals(activeScene.name, allowedSceneName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    struct RendererSortState
-    {
-        public int order;
-        public int layer;
     }
 
     [Serializable]

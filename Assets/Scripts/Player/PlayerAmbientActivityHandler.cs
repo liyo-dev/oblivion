@@ -28,6 +28,7 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     private Vector3 _preSnapPosition;
     private NPCWorldPoint _currentWorldPoint;
     private Coroutine _activityCoroutine;
+    private Coroutine _snapCoroutine;
     private Dictionary<string, float> _clipLengthCache = new();
 
     // Hash cacheado para no usar StringToHash en runtime
@@ -134,6 +135,7 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     {
         if (_currentWorldPoint == null) return;
         if (_activityCoroutine != null) { StopCoroutine(_activityCoroutine); _activityCoroutine = null; }
+        if (_snapCoroutine != null) { StopCoroutine(_snapCoroutine); _snapCoroutine = null; }
         var leaving = _currentWorldPoint;
         _currentWorldPoint = null;
         leaving.Release(transform);
@@ -153,6 +155,11 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
         {
             StopCoroutine(_activityCoroutine);
             _activityCoroutine = null;
+        }
+        if (_snapCoroutine != null)
+        {
+            StopCoroutine(_snapCoroutine);
+            _snapCoroutine = null;
         }
 
         var leaving = _currentWorldPoint;
@@ -199,8 +206,26 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
             _invectorInput.MoveInput();
         }
 
-        // Posición exacta del GO vacío definido en el inspector: sin ajuste de altura por raycast
-        transform.position = worldPoint.InteractionPosition;
+        // FIX INC-014: un teletransporte instantáneo aquí hace que la cámara (que sigue al
+        // player cada frame) dé un salto/golpe seco visible al sentarse o tumbarse a dormir.
+        // Se suaviza con el mismo lerp corto que ya se usa al levantarse (ReturnToGroundAndUnlock).
+        if (_snapCoroutine != null) StopCoroutine(_snapCoroutine);
+        _snapCoroutine = StartCoroutine(LerpToSeatPosition(worldPoint.InteractionPosition));
+    }
+
+    // Posición exacta del GO vacío definido en el inspector: sin ajuste de altura por raycast,
+    // pero suavizado en el tiempo para no golpear la cámara con un teleport instantáneo.
+    private IEnumerator LerpToSeatPosition(Vector3 target)
+    {
+        const float duration = 0.12f;
+        var startPos = transform.position;
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            transform.position = Vector3.Lerp(startPos, target, t / duration);
+            yield return null;
+        }
+        transform.position = target;
+        _snapCoroutine = null;
     }
 
     private void RestoreCC()
@@ -293,6 +318,7 @@ public class PlayerAmbientActivityHandler : MonoBehaviour
     private void ForceRelease()
     {
         if (_activityCoroutine != null) { StopCoroutine(_activityCoroutine); _activityCoroutine = null; }
+        if (_snapCoroutine != null) { StopCoroutine(_snapCoroutine); _snapCoroutine = null; }
         _currentWorldPoint?.Release(transform);
         _currentWorldPoint?.DetachProp();
         _currentWorldPoint = null;

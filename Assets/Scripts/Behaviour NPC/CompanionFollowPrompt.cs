@@ -27,7 +27,6 @@ namespace Game.NPC
         private NPCBehaviourManagerV2 _npcManager;
         private NPCAlertIconController _iconController;
         private Interactable _interactable;
-        private PlayerParty _playerParty;
         private GameObject _followIconPrefab;
         private GameObject _stopFollowIconPrefab;
         private bool _listenerAdded;
@@ -55,7 +54,7 @@ namespace Game.NPC
             bool isActivelyFollowing = _npcManager?.Context?.IsPinnedByParty == false;
             if (isActivelyFollowing) return true;
 
-            var party = _playerParty ?? PlayerParty.Instance;
+            var party = PlayerParty.Instance;
             bool fullParty = (party?.MemberCount ?? 0) >= 2;
             if (!fullParty) return false;
 
@@ -92,10 +91,14 @@ namespace Game.NPC
                 return;
             }
 
-            _playerParty = PlayerParty.Instance;
-
             _partyMember.OnLeft   += OnLeftParty;
             _partyMember.OnJoined += OnJoinedParty;
+
+            // FIX INC-030: al disolver/reunir el equipo (D-Pad Down) hay que reevaluar el prompt
+            // en el mismo frame. Esperar al siguiente tick de checkInterval podía dejar el texto
+            // "Sígueme" mostrando el estado previo (estático) durante ese margen si además
+            // _playerParty quedaba con una referencia obsoleta tras un cambio de escena.
+            PartyControlManager.OnFollowModeChanged += OnFollowModeChanged;
 
             if (_interactable != null)
             {
@@ -111,6 +114,7 @@ namespace Game.NPC
                 _partyMember.OnLeft   -= OnLeftParty;
                 _partyMember.OnJoined -= OnJoinedParty;
             }
+            PartyControlManager.OnFollowModeChanged -= OnFollowModeChanged;
             if (_listenerAdded && _interactable != null)
                 _interactable.OnInteract.RemoveListener(OnPlayerInteracted);
         }
@@ -121,6 +125,10 @@ namespace Game.NPC
             _nextCheck = 0f;
         }
         private void OnJoinedParty() => HidePrompt();
+
+        // FIX INC-030: forzar reevaluación inmediata del prompt al alternar Siguiendo/Libre,
+        // en lugar de esperar hasta checkInterval (podía verse "estático" durante ese margen).
+        private void OnFollowModeChanged(bool _) => _nextCheck = 0f;
 
         private void OnPlayerInteracted(GameObject _)
         {
@@ -183,7 +191,7 @@ namespace Game.NPC
                 {
                     // "Sígueme" solo si: el equipo está completo (todos los compañeros unidos),
                     // el jugador ha separado el equipo (modo Libre) y este miembro fue detenido.
-                    bool fullParty = (_playerParty?.MemberCount ?? 0) >= 2;
+                    bool fullParty = (PlayerParty.Instance?.MemberCount ?? 0) >= 2;
                     bool isAvailable = fullParty &&
                                        partyInLibreMode &&
                                        _partyMember.IsInParty &&
@@ -224,8 +232,9 @@ namespace Game.NPC
         // Verifica si algún otro miembro del party está siguiendo activamente (IsInParty && !IsPinnedByParty)
         private bool AnyOtherMemberActivelyFollowing()
         {
-            if (_playerParty == null) return false;
-            var members = _playerParty.Members;
+            var playerParty = PlayerParty.Instance;
+            if (playerParty == null) return false;
+            var members = playerParty.Members;
             for (int i = 0; i < members.Count; i++)
             {
                 var m = members[i];

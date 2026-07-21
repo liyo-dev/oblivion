@@ -13,6 +13,10 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private float lifetime = 5f;
     [SerializeField] private GameObject hitEffectPrefab;
     [SerializeField] private bool usePhysicsMovement = true; // Usar Rigidbody para movimiento suave
+
+    [Header("Daño")]
+    [Tooltip("Daño usado cuando Initialize() recibe un valor negativo (ej: -1). Permite que el prefab defina su propio daño por defecto.")]
+    [SerializeField] private float baseDamage = 10f;
     
     [Header("Audio")]
     [Tooltip("Clave del SFX en AudioGraphProfile para reproducir al spawnearse el proyectil")]
@@ -94,7 +98,10 @@ public class EnemyProjectile : MonoBehaviour
     public void Initialize(Vector3 dir, float dmg)
     {
         direction = dir.normalized;
-        damage = dmg;
+        // FIX INC-024/027: un valor negativo (ej: -1) es el sentinel "usa el daño del prefab".
+        // Antes no existía este fallback y el daño quedaba en -1, por lo que
+        // PlayerHealthSystem.TakeDamage() lo descartaba (damageAmount <= 0f) y la roca no dañaba nunca.
+        damage = dmg >= 0f ? dmg : baseDamage;
         initialized = true;
         _spawnTime = Time.time;
 

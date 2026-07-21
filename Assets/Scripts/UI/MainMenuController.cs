@@ -386,20 +386,49 @@ public class MainMenuController : MonoBehaviour
     public void OnClickNewGame()
     {
         Debug.Log("[MainMenu] ========== NUEVA PARTIDA SOLICITADA ==========");
-        
+
         if (_isLoading || !_inputArmed)
         {
             if (!_inputArmed)
                 Debug.Log("[MainMenu] Ignorando New Game mientras el menú arma la entrada.");
             return;
         }
-        _isLoading = true;
-        
-        // SFX de confirmación
-        AudioService.Instance?.PlaySFX("UI_Submit");
 
         if (!saveSystem)
             saveSystem = ServiceLocator.Get<SaveSystem>(logIfMissing: false);
+
+        // Si hay una partida guardada (y no estamos en modo preset de testeo, que no toca el
+        // save), pedir confirmación antes de borrarla. Reutilizamos el mismo popup que ya se usa
+        // para "salir al menú principal" (ConfirmationPopupUI), solo cambia el texto.
+        bool forcePreset = GameBootService.IsPresetOverrideActive;
+        bool hasSave = saveSystem != null && saveSystem.HasSave();
+
+        if (!forcePreset && hasSave)
+        {
+            var popup = ConfirmationPopupUI.Instance;
+            if (popup != null)
+            {
+                string msg = LocalizationManager.Instance != null
+                    ? LocalizationManager.Instance.Get("CONFIRM_NEW_GAME", "Se borrarán los datos de la partida actual. ¿Quieres continuar?")
+                    : "Se borrarán los datos de la partida actual. ¿Quieres continuar?";
+                popup.Show(msg, onConfirm: ProceedWithNewGame);
+                return;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[MainMenu] Había que mostrar el popup de confirmación pero ConfirmationPopupUI.Instance es NULL (¿Start.unity no está cargada?). Se procede sin confirmar.");
+#endif
+        }
+
+        ProceedWithNewGame();
+    }
+
+    void ProceedWithNewGame()
+    {
+        _isLoading = true;
+
+        // SFX de confirmación
+        AudioService.Instance?.PlaySFX("UI_Submit");
 
         bool forcePreset = GameBootService.IsPresetOverrideActive;
 
@@ -411,7 +440,7 @@ public class MainMenuController : MonoBehaviour
         else
         {
             Debug.Log("[MainMenu] NEW GAME → Reseteando perfil y borrando save");
-            
+
             if (GameBootService.IsAvailable)
             {
                 Debug.Log("[MainMenu] Llamando a GameBootService.NewGameReset()...");

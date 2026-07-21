@@ -122,13 +122,17 @@ public class ShopController : MonoBehaviour
 
     bool HasInventoryReferences(out string message)
     {
-        // Intentar obtener referencias si son null
-        if (playerInventory == null)
-            PlayerService.TryGetComponent(out playerInventory, includeInactive: true, allowSceneLookup: true);
-        
-        if (wardrobeInventory == null)
-            PlayerService.TryGetComponent(out wardrobeInventory, includeInactive: true, allowSceneLookup: true);
-        
+        // FIX INC-020 (Crítica): antes solo se re-resolvía la referencia si playerInventory
+        // era null, así que una vez cacheada en Awake() se usaba para siempre aunque el
+        // GameObject del jugador cambiara (recarga de partida, reset de preset de testeo,
+        // reinstanciación del player). La compra entonces escribía en un Inventory huérfano
+        // que ya no era el del jugador activo, y la poción "desaparecía" (nunca llegó al
+        // inventario real que la UI/el guardado consultan). Revalidar SIEMPRE contra
+        // PlayerService, que internamente cachea de forma barata y se invalida solo cuando
+        // el player realmente cambia.
+        PlayerService.TryGetComponent(out playerInventory, includeInactive: true, allowSceneLookup: true);
+        PlayerService.TryGetComponent(out wardrobeInventory, includeInactive: true, allowSceneLookup: true);
+
         if (playerInventory == null)
         {
             message = "No hay inventario configurado.";

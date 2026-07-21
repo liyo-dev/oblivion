@@ -59,6 +59,23 @@ namespace Game.NPC.Modules
         private bool _shouldCancelDizzySequence; // Para interrumpir dizzy cuando inicia movimiento narrativo
         #endregion
 
+        /// <summary>
+        /// FIX INC-045: un proyectil ya lanzado puede matar a este NPC después de que el
+        /// jugador haya muerto (game over en curso, ej: ambos se golpean casi a la vez).
+        /// En ese caso el combate terminó en derrota, no en victoria: ni la música/animación
+        /// de victoria ni la restauración de música ambiente deben sonar por encima del game over.
+        /// </summary>
+        private static bool IsPlayerDeadOrGameOverActive()
+        {
+            if (GameOverManager.Instance != null && GameOverManager.Instance.IsShown) return true;
+            if (PlayerService.TryGetPlayer(out GameObject playerGo))
+            {
+                var health = playerGo.GetComponent<PlayerHealthSystem>();
+                if (health != null && !health.IsAlive) return true;
+            }
+            return false;
+        }
+
         private void Awake()
         {
             _manager = GetComponent<NPCBehaviourManagerV2>();
@@ -323,31 +340,38 @@ namespace Game.NPC.Modules
             {
                 if (PlayerService.TryGetPlayer(out GameObject playerGo))
                 {
-                    var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
-                    if (playerVictory != null)
+                    if (IsPlayerDeadOrGameOverActive())
                     {
-                        string battleId = _config?.battleMusicId;
-                        Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
-                        playerVictory.PlayVictory(battleId);
-                        
-                        // ✅ Esperar a que termine la animación de victoria del jugador
-                        float victoryTimeout = 15f; // Timeout de seguridad
-                        float elapsed = 0f;
-                        
-                        // Esperar a que comience la victoria (puede tomar un frame)
-                        yield return null;
-                        
-                        // Esperar mientras el jugador está reproduciendo la victoria
-                        while (playerVictory.IsPlayingVictory && elapsed < victoryTimeout)
+                        Debug.Log("[Lifecycle] ⚠️ Jugador ya murió (game over en curso) — se omite la celebración de victoria.");
+                    }
+                    else
+                    {
+                        var playerVictory = playerGo.GetComponent<PlayerBattleModeController>();
+                        if (playerVictory != null)
                         {
-                            elapsed += Time.unscaledDeltaTime;
+                            string battleId = _config?.battleMusicId;
+                            Debug.Log($"[Lifecycle] 🎉 Llamando a PlayVictory() del player con battleId: {battleId}");
+                            playerVictory.PlayVictory(battleId);
+
+                            // ✅ Esperar a que termine la animación de victoria del jugador
+                            float victoryTimeout = 15f; // Timeout de seguridad
+                            float elapsed = 0f;
+
+                            // Esperar a que comience la victoria (puede tomar un frame)
                             yield return null;
+
+                            // Esperar mientras el jugador está reproduciendo la victoria
+                            while (playerVictory.IsPlayingVictory && elapsed < victoryTimeout)
+                            {
+                                elapsed += Time.unscaledDeltaTime;
+                                yield return null;
+                            }
+
+                            Debug.Log($"[Lifecycle] ✅ Animación de victoria completada - la música se restaurará después del diálogo");
                         }
-                        
-                        Debug.Log($"[Lifecycle] ✅ Animación de victoria completada - la música se restaurará después del diálogo");
                     }
                 }
-                
+
                 // NOTA: La restauración de música ahora se maneja manualmente después del diálogo post-derrota
                 // en HandleGetUpDizzy(), permitiendo que la música de victoria suene durante todo el diálogo.
                 // El evento RaiseBattleWon solo se usa para BossArenaController que no usa PlayVictoryForBattle.
@@ -556,7 +580,11 @@ namespace Game.NPC.Modules
                     Debug.Log($"[Lifecycle] 🔍 DEBUG Restauración música: isInTeam={isInTeam}, IsLeader={teamMember?.IsLeader}, isLastTeamMember={isLastTeamMember}");
                     Debug.Log($"[Lifecycle] 🔍 DEBUG Config: battleMusicId='{_config?.battleMusicId}', AudioService={AudioService.Instance != null}");
                     
-                    if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
+                    if (IsPlayerDeadOrGameOverActive())
+                    {
+                        Debug.Log("[Lifecycle] ⚠️ Jugador ya murió (game over en curso) — se omite la restauración de música tras el diálogo.");
+                    }
+                    else if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
                     {
                         if (!string.IsNullOrEmpty(_config?.battleMusicId) && AudioService.Instance != null)
                         {
@@ -589,7 +617,11 @@ namespace Game.NPC.Modules
                     }
                     
                     // ✅ Restaurar música si no hay diálogo
-                    if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
+                    if (IsPlayerDeadOrGameOverActive())
+                    {
+                        Debug.Log("[Lifecycle] ⚠️ Jugador ya murió (game over en curso) — se omite la restauración de música (sin diálogo).");
+                    }
+                    else if (!isInTeam || (isInTeam && teamMember.IsLeader && isLastTeamMember))
                     {
                         if (!string.IsNullOrEmpty(_config?.battleMusicId) && AudioService.Instance != null)
                         {

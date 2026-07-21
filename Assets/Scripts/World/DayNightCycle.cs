@@ -44,6 +44,8 @@ public class DayNightCycle : MonoBehaviour
         public float duration = 60f;
         [Tooltip("Si es true, este periodo SIEMPRE tendrá lluvia activa")]
         public bool forceRain = false;
+        [Tooltip("Probabilidad (0-1) de que llueva 'de vez en cuando' al entrar en este periodo. Se sortea una vez por periodo, independiente de forceRain.")]
+        [Range(0f, 1f)] public float rainChance = 0f;
     }
 
     [Header("Periodos del día")]
@@ -158,6 +160,10 @@ public class DayNightCycle : MonoBehaviour
     private Coroutine _transitionCoroutine;
     private Coroutine _rainFadeCoroutine;
 
+    // Suprime la lluvia VISUALMENTE mientras el jugador está en un interior (AnchorEnvironment.isInterior),
+    // sin tocar el ciclo lógico (IsRaining, temporizadores) para que al salir se reanude si sigue lloviendo.
+    private bool _rainSuppressedIndoors;
+
     void Awake()
     {
         if (timeSettings == null || timeSettings.Length == 0)
@@ -179,10 +185,21 @@ public class DayNightCycle : MonoBehaviour
     void OnEnable()
     {
         InitializeCycle();
+
+        EnvironmentController.OnInteriorEntered += HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  += HandleInteriorExited;
+
+        // Si ya estábamos en un interior al activarnos (p.ej. carga directa a una escena de
+        // interior), arrancar ya suprimidos para no mostrar/oír lluvia un frame de más.
+        var ec = EnvironmentController.Instance;
+        _rainSuppressedIndoors = ec != null && ec.CurrentMode == EnvironmentMode.Interior;
     }
 
     void OnDisable()
     {
+        EnvironmentController.OnInteriorEntered -= HandleInteriorEntered;
+        EnvironmentController.OnInteriorExited  -= HandleInteriorExited;
+
         StopAllCoroutines();
         IsRaining = false;
         if (_activeRainInstance != null)
@@ -190,6 +207,24 @@ public class DayNightCycle : MonoBehaviour
             Destroy(_activeRainInstance);
             _activeRainInstance = null;
         }
+    }
+
+    void HandleInteriorEntered()
+    {
+        _rainSuppressedIndoors = true;
+        SetRainVisualActive(false);
+    }
+
+    void HandleInteriorExited()
+    {
+        _rainSuppressedIndoors = false;
+        SetRainVisualActive(true);
+    }
+
+    void SetRainVisualActive(bool active)
+    {
+        if (_activeRainInstance != null)
+            _activeRainInstance.SetActive(active);
     }
 
     void Update()
@@ -295,7 +330,12 @@ public class DayNightCycle : MonoBehaviour
         else
             _transitionCoroutine = StartCoroutine(TransitionToSettings(settings, invokeEvents));
 
-        if (settings.forceRain)
+        // forceRain = lluvia garantizada (usado por narrativa/tests).
+        // rainChance = sorteo "de vez en cuando" cada vez que arranca el periodo, independiente de forceRain.
+        bool shouldRain = settings.forceRain ||
+                           (settings.rainChance > 0f && UnityEngine.Random.value < settings.rainChance);
+
+        if (shouldRain)
             StartRain(rainLastsWholePeriod ? settings.duration : (float?)null);
         else if (IsRaining)
             StopRain();
@@ -426,6 +466,11 @@ public class DayNightCycle : MonoBehaviour
             _activeRainInstance = Instantiate(rainPrefab, transform.position, Quaternion.identity);
             Debug.LogWarning("[DayNightCycle] No se encontró jugador ni cámara, lluvia instanciada sin padre.");
         }
+
+        // Si el jugador ya está en un interior cuando empieza a llover, que no se vea/oiga
+        // hasta que salga (evita el problema de "llueve dentro de la casa").
+        if (_rainSuppressedIndoors)
+            _activeRainInstance.SetActive(false);
 
         IsRaining = true;
         onRainStarted?.Invoke();

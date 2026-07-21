@@ -46,6 +46,15 @@ namespace Game.NPC.States
 
             context.Log("[AlertState] ⚠️ INICIANDO ALERTA");
 
+            // FIX INC-019: el icono de detección (❗) estaba definido en NPCCombatConfig
+            // (alertIconPrefab/questionIconPrefab/exclamationIconPrefab) y el sistema que lo
+            // dibuja (NPCAlertIconController) ya existía, pero solo se usaba dentro del
+            // minigame de Tag — ningún NPC normal lo mostraba al detectar al jugador porque
+            // WanderState/IdleState solo reutilizaban alertIconDuration como duración de estado,
+            // sin nunca invocar ShowExclamation(). Se aplica aquí para que TODOS los NPCs con
+            // combatConfig.isAggressive muestren el icono al entrar en alerta.
+            ShowDetectionIcon(context);
+
             // 1. Audio
             TriggerAlertMusic(context);
 
@@ -248,6 +257,25 @@ namespace Game.NPC.States
             {
                 AudioService.Instance?.BeginAlertById(eventId);
             }
+        }
+
+        /// <summary>
+        /// FIX INC-019: muestra el icono "❗" sobre la cabeza del NPC al entrar en alerta,
+        /// usando el prefab configurado en NPCCombatConfig.exclamationIconPrefab.
+        /// Añade NPCAlertIconController de forma perezosa (igual que hace TagMinigameController)
+        /// para no requerir configuración manual por NPC.
+        /// </summary>
+        private void ShowDetectionIcon(NPCStateContext context)
+        {
+            var combatConfig = context.Config?.combatConfig;
+            if (combatConfig == null || combatConfig.exclamationIconPrefab == null) return;
+            if (context.Transform == null) return;
+
+            var iconController = context.Transform.GetComponent<NPCAlertIconController>();
+            if (iconController == null)
+                iconController = context.Transform.gameObject.AddComponent<NPCAlertIconController>();
+
+            iconController.ShowExclamation(combatConfig.exclamationIconPrefab, combatConfig.alertIconDuration);
         }
 
         private void StartAlertDialogue(NPCStateContext context)

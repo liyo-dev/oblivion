@@ -12,6 +12,8 @@ namespace Sendero.UI
     /// </summary>
     public class TimeOfDayIndicator : MonoBehaviour
     {
+        public static TimeOfDayIndicator Instance { get; private set; }
+
         [Serializable]
         public struct TimeIconEntry
         {
@@ -33,6 +35,11 @@ namespace Sendero.UI
         private DayNightCycle _dayNight;
         private DayNightCycle.TimeOfDay _currentPeriod;
 
+        private void Awake()
+        {
+            Instance = this;
+        }
+
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -46,6 +53,32 @@ namespace Sendero.UI
             TeleportHintUI.OnHintShown  -= OnTeleportHintShown;
             TeleportHintUI.OnHintHidden -= OnTeleportHintHidden;
             UnsubscribeFromCycle();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
+        /// <summary>
+        /// Oculta el icono de estado del tiempo (p.ej. mientras está abierto el menú de equipamiento).
+        /// </summary>
+        public void Hide()
+        {
+            if (iconImage != null) iconImage.enabled = false;
+        }
+
+        /// <summary>
+        /// Restaura el icono de estado del tiempo con el sprite que le corresponda (lluvia o período actual).
+        /// </summary>
+        public void Show()
+        {
+            if (iconImage == null) return;
+            if (_dayNight != null && _dayNight.IsRaining)
+                ApplySprite(rainSprite);
+            else
+                ApplySprite(SpriteForPeriod(_currentPeriod));
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -125,7 +158,10 @@ namespace Sendero.UI
 
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { }
+        static void ResetStatics()
+        {
+            Instance = null;
+        }
 #endif
     }
 }

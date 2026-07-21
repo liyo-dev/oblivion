@@ -6203,7 +6203,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterAppearanceRegistry
   liamDefault:
   - category: 0
-    partName: Body03
+    partName: Body12
   - category: 4
     partName: Eye01
   - category: 5
@@ -18128,16 +18128,12 @@ MonoBehaviour:
       nextButton: {fileID: 7778548774197734235}
       clearButton: {fileID: 4240323438670564300}
     rowSelectionColor: {r: 1, g: 0.82, b: 0.16, a: 1}
-  equipmentCameraDistance: 3
-  equipmentCameraHeight: 0
-  equipmentCameraLookOffset: {x: 1, y: 1.4, z: 0}
-  equipmentCameraHorizontalOffset: -1.2
   previewOrbitSpeed: 120
-  portraitAnchor: {fileID: 0}
-  portraitLayerSwap: {fileID: 0}
-  bringPlayerInFrontOfUi: 1
-  playerPreviewSortingOrder: 5000
   closeInputGracePeriod: 0.3
+  mainThirdPersonCamera: {fileID: 0}
+  equipmentMenuTargetScreenX: 0.75
+  equipmentMenuCameraLookHeight: 1.6
+  equipmentMenuCameraTransitionDuration: 0.4
 --- !u!114 &603023667081550858
 MonoBehaviour:
   m_ObjectHideFlags: 0

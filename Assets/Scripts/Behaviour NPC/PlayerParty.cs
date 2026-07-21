@@ -1166,17 +1166,27 @@ namespace Game.NPC
         // -----------------------------------------------------------------
         // Manejo de escalada: preparación y notificaciones para los party members
         // -----------------------------------------------------------------
+        // FIX INC-034: antes el "else" se disparaba en CUALQUIER cambio a un modo que no fuera
+        // Climbing (nadar, saltar, combate, sentarse...), no solo al abandonar la escalada.
+        // Eso hacía que NotifyPlayerClimbStopped() -> TeleportAllMembersToPlayer() reagrupara
+        // al equipo entero cada vez que el jugador entraba en agua (ActionMode.Swimming),
+        // incluso con el equipo disuelto (modo Libre). Ahora solo notifica el fin de escalada
+        // si el modo anterior realmente era Climbing.
+        private bool _wasClimbingTopMode;
+
         private void OnPlayerTopModeChanged(ActionMode mode)
         {
             if (mode == ActionMode.Climbing)
             {
+                _wasClimbingTopMode = true;
                 // El PlayerClimbingController también llamará NotifyPlayerClimbStarted
                 // pero escuchamos el cambio de modo como medida de seguridad.
                 NotifyPlayerClimbStarted(_playerTransform != null ? _playerTransform.position : Vector3.zero);
             }
-            else
+            else if (_wasClimbingTopMode)
             {
-                // Si salimos de Climbing limpiar estado de preparación
+                // Solo limpiar estado de preparación si de verdad veníamos de Climbing
+                _wasClimbingTopMode = false;
                 NotifyPlayerClimbStopped(_playerTransform != null ? _playerTransform.position : Vector3.zero);
             }
         }

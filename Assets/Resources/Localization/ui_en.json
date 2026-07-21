@@ -17,6 +17,10 @@
             "value": "Quit to main menu? Unsaved progress will be lost."
         },
         {
+            "key": "CONFIRM_NEW_GAME",
+            "value": "Current save data will be deleted. Do you want to continue?"
+        },
+        {
             "key": "CONFIRM_MINIGAME_ABORT",
             "value": "Exit the minigame? The level will restart."
         },

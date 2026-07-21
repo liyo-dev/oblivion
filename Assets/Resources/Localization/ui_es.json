@@ -17,6 +17,10 @@
             "value": "¿Salir al menú principal? El progreso no guardado se perderá."
         },
         {
+            "key": "CONFIRM_NEW_GAME",
+            "value": "Se borrarán los datos de la partida actual. ¿Quieres continuar?"
+        },
+        {
             "key": "CONFIRM_MINIGAME_ABORT",
             "value": "¿Salir del minijuego? El nivel se reiniciará."
         },
