@@ -535,18 +535,40 @@ public class EstelaAppearsSequencer : CinematicSequencerBase
     // Helpers
     // ══════════════════════════════════════════════════════════════════════════
 
+    /// Cálculo de spawn idéntico al de gameplay (MagicProjectileSpawner):
+    /// forwardOffset sobre la dirección de tiro, Y del positionOffset en espacio
+    /// mundial y X/Z en espacio local del PERSONAJE (no del hueso de la mano,
+    /// cuyos ejes locales son arbitrarios y desplazaban el spawn hacia atrás).
     private void FireAtTarget(Transform target)
     {
         if (_bolaFuego == null || _bolaFuego.prefab == null || target == null) return;
 
-        Transform origin  = _estelaSpawnPoint != null ? _estelaSpawnPoint : _estelaTransform;
-        Vector3 spawnPos  = origin.position + origin.TransformDirection(_bolaFuego.positionOffset);
+        // Orientar a Estela antes de calcular nada para que su forward sea válido
+        FaceTarget(_estelaTransform, target);
+
+        // Sin spawn point: disparar desde la altura del pecho del personaje
+        // (mismo criterio que AllyCombatState), no desde el pivote en los pies.
+        Vector3 originPos = _estelaSpawnPoint != null
+            ? _estelaSpawnPoint.position
+            : _estelaTransform.position + Vector3.up * 1.2f;
         Vector3 targetPos = target.position + Vector3.up;
-        Vector3 dir       = (targetPos - spawnPos).normalized;
+        Vector3 dir       = (targetPos - originPos).normalized;
 
         if (_bolaFuego.flattenDirection) { dir.y = 0; dir.Normalize(); }
 
-        FaceTarget(_estelaTransform, target);
+        Vector3 spawnPos = originPos + dir * _bolaFuego.forwardOffset;
+        if (_bolaFuego.positionOffset != Vector3.zero)
+        {
+            // Y siempre vertical (espacio mundial)
+            spawnPos.y += _bolaFuego.positionOffset.y;
+            // X (derecha) y Z (adelante) en espacio local del personaje
+            if (_bolaFuego.positionOffset.x != 0f || _bolaFuego.positionOffset.z != 0f)
+            {
+                Vector3 localOffset = new Vector3(_bolaFuego.positionOffset.x, 0f, _bolaFuego.positionOffset.z);
+                spawnPos += _estelaTransform.TransformDirection(localOffset);
+            }
+        }
+
         _estelaSimpleAnim?.PlaySpellCast();
 
         var go = Instantiate(_bolaFuego.prefab, spawnPos, Quaternion.LookRotation(dir));

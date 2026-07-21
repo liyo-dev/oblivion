@@ -104,8 +104,14 @@ public abstract class CinematicSequencerBase : MonoBehaviour
     protected IEnumerator Co_BeginCinematicWithTransition(Action additionalOnCut = null)
     {
         LockCinematic();
-        yield return Co_Transition(_entryTransition, () => { BeginCinematic(); additionalOnCut?.Invoke(); });
-        if (_interiorAnchor != null) EnvironmentController.Instance?.ApplyInteriorForCinematic(env: _interiorAnchor);
+        yield return Co_Transition(_entryTransition, () =>
+        {
+            BeginCinematic();
+            // El interior se aplica en el cut point, con la pantalla cubierta:
+            // si se aplica tras el reveal se ve el skybox exterior un instante
+            ApplyInteriorAtCutPoint();
+            additionalOnCut?.Invoke();
+        });
     }
 
     /// Igual que el anterior pero corta al plano inicial durante el blackout,
@@ -117,9 +123,19 @@ public abstract class CinematicSequencerBase : MonoBehaviour
         {
             BeginCinematic();
             if (initialShot != null) _cinematicCamera.Cut(initialShot);
+            // El interior se aplica en el cut point, con la pantalla cubierta:
+            // si se aplica tras el reveal se ve el skybox exterior un instante
+            ApplyInteriorAtCutPoint();
             additionalOnCut?.Invoke();
         });
-        if (_interiorAnchor != null) EnvironmentController.Instance?.ApplyInteriorForCinematic(env: _interiorAnchor);
+    }
+
+    /// Aplica el entorno interior con la pantalla cubierta. Debe llamarse después
+    /// de BeginCinematic() (que activa el override en EnvironmentController).
+    private void ApplyInteriorAtCutPoint()
+    {
+        if (_interiorAnchor != null)
+            EnvironmentController.Instance?.ApplyInteriorForCinematic(env: _interiorAnchor);
     }
 
     /// Cubre la pantalla, llama a EndCinematic() en el cut point y revela el gameplay.

@@ -133,10 +133,20 @@ public class TabernaSequencer : CinematicSequencerBase
     // ── Fase 5 — Liam se acerca ───────────────────────────────────────────────
 
     [Header("Fase 5 — Liam se acerca")]
+    [Tooltip("El texto se divide en páginas por '\\n': la primera se dice desde lejos, el resto en primer plano.")]
     [SerializeField] private string     _keyLiam01      = "EVT_TAB_LIAM_01";
     [SerializeField] private NPCEmotion _emotionLiam01  = NPCEmotion.Thinking;
     [SerializeField] private string     _animLiam01     = "Thinking01";
+    [Tooltip("Duración de cada página del bocadillo")]
     [SerializeField] private float      _liam01Duration = 3.5f;
+    [Tooltip("Distancia de la cámara a Liam en el primer plano")]
+    [SerializeField] private float      _liamCloseupDistance = 2f;
+    [Tooltip("Altura del punto de mira sobre el pivote de Liam (pecho/cara)")]
+    [SerializeField] private float      _liamCloseupLookHeight = 1.5f;
+    [Tooltip("Duración del acercamiento de cámara; transcurre mientras dice la segunda frase")]
+    [SerializeField] private float      _liamCloseupBlendTime = 1.2f;
+    [Tooltip("Ángulo lateral del primer plano en grados (0 = de frente, + = cámara hacia la derecha de Liam)")]
+    [SerializeField] private float      _liamCloseupYawOffset = 0f;
 
     // ── Fase 6 — Estela explota sin dejar de comer ───────────────────────────
 
@@ -192,6 +202,9 @@ public class TabernaSequencer : CinematicSequencerBase
     private Coroutine            _eatLoopCoroutine;
     private Coroutine            _estelaFacingLock;
     private Coroutine            _liamFacingLock;
+    private Transform            _liamCloseupShot;   // generado en runtime a partir de _shotLiam
+    private GameObject           _rageAuraVFXInstance;   // instancias de VFX sobre Estela: se destruyen
+    private GameObject           _lightningVFXInstance;  // en el cleanup por si el prefab no se autodestruye
 
     private CharacterController _willCharController;
     private Vector3    _willPreSequencePosition;
@@ -243,7 +256,13 @@ public class TabernaSequencer : CinematicSequencerBase
         }
 
         // Los personajes se sientan durante el blackout de entrada; la cámara ya está en posición al revelar
-        yield return Co_BeginCinematicWithTransition(_shotGroup, SeatAll);
+        yield return Co_BeginCinematicWithTransition(_shotGroup, () =>
+        {
+            SeatAll();
+            // Liam no debe verse hasta su turno (Fase 5): ocultarlo durante el blackout
+            // por si su comportamiento/posición actual lo deja a la vista en la taberna
+            if (_liamTransform != null) _liamTransform.gameObject.SetActive(false);
+        });
         PlaySequenceMusic();
 
         // Estela debe mirar al plato/mesa mientras está sentada, no al jugador
@@ -283,6 +302,12 @@ public class TabernaSequencer : CinematicSequencerBase
             // Limpiar locks de rotación antes de restaurar el control del brain
             if (_estelaFacingLock != null) { StopCoroutine(_estelaFacingLock); _estelaFacingLock = null; }
             if (_liamFacingLock   != null) { StopCoroutine(_liamFacingLock);  _liamFacingLock  = null; }
+            if (_liamCloseupShot  != null) { Destroy(_liamCloseupShot.gameObject); _liamCloseupShot = null; }
+
+            // Quitar los VFX de rabia/rayos de Estela: el prefab debería autodestruirse
+            // pero si no lo hace se quedan colgando de ella durante el minijuego y la montaña
+            if (_rageAuraVFXInstance  != null) { Destroy(_rageAuraVFXInstance);  _rageAuraVFXInstance  = null; }
+            if (_lightningVFXInstance != null) { Destroy(_lightningVFXInstance); _lightningVFXInstance = null; }
 
             // Snap a idle durante el blackout: sin animación de levantarse, sincrónico para no bloquear locomoción
             _willActivityHandler?.ForceStopActivityImmediate();
@@ -294,6 +319,8 @@ public class TabernaSequencer : CinematicSequencerBase
                 _liamAgent.updatePosition = true;
                 _liamAgent.updateRotation = true;
             }
+            // Devolver a Liam el control de rotación del brain (se desactivó en Co_LiamApproaches)
+            _liamSimpleAnim?.EnableAutoRotation();
             // Restaurar al jugador a donde estaba antes de la secuencia para el minijuego
             RestorePlayerPosition();
             // Sin RestoreMusic: la música de comida sigue en bucle hasta que el minijuego tome el control
@@ -314,9 +341,10 @@ public class TabernaSequencer : CinematicSequencerBase
 
         _eldranEmotion?.SetEmotion(_emotionEldran01);
         bool done = false;
+        // Sin animTrigger: Eldran está sentado y los gestos sociales son a cuerpo
+        // completo de pie (PlaySocialGesture en layer 0), lo levantarían de la silla
         SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyEldran01),
-            duration: _eldran01Duration, onComplete: () => done = true,
-            animTrigger: _animEldran01);
+            duration: _eldran01Duration, onComplete: () => done = true);
         yield return new WaitUntil(() => done);
 
         _cinematicCamera.Cut(_shotWillEldran);
@@ -389,6 +417,12 @@ public class TabernaSequencer : CinematicSequencerBase
     {
         _cinematicCamera.Cut(_shotEstela);
         _estelaEmotion?.SetEmotion(NPCEmotion.Happy);
+
+        // Will y Eldran reaccionan en cuanto Estela se pone a comer: la cara cambia
+        // ya (aunque estén fuera de plano); sus frases y gestos llegan en la Fase 4
+        _willEmotion?.SetEmotion(_emotionWill02);
+        _eldranEmotion?.SetEmotion(_emotionEldran02);
+
         _eatLoopCoroutine = StartCoroutine(Co_EatLoop());
         yield return new WaitForSeconds(_eatHold);
     }
@@ -419,8 +453,9 @@ public class TabernaSequencer : CinematicSequencerBase
 
     private IEnumerator Co_WillEldranReact()
     {
+        // Las emociones ya se aplicaron en la Fase 3 al empezar a comer Estela;
+        // aquí solo dicen sus frases con el gesto correspondiente
         _cinematicCamera.Cut(_shotWillEldran);
-        _willEmotion?.SetEmotion(_emotionWill02);
 
         bool done = false;
         SpeechBubbleUI.Instance.Show(_willTransform, Loc(_keyWill02),
@@ -428,7 +463,6 @@ public class TabernaSequencer : CinematicSequencerBase
             animTrigger: _animWill02);
         yield return new WaitUntil(() => done);
 
-        _eldranEmotion?.SetEmotion(_emotionEldran02);
         done = false;
         SpeechBubbleUI.Instance.Show(_eldranTransform, Loc(_keyEldran02),
             duration: _eldran02Duration, onComplete: () => done = true,
@@ -442,6 +476,10 @@ public class TabernaSequencer : CinematicSequencerBase
 
     private IEnumerator Co_LiamApproaches()
     {
+        // Reaparecer a Liam (oculto desde el inicio de la secuencia) justo antes de su plano
+        if (_liamTransform != null && !_liamTransform.gameObject.activeSelf)
+            _liamTransform.gameObject.SetActive(true);
+
         // Teletransportar a Liam a la taberna antes de que la cámara lo muestre
         if (_liamTransform != null && _liamApproachTarget != null)
         {
@@ -460,15 +498,66 @@ public class TabernaSequencer : CinematicSequencerBase
         _cinematicCamera.Cut(_shotLiam);
         Vector3 groupCenter = (_willTransform.position + _eldranTransform.position + _estelaTransform.position) / 3f;
 
+        // Desactivar la rotación automática del brain para que no se pelee con el lock
+        // (mismo conflicto que con los NPCs sentados: ApplySmoothRotation vs Co_LockFacing → temblor)
+        _liamSimpleAnim?.DisableAutoRotation();
         // Mantener a Liam mirando al grupo hasta el final de la secuencia (el lock se para en el cleanup)
         _liamFacingLock = StartCoroutine(Co_LockFacing(_liamTransform, groupCenter));
 
         _liamEmotion?.SetEmotion(_emotionLiam01);
+
+        // El texto se divide en páginas por '\n' en la clave de localización
+        string[] pages = Loc(_keyLiam01).Split('\n');
+
+        // Primera frase: desde lejos, en el plano _shotLiam
         bool done = false;
-        SpeechBubbleUI.Instance.Show(_liamTransform, Loc(_keyLiam01),
+        SpeechBubbleUI.Instance.Show(_liamTransform, pages[0].Trim(),
             duration: _liam01Duration, onComplete: () => done = true,
             animTrigger: _animLiam01);
         yield return new WaitUntil(() => done);
+
+        // Resto de frases: la misma cámara se acerca a primer plano mientras habla
+        if (pages.Length > 1)
+        {
+            BuildLiamCloseupShot();
+            if (_liamCloseupShot != null)
+                _cinematicCamera.MoveTo(_liamCloseupShot, _liamCloseupBlendTime);
+
+            for (int i = 1; i < pages.Length; i++)
+            {
+                string page = pages[i].Trim();
+                if (string.IsNullOrEmpty(page)) continue;
+                done = false;
+                SpeechBubbleUI.Instance.Show(_liamTransform, page,
+                    duration: _liam01Duration, onComplete: () => done = true);
+                yield return new WaitUntil(() => done);
+            }
+        }
+    }
+
+    /// Genera el primer plano DELANTE de Liam usando su forward (está mirando al
+    /// grupo por el facing lock), no el eje de _shotLiam: ese plano es cenital y
+    /// acercarse por su eje acababa enfocando el cogote. _liamCloseupYawOffset
+    /// permite angular el plano para un 3/4 en lugar de un frontal puro.
+    private void BuildLiamCloseupShot()
+    {
+        if (_liamTransform == null) return;
+
+        Vector3 fwd = _liamTransform.forward;
+        fwd.y = 0f;
+        if (fwd.sqrMagnitude < 0.001f) return;
+        fwd.Normalize();
+        if (_liamCloseupYawOffset != 0f)
+            fwd = Quaternion.AngleAxis(_liamCloseupYawOffset, Vector3.up) * fwd;
+
+        Vector3 lookPoint = _liamTransform.position + Vector3.up * _liamCloseupLookHeight;
+
+        if (_liamCloseupShot == null)
+            _liamCloseupShot = new GameObject("TabernaSequencer_LiamCloseupShot").transform;
+
+        _liamCloseupShot.SetPositionAndRotation(
+            lookPoint + fwd * _liamCloseupDistance,
+            Quaternion.LookRotation(-fwd));
     }
 
     private IEnumerator Co_LockFacing(Transform t, Vector3 worldPos)
@@ -501,7 +590,7 @@ public class TabernaSequencer : CinematicSequencerBase
 
         // ── Primer plano con slow motion ──────────────────────────────────────
         if (_estelaRageAuraVFX != null)
-            Instantiate(_estelaRageAuraVFX, _estelaTransform.position, _estelaTransform.rotation, _estelaTransform);
+            _rageAuraVFXInstance = Instantiate(_estelaRageAuraVFX, _estelaTransform.position, _estelaTransform.rotation, _estelaTransform);
 
         Time.timeScale      = _slowMotionScale;
         Time.fixedDeltaTime = 0.02f * _slowMotionScale;
@@ -522,7 +611,7 @@ public class TabernaSequencer : CinematicSequencerBase
         FaceTarget(_estelaTransform, _liamTransform);
 
         if (_lightningVFX != null)
-            Instantiate(_lightningVFX, _estelaTransform.position, _estelaTransform.rotation, _estelaTransform);
+            _lightningVFXInstance = Instantiate(_lightningVFX, _estelaTransform.position, _estelaTransform.rotation, _estelaTransform);
         _liamSimpleAnim?.PlaySocialGesture(_animLiamDodge);
         FeedbackService.ScreenFlash(new Color(0.8f, 0.9f, 1f, 0.5f), 0.5f);
         FeedbackService.CameraShake(0.3f, 0.6f);
@@ -609,6 +698,10 @@ public class TabernaSequencer : CinematicSequencerBase
             agent.nextPosition   = seat.InteractionPosition;
         }
 
+        // El brain sigue en FollowPlayerState durante la secuencia y su ApplySmoothRotation
+        // (LateUpdate) gira al NPC hacia el jugador cada frame, peleándose con los
+        // Co_LockFacing del sequencer → temblor visible. Desactivar mientras esté sentado.
+        simAnim?.DisableAutoRotation();
         simAnim?.PlayAmbientActivity(seat.activityType, seat);
     }
 
@@ -619,6 +712,9 @@ public class TabernaSequencer : CinematicSequencerBase
         if (seat == null || npc == null) return;
         seat.DetachProp();
         seat.Release(npc);
+        // Reactivar la rotación automática del brain (EnableAutoRotation sincroniza
+        // _targetRotation con la rotación actual, así no hay snap visible)
+        simAnim?.EnableAutoRotation();
         simAnim?.PlayIdleNormal();
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {

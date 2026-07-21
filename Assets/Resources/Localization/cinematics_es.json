@@ -229,8 +229,8 @@
             "text": "Hay que averiguar quién invocó ese demonio y por qué os ha buscado a vosotros."
         },
         {
-            "id": "EVT_TAB_WILL_01",
-            "text": "Y también qué tiene que ver con mi magia..."
+            "id": "EVT_TAB_ELDRAN_02",
+            "text": "Creo que he perdido el apetito."
         },
         {
             "id": "EVT_TAB_ESTELA_01",
@@ -245,20 +245,24 @@
             "text": "¡AL FIN!"
         },
         {
-            "id": "EVT_TAB_WILL_02",
-            "text": "Estela... ¿de verdad comes así?"
+            "id": "EVT_TAB_ESTELA_RAGE",
+            "text": "¡NADIE me interrumpe cuando estoy comiendo!"
         },
         {
-            "id": "EVT_TAB_ELDRAN_02",
-            "text": "Creo que he perdido el apetito."
+            "id": "EVT_TAB_ESTELA_SEVAENTERAR",
+            "text": "¡Se va a enterar este!"
         },
         {
             "id": "EVT_TAB_LIAM_01",
-            "text": "Disculpad que os interrumpa... tengo información que podría interesaros."
+            "text": "Disculpad que os interrumpa...\nMe llamo Liam y no he podido evitar escuchar vuestra conversación.\nCreo que tengo información que podría interesaros."
         },
         {
-            "id": "EVT_TAB_ESTELA_RAGE",
-            "text": "¡NADIE me interrumpe cuando estoy comiendo!"
+            "id": "EVT_TAB_WILL_01",
+            "text": "Y también qué tiene que ver con mi magia..."
+        },
+        {
+            "id": "EVT_TAB_WILL_02",
+            "text": "Estela... ¿de verdad comes así?"
         },
         {
             "id": "EVT_TAB_WILL_03",

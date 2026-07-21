@@ -229,8 +229,8 @@
             "text": "We need to find out who summoned that demon and why they're after you."
         },
         {
-            "id": "EVT_TAB_WILL_01",
-            "text": "And what it has to do with my magic..."
+            "id": "EVT_TAB_ELDRAN_02",
+            "text": "I think I've lost my appetite."
         },
         {
             "id": "EVT_TAB_ESTELA_01",
@@ -245,20 +245,24 @@
             "text": "FINALLY!"
         },
         {
-            "id": "EVT_TAB_WILL_02",
-            "text": "Estela... do you really eat like that?"
+            "id": "EVT_TAB_ESTELA_RAGE",
+            "text": "NOBODY interrupts me when I'm eating!"
         },
         {
-            "id": "EVT_TAB_ELDRAN_02",
-            "text": "I think I've lost my appetite."
+            "id": "EVT_TAB_ESTELA_SEVAENTERAR",
+            "text": ""
         },
         {
             "id": "EVT_TAB_LIAM_01",
-            "text": "Pardon the interruption... I have information that might interest you."
+            "text": "Pardon the interruption...\nMy name is Liam, and I couldn't help overhearing your conversation.\nI think I have information that might interest you."
         },
         {
-            "id": "EVT_TAB_ESTELA_RAGE",
-            "text": "NOBODY interrupts me when I'm eating!"
+            "id": "EVT_TAB_WILL_01",
+            "text": "And what it has to do with my magic..."
+        },
+        {
+            "id": "EVT_TAB_WILL_02",
+            "text": "Estela... do you really eat like that?"
         },
         {
             "id": "EVT_TAB_WILL_03",

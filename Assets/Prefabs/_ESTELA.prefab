@@ -15509,6 +15509,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1574180523347287390}
   - component: {fileID: 1148965841523420612}
+  - component: {fileID: 2079650190807873139}
   m_Layer: 0
   m_Name: Body09
   m_TagString: Untagged
@@ -15634,6 +15635,20 @@ SkinnedMeshRenderer:
     m_Center: {x: -0.014823109, y: -0.009416476, z: 0.37241507}
     m_Extent: {x: 0.76054096, y: 0.2331669, z: 0.3966998}
   m_DirtyAABB: 0
+--- !u!114 &2079650190807873139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7166019036080239782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 141d646b6703b4c478642cb48c9f1f33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RendererColorOverride
+  _color: {r: 1, g: 0, b: 0.927191, a: 1}
+  _renderers: []
 --- !u!1 &7227512337991677738
 GameObject:
   m_ObjectHideFlags: 0
@@ -17295,6 +17310,7 @@ GameObject:
   - component: {fileID: 732352680391503075}
   - component: {fileID: 5526212711652006628}
   - component: {fileID: 6601794589266627543}
+  - component: {fileID: 2154861250279181922}
   m_Layer: 0
   m_Name: Hair08
   m_TagString: Untagged
@@ -17374,6 +17390,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2154861250279181922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7974455547802228836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 141d646b6703b4c478642cb48c9f1f33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RendererColorOverride
+  _color: {r: 1, g: 0.45, b: 0.15, a: 1}
+  _renderers: []
 --- !u!1 &8022916129199227797
 GameObject:
   m_ObjectHideFlags: 0

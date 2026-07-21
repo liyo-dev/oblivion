@@ -168,9 +168,7 @@ public sealed class GameLogHandler : ILogHandler
         try
         {
 #if UNITY_EDITOR
-            // UnityEditor.Graphs lanza NullReferenceException propias al refrescar el
-            // Animator window en Play. Son bugs internos del editor, no del juego.
-            if (exception?.StackTrace?.Contains("UnityEditor.Graphs") == true) return;
+            if (IsHarmlessEditorException(exception)) return;
 #endif
             _upstream?.LogException(exception, context);
         }
@@ -179,6 +177,35 @@ public sealed class GameLogHandler : ILogHandler
             // Intencionalmente silencioso: evita recursión con el propio logHandler.
         }
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Excepciones internas del editor que no indican ningún error del juego.
+    /// Se filtran para no ensuciar la consola. Criterios acotados a tipos/stacks
+    /// de UnityEditor para no ocultar MissingReference reales del gameplay.
+    /// </summary>
+    static bool IsHarmlessEditorException(Exception ex)
+    {
+        if (ex == null) return false;
+
+        // UnityEditor.Graphs lanza NullReferenceException propias al refrescar el
+        // Animator window en Play. Bug interno del editor.
+        if (ex.StackTrace?.Contains("UnityEditor.Graphs") == true) return true;
+
+        // El Inspector reconstruye sus editores sobre un objeto ya destruido
+        // (entrar/salir de Play, recarga de escena, objetos generados en runtime).
+        // Solo la lanza UnityEditor.Editor.CreateSerializedObject.
+        if (ex.GetType().Name == "SerializedObjectNotCreatableException") return true;
+
+        // Mismo caso, vía GameObjectInspector.OnEnable ("m_Targets doesn't exist anymore")
+        if (ex is MissingReferenceException &&
+            (ex.Message?.Contains("GameObjectInspector") == true ||
+             ex.StackTrace?.Contains("UnityEditor.GameObjectInspector") == true))
+            return true;
+
+        return false;
+    }
+#endif
 
     public void SetTag(string tag, bool enabled)   => _tags[tag] = enabled;
     public void RegisterTag(string tag)            { if (!_tags.ContainsKey(tag)) _tags[tag] = true; }
